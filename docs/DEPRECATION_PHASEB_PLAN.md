@@ -43,3 +43,11 @@
 - Artifacts: GENERATED (index created)
 - Verification: PENDING (must run in canonical repo workspace; otherwise allowlist gate will fail by definition)
 
+## Canonical Workspace Gate (Hard)
+
+Before running Phase B verification, MUST pass:
+
+```bash
+bash docs/_evidence/_tools/check_canonical_workspace.sh
+```
+

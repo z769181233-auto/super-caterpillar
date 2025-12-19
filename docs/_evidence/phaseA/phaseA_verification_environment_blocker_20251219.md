@@ -31,3 +31,9 @@ Phase A Close is BLOCKED in this workspace.
 
 Re-run verification in a canonical repo workspace before attempting Close.
 
+## Canonical Workspace Gate (Executable)
+
+```bash
+bash docs/_evidence/_tools/check_canonical_workspace.sh
+```
+
