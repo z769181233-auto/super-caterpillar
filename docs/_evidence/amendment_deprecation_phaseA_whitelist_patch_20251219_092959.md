@@ -63,7 +63,12 @@ This amendment does not change Phase A verification outcomes (PASS/violation_cou
 
 Evidence chain is strengthened: whitelist policy is now unambiguous and reproducible across environments.
 
-**Final**: ✅ Amendment applied; Phase A Close remains ✅ VALID.
+**Final**: ✅ Amendment applied (text-only). Does not imply Close; Authoritative Close Status remains NOT CLOSE / BLOCKED until canonical re-verify PASS.
+
+See authoritative Close status:
+- docs/_evidence/phaseA/close_report_deprecation_phaseA_20251219.md
+- docs/_evidence/phaseA/phaseA_verification_environment_blocker_20251219.md
+- docs/_evidence/phaseA/reverify_untracked_allowlist_phaseA_20251219.md
 
 ## 6) Reproducibility Check (repo-local tmp paths)
 
