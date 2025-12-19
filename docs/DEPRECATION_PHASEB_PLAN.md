@@ -38,3 +38,8 @@
 - allowlist = docs/_evidence/** only
 - tmp paths = docs/_evidence/_tmp/** (repo-local)
 
+## Phase B Status (Hard)
+
+- Artifacts: GENERATED (index created)
+- Verification: PENDING (must run in canonical repo workspace; otherwise allowlist gate will fail by definition)
+
