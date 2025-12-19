@@ -27,3 +27,14 @@
    - links remain valid
    - untracked stays inside docs/_evidence/
 
+## Phase B Outputs (Hard)
+
+- Index (authoritative): docs/DEPRECATION_HISTORY_INDEX_STAGE1_4.md
+- Optional snapshots root: docs/_archive_snapshots/stageX/YYYYMMDD/ (COPY ONLY)
+- Evidence for Phase B runs: docs/_evidence/phaseB/**
+
+## Phase B Verification (Hard)
+
+- allowlist = docs/_evidence/** only
+- tmp paths = docs/_evidence/_tmp/** (repo-local)
+

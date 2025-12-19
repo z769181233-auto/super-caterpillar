@@ -7,6 +7,7 @@
   - docs/_evidence/automation_verification_deprecation_phaseA_20251219_080136.md
   - docs/_evidence/manual_verification_deprecation_phaseA_20251219_080136.md
   - docs/_evidence/amendment_deprecation_phaseA_whitelist_patch_20251219_092959.md
+  - docs/_evidence/phaseA/amendment_phaseA_close_consistency_patch_20251219.md
 - Policy:
   - untracked allowlist = docs/_evidence/** only
   - tmp paths = docs/_evidence/_tmp/** (repo-local)
