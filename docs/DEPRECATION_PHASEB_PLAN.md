@@ -1,0 +1,29 @@
+# Deprecation Cleanup - Phase B Plan (Index + Snapshot Only)
+
+## Goal
+
+- Keep history docs in place (NO moves)
+- Create a stable index for Stage1-4 historical docs
+- Optionally create snapshot copies under docs/_archive_snapshots/ (COPY ONLY)
+
+## Non-Goals
+
+- No deletion
+- No relocation of original history docs
+- No code changes
+
+## Steps
+
+1) Generate a table of historical docs (Stage1-4) with:
+   - file path
+   - short description (1 line)
+   - referenced-by (if any)
+
+2) Snapshot policy (optional):
+   - copy selected docs to docs/_archive_snapshots/stageX/YYYYMMDD/
+   - keep original files untouched
+
+3) Verify:
+   - links remain valid
+   - untracked stays inside docs/_evidence/
+
