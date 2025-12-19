@@ -377,3 +377,33 @@ Authoritative allowlist policy and latest outcome are recorded in:
 - docs/_evidence/phaseA/phaseA_verification_environment_blocker_20251219.md
 
 Do NOT use this file alone to decide Close.
+
+---
+
+## NOTE (Policy Override / Superseded Sections)
+
+This report contains legacy allowlist examples that referenced `/tmp/`.
+
+Those examples are **deprecated** and MUST NOT be used to decide PASS/FAIL.
+
+### Authoritative Policy (Current)
+
+- allowlist = `docs/_evidence/**` only
+- repo-local tmp paths = `docs/_evidence/_tmp/**`
+- canonical workspace is a hard prerequisite
+
+### Authoritative References
+
+- docs/_evidence/amendment_deprecation_phaseA_whitelist_patch_20251219_092959.md
+- docs/_evidence/phaseA/amendment_phaseA_close_consistency_patch_20251219.md
+- docs/_evidence/phaseA/phaseA_verification_environment_blocker_20251219.md
+- docs/_evidence/phaseA/reverify_untracked_allowlist_phaseA_20251219.md
+- docs/_evidence/phaseA/close_report_deprecation_phaseA_20251219.md
+
+### Canonical Workspace Gate
+
+```bash
+bash docs/_evidence/_tools/check_canonical_workspace.sh
+```
+
+If canonical gate FAILs, verification is BLOCKED and this report is treated as early-run output only.
