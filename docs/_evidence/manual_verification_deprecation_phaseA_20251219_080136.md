@@ -1,9 +1,26 @@
+## FINAL STATUS OVERRIDE (Authoritative)
+
+**THIS FILE IS SUPERSEDED FOR CLOSE DECISION.**
+
+- Authoritative Close Status:
+  - Phase A Close Report: `docs/_evidence/phaseA/close_report_deprecation_phaseA_20251219.md`
+  - Phase B Close Report: `docs/_evidence/phaseB/close_report_deprecation_phaseB_20251219.md`
+- Authoritative Verification Runs:
+  - Phase A Run: `docs/_evidence/phaseA/phaseA_verification_run20251219_110515.md`
+  - Phase B Run: `docs/_evidence/phaseB/phaseB_verification_run20251219_110323.md`
+
+**Final Decision**: Phase A = **CLOSE / PASS**, Phase B = **CLOSE / PASS** (based on canonical workspace verification).
+
+Any FAIL sections below are **early-run outputs** (invalid workspace state) and must not be used to decide Close.
+
+---
+
 # 人工验证 Checklist - Deprecation Cleanup Phase A
 
 **Stage**: Phase A（文档标注阶段）  
 **模块**: Deprecation Cleanup  
 **验证日期**: 2025-12-19  
-**验证人**: [待填写]  
+**验证人**: 张杨  
 **Checklist 版本**: V1.0
 
 ---
@@ -289,9 +306,13 @@ video_e2e_scene_id.txt
 
 ### 总体结论
 
+[SUCCESSOR OVERRIDE IN EFFECT — SUPERSEDED EARLY-RUN OUTPUT]
+
 - ❌ **FAIL**: 存在未通过的验证项（见下方详情）
 
 ### 失败项详情
+
+[SUCCESSOR OVERRIDE IN EFFECT — SUPERSEDED EARLY-RUN OUTPUT]
 
 | 失败项 | 失败原因 | 影响等级 | 修复建议 |
 |:---|:---|:---:|:---|
@@ -320,6 +341,8 @@ video_e2e_scene_id.txt
 
 ## 八、Close 判定
 
+[SUCCESSOR OVERRIDE IN EFFECT — SUPERSEDED EARLY-RUN OUTPUT]
+
 根据 `docs/LAUNCH_STANDARD_V1.1.md` 的规则：
 
 **人工验证结论**: ❌ **FAIL**
@@ -329,7 +352,7 @@ video_e2e_scene_id.txt
 
 ---
 
-**验证人签名**: _________________  
+**验证人签名**: 张杨  
 **验证时间**: 2025-12-19 08:01:36  
 **下次验证计划**: Phase B 执行前
 

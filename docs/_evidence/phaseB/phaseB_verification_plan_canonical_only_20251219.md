@@ -7,6 +7,9 @@
 ## Run
 
 ```bash
+# hard prerequisite
+bash docs/_evidence/_tools/require_canonical_or_exit.sh
+
 # 0) canonical workspace gate
 bash docs/_evidence/_tools/check_canonical_workspace.sh
 

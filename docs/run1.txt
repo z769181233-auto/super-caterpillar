@@ -1,0 +1,163 @@
+🚀 Starting E2E Vertical Slice Verification (RC1)...
+API_BASE_URL=http://localhost:3000/api
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/scu?schema=public
+WORKER_API_KEY=ak_e2e_test_key_001
+Connection to localhost port 5433 [tcp/pyrrho] succeeded!
+🚀 Starting API...
+API PID: 5193
+⏳ Waiting for API (localhost:3000)...
+Connection to localhost port 3000 [tcp/hbci] succeeded!
+✅ API is up!
+🚀 Starting Worker loop...
+Worker loop PID: 5347
+⏳ Waiting 15s for Worker to initialize...
+🧪 Running e2e_verify.ts ...
+🚀 Starting E2E Vertical Slice Verification (RC1 - JWT Flow)...
+Target: http://localhost:3000/api
+User: e2e_auto_7fdf3c1a@scu.test
+DB URL: postgresql://postgres:***@localhost:5433/scu?schema=public
+👤 Registering Test User...
+✅ Logged in. UserId=e21a6d16-041e-4aca-92f6-9fba54f97009
+✅ Verified User exists in DB.
+📦 Seeding Project Data...
+📦 Seeding Worker API Key: ak_e2e_test_key_001
+✅ Data Ready: Shot=176db862-049e-4bd7-b5d4-f6bec5c828bb, Member=e21a6d16-041e-4aca-92f6-9fba54f97009, Engine & ApiKey seeded
+🔄 Refreshing Token (Re-Login)...
+✅ Token Refreshed.
+
+🧪 Test Case A: Fail Fast (Worker Logic Check)
+   Job Injected: 4621b48f-5de1-4421-a534-20fb92d90f8f
+   Poll 1: PENDING Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 6: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 11: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 16: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 21: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 26: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 31: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 36: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 41: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 46: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 51: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 56: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 61: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 66: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 71: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 76: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 81: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 86: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 91: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 96: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 101: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 106: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 111: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+   Poll 116: DISPATCHED Binding: {"id":"e9961720-66cf-49df-bcab-85ac8cf8c9ce","jobId":"4621b48f-5de1-4421-a534-20fb92d90f8f","engineId":"c9e6943c-24b4-4596-8d5b-a132343efd3a","engineVersionId":null,"engineKey":"default_novel_analysis","status":"BOUND","boundAt":"2025-12-17T07:39:14.449Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":null,"createdAt":"2025-12-17T07:39:14.449Z","updatedAt":"2025-12-17T07:39:14.449Z","engine":{"id":"c9e6943c-24b4-4596-8d5b-a132343efd3a","code":"default_novel_analysis","name":"default_novel_analysis","type":"local","isActive":true,"engineKey":"default_novel_analysis","adapterName":"default_novel_analysis","adapterType":"local","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2025-12-16T03:47:08.863Z","updatedAt":"2025-12-17T07:39:14.363Z"},"engineVersion":null}
+❌ E2E Failed: Error: Timeout polling 4621b48f-5de1-4421-a534-20fb92d90f8f
+    at pollJob (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/smoke/e2e_verify.ts:304:11)
+    at async main (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/smoke/e2e_verify.ts:246:9)
+❌ E2E Verification Failed! exit=1
+📋 Worker Log Tail:
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=002b7441... timestamp=1765957204553
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=545fb7a7... timestamp=1765957205566
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=f2a1bbab... timestamp=1765957207568
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=9340599d... timestamp=1765957209553
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=2b4c8e9e... timestamp=1765957209568
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=f8a25eb9... timestamp=1765957211569
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=13ad1d4a... timestamp=1765957213570
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=c1f27799... timestamp=1765957214554
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=d71eae68... timestamp=1765957215572
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=06831188... timestamp=1765957217572
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=50c7e9ee... timestamp=1765957219555
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=e4666af0... timestamp=1765957219572
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=5d6edda4... timestamp=1765957221574
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=68800137... timestamp=1765957223574
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=e066f549... timestamp=1765957224556
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=6932a0a0... timestamp=1765957225575
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=b0274f1b... timestamp=1765957227575
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=490256c9... timestamp=1765957229558
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=32665c0a... timestamp=1765957229576
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=feb61784... timestamp=1765957231577
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=d034160a... timestamp=1765957233579
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=728ffc66... timestamp=1765957234559
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=ba86eb99... timestamp=1765957235579
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=f4a19627... timestamp=1765957237580
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=ff858322... timestamp=1765957239560
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=d8b7fd4c... timestamp=1765957239580
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=97f314ec... timestamp=1765957241582
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=6df15174... timestamp=1765957243583
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=183ddd0a... timestamp=1765957244561
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=c1180b3e... timestamp=1765957245583
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=3f7e3070... timestamp=1765957247585
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=6e57b230... timestamp=1765957249562
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=60ff65d6... timestamp=1765957249585
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=712a2bc9... timestamp=1765957251585
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=ebb9fd0f... timestamp=1765957253587
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=577a7784... timestamp=1765957254564
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=9b34a9dc... timestamp=1765957255588
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=9826178f... timestamp=1765957257594
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=e4a640c8... timestamp=1765957259565
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=0f3f4d05... timestamp=1765957259593
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=1245f25c... timestamp=1765957261594
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=c06c8e87... timestamp=1765957263594
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=5f6cff94... timestamp=1765957264566
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=90cba83b... timestamp=1765957265594
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=a42865b8... timestamp=1765957267595
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=90f7bb76... timestamp=1765957269567
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=a6601d2d... timestamp=1765957269596
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=b52d61cc... timestamp=1765957271597
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=cd369622... timestamp=1765957273598
+apps/workers dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0}
+apps/workers dev: DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0}
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/heartbeat nonce=af4269f3... timestamp=1765957274568
+apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=2629ac12... timestamp=1765957275599
+📋 API Log Tail:
+apps/api dev:       },
+apps/api dev:       "remoteAddress": "::1",
+apps/api dev:       "remotePort": 60914
+apps/api dev:     }
+apps/api dev:     res: {
+apps/api dev:       "statusCode": 200,
+apps/api dev:       "headers": {
+apps/api dev:         "x-powered-by": "Express",
+apps/api dev:         "access-control-allow-origin": "http://localhost:3001",
+apps/api dev:         "vary": "Origin",
+apps/api dev:         "access-control-allow-credentials": "true",
+apps/api dev:         "x-ratelimit-limit": "100",
+apps/api dev:         "x-ratelimit-remaining": "41",
+apps/api dev:         "x-ratelimit-reset": "59",
+apps/api dev:         "content-type": "application/json; charset=utf-8",
+apps/api dev:         "content-length": "2933",
+apps/api dev:         "etag": "W/\"b75-T7jzV9mkgFL/N+4lImhKMqH/PF0\""
+apps/api dev:       }
+apps/api dev:     }
+apps/api dev:     responseTime: 17
+🧹 Cleanup...
+tools/smoke/run_e2e_vertical_slice.sh: line 32:  5347 Terminated: 15          ( while true; do
+    echo "[Runner] Starting worker..." >> worker.log; pnpm -w --filter @scu/worker dev >> worker.log 2>&1; echo "[Runner] Worker exited with $?. Restarting in 2s..." >> worker.log; sleep 2;
+done )

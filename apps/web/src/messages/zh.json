@@ -1,0 +1,212 @@
+{
+    "Index": {
+        "title": "毛毛虫宇宙 Studio",
+        "navTitle": "毛毛虫宇宙 Studio",
+        "nav": {
+            "enterStudio": "进入 Studio",
+            "process": "制作流程",
+            "features": "系统能力",
+            "platform": "开放平台",
+            "copilot": "AI 辅助",
+            "projects": "项目",
+            "studio": "制片厂",
+            "assets": "资产库"
+        },
+        "hero": {
+            "title": "把小说，变成可规模生产的动画。",
+            "subtitle": "用一整套 AI 动画工业系统，而不是零散工具。",
+            "description": "超级毛毛虫宇宙通过多引擎协同、结构化资产与自动化生产流程，\n将文本内容持续转化为可交付、可控、可扩展的动画作品。",
+            "ctaPrimary": "进入 Studio 开始创作",
+            "ctaSecondary": "查看完整制作流程"
+        },
+        "value": {
+            "title": "这不是一个 AI 工具，\n而是一条完整的动画生产线。",
+            "cards": {
+                "v1": {
+                    "title": "结构化生产",
+                    "desc": "小说、角色、世界观被拆解为可计算、可管理的生产结构。"
+                },
+                "v2": {
+                    "title": "质量与一致性",
+                    "desc": "自动 QA、逻辑校验与视觉一致性机制，保障稳定交付。"
+                },
+                "v3": {
+                    "title": "成本与效率可控",
+                    "desc": "GPU / 模型 / 任务级成本实时可见、可预测、可优化。"
+                }
+            }
+        },
+        "process": {
+            "title": "从故事，到成片\n全自动动画生产流程",
+            "steps": {
+                "s1": {
+                    "title": "01 小说导入与结构分析",
+                    "desc": "AI 深度理解文本，拆解剧情、角色与世界观核心要素。"
+                },
+                "s2": {
+                    "title": "02 剧本与语义理解",
+                    "desc": "自动转换为标准化制作脚本，构建可执行的语义空间。"
+                },
+                "s3": {
+                    "title": "03 分镜与镜头规划",
+                    "desc": "精准规划景别、运镜与画面构图，形成可渲染镜头结构。"
+                },
+                "s4": {
+                    "title": "04 角色 / 场景 / 资产生成",
+                    "desc": "多引擎批量生成一致性资产，进入可复用资产库。"
+                },
+                "s5": {
+                    "title": "05 批量视频生成",
+                    "desc": "集群化渲染与任务调度，高效生成动画片段。"
+                },
+                "s6": {
+                    "title": "06 合成、修复与导出",
+                    "desc": "智能剪辑与后期处理，输出最终可交付成片。"
+                }
+            }
+        },
+        "capabilities": {
+            "title": "为动画工业化而生的六大系统能力",
+            "cards": {
+                "c1": {
+                    "title": "可视化场景图谱",
+                    "desc": "直观呈现剧情结构、人物关系与场景关联，轻松掌控复杂叙事体系。"
+                },
+                "c2": {
+                    "title": "智能质量评估",
+                    "desc": "系统自动识别并拦截逻辑与视觉错误，无需人工逐帧检查。"
+                },
+                "c3": {
+                    "title": "多层级生产管理",
+                    "desc": "支持组织 / 项目 / 场景分层管理，适配大型团队协作与权限控制。"
+                },
+                "c4": {
+                    "title": "多引擎智能路由",
+                    "desc": "自动选择“最省钱且可用”的生成方案，最大化单位成本产出。"
+                },
+                "c5": {
+                    "title": "企业级安全审计",
+                    "desc": "IP 全流程可控、可追责、可商用，杜绝版权与合规风险。"
+                },
+                "c6": {
+                    "title": "成本与效能中心",
+                    "desc": "实时监控每一分算力消耗，杜绝预算黑洞，优化资源配置。"
+                }
+            }
+        },
+        "platform": {
+            "title": "一个可以持续扩展的 AI 动漫平台",
+            "subtitle": "所有模型、资产与生产任务，\n均由统一的引擎体系进行编排与执行。",
+            "cards": {
+                "p1": {
+                    "title": "引擎体系 (Engine Universe)",
+                    "desc": "核心调度中枢：统一管理生成、分析、修复与评估等多类 AI 引擎，实现跨模型、跨任务的协同工作。"
+                },
+                "p2": {
+                    "title": "模型宇宙 (Model Universe)",
+                    "desc": "模型资源池：多模型可替换、可路由，支持私有化微调与风格定制。"
+                },
+                "p3": {
+                    "title": "资产宇宙 (Asset Universe)",
+                    "desc": "数字资产沉淀系统：角色、场景、风格等资产可复用、可积累，支撑跨项目、跨季的长期生产。"
+                }
+            }
+        },
+        "entry": {
+            "viewSolution": "查看解决方案",
+            "cards": {
+                "e1": {
+                    "title": "创作者",
+                    "desc": "零门槛，把故事变成动画。"
+                },
+                "e2": {
+                    "title": "动画工作室",
+                    "desc": "批量生产、协作管理、质量与成本控制。"
+                },
+                "e3": {
+                    "title": "企业 / IP 方",
+                    "desc": "私有化部署、版权安全与工业级审计。"
+                }
+            }
+        },
+        "footerCTA": {
+            "title": "准备好进入 AI 动漫工业时代了吗？",
+            "primary": "进入 Studio",
+            "secondary": "联系我们"
+        }
+    },
+    "Common": {
+        "save": "保存",
+        "cancel": "取消",
+        "create": "创建",
+        "loading": "加载中...",
+        "login": "登陆",
+        "enterWorkbench": "进入工作台",
+        "logout": "退出登录"
+    },
+    "Projects": {
+        "title": "项目列表",
+        "subtitle": "管理您的毛毛虫电影宇宙作品",
+        "newProject": "+ 新建项目",
+        "createModalTitle": "创建新项目",
+        "createModalName": "项目名称 *",
+        "createModalNamePlaceholder": "例如：赛博朋克 2077 前传",
+        "createModalDesc": "项目简介",
+        "createModalDescPlaceholder": "简要描述您的杰作...",
+        "createButton": "创建宇宙",
+        "creatingButton": "创建中...",
+        "emptyTitle": "暂无项目",
+        "emptyDesc": "开启您的第一个创作旅程",
+        "openStudio": "工作台",
+        "stats": {
+            "seasons": "季",
+            "scenes": "场",
+            "shots": "镜"
+        },
+        "status": {
+            "READY": "就绪",
+            "RUNNING": "运行中",
+            "ERROR": "错误",
+            "DONE": "完成"
+        },
+        "time": {
+            "justNow": "刚刚更新",
+            "hoursAgo": "{hours} 小时前更新",
+            "daysAgo": "{days} 天前更新"
+        },
+        "Analysis": {
+            "updated": "更新于: {time}",
+            "job": "任务: {id}",
+            "import": "导入小说",
+            "analyzing": "分析中...",
+            "start": "开始分析",
+            "structure": "生成结构",
+            "refresh": "刷新",
+            "status": "AI 正在阅读小说并拆解结构，请稍候片刻... 结果将自动显示在左侧列表。",
+            "viewJob": "查看进度详情",
+            "viewAllJobs": "查看所有后台任务"
+        },
+        "Detail": {
+            "selectNode": "请选择一个节点查看详情",
+            "season": "第 {index} 季",
+            "episode": "第 {index} 集",
+            "scene": "第 {index} 场",
+            "shot": "第 {index} 镜",
+            "title": "标题",
+            "desc": "描述",
+            "summary": "摘要",
+            "episodes": "包含集数",
+            "scenes": "包含场次",
+            "shots": "包含镜头",
+            "params": "参数",
+            "type": "类型",
+            "generateVideo": "生成视频片段",
+            "submitting": "正在提交任务...",
+            "statusTitle": "分析状态",
+            "viewAll": "查看所有任务",
+            "unknown": "未知节点类型",
+            "noDesc": "（暂无描述）",
+            "noSummary": "（暂无摘要）"
+        }
+    }
+}

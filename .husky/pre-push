@@ -1,0 +1,8 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+set -e
+
+echo "[pre-push] Running duplicate implementation guard..."
+pnpm -w exec tsx tools/smoke/guard/no_duplicate_impls.ts
+echo "[pre-push] PASS"

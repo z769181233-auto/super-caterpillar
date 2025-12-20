@@ -1,0 +1,22 @@
+{
+  "root": true,
+  "extends": ["../../.eslintrc.json"],
+  "ignorePatterns": [
+    "dist/",
+    "src/scripts/legacy/**"
+  ],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@prisma/client",
+            "message": "❌ 禁止在 apps/api 中直接使用 @prisma/client。PrismaClient/Prisma 类型必须从 database 包导入。"
+          }
+        ]
+      }
+    ]
+  }
+}
+

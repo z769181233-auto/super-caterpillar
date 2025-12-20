@@ -1,0 +1,137 @@
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { JobService } from '../job/job.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { ParseStoryDto } from './dto/parse-story.dto';
+import { JobType as JobTypeEnum, TaskType as TaskTypeEnum } from 'database';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuditActions } from '../audit/audit.constants';
+import { randomUUID } from 'crypto';
+
+/**
+ * Story Service
+ * CE06: Novel Parsing 服务层
+ * 
+ * 规则：
+ * - 只负责参数校验 + 创建 Job
+ * - 复用现有 JobService.createCECoreJob
+ * - 不写业务逻辑，不复制解析算法
+ */
+@Injectable()
+export class StoryService {
+  private readonly logger = new Logger(StoryService.name);
+
+  constructor(
+    private readonly jobService: JobService,
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
+
+  /**
+   * 解析小说（CE06）
+   * 
+   * @param dto 输入参数
+   * @param userId 用户 ID
+   * @param organizationId 组织 ID
+   * @param ip IP 地址
+   * @param userAgent UserAgent
+   * @returns jobId, traceId, status
+   */
+  async parseStory(
+    dto: ParseStoryDto,
+    userId?: string,
+    organizationId?: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
+    // 1. 参数校验（DTO 已通过 class-validator）
+    if (!dto.rawText || dto.rawText.trim().length === 0) {
+      throw new BadRequestException('rawText is required and cannot be empty');
+    }
+
+    // 2. 如果提供了 projectId，验证项目存在
+    const projectId = dto.projectId;
+    if (projectId) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+      });
+      if (!project) {
+        throw new BadRequestException(`Project ${projectId} not found`);
+      }
+      if (organizationId && project.organizationId !== organizationId) {
+        throw new BadRequestException(`Project ${projectId} does not belong to organization ${organizationId}`);
+      }
+    } else {
+      // 如果没有提供 projectId，创建一个临时项目（可选，根据业务需求）
+      // 这里暂时要求必须提供 projectId
+      throw new BadRequestException('projectId is required');
+    }
+
+    // 3. 生成 traceId（Pipeline 级）
+    const traceId = `ce_pipeline_${randomUUID()}`;
+
+    // 4. 创建 CE_CORE_PIPELINE Task
+    if (!organizationId) {
+      throw new BadRequestException('organizationId is required');
+    }
+    const task = await this.prisma.task.create({
+      data: {
+        projectId,
+        organizationId,
+        type: TaskTypeEnum.CE_CORE_PIPELINE,
+        status: 'PENDING',
+        traceId, // Task 的 traceId 字段
+        payload: {
+          pipeline: ['CE06_NOVEL_PARSING', 'CE03_VISUAL_DENSITY', 'CE04_VISUAL_ENRICHMENT'],
+          input: {
+            rawText: dto.rawText,
+            novelTitle: dto.novelTitle,
+            novelAuthor: dto.novelAuthor,
+          },
+        },
+      },
+    });
+
+    // 5. 创建 CE06 Job（复用现有逻辑）
+    const job = await this.jobService.createCECoreJob({
+      projectId,
+      organizationId,
+      taskId: task.id,
+      jobType: JobTypeEnum.CE06_NOVEL_PARSING,
+      payload: {
+        projectId,
+        engineKey: 'ce06_novel_parsing',
+        rawText: dto.rawText,
+        novelTitle: dto.novelTitle,
+        novelAuthor: dto.novelAuthor,
+        traceId,
+      },
+    });
+
+    // 6. 记录审计日志
+    await this.auditLogService.record({
+      userId,
+      action: AuditActions.JOB_CREATED,
+      resourceType: 'job',
+      resourceId: job.id,
+      ip,
+      userAgent,
+      details: {
+        jobType: 'CE06_NOVEL_PARSING',
+        taskId: task.id,
+        traceId,
+        projectId,
+      },
+    });
+
+    this.logger.log(`CE06 Job created: ${job.id}, traceId: ${traceId}`);
+
+    // 7. 返回结果
+    return {
+      jobId: job.id,
+      traceId,
+      status: job.status,
+      taskId: task.id,
+    };
+  }
+}
+

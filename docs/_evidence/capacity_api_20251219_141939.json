@@ -1,0 +1,29 @@
+{
+  "url": "http://localhost:3000",
+  "endpoint": "POST /api/shots/\\1/jobs",
+  "jobType": "VIDEO_RENDER",
+  "concurrent": 10,
+  "requests": 100,
+  "total": 100,
+  "success": 0,
+  "failed": 100,
+  "capacityExceeded": 0,
+  "durationSec": 0.053,
+  "rps": 1886.7924528301887,
+  "latencyMs": {
+    "min": 0,
+    "max": 15,
+    "avg": 2.92,
+    "p50": 2,
+    "p95": 12,
+    "p99": 15
+  },
+  "successRate": 0,
+  "capacityExceededRate": 0,
+  "threshold": {
+    "p95Ms": 500,
+    "successRate": 0.95
+  },
+  "pass": false,
+  "ts": "2025-12-19T07:19:39.745Z"
+}

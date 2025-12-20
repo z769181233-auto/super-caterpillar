@@ -4,10 +4,10 @@ set -euo pipefail
 echo "== Canonical workspace check =="
 
 # 1) must be inside git work tree
-git rev-parse --is-inside-work-tree >/dev/null
+git rev-parse --is-inside-work-tree >/dev/null 2>&1
 
 # 2) must have tracked files
-TRACKED_N=$(git ls-files | wc -l | tr -d ' ')
+TRACKED_N=$(git ls-files 2>/dev/null | wc -l | tr -d ' ')
 echo "[canonical] tracked_count=$TRACKED_N"
 if [ "$TRACKED_N" -le 0 ]; then
   echo "FAIL: no tracked files (likely init/new workspace)"
@@ -16,7 +16,7 @@ fi
 
 # 3) must not be 'all-untracked' state (heuristic)
 # if ratio of '??' to tracked is extremely high, it is not canonical
-UNTRACKED_N=$(git status --porcelain | awk '$1=="??"{c++} END{print c+0}')
+UNTRACKED_N=$(git status --porcelain 2>/dev/null | awk '$1=="??"{c++} END{print c+0}')
 echo "[canonical] untracked_count=$UNTRACKED_N"
 
 # heuristic threshold: untracked > tracked * 2 => treat as invalid workspace for allowlist verification

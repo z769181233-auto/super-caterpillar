@@ -1,0 +1,72 @@
+{
+  "name": "super-caterpillar-universe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Super Caterpillar Universe — Monorepo (API / Web / Workers)",
+  "scripts": {
+    "env:init": "node tools/env/init-env-local.js",
+    "env:check": "node tools/env/print-env-source.js",
+    "db:up": "bash tools/db/up-postgres.sh && node tools/db/wait-postgres.js",
+    "db:init": "pnpm db:up && node tools/db/init-db.js",
+    "db:status": "docker ps -a --filter name=scu-postgres --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"",
+    "dev": "pnpm env:init && turbo run dev --parallel --filter=api --filter=web",
+    "dev:api": "pnpm -w --filter api dev",
+    "dev:web": "pnpm -w --filter web dev",
+    "dev:worker": "pnpm -w --filter workers dev",
+    "build": "turbo run build",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "mock:http-engine": "ts-node apps/tools/mock-http-engine/server.ts",
+    "postinstall": "pnpm --filter database prisma:generate",
+    "preflight": "node tools/preflight.mjs",
+    "test:contract": "pnpm -w --filter api test:e2e",
+    "smoke": "node tools/smoke/run-smoke.mjs",
+    "smoke:stage1-2": "tsx tools/smoke/stage1_stage2_smoke.ts",
+    "smoke:diag:db": "pnpm -w exec tsx tools/smoke/diag_db.ts",
+    "typecheck": "turbo run typecheck",
+    "verify:cold-start": "pnpm -w exec tsx tools/verify_cold_start.ts",
+    "verify:stage10": "pnpm -w exec tsx scripts/verify_stage10.ts",
+    "verify:signed-url": "pnpm -w exec tsx scripts/verify_signed_url.ts",
+    "verify:text-safety": "pnpm -w exec tsx scripts/verify_text_safety.ts",
+    "verify:stage12": "pnpm -w exec tsx scripts/verify_stage12.ts",
+    "verify:all": "pnpm verify:cold-start && pnpm verify:stage10 && pnpm verify:signed-url && pnpm verify:text-safety",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "axios": "^1.6.0",
+    "glob": "^13.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.7.0",
+    "turbo": "^2.1.1",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "pnpm@9.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "lint-staged": {
+    "apps/web/**/*.{ts,tsx}": [
+      "pnpm -C apps/web eslint --max-warnings=0"
+    ],
+    "apps/api/**/*.{ts,tsx}": [
+      "pnpm -C apps/api eslint --max-warnings=0"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --check"
+    ]
+  },
+  "dependencies": {
+    "@formatjs/icu-messageformat-parser": "^3.0.2",
+    "dotenv": "^16.0.0",
+    "express": "^4.19.2",
+    "pg": "^8.16.3"
+  }
+}

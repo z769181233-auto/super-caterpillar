@@ -211,3 +211,11 @@
 
 **维护说明**: 本索引文档应在每次 Phase 执行或 Stage Close 后更新。
 
+---
+
+## Frozen Clause
+
+**As of 2025-12-19, Deprecation Cleanup Phases A/B/C are frozen.**
+
+Any future deviation requires a new Deprecation RFC and MUST NOT reuse historical evidence.
+

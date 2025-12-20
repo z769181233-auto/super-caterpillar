@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2025-12-17T04:13:15.118Z",
+  "totalIssues": 1004,
+  "highRiskCount": 970,
+  "medRiskCount": 34,
+  "topFiles": [
+    {
+      "file": "packages/database/src/generated/prisma/index.d.ts",
+      "count": 132
+    },
+    {
+      "file": "packages/database/src/generated/prisma/runtime/library.d.ts",
+      "count": 62
+    },
+    {
+      "file": "apps/api/src/job/job.service.ts",
+      "count": 50
+    },
+    {
+      "file": "apps/api/src/project/project.service.ts",
+      "count": 30
+    },
+    {
+      "file": "apps/workers/src/ce-core-processor.ts",
+      "count": 28
+    },
+    {
+      "file": "apps/api/src/engine-admin/engine-admin.service.ts",
+      "count": 27
+    },
+    {
+      "file": "apps/api/src/project/project.controller.ts",
+      "count": 22
+    },
+    {
+      "file": "apps/api/src/engine/engine-config-store.service.ts",
+      "count": 20
+    },
+    {
+      "file": "apps/api/src/job/job.controller.ts",
+      "count": 19
+    },
+    {
+      "file": "apps/workers/src/novel-analysis-processor.ts",
+      "count": 17
+    }
+  ]
+}
