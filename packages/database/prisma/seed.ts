@@ -1,0 +1,202 @@
+import { PrismaClient } from '../src/generated/prisma';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Seeding Engine data...');
+
+  const engines = [
+    {
+      code: 'default_novel_analysis',
+      name: 'Default Novel Analysis',
+      type: 'local',
+      isActive: true,
+      engineKey: 'default_novel_analysis',
+      adapterName: 'default_novel_analysis',
+      adapterType: 'local',
+      config: {},
+      enabled: true,
+    },
+    {
+      code: 'default_shot_render',
+      name: 'Default Shot Render',
+      type: 'local',
+      isActive: true,
+      engineKey: 'default_shot_render',
+      adapterName: 'default_shot_render',
+      adapterType: 'local',
+      config: {},
+      enabled: true,
+    },
+    // HTTP 引擎（如果后续要用就先建好）
+    {
+      code: 'http_real_novel_analysis',
+      name: 'HTTP Novel Analysis',
+      type: 'http',
+      isActive: true,
+      engineKey: 'http_real_novel_analysis',
+      adapterName: 'http',
+      adapterType: 'http',
+      config: {},
+      enabled: true,
+    },
+    {
+      code: 'http_real_shot_render',
+      name: 'HTTP Shot Render',
+      type: 'http',
+      isActive: true,
+      engineKey: 'http_real_shot_render',
+      adapterName: 'http',
+      adapterType: 'http',
+      config: {},
+      enabled: true,
+    },
+  ];
+
+  for (const e of engines) {
+    // 先尝试用 engineKey 查找
+    let engine = await prisma.engine.findUnique({
+      where: { engineKey: e.engineKey },
+    });
+
+    if (engine) {
+      // 如果存在，更新字段（包括新增的 code, name, type, isActive）
+      engine = await prisma.engine.update({
+        where: { engineKey: e.engineKey },
+        data: {
+          code: e.code,
+          name: e.name,
+          type: e.type,
+          isActive: e.isActive,
+          adapterName: e.adapterName,
+          adapterType: e.adapterType,
+          config: e.config,
+          enabled: e.enabled,
+        },
+      });
+      console.log(`✅ Updated engine: ${engine.engineKey} -> code: ${e.code} (${e.name})`);
+    } else {
+      // 如果不存在，创建新记录
+      engine = await prisma.engine.create({
+        data: e,
+      });
+      console.log(`✅ Created engine: ${engine.engineKey} -> code: ${e.code} (${e.name})`);
+    }
+  }
+
+  console.log('✅ Engine seeding completed!');
+
+  // ========== RBAC Seed: Roles, Permissions, RolePermissions ==========
+  console.log('🌱 Seeding RBAC data...');
+
+  // 1. 创建 Roles (只保留标准全大写角色)
+  const roles = [
+    { name: 'OWNER', level: 100 }, // 对齐计划中的 level
+    { name: 'ADMIN', level: 80 },
+    { name: 'CREATOR', level: 60 },
+    { name: 'EDITOR', level: 50 },
+    { name: 'VIEWER', level: 20 },
+  ];
+
+  // 清理非标角色 (强制收敛)
+  const standardRoleNames = roles.map(r => r.name);
+  await prisma.role.deleteMany({
+    where: {
+      name: { notIn: standardRoleNames },
+    },
+  });
+  console.log('🧹 Cleaned non-standard roles');
+
+  for (const roleData of roles) {
+    await prisma.role.upsert({
+      where: { name: roleData.name },
+      update: { level: roleData.level },
+      create: roleData,
+    });
+  }
+  console.log('✅ Created/Updated roles:', roles.map(r => r.name).join(', '));
+
+  // 2. 创建 Permissions (system scope)
+  const permissions = [
+    { key: 'auth', scope: 'system' },
+    { key: 'project.create', scope: 'system' },
+    { key: 'project.read', scope: 'system' },
+    { key: 'project.write', scope: 'system' },
+    { key: 'project.update', scope: 'system' },
+    { key: 'project.generate', scope: 'system' },
+    { key: 'project.review', scope: 'system' },
+    { key: 'project.publish', scope: 'system' },
+    { key: 'project.delete', scope: 'system' },
+    { key: 'user.manage', scope: 'system' },
+    { key: 'billing.view', scope: 'system' },
+    { key: 'billing.manage', scope: 'system' },
+    { key: 'model.use.base', scope: 'system' },
+    { key: 'novel.upload', scope: 'system' },
+    { key: 'novel.read', scope: 'system' },
+    { key: 'novel.update', scope: 'system' },
+    { key: 'structure.read', scope: 'system' },
+    { key: 'project.manage', scope: 'system' },
+  ];
+
+  for (const permData of permissions) {
+    await prisma.permission.upsert({
+      where: { key: permData.key },
+      update: { scope: permData.scope },
+      create: permData,
+    });
+  }
+  console.log('✅ Created/Updated permissions:', permissions.map(p => p.key).join(', '));
+
+  // 3. 创建 RolePermissions (关联 Role 和 Permission)
+  const rolePermissions = [
+    { roleName: 'VIEWER', permKeys: ['auth', 'project.read', 'novel.read', 'structure.read', 'billing.view'] },
+    { roleName: 'EDITOR', permKeys: ['auth', 'project.read', 'project.write', 'project.update', 'project.generate', 'project.review', 'novel.read', 'novel.update', 'structure.read', 'billing.view'] },
+    { roleName: 'CREATOR', permKeys: ['auth', 'project.create', 'project.read', 'project.write', 'project.update', 'project.generate', 'project.review', 'novel.upload', 'novel.read', 'novel.update', 'structure.read', 'billing.view', 'model.use.base'] },
+    { roleName: 'ADMIN', permKeys: ['auth', 'project.create', 'project.read', 'project.write', 'project.update', 'project.generate', 'project.review', 'project.publish', 'project.delete', 'project.manage', 'user.manage', 'billing.view', 'billing.manage', 'novel.upload', 'novel.read', 'novel.update', 'structure.read', 'model.use.base'] },
+    { roleName: 'OWNER', permKeys: ['auth', 'project.create', 'project.read', 'project.write', 'project.update', 'project.generate', 'project.review', 'project.publish', 'project.delete', 'project.manage', 'user.manage', 'billing.view', 'billing.manage', 'novel.upload', 'novel.read', 'novel.update', 'structure.read', 'model.use.base'] },
+  ];
+
+  for (const { roleName, permKeys } of rolePermissions) {
+    const role = await prisma.role.findUnique({ where: { name: roleName } });
+    if (!role) {
+      console.warn(`⚠️  Role ${roleName} not found, skipping permissions`);
+      continue;
+    }
+
+    for (const permKey of permKeys) {
+      const permission = await prisma.permission.findUnique({ where: { key: permKey } });
+      if (!permission) {
+        console.warn(`⚠️  Permission ${permKey} not found, skipping`);
+        continue;
+      }
+
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: role.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: role.id,
+          permissionId: permission.id,
+        },
+      });
+    }
+    console.log(`✅ Assigned ${permKeys.length} permissions to role: ${roleName}`);
+  }
+
+  console.log('✅ RBAC seeding completed!');
+}
+
+main()
+  .then(async () => {
+    await prisma.$disconnect();
+  })
+  .catch(async (e) => {
+    console.error('❌ Seeding failed:', e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });
+

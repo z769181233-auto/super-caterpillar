@@ -1,0 +1,65 @@
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { ReadStream, createReadStream } from 'fs';
+
+export class LocalStorageAdapter {
+    private root: string;
+
+    constructor(root?: string) {
+        // Default to .data/storage in repo root if not provided
+        this.root = root || path.resolve(process.cwd(), '../../.data/storage');
+        fs.ensureDirSync(this.root);
+        console.log(`[LocalStorageAdapter] Initialized at: ${this.root}`);
+    }
+
+    /**
+     * Write buffer to storage
+     * @param key Storage key (e.g., "videos/job-123.mp4")
+     * @param buffer Content
+     */
+    async put(key: string, buffer: Buffer): Promise<void> {
+        this.validateKey(key);
+        const fullPath = this.getAbsolutePath(key);
+        await fs.ensureDir(path.dirname(fullPath));
+        await fs.writeFile(fullPath, buffer);
+    }
+
+    /**
+     * Get read stream for key
+     * @param key Storage key
+     */
+    getReadStream(key: string): ReadStream {
+        this.validateKey(key);
+        const fullPath = this.getAbsolutePath(key);
+        if (!fs.existsSync(fullPath)) {
+            throw new Error(`File not found: ${key}`);
+        }
+        return createReadStream(fullPath);
+    }
+
+    /**
+     * Get absolute local path (Internal/Worker only)
+     * @param key Storage key
+     */
+    getAbsolutePath(key: string): string {
+        this.validateKey(key);
+        return path.join(this.root, key);
+    }
+
+    /**
+     * Check if file exists
+     */
+    exists(key: string): boolean {
+        this.validateKey(key);
+        return fs.existsSync(this.getAbsolutePath(key));
+    }
+
+    /**
+     * Validate key to prevent partial traversal
+     */
+    private validateKey(key: string): void {
+        if (key.includes('..') || key.startsWith('/')) {
+            throw new Error(`Invalid storage key: ${key}`);
+        }
+    }
+}

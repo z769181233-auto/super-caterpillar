@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.log
+
+# Production
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Turbo
+.turbo/
+
+# Prisma
+packages/database/prisma/migrations/
+
+# Misc
+*.tsbuildinfo
+
+# Reports (keep main reports, ignore generated test reports)
+reports/e2e/*.json
+reports/stability/*.md
+!reports/SELF_TEST_REPORT_V2.md
+
+apps/web/e2e/.auth

@@ -1,0 +1,6 @@
+[
+  {
+    "db": "super_caterpillar_dev",
+    "schema": "public"
+  }
+]

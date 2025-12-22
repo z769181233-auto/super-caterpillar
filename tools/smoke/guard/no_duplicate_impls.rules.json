@@ -1,0 +1,26 @@
+[
+    {
+        "file": "tools/smoke/helpers/worker_min_flow.ts",
+        "pattern": "export\\s+async\\s+function\\s+runWorkerMinFlow",
+        "expected": 1,
+        "owner": "@infra-core",
+        "reason": "Critical Worker Flow Entry Point: Multiple definitions will cause ambiguous worker behavior and split-brain execution.",
+        "fix": "Search for 'runWorkerMinFlow' and remove the duplicate definition. Ensure only one export exists."
+    },
+    {
+        "file": "tools/smoke/stage1_stage2_smoke.ts",
+        "pattern": "import[\\s\\S]*?\\{\\s*[^}]*\\bcheckHealth\\b[^}]*\\}[\\s\\S]*?from\\s+['\"]\\.\\/helpers\\/health_check\\.ts['\"]\\s*;?",
+        "expected": 1,
+        "owner": "@infra-core",
+        "reason": "Health Check Import Security: Duplicate imports may bypass mock checks or lead to circular dependency initialization issues.",
+        "fix": "Consolidate imports from './helpers/health_check.ts'."
+    },
+    {
+        "file": "tools/smoke/stage1_stage2_smoke.ts",
+        "pattern": "async\\s+function\\s+main\\s*\\(",
+        "expected": 1,
+        "owner": "@infra-core",
+        "reason": "Smoke Test Entry Point: Multiple main() functions define conflicting entry points.",
+        "fix": "Rename or remove the extraneous main() function."
+    }
+]

@@ -1,28 +1,53 @@
-# CLOSE REPORT - Deprecation Cleanup Phase A
+# CLOSE REPORT - Deprecation Cleanup Phase A (Authoritative)
 
 - Date: 2025-12-19
-- Result: NOT CLOSE (Automation FAIL due to workspace state)
-- Status: BLOCKED (requires canonical repo workspace)
+- Result: CLOSE (PASS)
+- Status: UNBLOCKED (Canonical workspace verification complete)
 - Scope: docs-only (no code changes)
-- Evidence:
-  - docs/_evidence/automation_verification_deprecation_phaseA_20251219_080136.md
-  - docs/_evidence/manual_verification_deprecation_phaseA_20251219_080136.md
-  - docs/_evidence/amendment_deprecation_phaseA_whitelist_patch_20251219_092959.md
-  - docs/_evidence/phaseA/amendment_phaseA_close_consistency_patch_20251219.md
-  - docs/_evidence/phaseA/reverify_untracked_allowlist_phaseA_20251219.md
-  - docs/_evidence/phaseA/phaseA_verification_environment_blocker_20251219.md
-- Policy:
+- Policy (Authoritative):
+  - Canonical workspace gate: MUST PASS
   - untracked allowlist = docs/_evidence/** only
-  - tmp paths = docs/_evidence/_tmp/** (repo-local)
+  - repo-local tmp paths = docs/_evidence/_tmp/**
 
-## Close Status Update (Authoritative)
+## Final Authoritative Evidence (Canonical Workspace)
 
-- Status: **NOT CLOSE / BLOCKED**
-- Reason: Re-verify shows `violation_count>0` (workspace has many untracked outside allowlist).
-- Rule: allowlist = `docs/_evidence/**` only; PASS requires `violation_count==0`.
+### Canonical Workspace
 
-## Additional Evidence
+- Workspace: ../SuperCaterpillar_canonical (git worktree)
+- Gate: PASS
+- tracked_count=19
+- untracked_count=6 (all under docs/_evidence/**)
 
-- docs/_evidence/phaseA/reverify_untracked_allowlist_phaseA_20251219.md
-- docs/_evidence/phaseA/phaseA_verification_environment_blocker_20251219.md
+### Phase A Verification Run (Canonical)
 
+- File: docs/_evidence/phaseA/phaseA_verification_run20251219_110515.md
+- Canonical workspace gate: PASS
+- Untracked allowlist: violation_count=0
+- Doc link spot checks: PASS
+- Outcome: PASS
+
+### Final Allowlist Check
+
+- File: untracked_violation.txt (empty)
+- Outcome: PASS
+
+### Manual Verification
+
+- Verifier: 张杨
+- Verification Date: 2025-12-19
+- Signature: 张杨 (text signature)
+- Outcome: PASS
+
+## Superseded / Non-Authoritative Outputs
+
+Any earlier Phase A outputs produced outside canonical workspace (e.g., showing mass untracked violations)
+are superseded and MUST NOT be used to decide Close.
+
+## Close Decision
+
+All hard requirements are satisfied:
+- Canonical gate: PASS
+- Phase A allowlist: violation_count=0
+- Doc chain: PASS
+
+**Final**: CLOSE / PASS

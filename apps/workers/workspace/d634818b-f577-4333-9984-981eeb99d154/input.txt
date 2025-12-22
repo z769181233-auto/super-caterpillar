@@ -1,0 +1,5 @@
+file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/d634818b-f577-4333-9984-981eeb99d154/dummy_frame1_png.png'
+duration 2
+file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/d634818b-f577-4333-9984-981eeb99d154/dummy_frame2_png.png'
+duration 2
+file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/d634818b-f577-4333-9984-981eeb99d154/dummy_frame2_png.png'

@@ -1,0 +1,32 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint",
+    "lint:strict": "eslint \"src/components/**/*.{ts,tsx}\" \"src/app/**/tasks/**/*.{ts,tsx}\" \"src/app/**/login/**/*.{ts,tsx}\" \"src/app/**/projects/**/pipeline/**/*.{ts,tsx}\" --ignore-pattern \"**/_legacy/**\" --ignore-pattern \"**/tasks/**/graph/**\" --max-warnings=0",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "@scu/shared-types": "workspace:*",
+    "database": "workspace:*",
+    "next": "^14.0.4",
+    "next-intl": "^4.6.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.0.4",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "typescript": "^5.3.0"
+  }
+}

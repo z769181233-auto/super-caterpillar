@@ -1,0 +1,19 @@
+./docs/DEPRECATION_INDEX.md:24:| **DEP-021** | Script / 调试工具 | `tools/mock-worker.ts` | P2 | Phase B/C | 本地调试工具，禁止在 CI/Prod 使用（仅文档约束） |
+./docs/DEPRECATION_INDEX.md:90:### DEP-021 — mock-worker 调试脚本
+./docs/DEPRECATION_INDEX.md:93:- **路径**: `tools/mock-worker.ts`
+./tools/clean-structure.ts:46:    // Also reset Job status to PENDING so mock-worker picks it up?
+./tools/clean-structure.ts:47:    // Or just mock-worker handles any 'DONE' job?
+./docs/DEPRECATION_AUDIT_REPORT.md:178:#### DEP-021 — mock-worker 调试脚本
+./docs/DEPRECATION_AUDIT_REPORT.md:181:- **路径**: `tools/mock-worker.ts`
+./docs/DEPRECATION_AUDIT_REPORT.md:184:    - `// Also reset Job status to PENDING so mock-worker picks it up?`
+./docs/DEPRECATION_CLEANUP_PLAN.md:375:### DEP-021 — mock-worker 调试脚本
+./docs/DEPRECATION_CLEANUP_PLAN.md:379:- **Phase B**: 建立索引 + 可选复制快照到 `tools/dev/_archive/mock-worker.ts`（原文件保持不动）
+./docs/DEPRECATION_CLEANUP_PLAN.md:392:- `docs/stage-history/tools-index.md` - 新增索引文档，指向 `tools/mock-worker.ts`
+./docs/DEPRECATION_CLEANUP_PLAN.md:393:- 可选：`tools/dev/_archive/mock-worker.ts` - 复制快照（原文件 `tools/mock-worker.ts` 保持不动）
+./docs/DEPRECATION_CLEANUP_PLAN.md:396:- 删除 `tools/mock-worker.ts`（原路径，与 DEP 索引一致）
+./docs/DEPRECATION_CLEANUP_PLAN.md:437:  - [ ] 无代码引用该脚本（原路径 `tools/mock-worker.ts`）
+./docs/DEPRECATION_CLEANUP_PLAN.md:443:   - 执行 `grep -r "mock-worker" apps/ packages/ tools/` 确认无引用（排除文档和快照目录）
+./docs/DEPRECATION_CLEANUP_PLAN.md:699:4. **DEP-021**: 在文档中标注 `tools/mock-worker.ts` 为“本地调试工具，禁止在 CI/Prod 使用（仅文档约束）”
+./docs/DEPRECATION_CLEANUP_PLAN.md:759:4. **DEP-021**: 建立索引 `docs/stage-history/tools-index.md` 指向原路径；可选复制快照到 `tools/dev/_archive/mock-worker.ts`（原文件 `tools/mock-worker.ts` 保持不动）；不更新引用
+./docs/DEPRECATION_CLEANUP_PLAN.md:824:4. **DEP-021**: 删除 mock-worker 调试脚本（需证明无引用）
+./docs/DEPRECATION_CLEANUP_PLAN.md:825:   - **删除目标**: `tools/mock-worker.ts`（原路径，与 DEP 索引一致）

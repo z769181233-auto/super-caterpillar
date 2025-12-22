@@ -1,0 +1,43 @@
+import { Inter, Outfit } from 'next/font/google';
+
+import { getTranslations } from 'next-intl/server';
+
+export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+  const t = await getTranslations({ locale, namespace: 'Index' });
+  return {
+    title: t('navTitle'),
+    description: 'AI 驱动的动漫生产平台', // Description could also be translated if needed
+  };
+}
+
+import '../globals.css';
+
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
+import { Nav } from './Nav'; // Moving client-side nav to separate component to use useTranslations
+import UnauthorizedRedirectProvider from '@/components/auth/UnauthorizedRedirectProvider';
+
+// Initialize fonts
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
+
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
+  return (
+    <html lang={locale} className={`${inter.variable} ${outfit.variable}`}>
+      <body>
+        <NextIntlClientProvider messages={messages}>
+          <UnauthorizedRedirectProvider />
+          <Nav />
+          <main className="container animate-fade-in">{children}</main>
+        </NextIntlClientProvider>
+      </body>
+    </html>
+  );
+}

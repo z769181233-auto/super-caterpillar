@@ -1,3 +1,20 @@
+## FINAL STATUS OVERRIDE (Authoritative)
+
+**THIS FILE IS SUPERSEDED FOR CLOSE DECISION.**
+
+- Authoritative Close Status:
+  - Phase A Close Report: `docs/_evidence/phaseA/close_report_deprecation_phaseA_20251219.md`
+  - Phase B Close Report: `docs/_evidence/phaseB/close_report_deprecation_phaseB_20251219.md`
+- Authoritative Verification Runs:
+  - Phase A Run: `docs/_evidence/phaseA/phaseA_verification_run20251219_110515.md`
+  - Phase B Run: `docs/_evidence/phaseB/phaseB_verification_run20251219_110323.md`
+
+**Final Decision**: Phase A = **CLOSE / PASS**, Phase B = **CLOSE / PASS** (based on canonical workspace verification).
+
+Any FAIL sections below are **early-run outputs** (invalid workspace state) and must not be used to decide Close.
+
+---
+
 # 自动化验证报告 - Deprecation Cleanup Phase A
 
 **Stage**: Phase A（文档标注阶段）  
@@ -277,9 +294,13 @@ grep -E "DEP-[0-9]{3}" docs/DEPRECATION_INDEX.md | wc -l
 
 ### 总体结论
 
+[SUCCESSOR OVERRIDE IN EFFECT — SUPERSEDED EARLY-RUN OUTPUT]
+
 - ❌ **FAIL**: 存在未通过的验证项（见下方详情）
 
 ### 失败项详情
+
+[SUCCESSOR OVERRIDE IN EFFECT — SUPERSEDED EARLY-RUN OUTPUT]
 
 | 失败项 | 失败原因 | 影响等级 | 修复建议 |
 |:---|:---|:---:|:---|
@@ -305,6 +326,8 @@ grep -E "DEP-[0-9]{3}" docs/DEPRECATION_INDEX.md | wc -l
 ---
 
 ## 四、Close 判定
+
+[SUCCESSOR OVERRIDE IN EFFECT — SUPERSEDED EARLY-RUN OUTPUT]
 
 根据 `docs/LAUNCH_STANDARD_V1.1.md` 的规则：
 
