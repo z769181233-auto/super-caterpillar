@@ -289,14 +289,7 @@ export default function ProjectDetailPage({
 
   // ========== 页面渲染逻辑 ==========
 
-  import { ProductionTimeline } from '@/components/project/ProductionTimeline';
-  import { MainActionDispatcher } from '@/components/project/MainActionDispatcher';
-
-  // ... (existing imports, but make sure to update imports or rely on manual adding if tool doesn't support adding imports easily without full file context)
-  // Assume imports are handled or I will add them in a separate block if needed. 
-  // Actually, I should add them at the top. But let's focus on the component logic update first.
-
-  // Insert Helper Logic for Video Status (can be placed inside component or outside)
+  // Insert Helper Logic for Video Status
   const checkHasVideo = (nodes: any[]): boolean => {
     if (!nodes || !Array.isArray(nodes)) return false;
     for (const node of nodes) {
