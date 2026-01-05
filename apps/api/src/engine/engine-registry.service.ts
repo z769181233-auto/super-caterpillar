@@ -199,6 +199,12 @@ export class EngineRegistry {
       SHOT_RENDER_HTTP: 'http_real_shot_render',
       VIDEO_RENDER: 'default_video_render',
 
+      // P2 Visual Metrics
+      CE03_VISUAL_DENSITY: 'ce03_visual_density',
+      CE04_VISUAL_ENRICHMENT: 'ce04_visual_enrichment',
+      CE06_NOVEL_PARSING: 'ce06_novel_parsing',
+      CE07_MEMORY_UPDATE: 'ce07_memory_update',
+
       // TEST_HTTP_ENGINE_CALL: 'mock_http_engine', // 仅用于测试，不接入现有业务流程
     };
 

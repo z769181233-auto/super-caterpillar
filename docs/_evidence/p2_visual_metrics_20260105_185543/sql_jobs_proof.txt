@@ -1,0 +1,6 @@
+                  id                  |          type          |  status   
+--------------------------------------+------------------------+-----------
+ 23b2abf7-6ef9-4806-8a91-32f788b2c082 | CE03_VISUAL_DENSITY    | SUCCEEDED
+ 5f3b6b50-d286-41ed-92d4-dfc197625f71 | CE04_VISUAL_ENRICHMENT | SUCCEEDED
+(2 rows)
+

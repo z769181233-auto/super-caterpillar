@@ -266,6 +266,14 @@ async function processJob(job: JobFromApi): Promise<void> {
         result: result,
       });
       return;
+    } else if (job.type === 'CE03_VISUAL_DENSITY') {
+      const result = await processCE03Job(prisma, { ...job, projectId: job.projectId || '' }, engineHubClient, apiClient);
+      await apiClient.reportJobResult({
+        jobId: job.id,
+        status: 'SUCCEEDED',
+        result: result,
+      });
+      return;
     } else if (job.type.startsWith('CE')) {
       const result = await processGenericCEJob(prisma, job as any, engineHubClient, apiClient);
       await apiClient.reportJobResult({

@@ -7,11 +7,13 @@ import { AuthModule } from '../auth/auth.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
 import { PermissionModule } from '../permission/permission.module';
 
+import { DirectorConstraintSolverService } from './director-solver.service';
+
 @Module({
   imports: [PrismaModule, AuditLogModule, AuthModule, ApiSecurityModule, PermissionModule],
   controllers: [ShotDirectorController],
-  providers: [ShotDirectorService],
-  exports: [ShotDirectorService],
+  providers: [ShotDirectorService, DirectorConstraintSolverService],
+  exports: [ShotDirectorService, DirectorConstraintSolverService],
 })
-export class ShotDirectorModule {}
+export class ShotDirectorModule { }
 

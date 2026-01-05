@@ -227,6 +227,7 @@ export class JobService {
           attempts: 0,
           payload: createJobDto.payload ?? {},
           engineConfig: createJobDto.engineConfig ?? {},
+          traceId: createJobDto.traceId,
         },
       });
 

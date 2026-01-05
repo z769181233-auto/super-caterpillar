@@ -125,11 +125,44 @@ export class AuditInsightService {
         }));
 
 
+        // 4. Fetch CE03/CE04: Visual Metrics Jobs
+        const visualJobs = await this.prisma.shotJob.findMany({
+            where: {
+                projectId,
+                type: {
+                    in: ['CE03_VISUAL_DENSITY', 'CE04_VISUAL_ENRICHMENT']
+                },
+                status: 'SUCCEEDED'
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20
+        });
+
+        const visualMetricArtifacts = visualJobs.map(job => {
+            const output = ((job as any).result as any) || {};
+            let score = 0;
+            if (job.type === 'CE03_VISUAL_DENSITY') {
+                score = (output['visual_density_score'] as number) || 0;
+            } else if (job.type === 'CE04_VISUAL_ENRICHMENT') {
+                score = (output['enrichment_quality'] as number) || 0;
+            }
+
+            return {
+                jobId: job.id,
+                type: job.type,
+                status: job.status,
+                score,
+                output_summary: output,
+                created_at: job.createdAt
+            };
+        });
+
         return {
             novelSourceId,
             projectId,
             ce06: ce06Artifacts,
             ce07: ce07Artifacts,
+            ce03_04: visualMetricArtifacts
         };
     }
 

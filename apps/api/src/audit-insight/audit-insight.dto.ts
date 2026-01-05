@@ -6,6 +6,16 @@ export class NovelInsightResponse {
     projectId: string;
     ce06: NovelAnalysisArtifact[];
     ce07: MemoryUpdateArtifact[];
+    ce03_04: VisualMetricArtifact[];
+}
+
+export class VisualMetricArtifact {
+    jobId: string;
+    type: string; // CE03_VISUAL_DENSITY | CE04_VISUAL_ENRICHMENT
+    status: string;
+    score?: number; // density_score or enrichment_quality
+    output_summary: any;
+    created_at: Date;
 }
 
 export class NovelAnalysisArtifact {

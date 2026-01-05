@@ -22,6 +22,8 @@ import {
   basicTextSegmentation,
   applyAnalyzedStructureToDatabase,
 } from './novel-analysis-processor';
+import { VisualDensityLocalAdapterWorker } from './adapters/visual-density.adapter';
+import { VisualEnrichmentLocalAdapterWorker } from './adapters/visual-enrichment.adapter';
 
 /**
  * 结构化日志输出函数（与 Worker 端保持一致）
@@ -271,6 +273,14 @@ export class EngineAdapterClient {
     // 注册 CE07 Http 适配器
     const ce07Adapter = new HttpEngineAdapterWorker('ce07_memory_update', ce06BaseUrl, '/memory/update');
     this.adapters.set(ce07Adapter.name, ce07Adapter);
+
+    // [P2] 注册 CE03 视觉密度适配器
+    const ce03Adapter = new VisualDensityLocalAdapterWorker();
+    this.adapters.set(ce03Adapter.name, ce03Adapter);
+
+    // [P2] 注册 CE04 视觉丰富度适配器
+    const ce04Adapter = new VisualEnrichmentLocalAdapterWorker();
+    this.adapters.set(ce04Adapter.name, ce04Adapter);
   }
 
   /**
