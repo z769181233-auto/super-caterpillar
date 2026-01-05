@@ -33,6 +33,7 @@ import { QualityModule } from './quality/quality.module';
 import { AssetModule } from './asset/asset.module';
 import { MemoryModule } from './memory/memory.module';
 import { ShotDirectorModule } from './shot-director/shot-director.module';
+import { CEPipelineModule } from './ce-pipeline/ce-pipeline.module';
 import { HealthModule } from './health/health.module';
 import { OpsModule } from './ops/ops.module';
 import { AuditInterceptor } from './audit/audit.interceptor';
@@ -93,6 +94,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     AssetModule, // CE09: Media Security API
     MemoryModule, // CE07/CE08: Story Memory API
     ShotDirectorModule, // CE05: Director Control API
+    CEPipelineModule, // P2-3: CE DAG Pipeline (CE06→CE03→CE04)
     QualityModule, // 质量指标写入模块（QualityMetricsWriter）
     HealthModule, // 健康检查端点（/health, /ping, /metrics）
     StorageModule, // Stage 8: Local Storage Module

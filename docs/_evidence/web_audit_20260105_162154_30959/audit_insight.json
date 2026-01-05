@@ -1,1 +1,28 @@
-{"novelSourceId":"ns_web_audit_1767604922","projectId":"proj_web_audit_1767604922","ce06":[],"ce07":[{"jobId":"job_ce07_ns_web_audit_1767604922","workerId":"UNKNOWN","engineKey":"ce07_memory_update","engineVersion":"1.0.0","createdAt":"2026-01-05T09:22:05.690Z","status":"SUCCEEDED","payload":{"text":"context","result":{"result":{"summary":"Mock summary for CE07","memoryId":"867216b8-36d6-49b7-aa74-243df19fa97a"},"success":true},"sceneId":"scene_audit","projectId":"proj_web_audit_1767604922"},"memoryContent":{}}]}
+{
+  "novelSourceId": "ns_web_audit_1767604922",
+  "projectId": "proj_web_audit_1767604922",
+  "ce06": [],
+  "ce07": [
+    {
+      "jobId": "job_ce07_ns_web_audit_1767604922",
+      "workerId": "UNKNOWN",
+      "engineKey": "ce07_memory_update",
+      "engineVersion": "1.0.0",
+      "createdAt": "2026-01-05T09:22:05.690Z",
+      "status": "SUCCEEDED",
+      "payload": {
+        "text": "context",
+        "result": {
+          "result": {
+            "summary": "Mock summary for CE07",
+            "memoryId": "867216b8-36d6-49b7-aa74-243df19fa97a"
+          },
+          "success": true
+        },
+        "sceneId": "scene_audit",
+        "projectId": "proj_web_audit_1767604922"
+      },
+      "memoryContent": {}
+    }
+  ]
+}

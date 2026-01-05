@@ -1,1 +1,18 @@
-{"snapshot":{"snapshotId":"f58c3a2b-e6cf-436c-8fb4-07a4654f64ad","projectId":"proj-m2-93c8cbcd","identityLockToken":"idkey-93c8cbcd","version":1,"createdAt":"2026-01-04T11:58:10.502Z","summary":{"snapshotId":"f58c3a2b-e6cf-436c-8fb4-07a4654f64ad","version":1,"identityLockToken":"idkey-93c8cbcd","sourceRef":"shotplan-v1-93c8cbcd","content":{"memory":"V1 Memory Content","source":"manual","version":1},"createdAt":"2026-01-04T11:58:10.502Z","updatedAt":"2026-01-04T11:58:10.502Z"}}}
+{
+  "snapshot": {
+    "snapshotId": "f58c3a2b-e6cf-436c-8fb4-07a4654f64ad",
+    "projectId": "proj-m2-93c8cbcd",
+    "identityLockToken": "idkey-93c8cbcd",
+    "version": 1,
+    "createdAt": "2026-01-04T11:58:10.502Z",
+    "summary": {
+      "snapshotId": "f58c3a2b-e6cf-436c-8fb4-07a4654f64ad",
+      "version": 1,
+      "identityLockToken": "idkey-93c8cbcd",
+      "sourceRef": "shotplan-v1-93c8cbcd",
+      "content": { "memory": "V1 Memory Content", "source": "manual", "version": 1 },
+      "createdAt": "2026-01-04T11:58:10.502Z",
+      "updatedAt": "2026-01-04T11:58:10.502Z"
+    }
+  }
+}

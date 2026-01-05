@@ -1,1 +1,5 @@
-{"message":"Cannot GET /api/audit/novels/ns_web_audit_1767604619/insight","error":"Not Found","statusCode":404}
+{
+  "message": "Cannot GET /api/audit/novels/ns_web_audit_1767604619/insight",
+  "error": "Not Found",
+  "statusCode": 404
+}
