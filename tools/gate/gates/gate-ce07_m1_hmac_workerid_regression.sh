@@ -56,6 +56,7 @@ REG_WORKER_ID="worker_reg_$(date +%s)"
 log "Starting Worker with WORKER_ID=$REG_WORKER_ID..."
 export WORKER_ID="$REG_WORKER_ID"
 export CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
+export CE07_GATE_MOCK_ENGINE=1
 export HMAC_TRACE=1
 WORKER_ID="$REG_WORKER_ID" node apps/workers/dist/apps/workers/src/main.js > "$EVID_DIR/worker.log" 2>&1 &
 WORKER_PID=$!

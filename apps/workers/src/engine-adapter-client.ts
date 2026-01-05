@@ -10,6 +10,8 @@
  */
 
 import { PrismaClient } from 'database';
+import axios from 'axios';
+import { env } from '@scu/config';
 import {
   EngineAdapter,
   EngineInvokeInput,
@@ -201,6 +203,54 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
 }
 
 /**
+ * HttpEngineAdapterWorker
+ * 支持通过 HTTP 调用远程引擎服务
+ */
+export class HttpEngineAdapterWorker implements EngineAdapter {
+  constructor(
+    public readonly name: string,
+    private readonly baseUrl: string,
+    private readonly path: string = '/story/parse',
+  ) { }
+
+  supports(engineKey: string): boolean {
+    return engineKey === this.name;
+  }
+
+  async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
+    const startTime = Date.now();
+    try {
+      const response = await axios.post(`${this.baseUrl}${this.path}`, input.payload, {
+        timeout: 30000,
+      });
+
+      const totalDuration = Date.now() - startTime;
+
+      return {
+        status: 'SUCCESS' as EngineInvokeStatus,
+        output: response.data,
+        metrics: {
+          durationMs: totalDuration,
+        },
+      };
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      return {
+        status: 'FAILED' as EngineInvokeStatus,
+        error: {
+          message: error?.response?.data?.message || error?.message || 'Remote engine call failed',
+          code: 'REMOTE_ENGINE_ERROR',
+          details: error?.response?.data || error?.stack,
+        },
+        metrics: {
+          durationMs: duration,
+        },
+      };
+    }
+  }
+}
+
+/**
  * 简单的 Adapter 查找器（Worker 端）
  * 用于根据 engineKey 和 jobType 查找合适的 Adapter
  */
@@ -211,6 +261,16 @@ export class EngineAdapterClient {
     // 注册默认的 NovelAnalysisLocalAdapter
     const novelAdapter = new NovelAnalysisLocalAdapterWorker(prisma);
     this.adapters.set(novelAdapter.name, novelAdapter);
+
+    // 注册 CE06 Http 适配器
+    // 物理引擎基准地址由环境变量提供
+    const ce06BaseUrl = env.engineRealHttpBaseUrl || process.env.CE06_BASE_URL || 'http://localhost:8000';
+    const ce06Adapter = new HttpEngineAdapterWorker('ce06_novel_parsing', ce06BaseUrl, '/story/parse');
+    this.adapters.set(ce06Adapter.name, ce06Adapter);
+
+    // 注册 CE07 Http 适配器
+    const ce07Adapter = new HttpEngineAdapterWorker('ce07_memory_update', ce06BaseUrl, '/memory/update');
+    this.adapters.set(ce07Adapter.name, ce07Adapter);
   }
 
   /**

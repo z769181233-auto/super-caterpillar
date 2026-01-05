@@ -12,6 +12,7 @@ import { PermissionModule } from '../permission/permission.module';
 import { TaskModule } from '../task/task.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
+import { EngineHubModule } from '../engine-hub/engine-hub.module';
 import { EngineModule } from '../engines/engine.module';
 import { QualityModule } from '../quality/quality.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
@@ -34,7 +35,8 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     TaskModule, // 导入 TaskModule 以使用 QualityScoreService
     AuthModule,
     AuditLogModule,
-    EngineModule, // 导入 EngineModule，使用统一的引擎注册
+    EngineHubModule, // 导入 EngineHubModule，使用统一的枢纽化引擎注册
+    EngineModule, // 导入 EngineModule 以使用 EngineRegistry
     QualityModule, // 质量指标写入模块
     ApiSecurityModule, // 提供 ApiSecurityGuard 给 JwtOrHmacGuard
     BillingModule, // Full Implementation: 计费集成

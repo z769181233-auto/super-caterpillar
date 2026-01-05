@@ -62,6 +62,7 @@ GATES=(
   "tools/gate/gates/gate-ce05_m1_hard.sh"
   "tools/gate/gates/gate-ce07_m1_hard.sh"
   "tools/gate/gates/gate-ce07_m1_hmac_workerid_regression.sh"
+  "tools/gate/gates/gate-stage3_p1_web_audit.sh"
 )
 
 # 门栓 1.2：输出交付基线白名单 Manifest

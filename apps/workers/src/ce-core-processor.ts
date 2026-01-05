@@ -13,9 +13,15 @@ import {
   CE03VisualDensityOutput,
   CE04VisualEnrichmentInput,
   CE04VisualEnrichmentOutput,
+  CE07MemoryUpdateInput,
+  CE07MemoryUpdateOutput,
   WorkerJobBase,
 } from '@scu/shared-types';
 import { createHash } from 'crypto';
+import {
+  mapCE06OutputToProjectStructure,
+  applyAnalyzedStructureToDatabase,
+} from './novel-analysis-processor';
 
 /**
  * 结构化日志输出函数
@@ -122,6 +128,11 @@ export async function processCE06Job(
         parsingQuality: result.parsing_quality,
       },
     });
+
+    // 3.1 映射到层级结构并落库 (Season/Episode/Scene/Shot)
+    // 这是 P1 能力闭环的关键：让物理引擎的产物进入业务主表
+    const structure = mapCE06OutputToProjectStructure(job.projectId, result);
+    await applyAnalyzedStructureToDatabase(prisma, structure);
 
     const duration = Date.now() - jobStartTime;
 
@@ -657,11 +668,182 @@ export async function processCE01Job(
 }
 
 /**
+ * 处理 CE07 Memory Update Job
+ * 
+ * 逻辑：
+ * 1. 提取当前文本 (Scene/Chapter/Shot)
+ * 2. 检索前序记忆 (projectId + createdAt 排序)
+ * 3. 调用 CE07 引擎
+ * 4. 落库 MemoryShortTerm
+ */
+export async function processCE07Job(
+  prisma: PrismaClient,
+  job: WorkerJobBase,
+  engineHub: EngineHubClient,
+  apiClient: ApiClient,
+): Promise<any> {
+  const jobStartTime = Date.now();
+  const jobId = job.id;
+  const traceId = job.traceId;
+  const projectId = job.projectId;
+
+  logStructured('info', {
+    action: 'CE07_MEMORY_UPDATE_START',
+    jobId,
+    projectId,
+  });
+
+  // Gate Test Helper: Fail once if requested
+  // ✅ 权威来源：DB attempts（跨重启一致、多实例安全、可审计）
+  const failOnceEnv = `${job.type}_GATE_FAIL_ONCE`;
+
+  if (process.env[failOnceEnv] === '1') {
+    const row = await prisma.shotJob.findUnique({
+      where: { id: jobId },
+      select: { attempts: true },
+    });
+
+    const attemptsFromDb = row?.attempts ?? 0;
+
+    logStructured('info', {
+      action: 'GATE_FAIL_ONCE_CHECK',
+      jobId,
+      jobType: job.type,
+      attemptsFromDb,
+      failOnceEnv,
+      enabled: process.env[failOnceEnv] === '1',
+    });
+
+    // 商业级容错：使用<=1而非==1
+    if (attemptsFromDb <= 1) {
+      logStructured('warn', {
+        action: 'GATE_FAIL_ONCE_INJECT',
+        jobId,
+        jobType: job.type,
+        attemptsFromDb,
+        failOnceEnv,
+      });
+      throw new Error(`Simulated failure for ${failOnceEnv}`);
+    }
+  }
+
+  // 1. 获取当前文本 (Payload 中应包含文本或引用的 ID)
+  const payload = (job.payload || {}) as any;
+  let currentText = payload.text || payload.current_text || '';
+
+  if (!currentText && payload.sceneId) {
+    const scene = await prisma.scene.findUnique({
+      where: { id: payload.sceneId },
+    });
+    // 优先场景概要，没有则取 Shot 汇总或 rawText
+    currentText = scene?.summary || (scene as any)?.rawText || '';
+  }
+
+  // 2. 检索前序记忆
+  const previousMemory = await prisma.memoryShortTerm.findFirst({
+    where: { projectId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // 3. 构造引擎输入
+  const input: CE07MemoryUpdateInput = {
+    current_text: currentText,
+    previous_memory: previousMemory ? {
+      summary: previousMemory.summary || '',
+      character_states: (previousMemory.characterStates as any) || {},
+    } : undefined,
+    context: {
+      projectId,
+      sceneId: payload.sceneId,
+      chapterId: payload.chapterId,
+    }
+  };
+
+  // 4. 调用引擎
+  let engineResult: { success: boolean; output?: CE07MemoryUpdateOutput; error?: any };
+
+  if (process.env.CE07_GATE_MOCK_ENGINE === '1') {
+    logStructured('info', {
+      action: 'GATE_MOCK_ENGINE_CE07',
+      jobId,
+      note: 'Returning mock engine output for gate verification'
+    });
+    engineResult = {
+      success: true,
+      output: {
+        summary: "Mock summary for CE07",
+        character_states: {},
+        key_facts: ["Mock fact 1"],
+        audit_trail: "mock-audit-trail",
+        engine_version: "mock-v1",
+        latency_ms: 10
+      }
+    };
+  } else {
+    engineResult = await engineHub.invoke<CE07MemoryUpdateInput, CE07MemoryUpdateOutput>({
+      engineKey: payload.engineKey || 'ce07_memory_update',
+      payload: input,
+      metadata: { traceId, projectId },
+    });
+  }
+
+  if (!engineResult.success || !engineResult.output) {
+    throw new Error(`Engine CE07 failed: ${engineResult.error?.message || 'Output missing'}`);
+  }
+
+  const result = engineResult.output;
+
+  // 5. 落库 (MemoryShortTerm)
+  const memoryRecord = await prisma.memoryShortTerm.create({
+    data: {
+      projectId,
+      chapterId: payload.chapterId || undefined,
+      summary: result.summary,
+      characterStates: result.character_states as any,
+    },
+  });
+
+  const duration = Date.now() - jobStartTime;
+
+  // 6. 上报审计日志
+  await apiClient.postAuditLog({
+    traceId: traceId || `trace-${jobId}`,
+    projectId,
+    jobId,
+    jobType: 'CE07_MEMORY_UPDATE',
+    engineKey: payload.engineKey || 'ce07_memory_update',
+    status: 'SUCCESS',
+    latencyMs: duration,
+    auditTrail: {
+      recordId: memoryRecord.id,
+      factsCount: result.key_facts?.length || 0
+    }
+  }).catch(e => console.warn('Audit log failed', e));
+
+  logStructured('info', {
+    action: 'CE07_MEMORY_UPDATE_SUCCESS',
+    jobId,
+    projectId,
+    recordId: memoryRecord.id,
+    durationMs: duration
+  });
+
+  return {
+    success: true,
+    result: {
+      memoryId: memoryRecord.id,
+      summary: result.summary
+    }
+  };
+}
+
+/**
  * 通用 CE Job 处理器，支持 Fail-Once 验证
  */
 export async function processGenericCEJob(
   prisma: PrismaClient,
   job: WorkerJobBase,
+  engineHub: EngineHubClient,
   apiClient: ApiClient,
 ): Promise<any> {
   const jobStartTime = Date.now();
@@ -675,6 +857,11 @@ export async function processGenericCEJob(
     projectId: job.projectId,
     traceId
   });
+
+  // 分发到专有处理器（如果匹配）
+  if (job.type === 'CE07_MEMORY_UPDATE') {
+    return processCE07Job(prisma, job, engineHub, apiClient);
+  }
 
   // Mock processing
   await new Promise(resolve => setTimeout(resolve, 300));

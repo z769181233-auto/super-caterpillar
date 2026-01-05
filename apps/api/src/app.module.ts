@@ -23,6 +23,7 @@ import { EngineHubModule } from './engine-hub/engine-hub.module';
 import { Stage4Module } from './stage4/stage4.module';
 import { AuditModule } from './audit/audit.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
+import { AuditInsightModule } from './audit-insight/audit-insight.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { InternalModule } from './internal/internal.module';
 import { ApiSecurityModule } from './security/api-security/api-security.module';
@@ -83,6 +84,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     Stage4Module,
     AuditModule,
     AuditLogModule, // Stage13: CE Core Layer 审计日志模块
+    AuditInsightModule, // Stage3-P1B: Web Audit Visibility
     PipelineModule,
     InternalModule, // 内部接口模块（仅 HMAC，不需要 JWT）
     ApiSecurityModule, // CE10: API 安全模块（@RequireSignature() 装饰器）

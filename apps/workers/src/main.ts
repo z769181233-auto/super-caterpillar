@@ -267,7 +267,7 @@ async function processJob(job: JobFromApi): Promise<void> {
       });
       return;
     } else if (job.type.startsWith('CE')) {
-      const result = await processGenericCEJob(prisma, job as any, apiClient);
+      const result = await processGenericCEJob(prisma, job as any, engineHubClient, apiClient);
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'SUCCEEDED',
