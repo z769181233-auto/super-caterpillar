@@ -1,0 +1,3 @@
+gate_id=GATE-12
+resolved_script=tools/gate/gates/gate-12_config_validate.sh
+manifest_sha256=b383351f6a11b39b1d5b3d0eb2034b978f3d1ec69e508b629a7ddadbf7d0a7a5

@@ -1,0 +1,2 @@
+== socket stat ==
+srwxr-xr-x@ 1 adam  staff  0 12 30 20:31 /Users/adam/.docker/run/docker.sock

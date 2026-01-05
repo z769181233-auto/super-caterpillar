@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { env } from 'config';
+import { env } from '@scu/config';
 
 export interface SignedUrlOptions {
   key: string;

@@ -1,0 +1,17 @@
+{
+  "gate_id": "GATE-31",
+  "head_sha": "f640d71a6778",
+  "timestamp_utc": "20251230T172450Z",
+  "result": "FAIL",
+  "rc": 2,
+  "change_class": "",
+  "change_reason": "",
+  "evidence_dir": ".runtime/evidence/gate-31_20251230T172450Z_f640d71a6778",
+  "artifacts": {
+    "gate_20_log": null,
+    "gate_21_log": null,
+    "gate_30_log": null,
+    "gate_31_log": null,
+    "health_audit_log": null
+  }
+}

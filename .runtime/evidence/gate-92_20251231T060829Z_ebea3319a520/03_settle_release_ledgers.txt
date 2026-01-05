@@ -1,0 +1,16 @@
+[
+  {
+    "id": "7d172b66-526c-4f71-bc49-a79a285bdd42",
+    "walletId": "e4a060d7-762f-42a0-9fc9-6790e15a58da",
+    "traceId": "trace-92-1767161311538-1",
+    "jobId": "651b5323-f74f-4530-8450-f42805239bf4",
+    "amount": "0",
+    "action": "RESERVE",
+    "costType": null,
+    "timestamp": "2025-12-31T06:08:31.582Z",
+    "actualCost": null,
+    "reservedCost": null,
+    "drift": null,
+    "snapshot": null
+  }
+]

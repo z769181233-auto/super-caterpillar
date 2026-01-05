@@ -1,0 +1,3 @@
+COMMAND     PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+redis-ser 41150 adam    6u  IPv4 0xbbfdc9c2ddda1031      0t0  TCP 127.0.0.1:6379 (LISTEN)
+redis-ser 41150 adam    7u  IPv6 0x7a8864474fccf444      0t0  TCP [::1]:6379 (LISTEN)

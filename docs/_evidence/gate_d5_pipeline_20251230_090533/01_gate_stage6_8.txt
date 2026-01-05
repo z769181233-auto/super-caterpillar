@@ -1,0 +1,3 @@
+=== Stage 6.8 Reaper Gate ===
+[Gate] Triggering internal import...
+[0;31m[FAIL] Failed to trigger job[0m

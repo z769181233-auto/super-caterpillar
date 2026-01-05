@@ -1,0 +1,4 @@
+ id | action | resourceType | nonce | sig_status | timestamp | createdAt 
+----+--------+--------------+-------+------------+-----------+-----------
+(0 rows)
+

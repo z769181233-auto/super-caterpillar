@@ -1,0 +1,10 @@
+[CE05 M4 Trigger] Starting multi-version consistency test...
+[CE05 M4 Trigger] Creating V1 Snapshot...
+V1_SNAPSHOT_ID=bd052975-d22a-4c01-ba44-471c1db80a38
+V1_SHOT_ID=3b610edb-0803-474f-8108-37a7fce93aef
+V1_SHOTPLANNING_ID=e5e67dca-8d09-4ea2-9e33-2933183b2bea
+[CE05 M4 Trigger] Creating V2 Snapshot...
+PROJECT_ID=proj-m4-45eef148
+V2_SNAPSHOT_ID=7e4597e6-3465-4710-8176-57050d5b8e42
+V2_SHOT_ID=dddc505c-3498-40d3-a1d8-a57450a42eef
+V2_SHOTPLANNING_ID=15b95338-beb2-42d8-a789-9d9f562cc5e4

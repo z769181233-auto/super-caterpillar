@@ -20,8 +20,9 @@ export interface ApiResponse<T = any> {
 /**
  * 生成随机 nonce
  */
+let nonceCounter = 0;
 function generateNonce(): string {
-  return randomBytes(16).toString('hex');
+  return `${randomBytes(16).toString('hex')}-${nonceCounter++}-${Date.now()}`;
 }
 
 /**
@@ -32,8 +33,39 @@ function computeBodyHash(body: string): string {
 }
 
 /**
+ * HMAC_TRACE 调试：分段指纹
+ */
+function fingerprintParts(parts: {
+  method: string;
+  path: string;
+  timestamp: string;
+  nonce: string;
+  bodyHash: string;
+  workerId?: string;
+  message: string;
+  signature: string;
+}) {
+  if (process.env.HMAC_TRACE !== '1') return;
+  const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
+  console.error('[HMAC_TRACE] worker_v2_inputs', {
+    method: { val: parts.method, len: parts.method.length, hash: sha256(parts.method) },
+    path: { val: parts.path, len: parts.path.length, hash: sha256(parts.path) },
+    timestamp: { val: parts.timestamp, len: parts.timestamp.length, hash: sha256(parts.timestamp) },
+    nonce: { val: parts.nonce.substring(0, 8) + '...', len: parts.nonce.length, hash: sha256(parts.nonce) },
+    bodyHash: { val: parts.bodyHash.substring(0, 16) + '...', len: parts.bodyHash.length, hash: sha256(parts.bodyHash) },
+    workerId: parts.workerId ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) } : 'N/A',
+    message: { len: parts.message.length, hash: sha256(parts.message) },
+  });
+  console.error('[HMAC_TRACE] worker_signature', {
+    sigHash: sha256(parts.signature),
+    sigLen: parts.signature.length,
+  });
+}
+
+/**
  * 构建 HMAC 签名消息
- * Spec: ${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}
+ * v1: ${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}
+ * v2: ${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}\n${workerId}
  */
 function buildMessage(
   method: string,
@@ -41,9 +73,14 @@ function buildMessage(
   nonce: string,
   timestamp: string,
   body: string,
+  workerId?: string,
 ): string {
   const contentHash = computeBodyHash(body);
-  return `${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}`;
+  let message = `${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}`;
+  if (workerId) {
+    message += `\n${workerId}`;
+  }
+  return message;
 }
 
 /**
@@ -79,6 +116,7 @@ export class ApiClient {
     method: string,
     path: string,
     body?: any,
+    extraHeaders?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
     console.log(`[Worker DEBUG] ApiClient request: ${method} ${path}`);
     const url = `${this.baseURL}${path}`;
@@ -86,8 +124,9 @@ export class ApiClient {
       'Content-Type': 'application/json',
     };
 
-    // 序列化请求体（用于签名和发送）
-    const bodyString = body ? JSON.stringify(body) : '';
+    // 序列化请求体（商业级规范：空对象视为 empty string 以对齐 API Guard 逻辑）
+    const hasBodyContent = body && typeof body === 'object' && Object.keys(body).length > 0;
+    const bodyString = typeof body === 'string' ? body : (hasBodyContent ? JSON.stringify(body) : '');
 
     // 如果配置了 API Key 和 Secret，使用 HMAC 认证
     if (this.apiKey && this.apiSecret) {
@@ -95,28 +134,55 @@ export class ApiClient {
       const timestamp = Date.now().toString();
       const nonce = generateNonce();
 
-      // 2. 构建签名消息
-      const message = buildMessage(method, path, nonce, timestamp, bodyString);
+      // 2. 检查是否使用v2签名（包含workerId）
+      const workerId = extraHeaders?.['x-worker-id'];
+      const useV2 = !!workerId;
 
-      // 3. 计算签名
+      // 3. 构建签名消息（v2包含workerId）
+      const message = buildMessage(method, path, nonce, timestamp, bodyString, workerId);
+
+      // 4. 计算签名
       const signature = computeSignature(this.apiSecret, message);
 
-      // 4. 设置 HMAC 认证头
+      // HMAC_TRACE: 输出Worker端v2分段指纹
+      if (useV2) {
+        fingerprintParts({
+          method,
+          path,
+          timestamp,
+          nonce,
+          bodyHash: computeBodyHash(bodyString),
+          workerId,
+          message,
+          signature,
+        });
+      }
+
+      // 5. 设置 HMAC 认证头
       headers['X-Api-Key'] = this.apiKey;
       headers['X-Nonce'] = nonce;
       headers['X-Timestamp'] = timestamp;
       headers['X-Signature'] = signature;
+      if (useV2) {
+        headers['X-Hmac-Version'] = '2';
+      }
 
       // 调试日志（不打印密钥）
       console.log(
-        `[Worker HMAC] ${method} ${path}`,
+        `[Worker HMAC v${useV2 ? '2' : '1'}] ${method} ${path}`,
         `nonce=${nonce.substring(0, 8)}...`,
         `timestamp=${timestamp}`,
+        `workerId=${workerId || 'N/A'}`,
         `bodyString=${bodyString}`,
       );
     } else {
       console.warn('[Worker] ⚠️  No API Key/Secret configured, requests may fail with 401');
       console.warn('[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.');
+    }
+
+    // 商业级审计：添加extraHeaders（v2时workerId已参与签名）
+    if (extraHeaders) {
+      Object.assign(headers, extraHeaders);
     }
 
     try {
@@ -219,7 +285,7 @@ export class ApiClient {
       taskId: string;
       shotId?: string;
       projectId?: string; // Add this
-    } | null>('POST', `/api/workers/${workerId}/jobs/next`);
+    } | null>('POST', `/api/workers/${workerId}/jobs/next`, {}, { 'x-worker-id': workerId });
 
     if (!response.success) {
       throw new Error('Failed to get next job');

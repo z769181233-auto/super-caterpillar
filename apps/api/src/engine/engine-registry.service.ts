@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import { env } from 'config';
+import { env } from '@scu/config';
 import { EngineConfigStoreService } from './engine-config-store.service';
 import { EngineRoutingService } from './engine-routing.service';
 import { EngineStrategyService } from './engine-strategy.service';

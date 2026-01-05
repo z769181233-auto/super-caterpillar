@@ -8,6 +8,8 @@ import { PrismaClient } from 'database';
 import { ApiClient } from './api-client.js';
 import { processNovelAnalysisJob } from './novel-analysis-processor.js';
 import { processVideoRenderJob, cleanupVideoRenderProcesses } from './video-render.processor.js';
+import { processCE01Job } from './ce-core-processor.js';
+import { createHash } from 'crypto';
 import { env } from '@scu/config';
 
 const prisma = new PrismaClient({
@@ -42,7 +44,7 @@ async function registerWorker() {
       workerId: WORKER_ID,
       name: WORKER_NAME,
       capabilities: {
-        supportedJobTypes: ['NOVEL_ANALYSIS', 'NOVEL_ANALYZE_CHAPTER', 'VIDEO_RENDER'],
+        supportedJobTypes: ['NOVEL_ANALYSIS', 'NOVEL_ANALYZE_CHAPTER', 'VIDEO_RENDER', 'CE01_REFERENCE_SHEET'],
         supportedModels: [],
         maxBatchSize: 1,
       },
@@ -110,6 +112,8 @@ async function processJob(job: {
         payload: job.payload,
         type: 'VIDEO_RENDER'
       } as any, apiClient);
+    } else if (job.type === 'CE01_REFERENCE_SHEET') {
+      result = await processCE01Job(prisma, job as any, apiClient);
     } else {
       result = {
         success: false,

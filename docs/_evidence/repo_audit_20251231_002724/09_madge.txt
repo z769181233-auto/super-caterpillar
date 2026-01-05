@@ -1,0 +1,15 @@
+=== madge (circular deps) ===
+npm warn Unknown env config "manage-package-manager-versions". This will stop working in the next major version of npm.
+- Finding files
+Processed 999 files (11.9s) (97 warnings)
+
+✖ Found 7 circular dependencies!
+
+1) apps/api/src/audit-log/audit-log.module.ts > apps/api/src/security/hmac-auth.module.ts
+2) apps/api/src/audit-log/audit-log.module.ts > apps/api/src/security/hmac-auth.module.ts > apps/api/src/auth/nonce.module.ts > apps/api/src/audit/audit.module.ts
+3) apps/api/src/audit-log/audit-log.module.ts > apps/api/src/security/hmac-auth.module.ts > apps/api/src/security/api-security/api-security.module.ts
+4) apps/api/src/auth/auth.module.ts > apps/api/src/organization/organization.module.ts
+5) apps/api/src/project/project.module.ts > apps/api/src/job/job.module.ts
+6) apps/api/src/job/job.module.ts > apps/api/src/task/task.module.ts
+7) apps/api/src/orchestrator/orchestrator.module.ts > apps/api/src/worker/worker.module.ts
+

@@ -629,7 +629,7 @@ export class ProjectController {
   }
 
   @Post('shots/batch/generate')
-  @UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
+  @AuditAction(AuditActions.PROJECT_UPDATE)
   async batchGenerate(
     @Body() body: { shotIds: string[]; jobType: 'IMAGE' | 'VIDEO' | 'STORYBOARD' | 'AUDIO'; engine?: string; engineConfig?: any },
     @CurrentUser() user: AuthenticatedUser,

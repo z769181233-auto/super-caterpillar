@@ -1,0 +1,2 @@
+ProjectId: a27c68e4-bc82-46b5-b90f-5f672ee6c238
+URL: http://127.0.0.1:3000/projects/a27c68e4-bc82-46b5-b90f-5f672ee6c238

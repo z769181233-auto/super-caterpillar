@@ -1,0 +1,120 @@
+apps/api/src/worker/worker.controller.ts:12:@UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
+apps/api/src/text/text.controller.ts:4:import { RequireSignature } from '../security/api-security/api-security.decorator';
+apps/api/src/text/text.controller.ts:35:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/text/text.controller.ts:62:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/engine/adapters/http-engine.adapter.ts:169:            throw new Error(`HTTP_ENGINE_HMAC_SECRET is required when authMode is 'hmac'`);
+apps/api/src/engine/adapters/http-engine.adapter.ts:188:   * 构造 HMAC 认证 Header
+apps/api/src/engine/adapters/http-engine.adapter.ts:190:   * 复用项目现有的 HMAC 签名机制
+apps/api/src/engine/adapters/http-engine.adapter.ts:204:      [hmacConfig.header || 'X-Signature']: signature,
+apps/api/src/engine/adapters/http-engine.adapter.ts:205:      'X-Timestamp': timestamp,
+apps/api/src/engine/adapters/http-engine.adapter.ts:206:      'X-Nonce': nonce,
+apps/api/src/engine/adapters/http-engine.adapter.ts:220:   * 计算 HMAC-SHA256 签名
+apps/api/src/storage/signed-url.service.ts:62:    // 生成 HMAC-SHA256 签名
+apps/api/src/shot-director/shot-director.controller.ts:4:import { RequireSignature } from '../security/api-security/api-security.decorator';
+apps/api/src/shot-director/shot-director.controller.ts:28:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/shot-director/shot-director.controller.ts:43:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/shot-director/shot-director.controller.ts:58:  @RequireSignature()
+apps/api/src/novel-import/novel-import.controller.ts:47:import { RequireSignature } from '../security/api-security/api-security.decorator';
+apps/api/src/novel-import/novel-import.controller.ts:122:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/novel-import/novel-import.controller.ts:377:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/novel-import/novel-import.controller.ts:602:  @RequireSignature() // CE10: 高成本接口（触发解析/增强），强制签名验证
+apps/api/src/app.module.ts:101:    InternalModule, // 内部接口模块（仅 HMAC，不需要 JWT）
+apps/api/src/app.module.ts:102:    ApiSecurityModule, // CE10: API 安全模块（@RequireSignature() 装饰器）
+apps/api/src/project/project.controller.ts:130:    const apiKeyId = (request as any).apiKeyId; // 从 HMAC Guard 中获取（如果存在）
+apps/api/src/project/project.controller.ts:632:  @UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
+apps/api/src/project/project.controller.ts:661:        const apiKeyId = (request as any).apiKeyId; // 从 HMAC Guard 中获取（如果存在）
+apps/api/src/story/story.controller.ts:4:import { RequireSignature } from '../security/api-security/api-security.decorator';
+apps/api/src/story/story.controller.ts:34:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/auth/guards/timestamp-nonce.guard.ts:9:import { shouldBypassSignature, shouldRequireSignature } from '../../common/utils/signature-path.utils';
+apps/api/src/auth/guards/timestamp-nonce.guard.ts:47:    if (!shouldRequireSignature(path)) {
+apps/api/src/auth/guards/timestamp-nonce.guard.ts:60:      // 如果不是 HMAC 认证请求（例如无头），是否应该放行？
+apps/api/src/auth/guards/timestamp-nonce.guard.ts:88:    // 将解析出的 HMAC 相关字段回写到 Request，供 AuditLogService 使用
+apps/api/src/security/security-audit.service.ts:19:     * 记录 HMAC 签名失败
+apps/api/src/security/security-audit.service.ts:24:            const actionType = Stage1AuditActions.SECURITY_HMAC_SIGNATURE_INVALID;
+apps/api/src/security/security-audit.service.ts:57:            const actionType = Stage1AuditActions.SECURITY_HMAC_REPLAY_REJECTED;
+apps/api/src/security/security-audit.service.ts:85:            const actionType = Stage1AuditActions.SECURITY_HMAC_TIMESTAMP_INVALID;
+apps/api/src/ce-engine/ce-engine.controller.ts:9:import { RequireSignature } from '../security/api-security/api-security.decorator';
+apps/api/src/ce-engine/ce-engine.controller.ts:35:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/ce-engine/ce-engine.controller.ts:62:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/ce-engine/ce-engine.controller.ts:89:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/auth/guards/jwt-or-hmac.guard.ts:8: * JWT 或 HMAC 任一通过即可
+apps/api/src/auth/guards/jwt-or-hmac.guard.ts:11: * - 否则若具备 HMAC 头，则走 HMAC Guard
+apps/api/src/auth/guards/jwt-or-hmac.guard.ts:64:    throw new UnauthorizedException('Missing auth header (JWT or HMAC required)');
+apps/api/src/security/api-security/api-security.guard.ts:16: * 只对标记了 @RequireSignature() 的端点生效
+apps/api/src/security/api-security/api-security.guard.ts:19: * 1. 检查请求头（X-Api-Key, X-Nonce, X-Timestamp, X-Signature）
+apps/api/src/security/api-security/api-security.guard.ts:34:    // 检查是否标记了 @RequireSignature()
+apps/api/src/security/api-security/api-security.guard.ts:60:      throw buildHmacError('4003', 'Missing required security headers (X-Api-Key, X-Nonce, X-Timestamp, X-Content-SHA256, X-Signature)', {
+apps/api/src/auth/auth.module.ts:35:    HmacAuthModule, // 导入 HMAC 认证模块
+apps/api/src/security/api-security/api-security.spec.ts:411:    it('应该正确计算 HMAC-SHA256 签名', () => {
+apps/api/src/security/api-security/api-security.decorator.ts:9: * @RequireSignature() 装饰器
+apps/api/src/security/api-security/api-security.decorator.ts:11: * 用于标记高成本/敏感接口，强制要求 HMAC 签名验证
+apps/api/src/security/api-security/api-security.decorator.ts:16: * @RequireSignature()
+apps/api/src/security/api-security/api-security.decorator.ts:25:export const RequireSignature = () => SetMetadata(REQUIRE_SIGNATURE_KEY, true);
+apps/api/src/security/api-security/api-security.module.ts:13: * - HMAC-SHA256 签名验证
+apps/api/src/security/api-security/api-security.module.ts:19: * 1. 在 Controller 方法上使用 @RequireSignature() 装饰器
+apps/api/src/memory/memory.controller.ts:4:import { RequireSignature } from '../security/api-security/api-security.decorator';
+apps/api/src/memory/memory.controller.ts:29:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/memory/memory.controller.ts:44:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/memory/memory.controller.ts:59:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/security/api-security/api-security.service.ts:18: * 负责 HMAC 签名验证、时间戳校验、Nonce 防重放
+apps/api/src/security/api-security/api-security.service.ts:37:   * 验证 HMAC 签名（v2 规范）
+apps/api/src/security/api-security/api-security.service.ts:322:   * 计算 HMAC-SHA256 签名
+apps/api/src/security/api-security/api-security.types.ts:8: * HMAC 签名验证结果
+apps/api/src/config/engine.config.ts:20: * HMAC 配置
+apps/api/src/config/engine.config.ts:26:  header?: string; // 默认 'X-Signature'
+apps/api/src/config/engine.config.ts:45:  hmac?: HttpHmacConfig; // HMAC 配置（用于 hmac 模式）
+apps/api/src/config/engine.config.ts:124:    const engineEnvHmacKeyId = process.env[`HTTP_ENGINE_${engineKeyUpper}_HMAC_KEY_ID`];
+apps/api/src/config/engine.config.ts:125:    const engineEnvHmacSecret = process.env[`HTTP_ENGINE_${engineKeyUpper}_HMAC_SECRET`];
+apps/api/src/config/engine.config.ts:126:    const engineEnvHmacHeader = process.env[`HTTP_ENGINE_${engineKeyUpper}_HMAC_HEADER`];
+apps/api/src/config/engine.config.ts:137:    const globalEnvHmacKeyId = process.env.HTTP_ENGINE_HMAC_KEY_ID;
+apps/api/src/config/engine.config.ts:138:    const globalEnvHmacSecret = process.env.HTTP_ENGINE_HMAC_SECRET;
+apps/api/src/config/engine.config.ts:139:    const globalEnvHmacHeader = process.env.HTTP_ENGINE_HMAC_HEADER;
+apps/api/src/config/engine.config.ts:170:    // HMAC 配置：只从环境变量读取
+apps/api/src/config/engine.config.ts:180:          header: engineEnvHmacHeader || globalEnvHmacHeader || 'X-Signature',
+apps/api/src/config/engine.config.ts:311:      throw new Error(`HTTP_ENGINE_HMAC_SECRET is required when authMode is 'hmac'`);
+apps/api/src/auth/decorators/public.decorator.ts:5: * 用于标记无需 HMAC 校验的公开路由（如 login、register、health check 等）
+apps/api/src/audit-log/audit-log.controller.ts:26:@UseGuards(HmacAuthGuard) // 使用 HMAC 认证，确保只有 Worker 可以调用
+apps/api/src/asset/asset.controller.ts:6:import { RequireSignature } from '../security/api-security/api-security.decorator';
+apps/api/src/asset/asset.controller.ts:37:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/asset/asset.controller.ts:52:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/asset/asset.controller.ts:67:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+apps/api/src/main.ts:14:  // Custom Body Parser to capture rawBody for HMAC verification
+apps/api/src/main.ts:92:    allowedHeaders: ['Content-Type', 'Authorization', 'X-Nonce', 'X-Timestamp', 'X-Signature'],
+apps/api/src/auth/hmac/hmac-auth.service.ts:11: * HMAC 认证服务
+apps/api/src/auth/hmac/hmac-auth.service.ts:12: * 负责验证 API Key + HMAC 签名
+apps/api/src/auth/hmac/hmac-auth.service.ts:29:   * 验证 HMAC 签名
+apps/api/src/auth/hmac/hmac-auth.service.ts:83:    const maxTimeDiff = env.HMAC_TIMESTAMP_WINDOW || 300000; // 默认 5 分钟（毫秒）
+apps/api/src/auth/hmac/hmac-auth.service.ts:95:        reason: 'HMAC_NONCE_REPLAY',
+apps/api/src/auth/hmac/hmac-auth.service.ts:130:      if (process.env.ALLOW_LEGACY_V0_HMAC === '1') {
+apps/api/src/auth/hmac/hmac-auth.service.ts:136:          reason: 'HMAC_LEGACY_V0_USED',
+apps/api/src/auth/hmac/hmac-auth.service.ts:146:          this.logger.warn(`[HMAC] Legacy V0 signature matched but ALLOW_LEGACY_V0_HMAC is not 1`);
+apps/api/src/auth/hmac/hmac-auth.service.ts:155:        console.log('[HMAC Mismatch]', { expectedSignatureV2, signature, messageV2, secretPart: secret?.substring(0, 5) });
+apps/api/src/auth/hmac/hmac-auth.service.ts:159:        reason: 'HMAC_SIGNATURE_MISMATCH',
+apps/api/src/auth/hmac/hmac-auth.service.ts:189:   * 计算 HMAC-SHA256 签名
+apps/api/src/auth/auth.controller.ts:32:  @Public() // 标记为公开路由，跳过 HMAC 校验
+apps/api/src/auth/auth.controller.ts:67:  @Public() // 标记为公开路由，跳过 HMAC 校验
+apps/api/src/auth/auth.controller.ts:102:  @Public() // 标记为公开路由，跳过 HMAC 校验
+apps/api/src/auth/hmac/hmac-auth.guard.ts:15: * HMAC 认证 Guard
+apps/api/src/auth/hmac/hmac-auth.guard.ts:16: * 用于验证 API Key + HMAC 签名
+apps/api/src/auth/hmac/hmac-auth.guard.ts:23: * 2. 计算签名：HMAC_SHA256(secret, message)，输出十六进制
+apps/api/src/auth/hmac/hmac-auth.guard.ts:57:      throw buildHmacError('4003', '缺少必需的认证头：X-Api-Key, X-Signature', { path, method });
+apps/api/src/auth/hmac/hmac-auth.guard.ts:64:    // 3. 获取原始 body 字符串 (CRITICAL: MUST use rawBody for HMAC)
+apps/api/src/auth/hmac/hmac-auth.guard.ts:65:    // 3. 获取原始 body 字符串 (CRITICAL: MUST use rawBody for HMAC)
+apps/api/src/auth/hmac/hmac-auth.guard.ts:84:      console.log('[HMAC DEBUG]', {
+apps/api/src/auth/hmac/hmac-auth.guard.ts:123:      (request as any).authType = (request as any).user ? 'jwt+hmac' : 'hmac'; // Hybrid or Pure HMAC
+apps/api/src/auth/hmac/hmac-auth.guard.ts:164:          reason: 'HMAC_AUTH_FAILED',
+apps/api/src/auth/hmac/hmac-auth.module.ts:12: * HMAC 认证模块
+apps/api/src/auth/hmac/hmac-auth.module.ts:13: * 提供 API Key + HMAC 签名验证能力
+apps/api/src/internal/internal.controller.ts:6: * 用于压测和监控，仅 HMAC 认证，不需要 JWT
+apps/api/src/internal/internal.controller.ts:11:   * HMAC 健康检查接口（仅 HMAC，不需要 JWT）
+apps/api/src/internal/internal.controller.ts:12:   * 用于压测和监控，验证 HMAC 签名机制正常工作
+apps/api/src/internal/internal.controller.ts:15:   * 认证：仅 HMAC（HmacGuard + TimestampNonceGuard），不要求 JWT
+apps/api/src/internal/internal.controller.ts:25:      message: 'HMAC authentication successful',
+apps/api/src/common/utils/hmac-error.utils.ts:5: * 构造符合 API Spec 的 HMAC 错误响应
+apps/api/src/common/utils/signature-path.utils.ts:18:// 内部接口（仅 HMAC，不需要 JWT）
+apps/api/src/common/utils/signature-path.utils.ts:19:const INTERNAL_HMAC_ONLY_PREFIX = [
+apps/api/src/common/utils/signature-path.utils.ts:34:export function shouldRequireSignature(pathname: string): boolean {
+apps/api/src/audit/audit.actions.stage1.ts:18:    SECURITY_HMAC_SIGNATURE_INVALID: 'SECURITY_HMAC_SIGNATURE_INVALID',
+apps/api/src/audit/audit.actions.stage1.ts:19:    SECURITY_HMAC_REPLAY_REJECTED: 'SECURITY_HMAC_REPLAY_REJECTED',
+apps/api/src/audit/audit.actions.stage1.ts:20:    SECURITY_HMAC_TIMESTAMP_INVALID: 'SECURITY_HMAC_TIMESTAMP_INVALID',
+apps/api/src/audit/audit.actions.stage1.ts:21:    SECURITY_HMAC_NONCE_MISSING: 'SECURITY_HMAC_NONCE_MISSING',

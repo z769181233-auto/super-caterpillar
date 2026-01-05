@@ -1,0 +1,30 @@
+{
+  "projectId": "a1557aa7-9322-4a68-8bee-bef17e177f5e",
+  "novelSourceId": "df3fee7b-a106-496c-b15a-fd97401a99a0",
+  "timestamp": "2026-01-03T06:46:23.701Z",
+  "checks": [
+    {
+      "name": "CE06_OUTPUT",
+      "status": "PASS",
+      "metrics": {
+        "chapterCount": 1
+      }
+    },
+    {
+      "name": "CE03_OUTPUT",
+      "status": "FAIL",
+      "metrics": {
+        "charCount": 0
+      }
+    },
+    {
+      "name": "CE04_OUTPUT",
+      "status": "FAIL",
+      "metrics": {
+        "sceneCount": 1,
+        "totalShots": 1,
+        "promptNonEmptyRate": 0
+      }
+    }
+  ]
+}

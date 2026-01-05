@@ -25,7 +25,9 @@ import {
   processCE06Job,
   processCE03Job,
   processCE04Job,
-  processShotRenderJob
+  processShotRenderJob,
+  processCE01Job,
+  processGenericCEJob
 } from './ce-core-processor';
 import { processVideoRenderJob as processVideoRenderJobImpl } from './video-render.processor';
 
@@ -101,7 +103,17 @@ async function registerWorker(): Promise<void> {
       workerId: env.workerId,
       name: env.workerName,
       capabilities: {
-        supportedJobTypes: ['NOVEL_ANALYSIS', 'VIDEO_RENDER'],
+        supportedJobTypes: [
+          'NOVEL_ANALYSIS',
+          'VIDEO_RENDER',
+          'CE01_REFERENCE_SHEET',
+          'CE02_IDENTITY_LOCK',
+          'CE03_VISUAL_DENSITY',
+          'CE04_VISUAL_ENRICHMENT',
+          'CE05_DIRECTOR_CONTROL',
+          'CE06_NOVEL_PARSING',
+          'CE07_MEMORY_UPDATE',
+        ],
         supportedModels: [],
         maxBatchSize: 1,
       },
@@ -244,31 +256,18 @@ async function processJob(job: JobFromApi): Promise<void> {
   tasksRunning++;
 
   try {
-    // Stage13: CE Core Layer - 处理 CE06/CE03/CE04 Job
-    // 修复：projectId 必须存在（支持从 payload 提取）
-    const effectiveProjectId = job.projectId || job.payload?.projectId;
-    if (!effectiveProjectId) {
-      logStructured('error', {
-        action: 'JOB_REJECTED',
-        jobId: job.id,
-        jobType: job.type,
-        reason: 'projectId is required but missing',
-      });
+    // Stage13: CE Core Layer - 处理 CE06/CE03/CE04/CE01 等 Job
+    // 优先匹配特定处理器，否则走通用处理器
+    if (job.type === 'CE04_VISUAL_ENRICHMENT') {
+      const result = await processCE04Job(prisma, { ...job, projectId: job.projectId || '' }, engineHubClient, apiClient);
       await apiClient.reportJobResult({
         jobId: job.id,
-        status: 'FAILED',
-        errorMessage: 'projectId is required (missing in job root and payload)',
+        status: 'SUCCEEDED',
+        result: result,
       });
       return;
-    }
-
-    // Patch the job object with effective projectId for downstream usage
-    job.projectId = effectiveProjectId;
-
-    if (job.type === 'CE06_NOVEL_PARSING') {
-
-    } else if (job.type === 'CE04_VISUAL_ENRICHMENT') {
-      const result = await processCE04Job(prisma, { ...job, projectId: job.projectId || '' }, engineHubClient, apiClient);
+    } else if (job.type.startsWith('CE')) {
+      const result = await processGenericCEJob(prisma, job as any, apiClient);
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'SUCCEEDED',
@@ -372,6 +371,8 @@ async function processJob(job: JobFromApi): Promise<void> {
       });
       return;
     }
+
+
 
     // 其它 JobType 走现有逻辑（保持不变）
     throw new Error(`Unsupported job type: ${job.type}`);

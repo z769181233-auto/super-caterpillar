@@ -1,0 +1,107 @@
+=== gate references in repo ===
+tools/gate/run_gate.sh:73:  echo "[gate-runner] ERROR: missing gate id. Example: tools/gate/run_gate.sh GATE-90" >&2
+tools/gate/run_gate.sh:104:  # Try exact match or prefix match (e.g. gate-12 -> gate-12_config_validate.sh)
+tools/gate/run_gate.sh:109:  GATE_SCRIPT="tools/gate/gates/${GATE_ID_LOWER}.sh"
+tools/gate/run_gate.sh:117:    echo "[gate-runner] If this is a new gate, run: bash tools/gate/common/gate_manifest_sync.sh" >&2
+tools/gate/rollback.sh:12:rm -rf tools/gate/gates/
+tools/gate/rollback.sh:47:echo "  - 门禁脚本 (tools/gate/gates/)"
+tools/release/verify_release.sh:6:if bash tools/gate/gates/gate-stage4_safety_quality.sh > /dev/null 2>&1; then
+tools/release/verify_release.sh:16:if JWT_SECRET=secret DATABASE_URL="${DATABASE_URL}" bash tools/gate/gates/gate-stage5_governance.sh > /dev/null 2>&1; then
+tools/dev/commit_local.sh:11:GATE="${2:-bash tools/gate/gates/gate-stage6_billing.sh}"
+tools/dev/commit_local.sh:25:if bash tools/gate/gates/gate-incremental_lint.sh; then
+tools/gate/_deprecated/gate-stage6_5_ce10_patch.sh:21:npx tsx tools/gate/gates/stage6_5_auth_verifier.ts > "$EVID_DIR/verifier.log" 2>&1 &
+tools/gate/_deprecated/gate-stage6_5_ce10_patch.sh:36:HEADERS=$(npx tsx tools/gate/gates/generate_v2_headers.ts GET "$PROG_PATH")
+tools/gate/_deprecated/gate-stage6_5_ce10_patch.sh:41:HEADERS=$(npx tsx tools/gate/gates/generate_v2_headers.ts GET "$LEDG_PATH")
+tools/dev/diagnose_hang.sh:31:tools/dev/run_with_timeout.sh 900 "bash tools/gate/gates/gate-stage7_ce07_memory.sh" | tee "$E/04_gate_stage7.log" || true
+tools/dev/repo_full_audit.sh:266:  rg -n "tools/gate/gates/|gate-.*\.sh" tools -S || true
+tools/dev/d5_verification.sh:51:bash tools/gate/gates/gate-stage6_8_reaper.sh | tee "$EVID_DIR/02_gate_stage6_8.txt"
+tools/gate/_deprecated/gate-90.sh:7:# gate-90_health_audit.sh expects RUN_DIR as first argument
+tools/gate/_deprecated/gate-90.sh:18:exec bash tools/gate/gates/gate-90_health_audit.sh "$EVID_DIR"
+tools/dev/full_audit_run.sh:135:    "tools/gate/gates/gate-stage7_ce07_memory.sh"
+tools/dev/full_audit_run.sh:136:    "tools/gate/gates/gate-ce_video_e2e.sh"
+tools/gate/run_all.sh:174:      local REL_SCRIPT_PATH="tools/gate/gates/${script_name}"
+tools/gate/run_all.sh:238:            execute_gate_script "GATE-5" "API契约" "gate-5_api_contract.sh" || return 1
+tools/gate/run_all.sh:248:            execute_gate_script "GATE-6" "数据备份" "gate-6_backup_verify.sh" || return 1
+tools/gate/run_all.sh:249:            execute_gate_script "GATE-DB-DRIFT" "Schema漂移检测" "gate-db-schema-drift.sh" || return 1
+tools/gate/run_all.sh:257:            execute_gate_script "GATE-5" "API契约" "gate-5_api_contract.sh" || return 1
+tools/gate/run_all.sh:258:            execute_gate_script "GATE-11" "Worker调度" "gate-11_worker_orch_verify.sh" || return 1
+tools/gate/run_all.sh:265:            execute_gate_script "GATE-12" "配置合规" "gate-12_config_validate.sh" || return 1
+tools/gate/run_all.sh:270:            execute_gate_script "GATE-13" "文档完整性" "gate-13_docs_verify.sh" || return 1
+tools/gate/run_all.sh:275:            execute_gate_script "GATE-90" "工业健康审计" "gate-90_health_audit.sh" || return 1
+tools/gate/run_all.sh:276:            execute_gate_script "GATE-91" "发布制品审计" "gate-91_release_artifact_audit.sh" || return 1
+tools/gate/run_all.sh:277:            execute_gate_script "GATE-92" "稳定性审计" "gate-92_hc3_baseline_required.sh" || return 1
+tools/gate/run_all.sh:278:            execute_gate_script "GATE-93" "灾备审计" "gate-93_dr_audit.sh" || return 1
+tools/gate/run_all.sh:279:            execute_gate_script "GATE-94" "交付清单签章" "gate-94_delivery_audit.sh" || return 1
+tools/gate/run_all.sh:378:        GATE-12) execute_gate_script "GATE-12" "配置合规" "gate-12_config_validate.sh" ;;
+tools/gate/run_all.sh:379:        GATE-13) execute_gate_script "GATE-13" "文档完整性" "gate-13_docs_verify.sh" ;;
+tools/gate/run_all.sh:380:        GATE-90) execute_gate_script "GATE-90" "工业健康审计" "gate-90_health_audit.sh" ;;
+tools/gate/run_all.sh:381:        GATE-91) execute_gate_script "GATE-91" "发布制品审计" "gate-91_release_artifact_audit.sh" ;;
+tools/gate/run_all.sh:382:        GATE-92) execute_gate_script "GATE-92" "稳定性审计" "gate-92_hc3_baseline_required.sh" ;;
+tools/gate/run_all.sh:383:        GATE-93) execute_gate_script "GATE-93" "灾备审计" "gate-93_dr_audit.sh" ;;
+tools/gate/run_all.sh:384:        GATE-94) execute_gate_script "GATE-94" "交付清单签章" "gate-94_delivery_audit.sh" ;;
+tools/gate/run_single.sh:6:SCRIPT="tools/gate/gates/${GATE}.sh"
+tools/gate/_deprecated/gate-91_evidence_policy.sh:72:  echo "[gate-91] Keep them untracked; rotate via tools/health/hc2_3_rotate_evidence.sh"
+tools/gate/gate_manifest.json:7:    "tools/gate/gates/gate-11_worker_orch_verify.sh",
+tools/gate/gate_manifest.json:8:    "tools/gate/gates/gate-12_config_validate.sh",
+tools/gate/gate_manifest.json:9:    "tools/gate/gates/gate-13_docs_verify.sh",
+tools/gate/gate_manifest.json:10:    "tools/gate/gates/gate-20_zone_guard.sh",
+tools/gate/gate_manifest.json:11:    "tools/gate/gates/gate-21_deps_size_guard.sh",
+tools/gate/gate_manifest.json:12:    "tools/gate/gates/gate-30_security_proof_pack.sh",
+tools/gate/gate_manifest.json:13:    "tools/gate/gates/gate-31_build_runtime_proof_pack.sh",
+tools/gate/gate_manifest.json:14:    "tools/gate/gates/gate-5_api_contract.sh",
+tools/gate/gate_manifest.json:15:    "tools/gate/gates/gate-6_backup_verify.sh",
+tools/gate/gate_manifest.json:16:    "tools/gate/gates/gate-90_health_audit.sh",
+tools/gate/gate_manifest.json:17:    "tools/gate/gates/gate-90_costguard_check.sh",
+tools/gate/gate_manifest.json:18:    "tools/gate/gates/gate-91_release_artifact_audit.sh",
+tools/gate/gate_manifest.json:19:    "tools/gate/gates/gate-92_hc3_baseline_required.sh",
+tools/gate/gate_manifest.json:20:    "tools/gate/gates/gate-93_dr_audit.sh",
+tools/gate/gate_manifest.json:21:    "tools/gate/gates/gate-94_delivery_audit.sh",
+tools/gate/gate_manifest.json:22:    "tools/gate/gates/gate-ce_video_e2e.sh",
+tools/gate/gate_manifest.json:23:    "tools/gate/gates/gate-db-schema-drift.sh",
+tools/gate/gate_manifest.json:24:    "tools/gate/gates/gate-incremental_lint.sh",
+tools/gate/gate_manifest.json:25:    "tools/gate/gates/gate-stage4_safety_quality.sh",
+tools/gate/gate_manifest.json:26:    "tools/gate/gates/gate-stage5_governance.sh",
+tools/gate/gate_manifest.json:27:    "tools/gate/gates/gate-stage6_8_reaper.sh",
+tools/gate/gate_manifest.json:28:    "tools/gate/gates/gate-stage6_9_d5_pipeline.sh",
+tools/gate/gate_manifest.json:29:    "tools/gate/gates/gate-stage6_assetization.sh",
+tools/gate/gate_manifest.json:30:    "tools/gate/gates/gate-stage6_billing.sh",
+tools/gate/gate_manifest.json:31:    "tools/gate/gates/gate-stage6_product_entry_v2.sh",
+tools/gate/gate_manifest.json:32:    "tools/gate/gates/gate-stage7_ce07_memory.sh",
+tools/gate/gate_manifest.json:33:    "tools/gate/gates/gate-stage7_commercial_loop.sh",
+tools/gate/gate_manifest.json:34:    "tools/gate/gates/gate-80_telemetry_check.sh",
+tools/gate/gate_manifest.json:35:    "tools/gate/gates/gate-81_cost_integrity_check.sh"
+tools/gate/gate_manifest.json:38:    "tools/gate/_deprecated/gate-10_cost_verify.sh",
+tools/gate/gate_manifest.json:39:    "tools/gate/_deprecated/gate-8_perf_benchmark.sh",
+tools/gate/gate_manifest.json:40:    "tools/gate/_deprecated/gate-90.sh",
+tools/gate/gate_manifest.json:41:    "tools/gate/_deprecated/gate-91_evidence_policy.sh",
+tools/gate/gate_manifest.json:42:    "tools/gate/_deprecated/gate-93_docs_formatting_check.sh",
+tools/gate/gate_manifest.json:43:    "tools/gate/_deprecated/gate-94_knip.sh",
+tools/gate/gate_manifest.json:44:    "tools/gate/_deprecated/gate-95_jscpd.sh",
+tools/gate/gate_manifest.json:45:    "tools/gate/_deprecated/gate-ce06-ledger-no-migrate.sh",
+tools/gate/gate_manifest.json:46:    "tools/gate/_deprecated/gate-ce06_call_boundary.sh",
+tools/gate/gate_manifest.json:47:    "tools/gate/_deprecated/gate-ce06_integration_entrypoints.sh",
+tools/gate/gate_manifest.json:48:    "tools/gate/_deprecated/gate-ce06_module_exists.sh",
+tools/gate/gate_manifest.json:49:    "tools/gate/_deprecated/gate-ce06_prisma_presence.sh",
+tools/gate/gate_manifest.json:50:    "tools/gate/_deprecated/gate-ce_chain_orchestration.sh",
+tools/gate/gate_manifest.json:51:    "tools/gate/_deprecated/gate-ce_novel_pipeline_e2e.sh",
+tools/gate/gate_manifest.json:52:    "tools/gate/_deprecated/gate-ssot_stage6.sh",
+tools/gate/gate_manifest.json:53:    "tools/gate/_deprecated/gate-stage2_workerpool_orchestrator.sh",
+tools/gate/gate_manifest.json:54:    "tools/gate/_deprecated/gate-stage3_human_loop.sh",
+tools/gate/gate_manifest.json:55:    "tools/gate/_deprecated/gate-stage6_11_dispatch_revive.sh",
+tools/gate/gate_manifest.json:56:    "tools/gate/_deprecated/gate-stage6_12_hardening.sh",
+tools/gate/gate_manifest.json:57:    "tools/gate/_deprecated/gate-stage6_5_ce10_patch.sh",
+tools/gate/gate_manifest.json:58:    "tools/gate/_deprecated/gate-stage6_6_secure_refresh.sh",
+tools/gate/gate_manifest.json:59:    "tools/gate/_deprecated/gate-stage6_7_e2e_real_delivery.sh",
+tools/gate/gate_manifest.json:60:    "tools/gate/_deprecated/gate-stage6_product_entry.sh"
+tools/gate/_deprecated/gate-stage6_6_secure_refresh.sh:29:npx tsx tools/gate/gates/stage6_5_auth_verifier.ts > "$EVID_DIR/verifier.log" 2>&1 &
+tools/gate/_deprecated/gate-stage6_6_secure_refresh.sh:41:HEADERS=$(npx tsx tools/gate/gates/generate_v2_headers.ts GET "$ASSET_PATH")
+tools/gate/gates/gate-stage6_billing.sh:4:# gate-stage6_billing.sh - Stage 6.4 Billing Verification
+tools/gate/gates/gate-90_health_audit.sh:27:bash tools/gate/gates/gate-20_zone_guard.sh "$EVID_DIR" 2>&1 | tee "$EVID_DIR/gate-20.log"
+tools/gate/gates/gate-90_health_audit.sh:34:bash tools/gate/gates/gate-21_deps_size_guard.sh "$EVID_DIR" 2>&1 | tee "$EVID_DIR/gate-21.log"
+tools/gate/gates/gate-90_health_audit.sh:47:  bash tools/gate/gates/gate-30_security_proof_pack.sh "$EVID_DIR" 2>&1 | tee "$EVID_DIR/gate-30.log"
+tools/gate/gates/gate-90_health_audit.sh:54:  bash tools/gate/gates/gate-31_build_runtime_proof_pack.sh "$EVID_DIR" 2>&1 | tee "$EVID_DIR/gate-31.log"
+tools/gate/gates/gate-90_costguard_check.sh:2:# gate-90_costguard_check.sh
+tools/gate/gates/gate-stage6_product_entry_v2.sh:6:# gate-stage6_product_entry_v2.sh
+tools/gate/gates/gate-stage7_commercial_loop.sh:47:bash tools/gate/gates/gate-stage6_9_d5_pipeline.sh | tee "$EVID_DIR/02_d5_regression.txt"
+tools/gate/gates/gate-stage6_9_d5_pipeline.sh:64:bash tools/gate/gates/gate-stage6_8_reaper.sh | tee "$EVID_DIR/01_gate_stage6_8.txt"
+tools/gate/gates/gate-stage6_assetization.sh:4:# gate-stage6_assetization.sh - Fixed DB URL parsing

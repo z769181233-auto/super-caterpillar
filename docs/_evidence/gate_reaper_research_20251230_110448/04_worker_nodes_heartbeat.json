@@ -1,0 +1,18 @@
+[
+  {
+    "status": "idle",
+    "count": 15,
+    "oldest_heartbeat": "2025-12-27T00:37:50.077Z",
+    "newest_heartbeat": "2025-12-30T03:56:37.049Z",
+    "min_since_heartbeat_min": 11.12,
+    "max_since_heartbeat_min": 4529.91
+  },
+  {
+    "status": "online",
+    "count": 2,
+    "oldest_heartbeat": "2025-12-30T03:54:56.565Z",
+    "newest_heartbeat": "2025-12-30T03:55:47.526Z",
+    "min_since_heartbeat_min": 11.95,
+    "max_since_heartbeat_min": 12.8
+  }
+]

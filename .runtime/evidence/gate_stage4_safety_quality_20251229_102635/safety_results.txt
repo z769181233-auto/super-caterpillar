@@ -1,0 +1,9 @@
+     shotId      | riskLevel |                               reasons                               
+-----------------+-----------+---------------------------------------------------------------------
+ shot-test-000-p | low       | []
+ shot-test-000-r | high      | [{"code": "CONTENT_VIOLATION", "message": "Mock safety rejection"}]
+ shot-test-000-q | low       | []
+ shot-test-000-v | medium    | [{"code": "SENSITIVE_CONTENT", "message": "Mock safety review"}]
+ shot-test-000-b | low       | []
+(5 rows)
+

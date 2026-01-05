@@ -11,7 +11,9 @@ async function main() {
   const data = JSON.parse(content) as { engines: any[] };
 
   for (const engine of data.engines) {
-    const exists = await (prisma as any).engine.findUnique({ where: { engineKey: engine.engineKey } });
+    const exists = await (prisma as any).engine.findUnique({
+      where: { engineKey: engine.engineKey },
+    });
     if (exists) {
       console.log(`[sync-engines] skip existing ${engine.engineKey}`);
       continue;
@@ -41,4 +43,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

@@ -141,10 +141,10 @@ exports.Prisma.OrganizationScalarFieldEnum = {
   name: 'name',
   ownerId: 'ownerId',
   slug: 'slug',
-  type: 'type',
-  credits: 'credits',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  credits: 'credits',
+  type: 'type'
 };
 
 exports.Prisma.MembershipScalarFieldEnum = {
@@ -165,9 +165,9 @@ exports.Prisma.ProjectScalarFieldEnum = {
   organizationId: 'organizationId',
   status: 'status',
   metadata: 'metadata',
-  settingsJson: 'settingsJson',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  settingsJson: 'settingsJson'
 };
 
 exports.Prisma.SeasonScalarFieldEnum = {
@@ -197,11 +197,11 @@ exports.Prisma.SceneScalarFieldEnum = {
   index: 'index',
   title: 'title',
   summary: 'summary',
-  characters: 'characters',
-  visualDensityScore: 'visualDensityScore',
-  enrichedText: 'enrichedText',
   sceneDraftId: 'sceneDraftId',
-  projectId: 'projectId'
+  characters: 'characters',
+  enrichedText: 'enrichedText',
+  projectId: 'projectId',
+  visualDensityScore: 'visualDensityScore'
 };
 
 exports.Prisma.ShotScalarFieldEnum = {
@@ -268,10 +268,6 @@ exports.Prisma.EngineTaskScalarFieldEnum = {
 
 exports.Prisma.EngineScalarFieldEnum = {
   id: 'id',
-  code: 'code',
-  name: 'name',
-  type: 'type',
-  isActive: 'isActive',
   engineKey: 'engineKey',
   adapterName: 'adapterName',
   adapterType: 'adapterType',
@@ -280,7 +276,11 @@ exports.Prisma.EngineScalarFieldEnum = {
   version: 'version',
   defaultVersion: 'defaultVersion',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  code: 'code',
+  isActive: 'isActive',
+  name: 'name',
+  type: 'type'
 };
 
 exports.Prisma.EngineVersionScalarFieldEnum = {
@@ -358,15 +358,15 @@ exports.Prisma.TaskScalarFieldEnum = {
   type: 'type',
   status: 'status',
   payload: 'payload',
-  output: 'output',
   attempts: 'attempts',
   maxRetry: 'maxRetry',
   retryCount: 'retryCount',
   error: 'error',
-  workerId: 'workerId',
-  traceId: 'traceId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  output: 'output',
+  traceId: 'traceId',
+  workerId: 'workerId'
 };
 
 exports.Prisma.WorkerJobScalarFieldEnum = {
@@ -402,9 +402,9 @@ exports.Prisma.ShotJobScalarFieldEnum = {
   payload: 'payload',
   engineConfig: 'engineConfig',
   lastError: 'lastError',
-  traceId: 'traceId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  traceId: 'traceId'
 };
 
 exports.Prisma.WorkerNodeScalarFieldEnum = {
@@ -494,8 +494,8 @@ exports.Prisma.BillingEventScalarFieldEnum = {
   totalCost: 'totalCost',
   billingStatus: 'billingStatus',
   invoiceId: 'invoiceId',
-  metadata: 'metadata',
-  timestamp: 'timestamp'
+  timestamp: 'timestamp',
+  metadata: 'metadata'
 };
 
 exports.Prisma.CostCenterScalarFieldEnum = {
@@ -565,12 +565,12 @@ exports.Prisma.NovelChapterScalarFieldEnum = {
   orderIndex: 'orderIndex',
   title: 'title',
   rawText: 'rawText',
-  summary: 'summary',
   startParagraph: 'startParagraph',
   endParagraph: 'endParagraph',
   characterCount: 'characterCount',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  summary: 'summary'
 };
 
 exports.Prisma.SceneDraftScalarFieldEnum = {
@@ -606,10 +606,6 @@ exports.Prisma.ApiKeyScalarFieldEnum = {
   id: 'id',
   key: 'key',
   secretHash: 'secretHash',
-  secretEnc: 'secretEnc',
-  secretEncIv: 'secretEncIv',
-  secretEncTag: 'secretEncTag',
-  secretVersion: 'secretVersion',
   name: 'name',
   ownerUserId: 'ownerUserId',
   ownerOrgId: 'ownerOrgId',
@@ -617,25 +613,29 @@ exports.Prisma.ApiKeyScalarFieldEnum = {
   lastUsedAt: 'lastUsedAt',
   expiresAt: 'expiresAt',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  secretEnc: 'secretEnc',
+  secretEncIv: 'secretEncIv',
+  secretEncTag: 'secretEncTag',
+  secretVersion: 'secretVersion'
 };
 
 exports.Prisma.AuditLogScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  orgId: 'orgId',
   apiKeyId: 'apiKeyId',
   action: 'action',
   resourceType: 'resourceType',
   resourceId: 'resourceId',
   ip: 'ip',
   userAgent: 'userAgent',
+  details: 'details',
+  createdAt: 'createdAt',
   nonce: 'nonce',
   signature: 'signature',
   timestamp: 'timestamp',
-  details: 'details',
   payload: 'payload',
-  createdAt: 'createdAt'
+  orgId: 'orgId'
 };
 
 exports.Prisma.SecurityFingerprintScalarFieldEnum = {
@@ -796,14 +796,14 @@ exports.Prisma.ModelScalarFieldEnum = {
 exports.Prisma.AssetScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
-  ownerType: 'ownerType',
-  ownerId: 'ownerId',
-  type: 'type',
-  status: 'status',
-  storageKey: 'storageKey',
+  createdAt: 'createdAt',
   checksum: 'checksum',
   createdByJobId: 'createdByJobId',
-  createdAt: 'createdAt'
+  ownerId: 'ownerId',
+  ownerType: 'ownerType',
+  status: 'status',
+  storageKey: 'storageKey',
+  type: 'type'
 };
 
 exports.Prisma.TextSafetyResultScalarFieldEnum = {
@@ -855,11 +855,10 @@ exports.UserType = exports.$Enums.UserType = {
 };
 
 exports.UserRole = exports.$Enums.UserRole = {
-  OWNER: 'OWNER',
-  ADMIN: 'ADMIN',
-  CREATOR: 'CREATOR',
-  EDITOR: 'EDITOR',
-  VIEWER: 'VIEWER'
+  viewer: 'viewer',
+  editor: 'editor',
+  creator: 'creator',
+  admin: 'admin'
 };
 
 exports.UserTier = exports.$Enums.UserTier = {
@@ -937,11 +936,11 @@ exports.WorkerJobStatus = exports.$Enums.WorkerJobStatus = {
 
 exports.JobStatus = exports.$Enums.JobStatus = {
   PENDING: 'PENDING',
-  DISPATCHED: 'DISPATCHED',
   RUNNING: 'RUNNING',
   SUCCEEDED: 'SUCCEEDED',
   FAILED: 'FAILED',
-  RETRYING: 'RETRYING'
+  RETRYING: 'RETRYING',
+  DISPATCHED: 'DISPATCHED'
 };
 
 exports.JobType = exports.$Enums.JobType = {
@@ -954,6 +953,7 @@ exports.JobType = exports.$Enums.JobType = {
   CE02_IDENTITY_LOCK: 'CE02_IDENTITY_LOCK',
   CE05_DIRECTOR_CONTROL: 'CE05_DIRECTOR_CONTROL',
   CE07_STORY_MEMORY: 'CE07_STORY_MEMORY',
+  CE07_MEMORY_UPDATE: 'CE07_MEMORY_UPDATE',
   CE08_STORY_KG: 'CE08_STORY_KG',
   CE09_MEDIA_SECURITY: 'CE09_MEDIA_SECURITY',
   VIDEO_RENDER: 'VIDEO_RENDER'
@@ -1066,16 +1066,16 @@ exports.AssetOwnerType = exports.$Enums.AssetOwnerType = {
   SHOT: 'SHOT'
 };
 
-exports.AssetType = exports.$Enums.AssetType = {
-  IMAGE: 'IMAGE',
-  VIDEO: 'VIDEO',
-  MODEL: 'MODEL'
-};
-
 exports.AssetStatus = exports.$Enums.AssetStatus = {
   GENERATED: 'GENERATED',
   LOCKED: 'LOCKED',
   PUBLISHED: 'PUBLISHED'
+};
+
+exports.AssetType = exports.$Enums.AssetType = {
+  IMAGE: 'IMAGE',
+  VIDEO: 'VIDEO',
+  MODEL: 'MODEL'
 };
 
 exports.TextSafetyDecision = exports.$Enums.TextSafetyDecision = {

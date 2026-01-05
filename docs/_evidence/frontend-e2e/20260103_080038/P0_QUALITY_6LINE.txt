@@ -1,0 +1,4 @@
+P0_CE06_OUTPUT: PASS (chapters=1)
+P0_CE03_OUTPUT: FAIL (chars=0)
+P0_CE04_OUTPUT: FAIL (scenes=1, promptRate=0.00)
+P0_QUALITY_GATE: FAIL

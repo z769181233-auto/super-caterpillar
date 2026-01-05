@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject, forwardRef }
 import { JobStatus as JobStatusEnum } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobService } from './job.service';
-import { env } from 'config';
+import { env } from '@scu/config';
 
 @Injectable()
 export class JobWorkerService implements OnModuleInit, OnModuleDestroy {

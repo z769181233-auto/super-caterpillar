@@ -649,6 +649,11 @@ export class JobService {
    * @returns 领取到的 Job，如果没有可用的 Job 则返回 null
    */
   async getAndMarkNextPendingJob(workerId: string, jobType?: string): Promise<any | null> {
+    // 商业级硬要求：workerId不能为空
+    if (!workerId?.trim()) {
+      throw new Error('workerId cannot be empty for claim audit');
+    }
+
     return this.prisma.$transaction(async (tx) => {
       // 1. 验证 Worker 存在且在线
       const worker = await tx.workerNode.findUnique({
@@ -680,9 +685,9 @@ export class JobService {
       const claimedJobs = await tx.$queryRaw<any[]>`
         WITH target_job AS (
           SELECT j.id
-          FROM "ShotJob" j
+          FROM "shot_jobs" j
           LEFT JOIN "job_engine_bindings" b ON j.id = b."jobId"
-          WHERE j.status = 'PENDING'
+          WHERE (j.status = 'PENDING' OR (j.status = 'RETRYING' AND (j.payload->>'nextRetryAt' IS NULL OR (j.payload->>'nextRetryAt')::timestamp <= NOW())))
             AND j."workerId" IS NULL
             -- 允许领取无绑定或已绑定的任务，不再强制 b.status = 'BOUND'，提高内置 Worker 的消化能力
             ${jobType ? Prisma.sql`AND j.type = ${jobType}` : Prisma.empty}
@@ -690,7 +695,7 @@ export class JobService {
           LIMIT 1
           FOR UPDATE OF j SKIP LOCKED
         )
-        UPDATE "ShotJob" SET
+        UPDATE "shot_jobs" SET
           status = 'RUNNING',
           "workerId" = ${worker.id},
           attempts = attempts + 1,
@@ -700,10 +705,24 @@ export class JobService {
       `;
 
       if (!claimedJobs || claimedJobs.length === 0) {
+        // 商业级审计：如果认领失败，必须显式返回 null，调用方需处理此种情况（不可通过空指针）
+        this.logger.debug(`[JobService] No PENDING jobs found for workerUid=${worker.id} (workerId=${workerId})`);
+
+        // 门栓 2.1：Gate/Trace 模式下认领零行视为基线崩溃（外键失效或严重竞争），强制抛出异常
+        const isHardGateMode = !!process.env.CE01_GATE_FAIL_ONCE || !!process.env.CE07_MEMORY_UPDATE_GATE_FAIL_ONCE || !!process.env.HMAC_TRACE;
+        if (isHardGateMode) {
+          throw new Error(`[CRITICAL] Job claim returned 0 rows in HARD-GATE mode for workerId=${workerId}. Atomic baseline violated.`);
+        }
+
         return null;
       }
 
       const job = claimedJobs[0];
+
+      // 门栓 2.1-B：强断言返回对象字段完整性
+      if (!job.id || job.attempts === undefined) {
+        throw new Error(`[CRITICAL] Invalid job object returned from atomic claim for workerId=${workerId}`);
+      }
 
       // 3. 记录结构化日志：Job 领取成功
       this.logger.log(
@@ -869,7 +888,8 @@ export class JobService {
             payload: updatedPayload ?? undefined,
             attempts: job.attempts, // attempts 只在领取时递增，不在此处递增
             retryCount: job.retryCount,
-            lastError: undefined,
+            lastError: null,
+            workerId: null,
           },
         });
 

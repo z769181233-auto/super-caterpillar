@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 61
+ETag: W/"3d-frxBqw5HY2YurR7RmTAXGsutvXI"
+Date: Mon, 29 Dec 2025 11:30:15 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"success":true,"data":{"progress":75,"status":"PROCESSING"}}

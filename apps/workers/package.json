@@ -10,7 +10,7 @@
   "dependencies": {
     "@scu/storage": "workspace:^",
     "axios": "^1.6.0",
-    "config": "workspace:*",
+    "@scu/config": "workspace:*",
     "database": "workspace:*"
   },
   "devDependencies": {

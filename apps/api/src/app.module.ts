@@ -35,14 +35,13 @@ import { ShotDirectorModule } from './shot-director/shot-director.module';
 import { HealthModule } from './health/health.module';
 import { OpsModule } from './ops/ops.module';
 import { AuditInterceptor } from './audit/audit.interceptor';
-import { TimestampNonceGuard } from './auth/guards/timestamp-nonce.guard';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { StorageModule } from './storage/storage.module';
 import { SeasonsModule } from './seasons/seasons.module';
 import { FeatureFlagModule } from './feature-flag/feature-flag.module';
-import { env } from 'config';
+import { env } from '@scu/config';
 
 // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
@@ -104,11 +103,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
       provide: APP_INTERCEPTOR,
       useClass: AuditInterceptor,
     },
-    // 使用 APP_GUARD 让 Nest 注入，禁止手动 new
-    {
-      provide: APP_GUARD,
-      useClass: TimestampNonceGuard,
-    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
@@ -120,14 +114,3 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
   ],
 })
 export class AppModule { }
-
-
-
-
-
-
-
-
-
-
-

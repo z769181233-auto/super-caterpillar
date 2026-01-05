@@ -1,0 +1,2 @@
+{"message":"Memory Snapshot not found for project proj-m2-8882e2f3, identityLockToken fake-token-not-exists. This project requires Memory SSOT to maintain consistency.","error":"Bad Request","statusCode":400}
+HTTP_STATUS:400

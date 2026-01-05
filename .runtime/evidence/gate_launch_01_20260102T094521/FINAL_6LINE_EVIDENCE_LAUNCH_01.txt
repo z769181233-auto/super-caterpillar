@@ -1,0 +1,6 @@
+1) release_mode_off_all_blocked: PASS
+2) release_mode_beta_whitelist_enforced: PASS
+3) release_mode_live_all_allowed: PASS
+4) release_mode_frozen_read_write_split: PASS
+5) studio_release_blocked_audit_logged: PASS
+6) gate_launch_01_release_mode: PASSED

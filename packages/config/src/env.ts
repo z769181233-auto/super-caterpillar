@@ -135,7 +135,21 @@ export const env = {
   // Worker API Key（可选，用于 HMAC 认证）
   workerApiKey: process.env.WORKER_API_KEY,
   workerApiSecret: process.env.WORKER_API_SECRET,
-  workerId: process.env.WORKER_ID || process.env.WORKER_NAME || 'local-worker',
+  workerId: (() => {
+    const id = (process.env.WORKER_ID || process.env.WORKER_NAME || '').trim();
+    const isGateRun =
+      Object.keys(process.env).some(k => k.endsWith('_GATE_FAIL_ONCE') && process.env[k] === '1') ||
+      process.env.HMAC_TRACE === '1';
+
+    // 商业级鲁棒性：只有在 Gate/Trace 模式下且非 API 服务器进程（即 Worker 进程）时才进行硬断言
+    const isApiProcess = !!process.env.API_PORT || !!process.env.NEST_APP_NAME || process.env.SERVICE_TYPE === 'api';
+
+    if (isGateRun && !isApiProcess) {
+      if (!id) throw new Error('[Strict] WORKER_ID is required in gate/trace mode for Worker');
+      if (id === 'local-worker') throw new Error('[Strict] WORKER_ID must not be "local-worker" in gate/trace mode');
+    }
+    return id || 'local-worker';
+  })(),
   workerName: process.env.WORKER_NAME || process.env.WORKER_ID || 'local-worker',
   workerPollInterval: Number(process.env.WORKER_POLL_INTERVAL ?? '2000'),
   // Worker Job Processing (必须显式设置为 'true' 才启用)

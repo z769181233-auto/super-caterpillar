@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# pre-commit：默认跑完整 workstream（由 run_all.sh 内部 detect_workstream 决定）
+./tools/gate/run_all.sh

@@ -592,3 +592,148 @@ export async function processShotRenderJob(
     throw error;
   }
 }
+
+/**
+ * 处理 CE01 Reference Sheet Job
+ */
+export async function processCE01Job(
+  prisma: PrismaClient,
+  job: WorkerJobBase,
+  apiClient: ApiClient,
+): Promise<any> {
+  const jobStartTime = Date.now();
+  const jobId = job.id;
+  const traceId = job.traceId;
+
+  logStructured('info', {
+    action: 'CE01_JOB_START',
+    jobId,
+    projectId: job.projectId,
+    traceId
+  });
+
+  // Mock processing
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // Gate Test Helper: Fail once if requested
+  // ✅ 权威来源：DB attempts（跨重启一致）
+  const failOnceEnv = 'CE01_REFERENCE_SHEET_GATE_FAIL_ONCE';
+  if (process.env[failOnceEnv] === '1') {
+    const row = await prisma.shotJob.findUnique({
+      where: { id: jobId },
+      select: { attempts: true },
+    });
+    const attemptsFromDb = row?.attempts ?? 0;
+    // API的getAndMarkNextPendingJob在标记RUNNING时已将attempts递增(0→1)
+    // 商业级容错：使用<=1而非==1，对未来API时序调整有容错
+    if (attemptsFromDb <= 1) {
+      console.log(`[Worker] ${failOnceEnv} is set, failing job ${jobId} (attemptsFromDb=${attemptsFromDb})`);
+      throw new Error(`Simulated failure for ${failOnceEnv}`);
+    }
+  }
+
+  const duration = Date.now() - jobStartTime;
+
+  // 上报审计日志
+  await apiClient.postAuditLog({
+    traceId: traceId || `trace-${jobId}`,
+    projectId: job.projectId,
+    jobId,
+    jobType: 'CE01_REFERENCE_SHEET',
+    engineKey: 'mock_ce01_engine',
+    status: 'SUCCESS',
+    latencyMs: duration,
+    auditTrail: { message: 'Reference sheet generated (mock)' }
+  }).catch(e => console.warn('Audit log failed', e));
+
+  logStructured('info', {
+    action: 'CE01_JOB_SUCCESS',
+    jobId,
+    projectId: job.projectId,
+    durationMs: duration
+  });
+
+  return { success: true, result: { imageUrl: 'mock://reference-sheet.png' } };
+}
+
+/**
+ * 通用 CE Job 处理器，支持 Fail-Once 验证
+ */
+export async function processGenericCEJob(
+  prisma: PrismaClient,
+  job: WorkerJobBase,
+  apiClient: ApiClient,
+): Promise<any> {
+  const jobStartTime = Date.now();
+  const jobId = job.id;
+  const traceId = job.traceId;
+
+  logStructured('info', {
+    action: 'GENERIC_CE_JOB_START',
+    jobId,
+    jobType: job.type,
+    projectId: job.projectId,
+    traceId
+  });
+
+  // Mock processing
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  // Gate Test Helper: Fail once if requested
+  // ✅ 权威来源：DB attempts（跨重启一致、多实例安全、可审计）
+  const failOnceEnv = `${job.type}_GATE_FAIL_ONCE`;
+
+  if (process.env[failOnceEnv] === '1') {
+    const row = await prisma.shotJob.findUnique({
+      where: { id: jobId },
+      select: { attempts: true },
+    });
+
+    const attemptsFromDb = row?.attempts ?? 0;
+
+    logStructured('info', {
+      action: 'GATE_FAIL_ONCE_CHECK',
+      jobId,
+      jobType: job.type,
+      attemptsFromDb,
+      failOnceEnv,
+      enabled: process.env[failOnceEnv] === '1',
+    });
+
+    // 商业级容错：使用<=1而非==1
+    if (attemptsFromDb <= 1) {
+      logStructured('warn', {
+        action: 'GATE_FAIL_ONCE_INJECT',
+        jobId,
+        jobType: job.type,
+        attemptsFromDb,
+        failOnceEnv,
+      });
+      throw new Error(`Simulated failure for ${failOnceEnv}`);
+    }
+  }
+
+  const duration = Date.now() - jobStartTime;
+
+  // 上报审计日志
+  await apiClient.postAuditLog({
+    traceId: traceId || `trace-${jobId}`,
+    projectId: job.projectId,
+    jobId,
+    jobType: (job as any).type,
+    engineKey: 'generic_ce_mock_engine',
+    status: 'SUCCESS',
+    latencyMs: duration,
+    auditTrail: { message: `${(job as any).type} processed (generic mock)` }
+  }).catch(e => console.warn('Audit log failed', e));
+
+  logStructured('info', {
+    action: 'GENERIC_CE_JOB_SUCCESS',
+    jobId,
+    jobType: job.type,
+    projectId: job.projectId,
+    durationMs: duration
+  });
+
+  return { success: true, result: { message: `${job.type} completed successfully` } };
+}

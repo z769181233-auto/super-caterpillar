@@ -20,7 +20,7 @@ import { CopyrightModule } from '../copyright/copyright.module';
 import { CapacityGateModule } from '../capacity/capacity-gate.module';
 import { JobWatchdogService } from './job-watchdog.service';
 import { TextSafetyModule } from '../text-safety/text-safety.module';
-import { env } from 'config';
+import { env } from '@scu/config';
 
 // P1 修复：统一使用 packages/config，避免 split-brain
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;

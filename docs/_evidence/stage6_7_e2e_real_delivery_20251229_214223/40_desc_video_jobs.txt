@@ -1,0 +1,13 @@
+                                   Table "public.video_jobs"
+      Column       |              Type              | Collation | Nullable |      Default      
+-------------------+--------------------------------+-----------+----------+-------------------
+ id                | text                           |           | not null | 
+ shotId            | text                           |           |          | 
+ status            | text                           |           |          | 
+ payload           | jsonb                          |           |          | 
+ securityProcessed | boolean                        |           | not null | false
+ createdAt         | timestamp(3) without time zone |           | not null | CURRENT_TIMESTAMP
+ updatedAt         | timestamp(3) without time zone |           | not null | 
+Indexes:
+    "video_jobs_pkey" PRIMARY KEY, btree (id)
+

@@ -1,0 +1,3 @@
+== waiting docker daemon (max 180s) ==
+..............................READY
+

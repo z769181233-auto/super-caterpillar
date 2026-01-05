@@ -1,0 +1,4 @@
+=== Stage-7 Commercial Loop Verification Start ===
+[0] Seeded user fbc0fc31-71b9-411a-a0d3-e5a8101d6118 and org 81c973dd-a1c5-4623-864a-b65806bcafa9
+[0] Created Shot 3cdc3429-84b6-4a80-bbc0-ef97a988496a
+[1] Creating and locking variant...

@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
 import { AuditActions } from '../../audit/audit.constants';
-import { env } from 'config';
+import { env } from '@scu/config';
 import { SecretEncryptionService } from './secret-encryption.service';
 import {
   SignatureVerificationResult,

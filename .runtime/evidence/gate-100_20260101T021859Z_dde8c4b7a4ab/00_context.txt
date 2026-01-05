@@ -1,0 +1,4 @@
+gate_id=gate-100
+head_sha=dde8c4b7a4ab
+timestamp_utc=20260101T021859Z
+repo_root=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar

@@ -1,0 +1,7 @@
+## fix/stage6_7_internal_import
+ M apps/api/src/worker/dto/register-worker.dto.ts
+ M apps/workers/src/api-client.ts
+ M apps/workers/src/main.ts
+ M tools/gate/gates/gate-ce_video_e2e.sh
+ M tools/smoke/ce_video_generation_e2e_smoke_realdb.ts
+?? debug_db.ts

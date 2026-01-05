@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { createClient } from 'redis';
 import type { RedisClientType } from 'redis';
-import { env } from 'config';
+import { env } from '@scu/config';
 
 /**
  * Redis 服务

@@ -1,0 +1,10 @@
+status=PASS
+gate_id=gate-93_aggregate_budget
+head_sha=85233caacedc
+evidence_dir=.runtime/evidence/gate-93_aggregate_budget_20251231T160146Z_85233caacedc
+timestamp_utc=20251231T160146Z
+head_commit_epoch=1767175383
+last_ok_gen_epoch=1767196907
+runner_sha=85233caacedc
+gate_script_sha256=183bbb5d1febc25a2a27f16b2933998706ac8f78c8557b72135b1d198542fb6d
+health_audit_sha256=52751ed7b0c4c63cea45b2168297d60113b306d6e44655de39e2de720e10b88a

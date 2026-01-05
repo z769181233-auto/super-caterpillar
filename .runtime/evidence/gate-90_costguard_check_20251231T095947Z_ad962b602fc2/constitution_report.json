@@ -1,0 +1,17 @@
+{
+  "gate_id": "gate-90_costguard_check",
+  "head_sha": "ad962b602fc2",
+  "timestamp_utc": "20251231T095947Z",
+  "result": "PASS",
+  "rc": 0,
+  "change_class": "",
+  "change_reason": "",
+  "evidence_dir": ".runtime/evidence/gate-90_costguard_check_20251231T095947Z_ad962b602fc2",
+  "artifacts": {
+    "gate_20_log": null,
+    "gate_21_log": null,
+    "gate_30_log": null,
+    "gate_31_log": null,
+    "health_audit_log": null
+  }
+}

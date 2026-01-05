@@ -1,0 +1,19 @@
+#!/bin/bash
+# Git pre-merge-commit hook: 强制所有 merge 通过门禁
+
+set -e
+
+# 检测是否是 merge commit
+if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+  echo "🔍  检测到 merge 操作，强制执行门禁验证..."
+  
+  # 调用 merge guard
+  if ! ./tools/gate/merge_guard.sh; then
+    echo "❌  Merge 门禁验证失败，拒绝合并"
+    exit 1
+  fi
+  
+  echo "✅  Merge 门禁验证通过"
+fi
+
+exit 0

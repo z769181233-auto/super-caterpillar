@@ -1,0 +1,1401 @@
+-[ RECORD 1 ]---------------------------------------------
+id        | 4b3bb3e6-1d0b-485e-b16d-6526cd4bacf6
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:12.569
+updatedAt | 2025-12-30 01:43:12.569
+-[ RECORD 2 ]---------------------------------------------
+id        | 279892aa-b85c-4b77-8e34-9b6832812478
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:12.559
+updatedAt | 2025-12-30 01:43:12.559
+-[ RECORD 3 ]---------------------------------------------
+id        | 63903f7e-51e6-4675-9869-cd7c38c189f5
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:10.568
+updatedAt | 2025-12-30 01:43:10.568
+-[ RECORD 4 ]---------------------------------------------
+id        | 19e5898a-6c23-4000-a806-b23e04cf9684
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:10.558
+updatedAt | 2025-12-30 01:43:10.558
+-[ RECORD 5 ]---------------------------------------------
+id        | 76cc18e7-b8ba-4152-8152-89e11d668b0f
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:08.58
+updatedAt | 2025-12-30 01:43:08.58
+-[ RECORD 6 ]---------------------------------------------
+id        | 4c5aedc7-0226-4a15-b514-b4c326c30b85
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:08.571
+updatedAt | 2025-12-30 01:43:08.571
+-[ RECORD 7 ]---------------------------------------------
+id        | 32f2fa80-17d2-42e1-83e6-31e930bd82d1
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:06.584
+updatedAt | 2025-12-30 01:43:06.584
+-[ RECORD 8 ]---------------------------------------------
+id        | c1ed18ff-d4e4-4e71-a2fb-dd6b6d80d341
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:06.575
+updatedAt | 2025-12-30 01:43:06.575
+-[ RECORD 9 ]---------------------------------------------
+id        | 80373114-d45b-4132-a98e-9a0e7aa635c8
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:04.566
+updatedAt | 2025-12-30 01:43:04.566
+-[ RECORD 10 ]--------------------------------------------
+id        | b70feb76-7924-461f-b24a-4e25d3e24a14
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:04.556
+updatedAt | 2025-12-30 01:43:04.556
+-[ RECORD 11 ]--------------------------------------------
+id        | d3699eb9-82c5-4792-b03f-cb6e3e782490
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:02.563
+updatedAt | 2025-12-30 01:43:02.563
+-[ RECORD 12 ]--------------------------------------------
+id        | 393ac5e9-dbe9-4870-aa02-ec47839ffa75
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:02.549
+updatedAt | 2025-12-30 01:43:02.549
+-[ RECORD 13 ]--------------------------------------------
+id        | 5066f365-a0c0-4b48-8ea6-6f0b7b54da6b
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:00.552
+updatedAt | 2025-12-30 01:43:00.552
+-[ RECORD 14 ]--------------------------------------------
+id        | 16b5eb21-ddbf-4b90-8465-4240110de1ee
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:43:00.544
+updatedAt | 2025-12-30 01:43:00.544
+-[ RECORD 15 ]--------------------------------------------
+id        | 35cf08bf-3c52-4178-912a-6ede7370317e
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:58.563
+updatedAt | 2025-12-30 01:42:58.563
+-[ RECORD 16 ]--------------------------------------------
+id        | 07668cb2-26cd-449b-9b91-d06892d4db6f
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:58.555
+updatedAt | 2025-12-30 01:42:58.555
+-[ RECORD 17 ]--------------------------------------------
+id        | 5b673915-c09d-41ec-a2e2-628a13de515b
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:56.559
+updatedAt | 2025-12-30 01:42:56.559
+-[ RECORD 18 ]--------------------------------------------
+id        | 124b1da7-f0cc-4ebe-8268-2a96c5e938c7
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:56.55
+updatedAt | 2025-12-30 01:42:56.55
+-[ RECORD 19 ]--------------------------------------------
+id        | a1538ee3-f73e-450a-9cf5-a3758557e557
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:54.556
+updatedAt | 2025-12-30 01:42:54.556
+-[ RECORD 20 ]--------------------------------------------
+id        | 9629528c-f571-41ae-a7cb-028372bbeca5
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:54.548
+updatedAt | 2025-12-30 01:42:54.548
+-[ RECORD 21 ]--------------------------------------------
+id        | 7feca9bc-a27e-4b15-abb6-e3717b8e46bc
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:52.564
+updatedAt | 2025-12-30 01:42:52.564
+-[ RECORD 22 ]--------------------------------------------
+id        | 83641928-a5c9-4b30-9f70-74193f86771c
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:52.556
+updatedAt | 2025-12-30 01:42:52.556
+-[ RECORD 23 ]--------------------------------------------
+id        | 57088d72-d31b-462a-9738-cd978c335de4
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:50.56
+updatedAt | 2025-12-30 01:42:50.56
+-[ RECORD 24 ]--------------------------------------------
+id        | 1e68e8c6-e1d0-426f-bb10-68fab9aa1b6b
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:50.552
+updatedAt | 2025-12-30 01:42:50.552
+-[ RECORD 25 ]--------------------------------------------
+id        | 198b947e-21db-4b06-a92a-0e4ef8249f7d
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:48.562
+updatedAt | 2025-12-30 01:42:48.562
+-[ RECORD 26 ]--------------------------------------------
+id        | dea292a7-bf17-4a63-b893-4c8c1fc95ffe
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:48.554
+updatedAt | 2025-12-30 01:42:48.554
+-[ RECORD 27 ]--------------------------------------------
+id        | d7578942-b693-4c3a-a665-681fce85afad
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:46.562
+updatedAt | 2025-12-30 01:42:46.562
+-[ RECORD 28 ]--------------------------------------------
+id        | 7a8071af-6c0b-48ac-a147-b82df75392cb
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:46.554
+updatedAt | 2025-12-30 01:42:46.554
+-[ RECORD 29 ]--------------------------------------------
+id        | ea79eeb7-3f37-488e-ad0d-e52b6b4cc32c
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:44.548
+updatedAt | 2025-12-30 01:42:44.548
+-[ RECORD 30 ]--------------------------------------------
+id        | 1380afd3-a197-453f-abbf-fbeb48ba97ec
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:44.54
+updatedAt | 2025-12-30 01:42:44.54
+-[ RECORD 31 ]--------------------------------------------
+id        | 4bdcc85e-47f0-46fe-92e3-635a64feb731
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:42.557
+updatedAt | 2025-12-30 01:42:42.557
+-[ RECORD 32 ]--------------------------------------------
+id        | 05242055-52da-493c-9dc7-0f3e907a33c8
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:42.548
+updatedAt | 2025-12-30 01:42:42.548
+-[ RECORD 33 ]--------------------------------------------
+id        | c1fc6b90-9275-4b8e-9237-5abb968922e2
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:40.552
+updatedAt | 2025-12-30 01:42:40.552
+-[ RECORD 34 ]--------------------------------------------
+id        | ca604a45-0e9f-42c0-8785-2ae9b727a87f
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:40.543
+updatedAt | 2025-12-30 01:42:40.543
+-[ RECORD 35 ]--------------------------------------------
+id        | 6a778057-af05-4dd3-bd2d-3e2e109d9863
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:38.562
+updatedAt | 2025-12-30 01:42:38.562
+-[ RECORD 36 ]--------------------------------------------
+id        | f7404ba5-11f1-4565-9831-7fa791856b1f
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:38.554
+updatedAt | 2025-12-30 01:42:38.554
+-[ RECORD 37 ]--------------------------------------------
+id        | c75bea99-a974-491b-9e3f-38c7aa288b9a
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:36.539
+updatedAt | 2025-12-30 01:42:36.539
+-[ RECORD 38 ]--------------------------------------------
+id        | 0c46672a-b625-48a6-98de-ffd24e3ab62d
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:36.53
+updatedAt | 2025-12-30 01:42:36.53
+-[ RECORD 39 ]--------------------------------------------
+id        | 4c6a8b84-eb5a-40c7-ba22-c25fbf4788c8
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:34.545
+updatedAt | 2025-12-30 01:42:34.545
+-[ RECORD 40 ]--------------------------------------------
+id        | 7a11f976-2129-433b-a604-52a4af13ecb0
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:34.537
+updatedAt | 2025-12-30 01:42:34.537
+-[ RECORD 41 ]--------------------------------------------
+id        | 0ac3ee07-3fa4-479e-8877-90739973fb8c
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:32.56
+updatedAt | 2025-12-30 01:42:32.56
+-[ RECORD 42 ]--------------------------------------------
+id        | 34aede06-b298-4e6e-b8e4-763c8ae1d86b
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:32.545
+updatedAt | 2025-12-30 01:42:32.545
+-[ RECORD 43 ]--------------------------------------------
+id        | efc9c9fe-94fb-4492-974f-5e530b331896
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:30.559
+updatedAt | 2025-12-30 01:42:30.559
+-[ RECORD 44 ]--------------------------------------------
+id        | d547179d-7005-41ef-aa39-ac73b14514d3
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:30.551
+updatedAt | 2025-12-30 01:42:30.551
+-[ RECORD 45 ]--------------------------------------------
+id        | 45333c57-4ccc-4aa4-9aeb-8073ef6f21b9
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:28.557
+updatedAt | 2025-12-30 01:42:28.557
+-[ RECORD 46 ]--------------------------------------------
+id        | e865e6c8-3106-40ee-92aa-5d5374232e1e
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:28.547
+updatedAt | 2025-12-30 01:42:28.547
+-[ RECORD 47 ]--------------------------------------------
+id        | 55163d2c-886d-4f33-b0a0-f1eb563eaaef
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:26.528
+updatedAt | 2025-12-30 01:42:26.528
+-[ RECORD 48 ]--------------------------------------------
+id        | c85504d5-c9dc-4d1f-b0eb-8c0e7cd22e6e
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:26.521
+updatedAt | 2025-12-30 01:42:26.521
+-[ RECORD 49 ]--------------------------------------------
+id        | 13510175-9390-4ff5-8e2e-54e112fa32af
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:24.541
+updatedAt | 2025-12-30 01:42:24.541
+-[ RECORD 50 ]--------------------------------------------
+id        | ca29309d-d891-41e0-af16-ce5e082b8859
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:24.532
+updatedAt | 2025-12-30 01:42:24.532
+-[ RECORD 51 ]--------------------------------------------
+id        | 8ce83572-6a86-4f5b-995a-90b954191c23
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:22.55
+updatedAt | 2025-12-30 01:42:22.55
+-[ RECORD 52 ]--------------------------------------------
+id        | 60fbb937-5a67-4f94-b6ce-d939e08318be
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:22.54
+updatedAt | 2025-12-30 01:42:22.54
+-[ RECORD 53 ]--------------------------------------------
+id        | cbb0ce75-aab4-4c05-99bb-b9acd5b86218
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:20.538
+updatedAt | 2025-12-30 01:42:20.538
+-[ RECORD 54 ]--------------------------------------------
+id        | 622e904d-9de6-4ad0-8c71-fee4fc5bff0e
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:20.529
+updatedAt | 2025-12-30 01:42:20.529
+-[ RECORD 55 ]--------------------------------------------
+id        | 0b919aec-f729-45f9-9fb9-c8821f7b1afe
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:18.519
+updatedAt | 2025-12-30 01:42:18.519
+-[ RECORD 56 ]--------------------------------------------
+id        | 0e26d16b-ed70-41fa-8c8f-b633269a73c7
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:18.51
+updatedAt | 2025-12-30 01:42:18.51
+-[ RECORD 57 ]--------------------------------------------
+id        | 4970ab5e-bb66-4bae-8d57-dfb672ae75c1
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:16.545
+updatedAt | 2025-12-30 01:42:16.545
+-[ RECORD 58 ]--------------------------------------------
+id        | 5fba2e90-216c-4d4d-ad78-c55f8e0a75ff
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:16.536
+updatedAt | 2025-12-30 01:42:16.536
+-[ RECORD 59 ]--------------------------------------------
+id        | 682a7f5a-a1ff-47e5-9e01-e43374914e01
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:14.512
+updatedAt | 2025-12-30 01:42:14.512
+-[ RECORD 60 ]--------------------------------------------
+id        | cb786053-a42e-4a1d-85a0-e317bb75da4d
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:14.505
+updatedAt | 2025-12-30 01:42:14.505
+-[ RECORD 61 ]--------------------------------------------
+id        | af373a51-3729-45f5-b0c1-3fac5183acce
+type      | NOVEL_ANALYSIS
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:13.242
+updatedAt | 2025-12-30 01:42:13.242
+-[ RECORD 62 ]--------------------------------------------
+id        | bc251bb4-36cd-4365-bd82-681f319a3599
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:12.517
+updatedAt | 2025-12-30 01:42:12.517
+-[ RECORD 63 ]--------------------------------------------
+id        | d6510bd8-d3d3-4bfe-bc35-a21e0d322068
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:12.507
+updatedAt | 2025-12-30 01:42:12.507
+-[ RECORD 64 ]--------------------------------------------
+id        | fec8d031-087a-49b1-abbf-5a1ccda963b2
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:10.541
+updatedAt | 2025-12-30 01:42:10.541
+-[ RECORD 65 ]--------------------------------------------
+id        | e30cbac1-5399-4240-ae98-b1e3632cf8ee
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:10.533
+updatedAt | 2025-12-30 01:42:10.533
+-[ RECORD 66 ]--------------------------------------------
+id        | 04700ec9-02a3-40cf-943e-462eb6b4e561
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:08.55
+updatedAt | 2025-12-30 01:42:08.55
+-[ RECORD 67 ]--------------------------------------------
+id        | 349d0e64-d687-41a0-8ac7-cb44c229a63c
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:08.541
+updatedAt | 2025-12-30 01:42:08.541
+-[ RECORD 68 ]--------------------------------------------
+id        | 94b27655-c8dc-4a08-9119-17e1cec4cab6
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:06.547
+updatedAt | 2025-12-30 01:42:06.547
+-[ RECORD 69 ]--------------------------------------------
+id        | 353cd0ee-891a-4d4d-b54a-af8cfd35d82e
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:06.539
+updatedAt | 2025-12-30 01:42:06.539
+-[ RECORD 70 ]--------------------------------------------
+id        | e319a8a3-ff31-48c9-be21-51fdc949c904
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:04.536
+updatedAt | 2025-12-30 01:42:04.536
+-[ RECORD 71 ]--------------------------------------------
+id        | 0c71e94e-fe0e-499d-a4b8-1ef407b31464
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:04.525
+updatedAt | 2025-12-30 01:42:04.525
+-[ RECORD 72 ]--------------------------------------------
+id        | 3e682cd6-3225-4f57-91ce-8dfbff50e0a6
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:02.524
+updatedAt | 2025-12-30 01:42:02.524
+-[ RECORD 73 ]--------------------------------------------
+id        | 3cf9ca4f-3572-4c8f-a0a0-9acc9185fa96
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:02.517
+updatedAt | 2025-12-30 01:42:02.517
+-[ RECORD 74 ]--------------------------------------------
+id        | bd85d6f9-db03-44bb-af1d-7184317c3f13
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:00.566
+updatedAt | 2025-12-30 01:42:00.566
+-[ RECORD 75 ]--------------------------------------------
+id        | 95940f6d-ad2d-4456-8b2b-cf869b6826dd
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:42:00.539
+updatedAt | 2025-12-30 01:42:00.539
+-[ RECORD 76 ]--------------------------------------------
+id        | ee91e9f8-516e-4252-ab9b-c44667214eb8
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:58.545
+updatedAt | 2025-12-30 01:41:58.545
+-[ RECORD 77 ]--------------------------------------------
+id        | 45723a19-f0e1-4847-af3d-f7642cfca3ef
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:58.534
+updatedAt | 2025-12-30 01:41:58.534
+-[ RECORD 78 ]--------------------------------------------
+id        | 5c9af41d-6aea-4af4-82eb-f3e5a964c807
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:56.543
+updatedAt | 2025-12-30 01:41:56.543
+-[ RECORD 79 ]--------------------------------------------
+id        | 324f1011-4167-47d6-928b-3595b22abebe
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:56.533
+updatedAt | 2025-12-30 01:41:56.533
+-[ RECORD 80 ]--------------------------------------------
+id        | 5cd771e6-a17a-437a-89ce-fefa52dd649d
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:54.541
+updatedAt | 2025-12-30 01:41:54.541
+-[ RECORD 81 ]--------------------------------------------
+id        | f9a69f94-b6d9-4deb-9c1b-92117a9664a7
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:54.534
+updatedAt | 2025-12-30 01:41:54.534
+-[ RECORD 82 ]--------------------------------------------
+id        | 895aba18-83e9-4841-be7f-6b5f88f4b7bb
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:52.538
+updatedAt | 2025-12-30 01:41:52.538
+-[ RECORD 83 ]--------------------------------------------
+id        | f827ac5e-1218-41f7-82df-8c88b43400b2
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:52.528
+updatedAt | 2025-12-30 01:41:52.528
+-[ RECORD 84 ]--------------------------------------------
+id        | 89fb7e58-cd90-4c33-b78f-60b6913ef321
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:50.536
+updatedAt | 2025-12-30 01:41:50.536
+-[ RECORD 85 ]--------------------------------------------
+id        | 5ab44a6b-f4b0-4cb0-98e8-390267e7e075
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:50.526
+updatedAt | 2025-12-30 01:41:50.526
+-[ RECORD 86 ]--------------------------------------------
+id        | 2dfc6a35-b6ff-4d38-8226-e41a7e364574
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:48.505
+updatedAt | 2025-12-30 01:41:48.505
+-[ RECORD 87 ]--------------------------------------------
+id        | e4684ef6-3875-4159-a0b8-194d5261e88c
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:48.498
+updatedAt | 2025-12-30 01:41:48.498
+-[ RECORD 88 ]--------------------------------------------
+id        | a3bc1c8c-f531-4c91-948f-378816b12a63
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:46.625
+updatedAt | 2025-12-30 01:41:46.625
+-[ RECORD 89 ]--------------------------------------------
+id        | 8f6f994e-0464-4d09-8a3d-48ccf42b3a47
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:46.62
+updatedAt | 2025-12-30 01:41:46.62
+-[ RECORD 90 ]--------------------------------------------
+id        | 354a2124-9e9b-4754-8f84-fb1e42345ba2
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:44.548
+updatedAt | 2025-12-30 01:41:44.548
+-[ RECORD 91 ]--------------------------------------------
+id        | b3985622-5fe8-4087-93d0-3a602382c05e
+type      | CE04_VISUAL_ENRICHMENT
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:44.539
+updatedAt | 2025-12-30 01:41:44.539
+-[ RECORD 92 ]--------------------------------------------
+id        | 494cbd34-30f6-4170-be35-345d2d7e034d
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.609
+updatedAt | 2025-12-30 01:41:42.609
+-[ RECORD 93 ]--------------------------------------------
+id        | 8af11f5f-8691-42da-8554-148e7c76b54a
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.608
+updatedAt | 2025-12-30 01:41:42.608
+-[ RECORD 94 ]--------------------------------------------
+id        | 45365650-88a5-4f39-ac01-c33247d3f051
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.608
+updatedAt | 2025-12-30 01:41:42.608
+-[ RECORD 95 ]--------------------------------------------
+id        | 44385462-20d5-4e85-b922-8c6c4fa71759
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.606
+updatedAt | 2025-12-30 01:41:42.606
+-[ RECORD 96 ]--------------------------------------------
+id        | 0eefbaf0-85b5-411a-b051-c281f4a69ba7
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.606
+updatedAt | 2025-12-30 01:41:42.606
+-[ RECORD 97 ]--------------------------------------------
+id        | dd9ead72-1e98-4415-b65a-719efdb3e9b2
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.604
+updatedAt | 2025-12-30 01:41:42.604
+-[ RECORD 98 ]--------------------------------------------
+id        | 4abdcb7e-c6d9-4667-a8d1-cc674e124367
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.603
+updatedAt | 2025-12-30 01:41:42.603
+-[ RECORD 99 ]--------------------------------------------
+id        | 11314a1a-527e-498d-b73b-ee044df950ba
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.602
+updatedAt | 2025-12-30 01:41:42.602
+-[ RECORD 100 ]-------------------------------------------
+id        | bda59400-656b-4e61-ad0d-9389e21065c4
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.601
+updatedAt | 2025-12-30 01:41:42.601
+-[ RECORD 101 ]-------------------------------------------
+id        | 0b384a34-f61f-42c9-b5f1-9aceb7122ea4
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.6
+updatedAt | 2025-12-30 01:41:42.6
+-[ RECORD 102 ]-------------------------------------------
+id        | ff5cfe4a-8168-4e55-a479-8eadb3e3cfd9
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.599
+updatedAt | 2025-12-30 01:41:42.599
+-[ RECORD 103 ]-------------------------------------------
+id        | 3f01e171-0cc1-4743-859c-da62a09a887b
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.598
+updatedAt | 2025-12-30 01:41:42.598
+-[ RECORD 104 ]-------------------------------------------
+id        | e347110c-9f4f-4cc0-8df5-254ce96de759
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.597
+updatedAt | 2025-12-30 01:41:42.597
+-[ RECORD 105 ]-------------------------------------------
+id        | afd829dd-7062-4db1-b087-4497efe1f4a4
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.596
+updatedAt | 2025-12-30 01:41:42.596
+-[ RECORD 106 ]-------------------------------------------
+id        | be6138ae-4b73-4d90-b2b9-89d3664fe96f
+type      | CE03_VISUAL_DENSITY
+status    | PENDING
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.595
+updatedAt | 2025-12-30 01:41:42.595
+-[ RECORD 107 ]-------------------------------------------
+id        | b7658b7e-d439-4049-9bb9-cd9e4ef742d9
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.594
+updatedAt | 2025-12-30 01:43:12.55
+-[ RECORD 108 ]-------------------------------------------
+id        | 3d471929-8f04-4e85-8773-c6ee04b3cdf5
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.593
+updatedAt | 2025-12-30 01:43:10.548
+-[ RECORD 109 ]-------------------------------------------
+id        | 8140fd87-f686-41ea-a118-750366674153
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.592
+updatedAt | 2025-12-30 01:43:08.56
+-[ RECORD 110 ]-------------------------------------------
+id        | b2978278-bfa6-4451-abce-cd1bcb8c8a43
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.591
+updatedAt | 2025-12-30 01:43:06.565
+-[ RECORD 111 ]-------------------------------------------
+id        | 1fcc059b-e03b-4830-96d0-29609dc27d2c
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.59
+updatedAt | 2025-12-30 01:43:04.543
+-[ RECORD 112 ]-------------------------------------------
+id        | e2b9c1e4-53d7-4b35-b484-f6a5f9a2612c
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.589
+updatedAt | 2025-12-30 01:43:02.538
+-[ RECORD 113 ]-------------------------------------------
+id        | 99687c73-5545-40fb-9f57-93b6522f3fb0
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.588
+updatedAt | 2025-12-30 01:43:00.535
+-[ RECORD 114 ]-------------------------------------------
+id        | aa30cca0-5ef0-4b87-adaa-da7777017517
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.587
+updatedAt | 2025-12-30 01:42:58.545
+-[ RECORD 115 ]-------------------------------------------
+id        | 3a2232da-e468-4f48-81e4-2ccaf685718b
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.586
+updatedAt | 2025-12-30 01:42:56.541
+-[ RECORD 116 ]-------------------------------------------
+id        | cb21aabb-9e73-4446-a948-95935819d2c9
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.585
+updatedAt | 2025-12-30 01:42:54.539
+-[ RECORD 117 ]-------------------------------------------
+id        | 7edaf9f1-8a27-4851-85fc-2fc4043c94c3
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.584
+updatedAt | 2025-12-30 01:42:52.545
+-[ RECORD 118 ]-------------------------------------------
+id        | dcfc6883-58cd-4ffa-b0ea-bedc6db9823d
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.583
+updatedAt | 2025-12-30 01:42:50.542
+-[ RECORD 119 ]-------------------------------------------
+id        | 98d2e06a-cddc-4858-9a99-2f3ec75fa20b
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.582
+updatedAt | 2025-12-30 01:42:48.54
+-[ RECORD 120 ]-------------------------------------------
+id        | 1683f838-f91d-4c18-9eed-c31476aefbf6
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.581
+updatedAt | 2025-12-30 01:42:46.543
+-[ RECORD 121 ]-------------------------------------------
+id        | 821a4a1c-4ec3-41be-ac9d-6f8022f6d39a
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.58
+updatedAt | 2025-12-30 01:42:44.53
+-[ RECORD 122 ]-------------------------------------------
+id        | badfbb81-ee2b-48f6-a497-1644dc45e7af
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.579
+updatedAt | 2025-12-30 01:42:42.538
+-[ RECORD 123 ]-------------------------------------------
+id        | 23e8e390-1c02-47b1-bb06-34fb6cde9be5
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.578
+updatedAt | 2025-12-30 01:42:40.534
+-[ RECORD 124 ]-------------------------------------------
+id        | 0c966e8d-aab0-4a30-bca1-b6a239995884
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.577
+updatedAt | 2025-12-30 01:42:38.543
+-[ RECORD 125 ]-------------------------------------------
+id        | 9a086004-6760-4b0e-8978-b69fbb54cad4
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.576
+updatedAt | 2025-12-30 01:42:36.522
+-[ RECORD 126 ]-------------------------------------------
+id        | fbdb87e2-908e-41ed-b273-ff9a4f9b1de9
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.575
+updatedAt | 2025-12-30 01:42:34.527
+-[ RECORD 127 ]-------------------------------------------
+id        | eb38f8df-db30-4ae5-a84d-b8d233de110d
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.574
+updatedAt | 2025-12-30 01:42:30.54
+-[ RECORD 128 ]-------------------------------------------
+id        | 7c995004-1708-4290-9283-d4af855dd0b1
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.574
+updatedAt | 2025-12-30 01:42:32.535
+-[ RECORD 129 ]-------------------------------------------
+id        | 2fcb0550-4317-40aa-a946-6a36041f3a35
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.573
+updatedAt | 2025-12-30 01:42:28.537
+-[ RECORD 130 ]-------------------------------------------
+id        | f11dcc60-ca97-4376-a141-f23536a9e05d
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.572
+updatedAt | 2025-12-30 01:42:26.513
+-[ RECORD 131 ]-------------------------------------------
+id        | d6fa9c75-aa0d-48c1-875e-300862e7a7d9
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.571
+updatedAt | 2025-12-30 01:42:22.53
+-[ RECORD 132 ]-------------------------------------------
+id        | 77f24f32-8c5c-4a11-b95b-677689fad84b
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.571
+updatedAt | 2025-12-30 01:42:24.521
+-[ RECORD 133 ]-------------------------------------------
+id        | cb975a8c-2d72-4a23-8190-adeb23c2e8f5
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.57
+updatedAt | 2025-12-30 01:42:20.519
+-[ RECORD 134 ]-------------------------------------------
+id        | 70d36a6a-1b9a-4bd0-af5c-65cfe891d3e8
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.569
+updatedAt | 2025-12-30 01:42:18.501
+-[ RECORD 135 ]-------------------------------------------
+id        | a3e10e1b-e6d0-4ed8-a30f-95b0983fe2cc
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.568
+updatedAt | 2025-12-30 01:42:16.526
+-[ RECORD 136 ]-------------------------------------------
+id        | ed958d8b-c441-4939-8da5-1a36ffb8392c
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.567
+updatedAt | 2025-12-30 01:42:14.498
+-[ RECORD 137 ]-------------------------------------------
+id        | f4233b33-2c15-4e3a-b5c5-b1e400c805dd
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.565
+updatedAt | 2025-12-30 01:42:12.501
+-[ RECORD 138 ]-------------------------------------------
+id        | 6b6a90ca-a138-449a-acc3-fdfef63edd0a
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.565
+updatedAt | 2025-12-30 01:42:10.521
+-[ RECORD 139 ]-------------------------------------------
+id        | 04172fb9-7ad8-49a0-9a52-3adc0eebd5cd
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.563
+updatedAt | 2025-12-30 01:42:06.521
+-[ RECORD 140 ]-------------------------------------------
+id        | 1e4b193f-31a4-4035-903b-f7cbec745d2e
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.563
+updatedAt | 2025-12-30 01:42:08.53
+-[ RECORD 141 ]-------------------------------------------
+id        | 862fa820-febf-4aba-888e-6f27ea226e88
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.562
+updatedAt | 2025-12-30 01:42:04.516
+-[ RECORD 142 ]-------------------------------------------
+id        | 908c1c08-cb7d-4c42-ba86-6b1c1b175fb0
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.561
+updatedAt | 2025-12-30 01:42:02.51
+-[ RECORD 143 ]-------------------------------------------
+id        | fb89ac60-5018-4eea-8697-fdc9a9918ba7
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.56
+updatedAt | 2025-12-30 01:42:00.523
+-[ RECORD 144 ]-------------------------------------------
+id        | f6d612fb-525e-44b0-b548-a10caaee7abd
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.558
+updatedAt | 2025-12-30 01:41:58.524
+-[ RECORD 145 ]-------------------------------------------
+id        | 06da776c-e6db-4960-a5fc-261960bd6ef5
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.558
+updatedAt | 2025-12-30 01:41:56.522
+-[ RECORD 146 ]-------------------------------------------
+id        | e9e8ca1e-7553-45f1-a1f1-7b01d4fd3a43
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.555
+updatedAt | 2025-12-30 01:41:54.524
+-[ RECORD 147 ]-------------------------------------------
+id        | 45b61560-a8cb-4046-81a7-0b55e8400509
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.555
+updatedAt | 2025-12-30 01:41:52.518
+-[ RECORD 148 ]-------------------------------------------
+id        | e2ba707f-9f5b-444f-a815-119fc9556612
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.553
+updatedAt | 2025-12-30 01:41:50.516
+-[ RECORD 149 ]-------------------------------------------
+id        | 7fabba00-7ed0-4363-a5b9-60ceacf9b5f4
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.552
+updatedAt | 2025-12-30 01:41:48.492
+-[ RECORD 150 ]-------------------------------------------
+id        | 9955a382-8901-406a-a58a-565dc666c071
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.551
+updatedAt | 2025-12-30 01:41:46.602
+-[ RECORD 151 ]-------------------------------------------
+id        | e3bdb0fe-086d-4b53-8f33-a3eac0d1d04f
+type      | CE03_VISUAL_DENSITY
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.547
+updatedAt | 2025-12-30 01:41:44.527
+-[ RECORD 152 ]-------------------------------------------
+id        | 7f1e94a8-e6bd-4fa1-8d48-e200c14f9f13
+type      | NOVEL_ANALYSIS
+status    | SUCCEEDED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:42.447
+updatedAt | 2025-12-30 01:41:42.532
+-[ RECORD 153 ]-------------------------------------------
+id        | 71798b2b-eb42-4378-bad9-88daab078838
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:13.387
+updatedAt | 2025-12-30 01:41:13.387
+-[ RECORD 154 ]-------------------------------------------
+id        | 3decee9a-c65f-4840-bc7f-9b6cd7ffa065
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:13.379
+updatedAt | 2025-12-30 01:41:13.379
+-[ RECORD 155 ]-------------------------------------------
+id        | 97e6964d-f89a-464d-9a82-8643435fab4f
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:11.375
+updatedAt | 2025-12-30 01:41:11.375
+-[ RECORD 156 ]-------------------------------------------
+id        | cbd09e91-b544-4a97-8bfd-5c8079e2ddbf
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:11.364
+updatedAt | 2025-12-30 01:41:11.364
+-[ RECORD 157 ]-------------------------------------------
+id        | 226b9f21-25ce-490f-bc8a-aba99e2f5ec5
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:09.369
+updatedAt | 2025-12-30 01:41:09.369
+-[ RECORD 158 ]-------------------------------------------
+id        | 76030647-15aa-4f02-a618-01adef6fac49
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:09.367
+updatedAt | 2025-12-30 01:41:09.367
+-[ RECORD 159 ]-------------------------------------------
+id        | 3dc8581f-9605-4a3b-a563-709a524ce8ea
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:07.393
+updatedAt | 2025-12-30 01:41:07.393
+-[ RECORD 160 ]-------------------------------------------
+id        | 20d54641-133c-4d39-a571-3004f7be3285
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:07.385
+updatedAt | 2025-12-30 01:41:07.385
+-[ RECORD 161 ]-------------------------------------------
+id        | 9fa19fdc-f7be-48a2-9284-2c7a84809f70
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:05.359
+updatedAt | 2025-12-30 01:41:05.359
+-[ RECORD 162 ]-------------------------------------------
+id        | 77841ae2-ea7a-410c-9f34-d6572d8f2639
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:05.353
+updatedAt | 2025-12-30 01:41:05.353
+-[ RECORD 163 ]-------------------------------------------
+id        | 780b3cbd-5374-4004-92f3-391a922bc464
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:03.356
+updatedAt | 2025-12-30 01:41:03.356
+-[ RECORD 164 ]-------------------------------------------
+id        | 5794dd0e-d3cb-4b2c-b955-3dcdc3fee195
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:03.347
+updatedAt | 2025-12-30 01:41:03.347
+-[ RECORD 165 ]-------------------------------------------
+id        | d84e4c77-8c9d-452c-ab21-1cd8e0f53b8f
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:01.354
+updatedAt | 2025-12-30 01:41:01.354
+-[ RECORD 166 ]-------------------------------------------
+id        | fc4c1927-c871-454d-a0fe-891420d579d5
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:41:01.347
+updatedAt | 2025-12-30 01:41:01.347
+-[ RECORD 167 ]-------------------------------------------
+id        | 64c0b92c-14b4-4591-b083-0cac4e3374c1
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:59.374
+updatedAt | 2025-12-30 01:40:59.374
+-[ RECORD 168 ]-------------------------------------------
+id        | 03d58cfc-2998-4c56-a98d-126481355561
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:59.364
+updatedAt | 2025-12-30 01:40:59.364
+-[ RECORD 169 ]-------------------------------------------
+id        | 488091c7-2eac-4a83-8a32-a7f7e42ce312
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:57.371
+updatedAt | 2025-12-30 01:40:57.371
+-[ RECORD 170 ]-------------------------------------------
+id        | 87b42f62-354e-4053-8589-8c17ab0cb4cc
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:57.359
+updatedAt | 2025-12-30 01:40:57.359
+-[ RECORD 171 ]-------------------------------------------
+id        | a79bc87f-6b43-4d22-99eb-5c80f9ba8d14
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:55.389
+updatedAt | 2025-12-30 01:40:55.389
+-[ RECORD 172 ]-------------------------------------------
+id        | 0d2e60ce-236c-4d7c-b125-db048aa4bd6e
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:55.377
+updatedAt | 2025-12-30 01:40:55.377
+-[ RECORD 173 ]-------------------------------------------
+id        | dbd40d24-f2d6-498b-94a4-451a1c48d051
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:53.351
+updatedAt | 2025-12-30 01:40:53.351
+-[ RECORD 174 ]-------------------------------------------
+id        | 541a6b1e-c0e9-4e70-ab87-14bbcf664f73
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:53.344
+updatedAt | 2025-12-30 01:40:53.344
+-[ RECORD 175 ]-------------------------------------------
+id        | 3acab6b6-dae3-4f13-a79c-6badf4549798
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:51.38
+updatedAt | 2025-12-30 01:40:51.38
+-[ RECORD 176 ]-------------------------------------------
+id        | 6d648754-3dbb-4137-a544-1ec47dde3ef3
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:51.37
+updatedAt | 2025-12-30 01:40:51.37
+-[ RECORD 177 ]-------------------------------------------
+id        | e6c6084e-0ba0-493f-ac53-51ec44e3489f
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:49.381
+updatedAt | 2025-12-30 01:40:49.381
+-[ RECORD 178 ]-------------------------------------------
+id        | 1412b17c-7ecd-430b-86a8-5196199740bd
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:49.371
+updatedAt | 2025-12-30 01:40:49.371
+-[ RECORD 179 ]-------------------------------------------
+id        | 7d33a176-f729-4024-ad0f-5b8ce0335b44
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:47.357
+updatedAt | 2025-12-30 01:40:47.357
+-[ RECORD 180 ]-------------------------------------------
+id        | b30f2991-36e4-4105-b690-784bc1996369
+type      | VIDEO_RENDER
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:47.35
+updatedAt | 2025-12-30 01:40:47.35
+-[ RECORD 181 ]-------------------------------------------
+id        | 142765fc-1516-4cfc-9c31-f3d1c7671a2c
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.475
+updatedAt | 2025-12-30 01:40:45.475
+-[ RECORD 182 ]-------------------------------------------
+id        | 72258c9f-baf2-487c-83df-9d42c087b56a
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.473
+updatedAt | 2025-12-30 01:40:45.473
+-[ RECORD 183 ]-------------------------------------------
+id        | 9e1e8034-a777-4de0-9202-cdba6068242c
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.473
+updatedAt | 2025-12-30 01:40:45.473
+-[ RECORD 184 ]-------------------------------------------
+id        | b247743d-4835-4f74-b7f5-0ca3fec0eebd
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.471
+updatedAt | 2025-12-30 01:40:45.471
+-[ RECORD 185 ]-------------------------------------------
+id        | 001ddf1c-ae4e-4c6c-b1d0-0456c79c334f
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.471
+updatedAt | 2025-12-30 01:40:45.471
+-[ RECORD 186 ]-------------------------------------------
+id        | 53e26a82-e078-4163-b0bc-cd5782b39227
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.469
+updatedAt | 2025-12-30 01:40:45.469
+-[ RECORD 187 ]-------------------------------------------
+id        | a04d626d-9d1a-4844-8d9e-21c938ee9d67
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.469
+updatedAt | 2025-12-30 01:40:45.469
+-[ RECORD 188 ]-------------------------------------------
+id        | 249c3662-af9b-4a27-aeda-e1b47e30c1b8
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.467
+updatedAt | 2025-12-30 01:40:45.467
+-[ RECORD 189 ]-------------------------------------------
+id        | 37115559-bf9d-412b-ae44-fa4b16c49796
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.467
+updatedAt | 2025-12-30 01:40:45.467
+-[ RECORD 190 ]-------------------------------------------
+id        | d9c96009-6afd-4d5d-8e08-51c0f147a5b5
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.466
+updatedAt | 2025-12-30 01:40:45.466
+-[ RECORD 191 ]-------------------------------------------
+id        | 28d384a2-5ced-4fb0-a963-2dad30f9a81b
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.466
+updatedAt | 2025-12-30 01:40:45.466
+-[ RECORD 192 ]-------------------------------------------
+id        | 7f6c25ba-14ed-42fb-961c-4dbf0e5ffe22
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.464
+updatedAt | 2025-12-30 01:40:45.464
+-[ RECORD 193 ]-------------------------------------------
+id        | ae981c28-3b03-426f-b69d-d59dacddcbcb
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.463
+updatedAt | 2025-12-30 01:40:45.463
+-[ RECORD 194 ]-------------------------------------------
+id        | 9e94979e-2c86-4e71-8d5c-84c80cfbad78
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.462
+updatedAt | 2025-12-30 01:40:45.462
+-[ RECORD 195 ]-------------------------------------------
+id        | 4e81e5fd-7a74-4da6-b896-e5194ce94165
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.462
+updatedAt | 2025-12-30 01:40:45.462
+-[ RECORD 196 ]-------------------------------------------
+id        | b116b973-a993-465a-89fc-2468261fdfed
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.46
+updatedAt | 2025-12-30 01:40:45.46
+-[ RECORD 197 ]-------------------------------------------
+id        | 975b3514-0dfa-4500-9eef-48f08b43ef1f
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.459
+updatedAt | 2025-12-30 01:40:45.459
+-[ RECORD 198 ]-------------------------------------------
+id        | 39adb8e2-b178-408b-94ee-e70bee129992
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.458
+updatedAt | 2025-12-30 01:40:45.458
+-[ RECORD 199 ]-------------------------------------------
+id        | 92cd1a35-0646-4201-8ea4-cb6159afcd72
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.457
+updatedAt | 2025-12-30 01:40:45.457
+-[ RECORD 200 ]-------------------------------------------
+id        | fb345294-ca0e-49d7-8f31-f90796ca08b8
+type      | CE03_VISUAL_DENSITY
+status    | FAILED
+projectId | ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+createdAt | 2025-12-30 01:40:45.455
+updatedAt | 2025-12-30 01:40:45.455
+

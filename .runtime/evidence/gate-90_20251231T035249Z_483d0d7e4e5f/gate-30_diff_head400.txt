@@ -1,0 +1,400 @@
+diff --git a/apps/api/src/app.module.ts b/apps/api/src/app.module.ts
+index 3163e87..1855a6d 100644
+--- a/apps/api/src/app.module.ts
++++ b/apps/api/src/app.module.ts
+@@ -54,6 +54,7 @@ import { env } from 'config';
+ import { VideoJobModule } from './video-job/video-job.module';
+ import { TraceInterceptor } from './common/interceptors/trace.interceptor';
+ import { TelemetryModule } from './telemetry/telemetry.module';
++import { CostModule } from './cost/cost.module';
+ 
+ // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
+ const envRecord = env as unknown as Record<string, unknown>;
+@@ -119,6 +120,7 @@ const JOB_WORKER_ENABLED = envRecord.enableInternalJobWorker as boolean;
+     ShotsModule, // ✅ Stage1-F: Shots CRUD
+     VideoJobModule, // ✅ Stage-7 Studio Production
+     TelemetryModule, // ✅ Stage-8 Production Telemetry Layer
++    CostModule, // ✅ Stage-8 P1 Production Cost Ledger
+     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS
+       ? [OpsModule]
+       : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
+@@ -148,4 +150,4 @@ const JOB_WORKER_ENABLED = envRecord.enableInternalJobWorker as boolean;
+     },
+   ],
+ })
+-export class AppModule { }
++export class AppModule {}
+diff --git a/apps/api/src/cost/ce-cost.service.ts b/apps/api/src/cost/ce-cost.service.ts
+new file mode 100644
+index 0000000..579a01c
+--- /dev/null
++++ b/apps/api/src/cost/ce-cost.service.ts
+@@ -0,0 +1,99 @@
++import { Injectable, Logger } from '@nestjs/common';
++import { PrismaService } from '../prisma/prisma.service';
++
++/**
++ * 价格配置 (Credits)
++ * 1 Credit = 0.05 RMB
++ */
++export const PRICING_CONFIG = {
++  // GPU 推理 (Credits per second)
++  // 参考: 1 小时 = 8 Credits (即 0.4 元/小时)
++  GPU_PER_SEC: 8 / 3600,
++
++  // LLM Token (Credits per 1k tokens)
++  // 参考: 1k tokens = 0.02 元 = 0.4 Credits
++  TOKEN_PER_1K: 0.4,
++
++  // 存储 (Credits per GB per hour)
++  STORAGE_PER_GB_HR: 0.1,
++};
++
++@Injectable()
++export class CeCostService {
++  private readonly logger = new Logger(CeCostService.name);
++
++  constructor(private readonly prisma: PrismaService) { }
++
++  /**
++   * 根据资源消耗计算成本 (Credits)
++   */
++  calculateCost(type: string, quantity: number, modelFactor = 1.0): number {
++    let baseCost = 0;
++
++    switch (type.toUpperCase()) {
++      case 'GPU':
++        baseCost = quantity * PRICING_CONFIG.GPU_PER_SEC;
++        break;
++      case 'TOKEN':
++        baseCost = (quantity / 1000) * PRICING_CONFIG.TOKEN_PER_1K;
++        break;
++      case 'STORAGE':
++        baseCost = quantity * PRICING_CONFIG.STORAGE_PER_GB_HR;
++        break;
++      default:
++        return 0;
++    }
++
++    return baseCost * modelFactor;
++  }
++
++  /**
++   * 原子化写入账本 (幂等去重)
++   */
++  async recordLedger(data: {
++    traceId: string;
++    projectId: string;
++    orgId: string;
++    userId?: string;
++    costType: string;
++    quantity: number;
++    unitCost: number;
++    totalCost: number;
++    timestamp?: Date;
++  }) {
++    try {
++      // 检查是否已计费 (同一个 traceId 下同一种类型的成本只允许计费一次)
++      const existing = await this.prisma.costLedger.findFirst({
++        where: {
++          traceId: data.traceId,
++          costType: data.costType,
++        },
++      });
++
++      if (existing) {
++        this.logger.debug(
++          `[Cost] Trace ${data.traceId} type ${data.costType} already charged, skipping.`
++        );
++        return existing;
++      }
++
++      return await this.prisma.costLedger.create({
++        data: {
++          traceId: data.traceId,
++          projectId: data.projectId,
++          orgId: data.orgId,
++          userId: data.userId || null,
++          costType: data.costType,
++          unitCost: data.unitCost,
++          quantity: data.quantity,
++          totalCost: data.totalCost,
++          timestamp: data.timestamp || new Date(),
++        },
++      });
++    } catch (error: unknown) {
++      const err = error as Error;
++      this.logger.error(`Failed to record cost ledger for trace ${data.traceId}`, err.stack);
++      throw error;
++    }
++  }
++}
+diff --git a/apps/api/src/cost/cost-ingest.job.ts b/apps/api/src/cost/cost-ingest.job.ts
+new file mode 100644
+index 0000000..2ca3dd6
+--- /dev/null
++++ b/apps/api/src/cost/cost-ingest.job.ts
+@@ -0,0 +1,98 @@
++import { Injectable, Logger } from '@nestjs/common';
++import { Cron, CronExpression } from '@nestjs/schedule';
++import { PrismaService } from '../prisma/prisma.service';
++import { CeCostService, PRICING_CONFIG } from './ce-cost.service';
++
++@Injectable()
++export class CostIngestJob {
++  private readonly logger = new Logger(CostIngestJob.name);
++  private isProcessing = false;
++
++  constructor(
++    private readonly prisma: PrismaService,
++    private readonly ceCostService: CeCostService
++  ) { }
++
++  /**
++   * 每 5 分钟扫描一次最近的遥感 COST 记录并处理入账
++   * Stage-8 P1: 异步旁路入账
++   */
++  @Cron(CronExpression.EVERY_5_MINUTES)
++  async handleCron() {
++    if (this.isProcessing) return;
++    this.isProcessing = true;
++
++    try {
++      this.logger.log('[CostIngest] Starting cost ingestion task...');
++
++      // 1. 获取最近 10 分钟未处理或需要重新审计的 COST 记录
++      // 注意：由于 P1 采用幂等 upsert 逻辑，我们可以稍微重叠扫描范围增加可靠性
++      const records = await this.prisma.telemetryRecord.findMany({
++        where: {
++          kind: 'COST',
++          timestamp: {
++            gte: new Date(Date.now() - 10 * 60 * 1000), // 最近 10 分钟
++          },
++        },
++      });
++
++      this.logger.log(`[CostIngest] Found ${records.length} COST telemetry records to process.`);
++
++      let processedCount = 0;
++      for (const record of records) {
++        // 2. 构造归因上下文 (从 payload 提取)
++        const payload = (record.payload as Record<string, unknown>) || {};
++        const projectId = payload.projectId as string | undefined;
++        const orgId = (payload.orgId || payload.organizationId) as string | undefined;
++
++        if (!projectId || !record.traceId) {
++          this.logger.warn(
++            `[CostIngest] Record ${record.id} missing projectId or traceId, skipping.`
++          );
++          continue;
++        }
++
++        // 3. 计算并写入 (CeCostService 内部处理幂等)
++        const quantity = record.value || 0;
++        const unitCost = this.getUnitCost(record.name);
++        const modelFactor = (payload.modelFactor as number | undefined) || 1.0;
++        const totalCost = this.ceCostService.calculateCost(record.name, quantity, modelFactor);
++
++        if (totalCost > 0) {
++          await this.ceCostService.recordLedger({
++            traceId: record.traceId,
++            projectId,
++            orgId: orgId || 'system',
++            userId: payload.userId as string | undefined,
++            costType: record.name,
++            quantity,
++            unitCost,
++            totalCost,
++            timestamp: record.timestamp,
++          });
++          processedCount++;
++        }
++      }
++
++      this.logger.log(`[CostIngest] Successfully processed ${processedCount} cost entries.`);
++    } catch (error: unknown) {
++      const err = error as Error;
++      this.logger.error('[CostIngest] Failed during cost ingestion', err.stack);
++    } finally {
++      this.isProcessing = false;
++    }
++  }
++
++  private getUnitCost(type: string): number {
++    switch (type.toUpperCase()) {
++      case 'GPU':
++        return PRICING_CONFIG.GPU_PER_SEC;
++      case 'TOKEN':
++        return PRICING_CONFIG.TOKEN_PER_1K;
++      case 'STORAGE':
++        return PRICING_CONFIG.STORAGE_PER_GB_HR;
++      default:
++        return 0;
++    }
++  }
++}
+diff --git a/apps/api/src/cost/cost.module.ts b/apps/api/src/cost/cost.module.ts
+new file mode 100644
+index 0000000..51a427c
+--- /dev/null
++++ b/apps/api/src/cost/cost.module.ts
+@@ -0,0 +1,9 @@
++import { Module } from '@nestjs/common';
++import { CeCostService } from './ce-cost.service';
++import { CostIngestJob } from './cost-ingest.job';
++
++@Module({
++  providers: [CeCostService, CostIngestJob],
++  exports: [CeCostService],
++})
++export class CostModule {}
+diff --git a/apps/api/src/cost/trigger.ts b/apps/api/src/cost/trigger.ts
+new file mode 100644
+index 0000000..e859619
+--- /dev/null
++++ b/apps/api/src/cost/trigger.ts
+@@ -0,0 +1,21 @@
++import { NestFactory } from '@nestjs/core';
++import { AppModule } from '../app.module';
++import { CostIngestJob } from './cost-ingest.job';
++
++async function bootstrap() {
++  try {
++    console.log('[Trigger] Initializing Nest application context...');
++    const app = await NestFactory.createApplicationContext(AppModule);
++    const job = app.get(CostIngestJob);
++    console.log('[Trigger] Starting cost ingestion job manual run...');
++    await job.handleCron();
++    console.log('[Trigger] Ingestion completed.');
++    await app.close();
++    process.exit(0);
++  } catch (error: unknown) {
++    const err = error as Error;
++    console.error('[Trigger] Failed to trigger ingest', err.stack);
++    process.exit(1);
++  }
++}
++bootstrap();
+diff --git a/packages/database/prisma/schema.prisma b/packages/database/prisma/schema.prisma
+index 96baf16..b9f6f80 100644
+--- a/packages/database/prisma/schema.prisma
++++ b/packages/database/prisma/schema.prisma
+@@ -1600,6 +1600,24 @@ model TelemetryRecord {
+   @@map("telemetry_records")
+ }
+ 
++/// Stage-8 P1: Production Cost Ledger
++model CostLedger {
++  id        String   @id @default(uuid())
++  traceId   String
++  projectId String
++  orgId     String
++  userId    String?
++  costType  String   // TOKEN, GPU, STORAGE, API_CALL
++  unitCost  Float
++  quantity  Float
++  totalCost Float
++  timestamp DateTime @default(now())
++
++  @@index([traceId])
++  @@index([projectId, orgId, timestamp])
++  @@map("cost_ledgers")
++}
++
+ model CacheProfiler {
+   key        String   @id
+   hitCount   Int      @default(0)
+diff --git a/tools/gate/gate_manifest.json b/tools/gate/gate_manifest.json
+index c19998c..69d0ad3 100644
+--- a/tools/gate/gate_manifest.json
++++ b/tools/gate/gate_manifest.json
+@@ -30,7 +30,8 @@
+     "tools/gate/gates/gate-stage6_product_entry_v2.sh",
+     "tools/gate/gates/gate-stage7_ce07_memory.sh",
+     "tools/gate/gates/gate-stage7_commercial_loop.sh",
+-    "tools/gate/gates/gate-80_telemetry_check.sh"
++    "tools/gate/gates/gate-80_telemetry_check.sh",
++    "tools/gate/gates/gate-81_cost_integrity_check.sh"
+   ],
+   "deprecated_gates": [
+     "tools/gate/_deprecated/gate-10_cost_verify.sh",
+diff --git a/tools/gate/gates/gate-80_telemetry_check.sh b/tools/gate/gates/gate-80_telemetry_check.sh
+index 167c6b1..52dfce8 100644
+--- a/tools/gate/gates/gate-80_telemetry_check.sh
++++ b/tools/gate/gates/gate-80_telemetry_check.sh
+@@ -15,8 +15,10 @@ echo "[GATE-80] 开始遥感数据回流校验..."
+ 
+ # 1. 检查数据库中是否存在遥感记录
+ # 我们通过 psql 查询最近 1 小时内的记录
++# 兼容性修复：剥离 Prisma 的 ?schema=public 参数
++DB_URL_CLEAN="${DATABASE_URL%\?*}"
+ SQL_CHECK="SELECT COUNT(*) FROM telemetry_records WHERE timestamp > NOW() - INTERVAL '1 hour';"
+-RECORD_COUNT=$(psql "$DATABASE_URL" -t -A -c "$SQL_CHECK")
++RECORD_COUNT=$(psql "$DB_URL_CLEAN" -t -A -c "$SQL_CHECK")
+ 
+ echo "最近 1 小时内发现 $RECORD_COUNT 条遥感记录。" | tee "$EVID_DIR/01_count.txt"
+ 
+@@ -27,16 +29,16 @@ fi
+ 
+ # 2. 导出样例记录供审计
+ QUERY_SAMPLE="SELECT id, kind, name, \"traceId\", value, payload FROM telemetry_records ORDER BY timestamp DESC LIMIT 5;"
+-psql "$DATABASE_URL" -c "$QUERY_SAMPLE" > "$EVID_DIR/02_sample_records.txt"
++psql "$DB_URL_CLEAN" -c "$QUERY_SAMPLE" > "$EVID_DIR/02_sample_records.txt"
+ 
+ # 3. 校验 TraceId 一致性记录个数 (简单比例校验)
+ SQL_TRACE_UNIQ="SELECT COUNT(DISTINCT \"traceId\") FROM telemetry_records WHERE timestamp > NOW() - INTERVAL '1 hour';"
+-TRACE_COUNT=$(psql "$DATABASE_URL" -t -A -c "$SQL_TRACE_UNIQ")
++TRACE_COUNT=$(psql "$DB_URL_CLEAN" -t -A -c "$SQL_TRACE_UNIQ")
+ echo "最近 1 小时内活跃 TraceId 数量: $TRACE_COUNT" | tee "$EVID_DIR/03_trace_stats.txt"
+ 
+ # 4. 检查 CacheProfiler 覆盖
+ SQL_CACHE="SELECT COUNT(*) FROM cache_profiler;"
+-CACHE_COUNT=$(psql "$DATABASE_URL" -t -A -c "$SQL_CACHE")
++CACHE_COUNT=$(psql "$DB_URL_CLEAN" -t -A -c "$SQL_CACHE")
+ echo "缓存剖析器条目数: $CACHE_COUNT" | tee "$EVID_DIR/04_cache_stats.txt"
+ 
+ echo "[GATE-80] ✅ 遥感回流校验通过。"
+diff --git a/tools/gate/gates/gate-81_cost_integrity_check.sh b/tools/gate/gates/gate-81_cost_integrity_check.sh
+new file mode 100644
+index 0000000..c623b8a
+--- /dev/null
++++ b/tools/gate/gates/gate-81_cost_integrity_check.sh
+@@ -0,0 +1,86 @@
++#!/bin/bash
++# [GATE-81] COST_INTEGRITY_CHECK
++# 验证成本账本生成的准确性、归因完整性及幂等性
++
++set -e
++GATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
++REPO_ROOT="$(cd "$GATE_DIR/../../.." && pwd)"
++EVID_DIR="$REPO_ROOT/docs/_evidence/gate-81_$(date +%Y%m%d_%H%M%S)"
++mkdir -p "$EVID_DIR"
++
++source "$GATE_DIR/../common/load_env.sh"
++source "$GATE_DIR/../common/run_with_timeout.sh"
++
++echo "[GATE-81] 开始成本完整性校验..."
++
++# 1. 模拟数据准备 (手动插入一条测试 COST 遥感记录)
++# 兼容性修复：剥离 Prisma 的 ?schema=public 参数
++DB_URL_CLEAN="${DATABASE_URL%\?*}"
++TEST_TRACE_ID="test-trace-$(date +%s)"
++TEST_PROJECT_ID="test-project-001"
++TEST_ORG_ID="test-org-001"
++
++echo "正在插入测试遥感记录: traceId=$TEST_TRACE_ID"
++psql "$DB_URL_CLEAN" -c "INSERT INTO telemetry_records (id, \"traceId\", kind, name, value, payload, timestamp) 
++VALUES ('$(uuidgen | tr '[:upper:]' '[:lower:]')', '$TEST_TRACE_ID', 'COST', 'GPU', 3600, '{\"projectId\": \"$TEST_PROJECT_ID\", \"orgId\": \"$TEST_ORG_ID\", \"modelFactor\": 1.0}', NOW());"
++
++# 2. 触发入账逻辑 (由于是 Cron 任务，Gate 环境下我们通过小工具脚本直接调用 Service 或等待扫描，
++# 但最快的方式是直接运行一个独立的 ts-node 脚本执行一次 Ingest 逻辑)
++echo "正在触发成本入账转换..."
++cat <<EOF > "$EVID_DIR/trigger_ingest.ts"
++import { NestFactory } from '@nestjs/core';
++import { AppModule } from '../../../apps/api/src/app.module';
++import { CostIngestJob } from '../../../apps/api/src/cost/cost-ingest.job';
++
++async function bootstrap() {
++  const app = await NestFactory.createApplicationContext(AppModule);
++  const job = app.get(CostIngestJob);
++  await job.handleCron();

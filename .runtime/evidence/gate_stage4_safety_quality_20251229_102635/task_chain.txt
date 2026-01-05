@@ -1,0 +1,24 @@
+                  id                  |            type            |  status   | error 
+--------------------------------------+----------------------------+-----------+-------
+ task-orch-p                          | STAGE4_ORCHESTRATOR        | SUCCEEDED | 
+ task-orch-r                          | STAGE4_ORCHESTRATOR        | SUCCEEDED | 
+ task-orch-q                          | STAGE4_ORCHESTRATOR        | SUCCEEDED | 
+ task-orch-v                          | STAGE4_ORCHESTRATOR        | SUCCEEDED | 
+ task-orch-b                          | STAGE4_ORCHESTRATOR        | SUCCEEDED | 
+ 27186d9e-27ff-4949-806d-f06fabc8c6ae | STAGE4_SAFETY_EVAL         | SUCCEEDED | 
+ 98976dce-a8f0-4e94-ae64-312d7cf86e96 | STAGE4_QUALITY_EVAL        | SUCCEEDED | 
+ f3371cc8-ce00-4d4c-8fbb-bad75d490d3f | STAGE4_SAFETY_EVAL         | SUCCEEDED | 
+ c7eec8e3-fd8d-4dc4-a1d2-82ec9f31db19 | STAGE4_QUALITY_EVAL        | SUCCEEDED | 
+ e82d9921-8de7-4e72-9422-98eeb6f9d89a | STAGE4_SAFETY_EVAL         | SUCCEEDED | 
+ c5db9395-1089-414c-a2f3-12a7e8a1e86f | STAGE4_QUALITY_EVAL        | SUCCEEDED | 
+ 543121f3-b43a-4fbd-bf5c-bbbf9fb05c60 | STAGE4_SAFETY_EVAL         | SUCCEEDED | 
+ 6e24088b-16e7-4f4e-977d-b1a700e1b33b | STAGE4_QUALITY_EVAL        | SUCCEEDED | 
+ 3253f94e-5b26-42a9-8347-a16c473fccba | STAGE4_SAFETY_EVAL         | SUCCEEDED | 
+ 04796b70-b3e8-4296-a19a-0131f46b8013 | STAGE4_QUALITY_EVAL        | SUCCEEDED | 
+ 1c878449-b936-448d-8bd3-b15cb0e25fbc | STAGE4_PUBLISHING_DECISION | SUCCEEDED | 
+ 8869f3ec-b91d-4ed5-b01e-d2bc3a17610b | STAGE4_PUBLISHING_DECISION | SUCCEEDED | 
+ 21ca75e2-1b0d-46ea-ae96-56b3419380ba | STAGE4_PUBLISHING_DECISION | SUCCEEDED | 
+ 23a5fa98-e652-4531-9c21-293e02a64864 | STAGE4_PUBLISHING_DECISION | SUCCEEDED | 
+ 12fd0574-8b0a-4eb8-8c50-1731edbca658 | STAGE4_PUBLISHING_DECISION | SUCCEEDED | 
+(20 rows)
+
