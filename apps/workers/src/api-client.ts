@@ -134,9 +134,11 @@ export class ApiClient {
       const timestamp = Date.now().toString();
       const nonce = generateNonce();
 
-      // 2. 检查是否使用v2签名（包含workerId）
+      // 2. 强制要求x-worker-id（商业级：避免回退到v1签名）
       const workerId = extraHeaders?.['x-worker-id'];
-      const useV2 = !!workerId;
+      if (!workerId) {
+        throw new Error('[AUTH] missing x-worker-id header; refusing to sign without workerId');
+      }
 
       // 3. 构建签名消息（v2包含workerId）
       const message = buildMessage(method, path, nonce, timestamp, bodyString, workerId);
@@ -145,34 +147,30 @@ export class ApiClient {
       const signature = computeSignature(this.apiSecret, message);
 
       // HMAC_TRACE: 输出Worker端v2分段指纹
-      if (useV2) {
-        fingerprintParts({
-          method,
-          path,
-          timestamp,
-          nonce,
-          bodyHash: computeBodyHash(bodyString),
-          workerId,
-          message,
-          signature,
-        });
-      }
+      fingerprintParts({
+        method,
+        path,
+        timestamp,
+        nonce,
+        bodyHash: computeBodyHash(bodyString),
+        workerId,
+        message,
+        signature,
+      });
 
       // 5. 设置 HMAC 认证头
       headers['X-Api-Key'] = this.apiKey;
       headers['X-Nonce'] = nonce;
       headers['X-Timestamp'] = timestamp;
       headers['X-Signature'] = signature;
-      if (useV2) {
-        headers['X-Hmac-Version'] = '2';
-      }
+      headers['X-Hmac-Version'] = '2';
 
       // 调试日志（不打印密钥）
       console.log(
-        `[Worker HMAC v${useV2 ? '2' : '1'}] ${method} ${path}`,
+        `[Worker HMAC v2] ${method} ${path}`,
         `nonce=${nonce.substring(0, 8)}...`,
         `timestamp=${timestamp}`,
-        `workerId=${workerId || 'N/A'}`,
+        `workerId=${workerId}`,
         `bodyString=${bodyString}`,
       );
     } else {
@@ -239,7 +237,9 @@ export class ApiClient {
       workerId: string;
       status: string;
       capabilities: any;
-    }>('POST', '/api/workers/register', params);
+    }>('POST', '/api/workers/register', params, {
+      'x-worker-id': params.workerId,
+    });
 
     if (!response.success || !response.data) {
       throw new Error('Failed to register worker');
