@@ -17,6 +17,8 @@ import {
   CE07MemoryUpdateOutput,
   WorkerJobBase,
 } from '@scu/shared-types';
+import * as path from 'path';
+import { LocalStorageAdapter } from '@scu/storage';
 import { createHash } from 'crypto';
 import {
   mapCE06OutputToProjectStructure,
@@ -590,8 +592,25 @@ export async function processShotRenderJob(
       format: 'png'
     };
 
+    // P3 E2E Fix: Write dummy PNG to storage so VIDEO_RENDER can find it
+    // 路径权威规则：优先使用 REPO_ROOT，否则使用 STORAGE_ROOT，禁止 process.cwd() 推导
+    let storageRoot: string;
+    if (process.env.REPO_ROOT) {
+      storageRoot = path.join(process.env.REPO_ROOT, '.data/storage');
+    } else if (process.env.STORAGE_ROOT) {
+      storageRoot = process.env.STORAGE_ROOT;
+    } else {
+      // 兜底：Worker 从 apps/workers 运行，向上两级到项目根目录
+      const repoRoot = path.resolve(process.cwd(), '../../');
+      storageRoot = path.join(repoRoot, '.data/storage');
+    }
+    const storage = new LocalStorageAdapter(storageRoot);
+    const dummyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABZJREFUeNpi2P//PwMTAwMDEAAEGADmnwX7tC4iOQAAAABJRU5ErkJggg==', 'base64');
+
+    await storage.put(mockEngineOutput.storageKey, dummyPng);
+
     // Simulate delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // 2. Create Asset Record (The P0 Requirement)
     const asset = await prisma.asset.upsert({

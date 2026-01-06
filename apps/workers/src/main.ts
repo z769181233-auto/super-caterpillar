@@ -114,6 +114,7 @@ async function registerWorker(): Promise<void> {
           'CE06_NOVEL_PARSING',
           'CE07_MEMORY_UPDATE',
           'SHOT_RENDER',
+          'VIDEO_RENDER',
         ],
         supportedModels: [],
         maxBatchSize: 1,

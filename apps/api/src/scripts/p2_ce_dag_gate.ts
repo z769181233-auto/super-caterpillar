@@ -51,6 +51,9 @@ async function main() {
   console.log(`CE04_JOB_ID=${result.ce04JobId}`);
   console.log(`CE03_SCORE=${result.ce03Score}`);
   console.log(`CE04_SCORE=${result.ce04Score}`);
+  console.log(`SHOT_RENDER_JOB_IDS=${(result.shotRenderJobIds || []).join(',')}`);
+  console.log(`VIDEO_JOB_ID=${result.videoJobId || ''}`);
+  console.log(`VIDEO_KEY=${result.videoKey || ''}`);
 
   process.exit(0);
 }

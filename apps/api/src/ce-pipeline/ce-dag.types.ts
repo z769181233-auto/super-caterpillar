@@ -41,6 +41,9 @@ export interface CEDagRunResult {
   ce06JobId: string;
   ce03JobId: string;
   ce04JobId: string;
+  shotRenderJobIds: string[];
+  videoJobId?: string;
+  videoKey?: string;
   ce03Score: number; // visualDensityScore
   ce04Score: number; // enrichmentQuality
   warningsCount: number;
@@ -53,6 +56,8 @@ export enum CEDagStatus {
   CE06_RUNNING = 'CE06_RUNNING',
   CE03_RUNNING = 'CE03_RUNNING',
   CE04_RUNNING = 'CE04_RUNNING',
+  RENDERING_SHOTS = 'RENDERING_SHOTS',
+  COMPOSING_VIDEO = 'COMPOSING_VIDEO',
   SUCCEEDED = 'SUCCEEDED',
   FAILED = 'FAILED',
 }
@@ -61,4 +66,6 @@ export interface CEDagJobIds {
   ce06JobId?: string;
   ce03JobId?: string;
   ce04JobId?: string;
+  shotRenderJobIds?: string[];
+  videoJobId?: string;
 }

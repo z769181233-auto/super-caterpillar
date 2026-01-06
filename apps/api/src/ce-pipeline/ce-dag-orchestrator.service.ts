@@ -24,8 +24,8 @@ export class CEDagOrchestratorService {
     ) { }
 
     /**
-     * Run full CE DAG: CE06 → CE03 → CE04
-     * Returns result with all job IDs and final scores
+     * Run full CE DAG: CE06 → CE03 → CE04 → SHOT_RENDERs → VIDEO_RENDER
+     * Returns result with all job IDs, scores and produced video info
      */
     async runCEDag(req: CEDagRunRequest): Promise<CEDagRunResult> {
         const startedAtIso = new Date().toISOString();
@@ -34,7 +34,7 @@ export class CEDagOrchestratorService {
         const runId = req.runId || randomUUID();
         const traceId = req.traceId || `trace_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
 
-        // 2. Get project for organizationId/ownerId (商业级必修:orgId不能用projectId代替)
+        // 2. Get project for organizationId/ownerId
         const project = await this.prisma.project.findUnique({
             where: { id: req.projectId },
             select: { organizationId: true, ownerId: true },
@@ -48,113 +48,145 @@ export class CEDagOrchestratorService {
         const orgId = project.organizationId;
 
         this.logger.log(
-            `[CE_DAG] Starting runId=${runId}, traceId=${traceId}, project=${req.projectId}, shot=${req.shotId}`
+            `[CE_DAG] Starting Full Pipeline runId=${runId}, traceId=${traceId}, project=${req.projectId}, shot=${req.shotId}`
         );
 
-        const jobIds: CEDagJobIds = {};
+        const jobIds: CEDagJobIds = { shotRenderJobIds: [] };
         const warningsCount = 0;
 
         try {
-            // 2. Trigger CE06 job (novel parsing)
+            // == Phase 1: Heavy Analysis (CE06 -> CE03 -> CE04) ==
+
+            // 3. Trigger CE06 job (novel parsing)
             const ce06Job = await this.jobService.create(
-                req.shotId, // ✅ Use shotId, not novelSourceId
+                req.shotId,
                 {
                     type: 'CE06_NOVEL_PARSING',
                     payload: { novelSourceId: req.novelSourceId, runId },
                     traceId,
                 },
-                userId, // ✅ From project.ownerId
-                orgId // ✅ From project.organizationId
+                userId,
+                orgId
             );
             jobIds.ce06JobId = ce06Job.id;
-
-            // 3. Wait for CE06 to SUCCEED
             await this.waitForJobCompletion(ce06Job.id, 'CE06');
 
-            // 4. Get CE06 real output (structured scenes)
+            // 4. Get CE06 real output
             const parseResult = await this.prisma.novelParseResult.findUnique({
                 where: { projectId: req.projectId },
             });
             const structuredText = parseResult?.scenes
                 ? JSON.stringify(parseResult.scenes)
-                : JSON.stringify([
-                    'A dark novel with bright red characters in blue scenes',
-                    'Light and shadow play across the green texture',
-                ]); // Fallback with visual keywords
+                : JSON.stringify(['A dark novel with deep visual details']);
 
-            const scenesJson = parseResult?.scenes;
-            const scenesCount = Array.isArray(scenesJson) ? scenesJson.length : 0;
-            this.logger.log(`[CE_DAG] CE06 produced scenesCount=${scenesCount}`);
-
-            // 5. Trigger CE03 job (visual density) with CE06 real data
-            const ce03Payload = {
-                structured_text: structuredText,
-                runId,
-            };
-
+            // 5. Trigger CE03 job
             const ce03Job = await this.jobService.create(
-                req.shotId, // ✅ Use shotId
+                req.shotId,
                 {
                     type: 'CE03_VISUAL_DENSITY',
-                    payload: ce03Payload,
+                    payload: { structured_text: structuredText, runId },
                     traceId,
                 },
                 userId,
                 orgId
             );
             jobIds.ce03JobId = ce03Job.id;
-
-            // 6. Wait for CE03 to SUCCEED
             await this.waitForJobCompletion(ce03Job.id, 'CE03');
 
-            // 7. Get CE03 score
+            // 6. Get CE03 score
             const ce03Metrics = await this.prisma.qualityMetrics.findFirst({
-                where: {
-                    projectId: req.projectId,
-                    engine: 'CE03',
-                    jobId: jobIds.ce03JobId, // ✅ Precise binding
-                    traceId, // ✅ Precise binding
-                },
+                where: { projectId: req.projectId, engine: 'CE03', jobId: jobIds.ce03JobId, traceId },
                 orderBy: { createdAt: 'desc' },
             });
             const ce03Score = ce03Metrics?.visualDensityScore ?? 0;
 
-            // 8. Trigger CE04 job (visual enrichment) with CE06 structured_text
-            const ce04Payload = {
-                structured_text: structuredText, // ✅ Use CE06 real data, CE04 adapter supports text array
-                runId,
-            };
-
+            // 7. Trigger CE04 job
             const ce04Job = await this.jobService.create(
-                req.shotId, // ✅ Use shotId
+                req.shotId,
                 {
                     type: 'CE04_VISUAL_ENRICHMENT',
-                    payload: ce04Payload,
+                    payload: { structured_text: structuredText, runId },
                     traceId,
                 },
                 userId,
                 orgId
             );
             jobIds.ce04JobId = ce04Job.id;
-
-            // 9. Wait for CE04 to SUCCEED
             await this.waitForJobCompletion(ce04Job.id, 'CE04');
 
-            // 10. Get CE04 score
+            // 8. Get CE04 score
             const ce04Metrics = await this.prisma.qualityMetrics.findFirst({
-                where: {
-                    projectId: req.projectId,
-                    engine: 'CE04',
-                    jobId: jobIds.ce04JobId, // ✅ Precise binding
-                    traceId, // ✅ Precise binding
-                },
+                where: { projectId: req.projectId, engine: 'CE04', jobId: jobIds.ce04JobId, traceId },
                 orderBy: { createdAt: 'desc' },
             });
             const ce04Score = ce04Metrics?.enrichmentQuality ?? 0;
 
-            const finishedAtIso = new Date().toISOString();
+            // == Phase 2: Content Production (SHOT_RENDERs -> VIDEO_RENDER) ==
 
-            this.logger.log(`[CE_DAG] SUCCESS: runId=${runId}, CE03=${ce03Score}, CE04=${ce04Score}`);
+            // 9. Resolve all shots in the same scene
+            const anchorShot = await this.prisma.shot.findUnique({
+                where: { id: req.shotId },
+                select: { sceneId: true }
+            });
+            const sceneId = anchorShot?.sceneId;
+            if (!sceneId) throw new Error(`Anchor shot ${req.shotId} not bound to a scene`);
+
+            const sceneShots = await this.prisma.shot.findMany({
+                where: { sceneId },
+                orderBy: { index: 'asc' }
+            });
+
+            this.logger.log(`[CE_DAG] Triggering SHOT_RENDER for ${sceneShots.length} shots`);
+
+            // 10. Trigger Parallel SHOT_RENDER
+            const renderJobPromises = sceneShots.map(s =>
+                this.jobService.create(s.id, {
+                    type: 'SHOT_RENDER',
+                    payload: { runId },
+                    traceId
+                }, userId, orgId)
+            );
+            const renderJobs = await Promise.all(renderJobPromises);
+            jobIds.shotRenderJobIds = renderJobs.map(j => j.id);
+
+            // 11. Wait for all renders
+            await this.waitForJobsCompletion(jobIds.shotRenderJobIds, 'SHOT_RENDER');
+
+            // 12. Trigger VIDEO_RENDER
+            this.logger.log(`[CE_DAG] All shots rendered. Triggering VIDEO_RENDER for scene ${sceneId}`);
+
+            // Gather frame keys (assets) for the scene
+            const assetsInScene = await this.prisma.asset.findMany({
+                where: {
+                    ownerType: 'SHOT',
+                    ownerId: { in: sceneShots.map(s => s.id) },
+                    type: 'IMAGE',
+                    status: 'GENERATED'
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            // One asset per shot (latest)
+            const frameKeys = sceneShots.map(s => {
+                const a = assetsInScene.find(as => as.ownerId === s.id);
+                return a?.storageKey;
+            }).filter(Boolean) as string[];
+
+            const videoJob = await this.jobService.create(req.shotId, {
+                type: 'VIDEO_RENDER',
+                payload: { frameKeys, fps: 24, runId },
+                traceId
+            }, userId, orgId);
+            jobIds.videoJobId = videoJob.id;
+
+            await this.waitForJobCompletion(videoJob.id, 'VIDEO_RENDER', 120000);
+
+            // 13. Extract final video info
+            const finalVideoJob = await this.prisma.shotJob.findUnique({ where: { id: videoJob.id } });
+            const videoKey = (finalVideoJob?.payload as any)?.result?.videoKey;
+
+            const finishedAtIso = new Date().toISOString();
+            this.logger.log(`[CE_DAG] FULL SUCCESS: runId=${runId}, videoKey=${videoKey}`);
 
             return {
                 runId,
@@ -162,6 +194,9 @@ export class CEDagOrchestratorService {
                 ce06JobId: jobIds.ce06JobId!,
                 ce03JobId: jobIds.ce03JobId!,
                 ce04JobId: jobIds.ce04JobId!,
+                shotRenderJobIds: jobIds.shotRenderJobIds,
+                videoJobId: jobIds.videoJobId,
+                videoKey,
                 ce03Score,
                 ce04Score,
                 warningsCount,
@@ -169,16 +204,13 @@ export class CEDagOrchestratorService {
                 finishedAtIso,
             };
         } catch (error: any) {
-            const fullError = JSON.stringify(error, Object.getOwnPropertyNames(error));
             this.logger.error(`[CE_DAG] FAILED: runId=${runId}, error=${error.message}`);
             throw error;
-        } finally {
         }
     }
 
     /**
-     * Wait for job to reach terminal status (SUCCEEDED or FAILED)
-     * Polls database with timeout
+     * Wait for job to reach terminal status
      */
     private async waitForJobCompletion(
         jobId: string,
@@ -190,24 +222,48 @@ export class CEDagOrchestratorService {
 
         while (Date.now() - startTime < timeoutMs) {
             const job = await this.prisma.shotJob.findUnique({ where: { id: jobId } });
-
-            if (!job) {
-                throw new Error(`Job ${jobId} (${jobLabel}) not found`);
-            }
+            if (!job) throw new Error(`Job ${jobId} (${jobLabel}) not found`);
 
             if (job.status === 'SUCCEEDED') {
                 this.logger.log(`[CE_DAG] ${jobLabel} job ${jobId} SUCCEEDED`);
                 return;
             }
-
             if (job.status === 'FAILED') {
                 throw new Error(`${jobLabel} job ${jobId} FAILED: ${job.lastError || 'unknown'}`);
             }
-
-            // Still running, wait and poll again
             await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
         }
-
         throw new Error(`${jobLabel} job ${jobId} timeout after ${timeoutMs}ms`);
+    }
+
+    /**
+     * Wait for multiple jobs (e.g. parallel rendering)
+     */
+    private async waitForJobsCompletion(
+        jobIds: string[],
+        jobLabel: string,
+        timeoutMs = 120000
+    ): Promise<void> {
+        const startTime = Date.now();
+        const pollIntervalMs = 2000;
+
+        while (Date.now() - startTime < timeoutMs) {
+            const jobs = await this.prisma.shotJob.findMany({
+                where: { id: { in: jobIds } }
+            });
+
+            const allSucceeded = jobs.length === jobIds.length && jobs.every(j => j.status === 'SUCCEEDED');
+            const anyFailed = jobs.find(j => j.status === 'FAILED');
+
+            if (allSucceeded) {
+                this.logger.log(`[CE_DAG] All ${jobIds.length} ${jobLabel} jobs SUCCEEDED`);
+                return;
+            }
+            if (anyFailed) {
+                throw new Error(`${jobLabel} job ${anyFailed.id} FAILED: ${anyFailed.lastError || 'unknown'}`);
+            }
+            await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+        }
+        throw new Error(`${jobLabel} parallel loop timeout after ${timeoutMs}ms`);
     }
 }
