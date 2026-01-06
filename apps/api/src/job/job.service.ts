@@ -1073,6 +1073,40 @@ export class JobService {
           }
         }
 
+        // Stage 13: 触发CE Job完成后的副作用（包括创建asset）
+        // - 此方法会根据 Job 类型触发不同的后续任务
+        await this.handleCEJobCompletionIfNeeded(updatedJob);
+
+        // P0-2: Record cost to ledger for billable jobs (idempotent)
+        if (updatedJob.type === JobTypeEnum.VIDEO_RENDER || updatedJob.type === JobTypeEnum.SHOT_RENDER) {
+          try {
+            const costAmount = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
+            await this.prisma.costLedger.upsert({
+              where: {
+                jobId_jobType: {
+                  jobId: updatedJob.id,
+                  jobType: updatedJob.type,
+                },
+              },
+              create: {
+                projectId: updatedJob.projectId,
+                userId: userId || 'system',
+                jobId: updatedJob.id,
+                jobType: updatedJob.type,
+                costAmount,
+                billingUnit: 'CREDITS',
+              },
+              update: {
+                // Idempotent: no-op on duplicate
+                costAmount,
+              },
+            });
+            this.logger.log(`[Job] Recorded cost_ledger for ${updatedJob.type} job ${updatedJob.id}: ${costAmount}`);
+          } catch (costError: any) {
+            this.logger.warn(`[Job] Failed to record cost_ledger for job ${jobId}: ${costError?.message}`);
+          }
+        }
+
         return updatedJob;
       } catch (e: any) {
         // 防御性兜底：若 SUCCEEDED 分支内部抛错，不再把错误冒泡为 500，而是按 FAILED 处理并进入统一重试/失败逻辑
