@@ -1073,9 +1073,7 @@ export class JobService {
           }
         }
 
-        // Stage 13: 触发CE Job完成后的副作用（包括创建asset）
-        // - 此方法会根据 Job 类型触发不同的后续任务
-        await this.handleCEJobCompletionIfNeeded(updatedJob);
+
 
         // P0-2: Record cost to ledger for billable jobs (idempotent)
         if (updatedJob.type === JobTypeEnum.VIDEO_RENDER || updatedJob.type === JobTypeEnum.SHOT_RENDER) {
@@ -1095,6 +1093,7 @@ export class JobService {
                 jobType: updatedJob.type,
                 costAmount,
                 billingUnit: 'CREDITS',
+                quantity: 1,
               },
               update: {
                 // Idempotent: no-op on duplicate
