@@ -1,7 +1,17 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { NovelInsightResponse, JobAuditResponse, NovelAnalysisArtifact, MemoryUpdateArtifact } from './audit-insight.dto';
+import {
+    NovelInsightResponse,
+    JobAuditResponse,
+    NovelAnalysisArtifact,
+    MemoryUpdateArtifact,
+    NovelAuditFullResponse,
+    AuditJobSummaryDto,
+    DirectorAuditSummaryDto,
+    DagRunSummaryDto
+} from './audit-insight.dto';
+import { DirectorConstraintSolverService } from '../shot-director/director-solver.service';
 
 @Injectable()
 export class AuditInsightService {
@@ -163,6 +173,179 @@ export class AuditInsightService {
             ce06: ce06Artifacts,
             ce07: ce07Artifacts,
             ce03_04: visualMetricArtifacts
+        };
+    }
+
+    async getNovelAuditFull(novelSourceId: string): Promise<NovelAuditFullResponse> {
+        // 1. Resolve projectId
+        const novelSource = await this.prisma.novelSource.findUnique({
+            where: { id: novelSourceId },
+            include: { project: true },
+        });
+
+        if (!novelSource) {
+            throw new NotFoundException(`NovelSource ${novelSourceId} not found`);
+        }
+
+        const projectId = novelSource.projectId;
+
+        // 2. Fetch Latest Jobs (orderBy createdAt desc take 1)
+        const fetchLatestJob = async (type: string) => {
+            return this.prisma.shotJob.findFirst({
+                where: { projectId, type: type as any }, // ✅ Type cast for safety
+                orderBy: { createdAt: 'desc' },
+            });
+        };
+
+        const [ce06J, ce07J, ce03J, ce04J] = await Promise.all([
+            fetchLatestJob('CE06_NOVEL_PARSING'),
+            fetchLatestJob('CE07_MEMORY_UPDATE'),
+            fetchLatestJob('CE03_VISUAL_DENSITY'),
+            fetchLatestJob('CE04_VISUAL_ENRICHMENT'),
+        ]);
+
+        const mapJob = (j: any): AuditJobSummaryDto | null => j ? {
+            jobId: j.id,
+            traceId: j.traceId || '',
+            status: j.status,
+            createdAtIso: j.createdAt.toISOString(),
+            workerId: j.workerId || 'UNKNOWN'
+        } : null;
+
+        // 3. Fetch Metrics (Precise Binding)
+        const fetchMetrics = async (jobId?: string, traceId?: string, engine?: string) => {
+            if (!jobId || !traceId) return null;
+            return this.prisma.qualityMetrics.findFirst({
+                where: { projectId, engine, jobId, traceId },
+                orderBy: { createdAt: 'desc' }
+            });
+        };
+
+        const [ce03M, ce04M] = await Promise.all([
+            fetchMetrics(ce03J?.id, ce03J?.traceId || undefined, 'CE03'),
+            fetchMetrics(ce04J?.id, ce04J?.traceId || undefined, 'CE04'),
+        ]);
+
+        // 4. Director (Real-time with Cap and Timeout)
+        const PERFORMANCE_CAP = 50;
+        const TIMEOUT_MS = 2000;
+
+        const shots = await this.prisma.shot.findMany({
+            where: { scene: { episode: { season: { project: { novelSources: { some: { id: novelSourceId } } } } } } },
+            take: PERFORMANCE_CAP,
+            orderBy: { index: 'asc' }, // ✅ Using index since createdAt is missing
+        });
+
+        // [DEBUG] Director Audit
+        if (shots.length === 0) {
+            console.warn(`[DIRECTOR_AUDIT] WARN: No shots found for NovelSource ${novelSourceId}. Check Episode->Season->Project relation.`);
+        } else {
+            console.log(`[DIRECTOR_AUDIT] Found ${shots.length} shots. First params type: ${typeof shots[0].params}`);
+        }
+
+        const solver = new DirectorConstraintSolverService();
+
+        // Timeout Protection using Promise.race
+        let results: any[] = [];
+        let isPartial = false;
+        let message = 'Success';
+
+        /* eslint-disable @typescript-eslint/no-explicit-any */
+        try {
+            results = await Promise.race([
+                Promise.resolve(shots.map(s => solver.validateShot({
+                    id: s.id,
+                    type: s.type as any,
+                    // Ensure params is parsed if it's stored as JSON string, or used as object
+                    params: typeof s.params === 'string' ? JSON.parse(s.params) : (s.params || {}),
+                    // Map other necessary fields like enriched_prompt if available
+                }))),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS))
+            ]) as any[];
+        } catch (e: any) {
+            isPartial = true;
+            message = e.message === 'TIMEOUT' ? 'Director evaluation timed out (partial results)' : e.message;
+            results = []; // Or keep partial if we had them
+        }
+        /* eslint-enable @typescript-eslint/no-explicit-any */
+
+        const totalViolations = results.reduce((acc, r) => acc + r.violations.length, 0);
+        const totalSuggestions = results.reduce((acc, r) => acc + r.suggestions.length, 0);
+        const sampleViolations = results.flatMap(r => r.violations).slice(0, 10).map(v => ({
+            ruleId: v.ruleId,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            severity: v.severity as any,
+            message: v.message
+        }));
+
+        const director: DirectorAuditSummaryDto & { partial?: boolean; message?: string; evaluatedShots?: number } = {
+            mode: 'realtime',
+            shotsEvaluated: shots.length,
+            evaluatedShots: shots.length, // Alias for backward compatibility
+            isValid: results.length > 0 ? results.every(r => r.isValid) : false, // Default to false if no shots
+            violationsCount: totalViolations,
+            suggestionsCount: totalSuggestions,
+            violationsSample: sampleViolations,
+            computedAtIso: new Date().toISOString(),
+            // @ts-ignore - Adding dynamic fields for safety if requested
+            partial: isPartial,
+            message: message
+        };
+
+        // 5. DAG Timeline (Trace-based)
+        const dagTraceId = ce04J?.traceId || ce03J?.traceId || ce06J?.traceId || null;
+        let timeline: any[] = [];
+        let missingPhases: string[] = [];
+
+        if (dagTraceId) {
+            const traceJobs = await this.prisma.shotJob.findMany({
+                where: { traceId: dagTraceId, projectId },
+                orderBy: { createdAt: 'asc' }
+            });
+
+            const findInTrace = (type: string) => traceJobs.find(j => j.type === type);
+            const phases = [
+                { type: 'CE06_NOVEL_PARSING', label: 'CE06' },
+                { type: 'CE03_VISUAL_DENSITY', label: 'CE03' },
+                { type: 'CE04_VISUAL_ENRICHMENT', label: 'CE04' }
+            ];
+
+            timeline = phases.map(p => {
+                const job = findInTrace(p.type);
+                if (!job) missingPhases.push(p.label);
+                return {
+                    phase: p.label,
+                    jobId: job?.id || 'MISSING',
+                    status: job?.status || 'MISSING'
+                };
+            });
+        } else {
+            missingPhases = ['CE06', 'CE03', 'CE04'];
+        }
+
+        const dag: DagRunSummaryDto = {
+            traceId: dagTraceId || 'NONE',
+            timeline,
+            missingPhases,
+            builtFrom: ce04J ? 'latest_ce04_trace' : (ce03J ? 'latest_run' : 'empty'),
+            builtAtIso: new Date().toISOString()
+        };
+
+        return {
+            novelSourceId,
+            projectId,
+            latestJobs: {
+                ce06: mapJob(ce06J),
+                ce07: mapJob(ce07J),
+                ce03: mapJob(ce03J),
+                ce04: mapJob(ce04J)
+            },
+            metrics: {
+                ce03Score: ce03M?.visualDensityScore || 0,
+                ce04Score: ce04M?.enrichmentQuality || 0,
+            },
+            director,
+            dag
         };
     }
 

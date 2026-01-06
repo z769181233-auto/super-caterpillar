@@ -713,6 +713,7 @@ export class JobService {
           WHERE (j.status = 'PENDING' OR (j.status = 'RETRYING' AND (j.payload->>'nextRetryAt' IS NULL OR (j.payload->>'nextRetryAt')::timestamp <= NOW())))
             AND j."workerId" IS NULL
             -- 允许领取无绑定或已绑定的任务，不再强制 b.status = 'BOUND'，提高内置 Worker 的消化能力
+            ${supportedEngines.length > 0 ? Prisma.sql`AND (b."engineKey" IS NULL OR b."engineKey" IN (${Prisma.join(supportedEngines)}))` : Prisma.empty}
             ${jobType ? Prisma.sql`AND j.type = ${jobType}` : Prisma.empty}
           ORDER BY j.priority DESC, j."createdAt" ASC
           LIMIT 1

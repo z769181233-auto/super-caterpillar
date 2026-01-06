@@ -57514,6 +57514,8 @@ export namespace Prisma {
     id: string | null
     projectId: string | null
     engine: string | null
+    jobId: string | null
+    traceId: string | null
     visualDensityScore: number | null
     enrichmentQuality: number | null
     parsingQuality: number | null
@@ -57525,6 +57527,8 @@ export namespace Prisma {
     id: string | null
     projectId: string | null
     engine: string | null
+    jobId: string | null
+    traceId: string | null
     visualDensityScore: number | null
     enrichmentQuality: number | null
     parsingQuality: number | null
@@ -57536,6 +57540,8 @@ export namespace Prisma {
     id: number
     projectId: number
     engine: number
+    jobId: number
+    traceId: number
     visualDensityScore: number
     enrichmentQuality: number
     parsingQuality: number
@@ -57562,6 +57568,8 @@ export namespace Prisma {
     id?: true
     projectId?: true
     engine?: true
+    jobId?: true
+    traceId?: true
     visualDensityScore?: true
     enrichmentQuality?: true
     parsingQuality?: true
@@ -57573,6 +57581,8 @@ export namespace Prisma {
     id?: true
     projectId?: true
     engine?: true
+    jobId?: true
+    traceId?: true
     visualDensityScore?: true
     enrichmentQuality?: true
     parsingQuality?: true
@@ -57584,6 +57594,8 @@ export namespace Prisma {
     id?: true
     projectId?: true
     engine?: true
+    jobId?: true
+    traceId?: true
     visualDensityScore?: true
     enrichmentQuality?: true
     parsingQuality?: true
@@ -57683,6 +57695,8 @@ export namespace Prisma {
     id: string
     projectId: string
     engine: string
+    jobId: string | null
+    traceId: string | null
     visualDensityScore: number | null
     enrichmentQuality: number | null
     parsingQuality: number | null
@@ -57714,6 +57728,8 @@ export namespace Prisma {
     id?: boolean
     projectId?: boolean
     engine?: boolean
+    jobId?: boolean
+    traceId?: boolean
     visualDensityScore?: boolean
     enrichmentQuality?: boolean
     parsingQuality?: boolean
@@ -57727,6 +57743,8 @@ export namespace Prisma {
     id?: boolean
     projectId?: boolean
     engine?: boolean
+    jobId?: boolean
+    traceId?: boolean
     visualDensityScore?: boolean
     enrichmentQuality?: boolean
     parsingQuality?: boolean
@@ -57740,6 +57758,8 @@ export namespace Prisma {
     id?: boolean
     projectId?: boolean
     engine?: boolean
+    jobId?: boolean
+    traceId?: boolean
     visualDensityScore?: boolean
     enrichmentQuality?: boolean
     parsingQuality?: boolean
@@ -57764,6 +57784,8 @@ export namespace Prisma {
       id: string
       projectId: string
       engine: string
+      jobId: string | null
+      traceId: string | null
       visualDensityScore: number | null
       enrichmentQuality: number | null
       parsingQuality: number | null
@@ -58167,6 +58189,8 @@ export namespace Prisma {
     readonly id: FieldRef<"QualityMetrics", 'String'>
     readonly projectId: FieldRef<"QualityMetrics", 'String'>
     readonly engine: FieldRef<"QualityMetrics", 'String'>
+    readonly jobId: FieldRef<"QualityMetrics", 'String'>
+    readonly traceId: FieldRef<"QualityMetrics", 'String'>
     readonly visualDensityScore: FieldRef<"QualityMetrics", 'Float'>
     readonly enrichmentQuality: FieldRef<"QualityMetrics", 'Float'>
     readonly parsingQuality: FieldRef<"QualityMetrics", 'Float'>
@@ -65040,6 +65064,8 @@ export namespace Prisma {
     id: 'id',
     projectId: 'projectId',
     engine: 'engine',
+    jobId: 'jobId',
+    traceId: 'traceId',
     visualDensityScore: 'visualDensityScore',
     enrichmentQuality: 'enrichmentQuality',
     parsingQuality: 'parsingQuality',
@@ -69831,6 +69857,8 @@ export namespace Prisma {
     id?: StringFilter<"QualityMetrics"> | string
     projectId?: StringFilter<"QualityMetrics"> | string
     engine?: StringFilter<"QualityMetrics"> | string
+    jobId?: StringNullableFilter<"QualityMetrics"> | string | null
+    traceId?: StringNullableFilter<"QualityMetrics"> | string | null
     visualDensityScore?: FloatNullableFilter<"QualityMetrics"> | number | null
     enrichmentQuality?: FloatNullableFilter<"QualityMetrics"> | number | null
     parsingQuality?: FloatNullableFilter<"QualityMetrics"> | number | null
@@ -69844,6 +69872,8 @@ export namespace Prisma {
     id?: SortOrder
     projectId?: SortOrder
     engine?: SortOrder
+    jobId?: SortOrderInput | SortOrder
+    traceId?: SortOrderInput | SortOrder
     visualDensityScore?: SortOrderInput | SortOrder
     enrichmentQuality?: SortOrderInput | SortOrder
     parsingQuality?: SortOrderInput | SortOrder
@@ -69860,6 +69890,8 @@ export namespace Prisma {
     NOT?: QualityMetricsWhereInput | QualityMetricsWhereInput[]
     projectId?: StringFilter<"QualityMetrics"> | string
     engine?: StringFilter<"QualityMetrics"> | string
+    jobId?: StringNullableFilter<"QualityMetrics"> | string | null
+    traceId?: StringNullableFilter<"QualityMetrics"> | string | null
     visualDensityScore?: FloatNullableFilter<"QualityMetrics"> | number | null
     enrichmentQuality?: FloatNullableFilter<"QualityMetrics"> | number | null
     parsingQuality?: FloatNullableFilter<"QualityMetrics"> | number | null
@@ -69873,6 +69905,8 @@ export namespace Prisma {
     id?: SortOrder
     projectId?: SortOrder
     engine?: SortOrder
+    jobId?: SortOrderInput | SortOrder
+    traceId?: SortOrderInput | SortOrder
     visualDensityScore?: SortOrderInput | SortOrder
     enrichmentQuality?: SortOrderInput | SortOrder
     parsingQuality?: SortOrderInput | SortOrder
@@ -69893,6 +69927,8 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"QualityMetrics"> | string
     projectId?: StringWithAggregatesFilter<"QualityMetrics"> | string
     engine?: StringWithAggregatesFilter<"QualityMetrics"> | string
+    jobId?: StringNullableWithAggregatesFilter<"QualityMetrics"> | string | null
+    traceId?: StringNullableWithAggregatesFilter<"QualityMetrics"> | string | null
     visualDensityScore?: FloatNullableWithAggregatesFilter<"QualityMetrics"> | number | null
     enrichmentQuality?: FloatNullableWithAggregatesFilter<"QualityMetrics"> | number | null
     parsingQuality?: FloatNullableWithAggregatesFilter<"QualityMetrics"> | number | null
@@ -74834,6 +74870,8 @@ export namespace Prisma {
   export type QualityMetricsCreateInput = {
     id?: string
     engine: string
+    jobId?: string | null
+    traceId?: string | null
     visualDensityScore?: number | null
     enrichmentQuality?: number | null
     parsingQuality?: number | null
@@ -74847,6 +74885,8 @@ export namespace Prisma {
     id?: string
     projectId: string
     engine: string
+    jobId?: string | null
+    traceId?: string | null
     visualDensityScore?: number | null
     enrichmentQuality?: number | null
     parsingQuality?: number | null
@@ -74858,6 +74898,8 @@ export namespace Prisma {
   export type QualityMetricsUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     engine?: StringFieldUpdateOperationsInput | string
+    jobId?: NullableStringFieldUpdateOperationsInput | string | null
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     enrichmentQuality?: NullableFloatFieldUpdateOperationsInput | number | null
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -74871,6 +74913,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     projectId?: StringFieldUpdateOperationsInput | string
     engine?: StringFieldUpdateOperationsInput | string
+    jobId?: NullableStringFieldUpdateOperationsInput | string | null
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     enrichmentQuality?: NullableFloatFieldUpdateOperationsInput | number | null
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -74883,6 +74927,8 @@ export namespace Prisma {
     id?: string
     projectId: string
     engine: string
+    jobId?: string | null
+    traceId?: string | null
     visualDensityScore?: number | null
     enrichmentQuality?: number | null
     parsingQuality?: number | null
@@ -74894,6 +74940,8 @@ export namespace Prisma {
   export type QualityMetricsUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     engine?: StringFieldUpdateOperationsInput | string
+    jobId?: NullableStringFieldUpdateOperationsInput | string | null
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     enrichmentQuality?: NullableFloatFieldUpdateOperationsInput | number | null
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -74906,6 +74954,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     projectId?: StringFieldUpdateOperationsInput | string
     engine?: StringFieldUpdateOperationsInput | string
+    jobId?: NullableStringFieldUpdateOperationsInput | string | null
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     enrichmentQuality?: NullableFloatFieldUpdateOperationsInput | number | null
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -78823,6 +78873,8 @@ export namespace Prisma {
     id?: SortOrder
     projectId?: SortOrder
     engine?: SortOrder
+    jobId?: SortOrder
+    traceId?: SortOrder
     visualDensityScore?: SortOrder
     enrichmentQuality?: SortOrder
     parsingQuality?: SortOrder
@@ -78841,6 +78893,8 @@ export namespace Prisma {
     id?: SortOrder
     projectId?: SortOrder
     engine?: SortOrder
+    jobId?: SortOrder
+    traceId?: SortOrder
     visualDensityScore?: SortOrder
     enrichmentQuality?: SortOrder
     parsingQuality?: SortOrder
@@ -78852,6 +78906,8 @@ export namespace Prisma {
     id?: SortOrder
     projectId?: SortOrder
     engine?: SortOrder
+    jobId?: SortOrder
+    traceId?: SortOrder
     visualDensityScore?: SortOrder
     enrichmentQuality?: SortOrder
     parsingQuality?: SortOrder
@@ -86122,6 +86178,8 @@ export namespace Prisma {
   export type QualityMetricsCreateWithoutProjectInput = {
     id?: string
     engine: string
+    jobId?: string | null
+    traceId?: string | null
     visualDensityScore?: number | null
     enrichmentQuality?: number | null
     parsingQuality?: number | null
@@ -86133,6 +86191,8 @@ export namespace Prisma {
   export type QualityMetricsUncheckedCreateWithoutProjectInput = {
     id?: string
     engine: string
+    jobId?: string | null
+    traceId?: string | null
     visualDensityScore?: number | null
     enrichmentQuality?: number | null
     parsingQuality?: number | null
@@ -86606,6 +86666,8 @@ export namespace Prisma {
     id?: StringFilter<"QualityMetrics"> | string
     projectId?: StringFilter<"QualityMetrics"> | string
     engine?: StringFilter<"QualityMetrics"> | string
+    jobId?: StringNullableFilter<"QualityMetrics"> | string | null
+    traceId?: StringNullableFilter<"QualityMetrics"> | string | null
     visualDensityScore?: FloatNullableFilter<"QualityMetrics"> | number | null
     enrichmentQuality?: FloatNullableFilter<"QualityMetrics"> | number | null
     parsingQuality?: FloatNullableFilter<"QualityMetrics"> | number | null
@@ -95773,6 +95835,8 @@ export namespace Prisma {
   export type QualityMetricsCreateManyProjectInput = {
     id?: string
     engine: string
+    jobId?: string | null
+    traceId?: string | null
     visualDensityScore?: number | null
     enrichmentQuality?: number | null
     parsingQuality?: number | null
@@ -96194,6 +96258,8 @@ export namespace Prisma {
   export type QualityMetricsUpdateWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
     engine?: StringFieldUpdateOperationsInput | string
+    jobId?: NullableStringFieldUpdateOperationsInput | string | null
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     enrichmentQuality?: NullableFloatFieldUpdateOperationsInput | number | null
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -96205,6 +96271,8 @@ export namespace Prisma {
   export type QualityMetricsUncheckedUpdateWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
     engine?: StringFieldUpdateOperationsInput | string
+    jobId?: NullableStringFieldUpdateOperationsInput | string | null
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     enrichmentQuality?: NullableFloatFieldUpdateOperationsInput | number | null
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -96216,6 +96284,8 @@ export namespace Prisma {
   export type QualityMetricsUncheckedUpdateManyWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
     engine?: StringFieldUpdateOperationsInput | string
+    jobId?: NullableStringFieldUpdateOperationsInput | string | null
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     enrichmentQuality?: NullableFloatFieldUpdateOperationsInput | number | null
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null

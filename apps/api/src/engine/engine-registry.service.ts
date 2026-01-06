@@ -109,6 +109,16 @@ export class EngineRegistry {
   }
 
   /**
+   * 注册引擎适配器别名
+   * @param alias 别名
+   * @param adapter 适配器实例
+   */
+  registerAlias(alias: string, adapter: EngineAdapter): void {
+    this.ensureAdapters().set(alias, adapter);
+    this.safeLog(`Registered engine adapter alias: ${alias} -> ${adapter.name}`);
+  }
+
+  /**
    * 获取引擎适配器
    * @param engineKey 引擎标识
    * @returns EngineAdapter 或 null
@@ -146,6 +156,8 @@ export class EngineRegistry {
       }
       // 如果指定的 HTTP 引擎不存在，继续走原有逻辑（不抛出错误）
     }
+
+    this.safeLog(`[DEBUG] findAdapter request: engineKey=${engineKey}, jobType=${jobType}. Available adapters: ${Array.from(this.adapters.keys()).join(', ')}`);
 
     // 1. 如果指定了 engineKey，优先查找
     if (engineKey) {

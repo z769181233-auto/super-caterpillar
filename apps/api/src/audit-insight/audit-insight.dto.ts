@@ -11,9 +11,9 @@ export class NovelInsightResponse {
 
 export class VisualMetricArtifact {
     jobId: string;
-    type: string; // CE03_VISUAL_DENSITY | CE04_VISUAL_ENRICHMENT
+    type: string;
     status: string;
-    score?: number; // density_score or enrichment_quality
+    score?: number;
     output_summary: any;
     created_at: Date;
 }
@@ -21,8 +21,6 @@ export class VisualMetricArtifact {
 export class NovelAnalysisArtifact {
     jobId: string;
     workerId?: string;
-    engineKey?: string;
-    engineVersion?: string;
     createdAt: Date;
     status: string;
     payload: any;
@@ -32,12 +30,10 @@ export class NovelAnalysisArtifact {
 export class MemoryUpdateArtifact {
     jobId: string;
     workerId?: string;
-    engineKey?: string;
-    engineVersion?: string;
     createdAt: Date;
     status: string;
     payload: any;
-    memoryContent?: any; // The JSON content
+    memoryContent?: any;
 }
 
 export class JobAuditResponse {
@@ -50,4 +46,47 @@ export class JobAuditResponse {
     payload: any;
     result: any;
     auditLogs: any[];
+}
+
+export class AuditJobSummaryDto {
+    jobId: string;
+    traceId: string;
+    status: string;
+    createdAtIso: string;
+    workerId?: string;
+}
+
+export class DirectorAuditSummaryDto {
+    mode: 'realtime' | 'stored';
+    shotsEvaluated: number;
+    isValid: boolean;
+    violationsCount: number;
+    suggestionsCount: number;
+    violationsSample: Array<{ ruleId: string; severity: 'WARNING' | 'ERROR'; message: string }>;
+    computedAtIso: string;
+}
+
+export class DagRunSummaryDto {
+    traceId: string;
+    timeline: Array<{ phase: 'CE06' | 'CE03' | 'CE04'; jobId: string; status: string }>;
+    missingPhases: string[];
+    builtFrom: 'latest_ce04_trace' | 'latest_run' | 'empty';
+    builtAtIso: string;
+}
+
+export class NovelAuditFullResponse {
+    novelSourceId: string;
+    projectId: string;
+    latestJobs: {
+        ce06?: AuditJobSummaryDto | null;
+        ce07?: AuditJobSummaryDto | null;
+        ce03?: AuditJobSummaryDto | null;
+        ce04?: AuditJobSummaryDto | null;
+    };
+    metrics: {
+        ce03Score: number;
+        ce04Score: number;
+    };
+    director: DirectorAuditSummaryDto;
+    dag: DagRunSummaryDto;
 }

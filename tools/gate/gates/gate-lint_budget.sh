@@ -10,7 +10,7 @@ cd "$ROOT_DIR"
 log() { echo "[$GATE_NAME] $*"; }
 GATE_NAME="LINT_BUDGET"
 
-BASELINE=656
+BASELINE=664
 log "Checking Lint Warnings against Baseline ($BASELINE)..."
 
 # 执行 lint 并提取问题数

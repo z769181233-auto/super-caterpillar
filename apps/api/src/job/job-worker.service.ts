@@ -25,14 +25,14 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
         update: {
           status: 'online', // Prisma 枚举通常为小写或严格匹配
           lastHeartbeat: new Date(),
-          capabilities: { supportedEngines: ['default_novel_analysis', 'default_shot_render', 'default_video_render'] },
+          capabilities: { supportedEngines: ['default_novel_analysis'] },
         },
         create: {
           workerId: 'internal-api-worker',
           name: 'Internal API Worker',
           status: 'online',
           lastHeartbeat: new Date(),
-          capabilities: { supportedEngines: ['default_novel_analysis', 'default_shot_render', 'default_video_render'] },
+          capabilities: { supportedEngines: ['default_novel_analysis'] },
         },
       });
 

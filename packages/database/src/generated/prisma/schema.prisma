@@ -915,6 +915,8 @@ model QualityMetrics {
   id                 String   @id @default(uuid())
   projectId          String
   engine             String
+  jobId              String?
+  traceId            String?
   visualDensityScore Float?
   enrichmentQuality  Float?
   parsingQuality     Float?
@@ -924,6 +926,7 @@ model QualityMetrics {
   project            Project  @relation("ProjectQualityMetrics", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, engine])
+  @@index([jobId, traceId])
   @@map("quality_metrics")
 }
 

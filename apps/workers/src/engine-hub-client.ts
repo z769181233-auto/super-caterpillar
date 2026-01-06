@@ -120,6 +120,9 @@ export class EngineHubClient {
     if (engineKey === 'novel_analysis' || engineKey === 'default_novel_analysis') {
       return 'NOVEL_ANALYSIS';
     }
+    if (engineKey === 'default_shot_render') {
+      return 'SHOT_RENDER';
+    }
     return 'UNKNOWN';
   }
 }

@@ -113,6 +113,7 @@ async function registerWorker(): Promise<void> {
           'CE05_DIRECTOR_CONTROL',
           'CE06_NOVEL_PARSING',
           'CE07_MEMORY_UPDATE',
+          'SHOT_RENDER',
         ],
         supportedModels: [],
         maxBatchSize: 1,

@@ -292,6 +292,8 @@ export async function processCE03Job(
       data: {
         projectId: job.projectId,
         engine: 'CE03',
+        jobId,
+        traceId,
         visualDensityScore: result.visual_density_score,
         metadata: result.quality_indicators as any,
       },
@@ -468,6 +470,8 @@ export async function processCE04Job(
       data: {
         projectId: job.projectId,
         engine: 'CE04',
+        jobId,
+        traceId,
         enrichmentQuality: result.enrichment_quality,
         metadata: result.metadata as any,
       },
@@ -590,8 +594,15 @@ export async function processShotRenderJob(
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // 2. Create Asset Record (The P0 Requirement)
-    const asset = await prisma.asset.create({
-      data: {
+    const asset = await prisma.asset.upsert({
+      where: {
+        ownerType_ownerId_type: {
+          ownerType: 'SHOT',
+          ownerId: shotId,
+          type: 'IMAGE',
+        }
+      },
+      create: {
         projectId: job.projectId,
         ownerType: 'SHOT',
         ownerId: shotId,
@@ -600,6 +611,13 @@ export async function processShotRenderJob(
         storageKey: mockEngineOutput.storageKey,
         checksum: mockEngineOutput.checksum,
         createdByJobId: jobId
+      },
+      update: {
+        status: 'GENERATED',
+        storageKey: mockEngineOutput.storageKey,
+        checksum: mockEngineOutput.checksum,
+        createdByJobId: jobId,
+        // 更新时保持 projectId 和 owner 不变
       }
     });
 

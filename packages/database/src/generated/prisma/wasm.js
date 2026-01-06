@@ -734,6 +734,8 @@ exports.Prisma.QualityMetricsScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
   engine: 'engine',
+  jobId: 'jobId',
+  traceId: 'traceId',
   visualDensityScore: 'visualDensityScore',
   enrichmentQuality: 'enrichmentQuality',
   parsingQuality: 'parsingQuality',

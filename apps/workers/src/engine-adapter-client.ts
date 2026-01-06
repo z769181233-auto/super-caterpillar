@@ -281,6 +281,17 @@ export class EngineAdapterClient {
     // [P2] 注册 CE04 视觉丰富度适配器
     const ce04Adapter = new VisualEnrichmentLocalAdapterWorker();
     this.adapters.set(ce04Adapter.name, ce04Adapter);
+
+    // [P2] 注册默认渲染器适配器 (自引用 processor)
+    this.adapters.set('default_shot_render', {
+      name: 'default_shot_render',
+      supports: (k) => k === 'default_shot_render',
+      invoke: async (input) => {
+        // 由于这只是一个适配器层，真正的 logic 已经在 ce-core-processor.ts 中由 main.ts 分发了。
+        // 但为了 EngineHubClient.invoke 能够正常工作，我们需要在这里也注册它。
+        throw new Error('Direct invocation of default_shot_render via adapter is not recommended. Use dedicated processor.');
+      }
+    });
   }
 
   /**
@@ -298,6 +309,13 @@ export class EngineAdapterClient {
     // 2. 根据 jobType 查找默认适配器
     if (jobType === 'NOVEL_ANALYSIS') {
       const adapter = this.adapters.get('default_novel_analysis');
+      if (adapter) {
+        return adapter;
+      }
+    }
+
+    if (jobType === 'SHOT_RENDER') {
+      const adapter = this.adapters.get('default_shot_render');
       if (adapter) {
         return adapter;
       }
