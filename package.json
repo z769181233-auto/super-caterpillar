@@ -54,10 +54,10 @@
   ],
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": [
-      "pnpm -C apps/web eslint --max-warnings=0"
+      "pnpm -w --filter web run lint"
     ],
     "apps/api/**/*.{ts,tsx}": [
-      "pnpm -C apps/api eslint --max-warnings=0"
+      "pnpm -w --filter api run lint"
     ],
     "**/*.{json,md,yml,yaml}": [
       "prettier --check"
