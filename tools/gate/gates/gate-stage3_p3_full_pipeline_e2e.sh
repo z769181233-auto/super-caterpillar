@@ -4,6 +4,9 @@ IFS=$'\n\t'
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"
 
+# CE-DAG wait timeout (per job). Prevent false 500 when CE06/CE-chain exceeds default 60s.
+export CE_DAG_JOB_TIMEOUT_MS="${CE_DAG_JOB_TIMEOUT_MS:-300000}"
+
 TS="$(date +%Y%m%d_%H%M%S)"
 RUN_ID="$(uuidgen | tr '[:upper:]' '[:lower:]' | tr -d '-')"
 EVID_DIR="docs/_evidence/p3_full_pipeline_e2e_${TS}"
@@ -12,6 +15,7 @@ mkdir -p "$EVID_DIR"
 log() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$EVID_DIR/gate.log"; }
 
 log "🚀 [P3_FULL_PIPELINE_E2E] Starting Gate (RUN_ID: $RUN_ID)..."
+log "CE_DAG_JOB_TIMEOUT_MS=$CE_DAG_JOB_TIMEOUT_MS"
 log "🧹 Cleaning up old processes..."
 pkill -f 'turbo.*dev' || true
 pkill -f 'node.*3001' || true
