@@ -4,6 +4,7 @@ import { WorkerJobBase } from '@scu/shared-types';
 import { ApiClient } from './api-client';
 import { spawn } from 'child_process';
 import * as fs from 'fs';
+import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 import { LocalStorageAdapter } from '@scu/storage';
 
@@ -29,6 +30,27 @@ export function cleanupVideoRenderProcesses() {
         }
     }
     activeProcesses.clear();
+}
+
+/**
+ * P0-2: Helper to check if key is an image
+ */
+function isImageKey(key: string): boolean {
+    const k = key.toLowerCase();
+    return k.endsWith('.png') || k.endsWith('.jpg') || k.endsWith('.jpeg') || k.endsWith('.webp');
+}
+
+/**
+ * P0-2: Verify frame file exists and is valid
+ */
+async function assertFrameFileOk(absPath: string): Promise<void> {
+    const st = await fsPromises.stat(absPath);
+    if (!st.isFile() || st.size <= 0) {
+        throw new Error(`Frame file missing/empty: ${absPath}`);
+    }
+    if (st.size < 10_000) {
+        throw new Error(`Frame too small (corrupt?): ${absPath} size=${st.size}`);
+    }
 }
 export async function processVideoRenderJob(
     prisma: PrismaClient,
@@ -80,6 +102,78 @@ export async function processVideoRenderJob(
     }
 
     try {
+        // P0-2: Single image frame mode (bypass concat demuxer for single PNG)
+        if (frameKeys.length === 1 && isImageKey(frameKeys[0])) {
+            const inputAbs = storage.getAbsolutePath(frameKeys[0]);
+            await assertFrameFileOk(inputAbs);
+
+            const seconds = 1;
+            const fpsVal = fps ?? 24;
+            const tempOutput = path.join(workspaceDir, 'output.mp4');
+
+            const cmd = 'ffmpeg';
+            const args = [
+                '-hide_banner',
+                '-loglevel', 'error',
+                '-loop', '1',
+                '-t', String(seconds),
+                '-i', inputAbs,
+                '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                '-r', String(fpsVal),
+                '-y', tempOutput,
+            ];
+
+            console.log({ event: 'VIDEO_RENDER_SINGLE_IMAGE', jobId, cmd: [cmd, ...args].join(' ') });
+
+            await new Promise<void>((resolve, reject) => {
+                const proc = spawn(cmd, args, { cwd: workspaceDir });
+                activeProcesses.add(proc);
+                let stderr = '';
+
+                proc.stderr?.on('data', (data) => {
+                    stderr += data.toString();
+                });
+
+                proc.on('close', (code) => {
+                    activeProcesses.delete(proc);
+                    if (code === 0) {
+                        resolve();
+                    } else {
+                        reject(new Error(`FFmpeg failed (code ${code}): ${stderr}`));
+                    }
+                });
+
+                proc.on('error', (err) => {
+                    activeProcesses.delete(proc);
+                    reject(err);
+                });
+            });
+
+            // Verify output
+            const outSt = await fsPromises.stat(tempOutput);
+            if (outSt.size <= 0) {
+                throw new Error(`VIDEO_RENDER: empty mp4 ${tempOutput}`);
+            }
+
+            const outputKey = `projects/${job.projectId}/videos/output-${Date.now()}.mp4`;
+            await storage.put(outputKey, fs.readFileSync(tempOutput));
+            await apiClient.postAuditLog({
+                traceId: traceId || `trace-${jobId}`,
+                projectId: job.projectId,
+                jobId,
+                jobType: 'VIDEO_RENDER',
+                engineKey: 'ffmpeg_single_image',
+                status: 'SUCCESS',
+                latencyMs: Date.now() - jobStartTime,
+                auditTrail: { frameCount: 1, duration: seconds },
+            }).catch(e => console.warn('Audit failed', e));
+
+            console.log({ event: 'VIDEO_RENDER_SUCCESS_SINGLE', jobId, outputKey, durationSec: seconds });
+            return { outputKey, durationSec: seconds };
+        }
+
+        // Original concat mode for multiple frames
         // 1. Resolve Inputs -> input.txt
         const listFilePath = path.join(workspaceDir, 'input.txt');
         let listContent = frameKeys.map(key => {

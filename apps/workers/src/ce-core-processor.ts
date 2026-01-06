@@ -18,6 +18,8 @@ import {
   WorkerJobBase,
 } from '@scu/shared-types';
 import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import sharp from 'sharp';
 import { LocalStorageAdapter } from '@scu/storage';
 import { createHash } from 'crypto';
 import {
@@ -592,7 +594,7 @@ export async function processShotRenderJob(
       format: 'png'
     };
 
-    // P3 E2E Fix: Write dummy PNG to storage so VIDEO_RENDER can find it
+    // P0-2 Fix: Generate valid 1280x720 PNG instead of corrupt 2x2
     // 路径权威规则：优先使用 REPO_ROOT，否则使用 STORAGE_ROOT，禁止 process.cwd() 推导
     let storageRoot: string;
     if (process.env.REPO_ROOT) {
@@ -605,9 +607,29 @@ export async function processShotRenderJob(
       storageRoot = path.join(repoRoot, '.data/storage');
     }
     const storage = new LocalStorageAdapter(storageRoot);
-    const dummyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABZJREFUeNpi2P//PwMTAwMDEAAEGADmnwX7tC4iOQAAAABJRU5ErkJggg==', 'base64');
 
-    await storage.put(mockEngineOutput.storageKey, dummyPng);
+    // Generate valid 1280x720 PNG
+    const validPng = await sharp({
+      create: {
+        width: 1280,
+        height: 720,
+        channels: 4,
+        background: { r: 20, g: 20, b: 20, alpha: 1 },
+      },
+    }).png().toBuffer();
+
+    // Atomic write
+    const absPath = storage.getAbsolutePath(mockEngineOutput.storageKey);
+    await fs.mkdir(path.dirname(absPath), { recursive: true });
+    const tmpPath = absPath + '.tmp';
+    await fs.writeFile(tmpPath, validPng);
+    await fs.rename(tmpPath, absPath);
+
+    // Verify file size
+    const st = await fs.stat(absPath);
+    if (st.size < 10_000) {
+      throw new Error(`SHOT_RENDER PNG too small: ${absPath} size=${st.size}`);
+    }
 
     // Simulate delay
     await new Promise(resolve => setTimeout(resolve, 500));
