@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+IFS=$'\n\t'
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"
 
@@ -86,10 +87,22 @@ ON CONFLICT (\"engineKey\") DO UPDATE SET \"isActive\" = true;
 
 log "✅ Data Seeded. Triggering Full Pipeline..."
 
-DAG_OUT=$(PROJ_ID="$PROJ_ID" SOURCE_ID="$SOURCE_ID" SHOT_ID="$SHOT_ID" API_BASE="http://localhost:3000" \
-  npx ts-node -P apps/api/tsconfig.json apps/api/src/scripts/p2_ce_dag_gate.ts 2>&1)
+DAG_OUT_FILE="$EVID_DIR/dag_trigger.log"
 
-echo "$DAG_OUT" | tee "$EVID_DIR/dag_trigger.log"
+set +e
+PROJ_ID="$PROJ_ID" SOURCE_ID="$SOURCE_ID" SHOT_ID="$SHOT_ID" API_BASE="http://localhost:3000" \
+  npx ts-node -P apps/api/tsconfig.json apps/api/src/scripts/p2_ce_dag_gate.ts 2>&1 | tee "$DAG_OUT_FILE"
+TS_NODE_RC=${PIPESTATUS[0]}
+set -e
+
+if [ "$TS_NODE_RC" -ne 0 ]; then
+  log "❌ DAG trigger script failed rc=$TS_NODE_RC"
+  exit 1
+fi
+
+[ -s "$DAG_OUT_FILE" ] || { log "❌ dag_trigger.log empty"; exit 1; }
+
+DAG_OUT=$(cat "$DAG_OUT_FILE")
 
 TRACE_ID=$(echo "$DAG_OUT" | grep "TRACE_ID=" | cut -d= -f2)
 CE06_JOB_ID=$(echo "$DAG_OUT" | grep "CE06_JOB_ID=" | cut -d= -f2)
@@ -147,3 +160,15 @@ VIDEO_PATH: $VIDEO_URL
 EOF
 
 log "📝 Evidence saved. Gate Passed."
+
+# CRITICAL: Refuse false-positive success
+GATE_LOG_FILE="$EVID_DIR/gate.log"
+if [ ! -s "$GATE_LOG_FILE" ]; then
+  GATE_LOG_FILE="/tmp/scu_gate_full_pipeline.log"
+fi
+
+PASS_CNT="$(rg -c "\[PASS\]" "$GATE_LOG_FILE" 2>/dev/null || echo "0")"
+if [ "${PASS_CNT:-0}" -lt 1 ]; then
+  log "❌ No [PASS] assertions found. Refusing false-positive success."
+  exit 1
+fi
