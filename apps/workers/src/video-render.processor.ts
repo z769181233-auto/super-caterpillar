@@ -91,7 +91,7 @@ export async function processVideoRenderJob(
             }
             // FFmpeg needs absolute path - FORCE DURATION for test stability
             return `file '${storage.getAbsolutePath(key)}'\nduration 1.0`;
-        }));
+        });
         let joinedListContent = listContent.join('\n');
 
         // FFmpeg concat demuxer quirk: Last file needs to be repeated or it won't have duration
