@@ -122,7 +122,11 @@ log "✅ videoAsset validation passed"
 
 # 6. Test video URL (no Range)
 log "🎬 Testing video URL (no Range)..."
-FULL_URL="http://localhost:3000${SECURE_URL}"
+if [[ "$SECURE_URL" == http* ]]; then
+  FULL_URL="$SECURE_URL"
+else
+  FULL_URL="http://localhost:3000${SECURE_URL}"
+fi
 
 curl -s -I "$FULL_URL" > "$EVID_DIR/video_headers_no_range.txt" 2>&1
 

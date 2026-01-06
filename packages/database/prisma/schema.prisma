@@ -1040,10 +1040,10 @@ enum UserType {
 }
 
 enum UserRole {
-  viewer
-  editor
-  creator
-  admin
+  viewer  @map("VIEWER")
+  editor  @map("EDITOR")
+  creator @map("CREATOR")
+  admin   @map("ADMIN")
 
   @@map("user_role")
 }
