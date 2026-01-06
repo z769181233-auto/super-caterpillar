@@ -66,9 +66,18 @@ export class DirectorAuditSummaryDto {
     computedAtIso: string;
 }
 
+
+export class VideoAssetDto {
+    status: string;
+    secureUrl?: string;
+    jobId?: string;
+    assetId?: string;
+    storageKey?: string;
+}
+
 export class DagRunSummaryDto {
     traceId: string;
-    timeline: Array<{ phase: 'CE06' | 'CE03' | 'CE04'; jobId: string; status: string }>;
+    timeline: Array<{ phase: 'CE06' | 'CE03' | 'CE04' | 'SHOT' | 'VIDEO'; jobId: string; status: string }>;
     missingPhases: string[];
     builtFrom: 'latest_ce04_trace' | 'latest_run' | 'empty';
     builtAtIso: string;
@@ -82,6 +91,7 @@ export class NovelAuditFullResponse {
         ce07?: AuditJobSummaryDto | null;
         ce03?: AuditJobSummaryDto | null;
         ce04?: AuditJobSummaryDto | null;
+        video?: AuditJobSummaryDto | null;
     };
     metrics: {
         ce03Score: number;
@@ -89,4 +99,5 @@ export class NovelAuditFullResponse {
     };
     director: DirectorAuditSummaryDto;
     dag: DagRunSummaryDto;
+    videoAsset?: VideoAssetDto;
 }

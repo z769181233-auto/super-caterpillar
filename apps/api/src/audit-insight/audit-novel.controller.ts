@@ -2,6 +2,8 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { AuditInsightService } from './audit-insight.service';
 import { NovelAuditFullResponse } from './audit-insight.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthenticatedUser } from '@scu/shared-types';
 
 @Controller('audit')
 export class AuditNovelController {
@@ -13,8 +15,10 @@ export class AuditNovelController {
      */
     @Get('novel/:novelSourceId/full')
     async getNovelAuditFull(
-        @Param('novelSourceId') novelSourceId: string
+        @Param('novelSourceId') novelSourceId: string,
+        @CurrentUser() user?: AuthenticatedUser
     ): Promise<NovelAuditFullResponse> {
-        return this.auditInsightService.getNovelAuditFull(novelSourceId);
+        const userId = user?.userId || 'system-audit-viewer';
+        return this.auditInsightService.getNovelAuditFull(novelSourceId, userId);
     }
 }

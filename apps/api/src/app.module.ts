@@ -44,6 +44,11 @@ import { StorageModule } from './storage/storage.module';
 import { SeasonsModule } from './seasons/seasons.module';
 import { FeatureFlagModule } from './feature-flag/feature-flag.module';
 import { env } from '@scu/config';
+import { StorageController } from './storage/storage.controller';
+import { LocalStorageService } from './storage/local-storage.service';
+import { SignedUrlService } from './storage/signed-url.service';
+import { StorageAuthService } from './storage/storage-auth.service';
+
 
 // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
@@ -101,7 +106,10 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     SeasonsModule, // 补齐 Seasons API (Smoke Test Fix)
     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS ? [OpsModule] : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
   ],
-  controllers: [AppController],
+  controllers: [
+    AppController,
+    StorageController, // FORCE REGISTRATION: Bypass StorageModule issue
+  ],
   providers: [
     {
       provide: APP_INTERCEPTOR,
@@ -115,6 +123,10 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
+    // FORCE REGISTRATION: Storage services
+    LocalStorageService,
+    SignedUrlService,
+    StorageAuthService,
   ],
 })
 export class AppModule { }

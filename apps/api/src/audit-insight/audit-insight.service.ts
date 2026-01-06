@@ -13,9 +13,14 @@ import {
 } from './audit-insight.dto';
 import { DirectorConstraintSolverService } from '../shot-director/director-solver.service';
 
+import { SignedUrlService } from '../storage/signed-url.service';
+
 @Injectable()
 export class AuditInsightService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly signedUrlService: SignedUrlService
+    ) { }
 
     async getNovelInsight(novelSourceId: string): Promise<NovelInsightResponse> {
         // 1. Find Project by NovelSource
@@ -176,7 +181,7 @@ export class AuditInsightService {
         };
     }
 
-    async getNovelAuditFull(novelSourceId: string): Promise<NovelAuditFullResponse> {
+    async getNovelAuditFull(novelSourceId: string, userId: string): Promise<NovelAuditFullResponse> {
         // 1. Resolve projectId
         const novelSource = await this.prisma.novelSource.findUnique({
             where: { id: novelSourceId },
@@ -197,11 +202,12 @@ export class AuditInsightService {
             });
         };
 
-        const [ce06J, ce07J, ce03J, ce04J] = await Promise.all([
+        const [ce06J, ce07J, ce03J, ce04J, videoJ] = await Promise.all([
             fetchLatestJob('CE06_NOVEL_PARSING'),
             fetchLatestJob('CE07_MEMORY_UPDATE'),
             fetchLatestJob('CE03_VISUAL_DENSITY'),
             fetchLatestJob('CE04_VISUAL_ENRICHMENT'),
+            fetchLatestJob('VIDEO_RENDER'),
         ]);
 
         const mapJob = (j: any): AuditJobSummaryDto | null => j ? {
@@ -307,7 +313,9 @@ export class AuditInsightService {
             const phases = [
                 { type: 'CE06_NOVEL_PARSING', label: 'CE06' },
                 { type: 'CE03_VISUAL_DENSITY', label: 'CE03' },
-                { type: 'CE04_VISUAL_ENRICHMENT', label: 'CE04' }
+                { type: 'CE04_VISUAL_ENRICHMENT', label: 'CE04' },
+                { type: 'SHOT_RENDER', label: 'SHOT' },
+                { type: 'VIDEO_RENDER', label: 'VIDEO' }
             ];
 
             timeline = phases.map(p => {
@@ -320,7 +328,96 @@ export class AuditInsightService {
                 };
             });
         } else {
-            missingPhases = ['CE06', 'CE03', 'CE04'];
+            missingPhases = ['CE06', 'CE03', 'CE04', 'SHOT', 'VIDEO'];
+        }
+
+        // 6. Video Asset Resolution (SSOT: Asset Table)
+        let videoAsset:
+            | undefined
+            | { status: string; secureUrl?: string; jobId?: string; assetId?: string; storageKey?: string };
+
+        // Step 6A: Resolve shotId (must be derived from reliable context)
+        // Prefer explicit shotId from VIDEO_RENDER job payload if present, else from CE04 payload, else latest shot in this project.
+        let shotId: string | null =
+            ((videoJ?.payload as any)?.shotId as string | undefined) ||
+            ((ce04J?.payload as any)?.shotId as string | undefined) ||
+            null;
+
+        if (!shotId) {
+            const shot = await this.prisma.shot.findFirst({
+                where: { scene: { episode: { season: { projectId } } } },
+                select: { id: true },
+            });
+            shotId = shot?.id || null;
+        }
+
+        // Step 6B: Query Asset table as SSOT
+        let videoFromAsset: { id: string; storageKey: string | null; createdByJobId: string | null } | null = null;
+
+        if (shotId) {
+            videoFromAsset = await this.prisma.asset.findFirst({
+                where: {
+                    projectId,
+                    ownerType: 'SHOT',
+                    ownerId: shotId,
+                    type: 'VIDEO',
+                    status: 'GENERATED',
+                },
+                orderBy: { createdAt: 'desc' },
+                select: { id: true, storageKey: true, createdByJobId: true },
+            });
+        }
+
+        if (videoFromAsset?.storageKey) {
+            // Use Asset SSOT
+            try {
+                const { url } = this.signedUrlService.generateSignedUrl({
+                    key: videoFromAsset.storageKey,
+                    tenantId: projectId, // tenant binding (project-scoped)
+                    userId,
+                    expiresIn: 3600,
+                });
+
+                videoAsset = {
+                    status: 'READY',
+                    secureUrl: url,
+                    assetId: videoFromAsset.id,
+                    storageKey: videoFromAsset.storageKey,
+                    jobId: videoFromAsset.createdByJobId || undefined,
+                };
+            } catch (e) {
+                console.error('[AuditInsight] Failed to sign video URL from Asset SSOT', e);
+                videoAsset = {
+                    status: 'ERROR_SIGNING',
+                    assetId: videoFromAsset.id,
+                    storageKey: videoFromAsset.storageKey,
+                    jobId: videoFromAsset.createdByJobId || undefined,
+                };
+            }
+        } else if (videoJ) {
+            // DEPRECATED Fallback (job payload result.videoKey)
+            console.warn(`[AuditInsight] WARN_DEPRECATED_JOB_VIDEO_KEY_PATH_USED=1 projectId=${projectId}`);
+
+            const payload = (videoJ.payload as any) || {};
+            const res = payload.result || {};
+            const legacyKey = res.videoKey as string | undefined;
+
+            if (videoJ.status === 'SUCCEEDED' && legacyKey) {
+                try {
+                    const { url } = this.signedUrlService.generateSignedUrl({
+                        key: legacyKey,
+                        tenantId: projectId,
+                        userId,
+                        expiresIn: 3600,
+                    });
+                    videoAsset = { status: 'READY', secureUrl: url, jobId: videoJ.id, storageKey: legacyKey };
+                } catch (e) {
+                    console.error('[AuditInsight] Failed to sign video URL from legacy job payload', e);
+                    videoAsset = { status: 'ERROR_SIGNING', jobId: videoJ.id, storageKey: legacyKey };
+                }
+            } else {
+                videoAsset = { status: videoJ.status, jobId: videoJ.id };
+            }
         }
 
         const dag: DagRunSummaryDto = {
@@ -338,14 +435,16 @@ export class AuditInsightService {
                 ce06: mapJob(ce06J),
                 ce07: mapJob(ce07J),
                 ce03: mapJob(ce03J),
-                ce04: mapJob(ce04J)
+                ce04: mapJob(ce04J),
+                video: mapJob(videoJ)
             },
             metrics: {
                 ce03Score: ce03M?.visualDensityScore || 0,
                 ce04Score: ce04M?.enrichmentQuality || 0,
             },
             director,
-            dag
+            dag,
+            videoAsset
         };
     }
 

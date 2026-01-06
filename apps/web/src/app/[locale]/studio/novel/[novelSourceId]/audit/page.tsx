@@ -121,6 +121,42 @@ export default function AuditPage() {
                 </div>
             </div>
 
+            {/* Stage 3: Final Output Video */}
+            {data.videoAsset && (
+                <section className="bg-white/[0.02] p-6 rounded-2xl border border-white/10">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-lg font-bold flex items-center gap-2 italic">
+                            <span className="w-1.5 h-6 bg-green-500 skew-x-[-15deg]"></span>
+                            FINAL_RENDER_OUTPUT
+                        </h2>
+                        <div className="flex items-center gap-4">
+                            <div className={`px-2 py-0.5 text-[10px] font-mono rounded uppercase ${data.videoAsset.status === 'READY' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                                STATUS: {data.videoAsset.status}
+                            </div>
+                            <div className="text-[10px] font-mono text-gray-600">ID: {data.videoAsset.jobId}</div>
+                        </div>
+                    </div>
+
+                    <div className="relative aspect-video bg-black rounded-lg overflow-hidden border border-white/10 group">
+                        {data.videoAsset.secureUrl ? (
+                            <video
+                                src={data.videoAsset.secureUrl}
+                                controls
+                                className="w-full h-full object-contain"
+                                poster="/placeholder-video-poster.png" // Optional
+                            >
+                                Your browser does not support the video tag.
+                            </video>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                <div className="text-4xl mb-4 animate-pulse">⏳</div>
+                                <div className="text-sm font-mono uppercase">Rendering in Progress...</div>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
+
             {/* Stage 2: DAG Pipeline Timeline */}
             <section className="bg-white/[0.02] p-6 rounded-2xl border border-white/10">
                 <div className="flex items-center justify-between mb-8">

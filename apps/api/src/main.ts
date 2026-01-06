@@ -47,26 +47,21 @@ async function bootstrap() {
   if (env.isProduction) {
     if (!process.env.CORS_ORIGINS) {
       const logger = app.get(Logger);
-      logger.error(
-        '[FATAL] CORS_ORIGINS is required in production environment. ' +
-        'Please set CORS_ORIGINS environment variable (comma-separated origins).',
-      );
+      logger.error('[CORS] FATAL: CORS_ORIGINS is required in production, but not set.');
       process.exit(1);
     }
   }
 
-  const corsOrigins = env.isProduction
-    ? process.env.CORS_ORIGINS!.split(',').map((o) => o.trim()).filter(Boolean)
-    : [env.frontendUrl || 'http://localhost:3001'];
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+    : ['http://localhost:3001', 'http://localhost:3000'];
 
   app.enableCors({
     origin: (origin, callback) => {
-      // 允许无 origin 的请求（如 Postman、curl）
       if (!origin) {
-        return callback(null, true);
+        callback(null, true);
+        return;
       }
-
-      // 生产环境：严格检查白名单
       if (env.isProduction) {
         if (corsOrigins.includes(origin)) {
           callback(null, true);
@@ -85,19 +80,33 @@ async function bootstrap() {
 
   await app.listen(env.apiPort);
 
+  // P0 Self-Verification: Check if StorageController is registered
+  try {
+    const { ModulesContainer } = await import('@nestjs/core');
+    const { StorageController } = await import('./storage/storage.controller');
+
+    const modules = app.get(ModulesContainer);
+    let hasStorageController = false;
+    let totalControllers = 0;
+
+    for (const [_, mod] of modules.entries()) {
+      for (const ctrl of mod.controllers.values()) {
+        totalControllers++;
+        if (ctrl.metatype === StorageController) {
+          hasStorageController = true;
+          console.log(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`);
+        }
+      }
+    }
+
+    console.log(`[P0_EVIDENCE] StorageController registered = ${hasStorageController}`);
+    console.log(`[P0_EVIDENCE] Total controllers registered = ${totalControllers}`);
+  } catch (e) {
+    console.error('[P0_EVIDENCE] Failed to check modules:', e);
+  }
+
   const logger = app.get(Logger);
   logger.log(`🚀 API Server is running on: http://localhost:${env.apiPort}`);
 }
 
 bootstrap();
-
-
-
-
-
-
-
-
-
-
-

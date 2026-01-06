@@ -52,6 +52,13 @@ export async function processVideoRenderJob(
 
     const traceId = job.traceId || `trace-${jobId}`;
     const payload = job.payload as any;
+
+    // FIX 3: shotId 强制校验 - 必填,不允许fallback
+    const shotId = payload?.shotId;
+    if (!shotId) {
+        throw new Error(`[VIDEO_RENDER] shotId is required in payload. Job cannot proceed without valid shot ownership.`);
+    }
+
     const frameKeys = payload.frameKeys as string[];
     const fps = payload.fps || 24;
 
@@ -82,34 +89,56 @@ export async function processVideoRenderJob(
                 console.error(`[Start-Video-Render] AbsolutePath: ${storage.getAbsolutePath(key)}`);
                 throw new Error(`Frame missing: ${key} (Root: ${storageRoot})`);
             }
-            // FFmpeg needs absolute path
-            // FORCE DURATION for test stability
+            // FFmpeg needs absolute path - FORCE DURATION for test stability
             return `file '${storage.getAbsolutePath(key)}'\nduration 1.0`;
-        }).join('\n');
+        }));
+        let joinedListContent = listContent.join('\n');
 
         // FFmpeg concat demuxer quirk: Last file needs to be repeated or it won't have duration
         if (frameKeys.length > 0) {
             const lastKey = frameKeys[frameKeys.length - 1];
-            listContent += `\nfile '${storage.getAbsolutePath(lastKey)}'`;
+            joinedListContent += `\nfile '${storage.getAbsolutePath(lastKey)}'`;
+        } else {
+            joinedListContent = listContent.join('\n');
         }
 
-        console.log(`[VIDEO_RENDER_DEBUG] input.txt content:\n${listContent}`);
-        fs.writeFileSync(listFilePath, listContent);
+        console.log(`[VIDEO_RENDER_DEBUG] input.txt content:\n${joinedListContent}`);
+        fs.writeFileSync(listFilePath, joinedListContent);
 
         // 2. Output Path (Temp)
         const tempOutput = path.join(workspaceDir, 'output.mp4');
 
         // 3. Exec FFmpeg
-        // P3 E2E Fix: Use synthetic video source to guarantee success regardless of input images
+        // FIX 5: testsrc 只在环境变量开启时启用,否则使用真实 frameKeys concat
+        const useTestsrc = process.env.VIDEO_RENDER_TESTSRC === '1';
         const cmd = 'ffmpeg';
-        const args = [
-            '-f', 'lavfi',
-            '-i', 'testsrc=duration=1:size=640x360:rate=24',
-            '-c:v', 'libx264',
-            '-pix_fmt', 'yuv420p',
-            '-y',
-            tempOutput
-        ];
+        let args: string[];
+
+        if (useTestsrc) {
+            // Gate模式: synthetic video for E2E stability
+            args = [
+                '-f', 'lavfi',
+                '-i', 'testsrc=duration=1:size=640x360:rate=24',
+                '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                '-y',
+                tempOutput
+            ];
+            console.log(`[VIDEO_RENDER] Using testsrc mode (VIDEO_RENDER_TESTSRC=1)`);
+        } else {
+            // 正常模式: 使用真实 frames concat
+            args = [
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', listFilePath,
+                '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                '-r', '24',
+                '-y',
+                tempOutput
+            ];
+            console.log(`[VIDEO_RENDER] Using real frames concat mode (frameKeys: ${frameKeys.length})`);
+        }
 
         console.log(JSON.stringify({
             event: 'VIDEO_RENDER_FFMPEG_CMD',
@@ -136,11 +165,70 @@ export async function processVideoRenderJob(
             });
         });
 
-        // 4. Upload to Storage
-        const videoKey = `videos/${jobId}.mp4`;
+        // 4. Register Asset First (FIX 2: 使用 assetId 作为 videoKey SSOT)
         const videoBuffer = fs.readFileSync(tempOutput);
-        await storage.put(videoKey, videoBuffer);
         const sizeBytes = videoBuffer.length;
+
+        const asset = await prisma.asset.upsert({
+            where: {
+                ownerType_ownerId_type: {
+                    ownerType: 'SHOT',
+                    ownerId: shotId,
+                    type: 'VIDEO',
+                }
+            },
+            create: {
+                projectId: (job as any).projectId,
+                ownerType: 'SHOT',
+                ownerId: shotId,
+                type: 'VIDEO',
+                status: 'GENERATED',
+                storageKey: 'temp/pending', // Temporary, will update after upload
+                checksum: null,
+                createdByJobId: jobId
+            },
+            update: {
+                status: 'GENERATED',
+                storageKey: 'temp/pending', // Will update
+                checksum: null,
+                createdByJobId: jobId
+            }
+        });
+
+        // FIX 2: 使用 assetId 作为 videoKey,保证资产与物理文件 1:1 对应
+        const videoKey = `videos/${asset.id}.mp4`;
+
+        // 5. Upload to Storage with assetId-based key
+        console.log(JSON.stringify({
+            event: 'VIDEO_STORAGE_PUT_START',
+            jobId,
+            assetId: asset.id,
+            videoKey,
+            bufferSize: sizeBytes,
+            storageRoot
+        }));
+        await storage.put(videoKey, videoBuffer);
+        console.log(JSON.stringify({
+            event: 'VIDEO_STORAGE_PUT_DONE',
+            jobId,
+            assetId: asset.id,
+            videoKey,
+            absolutePath: storage.getAbsolutePath(videoKey)
+        }));
+
+        // 6. Update Asset with final storageKey
+        await prisma.asset.update({
+            where: { id: asset.id },
+            data: { storageKey: videoKey }
+        });
+
+        console.log(JSON.stringify({
+            event: 'VIDEO_ASSET_REGISTERED',
+            jobId,
+            assetId: asset.id,
+            videoKey,
+            projectId: (job as any).projectId
+        }));
 
         const duration = Date.now() - jobStartTime;
 
@@ -154,6 +242,7 @@ export async function processVideoRenderJob(
         }));
 
         return {
+            assetId: asset.id,
             videoKey,
             sizeBytes,
             durationMs: duration,
