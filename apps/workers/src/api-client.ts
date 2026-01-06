@@ -97,8 +97,9 @@ export class ApiClient {
   private baseURL: string;
   private apiKey?: string;
   private apiSecret?: string;
+  private workerId?: string;
 
-  constructor(baseURL: string | undefined, apiKey?: string, apiSecret?: string) {
+  constructor(baseURL: string | undefined, apiKey?: string, apiSecret?: string, workerId?: string) {
     if (!baseURL) {
       throw new Error(
         'ApiClient: baseURL 不能为空（请检查 env.apiUrl / API_HOST / API_PORT）'
@@ -110,6 +111,7 @@ export class ApiClient {
 
     this.apiKey = apiKey;
     this.apiSecret = apiSecret;
+    this.workerId = workerId;
   }
 
   private async request<T>(
@@ -135,7 +137,8 @@ export class ApiClient {
       const nonce = generateNonce();
 
       // 2. 强制要求x-worker-id（商业级：避免回退到v1签名）
-      const workerId = extraHeaders?.['x-worker-id'];
+      // 优先使用实例workerId，其次使用extraHeaders中的
+      const workerId = this.workerId ?? extraHeaders?.['x-worker-id'];
       if (!workerId) {
         throw new Error('[AUTH] missing x-worker-id header; refusing to sign without workerId');
       }
@@ -179,9 +182,12 @@ export class ApiClient {
     }
 
     // 商业级审计：添加extraHeaders（v2时workerId已参与签名）
-    if (extraHeaders) {
-      Object.assign(headers, extraHeaders);
-    }
+    // 确保x-worker-id始终存在于headers中
+    const mergedHeaders = {
+      ...extraHeaders,
+      'x-worker-id': this.workerId ?? extraHeaders?.['x-worker-id'],
+    };
+    Object.assign(headers, mergedHeaders);
 
     try {
       const response = await fetch(url, {

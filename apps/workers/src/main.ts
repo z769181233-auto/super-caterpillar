@@ -56,6 +56,7 @@ const apiClient = new ApiClient(
   apiBaseUrl.replace(/\/api\/?$/, ''),
   env.workerApiKey,
   env.workerApiSecret,
+  env.workerId,
 );
 
 let isRunning = false;
