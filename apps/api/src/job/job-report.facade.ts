@@ -172,7 +172,8 @@ export class JobReportFacade {
         // Case B: VIDEO_RENDER finished -> Create Asset in DB
         // This ensures the UI (ProjectStructureService) can see the video.
         if (updatedJob.type === JobTypeEnum.VIDEO_RENDER && updatedJob.shotId) {
-          const videoUrl = params.result?.videoUrl || params.result?.storageKey;
+          // P0-2: Accept outputKey (from Worker), storageKey or videoUrl
+          const videoUrl = params.result?.outputKey || params.result?.storageKey || params.result?.videoUrl;
           if (videoUrl) {
             // Stage 10 Refactor: Business Key Idempotency (One Asset per Type per Owner)
             // Stage 10 Refactor: Business Key Idempotency (One Asset per Type per Owner)
