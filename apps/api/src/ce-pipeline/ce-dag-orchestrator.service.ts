@@ -174,7 +174,12 @@ export class CEDagOrchestratorService {
 
             const videoJob = await this.jobService.create(req.shotId, {
                 type: 'VIDEO_RENDER',
-                payload: { frameKeys, fps: 24, runId },
+                payload: {
+                    shotId: req.shotId,  // ✅ P0-2: VideoRenderProcessor requires shotId in payload
+                    frameKeys,
+                    fps: 24,
+                    runId
+                },
                 traceId
             }, userId, orgId);
             jobIds.videoJobId = videoJob.id;
@@ -215,8 +220,14 @@ export class CEDagOrchestratorService {
     private async waitForJobCompletion(
         jobId: string,
         jobLabel: string,
-        timeoutMs = 60000
+        timeoutMs?: number
     ): Promise<void> {
+        // Allow override via env (for gate testing on slow machines)
+        if (!timeoutMs) {
+            const parsed = Number(process.env.CE_DAG_JOB_TIMEOUT_MS ?? 60000);
+            timeoutMs = Number.isFinite(parsed) && parsed > 0 ? parsed : 60000;
+            this.logger.log(`[CE_DAG] job wait timeout=${timeoutMs}ms (env:${process.env.CE_DAG_JOB_TIMEOUT_MS ?? 'default'})`);
+        }
         const startTime = Date.now();
         const pollIntervalMs = 1000;
 
