@@ -49,6 +49,7 @@ import { StorageController } from './storage/storage.controller';
 import { LocalStorageService } from './storage/local-storage.service';
 import { SignedUrlService } from './storage/signed-url.service';
 import { StorageAuthService } from './storage/storage-auth.service';
+import { ApiSecurityGuard } from './security/api-security/api-security.guard';
 
 
 // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
@@ -120,6 +121,10 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ApiSecurityGuard, // P0-2: HMAC 签名验证 Guard
     },
     {
       provide: APP_FILTER,

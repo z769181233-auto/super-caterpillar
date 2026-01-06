@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@scu/database';
+import type { Prisma } from 'database';
 
 const ALLOWED_BILLING_UNITS = new Set(['job', 'tokens', 'seconds', 'frames']);
 

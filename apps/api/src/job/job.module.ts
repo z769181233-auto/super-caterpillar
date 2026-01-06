@@ -21,6 +21,7 @@ import { CopyrightModule } from '../copyright/copyright.module';
 import { CapacityGateModule } from '../capacity/capacity-gate.module';
 import { JobWatchdogService } from './job-watchdog.service';
 import { TextSafetyModule } from '../text-safety/text-safety.module';
+import { ShotDirectorModule } from '../shot-director/shot-director.module';
 import { env } from '@scu/config';
 
 // P1 修复：统一使用 packages/config，避免 split-brain
@@ -43,6 +44,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     CopyrightModule, // Full Implementation: 版权集成
     CapacityGateModule, // 容量门禁模块
     TextSafetyModule,
+    ShotDirectorModule, // P0-3: 提供 DirectorConstraintSolverService
   ],
   controllers: [JobController],
   providers: [
