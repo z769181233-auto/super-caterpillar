@@ -821,6 +821,21 @@ exports.Prisma.TextSafetyResultScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.CostLedgerScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  projectId: 'projectId',
+  jobId: 'jobId',
+  jobType: 'jobType',
+  engineKey: 'engineKey',
+  costAmount: 'costAmount',
+  currency: 'currency',
+  billingUnit: 'billingUnit',
+  quantity: 'quantity',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1142,7 +1157,8 @@ exports.Prisma.ModelName = {
   BillingRecord: 'BillingRecord',
   Model: 'Model',
   Asset: 'Asset',
-  TextSafetyResult: 'TextSafetyResult'
+  TextSafetyResult: 'TextSafetyResult',
+  CostLedger: 'CostLedger'
 };
 
 /**

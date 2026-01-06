@@ -23,6 +23,7 @@ model User {
   apiKeys               ApiKey[]             @relation("UserApiKeys")
   auditLogs             AuditLog[]           @relation("UserAuditLogs")
   billingEvents         BillingEvent[]       @relation("BillingEventUser")
+  costLedgers           CostLedger[]         @relation("UserCostLedgers")
   memberships           Membership[]         @relation("UserMemberships")
   organizationMembers   OrganizationMember[] @relation("UserOrganizationMember")
   ownedOrganizations    Organization[]       @relation("OrganizationOwner")
@@ -100,6 +101,7 @@ model Project {
   qualityMetrics         QualityMetrics[]        @relation("ProjectQualityMetrics")
   seasons                Season[]                @relation("ProjectSeasons")
   structureQualityReport StructureQualityReport? @relation("ProjectQualityReport")
+  costLedgers            CostLedger[]            @relation("ProjectCostLedgers")
 
   @@map("projects")
 }
@@ -1338,4 +1340,29 @@ enum AssetStatus {
   GENERATED
   LOCKED
   PUBLISHED
+}
+
+// P0: Cost Ledger for billing and cost tracking
+model CostLedger {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String
+  jobId       String // ⚠️ 非空: 避免unique对NULL失效
+  jobType     String // ⚠️ 非空: 避免unique对NULL失效
+  engineKey   String?
+  costAmount  Float
+  currency    String   @default("USD")
+  billingUnit String // e.g. "tokens", "seconds", "frames", "job"
+  quantity    Float
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user    User    @relation("UserCostLedgers", fields: [userId], references: [id])
+  project Project @relation("ProjectCostLedgers", fields: [projectId], references: [id])
+
+  // ⚠️ 幂等唯一键: 同一 jobId + jobType 只能记一次
+  @@unique([jobId, jobType])
+  @@index([projectId, createdAt])
+  @@index([userId])
+  @@map("cost_ledger")
 }

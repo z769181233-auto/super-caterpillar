@@ -241,6 +241,39 @@ export async function processVideoRenderJob(
             sizeBytes
         }));
 
+        // P0-2: 成本事件上报（不阻断主流程）
+        const project = await prisma.project.findUnique({
+            where: { id: (job as any).projectId },
+            select: { ownerId: true }
+        }).catch(() => null);
+
+        if (project?.ownerId) {
+            try {
+                const costResult = await apiClient.postCostEvent({
+                    userId: project.ownerId,
+                    projectId: (job as any).projectId,
+                    jobId: jobId,
+                    jobType: 'VIDEO_RENDER',
+                    engineKey: 'ffmpeg',
+                    costAmount: 0.05, // P0-2: 固定成本，后续实现真实计费
+                    currency: 'USD',
+                    billingUnit: 'job',
+                    quantity: 1,
+                    metadata: {
+                        sizeBytes,
+                        durationMs: duration,
+                        framesCount: frameKeys.length,
+                    }
+                });
+                console.log(`[COST_EVENT] OK jobId=${jobId} costId=${costResult.id} deduplicated=${costResult.deduplicated}`);
+            } catch (e: any) {
+                // 不阻断主流程，仅记录日志
+                console.error(`[COST_EVENT] FAILED jobId=${jobId}`, e.message || e);
+            }
+        } else {
+            console.warn(`[COST_EVENT] SKIP jobId=${jobId} (no project owner found)`);
+        }
+
         return {
             assetId: asset.id,
             videoKey,

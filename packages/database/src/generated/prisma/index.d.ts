@@ -293,6 +293,11 @@ export type Asset = $Result.DefaultSelection<Prisma.$AssetPayload>
  * 
  */
 export type TextSafetyResult = $Result.DefaultSelection<Prisma.$TextSafetyResultPayload>
+/**
+ * Model CostLedger
+ * 
+ */
+export type CostLedger = $Result.DefaultSelection<Prisma.$CostLedgerPayload>
 
 /**
  * Enums
@@ -1448,6 +1453,16 @@ export class PrismaClient<
     * ```
     */
   get textSafetyResult(): Prisma.TextSafetyResultDelegate<ExtArgs>;
+
+  /**
+   * `prisma.costLedger`: Exposes CRUD operations for the **CostLedger** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CostLedgers
+    * const costLedgers = await prisma.costLedger.findMany()
+    * ```
+    */
+  get costLedger(): Prisma.CostLedgerDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1944,7 +1959,8 @@ export namespace Prisma {
     BillingRecord: 'BillingRecord',
     Model: 'Model',
     Asset: 'Asset',
-    TextSafetyResult: 'TextSafetyResult'
+    TextSafetyResult: 'TextSafetyResult',
+    CostLedger: 'CostLedger'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1960,7 +1976,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "organization" | "membership" | "project" | "season" | "episode" | "scene" | "shot" | "semanticEnhancement" | "shotPlanning" | "structureQualityReport" | "engineTask" | "engine" | "engineVersion" | "jobEngineBinding" | "nonceStore" | "role" | "permission" | "rolePermission" | "projectMember" | "task" | "workerJob" | "shotJob" | "workerNode" | "workerHeartbeat" | "modelRegistry" | "templatePreset" | "qualityScore" | "safetyResult" | "billingEvent" | "costCenter" | "subscription" | "publishingReview" | "organizationMember" | "novelSource" | "novelChapter" | "sceneDraft" | "novelAnalysisJob" | "apiKey" | "auditLog" | "securityFingerprint" | "shotVariant" | "videoJob" | "character" | "novelVolume" | "novelScene" | "memoryShortTerm" | "memoryLongTerm" | "novelParseResult" | "qualityMetrics" | "systemSetting" | "billingPlan" | "billingRecord" | "model" | "asset" | "textSafetyResult"
+      modelProps: "user" | "organization" | "membership" | "project" | "season" | "episode" | "scene" | "shot" | "semanticEnhancement" | "shotPlanning" | "structureQualityReport" | "engineTask" | "engine" | "engineVersion" | "jobEngineBinding" | "nonceStore" | "role" | "permission" | "rolePermission" | "projectMember" | "task" | "workerJob" | "shotJob" | "workerNode" | "workerHeartbeat" | "modelRegistry" | "templatePreset" | "qualityScore" | "safetyResult" | "billingEvent" | "costCenter" | "subscription" | "publishingReview" | "organizationMember" | "novelSource" | "novelChapter" | "sceneDraft" | "novelAnalysisJob" | "apiKey" | "auditLog" | "securityFingerprint" | "shotVariant" | "videoJob" | "character" | "novelVolume" | "novelScene" | "memoryShortTerm" | "memoryLongTerm" | "novelParseResult" | "qualityMetrics" | "systemSetting" | "billingPlan" | "billingRecord" | "model" | "asset" | "textSafetyResult" | "costLedger"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -5884,6 +5900,76 @@ export namespace Prisma {
           }
         }
       }
+      CostLedger: {
+        payload: Prisma.$CostLedgerPayload<ExtArgs>
+        fields: Prisma.CostLedgerFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CostLedgerFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CostLedgerFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload>
+          }
+          findFirst: {
+            args: Prisma.CostLedgerFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CostLedgerFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload>
+          }
+          findMany: {
+            args: Prisma.CostLedgerFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload>[]
+          }
+          create: {
+            args: Prisma.CostLedgerCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload>
+          }
+          createMany: {
+            args: Prisma.CostLedgerCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CostLedgerCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload>[]
+          }
+          delete: {
+            args: Prisma.CostLedgerDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload>
+          }
+          update: {
+            args: Prisma.CostLedgerUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload>
+          }
+          deleteMany: {
+            args: Prisma.CostLedgerDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CostLedgerUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CostLedgerUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CostLedgerPayload>
+          }
+          aggregate: {
+            args: Prisma.CostLedgerAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCostLedger>
+          }
+          groupBy: {
+            args: Prisma.CostLedgerGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CostLedgerGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CostLedgerCountArgs<ExtArgs>
+            result: $Utils.Optional<CostLedgerCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -6048,6 +6134,7 @@ export namespace Prisma {
     apiKeys: number
     auditLogs: number
     billingEvents: number
+    costLedgers: number
     memberships: number
     organizationMembers: number
     ownedOrganizations: number
@@ -6060,6 +6147,7 @@ export namespace Prisma {
     apiKeys?: boolean | UserCountOutputTypeCountApiKeysArgs
     auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
     billingEvents?: boolean | UserCountOutputTypeCountBillingEventsArgs
+    costLedgers?: boolean | UserCountOutputTypeCountCostLedgersArgs
     memberships?: boolean | UserCountOutputTypeCountMembershipsArgs
     organizationMembers?: boolean | UserCountOutputTypeCountOrganizationMembersArgs
     ownedOrganizations?: boolean | UserCountOutputTypeCountOwnedOrganizationsArgs
@@ -6098,6 +6186,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountBillingEventsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BillingEventWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountCostLedgersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CostLedgerWhereInput
   }
 
   /**
@@ -6280,6 +6375,7 @@ export namespace Prisma {
     projectMembers: number
     qualityMetrics: number
     seasons: number
+    costLedgers: number
   }
 
   export type ProjectCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6294,6 +6390,7 @@ export namespace Prisma {
     projectMembers?: boolean | ProjectCountOutputTypeCountProjectMembersArgs
     qualityMetrics?: boolean | ProjectCountOutputTypeCountQualityMetricsArgs
     seasons?: boolean | ProjectCountOutputTypeCountSeasonsArgs
+    costLedgers?: boolean | ProjectCountOutputTypeCountCostLedgersArgs
   }
 
   // Custom InputTypes
@@ -6382,6 +6479,13 @@ export namespace Prisma {
    */
   export type ProjectCountOutputTypeCountSeasonsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SeasonWhereInput
+  }
+
+  /**
+   * ProjectCountOutputType without action
+   */
+  export type ProjectCountOutputTypeCountCostLedgersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CostLedgerWhereInput
   }
 
 
@@ -7191,6 +7295,7 @@ export namespace Prisma {
     apiKeys?: boolean | User$apiKeysArgs<ExtArgs>
     auditLogs?: boolean | User$auditLogsArgs<ExtArgs>
     billingEvents?: boolean | User$billingEventsArgs<ExtArgs>
+    costLedgers?: boolean | User$costLedgersArgs<ExtArgs>
     memberships?: boolean | User$membershipsArgs<ExtArgs>
     organizationMembers?: boolean | User$organizationMembersArgs<ExtArgs>
     ownedOrganizations?: boolean | User$ownedOrganizationsArgs<ExtArgs>
@@ -7232,6 +7337,7 @@ export namespace Prisma {
     apiKeys?: boolean | User$apiKeysArgs<ExtArgs>
     auditLogs?: boolean | User$auditLogsArgs<ExtArgs>
     billingEvents?: boolean | User$billingEventsArgs<ExtArgs>
+    costLedgers?: boolean | User$costLedgersArgs<ExtArgs>
     memberships?: boolean | User$membershipsArgs<ExtArgs>
     organizationMembers?: boolean | User$organizationMembersArgs<ExtArgs>
     ownedOrganizations?: boolean | User$ownedOrganizationsArgs<ExtArgs>
@@ -7248,6 +7354,7 @@ export namespace Prisma {
       apiKeys: Prisma.$ApiKeyPayload<ExtArgs>[]
       auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
       billingEvents: Prisma.$BillingEventPayload<ExtArgs>[]
+      costLedgers: Prisma.$CostLedgerPayload<ExtArgs>[]
       memberships: Prisma.$MembershipPayload<ExtArgs>[]
       organizationMembers: Prisma.$OrganizationMemberPayload<ExtArgs>[]
       ownedOrganizations: Prisma.$OrganizationPayload<ExtArgs>[]
@@ -7634,6 +7741,7 @@ export namespace Prisma {
     apiKeys<T extends User$apiKeysArgs<ExtArgs> = {}>(args?: Subset<T, User$apiKeysArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findMany"> | Null>
     auditLogs<T extends User$auditLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany"> | Null>
     billingEvents<T extends User$billingEventsArgs<ExtArgs> = {}>(args?: Subset<T, User$billingEventsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BillingEventPayload<ExtArgs>, T, "findMany"> | Null>
+    costLedgers<T extends User$costLedgersArgs<ExtArgs> = {}>(args?: Subset<T, User$costLedgersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "findMany"> | Null>
     memberships<T extends User$membershipsArgs<ExtArgs> = {}>(args?: Subset<T, User$membershipsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MembershipPayload<ExtArgs>, T, "findMany"> | Null>
     organizationMembers<T extends User$organizationMembersArgs<ExtArgs> = {}>(args?: Subset<T, User$organizationMembersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrganizationMemberPayload<ExtArgs>, T, "findMany"> | Null>
     ownedOrganizations<T extends User$ownedOrganizationsArgs<ExtArgs> = {}>(args?: Subset<T, User$ownedOrganizationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrganizationPayload<ExtArgs>, T, "findMany"> | Null>
@@ -8051,6 +8159,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: BillingEventScalarFieldEnum | BillingEventScalarFieldEnum[]
+  }
+
+  /**
+   * User.costLedgers
+   */
+  export type User$costLedgersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    where?: CostLedgerWhereInput
+    orderBy?: CostLedgerOrderByWithRelationInput | CostLedgerOrderByWithRelationInput[]
+    cursor?: CostLedgerWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CostLedgerScalarFieldEnum | CostLedgerScalarFieldEnum[]
   }
 
   /**
@@ -10627,6 +10755,7 @@ export namespace Prisma {
     qualityMetrics?: boolean | Project$qualityMetricsArgs<ExtArgs>
     seasons?: boolean | Project$seasonsArgs<ExtArgs>
     structureQualityReport?: boolean | Project$structureQualityReportArgs<ExtArgs>
+    costLedgers?: boolean | Project$costLedgersArgs<ExtArgs>
     _count?: boolean | ProjectCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["project"]>
 
@@ -10674,6 +10803,7 @@ export namespace Prisma {
     qualityMetrics?: boolean | Project$qualityMetricsArgs<ExtArgs>
     seasons?: boolean | Project$seasonsArgs<ExtArgs>
     structureQualityReport?: boolean | Project$structureQualityReportArgs<ExtArgs>
+    costLedgers?: boolean | Project$costLedgersArgs<ExtArgs>
     _count?: boolean | ProjectCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type ProjectIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -10699,6 +10829,7 @@ export namespace Prisma {
       qualityMetrics: Prisma.$QualityMetricsPayload<ExtArgs>[]
       seasons: Prisma.$SeasonPayload<ExtArgs>[]
       structureQualityReport: Prisma.$StructureQualityReportPayload<ExtArgs> | null
+      costLedgers: Prisma.$CostLedgerPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -11090,6 +11221,7 @@ export namespace Prisma {
     qualityMetrics<T extends Project$qualityMetricsArgs<ExtArgs> = {}>(args?: Subset<T, Project$qualityMetricsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$QualityMetricsPayload<ExtArgs>, T, "findMany"> | Null>
     seasons<T extends Project$seasonsArgs<ExtArgs> = {}>(args?: Subset<T, Project$seasonsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SeasonPayload<ExtArgs>, T, "findMany"> | Null>
     structureQualityReport<T extends Project$structureQualityReportArgs<ExtArgs> = {}>(args?: Subset<T, Project$structureQualityReportArgs<ExtArgs>>): Prisma__StructureQualityReportClient<$Result.GetResult<Prisma.$StructureQualityReportPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    costLedgers<T extends Project$costLedgersArgs<ExtArgs> = {}>(args?: Subset<T, Project$costLedgersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -11694,6 +11826,26 @@ export namespace Prisma {
      */
     include?: StructureQualityReportInclude<ExtArgs> | null
     where?: StructureQualityReportWhereInput
+  }
+
+  /**
+   * Project.costLedgers
+   */
+  export type Project$costLedgersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    where?: CostLedgerWhereInput
+    orderBy?: CostLedgerOrderByWithRelationInput | CostLedgerOrderByWithRelationInput[]
+    cursor?: CostLedgerWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CostLedgerScalarFieldEnum | CostLedgerScalarFieldEnum[]
   }
 
   /**
@@ -64292,6 +64444,1063 @@ export namespace Prisma {
 
 
   /**
+   * Model CostLedger
+   */
+
+  export type AggregateCostLedger = {
+    _count: CostLedgerCountAggregateOutputType | null
+    _avg: CostLedgerAvgAggregateOutputType | null
+    _sum: CostLedgerSumAggregateOutputType | null
+    _min: CostLedgerMinAggregateOutputType | null
+    _max: CostLedgerMaxAggregateOutputType | null
+  }
+
+  export type CostLedgerAvgAggregateOutputType = {
+    costAmount: number | null
+    quantity: number | null
+  }
+
+  export type CostLedgerSumAggregateOutputType = {
+    costAmount: number | null
+    quantity: number | null
+  }
+
+  export type CostLedgerMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    projectId: string | null
+    jobId: string | null
+    jobType: string | null
+    engineKey: string | null
+    costAmount: number | null
+    currency: string | null
+    billingUnit: string | null
+    quantity: number | null
+    createdAt: Date | null
+  }
+
+  export type CostLedgerMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    projectId: string | null
+    jobId: string | null
+    jobType: string | null
+    engineKey: string | null
+    costAmount: number | null
+    currency: string | null
+    billingUnit: string | null
+    quantity: number | null
+    createdAt: Date | null
+  }
+
+  export type CostLedgerCountAggregateOutputType = {
+    id: number
+    userId: number
+    projectId: number
+    jobId: number
+    jobType: number
+    engineKey: number
+    costAmount: number
+    currency: number
+    billingUnit: number
+    quantity: number
+    metadata: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type CostLedgerAvgAggregateInputType = {
+    costAmount?: true
+    quantity?: true
+  }
+
+  export type CostLedgerSumAggregateInputType = {
+    costAmount?: true
+    quantity?: true
+  }
+
+  export type CostLedgerMinAggregateInputType = {
+    id?: true
+    userId?: true
+    projectId?: true
+    jobId?: true
+    jobType?: true
+    engineKey?: true
+    costAmount?: true
+    currency?: true
+    billingUnit?: true
+    quantity?: true
+    createdAt?: true
+  }
+
+  export type CostLedgerMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    projectId?: true
+    jobId?: true
+    jobType?: true
+    engineKey?: true
+    costAmount?: true
+    currency?: true
+    billingUnit?: true
+    quantity?: true
+    createdAt?: true
+  }
+
+  export type CostLedgerCountAggregateInputType = {
+    id?: true
+    userId?: true
+    projectId?: true
+    jobId?: true
+    jobType?: true
+    engineKey?: true
+    costAmount?: true
+    currency?: true
+    billingUnit?: true
+    quantity?: true
+    metadata?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type CostLedgerAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CostLedger to aggregate.
+     */
+    where?: CostLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CostLedgers to fetch.
+     */
+    orderBy?: CostLedgerOrderByWithRelationInput | CostLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CostLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CostLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CostLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CostLedgers
+    **/
+    _count?: true | CostLedgerCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CostLedgerAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CostLedgerSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CostLedgerMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CostLedgerMaxAggregateInputType
+  }
+
+  export type GetCostLedgerAggregateType<T extends CostLedgerAggregateArgs> = {
+        [P in keyof T & keyof AggregateCostLedger]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCostLedger[P]>
+      : GetScalarType<T[P], AggregateCostLedger[P]>
+  }
+
+
+
+
+  export type CostLedgerGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CostLedgerWhereInput
+    orderBy?: CostLedgerOrderByWithAggregationInput | CostLedgerOrderByWithAggregationInput[]
+    by: CostLedgerScalarFieldEnum[] | CostLedgerScalarFieldEnum
+    having?: CostLedgerScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CostLedgerCountAggregateInputType | true
+    _avg?: CostLedgerAvgAggregateInputType
+    _sum?: CostLedgerSumAggregateInputType
+    _min?: CostLedgerMinAggregateInputType
+    _max?: CostLedgerMaxAggregateInputType
+  }
+
+  export type CostLedgerGroupByOutputType = {
+    id: string
+    userId: string
+    projectId: string
+    jobId: string
+    jobType: string
+    engineKey: string | null
+    costAmount: number
+    currency: string
+    billingUnit: string
+    quantity: number
+    metadata: JsonValue | null
+    createdAt: Date
+    _count: CostLedgerCountAggregateOutputType | null
+    _avg: CostLedgerAvgAggregateOutputType | null
+    _sum: CostLedgerSumAggregateOutputType | null
+    _min: CostLedgerMinAggregateOutputType | null
+    _max: CostLedgerMaxAggregateOutputType | null
+  }
+
+  type GetCostLedgerGroupByPayload<T extends CostLedgerGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CostLedgerGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CostLedgerGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CostLedgerGroupByOutputType[P]>
+            : GetScalarType<T[P], CostLedgerGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CostLedgerSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    projectId?: boolean
+    jobId?: boolean
+    jobType?: boolean
+    engineKey?: boolean
+    costAmount?: boolean
+    currency?: boolean
+    billingUnit?: boolean
+    quantity?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["costLedger"]>
+
+  export type CostLedgerSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    projectId?: boolean
+    jobId?: boolean
+    jobType?: boolean
+    engineKey?: boolean
+    costAmount?: boolean
+    currency?: boolean
+    billingUnit?: boolean
+    quantity?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["costLedger"]>
+
+  export type CostLedgerSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    projectId?: boolean
+    jobId?: boolean
+    jobType?: boolean
+    engineKey?: boolean
+    costAmount?: boolean
+    currency?: boolean
+    billingUnit?: boolean
+    quantity?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+  }
+
+  export type CostLedgerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+  }
+  export type CostLedgerIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+  }
+
+  export type $CostLedgerPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CostLedger"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+      project: Prisma.$ProjectPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      projectId: string
+      jobId: string
+      jobType: string
+      engineKey: string | null
+      costAmount: number
+      currency: string
+      billingUnit: string
+      quantity: number
+      metadata: Prisma.JsonValue | null
+      createdAt: Date
+    }, ExtArgs["result"]["costLedger"]>
+    composites: {}
+  }
+
+  type CostLedgerGetPayload<S extends boolean | null | undefined | CostLedgerDefaultArgs> = $Result.GetResult<Prisma.$CostLedgerPayload, S>
+
+  type CostLedgerCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CostLedgerFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CostLedgerCountAggregateInputType | true
+    }
+
+  export interface CostLedgerDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CostLedger'], meta: { name: 'CostLedger' } }
+    /**
+     * Find zero or one CostLedger that matches the filter.
+     * @param {CostLedgerFindUniqueArgs} args - Arguments to find a CostLedger
+     * @example
+     * // Get one CostLedger
+     * const costLedger = await prisma.costLedger.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CostLedgerFindUniqueArgs>(args: SelectSubset<T, CostLedgerFindUniqueArgs<ExtArgs>>): Prisma__CostLedgerClient<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CostLedger that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CostLedgerFindUniqueOrThrowArgs} args - Arguments to find a CostLedger
+     * @example
+     * // Get one CostLedger
+     * const costLedger = await prisma.costLedger.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CostLedgerFindUniqueOrThrowArgs>(args: SelectSubset<T, CostLedgerFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CostLedgerClient<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CostLedger that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CostLedgerFindFirstArgs} args - Arguments to find a CostLedger
+     * @example
+     * // Get one CostLedger
+     * const costLedger = await prisma.costLedger.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CostLedgerFindFirstArgs>(args?: SelectSubset<T, CostLedgerFindFirstArgs<ExtArgs>>): Prisma__CostLedgerClient<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CostLedger that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CostLedgerFindFirstOrThrowArgs} args - Arguments to find a CostLedger
+     * @example
+     * // Get one CostLedger
+     * const costLedger = await prisma.costLedger.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CostLedgerFindFirstOrThrowArgs>(args?: SelectSubset<T, CostLedgerFindFirstOrThrowArgs<ExtArgs>>): Prisma__CostLedgerClient<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CostLedgers that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CostLedgerFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CostLedgers
+     * const costLedgers = await prisma.costLedger.findMany()
+     * 
+     * // Get first 10 CostLedgers
+     * const costLedgers = await prisma.costLedger.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const costLedgerWithIdOnly = await prisma.costLedger.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CostLedgerFindManyArgs>(args?: SelectSubset<T, CostLedgerFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CostLedger.
+     * @param {CostLedgerCreateArgs} args - Arguments to create a CostLedger.
+     * @example
+     * // Create one CostLedger
+     * const CostLedger = await prisma.costLedger.create({
+     *   data: {
+     *     // ... data to create a CostLedger
+     *   }
+     * })
+     * 
+     */
+    create<T extends CostLedgerCreateArgs>(args: SelectSubset<T, CostLedgerCreateArgs<ExtArgs>>): Prisma__CostLedgerClient<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CostLedgers.
+     * @param {CostLedgerCreateManyArgs} args - Arguments to create many CostLedgers.
+     * @example
+     * // Create many CostLedgers
+     * const costLedger = await prisma.costLedger.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CostLedgerCreateManyArgs>(args?: SelectSubset<T, CostLedgerCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CostLedgers and returns the data saved in the database.
+     * @param {CostLedgerCreateManyAndReturnArgs} args - Arguments to create many CostLedgers.
+     * @example
+     * // Create many CostLedgers
+     * const costLedger = await prisma.costLedger.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CostLedgers and only return the `id`
+     * const costLedgerWithIdOnly = await prisma.costLedger.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CostLedgerCreateManyAndReturnArgs>(args?: SelectSubset<T, CostLedgerCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CostLedger.
+     * @param {CostLedgerDeleteArgs} args - Arguments to delete one CostLedger.
+     * @example
+     * // Delete one CostLedger
+     * const CostLedger = await prisma.costLedger.delete({
+     *   where: {
+     *     // ... filter to delete one CostLedger
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CostLedgerDeleteArgs>(args: SelectSubset<T, CostLedgerDeleteArgs<ExtArgs>>): Prisma__CostLedgerClient<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CostLedger.
+     * @param {CostLedgerUpdateArgs} args - Arguments to update one CostLedger.
+     * @example
+     * // Update one CostLedger
+     * const costLedger = await prisma.costLedger.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CostLedgerUpdateArgs>(args: SelectSubset<T, CostLedgerUpdateArgs<ExtArgs>>): Prisma__CostLedgerClient<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CostLedgers.
+     * @param {CostLedgerDeleteManyArgs} args - Arguments to filter CostLedgers to delete.
+     * @example
+     * // Delete a few CostLedgers
+     * const { count } = await prisma.costLedger.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CostLedgerDeleteManyArgs>(args?: SelectSubset<T, CostLedgerDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CostLedgers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CostLedgerUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CostLedgers
+     * const costLedger = await prisma.costLedger.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CostLedgerUpdateManyArgs>(args: SelectSubset<T, CostLedgerUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CostLedger.
+     * @param {CostLedgerUpsertArgs} args - Arguments to update or create a CostLedger.
+     * @example
+     * // Update or create a CostLedger
+     * const costLedger = await prisma.costLedger.upsert({
+     *   create: {
+     *     // ... data to create a CostLedger
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CostLedger we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CostLedgerUpsertArgs>(args: SelectSubset<T, CostLedgerUpsertArgs<ExtArgs>>): Prisma__CostLedgerClient<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CostLedgers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CostLedgerCountArgs} args - Arguments to filter CostLedgers to count.
+     * @example
+     * // Count the number of CostLedgers
+     * const count = await prisma.costLedger.count({
+     *   where: {
+     *     // ... the filter for the CostLedgers we want to count
+     *   }
+     * })
+    **/
+    count<T extends CostLedgerCountArgs>(
+      args?: Subset<T, CostLedgerCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CostLedgerCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CostLedger.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CostLedgerAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CostLedgerAggregateArgs>(args: Subset<T, CostLedgerAggregateArgs>): Prisma.PrismaPromise<GetCostLedgerAggregateType<T>>
+
+    /**
+     * Group by CostLedger.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CostLedgerGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CostLedgerGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CostLedgerGroupByArgs['orderBy'] }
+        : { orderBy?: CostLedgerGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CostLedgerGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCostLedgerGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CostLedger model
+   */
+  readonly fields: CostLedgerFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CostLedger.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CostLedgerClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CostLedger model
+   */ 
+  interface CostLedgerFieldRefs {
+    readonly id: FieldRef<"CostLedger", 'String'>
+    readonly userId: FieldRef<"CostLedger", 'String'>
+    readonly projectId: FieldRef<"CostLedger", 'String'>
+    readonly jobId: FieldRef<"CostLedger", 'String'>
+    readonly jobType: FieldRef<"CostLedger", 'String'>
+    readonly engineKey: FieldRef<"CostLedger", 'String'>
+    readonly costAmount: FieldRef<"CostLedger", 'Float'>
+    readonly currency: FieldRef<"CostLedger", 'String'>
+    readonly billingUnit: FieldRef<"CostLedger", 'String'>
+    readonly quantity: FieldRef<"CostLedger", 'Float'>
+    readonly metadata: FieldRef<"CostLedger", 'Json'>
+    readonly createdAt: FieldRef<"CostLedger", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CostLedger findUnique
+   */
+  export type CostLedgerFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    /**
+     * Filter, which CostLedger to fetch.
+     */
+    where: CostLedgerWhereUniqueInput
+  }
+
+  /**
+   * CostLedger findUniqueOrThrow
+   */
+  export type CostLedgerFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    /**
+     * Filter, which CostLedger to fetch.
+     */
+    where: CostLedgerWhereUniqueInput
+  }
+
+  /**
+   * CostLedger findFirst
+   */
+  export type CostLedgerFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    /**
+     * Filter, which CostLedger to fetch.
+     */
+    where?: CostLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CostLedgers to fetch.
+     */
+    orderBy?: CostLedgerOrderByWithRelationInput | CostLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CostLedgers.
+     */
+    cursor?: CostLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CostLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CostLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CostLedgers.
+     */
+    distinct?: CostLedgerScalarFieldEnum | CostLedgerScalarFieldEnum[]
+  }
+
+  /**
+   * CostLedger findFirstOrThrow
+   */
+  export type CostLedgerFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    /**
+     * Filter, which CostLedger to fetch.
+     */
+    where?: CostLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CostLedgers to fetch.
+     */
+    orderBy?: CostLedgerOrderByWithRelationInput | CostLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CostLedgers.
+     */
+    cursor?: CostLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CostLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CostLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CostLedgers.
+     */
+    distinct?: CostLedgerScalarFieldEnum | CostLedgerScalarFieldEnum[]
+  }
+
+  /**
+   * CostLedger findMany
+   */
+  export type CostLedgerFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    /**
+     * Filter, which CostLedgers to fetch.
+     */
+    where?: CostLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CostLedgers to fetch.
+     */
+    orderBy?: CostLedgerOrderByWithRelationInput | CostLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CostLedgers.
+     */
+    cursor?: CostLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CostLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CostLedgers.
+     */
+    skip?: number
+    distinct?: CostLedgerScalarFieldEnum | CostLedgerScalarFieldEnum[]
+  }
+
+  /**
+   * CostLedger create
+   */
+  export type CostLedgerCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CostLedger.
+     */
+    data: XOR<CostLedgerCreateInput, CostLedgerUncheckedCreateInput>
+  }
+
+  /**
+   * CostLedger createMany
+   */
+  export type CostLedgerCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CostLedgers.
+     */
+    data: CostLedgerCreateManyInput | CostLedgerCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CostLedger createManyAndReturn
+   */
+  export type CostLedgerCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CostLedgers.
+     */
+    data: CostLedgerCreateManyInput | CostLedgerCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CostLedger update
+   */
+  export type CostLedgerUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CostLedger.
+     */
+    data: XOR<CostLedgerUpdateInput, CostLedgerUncheckedUpdateInput>
+    /**
+     * Choose, which CostLedger to update.
+     */
+    where: CostLedgerWhereUniqueInput
+  }
+
+  /**
+   * CostLedger updateMany
+   */
+  export type CostLedgerUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CostLedgers.
+     */
+    data: XOR<CostLedgerUpdateManyMutationInput, CostLedgerUncheckedUpdateManyInput>
+    /**
+     * Filter which CostLedgers to update
+     */
+    where?: CostLedgerWhereInput
+  }
+
+  /**
+   * CostLedger upsert
+   */
+  export type CostLedgerUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CostLedger to update in case it exists.
+     */
+    where: CostLedgerWhereUniqueInput
+    /**
+     * In case the CostLedger found by the `where` argument doesn't exist, create a new CostLedger with this data.
+     */
+    create: XOR<CostLedgerCreateInput, CostLedgerUncheckedCreateInput>
+    /**
+     * In case the CostLedger was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CostLedgerUpdateInput, CostLedgerUncheckedUpdateInput>
+  }
+
+  /**
+   * CostLedger delete
+   */
+  export type CostLedgerDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+    /**
+     * Filter which CostLedger to delete.
+     */
+    where: CostLedgerWhereUniqueInput
+  }
+
+  /**
+   * CostLedger deleteMany
+   */
+  export type CostLedgerDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CostLedgers to delete
+     */
+    where?: CostLedgerWhereInput
+  }
+
+  /**
+   * CostLedger without action
+   */
+  export type CostLedgerDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CostLedger
+     */
+    select?: CostLedgerSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CostLedgerInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -65172,6 +66381,24 @@ export namespace Prisma {
   export type TextSafetyResultScalarFieldEnum = (typeof TextSafetyResultScalarFieldEnum)[keyof typeof TextSafetyResultScalarFieldEnum]
 
 
+  export const CostLedgerScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    projectId: 'projectId',
+    jobId: 'jobId',
+    jobType: 'jobType',
+    engineKey: 'engineKey',
+    costAmount: 'costAmount',
+    currency: 'currency',
+    billingUnit: 'billingUnit',
+    quantity: 'quantity',
+    metadata: 'metadata',
+    createdAt: 'createdAt'
+  };
+
+  export type CostLedgerScalarFieldEnum = (typeof CostLedgerScalarFieldEnum)[keyof typeof CostLedgerScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -65792,6 +67019,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyListRelationFilter
     auditLogs?: AuditLogListRelationFilter
     billingEvents?: BillingEventListRelationFilter
+    costLedgers?: CostLedgerListRelationFilter
     memberships?: MembershipListRelationFilter
     organizationMembers?: OrganizationMemberListRelationFilter
     ownedOrganizations?: OrganizationListRelationFilter
@@ -65815,6 +67043,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyOrderByRelationAggregateInput
     auditLogs?: AuditLogOrderByRelationAggregateInput
     billingEvents?: BillingEventOrderByRelationAggregateInput
+    costLedgers?: CostLedgerOrderByRelationAggregateInput
     memberships?: MembershipOrderByRelationAggregateInput
     organizationMembers?: OrganizationMemberOrderByRelationAggregateInput
     ownedOrganizations?: OrganizationOrderByRelationAggregateInput
@@ -65841,6 +67070,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyListRelationFilter
     auditLogs?: AuditLogListRelationFilter
     billingEvents?: BillingEventListRelationFilter
+    costLedgers?: CostLedgerListRelationFilter
     memberships?: MembershipListRelationFilter
     organizationMembers?: OrganizationMemberListRelationFilter
     ownedOrganizations?: OrganizationListRelationFilter
@@ -66087,6 +67317,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsListRelationFilter
     seasons?: SeasonListRelationFilter
     structureQualityReport?: XOR<StructureQualityReportNullableRelationFilter, StructureQualityReportWhereInput> | null
+    costLedgers?: CostLedgerListRelationFilter
   }
 
   export type ProjectOrderByWithRelationInput = {
@@ -66115,6 +67346,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsOrderByRelationAggregateInput
     seasons?: SeasonOrderByRelationAggregateInput
     structureQualityReport?: StructureQualityReportOrderByWithRelationInput
+    costLedgers?: CostLedgerOrderByRelationAggregateInput
   }
 
   export type ProjectWhereUniqueInput = Prisma.AtLeast<{
@@ -66146,6 +67378,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsListRelationFilter
     seasons?: SeasonListRelationFilter
     structureQualityReport?: XOR<StructureQualityReportNullableRelationFilter, StructureQualityReportWhereInput> | null
+    costLedgers?: CostLedgerListRelationFilter
   }, "id">
 
   export type ProjectOrderByWithAggregationInput = {
@@ -70409,6 +71642,102 @@ export namespace Prisma {
     createdAt?: DateTimeNullableWithAggregatesFilter<"TextSafetyResult"> | Date | string | null
   }
 
+  export type CostLedgerWhereInput = {
+    AND?: CostLedgerWhereInput | CostLedgerWhereInput[]
+    OR?: CostLedgerWhereInput[]
+    NOT?: CostLedgerWhereInput | CostLedgerWhereInput[]
+    id?: StringFilter<"CostLedger"> | string
+    userId?: StringFilter<"CostLedger"> | string
+    projectId?: StringFilter<"CostLedger"> | string
+    jobId?: StringFilter<"CostLedger"> | string
+    jobType?: StringFilter<"CostLedger"> | string
+    engineKey?: StringNullableFilter<"CostLedger"> | string | null
+    costAmount?: FloatFilter<"CostLedger"> | number
+    currency?: StringFilter<"CostLedger"> | string
+    billingUnit?: StringFilter<"CostLedger"> | string
+    quantity?: FloatFilter<"CostLedger"> | number
+    metadata?: JsonNullableFilter<"CostLedger">
+    createdAt?: DateTimeFilter<"CostLedger"> | Date | string
+    user?: XOR<UserRelationFilter, UserWhereInput>
+    project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+  }
+
+  export type CostLedgerOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    jobId?: SortOrder
+    jobType?: SortOrder
+    engineKey?: SortOrderInput | SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrder
+    quantity?: SortOrder
+    metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+    project?: ProjectOrderByWithRelationInput
+  }
+
+  export type CostLedgerWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    jobId_jobType?: CostLedgerJobIdJobTypeCompoundUniqueInput
+    AND?: CostLedgerWhereInput | CostLedgerWhereInput[]
+    OR?: CostLedgerWhereInput[]
+    NOT?: CostLedgerWhereInput | CostLedgerWhereInput[]
+    userId?: StringFilter<"CostLedger"> | string
+    projectId?: StringFilter<"CostLedger"> | string
+    jobId?: StringFilter<"CostLedger"> | string
+    jobType?: StringFilter<"CostLedger"> | string
+    engineKey?: StringNullableFilter<"CostLedger"> | string | null
+    costAmount?: FloatFilter<"CostLedger"> | number
+    currency?: StringFilter<"CostLedger"> | string
+    billingUnit?: StringFilter<"CostLedger"> | string
+    quantity?: FloatFilter<"CostLedger"> | number
+    metadata?: JsonNullableFilter<"CostLedger">
+    createdAt?: DateTimeFilter<"CostLedger"> | Date | string
+    user?: XOR<UserRelationFilter, UserWhereInput>
+    project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+  }, "id" | "jobId_jobType">
+
+  export type CostLedgerOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    jobId?: SortOrder
+    jobType?: SortOrder
+    engineKey?: SortOrderInput | SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrder
+    quantity?: SortOrder
+    metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: CostLedgerCountOrderByAggregateInput
+    _avg?: CostLedgerAvgOrderByAggregateInput
+    _max?: CostLedgerMaxOrderByAggregateInput
+    _min?: CostLedgerMinOrderByAggregateInput
+    _sum?: CostLedgerSumOrderByAggregateInput
+  }
+
+  export type CostLedgerScalarWhereWithAggregatesInput = {
+    AND?: CostLedgerScalarWhereWithAggregatesInput | CostLedgerScalarWhereWithAggregatesInput[]
+    OR?: CostLedgerScalarWhereWithAggregatesInput[]
+    NOT?: CostLedgerScalarWhereWithAggregatesInput | CostLedgerScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CostLedger"> | string
+    userId?: StringWithAggregatesFilter<"CostLedger"> | string
+    projectId?: StringWithAggregatesFilter<"CostLedger"> | string
+    jobId?: StringWithAggregatesFilter<"CostLedger"> | string
+    jobType?: StringWithAggregatesFilter<"CostLedger"> | string
+    engineKey?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
+    costAmount?: FloatWithAggregatesFilter<"CostLedger"> | number
+    currency?: StringWithAggregatesFilter<"CostLedger"> | string
+    billingUnit?: StringWithAggregatesFilter<"CostLedger"> | string
+    quantity?: FloatWithAggregatesFilter<"CostLedger"> | number
+    metadata?: JsonNullableWithAggregatesFilter<"CostLedger">
+    createdAt?: DateTimeWithAggregatesFilter<"CostLedger"> | Date | string
+  }
+
   export type UserCreateInput = {
     id?: string
     email: string
@@ -70424,6 +71753,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     memberships?: MembershipCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
@@ -70447,6 +71777,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
@@ -70470,6 +71801,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     memberships?: MembershipUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
@@ -70493,6 +71825,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
@@ -70755,6 +72088,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateInput = {
@@ -70781,6 +72115,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUpdateInput = {
@@ -70807,6 +72142,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateInput = {
@@ -70833,6 +72169,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectCreateManyInput = {
@@ -75500,6 +76837,109 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type CostLedgerCreateInput = {
+    id?: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount: number
+    currency?: string
+    billingUnit: string
+    quantity: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutCostLedgersInput
+    project: ProjectCreateNestedOneWithoutCostLedgersInput
+  }
+
+  export type CostLedgerUncheckedCreateInput = {
+    id?: string
+    userId: string
+    projectId: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount: number
+    currency?: string
+    billingUnit: string
+    quantity: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type CostLedgerUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutCostLedgersNestedInput
+    project?: ProjectUpdateOneRequiredWithoutCostLedgersNestedInput
+  }
+
+  export type CostLedgerUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CostLedgerCreateManyInput = {
+    id?: string
+    userId: string
+    projectId: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount: number
+    currency?: string
+    billingUnit: string
+    quantity: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type CostLedgerUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CostLedgerUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -75602,6 +77042,12 @@ export namespace Prisma {
     none?: BillingEventWhereInput
   }
 
+  export type CostLedgerListRelationFilter = {
+    every?: CostLedgerWhereInput
+    some?: CostLedgerWhereInput
+    none?: CostLedgerWhereInput
+  }
+
   export type MembershipListRelationFilter = {
     every?: MembershipWhereInput
     some?: MembershipWhereInput
@@ -75652,6 +77098,10 @@ export namespace Prisma {
   }
 
   export type BillingEventOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CostLedgerOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -79250,6 +80700,64 @@ export namespace Prisma {
     _max?: NestedEnumTextSafetyDecisionFilter<$PrismaModel>
   }
 
+  export type CostLedgerJobIdJobTypeCompoundUniqueInput = {
+    jobId: string
+    jobType: string
+  }
+
+  export type CostLedgerCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    jobId?: SortOrder
+    jobType?: SortOrder
+    engineKey?: SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrder
+    quantity?: SortOrder
+    metadata?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CostLedgerAvgOrderByAggregateInput = {
+    costAmount?: SortOrder
+    quantity?: SortOrder
+  }
+
+  export type CostLedgerMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    jobId?: SortOrder
+    jobType?: SortOrder
+    engineKey?: SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrder
+    quantity?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CostLedgerMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    jobId?: SortOrder
+    jobType?: SortOrder
+    engineKey?: SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrder
+    quantity?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CostLedgerSumOrderByAggregateInput = {
+    costAmount?: SortOrder
+    quantity?: SortOrder
+  }
+
   export type ApiKeyCreateNestedManyWithoutOwnerUserInput = {
     create?: XOR<ApiKeyCreateWithoutOwnerUserInput, ApiKeyUncheckedCreateWithoutOwnerUserInput> | ApiKeyCreateWithoutOwnerUserInput[] | ApiKeyUncheckedCreateWithoutOwnerUserInput[]
     connectOrCreate?: ApiKeyCreateOrConnectWithoutOwnerUserInput | ApiKeyCreateOrConnectWithoutOwnerUserInput[]
@@ -79269,6 +80777,13 @@ export namespace Prisma {
     connectOrCreate?: BillingEventCreateOrConnectWithoutUserInput | BillingEventCreateOrConnectWithoutUserInput[]
     createMany?: BillingEventCreateManyUserInputEnvelope
     connect?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
+  }
+
+  export type CostLedgerCreateNestedManyWithoutUserInput = {
+    create?: XOR<CostLedgerCreateWithoutUserInput, CostLedgerUncheckedCreateWithoutUserInput> | CostLedgerCreateWithoutUserInput[] | CostLedgerUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutUserInput | CostLedgerCreateOrConnectWithoutUserInput[]
+    createMany?: CostLedgerCreateManyUserInputEnvelope
+    connect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
   }
 
   export type MembershipCreateNestedManyWithoutUserInput = {
@@ -79332,6 +80847,13 @@ export namespace Prisma {
     connectOrCreate?: BillingEventCreateOrConnectWithoutUserInput | BillingEventCreateOrConnectWithoutUserInput[]
     createMany?: BillingEventCreateManyUserInputEnvelope
     connect?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
+  }
+
+  export type CostLedgerUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<CostLedgerCreateWithoutUserInput, CostLedgerUncheckedCreateWithoutUserInput> | CostLedgerCreateWithoutUserInput[] | CostLedgerUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutUserInput | CostLedgerCreateOrConnectWithoutUserInput[]
+    createMany?: CostLedgerCreateManyUserInputEnvelope
+    connect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
   }
 
   export type MembershipUncheckedCreateNestedManyWithoutUserInput = {
@@ -79440,6 +80962,20 @@ export namespace Prisma {
     update?: BillingEventUpdateWithWhereUniqueWithoutUserInput | BillingEventUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: BillingEventUpdateManyWithWhereWithoutUserInput | BillingEventUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: BillingEventScalarWhereInput | BillingEventScalarWhereInput[]
+  }
+
+  export type CostLedgerUpdateManyWithoutUserNestedInput = {
+    create?: XOR<CostLedgerCreateWithoutUserInput, CostLedgerUncheckedCreateWithoutUserInput> | CostLedgerCreateWithoutUserInput[] | CostLedgerUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutUserInput | CostLedgerCreateOrConnectWithoutUserInput[]
+    upsert?: CostLedgerUpsertWithWhereUniqueWithoutUserInput | CostLedgerUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: CostLedgerCreateManyUserInputEnvelope
+    set?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    disconnect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    delete?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    connect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    update?: CostLedgerUpdateWithWhereUniqueWithoutUserInput | CostLedgerUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: CostLedgerUpdateManyWithWhereWithoutUserInput | CostLedgerUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: CostLedgerScalarWhereInput | CostLedgerScalarWhereInput[]
   }
 
   export type MembershipUpdateManyWithoutUserNestedInput = {
@@ -79566,6 +81102,20 @@ export namespace Prisma {
     update?: BillingEventUpdateWithWhereUniqueWithoutUserInput | BillingEventUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: BillingEventUpdateManyWithWhereWithoutUserInput | BillingEventUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: BillingEventScalarWhereInput | BillingEventScalarWhereInput[]
+  }
+
+  export type CostLedgerUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<CostLedgerCreateWithoutUserInput, CostLedgerUncheckedCreateWithoutUserInput> | CostLedgerCreateWithoutUserInput[] | CostLedgerUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutUserInput | CostLedgerCreateOrConnectWithoutUserInput[]
+    upsert?: CostLedgerUpsertWithWhereUniqueWithoutUserInput | CostLedgerUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: CostLedgerCreateManyUserInputEnvelope
+    set?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    disconnect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    delete?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    connect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    update?: CostLedgerUpdateWithWhereUniqueWithoutUserInput | CostLedgerUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: CostLedgerUpdateManyWithWhereWithoutUserInput | CostLedgerUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: CostLedgerScalarWhereInput | CostLedgerScalarWhereInput[]
   }
 
   export type MembershipUncheckedUpdateManyWithoutUserNestedInput = {
@@ -80269,6 +81819,13 @@ export namespace Prisma {
     connect?: StructureQualityReportWhereUniqueInput
   }
 
+  export type CostLedgerCreateNestedManyWithoutProjectInput = {
+    create?: XOR<CostLedgerCreateWithoutProjectInput, CostLedgerUncheckedCreateWithoutProjectInput> | CostLedgerCreateWithoutProjectInput[] | CostLedgerUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutProjectInput | CostLedgerCreateOrConnectWithoutProjectInput[]
+    createMany?: CostLedgerCreateManyProjectInputEnvelope
+    connect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+  }
+
   export type ShotJobUncheckedCreateNestedManyWithoutProjectInput = {
     create?: XOR<ShotJobCreateWithoutProjectInput, ShotJobUncheckedCreateWithoutProjectInput> | ShotJobCreateWithoutProjectInput[] | ShotJobUncheckedCreateWithoutProjectInput[]
     connectOrCreate?: ShotJobCreateOrConnectWithoutProjectInput | ShotJobCreateOrConnectWithoutProjectInput[]
@@ -80356,6 +81913,13 @@ export namespace Prisma {
     create?: XOR<StructureQualityReportCreateWithoutProjectInput, StructureQualityReportUncheckedCreateWithoutProjectInput>
     connectOrCreate?: StructureQualityReportCreateOrConnectWithoutProjectInput
     connect?: StructureQualityReportWhereUniqueInput
+  }
+
+  export type CostLedgerUncheckedCreateNestedManyWithoutProjectInput = {
+    create?: XOR<CostLedgerCreateWithoutProjectInput, CostLedgerUncheckedCreateWithoutProjectInput> | CostLedgerCreateWithoutProjectInput[] | CostLedgerUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutProjectInput | CostLedgerCreateOrConnectWithoutProjectInput[]
+    createMany?: CostLedgerCreateManyProjectInputEnvelope
+    connect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
   }
 
   export type EnumProjectStatusFieldUpdateOperationsInput = {
@@ -80552,6 +82116,20 @@ export namespace Prisma {
     update?: XOR<XOR<StructureQualityReportUpdateToOneWithWhereWithoutProjectInput, StructureQualityReportUpdateWithoutProjectInput>, StructureQualityReportUncheckedUpdateWithoutProjectInput>
   }
 
+  export type CostLedgerUpdateManyWithoutProjectNestedInput = {
+    create?: XOR<CostLedgerCreateWithoutProjectInput, CostLedgerUncheckedCreateWithoutProjectInput> | CostLedgerCreateWithoutProjectInput[] | CostLedgerUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutProjectInput | CostLedgerCreateOrConnectWithoutProjectInput[]
+    upsert?: CostLedgerUpsertWithWhereUniqueWithoutProjectInput | CostLedgerUpsertWithWhereUniqueWithoutProjectInput[]
+    createMany?: CostLedgerCreateManyProjectInputEnvelope
+    set?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    disconnect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    delete?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    connect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    update?: CostLedgerUpdateWithWhereUniqueWithoutProjectInput | CostLedgerUpdateWithWhereUniqueWithoutProjectInput[]
+    updateMany?: CostLedgerUpdateManyWithWhereWithoutProjectInput | CostLedgerUpdateManyWithWhereWithoutProjectInput[]
+    deleteMany?: CostLedgerScalarWhereInput | CostLedgerScalarWhereInput[]
+  }
+
   export type ShotJobUncheckedUpdateManyWithoutProjectNestedInput = {
     create?: XOR<ShotJobCreateWithoutProjectInput, ShotJobUncheckedCreateWithoutProjectInput> | ShotJobCreateWithoutProjectInput[] | ShotJobUncheckedCreateWithoutProjectInput[]
     connectOrCreate?: ShotJobCreateOrConnectWithoutProjectInput | ShotJobCreateOrConnectWithoutProjectInput[]
@@ -80724,6 +82302,20 @@ export namespace Prisma {
     delete?: StructureQualityReportWhereInput | boolean
     connect?: StructureQualityReportWhereUniqueInput
     update?: XOR<XOR<StructureQualityReportUpdateToOneWithWhereWithoutProjectInput, StructureQualityReportUpdateWithoutProjectInput>, StructureQualityReportUncheckedUpdateWithoutProjectInput>
+  }
+
+  export type CostLedgerUncheckedUpdateManyWithoutProjectNestedInput = {
+    create?: XOR<CostLedgerCreateWithoutProjectInput, CostLedgerUncheckedCreateWithoutProjectInput> | CostLedgerCreateWithoutProjectInput[] | CostLedgerUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutProjectInput | CostLedgerCreateOrConnectWithoutProjectInput[]
+    upsert?: CostLedgerUpsertWithWhereUniqueWithoutProjectInput | CostLedgerUpsertWithWhereUniqueWithoutProjectInput[]
+    createMany?: CostLedgerCreateManyProjectInputEnvelope
+    set?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    disconnect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    delete?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    connect?: CostLedgerWhereUniqueInput | CostLedgerWhereUniqueInput[]
+    update?: CostLedgerUpdateWithWhereUniqueWithoutProjectInput | CostLedgerUpdateWithWhereUniqueWithoutProjectInput[]
+    updateMany?: CostLedgerUpdateManyWithWhereWithoutProjectInput | CostLedgerUpdateManyWithWhereWithoutProjectInput[]
+    deleteMany?: CostLedgerScalarWhereInput | CostLedgerScalarWhereInput[]
   }
 
   export type EpisodeCreateNestedManyWithoutSeasonInput = {
@@ -83130,6 +84722,34 @@ export namespace Prisma {
     set?: $Enums.TextSafetyDecision
   }
 
+  export type UserCreateNestedOneWithoutCostLedgersInput = {
+    create?: XOR<UserCreateWithoutCostLedgersInput, UserUncheckedCreateWithoutCostLedgersInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCostLedgersInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type ProjectCreateNestedOneWithoutCostLedgersInput = {
+    create?: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
+    connectOrCreate?: ProjectCreateOrConnectWithoutCostLedgersInput
+    connect?: ProjectWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutCostLedgersNestedInput = {
+    create?: XOR<UserCreateWithoutCostLedgersInput, UserUncheckedCreateWithoutCostLedgersInput>
+    connectOrCreate?: UserCreateOrConnectWithoutCostLedgersInput
+    upsert?: UserUpsertWithoutCostLedgersInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCostLedgersInput, UserUpdateWithoutCostLedgersInput>, UserUncheckedUpdateWithoutCostLedgersInput>
+  }
+
+  export type ProjectUpdateOneRequiredWithoutCostLedgersNestedInput = {
+    create?: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
+    connectOrCreate?: ProjectCreateOrConnectWithoutCostLedgersInput
+    upsert?: ProjectUpsertWithoutCostLedgersInput
+    connect?: ProjectWhereUniqueInput
+    update?: XOR<XOR<ProjectUpdateToOneWithWhereWithoutCostLedgersInput, ProjectUpdateWithoutCostLedgersInput>, ProjectUncheckedUpdateWithoutCostLedgersInput>
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -84133,6 +85753,44 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CostLedgerCreateWithoutUserInput = {
+    id?: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount: number
+    currency?: string
+    billingUnit: string
+    quantity: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    project: ProjectCreateNestedOneWithoutCostLedgersInput
+  }
+
+  export type CostLedgerUncheckedCreateWithoutUserInput = {
+    id?: string
+    projectId: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount: number
+    currency?: string
+    billingUnit: string
+    quantity: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type CostLedgerCreateOrConnectWithoutUserInput = {
+    where: CostLedgerWhereUniqueInput
+    create: XOR<CostLedgerCreateWithoutUserInput, CostLedgerUncheckedCreateWithoutUserInput>
+  }
+
+  export type CostLedgerCreateManyUserInputEnvelope = {
+    data: CostLedgerCreateManyUserInput | CostLedgerCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type MembershipCreateWithoutUserInput = {
     id?: string
     role: $Enums.MembershipRole
@@ -84262,6 +85920,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutOwnerInput = {
@@ -84287,6 +85946,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutOwnerInput = {
@@ -84476,6 +86136,40 @@ export namespace Prisma {
     invoiceId?: StringNullableFilter<"BillingEvent"> | string | null
     timestamp?: DateTimeFilter<"BillingEvent"> | Date | string
     metadata?: JsonNullableFilter<"BillingEvent">
+  }
+
+  export type CostLedgerUpsertWithWhereUniqueWithoutUserInput = {
+    where: CostLedgerWhereUniqueInput
+    update: XOR<CostLedgerUpdateWithoutUserInput, CostLedgerUncheckedUpdateWithoutUserInput>
+    create: XOR<CostLedgerCreateWithoutUserInput, CostLedgerUncheckedCreateWithoutUserInput>
+  }
+
+  export type CostLedgerUpdateWithWhereUniqueWithoutUserInput = {
+    where: CostLedgerWhereUniqueInput
+    data: XOR<CostLedgerUpdateWithoutUserInput, CostLedgerUncheckedUpdateWithoutUserInput>
+  }
+
+  export type CostLedgerUpdateManyWithWhereWithoutUserInput = {
+    where: CostLedgerScalarWhereInput
+    data: XOR<CostLedgerUpdateManyMutationInput, CostLedgerUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type CostLedgerScalarWhereInput = {
+    AND?: CostLedgerScalarWhereInput | CostLedgerScalarWhereInput[]
+    OR?: CostLedgerScalarWhereInput[]
+    NOT?: CostLedgerScalarWhereInput | CostLedgerScalarWhereInput[]
+    id?: StringFilter<"CostLedger"> | string
+    userId?: StringFilter<"CostLedger"> | string
+    projectId?: StringFilter<"CostLedger"> | string
+    jobId?: StringFilter<"CostLedger"> | string
+    jobType?: StringFilter<"CostLedger"> | string
+    engineKey?: StringNullableFilter<"CostLedger"> | string | null
+    costAmount?: FloatFilter<"CostLedger"> | number
+    currency?: StringFilter<"CostLedger"> | string
+    billingUnit?: StringFilter<"CostLedger"> | string
+    quantity?: FloatFilter<"CostLedger"> | number
+    metadata?: JsonNullableFilter<"CostLedger">
+    createdAt?: DateTimeFilter<"CostLedger"> | Date | string
   }
 
   export type MembershipUpsertWithWhereUniqueWithoutUserInput = {
@@ -84999,6 +86693,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     memberships?: MembershipCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
     ownedProjects?: ProjectCreateNestedManyWithoutOwnerInput
@@ -85021,6 +86716,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
     ownedProjects?: ProjectUncheckedCreateNestedManyWithoutOwnerInput
@@ -85056,6 +86752,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutOrganizationInput = {
@@ -85081,6 +86778,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutOrganizationInput = {
@@ -85393,6 +87091,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     memberships?: MembershipUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
     ownedProjects?: ProjectUpdateManyWithoutOwnerNestedInput
@@ -85415,6 +87114,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
     ownedProjects?: ProjectUncheckedUpdateManyWithoutOwnerNestedInput
@@ -85550,6 +87250,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
     ownedProjects?: ProjectCreateNestedManyWithoutOwnerInput
@@ -85572,6 +87273,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
     ownedProjects?: ProjectUncheckedCreateNestedManyWithoutOwnerInput
@@ -85663,6 +87365,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
     ownedProjects?: ProjectUpdateManyWithoutOwnerNestedInput
@@ -85685,6 +87388,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
     ownedProjects?: ProjectUncheckedUpdateManyWithoutOwnerNestedInput
@@ -86141,6 +87845,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     memberships?: MembershipCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
@@ -86163,6 +87868,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
@@ -86264,6 +87970,44 @@ export namespace Prisma {
   export type StructureQualityReportCreateOrConnectWithoutProjectInput = {
     where: StructureQualityReportWhereUniqueInput
     create: XOR<StructureQualityReportCreateWithoutProjectInput, StructureQualityReportUncheckedCreateWithoutProjectInput>
+  }
+
+  export type CostLedgerCreateWithoutProjectInput = {
+    id?: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount: number
+    currency?: string
+    billingUnit: string
+    quantity: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutCostLedgersInput
+  }
+
+  export type CostLedgerUncheckedCreateWithoutProjectInput = {
+    id?: string
+    userId: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount: number
+    currency?: string
+    billingUnit: string
+    quantity: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type CostLedgerCreateOrConnectWithoutProjectInput = {
+    where: CostLedgerWhereUniqueInput
+    create: XOR<CostLedgerCreateWithoutProjectInput, CostLedgerUncheckedCreateWithoutProjectInput>
+  }
+
+  export type CostLedgerCreateManyProjectInputEnvelope = {
+    data: CostLedgerCreateManyProjectInput | CostLedgerCreateManyProjectInput[]
+    skipDuplicates?: boolean
   }
 
   export type ShotJobUpsertWithWhereUniqueWithoutProjectInput = {
@@ -86614,6 +88358,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     memberships?: MembershipUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
@@ -86636,6 +88381,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
@@ -86735,6 +88481,22 @@ export namespace Prisma {
     engineVersion?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type CostLedgerUpsertWithWhereUniqueWithoutProjectInput = {
+    where: CostLedgerWhereUniqueInput
+    update: XOR<CostLedgerUpdateWithoutProjectInput, CostLedgerUncheckedUpdateWithoutProjectInput>
+    create: XOR<CostLedgerCreateWithoutProjectInput, CostLedgerUncheckedCreateWithoutProjectInput>
+  }
+
+  export type CostLedgerUpdateWithWhereUniqueWithoutProjectInput = {
+    where: CostLedgerWhereUniqueInput
+    data: XOR<CostLedgerUpdateWithoutProjectInput, CostLedgerUncheckedUpdateWithoutProjectInput>
+  }
+
+  export type CostLedgerUpdateManyWithWhereWithoutProjectInput = {
+    where: CostLedgerScalarWhereInput
+    data: XOR<CostLedgerUpdateManyMutationInput, CostLedgerUncheckedUpdateManyWithoutProjectInput>
+  }
+
   export type EpisodeCreateWithoutSeasonInput = {
     id?: string
     index: number
@@ -86792,6 +88554,7 @@ export namespace Prisma {
     owner: UserCreateNestedOneWithoutOwnedProjectsInput
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutSeasonsInput = {
@@ -86817,6 +88580,7 @@ export namespace Prisma {
     projectMembers?: ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutSeasonsInput = {
@@ -86874,6 +88638,7 @@ export namespace Prisma {
     owner?: UserUpdateOneRequiredWithoutOwnedProjectsNestedInput
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutSeasonsInput = {
@@ -86899,6 +88664,7 @@ export namespace Prisma {
     projectMembers?: ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ShotJobCreateWithoutEpisodeInput = {
@@ -87017,6 +88783,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutEpisodesInput = {
@@ -87042,6 +88809,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutEpisodesInput = {
@@ -87239,6 +89007,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutEpisodesInput = {
@@ -87264,6 +89033,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SeasonUpsertWithoutEpisodesInput = {
@@ -88390,6 +90160,7 @@ export namespace Prisma {
     owner: UserCreateNestedOneWithoutOwnedProjectsInput
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutStructureQualityReportInput = {
@@ -88415,6 +90186,7 @@ export namespace Prisma {
     projectMembers?: ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutStructureQualityReportInput = {
@@ -88456,6 +90228,7 @@ export namespace Prisma {
     owner?: UserUpdateOneRequiredWithoutOwnedProjectsNestedInput
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutStructureQualityReportInput = {
@@ -88481,6 +90254,7 @@ export namespace Prisma {
     projectMembers?: ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectCreateWithoutEngineTasksInput = {
@@ -88506,6 +90280,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutEngineTasksInput = {
@@ -88531,6 +90306,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutEngineTasksInput = {
@@ -88654,6 +90430,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutEngineTasksInput = {
@@ -88679,6 +90456,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SceneUpsertWithoutEngineTasksInput = {
@@ -89567,6 +91345,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutProjectMembersInput = {
@@ -89592,6 +91371,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutProjectMembersInput = {
@@ -89656,6 +91436,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutProjectMembersInput = {
@@ -89681,6 +91462,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type RoleUpsertWithoutMembersInput = {
@@ -89840,6 +91622,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutTasksInput = {
@@ -89865,6 +91648,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutTasksInput = {
@@ -90016,6 +91800,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutTasksInput = {
@@ -90041,6 +91826,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type WorkerNodeUpsertWithoutTasksInput = {
@@ -90341,6 +92127,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutShotJobsInput = {
@@ -90366,6 +92153,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutShotJobsInput = {
@@ -90728,6 +92516,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutShotJobsInput = {
@@ -90753,6 +92542,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SceneUpsertWithoutShotJobsInput = {
@@ -91515,6 +93305,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutBillingEventsInput = {
@@ -91540,6 +93331,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutBillingEventsInput = {
@@ -91561,6 +93353,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     memberships?: MembershipCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
@@ -91583,6 +93376,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
@@ -91724,6 +93518,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutBillingEventsInput = {
@@ -91749,6 +93544,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type UserUpsertWithoutBillingEventsInput = {
@@ -91776,6 +93572,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     memberships?: MembershipUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
@@ -91798,6 +93595,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
@@ -91968,6 +93766,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     memberships?: MembershipCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
@@ -91990,6 +93789,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
@@ -92081,6 +93881,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     memberships?: MembershipUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
@@ -92103,6 +93904,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
@@ -92154,6 +93956,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     memberships?: MembershipCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
@@ -92176,6 +93979,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
@@ -92296,6 +94100,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     memberships?: MembershipUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
@@ -92318,6 +94123,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
@@ -92440,6 +94246,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     memberships?: MembershipCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
     ownedProjects?: ProjectCreateNestedManyWithoutOwnerInput
@@ -92462,6 +94269,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
     ownedProjects?: ProjectUncheckedCreateNestedManyWithoutOwnerInput
@@ -92553,6 +94361,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     memberships?: MembershipUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
     ownedProjects?: ProjectUpdateManyWithoutOwnerNestedInput
@@ -92575,6 +94384,7 @@ export namespace Prisma {
     apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
     ownedProjects?: ProjectUncheckedUpdateManyWithoutOwnerNestedInput
@@ -92679,6 +94489,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelSourcesInput = {
@@ -92704,6 +94515,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelSourcesInput = {
@@ -92794,6 +94606,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelSourcesInput = {
@@ -92819,6 +94632,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type EpisodeCreateWithoutChapterInput = {
@@ -93266,6 +95080,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelAnalysisJobsInput = {
@@ -93291,6 +95106,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelAnalysisJobsInput = {
@@ -93379,6 +95195,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelAnalysisJobsInput = {
@@ -93404,6 +95221,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type OrganizationCreateWithoutApiKeysInput = {
@@ -93467,6 +95285,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     auditLogs?: AuditLogCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     memberships?: MembershipCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
@@ -93489,6 +95308,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
     billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
@@ -93624,6 +95444,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     memberships?: MembershipUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
@@ -93646,6 +95467,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
@@ -93772,6 +95594,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
     billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutUserInput
     memberships?: MembershipCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
@@ -93794,6 +95617,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
     billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutUserInput
     memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
     organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
     ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
@@ -93932,6 +95756,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
     billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutUserNestedInput
     memberships?: MembershipUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
@@ -93954,6 +95779,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutUserNestedInput
     memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
     organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
     ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
@@ -93985,6 +95811,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelParseResultsInput = {
@@ -94010,6 +95837,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelParseResultsInput = {
@@ -94051,6 +95879,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelParseResultsInput = {
@@ -94076,6 +95905,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectCreateWithoutQualityMetricsInput = {
@@ -94101,6 +95931,7 @@ export namespace Prisma {
     owner: UserCreateNestedOneWithoutOwnedProjectsInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutQualityMetricsInput = {
@@ -94126,6 +95957,7 @@ export namespace Prisma {
     projectMembers?: ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutQualityMetricsInput = {
@@ -94167,6 +95999,7 @@ export namespace Prisma {
     owner?: UserUpdateOneRequiredWithoutOwnedProjectsNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutQualityMetricsInput = {
@@ -94192,6 +96025,7 @@ export namespace Prisma {
     projectMembers?: ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ShotCreateWithoutAssetsInput = {
@@ -94317,6 +96151,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutAssetsInput = {
@@ -94342,6 +96177,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutAssetsInput = {
@@ -94495,6 +96331,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutAssetsInput = {
@@ -94510,6 +96347,235 @@ export namespace Prisma {
     settingsJson?: NullableJsonNullValueInput | InputJsonValue
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutProjectNestedInput
+    billingEvents?: BillingEventUncheckedUpdateManyWithoutProjectNestedInput
+    engineTasks?: EngineTaskUncheckedUpdateManyWithoutProjectNestedInput
+    episodes?: EpisodeUncheckedUpdateManyWithoutProjectNestedInput
+    novelAnalysisJobs?: NovelAnalysisJobUncheckedUpdateManyWithoutProjectNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateOneWithoutProjectNestedInput
+    novelSources?: NovelSourceUncheckedUpdateManyWithoutProjectNestedInput
+    projectMembers?: ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
+    qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
+    seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
+    structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
+  }
+
+  export type UserCreateWithoutCostLedgersInput = {
+    id?: string
+    email: string
+    passwordHash: string
+    avatar?: string | null
+    userType?: $Enums.UserType
+    role?: $Enums.UserRole
+    tier?: $Enums.UserTier
+    quota?: NullableJsonNullValueInput | InputJsonValue
+    defaultOrganizationId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    memberships?: MembershipCreateNestedManyWithoutUserInput
+    organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
+    ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
+    ownedProjects?: ProjectCreateNestedManyWithoutOwnerInput
+    reviewLogs?: PublishingReviewCreateNestedManyWithoutReviewerInput
+    subscriptions?: SubscriptionCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutCostLedgersInput = {
+    id?: string
+    email: string
+    passwordHash: string
+    avatar?: string | null
+    userType?: $Enums.UserType
+    role?: $Enums.UserRole
+    tier?: $Enums.UserTier
+    quota?: NullableJsonNullValueInput | InputJsonValue
+    defaultOrganizationId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
+    organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
+    ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
+    ownedProjects?: ProjectUncheckedCreateNestedManyWithoutOwnerInput
+    reviewLogs?: PublishingReviewUncheckedCreateNestedManyWithoutReviewerInput
+    subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutCostLedgersInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutCostLedgersInput, UserUncheckedCreateWithoutCostLedgersInput>
+  }
+
+  export type ProjectCreateWithoutCostLedgersInput = {
+    id?: string
+    name: string
+    description?: string | null
+    status?: $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
+    tasks?: TaskCreateNestedManyWithoutProjectInput
+    assets?: AssetCreateNestedManyWithoutProjectInput
+    billingEvents?: BillingEventCreateNestedManyWithoutProjectInput
+    engineTasks?: EngineTaskCreateNestedManyWithoutProjectInput
+    episodes?: EpisodeCreateNestedManyWithoutProjectInput
+    novelAnalysisJobs?: NovelAnalysisJobCreateNestedManyWithoutProjectInput
+    novelParseResults?: NovelParseResultCreateNestedOneWithoutProjectInput
+    novelSources?: NovelSourceCreateNestedManyWithoutProjectInput
+    projectMembers?: ProjectMemberCreateNestedManyWithoutProjectInput
+    organization: OrganizationCreateNestedOneWithoutProjectsInput
+    owner: UserCreateNestedOneWithoutOwnedProjectsInput
+    qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
+    seasons?: SeasonCreateNestedManyWithoutProjectInput
+    structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+  }
+
+  export type ProjectUncheckedCreateWithoutCostLedgersInput = {
+    id?: string
+    name: string
+    description?: string | null
+    ownerId: string
+    organizationId: string
+    status?: $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
+    tasks?: TaskUncheckedCreateNestedManyWithoutProjectInput
+    assets?: AssetUncheckedCreateNestedManyWithoutProjectInput
+    billingEvents?: BillingEventUncheckedCreateNestedManyWithoutProjectInput
+    engineTasks?: EngineTaskUncheckedCreateNestedManyWithoutProjectInput
+    episodes?: EpisodeUncheckedCreateNestedManyWithoutProjectInput
+    novelAnalysisJobs?: NovelAnalysisJobUncheckedCreateNestedManyWithoutProjectInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedOneWithoutProjectInput
+    novelSources?: NovelSourceUncheckedCreateNestedManyWithoutProjectInput
+    projectMembers?: ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
+    qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
+    seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
+    structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+  }
+
+  export type ProjectCreateOrConnectWithoutCostLedgersInput = {
+    where: ProjectWhereUniqueInput
+    create: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
+  }
+
+  export type UserUpsertWithoutCostLedgersInput = {
+    update: XOR<UserUpdateWithoutCostLedgersInput, UserUncheckedUpdateWithoutCostLedgersInput>
+    create: XOR<UserCreateWithoutCostLedgersInput, UserUncheckedCreateWithoutCostLedgersInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutCostLedgersInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutCostLedgersInput, UserUncheckedUpdateWithoutCostLedgersInput>
+  }
+
+  export type UserUpdateWithoutCostLedgersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    avatar?: NullableStringFieldUpdateOperationsInput | string | null
+    userType?: EnumUserTypeFieldUpdateOperationsInput | $Enums.UserType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    tier?: EnumUserTierFieldUpdateOperationsInput | $Enums.UserTier
+    quota?: NullableJsonNullValueInput | InputJsonValue
+    defaultOrganizationId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    memberships?: MembershipUpdateManyWithoutUserNestedInput
+    organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
+    ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
+    ownedProjects?: ProjectUpdateManyWithoutOwnerNestedInput
+    reviewLogs?: PublishingReviewUpdateManyWithoutReviewerNestedInput
+    subscriptions?: SubscriptionUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutCostLedgersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    avatar?: NullableStringFieldUpdateOperationsInput | string | null
+    userType?: EnumUserTypeFieldUpdateOperationsInput | $Enums.UserType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    tier?: EnumUserTierFieldUpdateOperationsInput | $Enums.UserTier
+    quota?: NullableJsonNullValueInput | InputJsonValue
+    defaultOrganizationId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
+    organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
+    ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
+    ownedProjects?: ProjectUncheckedUpdateManyWithoutOwnerNestedInput
+    reviewLogs?: PublishingReviewUncheckedUpdateManyWithoutReviewerNestedInput
+    subscriptions?: SubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type ProjectUpsertWithoutCostLedgersInput = {
+    update: XOR<ProjectUpdateWithoutCostLedgersInput, ProjectUncheckedUpdateWithoutCostLedgersInput>
+    create: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
+    where?: ProjectWhereInput
+  }
+
+  export type ProjectUpdateToOneWithWhereWithoutCostLedgersInput = {
+    where?: ProjectWhereInput
+    data: XOR<ProjectUpdateWithoutCostLedgersInput, ProjectUncheckedUpdateWithoutCostLedgersInput>
+  }
+
+  export type ProjectUpdateWithoutCostLedgersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
+    tasks?: TaskUpdateManyWithoutProjectNestedInput
+    assets?: AssetUpdateManyWithoutProjectNestedInput
+    billingEvents?: BillingEventUpdateManyWithoutProjectNestedInput
+    engineTasks?: EngineTaskUpdateManyWithoutProjectNestedInput
+    episodes?: EpisodeUpdateManyWithoutProjectNestedInput
+    novelAnalysisJobs?: NovelAnalysisJobUpdateManyWithoutProjectNestedInput
+    novelParseResults?: NovelParseResultUpdateOneWithoutProjectNestedInput
+    novelSources?: NovelSourceUpdateManyWithoutProjectNestedInput
+    projectMembers?: ProjectMemberUpdateManyWithoutProjectNestedInput
+    organization?: OrganizationUpdateOneRequiredWithoutProjectsNestedInput
+    owner?: UserUpdateOneRequiredWithoutOwnedProjectsNestedInput
+    qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
+    seasons?: SeasonUpdateManyWithoutProjectNestedInput
+    structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+  }
+
+  export type ProjectUncheckedUpdateWithoutCostLedgersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerId?: StringFieldUpdateOperationsInput | string
+    organizationId?: StringFieldUpdateOperationsInput | string
+    status?: EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
+    tasks?: TaskUncheckedUpdateManyWithoutProjectNestedInput
+    assets?: AssetUncheckedUpdateManyWithoutProjectNestedInput
     billingEvents?: BillingEventUncheckedUpdateManyWithoutProjectNestedInput
     engineTasks?: EngineTaskUncheckedUpdateManyWithoutProjectNestedInput
     episodes?: EpisodeUncheckedUpdateManyWithoutProjectNestedInput
@@ -94573,6 +96639,20 @@ export namespace Prisma {
     invoiceId?: string | null
     timestamp?: Date | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type CostLedgerCreateManyUserInput = {
+    id?: string
+    projectId: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount: number
+    currency?: string
+    billingUnit: string
+    quantity: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type MembershipCreateManyUserInput = {
@@ -94798,6 +96878,48 @@ export namespace Prisma {
     metadata?: NullableJsonNullValueInput | InputJsonValue
   }
 
+  export type CostLedgerUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    project?: ProjectUpdateOneRequiredWithoutCostLedgersNestedInput
+  }
+
+  export type CostLedgerUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CostLedgerUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type MembershipUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     role?: EnumMembershipRoleFieldUpdateOperationsInput | $Enums.MembershipRole
@@ -94924,6 +97046,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutOwnerInput = {
@@ -94949,6 +97072,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateManyWithoutOwnerInput = {
@@ -95573,6 +97697,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutOrganizationInput = {
@@ -95598,6 +97723,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateManyWithoutOrganizationInput = {
@@ -95853,6 +97979,20 @@ export namespace Prisma {
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
+  }
+
+  export type CostLedgerCreateManyProjectInput = {
+    id?: string
+    userId: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount: number
+    currency?: string
+    billingUnit: string
+    quantity: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type ShotJobUpdateWithoutProjectInput = {
@@ -96324,6 +98464,48 @@ export namespace Prisma {
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CostLedgerUpdateWithoutProjectInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutCostLedgersNestedInput
+  }
+
+  export type CostLedgerUncheckedUpdateWithoutProjectInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CostLedgerUncheckedUpdateManyWithoutProjectInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type EpisodeCreateManySeasonInput = {
@@ -98309,6 +100491,10 @@ export namespace Prisma {
      * @deprecated Use TextSafetyResultDefaultArgs instead
      */
     export type TextSafetyResultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = TextSafetyResultDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CostLedgerDefaultArgs instead
+     */
+    export type CostLedgerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CostLedgerDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

@@ -369,4 +369,35 @@ export class ApiClient {
 
     return response.data || { success: true };
   }
+
+  /**
+   * P0-2: 发送成本事件到 Internal Events API
+   * POST /internal/events/cost-ledger
+   * ✅ 自动带 HMAC 签名
+   * ⚠️ 不阻断主流程（调用方应 try/catch + 日志降级）
+   */
+  async postCostEvent(payload: {
+    userId: string;
+    projectId: string;
+    jobId: string;
+    jobType: string;
+    engineKey?: string;
+    costAmount: number;
+    currency?: string;
+    billingUnit: string;
+    quantity: number;
+    metadata?: any;
+  }): Promise<{ ok: boolean; id: string; deduplicated: boolean }> {
+    const response = await this.request<{ ok: boolean; id: string; deduplicated: boolean }>(
+      'POST',
+      '/internal/events/cost-ledger',
+      payload,
+    );
+
+    if (!response.success) {
+      throw new Error('Failed to post cost event');
+    }
+
+    return response.data || { ok: true, id: 'unknown', deduplicated: false };
+  }
 }

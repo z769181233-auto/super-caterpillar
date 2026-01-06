@@ -43,6 +43,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { StorageModule } from './storage/storage.module';
 import { SeasonsModule } from './seasons/seasons.module';
 import { FeatureFlagModule } from './feature-flag/feature-flag.module';
+import { CostModule } from './cost/cost.module';
 import { env } from '@scu/config';
 import { StorageController } from './storage/storage.controller';
 import { LocalStorageService } from './storage/local-storage.service';
@@ -104,6 +105,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     HealthModule, // 健康检查端点（/health, /ping, /metrics）
     StorageModule, // Stage 8: Local Storage Module
     SeasonsModule, // 补齐 Seasons API (Smoke Test Fix)
+    CostModule, // P0: Cost tracking & billing foundation
     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS ? [OpsModule] : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
   ],
   controllers: [
