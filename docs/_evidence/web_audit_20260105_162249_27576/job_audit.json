@@ -1,0 +1,201 @@
+{
+  "jobId": "job_ce07_ns_web_audit_1767604978",
+  "type": "CE07_MEMORY_UPDATE",
+  "status": "SUCCEEDED",
+  "workerId": "local-worker",
+  "createdAt": "2026-01-05T16:23:00.719Z",
+  "updatedAt": "2026-01-05T09:23:01.735Z",
+  "payload": {
+    "text": "context",
+    "result": {
+      "result": {
+        "summary": "Mock summary for CE07",
+        "memoryId": "87953b9a-3d81-4b01-8ea6-016342e9a5dd"
+      },
+      "success": true
+    },
+    "sceneId": "scene_audit",
+    "projectId": "proj_web_audit_1767604978"
+  },
+  "result": {},
+  "auditLogs": [
+    {
+      "id": "6408dfdd-5242-45ec-9e73-b6bf5564648a",
+      "userId": null,
+      "apiKeyId": null,
+      "action": "JOB_DISPATCHED",
+      "resourceType": "job",
+      "resourceId": "job_ce07_ns_web_audit_1767604978",
+      "ip": null,
+      "userAgent": null,
+      "details": { "taskId": null, "jobType": "CE07_MEMORY_UPDATE", "workerId": "local-worker" },
+      "createdAt": "2026-01-05T09:23:01.710Z",
+      "nonce": null,
+      "signature": null,
+      "timestamp": null,
+      "payload": {
+        "ip": null,
+        "nonce": null,
+        "orgId": null,
+        "action": "JOB_DISPATCHED",
+        "details": { "taskId": null, "jobType": "CE07_MEMORY_UPDATE", "workerId": "local-worker" },
+        "signature": null,
+        "timestamp": null,
+        "userAgent": null,
+        "resourceId": "job_ce07_ns_web_audit_1767604978",
+        "resourceType": "job"
+      },
+      "orgId": null
+    },
+    {
+      "id": "58b38e28-7131-4888-b51e-e56c8eb93e79",
+      "userId": null,
+      "apiKeyId": "c6e9c20a-8c54-4153-9b21-9f231de5aa42",
+      "action": "JOB_STARTED",
+      "resourceType": "job",
+      "resourceId": "job_ce07_ns_web_audit_1767604978",
+      "ip": "::1",
+      "userAgent": "node",
+      "details": { "type": "CE07_MEMORY_UPDATE", "taskId": null, "workerId": "local-worker" },
+      "createdAt": "2026-01-05T09:23:01.711Z",
+      "nonce": "a9192f41842551f2eb3cbcaec2488c61-9-1767604981699",
+      "signature": "371da98ac4c722974915da176beae0b6c895fb534a8bfb9741bffd57603c7ec4",
+      "timestamp": "2026-01-05T09:23:01.699Z",
+      "payload": {
+        "ip": "::1",
+        "nonce": "a9192f41842551f2eb3cbcaec2488c61-9-1767604981699",
+        "orgId": null,
+        "action": "JOB_STARTED",
+        "details": { "type": "CE07_MEMORY_UPDATE", "taskId": null, "workerId": "local-worker" },
+        "signature": "371da98ac4c722974915da176beae0b6c895fb534a8bfb9741bffd57603c7ec4",
+        "timestamp": "2026-01-05T09:23:01.699Z",
+        "userAgent": "node",
+        "resourceId": "job_ce07_ns_web_audit_1767604978",
+        "resourceType": "job"
+      },
+      "orgId": null
+    },
+    {
+      "id": "04e2d466-bf6d-4f45-8ead-d0432b633a9c",
+      "userId": null,
+      "apiKeyId": null,
+      "action": "CE_CE07_MEMORY_UPDATE_SUCCESS",
+      "resourceType": "job",
+      "resourceId": "job_ce07_ns_web_audit_1767604978",
+      "ip": null,
+      "userAgent": null,
+      "details": {
+        "jobId": "job_ce07_ns_web_audit_1767604978",
+        "status": "SUCCESS",
+        "jobType": "CE07_MEMORY_UPDATE",
+        "traceId": "trace-job_ce07_ns_web_audit_1767604978",
+        "engineKey": "ce07_memory_update",
+        "latencyMs": 7,
+        "projectId": "proj_web_audit_1767604978",
+        "auditTrail": { "recordId": "87953b9a-3d81-4b01-8ea6-016342e9a5dd", "factsCount": 1 }
+      },
+      "createdAt": "2026-01-05T09:23:01.725Z",
+      "nonce": null,
+      "signature": null,
+      "timestamp": null,
+      "payload": {
+        "ip": null,
+        "nonce": null,
+        "orgId": null,
+        "action": "CE_CE07_MEMORY_UPDATE_SUCCESS",
+        "details": {
+          "jobId": "job_ce07_ns_web_audit_1767604978",
+          "status": "SUCCESS",
+          "jobType": "CE07_MEMORY_UPDATE",
+          "traceId": "trace-job_ce07_ns_web_audit_1767604978",
+          "engineKey": "ce07_memory_update",
+          "latencyMs": 7,
+          "projectId": "proj_web_audit_1767604978",
+          "auditTrail": { "recordId": "87953b9a-3d81-4b01-8ea6-016342e9a5dd", "factsCount": 1 }
+        },
+        "signature": null,
+        "timestamp": null,
+        "userAgent": null,
+        "resourceId": "job_ce07_ns_web_audit_1767604978",
+        "resourceType": "job"
+      },
+      "orgId": null
+    },
+    {
+      "id": "41a15a99-cf66-4d7b-8971-28d602d8145b",
+      "userId": null,
+      "apiKeyId": "c6e9c20a-8c54-4153-9b21-9f231de5aa42",
+      "action": "JOB_REPORT_RECEIVED",
+      "resourceType": "job",
+      "resourceId": "job_ce07_ns_web_audit_1767604978",
+      "ip": "::1",
+      "userAgent": "node",
+      "details": {
+        "jobId": "job_ce07_ns_web_audit_1767604978",
+        "status": "SUCCEEDED",
+        "workerId": "7e80f1d9-a5fd-4699-a6cf-7dbd8a644281"
+      },
+      "createdAt": "2026-01-05T09:23:01.734Z",
+      "nonce": "90bfcced86786288f5e08b73eb6d0a91-11-1767604981727",
+      "signature": "3e939bdd4ea5fd734f1af78740125daade3b661cb37604b840a45f582871938f",
+      "timestamp": "2026-01-05T09:23:01.726Z",
+      "payload": {
+        "ip": "::1",
+        "nonce": "90bfcced86786288f5e08b73eb6d0a91-11-1767604981727",
+        "orgId": null,
+        "action": "JOB_REPORT_RECEIVED",
+        "details": {
+          "jobId": "job_ce07_ns_web_audit_1767604978",
+          "status": "SUCCEEDED",
+          "workerId": "7e80f1d9-a5fd-4699-a6cf-7dbd8a644281"
+        },
+        "signature": "3e939bdd4ea5fd734f1af78740125daade3b661cb37604b840a45f582871938f",
+        "timestamp": "2026-01-05T09:23:01.726Z",
+        "userAgent": "node",
+        "resourceId": "job_ce07_ns_web_audit_1767604978",
+        "resourceType": "job"
+      },
+      "orgId": null
+    },
+    {
+      "id": "62159383-0807-4de7-b813-03739d6bf346",
+      "userId": null,
+      "apiKeyId": "c6e9c20a-8c54-4153-9b21-9f231de5aa42",
+      "action": "JOB_SUCCEEDED",
+      "resourceType": "job",
+      "resourceId": "job_ce07_ns_web_audit_1767604978",
+      "ip": "::1",
+      "userAgent": "node",
+      "details": {
+        "spanId": null,
+        "attempts": 1,
+        "duration": 986,
+        "workerId": "7e80f1d9-a5fd-4699-a6cf-7dbd8a644281",
+        "modelUsed": null
+      },
+      "createdAt": "2026-01-05T09:23:01.739Z",
+      "nonce": "90bfcced86786288f5e08b73eb6d0a91-11-1767604981727",
+      "signature": "3e939bdd4ea5fd734f1af78740125daade3b661cb37604b840a45f582871938f",
+      "timestamp": "2026-01-05T09:23:01.726Z",
+      "payload": {
+        "ip": "::1",
+        "nonce": "90bfcced86786288f5e08b73eb6d0a91-11-1767604981727",
+        "orgId": null,
+        "action": "JOB_SUCCEEDED",
+        "details": {
+          "spanId": null,
+          "attempts": 1,
+          "duration": 986,
+          "workerId": "7e80f1d9-a5fd-4699-a6cf-7dbd8a644281",
+          "modelUsed": null
+        },
+        "signature": "3e939bdd4ea5fd734f1af78740125daade3b661cb37604b840a45f582871938f",
+        "timestamp": "2026-01-05T09:23:01.726Z",
+        "userAgent": "node",
+        "resourceId": "job_ce07_ns_web_audit_1767604978",
+        "resourceType": "job"
+      },
+      "orgId": null
+    }
+  ]
+}

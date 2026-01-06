@@ -1,0 +1,6 @@
+BASELINE_SHA: 56d85356f722f60d9348961bc2157f4814bbfed1
+ENDPOINTS_OK: GET /api/novel-insight/:novelSourceId, GET /api/novel-insight/:novelSourceId/metrics
+READ_ONLY_GATE_04A: PASS (No write operations detected in consumption layer)
+TYPECHECK_OK: PASS (api:typecheck completed successfully)
+RBAC_SECURITY: Controller uses JwtOrHmacGuard + PermissionsGuard with insight.read/insight.metrics.read
+AUDIT_DETAILS_OK: PASS (INSIGHT_QUERY/INSIGHT_METRICS_QUERY use details field, no payload)

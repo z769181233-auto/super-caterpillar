@@ -35,7 +35,7 @@ describe('Stage 4 Flow (E2E)', () => {
             data: {
                 email,
                 passwordHash: 'mock_hash',
-                role: 'ADMIN',
+                role: 'admin',
                 userType: 'individual',
             },
         });

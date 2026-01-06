@@ -10,13 +10,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { QualityScoreRecord } from '@scu/shared-types';
 import { EngineAdapter } from '@scu/shared-types';
-import { EngineRegistry } from '../engine/engine-registry.service';
 
 @Injectable()
 export class QualityScoreService {
   private readonly logger = new Logger(QualityScoreService.name);
 
-  constructor(private readonly engineRegistry: EngineRegistry) {}
+  constructor() { }
 
   /**
    * 从 Job 和 Adapter 构建 QualityScoreRecord
@@ -127,7 +126,7 @@ export class QualityScoreService {
       const payload = job.payload as any;
       if (payload.result && typeof payload.result === 'object') {
         const result = payload.result as any;
-        
+
         // 优先从 result.quality 读取
         if (result.quality && typeof result.quality === 'object') {
           const resultQuality = result.quality as any;

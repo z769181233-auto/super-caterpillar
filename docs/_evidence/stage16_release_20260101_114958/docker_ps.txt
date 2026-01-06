@@ -1,0 +1,5 @@
+NAME                          IMAGE                  COMMAND                   SERVICE    CREATED          STATUS                    PORTS
+supercaterpillar-api-1        supercaterpillar-api   "docker-entrypoint.s…"   api        19 seconds ago   Up 11 seconds             0.0.0.0:3002->3000/tcp, [::]:3002->3000/tcp
+supercaterpillar-postgres-1   postgres:16            "docker-entrypoint.s…"   postgres   19 seconds ago   Up 17 seconds (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+supercaterpillar-redis-1      redis:7                "docker-entrypoint.s…"   redis      19 seconds ago   Up 17 seconds (healthy)   0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp
+supercaterpillar-web-1        supercaterpillar-web   "docker-entrypoint.s…"   web        18 seconds ago   Up 10 seconds             0.0.0.0:3005->3000/tcp, [::]:3005->3000/tcp

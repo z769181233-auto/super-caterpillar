@@ -1,0 +1,7 @@
+public|ShotJob|table|postgres
+public|job_engine_bindings|table|postgres
+public|novel_analysis_jobs|table|postgres
+public|project_members|table|postgres
+public|projects|table|postgres
+public|video_jobs|table|postgres
+public|worker_jobs|table|postgres

@@ -222,7 +222,6 @@ export class JobController {
   }
 
   @Post('jobs/batch/retry')
-  @UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
   async batchRetry(
     @Body() body: BatchJobOperationDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -240,7 +239,6 @@ export class JobController {
   }
 
   @Post('jobs/batch/cancel')
-  @UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
   async batchCancel(
     @Body() body: BatchJobOperationDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -258,7 +256,6 @@ export class JobController {
   }
 
   @Post('jobs/batch/force-fail')
-  @UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
   async batchForceFail(
     @Body() body: BatchJobOperationDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -281,7 +278,6 @@ export class JobController {
    * Stage2-B: Worker 执行闭环
    */
   @Post('jobs/:id/start')
-  @UseGuards(JwtOrHmacGuard)
   async startJob(
     @Param('id') jobId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -326,7 +322,6 @@ export class JobController {
    * POST /jobs/:id/report
    */
   @Post('jobs/:id/report')
-  @UseGuards(JwtOrHmacGuard)
   async reportJob(
     @Param('id') jobId: string,
     @Body() reportDto: ReportJobDto,

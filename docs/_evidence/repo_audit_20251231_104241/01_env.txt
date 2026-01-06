@@ -1,0 +1,22 @@
+=== git ===
+fix/stage6_7_internal_import
+483d0d7e4e5f495cdededaea2e021798121b0ec2
+ M apps/api/src/app.module.ts
+ M apps/api/src/audit-log/audit-log.service.ts
+ M apps/api/src/billing/billing.module.ts
+ M apps/api/src/job/job.module.ts
+ M apps/api/src/job/job.service.ts
+ M apps/api/src/production/production.module.ts
+ M apps/api/src/task/task.module.ts
+ M packages/database/prisma/schema.prisma
+ M tools/gate/gate_manifest.json
+?? apps/api/src/billing/budget.service.ts
+?? apps/api/src/billing/cost-guard.service.ts
+?? apps/api/src/billing/credit-ledger.service.ts
+?? apps/api/src/billing/credit-wallet.service.ts
+?? apps/api/src/task/task-callback.module.ts
+?? tools/gate/gates/gate-90_costguard_check.sh
+
+=== node/pnpm ===
+v24.3.0
+9.1.0

@@ -25,7 +25,7 @@ async function createTestUser() {
                 email,
                 passwordHash,
                 userType: 'individual',
-                role: UserRole.ADMIN, // Force Admin Role
+                role: UserRole.admin, // Force Admin Role
                 tier: 'Pro',
                 quota: {
                     remainingTokens: 10000,
@@ -42,7 +42,7 @@ async function createTestUser() {
             data: {
                 passwordHash,
                 userType: UserType.individual,
-                role: UserRole.ADMIN // Force Admin Role update
+                role: UserRole.admin // Force Admin Role update
             }
         });
         console.log(`✅ Password reset to: ${password}`);

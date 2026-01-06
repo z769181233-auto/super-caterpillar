@@ -2,8 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EngineProfileService } from './engine-profile.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobService } from '../job/job.service';
-import { EngineRegistry } from '../engine/engine-registry.service';
-import { EngineConfigStoreService } from '../engine/engine-config-store.service';
+import { EngineRegistryHubService } from '../engine-hub/engine-registry-hub.service';
 
 describe('EngineProfileService', () => {
   let service: EngineProfileService;
@@ -30,15 +29,9 @@ describe('EngineProfileService', () => {
           },
         },
         {
-          provide: EngineRegistry,
+          provide: EngineRegistryHubService,
           useValue: {
-            getAdapter: jest.fn().mockReturnValue({ name: 'mock_adapter' }),
-          },
-        },
-        {
-          provide: EngineConfigStoreService,
-          useValue: {
-            findByEngineKey: jest.fn().mockResolvedValue(null),
+            find: jest.fn().mockReturnValue({ mode: 'local', adapterToken: { name: 'mock_adapter' } }),
           },
         },
       ],

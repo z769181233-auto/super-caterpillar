@@ -1,0 +1,4 @@
+ id | projectId | name | url_len | embedding_id | default_seed | createdAt 
+----+-----------+------+---------+--------------+--------------+-----------
+(0 rows)
+

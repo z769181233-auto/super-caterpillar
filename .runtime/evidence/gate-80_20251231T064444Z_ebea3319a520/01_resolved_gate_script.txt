@@ -1,0 +1,3 @@
+gate_id=GATE-80
+resolved_script=tools/gate/gates/gate-80_telemetry_check.sh
+manifest_sha256=28048ed4f3cb779d824c15ed198873c8ad646604367adb473f14500e63f66fc6

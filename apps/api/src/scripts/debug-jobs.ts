@@ -21,7 +21,7 @@ async function main() {
       workerId: j.workerId,
       createdAt: j.createdAt,
       updatedAt: j.updatedAt,
-    })),
+    }))
   );
 
   await prisma.$disconnect();
@@ -35,4 +35,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

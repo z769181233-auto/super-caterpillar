@@ -15,7 +15,7 @@ import { JobType as JobTypeEnum } from 'database';
 export class QualityMetricsWriter {
   private readonly logger = new Logger(QualityMetricsWriter.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * 写入质量指标
@@ -86,6 +86,8 @@ export class QualityMetricsWriter {
           data: {
             projectId,
             engine,
+            jobId, // ✅ 新增：根级别绑定
+            traceId, // ✅ 新增：根级别绑定
             visualDensityScore,
             enrichmentQuality,
             metadata: finalMetadata,

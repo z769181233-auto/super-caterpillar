@@ -1,0 +1,15 @@
+=== Stage 6.8 Reaper Gate ===
+[Gate] Triggering internal import...
+[Gate] Triggered Job: 849cdc72-5838-4436-96f3-bb78a62df1f7
+[Gate] Waiting 30s for worker execution...
+[Gate] Job already DONE. Verification of persistence passed.
+[Gate] Running Reaper...
+scanned=0
+reaped_failed=0
+requeued=0
+pending_after=0
+running_after=0
+ok=true
+[0;32m[PASS] No Stale Jobs (>30m)[0m
+[0;32m[PASS] No Zombie Jobs (>2m no progress)[0m
+[0;32m[SUCCESS] Stage 6.8 Reaper Gate Passed[0m

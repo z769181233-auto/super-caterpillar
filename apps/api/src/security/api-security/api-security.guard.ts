@@ -9,6 +9,7 @@ import { Request } from 'express';
 import { ApiSecurityService } from './api-security.service';
 import { REQUIRE_SIGNATURE_KEY } from './api-security.decorator';
 import { buildHmacError } from '../../common/utils/hmac-error.utils';
+import { RequestWithApiSecurity } from './api-security.types';
 
 /**
  * API Security Guard
@@ -28,7 +29,7 @@ export class ApiSecurityGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly apiSecurityService: ApiSecurityService,
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // 检查是否标记了 @RequireSignature()
@@ -42,7 +43,7 @@ export class ApiSecurityGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<RequestWithApiSecurity>();
     const method = request.method;
     // v2: 包含 query string 的完整路径
     const pathWithQuery = request.url || request.path || '';
@@ -66,7 +67,7 @@ export class ApiSecurityGuard implements CanActivate {
     // 3. 判断是否为 multipart 端点（import-file）
     // 注意：使用 pathWithQuery 判断，但匹配时不包含 query string
     const isMultipartEndpoint = method === 'POST' && pathWithQuery.match(/^\/api\/projects\/[^/]+\/novel\/import-file(\?.*)?$/);
-    
+
     let finalContentSha256 = contentSha256;
 
     if (isMultipartEndpoint) {
@@ -94,15 +95,15 @@ export class ApiSecurityGuard implements CanActivate {
     let rawBodyBytes: Buffer | undefined;
     if (!isMultipartEndpoint) {
       // 非 multipart 端点：尝试获取 rawBody 或从 body 序列化
-      if ((request as any).rawBody) {
-        rawBodyBytes = Buffer.isBuffer((request as any).rawBody) 
-          ? (request as any).rawBody 
-          : Buffer.from((request as any).rawBody);
+      if (request.rawBody) {
+        rawBodyBytes = Buffer.isBuffer(request.rawBody)
+          ? request.rawBody
+          : Buffer.from(request.rawBody);
       } else if (request.body) {
         // 如果没有 rawBody，从 body 对象序列化
         rawBodyBytes = Buffer.from(JSON.stringify(request.body), 'utf8');
       }
-      
+
       // 如果客户端未提供 contentSha256，且我们有 rawBodyBytes，则计算（兜底）
       // 注意：当前实现要求客户端必须提供 X-Content-SHA256，此处仅作为兜底
       if (!finalContentSha256 && rawBodyBytes) {
@@ -136,8 +137,8 @@ export class ApiSecurityGuard implements CanActivate {
     }
 
     // 6. 验证成功，将 API Key 信息附加到请求对象
-    (request as any).apiKey = result.apiKey;
-    (request as any).apiKeyId = result.apiKeyId;
+    request.apiKey = result.apiKey;
+    request.apiKeyId = result.apiKeyId;
 
     return true;
   }

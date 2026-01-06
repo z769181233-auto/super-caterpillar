@@ -1,0 +1,21 @@
+=== Stage 6.8 Reaper Gate ===
+[Gate] Triggering internal import...
+[Gate] Triggered Job: 53cdea7a-30ee-44a5-85d6-0ee1acb5e6d5
+[Gate] Waiting 30s for worker execution...
+[Gate] Job status: PENDING. Proceeding to Reaper.
+[Gate] Running Reaper...
+scanned=0
+reaped_failed=0
+requeued=0
+pending_after=4
+running_after=0
+ok=true
+[0;31m[FAIL] Stale Jobs found: 4[0m
+                  id                  | status  |        updatedAt        
+--------------------------------------+---------+-------------------------
+ 6c56c99c-cd52-4992-911c-09c9d4f9b38c | PENDING | 2025-12-30 01:55:18.138
+ 3f6fd33b-54bb-41bd-b67f-c97831e0b309 | PENDING | 2025-12-30 01:56:24.606
+ b3565e0e-d70b-4112-bdd4-90b2fc969a06 | PENDING | 2025-12-30 01:58:58.18
+ e0de7edd-1837-44fb-af0b-e7a4807b92db | PENDING | 2025-12-30 02:01:43.717
+(4 rows)
+

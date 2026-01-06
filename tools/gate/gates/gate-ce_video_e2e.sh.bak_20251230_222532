@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TS="$(date +%Y%m%d_%H%M%S)"
+EVID_DIR=".runtime/evidence/gate-ce_video_e2e_${TS}"
+mkdir -p "$EVID_DIR"
+
+log() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$EVID_DIR/gate.log"; }
+
+log "EVID_DIR=$EVID_DIR"
+
+# Cleanup any existing processes on ports
+log "Cleaning up old processes and env files..."
+# Robust kill using pkill as fallback to lsof
+lsof -t -i :3001 | xargs kill -9 2>/dev/null || true
+lsof -t -i :3002 | xargs kill -9 2>/dev/null || true
+pkill -9 -f "api/dist/main" || true
+pkill -9 -f "ts-node.*workers/src/main.ts" || true
+sleep 2
+
+# Rename .env.local to avoid contamination (Keep base .env for essentials like JWT_SECRET)
+[ -f apps/api/.env.local ] && mv apps/api/.env.local apps/api/.env.local.bak || true
+[ -f apps/workers/.env.local ] && mv apps/workers/.env.local apps/workers/.env.local.bak || true
+
+# Common credentials for smoke test and worker
+export TEST_API_KEY="test_api_key_v1"
+export TEST_API_SECRET="test_api_secret_v1"
+
+
+# Pre-seed Worker ApiKey (P0: Essential to avoid worker registration race condition)
+log "Pre-seeding Worker ApiKey into DB (psql)..."
+# Using heredoc for multiple SQL commands
+psql -h localhost -U postgres -d scu <<EOF
+INSERT INTO users (id, email, "passwordHash", "updatedAt")
+VALUES ('test-user-worker', 'worker@scu.com', 'mock', NOW())
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO organizations (id, name, "ownerId", "updatedAt")
+VALUES ('test-org-worker', 'Worker Org', 'test-user-worker', NOW())
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO api_keys (id, key, "secretHash", name, "ownerOrgId", status, "updatedAt")
+VALUES ('test-worker-key', '$TEST_API_KEY', '$TEST_API_SECRET', 'Worker Key', 'test-org-worker', 'ACTIVE', NOW())
+ON CONFLICT (key) DO UPDATE SET "secretHash" = EXCLUDED."secretHash", status = 'ACTIVE', "updatedAt" = NOW();
+EOF
+psql -h localhost -U postgres -d scu -c "SELECT key, status FROM api_keys WHERE key = 'test_api_key_v1'" | tee -a "$EVID_DIR/gate.log"
+log "Pre-seed Complete."
+
+
+
+
+# Start API
+log "Starting API..."
+ALLOW_TEST_BILLING_GRANT=1 pnpm --filter api dev > "$EVID_DIR/api.log" 2>&1 &
+API_PID=$!
+log "API PID: $API_PID"
+
+# Wait for API to be ready
+log "Waiting for API to listen on 3001..."
+while ! grep -q "Nest application successfully started" "$EVID_DIR/api.log"; do
+  sleep 1
+done
+log "API is ready!"
+
+# Start Workers
+log "Starting Workers..."
+WORKER_API_KEY="$TEST_API_KEY" WORKER_API_SECRET="$TEST_API_SECRET" API_URL="http://127.0.0.1:3001" pnpm --filter @scu/worker dev > "$EVID_DIR/workers.log" 2>&1 &
+WORKER_PID=$!
+log "Workers PID: $WORKER_PID"
+
+# Wait for services to be ready
+log "Waiting 30s for services..."
+sleep 30
+
+log "Step 1: typecheck"
+( pnpm -w run typecheck ) 2>&1 | tee "$EVID_DIR/01_typecheck.log"
+
+log "Step 2: smoke e2e (realdb)"
+( pnpm -w exec tsx tools/smoke/ce_video_generation_e2e_smoke_realdb.ts ) 2>&1 | tee "$EVID_DIR/02_smoke.log"
+
+log "Step 3: 6-line report"
+tail -n 40 "$EVID_DIR/02_smoke.log" | tee "$EVID_DIR/03_last40_smoke.log"
+log "DONE"
+
+# Cleanup
+log "Cleaning up PIDs and restoring env files..."
+kill $API_PID || true
+kill $WORKER_PID || true
+[ -f apps/api/.env.local.bak ] && mv apps/api/.env.local.bak apps/api/.env.local || true
+[ -f apps/workers/.env.local.bak ] && mv apps/workers/.env.local.bak apps/workers/.env.local || true
+log "Cleanup Complete"

@@ -1,0 +1,13 @@
+apps/api/src/memory/dto/update-memory.dto.ts
+apps/api/src/shots/shots.service.ts
+apps/api/src/worker/dto/register-worker.dto.ts
+apps/workers/src/api-client.ts
+apps/workers/src/main.ts
+debug_db.ts
+task.md
+tools/dev/full_audit_run.sh
+tools/dev/repo_full_audit.sh
+tools/gate/gates/gate-ce_video_e2e.sh
+tools/gate/gates/gate-stage7_ce07_memory.sh
+tools/smoke/ce_video_generation_e2e_smoke_realdb.ts
+walkthrough.md

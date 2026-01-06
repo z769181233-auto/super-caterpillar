@@ -23,6 +23,7 @@ model User {
   apiKeys               ApiKey[]             @relation("UserApiKeys")
   auditLogs             AuditLog[]           @relation("UserAuditLogs")
   billingEvents         BillingEvent[]       @relation("BillingEventUser")
+  costLedgers           CostLedger[]         @relation("UserCostLedgers")
   memberships           Membership[]         @relation("UserMemberships")
   organizationMembers   OrganizationMember[] @relation("UserOrganizationMember")
   ownedOrganizations    Organization[]       @relation("OrganizationOwner")
@@ -100,6 +101,7 @@ model Project {
   qualityMetrics         QualityMetrics[]        @relation("ProjectQualityMetrics")
   seasons                Season[]                @relation("ProjectSeasons")
   structureQualityReport StructureQualityReport? @relation("ProjectQualityReport")
+  costLedgers            CostLedger[]            @relation("ProjectCostLedgers")
 
   @@map("projects")
 }
@@ -467,6 +469,8 @@ model ShotJob {
   worker         WorkerNode?       @relation("WorkerNodeShotJobs", fields: [workerId], references: [id])
   generatedAsset Asset[]           @relation("JobGeneratedAsset")
   engineBinding  JobEngineBinding? @relation("JobEngineBinding")
+
+  @@map("shot_jobs")
 }
 
 model WorkerNode {
@@ -913,6 +917,8 @@ model QualityMetrics {
   id                 String   @id @default(uuid())
   projectId          String
   engine             String
+  jobId              String?
+  traceId            String?
   visualDensityScore Float?
   enrichmentQuality  Float?
   parsingQuality     Float?
@@ -922,6 +928,7 @@ model QualityMetrics {
   project            Project  @relation("ProjectQualityMetrics", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, engine])
+  @@index([jobId, traceId])
   @@map("quality_metrics")
 }
 
@@ -1033,10 +1040,10 @@ enum UserType {
 }
 
 enum UserRole {
-  viewer
-  editor
-  creator
-  admin
+  viewer  @map("VIEWER")
+  editor  @map("EDITOR")
+  creator @map("CREATOR")
+  admin   @map("ADMIN")
 
   @@map("user_role")
 }
@@ -1127,6 +1134,7 @@ enum JobType {
   CE02_IDENTITY_LOCK
   CE05_DIRECTOR_CONTROL
   CE07_STORY_MEMORY
+  CE07_MEMORY_UPDATE
   CE08_STORY_KG
   CE09_MEDIA_SECURITY
   VIDEO_RENDER
@@ -1332,4 +1340,29 @@ enum AssetStatus {
   GENERATED
   LOCKED
   PUBLISHED
+}
+
+// P0: Cost Ledger for billing and cost tracking
+model CostLedger {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String
+  jobId       String // ⚠️ 非空: 避免unique对NULL失效
+  jobType     String // ⚠️ 非空: 避免unique对NULL失效
+  engineKey   String?
+  costAmount  Float
+  currency    String   @default("USD")
+  billingUnit String // e.g. "tokens", "seconds", "frames", "job"
+  quantity    Float
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user    User    @relation("UserCostLedgers", fields: [userId], references: [id])
+  project Project @relation("ProjectCostLedgers", fields: [projectId], references: [id])
+
+  // ⚠️ 幂等唯一键: 同一 jobId + jobType 只能记一次
+  @@unique([jobId, jobType])
+  @@index([projectId, createdAt])
+  @@index([userId])
+  @@map("cost_ledger")
 }

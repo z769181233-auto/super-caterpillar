@@ -1,0 +1,29 @@
+# CORE-7 Scan & Alignment Report
+
+## 1. Schema SSOT (Verified)
+- `NovelParseResult`: Exists (linked to Project).
+- `QualityMetrics`: Exists (linked to Project, supports engine-based metrics).
+- `JobType`: Contains `CE06_NOVEL_PARSING`, `CE03_VISUAL_DENSITY`, `CE04_VISUAL_ENRICHMENT`.
+- `NovelVolume` / `NovelChapter` / `NovelScene`: Exist for structured content.
+
+## 2. Orchestrator SSOT (Verified)
+- `OrchestratorService.createCECoreDAG`: Exists. Creates `CE_CORE_PIPELINE` Task and first `CE06` Job.
+- **Action Item**: Ensure this DAG creation is exposed via new Facade Controllers.
+
+## 3. Worker Processors (Verified with Gaps)
+- `apps/workers/src/ce-core-processor.ts`: Exists.
+- **CE06 Input**: Supports BOTH "HugeNovel" (chunk-based) and "Single Source" (full text).
+    - **Correction Required**: User requested Strict Input from `NovelChapter.rawText` / chunking. Will prioritize "Chunk-based" logic or ensure the single source path remains compatible but idempotent.
+- **CE03/04 Trigger**: Code in processor contains placeholders `// 4. 触发下一个 Job` but no API calls.
+    - **Action Item**: Implement strict "Job Success -> Trigger Next" logic in `JobService` (Server-side trigger) or Worker-side API call. Track B specifies "Job 成功回调严格触发".
+
+## 4. API Facades (Missing)
+- No `TextEngineController` found.
+- **Action Item**: Create `apps/api/src/text-engines/text-engine.controller.ts`.
+
+## 5. Safety & Quality (Gap)
+- CE04 Safety Filter: Not found in processor.
+- Quality Metrics: Tables exist, logic needed.
+
+## Plan Alignment
+- Proceeding with Track A (Facade) -> Track B (Job/DAG Trigger) -> Track C (Worker Logic) -> Track D (Safety/Quality).

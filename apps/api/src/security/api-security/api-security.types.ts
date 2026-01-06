@@ -1,3 +1,5 @@
+import { Request } from 'express';
+
 /**
  * API Security Types
  * 
@@ -45,3 +47,11 @@ export interface SignatureAuditDetails {
   errorCode?: string;
 }
 
+/**
+ * 扩展 Express Request 接口以包含安全上下文
+ */
+export interface RequestWithApiSecurity extends Request {
+  rawBody?: Buffer | string;
+  apiKey?: string;
+  apiKeyId?: string;
+}

@@ -1,0 +1,17 @@
+{
+  "gate_id": "gate-90_health_audit",
+  "head_sha": "e2aa846fb96a",
+  "timestamp_utc": "20251231T094721Z",
+  "result": "PASS",
+  "rc": 0,
+  "change_class": "CC3",
+  "change_reason": "security_critical_change",
+  "evidence_dir": ".runtime/evidence/gate-90_health_audit_20251231T094721Z_e2aa846fb96a",
+  "artifacts": {
+    "gate_20_log": ".runtime/evidence/gate-90_health_audit_20251231T094721Z_e2aa846fb96a/gate-20.log",
+    "gate_21_log": ".runtime/evidence/gate-90_health_audit_20251231T094721Z_e2aa846fb96a/gate-21.log",
+    "gate_30_log": ".runtime/evidence/gate-90_health_audit_20251231T094721Z_e2aa846fb96a/gate-30.log",
+    "gate_31_log": null,
+    "health_audit_log": ".runtime/evidence/gate-90_health_audit_20251231T094721Z_e2aa846fb96a/health_audit.log"
+  }
+}

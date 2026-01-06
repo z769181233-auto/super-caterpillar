@@ -1,0 +1,7 @@
+                  id                  |  status   | attempts |        updatedAt        |                        err                        
+--------------------------------------+-----------+----------+-------------------------+---------------------------------------------------
+ a53aff4d-bbcd-437a-bfa7-2d239845a14b | SUCCEEDED |        3 | 2026-01-04 04:37:40.236 | Unsupported job type: CE01_REFERENCE_SHEET       +
+                                      |           |          |                         | Error: Unsupported job type: CE01_REFERENCE_SHEET+
+                                      |           |          |                         |     at 
+(1 row)
+

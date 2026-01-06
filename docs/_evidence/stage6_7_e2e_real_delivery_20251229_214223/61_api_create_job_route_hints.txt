@@ -1,0 +1,6 @@
+406:[21:42:31.440] INFO (52756): Mapped {/api/orchestrator/dispatch, POST} route
+590:[21:42:31.440] INFO (52756): Registered engine adapter: default_novel_analysis
+596:[21:42:31.440] INFO (52756): [TaskCallback] Registered hook for jobType: NOVEL_ANALYSIS
+863:[21:42:39.079] INFO (52756): ➡️  [POST] /api/projects/proj-s67/novel/import [TraceID: 064bd63f-3bec-4943-9323-74ce25a40a5e]
+884:[21:42:39.118] INFO (52756): Auto-bound engine default_novel_analysis to NOVEL_ANALYSIS job 4e1827a5-9e13-4c02-bd09-e99f5efd98a9
+905:[21:42:39.123] INFO (52756): ⬅️  [POST] /api/projects/proj-s67/novel/import +44ms [TraceID: 064bd63f-3bec-4943-9323-74ce25a40a5e]

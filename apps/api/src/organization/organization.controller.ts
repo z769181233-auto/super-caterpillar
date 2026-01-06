@@ -5,7 +5,7 @@ import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { randomUUID } from 'crypto';
-import { env } from 'config';
+import { env } from '@scu/config';
 import { AuditAction } from '../audit/audit.decorator';
 import { AuditActions } from '../audit/audit.constants';
 import { AuditLogService } from '../audit-log/audit-log.service';

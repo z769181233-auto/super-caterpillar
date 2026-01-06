@@ -6,7 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
-import { env } from 'config';
+import { env } from '@scu/config';
 import { UserRole } from 'database';
 
 @Injectable()
@@ -41,7 +41,7 @@ export class AuthService {
           email,
           passwordHash,
           userType,
-          role: UserRole.CREATOR, // 统一 Uppercase
+          role: UserRole.creator, // 统一 lowercase
           tier: 'Free',
           quota: {
             remainingTokens: 1000,

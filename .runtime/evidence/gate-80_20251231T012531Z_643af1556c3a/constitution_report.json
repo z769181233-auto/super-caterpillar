@@ -1,0 +1,17 @@
+{
+  "gate_id": "GATE-80",
+  "head_sha": "643af1556c3a",
+  "timestamp_utc": "20251231T012531Z",
+  "result": "FAIL",
+  "rc": 1,
+  "change_class": "",
+  "change_reason": "",
+  "evidence_dir": ".runtime/evidence/gate-80_20251231T012531Z_643af1556c3a",
+  "artifacts": {
+    "gate_20_log": null,
+    "gate_21_log": null,
+    "gate_30_log": null,
+    "gate_31_log": null,
+    "health_audit_log": null
+  }
+}

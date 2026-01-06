@@ -1,0 +1,6 @@
+[CE07 Trigger] Starting CE07 M1 trigger...
+PROJECT_ID=proj-ce07-f63d2be1
+IDENTITY_KEY=idkey-f63d2be1
+SNAPSHOT_ID=3d0416ed-ae56-4aea-be94-8dcc0936372b
+SHOT_PLANNING_ID=d90bd26f-573b-4fb6-bd60-c17bd68ddade
+CE07_JOB_ID=9694b8fe-dc56-40fa-8b3a-d976a99b4d55

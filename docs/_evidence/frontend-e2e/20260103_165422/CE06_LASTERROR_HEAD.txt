@@ -1,0 +1,8 @@
+                  id                  |  status  |        type        | retryCount |        updatedAt        |                                        lasterror_head                                        
+--------------------------------------+----------+--------------------+------------+-------------------------+----------------------------------------------------------------------------------------------
+ 711f8365-0871-48cf-8969-3741ee78a384 | RETRYING | CE06_NOVEL_PARSING |          1 | 2026-01-03 09:56:06.492 | CE job failed: no error details (engineKey=CE06, jobId=711f8365-0871-48cf-8969-3741ee78a384)
+ 74e37d26-9ee5-418c-b3dc-443359616a3b | RETRYING | CE06_NOVEL_PARSING |          1 | 2026-01-03 09:56:04.499 | CE job failed: no error details (engineKey=CE06, jobId=74e37d26-9ee5-418c-b3dc-443359616a3b)
+ de3f0425-adaf-45fd-bdf0-c69bfd72720f | RETRYING | CE06_NOVEL_PARSING |          1 | 2026-01-03 09:55:00.489 | CE job failed: no error details (engineKey=CE06, jobId=de3f0425-adaf-45fd-bdf0-c69bfd72720f)
+ b9b4441b-41c3-456a-bad9-2b617ad2345c | RETRYING | CE06_NOVEL_PARSING |          1 | 2026-01-03 09:54:58.507 | CE job failed: no error details (engineKey=CE06, jobId=b9b4441b-41c3-456a-bad9-2b617ad2345c)
+(4 rows)
+

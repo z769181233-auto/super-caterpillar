@@ -43,4 +43,6 @@ reports/e2e/*.json
 reports/stability/*.md
 !reports/SELF_TEST_REPORT_V2.md
 
-apps/web/e2e/.auth
+
+# Data
+.data/

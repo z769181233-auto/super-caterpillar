@@ -188,6 +188,26 @@ async function main() {
   }
 
   console.log('✅ RBAC seeding completed!');
+
+  // ========== API Keys Seed: Worker Key ==========
+  console.log('🌱 Seeding API Keys...');
+  const workerApiKey = 'ak_worker_dev_0000000000000000';
+  const workerApiSecret = 'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
+
+  await prisma.apiKey.upsert({
+    where: { key: workerApiKey },
+    update: {
+      secretHash: workerApiSecret, // Dev env fallback allows plain secret in secretHash
+      status: 'ACTIVE',
+    },
+    create: {
+      key: workerApiKey,
+      secretHash: workerApiSecret,
+      name: 'Dev Worker Key',
+      status: 'ACTIVE',
+    },
+  });
+  console.log('✅ API Key seeding completed!');
 }
 
 main()

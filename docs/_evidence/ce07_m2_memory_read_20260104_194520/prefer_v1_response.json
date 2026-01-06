@@ -1,0 +1,18 @@
+{
+  "snapshot": {
+    "snapshotId": "88565e43-92cd-4411-a38d-b2f2d4dd68e3",
+    "projectId": "proj-m2-893334d2",
+    "identityLockToken": "idkey-893334d2",
+    "version": 1,
+    "createdAt": "2026-01-04T12:45:28.659Z",
+    "summary": {
+      "snapshotId": "88565e43-92cd-4411-a38d-b2f2d4dd68e3",
+      "version": 1,
+      "identityLockToken": "idkey-893334d2",
+      "sourceRef": "shotplan-v1-893334d2",
+      "content": { "memory": "V1 Memory Content", "source": "manual", "version": 1 },
+      "createdAt": "2026-01-04T12:45:28.659Z",
+      "updatedAt": "2026-01-04T12:45:28.659Z"
+    }
+  }
+}

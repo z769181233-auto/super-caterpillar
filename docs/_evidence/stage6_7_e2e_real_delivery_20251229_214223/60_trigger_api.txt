@@ -1,0 +1,63 @@
+========================================
+Stage 6.7 真实任务触发
+========================================
+API URL: http://localhost:3001
+Project ID: ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+API Key: ak_worker_dev_000000...
+========================================
+
+
+[REQUEST] POST /api/projects/ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d/novel/import
+[HEADERS] X-Api-Key: ak_worker_dev_000000...
+[HEADERS] X-Nonce: c0b1d84d97c938b1e899408e3a1efc6f}
+[HEADERS] X-Timestamp: 1767023563194
+[HEADERS] X-Signature: 9e94c2b43b860a801985...
+[BODY] {"title":"Stage 6.7 测试小说 - 2025-12-29T15:52:43.193Z","content":"这是一个测试小说的内容。\n\n第一章 开始\n\n这是第一章的内容。主人公开始了他的冒险之旅。\n\n第二章 继续\n\n冒险仍在继续，更多精彩即将到来。","author":"Stage 6.7 测试","sourceUrl":"https://test.example.com/stage67-test"}
+[RESPONSE] Status: 400
+[RESPONSE] Body: {"success":false,"error":{"code":"4003","message":"签名验证失败"},"requestId":"79a8b22e-8945-46c5-8d2c-b2fc2781ae31","timestamp":"2025-12-29T15:52:43.206Z","path":"/api/projects/ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d/novel/import","method":"POST"}
+
+========================================
+❌ 任务创建失败
+========================================
+========================================
+Stage 6.7 真实任务触发
+========================================
+API URL: http://localhost:3001
+Project ID: ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+API Key: ak_worker_dev_000000...
+========================================
+
+
+[REQUEST] POST /api/projects/ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d/novel/import
+[HEADERS] X-Api-Key: ak_worker_dev_000000...
+[HEADERS] X-Nonce: 040a24b038eaf9eb5f7298bc5f553a65}
+[HEADERS] X-Timestamp: 1767023611854
+[HEADERS] X-Signature: 5a2eebc425a9c091a566...
+[BODY] {"title":"Stage 6.7 测试小说 - 2025-12-29T15:53:31.853Z","content":"这是一个测试小说的内容。\n\n第一章 开始\n\n这是第一章的内容。主人公开始了他的冒险之旅。\n\n第二章 继续\n\n冒险仍在继续，更多精彩即将到来。","author":"Stage 6.7 测试","sourceUrl":"https://test.example.com/stage67-test"}
+[RESPONSE] Status: 400
+[RESPONSE] Body: {"success":false,"error":{"code":"4003","message":"签名验证失败"},"requestId":"fa737637-b849-478e-917c-672b2688d0f7","timestamp":"2025-12-29T15:53:31.865Z","path":"/api/projects/ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d/novel/import","method":"POST"}
+
+========================================
+❌ 任务创建失败
+========================================
+========================================
+Stage 6.7 真实任务触发
+========================================
+API URL: http://localhost:3001
+Project ID: ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+API Key: ak_worker_dev_000000...
+========================================
+
+
+[REQUEST] POST /api/projects/ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d/novel/import
+[HEADERS] X-Api-Key: ak_worker_dev_000000...
+[HEADERS] X-Nonce: a2890ad48a5d6d51075be6e0e3fb8001}
+[HEADERS] X-Timestamp: 1767023635671
+[HEADERS] X-Signature: cf5c9f3424415ce3442d...
+[BODY] {"title":"Stage 6.7 测试小说 - 2025-12-29T15:53:55.670Z","content":"这是一个测试小说的内容。\n\n第一章 开始\n\n这是第一章的内容。主人公开始了他的冒险之旅。\n\n第二章 继续\n\n冒险仍在继续，更多精彩即将到来。","author":"Stage 6.7 测试","sourceUrl":"https://test.example.com/stage67-test"}
+[RESPONSE] Status: 400
+[RESPONSE] Body: {"message":["property sourceUrl should not exist"],"error":"Bad Request","statusCode":400}
+
+========================================
+❌ 任务创建失败
+========================================

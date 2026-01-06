@@ -1,0 +1,20 @@
+[CE05 Trigger] Starting setup...
+[CE05 Trigger] Creating Job 47d3102a-a6a4-4626-b6a7-228907939932...
+PrismaClientKnownRequestError: 
+Invalid `prisma.shotJob.create()` invocation in
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/dev/ce05_trigger.ts:122:30
+
+  119     }
+  120 }
+  121 
+→ 122 await prisma.shotJob.create(
+Foreign key constraint violated: `shot_jobs_taskId_fkey (index)`
+    at $n.handleRequestError (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/dist/generated/prisma/runtime/library.js:121:7315)
+    at $n.handleAndLogRequestError (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/dist/generated/prisma/runtime/library.js:121:6623)
+    at $n.request (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/dist/generated/prisma/runtime/library.js:121:6307)
+    at async l (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/dist/generated/prisma/runtime/library.js:130:9633)
+    at async main (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/dev/ce05_trigger.ts:122:9) {
+  code: 'P2003',
+  clientVersion: '5.22.0',
+  meta: { modelName: 'ShotJob', field_name: 'shot_jobs_taskId_fkey (index)' }
+}

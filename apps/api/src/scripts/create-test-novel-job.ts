@@ -1,4 +1,11 @@
-import { PrismaClient, UserType, OrganizationRole, ProjectStatus, JobType, JobStatus } from 'database';
+import {
+  PrismaClient,
+  UserType,
+  OrganizationRole,
+  ProjectStatus,
+  JobType,
+  JobStatus,
+} from 'database';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 
@@ -123,7 +130,9 @@ async function main() {
     });
   }
 
-  let novelChapter = await prisma.novelChapter.findFirst({ where: { novelSourceId: novelSource.id, orderIndex: 1 } });
+  let novelChapter = await prisma.novelChapter.findFirst({
+    where: { novelSourceId: novelSource.id, orderIndex: 1 },
+  });
   if (!novelChapter) {
     novelChapter = await prisma.novelChapter.create({
       data: {
@@ -181,4 +190,3 @@ main()
       process.exit(0);
     }
   });
-

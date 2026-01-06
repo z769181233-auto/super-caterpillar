@@ -12,7 +12,7 @@ import { UserModule } from '../user/user.module';
 import { OrganizationModule } from '../organization/organization.module';
 import { HmacAuthModule } from './hmac/hmac-auth.module';
 import { PermissionModule } from '../permission/permission.module';
-import { env } from 'config';
+import { env } from '@scu/config';
 import { AuditModule } from '../audit/audit.module';
 import { NonceModule } from './nonce.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';

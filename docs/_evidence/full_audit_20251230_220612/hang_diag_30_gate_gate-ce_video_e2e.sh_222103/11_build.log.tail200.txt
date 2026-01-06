@@ -1,0 +1,111 @@
+
+> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run build
+
+turbo 2.6.3
+
+• Packages in scope: @scu/shared-types, @scu/storage, @scu/worker, api, config, database, web
+• Running build in 7 packages
+• Remote caching disabled
+@scu/storage:build: cache hit, replaying logs 79b7c7563721b088
+@scu/storage:build: 
+@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > tsc
+@scu/storage:build: 
+config:build: cache hit, replaying logs dc103ef6428fbddf
+config:build: 
+config:build: > config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+config:build: > tsc
+config:build: 
+@scu/shared-types:build: cache hit, replaying logs f4ae780f653f2d5a
+@scu/shared-types:build: 
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > tsc -p tsconfig.build.json
+@scu/shared-types:build: 
+database:build: cache hit, replaying logs 2bd226635ef9bc01
+database:build: 
+database:build: 
+database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
+database:build: 
+api:build: cache hit, replaying logs 95c4baacdf3c2372
+api:build: 
+api:build: > api@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+api:build: > nest build
+api:build: 
+api:build: webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 4355 ms
+@scu/worker:build: cache hit, replaying logs be2c55a837ac390d
+@scu/worker:build: 
+@scu/worker:build: 
+@scu/worker:build: > @scu/worker@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers
+@scu/worker:build: > tsc -p tsconfig.json
+@scu/worker:build: 
+web:build: cache hit, replaying logs da5cb0f551cc0ba2
+web:build: 
+web:build: > web@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web
+web:build: > next build
+web:build: 
+web:build:   ▲ Next.js 14.2.33
+web:build: 
+web:build:    Creating an optimized production build ...
+web:build:  ✓ Compiled successfully
+web:build:    Linting and checking validity of types ...
+web:build: 
+web:build: ./src/app/[locale]/projects/[projectId]/video/page.tsx
+web:build: 18:8  Warning: React Hook useEffect has a missing dependency: 'loadFirstVideo'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+web:build: 
+web:build: ./src/app/[locale]/projects/page.tsx
+web:build: 44:6  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+web:build: 
+web:build: info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+web:build:    Collecting page data ...
+web:build:    Generating static pages (0/3) ...
+web:build:  ✓ Generating static pages (3/3)
+web:build:    Finalizing page optimization ...
+web:build:    Collecting build traces ...
+web:build: 
+web:build: Route (app)                                      Size     First Load JS
+web:build: ┌ ○ /_not-found                                  875 B          88.2 kB
+web:build: ├ ƒ /[locale]                                    1.74 kB        97.7 kB
+web:build: ├ ƒ /[locale]/contact                            707 B            88 kB
+web:build: ├ ƒ /[locale]/dev/autofill                       1.06 kB        88.4 kB
+web:build: ├ ƒ /[locale]/login                              2.44 kB         102 kB
+web:build: ├ ƒ /[locale]/monitor/scheduler                  2.93 kB        94.3 kB
+web:build: ├ ƒ /[locale]/monitor/workers                    1.58 kB        92.9 kB
+web:build: ├ ƒ /[locale]/platform                           863 B          88.2 kB
+web:build: ├ ƒ /[locale]/privacy                            708 B            88 kB
+web:build: ├ ƒ /[locale]/projects                           3.94 kB         119 kB
+web:build: ├ ƒ /[locale]/projects/[projectId]               3.26 kB         103 kB
+web:build: ├ ƒ /[locale]/projects/[projectId]/import-novel  7.97 kB        99.3 kB
+web:build: ├ ƒ /[locale]/projects/[projectId]/pipeline      3.1 kB         94.4 kB
+web:build: ├ ƒ /[locale]/projects/[projectId]/production    3.65 kB         104 kB
+web:build: ├ ƒ /[locale]/projects/[projectId]/result        2.77 kB        94.1 kB
+web:build: ├ ƒ /[locale]/projects/[projectId]/structure     138 B          87.4 kB
+web:build: ├ ƒ /[locale]/projects/[projectId]/upload        2.12 kB        93.5 kB
+web:build: ├ ƒ /[locale]/projects/[projectId]/video         2.84 kB        94.2 kB
+web:build: ├ ƒ /[locale]/register                           2.32 kB         102 kB
+web:build: ├ ƒ /[locale]/solutions/creator                  855 B          88.2 kB
+web:build: ├ ƒ /[locale]/solutions/enterprise               815 B          88.1 kB
+web:build: ├ ƒ /[locale]/solutions/studio                   817 B          88.1 kB
+web:build: ├ ƒ /[locale]/studio                             139 B          87.4 kB
+web:build: ├ ƒ /[locale]/studio/jobs                        10.4 kB         102 kB
+web:build: ├ ƒ /[locale]/studio/review                      4.11 kB         104 kB
+web:build: ├ ƒ /[locale]/tasks                              3.94 kB        95.3 kB
+web:build: ├ ƒ /[locale]/tasks/[taskId]/graph               3.75 kB        95.1 kB
+web:build: └ ƒ /[locale]/terms                              711 B            88 kB
+web:build: + First Load JS shared by all                    87.3 kB
+web:build:   ├ chunks/175-ed47e9557435a9a1.js               31.7 kB
+web:build:   ├ chunks/d96dac80-8323eb0040160a50.js          53.7 kB
+web:build:   └ other shared chunks (total)                  1.95 kB
+web:build: 
+web:build: 
+web:build: ƒ Middleware                                     37.6 kB
+web:build: 
+web:build: ○  (Static)   prerendered as static content
+web:build: ƒ  (Dynamic)  server-rendered on demand
+web:build: 
+
+ Tasks:    7 successful, 7 total
+Cached:    7 cached, 7 total
+  Time:    820ms >>> FULL TURBO
+

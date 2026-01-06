@@ -123,6 +123,15 @@ export class WorkerController {
     @CurrentUser() user: { userId: string },
     @Req() request: Request,
   ): Promise<any> {
+    // 商业级审计：强制要求x-worker-id header
+    const headerWorkerId = (request.headers['x-worker-id'] as string || '').trim();
+    if (!headerWorkerId) {
+      throw new NotFoundException('Missing x-worker-id header for claim audit');
+    }
+    if (headerWorkerId !== workerId) {
+      throw new NotFoundException(`x-worker-id header mismatch: expected=${workerId} actual=${headerWorkerId}`);
+    }
+
     // 通过调度器获取下一条待处理的 Job（最小闭环版）
     const job = await this.orchestratorService.dispatchNextJobForWorker(workerId);
 

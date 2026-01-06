@@ -1,0 +1,12 @@
+{
+  "amount": 400,
+  "p95_ms": 43,
+  "p50_ms": 7,
+  "qps": 400,
+  "errors": 0,
+  "timeouts": 0,
+  "5xx": 0,
+  "cacheHitRatio": 1,
+  "hit": 50,
+  "miss": 0
+}

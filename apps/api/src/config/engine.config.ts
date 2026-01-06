@@ -7,7 +7,7 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { env } from 'config';
+import { env } from '@scu/config';
 import * as fs from 'fs';
 import * as path from 'path';
 

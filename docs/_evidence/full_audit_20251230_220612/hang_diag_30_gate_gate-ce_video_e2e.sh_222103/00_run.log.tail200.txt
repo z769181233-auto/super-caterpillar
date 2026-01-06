@@ -1,0 +1,19 @@
+[22:06:12] EVID_ROOT=docs/_evidence/full_audit_20251230_220612
+[22:06:12] API_PORT=3001 API_BASE=http://127.0.0.1:3001
+[22:06:12] === STEP 01_git_status (timeout=120s) ===
+[22:06:12] [PASS] STEP 01_git_status
+[22:06:12] === STEP 02_versions (timeout=120s) ===
+[22:06:12] [PASS] STEP 02_versions
+[22:06:12] === STEP 10_typecheck (timeout=300s) ===
+[22:06:14] [PASS] STEP 10_typecheck
+[22:06:14] === STEP 11_build (timeout=900s) ===
+[22:06:16] [PASS] STEP 11_build
+[22:06:16] === STEP 20_prisma_generate (timeout=300s) ===
+[22:06:19] [PASS] STEP 20_prisma_generate
+[22:06:19] === STEP 21_prisma_validate (timeout=300s) ===
+[22:06:20] [PASS] STEP 21_prisma_validate
+[22:06:20] === STEP 30_gate_gate-stage7_ce07_memory.sh (timeout=900s) ===
+[22:06:34] [PASS] STEP 30_gate_gate-stage7_ce07_memory.sh
+[22:06:34] [SKIP] missing gate: tools/gate/gates/gate-d5_pipeline.sh
+[22:06:34] === STEP 30_gate_gate-ce_video_e2e.sh (timeout=900s) ===
+[22:21:03] [FAIL] STEP 30_gate_gate-ce_video_e2e.sh rc=143

@@ -1,0 +1,10 @@
+{
+  "timestamp": "20260103_010540",
+  "gitSha": "9a6ed4cdbcfdc81e551a793fb31d40b700078def",
+  "nodeVersion": "v24.3.0",
+  "pnpmVersion": "9.1.0",
+  "dbSchemaHash": "4ba8e8a7bd06d2ea30ff562098d094b8",
+  "webPort": 3000,
+  "apiPort": 3001,
+  "workerMode": "INDUSTRIAL_CE_SPEC_V1.1"
+}

@@ -1,0 +1,29 @@
+[CE05 M2 Trigger] Starting setup...
+[CE05 M2 Trigger] Triggering CE05...
+[CE05 M2 Trigger] Triggering CE06...
+PrismaClientValidationError: 
+Invalid `prisma.task.create()` invocation in
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/dev/ce05_m2_trigger.ts:31:32
+
+  28 
+  29 // Helper to create Task
+  30 const createTask = async (type: string) => {
+→ 31     return prisma.task.create({
+           data: {
+             organizationId: "org-m2-eb7ecea9",
+             projectId: "proj-m2-eb7ecea9",
+             type: "CE06_NOVEL_PARSING",
+                   ~~~~~~~~~~~~~~~~~~~~
+             status: "PENDING"
+           }
+         })
+
+Invalid value for argument `type`. Expected TaskType.
+    at wn (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/dist/generated/prisma/runtime/library.js:29:1363)
+    at $n.handleRequestError (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/dist/generated/prisma/runtime/library.js:121:6958)
+    at $n.handleAndLogRequestError (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/dist/generated/prisma/runtime/library.js:121:6623)
+    at $n.request (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/dist/generated/prisma/runtime/library.js:121:6307)
+    at async l (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/dist/generated/prisma/runtime/library.js:130:9633)
+    at async main (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/dev/ce05_m2_trigger.ts:76:24) {
+  clientVersion: '5.22.0'
+}

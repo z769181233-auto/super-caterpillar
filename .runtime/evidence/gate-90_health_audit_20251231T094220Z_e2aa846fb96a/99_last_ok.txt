@@ -1,0 +1,10 @@
+status=PASS
+gate_id=gate-90_health_audit
+head_sha=e2aa846fb96a
+evidence_dir=.runtime/evidence/gate-90_health_audit_20251231T094220Z_e2aa846fb96a
+timestamp_utc=20251231T094220Z
+head_commit_epoch=1767173152
+last_ok_gen_epoch=1767174164
+runner_sha=e2aa846fb96a
+gate_script_sha256=b782b582357aab8f22898d71050905d459046d50bbee92ba90db380ead3b7065
+health_audit_sha256=52751ed7b0c4c63cea45b2168297d60113b306d6e44655de39e2de720e10b88a

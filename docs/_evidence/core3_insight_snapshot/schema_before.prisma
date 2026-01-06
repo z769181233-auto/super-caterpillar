@@ -1,0 +1,1976 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model User {
+  id                    String               @id @default(uuid())
+  email                 String               @unique
+  passwordHash          String
+  avatar                String?
+  userType              UserType             @default(individual)
+  role                  UserRole             @default(VIEWER)
+  tier                  UserTier             @default(Free)
+  quota                 Json?
+  credits               Decimal              @default(0) @db.Decimal(20, 6)
+  defaultOrganizationId String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  apiKeys               ApiKey[]             @relation("UserApiKeys")
+  auditLogs             AuditLog[]           @relation("UserAuditLogs")
+  billingEvents         BillingEvent[]       @relation("BillingEventUser")
+  memberships           Membership[]         @relation("UserMemberships")
+  organizationMembers   OrganizationMember[] @relation("UserOrganizationMember")
+  ownedOrganizations    Organization[]       @relation("OrganizationOwner")
+  ownedProjects         Project[]            @relation("ProjectOwner")
+  reviewLogs            PublishingReview[]   @relation("ReviewerUser")
+  subscriptions         Subscription[]       @relation("UserSubscription")
+  billingRecords        BillingRecord[]      @relation("UserBillingRecords")
+
+  @@map("users")
+}
+
+model Organization {
+  id            String               @id @default(uuid())
+  name          String
+  ownerId       String
+  slug          String?              @unique
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  credits       Float                @default(0)
+  type          String?
+  shotJobs      ShotJob[]            @relation("OrganizationShotJobs")
+  tasks         Task[]               @relation("OrganizationTasks")
+  apiKeys       ApiKey[]             @relation("OrganizationApiKeys")
+  auditLogs     AuditLog[]           @relation("OrganizationAuditLogs")
+  billingEvents BillingEvent[]       @relation("BillingEventOrganization")
+  costCenters   CostCenter[]         @relation("OrganizationCostCenters")
+  memberships   Membership[]         @relation("OrganizationMemberships")
+  members       OrganizationMember[] @relation("OrganizationMembers")
+  owner         User                 @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  projects      Project[]            @relation("OrganizationProjects")
+  shots         Shot[]               @relation("OrganizationShots")
+  subscriptions Subscription[]       @relation("OrganizationSubscription")
+
+  @@unique([ownerId, type])
+  @@map("organizations")
+}
+
+model Membership {
+  id             String         @id @default(uuid())
+  userId         String
+  organizationId String
+  role           MembershipRole
+  permissions    Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation("OrganizationMemberships", fields: [organizationId], references: [id])
+  user           User           @relation("UserMemberships", fields: [userId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@map("memberships")
+}
+
+model Project {
+  id                     String                  @id @default(uuid())
+  name                   String
+  description            String?
+  ownerId                String
+  organizationId         String
+  status                 ProjectStatus           @default(in_progress)
+  metadata               Json?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  settingsJson           Json?
+  shotJobs               ShotJob[]               @relation("ProjectShotJobs")
+  tasks                  Task[]                  @relation("ProjectTasks")
+  assets                 Asset[]                 @relation("ProjectAssets")
+  billingEvents          BillingEvent[]          @relation("BillingEventProject")
+  engineTasks            EngineTask[]            @relation("ProjectEngineTask")
+  episodes               Episode[]               @relation("ProjectEpisodes")
+  novelAnalysisJobs      NovelAnalysisJob[]      @relation("ProjectNovelAnalysisJobs")
+  novelParseResults      NovelParseResult?       @relation("ProjectNovelParseResults")
+  novelSources           NovelSource[]           @relation("ProjectNovelSources")
+  novelInsightSnapshots  NovelInsightSnapshot[]  @relation("ProjectNovelInsightSnapshots")
+  projectMembers         ProjectMember[]
+  organization           Organization            @relation("OrganizationProjects", fields: [organizationId], references: [id])
+  owner                  User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
+  qualityMetrics         QualityMetrics[]        @relation("ProjectQualityMetrics")
+  seasons                Season[]                @relation("ProjectSeasons")
+  structureQualityReport StructureQualityReport? @relation("ProjectQualityReport")
+  plan                   ProjectPlan?
+
+  @@map("projects")
+}
+
+model Season {
+  id          String    @id @default(uuid())
+  projectId   String
+  index       Int
+  title       String
+  description String?
+  metadata    Json?     @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  episodes    Episode[] @relation("SeasonEpisodes")
+  project     Project   @relation("ProjectSeasons", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, index])
+  @@index([projectId])
+  @@map("seasons")
+}
+
+model Episode {
+  id                String             @id @default(uuid())
+  seasonId          String
+  projectId         String?
+  index             Int
+  name              String
+  summary           String?
+  chapterId         String?            @unique
+  shotJobs          ShotJob[]          @relation("EpisodeShotJobs")
+  chapter           NovelChapter?      @relation("ChapterEpisode", fields: [chapterId], references: [id])
+  project           Project?           @relation("ProjectEpisodes", fields: [projectId], references: [id], onDelete: Cascade)
+  season            Season             @relation("SeasonEpisodes", fields: [seasonId], references: [id], onDelete: Cascade)
+  publishingReviews PublishingReview[] @relation("EpisodePublishingReview")
+  scenes            Scene[]            @relation("EpisodeScenes")
+
+  @@map("episodes")
+}
+
+model Scene {
+  id                 String       @id @default(uuid())
+  episodeId          String
+  index              Int
+  title              String
+  summary            String?
+  sceneDraftId       String?      @unique
+  characters         Json?
+  enrichedText       String?
+  projectId          String?
+  visualDensityScore Float?
+  shotJobs           ShotJob[]    @relation("SceneShotJobs")
+  engineTasks        EngineTask[] @relation("SceneEngineTask")
+  episode            Episode      @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
+  sceneDraft         SceneDraft?  @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
+  shots              Shot[]       @relation("SceneShots")
+
+  @@index([projectId, index])
+  @@map("scenes")
+}
+
+model Shot {
+  id                String             @id @default(uuid())
+  sceneId           String
+  index             Int
+  title             String?
+  description       String?
+  type              String
+  status            ShotStatus         @default(DRAFT)
+  statusUpdatedAt   DateTime           @default(now())
+  currentVariantId  String?
+  params            Json               @default("{}")
+  qualityScore      Json               @default("{}")
+  reviewedAt        DateTime?
+  durationSeconds   Int?
+  organizationId    String?
+  enrichedPrompt    String?
+  identityLockToken String?            @map("identity_lock_token")
+  jobs              ShotJob[]          @relation("ShotJobs")
+  assets            Asset[]            @relation("ShotAssets")
+  engineTasks       EngineTask[]       @relation("ShotEngineTask")
+  publishingReviews PublishingReview[] @relation("ShotPublishingReview")
+  qualityScores     QualityScore[]     @relation("ShotQualityScore")
+  safetyResults     SafetyResult[]     @relation("ShotSafetyResult")
+  shotPlanning      ShotPlanning?      @relation("ShotPlanning")
+  organization      Organization?      @relation("OrganizationShots", fields: [organizationId], references: [id])
+  scene             Scene              @relation("SceneShots", fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId, index])
+  @@map("shots")
+}
+
+model SemanticEnhancement {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  nodeType      String
+  nodeId        String
+  data          Json
+  engineKey     String
+  engineVersion String?
+  confidence    Float?
+
+  @@unique([nodeType, nodeId])
+  @@index([nodeType, nodeId])
+  @@map("semantic_enhancements")
+}
+
+model ShotPlanning {
+  id            String   @id @default(uuid())
+  shotId        String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  data          Json
+  engineKey     String
+  engineVersion String?
+  confidence    Float?
+  shot          Shot     @relation("ShotPlanning", fields: [shotId], references: [id], onDelete: Cascade)
+
+  @@map("shot_plannings")
+}
+
+model StructureQualityReport {
+  id            String   @id @default(uuid())
+  projectId     String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  data          Json
+  engineKey     String
+  engineVersion String?
+  project       Project  @relation("ProjectQualityReport", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("structure_quality_reports")
+}
+
+model EngineTask {
+  id            String           @id @default(uuid())
+  type          EngineTaskType
+  projectId     String
+  sceneId       String?
+  shotId        String?
+  input         Json
+  output        Json?
+  engineVersion String
+  status        EngineTaskStatus @default(pending)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  project       Project          @relation("ProjectEngineTask", fields: [projectId], references: [id], onDelete: Cascade)
+  scene         Scene?           @relation("SceneEngineTask", fields: [sceneId], references: [id], onDelete: Cascade)
+  shot          Shot?            @relation("ShotEngineTask", fields: [shotId], references: [id], onDelete: Cascade)
+
+  @@map("engine_tasks")
+}
+
+model Engine {
+  id             String             @id @default(uuid())
+  engineKey      String             @unique
+  adapterName    String
+  adapterType    String
+  config         Json
+  enabled        Boolean            @default(true)
+  version        String?
+  defaultVersion String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  code           String             @unique
+  isActive       Boolean            @default(true)
+  name           String
+  type           String
+  versions       EngineVersion[]
+  jobBindings    JobEngineBinding[] @relation("EngineJobBindings")
+
+  @@map("engines")
+}
+
+model EngineVersion {
+  id            String             @id @default(uuid())
+  engineId      String
+  versionName   String
+  config        Json
+  enabled       Boolean            @default(true)
+  rolloutWeight Int?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  engine        Engine             @relation(fields: [engineId], references: [id])
+  jobBindings   JobEngineBinding[] @relation("EngineVersionJobBindings")
+
+  @@unique([engineId, versionName])
+  @@map("engine_versions")
+}
+
+model JobEngineBinding {
+  id              String                 @id @default(uuid())
+  jobId           String                 @unique
+  engineId        String
+  engineVersionId String?
+  engineKey       String
+  status          JobEngineBindingStatus @default(BOUND)
+  boundAt         DateTime               @default(now())
+  executedAt      DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  metadata        Json?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  engine          Engine                 @relation("EngineJobBindings", fields: [engineId], references: [id])
+  engineVersion   EngineVersion?         @relation("EngineVersionJobBindings", fields: [engineVersionId], references: [id])
+  job             ShotJob                @relation("JobEngineBinding", fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([engineId, status])
+  @@index([jobId])
+  @@index([engineKey, status])
+  @@map("job_engine_bindings")
+}
+
+/// Nonce 防重放存储（HMAC 安全）
+model NonceStore {
+  id        String    @id @default(uuid())
+  nonce     String
+  apiKey    String
+  timestamp BigInt
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([nonce, apiKey])
+  @@map("nonce_store")
+}
+
+model Role {
+  id        String           @id @default(uuid())
+  name      String           @unique
+  level     Int
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  members   ProjectMember[]
+  rolePerms RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id        String           @id @default(uuid())
+  key       String           @unique
+  scope     String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  rolePerms RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  userId    String
+  projectId String
+  roleId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@map("project_members")
+}
+
+model AuditLogLegacy {
+  id           String   @id @default(uuid())
+  userId       String?
+  orgId        String?
+  action       String
+  resourceType String?
+  resourceId   String?
+  traceId      String
+  ip           String?
+  ua           String?
+  timestamp    DateTime @default(now())
+  details      Json?
+  immutable    Boolean  @default(true)
+
+  @@index([userId])
+  @@index([resourceId])
+  @@index([action])
+  @@index([timestamp])
+  @@map("audit_log")
+  @@ignore
+}
+
+model Task {
+  id             String       @id @default(uuid())
+  organizationId String
+  projectId      String
+  type           TaskType
+  status         TaskStatus   @default(PENDING)
+  payload        Json?
+  attempts       Int          @default(0)
+  maxRetry       Int          @default(3)
+  retryCount     Int          @default(0)
+  error          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  output         Json?
+  traceId        String?
+  workerId       String?
+  jobs           ShotJob[]    @relation("TaskJobs")
+  organization   Organization @relation("OrganizationTasks", fields: [organizationId], references: [id])
+  project        Project      @relation("ProjectTasks", fields: [projectId], references: [id], onDelete: Cascade)
+  worker         WorkerNode?  @relation("TaskWorker", fields: [workerId], references: [id])
+
+  @@index([status, createdAt])
+}
+
+model WorkerJob {
+  id            String          @id @default(uuid())
+  type          WorkerJobType
+  payload       Json
+  status        WorkerJobStatus @default(pending)
+  workerId      String?
+  retryCount    Int             @default(0)
+  traceId       String
+  jobId         String          @unique
+  engineVersion String?
+  modelVersion  String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  billingEvents BillingEvent[]  @relation("BillingEventJob")
+  worker        WorkerNode?     @relation("WorkerNodeJobs", fields: [workerId], references: [id])
+
+  @@map("worker_jobs")
+}
+
+model ShotJob {
+  id             String            @id @default(uuid())
+  organizationId String
+  projectId      String
+  episodeId      String
+  sceneId        String
+  shotId         String
+  taskId         String?
+  workerId       String?
+  status         JobStatus         @default(PENDING)
+  type           JobType
+  priority       Int               @default(0)
+  maxRetry       Int               @default(3)
+  retryCount     Int               @default(0)
+  attempts       Int               @default(0)
+  payload        Json?
+  engineConfig   Json?
+  lastError      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  traceId        String?
+  engineKey      String?
+  episode        Episode           @relation("EpisodeShotJobs", fields: [episodeId], references: [id], onDelete: Cascade)
+  organization   Organization      @relation("OrganizationShotJobs", fields: [organizationId], references: [id])
+  project        Project           @relation("ProjectShotJobs", fields: [projectId], references: [id], onDelete: Cascade)
+  scene          Scene             @relation("SceneShotJobs", fields: [sceneId], references: [id], onDelete: Cascade)
+  shot           Shot              @relation("ShotJobs", fields: [shotId], references: [id], onDelete: Cascade)
+  task           Task?             @relation("TaskJobs", fields: [taskId], references: [id], onDelete: Cascade)
+  worker         WorkerNode?       @relation("WorkerNodeShotJobs", fields: [workerId], references: [id])
+  generatedAsset Asset[]           @relation("JobGeneratedAsset")
+  engineBinding  JobEngineBinding? @relation("JobEngineBinding")
+
+  @@index([status, createdAt])
+  @@index([type, status])
+  @@index([engineKey, status])
+  @@map("shot_jobs")
+}
+
+model WorkerNode {
+  id                String       @id @default(uuid())
+  workerId          String       @unique
+  name              String?
+  status            WorkerStatus @default(offline)
+  gpuCount          Int          @default(0)
+  gpuMemory         Int          @default(0)
+  gpuType           String       @default("unknown")
+  tasksRunning      Int          @default(0)
+  temperature       Float?
+  capabilities      Json         @default("{}")
+  supportedJobTypes String[]     @default([])
+  lastHeartbeat     DateTime     @default(now())
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  shotJobs          ShotJob[]    @relation("WorkerNodeShotJobs")
+  tasks             Task[]       @relation("TaskWorker")
+  jobs              WorkerJob[]  @relation("WorkerNodeJobs")
+
+  @@index([status])
+  @@index([status, lastHeartbeat])
+  @@map("worker_nodes")
+}
+
+model WorkerHeartbeat {
+  workerId   String   @id @map("worker_id")
+  lastSeenAt DateTime @map("last_seen_at")
+  status     String   @default("ALIVE")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([status, lastSeenAt])
+  @@map("worker_heartbeats")
+}
+
+model ModelRegistry {
+  id                 String    @id @default(uuid())
+  name               String
+  type               ModelType
+  version            String
+  changelog          String?
+  compatibleEngines  Json
+  performanceMetrics Json?
+  fineTuneInfo       Json?
+  seed               String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([name, version])
+  @@map("model_registry")
+}
+
+model TemplatePreset {
+  id        String       @id @default(uuid())
+  type      TemplateType
+  name      String
+  preset    Json
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@map("template_presets")
+}
+
+model QualityScore {
+  id                 String   @id @default(uuid())
+  shotId             String
+  visualDensityScore Float
+  consistencyScore   Float
+  motionScore        Float
+  clarityScore       Float
+  aestheticScore     Float
+  overallScore       Float
+  calcVersion        Int      @default(1)
+  weightsSnapshot    Json?
+  thresholdSnapshot  Json?
+  traceId            String?
+  inputsSnapshotHash String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  shot               Shot     @relation("ShotQualityScore", fields: [shotId], references: [id])
+
+  @@unique([shotId, calcVersion])
+  @@map("quality_scores")
+}
+
+model SafetyResult {
+  id                 String       @id @default(uuid())
+  shotId             String
+  textScore          Float
+  imageScore         Float
+  riskLevel          RiskLevel
+  reviewStatus       ReviewStatus @default(require_human_review)
+  version            Int          @default(1)
+  reasons            Json?
+  evidenceRef        String?
+  traceId            String?
+  inputsSnapshotHash String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  shot               Shot         @relation("ShotSafetyResult", fields: [shotId], references: [id])
+
+  @@unique([shotId, version])
+  @@map("safety_results")
+}
+
+model BillingEvent {
+  id                 String           @id @default(uuid())
+  eventType          BillingEventType
+  userId             String
+  organizationId     String?
+  projectId          String?
+  jobId              String?
+  amount             Float
+  creditsConsumed    Float
+  computeSecondsUsed Float
+  gpuCost            Float
+  modelCost          Float
+  storageCost        Float
+  totalCost          Float
+  billingStatus      BillingStatus    @default(pending)
+  invoiceId          String?
+  timestamp          DateTime         @default(now())
+  metadata           Json?
+  job                WorkerJob?       @relation("BillingEventJob", fields: [jobId], references: [id])
+  organization       Organization?    @relation("BillingEventOrganization", fields: [organizationId], references: [id])
+  project            Project?         @relation("BillingEventProject", fields: [projectId], references: [id])
+  user               User             @relation("BillingEventUser", fields: [userId], references: [id])
+
+  @@map("billing_events")
+}
+
+model CostCenter {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  budget         Float
+  currentCost    Float        @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation("OrganizationCostCenters", fields: [organizationId], references: [id])
+
+  @@map("cost_centers")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  userId             String?
+  organizationId     String?
+  planId             String
+  status             SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  organization       Organization?      @relation("OrganizationSubscription", fields: [organizationId], references: [id])
+  user               User?              @relation("UserSubscription", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([organizationId])
+  @@map("subscriptions")
+}
+
+model PublishingReview {
+  id                 String       @id @default(uuid())
+  episodeId          String?
+  shotId             String?
+  reviewType         ReviewType
+  reviewerId         String?
+  result             ReviewResult
+  reviewLog          Json
+  decisionVersion    Int          @default(1)
+  reasons            Json?
+  traceId            String?
+  inputsSnapshotHash String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  episode            Episode?     @relation("EpisodePublishingReview", fields: [episodeId], references: [id])
+  reviewer           User?        @relation("ReviewerUser", fields: [reviewerId], references: [id])
+  shot               Shot?        @relation("ShotPublishingReview", fields: [shotId], references: [id])
+
+  @@unique([shotId, decisionVersion])
+  @@map("publishing_reviews")
+}
+
+model OrganizationMember {
+  id             String           @id @default(uuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole @default(VIEWER)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation("OrganizationMembers", fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation("UserOrganizationMember", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("organization_members")
+}
+
+model NovelSource {
+  id              String             @id @default(uuid())
+  projectId       String
+  novelTitle      String?
+  novelAuthor     String?
+  rawText         String
+  rawContentHash  String?            @db.VarChar(64) @map("raw_content_hash") // sha256 for deduplication
+  filePath        String?
+  fileName        String?
+  fileSize        Int?
+  fileType        String?
+  characterCount  Int?
+  chapterCount    Int?
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  analysisJobs    NovelAnalysisJob[] @relation("NovelSourceAnalysisJobs")
+  chapters        NovelChapter[]     @relation("NovelSourceChapters")
+  project         Project            @relation("ProjectNovelSources", fields: [projectId], references: [id], onDelete: Cascade)
+  analyses        NovelAnalysis[]    @relation("NovelSourceAnalyses") // CE03 SSOT
+  insightSnapshots NovelInsightSnapshot[] @relation("NovelSourceInsightSnapshots")
+
+  @@index([projectId])
+  @@index([rawContentHash])
+  @@map("novel_sources")
+}
+
+model NovelChapter {
+  id              String           @id @default(uuid())
+  novelSourceId   String
+  orderIndex      Int
+  title           String
+  rawText         String           @map("raw_text")
+  startParagraph  Int?             @map("start_paragraph")
+  endParagraph    Int?             @map("end_paragraph")
+  characterCount  Int?             @map("character_count")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  summary         String?
+  shortTermMemory MemoryShortTerm? @relation("ChapterShortTermMemory")
+  episode         Episode?         @relation("ChapterEpisode")
+  novelSource     NovelSource      @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  sceneDrafts     SceneDraft[]     @relation("ChapterSceneDrafts")
+  scenes          NovelScene[]     @relation("ChapterScenes")
+
+  @@unique([novelSourceId, orderIndex])
+  @@index([novelSourceId])
+  @@map("novel_chapters")
+}
+
+model MemoryShortTerm {
+  id                 String   @id @default(uuid())
+  organizationId     String?  @map("organization_id")
+  projectId          String?  @map("project_id")
+  chapterId          String   @unique @map("chapter_id")
+  summary            String?
+  characterStateJson Json?    @map("character_state_json")
+  keyEventsJson      Json?    @map("key_events_json")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  chapter NovelChapter @relation("ChapterShortTermMemory", fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@index([chapterId])
+  @@index([projectId, chapterId])
+  @@index([updatedAt])
+  @@map("memory_short_term")
+}
+
+model MemoryUpdateLog {
+  id          String   @id @default(uuid())
+  chapterId   String   @map("chapter_id")
+  payloadHash String   @map("payload_hash")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([chapterId, payloadHash])
+  @@index([chapterId])
+  @@map("memory_update_logs")
+}
+
+model SceneDraft {
+  id             String           @id @default(uuid())
+  chapterId      String
+  orderIndex     Int
+  title          String?
+  summary        String?
+  characters     Json?
+  location       String?
+  emotions       Json?
+  rawTextRange   Json?
+  status         SceneDraftStatus @default(DRAFT)
+  analysisResult Json?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  chapter        NovelChapter     @relation("ChapterSceneDrafts", fields: [chapterId], references: [id], onDelete: Cascade)
+  scene          Scene?           @relation("SceneDraftScene")
+
+  @@unique([chapterId, orderIndex])
+  @@index([chapterId])
+  @@index([status])
+  @@map("scene_drafts")
+}
+
+model NovelAnalysisJob {
+  id            String               @id @default(uuid())
+  projectId     String
+  novelSourceId String?
+  chapterId     String?
+  jobType       NovelAnalysisJobType @default(ANALYZE_ALL)
+  status        NovelAnalysisStatus  @default(PENDING)
+  errorMessage  String?
+  progress      Json?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  novelSource   NovelSource?         @relation("NovelSourceAnalysisJobs", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  project       Project              @relation("ProjectNovelAnalysisJobs", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([novelSourceId])
+  @@index([chapterId])
+  @@index([status])
+  @@map("novel_analysis_jobs")
+}
+
+model ApiKey {
+  id            String        @id @default(uuid())
+  key           String        @unique
+  secretHash    String?
+  name          String?
+  ownerUserId   String?
+  ownerOrgId    String?
+  status        ApiKeyStatus  @default(ACTIVE)
+  lastUsedAt    DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  secretEnc     String?
+  secretEncIv   String?
+  secretEncTag  String?
+  secretVersion Int?          @default(1)
+  ownerOrg      Organization? @relation("OrganizationApiKeys", fields: [ownerOrgId], references: [id])
+  ownerUser     User?         @relation("UserApiKeys", fields: [ownerUserId], references: [id])
+  auditLogs     AuditLog[]    @relation("ApiKeyAuditLogs")
+
+  @@index([key])
+  @@index([status])
+  @@index([ownerUserId])
+  @@index([ownerOrgId])
+  @@map("api_keys")
+}
+
+model AuditLog {
+  id           String        @id @default(uuid())
+  userId       String?
+  apiKeyId     String?
+  action       String
+  resourceType String
+  resourceId   String?
+  ip           String?
+  userAgent    String?
+  details      Json?
+  createdAt    DateTime      @default(now())
+  nonce        String?
+  signature    String?
+  timestamp    DateTime?
+  payload      Json?
+  orgId        String?
+  apiKey       ApiKey?       @relation("ApiKeyAuditLogs", fields: [apiKeyId], references: [id])
+  organization Organization? @relation("OrganizationAuditLogs", fields: [orgId], references: [id])
+  user         User?         @relation("UserAuditLogs", fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([resourceType, resourceId])
+  @@index([userId])
+  @@index([apiKeyId])
+  @@index([nonce, timestamp])
+  @@map("audit_logs")
+}
+
+model SecurityFingerprint {
+  id        String   @id @default(uuid())
+  assetId   String?
+  fpVector  Json?
+  createdAt DateTime @default(now())
+
+  @@map("security_fingerprints")
+}
+
+model ShotVariant {
+  id               String    @id @default(uuid())
+  shotId           String?
+  name             String?
+  version          Int       @default(1)
+  isLocked         Boolean   @default(false)
+  lockedAt         DateTime?
+  lockedByUserId   String?
+  parameters       Json?
+  qualityScore     Json?
+  consistencyScore Float?
+  visualScore      Float?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("shot_variants")
+}
+
+model VideoJob {
+  id             String         @id @default(uuid())
+  shotId         String?
+  variantId      String?
+  projectId      String?
+  organizationId String?
+  status         VideoJobStatus @default(PENDING)
+  payload        Json?          @default("{}")
+
+  // Billing Stage 7 (3-Stage: Reserve/Settle/Refund)
+  reservedCredits     Int?      @default(0)
+  settledCredits      Int?      @default(0)
+  creditReservationId String?
+  reservedAt          DateTime?
+  settledAt           DateTime?
+
+  // Metrics
+  gpuSecondsEstimated Int? @default(0)
+  gpuSecondsActual    Int? @default(0)
+
+  // Idempotency
+  idempotencyKey    String?  @unique
+  securityProcessed Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@map("video_jobs")
+}
+
+model Character {
+  id          String  @id @default(uuid())
+  projectId   String?
+  name        String
+  description String?
+
+  // CE01 (DBSpec 既定字段:必须 snake_case 映射,避免生成重复列)
+  referenceSheetUrls Json?   @map("reference_sheet_urls")
+  embeddingId        String? @map("embedding_id")
+  defaultSeed        String? @map("default_seed")
+  referenceSheetId   String? @map("reference_sheet_id") // 可选:对齐 EngineSpec
+
+  // CE02 (SSOT)
+  identityLockToken String?            @map("identity_lock_token")
+  identityLockScope IdentityLockScope? @default(PROJECT) @map("identity_lock_scope")
+
+  traits    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, name])
+  @@map("characters")
+}
+
+model NovelVolume {
+  id        String   @id @default(uuid())
+  projectId String?
+  index     Int
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("novel_volumes")
+}
+
+model NovelScene {
+  id                 String       @id @default(uuid())
+  chapterId          String       @map("chapter_id")
+  index              Int
+  chunkIndex         Int          @default(0) @map("chunk_index") /// Block-based DAG: which chunk this scene belongs to
+  rawText            String       @map("raw_text")
+  enrichedText       String?      @map("enriched_text")
+  visualDensityScore Float?       @map("visual_density_score")
+  characterIds       Json?        @map("character_ids")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  chapter            NovelChapter @relation("ChapterScenes", fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@index([chapterId, index])
+  @@index([chunkIndex])
+  @@map("novel_scenes")
+}
+
+model MemoryLongTerm {
+  id         String   @id @default(uuid())
+  entityId   String
+  entityType String
+  vectorRef  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("memory_long_term")
+}
+
+enum NovelInsightStatus {
+  INIT
+  GENERATED
+  FAILED
+}
+
+model NovelInsightSnapshot {
+  id            String             @id @default(uuid())
+  projectId     String
+  novelSourceId String
+  jobId         String? // Traceable source job
+  traceId       String? // Correlation ID
+  engineVersion String // SSOT Constant
+  schemaVersion String             @default("v1")
+  status        NovelInsightStatus @default(INIT)
+  summaryJson   Json // Structured insights: characters, outline, rhythm, etc.
+  errorMessage  String? // Failure details for status=FAILED
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  project     Project     @relation("ProjectNovelInsightSnapshots", fields: [projectId], references: [id], onDelete: Cascade)
+  novelSource NovelSource @relation("NovelSourceInsightSnapshots", fields: [novelSourceId], references: [id], onDelete: Cascade)
+
+  @@unique([novelSourceId, engineVersion])
+  @@index([projectId])
+  @@index([novelSourceId])
+  @@map("novel_insight_snapshots")
+}
+
+model NovelParseResult {
+  id             String   @id @default(uuid())
+  projectId      String   @unique
+  volumes        Json?
+  chapters       Json?
+  scenes         Json?
+  parsingQuality Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  project        Project  @relation("ProjectNovelParseResults", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("novel_parse_results")
+}
+
+/// Day-3+: 千万字级分块模型（支持 1500万字小说断点恢复）
+/// 用于将超大型小说切分为可处理的小块（≤6k tokens）
+model NovelChunk {
+  id            String   @id @default(uuid())
+  novelSourceId String
+  orderIndex    Int      /// 块序号，用于排序和重组
+  rawText       String   @db.Text /// PostgreSQL Text 类型，支持无限长度
+  hash          String   /// SHA256 hash for deduplication and integrity
+  status        String   @default("PENDING") /// PENDING / PARSED / FAILED
+  charCount     Int      @default(0) /// 字符数统计
+  tokenEstimate Int      @default(0) /// Token 估算值（用于计费和容量规划）
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([novelSourceId, orderIndex])
+  @@index([novelSourceId])
+  @@map("novel_chunks")
+}
+
+/// Day-3: DAG 状态追踪模型
+/// 追踪每个 chunk 在 CE06/CE03/CE04 pipeline 中的执行状态
+model ParseBlock {
+  id            String   @id @default(uuid())
+  novelSourceId String
+  chunkId       String
+  blockType     String   /// CE06 / CE03 / CE04
+  status        String   @default("PENDING") /// PENDING / RUNNING / DONE / FAILED
+  resultRef     String?  /// Reference to result (e.g., jobId or output location)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([chunkId, blockType])
+  @@index([novelSourceId])
+  @@index([chunkId])
+  @@map("parse_blocks")
+}
+
+model QualityMetrics {
+  id                 String   @id @default(uuid())
+  projectId          String
+  engine             String
+  visualDensityScore Float?
+  enrichmentQuality  Float?
+  parsingQuality     Float?
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  project            Project  @relation("ProjectQualityMetrics", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, engine])
+  @@map("quality_metrics")
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json?
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model BillingPlan {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  tier           String
+  price          Float
+  credits        Float
+  computeSeconds Float
+  features       Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("billing_plans")
+}
+
+model BillingRecord {
+  id             String            @id @default(uuid())
+  userId         String
+  organizationId String?
+  projectId      String?
+  jobId          String?
+  traceId        String?
+  planId         String?
+  type           BillingRecordType @default(SETTLE)
+  amount         Decimal           @db.Decimal(20, 6)
+  credits        Float?            @ignore // Legacy field, keeping for compatibility during migration if needed
+  computeSeconds Float?
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  status         String
+  idempotencyKey String?           @unique
+  invoiceId      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  user           User              @relation("UserBillingRecords", fields: [userId], references: [id])
+
+  @@map("billing_records")
+}
+
+model Model {
+  id        String   @id @default(uuid())
+  name      String
+  type      String
+  version   String
+  provider  String?
+  config    Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, version])
+  @@map("models")
+}
+
+model Asset {
+  id             String         @id @default(uuid())
+  projectId      String
+  createdAt      DateTime       @default(now())
+  checksum       String?
+  createdByJobId String?
+  traceId        String? // Stage 6.3: 审计追溯
+  ownerId        String
+  ownerType      AssetOwnerType
+  status         AssetStatus    @default(GENERATED)
+  storageKey     String
+  type           AssetType
+
+  // Stage 6.3: 交付必需字段
+  contentType String? // "video/mp4", "image/jpeg"
+  sizeBytes   BigInt? // 文件大小
+
+  // Stage 6.3: 媒体元信息
+  durationMs Int? // 视频时长（毫秒）
+  width      Int? // 宽度
+  height     Int? // 高度
+  fps        Int? // 帧率
+
+  // CE09 Media Security Fields
+  signedUrl      String? @map("signed_url")
+  hlsPlaylistUrl String? @map("hls_playlist_url")
+  watermarkMode  String? @map("watermark_mode")
+  fingerprintId  String? @map("fingerprint_id")
+
+  // Relations
+  shot      Shot       @relation("ShotAssets", fields: [ownerId], references: [id], onDelete: Cascade, map: "Asset_Shot_fkey")
+  job       ShotJob?   @relation("JobGeneratedAsset", fields: [createdByJobId], references: [id])
+  project   Project    @relation("ProjectAssets", fields: [projectId], references: [id], onDelete: Cascade)
+  assetSkus AssetSku[] @relation("AssetSkus") // Stage 6.4: 计费关联
+
+  @@unique([ownerType, ownerId, type])
+  @@unique([createdByJobId, type]) // Stage 6.3: 幂等性约束
+  @@index([projectId])
+  @@index([ownerType, ownerId])
+  @@index([status, projectId]) // Stage 6.3: 查询优化
+  @@map("assets")
+}
+
+model TextSafetyResult {
+  id              String             @id @default(uuid())
+  resourceType    String
+  resourceId      String
+  decision        TextSafetyDecision
+  riskLevel       RiskLevel
+  flags           Json?              @default("[]")
+  reasons         Json?              @default("[]")
+  sanitizedDigest String?
+  traceId         String?
+  createdAt       DateTime?          @default(now())
+
+  @@index([decision, createdAt(sort: Desc)], map: "text_safety_results_decision_createdat_idx")
+  @@index([resourceType, resourceId], map: "text_safety_results_resourcetype_resourceid_idx")
+  @@index([riskLevel, createdAt(sort: Desc)], map: "text_safety_results_risklevel_createdat_idx")
+  @@map("text_safety_results")
+}
+
+enum UserType {
+  individual
+  organization_member
+  admin
+
+  @@map("user_type")
+}
+
+enum UserRole {
+  VIEWER
+  EDITOR
+  CREATOR
+  ADMIN
+
+  @@map("user_role")
+}
+
+enum UserTier {
+  Free
+  Pro
+  Studio
+  Enterprise
+
+  @@map("user_tier")
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  CREATOR
+  EDITOR
+  VIEWER
+
+  @@map("membership_role")
+}
+
+enum TextSafetyDecision {
+  PASS
+  WARN
+  BLOCK
+
+  @@map("text_safety_decision")
+}
+
+enum ProjectStatus {
+  in_progress
+  completed
+
+  @@map("project_status")
+}
+
+enum ShotStatus {
+  DRAFT
+  READY
+  RENDERING
+  DONE
+  FAILED
+
+  // Legacy/Technical Debt
+  GENERATING
+  GENERATED
+  pending
+  running
+  success
+  fail
+  need_fix
+
+  @@map("shot_status")
+}
+
+enum IdentityLockScope {
+  EPISODE
+  SEASON
+  PROJECT
+
+  @@map("identity_lock_scope")
+}
+
+enum ShotReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("shot_review_status")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  TRIALING
+
+  @@map("subscription_status")
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  RETRYING
+  DISPATCHED
+}
+
+enum JobType {
+  SHOT_RENDER
+  NOVEL_ANALYSIS
+  CE06_NOVEL_PARSING
+  CE03_VISUAL_DENSITY
+  CE04_VISUAL_ENRICHMENT
+  CE01_REFERENCE_SHEET
+  CE02_IDENTITY_LOCK
+  CE05_DIRECTOR_CONTROL
+  CE07_MEMORY_UPDATE
+  CE07_STORY_MEMORY
+  CE08_STORY_KG
+  CE09_MEDIA_SECURITY
+  VIDEO_RENDER
+}
+
+enum JobEngineBindingStatus {
+  BOUND
+  EXECUTING
+  COMPLETED
+  FAILED
+
+  @@map("job_engine_binding_status")
+}
+
+enum EngineTaskType {
+  scene_parse
+  shot_plan
+  shot_enhance
+  inpainting
+  visual_enhance
+  consistency_calibrate
+
+  @@map("engine_task_type")
+}
+
+enum EngineTaskStatus {
+  pending
+  running
+  success
+  fail
+
+  @@map("engine_task_status")
+}
+
+enum TaskType {
+  NOVEL_IMPORT
+  NOVEL_ANALYSIS
+  SHOT_RENDER
+  CE_CORE_PIPELINE
+  VIDEO_RENDER
+  STAGE4_ORCHESTRATOR
+  STAGE4_SAFETY_EVAL
+  STAGE4_QUALITY_EVAL
+  STAGE4_PUBLISHING_DECISION
+}
+
+enum TaskStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  RETRYING
+}
+
+enum WorkerJobType {
+  render
+  engine_task
+  synthesis
+  fix
+
+  @@map("worker_job_type")
+}
+
+enum WorkerJobStatus {
+  pending
+  running
+  success
+  fail
+
+  @@map("worker_job_status")
+}
+
+enum WorkerStatus {
+  idle
+  busy
+  offline
+  online
+
+  @@map("worker_status")
+}
+
+enum ModelType {
+  foundation
+  sub_model
+  character
+  pose
+  style
+  embedding
+  lora
+
+  @@map("model_type")
+}
+
+enum TemplateType {
+  pose
+  camera
+  style
+
+  @@map("template_type")
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+  critical
+
+  @@map("risk_level")
+}
+
+enum ReviewStatus {
+  pass
+  reject
+  require_human_review
+
+  @@map("review_status")
+}
+
+enum BillingEventType {
+  subscription
+  pay_as_you_go
+  organization_billing
+  auto_fix
+  render
+  model_call
+
+  @@map("billing_event_type")
+}
+
+enum BillingStatus {
+  pending // 预占用（保留兼容性）
+  reserved // Stage 6.4: 已预留
+  completed // 已完成（保留兼容性）
+  settled // Stage 6.4: 已结算
+  failed // 失败（保留兼容性）
+  refunded // Stage 6.4: 已退款
+
+  @@map("billing_status")
+}
+
+enum ReviewType {
+  auto
+  semi_auto
+  human
+
+  @@map("review_type")
+}
+
+enum ReviewResult {
+  pass
+  reject
+  require_review
+
+  @@map("review_result")
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  CREATOR
+  EDITOR
+  VIEWER
+
+  @@map("organization_role")
+}
+
+enum SceneDraftStatus {
+  DRAFT
+  ANALYZED
+  FINALIZED
+
+  @@map("scene_draft_status")
+}
+
+enum NovelAnalysisJobType {
+  ANALYZE_ALL
+  ANALYZE_CHAPTER
+
+  @@map("novel_analysis_job_type")
+}
+
+enum NovelAnalysisStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+
+  @@map("novel_analysis_status")
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  DISABLED
+
+  @@map("api_key_status")
+}
+
+enum AssetOwnerType {
+  SCENE
+  SHOT
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+  MODEL
+}
+
+enum AssetStatus {
+  CREATING // Stage 6.3: 创建中
+  READY // Stage 6.3: 可交付
+  FAILED // Stage 6.3: 失败
+  GENERATED // 保留兼容性
+  LOCKED
+  PUBLISHED
+}
+
+// ========================================
+// CE06 Ledger Domain - 商业账本内核
+// ========================================
+
+model Ce06LedgerRun {
+  id         String   @id @default(cuid())
+  ce06RunId  String   @unique
+  projectId  String
+  engineKey  String
+  engineVer  String
+  inputHash  String
+  outputHash String?
+  status     String // SUCCESS | FAIL | REFUNDED
+  createdAt  DateTime @default(now())
+
+  @@map("ce06_ledger_runs")
+}
+
+model Ce06LedgerCost {
+  id        String   @id @default(cuid())
+  runId     String
+  metric    String // TOKEN | GPU_SEC | BW_MB | STORAGE_MB
+  amount    Float
+  createdAt DateTime @default(now())
+
+  @@map("ce06_ledger_costs")
+}
+
+model Ce06LedgerQuality {
+  id        String   @id @default(cuid())
+  runId     String
+  score     Float
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@map("ce06_ledger_quality")
+}
+
+model Ce06LedgerSla {
+  id        String   @id @default(cuid())
+  runId     String
+  latencyMs Int
+  passed    Boolean
+  createdAt DateTime @default(now())
+
+  @@map("ce06_ledger_sla")
+}
+
+model Ce06LedgerInvoiceLink {
+  id        String   @id @default(cuid())
+  runId     String
+  invoiceId String
+  createdAt DateTime @default(now())
+
+  @@map("ce06_ledger_invoice_links")
+}
+
+enum BillingRecordType {
+  RESERVE
+  SETTLE
+  REFUND
+  GRANT
+  DEBIT
+}
+
+// ========================================
+// Stage 6.4: Commercial Billing Domain
+// ========================================
+
+model Sku {
+  id         String   @id @default(uuid())
+  code       String   @unique
+  name       String
+  unit       String // "video", "minute", "credit"
+  priceCents Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("skus")
+}
+
+model AssetSku {
+  id          String        @id @default(uuid())
+  assetId     String
+  skuId       String
+  quantity    Int
+  amountCents Int
+  status      BillingStatus @default(pending)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  asset Asset @relation("AssetSkus", fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, skuId]) // 幂等保障
+  @@index([status, createdAt])
+  @@map("asset_skus")
+}
+
+model BillingLedger {
+  id          String        @id @default(uuid())
+  assetId     String
+  skuId       String
+  amountCents Int
+  status      BillingStatus
+  refId       String? // 对账/外部支付单号
+  metadata    Json? // 扩展字段
+  createdAt   DateTime      @default(now())
+
+  @@index([assetId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("billing_ledgers")
+}
+
+enum VideoJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+
+  @@map("video_job_status")
+}
+
+// ========================================
+// Stage 8: Production Telemetry Layer
+// ========================================
+
+model TelemetryRecord {
+  id        String   @id @default(uuid())
+  traceId   String
+  jobId     String?
+  workerId  String?
+  kind      String // METRIC, SPAN, COST, ALERT
+  name      String // e.g., "gpu.util", "job.duration"
+  value     Float?
+  payload   Json?
+  timestamp DateTime @default(now())
+
+  @@index([traceId])
+  @@index([jobId])
+  @@index([workerId])
+  @@index([kind, name, timestamp])
+  @@map("telemetry_records")
+}
+
+/// Stage-8 P1: Production Cost Ledger
+model CostLedger {
+  id        String   @id @default(uuid())
+  traceId   String
+  projectId String
+  orgId     String
+  userId    String?
+  costType  String // TOKEN, GPU, STORAGE, API_CALL
+  unitCost  Float
+  quantity  Float
+  totalCost Float
+  timestamp DateTime @default(now())
+
+  @@index([traceId])
+  @@index([projectId, orgId, timestamp])
+  @@map("cost_ledgers")
+}
+
+model CacheProfiler {
+  key        String   @id
+  hitCount   Int      @default(0)
+  missCount  Int      @default(0)
+  savingSize BigInt   @default(0) // 节省的带宽/IO
+  lastRef    DateTime @updatedAt
+
+  @@map("cache_profiler")
+}
+
+// ========================================
+// Stage 9: CostGuard & Credit Domain
+// ========================================
+
+model CreditWallet {
+  id        String    @id @default(uuid())
+  ownerId   String
+  ownerType OwnerType
+  balance   Decimal   @default(0) @db.Decimal(20, 6)
+  updatedAt DateTime  @updatedAt
+
+  @@unique([ownerType, ownerId])
+  @@map("credit_wallets")
+}
+
+model CreditLedger {
+  id        String       @id @default(uuid())
+  walletId  String
+  traceId   String?
+  jobId     String?
+  amount    Decimal      @db.Decimal(20, 6)
+  action    CreditAction
+  costType  String?
+  timestamp DateTime     @default(now())
+
+  // Stage-9 P1: Reconciliation fields (optional, backward compatible)
+  actualCost   Float? @map("actual_cost") // 实际成本（从 CostLedger 聚合）
+  reservedCost Float? @map("reserved_cost") // 预扣成本
+  drift        Float? // 漂移量（reserved - actual，应为0）
+  snapshot     Json? // 对账快照
+
+  @@unique([walletId, traceId, jobId, action])
+  @@index([traceId])
+  @@index([jobId])
+  @@map("credit_ledgers")
+}
+
+enum BudgetWindow {
+  DAILY
+  MONTHLY
+}
+
+model Budget {
+  id           String       @id @default(uuid())
+  targetId     String // projectId
+  targetType   OwnerType
+  window       BudgetWindow @default(DAILY)
+  limitCredits Decimal      @db.Decimal(20, 6)
+  action       BudgetAction
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([targetId, window])
+  @@index([targetId, targetType])
+  @@map("budgets")
+}
+
+model BudgetWindowState {
+  id              String       @id @default(uuid())
+  targetId        String // projectId
+  window          BudgetWindow
+  windowStart     DateTime // 当天 00:00 或当月 1 号 00:00
+  reservedCredits Decimal      @default(0) @db.Decimal(20, 6)
+  spentCredits    Decimal      @default(0) @db.Decimal(20, 6)
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([targetId, window, windowStart])
+  @@index([targetId, window])
+  @@map("budget_window_states")
+}
+
+enum OwnerType {
+  ORGANIZATION
+  PROJECT
+  USER
+
+  @@map("owner_type")
+}
+
+enum CreditAction {
+  REFILL
+  RESERVE
+  SETTLE
+  RELEASE
+  REFUND
+  GRANT
+
+  @@map("credit_action")
+}
+
+enum BudgetAction {
+  WARN
+  BLOCK
+
+  @@map("budget_action")
+}
+
+// --- BILLING PRODUCT LAYER (Stage-10 P3-A) ---
+
+model Plan {
+  id        String        @id @default(uuid())
+  code      String        @unique // e.g., 'FREE', 'PRO'
+  name      String
+  price     Decimal       @db.Decimal(10, 2)
+  currency  String        @default("USD")
+  isActive  Boolean       @default(true)
+  quotas    PlanQuota[]
+  projects  ProjectPlan[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("plans")
+}
+
+model PlanQuota {
+  id         String       @id @default(uuid())
+  planId     String
+  limitType  String // e.g., 'DAILY_CREDITS', 'MONTHLY_CREDITS', 'CONCURRENCY'
+  limitValue Decimal      @db.Decimal(20, 6)
+  action     BudgetAction @default(BLOCK)
+  plan       Plan         @relation(fields: [planId], references: [id])
+
+  @@map("plan_quotas")
+}
+
+model ProjectPlan {
+  id        String    @id @default(uuid())
+  projectId String    @unique
+  planId    String
+  startedAt DateTime  @default(now())
+  expiresAt DateTime?
+  project   Project   @relation(fields: [projectId], references: [id])
+  plan      Plan      @relation(fields: [planId], references: [id])
+
+  @@map("project_plans")
+}
+
+model BillingStatement {
+  id              String   @id @default(uuid())
+  orgId           String
+  projectId       String?
+  periodStart     DateTime
+  periodEnd       DateTime
+  totalCost       Decimal  @db.Decimal(20, 6)
+  creditsConsumed Decimal  @db.Decimal(20, 6)
+  status          String // DRAFT, FINALIZED, PAID
+  s3Url           String? // PDF link
+  createdAt       DateTime @default(now())
+
+  invoices Invoice[]
+
+  @@index([orgId, periodStart])
+  @@map("billing_statements")
+}
+
+model Invoice {
+  id              String           @id @default(uuid())
+  statementId     String
+  amount          Decimal
+  currency        String
+  status          String // PENDING, PAID, FAILED
+  paymentMethodId String?
+  paidAt          DateTime?
+  statement       BillingStatement @relation(fields: [statementId], references: [id])
+
+  @@map("invoices")
+}
+
+model SettlementSnapshot {
+  id         String   @id @default(uuid())
+  jobId      String   @unique
+  traceId    String
+  capturedAt DateTime @default(now())
+  ledgerData Json // 完整快照：CostLedger + CreditLedger entries
+
+  @@map("settlement_snapshots")
+}
+
+// ===============================================
+// CE03: Novel Analysis SSOT Models (Stage-17)
+// Added for establishing Single Source of Truth
+// Ensures idempotency via analysisKey + version control
+// ===============================================
+
+model NovelAnalysis {
+  id              String                  @id @default(uuid())
+  novelSourceId   String                  @map("novel_source_id")
+  version         Int                     @default(1)
+  analysisKey     String                  @unique @map("analysis_key") // sha256(novelSourceId + rawContentHash + modelUsed + schemaVersion + promptVersion)
+  rawContentHash  String                  @map("raw_content_hash") // snapshot of rawText hash at analysis time
+  modelUsed       String                  @map("model_used") // e.g. "gemini-1.5-pro"
+  schemaVersion   Int                     @default(1) @map("schema_version")
+  promptVersion   Int                     @default(1) @map("prompt_version")
+  jobId           String?                 @map("job_id") // links to Job system
+  status          String                  @default("PENDING") // PENDING / PROCESSING / COMPLETED / FAILED
+  analysisResult  Json?                   @map("analysis_result") @db.JsonB
+  errorDetails    Json?                   @map("error_details") @db.JsonB
+  createdAt       DateTime                @default(now()) @map("created_at")
+  completedAt     DateTime?               @map("completed_at")
+  
+  novelSource     NovelSource             @relation("NovelSourceAnalyses", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  chapters        AnalysisChapter[]       @relation("NovelAnalysisChapters")
+  characters      AnalysisCharacter[]     @relation("NovelAnalysisCharacters")
+  worldSetting    AnalysisWorldSetting?   @relation("NovelAnalysisWorldSetting")
+  
+  @@unique([novelSourceId, version])
+  @@index([analysisKey])
+  @@index([jobId])
+  @@index([status])
+  @@map("novel_analyses")
+}
+
+model AnalysisChapter {
+  id              String          @id @default(uuid())
+  analysisId      String          @map("analysis_id")
+  chapterNumber   Int             @map("chapter_number")
+  title           String?
+  summary         String          @db.Text
+  characters      String[]        // array of character names appearing in this chapter
+  timeline        String?         // timeline identifier (e.g., "T1", "T2")
+  emotionTone     String?         @map("emotion_tone") // emotional tone of the chapter
+  createdAt       DateTime        @default(now()) @map("created_at")
+  
+  analysis        NovelAnalysis   @relation("NovelAnalysisChapters", fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  @@unique([analysisId, chapterNumber])
+  @@index([analysisId])
+  @@map("analysis_chapters")
+}
+
+model AnalysisCharacter {
+  id              String          @id @default(uuid())
+  analysisId      String          @map("analysis_id")
+  name            String
+  traits          String[]        // character traits (e.g., ["brave", "cautious"])
+  arc             String?         @db.Text // character arc description
+  firstAppearance Int?            @map("first_appearance") // chapter number of first appearance
+  createdAt       DateTime        @default(now()) @map("created_at")
+  
+  analysis        NovelAnalysis   @relation("NovelAnalysisCharacters", fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  @@unique([analysisId, name])
+  @@index([analysisId])
+  @@map("analysis_characters")
+}
+
+model AnalysisWorldSetting {
+  id          String          @id @default(uuid())
+  analysisId  String          @unique @map("analysis_id")
+  era         String?         // time period/era
+  geography   String?         @db.Text // geographical setting
+  rules       String[]        // world rules (e.g., magic system, tech level)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  
+  analysis    NovelAnalysis   @relation("NovelAnalysisWorldSetting", fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  @@map("analysis_world_settings")
+}

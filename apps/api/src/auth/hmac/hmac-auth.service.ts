@@ -2,7 +2,7 @@ import { Injectable, HttpException, UnauthorizedException, BadRequestException, 
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { createHmac, createHash, randomUUID } from 'crypto';
-import { env } from 'config';
+import { env } from '@scu/config';
 import { RedisService } from '../../redis/redis.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
 import { AuditActions } from '../../audit/audit.constants';
@@ -18,6 +18,31 @@ export class HmacAuthService {
   // key: nonceKey, value: timestamp(ms)
   private nonceCache: Map<string, number> = new Map();
   private readonly NONCE_TTL = 5 * 60 * 1000; // 5 分钟
+
+  /**
+   * HMAC_TRACE 调试：分段指纹（只在开发环境输出）
+   */
+  private fingerprintParts(parts: {
+    method: string;
+    path: string;
+    timestamp: string;
+    nonce: string;
+    bodyHash: string;
+    workerId?: string;
+    message: string;
+  }) {
+    if (process.env.HMAC_TRACE !== '1') return;
+    const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
+    console.error('[HMAC_TRACE] api_v2_inputs', {
+      method: { val: parts.method, len: parts.method.length, hash: sha256(parts.method) },
+      path: { val: parts.path, len: parts.path.length, hash: sha256(parts.path) },
+      timestamp: { val: parts.timestamp, len: parts.timestamp.length, hash: sha256(parts.timestamp) },
+      nonce: { val: parts.nonce.substring(0, 8) + '...', len: parts.nonce.length, hash: sha256(parts.nonce) },
+      bodyHash: { val: parts.bodyHash.substring(0, 16) + '...', len: parts.bodyHash.length, hash: sha256(parts.bodyHash) },
+      workerId: parts.workerId ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) } : 'N/A',
+      message: { len: parts.message.length, hash: sha256(parts.message) },
+    });
+  }
 
   constructor(
     private readonly prisma: PrismaService,
@@ -42,7 +67,7 @@ export class HmacAuthService {
     nonce: string,
     timestamp: string,
     signature: string,
-    debug?: { ip?: string; ua?: string },
+    debug?: { ip?: string; ua?: string; workerId?: string },
   ) {
     // 1. 查找 ApiKey 记录
     const keyRecord = await (this.prisma as any).apiKey.findUnique({
@@ -107,15 +132,53 @@ export class HmacAuthService {
     const expectedSignatureV1 = this.computeSignature(secret, messageV1);
 
     const bodyHash = HmacAuthService.computeBodyHash(body);
-    const messageV2 = `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${bodyHash}\n`;
-    const expectedSignatureV2 = this.computeSignature(secret, messageV2);
+    const messageV2Old = `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${bodyHash}\n`;
+    const expectedSignatureV2Old = this.computeSignature(secret, messageV2Old);
 
-    // 7. 对比签名 (支持 v1 和 v2)
-    if (signature !== expectedSignatureV1 && signature !== expectedSignatureV2) {
+    // v2-with-workerId: 新增支持，从request取x-worker-id
+    const workerId = (debug as any)?.workerId;
+    let expectedSignatureV2WithWorkerId: string | null = null;
+    let messageV2WithWorkerId: string | null = null;
+    if (workerId) {
+      messageV2WithWorkerId = this.buildMessage(method, path, nonce, timestamp, body, workerId);
+      expectedSignatureV2WithWorkerId = this.computeSignature(secret, messageV2WithWorkerId);
+
+      // HMAC_TRACE: 输出API端v2分段指纹
+      this.fingerprintParts({
+        method,
+        path,
+        timestamp,
+        nonce,
+        bodyHash,
+        workerId,
+        message: messageV2WithWorkerId,
+      });
+      if (process.env.HMAC_TRACE === '1') {
+        console.error('[HMAC_TRACE] api_v2_expected', {
+          expectedSigHash: createHash('sha256').update(expectedSignatureV2WithWorkerId).digest('hex'),
+          expectedSigLen: expectedSignatureV2WithWorkerId.length,
+        });
+      }
+    }
+
+    // 7. 对比签名 (支持 v1 / v2-old / v2-with-workerId)
+    const signatureMatches =
+      signature === expectedSignatureV1 ||
+      signature === expectedSignatureV2Old ||
+      (expectedSignatureV2WithWorkerId && signature === expectedSignatureV2WithWorkerId);
+
+    if (!signatureMatches) {
       // DEBUG: Log mismatch if in dev
       if (process.env.NODE_ENV !== 'production') {
         // eslint-disable-next-line no-console
-        console.log('[HMAC Mismatch]', { expectedSignatureV2, signature, messageV2, secretPart: secret?.substring(0, 5) });
+        console.log('[HMAC Mismatch]', {
+          expectedV1: expectedSignatureV1,
+          expectedV2Old: expectedSignatureV2Old,
+          expectedV2WorkerId: expectedSignatureV2WithWorkerId,
+          actual: signature,
+          workerId,
+          secretPart: secret?.substring(0, 5)
+        });
       }
 
       await this.writeAudit(apiKey, AuditActions.SECURITY_EVENT, 'api_security', {
@@ -143,9 +206,13 @@ export class HmacAuthService {
    * 构建签名消息
    * Spec: ${method}\n${path}\n${timestamp}\n${nonce}\n${bodyHash}
    */
-  private buildMessage(method: string, path: string, nonce: string, timestamp: string, body: string): string {
+  private buildMessage(method: string, path: string, nonce: string, timestamp: string, body: string, workerId?: string): string {
     const contentHash = HmacAuthService.computeBodyHash(body);
-    return `${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}`;
+    let message = `${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}`;
+    if (workerId) {
+      message += `\n${workerId}`;
+    }
+    return message;
   }
 
   /**

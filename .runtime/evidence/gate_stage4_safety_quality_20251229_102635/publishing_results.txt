@@ -1,0 +1,9 @@
+     shotId      |     result     |                                            reasons                                             | traceId 
+-----------------+----------------+------------------------------------------------------------------------------------------------+---------
+ shot-test-000-b | require_review | [{"code": "BORDERLINE", "type": "SYSTEM", "message": "Borderline case, requires human audit"}] | trace-b
+ shot-test-000-p | pass           | []                                                                                             | trace-p
+ shot-test-000-q | reject         | [{"code": "TOO_LOW", "type": "QUALITY", "message": "Quality score below minimum threshold"}]   | trace-q
+ shot-test-000-r | reject         | [{"code": "HIGH_RISK", "type": "SAFETY", "message": "Content safety risk detected"}]           | trace-r
+ shot-test-000-v | require_review | [{"code": "BORDERLINE", "type": "SYSTEM", "message": "Borderline case, requires human audit"}] | trace-v
+(5 rows)
+

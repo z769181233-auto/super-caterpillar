@@ -647,14 +647,11 @@ export class NovelImportController {
           data: { status: 'RUNNING' },
         });
 
-        // TODO: 这里应该通过 Job 系统处理，暂时直接调用
-        // 未来应该创建 NOVEL_ANALYZE_CHAPTER 类型的 Job，由 Worker 处理
-        await this.novelImportService.analyzeChapter(body.chapterId);
-
-        await this.prisma.novelAnalysisJob.update({
-          where: { id: analysisJob.id },
-          data: { status: 'DONE' },
-        });
+        // P0-B: 封死同步 Stub 直调路径（强制分布式离散化）
+        throw new BadRequestException(
+          'DEPRECATED: Synchronous analysis is disabled. Use the Job pipeline instead.'
+        );
+        // await this.novelImportService.analyzeChapter(body.chapterId);
 
         // 记录审计日志：NOVEL_ANALYZE（单章分析）
         const requestInfo = AuditLogService.extractRequestInfo(request);
@@ -668,7 +665,7 @@ export class NovelImportController {
             userAgent: requestInfo.userAgent,
             details: {
               projectId,
-              novelSourceId: novelSource.id,
+              novelSourceId: novelSource?.id,
               jobType: analysisJob.jobType,
               chapterId: body.chapterId,
             },

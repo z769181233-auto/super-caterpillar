@@ -53,7 +53,9 @@ async function main() {
 
   // 4) 确保项目
   const projectName = 'Dev Project - Novel Analysis';
-  let project = await prisma.project.findFirst({ where: { name: projectName, organizationId: org.id } });
+  let project = await prisma.project.findFirst({
+    where: { name: projectName, organizationId: org.id },
+  });
   if (!project) {
     project = await prisma.project.create({
       data: {
@@ -67,7 +69,10 @@ async function main() {
   }
 
   // 5) Season / Episode / Scene / Shot（若不存在则创建最小结构）
-  let season = await prisma.season.findFirst({ where: { projectId: project.id }, orderBy: { index: 'asc' } });
+  let season = await prisma.season.findFirst({
+    where: { projectId: project.id },
+    orderBy: { index: 'asc' },
+  });
   if (!season) {
     season = await prisma.season.create({
       data: {
@@ -80,7 +85,10 @@ async function main() {
     });
   }
 
-  let episode = await prisma.episode.findFirst({ where: { seasonId: season.id }, orderBy: { index: 'asc' } });
+  let episode = await prisma.episode.findFirst({
+    where: { seasonId: season.id },
+    orderBy: { index: 'asc' },
+  });
   if (!episode) {
     episode = await prisma.episode.create({
       data: {
@@ -93,7 +101,10 @@ async function main() {
     });
   }
 
-  let scene = await prisma.scene.findFirst({ where: { episodeId: episode.id }, orderBy: { index: 'asc' } });
+  let scene = await prisma.scene.findFirst({
+    where: { episodeId: episode.id },
+    orderBy: { index: 'asc' },
+  });
   if (!scene) {
     scene = await prisma.scene.create({
       data: {
@@ -105,7 +116,10 @@ async function main() {
     });
   }
 
-  let shot = await prisma.shot.findFirst({ where: { sceneId: scene.id }, orderBy: { index: 'asc' } });
+  let shot = await prisma.shot.findFirst({
+    where: { sceneId: scene.id },
+    orderBy: { index: 'asc' },
+  });
   if (!shot) {
     shot = await prisma.shot.create({
       data: {
@@ -154,4 +168,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

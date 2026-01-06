@@ -1,0 +1,17 @@
+{
+  "gate_id": "gate-100",
+  "head_sha": "dde8c4b7a4ab",
+  "timestamp_utc": "20260101T021827Z",
+  "result": "FAIL",
+  "rc": 1,
+  "change_class": "",
+  "change_reason": "",
+  "evidence_dir": ".runtime/evidence/gate-100_20260101T021827Z_dde8c4b7a4ab",
+  "artifacts": {
+    "gate_20_log": null,
+    "gate_21_log": null,
+    "gate_30_log": null,
+    "gate_31_log": null,
+    "health_audit_log": null
+  }
+}

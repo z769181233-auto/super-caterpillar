@@ -1,0 +1,12 @@
+[P2 FINAL DELIVERY - 2026-01-05 +07]
+P2-1 Gate: tools/gate/gates/gate-stage3_p2_visual_metrics.sh
+Evidence: docs/_evidence/p2_visual_metrics_20260105_185543
+Key: CE03>0, CE04>0, RUN_ID/TRACE_ID bound & anti-pollution
+
+P2-2 Gate: tools/gate/gates/gate-stage3_p2_director_solver.sh
+Evidence: docs/_evidence/p2_director_solver_20260105_191542
+Key: 6 shots (3 valid/3 invalid), 100% catch-rate, structured suggestions
+
+P2-3 Gate: tools/gate/gates/gate-stage3_p2_ce_dag_e2e.sh
+Evidence: docs/_evidence/p2_ce_dag_e2e_20260105_205436
+Key: CE06->CE03->CE04 true DAG, CE03>0, CE04>0, traceId full propagation

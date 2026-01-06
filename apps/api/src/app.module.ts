@@ -23,6 +23,7 @@ import { EngineHubModule } from './engine-hub/engine-hub.module';
 import { Stage4Module } from './stage4/stage4.module';
 import { AuditModule } from './audit/audit.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
+import { AuditInsightModule } from './audit-insight/audit-insight.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { InternalModule } from './internal/internal.module';
 import { ApiSecurityModule } from './security/api-security/api-security.module';
@@ -32,17 +33,24 @@ import { QualityModule } from './quality/quality.module';
 import { AssetModule } from './asset/asset.module';
 import { MemoryModule } from './memory/memory.module';
 import { ShotDirectorModule } from './shot-director/shot-director.module';
+import { CEPipelineModule } from './ce-pipeline/ce-pipeline.module';
 import { HealthModule } from './health/health.module';
 import { OpsModule } from './ops/ops.module';
 import { AuditInterceptor } from './audit/audit.interceptor';
-import { TimestampNonceGuard } from './auth/guards/timestamp-nonce.guard';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { StorageModule } from './storage/storage.module';
 import { SeasonsModule } from './seasons/seasons.module';
 import { FeatureFlagModule } from './feature-flag/feature-flag.module';
-import { env } from 'config';
+import { CostModule } from './cost/cost.module';
+import { env } from '@scu/config';
+import { StorageController } from './storage/storage.controller';
+import { LocalStorageService } from './storage/local-storage.service';
+import { SignedUrlService } from './storage/signed-url.service';
+import { StorageAuthService } from './storage/storage-auth.service';
+import { ApiSecurityGuard } from './security/api-security/api-security.guard';
+
 
 // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
@@ -84,6 +92,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     Stage4Module,
     AuditModule,
     AuditLogModule, // Stage13: CE Core Layer 审计日志模块
+    AuditInsightModule, // Stage3-P1B: Web Audit Visibility
     PipelineModule,
     InternalModule, // 内部接口模块（仅 HMAC，不需要 JWT）
     ApiSecurityModule, // CE10: API 安全模块（@RequireSignature() 装饰器）
@@ -92,42 +101,39 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     AssetModule, // CE09: Media Security API
     MemoryModule, // CE07/CE08: Story Memory API
     ShotDirectorModule, // CE05: Director Control API
+    CEPipelineModule, // P2-3: CE DAG Pipeline (CE06→CE03→CE04)
     QualityModule, // 质量指标写入模块（QualityMetricsWriter）
     HealthModule, // 健康检查端点（/health, /ping, /metrics）
     StorageModule, // Stage 8: Local Storage Module
     SeasonsModule, // 补齐 Seasons API (Smoke Test Fix)
+    CostModule, // P0: Cost tracking & billing foundation
     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS ? [OpsModule] : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
   ],
-  controllers: [AppController],
+  controllers: [
+    AppController,
+    StorageController, // FORCE REGISTRATION: Bypass StorageModule issue
+  ],
   providers: [
     {
       provide: APP_INTERCEPTOR,
       useClass: AuditInterceptor,
-    },
-    // 使用 APP_GUARD 让 Nest 注入，禁止手动 new
-    {
-      provide: APP_GUARD,
-      useClass: TimestampNonceGuard,
     },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
     {
+      provide: APP_GUARD,
+      useClass: ApiSecurityGuard, // P0-2: HMAC 签名验证 Guard
+    },
+    {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
+    // FORCE REGISTRATION: Storage services
+    LocalStorageService,
+    SignedUrlService,
+    StorageAuthService,
   ],
 })
 export class AppModule { }
-
-
-
-
-
-
-
-
-
-
-

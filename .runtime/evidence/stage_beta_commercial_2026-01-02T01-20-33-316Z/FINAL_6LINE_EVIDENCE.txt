@@ -1,0 +1,8 @@
+=== Stage-BETA FINAL SEAL EVIDENCE ===
+TIME_UTC: 2026-01-02T01:20:33.380Z
+1) studio_auto_generate_status: FAIL
+2) billing_estimate_credits: 0
+3) commit_generate_settlement_id: FAIL
+4) dag_triggered_nodes: N/A
+5) idempotency_double_commit: FAIL
+6) beta_entry_smoke_status: FAIL

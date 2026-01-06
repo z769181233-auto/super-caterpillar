@@ -1,0 +1,60 @@
+
+> super-caterpillar-universe@1.0.0 dev:worker /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> pnpm -w --filter workers dev
+
+No projects matched the filters "workers" in "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"
+
+> super-caterpillar-universe@1.0.0 dev /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> pnpm env:init && turbo run dev --parallel --filter=api --filter=web
+
+
+> super-caterpillar-universe@1.0.0 env:init /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> node tools/env/init-env-local.js
+
+========================================
+环境变量初始化
+========================================
+检查文件: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.env.local
+
+✅ .env.local 已存在，检查缺失项...
+
+✅ 所有必需变量已存在且有效，无需补充
+
+如需重新生成密钥，请先删除 .env.local 文件：
+  rm /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.env.local
+然后重新运行：
+  pnpm env:init
+turbo 2.6.3
+
+• Packages in scope: api, web
+• Running dev in 2 packages
+• Remote caching disabled
+api:dev: cache bypass, force executing 5cdad2f01b5057cf
+web:dev: cache bypass, force executing 1ac4d81dbc46be1b
+web:dev: 
+web:dev: > web@1.0.0 dev /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web
+web:dev: > next dev -p 3000
+web:dev: 
+api:dev: 
+api:dev: > api@1.0.0 dev /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+api:dev: > nest start --watch
+api:dev: 
+web:dev:  ⨯ Failed to start server
+web:dev: Error: listen EADDRINUSE: address already in use :::3000
+web:dev:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+web:dev:     at listenInCluster (node:net:1997:12)
+web:dev:     at Server.listen (node:net:2102:7)
+web:dev:     at /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/next@14.2.33_@babel+core@7.28.5_@playwright+test@1.57.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/start-server.js:280:16
+web:dev:     at new Promise (<anonymous>)
+web:dev:     at startServer (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/next@14.2.33_@babel+core@7.28.5_@playwright+test@1.57.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/start-server.js:191:11)
+web:dev:     at /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/next@14.2.33_@babel+core@7.28.5_@playwright+test@1.57.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/start-server.js:310:52
+web:dev:     at Span.traceAsyncFn (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/next@14.2.33_@babel+core@7.28.5_@playwright+test@1.57.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/trace/trace.js:154:26)
+web:dev:     at process.<anonymous> (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/next@14.2.33_@babel+core@7.28.5_@playwright+test@1.57.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/start-server.js:310:35)
+web:dev:     at process.emit (node:events:507:28) {
+web:dev:   code: 'EADDRINUSE',
+web:dev:   errno: -48,
+web:dev:   syscall: 'listen',
+web:dev:   address: '::',
+web:dev:   port: 3000
+web:dev: }
+web:dev: [?25h

@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
-import { env } from 'config';
+import { env } from '@scu/config';
 
 /**
  * Secret Encryption Service
