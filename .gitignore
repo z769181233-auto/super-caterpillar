@@ -46,3 +46,9 @@ reports/stability/*.md
 
 # Data
 .data/
+
+# Gate 自动化运行证据(保留在本地,不提交)
+docs/_evidence/*_hardpass_*/
+docs/_evidence/hmac_regression_*/
+docs/_evidence/ssot_regression_hardpass_*/
+docs/_evidence/p1_web_audit/
