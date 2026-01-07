@@ -61,14 +61,14 @@ EOF
 log "✅ Seed completed."
 
 # 2. Trigger DAG and Verify via full API
-log "🧪 Running p1_web_audit_gate.ts..."
+log "🧪 Running apps/api/src/scripts/p1_web_audit_gate.ts..."
 export PROJECT_ID="$PROJECT_ID"
 export NOVEL_SOURCE_ID="$NOVEL_SOURCE_ID"
 export EVID_DIR="$EVID_DIR"
 export API_KEY="ak-p1b"
 export API_SECRET="as-p1b"
 
-npx ts-node -P apps/api/tsconfig.json apps/api/src/scripts/p1_web_audit_gate.ts | tee -a "$EVID_DIR/run.log"
+npx ts-node -P apps/api/tsconfig.json apps/api/src/scripts/apps/api/src/scripts/p1_web_audit_gate.ts | tee -a "$EVID_DIR/run.log"
 
 log "✅ Gate Passed. Evidence at $EVID_DIR"
 cat "$EVID_DIR/FINAL_6LINE_EVIDENCE.txt"
