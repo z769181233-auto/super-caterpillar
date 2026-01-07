@@ -293,7 +293,6 @@ export class AuditInsightService {
             suggestionsCount: totalSuggestions,
             violationsSample: sampleViolations,
             computedAtIso: new Date().toISOString(),
-            // @ts-ignore - Adding dynamic fields for safety if requested
             partial: isPartial,
             message: message
         };

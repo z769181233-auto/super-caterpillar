@@ -147,11 +147,12 @@ mkdir -p docs/_evidence/gates
 END_TIME=$(date +%s)
 TOTAL_DURATION=$((END_TIME - START_TIME))
 
-GATE_PASS_FILE="docs/_evidence/gates/GATE_PASS_${HEAD_SHA}.json"
+GATE_PASS_FILE="docs/_evidence/gates/GATE_PASS.json"
 
 cat > "$GATE_PASS_FILE" <<EOF
 {
   "version": "1.1",
+  "tip_sha": "$HEAD_SHA",
   "head_sha": "$HEAD_SHA",
   "index_sha": "$INDEX_SHA",
   "started_at": "$(date -r $START_TIME -u +%Y-%m-%dT%H:%M:%SZ)",
