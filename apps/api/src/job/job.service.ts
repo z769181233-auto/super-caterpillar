@@ -736,20 +736,21 @@ export class JobService {
           "attempts" = "attempts" + 1,
           "updatedAt" = NOW()
         WHERE id = (
-          SELECT id
-          FROM "shot_jobs"
-          WHERE status = 'PENDING'
-          AND (lease_until IS NULL OR lease_until < NOW())
+          SELECT j.id
+          FROM "shot_jobs" j
+          LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
+          WHERE j.status = 'PENDING'
+          AND (j.lease_until IS NULL OR j.lease_until < NOW())
           ${filterTypes.length > 0
-          ? Prisma.sql`AND "type"::text IN (${Prisma.join(filterTypes)})`
+          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
           : Prisma.empty
         }
           ${supportedEngines.length > 0
-          ? Prisma.sql`AND ("engineKey" IS NULL OR "engineKey" IN (${Prisma.join(supportedEngines)}))`
+          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
           : Prisma.empty
         }
-          ORDER BY priority DESC, "createdAt" ASC
-          FOR UPDATE SKIP LOCKED
+          ORDER BY j.priority DESC, j."createdAt" ASC
+          FOR UPDATE OF j SKIP LOCKED
           LIMIT 1
         )
         RETURNING *
@@ -767,7 +768,7 @@ export class JobService {
       // 3. 记录日志：包含租约信息
       this.logger.log(
         JSON.stringify({
-          event: 'JOB_CLAIMED_SUCCESS_LEASE',
+          event: 'JOB_CLAIMED_SUCCESS_ATOMIC',
           jobId: job.id,
           workerId,
           jobType: job.type,

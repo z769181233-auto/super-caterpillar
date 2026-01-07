@@ -42,6 +42,7 @@ export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGR
 log "Starting API..."
 export STRIPE_SECRET_KEY="sk_test_mock_start_key_ce05"
 export ALLOW_TEST_BILLING_GRANT=1
+export API_PORT=3001
 node apps/api/dist/main.js > "$EVID_DIR/api.log" 2>&1 &
 API_PID=$!
 sleep 5 # Wait for API boot

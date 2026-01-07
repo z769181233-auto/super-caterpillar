@@ -6,8 +6,8 @@ set -o pipefail
 # 功能：验证聚合审计接口数据准确性，确保 P2 产出在 Web 可见且满足商用标准。
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"
-# P1-B Correction: Override default load_env 3001 to 3000 to match current dev setup
-export API_PORT=3000
+# P1-B Correction: Standardize to 3001
+export API_PORT=3001
 export API_URL="http://127.0.0.1:$API_PORT/api"
 
 TS="$(date +%Y%m%d_%H%M%S)"

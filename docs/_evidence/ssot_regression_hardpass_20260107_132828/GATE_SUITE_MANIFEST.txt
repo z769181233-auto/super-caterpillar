@@ -1,0 +1,10 @@
+=== SSOT DELIVERY GATE MANIFEST ===
+TS: 20260107_132828
+HEAD_SHA: 237fd97a0f1eb2faedf13807a1a5a66224befd80
+WHITELISTED_GATES:
+  - tools/gate/gates/gate-ce01_m1_hard.sh
+  - tools/gate/gates/gate-ce02_m1_hard.sh
+  - tools/gate/gates/gate-ce05_m1_hard.sh
+  - tools/gate/gates/gate-ce07_m1_hard.sh
+  - tools/gate/gates/gate-ce07_m1_hmac_workerid_regression.sh
+  - tools/gate/gates/gate-stage3_p1_web_audit.sh

@@ -32,6 +32,8 @@ DELETE FROM worker_nodes WHERE \"workerId\" LIKE 'worker_reg_%';
 # 2. 启动 API (禁用内部 Worker)
 log "Starting API (with Internal Worker DISABLED)..."
 cd "$(dirname "$0")/../../.."
+export API_PORT=3001
+export ALLOW_TEST_BILLING_GRANT=1
 SERVICE_TYPE=api ENABLE_INTERNAL_JOB_WORKER=false node apps/api/dist/main.js > "$EVID_DIR/api.log" 2>&1 &
 API_PID=$!
 sleep 5
@@ -52,12 +54,13 @@ VALUES ('${CE07_JOB_ID}', '${ORG_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCEN
 " > /dev/null
 
 # 4. 启动专用 Worker (Fail-Once 模式)
-REG_WORKER_ID="worker_reg_$(date +%s)"
+export REG_WORKER_ID="worker_reg_$(date +%s)"
 log "Starting Worker with WORKER_ID=$REG_WORKER_ID..."
 export WORKER_ID="$REG_WORKER_ID"
 export CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
 export CE07_GATE_MOCK_ENGINE=1
 export HMAC_TRACE=1
+export API_URL="http://localhost:3001"
 WORKER_ID="$REG_WORKER_ID" node apps/workers/dist/apps/workers/src/main.js > "$EVID_DIR/worker.log" 2>&1 &
 WORKER_PID=$!
 
@@ -68,7 +71,7 @@ PASSED=false
 
 for i in $(seq 1 $MAX_WAIT); do
     ROW=$(PGPASSWORD="${POSTGRES_PASSWORD:-postgres}" psql -h "${POSTGRES_HOST:-localhost}" -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-scu}" -t -A -c "
-    SELECT status, attempts, \"workerId\" FROM shot_jobs WHERE id='${CE07_JOB_ID}';
+    SELECT j.status, j.attempts, wn.\"workerId\" FROM shot_jobs j LEFT JOIN worker_nodes wn ON wn.id = j.\"workerId\" WHERE j.id='${CE07_JOB_ID}';
     ")
     S=$(echo "$ROW" | awk -F'|' '{print $1}' | xargs)
     A=$(echo "$ROW" | awk -F'|' '{print $2}' | xargs)

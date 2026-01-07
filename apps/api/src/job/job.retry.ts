@@ -34,13 +34,13 @@ export function computeNextRetry(job: {
 }): RetryComputation {
   const nextRetryCount = job.retryCount + 1;
   const shouldFail = nextRetryCount >= job.maxRetry;
-  
+
   // 指数退避：baseDelay * 2^(nextRetryCount - 1)
   // nextRetryCount=1: 1s, nextRetryCount=2: 2s, nextRetryCount=3: 4s, ...
   const baseDelayMs = 1000; // 1 秒
   const backoffMs = shouldFail ? 0 : baseDelayMs * Math.pow(2, nextRetryCount - 1);
   const nextRetryAt = shouldFail ? null : new Date(Date.now() + backoffMs);
-  
+
   return {
     nextRetryCount,
     nextRetryAt,
@@ -75,7 +75,7 @@ export async function markRetryOrFail(
   } = {},
 ): Promise<{ status: JobStatus; retryCount: number; nextRetryAt: Date | null }> {
   const computation = computeNextRetry(job);
-  
+
   // 更新 payload（存储 nextRetryAt 和 backoffDelayMs）
   const payload = (job.payload as Record<string, any>) || {};
   if (computation.shouldFail) {
@@ -87,10 +87,10 @@ export async function markRetryOrFail(
     payload.nextRetryAt = computation.nextRetryAt?.toISOString();
     payload.backoffDelayMs = computation.backoffMs;
   }
-  
+
   // 更新 Job 状态
   const status = computation.shouldFail ? JobStatus.FAILED : JobStatus.RETRYING;
-  
+
   await tx.shotJob.update({
     where: { id: job.id },
     data: {
@@ -99,9 +99,11 @@ export async function markRetryOrFail(
       lastError: failPayload.errorMessage || 'Processing failed',
       retryCount: computation.nextRetryCount,
       workerId: null, // 清除 Worker 分配，允许重新分配
+      leaseUntil: null, // P1-1: 释放租约，允许重试领取
+      lockedBy: null, // P1-1: 清除锁定标记
     },
   });
-  
+
   return {
     status,
     retryCount: computation.nextRetryCount,

@@ -32,6 +32,7 @@ log "Starting API..."
 # Ensure default env vars for test
 export STRIPE_SECRET_KEY="sk_test_mock_start_key"
 export ALLOW_TEST_BILLING_GRANT=1
+export API_PORT=3001
 node apps/api/dist/main.js > "$EVID_DIR/api.log" 2>&1 &
 API_PID=$!
 log "API PID: $API_PID"

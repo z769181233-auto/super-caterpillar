@@ -21,7 +21,8 @@ export JOB_WAVE_SIZE=3
 export JOB_LEASE_TTL_MS=10000
 export WORKER_OFFLINE_GRACE_MS=10000 
 export WORKER_POLL_INTERVAL=4000
-export API_URL="http://localhost:3000"
+export API_PORT=3001
+export API_URL="http://localhost:$API_PORT"
 export HEARTBEAT_TTL_SECONDS=3
 
 EVIDENCE_FILE="docs/_evidence/p1_1_concurrency_audit/p1_1_concurrency_audit.json"
@@ -39,11 +40,13 @@ cleanup() {
   pkill -9 -f "$W1_ID" || true
   pkill -9 -f "$W2_ID" || true
   lsof -i :3000 -t | xargs kill -9 2>/dev/null || true
+  lsof -i :3001 -t | xargs kill -9 2>/dev/null || true
 }
 trap cleanup EXIT
 
 # 0. Startup Cleanup
 lsof -i :3000 -t | xargs kill -9 2>/dev/null || true
+lsof -i :3001 -t | xargs kill -9 2>/dev/null || true
 psql "$DATABASE_URL" -c "DELETE FROM worker_heartbeats WHERE worker_id LIKE 'gw-%'" || true
 
 echo "=== [GATE P1-1] Concurrency & Queue Stress Start ==="
@@ -54,7 +57,9 @@ pnpm -w build --filter api --filter @scu/worker > /dev/null
 
 # 2. Launch API
 echo "Starting API..."
-WORKER_OFFLINE_GRACE_MS=10000 HEARTBEAT_TTL_SECONDS=3 JOB_LEASE_TTL_MS=10000 node apps/api/dist/main.js > "$API_LOG" 2>&1 &
+export STRIPE_SECRET_KEY="sk_test_dummy"
+export ALLOW_TEST_BILLING_GRANT=1
+WORKER_OFFLINE_GRACE_MS=10000 HEARTBEAT_TTL_SECONDS=3 JOB_LEASE_TTL_MS=10000 API_PORT=3001 node apps/api/dist/main.js > "$API_LOG" 2>&1 &
 API_PID=$!
 
 # Wait for API Ready
