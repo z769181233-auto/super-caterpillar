@@ -1,0 +1,4 @@
+change_class=CC1
+reason=default_business
+head_sha=ebea3319a520
+generated_utc=20251231T071208Z

@@ -3,6 +3,7 @@ import { JobService } from './job.service';
 import { QualityMetricsWriter } from '../quality/quality-metrics.writer';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobType as JobTypeEnum, JobStatus as JobStatusEnum } from 'database';
+import { DirectorConstraintSolverService } from '../shot-director/director-solver.service';
 
 /**
  * Job Report Facade
@@ -21,6 +22,7 @@ export class JobReportFacade {
     private readonly jobService: JobService,
     private readonly qualityMetricsWriter: QualityMetricsWriter,
     private readonly prisma: PrismaService,
+    private readonly directorSolver: DirectorConstraintSolverService,
   ) { }
 
   /**
@@ -98,6 +100,52 @@ export class JobReportFacade {
           error.stack,
         );
       }
+
+      // P0-3: CE05 Director Control (non-blocking)
+      if (updatedJob.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
+        try {
+          // 1) 取 shotId（防御性）
+          const payload: any = updatedJob.payload ?? {};
+          const shotId: string | undefined = payload.shotId ?? (updatedJob as any).shotId;
+
+          if (!shotId) {
+            this.logger.warn(`[CE05] skip: missing shotId jobId=${updatedJob.id}`);
+          } else {
+            // 2) 调用约束验证器
+            const shotInput = {
+              id: shotId,
+              type: payload.type ?? 'DEFAULT',  // 添加required字段
+              params: {
+                durationSec: payload.durationSec ?? 5,
+                prompt: payload.prompt ?? '',
+                motion: payload.motion ?? 'NONE',
+              },
+            };
+            const validation = this.directorSolver.validateShot(shotInput);
+
+            // 3) Upsert 写入 shot_plannings（幂等，序列化JSON）
+            await this.prisma.shotPlanning.upsert({
+              where: { shotId },
+              create: {
+                shotId,
+                engineKey: 'CE05_DIRECTOR',
+                engineVersion: null,
+                confidence: validation.violations.length === 0 ? 1.0 : 0.5,
+                data: JSON.parse(JSON.stringify(validation)) as any,  // 序列化
+              },
+              update: {
+                engineKey: 'CE05_DIRECTOR',
+                confidence: validation.violations.length === 0 ? 1.0 : 0.5,
+                data: JSON.parse(JSON.stringify(validation)) as any,  // 序列化
+              },
+            });
+
+            this.logger.log(`[CE05] ShotPlanning upserted shotId=${shotId} isValid=${validation.isValid} violations=${validation.violations.length}`);
+          }
+        } catch (e: any) {
+          this.logger.warn(`[CE05] failed (non-blocking) jobId=${updatedJob.id} err=${e?.message ?? e}`);
+        }
+      }
     }
 
     // 3. Stage 8: Trigger Video Render & Create Asset (Structure -> Video Loop)
@@ -124,7 +172,8 @@ export class JobReportFacade {
         // Case B: VIDEO_RENDER finished -> Create Asset in DB
         // This ensures the UI (ProjectStructureService) can see the video.
         if (updatedJob.type === JobTypeEnum.VIDEO_RENDER && updatedJob.shotId) {
-          const videoUrl = params.result?.videoUrl || params.result?.storageKey;
+          // P0-2: Accept outputKey (from Worker), storageKey or videoUrl
+          const videoUrl = params.result?.outputKey || params.result?.storageKey || params.result?.videoUrl;
           if (videoUrl) {
             // Stage 10 Refactor: Business Key Idempotency (One Asset per Type per Owner)
             // Stage 10 Refactor: Business Key Idempotency (One Asset per Type per Owner)

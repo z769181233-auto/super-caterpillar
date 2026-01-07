@@ -1,7 +1,7 @@
 /**
  * 初始化 Worker API Key 脚本
  * 用于在开发环境中创建固定的 Worker API Key
- * 
+ *
  * 使用方法：
  * pnpm --filter api init:worker-api-key
  * 或在 apps/api 目录下：pnpm init:worker-api-key
@@ -13,7 +13,9 @@ import { ApiKeyService } from '../auth/hmac/api-key.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const WORKER_API_KEY = process.env.WORKER_API_KEY || 'ak_worker_dev_0000000000000000';
-const WORKER_API_SECRET = process.env.WORKER_API_SECRET || 'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
+const WORKER_API_SECRET =
+  process.env.WORKER_API_SECRET ||
+  'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
 
 async function main() {
   console.log('========================================');
@@ -66,4 +68,3 @@ async function main() {
 }
 
 main();
-

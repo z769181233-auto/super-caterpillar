@@ -1,0 +1,3 @@
+gate_id=GATE-92
+resolved_script=tools/gate/gates/gate-92_hc3_baseline_required.sh
+manifest_sha256=ac020345dbd8fbc6fc2610a73b36e09384487706bd02bc6bdc35aa946dc99088

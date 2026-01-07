@@ -1,0 +1,25 @@
+{
+  "status": 201,
+  "body": {
+    "success": true,
+    "data": {
+      "id": "2d3bbff2-2d2c-43cf-aac8-d1aab6fc3aa6",
+      "name": "CE01_M1_E2E_20260104_090149",
+      "description": null,
+      "ownerId": "user-core04-test",
+      "organizationId": "seed-core04-org",
+      "status": "in_progress",
+      "metadata": null,
+      "createdAt": "2026-01-04T02:01:50.052Z",
+      "updatedAt": "2026-01-04T02:01:50.052Z",
+      "settingsJson": null
+    },
+    "requestId": "6c42d3f4-ff63-4e07-acc8-6e54ec3fd24c",
+    "timestamp": "2026-01-04T02:01:50.081Z"
+  },
+  "_meta": {
+    "nonce": "e6e64328834c405787c43340b3bbcffb",
+    "timestamp": "1767492110027",
+    "signature": "fa526528560fcc00..."
+  }
+}

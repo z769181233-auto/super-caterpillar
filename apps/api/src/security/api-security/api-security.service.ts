@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
 import { AuditActions } from '../../audit/audit.constants';
-import { env } from 'config';
+import { Prisma } from 'database';
 import { SecretEncryptionService } from './secret-encryption.service';
 import {
   SignatureVerificationResult,
@@ -50,7 +50,7 @@ export class ApiSecurityService {
 
     try {
       // 1. 查找 API Key 记录
-      const keyRecord = await (this.prisma as any).apiKey.findUnique({
+      const keyRecord = await this.prisma.apiKey.findUnique({
         where: { key: apiKey },
         include: {
           ownerUser: true,
@@ -212,7 +212,7 @@ export class ApiSecurityService {
       }
 
       // 9. 更新最后使用时间
-      await (this.prisma as any).apiKey.update({
+      await this.prisma.apiKey.update({
         where: { id: keyRecord.id },
         data: { lastUsedAt: new Date() },
       }).catch(() => {
@@ -235,7 +235,8 @@ export class ApiSecurityService {
         apiKeyId: keyRecord.id,
         apiKey: apiKey,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       // 记录异常审计
       await this.writeAuditLog({
         nonce,
@@ -251,7 +252,7 @@ export class ApiSecurityService {
       return {
         success: false,
         errorCode: '500',
-        errorMessage: error?.message || '签名验证异常',
+        errorMessage: err?.message || '签名验证异常',
       };
     }
   }
@@ -333,7 +334,7 @@ export class ApiSecurityService {
    * 规则：
    * 1. 优先读取新字段（secretEnc/secretEncIv/secretEncTag），解密得到 secret
    * 2. 如果仅存在旧字段（secretHash）：
-   *    - dev/test: 允许 fallback，但写警告日志和审计
+   *    - dev/test: 允许 fallback，但写警告日志 and 审计
    *    - 生产: 拒绝并写审计 INSECURE_SECRET_STORAGE
    * 
    * @param keyRecord API Key 记录
@@ -344,7 +345,7 @@ export class ApiSecurityService {
    * @throws {InternalServerErrorException} 如果无法解析 secret
    */
   private async resolveSecretForApiKey(
-    keyRecord: any,
+    keyRecord: Prisma.ApiKeyGetPayload<any>,
     apiKey: string,
     ip?: string,
     userAgent?: string,
@@ -358,7 +359,8 @@ export class ApiSecurityService {
           keyRecord.secretEncTag,
         );
         return secret;
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as Error;
         // 解密失败，写审计
         await this.writeAuditLog({
           nonce: '',
@@ -373,8 +375,8 @@ export class ApiSecurityService {
 
         // 脱敏错误消息，详细错误记录到日志
         this.logger.error(
-          `Failed to decrypt secret for API Key ${this.maskApiKey(apiKey)}: ${error.message}`,
-          error.stack,
+          `Failed to decrypt secret for API Key ${this.maskApiKey(apiKey)}: ${err.message}`,
+          err.stack,
         );
         throw new InternalServerErrorException(
           `Failed to decrypt secret for API Key ${this.maskApiKey(apiKey)}.`,
@@ -486,4 +488,3 @@ export class ApiSecurityService {
     }
   }
 }
-

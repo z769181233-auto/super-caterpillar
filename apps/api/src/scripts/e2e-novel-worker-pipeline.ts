@@ -1,9 +1,9 @@
 /**
  * 端到端测试脚本：真实 Worker 联调版（小说导入 → 分析 → 结构生成）
- * 
+ *
  * 使用方法：
  * pnpm --filter @super-caterpillar/api e2e:novel:worker
- * 
+ *
  * 前置条件：
  * 1. API 服务已启动
  * 2. Worker 服务已启动（apps/workers）
@@ -45,7 +45,7 @@ const TEST_PROJECT_NAME = 'E2E Novel Pipeline Test Project';
 const TEST_NOVEL_FILE = path.join(__dirname, '../../fixtures/novels/sample.txt');
 
 async function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function createOrGetTestUser(
@@ -173,7 +173,8 @@ async function importNovel(
   console.log(`[E2E] ✅ NovelSource ID: ${novelSource.id}`);
 
   // 解析章节
-  const chapterPattern = /第[一二三四五六七八九十\d]+章[：:]\s*(.+?)(?=第[一二三四五六七八九十\d]+章|$)/gs;
+  const chapterPattern =
+    /第[一二三四五六七八九十\d]+章[：:]\s*(.+?)(?=第[一二三四五六七八九十\d]+章|$)/gs;
   const chapters: Array<{ title: string; content: string }> = [];
   let match: RegExpExecArray | null;
 
@@ -260,7 +261,7 @@ async function importNovel(
     type: TaskType.NOVEL_ANALYSIS,
     payload: {
       novelSourceId: novelSource.id,
-      chapterIds: savedChapters.map(ch => ch.id),
+      chapterIds: savedChapters.map((ch) => ch.id),
       shotId: shot.id,
     },
     maxRetry: 3,
@@ -288,7 +289,7 @@ async function importNovel(
       },
       userId,
       organizationId,
-      task.id,
+      task.id
     );
     jobIds.push(job.id);
   }
@@ -303,8 +304,10 @@ async function triggerOrchestrator(app: any): Promise<void> {
   const orchestratorService = app.get(OrchestratorService);
 
   const result = await orchestratorService.dispatch();
-  console.log(`[E2E] ✅ Orchestrator 调度完成: dispatched=${result.dispatched}, skipped=${result.skipped || 0}, errors=${result.errors || 0}`);
-  
+  console.log(
+    `[E2E] ✅ Orchestrator 调度完成: dispatched=${result.dispatched}, skipped=${result.skipped || 0}, errors=${result.errors || 0}`
+  );
+
   // 如果调度成功，等待一下让 Worker 有机会拉取
   if (result.dispatched > 0) {
     console.log(`[E2E] 等待 2 秒让 Worker 拉取 Job...`);
@@ -320,7 +323,7 @@ async function waitJobsHandledByRealWorker(
   prisma: PrismaService,
   jobIds: string[],
   timeoutMs = 60_000,
-  pollIntervalMs = 3_000,
+  pollIntervalMs = 3_000
 ): Promise<void> {
   const start = Date.now();
 
@@ -341,15 +344,15 @@ async function waitJobsHandledByRealWorker(
       statusCount[j.status] = (statusCount[j.status] ?? 0) + 1;
     }
 
-    const pending = (statusCount[JobStatus.PENDING] ?? 0);
-    const running = (statusCount[JobStatus.RUNNING] ?? 0);
-    const succeeded = (statusCount[JobStatus.SUCCEEDED] ?? 0);
-    const failed = (statusCount[JobStatus.FAILED] ?? 0);
-    const retrying = (statusCount[JobStatus.RETRYING] ?? 0);
+    const pending = statusCount[JobStatus.PENDING] ?? 0;
+    const running = statusCount[JobStatus.RUNNING] ?? 0;
+    const succeeded = statusCount[JobStatus.SUCCEEDED] ?? 0;
+    const failed = statusCount[JobStatus.FAILED] ?? 0;
+    const retrying = statusCount[JobStatus.RETRYING] ?? 0;
 
     console.log(
       `[E2E] Job 状态: PENDING=${pending}, RUNNING=${running}, ` +
-        `SUCCEEDED=${succeeded}, FAILED=${failed}, RETRYING=${retrying}`,
+        `SUCCEEDED=${succeeded}, FAILED=${failed}, RETRYING=${retrying}`
     );
 
     // 判定 1：全部成功
@@ -360,9 +363,9 @@ async function waitJobsHandledByRealWorker(
 
     // 判定 2：有失败
     if (failed > 0) {
-      const failedJobs = jobs.filter(j => j.status === JobStatus.FAILED);
+      const failedJobs = jobs.filter((j) => j.status === JobStatus.FAILED);
       console.error(`[E2E] ❌ 存在 ${failed} 个 FAILED Job:`);
-      failedJobs.forEach(job => {
+      failedJobs.forEach((job) => {
         console.error(`[E2E]   - Job ${job.id}: ${job.lastError || 'Unknown error'}`);
       });
       throw new Error('[E2E] ❌ 存在 FAILED Job，真实 Worker 处理失败');
@@ -377,10 +380,7 @@ async function waitJobsHandledByRealWorker(
   }
 }
 
-async function verifyStructure(
-  prisma: PrismaService,
-  projectId: string
-): Promise<void> {
+async function verifyStructure(prisma: PrismaService, projectId: string): Promise<void> {
   console.log('[E2E] 步骤 6: 验证生成的结构...');
 
   const project = await prisma.project.findUnique({
@@ -411,7 +411,9 @@ async function verifyStructure(
 
   // 检查第一个 Episode
   const firstEpisode = tree.episodes[0];
-  console.log(`[E2E] 第一集: ${firstEpisode.name || '未命名'} (${firstEpisode.scenes.length} 个 Scene)`);
+  console.log(
+    `[E2E] 第一集: ${firstEpisode.name || '未命名'} (${firstEpisode.scenes.length} 个 Scene)`
+  );
 
   if (firstEpisode.scenes.length === 0) {
     throw new Error('❌ 第一集没有生成任何 Scene');
@@ -419,7 +421,9 @@ async function verifyStructure(
 
   // 检查第一个 Scene
   const firstScene = firstEpisode.scenes[0];
-  console.log(`[E2E] 第一个 Scene: ${firstScene.title || '未命名'} (${firstScene.shots.length} 个 Shot)`);
+  console.log(
+    `[E2E] 第一个 Scene: ${firstScene.title || '未命名'} (${firstScene.shots.length} 个 Shot)`
+  );
 
   if (firstScene.shots.length === 0) {
     throw new Error('❌ 第一个 Scene 没有生成任何 Shot');
@@ -427,25 +431,22 @@ async function verifyStructure(
 
   // 打印 Shot 信息
   firstScene.shots.slice(0, 5).forEach((shot, index) => {
-    console.log(
-      `[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`,
-    );
+    console.log(`[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`);
   });
   if (firstScene.shots.length > 5) {
     console.log(`[E2E]   ... 还有 ${firstScene.shots.length - 5} 个 Shot`);
   }
 
   // 汇总统计
-  const totalScenes = tree.episodes.reduce(
-    (sum, ep) => sum + ep.scenes.length,
-    0,
-  );
+  const totalScenes = tree.episodes.reduce((sum, ep) => sum + ep.scenes.length, 0);
   const totalShots = tree.episodes.reduce(
     (sum, ep) => sum + ep.scenes.reduce((s, sc) => s + sc.shots.length, 0),
-    0,
+    0
   );
 
-  console.log(`[E2E] 汇总: ${tree.episodes.length} 个 Episode, ${totalScenes} 个 Scene, ${totalShots} 个 Shot`);
+  console.log(
+    `[E2E] 汇总: ${tree.episodes.length} 个 Episode, ${totalScenes} 个 Scene, ${totalShots} 个 Shot`
+  );
   console.log('[E2E] ✅ 结构验证通过');
 }
 
@@ -505,4 +506,3 @@ async function main() {
 }
 
 main();
-

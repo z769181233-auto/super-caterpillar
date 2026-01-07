@@ -1,0 +1,17 @@
+{
+  "gate_id": "gate-90_health_audit",
+  "head_sha": "d0503b6fcc5e",
+  "timestamp_utc": "20260101T015516Z",
+  "result": "PASS",
+  "rc": 0,
+  "change_class": "CC0",
+  "change_reason": "governance_change",
+  "evidence_dir": ".runtime/evidence/gate-90_health_audit_20260101T015516Z_d0503b6fcc5e",
+  "artifacts": {
+    "gate_20_log": ".runtime/evidence/gate-90_health_audit_20260101T015516Z_d0503b6fcc5e/gate-20.log",
+    "gate_21_log": ".runtime/evidence/gate-90_health_audit_20260101T015516Z_d0503b6fcc5e/gate-21.log",
+    "gate_30_log": null,
+    "gate_31_log": null,
+    "health_audit_log": ".runtime/evidence/gate-90_health_audit_20260101T015516Z_d0503b6fcc5e/health_audit.log"
+  }
+}

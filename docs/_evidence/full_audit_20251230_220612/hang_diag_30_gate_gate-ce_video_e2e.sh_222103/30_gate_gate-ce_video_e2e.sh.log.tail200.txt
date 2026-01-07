@@ -1,0 +1,15 @@
+[22:06:34] EVID_DIR=.runtime/evidence/gate-ce_video_e2e_20251230_220634
+[22:06:34] Cleaning up old processes and env files...
+[22:06:36] Pre-seeding Worker ApiKey into DB (psql)...
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+       key       | status 
+-----------------+--------
+ test_api_key_v1 | ACTIVE
+(1 row)
+
+[22:06:36] Pre-seed Complete.
+[22:06:36] Starting API...
+[22:06:36] API PID: 11074
+[22:06:36] Waiting for API to listen on 3001...

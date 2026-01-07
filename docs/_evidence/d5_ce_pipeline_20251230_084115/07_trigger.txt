@@ -1,0 +1,21 @@
+========================================
+Stage 6.7 真实任务触发
+========================================
+API URL: http://localhost:3001
+Project ID: ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d
+API Key: ak_worker_dev_000000...
+========================================
+
+
+[REQUEST] POST /api/internal/projects/ce09_proj_c8fa719a-19a4-404c-b893-a449a6f7328d/novel/import
+[HEADERS] X-Api-Key: ak_worker_dev_000000...
+[HEADERS] X-Nonce: 64d840965b18962269c2b3f87435f615}
+[HEADERS] X-Timestamp: 1767058933192
+[HEADERS] X-Signature: c255b27fc20031418b68...
+[BODY] {"title":"Stage 6.7 测试小说 - 2025-12-30T01:42:13.192Z","content":"这是一个测试小说的内容。\n\n第一章 开始\n\n这是第一章的内容。主人公开始了他的冒险之旅。\n\n第二章 继续\n\n冒险仍在继续，更多精彩即将到来。","author":"Stage 6.7 测试"}
+[RESPONSE] Status: 201
+[RESPONSE] Body: {"success":true,"data":{"novelSourceId":"eefead97-305b-4b27-91de-56706622d4fd","chapterCount":1,"analysisJobId":"9a5b3c5a-600b-41a4-b7f7-915b19e2b2cb","taskId":"9d89803d-db64-4e15-8a0c-b18d4a774ea1","jobId":"af373a51-3729-45f5-b0c1-3fac5183acce"}}
+
+========================================
+✅ 任务创建成功
+========================================

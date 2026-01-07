@@ -12,6 +12,7 @@ import { PermissionModule } from '../permission/permission.module';
 import { TaskModule } from '../task/task.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
+import { EngineHubModule } from '../engine-hub/engine-hub.module';
 import { EngineModule } from '../engines/engine.module';
 import { QualityModule } from '../quality/quality.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
@@ -20,7 +21,8 @@ import { CopyrightModule } from '../copyright/copyright.module';
 import { CapacityGateModule } from '../capacity/capacity-gate.module';
 import { JobWatchdogService } from './job-watchdog.service';
 import { TextSafetyModule } from '../text-safety/text-safety.module';
-import { env } from 'config';
+import { ShotDirectorModule } from '../shot-director/shot-director.module';
+import { env } from '@scu/config';
 
 // P1 修复：统一使用 packages/config，避免 split-brain
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
@@ -34,13 +36,15 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     TaskModule, // 导入 TaskModule 以使用 QualityScoreService
     AuthModule,
     AuditLogModule,
-    EngineModule, // 导入 EngineModule，使用统一的引擎注册
+    EngineHubModule, // 导入 EngineHubModule，使用统一的枢纽化引擎注册
+    EngineModule, // 导入 EngineModule 以使用 EngineRegistry
     QualityModule, // 质量指标写入模块
     ApiSecurityModule, // 提供 ApiSecurityGuard 给 JwtOrHmacGuard
     BillingModule, // Full Implementation: 计费集成
     CopyrightModule, // Full Implementation: 版权集成
     CapacityGateModule, // 容量门禁模块
     TextSafetyModule,
+    ShotDirectorModule, // P0-3: 提供 DirectorConstraintSolverService
   ],
   controllers: [JobController],
   providers: [

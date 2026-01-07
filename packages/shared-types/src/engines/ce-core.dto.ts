@@ -80,3 +80,29 @@ export interface CE04VisualEnrichmentOutput {
   latency_ms: number;
 }
 
+// ============================================
+// CE07: Memory Update
+// ============================================
+
+export interface CE07MemoryUpdateInput {
+  current_text: string;
+  previous_memory?: {
+    summary: string;
+    character_states: Record<string, any>;
+  };
+  context: {
+    projectId: string;
+    chapterId?: string;
+    sceneId?: string;
+  };
+}
+
+export interface CE07MemoryUpdateOutput {
+  summary: string;
+  character_states: Record<string, any>;
+  key_facts: string[];
+  audit_trail: string;
+  engine_version: string;
+  latency_ms: number;
+}
+

@@ -8,6 +8,7 @@ import {
   AnalyzedShot,
   AnalyzedProjectStructure,
   WorkerJobBase,
+  CE06NovelParsingOutput,
 } from '@scu/shared-types';
 
 /**
@@ -410,7 +411,7 @@ export async function applyAnalyzedStructureToDatabase(
 }> {
   const { projectId, seasons } = structure;
 
-  // S3-B Fine-Tune: 使用 validateAnalyzedStructure 进行验证和自动修复
+  // S3-B Fine-Tune: 使用 validateAnalyzedStructure进行验证和自动修复
   const validation = validateAnalyzedStructure(structure);
   if (!validation.valid) {
     logStructured('error', {
@@ -797,12 +798,111 @@ export async function applyAnalyzedStructureToDatabase(
   //   "Transaction already closed / Transaction not found" 错误。
   // - 这里显式将 interactive transaction timeout 调高（例如 5 分钟），避免长事务被过早关闭。
   const result = prisma instanceof PrismaClient
-    ? await prisma.$transaction(executeInTransaction, {
+    ? await (prisma as any).$transaction(executeInTransaction, {
       timeout: 5 * 60 * 1000, // 5 minutes
     })
     : await executeInTransaction(prisma);
 
   return result;
+}
+
+/**
+ * 将 CE06 引擎的结构化输出转换为项目层级结构 (Season/Episode/Scene/Shot)
+ * 
+ * @param projectId 项目 ID
+ * @param output CE06 引擎输出
+ * @returns 转换后的 AnalyzedProjectStructure
+ */
+export function mapCE06OutputToProjectStructure(
+  projectId: string,
+  output: CE06NovelParsingOutput,
+): AnalyzedProjectStructure {
+  const seasons: AnalyzedSeason[] = [];
+  let sIndex = 1;
+
+  for (const vol of (output.volumes || [])) {
+    const season: AnalyzedSeason = {
+      index: sIndex++,
+      title: vol.title || `第 ${sIndex - 1} 卷`,
+      summary: '',
+      episodes: [],
+    };
+
+    let eIndex = 1;
+    for (const chap of (vol.chapters || [])) {
+      const episode: AnalyzedEpisode = {
+        index: eIndex++,
+        title: chap.title || `第 ${eIndex - 1} 章`,
+        summary: '',
+        scenes: [],
+      };
+
+      let scIndex = 1;
+      for (const sc of (chap.scenes || [])) {
+        const scene: AnalyzedScene = {
+          index: scIndex++,
+          title: sc.title || `场景 ${scIndex - 1}`,
+          summary: '',
+          shots: [],
+        };
+
+        // 对于 Scene Content，我们暂时使用标点分句逻辑来生成 Shots
+        // 后续如果 CE06 支持直接输出 Shots，则这里改为直接映射
+        const rawContent = sc.content || '';
+        const sentences = rawContent.split(/(?<=[。！？!?])/);
+        let shIndex = 1;
+        for (const sentence of sentences) {
+          const text = sentence.trim();
+          if (!text) continue;
+
+          scene.shots.push({
+            index: shIndex++,
+            title: `镜头 ${shIndex - 1}`,
+            summary: text.slice(0, 50),
+            text,
+          });
+        }
+
+        if (scene.shots.length > 0) {
+          episode.scenes.push(scene);
+        }
+      }
+
+      if (episode.scenes.length > 0) {
+        season.episodes.push(episode);
+      }
+    }
+
+    if (season.episodes.length > 0) {
+      seasons.push(season);
+    }
+  }
+
+  // 统计信息
+  let episodesCount = 0;
+  let scenesCount = 0;
+  let shotsCount = 0;
+
+  for (const s of seasons) {
+    episodesCount += s.episodes.length;
+    for (const e of s.episodes) {
+      scenesCount += e.scenes.length;
+      for (const sc of e.scenes) {
+        shotsCount += sc.shots.length;
+      }
+    }
+  }
+
+  return {
+    projectId,
+    seasons,
+    stats: {
+      seasonsCount: seasons.length,
+      episodesCount,
+      scenesCount,
+      shotsCount,
+    },
+  };
 }
 
 /**

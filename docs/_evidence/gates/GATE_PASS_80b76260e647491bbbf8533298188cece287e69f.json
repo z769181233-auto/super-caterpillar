@@ -1,0 +1,40 @@
+{
+  "version": "1.1",
+  "head_sha": "80b76260e647491bbbf8533298188cece287e69f",
+  "index_sha": "28d4f61caf2ccd34ee3d6f98fc22676fc09d4d98",
+  "started_at": "2026-01-07T00:48:39Z",
+  "ended_at": "2026-01-07T00:49:04Z",
+  "unix_timestamp": 1767746944,
+  "total_duration_seconds": 25,
+  "worktree_clean": 0,
+  "steps": {
+    "typecheck": {
+      "exit_code": 0,
+      "duration_seconds": 4,
+      "status": "PASS"
+    },
+    "lint": {
+      "exit_code": 0,
+      "duration_seconds": 3,
+      "status": "PASS"
+    },
+    "build": {
+      "exit_code": 0,
+      "duration_seconds": 16,
+      "status": "PASS"
+    }
+  },
+  "validation": {
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "build": "PASS",
+    "evidence_check": "SKIP"
+  },
+  "system": {
+    "hostname": "AdamdeMacBook-Pro.local",
+    "user": "adam",
+    "git_version": "git version 2.51.2",
+    "node_version": "v24.3.0",
+    "pnpm_version": "9.1.0"
+  }
+}

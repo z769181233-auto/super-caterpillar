@@ -10,6 +10,8 @@
  */
 
 import { PrismaClient } from 'database';
+import axios from 'axios';
+import { env } from '@scu/config';
 import {
   EngineAdapter,
   EngineInvokeInput,
@@ -20,6 +22,8 @@ import {
   basicTextSegmentation,
   applyAnalyzedStructureToDatabase,
 } from './novel-analysis-processor';
+import { VisualDensityLocalAdapterWorker } from './adapters/visual-density.adapter';
+import { VisualEnrichmentLocalAdapterWorker } from './adapters/visual-enrichment.adapter';
 
 /**
  * 结构化日志输出函数（与 Worker 端保持一致）
@@ -201,6 +205,54 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
 }
 
 /**
+ * HttpEngineAdapterWorker
+ * 支持通过 HTTP 调用远程引擎服务
+ */
+export class HttpEngineAdapterWorker implements EngineAdapter {
+  constructor(
+    public readonly name: string,
+    private readonly baseUrl: string,
+    private readonly path: string = '/story/parse',
+  ) { }
+
+  supports(engineKey: string): boolean {
+    return engineKey === this.name;
+  }
+
+  async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
+    const startTime = Date.now();
+    try {
+      const response = await axios.post(`${this.baseUrl}${this.path}`, input.payload, {
+        timeout: 30000,
+      });
+
+      const totalDuration = Date.now() - startTime;
+
+      return {
+        status: 'SUCCESS' as EngineInvokeStatus,
+        output: response.data,
+        metrics: {
+          durationMs: totalDuration,
+        },
+      };
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      return {
+        status: 'FAILED' as EngineInvokeStatus,
+        error: {
+          message: error?.response?.data?.message || error?.message || 'Remote engine call failed',
+          code: 'REMOTE_ENGINE_ERROR',
+          details: error?.response?.data || error?.stack,
+        },
+        metrics: {
+          durationMs: duration,
+        },
+      };
+    }
+  }
+}
+
+/**
  * 简单的 Adapter 查找器（Worker 端）
  * 用于根据 engineKey 和 jobType 查找合适的 Adapter
  */
@@ -211,6 +263,35 @@ export class EngineAdapterClient {
     // 注册默认的 NovelAnalysisLocalAdapter
     const novelAdapter = new NovelAnalysisLocalAdapterWorker(prisma);
     this.adapters.set(novelAdapter.name, novelAdapter);
+
+    // 注册 CE06 Http 适配器
+    // 物理引擎基准地址由环境变量提供
+    const ce06BaseUrl = env.engineRealHttpBaseUrl || process.env.CE06_BASE_URL || 'http://localhost:8000';
+    const ce06Adapter = new HttpEngineAdapterWorker('ce06_novel_parsing', ce06BaseUrl, '/story/parse');
+    this.adapters.set(ce06Adapter.name, ce06Adapter);
+
+    // 注册 CE07 Http 适配器
+    const ce07Adapter = new HttpEngineAdapterWorker('ce07_memory_update', ce06BaseUrl, '/memory/update');
+    this.adapters.set(ce07Adapter.name, ce07Adapter);
+
+    // [P2] 注册 CE03 视觉密度适配器
+    const ce03Adapter = new VisualDensityLocalAdapterWorker();
+    this.adapters.set(ce03Adapter.name, ce03Adapter);
+
+    // [P2] 注册 CE04 视觉丰富度适配器
+    const ce04Adapter = new VisualEnrichmentLocalAdapterWorker();
+    this.adapters.set(ce04Adapter.name, ce04Adapter);
+
+    // [P2] 注册默认渲染器适配器 (自引用 processor)
+    this.adapters.set('default_shot_render', {
+      name: 'default_shot_render',
+      supports: (k) => k === 'default_shot_render',
+      invoke: async (input) => {
+        // 由于这只是一个适配器层，真正的 logic 已经在 ce-core-processor.ts 中由 main.ts 分发了。
+        // 但为了 EngineHubClient.invoke 能够正常工作，我们需要在这里也注册它。
+        throw new Error('Direct invocation of default_shot_render via adapter is not recommended. Use dedicated processor.');
+      }
+    });
   }
 
   /**
@@ -228,6 +309,13 @@ export class EngineAdapterClient {
     // 2. 根据 jobType 查找默认适配器
     if (jobType === 'NOVEL_ANALYSIS') {
       const adapter = this.adapters.get('default_novel_analysis');
+      if (adapter) {
+        return adapter;
+      }
+    }
+
+    if (jobType === 'SHOT_RENDER') {
+      const adapter = this.adapters.get('default_shot_render');
       if (adapter) {
         return adapter;
       }

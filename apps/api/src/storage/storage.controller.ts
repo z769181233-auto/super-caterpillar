@@ -30,6 +30,23 @@ export class StorageController {
         @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService,
     ) { }
 
+    @Public()
+    @Get('__probe')
+    probe() {
+        return { ok: true, ts: Date.now(), controller: 'StorageController' };
+    }
+
+    // DEV-ONLY: remove after signed-url acceptance
+    @Public()
+    @Get('raw/:key(*)')
+    raw(@Param('key') key: string, @Res() res: Response) {
+        const abs = this.storageService.getAbsolutePath(key);
+        const exists = this.storageService.exists(key);
+        console.log('[StorageRaw]', { key, abs, exists });
+        if (!exists) throw new NotFoundException('Resource not found');
+        return res.sendFile(abs);
+    }
+
     @Post('refresh-signed-url')
     @UseGuards(JwtOrHmacGuard)
     async refreshSignedUrl(
@@ -237,6 +254,19 @@ export class StorageController {
         // 再次验证权限（双重检查）
         // P2 修复：去掉无意义的 try/catch，直接让 StorageAuthService 抛出统一的 404
         await this.storageAuthService.verifyAccess(key, tenantId, userId);
+
+        // Debug logging for 404 diagnosis (ALWAYS ON for troubleshooting)
+        const resolved = this.storageService.getAbsolutePath(key);
+        const exists = this.storageService.exists(key);
+        console.log(`[StorageSigned] key=${key}`);
+        console.log(`[StorageSigned] resolved=${resolved}`);
+        console.log(`[StorageSigned] exists=${exists}`);
+        try {
+            const st = fs.statSync(resolved);
+            console.log(`[StorageSigned] stat.size=${st.size}`);
+        } catch (e) {
+            console.log(`[StorageSigned] stat.error=${(e as any)?.message}`);
+        }
 
         if (!this.storageService.exists(key)) {
             throw new NotFoundException('Resource not found');

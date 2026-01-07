@@ -1,0 +1,24 @@
+node:internal/modules/cjs/loader:1372
+  throw err;
+  ^
+
+Error: Cannot find module './ce07_m2_trigger.ts'
+Require stack:
+- /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/dev/imaginaryUncacheableRequireResolveScript
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1369:15)
+    at require.resolve (node:internal/modules/helpers:145:19)
+    at requireResolveNonCached (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/dist/bin.js:549:16)
+    at getProjectSearchDir (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/dist/bin.js:519:40)
+    at phase3 (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/dist/bin.js:267:27)
+    at bootstrap (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/dist/bin.js:47:30)
+    at main (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/dist/bin.js:33:12)
+    at Object.<anonymous> (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/dist/bin.js:579:5)
+    at Module._compile (node:internal/modules/cjs/loader:1692:14)
+    at Object..js (node:internal/modules/cjs/loader:1824:10) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/dev/imaginaryUncacheableRequireResolveScript'
+  ]
+}
+
+Node.js v24.3.0

@@ -1,0 +1,4 @@
+=== CORE-5 Security Smoke (Real HMAC V2) ===
+✓ /api/novel-insight/seed-core04-source -> 200 (4444=0)
+✓ /api/novel-insight/seed-core04-source/metrics -> 200 (4444=0)
+[PASS] CORE-5 Security Smoke OK

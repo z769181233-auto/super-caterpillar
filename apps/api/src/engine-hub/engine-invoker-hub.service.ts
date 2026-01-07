@@ -25,7 +25,7 @@ export class EngineInvokerHubService {
     private readonly engineRegistry: EngineRegistryHubService,
     private readonly moduleRef: ModuleRef,
     private readonly httpEngineAdapter: HttpEngineAdapter,
-  ) {}
+  ) { }
 
   /**
    * 调用引擎
@@ -56,7 +56,7 @@ export class EngineInvokerHubService {
       };
     }
 
-      try {
+    try {
       let output: TOutput;
       let engineResult: EngineInvokeResult | undefined;
 
@@ -138,21 +138,22 @@ export class EngineInvokerHubService {
           ...(engineResult?.metrics || {}),
         },
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const errorObj = e as any;
       this.logger.error(
         `Engine invocation failed: ${req.engineKey}@${req.engineVersion ?? 'default'}`,
-        e?.stack || e?.message,
+        errorObj?.stack || errorObj?.message,
       );
 
       return {
         success: false,
         error: {
-          code: e?.code ?? 'ENGINE_CALL_FAILED',
-          message: e?.message ?? 'Engine invocation failed',
+          code: errorObj?.code ?? 'ENGINE_CALL_FAILED',
+          message: errorObj?.message ?? 'Engine invocation failed',
           details: {
             engineKey: req.engineKey,
             engineVersion: req.engineVersion,
-            ...(e?.details || {}),
+            ...(errorObj?.details || {}),
           },
         },
         metrics: {

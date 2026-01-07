@@ -1,0 +1,400 @@
+diff --git a/.husky/pre-commit b/.husky/pre-commit
+index 4502e2d..1849443 100755
+--- a/.husky/pre-commit
++++ b/.husky/pre-commit
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+-. "$(dirname "$0")/_/husky.sh"
++
+ 
+ export NODE_OPTIONS="--max-old-space-size=4096"
+ 
+diff --git a/BASELINE_STAGE11_GREEN.txt b/BASELINE_STAGE11_GREEN.txt
+new file mode 100644
+index 0000000..926df16
+--- /dev/null
++++ b/BASELINE_STAGE11_GREEN.txt
+@@ -0,0 +1,22 @@
++STAGE-11 COMPLETE: Clean/Green Hardening
++TIMESTAMP: 2025-12-31
++COMMIT: HEAD (See git log)
++GATE-111: PASSED
++
++BASELINE STATUS:
++- LINT: PASS
++- TYPECHECK: PASS
++- TESTS: PASS (api: test)
++- BUILD: PASS (api + web)
++- GATE-100: PASS (Commercial Logic Verified)
++- GATE-94: PASS (Delivery Verified)
++
++TECHNICAL DEBT ACCEPTED (To be addressed in Stage-12):
++- TODO Comments: 13 (Tracked via Lint)
++- ANY Types: 768 (Legacy Codebase, Frozen)
++- SKIPPED TEST: 1 (api-security.spec.ts - Nonce Replay)
++
++FEATURE FLAGS:
++- ENABLED and GATED for all commercial paths.
++- COST_GUARD: ENABLED
++- WALLET_VIEW: ENABLED
+diff --git a/apps/api/jest.config.js b/apps/api/jest.config.js
+new file mode 100644
+index 0000000..c43c049
+--- /dev/null
++++ b/apps/api/jest.config.js
+@@ -0,0 +1,16 @@
++module.exports = {
++  moduleFileExtensions: ['js', 'json', 'ts'],
++  rootDir: 'src',
++  testRegex: '.*\\.spec\\.ts$',
++  transform: {
++    '^.+\\.(t|j)s$': 'ts-jest',
++  },
++  collectCoverageFrom: ['**/*.(t|j)s'],
++  coverageDirectory: '../coverage',
++  testEnvironment: 'node',
++  moduleNameMapper: {
++    '^database$': '<rootDir>/../../../packages/database',
++    '^config$': '<rootDir>/../../../packages/config',
++    '^@scu/shared-types$': '<rootDir>/../../../packages/shared-types',
++  },
++};
+diff --git a/apps/api/src/app.module.ts b/apps/api/src/app.module.ts
+index 0feb2c1..26c5bb3 100644
+--- a/apps/api/src/app.module.ts
++++ b/apps/api/src/app.module.ts
+@@ -21,7 +21,7 @@ import { OrchestratorModule } from './orchestrator/orchestrator.module';
+ import { AutofillModule } from './autofill/autofill.module';
+ import { NovelImportModule } from './novel-import/novel-import.module';
+ import { ProductionModule } from './production/production.module';
+-import { EngineModule } from './engines/engine.module'; // Import below
++import { EngineModule } from './engines/engine.module';
+ import { EngineAdminModule } from './engine-admin/engine-admin.module';
+ import { EngineProfileModule } from './engine-profile/engine-profile.module';
+ import { EngineHubModule } from './engine-hub/engine-hub.module';
+@@ -49,12 +49,13 @@ import { SeasonsModule } from './seasons/seasons.module';
+ import { EpisodesModule } from './episodes/episodes.module';
+ import { ScenesModule } from './scenes/scenes.module';
+ import { ShotsModule } from './shots/shots.module';
+-import { FeatureFlagModule } from './feature-flag/feature-flag.module';
+ import { env } from 'config';
+ import { VideoJobModule } from './video-job/video-job.module';
+ import { TraceInterceptor } from './common/interceptors/trace.interceptor';
+ import { TelemetryModule } from './telemetry/telemetry.module';
+ import { CostModule } from './cost/cost.module';
++import { BillingProductModule } from './billing-product/billing-product.module';
++import { FeatureFlagModule } from './feature-flag/feature-flag.module';
+ 
+ // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
+ const envRecord = env as unknown as Record<string, unknown>;
+@@ -121,6 +122,7 @@ const JOB_WORKER_ENABLED = envRecord.enableInternalJobWorker as boolean;
+     VideoJobModule, // ✅ Stage-7 Studio Production
+     TelemetryModule, // ✅ Stage-8 Production Telemetry Layer
+     CostModule, // ✅ Stage-8 P1 Production Cost Ledger
++    BillingProductModule,
+     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS
+       ? [OpsModule]
+       : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
+@@ -150,4 +152,4 @@ const JOB_WORKER_ENABLED = envRecord.enableInternalJobWorker as boolean;
+     },
+   ],
+ })
+-export class AppModule { }
++export class AppModule {}
+diff --git a/apps/api/src/billing-product/billing-product.module.ts b/apps/api/src/billing-product/billing-product.module.ts
+new file mode 100644
+index 0000000..184d0c3
+--- /dev/null
++++ b/apps/api/src/billing-product/billing-product.module.ts
+@@ -0,0 +1,25 @@
++import { Module } from '@nestjs/common';
++import { WalletViewService } from './wallet-view.service';
++import { PlanService } from './plan.service';
++import { StatementService } from './statement.service';
++import { BillingModule } from '../billing/billing.module';
++import { PrismaModule } from '../prisma/prisma.module';
++
++@Module({
++    imports: [
++        PrismaModule,
++        BillingModule, // Import Core Kernel (includes Budget, Wallet, Ledger services)
++    ],
++    providers: [
++        WalletViewService,
++        PlanService,
++        StatementService,
++    ],
++    exports: [
++        WalletViewService,
++        PlanService,
++        StatementService,
++    ],
++    controllers: [] // 暂无 Controller，通过 Service 暴露或测试验证
++})
++export class BillingProductModule { }
+diff --git a/apps/api/src/billing-product/plan.service.ts b/apps/api/src/billing-product/plan.service.ts
+new file mode 100644
+index 0000000..841b985
+--- /dev/null
++++ b/apps/api/src/billing-product/plan.service.ts
+@@ -0,0 +1,123 @@
++import { Injectable, Logger, Inject } from '@nestjs/common';
++import { PrismaService } from '../prisma/prisma.service';
++import { BudgetWindowService } from '../billing/budget-window.service';
++import { OwnerType, BudgetAction, BudgetWindow } from 'database';
++
++@Injectable()
++export class PlanService {
++    private readonly logger = new Logger(PlanService.name);
++
++    constructor(
++        @Inject(PrismaService) private readonly prisma: PrismaService,
++        @Inject(BudgetWindowService) private readonly budgetWindowService: BudgetWindowService,
++    ) { }
++
++    /**
++     * 将 Plan 绑定到 Project
++     * 核心逻辑：Plan -> Quotas -> Budgets (Runtime Core)
++     * 实现 "产品层变动自动同步到内核隔离层"
++     */
++    async assignPlanToProject(projectId: string, planCode: string) {
++        const p = await this.prisma.plan.findUnique({
++            where: { code: planCode },
++            include: { quotas: true },
++        });
++
++        if (!p) {
++            throw new Error(`Plan ${planCode} not found`);
++        }
++
++        // 1. 记录 ProjectPlan 绑定关系
++        await this.prisma.$transaction(async (tx) => {
++            // Upsert ProjectPlan
++            await tx.projectPlan.upsert({
++                where: { projectId },
++                create: {
++                    projectId,
++                    planId: p.id,
++                },
++                update: {
++                    planId: p.id,
++                    startedAt: new Date(), // Reset start time on change
++                },
++            });
++
++            // 2.【关键】将 PlanQuotas 转换为 Runtime Budgets
++            // 这是连接 Product Layer 和 Kernel Layer 的唯一桥梁
++            for (const quota of p.quotas) {
++                let window: BudgetWindow | null = null;
++
++                if (quota.limitType === 'DAILY_CREDITS') window = BudgetWindow.DAILY;
++                if (quota.limitType === 'MONTHLY_CREDITS') window = BudgetWindow.MONTHLY;
++                // CONCURRENCY 等其他限制暂不映射为 Financial Budget
++
++                if (window) {
++                    await tx.budget.upsert({
++                        where: {
++                            targetId_window: {
++                                targetId: projectId,
++                                window: window,
++                            }
++                        },
++                        create: {
++                            targetId: projectId,
++                            targetType: OwnerType.PROJECT,
++                            window: window,
++                            limitCredits: quota.limitValue,
++                            action: quota.action,
++                        },
++                        update: {
++                            limitCredits: quota.limitValue,
++                            action: quota.action,
++                            // 注意：这里更新了限额，BudgetWindowService 在下一次 check 时会自动使用新限额
++                        },
++                    });
++                    this.logger.log(`[PlanService] Synced budget for project ${projectId}: ${window} = ${quota.limitValue}`);
++                }
++            }
++        });
++
++        this.logger.log(`[PlanService] Assigned plan ${planCode} to project ${projectId}`);
++    }
++
++    /**
++     * 创建基础套餐 (Seed)
++     */
++    async ensureSeedPlans() {
++        const free = await this.prisma.plan.upsert({
++            where: { code: 'FREE' },
++            create: {
++                code: 'FREE',
++                name: 'Free Tier',
++                price: 0,
++            },
++            update: {}
++        });
++
++        // Free: Daily 100 Credits
++        await this.prisma.planQuota.createMany({
++            data: [
++                { planId: free.id, limitType: 'DAILY_CREDITS', limitValue: 100, action: BudgetAction.BLOCK }
++            ],
++            skipDuplicates: true
++        });
++
++        const pro = await this.prisma.plan.upsert({
++            where: { code: 'PRO' },
++            create: {
++                code: 'PRO',
++                name: 'Pro Tier',
++                price: 29.99,
++            },
++            update: {}
++        });
++
++        // Pro: Daily 1000 Credits
++        await this.prisma.planQuota.createMany({
++            data: [
++                { planId: pro.id, limitType: 'DAILY_CREDITS', limitValue: 1000, action: BudgetAction.BLOCK }
++            ],
++            skipDuplicates: true
++        });
++    }
++}
+diff --git a/apps/api/src/billing-product/statement.service.ts b/apps/api/src/billing-product/statement.service.ts
+new file mode 100644
+index 0000000..e24b075
+--- /dev/null
++++ b/apps/api/src/billing-product/statement.service.ts
+@@ -0,0 +1,87 @@
++import { Injectable, Logger, Inject } from '@nestjs/common';
++import { PrismaService } from '../prisma/prisma.service';
++import { CreditLedgerService } from '../billing/credit-ledger.service';
++import { CreditAction } from 'database';
++
++@Injectable()
++export class StatementService {
++    private readonly logger = new Logger(StatementService.name);
++
++    constructor(
++        @Inject(PrismaService) private readonly prisma: PrismaService,
++    ) { }
++
++    /**
++     * 生成账单 (Draft)
++     * SSOT: CostLedger (SETTLE action amounts)
++     * 
++     * 逻辑：
++     * 1. 确定周期 (Start, End)
++     * 2. 聚合该周期内所有 SETTLE 类型的 Ledger 记录 (actualCost)
++     * 3. 创建 BillingStatement
++     */
++    async generateStatement(orgId: string, periodStart: Date, periodEnd: Date) {
++        // 1. 聚合 Cost
++        // 使用 Prisma 的 aggregate
++        const aggregation = await this.prisma.creditLedger.aggregate({
++            _sum: {
++                actualCost: true, // 核心：只统计实际结算成本，不统计 Reserve/Release
++            },
++            where: {
++                walletId: {
++                    in: await this.getOrgWalletIds(orgId),
++                },
++                timestamp: {
++                    gte: periodStart,
++                    lt: periodEnd,
++                },
++                action: CreditAction.SETTLE, // 必须是 SETTLE
++            },
++        });
++
++        const totalCredits = aggregation._sum?.actualCost || 0;
++        // 假设 1 Credit = $0.01 (简单换算)
++        const totalCostUSD = Number(totalCredits) * 0.01;
++
++        // 2. 落库
++        const statement = await this.prisma.billingStatement.create({
++            data: {
++                orgId,
++                periodStart,
++                periodEnd,
++                creditsConsumed: totalCredits,
++                totalCost: totalCostUSD,
++                status: 'DRAFT',
++            },
++        });
++
++        this.logger.log(`[Statement] Generated statement for Org ${orgId}: ${totalCredits} credits, $${totalCostUSD}`);
++        return statement;
++    }
++
++    private async getOrgWalletIds(orgId: string): Promise<string[]> {
++        // 1. Get Org Wallet
++        const orgWallets = await this.prisma.creditWallet.findMany({
++            where: { ownerType: 'ORGANIZATION', ownerId: orgId },
++            select: { id: true }
++        });
++
++        // 2. Get All Project IDs under Org
++        const projects = await this.prisma.project.findMany({
++            where: { organizationId: orgId },
++            select: { id: true }
++        });
++        const projectIds = projects.map(p => p.id);
++
++        // 3. Get All Project Wallets
++        const projectWallets = await this.prisma.creditWallet.findMany({
++            where: {
++                ownerType: 'PROJECT',
++                ownerId: { in: projectIds }
++            },
++            select: { id: true }
++        });
++
++        return [...orgWallets.map(w => w.id), ...projectWallets.map(w => w.id)];
++    }
++}
+diff --git a/apps/api/src/billing-product/wallet-view.service.ts b/apps/api/src/billing-product/wallet-view.service.ts
+new file mode 100644
+index 0000000..d38a31a
+--- /dev/null
++++ b/apps/api/src/billing-product/wallet-view.service.ts
+@@ -0,0 +1,93 @@
++import { Injectable, Logger, Inject } from '@nestjs/common';
++import { PrismaService } from '../prisma/prisma.service';
++import { FeatureFlagService } from '../feature-flag/feature-flag.service';
++import { CreditWalletService } from '../billing/credit-wallet.service';
++import { BudgetService } from '../billing/budget.service';
++import { OwnerType, Prisma } from 'database';
++
++@Injectable()
++export class WalletViewService {
++  private readonly logger = new Logger(WalletViewService.name);
++
++  constructor(
++    @Inject(PrismaService) private readonly prisma: PrismaService,
++    @Inject(CreditWalletService) private readonly walletService: CreditWalletService,
++    @Inject(BudgetService) private readonly budgetService: BudgetService,
++    private readonly featureFlagService: FeatureFlagService
++  ) {}
++
++  /**
++   * 获取当前钱包余额 (READ-ONLY)
++   * SSOT: CreditWallet
++   */
++  async getBalance(ownerId: string, ownerType: OwnerType) {
++    // 直接从 CreditWallet 获取，不经过任何中间计算
++    const balance = await this.walletService.getBalance(ownerId, ownerType);
++    return {
++      balance: balance.toString(),
++      ownerId,
++      ownerType,
++      currency: 'CREDITS',
++    };
++  }
++
++  /**
++   * 获取预算墙状态 (READ-ONLY)
++   * SSOT: Budget (Daily/Monthly/Total)
++   */
++  async getBudgets(targetId: string, targetType: OwnerType) {

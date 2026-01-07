@@ -1,0 +1,6 @@
+1) metrics_endpoint_available: PASS
+2) metrics_contains_six_kpis: PASS
+3) credits_in_out_consistent: PASS
+4) reconciliation_drift_visible: PASS
+5) traceid_propagated: PASS
+6) gate_launch_03_business_dashboard: PASSED

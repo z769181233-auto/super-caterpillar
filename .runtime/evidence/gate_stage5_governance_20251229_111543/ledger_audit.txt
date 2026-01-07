@@ -1,0 +1,7 @@
+      userId      |  type   |  amount   |                jobId                 |                  idempotencyKey                   
+------------------+---------+-----------+--------------------------------------+---------------------------------------------------
+ user-stage5-rich | REFUND  |  1.500000 | 450466fa-ffdd-461f-b60d-16649521a8fb | refund-delta:450466fa-ffdd-461f-b60d-16649521a8fb
+ user-stage5-rich | SETTLE  |  8.500000 | 450466fa-ffdd-461f-b60d-16649521a8fb | settle:450466fa-ffdd-461f-b60d-16649521a8fb
+ user-stage5-rich | RESERVE | 10.000000 | 450466fa-ffdd-461f-b60d-16649521a8fb | reserve:450466fa-ffdd-461f-b60d-16649521a8fb
+(3 rows)
+

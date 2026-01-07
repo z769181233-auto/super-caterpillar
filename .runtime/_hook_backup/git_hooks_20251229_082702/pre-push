@@ -1,0 +1,107 @@
+#!/bin/bash
+# Dev Constitution OS - Pre-push Hook
+# 自动调用门禁系统（推送前最后防线）
+# 运行 GATE-96 全量健康检查（智能复用已通过的证据）
+
+set -euo pipefail
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Pre-push 门禁检查: GATE-96 全量健康检查"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# 紧急跳过机制（仅限救火）- 红线修正
+if [ "${ALLOW_DIRTY_PUSH:-0}" = "1" ]; then
+  echo ""
+  echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${RED}⚠️  WARNING: 跳过健康检查（ALLOW_DIRTY_PUSH=1）${NC}"
+  echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${YELLOW}理由: 紧急修复或热修复${NC}"
+  echo -e "${YELLOW}后果: 可能引入未经验证的代码${NC}"
+  echo -e "${YELLOW}责任: 推送者需在PR中说明跳过原因${NC}"
+  echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo ""
+  exit 0
+fi
+
+# 商业级红线A：同一HEAD快速放行
+CURRENT_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "")
+
+if [ -z "$CURRENT_HEAD" ]; then
+  echo -e "${YELLOW}⚠️  无法获取 Git HEAD，跳过证据复用${NC}"
+else
+  echo ""
+  echo "当前 HEAD: ${CURRENT_HEAD:0:8}"
+  echo "检查是否已有通过的健康检查证据..."
+  
+  # 查找匹配的证据目录
+  EVIDENCE_BASE="./docs/_evidence"
+  FOUND_PASS=""
+  
+  if [ -d "$EVIDENCE_BASE" ]; then
+    # 按时间倒序查找最新的证据目录
+    for DIR in $(ls -td "$EVIDENCE_BASE"/health_check_* 2>/dev/null || true); do
+      SHA_FILE="$DIR/00_head_sha.txt"
+      PASS_FILE="$DIR/STATUS_PASS.txt"
+      
+      if [ -f "$SHA_FILE" ] && [ -f "$PASS_FILE" ]; then
+        EVIDENCE_SHA=$(cat "$SHA_FILE" 2>/dev/null || echo "")
+        
+        if [ "$EVIDENCE_SHA" = "$CURRENT_HEAD" ]; then
+          FOUND_PASS="$DIR"
+          break
+        fi
+      fi
+    done
+  fi
+  
+  if [ -n "$FOUND_PASS" ]; then
+    # 快速放行
+    echo ""
+    echo -e "${GREEN}✅ 复用已通过的健康检查证据${NC}"
+    echo -e "${CYAN}证据目录: $FOUND_PASS${NC}"
+    echo -e "${CYAN}HEAD: ${CURRENT_HEAD:0:8}${NC}"
+    echo ""
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}✅ Pre-push 门禁通过 (GATE-96 复用证据)${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    exit 0
+  else
+    echo -e "${YELLOW}未找到当前 HEAD 的通过证据，执行完整健康检查...${NC}"
+  fi
+fi
+
+# 未找到证据或无法复用，执行 GATE-96
+echo ""
+if GATE_ONLY=GATE-96 bash ./tools/gate/run_all.sh; then
+  echo ""
+  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${GREEN}✅ Pre-push 门禁通过 (GATE-96)${NC}"
+  echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  exit 0
+else
+  EXIT_CODE=$?
+  echo ""
+  echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${RED}❌ Pre-push 门禁失败 (GATE-96)${NC}"
+  echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo ""
+  echo "修复方式："
+  echo "1. 查看健康检查报告: docs/_evidence/health_check_*/"
+  echo "2. 修复失败的检查项"
+  echo "3. 重新运行: bash tools/health/run_healthcheck.sh"
+  echo ""
+  echo "紧急跳过（仅限救火）："
+  echo "  ALLOW_DIRTY_PUSH=1 git push"
+  echo "  或"
+  echo "  git push --no-verify"
+  echo ""
+  echo -e "${YELLOW}⚠️  跳过健康检查将导致未经验证的代码进入仓库${NC}"
+  echo ""
+  exit $EXIT_CODE
+fi

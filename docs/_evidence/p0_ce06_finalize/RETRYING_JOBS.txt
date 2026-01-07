@@ -1,0 +1,8 @@
+                  id                  |        type        |  status  | retryCount |     lastError     |        createdAt        |        updatedAt        
+--------------------------------------+--------------------+----------+------------+-------------------+-------------------------+-------------------------
+ bf58dd52-caf3-4d65-ba5e-f885c001127f | CE06_NOVEL_PARSING | RETRYING |          1 | Processing failed | 2026-01-03 08:52:07.356 | 2026-01-03 08:52:09.675
+ 37afd287-e96a-49e9-aaeb-bd3801db1907 | CE06_NOVEL_PARSING | RETRYING |          1 | Processing failed | 2026-01-03 08:52:07.253 | 2026-01-03 08:52:07.694
+ 83141f64-181f-4d37-a1a4-ae9f9dcbf7af | CE06_NOVEL_PARSING | RETRYING |          1 | Processing failed | 2026-01-03 08:51:03.353 | 2026-01-03 08:51:05.67
+ 079f03a3-f15a-461c-be14-7698a02d755f | CE06_NOVEL_PARSING | RETRYING |          1 | Processing failed | 2026-01-03 08:51:03.26  | 2026-01-03 08:51:03.695
+(4 rows)
+

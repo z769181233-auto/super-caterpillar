@@ -1,0 +1,6 @@
+Pager usage is off.
+   workerId   |                                                supportedJobTypes                                                 |        createdAt        |      lastHeartbeat      
+--------------+------------------------------------------------------------------------------------------------------------------+-------------------------+-------------------------
+ local-worker | {CE06_NOVEL_PARSING,CE03_VISUAL_DENSITY,CE04_VISUAL_ENRICHMENT,VIDEO_RENDER,NOVEL_ANALYSIS,CE01_REFERENCE_SHEET} | 2026-01-04 04:08:43.597 | 2026-01-04 04:09:08.625
+(1 row)
+

@@ -1,0 +1,17 @@
+{
+  "gate_id": "GATE-91",
+  "head_sha": "ebea3319a520",
+  "timestamp_utc": "20251231T063633Z",
+  "result": "FAIL",
+  "rc": 1,
+  "change_class": "",
+  "change_reason": "",
+  "evidence_dir": ".runtime/evidence/gate-91_20251231T063633Z_ebea3319a520",
+  "artifacts": {
+    "gate_20_log": null,
+    "gate_21_log": null,
+    "gate_30_log": null,
+    "gate_31_log": null,
+    "health_audit_log": null
+  }
+}

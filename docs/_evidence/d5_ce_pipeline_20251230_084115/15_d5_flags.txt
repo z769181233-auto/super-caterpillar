@@ -1,0 +1,29 @@
+HAS_CE03=1 HAS_CE04=1 HAS_VR=type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+type      | VIDEO_RENDER
+1

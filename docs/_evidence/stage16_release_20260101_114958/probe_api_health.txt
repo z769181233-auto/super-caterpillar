@@ -1,0 +1,1 @@
+{"ok":true,"service":"api","status":"ok","ts":"2026-01-01T11:50:22.090Z"}

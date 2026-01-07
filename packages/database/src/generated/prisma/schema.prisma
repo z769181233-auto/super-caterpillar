@@ -1,6 +1,3 @@
-// Prisma Schema for 毛毛虫宇宙 (Super Caterpillar Universe)
-// Based on PLAN - STEP 2: Prisma Schema 顶层结构规划
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -11,59 +8,52 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// 用户体系 (User System)
-// ============================================
-
 model User {
-  id                    String   @id @default(uuid())
-  email                 String   @unique
+  id                    String               @id @default(uuid())
+  email                 String               @unique
   passwordHash          String
   avatar                String?
-  userType              UserType @default(individual)
-  role                  UserRole @default(VIEWER)
-  tier                  UserTier @default(Free)
-  quota                 Json? // { remainingTokens, computeSeconds, credits }
-  defaultOrganizationId String? // Studio v0.7: 默认组织 ID
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  // Relations
-  memberships         Membership[]         @relation("UserMemberships")
-  ownedProjects       Project[]            @relation("ProjectOwner")
-  ownedOrganizations  Organization[]       @relation("OrganizationOwner")
-  billingEvents       BillingEvent[]       @relation("BillingEventUser")
-  reviewLogs          PublishingReview[]   @relation("ReviewerUser")
-  organizationMembers OrganizationMember[] @relation("UserOrganizationMember") // Studio v0.7
-  apiKeys             ApiKey[]             @relation("UserApiKeys") // API Key 关联
-  auditLogs           AuditLog[]           @relation("UserAuditLogs") // 审计日志关联
-  subscriptions       Subscription[]       @relation("UserSubscription")
+  userType              UserType             @default(individual)
+  role                  UserRole             @default(viewer)
+  tier                  UserTier             @default(Free)
+  quota                 Json?
+  defaultOrganizationId String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  apiKeys               ApiKey[]             @relation("UserApiKeys")
+  auditLogs             AuditLog[]           @relation("UserAuditLogs")
+  billingEvents         BillingEvent[]       @relation("BillingEventUser")
+  costLedgers           CostLedger[]         @relation("UserCostLedgers")
+  memberships           Membership[]         @relation("UserMemberships")
+  organizationMembers   OrganizationMember[] @relation("UserOrganizationMember")
+  ownedOrganizations    Organization[]       @relation("OrganizationOwner")
+  ownedProjects         Project[]            @relation("ProjectOwner")
+  reviewLogs            PublishingReview[]   @relation("ReviewerUser")
+  subscriptions         Subscription[]       @relation("UserSubscription")
 
   @@map("users")
 }
 
 model Organization {
-  id        String   @id @default(uuid())
-  name      String
-  ownerId   String
-  slug      String?  @unique // Studio v0.7: 可选，用于 URL 或内部标识
-  type      String? // Studio v0.7: 组织类型 (PERSONAL | TEAM)
-  credits   Float    @default(0) // Stage 10: Organization Credits
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  owner         User                 @relation("OrganizationOwner", fields: [ownerId], references: [id])
-  memberships   Membership[]         @relation("OrganizationMemberships")
-  members       OrganizationMember[] @relation("OrganizationMembers") // Studio v0.7
-  projects      Project[]            @relation("OrganizationProjects")
-  shots         Shot[]               @relation("OrganizationShots") // Studio v0.7
-  shotJobs      ShotJob[]            @relation("OrganizationShotJobs") // Studio v0.7
-  tasks         Task[]               @relation("OrganizationTasks") // Studio v0.8: 平台任务
-  costCenters   CostCenter[]         @relation("OrganizationCostCenters")
-  apiKeys       ApiKey[]             @relation("OrganizationApiKeys") // API Key 关联
-  billingEvents BillingEvent[]       @relation("BillingEventOrganization")
+  id            String               @id @default(uuid())
+  name          String
+  ownerId       String
+  slug          String?              @unique
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  credits       Float                @default(0)
+  type          String?
+  shotJobs      ShotJob[]            @relation("OrganizationShotJobs")
+  tasks         Task[]               @relation("OrganizationTasks")
+  apiKeys       ApiKey[]             @relation("OrganizationApiKeys")
   auditLogs     AuditLog[]           @relation("OrganizationAuditLogs")
+  billingEvents BillingEvent[]       @relation("BillingEventOrganization")
+  costCenters   CostCenter[]         @relation("OrganizationCostCenters")
+  memberships   Membership[]         @relation("OrganizationMemberships")
+  members       OrganizationMember[] @relation("OrganizationMembers")
+  owner         User                 @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  projects      Project[]            @relation("OrganizationProjects")
+  shots         Shot[]               @relation("OrganizationShots")
   subscriptions Subscription[]       @relation("OrganizationSubscription")
 
   @@unique([ownerId, type])
@@ -75,73 +65,58 @@ model Membership {
   userId         String
   organizationId String
   role           MembershipRole
-  permissions    Json? // { projectPermissions: { projectId: [read, write, generate, publish, manage] } }
+  permissions    Json?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-
-  // Relations
-  user         User         @relation("UserMemberships", fields: [userId], references: [id])
-  organization Organization @relation("OrganizationMemberships", fields: [organizationId], references: [id])
+  organization   Organization   @relation("OrganizationMemberships", fields: [organizationId], references: [id])
+  user           User           @relation("UserMemberships", fields: [userId], references: [id])
 
   @@unique([userId, organizationId])
   @@map("memberships")
 }
 
-// ============================================
-// 项目体系 (Project System - 五层内容结构)
-// ============================================
-
 model Project {
-  id             String        @id @default(uuid())
-  name           String
-  description    String?
-  ownerId        String
-  organizationId String // Studio v0.7: 所属组织（必填，不再可选）
-  status         ProjectStatus @default(in_progress)
-  metadata       Json? // { timeline, progress, settings } (保留用于兼容)
-  settingsJson   Json? // DBSpec V1.1: 项目级配置 JSON (settings_json)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  // Relations
-  owner                  User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
-  organization           Organization            @relation("OrganizationProjects", fields: [organizationId], references: [id], onDelete: Restrict)
-  seasons                Season[]                @relation("ProjectSeasons") // 影视工业标准：Project → Season → Episode
-  episodes               Episode[]               @relation("ProjectEpisodes") // @deprecated 保留用于向下兼容
+  id                     String                  @id @default(uuid())
+  name                   String
+  description            String?
+  ownerId                String
+  organizationId         String
+  status                 ProjectStatus           @default(in_progress)
+  metadata               Json?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  settingsJson           Json?
+  shotJobs               ShotJob[]               @relation("ProjectShotJobs")
+  tasks                  Task[]                  @relation("ProjectTasks")
+  assets                 Asset[]                 @relation("ProjectAssets")
   billingEvents          BillingEvent[]          @relation("BillingEventProject")
   engineTasks            EngineTask[]            @relation("ProjectEngineTask")
-  tasks                  Task[]                  @relation("ProjectTasks") // Studio v0.8: 平台任务
-  novelSources           NovelSource[]           @relation("ProjectNovelSources") // Studio: 小说导入
-  novelAnalysisJobs      NovelAnalysisJob[]      @relation("ProjectNovelAnalysisJobs") // Studio: 小说分析任务
-  shotJobs               ShotJob[]               @relation("ProjectShotJobs") // ShotJob 关联
+  episodes               Episode[]               @relation("ProjectEpisodes")
+  novelAnalysisJobs      NovelAnalysisJob[]      @relation("ProjectNovelAnalysisJobs")
+  novelParseResults      NovelParseResult?       @relation("ProjectNovelParseResults")
+  novelSources           NovelSource[]           @relation("ProjectNovelSources")
   projectMembers         ProjectMember[]
-  structureQualityReport StructureQualityReport? @relation("ProjectQualityReport")
-  novelParseResults      NovelParseResult[]      @relation("ProjectNovelParseResults")
+  organization           Organization            @relation("OrganizationProjects", fields: [organizationId], references: [id])
+  owner                  User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
   qualityMetrics         QualityMetrics[]        @relation("ProjectQualityMetrics")
-  assets                 Asset[]                 @relation("ProjectAssets")
+  seasons                Season[]                @relation("ProjectSeasons")
+  structureQualityReport StructureQualityReport? @relation("ProjectQualityReport")
+  costLedgers            CostLedger[]            @relation("ProjectCostLedgers")
 
   @@map("projects")
 }
 
-// ============================================
-// 影视工业标准层级：Season（季/部）
-// @deprecated 根据 DBSpec V1.1，应使用四层结构（Project → Episode → Scene → Shot）
-// 保留此模型用于向后兼容，新代码应直接使用 Project → Episode 关联
-// ============================================
-
 model Season {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   projectId   String
-  index       Int // 季序号（从 1 开始）
-  title       String // 季标题
-  description String?  @db.Text // 季描述
-  metadata    Json?    @default("{}") // 额外元数据
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  project  Project   @relation("ProjectSeasons", fields: [projectId], references: [id], onDelete: Cascade)
-  episodes Episode[] @relation("SeasonEpisodes")
+  index       Int
+  title       String
+  description String?
+  metadata    Json?     @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  episodes    Episode[] @relation("SeasonEpisodes")
+  project     Project   @relation("ProjectSeasons", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, index])
   @@index([projectId])
@@ -149,89 +124,75 @@ model Season {
 }
 
 model Episode {
-  id        String  @id @default(uuid())
-  seasonId  String
-  projectId String?
-  index     Int
-  name      String
-  summary   String?
-  chapterId String? @unique
-
-  season            Season             @relation("SeasonEpisodes", fields: [seasonId], references: [id], onDelete: Cascade)
-  project           Project?           @relation("ProjectEpisodes", fields: [projectId], references: [id], onDelete: Cascade)
-  scenes            Scene[]            @relation("EpisodeScenes")
+  id                String             @id @default(uuid())
+  seasonId          String
+  projectId         String?
+  index             Int
+  name              String
+  summary           String?
+  chapterId         String?            @unique
   shotJobs          ShotJob[]          @relation("EpisodeShotJobs")
   chapter           NovelChapter?      @relation("ChapterEpisode", fields: [chapterId], references: [id])
+  project           Project?           @relation("ProjectEpisodes", fields: [projectId], references: [id], onDelete: Cascade)
+  season            Season             @relation("SeasonEpisodes", fields: [seasonId], references: [id], onDelete: Cascade)
   publishingReviews PublishingReview[] @relation("EpisodePublishingReview")
+  scenes            Scene[]            @relation("EpisodeScenes")
 
   @@map("episodes")
 }
 
 model Scene {
-  id                 String  @id @default(uuid())
+  id                 String       @id @default(uuid())
   episodeId          String
   index              Int
   title              String
   summary            String?
-  // V1.1: 角色 ID 列表（语义层面），存 JSON
+  sceneDraftId       String?      @unique
   characters         Json?
-  // V1.1: 视觉密度评分
+  enrichedText       String?
+  projectId          String?
   visualDensityScore Float?
-  // V1.1: 文本增强结果
-  enrichedText       String? @db.Text
-
-  episode      Episode      @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
-  shots        Shot[]       @relation("SceneShots")
-  shotJobs     ShotJob[]    @relation("SceneShotJobs")
-  engineTasks  EngineTask[] @relation("SceneEngineTask")
-  sceneDraft   SceneDraft?  @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
-  sceneDraftId String?      @unique
-
-  // 兼容项目级索引需求（Spec: scenes(project_id,index)）
-  projectId String?
+  shotJobs           ShotJob[]    @relation("SceneShotJobs")
+  engineTasks        EngineTask[] @relation("SceneEngineTask")
+  episode            Episode      @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
+  sceneDraft         SceneDraft?  @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
+  shots              Shot[]       @relation("SceneShots")
 
   @@index([projectId, index])
   @@map("scenes")
 }
 
 model Shot {
-  id              String    @id @default(uuid())
-  sceneId         String
-  index           Int
-  title           String?
-  description     String?
-  type            String
-  params          Json      @default("{}")
-  qualityScore    Json      @default("{}")
-  reviewedAt      DateTime?
-  durationSeconds Int?
-  organizationId  String?
-  // V1.1: 文本增强后的镜头 prompt
-  enrichedPrompt  String?   @db.Text
-
-  scene             Scene              @relation("SceneShots", fields: [sceneId], references: [id], onDelete: Cascade)
-  organization      Organization?      @relation("OrganizationShots", fields: [organizationId], references: [id])
+  id                String             @id @default(uuid())
+  sceneId           String
+  index             Int
+  title             String?
+  description       String?
+  type              String
+  params            Json               @default("{}")
+  qualityScore      Json               @default("{}")
+  reviewedAt        DateTime?
+  durationSeconds   Int?
+  organizationId    String?
+  enrichedPrompt    String?
+  jobs              ShotJob[]          @relation("ShotJobs")
+  assets            Asset[]            @relation("ShotAssets")
   engineTasks       EngineTask[]       @relation("ShotEngineTask")
+  publishingReviews PublishingReview[] @relation("ShotPublishingReview")
   qualityScores     QualityScore[]     @relation("ShotQualityScore")
   safetyResults     SafetyResult[]     @relation("ShotSafetyResult")
-  publishingReviews PublishingReview[] @relation("ShotPublishingReview")
-  jobs              ShotJob[]          @relation("ShotJobs")
   shotPlanning      ShotPlanning?      @relation("ShotPlanning")
-  assets            Asset[]            @relation("ShotAssets")
+  organization      Organization?      @relation("OrganizationShots", fields: [organizationId], references: [id])
+  scene             Scene              @relation("SceneShots", fields: [sceneId], references: [id], onDelete: Cascade)
 
   @@index([sceneId, index])
   @@map("shots")
 }
 
-// ============================================
-// Stage4: Semantic Enhancement / Shot Planning / Structure QA
-// ============================================
-
 model SemanticEnhancement {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   nodeType      String
   nodeId        String
   data          Json
@@ -245,130 +206,105 @@ model SemanticEnhancement {
 }
 
 model ShotPlanning {
-  id        String   @id @default(uuid())
-  shotId    String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id            String   @id @default(uuid())
+  shotId        String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   data          Json
   engineKey     String
   engineVersion String?
   confidence    Float?
-
-  shot Shot @relation("ShotPlanning", fields: [shotId], references: [id], onDelete: Cascade)
+  shot          Shot     @relation("ShotPlanning", fields: [shotId], references: [id], onDelete: Cascade)
 
   @@map("shot_plannings")
 }
 
 model StructureQualityReport {
-  id        String   @id @default(uuid())
-  projectId String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id            String   @id @default(uuid())
+  projectId     String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   data          Json
   engineKey     String
   engineVersion String?
-
-  project Project @relation("ProjectQualityReport", fields: [projectId], references: [id], onDelete: Cascade)
+  project       Project  @relation("ProjectQualityReport", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("structure_quality_reports")
 }
 
-// ============================================
-// 引擎体系 (EngineHub System)
-// ============================================
-
-// 注意：EngineTask 保留用于向后兼容，新代码应使用 Task 模型
-// EngineTask 主要用于引擎层面的任务记录（scene_parse, shot_plan 等）
 model EngineTask {
   id            String           @id @default(uuid())
   type          EngineTaskType
   projectId     String
   sceneId       String?
   shotId        String?
-  input         Json // EngineInput { text, projectId, episodeId, sceneId?, historyContext? }
-  output        Json? // EngineOutput { sceneSummary?, shotPlan?, enrichData? }
+  input         Json
+  output        Json?
   engineVersion String
   status        EngineTaskStatus @default(pending)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
-
-  // Relations
-  project Project @relation("ProjectEngineTask", fields: [projectId], references: [id], onDelete: Cascade)
-  scene   Scene?  @relation("SceneEngineTask", fields: [sceneId], references: [id], onDelete: Cascade)
-  shot    Shot?   @relation("ShotEngineTask", fields: [shotId], references: [id], onDelete: Cascade)
+  project       Project          @relation("ProjectEngineTask", fields: [projectId], references: [id], onDelete: Cascade)
+  scene         Scene?           @relation("SceneEngineTask", fields: [sceneId], references: [id], onDelete: Cascade)
+  shot          Shot?            @relation("ShotEngineTask", fields: [shotId], references: [id], onDelete: Cascade)
 
   @@map("engine_tasks")
 }
 
-// S3-B.1: Engine 配置存储（数据库驱动）
-// Stage3-A: 最小闭环字段（code, name, type, isActive, createdAt）
 model Engine {
   id             String             @id @default(uuid())
-  code           String             @unique // Stage3-A: 引擎代码（与 engineKey 保持一致）
-  name           String // Stage3-A: 引擎名称（与 adapterName 保持一致）
-  type           String // Stage3-A: 引擎类型（local | http | mock，与 adapterType 保持一致）
-  isActive       Boolean            @default(true) // Stage3-A: 是否激活（与 enabled 保持一致）
   engineKey      String             @unique
   adapterName    String
   adapterType    String
   config         Json
   enabled        Boolean            @default(true)
   version        String?
-  // S3-B.2: 引擎版本体系
   defaultVersion String?
-  versions       EngineVersion[]
-  jobBindings    JobEngineBinding[] @relation("EngineJobBindings")
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+  code           String             @unique
+  isActive       Boolean            @default(true)
+  name           String
+  type           String
+  versions       EngineVersion[]
+  jobBindings    JobEngineBinding[] @relation("EngineJobBindings")
 
   @@map("engines")
 }
 
-// S3-B.2: Engine 版本表
 model EngineVersion {
-  id            String   @id @default(uuid())
-  engine        Engine   @relation(fields: [engineId], references: [id])
+  id            String             @id @default(uuid())
   engineId      String
   versionName   String
   config        Json
-  enabled       Boolean  @default(true)
+  enabled       Boolean            @default(true)
   rolloutWeight Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  jobBindings JobEngineBinding[] @relation("EngineVersionJobBindings")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  engine        Engine             @relation(fields: [engineId], references: [id])
+  jobBindings   JobEngineBinding[] @relation("EngineVersionJobBindings")
 
   @@unique([engineId, versionName])
   @@map("engine_versions")
 }
 
-// Stage3-A: Job-Engine 逻辑绑定表
-// 核心设计：Job 与 Engine 的逻辑绑定（不是物理绑定）
-// - Worker 只消费"可执行 Job"，不直接知道 Engine 细节
-// - Engine 失败/超时 = Job 级事件（通过 Job 状态机处理）
 model JobEngineBinding {
   id              String                 @id @default(uuid())
-  jobId           String                 @unique // 一个 Job 只能绑定一个 Engine
+  jobId           String                 @unique
   engineId        String
-  engineVersionId String? // 可选：绑定到特定版本
-  engineKey       String // 冗余字段，便于查询
+  engineVersionId String?
+  engineKey       String
   status          JobEngineBindingStatus @default(BOUND)
   boundAt         DateTime               @default(now())
   executedAt      DateTime?
   completedAt     DateTime?
   errorMessage    String?
-  metadata        Json? // 绑定时的元数据（策略、权重等）
-
-  // Relations
-  job           ShotJob        @relation("JobEngineBinding", fields: [jobId], references: [id], onDelete: Cascade)
-  engine        Engine         @relation("EngineJobBindings", fields: [engineId], references: [id])
-  engineVersion EngineVersion? @relation("EngineVersionJobBindings", fields: [engineVersionId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  metadata        Json?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  engine          Engine                 @relation("EngineJobBindings", fields: [engineId], references: [id])
+  engineVersion   EngineVersion?         @relation("EngineVersionJobBindings", fields: [engineVersionId], references: [id])
+  job             ShotJob                @relation("JobEngineBinding", fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([engineId, status])
   @@index([jobId])
@@ -389,7 +325,6 @@ model NonceStore {
   @@map("nonce_store")
 }
 
-// RBAC 基础表
 model Role {
   id        String           @id @default(uuid())
   name      String           @unique
@@ -405,7 +340,7 @@ model Role {
 model Permission {
   id        String           @id @default(uuid())
   key       String           @unique
-  scope     String // system | project
+  scope     String
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   rolePerms RolePermission[]
@@ -414,13 +349,12 @@ model Permission {
 }
 
 model RolePermission {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   roleId       String
   permissionId String
-  createdAt    DateTime @default(now())
-
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, permissionId])
   @@map("role_permissions")
@@ -433,15 +367,13 @@ model ProjectMember {
   roleId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  role    Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId])
   @@map("project_members")
 }
 
-// 审计日志（Append-only）
 model AuditLogLegacy {
   id           String   @id @default(uuid())
   userId       String?
@@ -464,74 +396,51 @@ model AuditLogLegacy {
   @@ignore
 }
 
-// ============================================
-// 任务与调度体系 (TaskSystem & WorkerPool)
-// ============================================
-
-// Task（平台级任务）
-// 定义：跨 Worker、跨重试、带业务语义的任务
-// 职责：包含任务类型、业务对象关联、重试策略、优先级等平台级元信息
-// 关系：Task → Job（一个 Task 可以产生多个 Job，用于重试）
 model Task {
-  id             String     @id @default(uuid())
+  id             String       @id @default(uuid())
   organizationId String
   projectId      String
   type           TaskType
-  status         TaskStatus @default(PENDING)
+  status         TaskStatus   @default(PENDING)
   payload        Json?
-  output         Json? // 任务输出结果，Engine/Worker 执行完成后写入
-  attempts       Int        @default(0)
-  maxRetry       Int        @default(3)
-  retryCount     Int        @default(0)
+  attempts       Int          @default(0)
+  maxRetry       Int          @default(3)
+  retryCount     Int          @default(0)
   error          String?
-  workerId       String? // 实际执行该 Task 的 Worker 节点 ID
-  traceId        String? // Stage13-Final: Pipeline 级 traceId（用于 CE Core Layer 审计追溯）
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-
-  jobs ShotJob[] @relation("TaskJobs")
-
-  project      Project      @relation("ProjectTasks", fields: [projectId], references: [id], onDelete: Cascade)
-  organization Organization @relation("OrganizationTasks", fields: [organizationId], references: [id], onDelete: Restrict)
-  worker       WorkerNode?  @relation("TaskWorker", fields: [workerId], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  output         Json?
+  traceId        String?
+  workerId       String?
+  jobs           ShotJob[]    @relation("TaskJobs")
+  organization   Organization @relation("OrganizationTasks", fields: [organizationId], references: [id])
+  project        Project      @relation("ProjectTasks", fields: [projectId], references: [id], onDelete: Cascade)
+  worker         WorkerNode?  @relation("TaskWorker", fields: [workerId], references: [id])
 
   @@index([status, createdAt])
 }
 
-// WorkerJob（Worker 执行记录）
-// 定义：Worker 维度的一次具体执行记录
-// 职责：记录 Worker 执行任务的过程和结果
-// 关系：WorkerJob 与 Task/Job 是不同层面的概念，WorkerJob 主要用于 Worker 内部调度和计费
 model WorkerJob {
   id            String          @id @default(uuid())
   type          WorkerJobType
-  payload       Json // { taskData, params, modelInfo }
+  payload       Json
   status        WorkerJobStatus @default(pending)
   workerId      String?
   retryCount    Int             @default(0)
   traceId       String
-  jobId         String          @unique // BullMQ jobId
+  jobId         String          @unique
   engineVersion String?
   modelVersion  String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-
-  // Relations
-  worker        WorkerNode?    @relation("WorkerNodeJobs", fields: [workerId], references: [id])
-  billingEvents BillingEvent[] @relation("BillingEventJob")
+  billingEvents BillingEvent[]  @relation("BillingEventJob")
+  worker        WorkerNode?     @relation("WorkerNodeJobs", fields: [workerId], references: [id])
 
   @@map("worker_jobs")
 }
 
-// Job（Worker 执行单元）
-// 定义：某个 Worker 在某个时间执行某个 Task 的一次尝试
-// 职责：记录单次执行的状态、结果、错误信息等
-// 关系：Job 属于某个 Task（taskId），一个 Task 可以产生多个 Job（用于重试）
-// Studio v0.2: Shot 生成任务模型
-// Studio v0.4: 增强队列化处理能力
-// Studio v0.8: 引入 Task 层，Job 关联 Task
 model ShotJob {
-  id             String    @id @default(uuid())
+  id             String            @id @default(uuid())
   organizationId String
   projectId      String
   episodeId      String
@@ -539,59 +448,57 @@ model ShotJob {
   shotId         String
   taskId         String?
   workerId       String?
-  status         JobStatus @default(PENDING)
+  status         JobStatus         @default(PENDING)
   type           JobType
-  priority       Int       @default(0)
-  maxRetry       Int       @default(3)
-  retryCount     Int       @default(0)
-  attempts       Int       @default(0)
+  priority       Int               @default(0)
+  maxRetry       Int               @default(3)
+  retryCount     Int               @default(0)
+  attempts       Int               @default(0)
   payload        Json?
   engineConfig   Json?
   lastError      String?
-  traceId        String? // Stage13: 用于 CE Core Layer 审计追溯
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  traceId        String?
+  episode        Episode           @relation("EpisodeShotJobs", fields: [episodeId], references: [id], onDelete: Cascade)
+  organization   Organization      @relation("OrganizationShotJobs", fields: [organizationId], references: [id])
+  project        Project           @relation("ProjectShotJobs", fields: [projectId], references: [id], onDelete: Cascade)
+  scene          Scene             @relation("SceneShotJobs", fields: [sceneId], references: [id], onDelete: Cascade)
   shot           Shot              @relation("ShotJobs", fields: [shotId], references: [id], onDelete: Cascade)
   task           Task?             @relation("TaskJobs", fields: [taskId], references: [id], onDelete: Cascade)
-  worker         WorkerNode?       @relation("WorkerNodeShotJobs", fields: [workerId], references: [id], onDelete: SetNull)
-  project        Project           @relation("ProjectShotJobs", fields: [projectId], references: [id], onDelete: Cascade)
-  episode        Episode           @relation("EpisodeShotJobs", fields: [episodeId], references: [id], onDelete: Cascade)
-  scene          Scene             @relation("SceneShotJobs", fields: [sceneId], references: [id], onDelete: Cascade)
-  organization   Organization      @relation("OrganizationShotJobs", fields: [organizationId], references: [id], onDelete: Restrict)
-  engineBinding  JobEngineBinding? @relation("JobEngineBinding")
+  worker         WorkerNode?       @relation("WorkerNodeShotJobs", fields: [workerId], references: [id])
   generatedAsset Asset[]           @relation("JobGeneratedAsset")
+  engineBinding  JobEngineBinding? @relation("JobEngineBinding")
+
+  @@map("shot_jobs")
 }
 
 model WorkerNode {
   id            String       @id @default(uuid())
   workerId      String       @unique
-  name          String? // Worker 名称（可选）
+  name          String?
   status        WorkerStatus @default(offline)
   gpuCount      Int          @default(0)
   gpuMemory     Int          @default(0)
   gpuType       String       @default("unknown")
   tasksRunning  Int          @default(0)
   temperature   Float?
-  capabilities  Json         @default("{}") // { supportedJobTypes[], supportedModels[], maxBatchSize }
+  capabilities  Json         @default("{}")
   lastHeartbeat DateTime     @default(now())
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
-
-  // Relations
-  jobs     WorkerJob[] @relation("WorkerNodeJobs")
-  shotJobs ShotJob[]   @relation("WorkerNodeShotJobs") // Orchestrator Stage2: 关联 ShotJob
-  tasks    Task[]      @relation("TaskWorker") // S1-FIX-A: Task 关联 Worker
+  shotJobs      ShotJob[]    @relation("WorkerNodeShotJobs")
+  tasks         Task[]       @relation("TaskWorker")
+  jobs          WorkerJob[]  @relation("WorkerNodeJobs")
 
   @@index([status])
   @@map("worker_nodes")
 }
 
-// Stage2-A: Worker 心跳记录
 model WorkerHeartbeat {
   workerId   String   @id @map("worker_id")
   lastSeenAt DateTime @map("last_seen_at")
-  status     String   @default("ALIVE") // ALIVE | DEAD
+  status     String   @default("ALIVE")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
@@ -599,19 +506,15 @@ model WorkerHeartbeat {
   @@map("worker_heartbeats")
 }
 
-// ============================================
-// 模型宇宙体系 (Model Universe System)
-// ============================================
-
 model ModelRegistry {
   id                 String    @id @default(uuid())
   name               String
   type               ModelType
   version            String
   changelog          String?
-  compatibleEngines  Json // { engines: [CE01, CE02, ...] }
-  performanceMetrics Json? // { latency, accuracy, cost }
-  fineTuneInfo       Json? // { method, dataset, params }
+  compatibleEngines  Json
+  performanceMetrics Json?
+  fineTuneInfo       Json?
   seed               String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -624,16 +527,12 @@ model TemplatePreset {
   id        String       @id @default(uuid())
   type      TemplateType
   name      String
-  preset    Json // 根据类型不同，包含 pose 参数、camera 参数、style 参数
+  preset    Json
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
   @@map("template_presets")
 }
-
-// ============================================
-// 质量与安全体系 (Quality & Safety System)
-// ============================================
 
 model QualityScore {
   id                 String   @id @default(uuid())
@@ -646,9 +545,7 @@ model QualityScore {
   overallScore       Float
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
-
-  // Relations
-  shot Shot @relation("ShotQualityScore", fields: [shotId], references: [id])
+  shot               Shot     @relation("ShotQualityScore", fields: [shotId], references: [id])
 
   @@map("quality_scores")
 }
@@ -662,16 +559,10 @@ model SafetyResult {
   reviewStatus ReviewStatus @default(require_human_review)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-
-  // Relations
-  shot Shot @relation("ShotSafetyResult", fields: [shotId], references: [id])
+  shot         Shot         @relation("ShotSafetyResult", fields: [shotId], references: [id])
 
   @@map("safety_results")
 }
-
-// ============================================
-// 商业化体系 (Billing System)
-// ============================================
 
 model BillingEvent {
   id                 String           @id @default(uuid())
@@ -689,29 +580,25 @@ model BillingEvent {
   totalCost          Float
   billingStatus      BillingStatus    @default(pending)
   invoiceId          String?
-  metadata           Json? // Stage 10: TraceId, JobType, etc.
   timestamp          DateTime         @default(now())
-
-  // Relations
-  user         User          @relation("BillingEventUser", fields: [userId], references: [id])
-  organization Organization? @relation("BillingEventOrganization", fields: [organizationId], references: [id])
-  project      Project?      @relation("BillingEventProject", fields: [projectId], references: [id])
-  job          WorkerJob?    @relation("BillingEventJob", fields: [jobId], references: [id])
+  metadata           Json?
+  job                WorkerJob?       @relation("BillingEventJob", fields: [jobId], references: [id])
+  organization       Organization?    @relation("BillingEventOrganization", fields: [organizationId], references: [id])
+  project            Project?         @relation("BillingEventProject", fields: [projectId], references: [id])
+  user               User             @relation("BillingEventUser", fields: [userId], references: [id])
 
   @@map("billing_events")
 }
 
 model CostCenter {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   organizationId String
   name           String
   budget         Float
-  currentCost    Float    @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  organization Organization @relation("OrganizationCostCenters", fields: [organizationId], references: [id])
+  currentCost    Float        @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation("OrganizationCostCenters", fields: [organizationId], references: [id])
 
   @@map("cost_centers")
 }
@@ -727,18 +614,13 @@ model Subscription {
   cancelAtPeriodEnd  Boolean            @default(false)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
-
-  user         User?         @relation("UserSubscription", fields: [userId], references: [id])
-  organization Organization? @relation("OrganizationSubscription", fields: [organizationId], references: [id])
+  organization       Organization?      @relation("OrganizationSubscription", fields: [organizationId], references: [id])
+  user               User?              @relation("UserSubscription", fields: [userId], references: [id])
 
   @@index([userId])
   @@index([organizationId])
   @@map("subscriptions")
 }
-
-// ============================================
-// 发布体系 (Publishing System)
-// ============================================
 
 model PublishingReview {
   id         String       @id @default(uuid())
@@ -747,21 +629,407 @@ model PublishingReview {
   reviewType ReviewType
   reviewerId String?
   result     ReviewResult
-  reviewLog  Json // { reviewSteps[], comments[], timestamps[] }
+  reviewLog  Json
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
-
-  // Relations
-  episode  Episode? @relation("EpisodePublishingReview", fields: [episodeId], references: [id])
-  shot     Shot?    @relation("ShotPublishingReview", fields: [shotId], references: [id])
-  reviewer User?    @relation("ReviewerUser", fields: [reviewerId], references: [id])
+  episode    Episode?     @relation("EpisodePublishingReview", fields: [episodeId], references: [id])
+  reviewer   User?        @relation("ReviewerUser", fields: [reviewerId], references: [id])
+  shot       Shot?        @relation("ShotPublishingReview", fields: [shotId], references: [id])
 
   @@map("publishing_reviews")
 }
 
-// ============================================
-// Enums
-// ============================================
+model OrganizationMember {
+  id             String           @id @default(uuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole @default(VIEWER)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation("OrganizationMembers", fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation("UserOrganizationMember", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("organization_members")
+}
+
+model NovelSource {
+  id             String             @id @default(uuid())
+  projectId      String
+  novelTitle     String?
+  novelAuthor    String?
+  rawText        String
+  filePath       String?
+  fileName       String?
+  fileSize       Int?
+  fileType       String?
+  characterCount Int?
+  chapterCount   Int?
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  analysisJobs   NovelAnalysisJob[] @relation("NovelSourceAnalysisJobs")
+  chapters       NovelChapter[]     @relation("NovelSourceChapters")
+  project        Project            @relation("ProjectNovelSources", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("novel_sources")
+}
+
+model NovelChapter {
+  id             String       @id @default(uuid())
+  novelSourceId  String
+  orderIndex     Int
+  title          String
+  rawText        String
+  startParagraph Int?
+  endParagraph   Int?
+  characterCount Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  summary        String?
+  episode        Episode?     @relation("ChapterEpisode")
+  novelSource    NovelSource  @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  sceneDrafts    SceneDraft[] @relation("ChapterSceneDrafts")
+
+  @@unique([novelSourceId, orderIndex])
+  @@index([novelSourceId])
+  @@map("novel_chapters")
+}
+
+model SceneDraft {
+  id             String           @id @default(uuid())
+  chapterId      String
+  orderIndex     Int
+  title          String?
+  summary        String?
+  characters     Json?
+  location       String?
+  emotions       Json?
+  rawTextRange   Json?
+  status         SceneDraftStatus @default(DRAFT)
+  analysisResult Json?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  chapter        NovelChapter     @relation("ChapterSceneDrafts", fields: [chapterId], references: [id], onDelete: Cascade)
+  scene          Scene?           @relation("SceneDraftScene")
+
+  @@unique([chapterId, orderIndex])
+  @@index([chapterId])
+  @@index([status])
+  @@map("scene_drafts")
+}
+
+model NovelAnalysisJob {
+  id            String               @id @default(uuid())
+  projectId     String
+  novelSourceId String?
+  chapterId     String?
+  jobType       NovelAnalysisJobType @default(ANALYZE_ALL)
+  status        NovelAnalysisStatus  @default(PENDING)
+  errorMessage  String?
+  progress      Json?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  novelSource   NovelSource?         @relation("NovelSourceAnalysisJobs", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  project       Project              @relation("ProjectNovelAnalysisJobs", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([novelSourceId])
+  @@index([chapterId])
+  @@index([status])
+  @@map("novel_analysis_jobs")
+}
+
+model ApiKey {
+  id            String        @id @default(uuid())
+  key           String        @unique
+  secretHash    String?
+  name          String?
+  ownerUserId   String?
+  ownerOrgId    String?
+  status        ApiKeyStatus  @default(ACTIVE)
+  lastUsedAt    DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  secretEnc     String?
+  secretEncIv   String?
+  secretEncTag  String?
+  secretVersion Int?          @default(1)
+  ownerOrg      Organization? @relation("OrganizationApiKeys", fields: [ownerOrgId], references: [id])
+  ownerUser     User?         @relation("UserApiKeys", fields: [ownerUserId], references: [id])
+  auditLogs     AuditLog[]    @relation("ApiKeyAuditLogs")
+
+  @@index([key])
+  @@index([status])
+  @@index([ownerUserId])
+  @@index([ownerOrgId])
+  @@map("api_keys")
+}
+
+model AuditLog {
+  id           String        @id @default(uuid())
+  userId       String?
+  apiKeyId     String?
+  action       String
+  resourceType String
+  resourceId   String?
+  ip           String?
+  userAgent    String?
+  details      Json?
+  createdAt    DateTime      @default(now())
+  nonce        String?
+  signature    String?
+  timestamp    DateTime?
+  payload      Json?
+  orgId        String?
+  apiKey       ApiKey?       @relation("ApiKeyAuditLogs", fields: [apiKeyId], references: [id])
+  organization Organization? @relation("OrganizationAuditLogs", fields: [orgId], references: [id])
+  user         User?         @relation("UserAuditLogs", fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([resourceType, resourceId])
+  @@index([userId])
+  @@index([apiKeyId])
+  @@index([nonce, timestamp])
+  @@map("audit_logs")
+}
+
+model SecurityFingerprint {
+  id        String   @id @default(uuid())
+  assetId   String?
+  fpVector  Json?
+  createdAt DateTime @default(now())
+
+  @@map("security_fingerprints")
+}
+
+model ShotVariant {
+  id               String   @id @default(uuid())
+  shotId           String?
+  data             Json?
+  consistencyScore Float?
+  visualScore      Float?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("shot_variants")
+}
+
+model VideoJob {
+  id                String   @id @default(uuid())
+  shotId            String?
+  status            String?
+  payload           Json?
+  securityProcessed Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("video_jobs")
+}
+
+model Character {
+  id                 String   @id @default(uuid())
+  projectId          String?
+  name               String
+  description        String?
+  referenceSheetUrls Json?
+  embeddingId        String?
+  defaultSeed        String?
+  traits             Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([projectId, name])
+  @@map("characters")
+}
+
+model NovelVolume {
+  id        String   @id @default(uuid())
+  projectId String?
+  index     Int
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("novel_volumes")
+}
+
+model NovelScene {
+  id                 String   @id @default(uuid())
+  chapterId          String
+  index              Int
+  rawText            String?
+  enrichedText       String?
+  visualDensityScore Float?
+  characterIds       Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([chapterId, index])
+  @@map("novel_scenes")
+}
+
+model MemoryShortTerm {
+  id              String   @id @default(uuid())
+  projectId       String?
+  chapterId       String?
+  summary         String?
+  characterStates Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("memory_short_term")
+}
+
+model MemoryLongTerm {
+  id         String   @id @default(uuid())
+  entityId   String
+  entityType String
+  vectorRef  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("memory_long_term")
+}
+
+model NovelParseResult {
+  id             String   @id @default(uuid())
+  projectId      String   @unique
+  volumes        Json?
+  chapters       Json?
+  scenes         Json?
+  parsingQuality Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  project        Project  @relation("ProjectNovelParseResults", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("novel_parse_results")
+}
+
+model QualityMetrics {
+  id                 String   @id @default(uuid())
+  projectId          String
+  engine             String
+  jobId              String?
+  traceId            String?
+  visualDensityScore Float?
+  enrichmentQuality  Float?
+  parsingQuality     Float?
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  project            Project  @relation("ProjectQualityMetrics", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, engine])
+  @@index([jobId, traceId])
+  @@map("quality_metrics")
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json?
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model BillingPlan {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  tier           String
+  price          Float
+  credits        Float
+  computeSeconds Float
+  features       Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("billing_plans")
+}
+
+model BillingRecord {
+  id             String   @id @default(uuid())
+  userId         String
+  organizationId String?
+  planId         String?
+  amount         Float
+  credits        Float
+  computeSeconds Float
+  periodStart    DateTime
+  periodEnd      DateTime
+  status         String
+  invoiceId      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("billing_records")
+}
+
+model Model {
+  id        String   @id @default(uuid())
+  name      String
+  type      String
+  version   String
+  provider  String?
+  config    Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, version])
+  @@map("models")
+}
+
+model Asset {
+  id             String         @id @default(uuid())
+  projectId      String
+  createdAt      DateTime       @default(now())
+  checksum       String?
+  createdByJobId String?
+  ownerId        String
+  ownerType      AssetOwnerType
+  status         AssetStatus    @default(GENERATED)
+  storageKey     String
+  type           AssetType
+  shot           Shot           @relation("ShotAssets", fields: [ownerId], references: [id], onDelete: Cascade, map: "Asset_Shot_fkey")
+  job            ShotJob?       @relation("JobGeneratedAsset", fields: [createdByJobId], references: [id])
+  project        Project        @relation("ProjectAssets", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerType, ownerId, type])
+  @@index([projectId])
+  @@index([ownerType, ownerId])
+  @@map("assets")
+}
+
+model TextSafetyResult {
+  id              String             @id @default(uuid())
+  resourceType    String
+  resourceId      String
+  decision        TextSafetyDecision
+  riskLevel       RiskLevel
+  flags           Json?              @default("[]")
+  reasons         Json?              @default("[]")
+  sanitizedDigest String?
+  traceId         String?
+  createdAt       DateTime?          @default(now())
+
+  @@index([decision, createdAt(sort: Desc)], map: "text_safety_results_decision_createdat_idx")
+  @@index([resourceType, resourceId], map: "text_safety_results_resourcetype_resourceid_idx")
+  @@index([riskLevel, createdAt(sort: Desc)], map: "text_safety_results_risklevel_createdat_idx")
+  @@map("text_safety_results")
+}
 
 enum UserType {
   individual
@@ -772,11 +1040,10 @@ enum UserType {
 }
 
 enum UserRole {
-  OWNER
-  ADMIN
-  CREATOR
-  EDITOR
-  VIEWER
+  viewer  @map("VIEWER")
+  editor  @map("EDITOR")
+  creator @map("CREATOR")
+  admin   @map("ADMIN")
 
   @@map("user_role")
 }
@@ -800,7 +1067,6 @@ enum MembershipRole {
   @@map("membership_role")
 }
 
-// Stage 11: Text Safety Decision Enum
 enum TextSafetyDecision {
   PASS
   WARN
@@ -822,7 +1088,6 @@ enum ShotStatus {
   GENERATING
   GENERATED
   FAILED
-  // Legacy statuses (保持向后兼容)
   pending
   running
   success
@@ -852,31 +1117,29 @@ enum SubscriptionStatus {
 
 enum JobStatus {
   PENDING
-  DISPATCHED
   RUNNING
   SUCCEEDED
   FAILED
   RETRYING
+  DISPATCHED
 }
 
 enum JobType {
   SHOT_RENDER
   NOVEL_ANALYSIS
-  // CE Core Layer
   CE06_NOVEL_PARSING
   CE03_VISUAL_DENSITY
   CE04_VISUAL_ENRICHMENT
-  // DBSpec V1.1: 扩展 CE 引擎类型
   CE01_REFERENCE_SHEET
   CE02_IDENTITY_LOCK
   CE05_DIRECTOR_CONTROL
   CE07_STORY_MEMORY
+  CE07_MEMORY_UPDATE
   CE08_STORY_KG
   CE09_MEDIA_SECURITY
   VIDEO_RENDER
 }
 
-// Stage3-A: Job-Engine 绑定状态
 enum JobEngineBindingStatus {
   BOUND
   EXECUTING
@@ -941,10 +1204,10 @@ enum WorkerJobStatus {
 }
 
 enum WorkerStatus {
-  idle // 空闲
-  busy // 忙碌
-  offline // 离线
-  online // 在线（Orchestrator Stage2，与 idle/busy 可组合使用）
+  idle
+  busy
+  offline
+  online
 
   @@map("worker_status")
 }
@@ -1021,28 +1284,6 @@ enum ReviewResult {
   @@map("review_result")
 }
 
-// ============================================
-// Studio v0.7: 组织与多租户体系（补充 OrganizationMember）
-// ============================================
-
-model OrganizationMember {
-  id             String           @id @default(uuid())
-  userId         String
-  organizationId String
-  role           OrganizationRole @default(VIEWER)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-
-  // Relations
-  user         User         @relation("UserOrganizationMember", fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation("OrganizationMembers", fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, organizationId])
-  @@index([userId])
-  @@index([organizationId])
-  @@map("organization_members")
-}
-
 enum OrganizationRole {
   OWNER
   ADMIN
@@ -1053,117 +1294,17 @@ enum OrganizationRole {
   @@map("organization_role")
 }
 
-// ============================================
-// Studio: 小说导入体系 (Novel Import System)
-// ============================================
-
-model NovelSource {
-  id             String   @id @default(uuid())
-  projectId      String
-  novelTitle     String? // 作品名（从文件名或元数据提取）
-  novelAuthor    String? // 作者（从文件内容或元数据提取）
-  rawText        String   @db.Text // 完整原始文本（UTF-8）
-  filePath       String? // 文件存储路径
-  fileName       String? // 原始文件名
-  fileSize       Int? // 文件大小（字节）
-  fileType       String? // 文件类型：txt, docx, epub, md
-  characterCount Int? // 字符数
-  chapterCount   Int? // 章节数
-  metadata       Json? // 额外元数据（如 EPUB 的 metadata，编码信息等）
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  project      Project            @relation("ProjectNovelSources", fields: [projectId], references: [id], onDelete: Cascade)
-  analysisJobs NovelAnalysisJob[] @relation("NovelSourceAnalysisJobs")
-  chapters     NovelChapter[]     @relation("NovelSourceChapters")
-
-  @@index([projectId])
-  @@map("novel_sources")
-}
-
-model NovelChapter {
-  id             String   @id @default(uuid())
-  novelSourceId  String
-  orderIndex     Int // 章节顺序（从1开始）
-  title          String // 章节标题
-  rawText        String   @db.Text // 章节原始文本（UTF-8）
-  summary        String?  @db.Text // S1-FIX-A: 引擎对章节的摘要，后续由小说分析引擎生成
-  startParagraph Int? // 起始段落索引（在原始文本中的位置）
-  endParagraph   Int? // 结束段落索引
-  characterCount Int? // 章节字符数
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  novelSource NovelSource  @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
-  sceneDrafts SceneDraft[] @relation("ChapterSceneDrafts")
-  episode     Episode?     @relation("ChapterEpisode") // 关联到 Episode（1章=1集）
-
-  @@unique([novelSourceId, orderIndex])
-  @@index([novelSourceId])
-  @@map("novel_chapters")
-}
-
-model SceneDraft {
-  id             String           @id @default(uuid())
-  chapterId      String
-  orderIndex     Int // 场景顺序（从1开始）
-  title          String? // 场景标题
-  summary        String?          @db.Text // 场景摘要（50-80字）
-  characters     Json? // 涉及角色列表 [{ name, role }]
-  location       String? // 地点
-  emotions       Json? // 情绪标签 [{ emotion, intensity }]
-  rawTextRange   Json? // 原文范围 { startParagraph, endParagraph }
-  status         SceneDraftStatus @default(DRAFT) // DRAFT / ANALYZED / FINALIZED
-  analysisResult Json? // LLM分析结果（JSON格式）
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-
-  // Relations
-  chapter NovelChapter @relation("ChapterSceneDrafts", fields: [chapterId], references: [id], onDelete: Cascade)
-  scene   Scene?       @relation("SceneDraftScene") // 关联到最终 Scene
-
-  @@unique([chapterId, orderIndex])
-  @@index([chapterId])
-  @@index([status])
-  @@map("scene_drafts")
-}
-
 enum SceneDraftStatus {
-  DRAFT // 草稿（初始生成）
-  ANALYZED // 已分析（LLM分析完成）
-  FINALIZED // 已确认（用户确认后转为Scene）
+  DRAFT
+  ANALYZED
+  FINALIZED
 
   @@map("scene_draft_status")
 }
 
-model NovelAnalysisJob {
-  id            String               @id @default(uuid())
-  projectId     String
-  novelSourceId String?
-  chapterId     String? // 如果分析单章，指定章节ID
-  jobType       NovelAnalysisJobType @default(ANALYZE_ALL) // 分析类型：全书或单章
-  status        NovelAnalysisStatus  @default(PENDING)
-  errorMessage  String?              @db.Text
-  progress      Json? // 进度信息 { current, total, message }
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-
-  // Relations
-  project     Project?     @relation("ProjectNovelAnalysisJobs", fields: [projectId], references: [id], onDelete: Cascade)
-  novelSource NovelSource? @relation("NovelSourceAnalysisJobs", fields: [novelSourceId], references: [id], onDelete: Cascade)
-
-  @@index([projectId])
-  @@index([novelSourceId])
-  @@index([chapterId])
-  @@index([status])
-  @@map("novel_analysis_jobs")
-}
-
 enum NovelAnalysisJobType {
-  ANALYZE_ALL // 分析全书
-  ANALYZE_CHAPTER // 分析单章
+  ANALYZE_ALL
+  ANALYZE_CHAPTER
 
   @@map("novel_analysis_job_type")
 }
@@ -1177,348 +1318,11 @@ enum NovelAnalysisStatus {
   @@map("novel_analysis_status")
 }
 
-// ============================================
-// API Key 安全体系 (API Key Security System)
-// ============================================
-
-// API Key 模型（用于机器/Worker/外部服务认证）
-// 支持 HMAC + Nonce + Timestamp 签名机制
-model ApiKey {
-  id            String       @id @default(uuid())
-  key           String       @unique // 公钥 ID（对外暴露，例如：ak_xxx）
-  secretHash    String? // 密钥哈希（旧字段，仅用于 fallback，新创建的 key 不使用）
-  // CE10 v2: AES-256-GCM 加密存储
-  secretEnc     String? // 加密后的 secret（base64）
-  secretEncIv   String? // GCM IV（base64）
-  secretEncTag  String? // GCM 认证标签（base64）
-  secretVersion Int?         @default(1) // 密钥版本（便于轮换）
-  name          String? // 可选的 API Key 名称（便于管理）
-  ownerUserId   String? // 可选，关联用户
-  ownerOrgId    String? // 可选，关联组织
-  status        ApiKeyStatus @default(ACTIVE) // 状态：ACTIVE / DISABLED
-  lastUsedAt    DateTime? // 最后使用时间
-  expiresAt     DateTime? // 过期时间（可选）
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  // Relations
-  ownerUser User?         @relation("UserApiKeys", fields: [ownerUserId], references: [id])
-  ownerOrg  Organization? @relation("OrganizationApiKeys", fields: [ownerOrgId], references: [id])
-  auditLogs AuditLog[]    @relation("ApiKeyAuditLogs") // 审计日志关联
-
-  @@index([key])
-  @@index([status])
-  @@index([ownerUserId])
-  @@index([ownerOrgId])
-  @@map("api_keys")
-}
-
 enum ApiKeyStatus {
   ACTIVE
   DISABLED
 
   @@map("api_key_status")
-}
-
-// ============================================
-// 审计日志体系 (Audit Log System)
-// ============================================
-
-// 审计日志模型（用于记录关键操作）
-// 支持 JWT 用户和 API Key 两种认证来源
-model AuditLog {
-  id           String    @id @default(uuid())
-  userId       String? // JWT 用户 ID，可为空
-  orgId        String? // 组织 ID (Stage 10)
-  apiKeyId     String? // 对应 ApiKey.id，可为空（HMAC 调用场景）
-  action       String // 动作标识：PROJECT_CREATED / TASK_CREATED / JOB_SUCCEEDED 等
-  resourceType String // 资源类型：project / episode / scene / shot / task / job / worker / auth 等
-  resourceId   String? // 资源主键 ID，可为空
-  ip           String? // 请求 IP
-  userAgent    String?   @db.Text // UA 字符串
-  // V1.1: 记录签名相关字段
-  nonce        String?
-  signature    String?
-  timestamp    DateTime?
-  details      Json? // 附加信息（请求参数、结果摘要等）
-  payload      Json? // S1-FIX-A: 规范向 payload：包含 action/resourceType/resourceId/ip/ua/nonce/signature/timestamp/details 等的完整快照
-  createdAt    DateTime  @default(now())
-
-  // Relations
-  user         User?         @relation("UserAuditLogs", fields: [userId], references: [id])
-  organization Organization? @relation("OrganizationAuditLogs", fields: [orgId], references: [id])
-  apiKey       ApiKey?       @relation("ApiKeyAuditLogs", fields: [apiKeyId], references: [id])
-
-  @@index([createdAt])
-  @@index([action])
-  @@index([resourceType, resourceId])
-  @@index([userId])
-  @@index([apiKeyId])
-  @@index([nonce, timestamp])
-  @@map("audit_logs")
-}
-
-// ============================================
-// Media & Security (ADD_SAFE per Spec V1.1)
-// ============================================
-
-model SecurityFingerprint {
-  id        String   @id @default(uuid())
-  assetId   String?
-  fpVector  Json?
-  createdAt DateTime @default(now())
-
-  @@map("security_fingerprints")
-}
-
-model ShotVariant {
-  id               String   @id @default(uuid())
-  shotId           String?
-  data             Json?
-  consistencyScore Float?
-  visualScore      Float?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@map("shot_variants")
-}
-
-model VideoJob {
-  id                String   @id @default(uuid())
-  shotId            String?
-  status            String?
-  payload           Json?
-  securityProcessed Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@map("video_jobs")
-}
-
-// ============================================
-// Character & Novel & Memory (ADD_SAFE per Spec V1.1)
-// ============================================
-
-model Character {
-  id                 String   @id @default(uuid())
-  projectId          String?
-  name               String
-  description        String?
-  referenceSheetUrls Json?
-  embeddingId        String?
-  defaultSeed        String?
-  traits             Json?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  @@index([projectId, name])
-  @@map("characters")
-}
-
-model NovelVolume {
-  id        String   @id @default(uuid())
-  projectId String?
-  index     Int
-  title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("novel_volumes")
-}
-
-model NovelScene {
-  id                 String   @id @default(uuid())
-  chapterId          String
-  index              Int
-  rawText            String?  @db.Text
-  enrichedText       String?  @db.Text
-  visualDensityScore Float?
-  characterIds       Json?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  @@index([chapterId, index])
-  @@map("novel_scenes")
-}
-
-model MemoryShortTerm {
-  id              String   @id @default(uuid())
-  projectId       String?
-  chapterId       String?
-  summary         String?  @db.Text
-  characterStates Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@map("memory_short_term")
-}
-
-model MemoryLongTerm {
-  id         String   @id @default(uuid())
-  entityId   String
-  entityType String
-  vectorRef  String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@map("memory_long_term")
-}
-
-// ============================================
-// CE Core Layer (Stage13)
-// ============================================
-
-model NovelParseResult {
-  id        String  @id @default(uuid())
-  projectId String  @unique
-  project   Project @relation("ProjectNovelParseResults", fields: [projectId], references: [id], onDelete: Cascade)
-
-  volumes        Json? // CE06 解析出的卷信息
-  chapters       Json? // CE06 解析出的章节信息
-  scenes         Json? // CE06 解析出的场景信息
-  parsingQuality Float? // 解析质量评分
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([projectId])
-  @@map("novel_parse_results")
-}
-
-model QualityMetrics {
-  id        String  @id @default(uuid())
-  projectId String
-  project   Project @relation("ProjectQualityMetrics", fields: [projectId], references: [id], onDelete: Cascade)
-
-  engine             String // "CE03" | "CE04"
-  visualDensityScore Float? // CE03 输出
-  enrichmentQuality  Float? // CE04 输出
-  parsingQuality     Float? // CE06 输出（冗余，也可从 NovelParseResult 读取）
-
-  metadata Json? // 其他质量指标
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([projectId, engine])
-  @@map("quality_metrics")
-}
-
-// ============================================
-// DBSpec V1.1: 缺失实体补充
-// ============================================
-
-model SystemSetting {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  value     Json?
-  category  String? // 分类：security, billing, feature, etc.
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("system_settings")
-}
-
-model BillingPlan {
-  id             String   @id @default(uuid())
-  name           String
-  description    String?
-  tier           String // Free, Pro, Enterprise, etc.
-  price          Float
-  credits        Float
-  computeSeconds Float
-  features       Json? // { maxRenderTasks, maxFixAttempts, etc. }
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("billing_plans")
-}
-
-model BillingRecord {
-  id             String   @id @default(uuid())
-  userId         String
-  organizationId String?
-  planId         String? // 关联 BillingPlan
-  amount         Float
-  credits        Float
-  computeSeconds Float
-  periodStart    DateTime
-  periodEnd      DateTime
-  status         String // pending, paid, failed, refunded
-  invoiceId      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("billing_records")
-}
-
-model Model {
-  id        String   @id @default(uuid())
-  name      String
-  type      String // text, image, video, etc.
-  version   String
-  provider  String? // openai, stability, etc.
-  config    Json? // 模型配置参数
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([name, version])
-  @@map("models")
-}
-
-// ... (existing code)
-
-// ============================================
-// Stage 4: Asset System (MVP)
-// ============================================
-
-model Asset {
-  id             String         @id @default(uuid())
-  projectId      String
-  ownerType      AssetOwnerType
-  ownerId        String
-  type           AssetType
-  status         AssetStatus    @default(GENERATED)
-  storageKey     String
-  checksum       String? // SHA256/MD5
-  createdByJobId String?
-  createdAt      DateTime       @default(now())
-
-  // Relations
-  project Project  @relation("ProjectAssets", fields: [projectId], references: [id], onDelete: Cascade)
-  job     ShotJob? @relation("JobGeneratedAsset", fields: [createdByJobId], references: [id], onDelete: SetNull)
-  shot    Shot?    @relation("ShotAssets", fields: [ownerId], references: [id], onDelete: Cascade, map: "Asset_Shot_fkey") // Optional: logical link if ownerType=SHOT
-
-  // Stage 10 Refactor: Business Key Idempotency (One Asset per Type per Owner)
-  @@unique([ownerType, ownerId, type])
-  @@index([projectId])
-  @@index([ownerType, ownerId])
-  @@map("assets")
-}
-
-// ============================================
-// Stage 11: Text Safety System
-// ============================================
-
-model TextSafetyResult {
-  id              String             @id @default(uuid())
-  resourceType    String // 'NOVEL_SOURCE' | 'JOB' | 'SCENE_DRAFT'
-  resourceId      String
-  decision        TextSafetyDecision
-  riskLevel       RiskLevel
-  flags           Json               @default("[]")
-  reasons         Json               @default("[]")
-  sanitizedDigest String? // SHA256(sanitizedText)
-  traceId         String?
-  createdAt       DateTime           @default(now())
-
-  @@index([resourceType, resourceId])
-  @@index([decision, createdAt(sort: Desc)])
-  @@index([riskLevel, createdAt(sort: Desc)])
-  @@map("text_safety_results")
 }
 
 enum AssetOwnerType {
@@ -1536,4 +1340,29 @@ enum AssetStatus {
   GENERATED
   LOCKED
   PUBLISHED
+}
+
+// P0: Cost Ledger for billing and cost tracking
+model CostLedger {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String
+  jobId       String // ⚠️ 非空: 避免unique对NULL失效
+  jobType     String // ⚠️ 非空: 避免unique对NULL失效
+  engineKey   String?
+  costAmount  Float
+  currency    String   @default("USD")
+  billingUnit String // e.g. "tokens", "seconds", "frames", "job"
+  quantity    Float
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user    User    @relation("UserCostLedgers", fields: [userId], references: [id])
+  project Project @relation("ProjectCostLedgers", fields: [projectId], references: [id])
+
+  // ⚠️ 幂等唯一键: 同一 jobId + jobType 只能记一次
+  @@unique([jobId, jobType])
+  @@index([projectId, createdAt])
+  @@index([userId])
+  @@map("cost_ledger")
 }

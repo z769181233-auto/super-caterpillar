@@ -1,0 +1,10 @@
+status=PASS
+gate_id=gate-111
+head_sha=d0503b6fcc5e
+evidence_dir=.runtime/evidence/gate-111_20260101T015438Z_d0503b6fcc5e
+timestamp_utc=20260101T015438Z
+head_commit_epoch=1767196949
+last_ok_gen_epoch=1767232547
+runner_sha=d0503b6fcc5e
+gate_script_sha256=70315b30c025b96667606338759f32a30f467896666c568d9da1a82403ee3ba7
+health_audit_sha256=52751ed7b0c4c63cea45b2168297d60113b306d6e44655de39e2de720e10b88a

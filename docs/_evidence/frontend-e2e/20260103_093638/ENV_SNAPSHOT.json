@@ -1,0 +1,12 @@
+{
+  "timestamp": "20260103_093638",
+  "gitSha": "8175313",
+  "matrixHash": "3910eb716dea4e60f43f486d1b4c0dfce86defdd",
+  "policyHash": "f9885b0efdd9b0a9cfba3fb6ad39fbb0a4d3e99a",
+  "nodeVersion": "v24.3.0",
+  "pnpmVersion": "9.1.0",
+  "dbSchemaHash": "a07c57f8ba747e1801193550339f5220f67e444f",
+  "webPort": 3000,
+  "apiPort": 3001,
+  "workerMode": "AUTO_REGISTRY_V1.2"
+}

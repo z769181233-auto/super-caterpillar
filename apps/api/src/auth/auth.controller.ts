@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshDto } from './dto/refresh.dto';
-import { env } from 'config';
+import { env } from '@scu/config';
 import { AuditAction } from '../audit/audit.decorator';
 import { AuditActions } from '../audit/audit.constants';
 import { Public } from './decorators/public.decorator';

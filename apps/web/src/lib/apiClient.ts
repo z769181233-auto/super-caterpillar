@@ -382,6 +382,43 @@ export const projectApi = {
     const json = await res.json();
     return json.data || null;
   },
+
+  async getQualityReviewQueue(params: { projectId: string; status?: string; limit?: number }) {
+    const query = new URLSearchParams();
+    if (params.status) query.set('status', params.status);
+    if (params.limit) query.set('limit', String(params.limit));
+
+    const res = await fetchWithAuth(
+      `${API_BASE_URL}/api/projects/${params.projectId}/quality/review-queue?${query.toString()}`,
+      { credentials: 'include' }
+    );
+    if (!res.ok) {
+      const err = new Error(`加载审核队列失败: ${res.status}`) as Error & { statusCode?: number };
+      err.statusCode = res.status;
+      throw err;
+    }
+    const json = await res.json();
+    return json.data || [];
+  },
+
+  async manualRerunQualityDecision(auditId: string, note?: string) {
+    const res = await fetchWithAuth(
+      `${API_BASE_URL}/api/projects/quality/review-queue/${auditId}/rerun`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note }),
+      }
+    );
+    if (!res.ok) {
+      const err = new Error(`重新运行质量决策失败: ${res.status}`) as Error & { statusCode?: number };
+      err.statusCode = res.status;
+      throw err;
+    }
+    const json = await res.json();
+    return json.data || json;
+  },
 };
 
 // User API

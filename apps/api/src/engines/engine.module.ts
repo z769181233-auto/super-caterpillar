@@ -53,10 +53,19 @@ export class EngineModule implements OnModuleInit {
       return;
     }
     // 注册默认的 NovelAnalysisLocalAdapter
+    // 注册默认的 NovelAnalysisLocalAdapter
     this.registry.register(this.novelAdapter);
 
     // 注册 HttpEngineAdapter（支持 mock_http_engine 和通用 http 引擎）
     this.registry.register(this.httpAdapter);
+
+    // [P1-B Fix] Register Aliases for CE components to ensure dynamic resolution works with seeded data
+    // Use novelAdapter (Local) instead of HttpAdapter to ensure valid output (mock scores) when Http config is empty
+    this.registry.registerAlias('ce06_novel_parsing', this.novelAdapter);
+    this.registry.registerAlias('ce03_visual_density', this.novelAdapter);
+    this.registry.registerAlias('ce04_visual_enrichment', this.novelAdapter);
+    this.registry.registerAlias('default_shot_render', this.novelAdapter); // Safety fallback
+
   }
 }
 

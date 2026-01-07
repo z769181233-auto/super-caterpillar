@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import { env } from 'config';
+import { env } from '@scu/config';
 import { EngineConfigStoreService } from './engine-config-store.service';
 import { EngineRoutingService } from './engine-routing.service';
 import { EngineStrategyService } from './engine-strategy.service';
@@ -109,6 +109,16 @@ export class EngineRegistry {
   }
 
   /**
+   * 注册引擎适配器别名
+   * @param alias 别名
+   * @param adapter 适配器实例
+   */
+  registerAlias(alias: string, adapter: EngineAdapter): void {
+    this.ensureAdapters().set(alias, adapter);
+    this.safeLog(`Registered engine adapter alias: ${alias} -> ${adapter.name}`);
+  }
+
+  /**
    * 获取引擎适配器
    * @param engineKey 引擎标识
    * @returns EngineAdapter 或 null
@@ -146,6 +156,8 @@ export class EngineRegistry {
       }
       // 如果指定的 HTTP 引擎不存在，继续走原有逻辑（不抛出错误）
     }
+
+    this.safeLog(`[DEBUG] findAdapter request: engineKey=${engineKey}, jobType=${jobType}. Available adapters: ${Array.from(this.adapters.keys()).join(', ')}`);
 
     // 1. 如果指定了 engineKey，优先查找
     if (engineKey) {
@@ -198,6 +210,12 @@ export class EngineRegistry {
       NOVEL_ANALYSIS_HTTP: 'http_real_novel_analysis',
       SHOT_RENDER_HTTP: 'http_real_shot_render',
       VIDEO_RENDER: 'default_video_render',
+
+      // P2 Visual Metrics
+      CE03_VISUAL_DENSITY: 'ce03_visual_density',
+      CE04_VISUAL_ENRICHMENT: 'ce04_visual_enrichment',
+      CE06_NOVEL_PARSING: 'ce06_novel_parsing',
+      CE07_MEMORY_UPDATE: 'ce07_memory_update',
 
       // TEST_HTTP_ENGINE_CALL: 'mock_http_engine', // 仅用于测试，不接入现有业务流程
     };

@@ -46,7 +46,7 @@ describe('Job State Machine Contract Tests', () => {
         email: `test-user-${Date.now()}@example.com`,
         passwordHash: 'hash',
         userType: 'admin',
-        role: 'ADMIN'
+        role: 'admin'
       }
     });
     userId = user.id;

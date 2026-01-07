@@ -39,7 +39,21 @@ export class HmacAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
 
     const method = request.method;
-    const path = request.path || request.url || '';
+    // 商业级规范：验签path必须来自实际请求行（originalUrl优先）
+    // 不能从workerId/route param拼接，不能使用默认值
+    const path = request.originalUrl || request.url || '';
+
+    // DEBUG: 输出所有path相关字段以定位问题
+    if (process.env.HMAC_TRACE === '1') {
+      console.error('[HMAC_TRACE] path_debug', {
+        originalUrl: request.originalUrl,
+        url: request.url,
+        path: request.path,
+        baseUrl: request.baseUrl,
+        route_path: (request as any).route?.path,
+        computed_path: path,
+      });
+    }
 
     // 1. 提取 HTTP 头
     const apiKey = (request.headers['x-api-key'] ||
@@ -87,6 +101,17 @@ export class HmacAuthGuard implements CanActivate {
           ? JSON.stringify(request.body)
           : '';
 
+    // HMAC_TRACE: Guard入口必达日志
+    if (process.env.HMAC_TRACE === '1') {
+      console.error('[HMAC_TRACE] guard_enter', {
+        path: request.originalUrl ?? request.url,
+        method: request.method,
+        hasSig: !!request.headers['x-signature'],
+        hasV: !!request.headers['x-hmac-version'],
+        hasWorker: !!request.headers['x-worker-id'],
+      });
+    }
+
     // 4. 可选调试日志（仅非生产环境）
     if (process.env.NODE_ENV !== 'production') {
       /* eslint-disable no-console */
@@ -117,6 +142,7 @@ export class HmacAuthGuard implements CanActivate {
         {
           ip: request.ip || (request.headers['x-forwarded-for'] as string),
           ua: request.headers['user-agent'] as string,
+          workerId: request.headers['x-worker-id'] as string,
         },
       );
 

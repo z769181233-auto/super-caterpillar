@@ -17,7 +17,7 @@ export class WorkerService {
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
     private readonly jobService: JobService, // S3-C.3: 注入 JobService 以使用统一的引擎信息提取方法
-  ) {}
+  ) { }
 
   /**
    * 注册或更新 Worker
@@ -235,7 +235,7 @@ export class WorkerService {
     }
 
     // P0 修复：使用环境变量配置 timeout
-    const { env } = await import('config');
+    const { env } = await import('@scu/config');
     const timeoutMs = env.workerHeartbeatTimeoutMs || 30000;
     const timeoutThreshold = new Date(Date.now() - timeoutMs);
 
@@ -442,7 +442,7 @@ export class WorkerService {
    */
   private async determineWorkerState(worker: any): Promise<'idle' | 'busy' | 'dead'> {
     // P0 修复：使用环境变量配置 timeout
-    const { env } = await import('config');
+    const { env } = await import('@scu/config');
     const timeoutMs = env.workerHeartbeatTimeoutMs || 30000;
     const timeoutThreshold = new Date(Date.now() - timeoutMs);
 
@@ -471,7 +471,7 @@ export class WorkerService {
 
     const now = Date.now();
     // P2 修复：使用环境变量配置 timeout
-    const { env } = await import('config');
+    const { env } = await import('@scu/config');
     const TIMEOUT = env.workerHeartbeatTimeoutMs || 30000;
 
     // S3-C.1: 查找每个 worker 当前正在处理的 job（status=RUNNING 且 workerId 匹配）
@@ -509,14 +509,14 @@ export class WorkerService {
         }
 
         return {
-      id: w.id,
-      status: w.status,
-      capabilities: w.capabilities,
-      isOnline: w.lastHeartbeat ? now - w.lastHeartbeat.getTime() < TIMEOUT : false,
-      lastHeartbeat: w.lastHeartbeat?.toISOString() ?? null,
-      tasksRunning: w.tasksRunning,
-      createdAt: w.createdAt.toISOString(),
-      updatedAt: w.updatedAt.toISOString(),
+          id: w.id,
+          status: w.status,
+          capabilities: w.capabilities,
+          isOnline: w.lastHeartbeat ? now - w.lastHeartbeat.getTime() < TIMEOUT : false,
+          lastHeartbeat: w.lastHeartbeat?.toISOString() ?? null,
+          tasksRunning: w.tasksRunning,
+          createdAt: w.createdAt.toISOString(),
+          updatedAt: w.updatedAt.toISOString(),
           // S3-C.1: 新增字段
           currentEngineKey,
         };

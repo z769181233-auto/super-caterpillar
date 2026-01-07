@@ -3,10 +3,7 @@ import { EngineProfileController } from './engine-profile.controller';
 import { EngineProfileService } from './engine-profile.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JobModule } from '../job/job.module';
-// Note: EngineModule is in engines/, but we need EngineRegistry and EngineConfigStoreService
-// These are in engine/ directory, so we'll import them directly via a shared module
-// For now, we'll import from engines/engine.module
-import { EngineModule } from '../engines/engine.module';
+import { EngineHubModule } from '../engine-hub/engine-hub.module';
 import { AuthModule } from '../auth/auth.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
 
@@ -19,7 +16,7 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   imports: [
     PrismaModule,
     JobModule,
-    EngineModule,
+    EngineHubModule,
     AuthModule, // Required for JwtOrHmacGuard
     ApiSecurityModule, // Required for JwtOrHmacGuard (needs ApiSecurityGuard)
   ],
@@ -27,5 +24,5 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   providers: [EngineProfileService],
   exports: [EngineProfileService],
 })
-export class EngineProfileModule {}
+export class EngineProfileModule { }
 

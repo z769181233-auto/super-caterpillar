@@ -1,0 +1,89 @@
+[23:04:30] EVID_DIR=.runtime/evidence/gate-ce_video_e2e_20251230_230430
+[load_env] scanning env files...
+[load_env] skip (missing): /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/.env.local
+[load_env] skip (missing): /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/.env
+[load_env] sourcing: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.env.local
+[load_env] skip (missing): /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.env
+[23:04:30] Cleaning up old processes and env files...
+[23:04:32] Pre-seeding Worker ApiKey into DB (psql)...
+INSERT 0 0
+INSERT 0 1
+INSERT 0 1
+       key       | status 
+-----------------+--------
+ test_api_key_v1 | ACTIVE
+(1 row)
+
+[23:04:32] Pre-seed Complete.
+[23:04:32] Step 1: typecheck
+
+> super-caterpillar-universe@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run typecheck
+
+turbo 2.6.3
+
+• Packages in scope: @scu/shared-types, @scu/storage, @scu/worker, api, config, database, web
+• Running typecheck in 7 packages
+• Remote caching disabled
+config:build: cache hit, replaying logs dc103ef6428fbddf
+config:build: 
+config:build: > config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+config:build: > tsc
+config:build: 
+@scu/storage:build: cache hit, replaying logs 79b7c7563721b088
+@scu/storage:build: 
+@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > tsc
+@scu/storage:build: 
+@scu/shared-types:build: cache hit, replaying logs f4ae780f653f2d5a
+@scu/shared-types:build: 
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > tsc -p tsconfig.build.json
+@scu/shared-types:build: 
+database:build: cache hit, replaying logs 2bd226635ef9bc01
+database:build: 
+database:build: 
+database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
+database:build: 
+api:typecheck: cache hit, replaying logs b5efd05acdda4a80
+api:typecheck: 
+api:typecheck: > api@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+api:typecheck: > tsc -p tsconfig.json --noEmit
+api:typecheck: 
+
+ Tasks:    5 successful, 5 total
+Cached:    5 cached, 5 total
+  Time:    177ms >>> FULL TURBO
+
+[23:04:34] Starting API...
+[23:04:34] API PID: 29320
+[INFO] Waiting for API to listen on 3001 (max 120s)...
+[WAIT] port 3001 not ready yet... (api pid alive)
+[OK] API is listening on 3001
+[23:04:36] API is ready!
+[23:04:36] Starting Workers...
+[23:04:36] Workers PID: 29347
+[23:04:36] Waiting 30s for services...
+[23:05:06] DATABASE_URL is set (length: 63)
+[23:05:06] Step 2: smoke e2e (realdb)
+tools/gate/gates/gate-ce_video_e2e.sh: line 146: 29320 Killed: 9               ALLOW_TEST_BILLING_GRANT=1 node apps/api/dist/main.js > "$EVID_DIR/api.log" 2>&1
+[23:07:07] Smoke test finished with RC=1
+[23:07:07] Step 3: 6-line report
+=== CE_VIDEO_GENERATION_E2E (RealDB) ===
+Target: http://127.0.0.1:3001
+[Setup] Seeding User/Org/Project/Season/Episode/Scene/Shot + ApiKey ...
+[Setup] Seeding Mock Frame (mock/frame1.png) ...
+[Setup] Mock frame seeded at: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage/mock/frame1.png
+[Setup] Seeding Engine (VIDEO_RENDER) ...
+[Setup] Seeding Permissions (billing.manage, project.generate) ...
+[Setup] Granting 100 credits via API (Target: Org) ...
+Grant success (Org funded)
+[Step 1] Trigger VIDEO_RENDER job
+Trigger status: 201
+Resolved jobId: c8304aec-553b-4a99-bb03-d6e0fcacfa95
+[Step 2] Wait Job SUCCEEDED (poll DB)
+[Cleanup] best-effort cleanup...
+FATAL Error: FATAL Timeout: Job c8304aec-553b-4a99-bb03-d6e0fcacfa95 stayed RETRYING for 120s.
+    at main (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/smoke/ce_video_generation_e2e_smoke_realdb.ts:360:19)
+[23:07:07] [FAIL] Smoke test failed with RC=1

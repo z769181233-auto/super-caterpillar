@@ -1,0 +1,13 @@
+
+> database@1.0.0 prisma /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+> prisma "migrate" "dev"
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "scu", schema "public" at "localhost:5432"
+
+Error: Prisma Migrate has detected that the environment is non-interactive, which is not supported.
+
+`prisma migrate dev` is an interactive command designed to create new migrations and evolve the database in development.
+To apply existing migrations in deployments, use prisma migrate deploy.
+See https://www.prisma.io/docs/reference/api-reference/command-reference#migrate-deploy
+ ELIFECYCLE  Command failed with exit code 1.

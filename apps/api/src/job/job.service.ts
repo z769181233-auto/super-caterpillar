@@ -34,7 +34,28 @@ const TaskTypeEnum = TaskType;
 // 注意：ShotJobGetPayload 在 Prisma 5.22.0 中定义在顶层，不在 Prisma 命名空间内
 // 但由于类型导出可能不完整，暂时使用 any，后续应修复为正确的类型
 // TODO: 修复为正确的 Prisma 类型（可能需要从 @prisma/client/.prisma/client 导入）
-type ShotJobWithShotHierarchy = any;
+type ShotJobWithShotHierarchy = Prisma.ShotJobGetPayload<{
+  include: {
+    task: true;
+    shot: {
+      include: {
+        scene: {
+          include: {
+            episode: {
+              include: {
+                season: {
+                  include: {
+                    project: true;
+                  };
+                };
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}>;
 
 /**
  * Job Service
@@ -70,7 +91,7 @@ export class JobService {
   ) {
     // 文本安全审查
     if (this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_TRI_STATE')) {
-      const payload: any = createJobDto.payload || {};
+      const payload = (createJobDto.payload || {}) as Record<string, any>;
       const textToCheck =
         payload.enrichedText ??
         payload.promptText ??
@@ -206,6 +227,7 @@ export class JobService {
           attempts: 0,
           payload: createJobDto.payload ?? {},
           engineConfig: createJobDto.engineConfig ?? {},
+          traceId: createJobDto.traceId,
         },
       });
 
@@ -257,11 +279,12 @@ export class JobService {
     ip?: string,
     userAgent?: string,
   ) {
-    let shotId = (createJobDto.payload as any)?.shotId as string | undefined;
-    let episodeId = (createJobDto.payload as any)?.episodeId as string | undefined;
-    let sceneId = (createJobDto.payload as any)?.sceneId as string | undefined;
-    const projectId = (createJobDto.payload as any)?.projectId as string | undefined;
-    const chapterId = (createJobDto.payload as any)?.chapterId as string | undefined;
+    const payload = (createJobDto.payload || {}) as Record<string, any>;
+    let shotId = payload.shotId as string | undefined;
+    let episodeId = payload.episodeId as string | undefined;
+    let sceneId = payload.sceneId as string | undefined;
+    const projectId = payload.projectId as string | undefined;
+    const chapterId = payload.chapterId as string | undefined;
 
     if (!projectId) {
       throw new BadRequestException('projectId is required for novel analysis job');
@@ -649,6 +672,11 @@ export class JobService {
    * @returns 领取到的 Job，如果没有可用的 Job 则返回 null
    */
   async getAndMarkNextPendingJob(workerId: string, jobType?: string): Promise<any | null> {
+    // 商业级硬要求：workerId不能为空
+    if (!workerId?.trim()) {
+      throw new Error('workerId cannot be empty for claim audit');
+    }
+
     return this.prisma.$transaction(async (tx) => {
       // 1. 验证 Worker 存在且在线
       const worker = await tx.workerNode.findUnique({
@@ -660,7 +688,7 @@ export class JobService {
       }
 
       // 检查 Worker 是否被禁用（参考调度系统设计书 §3.4）
-      const caps = worker.capabilities as any;
+      const caps = worker.capabilities as Record<string, any>;
       if (caps?.disabled === true) {
         return null;
       }
@@ -677,20 +705,21 @@ export class JobService {
       // - 满足 supportedEngines 过滤（可选）
       // - 排序：priority DESC (高优先级优先), createdAt ASC (FIFO)
 
-      const claimedJobs = await tx.$queryRaw<any[]>`
+      const claimedJobs = await tx.$queryRaw<Prisma.ShotJobGetPayload<any>[]>`
         WITH target_job AS (
           SELECT j.id
-          FROM "ShotJob" j
+          FROM "shot_jobs" j
           LEFT JOIN "job_engine_bindings" b ON j.id = b."jobId"
-          WHERE j.status = 'PENDING'
+          WHERE (j.status = 'PENDING' OR (j.status = 'RETRYING' AND (j.payload->>'nextRetryAt' IS NULL OR (j.payload->>'nextRetryAt')::timestamp <= NOW())))
             AND j."workerId" IS NULL
             -- 允许领取无绑定或已绑定的任务，不再强制 b.status = 'BOUND'，提高内置 Worker 的消化能力
+            ${supportedEngines.length > 0 ? Prisma.sql`AND (b."engineKey" IS NULL OR b."engineKey" IN (${Prisma.join(supportedEngines)}))` : Prisma.empty}
             ${jobType ? Prisma.sql`AND j.type = ${jobType}` : Prisma.empty}
           ORDER BY j.priority DESC, j."createdAt" ASC
           LIMIT 1
           FOR UPDATE OF j SKIP LOCKED
         )
-        UPDATE "ShotJob" SET
+        UPDATE "shot_jobs" SET
           status = 'RUNNING',
           "workerId" = ${worker.id},
           attempts = attempts + 1,
@@ -700,10 +729,24 @@ export class JobService {
       `;
 
       if (!claimedJobs || claimedJobs.length === 0) {
+        // 商业级审计：如果认领失败，必须显式返回 null，调用方需处理此种情况（不可通过空指针）
+        this.logger.debug(`[JobService] No PENDING jobs found for workerUid=${worker.id} (workerId=${workerId})`);
+
+        // 门栓 2.1：Gate/Trace 模式下认领零行视为基线崩溃（外键失效或严重竞争），强制抛出异常
+        const isHardGateMode = !!process.env.CE01_GATE_FAIL_ONCE || !!process.env.CE07_MEMORY_UPDATE_GATE_FAIL_ONCE || !!process.env.HMAC_TRACE;
+        if (isHardGateMode) {
+          throw new Error(`[CRITICAL] Job claim returned 0 rows in HARD-GATE mode for workerId=${workerId}. Atomic baseline violated.`);
+        }
+
         return null;
       }
 
       const job = claimedJobs[0];
+
+      // 门栓 2.1-B：强断言返回对象字段完整性
+      if (!job.id || job.attempts === undefined) {
+        throw new Error(`[CRITICAL] Invalid job object returned from atomic claim for workerId=${workerId}`);
+      }
 
       // 3. 记录结构化日志：Job 领取成功
       this.logger.log(
@@ -771,13 +814,25 @@ export class JobService {
     const job = await this.prisma.shotJob.findUnique({
       where: { id: jobId },
       include: {
-        shot: {
-          include: {
-            scene: { include: { episode: { include: { season: { include: { project: true } } } } } },
-          },
-        },
         task: true,
         worker: true,
+        shot: {
+          include: {
+            scene: {
+              include: {
+                episode: {
+                  include: {
+                    season: {
+                      include: {
+                        project: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -809,10 +864,10 @@ export class JobService {
           taskId: job.taskId || undefined,
         },
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const err = e as Error;
       this.logger.warn(
-        `[Job] reportJobResult: failed to write JOB_REPORT_RECEIVED audit log for job ${jobId}: ${e?.message || e
-        }`,
+        `[Job] reportJobResult: failed to write JOB_REPORT_RECEIVED audit log for job ${jobId}: ${err?.message || String(e)}`,
       );
     }
 
@@ -849,18 +904,19 @@ export class JobService {
     if (status === JobStatusEnum.SUCCEEDED) {
       try {
         // 为 payload 构造“精简结果”，避免把超大结构写进 job.payload
-        let resultForPayload: any = result;
+        let resultForPayload: unknown = result;
         if (job.type === JobTypeEnum.NOVEL_ANALYSIS && result) {
-          const safe: any = {};
-          if (result.stats) safe.stats = result.stats;
-          if (result.metrics) safe.metrics = result.metrics;
+          const safe: Record<string, any> = {};
+          if ((result as any).stats) safe.stats = (result as any).stats;
+          if ((result as any).metrics) safe.metrics = (result as any).metrics;
           resultForPayload = safe;
         }
 
-        const updatedPayload: any =
+        const currentPayload = (job.payload as Record<string, any>) || {};
+        const updatedPayload: Record<string, any> =
           resultForPayload != null
-            ? { ...((job.payload as Record<string, any>) || {}), result: resultForPayload }
-            : (job.payload as any);
+            ? { ...currentPayload, result: resultForPayload }
+            : currentPayload;
 
         const updatedJob = await this.prisma.shotJob.update({
           where: { id: jobId },
@@ -869,9 +925,31 @@ export class JobService {
             payload: updatedPayload ?? undefined,
             attempts: job.attempts, // attempts 只在领取时递增，不在此处递增
             retryCount: job.retryCount,
-            lastError: undefined,
+            lastError: null,
+            workerId: null,
           },
-        });
+          include: {
+            task: true,
+            worker: true,
+            shot: {
+              include: {
+                scene: {
+                  include: {
+                    episode: {
+                      include: {
+                        season: {
+                          include: {
+                            project: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }) as ShotJobWithShotHierarchy;
 
         if (process.env.NODE_ENV === 'development') {
           console.log(
@@ -881,10 +959,10 @@ export class JobService {
 
         // P1 修复：提取可观测性字段
         const spanId = job.traceId || null; // 使用 traceId 作为 span_id（若存在）
-        const modelUsed = (job.engineConfig as any)?.engineKey || (job.payload as any)?.engineKey || null;
+        const modelUsed = (job.engineConfig as Record<string, any>)?.engineKey || (job.payload as Record<string, any>)?.engineKey || null;
         const duration = job.updatedAt && job.createdAt
           ? new Date(job.updatedAt).getTime() - new Date(job.createdAt).getTime()
-          : undefined; // 注意：包含队列等待时间，非纯执行时间
+          : undefined;
 
         await this.auditLogService.record({
           userId,
@@ -995,6 +1073,39 @@ export class JobService {
           }
         }
 
+
+
+        // P0-2: Record cost to ledger for billable jobs (idempotent)
+        if (updatedJob.type === JobTypeEnum.VIDEO_RENDER || updatedJob.type === JobTypeEnum.SHOT_RENDER) {
+          try {
+            const costAmount = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
+            await this.prisma.costLedger.upsert({
+              where: {
+                jobId_jobType: {
+                  jobId: updatedJob.id,
+                  jobType: updatedJob.type,
+                },
+              },
+              create: {
+                projectId: updatedJob.projectId,
+                userId: userId || 'system',
+                jobId: updatedJob.id,
+                jobType: updatedJob.type,
+                costAmount,
+                billingUnit: 'CREDITS',
+                quantity: 1,
+              },
+              update: {
+                // Idempotent: no-op on duplicate
+                costAmount,
+              },
+            });
+            this.logger.log(`[Job] Recorded cost_ledger for ${updatedJob.type} job ${updatedJob.id}: ${costAmount}`);
+          } catch (costError: any) {
+            this.logger.warn(`[Job] Failed to record cost_ledger for job ${jobId}: ${costError?.message}`);
+          }
+        }
+
         return updatedJob;
       } catch (e: any) {
         // 防御性兜底：若 SUCCEEDED 分支内部抛错，不再把错误冒泡为 500，而是按 FAILED 处理并进入统一重试/失败逻辑
@@ -1074,6 +1185,23 @@ export class JobService {
       include: {
         task: true,
         worker: true,
+        shot: {
+          include: {
+            scene: {
+              include: {
+                episode: {
+                  include: {
+                    season: {
+                      include: {
+                        project: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -1094,9 +1222,9 @@ export class JobService {
    * - 否则 → RETRYING（等待 backoff 时间后，由 Orchestrator 放回 PENDING）
    */
   private async retryJobIfPossible(
-    job: any, // Prisma.ShotJobGetPayload 类型在 Prisma 5.22.0 中可能不存在
+    job: ShotJobWithShotHierarchy,
     errorMessage?: string,
-    result?: any,
+    result?: unknown,
     userId?: string,
     apiKeyId?: string,
     ip?: string,
@@ -1585,7 +1713,7 @@ export class JobService {
    * S3-C.3: 从 Job 中提取 engineKey（统一方法，供其他服务复用）
    * 优先级：job.payload.engineKey > EngineRegistry.getDefaultEngineKeyForJobType(job.type) > 'default_novel_analysis'
    */
-  extractEngineKeyFromJob(job: any): string {
+  extractEngineKeyFromJob(job: { type: string; payload?: any }): string {
     if (job?.payload && typeof job.payload === 'object') {
       const payload = job.payload as any;
       if (payload.engineKey && typeof payload.engineKey === 'string') {
@@ -1602,7 +1730,7 @@ export class JobService {
    * S3-C.3: 从 Job 中提取 engineVersion（统一方法，供其他服务复用）
    * 优先级：job.payload.engineVersion > job.engineConfig.versionName > null
    */
-  extractEngineVersionFromJob(job: any): string | null {
+  extractEngineVersionFromJob(job: { payload?: any; engineConfig?: any }): string | null {
     if (job?.payload && typeof job.payload === 'object') {
       const payload = job.payload as any;
       if (payload.engineVersion && typeof payload.engineVersion === 'string') {
@@ -1870,8 +1998,8 @@ export class JobService {
       jobIds.map((jobId: string) => this.retryJob(jobId, userId, organizationId, resetAttempts))
     );
 
-    const succeeded = results.filter((r: any) => r.status === 'fulfilled').length;
-    const failed = results.filter((r: any) => r.status === 'rejected').length;
+    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
 
     return {
       succeeded,
@@ -2096,7 +2224,7 @@ export class JobService {
    * CE06 完成 → 触发 CE03
    * CE03 完成 → 触发 CE04
    */
-  private async handleCECoreJobCompletion(job: any, result?: any): Promise<void> {
+  private async handleCECoreJobCompletion(job: ShotJobWithShotHierarchy, result?: unknown): Promise<void> {
     const task = await this.prisma.task.findUnique({
       where: { id: job.taskId || '' },
     });
@@ -2112,9 +2240,9 @@ export class JobService {
       // CE06 完成，触发 CE03
       if (pipeline.includes('CE03_VISUAL_DENSITY')) {
         await this.createCECoreJob({
-          projectId: job.projectId,
-          organizationId: job.organizationId,
-          taskId: job.taskId,
+          projectId: job.projectId!,
+          organizationId: job.organizationId!,
+          taskId: job.taskId!,
           jobType: JobTypeEnum.CE03_VISUAL_DENSITY,
           payload: {
             projectId: job.projectId,
@@ -2129,9 +2257,9 @@ export class JobService {
       // CE03 完成，触发 CE04
       if (pipeline.includes('CE04_VISUAL_ENRICHMENT')) {
         await this.createCECoreJob({
-          projectId: job.projectId,
-          organizationId: job.organizationId,
-          taskId: job.taskId,
+          projectId: job.projectId!,
+          organizationId: job.organizationId!,
+          taskId: job.taskId!,
           jobType: JobTypeEnum.CE04_VISUAL_ENRICHMENT,
           payload: {
             projectId: job.projectId,
@@ -2150,7 +2278,7 @@ export class JobService {
    * 处理 SHOT_RENDER 完成后的安全链路（CE09）
    * Stage3-A: 从 handleCECoreJobCompletion 中分离出来，在 reportJobResult 的 SUCCEEDED 分支中调用
    */
-  private async handleShotRenderSecurityPipeline(job: any, result?: any): Promise<void> {
+  private async handleShotRenderSecurityPipeline(job: ShotJobWithShotHierarchy, result?: unknown): Promise<void> {
     try {
       // TODO: 实现真实逻辑（调用 CE09 引擎生成 HLS/水印/指纹）
       // 查找关联的 VideoJob

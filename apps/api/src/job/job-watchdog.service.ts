@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobStatus, JobType } from 'database';
-import { env } from 'config';
+import { env } from '@scu/config';
 
 const JobStatusEnum = JobStatus;
 

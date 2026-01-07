@@ -1,0 +1,7 @@
+SECURITY_CRITICAL_CHANGE_REGISTERED=1
+generated_utc=20251231T035249Z
+head_sha=483d0d7e4e5f
+base_sha=643af1556c3a4b6bcd60ccdc6f7be21d94eb8564
+
+files:
+packages/database/prisma/schema.prisma

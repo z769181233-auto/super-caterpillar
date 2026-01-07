@@ -1,0 +1,8 @@
+count: 4546
+size: 21.69 MiB
+in-pack: 3315
+packs: 2
+size-pack: 29.86 MiB
+prune-packable: 0
+garbage: 0
+size-garbage: 0 字节

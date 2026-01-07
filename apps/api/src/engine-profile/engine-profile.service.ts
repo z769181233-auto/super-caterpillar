@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobService } from '../job/job.service';
-import { EngineRegistry } from '../engine/engine-registry.service';
-import { EngineConfigStoreService } from '../engine/engine-config-store.service';
+import { EngineRegistryHubService } from '../engine-hub/engine-registry-hub.service';
 import type {
   EngineProfileQuery,
   EngineProfileSummary,
@@ -20,9 +19,8 @@ export class EngineProfileService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobService: JobService,
-    private readonly engineRegistry: EngineRegistry,
-    private readonly engineConfigStore: EngineConfigStoreService,
-  ) {}
+    private readonly engineRegistryHub: EngineRegistryHubService,
+  ) { }
 
   /**
    * 获取引擎画像统计摘要
@@ -76,16 +74,13 @@ export class EngineProfileService {
       // 获取适配器名称
       let adapterName: string | null = null;
       try {
-        const adapter = this.engineRegistry.getAdapter(engineKey);
-        if (adapter) {
-          adapterName = adapter.name;
+        const descriptor = this.engineRegistryHub.find(engineKey, engineVersion || undefined);
+        if (descriptor) {
+          adapterName = descriptor.mode === 'local'
+            ? (descriptor.adapterToken?.name || engineKey)
+            : 'HTTP_API';
         } else {
-          const engineConfig = await this.engineConfigStore.findByEngineKey(engineKey);
-          if (engineConfig?.adapterName) {
-            adapterName = engineConfig.adapterName;
-          } else {
-            adapterName = engineKey;
-          }
+          adapterName = engineKey;
         }
       } catch {
         adapterName = engineKey;

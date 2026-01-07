@@ -1,0 +1,3 @@
+ERROR:  relation "Asset" does not exist
+LINE 1: ...ntType", "sizeBytes", "ownerType", "ownerId" FROM "Asset" WH...
+                                                             ^
