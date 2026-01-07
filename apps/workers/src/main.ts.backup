@@ -60,11 +60,6 @@ const workerId = workerIdFromCli || workerIdFromEnv || env.workerId;
 
 console.log(`[WorkerConfig] workerId=${workerId} (source=${workerIdFromCli ? "cli" : workerIdFromEnv ? "env(WORKER_ID/NAME)" : "config/default"})`);
 
-// Write PID file for HA gate / failover testing
-import { writeWorkerPidFile } from "./utils/pidfile";
-const pidMeta = writeWorkerPidFile(workerId);
-console.log(`[Worker] PID file written: ${pidMeta.file}`);
-
 /**
  * Worker 使用的统一 API 基础地址
  * 优先 env.apiUrl，兜底 http://localhost:3000
@@ -98,7 +93,7 @@ const engineHubClient = new EngineHubClient(prisma);
  */
 async function registerWorker(): Promise<void> {
   console.log('[Worker] 正在注册 Worker 节点...');
-  console.log(`[Worker] Worker ID: ${workerId}`);
+  console.log(`[Worker] Worker ID: ${env.workerId}`);
   console.log(`[Worker] Worker Name: ${env.workerName}`);
   console.log(`[Worker] API URL: ${apiBaseUrl}`);
   console.log(`[Worker] Database URL: ${env.databaseUrl ? env.databaseUrl.substring(0, 30) + '...' : '未配置'}`);
@@ -124,23 +119,9 @@ async function registerWorker(): Promise<void> {
   }
 
   try {
-    // ✅ P1-2 HA: 添加supportedEngines配置
-    const supportedEngines =
-      (process.env.WORKER_SUPPORTED_ENGINES || "")
-        .split(",")
-        .map(s => s.trim())
-        .filter(Boolean);
-
-    // 稳定兜底:至少要把本次P1-2验证用到的引擎带上
-    const supportedEnginesFinal = supportedEngines.length > 0
-      ? supportedEngines
-      : ["default_novel_analysis"];
-
-    console.log(`[Worker] supportedEngines=${JSON.stringify(supportedEnginesFinal)}`);
-
     // 通过 API 注册 Worker
     await apiClient.registerWorker({
-      workerId: workerId,
+      workerId: env.workerId,
       name: env.workerName,
       capabilities: {
         supportedJobTypes: [
@@ -157,7 +138,6 @@ async function registerWorker(): Promise<void> {
           'VIDEO_RENDER',
         ],
         supportedModels: [],
-        supportedEngines: supportedEnginesFinal,
         maxBatchSize: 1,
       },
     });
@@ -177,7 +157,7 @@ async function sendHeartbeat(): Promise<void> {
     // WorkerStatus 枚举值：online, idle, busy, offline
     const status = tasksRunning > 0 ? 'busy' : 'idle';
     await apiClient.heartbeat({
-      workerId: workerId,
+      workerId: env.workerId,
       status,
       tasksRunning,
       // P1-1: 上报租约能力标识
@@ -291,6 +271,7 @@ async function handleEngineResultAndReport(
 
 async function processJob(job: JobFromApi): Promise<void> {
   const jobStartTime = Date.now();
+  const workerId = 'worker-main'; // 【假设】Worker ID，实际应从环境变量或配置获取
 
   // 记录 Job 处理开始日志
   logStructured('info', {
@@ -485,7 +466,7 @@ async function pollAndProcessJobs(): Promise<void> {
 
   for (let i = 0; i < currentWaveLimit; i++) {
     try {
-      const job = await apiClient.getNextJob(workerId);
+      const job = await apiClient.getNextJob(env.workerId);
 
       if (job) {
         // 异步处理 Job，不阻塞轮询

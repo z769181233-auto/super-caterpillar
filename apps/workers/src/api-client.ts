@@ -229,9 +229,10 @@ export class ApiClient {
   async registerWorker(params: {
     workerId: string;
     name: string;
-    capabilities: {
+    capabilities?: {
       supportedJobTypes?: string[];
       supportedModels?: string[];
+      supportedEngines?: string[];  // ✅ P1-2 HA: 添加引擎支持
       maxBatchSize?: number;
     };
     gpuCount?: number;

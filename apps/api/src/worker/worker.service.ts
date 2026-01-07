@@ -132,8 +132,8 @@ export class WorkerService {
         status: 'ALIVE',
       },
       update: {
+        // SSOT 单入口:heartbeat 只更新时间戳,禁止把 DEAD 直接改回 ALIVE
         lastSeenAt: now,
-        status: 'ALIVE',
       },
     });
 
@@ -378,65 +378,12 @@ export class WorkerService {
       });
     }
 
-    // 2. 获取所有 DEAD 状态的 Worker，检查是否有遗留任务需回收
-    const allDeadHeartbeats = await this.prisma.workerHeartbeat.findMany({
-      where: { status: 'DEAD' },
-    });
-    const allDeadWorkerIds = allDeadHeartbeats.map((h) => h.workerId);
 
-    if (allDeadWorkerIds.length === 0) {
-      return 0;
-    }
-
-    // 3. 回收这些 Worker 持有的 RUNNING Job
-    // 注意：既然 Worker 已经被标记为 DEAD，说明其心跳宽限期已过，无需再硬卡 leaseUntil
-    const jobsToReclaim = await this.prisma.shotJob.findMany({
-      where: {
-        lockedBy: { in: allDeadWorkerIds },
-        status: JobStatus.RUNNING,
-      },
-      select: { id: true, workerId: true, attempts: true, type: true, taskId: true, lockedBy: true }
-    });
-
-    let reclaimedCount = 0;
-    for (const job of jobsToReclaim) {
-      try {
-        await this.prisma.$transaction(async (tx) => {
-          await tx.shotJob.update({
-            where: { id: job.id },
-            data: {
-              status: JobStatus.PENDING,
-              workerId: null,
-              lockedBy: null,
-              leaseUntil: null,
-              lastError: 'reclaimed: worker offline',
-            },
-          });
-        });
-
-        // 记录审计日志 (必须包含 jobId, oldWorkerId, attempt, timestamp)
-        await this.auditLogService.record({
-          action: 'JOB_RECLAIMED',
-          resourceType: 'job',
-          resourceId: job.id,
-          details: {
-            reason: 'worker_offline',
-            oldWorkerId: job.workerId,
-            attempts: job.attempts,
-            timestamp: Date.now()
-          }
-        });
-
-        reclaimedCount++;
-      } catch (err) {
-        this.logger.error(`Failed to reclaim job ${job.id}: ${err.message}`);
-      }
-    }
-
+    // 统一回收入口(商业级:三重断言 + 事务 + 审计)
+    const reclaimedCount = await this.reclaimJobsFromDeadWorkers();
     if (reclaimedCount > 0) {
-      this.logger.warn(`[WorkerService] Reclaimed ${reclaimedCount} jobs from offline workers.`);
+      this.logger.warn(`[WorkerService] Reclaimed ${reclaimedCount} jobs from dead workers (unified).`);
     }
-
     return reclaimedCount;
   }
 
@@ -540,5 +487,118 @@ export class WorkerService {
     };
   }
 
-}
+  /**
+   * P1-2: HA Failover - 评估Worker健康状态
+   * 数据源: workerHeartbeat.lastSeenAt (与SSO T一致)
+   */
+  async evaluateWorkerHealth(workerId: string): Promise<{
+    workerId: string;
+    status: 'HEALTHY' | 'DEGRADED' | 'DEAD';
+    lastSeenSec?: number;
+  }> {
+    const { env: scuEnv } = await import('@scu/config');
+    const { workerOfflineGraceMs } = scuEnv;
 
+    const hb = await this.prisma.workerHeartbeat.findUnique({
+      where: { workerId },
+      select: { lastSeenAt: true },
+    });
+
+    if (!hb?.lastSeenAt) return { workerId, status: 'DEAD' };
+
+    const diffMs = Date.now() - hb.lastSeenAt.getTime();
+    const diffSec = diffMs / 1000;
+
+    const graceSec = workerOfflineGraceMs / 1000;
+    if (diffSec > graceSec) return { workerId, status: 'DEAD', lastSeenSec: diffSec };
+    if (diffSec > graceSec * 0.8) return { workerId, status: 'DEGRADED', lastSeenSec: diffSec };
+    return { workerId, status: 'HEALTHY', lastSeenSec: diffSec };
+  }
+
+  /**
+   * P1-2: HA Failover - 获取DEAD Worker IDs
+   * SSOT单入口:只读status='DEAD'(判死由markOfflineWorkers唯一负责)
+   */
+  private async getDeadWorkerIds(): Promise<string[]> {
+    const rows = await this.prisma.workerHeartbeat.findMany({
+      where: { status: 'DEAD' },
+      select: { workerId: true },
+    });
+    return rows.map((r) => r.workerId);
+  }
+
+  /**
+   * P1-2: HA Failover - 商业级回收:三重断言 + 事务 + 审计
+   * 返回 reclaimed job 数量
+   */
+  async reclaimJobsFromDeadWorkers(): Promise<number> {
+    const deadWorkerIds = await this.getDeadWorkerIds();
+    if (deadWorkerIds.length === 0) return 0;
+
+    const now = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const orphaned = await tx.shotJob.findMany({
+        where: {
+          status: 'RUNNING',
+          lockedBy: { in: deadWorkerIds },
+          leaseUntil: { lte: now },
+        },
+        select: { id: true, projectId: true, lockedBy: true },
+      });
+
+      if (orphaned.length === 0) return 0;
+
+      // fail-fast: projectId 不能为空(避免静默过滤导致审计缺失)
+      for (const j of orphaned) {
+        if (!j.projectId) {
+          throw new Error(`Cannot reclaim job without projectId: jobId=${j.id}, deadWorkerId=${j.lockedBy}`);
+        }
+      }
+
+      // 批量回到 PENDING
+      await tx.shotJob.updateMany({
+        where: { id: { in: orphaned.map(j => j.id) } },
+        data: {
+          status: 'PENDING',
+          workerId: null,
+          lockedBy: null,
+          leaseUntil: null,
+          lastError: 'reclaimed: dead worker',
+        },
+      });
+
+      // projectId -> orgId 映射(已确保非空)
+      const projectIds = Array.from(new Set(orphaned.map((j) => j.projectId as string)));
+      const projects = await tx.project.findMany({
+        where: { id: { in: projectIds } },
+        select: { id: true, organizationId: true },
+      });
+      const projToOrg = new Map(projects.map(p => [p.id, p.organizationId]));
+
+      // 校验: org 不能为空(避免回收成功但审计缺失)
+      for (const j of orphaned) {
+        const org = projToOrg.get(j.projectId);
+        if (!org) {
+          throw new Error(`Cannot resolve org for projectId=${j.projectId} when reclaiming jobId=${j.id}`);
+        }
+      }
+
+      // 审计(按 orgId 写)
+      await tx.auditLog.createMany({
+        data: orphaned.map(j => ({
+          action: 'JOB_RECLAIMED_FROM_DEAD_WORKER',
+          resourceType: 'shot_job',
+          resourceId: j.id,
+          orgId: projToOrg.get(j.projectId)!,
+          details: { deadWorkerId: j.lockedBy, projectId: j.projectId },
+          createdAt: new Date(),
+        })),
+      });
+
+      this.logger.warn(`Reclaimed ${orphaned.length} jobs from ${deadWorkerIds.length} dead workers`);
+      return orphaned.length;
+    });
+  }
+
+}

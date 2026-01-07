@@ -36,6 +36,7 @@ import { ShotDirectorModule } from './shot-director/shot-director.module';
 import { CEPipelineModule } from './ce-pipeline/ce-pipeline.module';
 import { HealthModule } from './health/health.module';
 import { OpsModule } from './ops/ops.module';
+import { AdminModule } from './admin/admin.module';
 import { AuditInterceptor } from './audit/audit.interceptor';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -107,6 +108,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     StorageModule, // Stage 8: Local Storage Module
     SeasonsModule, // 补齐 Seasons API (Smoke Test Fix)
     CostModule, // P0: Cost tracking & billing foundation
+    AdminModule, // P1-2: Admin endpoints for gate scripts (GATE_MODE=1 only)
     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS ? [OpsModule] : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
   ],
   controllers: [
