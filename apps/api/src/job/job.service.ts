@@ -682,6 +682,9 @@ export class JobService {
     const { jobMaxInFlight, jobLeaseTtlMs } = scuEnv;
 
     return this.prisma.$transaction(async (tx) => {
+      // P1-1: Strict Concurrency - Serialize claims to prevent race conditions
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(8472834)`;
+
       // 1. 验证 Worker 存在且在线
       const worker = await tx.workerNode.findUnique({
         where: { workerId },
@@ -699,13 +702,14 @@ export class JobService {
 
       // P1-1: 增加并发上限校验（限流防线）
       // 统计当前正在执行且租约未过期的任务
-      const runningCount = await tx.shotJob.count({
-        where: {
-          status: JobStatus.RUNNING,
-          // @ts-expect-error - leaseUntil field injected via raw SQL
-          leaseUntil: { gt: new Date() },
-        },
-      });
+      // Use Raw SQL with Tagged Template Literal for safety
+      const runningCountResult = await tx.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(*)::int as count 
+        FROM "shot_jobs" 
+        WHERE status = 'RUNNING' 
+        AND lease_until > NOW()
+      `;
+      const runningCount = Number(runningCountResult[0]?.count || 0);
 
       if (runningCount >= jobMaxInFlight) {
         this.logger.warn(`[JobService] Backpressure: concurrency limit reached (${runningCount}/${jobMaxInFlight}). Rejecting claim for workerId=${workerId}`);
@@ -713,47 +717,49 @@ export class JobService {
       }
 
       const supportedEngines = (caps?.supportedEngines as string[]) || [];
+      const filterTypes = jobType ? [jobType] : ((caps?.supportedJobTypes as string[]) || []);
 
-      // 2. 原子性认领：结合【并发安全】与【租约恢复】
-      // 认领条件：
-      // - (status = PENDING) OR (status = RETRYING 且到达重试时间)
-      // - OR (status = RUNNING 且 leaseUntil 已过期) -> 故障回收点
-      // - 且满足限流与能力过滤
-      const leaseTtlSeconds = jobLeaseTtlMs / 1000;
+      this.logger.log(`[JobService] getAndMarkNextPendingJob: workerId=${workerId} running=${runningCount}/${jobMaxInFlight} filterTypes=${JSON.stringify(filterTypes)} engines=${JSON.stringify(supportedEngines)}`);
 
-      const claimedJobs = await tx.$queryRaw<Prisma.ShotJobGetPayload<any>[]>`
-        WITH target_job AS (
-          SELECT j.id
-          FROM "shot_jobs" j
-          LEFT JOIN "job_engine_bindings" b ON j.id = b."jobId"
-          WHERE (
-            -- 基础待认领状态
-            (j.status = 'PENDING')
-            OR (j.status = 'RETRYING' AND (j.payload->>'nextRetryAt' IS NULL OR (j.payload->>'nextRetryAt')::timestamp <= NOW()))
-            -- P1-1: 租约失效回收认领点（核心：自愈）
-            OR (j.status = 'RUNNING' AND (j.lease_until IS NULL OR j.lease_until <= NOW()))
-          )
-          AND j."workerId" IS NULL -- 确保从未被认领或已被回收重置为 NULL
-          ${supportedEngines.length > 0 ? Prisma.sql`AND (b."engineKey" IS NULL OR b."engineKey" IN (${Prisma.join(supportedEngines)}))` : Prisma.empty}
-          ${jobType ? Prisma.sql`AND j.type = ${jobType}` : Prisma.empty}
-          ORDER BY j.priority DESC, j."createdAt" ASC
-          LIMIT 1
-          FOR UPDATE OF j SKIP LOCKED
-        )
-        UPDATE "shot_jobs" SET
+      // P1-1: Strict Atomic Claim
+      // Condition: status='PENDING' AND (lease_until IS NULL OR lease_until < NOW())
+      const now = new Date();
+      const leaseExpiration = new Date(now.getTime() + jobLeaseTtlMs);
+
+      const claimedJobs = await tx.$queryRaw<any[]>`
+        UPDATE "shot_jobs"
+        SET 
           status = 'RUNNING',
-          "workerId" = ${worker.id},
-          locked_by = ${workerId},
-          attempts = attempts + 1,
-          lease_until = NOW() + interval '${Prisma.raw(leaseTtlSeconds + ' seconds')}',
+          "workerId" = (SELECT id FROM "worker_nodes" WHERE "workerId" = ${workerId}),
+          "locked_by" = ${workerId},
+          "lease_until" = ${leaseExpiration},
+          "attempts" = "attempts" + 1,
           "updatedAt" = NOW()
-        WHERE id IN (SELECT id FROM target_job)
-        RETURNING *;
+        WHERE id = (
+          SELECT id
+          FROM "shot_jobs"
+          WHERE status = 'PENDING'
+          AND (lease_until IS NULL OR lease_until < NOW())
+          ${filterTypes.length > 0
+          ? Prisma.sql`AND "type"::text IN (${Prisma.join(filterTypes)})`
+          : Prisma.empty
+        }
+          ${supportedEngines.length > 0
+          ? Prisma.sql`AND ("engineKey" IS NULL OR "engineKey" IN (${Prisma.join(supportedEngines)}))`
+          : Prisma.empty
+        }
+          ORDER BY priority DESC, "createdAt" ASC
+          FOR UPDATE SKIP LOCKED
+          LIMIT 1
+        )
+        RETURNING *
       `;
 
-      if (!claimedJobs || claimedJobs.length === 0) {
-        this.logger.debug(`[JobService] No claimable jobs found for workerId=${workerId}`);
-        return null;
+      if (claimedJobs.length > 0) {
+        this.logger.log(`[JobService] Claimed job ${claimedJobs[0].id} for worker ${workerId}`);
+      } else {
+        this.logger.log(`[JobService] No jobs to claim for worker ${workerId} (types=${filterTypes.length}, query engines=${supportedEngines.length})`);
+        return null; // Explicitly return null if no jobs are claimed
       }
 
       const job = claimedJobs[0];
@@ -766,7 +772,6 @@ export class JobService {
           workerId,
           jobType: job.type,
           attempts: job.attempts,
-          // @ts-expect-error - leaseUntil field injected via raw SQL
           leaseUntil: job.leaseUntil,
           timestamp: new Date().toISOString(),
         }),
@@ -820,6 +825,7 @@ export class JobService {
     ip?: string,
     userAgent?: string,
     hmacMeta?: { nonce?: string; signature?: string; hmacTimestamp?: string },
+    attempts?: number,
   ) {
     const job = await this.prisma.shotJob.findUnique({
       where: { id: jobId },
@@ -852,6 +858,37 @@ export class JobService {
 
     const timestamp = hmacMeta?.hmacTimestamp ? new Date(Number(hmacMeta.hmacTimestamp)) : undefined;
 
+    // P1-1: Result Idempotency Check
+    // Prevent stale worker reports (e.g. from previous attempts) from overwriting current state.
+    if (attempts !== undefined && job.attempts !== attempts) {
+      this.logger.warn(
+        `[JobService] Stale report rejected: Job ${jobId} attempts mismatch (db=${job.attempts}, report=${attempts})`,
+      );
+
+      try {
+        await this.auditLogService.record({
+          userId,
+          apiKeyId,
+          action: 'JOB_REPORT_IGNORED',
+          resourceType: 'job',
+          resourceId: jobId,
+          ip,
+          userAgent,
+          timestamp,
+          details: {
+            reason: 'stale_attempts_mismatch',
+            dbAttempts: job.attempts,
+            reportAttempts: attempts,
+            workerId: job.workerId || undefined,
+          },
+        });
+      } catch (e) {
+        this.logger.warn(`[JobService] Failed to record JOB_REPORT_IGNORED: ${e}`);
+      }
+
+      return job;
+    }
+
     // Stage2-D: 写入 audit_logs（JOB_REPORT_RECEIVED）
     // 审计日志失败不应影响主流程（与其它模块保持一致）
     try {
@@ -877,7 +914,7 @@ export class JobService {
     } catch (e: unknown) {
       const err = e as Error;
       this.logger.warn(
-        `[Job] reportJobResult: failed to write JOB_REPORT_RECEIVED audit log for job ${jobId}: ${err?.message || String(e)}`,
+        `[Job] reportJobResult: failed to write JOB_REPORT_RECEIVED audit log for job ${jobId}: ${err?.message || String(e)} `,
       );
     }
 
@@ -963,7 +1000,7 @@ export class JobService {
 
         if (process.env.NODE_ENV === 'development') {
           console.log(
-            `[DEV][Job] reportJobResult jobId=${jobId} status=${status} workerId=${updatedJob.workerId}`,
+            `[DEV][Job] reportJobResult jobId = ${jobId} status = ${status} workerId = ${updatedJob.workerId} `,
           );
         }
 
@@ -1000,11 +1037,11 @@ export class JobService {
           try {
             const cost = 1.0;
             // TraceId for legacy path
-            const traceId = `LEGACY_JOB_COMPLETE_${jobId}_${Date.now()}`;
+            const traceId = `LEGACY_JOB_COMPLETE_${jobId}_${Date.now()} `;
             // Use consumeCredits for deduction
             await this.billingService.consumeCredits(userId, job.organizationId, cost, "LEGACY_JOB", traceId);
           } catch (error) {
-            this.logger.error(`Failed to deduct credits for job ${jobId}: ${(error as Error).message}`);
+            this.logger.error(`Failed to deduct credits for job ${jobId}: ${(error as Error).message} `);
           }
         }
 
@@ -1013,10 +1050,10 @@ export class JobService {
           try {
             // Mock asset registration for the rendered shot
             // In a real scenario, we'd hash the output file
-            const contentHash = `job-${job.id}-content`;
+            const contentHash = `job - ${job.id} -content`;
             await this.copyrightService.registerAsset(userId, 'shot_render', contentHash);
           } catch (error) {
-            this.logger.error(`Failed to register copyright for job ${jobId}: ${(error as Error).message}`);
+            this.logger.error(`Failed to register copyright for job ${jobId}: ${(error as Error).message} `);
           }
         }
 
@@ -1068,7 +1105,7 @@ export class JobService {
           } catch (e: any) {
             // NovelAnalysisJob 同步失败不应阻断 Job 主状态写入（否则会造成 UI 永久 RUNNING + Worker 重试风暴）
             this.logger.warn(
-              `[Job] reportJobResult: failed to update NovelAnalysisJob for job ${jobId}: ${e?.message || e}`,
+              `[Job] reportJobResult: failed to update NovelAnalysisJob for job ${jobId}: ${e?.message || e} `,
             );
           }
 
@@ -1078,7 +1115,7 @@ export class JobService {
               await this.sceneGraphService.invalidateProjectSceneGraph(job.projectId);
             } catch (cacheError) {
               // 缓存清除失败不影响主流程
-              this.logger.warn(`Failed to invalidate SceneGraph cache for project ${job.projectId}: ${cacheError}`);
+              this.logger.warn(`Failed to invalidate SceneGraph cache for project ${job.projectId}: ${cacheError} `);
             }
           }
         }
@@ -1110,9 +1147,9 @@ export class JobService {
                 costAmount,
               },
             });
-            this.logger.log(`[Job] Recorded cost_ledger for ${updatedJob.type} job ${updatedJob.id}: ${costAmount}`);
+            this.logger.log(`[Job] Recorded cost_ledger for ${updatedJob.type} job ${updatedJob.id}: ${costAmount} `);
           } catch (costError: any) {
-            this.logger.warn(`[Job] Failed to record cost_ledger for job ${jobId}: ${costError?.message}`);
+            this.logger.warn(`[Job] Failed to record cost_ledger for job ${jobId}: ${costError?.message} `);
           }
         }
 
@@ -1121,7 +1158,7 @@ export class JobService {
         // 防御性兜底：若 SUCCEEDED 分支内部抛错，不再把错误冒泡为 500，而是按 FAILED 处理并进入统一重试/失败逻辑
         const msg = e?.message || 'Unexpected error in reportJobResult(SUCCEEDED)';
         this.logger.error(
-          `[Job] reportJobResult SUCCEEDED branch failed for job ${jobId}: ${msg}`,
+          `[Job] reportJobResult SUCCEEDED branch failed for job ${jobId}: ${msg} `,
         );
         return this.markJobFailedAndMaybeRetry(jobId, msg, userId, apiKeyId, ip, userAgent);
       }
@@ -1152,7 +1189,7 @@ export class JobService {
         }
       } catch (e: any) {
         this.logger.warn(
-          `[Job] reportJobResult: failed to mark NovelAnalysisJob FAILED for job ${jobId}: ${e?.message || e}`,
+          `[Job] reportJobResult: failed to mark NovelAnalysisJob FAILED for job ${jobId}: ${e?.message || e} `,
         );
       }
     }
@@ -1420,16 +1457,16 @@ export class JobService {
       }
 
       if (!engineKey) {
-        throw new Error(`No engine bound and no default found for job type: ${job.type}`);
+        throw new Error(`No engine bound and no default found for job type: ${job.type} `);
       }
 
       const adapter = this.engineRegistry.getAdapter(engineKey);
       if (!adapter) {
-        throw new Error(`Engine adapter not found for key: ${engineKey}`);
+        throw new Error(`Engine adapter not found for key: ${engineKey} `);
       }
 
       // 2. 执行任务
-      this.logger.log(`[JobService] Executing job ${jobId} with engine ${engineKey}`);
+      this.logger.log(`[JobService] Executing job ${jobId} with engine ${engineKey} `);
 
       // 如果 Adapter 需要完整 Payload 或其他数据，它应自行处理或从 Payload 中获取
       const result = await adapter.invoke(job as any);
@@ -1446,11 +1483,11 @@ export class JobService {
       );
 
       const duration = Date.now() - startTime;
-      this.logger.log(`[JobService] Job ${jobId} finished in ${duration}ms`);
+      this.logger.log(`[JobService] Job ${jobId} finished in ${duration} ms`);
 
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      this.logger.error(`[JobService] Job ${jobId} failed in ${duration}ms: ${error.message}`, error.stack);
+      this.logger.error(`[JobService] Job ${jobId} failed in ${duration} ms: ${error.message} `, error.stack);
 
       // 4. 上报失败
       await this.reportJobResult(
@@ -1479,7 +1516,7 @@ export class JobService {
   }
 
   async findJobById(id: string, userId: string, organizationId: string) {
-    this.logger.log(`[DEBUG] findJobById: id=${id} userId=${userId} orgId=${organizationId}`);
+    this.logger.log(`[DEBUG] findJobById: id = ${id} userId = ${userId} orgId = ${organizationId} `);
     const job = (await this.prisma.shotJob.findUnique({
       where: {
         id,
@@ -1513,11 +1550,11 @@ export class JobService {
     })) as ShotJobWithShotHierarchy | null;
 
     if (!job) {
-      this.logger.warn(`[DEBUG] Job not found by findUnique. Check orgId match.`);
+      this.logger.warn(`[DEBUG] Job not found by findUnique.Check orgId match.`);
       // Debug: Attempt to find without orgId to diagnose
       const jobAnyOrg = await this.prisma.shotJob.findUnique({ where: { id } });
       if (jobAnyOrg) {
-        this.logger.warn(`[DEBUG] Job FOUND without org filter! Job Org=${jobAnyOrg.organizationId}, Request Org=${organizationId}`);
+        this.logger.warn(`[DEBUG] Job FOUND without org filter! Job Org = ${jobAnyOrg.organizationId}, Request Org = ${organizationId} `);
       } else {
         this.logger.warn(`[DEBUG] Job strictly NOT FOUND in DB.`);
       }
@@ -1528,7 +1565,7 @@ export class JobService {
     // 检查组织权限：支持 Season 和 Project 两种结构
     const project = job.shot.scene.episode.season?.project;
     if (!project || project.organizationId !== organizationId) {
-      this.logger.warn(`[DEBUG] Project Org Mismatch. Proj Org=${project?.organizationId}, Request Org=${organizationId}`);
+      this.logger.warn(`[DEBUG] Project Org Mismatch.Proj Org = ${project?.organizationId}, Request Org = ${organizationId} `);
       throw new ForbiddenException('You do not have permission to access this job');
     }
 
@@ -1979,7 +2016,7 @@ export class JobService {
     const job = await this.findJobById(jobId, userId, organizationId);
 
     if (job.status === JobStatusEnum.SUCCEEDED || job.status === JobStatusEnum.FAILED) {
-      throw new ForbiddenException(`Cannot force fail a job with status: ${job.status}`);
+      throw new ForbiddenException(`Cannot force fail a job with status: ${job.status} `);
     }
 
     // 验证状态转换：允许从 PENDING/DISPATCHED/RUNNING/RETRYING -> FAILED（强制失败，管理性操作）
@@ -2074,7 +2111,7 @@ export class JobService {
 
     if (process.env.NODE_ENV === 'development') {
       console.log(
-        `[DEV][Job] getNextPendingJobForWorker workerId=${workerId} jobId=${job ? job.id : 'none'} status=${job ? job.status : 'none'}`,
+        `[DEV][Job] getNextPendingJobForWorker workerId = ${workerId} jobId = ${job ? job.id : 'none'} status = ${job ? job.status : 'none'} `,
       );
     }
 
@@ -2108,7 +2145,7 @@ export class JobService {
         // 不同 Worker 尝试启动已运行的 Job
         throw new BadRequestException({
           code: 'JOB_ALREADY_RUNNING',
-          message: `Job ${jobId} is already running by worker ${job.worker?.workerId || job.workerId}`,
+          message: `Job ${jobId} is already running by worker ${job.worker?.workerId || job.workerId} `,
           details: {
             jobId,
             currentWorkerId: job.worker?.workerId || job.workerId,
@@ -2122,7 +2159,7 @@ export class JobService {
     if (job.status !== JobStatusEnum.DISPATCHED) {
       throw new BadRequestException({
         code: 'JOB_STATE_VIOLATION',
-        message: `Job ${jobId} is not in DISPATCHED status. Current status: ${job.status}`,
+        message: `Job ${jobId} is not in DISPATCHED status.Current status: ${job.status} `,
         details: {
           jobId,
           currentStatus: job.status,
@@ -2135,7 +2172,7 @@ export class JobService {
     if (job.workerId !== null && job.workerId !== worker.id) {
       throw new BadRequestException({
         code: 'JOB_WORKER_MISMATCH',
-        message: `Job ${jobId} is dispatched to a different worker. Current worker: ${job.worker?.workerId || job.workerId}, Requested worker: ${workerId}`,
+        message: `Job ${jobId} is dispatched to a different worker.Current worker: ${job.worker?.workerId || job.workerId}, Requested worker: ${workerId} `,
         details: {
           jobId,
           currentWorkerId: job.worker?.workerId || job.workerId,
@@ -2156,7 +2193,7 @@ export class JobService {
       await this.jobEngineBindingService.markBindingExecuting(jobId);
     } catch (error: any) {
       // 绑定状态更新失败不影响 Job 状态转换（向后兼容）
-      this.logger.warn(`Failed to mark binding as EXECUTING for job ${jobId}: ${error.message}`);
+      this.logger.warn(`Failed to mark binding as EXECUTING for job ${jobId}: ${error.message} `);
     }
 
     return this.prisma.shotJob.update({
@@ -2315,7 +2352,7 @@ export class JobService {
 
             type: 'VIDEO',
 
-            storageKey: `videos/${videoJob.id}.mp4`, // Required by schema
+            storageKey: `videos / ${videoJob.id}.mp4`, // Required by schema
           },
         });
 
@@ -2386,7 +2423,7 @@ export class JobService {
             where: { id: pendingJob.id },
             data: {
               status: JobStatusEnum.FAILED,
-              lastError: `Previous CE Job failed: ${job.type}`,
+              lastError: `Previous CE Job failed: ${job.type} `,
             },
           });
 
@@ -2396,7 +2433,7 @@ export class JobService {
             const traceId = pendingJob.traceId || task.traceId;
 
             await this.auditLogService.record({
-              action: `CE_${engineKey.toUpperCase()}_SKIPPED`,
+              action: `CE_${engineKey.toUpperCase()} _SKIPPED`,
               resourceType: 'job',
               resourceId: pendingJob.id,
               details: {
@@ -2406,7 +2443,7 @@ export class JobService {
                 jobType: nextJobType,
                 engineKey,
                 status: 'SKIPPED',
-                reason: `Previous CE Job failed: ${job.type}`,
+                reason: `Previous CE Job failed: ${job.type} `,
               },
             });
 

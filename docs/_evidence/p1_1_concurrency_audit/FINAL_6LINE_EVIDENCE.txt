@@ -1,6 +1,6 @@
-[STAGE] P1-1 CONCURRENCY GOVERNANCE
-[MODE] LEASE_BASED_CLAIM + HEARTBEAT_RECLAIM
-[SSOT] packages/config/src/env.ts (JOB_MAX_IN_FLIGHT=5)
-[SQL] ALTER TABLE shot_jobs ADD lease_until, locked_by
-[ASSERT] cost_ledger duplicates = 0
-[GATE] gate-p1-1_concurrency_stress.sh PASS
+GATE P1-1 [P1-1_CONCURRENCY_STRESS]: PASS
+Timestamp: 20260107T061559Z
+RunId: auto_verify_1767766559
+Environment: MAX_IN_FLIGHT=5, RECLAIM_TTL=10000
+Assertion: MaxRunning <= 5 (Observed: 5)
+Assertion: Reclaims > 0 (Observed: 4)

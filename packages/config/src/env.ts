@@ -13,6 +13,9 @@ const ignoreEnvFile = process.env.IGNORE_ENV_FILE === 'true';
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isCI = !!process.env.CI;
 
+// eslint-disable-next-line no-console
+console.log(`[Config] process.env.WORKER_OFFLINE_GRACE_MS: ${process.env.WORKER_OFFLINE_GRACE_MS}`);
+
 let dbUrlSource = 'environment variable';
 
 if (!ignoreEnvFile) {

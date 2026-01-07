@@ -1,130 +1,164 @@
 #!/bin/bash
-# P1-1 并发压力门禁 (Concurrency & Queue Stress Gate)
-# 验证点：并发上限、Worker 崩溃回收、计费幂等性
+set -o pipefail
 
-set -e
+# 0. Load Environment and Validate
+source tools/gate/common/load_env.sh
+if [ -z "$DATABASE_URL" ]; then
+  echo "Error: DATABASE_URL is not set"
+  exit 1
+fi
 
-# 加载环境
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-cd "$ROOT_DIR"
+mkdir -p docs/_evidence/p1_1_concurrency_audit
 
-echo "=== [GATE P1-1] Concurrency & Queue Stress Start ==="
+# Unique IDs for this run
+RUN_SUFFIX=$(date +%s | tail -c 4)
+W1_ID="gw-${RUN_SUFFIX}-1"
+W2_ID="gw-${RUN_SUFFIX}-2"
 
-# 1. 准备工作：清除旧日志
-EVIDENCE_DIR="docs/_evidence/p1_1_concurrency_audit"
-mkdir -p "$EVIDENCE_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-EVIDENCE_FILE="$EVIDENCE_DIR/audit_$TIMESTAMP.json"
-
-# 2. 注入测试环境配置
+# Constants
 export JOB_MAX_IN_FLIGHT=5
 export JOB_WAVE_SIZE=3
 export JOB_LEASE_TTL_MS=10000
-export WORKER_OFFLINE_GRACE_MS=15000
+export WORKER_OFFLINE_GRACE_MS=10000 
+export WORKER_POLL_INTERVAL=4000
+export API_URL="http://localhost:3000"
+export HEARTBEAT_TTL_SECONDS=3
 
-echo "[1/4] Environment Configured: MAX_IN_FLIGHT=$JOB_MAX_IN_FLIGHT, LEASE_TTL=$JOB_LEASE_TTL_MS"
+EVIDENCE_FILE="docs/_evidence/p1_1_concurrency_audit/p1_1_concurrency_audit.json"
+TXT_EVIDENCE="docs/_evidence/p1_1_concurrency_audit/FINAL_6LINE_EVIDENCE.txt"
+API_LOG="api_stress.log"
+WORKER_1_LOG="worker_1_stress.log"
+WORKER_2_LOG="worker_2_stress.log"
 
-# 3. 基础服务启动
-echo "[2/4] Launching API and test workers..."
-API_LOG="$EVIDENCE_DIR/api.log"
-WORKER_1_LOG="$EVIDENCE_DIR/worker1.log"
-WORKER_2_LOG="$EVIDENCE_DIR/worker2.log"
-
-# 启动 API
-NODE_ENV=development pnpm --filter api run dev > "$API_LOG" 2>&1 &
-API_PID=$!
-
-# 等待 API 就绪 (最长 60s)
-echo "Waiting for API to be ready..."
-for i in {1..20}; do
-  if curl -s http://localhost:3000/api/health > /dev/null; then
-    echo "API is READY."
-    break
-  fi
-  sleep 3
-done
-
-# 启动 Worker
-WORKER_ID=stress-worker-1 pnpm --filter @scu/worker run dev > "$WORKER_1_LOG" 2>&1 &
-W1_PID=$!
-WORKER_ID=stress-worker-2 pnpm --filter @scu/worker run dev > "$WORKER_2_LOG" 2>&1 &
-W2_PID=$!
-
+# Cleanup function
 cleanup() {
-  echo "Cleaning up pids: $API_PID $W1_PID $W2_PID"
-  kill -9 $API_PID $W1_PID $W2_PID 2>/dev/null || true
+  echo "Cleaning up pids: ${API_PID:-} ${W1_PID:-} ${W2_PID:-}"
+  [ -n "${API_PID:-}" ] && kill -9 $API_PID 2>/dev/null || true
+  [ -n "${W1_PID:-}" ] && kill -9 $W1_PID 2>/dev/null || true
+  [ -n "${W2_PID:-}" ] && kill -9 $W2_PID 2>/dev/null || true
+  pkill -9 -f "$W1_ID" || true
+  pkill -9 -f "$W2_ID" || true
+  lsof -i :3000 -t | xargs kill -9 2>/dev/null || true
 }
 trap cleanup EXIT
 
-# 4. 触发大量任务 (模拟高压)
-echo "[3/4] Triggering batch jobs (N=15)..."
-# 使用 API 直接注入任务或通过已有的 trigger 流程
-# 这里假设使用一个测试脚本注入 15 个 PENDING 任务
-pnpm --filter api exec ts-node src/scripts/stress-trigger.ts --count 15
+# 0. Startup Cleanup
+lsof -i :3000 -t | xargs kill -9 2>/dev/null || true
+psql "$DATABASE_URL" -c "DELETE FROM worker_heartbeats WHERE worker_id LIKE 'gw-%'" || true
 
-# 5. 监控与断言
-echo "[4/4] Monitoring concurrency and recovery..."
+echo "=== [GATE P1-1] Concurrency & Queue Stress Start ==="
+
+# 1. Build EVERYTHING
+echo "Building API and Worker..."
+pnpm -w build --filter api --filter @scu/worker > /dev/null
+
+# 2. Launch API
+echo "Starting API..."
+WORKER_OFFLINE_GRACE_MS=10000 HEARTBEAT_TTL_SECONDS=3 JOB_LEASE_TTL_MS=10000 node apps/api/dist/main.js > "$API_LOG" 2>&1 &
+API_PID=$!
+
+# Wait for API Ready
+READY=0
+for i in {1..30}; do
+  if grep -q "Nest application successfully started" "$API_LOG"; then
+    READY=1
+    break
+  fi
+  sleep 1
+done
+
+if [ "$READY" -ne 1 ]; then
+  echo "FAILED: API not ready after timeout"
+  cat "$API_LOG" | tail -n 20
+  exit 1
+fi
+echo "API is READY. IDs: $W1_ID, $W2_ID"
+
+# 3. Launch Workers
+WORKER_ID="$W1_ID" WORKER_OFFLINE_GRACE_MS=10000 node apps/workers/dist/apps/workers/src/main.js > "$WORKER_1_LOG" 2>&1 &
+W1_PID=$!
+WORKER_ID="$W2_ID" WORKER_OFFLINE_GRACE_MS=10000 node apps/workers/dist/apps/workers/src/main.js > "$WORKER_2_LOG" 2>&1 &
+W2_PID=$!
+
+sleep 5
+
+# 4. Inject Jobs
+echo "[3/4] Triggering batch jobs (N=30)..."
+pnpm --filter api exec ts-node src/scripts/stress-trigger.ts --count 30
+
+# 5. Monitor Loop
 MAX_RUNNING=0
-RECLAIM_COUNT=0
-DUPLICATES=0
-
-# 剥离 URL 参数用于 psql
 DB_URL_STR=$(echo "$DATABASE_URL" | cut -d '?' -f1)
+RECLAIM_BEFORE=$(psql "$DB_URL_STR" -t -A -c "SELECT count(*) FROM audit_logs WHERE action = 'JOB_RECLAIMED'")
 
-# 监控循环 (持续 60 秒)
-for i in {1..12}; do
+echo "[4/4] Monitoring concurrency and recovery..."
+for i in {1..14}; do
   RUNNING=$(psql "$DB_URL_STR" -t -A -c "SELECT count(*) FROM shot_jobs WHERE status = 'RUNNING' AND lease_until > NOW()")
   echo "Current Running: $RUNNING"
   if [ "$RUNNING" -gt "$MAX_RUNNING" ]; then MAX_RUNNING=$RUNNING; fi
   
-  # 中途干掉一个 Worker 模拟崩溃
-  if [ "$i" -eq 4 ]; then
-    echo "!!! Simulating Worker 1 Crash (SIGKILL) !!!"
+  if [ "$i" -eq 3 ]; then
+    echo "!!! Simulating Worker 1 Crash (SIGKILL) ID: $W1_ID !!!"
     kill -9 $W1_PID
   fi
-  
   sleep 5
 done
 
-# 检查回收情况 (从 stdout/stderr 日志中 grep)
-RECLAIM_COUNT=$(grep -c "reclaimed: worker offline" "$WORKER_1_LOG" "$WORKER_2_LOG" || echo "0")
-# 兜底也检查一下 API 日志
-API_RECLAIM=$(grep -c "reclaimed: worker offline" apps/api/logs/*.log 2>/dev/null || echo "0")
-RECLAIM_COUNT=$((RECLAIM_COUNT + API_RECLAIM))
+# 6. Post-Run Checks
+RECLAIM_AFTER=$(psql "$DB_URL_STR" -t -A -c "SELECT count(*) FROM audit_logs WHERE action = 'JOB_RECLAIMED'")
+RECLAIM_COUNT=$((RECLAIM_AFTER - RECLAIM_BEFORE))
+echo "Reclaims Observed: $RECLAIM_COUNT"
 
-# 检查计费幂等性
 DUPLICATES=$(psql "$DB_URL_STR" -t -A -c "SELECT count(*) FROM (SELECT \"jobId\", \"jobType\" FROM cost_ledger GROUP BY \"jobId\", \"jobType\" HAVING count(*) > 1) AS dupes")
 
-# 6. 生成证据 JSON
+PASS="true"
+FAIL_REASON=""
+if [ "$MAX_RUNNING" -gt "$JOB_MAX_IN_FLIGHT" ]; then PASS="false"; FAIL_REASON="Concurrency limit exceeded ($MAX_RUNNING > $JOB_MAX_IN_FLIGHT). "; fi
+if [ "$RECLAIM_COUNT" -lt 1 ]; then PASS="false"; FAIL_REASON="No reclaims observed. "; fi
+if [ "$DUPLICATES" -gt 0 ]; then PASS="false"; FAIL_REASON="Duplicates found. "; fi
+
+# JSON Evidence
 cat > "$EVIDENCE_FILE" <<EOF
 {
   "gate": "P1-1_CONCURRENCY_STRESS",
   "timestamp": "$(date -u +%Y%m%dT%H%M%SZ)",
   "config": {
     "JOB_MAX_IN_FLIGHT": $JOB_MAX_IN_FLIGHT,
-    "JOB_WAVE_SIZE": $JOB_WAVE_SIZE
+    "JOB_LEASE_TTL": $JOB_LEASE_TTL_MS
   },
   "results": {
     "max_concurrent_observed": $MAX_RUNNING,
-    "reclaim_logs_found": $RECLAIM_COUNT,
-    "cost_ledger_duplicates": $DUPLICATES,
-    "pass": $( [ "$MAX_RUNNING" -le "$JOB_MAX_IN_FLIGHT" ] && [ "$DUPLICATES" -eq 0 ] && echo "true" || echo "false" )
+    "reclaims_verified_db": $RECLAIM_COUNT,
+    "pass": $PASS,
+    "fail_reason": "$FAIL_REASON"
   }
 }
+EOF
+
+# Text Evidence
+PASS_TEXT="FAIL"
+if [ "$PASS" == "true" ]; then PASS_TEXT="PASS"; fi
+cat > "$TXT_EVIDENCE" <<EOF
+GATE P1-1 [P1-1_CONCURRENCY_STRESS]: $PASS_TEXT
+Timestamp: $(date -u +%Y%m%dT%H%M%SZ)
+RunId: auto_verify_$(date +%s)
+Environment: MAX_IN_FLIGHT=$JOB_MAX_IN_FLIGHT, RECLAIM_TTL=$WORKER_OFFLINE_GRACE_MS
+Assertion: MaxRunning <= $JOB_MAX_IN_FLIGHT (Observed: $MAX_RUNNING)
+Assertion: Reclaims > 0 (Observed: $RECLAIM_COUNT)
 EOF
 
 echo "=== [GATE P1-1] Results ==="
 cat "$EVIDENCE_FILE"
 
-if [ "$MAX_RUNNING" -gt "$JOB_MAX_IN_FLIGHT" ]; then
-  echo "FAILED: Concurrency limit exceeded ($MAX_RUNNING > $JOB_MAX_IN_FLIGHT)"
+if [ "$PASS" == "true" ]; then
+  echo "✅ GATE PASS"
+  exit 0
+else
+  echo "❌ GATE FAIL: $FAIL_REASON"
+  echo "--- DB DIAGNOSTIC ---"
+  echo "Worker Heartbeats (Last 60s):"
+  psql "$DB_URL_STR" -c "SELECT worker_id, last_seen_at, status FROM worker_heartbeats WHERE last_seen_at > NOW() - INTERVAL '60 seconds' ORDER BY last_seen_at DESC"
+  echo "Jobs locked by $W1_ID:"
+  psql "$DB_URL_STR" -c "SELECT id, status, \"locked_by\", lease_until FROM shot_jobs WHERE \"locked_by\" = '$W1_ID'"
   exit 1
 fi
-
-if [ "$DUPLICATES" -gt 0 ]; then
-  echo "FAILED: Cost ledger integrity violated (duplicates found)"
-  exit 1
-fi
-
-echo "PASSED: P1-1 Concurrency & Queue Governance verified."

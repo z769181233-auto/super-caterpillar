@@ -587,7 +587,8 @@ export async function processShotRenderJob(
     // 1. Simulate Engine Call (Mock for Stage 4 MVP)
     // In real life, would call Stable Diffusion / Midjourney via EngineHub
     const mockEngineOutput = {
-      storageKey: `projects/${job.projectId}/shots/${shotId}/render-${Date.now()}.png`,
+      // P1-1: Storage Key Idempotency (Deterministic Key)
+      storageKey: `projects/${job.projectId}/shots/${shotId}/render-${jobId}.png`,
       checksum: 'mock-checksum-1234567890abcdef',
       width: 1024,
       height: 576,
@@ -631,8 +632,9 @@ export async function processShotRenderJob(
       throw new Error(`SHOT_RENDER PNG too small: ${absPath} size=${st.size}`);
     }
 
-    // Simulate delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Simulate delay (extended for stress test to verify concurrency)
+    const delay = (job.payload as any)?.stress_test ? 20000 : 500;
+    await new Promise(resolve => setTimeout(resolve, delay));
 
     // 2. Create Asset Record (The P0 Requirement)
     const asset = await prisma.asset.upsert({

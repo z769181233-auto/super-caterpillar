@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkerService } from '../worker/worker.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -23,7 +24,7 @@ export class OrchestratorService {
     private readonly taskService: TaskService,
     private readonly jobService: JobService,
     private readonly engineRegistry: EngineRegistry,
-  ) {}
+  ) { }
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
@@ -34,7 +35,19 @@ export class OrchestratorService {
    * 参考《调度系统设计书_V1.0》第 5 章：故障恢复机制
    */
   async dispatch() {
-    this.logger.log('Starting job dispatch and recovery...');
+    // Deprecated: use scheduleRecovery() for background tasks
+    // and worker pull model for job dispatching
+    return this.scheduleRecovery();
+  }
+
+  /**
+   * P1-1: Automated Fault Recovery
+   * Runs every 5 seconds to cleanup dead workers and recover jobs.
+   */
+  @Cron(CronExpression.EVERY_5_SECONDS)
+  async scheduleRecovery() {
+    const { env: scuEnv } = await import('@scu/config');
+    this.logger.log(`Running automated recovery task... (Grace: ${scuEnv.workerOfflineGraceMs}ms)`);
 
     // Stage2-B: 1. 标记超时的 Worker 为 DEAD 并回收 Job
     const offlineCount = await this.workerService.markOfflineWorkers();
@@ -224,7 +237,7 @@ export class OrchestratorService {
       const workerId = deadWorkerIds[0] || 'unknown';
       const lastSeenAt = deadHeartbeats.find((h) => h.workerId === workerId)?.lastSeenAt || new Date();
       const HEARTBEAT_TTL_SECONDS = parseInt(process.env.HEARTBEAT_TTL_SECONDS || '30', 10);
-      
+
       await this.auditLogService.record({
         action: 'WORKER_DEAD_RECOVERY',
         resourceType: 'worker',
@@ -359,7 +372,7 @@ export class OrchestratorService {
     // 2. Worker 状态统计
     const onlineWorkers = await this.workerService.getOnlineWorkers();
     const allWorkers = await this.prisma.workerNode.findMany({});
-    
+
     const workerStats = {
       total: allWorkers.length,
       online: 0,
@@ -418,8 +431,8 @@ export class OrchestratorService {
 
     const now = new Date();
     const waitTimes = pendingJobsWithTime.map((job: any) => now.getTime() - job.createdAt.getTime());
-    const avgWaitTimeMs = waitTimes.length > 0 
-      ? waitTimes.reduce((sum: number, time: number) => sum + time, 0) / waitTimes.length 
+    const avgWaitTimeMs = waitTimes.length > 0
+      ? waitTimes.reduce((sum: number, time: number) => sum + time, 0) / waitTimes.length
       : 0;
 
     // 5. 故障恢复统计（最近 1 小时内的恢复操作）

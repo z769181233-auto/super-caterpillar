@@ -349,6 +349,7 @@ export class JobController {
         signature,
         hmacTimestamp,
       },
+      attempts: reportDto.attempts,
     });
 
     // Stage2-D: 返回格式 { ok: true, jobId, status }

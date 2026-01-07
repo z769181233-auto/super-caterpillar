@@ -350,8 +350,10 @@ export class WorkerService {
     const { workerOfflineGraceMs } = scuEnv;
     const timeoutThreshold = new Date(Date.now() - workerOfflineGraceMs);
 
-    // 查找所有心跳超时的 Worker
-    const deadHeartbeats = await this.prisma.workerHeartbeat.findMany({
+    this.logger.log(`[Recovery] Checking for dead workers... threshold: ${timeoutThreshold.toISOString()}, grace: ${workerOfflineGraceMs}ms`);
+
+    // 1. 获取所有心跳超时的 Worker 并标记为 DEAD
+    const timedOutHeartbeats = await this.prisma.workerHeartbeat.findMany({
       where: {
         lastSeenAt: {
           lt: timeoutThreshold,
@@ -362,58 +364,80 @@ export class WorkerService {
       },
     });
 
-    if (deadHeartbeats.length === 0) {
+    if (timedOutHeartbeats.length > 0) {
+      const idsToMark = timedOutHeartbeats.map((h) => h.workerId);
+      this.logger.warn(`[Recovery] Marking ${idsToMark.length} workers as DEAD: ${idsToMark.join(', ')}`);
+
+      await this.prisma.workerHeartbeat.updateMany({
+        where: { workerId: { in: idsToMark } },
+        data: { status: 'DEAD' },
+      });
+      await this.prisma.workerNode.updateMany({
+        where: { workerId: { in: idsToMark } },
+        data: { status: WorkerStatus.offline },
+      });
+    }
+
+    // 2. 获取所有 DEAD 状态的 Worker，检查是否有遗留任务需回收
+    const allDeadHeartbeats = await this.prisma.workerHeartbeat.findMany({
+      where: { status: 'DEAD' },
+    });
+    const allDeadWorkerIds = allDeadHeartbeats.map((h) => h.workerId);
+
+    if (allDeadWorkerIds.length === 0) {
       return 0;
     }
 
-    const workerIdStrings = deadHeartbeats.map((h) => h.workerId);
-
-    // 1. 回收这些 Worker 持有的租约过期的 RUNNING Job
-    // 规则：只要 Worker 离线且任务租约已过期，即可安全重置为 PENDING
-    const reclaimResult = await this.prisma.shotJob.updateMany({
+    // 3. 回收这些 Worker 持有的 RUNNING Job
+    // 注意：既然 Worker 已经被标记为 DEAD，说明其心跳宽限期已过，无需再硬卡 leaseUntil
+    const jobsToReclaim = await this.prisma.shotJob.findMany({
       where: {
-        // @ts-expect-error - lockedBy field injected via raw SQL
-        lockedBy: { in: workerIdStrings },
+        lockedBy: { in: allDeadWorkerIds },
         status: JobStatus.RUNNING,
-        leaseUntil: { lte: new Date() }, // 必须租约已失效
       },
-      data: {
-        status: JobStatus.PENDING,
-        workerId: null,
-        // @ts-expect-error - lockedBy & leaseUntil field injected via raw SQL
-        lockedBy: null,
-        leaseUntil: null,
-        lastError: 'reclaimed: worker offline and lease expired',
-      },
+      select: { id: true, workerId: true, attempts: true, type: true, taskId: true, lockedBy: true }
     });
 
-    if (reclaimResult.count > 0) {
-      this.logger.warn(`[WorkerService] Reclaimed ${reclaimResult.count} jobs from offline workers: ${workerIdStrings.join(', ')}`);
+    let reclaimedCount = 0;
+    for (const job of jobsToReclaim) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.shotJob.update({
+            where: { id: job.id },
+            data: {
+              status: JobStatus.PENDING,
+              workerId: null,
+              lockedBy: null,
+              leaseUntil: null,
+              lastError: 'reclaimed: worker offline',
+            },
+          });
+        });
+
+        // 记录审计日志 (必须包含 jobId, oldWorkerId, attempt, timestamp)
+        await this.auditLogService.record({
+          action: 'JOB_RECLAIMED',
+          resourceType: 'job',
+          resourceId: job.id,
+          details: {
+            reason: 'worker_offline',
+            oldWorkerId: job.workerId,
+            attempts: job.attempts,
+            timestamp: Date.now()
+          }
+        });
+
+        reclaimedCount++;
+      } catch (err) {
+        this.logger.error(`Failed to reclaim job ${job.id}: ${err.message}`);
+      }
     }
 
-    // 2. 更新 WorkerHeartbeat 状态为 DEAD
-    await this.prisma.workerHeartbeat.updateMany({
-      where: {
-        workerId: { in: workerIdStrings },
-        status: { not: 'DEAD' },
-      },
-      data: {
-        status: 'DEAD',
-      },
-    });
+    if (reclaimedCount > 0) {
+      this.logger.warn(`[WorkerService] Reclaimed ${reclaimedCount} jobs from offline workers.`);
+    }
 
-    // 3. 更新 WorkerNode 状态为 offline
-    const result = await this.prisma.workerNode.updateMany({
-      where: {
-        workerId: { in: workerIdStrings },
-        status: { not: WorkerStatus.offline },
-      },
-      data: {
-        status: WorkerStatus.offline,
-      },
-    });
-
-    return result.count;
+    return reclaimedCount;
   }
 
   /**

@@ -16,5 +16,8 @@ export class ReportJobDto {
   @IsObject()
   @IsOptional()
   metrics?: any;
+
+  @IsOptional()
+  attempts?: number;
 }
 

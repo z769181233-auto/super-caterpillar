@@ -399,6 +399,8 @@ exports.Prisma.ShotJobScalarFieldEnum = {
   maxRetry: 'maxRetry',
   retryCount: 'retryCount',
   attempts: 'attempts',
+  leaseUntil: 'leaseUntil',
+  lockedBy: 'lockedBy',
   payload: 'payload',
   engineConfig: 'engineConfig',
   lastError: 'lastError',
