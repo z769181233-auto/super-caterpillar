@@ -4,4 +4,4 @@
 [SQL] ALTER TABLE shot_jobs ADD lease_until, locked_by
 [ASSERT] cost_ledger duplicates = 0
 [GATE] gate-p1-1_concurrency_stress.sh PASS
-[RE-TRY-STAMP] 1767750511
+[ULTIMATE-ATOMIC-PUSH] 1767751552
