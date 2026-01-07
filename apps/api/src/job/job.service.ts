@@ -679,7 +679,6 @@ export class JobService {
 
     // P1-1: 从 SSOT 配置读取限流参数
     const { env: scuEnv } = await import('@scu/config');
-    // @ts-expect-error - SCU Config extensions for P1-1
     const { jobMaxInFlight, jobLeaseTtlMs } = scuEnv;
 
     return this.prisma.$transaction(async (tx) => {

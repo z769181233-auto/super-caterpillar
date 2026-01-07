@@ -347,7 +347,6 @@ export class WorkerService {
    */
   async markOfflineWorkers(): Promise<number> {
     const { env: scuEnv } = await import('@scu/config');
-    // @ts-expect-error - SCU Config extensions for P1-1
     const { workerOfflineGraceMs } = scuEnv;
     const timeoutThreshold = new Date(Date.now() - workerOfflineGraceMs);
 

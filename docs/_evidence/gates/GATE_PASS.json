@@ -1,11 +1,17 @@
 {
   "version": "1.1",
-  "tip_sha": "25502edac2c7b8cc366c81ed874c35bd80f9dfac",
-  "head_sha": "25502edac2c7b8cc366c81ed874c35bd80f9dfac",
-  "index_sha": "f89a83dc95ccf7c11d5eb423beca03e2f62c997a",
-  "started_at": "2026-01-07T01:18:31Z",
-  "ended_at": "2026-01-07T01:18:55Z",
-  "unix_timestamp": 1767748735,
+  "schema_version": 1,
+  "tip_sha": "41f3d11a2a8d27e375907bdddb2a02b75e381258",
+  "head_sha": "41f3d11a2a8d27e375907bdddb2a02b75e381258",
+  "index_sha": "3a8e07f4dd9208918195210ff1bda0e6761831d8",
+  "gates": {
+    "p3_full_pipeline": "PASS",
+    "p4_video_playback": "PASS",
+    "static_analysis": "PASS"
+  },
+  "started_at": "2026-01-07T01:43:19Z",
+  "ended_at": "2026-01-07T01:43:43Z",
+  "unix_timestamp": 1767750223,
   "total_duration_seconds": 24,
   "worktree_clean": 0,
   "steps": {
@@ -16,12 +22,12 @@
     },
     "lint": {
       "exit_code": 0,
-      "duration_seconds": 3,
+      "duration_seconds": 4,
       "status": "PASS"
     },
     "build": {
       "exit_code": 0,
-      "duration_seconds": 16,
+      "duration_seconds": 15,
       "status": "PASS"
     }
   },
