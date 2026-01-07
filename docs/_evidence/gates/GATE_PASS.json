@@ -1,14 +1,47 @@
 {
-  "tip_sha": "504109306816d3549d9e937a12000a7c9a21dc4f",
-  "timestamp": "2026-01-07T08:31:09Z",
-  "gates_passed": [
-    "gate-ce01_m1_hard.sh",
-    "gate-ce02_m1_hard.sh",
-    "gate-ce05_m1_hard.sh",
-    "gate-ce07_m1_hard.sh",
-    "gate-ce07_m1_hmac_workerid_regression.sh",
-    "gate-p1-1_concurrency_stress.sh",
-    "gate-stage3_p1_web_audit.sh"
-  ],
-  "evidence_manifest": "docs/_evidence/ssot_regression_hardpass_20260107_152857/GATE_SUITE_MANIFEST.txt"
+  "version": "1.1",
+  "schema_version": 1,
+  "tip_sha": "d527fa438af64bdacca1b5cbe5640b9548dc8433",
+  "head_sha": "d527fa438af64bdacca1b5cbe5640b9548dc8433",
+  "index_sha": "ba8d53a4b7d49a8b2583f3f773f92fc9e7e6460e",
+  "gates": {
+    "p3_full_pipeline": "PASS",
+    "p4_video_playback": "PASS",
+    "static_analysis": "PASS"
+  },
+  "started_at": "2026-01-07T08:40:56Z",
+  "ended_at": "2026-01-07T08:41:21Z",
+  "unix_timestamp": 1767775281,
+  "total_duration_seconds": 25,
+  "worktree_clean": 0,
+  "steps": {
+    "typecheck": {
+      "exit_code": 0,
+      "duration_seconds": 3,
+      "status": "PASS"
+    },
+    "lint": {
+      "exit_code": 0,
+      "duration_seconds": 4,
+      "status": "PASS"
+    },
+    "build": {
+      "exit_code": 0,
+      "duration_seconds": 17,
+      "status": "PASS"
+    }
+  },
+  "validation": {
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "build": "PASS",
+    "evidence_check": "SKIP"
+  },
+  "system": {
+    "hostname": "AdamdeMacBook-Pro.local",
+    "user": "adam",
+    "git_version": "git version 2.51.2",
+    "node_version": "v24.3.0",
+    "pnpm_version": "9.1.0"
+  }
 }
