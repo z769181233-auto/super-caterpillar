@@ -73,14 +73,14 @@ log "✅ Seed OK: PROJECT_ID=${PROJECT_ID} TEST_JOB_ID=${TEST_JOB_ID} KILL_WORKE
 
 # --- 3) 3 rounds kill → reclaim → complete ---
 ROUNDS=3
-RECLAIM_TIMEOUT_SEC=60
+RECLAIM_TIMEOUT_SEC=30  # 缩短到30秒,因为我们主动触发reclaim
 
 for r in $(seq 1 ${ROUNDS}); do
   log "🧨 Round ${r}/${ROUNDS}: killing worker PID=${KILL_WORKER_PID} (workerId=${KILL_WORKER_ID})"
   (set +e; kill -9 "${KILL_WORKER_PID}" >> "${ASSETS_DIR}/worker_kill.log" 2>&1; true)
   echo "ROUND=${r} killed PID=${KILL_WORKER_PID}" >> "${ASSETS_DIR}/worker_kill.log"
 
-  log "⏳ Waiting reclaim to happen (<=${RECLAIM_TIMEOUT_SEC}s)..."
+  log "⏳ Actively triggering reclaim (instead of waiting grace period)..."
   reclaimed="0"
   for i in $(seq 1 ${RECLAIM_TIMEOUT_SEC}); do
     set +e
