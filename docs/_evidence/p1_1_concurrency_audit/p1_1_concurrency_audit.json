@@ -1,0 +1,14 @@
+{
+  "gate": "P1-1_CONCURRENCY_STRESS",
+  "timestamp": "20260107T061559Z",
+  "config": {
+    "JOB_MAX_IN_FLIGHT": 5,
+    "JOB_LEASE_TTL": 10000
+  },
+  "results": {
+    "max_concurrent_observed": 5,
+    "reclaims_verified_db": 4,
+    "pass": true,
+    "fail_reason": ""
+  }
+}

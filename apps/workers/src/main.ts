@@ -140,6 +140,12 @@ async function sendHeartbeat(): Promise<void> {
       workerId: env.workerId,
       status,
       tasksRunning,
+      // P1-1: 上报租约能力标识
+      // @ts-expect-error - P1-1 extension
+      capabilities: {
+        concurrency_managed: true,
+        lease_supported: true
+      }
     });
     if (tasksRunning === 0) {
       // 静默心跳，避免日志过多
@@ -425,18 +431,36 @@ async function processJob(job: JobFromApi): Promise<void> {
  * 轮询并处理 Job
  */
 async function pollAndProcessJobs(): Promise<void> {
-  console.log('[Worker DEBUG] pollAndProcessJobs called');
-  try {
-    const job = await apiClient.getNextJob(env.workerId);
+  // P1-1: 尊重本地并发上限与波次限制
+  // @ts-expect-error - P1-1 extension
+  const { jobWaveSize, jobMaxInFlight } = env;
 
-    if (job) {
-      // 异步处理 Job，不阻塞轮询
-      processJob(job).catch((error) => {
-        console.error(`[Worker] ❌ processJob 异常:`, error);
-      });
+  if (tasksRunning >= jobMaxInFlight) {
+    // 达到单机上限，静默跳过
+    return;
+  }
+
+  // 计算本波次还能领多少（不超过波次大小，也不超过剩余槽位）
+  const remainingSlots = jobMaxInFlight - tasksRunning;
+  const currentWaveLimit = Math.min(jobWaveSize, remainingSlots);
+
+  for (let i = 0; i < currentWaveLimit; i++) {
+    try {
+      const job = await apiClient.getNextJob(env.workerId);
+
+      if (job) {
+        // 异步处理 Job，不阻塞轮询
+        processJob(job).catch((error) => {
+          console.error(`[Worker] ❌ processJob 异常:`, error);
+        });
+      } else {
+        // 本波次没领到，提前终止
+        break;
+      }
+    } catch (error: any) {
+      console.error(`[Worker] ❌ 轮询 Job 失败:`, error.message);
+      break;
     }
-  } catch (error: any) {
-    console.error(`[Worker] ❌ 轮询 Job 失败:`, error.message);
   }
 }
 

@@ -1,3 +1,0 @@
-16:26:05 Status=PENDING Attempts=0 Worker=
-16:26:07 Status=RETRYING Attempts=1 Worker=
-16:26:09 Status=SUCCEEDED Attempts=3 Worker=

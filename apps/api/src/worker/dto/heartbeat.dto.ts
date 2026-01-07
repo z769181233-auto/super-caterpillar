@@ -17,5 +17,8 @@ export class HeartbeatDto {
   @IsNumber()
   @IsOptional()
   temperature?: number;
+
+  @IsOptional()
+  capabilities?: any;
 }
 

@@ -41,6 +41,7 @@ export class JobReportFacade {
     ip?: string;
     userAgent?: string;
     hmacMeta?: { nonce?: string; signature?: string; hmacTimestamp?: string };
+    attempts?: number;
   }) {
     // 1. 先调用原逻辑（不改冻结区）
     const updatedJob = await this.jobService.reportJobResult(
@@ -53,6 +54,7 @@ export class JobReportFacade {
       params.ip,
       params.userAgent,
       params.hmacMeta,
+      params.attempts,
     );
 
     // 2. 如果是 CE03/CE04 且成功，触发质量闭环写入

@@ -30475,6 +30475,8 @@ export namespace Prisma {
     maxRetry: number | null
     retryCount: number | null
     attempts: number | null
+    leaseUntil: Date | null
+    lockedBy: string | null
     lastError: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -30496,6 +30498,8 @@ export namespace Prisma {
     maxRetry: number | null
     retryCount: number | null
     attempts: number | null
+    leaseUntil: Date | null
+    lockedBy: string | null
     lastError: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -30517,6 +30521,8 @@ export namespace Prisma {
     maxRetry: number
     retryCount: number
     attempts: number
+    leaseUntil: number
+    lockedBy: number
     payload: number
     engineConfig: number
     lastError: number
@@ -30556,6 +30562,8 @@ export namespace Prisma {
     maxRetry?: true
     retryCount?: true
     attempts?: true
+    leaseUntil?: true
+    lockedBy?: true
     lastError?: true
     createdAt?: true
     updatedAt?: true
@@ -30577,6 +30585,8 @@ export namespace Prisma {
     maxRetry?: true
     retryCount?: true
     attempts?: true
+    leaseUntil?: true
+    lockedBy?: true
     lastError?: true
     createdAt?: true
     updatedAt?: true
@@ -30598,6 +30608,8 @@ export namespace Prisma {
     maxRetry?: true
     retryCount?: true
     attempts?: true
+    leaseUntil?: true
+    lockedBy?: true
     payload?: true
     engineConfig?: true
     lastError?: true
@@ -30708,6 +30720,8 @@ export namespace Prisma {
     maxRetry: number
     retryCount: number
     attempts: number
+    leaseUntil: Date | null
+    lockedBy: string | null
     payload: JsonValue | null
     engineConfig: JsonValue | null
     lastError: string | null
@@ -30750,6 +30764,8 @@ export namespace Prisma {
     maxRetry?: boolean
     retryCount?: boolean
     attempts?: boolean
+    leaseUntil?: boolean
+    lockedBy?: boolean
     payload?: boolean
     engineConfig?: boolean
     lastError?: boolean
@@ -30783,6 +30799,8 @@ export namespace Prisma {
     maxRetry?: boolean
     retryCount?: boolean
     attempts?: boolean
+    leaseUntil?: boolean
+    lockedBy?: boolean
     payload?: boolean
     engineConfig?: boolean
     lastError?: boolean
@@ -30813,6 +30831,8 @@ export namespace Prisma {
     maxRetry?: boolean
     retryCount?: boolean
     attempts?: boolean
+    leaseUntil?: boolean
+    lockedBy?: boolean
     payload?: boolean
     engineConfig?: boolean
     lastError?: boolean
@@ -30871,6 +30891,8 @@ export namespace Prisma {
       maxRetry: number
       retryCount: number
       attempts: number
+      leaseUntil: Date | null
+      lockedBy: string | null
       payload: Prisma.JsonValue | null
       engineConfig: Prisma.JsonValue | null
       lastError: string | null
@@ -31293,6 +31315,8 @@ export namespace Prisma {
     readonly maxRetry: FieldRef<"ShotJob", 'Int'>
     readonly retryCount: FieldRef<"ShotJob", 'Int'>
     readonly attempts: FieldRef<"ShotJob", 'Int'>
+    readonly leaseUntil: FieldRef<"ShotJob", 'DateTime'>
+    readonly lockedBy: FieldRef<"ShotJob", 'String'>
     readonly payload: FieldRef<"ShotJob", 'Json'>
     readonly engineConfig: FieldRef<"ShotJob", 'Json'>
     readonly lastError: FieldRef<"ShotJob", 'String'>
@@ -65857,6 +65881,8 @@ export namespace Prisma {
     maxRetry: 'maxRetry',
     retryCount: 'retryCount',
     attempts: 'attempts',
+    leaseUntil: 'leaseUntil',
+    lockedBy: 'lockedBy',
     payload: 'payload',
     engineConfig: 'engineConfig',
     lastError: 'lastError',
@@ -68886,6 +68912,8 @@ export namespace Prisma {
     maxRetry?: IntFilter<"ShotJob"> | number
     retryCount?: IntFilter<"ShotJob"> | number
     attempts?: IntFilter<"ShotJob"> | number
+    leaseUntil?: DateTimeNullableFilter<"ShotJob"> | Date | string | null
+    lockedBy?: StringNullableFilter<"ShotJob"> | string | null
     payload?: JsonNullableFilter<"ShotJob">
     engineConfig?: JsonNullableFilter<"ShotJob">
     lastError?: StringNullableFilter<"ShotJob"> | string | null
@@ -68918,6 +68946,8 @@ export namespace Prisma {
     maxRetry?: SortOrder
     retryCount?: SortOrder
     attempts?: SortOrder
+    leaseUntil?: SortOrderInput | SortOrder
+    lockedBy?: SortOrderInput | SortOrder
     payload?: SortOrderInput | SortOrder
     engineConfig?: SortOrderInput | SortOrder
     lastError?: SortOrderInput | SortOrder
@@ -68953,6 +68983,8 @@ export namespace Prisma {
     maxRetry?: IntFilter<"ShotJob"> | number
     retryCount?: IntFilter<"ShotJob"> | number
     attempts?: IntFilter<"ShotJob"> | number
+    leaseUntil?: DateTimeNullableFilter<"ShotJob"> | Date | string | null
+    lockedBy?: StringNullableFilter<"ShotJob"> | string | null
     payload?: JsonNullableFilter<"ShotJob">
     engineConfig?: JsonNullableFilter<"ShotJob">
     lastError?: StringNullableFilter<"ShotJob"> | string | null
@@ -68985,6 +69017,8 @@ export namespace Prisma {
     maxRetry?: SortOrder
     retryCount?: SortOrder
     attempts?: SortOrder
+    leaseUntil?: SortOrderInput | SortOrder
+    lockedBy?: SortOrderInput | SortOrder
     payload?: SortOrderInput | SortOrder
     engineConfig?: SortOrderInput | SortOrder
     lastError?: SortOrderInput | SortOrder
@@ -69016,6 +69050,8 @@ export namespace Prisma {
     maxRetry?: IntWithAggregatesFilter<"ShotJob"> | number
     retryCount?: IntWithAggregatesFilter<"ShotJob"> | number
     attempts?: IntWithAggregatesFilter<"ShotJob"> | number
+    leaseUntil?: DateTimeNullableWithAggregatesFilter<"ShotJob"> | Date | string | null
+    lockedBy?: StringNullableWithAggregatesFilter<"ShotJob"> | string | null
     payload?: JsonNullableWithAggregatesFilter<"ShotJob">
     engineConfig?: JsonNullableWithAggregatesFilter<"ShotJob">
     lastError?: StringNullableWithAggregatesFilter<"ShotJob"> | string | null
@@ -73778,6 +73814,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -73810,6 +73848,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -73828,6 +73868,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -73860,6 +73902,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -73885,6 +73929,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -73901,6 +73947,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -73924,6 +73972,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -78828,6 +78878,8 @@ export namespace Prisma {
     maxRetry?: SortOrder
     retryCount?: SortOrder
     attempts?: SortOrder
+    leaseUntil?: SortOrder
+    lockedBy?: SortOrder
     payload?: SortOrder
     engineConfig?: SortOrder
     lastError?: SortOrder
@@ -78858,6 +78910,8 @@ export namespace Prisma {
     maxRetry?: SortOrder
     retryCount?: SortOrder
     attempts?: SortOrder
+    leaseUntil?: SortOrder
+    lockedBy?: SortOrder
     lastError?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -78879,6 +78933,8 @@ export namespace Prisma {
     maxRetry?: SortOrder
     retryCount?: SortOrder
     attempts?: SortOrder
+    leaseUntil?: SortOrder
+    lockedBy?: SortOrder
     lastError?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -86362,6 +86418,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -86392,6 +86450,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -86911,6 +86971,8 @@ export namespace Prisma {
     maxRetry?: IntFilter<"ShotJob"> | number
     retryCount?: IntFilter<"ShotJob"> | number
     attempts?: IntFilter<"ShotJob"> | number
+    leaseUntil?: DateTimeNullableFilter<"ShotJob"> | Date | string | null
+    lockedBy?: StringNullableFilter<"ShotJob"> | string | null
     payload?: JsonNullableFilter<"ShotJob">
     engineConfig?: JsonNullableFilter<"ShotJob">
     lastError?: StringNullableFilter<"ShotJob"> | string | null
@@ -87404,6 +87466,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -87434,6 +87498,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -88675,6 +88741,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -88705,6 +88773,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -89125,6 +89195,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -89155,6 +89227,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -89463,6 +89537,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -89493,6 +89569,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -90910,6 +90988,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -90941,6 +91021,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -91054,6 +91136,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -91085,6 +91169,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -91502,6 +91588,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -91532,6 +91620,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -92798,6 +92888,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -92828,6 +92920,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -96083,6 +96177,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -96114,6 +96210,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -96257,6 +96355,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -96288,6 +96388,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -97170,6 +97272,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -97320,6 +97424,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -97350,6 +97456,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -97374,6 +97482,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -97844,6 +97954,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -98003,6 +98115,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -98033,6 +98147,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -98057,6 +98173,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -98564,6 +98682,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -98603,6 +98723,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -98633,6 +98755,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -98657,6 +98781,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -98754,6 +98880,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -98797,6 +98925,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -98827,6 +98957,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -98851,6 +98983,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -98968,6 +99102,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -99042,6 +99178,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99072,6 +99210,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99096,6 +99236,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99534,6 +99676,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -99550,6 +99694,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99580,6 +99726,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99604,6 +99752,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99750,6 +99900,8 @@ export namespace Prisma {
     maxRetry?: number
     retryCount?: number
     attempts?: number
+    leaseUntil?: Date | string | null
+    lockedBy?: string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: string | null
@@ -99797,6 +99949,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99827,6 +99981,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99851,6 +100007,8 @@ export namespace Prisma {
     maxRetry?: IntFieldUpdateOperationsInput | number
     retryCount?: IntFieldUpdateOperationsInput | number
     attempts?: IntFieldUpdateOperationsInput | number
+    leaseUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
     payload?: NullableJsonNullValueInput | InputJsonValue
     engineConfig?: NullableJsonNullValueInput | InputJsonValue
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
