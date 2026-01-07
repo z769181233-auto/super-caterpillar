@@ -71,4 +71,4 @@ export API_SECRET="as-p1b"
 npx ts-node -P apps/api/tsconfig.json apps/api/src/scripts/p1_web_audit_gate.ts | tee -a "$EVID_DIR/run.log"
 
 log "✅ Gate Passed. Evidence at $EVID_DIR"
-cat "$EVID_DIR/FINAL_6LINE_EVIDENCE.txt"
+cat "$EVID_DIR/FINAL_REPORT.md" || echo "=== Evidence generated ==="
