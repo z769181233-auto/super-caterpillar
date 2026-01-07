@@ -1,19 +1,19 @@
 {
   "version": "1.1",
   "schema_version": 1,
-  "tip_sha": "41f3d11a2a8d27e375907bdddb2a02b75e381258",
-  "head_sha": "41f3d11a2a8d27e375907bdddb2a02b75e381258",
-  "index_sha": "3a8e07f4dd9208918195210ff1bda0e6761831d8",
+  "tip_sha": "b407b92b7cfe8b09a23c513733ff3abbaacc294b",
+  "head_sha": "b407b92b7cfe8b09a23c513733ff3abbaacc294b",
+  "index_sha": "7e016c750132360c024711b9285ba8871fa0cb28",
   "gates": {
     "p3_full_pipeline": "PASS",
     "p4_video_playback": "PASS",
     "static_analysis": "PASS"
   },
-  "started_at": "2026-01-07T01:43:19Z",
-  "ended_at": "2026-01-07T01:43:43Z",
-  "unix_timestamp": 1767750223,
-  "total_duration_seconds": 24,
-  "worktree_clean": 0,
+  "started_at": "2026-01-07T01:45:43Z",
+  "ended_at": "2026-01-07T01:46:06Z",
+  "unix_timestamp": 1767750366,
+  "total_duration_seconds": 23,
+  "worktree_clean": 1,
   "steps": {
     "typecheck": {
       "exit_code": 0,
