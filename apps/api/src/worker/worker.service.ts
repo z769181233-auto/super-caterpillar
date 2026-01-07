@@ -346,12 +346,12 @@ export class WorkerService {
    * 参考《调度系统设计书_V1.0》§3.3：Worker 状态判断（Dead = 心跳超时）
    */
   async markOfflineWorkers(): Promise<number> {
-    // Stage2-B: 使用 WorkerHeartbeat 模型检测超时
-    // HEARTBEAT_TTL_SECONDS（默认 30 秒），超时阈值 = TTL * 3
-    const HEARTBEAT_TTL_SECONDS = parseInt(process.env.HEARTBEAT_TTL_SECONDS || '30', 10);
-    const timeoutThreshold = new Date(Date.now() - HEARTBEAT_TTL_SECONDS * 3 * 1000);
+    const { env: scuEnv } = await import('@scu/config');
+    // @ts-expect-error - SCU Config extensions for P1-1
+    const { workerOfflineGraceMs } = scuEnv;
+    const timeoutThreshold = new Date(Date.now() - workerOfflineGraceMs);
 
-    // 查找所有 lastSeenAt < now - TTL*3 的 WorkerHeartbeat，标记为 DEAD
+    // 查找所有心跳超时的 Worker
     const deadHeartbeats = await this.prisma.workerHeartbeat.findMany({
       where: {
         lastSeenAt: {
@@ -367,68 +367,52 @@ export class WorkerService {
       return 0;
     }
 
-    // 更新 WorkerHeartbeat 状态为 DEAD
+    const workerIdStrings = deadHeartbeats.map((h) => h.workerId);
+
+    // 1. 回收这些 Worker 持有的租约过期的 RUNNING Job
+    // 规则：只要 Worker 离线且任务租约已过期，即可安全重置为 PENDING
+    const reclaimResult = await this.prisma.shotJob.updateMany({
+      where: {
+        // @ts-expect-error - lockedBy field injected via raw SQL
+        lockedBy: { in: workerIdStrings },
+        status: JobStatus.RUNNING,
+        leaseUntil: { lte: new Date() }, // 必须租约已失效
+      },
+      data: {
+        status: JobStatus.PENDING,
+        workerId: null,
+        // @ts-expect-error - lockedBy & leaseUntil field injected via raw SQL
+        lockedBy: null,
+        leaseUntil: null,
+        lastError: 'reclaimed: worker offline and lease expired',
+      },
+    });
+
+    if (reclaimResult.count > 0) {
+      this.logger.warn(`[WorkerService] Reclaimed ${reclaimResult.count} jobs from offline workers: ${workerIdStrings.join(', ')}`);
+    }
+
+    // 2. 更新 WorkerHeartbeat 状态为 DEAD
     await this.prisma.workerHeartbeat.updateMany({
       where: {
-        workerId: {
-          in: deadHeartbeats.map((h) => h.workerId),
-        },
-        status: {
-          not: 'DEAD',
-        },
+        workerId: { in: workerIdStrings },
+        status: { not: 'DEAD' },
       },
       data: {
         status: 'DEAD',
       },
     });
 
-    // 更新 WorkerNode 状态为 offline
-    const workerIds = deadHeartbeats.map((h) => h.workerId);
-    const workersToMarkOffline = await this.prisma.workerNode.findMany({
-      where: {
-        workerId: {
-          in: workerIds,
-        },
-        status: {
-          not: WorkerStatus.offline,
-        },
-      },
-    });
-
-    if (workersToMarkOffline.length === 0) {
-      return 0;
-    }
-
+    // 3. 更新 WorkerNode 状态为 offline
     const result = await this.prisma.workerNode.updateMany({
       where: {
-        workerId: {
-          in: workerIds,
-        },
-        status: {
-          not: WorkerStatus.offline,
-        },
+        workerId: { in: workerIdStrings },
+        status: { not: WorkerStatus.offline },
       },
       data: {
-        status: WorkerStatus.offline, // Dead = offline（心跳超时）
+        status: WorkerStatus.offline,
       },
     });
-
-    // 记录结构化日志：Worker 被标记为 offline
-    // 参考《平台日志监控与可观测性体系说明书_ObservabilityMonitoringSpec_V1.0》：结构化日志格式
-    for (const worker of workersToMarkOffline) {
-      this.logger.warn(
-        JSON.stringify({
-          event: 'WORKER_MARKED_OFFLINE',
-          workerId: worker.workerId,
-          statusBefore: worker.status,
-          statusAfter: 'offline',
-          lastSeenAt: deadHeartbeats.find((h) => h.workerId === worker.workerId)?.lastSeenAt.toISOString(),
-          timeoutThreshold: timeoutThreshold.toISOString(),
-          reason: 'heartbeat_timeout',
-          timestamp: new Date().toISOString(),
-        }),
-      );
-    }
 
     return result.count;
   }
