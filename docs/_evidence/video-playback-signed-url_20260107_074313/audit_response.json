@@ -1,0 +1,107 @@
+{
+  "novelSourceId": "source_7db43f76ee9f439c82450fe4466f969f",
+  "projectId": "proj_7db43f76ee9f439c82450fe4466f969f",
+  "latestJobs": {
+    "ce06": {
+      "jobId": "7379ec30-61af-47ba-8414-d4b3185542fd",
+      "traceId": "trace_d7c2c4fcd7dc4359",
+      "status": "SUCCEEDED",
+      "createdAtIso": "2026-01-07T00:42:57.739Z",
+      "workerId": "UNKNOWN"
+    },
+    "ce07": null,
+    "ce03": {
+      "jobId": "004c885d-f483-4968-92c7-7242887e13ac",
+      "traceId": "trace_d7c2c4fcd7dc4359",
+      "status": "SUCCEEDED",
+      "createdAtIso": "2026-01-07T00:42:58.774Z",
+      "workerId": "UNKNOWN"
+    },
+    "ce04": {
+      "jobId": "2ad4b8ac-2b7f-478b-b473-f1bc349a832f",
+      "traceId": "trace_d7c2c4fcd7dc4359",
+      "status": "SUCCEEDED",
+      "createdAtIso": "2026-01-07T00:43:00.799Z",
+      "workerId": "UNKNOWN"
+    },
+    "video": {
+      "jobId": "0f6ce338-a252-44e5-a385-a450b3d52da2",
+      "traceId": "trace_d7c2c4fcd7dc4359",
+      "status": "SUCCEEDED",
+      "createdAtIso": "2026-01-07T00:43:04.867Z",
+      "workerId": "UNKNOWN"
+    }
+  },
+  "metrics": {
+    "ce03Score": 14.28571428571428,
+    "ce04Score": 42
+  },
+  "director": {
+    "mode": "realtime",
+    "shotsEvaluated": 1,
+    "evaluatedShots": 1,
+    "isValid": false,
+    "violationsCount": 3,
+    "suggestionsCount": 3,
+    "violationsSample": [
+      {
+        "ruleId": "DR_REQ_001",
+        "severity": "ERROR",
+        "message": "required field missing: missing params.prompt"
+      },
+      {
+        "ruleId": "DR_REQ_001",
+        "severity": "ERROR",
+        "message": "required field missing: missing params.durationSec"
+      },
+      {
+        "ruleId": "DR_PROMPT_001",
+        "severity": "ERROR",
+        "message": "prompt must be non-empty and at least 10 chars"
+      }
+    ],
+    "computedAtIso": "2026-01-07T00:43:18.311Z",
+    "partial": false,
+    "message": "Success"
+  },
+  "dag": {
+    "traceId": "trace_d7c2c4fcd7dc4359",
+    "timeline": [
+      {
+        "phase": "CE06",
+        "jobId": "7379ec30-61af-47ba-8414-d4b3185542fd",
+        "status": "SUCCEEDED"
+      },
+      {
+        "phase": "CE03",
+        "jobId": "004c885d-f483-4968-92c7-7242887e13ac",
+        "status": "SUCCEEDED"
+      },
+      {
+        "phase": "CE04",
+        "jobId": "2ad4b8ac-2b7f-478b-b473-f1bc349a832f",
+        "status": "SUCCEEDED"
+      },
+      {
+        "phase": "SHOT",
+        "jobId": "2c8bed51-b884-4b84-b9f7-f6c1c19a454e",
+        "status": "SUCCEEDED"
+      },
+      {
+        "phase": "VIDEO",
+        "jobId": "0f6ce338-a252-44e5-a385-a450b3d52da2",
+        "status": "SUCCEEDED"
+      }
+    ],
+    "missingPhases": [],
+    "builtFrom": "latest_ce04_trace",
+    "builtAtIso": "2026-01-07T00:43:18.314Z"
+  },
+  "videoAsset": {
+    "status": "READY",
+    "secureUrl": "http://localhost:3000/api/storage/signed/projects/proj_7db43f76ee9f439c82450fe4466f969f/videos/output-1767746586374.mp4?expires=1767750198&tenantId=proj_7db43f76ee9f439c82450fe4466f969f&userId=system-audit-viewer&signature=b30a02648ef0091939993044691f4eecc0d5883a495c8f3cc11557f186969d78",
+    "assetId": "66dff672-92f1-4623-a551-ccf25de91992",
+    "storageKey": "projects/proj_7db43f76ee9f439c82450fe4466f969f/videos/output-1767746586374.mp4",
+    "jobId": "0f6ce338-a252-44e5-a385-a450b3d52da2"
+  }
+}
