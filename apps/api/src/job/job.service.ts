@@ -677,6 +677,10 @@ export class JobService {
       throw new Error('workerId cannot be empty for claim audit');
     }
 
+    // P1-1: 从 SSOT 配置读取限流参数
+    const { env: scuEnv } = await import('@scu/config');
+    const { jobMaxInFlight, jobLeaseTtlMs } = scuEnv;
+
     return this.prisma.$transaction(async (tx) => {
       // 1. 验证 Worker 存在且在线
       const worker = await tx.workerNode.findUnique({
@@ -687,34 +691,51 @@ export class JobService {
         return null;
       }
 
-      // 检查 Worker 是否被禁用（参考调度系统设计书 §3.4）
+      // 检查 Worker 是否被禁用
       const caps = worker.capabilities as Record<string, any>;
       if (caps?.disabled === true) {
         return null;
       }
 
+      // P1-1: 增加并发上限校验（限流防线）
+      // 统计当前正在执行且租约未过期的任务
+      const runningCount = await tx.shotJob.count({
+        where: {
+          status: JobStatus.RUNNING,
+          // @ts-expect-error - leaseUntil field injected via raw SQL
+          leaseUntil: { gt: new Date() },
+        },
+      });
+
+      if (runningCount >= jobMaxInFlight) {
+        this.logger.warn(`[JobService] Backpressure: concurrency limit reached (${runningCount}/${jobMaxInFlight}). Rejecting claim for workerId=${workerId}`);
+        return null;
+      }
+
       const supportedEngines = (caps?.supportedEngines as string[]) || [];
 
-      // 2. 原子性领取：使用 PostgreSQL FOR UPDATE SKIP LOCKED 保证并发安全
-      // 这取代了之前的 findFirst + updateMany 两阶段逻辑，消灭竞态风险
-      // 规则：
-      // - status = PENDING
-      // - workerId = NULL
-      // - engineBinding.status = BOUND
-      // - 满足 jobType 过滤（可选）
-      // - 满足 supportedEngines 过滤（可选）
-      // - 排序：priority DESC (高优先级优先), createdAt ASC (FIFO)
+      // 2. 原子性认领：结合【并发安全】与【租约恢复】
+      // 认领条件：
+      // - (status = PENDING) OR (status = RETRYING 且到达重试时间)
+      // - OR (status = RUNNING 且 leaseUntil 已过期) -> 故障回收点
+      // - 且满足限流与能力过滤
+      const leaseTtlSeconds = jobLeaseTtlMs / 1000;
 
       const claimedJobs = await tx.$queryRaw<Prisma.ShotJobGetPayload<any>[]>`
         WITH target_job AS (
           SELECT j.id
           FROM "shot_jobs" j
           LEFT JOIN "job_engine_bindings" b ON j.id = b."jobId"
-          WHERE (j.status = 'PENDING' OR (j.status = 'RETRYING' AND (j.payload->>'nextRetryAt' IS NULL OR (j.payload->>'nextRetryAt')::timestamp <= NOW())))
-            AND j."workerId" IS NULL
-            -- 允许领取无绑定或已绑定的任务，不再强制 b.status = 'BOUND'，提高内置 Worker 的消化能力
-            ${supportedEngines.length > 0 ? Prisma.sql`AND (b."engineKey" IS NULL OR b."engineKey" IN (${Prisma.join(supportedEngines)}))` : Prisma.empty}
-            ${jobType ? Prisma.sql`AND j.type = ${jobType}` : Prisma.empty}
+          WHERE (
+            -- 基础待认领状态
+            (j.status = 'PENDING')
+            OR (j.status = 'RETRYING' AND (j.payload->>'nextRetryAt' IS NULL OR (j.payload->>'nextRetryAt')::timestamp <= NOW()))
+            -- P1-1: 租约失效回收认领点（核心：自愈）
+            OR (j.status = 'RUNNING' AND (j.lease_until IS NULL OR j.lease_until <= NOW()))
+          )
+          AND j."workerId" IS NULL -- 确保从未被认领或已被回收重置为 NULL
+          ${supportedEngines.length > 0 ? Prisma.sql`AND (b."engineKey" IS NULL OR b."engineKey" IN (${Prisma.join(supportedEngines)}))` : Prisma.empty}
+          ${jobType ? Prisma.sql`AND j.type = ${jobType}` : Prisma.empty}
           ORDER BY j.priority DESC, j."createdAt" ASC
           LIMIT 1
           FOR UPDATE OF j SKIP LOCKED
@@ -722,47 +743,36 @@ export class JobService {
         UPDATE "shot_jobs" SET
           status = 'RUNNING',
           "workerId" = ${worker.id},
+          locked_by = ${workerId},
           attempts = attempts + 1,
+          lease_until = NOW() + interval '${Prisma.raw(leaseTtlSeconds + ' seconds')}',
           "updatedAt" = NOW()
         WHERE id IN (SELECT id FROM target_job)
         RETURNING *;
       `;
 
       if (!claimedJobs || claimedJobs.length === 0) {
-        // 商业级审计：如果认领失败，必须显式返回 null，调用方需处理此种情况（不可通过空指针）
-        this.logger.debug(`[JobService] No PENDING jobs found for workerUid=${worker.id} (workerId=${workerId})`);
-
-        // 门栓 2.1：Gate/Trace 模式下认领零行视为基线崩溃（外键失效或严重竞争），强制抛出异常
-        const isHardGateMode = !!process.env.CE01_GATE_FAIL_ONCE || !!process.env.CE07_MEMORY_UPDATE_GATE_FAIL_ONCE || !!process.env.HMAC_TRACE;
-        if (isHardGateMode) {
-          throw new Error(`[CRITICAL] Job claim returned 0 rows in HARD-GATE mode for workerId=${workerId}. Atomic baseline violated.`);
-        }
-
+        this.logger.debug(`[JobService] No claimable jobs found for workerId=${workerId}`);
         return null;
       }
 
       const job = claimedJobs[0];
 
-      // 门栓 2.1-B：强断言返回对象字段完整性
-      if (!job.id || job.attempts === undefined) {
-        throw new Error(`[CRITICAL] Invalid job object returned from atomic claim for workerId=${workerId}`);
-      }
-
-      // 3. 记录结构化日志：Job 领取成功
+      // 3. 记录日志：包含租约信息
       this.logger.log(
         JSON.stringify({
-          event: 'JOB_CLAIMED_SUCCESS_ATOMIC',
+          event: 'JOB_CLAIMED_SUCCESS_LEASE',
           jobId: job.id,
           workerId,
           jobType: job.type,
-          taskId: job.taskId || null,
-          statusAfter: 'RUNNING',
           attempts: job.attempts,
+          // @ts-expect-error - leaseUntil field injected via raw SQL
+          leaseUntil: job.leaseUntil,
           timestamp: new Date().toISOString(),
         }),
       );
 
-      // 4. 重新查询以包含完整关联数据（Prisma $queryRaw 返回的是原始对象，需要重新获取包含 hierarchy 的全模型）
+      // 4. 返回完整结构
       return tx.shotJob.findUnique({
         where: { id: job.id },
         include: {

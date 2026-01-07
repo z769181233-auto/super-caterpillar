@@ -164,6 +164,30 @@ export const env = {
   HMAC_TIMESTAMP_WINDOW: getEnvNumber('HMAC_TIMESTAMP_WINDOW', 300000),
   // HMAC_SIGNATURE_ALGORITHM: 签名算法，默认 sha256
   HMAC_SIGNATURE_ALGORITHM: getEnv('HMAC_SIGNATURE_ALGORITHM', 'sha256'),
+
+  // --- P1-1: 并发与队列治理 (Concurrency Governance) ---
+  // JOB_MAX_IN_FLIGHT: 全局或单 Worker 最大并发限制
+  jobMaxInFlight: (() => {
+    const val = getEnvNumber('JOB_MAX_IN_FLIGHT', 10);
+    if (val < 1) throw new Error('JOB_MAX_IN_FLIGHT must be >= 1');
+    return val;
+  })(),
+  // JOB_WAVE_SIZE: 任务触发/认领波次大小
+  jobWaveSize: (() => {
+    const val = getEnvNumber('JOB_WAVE_SIZE', 5);
+    if (val < 1) throw new Error('JOB_WAVE_SIZE must be >= 1');
+    return val;
+  })(),
+  // JOB_BACKPRESSURE_THRESHOLD: 背压触发阈值（in-flight / max）
+  jobBackpressureThreshold: (() => {
+    const val = parseFloat(getEnv('JOB_BACKPRESSURE_THRESHOLD', '0.8'));
+    if (isNaN(val) || val <= 0 || val > 1) throw new Error('JOB_BACKPRESSURE_THRESHOLD must be between (0, 1]');
+    return val;
+  })(),
+  // JOB_LEASE_TTL_MS: 任务租约时长（毫秒），超时可被回收
+  jobLeaseTtlMs: getEnvNumber('JOB_LEASE_TTL_MS', 120000), // 默认 2 分钟
+  // WORKER_OFFLINE_GRACE_MS: Worker 判定离线的宽限期
+  workerOfflineGraceMs: getEnvNumber('WORKER_OFFLINE_GRACE_MS', 180000), // 默认 3 分钟
 };
 
 
