@@ -1,14 +1,14 @@
 {
   "gate": "P1-1_CONCURRENCY_STRESS",
-  "timestamp": "20260107T061559Z",
+  "timestamp": "20260107T035442Z",
   "config": {
     "JOB_MAX_IN_FLIGHT": 5,
-    "JOB_LEASE_TTL": 10000
+    "JOB_WAVE_SIZE": 3
   },
   "results": {
     "max_concurrent_observed": 5,
-    "reclaims_verified_db": 4,
-    "pass": true,
-    "fail_reason": ""
+    "reclaim_logs_found": 1,
+    "cost_ledger_duplicates": 0,
+    "pass": true
   }
 }
