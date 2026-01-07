@@ -1,0 +1,8 @@
+[P3 FULL PIPELINE E2E - NOVEL TO VIDEO - PASS]
+RUN_ID: 4523de8afaf94800b31bba4bf6d23469
+TRACE_ID: trace_1a67fffc853645a0
+SHOT_ID: shot_4523de8afaf94800b31bba4bf6d23469
+IMAGE_ASSET: projects/proj_4523de8afaf94800b31bba4bf6d23469/shots/shot_4523de8afaf94800b31bba4bf6d23469/render-1767721549750.png
+VIDEO_ASSET: projects/proj_4523de8afaf94800b31bba4bf6d23469/videos/output-1767721551957.mp4
+[PASS] IMAGE_ASSET=projects/proj_4523de8afaf94800b31bba4bf6d23469/shots/shot_4523de8afaf94800b31bba4bf6d23469/render-1767721549750.png
+[PASS] VIDEO_ASSET=projects/proj_4523de8afaf94800b31bba4bf6d23469/videos/output-1767721551957.mp4

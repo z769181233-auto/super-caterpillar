@@ -1,0 +1,6 @@
+[P1 ORIGIN FOUNDATION - MAINLINE REGRESSION - PASS]
+DATE: 2026-01-07T07:44:01+07:00
+GATES: P3=PASS (x2), P4=PASS (x2)
+IDEMPOTENCY: cost_ledger duplicates = 0
+EVIDENCE: docs/_evidence/p1_origin_foundation_20260107_074401
+BRANCH: master
