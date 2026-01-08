@@ -23,12 +23,13 @@ fi
 TS=$(date +%Y%m%d_%H%M%S)
 EVID="docs/_evidence/p1_4_observability_${TS}"
 mkdir -p "$EVID/raw"
-RUN_STARTED_AT_ISO="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-export RUN_STARTED_AT_ISO
-log "RUN_STARTED_AT_ISO: ${RUN_STARTED_AT_ISO}"
 
 log(){ echo "[$(date +%H:%M:%S)] $*" | tee -a "$EVID/gate.log"; }
 psqlq(){ psql "$DB" -v ON_ERROR_STOP=1 -X -q -t -A -P pager=off "$@"; }
+
+RUN_STARTED_AT_ISO="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+export RUN_STARTED_AT_ISO
+log "RUN_STARTED_AT_ISO: ${RUN_STARTED_AT_ISO}"
 
 # Check Node requirement
 if ! command -v node >/dev/null 2>&1; then
@@ -62,13 +63,13 @@ VERIFY_RESULT="$(echo "$METRICS_JSON" | node -e '
     const errors = [];
     
     // 1. Ledger Duplicates MUST be 0
-    if (m.ledger_dups !== 0) {
+    if (Number(m.ledger_dups) !== 0) {
       errors.push(`FAIL: Ledger Duplicates Detected: ${m.ledger_dups}`);
     }
 
     // 2. Health Sanity (Pending Leak)
     const PENDING_LIMIT = 50; 
-    if (m.jobs_pending > PENDING_LIMIT) {
+    if (Number(m.jobs_pending) > PENDING_LIMIT) {
       errors.push(`FAIL: Pending Jobs Leaked: ${m.jobs_pending} > ${PENDING_LIMIT}`);
     }
 
@@ -116,6 +117,7 @@ cat > "${EVID}/FINAL_REPORT.md" <<EOF
 # P1-4 Observability Gate - FINAL REPORT
 
 - Timestamp: ${TS}
+- Run Started (UTC): ${RUN_STARTED_AT_ISO}
 - DB Verification: PASS
 - Ledger Duplicates: 0
 
