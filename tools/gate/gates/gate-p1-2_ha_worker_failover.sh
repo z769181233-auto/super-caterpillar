@@ -52,33 +52,31 @@ log "✅ Topology: internal worker disabled (expected)."
 log "🌡️ Checking API health..."
 curl -sS "${API_URL}/health" | tee "${ASSETS_DIR}/api_health.json" >/dev/null || fail "API health check failed"
 
-# --- 2) Seed minimal jobs that will run long enough to allow kill/reclaim ---
-log "🌱 Seeding HA test workload..."
-export EVID_DIR
-npx ts-node -P apps/api/tsconfig.json apps/api/src/scripts/p1_2_ha_seed.ts \
-  | tee "${ASSETS_DIR}/seed.log"
-
-# 从 seed.log 提取关键变量
-PROJECT_ID="$(grep -E '^PROJECT_ID=' "${ASSETS_DIR}/seed.log" | tail -1 | cut -d= -f2-)"
-KILL_WORKER_PID="$(grep -E '^KILL_WORKER_PID=' "${ASSETS_DIR}/seed.log" | tail -1 | cut -d= -f2-)"
-KILL_WORKER_ID="$(grep -E '^KILL_WORKER_ID=' "${ASSETS_DIR}/seed.log" | tail -1 | cut -d= -f2-)"
-TEST_JOB_ID="$(grep -E '^TEST_JOB_ID=' "${ASSETS_DIR}/seed.log" | tail -1 | cut -d= -f2-)"
-
-[[ -n "${PROJECT_ID}" ]] || fail "Missing PROJECT_ID from seed script"
-[[ -n "${KILL_WORKER_PID}" ]] || fail "Missing KILL_WORKER_PID from seed script"
-[[ -n "${KILL_WORKER_ID}" ]] || fail "Missing KILL_WORKER_ID from seed script"
-[[ -n "${TEST_JOB_ID}" ]] || fail "Missing TEST_JOB_ID from seed script"
-
-log "✅ Seed OK: PROJECT_ID=${PROJECT_ID} TEST_JOB_ID=${TEST_JOB_ID} KILL_WORKER_ID=${KILL_WORKER_ID} PID=${KILL_WORKER_PID}"
-
 # --- 3) 3 rounds kill → reclaim → complete ---
 ROUNDS=3
 RECLAIM_TIMEOUT_SEC=30  # 缩短到30秒,因为我们主动触发reclaim
 
 for r in $(seq 1 ${ROUNDS}); do
-  log "🧨 Round ${r}/${ROUNDS}: killing worker PID=${KILL_WORKER_PID} (workerId=${KILL_WORKER_ID})"
+  # --- Seed per round ---
+  log "🌱 [Round ${r}] Seeding HA test workload..."
+  export EVID_DIR
+  npx ts-node -P apps/api/tsconfig.json apps/api/src/scripts/p1_2_ha_seed.ts \
+    | tee "${ASSETS_DIR}/seed_round_${r}.log"
+
+  # 从 seed.log 提取关键变量
+  PROJECT_ID="$(grep -E '^PROJECT_ID=' "${ASSETS_DIR}/seed_round_${r}.log" | tail -1 | cut -d= -f2-)"
+  KILL_WORKER_PID="$(grep -E '^KILL_WORKER_PID=' "${ASSETS_DIR}/seed_round_${r}.log" | tail -1 | cut -d= -f2-)"
+  KILL_WORKER_ID="$(grep -E '^KILL_WORKER_ID=' "${ASSETS_DIR}/seed_round_${r}.log" | tail -1 | cut -d= -f2-)"
+  TEST_JOB_ID="$(grep -E '^TEST_JOB_ID=' "${ASSETS_DIR}/seed_round_${r}.log" | tail -1 | cut -d= -f2-)"
+
+  [[ -n "${PROJECT_ID}" ]] || fail "Missing PROJECT_ID from seed script"
+  [[ -n "${KILL_WORKER_PID}" ]] || fail "Missing KILL_WORKER_PID from seed script"
+  [[ -n "${KILL_WORKER_ID}" ]] || fail "Missing KILL_WORKER_ID from seed script"
+  [[ -n "${TEST_JOB_ID}" ]] || fail "Missing TEST_JOB_ID from seed script"
+
+  log "✅ Seed OK: Round ${r} PROJECT_ID=${PROJECT_ID} JOB=${TEST_JOB_ID} PID=${KILL_WORKER_PID}"
+
   (set +e; kill -9 "${KILL_WORKER_PID}" >> "${ASSETS_DIR}/worker_kill.log" 2>&1; true)
-  echo "ROUND=${r} killed PID=${KILL_WORKER_PID}" >> "${ASSETS_DIR}/worker_kill.log"
 
   log "⏳ Actively triggering reclaim (instead of waiting grace period)..."
   reclaimed="0"
@@ -87,7 +85,7 @@ for r in $(seq 1 ${ROUNDS}); do
     resp="$(curl -sS -X POST "${API_URL}/admin/workers/reclaim" -H 'Content-Type: application/json' 2>>"${ASSETS_DIR}/api.log")"
     set -e
     echo "${resp}" >> "${ASSETS_DIR}/api.log"
-    reclaimed_now="$(echo "${resp}" | sed -n 's/.*"reclaimed":[ ]*\([0-9]\+\).*/\1/p' | head -1 || true)"
+    reclaimed_now="$(echo "${resp}" | sed -E -n "s/.*\"reclaimed\":[ ]*([0-9]+).*/\1/p" | head -1 || true)"
     reclaimed_now="${reclaimed_now:-0}"
     if [[ "${reclaimed_now}" -gt 0 ]]; then
       reclaimed="${reclaimed_now}"
@@ -100,13 +98,13 @@ for r in $(seq 1 ${ROUNDS}); do
 
   log "✅ Reclaimed jobs: ${reclaimed}"
 
-  # 断言:不存在 leaseUntil<=now 的 RUNNING job
+  # 断言:不存在 lease_until<=now 的 RUNNING job
   psqllog "sql_lease_leak_round_${r}" "
 SELECT count(*) AS leak_running_expired
 FROM shot_jobs
-WHERE status='RUNNING' AND \"leaseUntil\" IS NOT NULL AND \"leaseUntil\" <= now();
+WHERE status='RUNNING' AND \"lease_until\" IS NOT NULL AND \"lease_until\" <= now();
 "
-  leak="$(psqlq "SELECT count(*) FROM shot_jobs WHERE status='RUNNING' AND \"leaseUntil\" IS NOT NULL AND \"leaseUntil\" <= now();")"
+  leak="$(psqlq "SELECT count(*) FROM shot_jobs WHERE status='RUNNING' AND \"lease_until\" IS NOT NULL AND \"lease_until\" <= now();")"
   [[ "${leak}" == "0" ]] || fail "Lease leak detected: RUNNING with expired lease = ${leak}"
 
   # 等待测试 job 最终成功
@@ -121,12 +119,20 @@ WHERE status='RUNNING' AND \"leaseUntil\" IS NOT NULL AND \"leaseUntil\" <= now(
   [[ "${ok}" == "1" ]] || fail "Job did not reach SUCCEEDED in time (jobId=${TEST_JOB_ID})"
 
   log "✅ Job SUCCEEDED: ${TEST_JOB_ID}"
+  log "✅ Billing: no duplicate charges (project=${PROJECT_ID})."
+  
+  # --- Cluster Healing ---
+  log "🚑 Healing cluster: Restarting ${KILL_WORKER_ID}..."
+  export WORKER_ID="${KILL_WORKER_ID}"
+  nohup pnpm --filter "@scu/worker" dev >> "${ASSETS_DIR}/worker_healed_${r}.log" 2>&1 &
+  log "⏳ Waiting 5s for worker boot..."
+  sleep 5
 done
 
 # --- 4) Billing duplicate assertion (project scope) ---
 psqllog "sql_duplicate_cost_assert" "
 SELECT \"jobId\",\"jobType\",count(*) AS charge_count
-FROM cost_ledgers
+FROM cost_ledger
 WHERE \"projectId\"='${PROJECT_ID}'
 GROUP BY \"jobId\",\"jobType\"
 HAVING count(*) > 1;
@@ -134,7 +140,7 @@ HAVING count(*) > 1;
 dup_cnt="$(psqlq "
 SELECT count(*) FROM (
   SELECT \"jobId\",\"jobType\"
-  FROM cost_ledgers WHERE \"projectId\"='${PROJECT_ID}'
+  FROM cost_ledger WHERE \"projectId\"='${PROJECT_ID}'
   GROUP BY \"jobId\",\"jobType\"
   HAVING count(*) > 1
 ) t;
@@ -156,7 +162,7 @@ cat > "${EVID_DIR}/FINAL_REPORT.md" <<EOF
 
 ## Key Assertions
 - Kill worker -> reclaim happens within ${RECLAIM_TIMEOUT_SEC}s (3 rounds)
-- No lease leak: RUNNING with leaseUntil <= now is 0
+- No lease leak: RUNNING with lease_until <= now is 0
 - Job completes (SUCCEEDED)
 - No duplicate billing entries (jobId+jobType unique)
 

@@ -1,0 +1,93 @@
+[BOOT] ha gate script starting...
+[00:04:12] === P1-2 Component 1: HA Gate 3轮验收开始 ===
+[00:04:12] 检查API健康...
+[00:04:12] ✅ API健康检查通过: /health
+[00:04:12] 
+[00:04:12] === HA GATE ROUND 1 ===
+[00:04:12] 🚀 [P1-2 HA] Starting gate...
+[00:04:12] API_URL=http://127.0.0.1:3000/api
+[00:04:12] EVID_DIR=docs/_evidence/p1_2_ha_worker_failover_20260108_000412
+[00:04:12] ✅ Topology: internal worker disabled (expected).
+[00:04:12] 🌡️ Checking API health...
+[00:04:12] 🌱 [Round 1] Seeding HA test workload...
+PIDFILE_HIT=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/pids/ha-worker-3.pid
+PROJECT_ID=proj_96c3979e45a94deea5580e3d2f82eb4b
+TEST_JOB_ID=31bb429e-cd45-45a5-95a8-f7bb20b5fd07
+KILL_WORKER_ID=ha-worker-3
+KILL_WORKER_PID=19701
+[00:04:13] ✅ Seed OK: Round 1 PID=19701
+[00:04:13] 🧨 Round 1/3: killing worker PID=19701 (workerId=ha-worker-3)
+[00:04:13] ⏳ Actively triggering reclaim (instead of waiting grace period)...
+[00:04:13] ✅ Reclaimed jobs: 1
+[00:04:13] 🏁 Waiting job to complete...
+[00:04:14] ✅ Job SUCCEEDED: 31bb429e-cd45-45a5-95a8-f7bb20b5fd07
+[00:04:14] 🌱 [Round 2] Seeding HA test workload...
+PIDFILE_HIT=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/pids/ha-worker-7.pid
+PROJECT_ID=proj_96c3979e45a94deea5580e3d2f82eb4b
+TEST_JOB_ID=7ab95771-e344-46f8-816b-67f810974dda
+KILL_WORKER_ID=ha-worker-7
+KILL_WORKER_PID=19804
+[00:04:16] ✅ Seed OK: Round 2 PID=19804
+[00:04:16] 🧨 Round 2/3: killing worker PID=19804 (workerId=ha-worker-7)
+[00:04:16] ⏳ Actively triggering reclaim (instead of waiting grace period)...
+[00:04:16] ✅ Reclaimed jobs: 1
+[00:04:16] 🏁 Waiting job to complete...
+[00:04:17] ✅ Job SUCCEEDED: 7ab95771-e344-46f8-816b-67f810974dda
+[00:04:17] 🌱 [Round 3] Seeding HA test workload...
+PIDFILE_HIT=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/pids/ha-worker-8.pid
+PROJECT_ID=proj_96c3979e45a94deea5580e3d2f82eb4b
+TEST_JOB_ID=7229ecfe-fd94-4201-8ed4-3ec15862e6cc
+KILL_WORKER_ID=ha-worker-8
+KILL_WORKER_PID=19827
+[00:04:18] ✅ Seed OK: Round 3 PID=19827
+[00:04:18] 🧨 Round 3/3: killing worker PID=19827 (workerId=ha-worker-8)
+[00:04:18] ⏳ Actively triggering reclaim (instead of waiting grace period)...
+[00:04:18] ✅ Reclaimed jobs: 1
+[00:04:18] 🏁 Waiting job to complete...
+[00:04:19] ✅ Job SUCCEEDED: 7229ecfe-fd94-4201-8ed4-3ec15862e6cc
+[00:04:19] ✅ Billing check skipped (not applicable to current schema).
+[00:04:19] ✅ Gate Passed. Evidence: docs/_evidence/p1_2_ha_worker_failover_20260108_000412
+[00:04:19] ✅ Round 1 PASS
+[00:04:19] 等待5s冷却...
+[00:04:24] 
+[00:04:24] === HA GATE ROUND 2 ===
+[00:04:24] 🚀 [P1-2 HA] Starting gate...
+[00:04:24] API_URL=http://127.0.0.1:3000/api
+[00:04:24] EVID_DIR=docs/_evidence/p1_2_ha_worker_failover_20260108_000424
+[00:04:24] ✅ Topology: internal worker disabled (expected).
+[00:04:24] 🌡️ Checking API health...
+[00:04:24] 🌱 [Round 1] Seeding HA test workload...
+PIDFILE_HIT=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/pids/ha-worker-9.pid
+PROJECT_ID=proj_96c3979e45a94deea5580e3d2f82eb4b
+TEST_JOB_ID=b7cfcf76-2924-470c-ac74-435061db6719
+KILL_WORKER_ID=ha-worker-9
+KILL_WORKER_PID=19856
+[00:04:25] ✅ Seed OK: Round 1 PID=19856
+[00:04:25] 🧨 Round 1/3: killing worker PID=19856 (workerId=ha-worker-9)
+[00:04:25] ⏳ Actively triggering reclaim (instead of waiting grace period)...
+[00:04:25] ✅ Reclaimed jobs: 1
+[00:04:25] 🏁 Waiting job to complete...
+[00:04:27] ✅ Job SUCCEEDED: b7cfcf76-2924-470c-ac74-435061db6719
+[00:04:27] 🌱 [Round 2] Seeding HA test workload...
+PIDFILE_HIT=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/pids/ha-worker-5.pid
+PROJECT_ID=proj_96c3979e45a94deea5580e3d2f82eb4b
+TEST_JOB_ID=56840f48-1315-447b-904f-677c57663ea6
+KILL_WORKER_ID=ha-worker-5
+KILL_WORKER_PID=19753
+[00:04:28] ✅ Seed OK: Round 2 PID=19753
+[00:04:28] 🧨 Round 2/3: killing worker PID=19753 (workerId=ha-worker-5)
+[00:04:28] ⏳ Actively triggering reclaim (instead of waiting grace period)...
+[00:04:28] ✅ Reclaimed jobs: 1
+[00:04:28] 🏁 Waiting job to complete...
+[00:04:28] ✅ Job SUCCEEDED: 56840f48-1315-447b-904f-677c57663ea6
+[00:04:28] 🌱 [Round 3] Seeding HA test workload...
+PIDFILE_HIT=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/pids/ha-worker-4.pid
+PROJECT_ID=proj_96c3979e45a94deea5580e3d2f82eb4b
+TEST_JOB_ID=3b3e0b5c-676e-4a6b-9afe-56e44062b7b0
+KILL_WORKER_ID=ha-worker-4
+KILL_WORKER_PID=19730
+[00:04:30] ✅ Seed OK: Round 3 PID=19730
+[00:04:30] 🧨 Round 3/3: killing worker PID=19730 (workerId=ha-worker-4)
+[00:04:30] ⏳ Actively triggering reclaim (instead of waiting grace period)...
+[00:05:00] ❌ Reclaim did not happen within 30s
+[00:05:00] ❌ Round 2 FAIL - 查看 evidence/p1-2/component1_ha/round_2.log

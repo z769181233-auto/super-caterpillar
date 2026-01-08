@@ -35,6 +35,12 @@ safe_source_env() {
 
 safe_source_env "$(dirname "${BASH_SOURCE[0]}")/../../.env.local"
 
+# 强校验:DATABASE_URL 必须非空(否则 psql 会退回本机 socket 导致验证全乱套)
+if [[ -z "${DATABASE_URL:-}" ]]; then
+  echo "[FATAL] DATABASE_URL is empty. Fix .env.local quoting (paths with spaces must be quoted)." >&2
+  exit 2
+fi
+
 export GATE_MODE=1
 export API_PORT="${API_PORT:-3000}"
 export API_BASE="http://127.0.0.1:${API_PORT}"
@@ -75,32 +81,108 @@ for i in 1 2 3; do
   fi
 done
 
-# 2) SQL验证
+# 2) SQL验证（自适应探测表名/列名）
 log ""
 log "=== SQL 验证 ==="
 
-# 断言DATABASE_URL
-if [[ -z "${DATABASE_URL:-}" ]]; then
-  log "❌ DATABASE_URL 未设置(.env.local未加载或环境变量缺失)"
-  exit 1
-fi
-
 DB_URL_CLEAN="${DATABASE_URL%%\?*}"
 
-psql -X "$DB_URL_CLEAN" -v ON_ERROR_STOP=1 <<'SQL' | tee "$EVIDENCE_DIR/sql_verify.log"
+log "正在探测真实表名和列名（自适应 snake_case/PascalCase）..."
+
+# 1) 探测审计表名：audit_logs / AuditLog（PostgreSQL 默认 snake_case）
+AUDIT_TABLE=$(
+  psql -X "$DB_URL_CLEAN" -tAc "
+    SELECT tablename
+    FROM pg_tables
+    WHERE schemaname='public'
+      AND tablename IN ('audit_logs','AuditLog','auditlog','audit_log')
+    ORDER BY CASE tablename
+      WHEN 'audit_logs' THEN 1
+      WHEN 'audit_log' THEN 2
+      WHEN 'AuditLog' THEN 3
+      ELSE 9 END
+    LIMIT 1;
+  " | tr -d '[:space:]'
+)
+
+if [[ -z "$AUDIT_TABLE" ]]; then
+  log "❌ 审计表未找到（期望 audit_logs）"
+  exit 3
+fi
+
+log "审计表名: $AUDIT_TABLE"
+
+# 2) 探测 shot_jobs 表名（确保存在）
+JOB_TABLE=$(
+  psql -X "$DB_URL_CLEAN" -tAc "
+    SELECT tablename
+    FROM pg_tables
+    WHERE schemaname='public'
+      AND tablename IN ('shot_jobs','ShotJob')
+    ORDER BY CASE tablename
+      WHEN 'shot_jobs' THEN 1
+      WHEN 'ShotJob' THEN 2
+      ELSE 9 END
+    LIMIT 1;
+  " | tr -d '[:space:]'
+)
+
+if [[ -z "$JOB_TABLE" ]]; then
+  log "❌ shot_jobs 表未找到"
+  exit 3
+fi
+
+log "Job 表名: $JOB_TABLE"
+
+# 3) 探测 shot_jobs 的租约/锁列名（snake_case vs camelCase）
+LOCK_COL=$(
+  psql -X "$DB_URL_CLEAN" -tAc "
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='$JOB_TABLE'
+      AND column_name IN ('locked_by','lockedBy')
+    LIMIT 1;
+  " | tr -d '[:space:]'
+)
+LEASE_COL=$(
+  psql -X "$DB_URL_CLEAN" -tAc "
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='$JOB_TABLE'
+      AND column_name IN ('lease_until','leaseUntil')
+    LIMIT 1;
+  " | tr -d '[:space:]'
+)
+
+if [[ -z "$LEASE_COL" ]]; then
+  log "❌ shot_jobs lease 列未找到（期望 lease_until）"
+  exit 4
+fi
+
+log "租约列: locked_by=${LOCK_COL:-'NULL'}, lease_until=$LEASE_COL"
+
+# 4) 执行校验（动态拼接表名/列名）
+log "执行 SQL 校验..."
+
+# 注意:必须用管道而非heredoc,因为psql不解析shell变量
+cat <<SQL | psql -X "$DB_URL_CLEAN" -v ON_ERROR_STOP=1 | tee "$EVIDENCE_DIR/sql_verify.log"
 -- A) 不允许存在 lease 过期仍 RUNNING 的残留
 SELECT count(*) AS running_stale_locked
-FROM "ShotJob"
+FROM $JOB_TABLE
 WHERE status='RUNNING'
-  AND "leaseUntil" IS NOT NULL
-  AND "leaseUntil" <= now()
-  AND "lockedBy" IS NOT NULL;
+  AND $LEASE_COL IS NOT NULL
+  AND $LEASE_COL <= now();
 
--- B) 审计必须存在
+-- B) 审计必须存在（容错处理，如果列不匹配仅警告）
 SELECT count(*) AS audit_reclaim_events
-FROM "AuditLog"
+FROM $AUDIT_TABLE
 WHERE action='JOB_RECLAIMED_FROM_DEAD_WORKER';
 SQL
+
+if [[ $? -ne 0 ]]; then
+  log "❌ SQL 校验失败"
+  exit 5
+fi
 
 log "✅ SQL验证完成"
 
