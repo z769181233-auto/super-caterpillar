@@ -23,9 +23,12 @@ fi
 TS=$(date +%Y%m%d_%H%M%S)
 EVID="docs/_evidence/p1_4_observability_${TS}"
 mkdir -p "$EVID/raw"
+RUN_STARTED_AT_ISO="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+export RUN_STARTED_AT_ISO
+log "RUN_STARTED_AT_ISO: ${RUN_STARTED_AT_ISO}"
 
 log(){ echo "[$(date +%H:%M:%S)] $*" | tee -a "$EVID/gate.log"; }
-psqlq(){ psql "$DB" -v ON_ERROR_STOP=1 -X -q -t "$@"; }
+psqlq(){ psql "$DB" -v ON_ERROR_STOP=1 -X -q -t -A -P pager=off "$@"; }
 
 # Check Node requirement
 if ! command -v node >/dev/null 2>&1; then
@@ -45,7 +48,7 @@ if [[ ! -f "$SQL_FILE" ]]; then
   exit 23
 fi
 
-METRICS_JSON="$(psqlq -f "$SQL_FILE")"
+METRICS_JSON="$(psqlq -f "$SQL_FILE" | tr -d '\r' | awk 'NF{print}')"
 echo "$METRICS_JSON" > "$EVID/raw/metrics_db.json"
 log "DB Metrics: $METRICS_JSON"
 

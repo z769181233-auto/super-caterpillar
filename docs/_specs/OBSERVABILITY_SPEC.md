@@ -15,16 +15,16 @@ These metrics are used for:
 
 ## 2. Metrics Definition
 
-| Metric Key       | Source (DB)   | Aggregation/Logic                                | Threshold (Gate)          | Description                                    |
-| :--------------- | :------------ | :----------------------------------------------- | :------------------------ | :--------------------------------------------- |
-| `jobs_total`     | `shot_jobs`   | `COUNT(*)`                                       | N/A                       | Total jobs in the system history.              |
-| `jobs_Pending`   | `shot_jobs`   | `COUNT(*)` where status NOT IN (Terminal)        | `<= MAX_PENDING_END`      | Current backlog. Should drain to 0 after load. |
-| `jobs_Succeeded` | `shot_jobs`   | `COUNT(*)` where status='SUCCEEDED'              | Rate >= 98%               | Successfully completed jobs.                   |
-| `jobs_Failed`    | `shot_jobs`   | `COUNT(*)` where status='FAILED'                 | Rate <= 2%                | Failed execution (after retries).              |
-| `jobs_Terminal`  | `shot_jobs`   | `COUNT(*)` where status IN (SUCC,COMP,FAIL,CANC) | == jobs_total (ideal)     | Jobs that have reached a final state.          |
-| `ledger_Rows`    | `cost_ledger` | `COUNT(*)`                                       | > 0 (if jobs run)         | Total financial records generated.             |
-| `ledger_Dups`    | `cost_ledger` | Group by `(jobId, jobType)` having count > 1     | **MUST BE 0**             | Idempotency Check. Critical Layout.            |
-| `latency_P95`    | `shot_jobs`   | 95th percentile of `(completedAt - createdAt)`   | `<= 60s` (Load Dependent) | End-to-End Processing Latency.                 |
+| Metric Key       | Source (DB)   | Aggregation/Logic                                | Threshold (Gate)            | Description                                    |
+| :--------------- | :------------ | :----------------------------------------------- | :-------------------------- | :--------------------------------------------- |
+| `jobs_total`     | `shot_jobs`   | `COUNT(*)`                                       | N/A                         | Total jobs in the system history.              |
+| `jobs_pending`   | `shot_jobs`   | `COUNT(*)` where status NOT IN (Terminal)        | `<= MAX_PENDING_END`        | Current backlog. Should drain to 0 after load. |
+| `jobs_succeeded` | `shot_jobs`   | `COUNT(*)` where status='SUCCEEDED'              | Rate >= 98% (Deferred P1-5) | Successfully completed jobs.                   |
+| `jobs_failed`    | `shot_jobs`   | `COUNT(*)` where status='FAILED'                 | Rate <= 2% (Deferred P1-5)  | Failed execution (after retries).              |
+| `jobs_terminal`  | `shot_jobs`   | `COUNT(*)` where status IN (SUCC,COMP,FAIL,CANC) | == jobs_total (ideal)       | Jobs that have reached a final state.          |
+| `ledger_rows`    | `cost_ledger` | `COUNT(*)`                                       | > 0 (if jobs run)           | Total financial records generated.             |
+| `ledger_dups`    | `cost_ledger` | Group by `(jobId, jobType)` having count > 1     | **MUST BE 0**               | Idempotency Check. Critical Layout.            |
+| `latency_p95`    | `shot_jobs`   | 95th percentile of `(completedAt - createdAt)`   | `<= 60s` (Deferred P1-5)    | End-to-End Processing Latency.                 |
 
 _Terminal States_: `SUCCEEDED`, `COMPLETED`, `FAILED`, `CANCELED`, `CANCELLED`
 
