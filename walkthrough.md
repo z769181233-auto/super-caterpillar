@@ -129,3 +129,44 @@ bash evidence/p1-2/run_ha_gates_3rounds.sh
 - **Phase B**: Concurrent API Load (Auto-Create N Jobs)
 - **Phase C**: Status Polling & Convergence Check
 - **Evidence**: `docs/_evidence/p1_3_performance_*/` (metrics.csv, latencies.csv)
+
+---
+
+# P1-A Real Model Integration 验收报告
+
+## 1. 验收结论: PASS ✅
+
+**审计通过时间**: 2026-01-08 22:12 (UTC+8)
+**验收范围**:
+
+- **ModelRouterV2**: 动态路由 (gemini/sdxl/flux) 逻辑验证。
+- **Real Model Adapters**: 集成真实模型 (Gemini-2.0, SDXL, Flux) 的 Worker 适配。
+- **Billing Integrity**: Tokens 计费与 Credits 链路闭环。
+
+## 2. 核心指标
+
+| 指标                      | 预期    | 实际             | 结论    |
+| :------------------------ | :------ | :--------------- | :------ |
+| **CE04 Gemini Route**     | Success | gemini-2.0-flash | ✅ PASS |
+| **ShotRender SDXL Route** | Success | sdxl-v1.5-real   | ✅ PASS |
+| **ShotRender Flux Route** | Success | flux-v1-dev      | ✅ PASS |
+| **Ledger Recording**      | 100%    | 100%             | ✅ PASS |
+
+## 3. 证据链条
+
+- **门禁脚本**: `tools/gate/gates/gate-p1-a_real_model_e2e.sh`
+- **PASS 输出**:
+  ```text
+  [22:12:07] ✅ CE04 Model: gemini-2.0-flash
+  [22:12:07] ✅ QualityMetrics (CE04) Entry Found: 2
+  [22:12:07] ✅ SDXL Route: Success
+  [22:12:07] ✅ Flux Route: Success
+  [22:12:07] ✅ Ledger Flow: Success
+  [22:12:07] 🎉 P1-A: Real Model E2E Gate PASSED
+  ```
+- **关键 TraceID 示例**: `p1a-flux-20260108_221145`
+
+## 4. 封存信息
+
+- **Commit**: `feat(p1-a): real model router v2 (ce04+shot_render) + e2e gate`
+- **Tag**: `p1a_real_model_router2_20260108_221200` (示例)
