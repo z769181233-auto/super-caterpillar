@@ -1,4 +1,12 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectService } from '../project/project.service';
@@ -19,7 +27,12 @@ import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { UnprocessableEntityException } from '@nestjs/common';
 import { Prisma, JobStatus, JobType, TaskStatus, TaskType, JobEngineBindingStatus } from 'database';
-import { assertTransition, isClaimableStatus, transitionJobStatus, transitionJobStatusAdmin } from './job.rules';
+import {
+  assertTransition,
+  isClaimableStatus,
+  transitionJobStatus,
+  transitionJobStatusAdmin,
+} from './job.rules';
 import { markRetryOrFail, computeNextRetry } from './job.retry';
 type JobStatusType = JobStatus;
 type JobTypeType = JobType;
@@ -72,14 +85,15 @@ export class JobService {
     @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry,
     @Inject(QualityScoreService) private readonly qualityScoreService: QualityScoreService,
     @Inject(EngineConfigStoreService) private readonly engineConfigStore: EngineConfigStoreService,
-    @Inject(JobEngineBindingService) private readonly jobEngineBindingService: JobEngineBindingService,
+    @Inject(JobEngineBindingService)
+    private readonly jobEngineBindingService: JobEngineBindingService,
     @Inject(BillingService) private readonly billingService: BillingService,
     @Inject(CopyrightService) private readonly copyrightService: CopyrightService,
     @Inject(CapacityGateService) private readonly capacityGateService: CapacityGateService,
     @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService,
     @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService,
     @Inject(forwardRef(() => SceneGraphService))
-    private readonly sceneGraphService?: SceneGraphService,
+    private readonly sceneGraphService?: SceneGraphService
   ) { }
 
   async create(
@@ -87,17 +101,13 @@ export class JobService {
     createJobDto: CreateJobDto,
     userId: string,
     organizationId: string,
-    taskId?: string,
+    taskId?: string
   ) {
     // 文本安全审查
     if (this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_TRI_STATE')) {
       const payload = (createJobDto.payload || {}) as Record<string, any>;
       const textToCheck =
-        payload.enrichedText ??
-        payload.promptText ??
-        payload.rawText ??
-        payload.text ??
-        null;
+        payload.enrichedText ?? payload.promptText ?? payload.rawText ?? payload.text ?? null;
 
       if (textToCheck) {
         const traceId = payload.traceId || randomUUID();
@@ -113,7 +123,10 @@ export class JobService {
           resourceId: tempJobId,
         });
 
-        if (safetyResult.decision === 'BLOCK' && this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_BLOCK_ON_JOB_CREATE')) {
+        if (
+          safetyResult.decision === 'BLOCK' &&
+          this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_BLOCK_ON_JOB_CREATE')
+        ) {
           throw new UnprocessableEntityException({
             statusCode: 422,
             error: 'Unprocessable Entity',
@@ -159,7 +172,9 @@ export class JobService {
     // Stage 4: Hard Gate
     // 工业化硬性门槛：Scene 必须通过 Stage 2 (Novel Analysis) 才能进入 Stage 3 (Shot Render)
     if (!scene.summary) {
-      throw new BadRequestException('Cannot create job: Scene analysis incomplete (missing summary). Please complete Stage 2 first.');
+      throw new BadRequestException(
+        'Cannot create job: Scene analysis incomplete (missing summary). Please complete Stage 2 first.'
+      );
     }
 
     // API-Side Stable Error Code for Fail Fast
@@ -168,7 +183,9 @@ export class JobService {
         where: { projectId: project.id },
       });
       if (!novelSource || !novelSource.rawText) {
-        throw new BadRequestException('NOVEL_SOURCE_MISSING: Project has no novel source or empty text.');
+        throw new BadRequestException(
+          'NOVEL_SOURCE_MISSING: Project has no novel source or empty text.'
+        );
       }
     }
 
@@ -190,8 +207,12 @@ export class JobService {
           traceId
         );
       } catch (error) {
-        this.logger.warn(`Billing gate rejected job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}`);
-        throw new ForbiddenException(`Insufficient credits to start job. Required: ${requiredCredits} tokens.`);
+        this.logger.warn(
+          `Billing gate rejected job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}`
+        );
+        throw new ForbiddenException(
+          `Insufficient credits to start job. Required: ${requiredCredits} tokens.`
+        );
       }
     }
 
@@ -232,7 +253,9 @@ export class JobService {
       });
 
       // 2. 绑定 Engine（在同一个事务中）
-      const engineSelection = await this.jobEngineBindingService.selectEngineForJob(createJobDto.type as JobType);
+      const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
+        createJobDto.type as JobType
+      );
       if (!engineSelection) {
         // 如果没有可用 Engine，事务会自动回滚 Job 创建
         throw new BadRequestException(`No engine available for job type: ${createJobDto.type}`);
@@ -277,7 +300,7 @@ export class JobService {
     taskId: string,
     apiKeyId?: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ) {
     const payload = (createJobDto.payload || {}) as Record<string, any>;
     let shotId = payload.shotId as string | undefined;
@@ -319,7 +342,8 @@ export class JobService {
       }
 
       if (!episode) {
-        const episodeIndex = (await this.prisma.episode.count({ where: { seasonId: season.id } })) + 1;
+        const episodeIndex =
+          (await this.prisma.episode.count({ where: { seasonId: season.id } })) + 1;
         episode = await this.prisma.episode.create({
           data: {
             seasonId: season.id,
@@ -401,10 +425,14 @@ export class JobService {
       });
 
       // 2. 绑定 Engine（在同一个事务中）
-      const engineSelection = await this.jobEngineBindingService.selectEngineForJob(JobTypeEnum.NOVEL_ANALYSIS);
+      const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
+        JobTypeEnum.NOVEL_ANALYSIS
+      );
       if (!engineSelection) {
         // 如果没有可用 Engine，事务会自动回滚 Job 创建
-        throw new BadRequestException(`No engine available for job type: ${JobTypeEnum.NOVEL_ANALYSIS}`);
+        throw new BadRequestException(
+          `No engine available for job type: ${JobTypeEnum.NOVEL_ANALYSIS}`
+        );
       }
 
       // 3. 创建 Engine Binding（在同一个事务中）
@@ -422,7 +450,9 @@ export class JobService {
         },
       });
 
-      this.logger.log(`Auto-bound engine ${engineSelection.engineKey} to NOVEL_ANALYSIS job ${createdJob.id}`);
+      this.logger.log(
+        `Auto-bound engine ${engineSelection.engineKey} to NOVEL_ANALYSIS job ${createdJob.id}`
+      );
       return createdJob;
     });
 
@@ -436,7 +466,6 @@ export class JobService {
       userAgent,
       details: { type: job.type, taskId: job.taskId },
     });
-
 
     return job;
   }
@@ -581,7 +610,13 @@ export class JobService {
    * @param frameKeys List of frame storage keys
    * @param traceId Original traceId for lineage
    */
-  async ensureVideoRenderJob(shotId: string, frameKeys: string[], traceId: string, userId: string, organizationId: string): Promise<any> {
+  async ensureVideoRenderJob(
+    shotId: string,
+    frameKeys: string[],
+    traceId: string,
+    userId: string,
+    organizationId: string
+  ): Promise<any> {
     const jobType = JobTypeEnum.VIDEO_RENDER;
 
     // P1 修复：容量门禁检查移入事务，防止竞态条件
@@ -591,7 +626,7 @@ export class JobService {
       const capacityCheck = await this.capacityGateService.checkVideoRenderCapacity(
         organizationId,
         userId,
-        tx, // 传入事务客户端
+        tx // 传入事务客户端
       );
 
       if (!capacityCheck.allowed) {
@@ -599,7 +634,7 @@ export class JobService {
           capacityCheck.errorCode as CapacityErrorCode,
           capacityCheck.currentCount || 0,
           capacityCheck.limit || 0,
-          capacityCheck.reason,
+          capacityCheck.reason
         );
       }
 
@@ -611,19 +646,21 @@ export class JobService {
         where: {
           shotId,
           type: jobType,
-          status: { notIn: [JobStatusEnum.FAILED] } // Ignore failed, create new one. CANCELLED doesn't exist in Prisma enum yet
-        }
+          status: { notIn: [JobStatusEnum.FAILED] }, // Ignore failed, create new one. CANCELLED doesn't exist in Prisma enum yet
+        },
       });
 
       if (existing) {
-        this.logger.log(`[JobService] ensureVideoRenderJob: Job already exists (${existing.id}), skipping.`);
+        this.logger.log(
+          `[JobService] ensureVideoRenderJob: Job already exists (${existing.id}), skipping.`
+        );
         return existing;
       }
 
       // 2. Resolve hierarchy for ShotJob requirement
       const shotHierarchy = await tx.shot.findUnique({
         where: { id: shotId },
-        include: { scene: { include: { episode: true } } }
+        include: { scene: { include: { episode: true } } },
       });
 
       if (!shotHierarchy) throw new NotFoundException('Resource not found');
@@ -635,7 +672,7 @@ export class JobService {
         type: TaskTypeEnum.VIDEO_RENDER,
         status: TaskStatusEnum.PENDING,
         payload: { shotId, jobType },
-        traceId // Propagate traceId
+        traceId, // Propagate traceId
       });
 
       // 4. Create Job
@@ -652,10 +689,10 @@ export class JobService {
           payload: {
             shotId,
             frameKeys,
-            fps: 24 // Default FPS
+            fps: 24, // Default FPS
           },
-          traceId
-        }
+          traceId,
+        },
       });
 
       this.logger.log(`[JobService] ensureVideoRenderJob: Created job ${job.id}`);
@@ -666,7 +703,7 @@ export class JobService {
   /**
    * 安全地领取下一个 PENDING Job（使用数据库级别的锁防止竞态）
    * 参考《调度系统设计书_V1.0》第 3.1~3.5 章：事务 + 悲观锁保证一次分配不重复
-   * 
+   *
    * @param workerId Worker ID（用于验证 Worker 存在）
    * @param jobType 可选的 Job 类型过滤
    * @returns 领取到的 Job，如果没有可用的 Job 则返回 null
@@ -712,14 +749,18 @@ export class JobService {
       const runningCount = Number(runningCountResult[0]?.count || 0);
 
       if (runningCount >= jobMaxInFlight) {
-        this.logger.warn(`[JobService] Backpressure: concurrency limit reached (${runningCount}/${jobMaxInFlight}). Rejecting claim for workerId=${workerId}`);
+        this.logger.warn(
+          `[JobService] Backpressure: concurrency limit reached (${runningCount}/${jobMaxInFlight}). Rejecting claim for workerId=${workerId}`
+        );
         return null;
       }
 
       const supportedEngines = (caps?.supportedEngines as string[]) || [];
-      const filterTypes = jobType ? [jobType] : ((caps?.supportedJobTypes as string[]) || []);
+      const filterTypes = jobType ? [jobType] : (caps?.supportedJobTypes as string[]) || [];
 
-      this.logger.log(`[JobService] getAndMarkNextPendingJob: workerId=${workerId} running=${runningCount}/${jobMaxInFlight} filterTypes=${JSON.stringify(filterTypes)} engines=${JSON.stringify(supportedEngines)}`);
+      this.logger.log(
+        `[JobService] getAndMarkNextPendingJob: workerId=${workerId} running=${runningCount}/${jobMaxInFlight} filterTypes=${JSON.stringify(filterTypes)} engines=${JSON.stringify(supportedEngines)}`
+      );
 
       // P1-1: Strict Atomic Claim
       // Condition: status='PENDING' AND (lease_until IS NULL OR lease_until < NOW())
@@ -759,7 +800,9 @@ export class JobService {
       if (claimedJobs.length > 0) {
         this.logger.log(`[JobService] Claimed job ${claimedJobs[0].id} for worker ${workerId}`);
       } else {
-        this.logger.log(`[JobService] No jobs to claim for worker ${workerId} (types=${filterTypes.length}, query engines=${supportedEngines.length})`);
+        this.logger.log(
+          `[JobService] No jobs to claim for worker ${workerId} (types=${filterTypes.length}, query engines=${supportedEngines.length})`
+        );
         return null; // Explicitly return null if no jobs are claimed
       }
 
@@ -775,7 +818,7 @@ export class JobService {
           attempts: job.attempts,
           leaseUntil: job.leaseUntil,
           timestamp: new Date().toISOString(),
-        }),
+        })
       );
 
       // 4. 返回完整结构
@@ -826,7 +869,7 @@ export class JobService {
     ip?: string,
     userAgent?: string,
     hmacMeta?: { nonce?: string; signature?: string; hmacTimestamp?: string },
-    attempts?: number,
+    attempts?: number
   ) {
     const job = await this.prisma.shotJob.findUnique({
       where: { id: jobId },
@@ -857,13 +900,15 @@ export class JobService {
       throw new NotFoundException('Resource not found');
     }
 
-    const timestamp = hmacMeta?.hmacTimestamp ? new Date(Number(hmacMeta.hmacTimestamp)) : undefined;
+    const timestamp = hmacMeta?.hmacTimestamp
+      ? new Date(Number(hmacMeta.hmacTimestamp))
+      : undefined;
 
     // P1-1: Result Idempotency Check
     // Prevent stale worker reports (e.g. from previous attempts) from overwriting current state.
     if (attempts !== undefined && job.attempts !== attempts) {
       this.logger.warn(
-        `[JobService] Stale report rejected: Job ${jobId} attempts mismatch (db=${job.attempts}, report=${attempts})`,
+        `[JobService] Stale report rejected: Job ${jobId} attempts mismatch (db=${job.attempts}, report=${attempts})`
       );
 
       try {
@@ -915,7 +960,7 @@ export class JobService {
     } catch (e: unknown) {
       const err = e as Error;
       this.logger.warn(
-        `[Job] reportJobResult: failed to write JOB_REPORT_RECEIVED audit log for job ${jobId}: ${err?.message || String(e)} `,
+        `[Job] reportJobResult: failed to write JOB_REPORT_RECEIVED audit log for job ${jobId}: ${err?.message || String(e)} `
       );
     }
 
@@ -927,8 +972,7 @@ export class JobService {
     //   - 其它非法转换仍拒绝
     if (job.status !== JobStatusEnum.RUNNING) {
       const alreadyTerminal =
-        job.status === JobStatusEnum.SUCCEEDED ||
-        job.status === JobStatusEnum.FAILED;
+        job.status === JobStatusEnum.SUCCEEDED || job.status === JobStatusEnum.FAILED;
 
       if (status === job.status) {
         return job;
@@ -966,7 +1010,7 @@ export class JobService {
             ? { ...currentPayload, result: resultForPayload }
             : currentPayload;
 
-        const updatedJob = await this.prisma.shotJob.update({
+        const updatedJob = (await this.prisma.shotJob.update({
           where: { id: jobId },
           data: {
             status: JobStatusEnum.SUCCEEDED,
@@ -997,20 +1041,24 @@ export class JobService {
               },
             },
           },
-        }) as ShotJobWithShotHierarchy;
+        })) as ShotJobWithShotHierarchy;
 
         if (process.env.NODE_ENV === 'development') {
           console.log(
-            `[DEV][Job] reportJobResult jobId = ${jobId} status = ${status} workerId = ${updatedJob.workerId} `,
+            `[DEV][Job] reportJobResult jobId = ${jobId} status = ${status} workerId = ${updatedJob.workerId} `
           );
         }
 
         // P1 修复：提取可观测性字段
         const spanId = job.traceId || null; // 使用 traceId 作为 span_id（若存在）
-        const modelUsed = (job.engineConfig as Record<string, any>)?.engineKey || (job.payload as Record<string, any>)?.engineKey || null;
-        const duration = job.updatedAt && job.createdAt
-          ? new Date(job.updatedAt).getTime() - new Date(job.createdAt).getTime()
-          : undefined;
+        const modelUsed =
+          (job.engineConfig as Record<string, any>)?.engineKey ||
+          (job.payload as Record<string, any>)?.engineKey ||
+          null;
+        const duration =
+          job.updatedAt && job.createdAt
+            ? new Date(job.updatedAt).getTime() - new Date(job.createdAt).getTime()
+            : undefined;
 
         await this.auditLogService.record({
           userId,
@@ -1040,9 +1088,17 @@ export class JobService {
             // TraceId for legacy path
             const traceId = `LEGACY_JOB_COMPLETE_${jobId}_${Date.now()} `;
             // Use consumeCredits for deduction
-            await this.billingService.consumeCredits(userId, job.organizationId, cost, "LEGACY_JOB", traceId);
+            await this.billingService.consumeCredits(
+              userId,
+              job.organizationId,
+              cost,
+              'LEGACY_JOB',
+              traceId
+            );
           } catch (error) {
-            this.logger.error(`Failed to deduct credits for job ${jobId}: ${(error as Error).message} `);
+            this.logger.error(
+              `Failed to deduct credits for job ${jobId}: ${(error as Error).message} `
+            );
           }
         }
 
@@ -1054,7 +1110,9 @@ export class JobService {
             const contentHash = `job - ${job.id} -content`;
             await this.copyrightService.registerAsset(userId, 'shot_render', contentHash);
           } catch (error) {
-            this.logger.error(`Failed to register copyright for job ${jobId}: ${(error as Error).message} `);
+            this.logger.error(
+              `Failed to register copyright for job ${jobId}: ${(error as Error).message} `
+            );
           }
         }
 
@@ -1106,7 +1164,7 @@ export class JobService {
           } catch (e: any) {
             // NovelAnalysisJob 同步失败不应阻断 Job 主状态写入（否则会造成 UI 永久 RUNNING + Worker 重试风暴）
             this.logger.warn(
-              `[Job] reportJobResult: failed to update NovelAnalysisJob for job ${jobId}: ${e?.message || e} `,
+              `[Job] reportJobResult: failed to update NovelAnalysisJob for job ${jobId}: ${e?.message || e} `
             );
           }
 
@@ -1116,17 +1174,20 @@ export class JobService {
               await this.sceneGraphService.invalidateProjectSceneGraph(job.projectId);
             } catch (cacheError) {
               // 缓存清除失败不影响主流程
-              this.logger.warn(`Failed to invalidate SceneGraph cache for project ${job.projectId}: ${cacheError} `);
+              this.logger.warn(
+                `Failed to invalidate SceneGraph cache for project ${job.projectId}: ${cacheError} `
+              );
             }
           }
         }
 
-
-
         // P0-2: Record cost to ledger for billable jobs (idempotent)
-        if (updatedJob.type === JobTypeEnum.VIDEO_RENDER || updatedJob.type === JobTypeEnum.SHOT_RENDER) {
+        if (
+          updatedJob.type === JobTypeEnum.VIDEO_RENDER ||
+          updatedJob.type === JobTypeEnum.SHOT_RENDER
+        ) {
           try {
-            const costAmount = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
+            const totalCost = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
             await this.prisma.costLedger.upsert({
               where: {
                 jobId_jobType: {
@@ -1139,18 +1200,25 @@ export class JobService {
                 userId: userId || 'system',
                 jobId: updatedJob.id,
                 jobType: updatedJob.type,
-                costAmount,
-                billingUnit: 'CREDITS',
+                totalCost,
+                unitCost: 0,
+                costType: 'AI_RENDER',
                 quantity: 1,
+                orgId: updatedJob.organizationId,
+                traceId: updatedJob.traceId || `trace-${updatedJob.id}`,
               },
               update: {
                 // Idempotent: no-op on duplicate
-                costAmount,
+                totalCost,
               },
             });
-            this.logger.log(`[Job] Recorded cost_ledger for ${updatedJob.type} job ${updatedJob.id}: ${costAmount} `);
+            this.logger.log(
+              `[Job] Recorded cost_ledger for ${updatedJob.type} job ${updatedJob.id}: ${totalCost} `
+            );
           } catch (costError: any) {
-            this.logger.warn(`[Job] Failed to record cost_ledger for job ${jobId}: ${costError?.message} `);
+            this.logger.warn(
+              `[Job] Failed to record cost_ledger for job ${jobId}: ${costError?.message} `
+            );
           }
         }
 
@@ -1159,7 +1227,7 @@ export class JobService {
         // 防御性兜底：若 SUCCEEDED 分支内部抛错，不再把错误冒泡为 500，而是按 FAILED 处理并进入统一重试/失败逻辑
         const msg = e?.message || 'Unexpected error in reportJobResult(SUCCEEDED)';
         this.logger.error(
-          `[Job] reportJobResult SUCCEEDED branch failed for job ${jobId}: ${msg} `,
+          `[Job] reportJobResult SUCCEEDED branch failed for job ${jobId}: ${msg} `
         );
         return this.markJobFailedAndMaybeRetry(jobId, msg, userId, apiKeyId, ip, userAgent);
       }
@@ -1190,7 +1258,7 @@ export class JobService {
         }
       } catch (e: any) {
         this.logger.warn(
-          `[Job] reportJobResult: failed to mark NovelAnalysisJob FAILED for job ${jobId}: ${e?.message || e} `,
+          `[Job] reportJobResult: failed to mark NovelAnalysisJob FAILED for job ${jobId}: ${e?.message || e} `
         );
       }
     }
@@ -1211,7 +1279,7 @@ export class JobService {
   /**
    * 统一的重试入口：标记 Job 失败并决定是否重试
    * 参考《TaskSystemAsyncExecutionSpec_V1.0》中关于重试策略的章节
-   * 
+   *
    * @param jobId Job ID
    * @param errorMessage 错误信息
    * @param userId 用户 ID（用于审计日志）
@@ -1226,7 +1294,7 @@ export class JobService {
     userId?: string,
     apiKeyId?: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ) {
     const job = await this.prisma.shotJob.findUnique({
       where: { id: jobId },
@@ -1263,7 +1331,7 @@ export class JobService {
   /**
    * 根据重试策略处理失败的 Job（统一入口，使用 job.retry.ts）
    * 参考《TaskSystemAsyncExecutionSpec_V1.0》中关于重试策略和 backoff 的章节
-   * 
+   *
    * 重试策略（统一入口，使用 job.retry.ts）：
    * - 只用 retryCount/maxRetry 判断，不使用 attempts
    * - 如果 retryCount >= maxRetry → FAILED
@@ -1276,7 +1344,7 @@ export class JobService {
     userId?: string,
     apiKeyId?: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ) {
     // 断言状态转换：RUNNING -> RETRYING 或 RUNNING -> FAILED
     const computation = computeNextRetry(job);
@@ -1295,10 +1363,12 @@ export class JobService {
 
     // P1 修复：可观测性字段：记录 worker_id、duration、error_code、span_id、model_used
     const spanId = job.traceId || null; // 使用 traceId 作为 span_id（若存在）
-    const modelUsed = (job.engineConfig as any)?.engineKey || (job.payload as any)?.engineKey || null;
-    const duration = job.updatedAt && job.createdAt
-      ? new Date(job.updatedAt).getTime() - new Date(job.createdAt).getTime()
-      : undefined; // 注意：包含队列等待时间，非纯执行时间
+    const modelUsed =
+      (job.engineConfig as any)?.engineKey || (job.payload as any)?.engineKey || null;
+    const duration =
+      job.updatedAt && job.createdAt
+        ? new Date(job.updatedAt).getTime() - new Date(job.createdAt).getTime()
+        : undefined; // 注意：包含队列等待时间，非纯执行时间
 
     // 记录结构化日志：Job 进入重试或最终失败
     // 参考《平台日志监控与可观测性体系说明书_ObservabilityMonitoringSpec_V1.0》：结构化日志格式
@@ -1321,7 +1391,7 @@ export class JobService {
         spanId, // 分布式追踪 ID
         modelUsed, // 使用的模型/引擎
         timestamp: new Date().toISOString(),
-      }),
+      })
     );
 
     await this.auditLogService.record({
@@ -1377,7 +1447,7 @@ export class JobService {
     const hasFailed = task.jobs.some((job: any) => job.status === JobStatusEnum.FAILED);
     const hasRetrying = task.jobs.some((job: any) => job.status === JobStatusEnum.RETRYING);
     const hasPendingOrRunning = task.jobs.some(
-      (job: any) => job.status === JobStatusEnum.PENDING || job.status === JobStatusEnum.RUNNING,
+      (job: any) => job.status === JobStatusEnum.PENDING || job.status === JobStatusEnum.RUNNING
     );
 
     if (allSucceeded) {
@@ -1391,14 +1461,28 @@ export class JobService {
       // S1-FIX-A: 获取执行该 Task 的 Worker ID（取第一个成功的 Job 的 workerId）
       const workerId = task.jobs.find((j: any) => j.workerId)?.workerId || null;
 
-      await this.taskService.updateStatus(taskId, TaskStatusEnum.SUCCEEDED, undefined, undefined, taskOutput, workerId);
+      await this.taskService.updateStatus(
+        taskId,
+        TaskStatusEnum.SUCCEEDED,
+        undefined,
+        undefined,
+        taskOutput,
+        workerId
+      );
       return;
     }
 
     if (hasFailed && !hasRetrying && !hasPendingOrRunning) {
       // S1-FIX-A: 获取执行该 Task 的 Worker ID（取第一个失败的 Job 的 workerId）
       const workerId = task.jobs.find((j: any) => j.workerId)?.workerId || null;
-      await this.taskService.updateStatus(taskId, TaskStatusEnum.FAILED, undefined, 'Some jobs failed', undefined, workerId);
+      await this.taskService.updateStatus(
+        taskId,
+        TaskStatusEnum.FAILED,
+        undefined,
+        'Some jobs failed',
+        undefined,
+        workerId
+      );
     }
   }
 
@@ -1412,7 +1496,9 @@ export class JobService {
       include: {
         shot: {
           include: {
-            scene: { include: { episode: { include: { season: { include: { project: true } } } } } },
+            scene: {
+              include: { episode: { include: { season: { include: { project: true } } } } },
+            },
           },
         },
         task: true,
@@ -1485,10 +1571,12 @@ export class JobService {
 
       const duration = Date.now() - startTime;
       this.logger.log(`[JobService] Job ${jobId} finished in ${duration} ms`);
-
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      this.logger.error(`[JobService] Job ${jobId} failed in ${duration} ms: ${error.message} `, error.stack);
+      this.logger.error(
+        `[JobService] Job ${jobId} failed in ${duration} ms: ${error.message} `,
+        error.stack
+      );
 
       // 4. 上报失败
       await this.reportJobResult(
@@ -1517,7 +1605,9 @@ export class JobService {
   }
 
   async findJobById(id: string, userId: string, organizationId: string) {
-    this.logger.log(`[DEBUG] findJobById: id = ${id} userId = ${userId} orgId = ${organizationId} `);
+    this.logger.log(
+      `[DEBUG] findJobById: id = ${id} userId = ${userId} orgId = ${organizationId} `
+    );
     const job = (await this.prisma.shotJob.findUnique({
       where: {
         id,
@@ -1555,7 +1645,9 @@ export class JobService {
       // Debug: Attempt to find without orgId to diagnose
       const jobAnyOrg = await this.prisma.shotJob.findUnique({ where: { id } });
       if (jobAnyOrg) {
-        this.logger.warn(`[DEBUG] Job FOUND without org filter! Job Org = ${jobAnyOrg.organizationId}, Request Org = ${organizationId} `);
+        this.logger.warn(
+          `[DEBUG] Job FOUND without org filter! Job Org = ${jobAnyOrg.organizationId}, Request Org = ${organizationId} `
+        );
       } else {
         this.logger.warn(`[DEBUG] Job strictly NOT FOUND in DB.`);
       }
@@ -1566,7 +1658,9 @@ export class JobService {
     // 检查组织权限：支持 Season 和 Project 两种结构
     const project = job.shot.scene.episode.season?.project;
     if (!project || project.organizationId !== organizationId) {
-      this.logger.warn(`[DEBUG] Project Org Mismatch.Proj Org = ${project?.organizationId}, Request Org = ${organizationId} `);
+      this.logger.warn(
+        `[DEBUG] Project Org Mismatch.Proj Org = ${project?.organizationId}, Request Org = ${organizationId} `
+      );
       throw new ForbiddenException('You do not have permission to access this job');
     }
 
@@ -1576,18 +1670,32 @@ export class JobService {
   /**
    * 查询 Jobs（运维接口）
    */
-  async listJobs(userId: string, organizationId: string, filters: {
-    status?: string;
-    type?: string;
-    shotId?: string;
-    projectId?: string;
-    engineKey?: string;
-    from?: string;
-    to?: string;
-    page?: number;
-    pageSize?: number;
-  }) {
-    const { status, type, shotId, projectId, engineKey, from, to, page = 1, pageSize = 20 } = filters;
+  async listJobs(
+    userId: string,
+    organizationId: string,
+    filters: {
+      status?: string;
+      type?: string;
+      shotId?: string;
+      projectId?: string;
+      engineKey?: string;
+      from?: string;
+      to?: string;
+      page?: number;
+      pageSize?: number;
+    }
+  ) {
+    const {
+      status,
+      type,
+      shotId,
+      projectId,
+      engineKey,
+      from,
+      to,
+      page = 1,
+      pageSize = 20,
+    } = filters;
     const skip = (page - 1) * pageSize;
     const take = pageSize;
 
@@ -1610,12 +1718,12 @@ export class JobService {
 
     // 时间范围过滤（按 createdAt）
     if (from || to) {
-      where.createdAt = {};
+      where.timestamp = {};
       if (from) {
-        where.createdAt.gte = new Date(from);
+        where.timestamp.gte = new Date(from);
       }
       if (to) {
-        where.createdAt.lte = new Date(to);
+        where.timestamp.lte = new Date(to);
       }
     }
 
@@ -1713,7 +1821,11 @@ export class JobService {
         let qualityScore = null;
         if (job.status === 'SUCCEEDED' && job.taskId) {
           try {
-            const score = this.qualityScoreService.buildQualityScoreFromJob(job, adapter, job.taskId);
+            const score = this.qualityScoreService.buildQualityScoreFromJob(
+              job,
+              adapter,
+              job.taskId
+            );
             if (score) {
               qualityScore = {
                 score: score.quality?.score ?? null,
@@ -1805,7 +1917,7 @@ export class JobService {
     engineKey: string,
     projectId: string | undefined,
     userId: string,
-    organizationId: string,
+    organizationId: string
   ): Promise<{
     engineKey: string;
     totalJobs: number;
@@ -1863,10 +1975,12 @@ export class JobService {
     });
 
     // 在内存中过滤 engineKey 匹配的 Job
-    const filteredJobs = jobs.filter((job: any) => {
-      const jobEngineKey = this.extractEngineKeyFromJob(job);
-      return jobEngineKey === engineKey;
-    }).slice(0, 100); // 只取前 100 条
+    const filteredJobs = jobs
+      .filter((job: any) => {
+        const jobEngineKey = this.extractEngineKeyFromJob(job);
+        return jobEngineKey === engineKey;
+      })
+      .slice(0, 100); // 只取前 100 条
 
     if (filteredJobs.length === 0) {
       return {
@@ -1948,11 +2062,18 @@ export class JobService {
   /**
    * 重试 Job
    */
-  async retryJob(jobId: string, userId: string, organizationId: string, resetAttempts: boolean = false) {
+  async retryJob(
+    jobId: string,
+    userId: string,
+    organizationId: string,
+    resetAttempts: boolean = false
+  ) {
     const job = await this.findJobById(jobId, userId, organizationId);
 
     if (job.status === JobStatusEnum.RUNNING) {
-      throw new ForbiddenException('Cannot retry a running job. Wait for it to finish or cancel it first.');
+      throw new ForbiddenException(
+        'Cannot retry a running job. Wait for it to finish or cancel it first.'
+      );
     }
 
     if (job.status === JobStatusEnum.SUCCEEDED) {
@@ -2041,7 +2162,12 @@ export class JobService {
   /**
    * 批量重试
    */
-  async batchRetry(jobIds: string[], userId: string, organizationId: string, resetAttempts: boolean = false) {
+  async batchRetry(
+    jobIds: string[],
+    userId: string,
+    organizationId: string,
+    resetAttempts: boolean = false
+  ) {
     const results = await Promise.allSettled(
       jobIds.map((jobId: string) => this.retryJob(jobId, userId, organizationId, resetAttempts))
     );
@@ -2112,7 +2238,7 @@ export class JobService {
 
     if (process.env.NODE_ENV === 'development') {
       console.log(
-        `[DEV][Job] getNextPendingJobForWorker workerId = ${workerId} jobId = ${job ? job.id : 'none'} status = ${job ? job.status : 'none'} `,
+        `[DEV][Job] getNextPendingJobForWorker workerId = ${workerId} jobId = ${job ? job.id : 'none'} status = ${job ? job.status : 'none'} `
       );
     }
 
@@ -2272,7 +2398,10 @@ export class JobService {
    * CE06 完成 → 触发 CE03
    * CE03 完成 → 触发 CE04
    */
-  private async handleCECoreJobCompletion(job: ShotJobWithShotHierarchy, result?: unknown): Promise<void> {
+  private async handleCECoreJobCompletion(
+    job: ShotJobWithShotHierarchy,
+    result?: unknown
+  ): Promise<void> {
     const task = await this.prisma.task.findUnique({
       where: { id: job.taskId || '' },
     });
@@ -2319,14 +2448,16 @@ export class JobService {
         this.logger.log(`CE03 completed, triggered CE04 for project ${job.projectId}`);
       }
     }
-
   }
 
   /**
    * 处理 SHOT_RENDER 完成后的安全链路（CE09）
    * Stage3-A: 从 handleCECoreJobCompletion 中分离出来，在 reportJobResult 的 SUCCEEDED 分支中调用
    */
-  private async handleShotRenderSecurityPipeline(job: ShotJobWithShotHierarchy, result?: unknown): Promise<void> {
+  private async handleShotRenderSecurityPipeline(
+    job: ShotJobWithShotHierarchy,
+    result?: unknown
+  ): Promise<void> {
     try {
       // TODO: 实现真实逻辑（调用 CE09 引擎生成 HLS/水印/指纹）
       // 查找关联的 VideoJob
@@ -2357,30 +2488,37 @@ export class JobService {
           },
         });
 
-        this.logger.log(`CE09: VideoJob ${videoJob.id} security processed, Asset ${asset.id} created`);
+        this.logger.log(
+          `CE09: VideoJob ${videoJob.id} security processed, Asset ${asset.id} created`
+        );
       }
     } catch (error: any) {
       // 软失败：记录 audit_logs（符合 SafetySpec）
-      await this.auditLogService.record({
-        action: 'CE09_SECURITY_PIPELINE_FAIL',
-        resourceType: 'job',
-        resourceId: job.id,
-        details: {
-          reason: 'CE09 security pipeline failed',
-          error: error?.message || 'Unknown error',
-          shotId: job.shotId,
-          projectId: job.projectId,
-        },
-      }).catch(() => {
-        // 审计失败不阻断
-      });
+      await this.auditLogService
+        .record({
+          action: 'CE09_SECURITY_PIPELINE_FAIL',
+          resourceType: 'job',
+          resourceId: job.id,
+          details: {
+            reason: 'CE09 security pipeline failed',
+            error: error?.message || 'Unknown error',
+            shotId: job.shotId,
+            projectId: job.projectId,
+          },
+        })
+        .catch(() => {
+          // 审计失败不阻断
+        });
       // 结构化日志（不打堆栈）
-      this.logger.warn({
-        tag: 'CE09_SECURITY_PIPELINE_FAIL',
-        jobId: job.id,
-        shotId: job.shotId,
-        error: error?.message || 'Unknown error',
-      }, 'CE09 security pipeline failed');
+      this.logger.warn(
+        {
+          tag: 'CE09_SECURITY_PIPELINE_FAIL',
+          jobId: job.id,
+          shotId: job.shotId,
+          error: error?.message || 'Unknown error',
+        },
+        'CE09 security pipeline failed'
+      );
     }
   }
 
@@ -2416,7 +2554,7 @@ export class JobService {
       for (let i = failedIndex + 1; i < pipeline.length; i++) {
         const nextJobType = pipeline[i];
         const pendingJobs = task.jobs.filter(
-          (j: any) => j.type === nextJobType && j.status === JobStatusEnum.PENDING,
+          (j: any) => j.type === nextJobType && j.status === JobStatusEnum.PENDING
         );
 
         for (const pendingJob of pendingJobs) {
@@ -2449,16 +2587,15 @@ export class JobService {
             });
 
             this.logger.warn(
-              `CE Pipeline: wrote SKIPPED audit for CE04 job ${pendingJob.id} due to ${job.type} failure`,
+              `CE Pipeline: wrote SKIPPED audit for CE04 job ${pendingJob.id} due to ${job.type} failure`
             );
           }
 
           this.logger.warn(
-            `CE Pipeline failed: marked ${nextJobType} job ${pendingJob.id} as FAILED due to ${job.type} failure`,
+            `CE Pipeline failed: marked ${nextJobType} job ${pendingJob.id} as FAILED due to ${job.type} failure`
           );
         }
       }
     }
   }
 }
-
