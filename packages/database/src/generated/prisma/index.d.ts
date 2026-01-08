@@ -64496,146 +64496,154 @@ export namespace Prisma {
   }
 
   export type CostLedgerAvgAggregateOutputType = {
-    unitCost: number | null
-    unitCostCredits: number | null
+    costAmount: number | null
     quantity: number | null
     totalCost: number | null
-    totalCredits: number | null
+    unitCost: number | null
   }
 
   export type CostLedgerSumAggregateOutputType = {
-    unitCost: number | null
-    unitCostCredits: number | null
+    costAmount: number | null
     quantity: number | null
     totalCost: number | null
-    totalCredits: number | null
+    unitCost: number | null
   }
 
   export type CostLedgerMinAggregateOutputType = {
     id: string | null
-    traceId: string | null
-    projectId: string | null
-    orgId: string | null
     userId: string | null
+    projectId: string | null
     jobId: string | null
     jobType: string | null
+    engineKey: string | null
+    costAmount: number | null
+    currency: string | null
+    billingUnit: string | null
+    quantity: number | null
+    createdAt: Date | null
+    traceId: string | null
+    orgId: string | null
+    totalCost: number | null
     costType: string | null
     unitCost: number | null
-    unitCostCredits: number | null
-    quantity: number | null
-    totalCost: number | null
-    totalCredits: number | null
-    modelName: string | null
     timestamp: Date | null
   }
 
   export type CostLedgerMaxAggregateOutputType = {
     id: string | null
-    traceId: string | null
-    projectId: string | null
-    orgId: string | null
     userId: string | null
+    projectId: string | null
     jobId: string | null
     jobType: string | null
+    engineKey: string | null
+    costAmount: number | null
+    currency: string | null
+    billingUnit: string | null
+    quantity: number | null
+    createdAt: Date | null
+    traceId: string | null
+    orgId: string | null
+    totalCost: number | null
     costType: string | null
     unitCost: number | null
-    unitCostCredits: number | null
-    quantity: number | null
-    totalCost: number | null
-    totalCredits: number | null
-    modelName: string | null
     timestamp: Date | null
   }
 
   export type CostLedgerCountAggregateOutputType = {
     id: number
-    traceId: number
-    projectId: number
-    orgId: number
     userId: number
+    projectId: number
     jobId: number
     jobType: number
+    engineKey: number
+    costAmount: number
+    currency: number
+    billingUnit: number
+    quantity: number
+    metadata: number
+    createdAt: number
+    traceId: number
+    orgId: number
+    totalCost: number
     costType: number
     unitCost: number
-    unitCostCredits: number
-    quantity: number
-    totalCost: number
-    totalCredits: number
-    modelName: number
-    metadata: number
     timestamp: number
     _all: number
   }
 
 
   export type CostLedgerAvgAggregateInputType = {
-    unitCost?: true
-    unitCostCredits?: true
+    costAmount?: true
     quantity?: true
     totalCost?: true
-    totalCredits?: true
+    unitCost?: true
   }
 
   export type CostLedgerSumAggregateInputType = {
-    unitCost?: true
-    unitCostCredits?: true
+    costAmount?: true
     quantity?: true
     totalCost?: true
-    totalCredits?: true
+    unitCost?: true
   }
 
   export type CostLedgerMinAggregateInputType = {
     id?: true
-    traceId?: true
-    projectId?: true
-    orgId?: true
     userId?: true
+    projectId?: true
     jobId?: true
     jobType?: true
+    engineKey?: true
+    costAmount?: true
+    currency?: true
+    billingUnit?: true
+    quantity?: true
+    createdAt?: true
+    traceId?: true
+    orgId?: true
+    totalCost?: true
     costType?: true
     unitCost?: true
-    unitCostCredits?: true
-    quantity?: true
-    totalCost?: true
-    totalCredits?: true
-    modelName?: true
     timestamp?: true
   }
 
   export type CostLedgerMaxAggregateInputType = {
     id?: true
-    traceId?: true
-    projectId?: true
-    orgId?: true
     userId?: true
+    projectId?: true
     jobId?: true
     jobType?: true
+    engineKey?: true
+    costAmount?: true
+    currency?: true
+    billingUnit?: true
+    quantity?: true
+    createdAt?: true
+    traceId?: true
+    orgId?: true
+    totalCost?: true
     costType?: true
     unitCost?: true
-    unitCostCredits?: true
-    quantity?: true
-    totalCost?: true
-    totalCredits?: true
-    modelName?: true
     timestamp?: true
   }
 
   export type CostLedgerCountAggregateInputType = {
     id?: true
-    traceId?: true
-    projectId?: true
-    orgId?: true
     userId?: true
+    projectId?: true
     jobId?: true
     jobType?: true
+    engineKey?: true
+    costAmount?: true
+    currency?: true
+    billingUnit?: true
+    quantity?: true
+    metadata?: true
+    createdAt?: true
+    traceId?: true
+    orgId?: true
+    totalCost?: true
     costType?: true
     unitCost?: true
-    unitCostCredits?: true
-    quantity?: true
-    totalCost?: true
-    totalCredits?: true
-    modelName?: true
-    metadata?: true
     timestamp?: true
     _all?: true
   }
@@ -64728,20 +64736,22 @@ export namespace Prisma {
 
   export type CostLedgerGroupByOutputType = {
     id: string
-    traceId: string
-    projectId: string
-    orgId: string
     userId: string | null
-    jobId: string | null
-    jobType: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits: number | null
+    projectId: string
+    jobId: string
+    jobType: string
+    engineKey: string | null
+    costAmount: number
+    currency: string
+    billingUnit: string | null
     quantity: number
-    totalCost: number
-    totalCredits: number | null
-    modelName: string | null
     metadata: JsonValue | null
+    createdAt: Date
+    traceId: string | null
+    orgId: string | null
+    totalCost: number | null
+    costType: string | null
+    unitCost: number | null
     timestamp: Date
     _count: CostLedgerCountAggregateOutputType | null
     _avg: CostLedgerAvgAggregateOutputType | null
@@ -64766,96 +64776,104 @@ export namespace Prisma {
 
   export type CostLedgerSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    traceId?: boolean
-    projectId?: boolean
-    orgId?: boolean
     userId?: boolean
+    projectId?: boolean
     jobId?: boolean
     jobType?: boolean
+    engineKey?: boolean
+    costAmount?: boolean
+    currency?: boolean
+    billingUnit?: boolean
+    quantity?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    traceId?: boolean
+    orgId?: boolean
+    totalCost?: boolean
     costType?: boolean
     unitCost?: boolean
-    unitCostCredits?: boolean
-    quantity?: boolean
-    totalCost?: boolean
-    totalCredits?: boolean
-    modelName?: boolean
-    metadata?: boolean
     timestamp?: boolean
-    user?: boolean | CostLedger$userArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    user?: boolean | CostLedger$userArgs<ExtArgs>
   }, ExtArgs["result"]["costLedger"]>
 
   export type CostLedgerSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    traceId?: boolean
-    projectId?: boolean
-    orgId?: boolean
     userId?: boolean
+    projectId?: boolean
     jobId?: boolean
     jobType?: boolean
+    engineKey?: boolean
+    costAmount?: boolean
+    currency?: boolean
+    billingUnit?: boolean
+    quantity?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    traceId?: boolean
+    orgId?: boolean
+    totalCost?: boolean
     costType?: boolean
     unitCost?: boolean
-    unitCostCredits?: boolean
-    quantity?: boolean
-    totalCost?: boolean
-    totalCredits?: boolean
-    modelName?: boolean
-    metadata?: boolean
     timestamp?: boolean
-    user?: boolean | CostLedger$userArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    user?: boolean | CostLedger$userArgs<ExtArgs>
   }, ExtArgs["result"]["costLedger"]>
 
   export type CostLedgerSelectScalar = {
     id?: boolean
-    traceId?: boolean
-    projectId?: boolean
-    orgId?: boolean
     userId?: boolean
+    projectId?: boolean
     jobId?: boolean
     jobType?: boolean
+    engineKey?: boolean
+    costAmount?: boolean
+    currency?: boolean
+    billingUnit?: boolean
+    quantity?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    traceId?: boolean
+    orgId?: boolean
+    totalCost?: boolean
     costType?: boolean
     unitCost?: boolean
-    unitCostCredits?: boolean
-    quantity?: boolean
-    totalCost?: boolean
-    totalCredits?: boolean
-    modelName?: boolean
-    metadata?: boolean
     timestamp?: boolean
   }
 
   export type CostLedgerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | CostLedger$userArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    user?: boolean | CostLedger$userArgs<ExtArgs>
   }
   export type CostLedgerIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | CostLedger$userArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    user?: boolean | CostLedger$userArgs<ExtArgs>
   }
 
   export type $CostLedgerPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "CostLedger"
     objects: {
-      user: Prisma.$UserPayload<ExtArgs> | null
       project: Prisma.$ProjectPayload<ExtArgs>
+      user: Prisma.$UserPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      traceId: string
-      projectId: string
-      orgId: string
       userId: string | null
-      jobId: string | null
-      jobType: string | null
-      costType: string
-      unitCost: number
-      unitCostCredits: number | null
+      projectId: string
+      jobId: string
+      jobType: string
+      engineKey: string | null
+      costAmount: number
+      currency: string
+      billingUnit: string | null
       quantity: number
-      totalCost: number
-      totalCredits: number | null
-      modelName: string | null
       metadata: Prisma.JsonValue | null
+      createdAt: Date
+      traceId: string | null
+      orgId: string | null
+      totalCost: number | null
+      costType: string | null
+      unitCost: number | null
       timestamp: Date
     }, ExtArgs["result"]["costLedger"]>
     composites: {}
@@ -65221,8 +65239,8 @@ export namespace Prisma {
    */
   export interface Prisma__CostLedgerClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    user<T extends CostLedger$userArgs<ExtArgs> = {}>(args?: Subset<T, CostLedger$userArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    user<T extends CostLedger$userArgs<ExtArgs> = {}>(args?: Subset<T, CostLedger$userArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -65253,20 +65271,22 @@ export namespace Prisma {
    */ 
   interface CostLedgerFieldRefs {
     readonly id: FieldRef<"CostLedger", 'String'>
-    readonly traceId: FieldRef<"CostLedger", 'String'>
-    readonly projectId: FieldRef<"CostLedger", 'String'>
-    readonly orgId: FieldRef<"CostLedger", 'String'>
     readonly userId: FieldRef<"CostLedger", 'String'>
+    readonly projectId: FieldRef<"CostLedger", 'String'>
     readonly jobId: FieldRef<"CostLedger", 'String'>
     readonly jobType: FieldRef<"CostLedger", 'String'>
+    readonly engineKey: FieldRef<"CostLedger", 'String'>
+    readonly costAmount: FieldRef<"CostLedger", 'Float'>
+    readonly currency: FieldRef<"CostLedger", 'String'>
+    readonly billingUnit: FieldRef<"CostLedger", 'String'>
+    readonly quantity: FieldRef<"CostLedger", 'Float'>
+    readonly metadata: FieldRef<"CostLedger", 'Json'>
+    readonly createdAt: FieldRef<"CostLedger", 'DateTime'>
+    readonly traceId: FieldRef<"CostLedger", 'String'>
+    readonly orgId: FieldRef<"CostLedger", 'String'>
+    readonly totalCost: FieldRef<"CostLedger", 'Float'>
     readonly costType: FieldRef<"CostLedger", 'String'>
     readonly unitCost: FieldRef<"CostLedger", 'Float'>
-    readonly unitCostCredits: FieldRef<"CostLedger", 'Float'>
-    readonly quantity: FieldRef<"CostLedger", 'Float'>
-    readonly totalCost: FieldRef<"CostLedger", 'Float'>
-    readonly totalCredits: FieldRef<"CostLedger", 'Float'>
-    readonly modelName: FieldRef<"CostLedger", 'String'>
-    readonly metadata: FieldRef<"CostLedger", 'Json'>
     readonly timestamp: FieldRef<"CostLedger", 'DateTime'>
   }
     
@@ -66501,20 +66521,22 @@ export namespace Prisma {
 
   export const CostLedgerScalarFieldEnum: {
     id: 'id',
-    traceId: 'traceId',
-    projectId: 'projectId',
-    orgId: 'orgId',
     userId: 'userId',
+    projectId: 'projectId',
     jobId: 'jobId',
     jobType: 'jobType',
+    engineKey: 'engineKey',
+    costAmount: 'costAmount',
+    currency: 'currency',
+    billingUnit: 'billingUnit',
+    quantity: 'quantity',
+    metadata: 'metadata',
+    createdAt: 'createdAt',
+    traceId: 'traceId',
+    orgId: 'orgId',
+    totalCost: 'totalCost',
     costType: 'costType',
     unitCost: 'unitCost',
-    unitCostCredits: 'unitCostCredits',
-    quantity: 'quantity',
-    totalCost: 'totalCost',
-    totalCredits: 'totalCredits',
-    modelName: 'modelName',
-    metadata: 'metadata',
     timestamp: 'timestamp'
   };
 
@@ -71784,44 +71806,48 @@ export namespace Prisma {
     OR?: CostLedgerWhereInput[]
     NOT?: CostLedgerWhereInput | CostLedgerWhereInput[]
     id?: StringFilter<"CostLedger"> | string
-    traceId?: StringFilter<"CostLedger"> | string
-    projectId?: StringFilter<"CostLedger"> | string
-    orgId?: StringFilter<"CostLedger"> | string
     userId?: StringNullableFilter<"CostLedger"> | string | null
-    jobId?: StringNullableFilter<"CostLedger"> | string | null
-    jobType?: StringNullableFilter<"CostLedger"> | string | null
-    costType?: StringFilter<"CostLedger"> | string
-    unitCost?: FloatFilter<"CostLedger"> | number
-    unitCostCredits?: FloatNullableFilter<"CostLedger"> | number | null
+    projectId?: StringFilter<"CostLedger"> | string
+    jobId?: StringFilter<"CostLedger"> | string
+    jobType?: StringFilter<"CostLedger"> | string
+    engineKey?: StringNullableFilter<"CostLedger"> | string | null
+    costAmount?: FloatFilter<"CostLedger"> | number
+    currency?: StringFilter<"CostLedger"> | string
+    billingUnit?: StringNullableFilter<"CostLedger"> | string | null
     quantity?: FloatFilter<"CostLedger"> | number
-    totalCost?: FloatFilter<"CostLedger"> | number
-    totalCredits?: FloatNullableFilter<"CostLedger"> | number | null
-    modelName?: StringNullableFilter<"CostLedger"> | string | null
     metadata?: JsonNullableFilter<"CostLedger">
+    createdAt?: DateTimeFilter<"CostLedger"> | Date | string
+    traceId?: StringNullableFilter<"CostLedger"> | string | null
+    orgId?: StringNullableFilter<"CostLedger"> | string | null
+    totalCost?: FloatNullableFilter<"CostLedger"> | number | null
+    costType?: StringNullableFilter<"CostLedger"> | string | null
+    unitCost?: FloatNullableFilter<"CostLedger"> | number | null
     timestamp?: DateTimeFilter<"CostLedger"> | Date | string
-    user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+    user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
   }
 
   export type CostLedgerOrderByWithRelationInput = {
     id?: SortOrder
-    traceId?: SortOrder
-    projectId?: SortOrder
-    orgId?: SortOrder
     userId?: SortOrderInput | SortOrder
-    jobId?: SortOrderInput | SortOrder
-    jobType?: SortOrderInput | SortOrder
-    costType?: SortOrder
-    unitCost?: SortOrder
-    unitCostCredits?: SortOrderInput | SortOrder
+    projectId?: SortOrder
+    jobId?: SortOrder
+    jobType?: SortOrder
+    engineKey?: SortOrderInput | SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrderInput | SortOrder
     quantity?: SortOrder
-    totalCost?: SortOrder
-    totalCredits?: SortOrderInput | SortOrder
-    modelName?: SortOrderInput | SortOrder
     metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    traceId?: SortOrderInput | SortOrder
+    orgId?: SortOrderInput | SortOrder
+    totalCost?: SortOrderInput | SortOrder
+    costType?: SortOrderInput | SortOrder
+    unitCost?: SortOrderInput | SortOrder
     timestamp?: SortOrder
-    user?: UserOrderByWithRelationInput
     project?: ProjectOrderByWithRelationInput
+    user?: UserOrderByWithRelationInput
   }
 
   export type CostLedgerWhereUniqueInput = Prisma.AtLeast<{
@@ -71830,41 +71856,45 @@ export namespace Prisma {
     AND?: CostLedgerWhereInput | CostLedgerWhereInput[]
     OR?: CostLedgerWhereInput[]
     NOT?: CostLedgerWhereInput | CostLedgerWhereInput[]
-    traceId?: StringFilter<"CostLedger"> | string
-    projectId?: StringFilter<"CostLedger"> | string
-    orgId?: StringFilter<"CostLedger"> | string
     userId?: StringNullableFilter<"CostLedger"> | string | null
-    jobId?: StringNullableFilter<"CostLedger"> | string | null
-    jobType?: StringNullableFilter<"CostLedger"> | string | null
-    costType?: StringFilter<"CostLedger"> | string
-    unitCost?: FloatFilter<"CostLedger"> | number
-    unitCostCredits?: FloatNullableFilter<"CostLedger"> | number | null
+    projectId?: StringFilter<"CostLedger"> | string
+    jobId?: StringFilter<"CostLedger"> | string
+    jobType?: StringFilter<"CostLedger"> | string
+    engineKey?: StringNullableFilter<"CostLedger"> | string | null
+    costAmount?: FloatFilter<"CostLedger"> | number
+    currency?: StringFilter<"CostLedger"> | string
+    billingUnit?: StringNullableFilter<"CostLedger"> | string | null
     quantity?: FloatFilter<"CostLedger"> | number
-    totalCost?: FloatFilter<"CostLedger"> | number
-    totalCredits?: FloatNullableFilter<"CostLedger"> | number | null
-    modelName?: StringNullableFilter<"CostLedger"> | string | null
     metadata?: JsonNullableFilter<"CostLedger">
+    createdAt?: DateTimeFilter<"CostLedger"> | Date | string
+    traceId?: StringNullableFilter<"CostLedger"> | string | null
+    orgId?: StringNullableFilter<"CostLedger"> | string | null
+    totalCost?: FloatNullableFilter<"CostLedger"> | number | null
+    costType?: StringNullableFilter<"CostLedger"> | string | null
+    unitCost?: FloatNullableFilter<"CostLedger"> | number | null
     timestamp?: DateTimeFilter<"CostLedger"> | Date | string
-    user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+    user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
   }, "id" | "jobId_jobType">
 
   export type CostLedgerOrderByWithAggregationInput = {
     id?: SortOrder
-    traceId?: SortOrder
-    projectId?: SortOrder
-    orgId?: SortOrder
     userId?: SortOrderInput | SortOrder
-    jobId?: SortOrderInput | SortOrder
-    jobType?: SortOrderInput | SortOrder
-    costType?: SortOrder
-    unitCost?: SortOrder
-    unitCostCredits?: SortOrderInput | SortOrder
+    projectId?: SortOrder
+    jobId?: SortOrder
+    jobType?: SortOrder
+    engineKey?: SortOrderInput | SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrderInput | SortOrder
     quantity?: SortOrder
-    totalCost?: SortOrder
-    totalCredits?: SortOrderInput | SortOrder
-    modelName?: SortOrderInput | SortOrder
     metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    traceId?: SortOrderInput | SortOrder
+    orgId?: SortOrderInput | SortOrder
+    totalCost?: SortOrderInput | SortOrder
+    costType?: SortOrderInput | SortOrder
+    unitCost?: SortOrderInput | SortOrder
     timestamp?: SortOrder
     _count?: CostLedgerCountOrderByAggregateInput
     _avg?: CostLedgerAvgOrderByAggregateInput
@@ -71878,20 +71908,22 @@ export namespace Prisma {
     OR?: CostLedgerScalarWhereWithAggregatesInput[]
     NOT?: CostLedgerScalarWhereWithAggregatesInput | CostLedgerScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"CostLedger"> | string
-    traceId?: StringWithAggregatesFilter<"CostLedger"> | string
-    projectId?: StringWithAggregatesFilter<"CostLedger"> | string
-    orgId?: StringWithAggregatesFilter<"CostLedger"> | string
     userId?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
-    jobId?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
-    jobType?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
-    costType?: StringWithAggregatesFilter<"CostLedger"> | string
-    unitCost?: FloatWithAggregatesFilter<"CostLedger"> | number
-    unitCostCredits?: FloatNullableWithAggregatesFilter<"CostLedger"> | number | null
+    projectId?: StringWithAggregatesFilter<"CostLedger"> | string
+    jobId?: StringWithAggregatesFilter<"CostLedger"> | string
+    jobType?: StringWithAggregatesFilter<"CostLedger"> | string
+    engineKey?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
+    costAmount?: FloatWithAggregatesFilter<"CostLedger"> | number
+    currency?: StringWithAggregatesFilter<"CostLedger"> | string
+    billingUnit?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
     quantity?: FloatWithAggregatesFilter<"CostLedger"> | number
-    totalCost?: FloatWithAggregatesFilter<"CostLedger"> | number
-    totalCredits?: FloatNullableWithAggregatesFilter<"CostLedger"> | number | null
-    modelName?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
     metadata?: JsonNullableWithAggregatesFilter<"CostLedger">
+    createdAt?: DateTimeWithAggregatesFilter<"CostLedger"> | Date | string
+    traceId?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
+    orgId?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
+    totalCost?: FloatNullableWithAggregatesFilter<"CostLedger"> | number | null
+    costType?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
+    unitCost?: FloatNullableWithAggregatesFilter<"CostLedger"> | number | null
     timestamp?: DateTimeWithAggregatesFilter<"CostLedger"> | Date | string
   }
 
@@ -77017,132 +77049,146 @@ export namespace Prisma {
 
   export type CostLedgerCreateInput = {
     id?: string
-    traceId: string
-    orgId: string
-    jobId?: string | null
-    jobType?: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits?: number | null
-    quantity: number
-    totalCost: number
-    totalCredits?: number | null
-    modelName?: string | null
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
     timestamp?: Date | string
-    user?: UserCreateNestedOneWithoutCostLedgersInput
     project: ProjectCreateNestedOneWithoutCostLedgersInput
+    user?: UserCreateNestedOneWithoutCostLedgersInput
   }
 
   export type CostLedgerUncheckedCreateInput = {
     id?: string
-    traceId: string
-    projectId: string
-    orgId: string
     userId?: string | null
-    jobId?: string | null
-    jobType?: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits?: number | null
-    quantity: number
-    totalCost: number
-    totalCredits?: number | null
-    modelName?: string | null
+    projectId: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
     timestamp?: Date | string
   }
 
   export type CostLedgerUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
-    user?: UserUpdateOneWithoutCostLedgersNestedInput
     project?: ProjectUpdateOneRequiredWithoutCostLedgersNestedInput
+    user?: UserUpdateOneWithoutCostLedgersNestedInput
   }
 
   export type CostLedgerUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
-    projectId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
     userId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    projectId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CostLedgerCreateManyInput = {
     id?: string
-    traceId: string
-    projectId: string
-    orgId: string
     userId?: string | null
-    jobId?: string | null
-    jobType?: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits?: number | null
-    quantity: number
-    totalCost: number
-    totalCredits?: number | null
-    modelName?: string | null
+    projectId: string
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
     timestamp?: Date | string
   }
 
   export type CostLedgerUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CostLedgerUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
-    projectId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
     userId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    projectId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -80924,73 +80970,77 @@ export namespace Prisma {
 
   export type CostLedgerCountOrderByAggregateInput = {
     id?: SortOrder
-    traceId?: SortOrder
-    projectId?: SortOrder
-    orgId?: SortOrder
     userId?: SortOrder
+    projectId?: SortOrder
     jobId?: SortOrder
     jobType?: SortOrder
+    engineKey?: SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrder
+    quantity?: SortOrder
+    metadata?: SortOrder
+    createdAt?: SortOrder
+    traceId?: SortOrder
+    orgId?: SortOrder
+    totalCost?: SortOrder
     costType?: SortOrder
     unitCost?: SortOrder
-    unitCostCredits?: SortOrder
-    quantity?: SortOrder
-    totalCost?: SortOrder
-    totalCredits?: SortOrder
-    modelName?: SortOrder
-    metadata?: SortOrder
     timestamp?: SortOrder
   }
 
   export type CostLedgerAvgOrderByAggregateInput = {
-    unitCost?: SortOrder
-    unitCostCredits?: SortOrder
+    costAmount?: SortOrder
     quantity?: SortOrder
     totalCost?: SortOrder
-    totalCredits?: SortOrder
+    unitCost?: SortOrder
   }
 
   export type CostLedgerMaxOrderByAggregateInput = {
     id?: SortOrder
-    traceId?: SortOrder
-    projectId?: SortOrder
-    orgId?: SortOrder
     userId?: SortOrder
+    projectId?: SortOrder
     jobId?: SortOrder
     jobType?: SortOrder
+    engineKey?: SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrder
+    quantity?: SortOrder
+    createdAt?: SortOrder
+    traceId?: SortOrder
+    orgId?: SortOrder
+    totalCost?: SortOrder
     costType?: SortOrder
     unitCost?: SortOrder
-    unitCostCredits?: SortOrder
-    quantity?: SortOrder
-    totalCost?: SortOrder
-    totalCredits?: SortOrder
-    modelName?: SortOrder
     timestamp?: SortOrder
   }
 
   export type CostLedgerMinOrderByAggregateInput = {
     id?: SortOrder
-    traceId?: SortOrder
-    projectId?: SortOrder
-    orgId?: SortOrder
     userId?: SortOrder
+    projectId?: SortOrder
     jobId?: SortOrder
     jobType?: SortOrder
+    engineKey?: SortOrder
+    costAmount?: SortOrder
+    currency?: SortOrder
+    billingUnit?: SortOrder
+    quantity?: SortOrder
+    createdAt?: SortOrder
+    traceId?: SortOrder
+    orgId?: SortOrder
+    totalCost?: SortOrder
     costType?: SortOrder
     unitCost?: SortOrder
-    unitCostCredits?: SortOrder
-    quantity?: SortOrder
-    totalCost?: SortOrder
-    totalCredits?: SortOrder
-    modelName?: SortOrder
     timestamp?: SortOrder
   }
 
   export type CostLedgerSumOrderByAggregateInput = {
-    unitCost?: SortOrder
-    unitCostCredits?: SortOrder
+    costAmount?: SortOrder
     quantity?: SortOrder
     totalCost?: SortOrder
-    totalCredits?: SortOrder
+    unitCost?: SortOrder
   }
 
   export type ApiKeyCreateNestedManyWithoutOwnerUserInput = {
@@ -84957,16 +85007,24 @@ export namespace Prisma {
     set?: $Enums.TextSafetyDecision
   }
 
+  export type ProjectCreateNestedOneWithoutCostLedgersInput = {
+    create?: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
+    connectOrCreate?: ProjectCreateOrConnectWithoutCostLedgersInput
+    connect?: ProjectWhereUniqueInput
+  }
+
   export type UserCreateNestedOneWithoutCostLedgersInput = {
     create?: XOR<UserCreateWithoutCostLedgersInput, UserUncheckedCreateWithoutCostLedgersInput>
     connectOrCreate?: UserCreateOrConnectWithoutCostLedgersInput
     connect?: UserWhereUniqueInput
   }
 
-  export type ProjectCreateNestedOneWithoutCostLedgersInput = {
+  export type ProjectUpdateOneRequiredWithoutCostLedgersNestedInput = {
     create?: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
     connectOrCreate?: ProjectCreateOrConnectWithoutCostLedgersInput
+    upsert?: ProjectUpsertWithoutCostLedgersInput
     connect?: ProjectWhereUniqueInput
+    update?: XOR<XOR<ProjectUpdateToOneWithWhereWithoutCostLedgersInput, ProjectUpdateWithoutCostLedgersInput>, ProjectUncheckedUpdateWithoutCostLedgersInput>
   }
 
   export type UserUpdateOneWithoutCostLedgersNestedInput = {
@@ -84977,14 +85035,6 @@ export namespace Prisma {
     delete?: UserWhereInput | boolean
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCostLedgersInput, UserUpdateWithoutCostLedgersInput>, UserUncheckedUpdateWithoutCostLedgersInput>
-  }
-
-  export type ProjectUpdateOneRequiredWithoutCostLedgersNestedInput = {
-    create?: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
-    connectOrCreate?: ProjectCreateOrConnectWithoutCostLedgersInput
-    upsert?: ProjectUpsertWithoutCostLedgersInput
-    connect?: ProjectWhereUniqueInput
-    update?: XOR<XOR<ProjectUpdateToOneWithWhereWithoutCostLedgersInput, ProjectUpdateWithoutCostLedgersInput>, ProjectUncheckedUpdateWithoutCostLedgersInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -85992,37 +86042,41 @@ export namespace Prisma {
 
   export type CostLedgerCreateWithoutUserInput = {
     id?: string
-    traceId: string
-    orgId: string
-    jobId?: string | null
-    jobType?: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits?: number | null
-    quantity: number
-    totalCost: number
-    totalCredits?: number | null
-    modelName?: string | null
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
     timestamp?: Date | string
     project: ProjectCreateNestedOneWithoutCostLedgersInput
   }
 
   export type CostLedgerUncheckedCreateWithoutUserInput = {
     id?: string
-    traceId: string
     projectId: string
-    orgId: string
-    jobId?: string | null
-    jobType?: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits?: number | null
-    quantity: number
-    totalCost: number
-    totalCredits?: number | null
-    modelName?: string | null
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
     timestamp?: Date | string
   }
 
@@ -86404,20 +86458,22 @@ export namespace Prisma {
     OR?: CostLedgerScalarWhereInput[]
     NOT?: CostLedgerScalarWhereInput | CostLedgerScalarWhereInput[]
     id?: StringFilter<"CostLedger"> | string
-    traceId?: StringFilter<"CostLedger"> | string
-    projectId?: StringFilter<"CostLedger"> | string
-    orgId?: StringFilter<"CostLedger"> | string
     userId?: StringNullableFilter<"CostLedger"> | string | null
-    jobId?: StringNullableFilter<"CostLedger"> | string | null
-    jobType?: StringNullableFilter<"CostLedger"> | string | null
-    costType?: StringFilter<"CostLedger"> | string
-    unitCost?: FloatFilter<"CostLedger"> | number
-    unitCostCredits?: FloatNullableFilter<"CostLedger"> | number | null
+    projectId?: StringFilter<"CostLedger"> | string
+    jobId?: StringFilter<"CostLedger"> | string
+    jobType?: StringFilter<"CostLedger"> | string
+    engineKey?: StringNullableFilter<"CostLedger"> | string | null
+    costAmount?: FloatFilter<"CostLedger"> | number
+    currency?: StringFilter<"CostLedger"> | string
+    billingUnit?: StringNullableFilter<"CostLedger"> | string | null
     quantity?: FloatFilter<"CostLedger"> | number
-    totalCost?: FloatFilter<"CostLedger"> | number
-    totalCredits?: FloatNullableFilter<"CostLedger"> | number | null
-    modelName?: StringNullableFilter<"CostLedger"> | string | null
     metadata?: JsonNullableFilter<"CostLedger">
+    createdAt?: DateTimeFilter<"CostLedger"> | Date | string
+    traceId?: StringNullableFilter<"CostLedger"> | string | null
+    orgId?: StringNullableFilter<"CostLedger"> | string | null
+    totalCost?: FloatNullableFilter<"CostLedger"> | number | null
+    costType?: StringNullableFilter<"CostLedger"> | string | null
+    unitCost?: FloatNullableFilter<"CostLedger"> | number | null
     timestamp?: DateTimeFilter<"CostLedger"> | Date | string
   }
 
@@ -88233,37 +88289,41 @@ export namespace Prisma {
 
   export type CostLedgerCreateWithoutProjectInput = {
     id?: string
-    traceId: string
-    orgId: string
-    jobId?: string | null
-    jobType?: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits?: number | null
-    quantity: number
-    totalCost: number
-    totalCredits?: number | null
-    modelName?: string | null
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
     timestamp?: Date | string
     user?: UserCreateNestedOneWithoutCostLedgersInput
   }
 
   export type CostLedgerUncheckedCreateWithoutProjectInput = {
     id?: string
-    traceId: string
-    orgId: string
     userId?: string | null
-    jobId?: string | null
-    jobType?: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits?: number | null
-    quantity: number
-    totalCost: number
-    totalCredits?: number | null
-    modelName?: string | null
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
     timestamp?: Date | string
   }
 
@@ -96663,57 +96723,6 @@ export namespace Prisma {
     costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
   }
 
-  export type UserCreateWithoutCostLedgersInput = {
-    id?: string
-    email: string
-    passwordHash: string
-    avatar?: string | null
-    userType?: $Enums.UserType
-    role?: $Enums.UserRole
-    tier?: $Enums.UserTier
-    quota?: NullableJsonNullValueInput | InputJsonValue
-    defaultOrganizationId?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
-    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
-    billingEvents?: BillingEventCreateNestedManyWithoutUserInput
-    memberships?: MembershipCreateNestedManyWithoutUserInput
-    organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
-    ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
-    ownedProjects?: ProjectCreateNestedManyWithoutOwnerInput
-    reviewLogs?: PublishingReviewCreateNestedManyWithoutReviewerInput
-    subscriptions?: SubscriptionCreateNestedManyWithoutUserInput
-  }
-
-  export type UserUncheckedCreateWithoutCostLedgersInput = {
-    id?: string
-    email: string
-    passwordHash: string
-    avatar?: string | null
-    userType?: $Enums.UserType
-    role?: $Enums.UserRole
-    tier?: $Enums.UserTier
-    quota?: NullableJsonNullValueInput | InputJsonValue
-    defaultOrganizationId?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
-    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
-    billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
-    memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
-    organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
-    ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
-    ownedProjects?: ProjectUncheckedCreateNestedManyWithoutOwnerInput
-    reviewLogs?: PublishingReviewUncheckedCreateNestedManyWithoutReviewerInput
-    subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutUserInput
-  }
-
-  export type UserCreateOrConnectWithoutCostLedgersInput = {
-    where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutCostLedgersInput, UserUncheckedCreateWithoutCostLedgersInput>
-  }
-
   export type ProjectCreateWithoutCostLedgersInput = {
     id?: string
     name: string
@@ -96771,61 +96780,55 @@ export namespace Prisma {
     create: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
   }
 
-  export type UserUpsertWithoutCostLedgersInput = {
-    update: XOR<UserUpdateWithoutCostLedgersInput, UserUncheckedUpdateWithoutCostLedgersInput>
+  export type UserCreateWithoutCostLedgersInput = {
+    id?: string
+    email: string
+    passwordHash: string
+    avatar?: string | null
+    userType?: $Enums.UserType
+    role?: $Enums.UserRole
+    tier?: $Enums.UserTier
+    quota?: NullableJsonNullValueInput | InputJsonValue
+    defaultOrganizationId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    apiKeys?: ApiKeyCreateNestedManyWithoutOwnerUserInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    billingEvents?: BillingEventCreateNestedManyWithoutUserInput
+    memberships?: MembershipCreateNestedManyWithoutUserInput
+    organizationMembers?: OrganizationMemberCreateNestedManyWithoutUserInput
+    ownedOrganizations?: OrganizationCreateNestedManyWithoutOwnerInput
+    ownedProjects?: ProjectCreateNestedManyWithoutOwnerInput
+    reviewLogs?: PublishingReviewCreateNestedManyWithoutReviewerInput
+    subscriptions?: SubscriptionCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutCostLedgersInput = {
+    id?: string
+    email: string
+    passwordHash: string
+    avatar?: string | null
+    userType?: $Enums.UserType
+    role?: $Enums.UserRole
+    tier?: $Enums.UserTier
+    quota?: NullableJsonNullValueInput | InputJsonValue
+    defaultOrganizationId?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerUserInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    billingEvents?: BillingEventUncheckedCreateNestedManyWithoutUserInput
+    memberships?: MembershipUncheckedCreateNestedManyWithoutUserInput
+    organizationMembers?: OrganizationMemberUncheckedCreateNestedManyWithoutUserInput
+    ownedOrganizations?: OrganizationUncheckedCreateNestedManyWithoutOwnerInput
+    ownedProjects?: ProjectUncheckedCreateNestedManyWithoutOwnerInput
+    reviewLogs?: PublishingReviewUncheckedCreateNestedManyWithoutReviewerInput
+    subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutCostLedgersInput = {
+    where: UserWhereUniqueInput
     create: XOR<UserCreateWithoutCostLedgersInput, UserUncheckedCreateWithoutCostLedgersInput>
-    where?: UserWhereInput
-  }
-
-  export type UserUpdateToOneWithWhereWithoutCostLedgersInput = {
-    where?: UserWhereInput
-    data: XOR<UserUpdateWithoutCostLedgersInput, UserUncheckedUpdateWithoutCostLedgersInput>
-  }
-
-  export type UserUpdateWithoutCostLedgersInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
-    passwordHash?: StringFieldUpdateOperationsInput | string
-    avatar?: NullableStringFieldUpdateOperationsInput | string | null
-    userType?: EnumUserTypeFieldUpdateOperationsInput | $Enums.UserType
-    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
-    tier?: EnumUserTierFieldUpdateOperationsInput | $Enums.UserTier
-    quota?: NullableJsonNullValueInput | InputJsonValue
-    defaultOrganizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
-    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
-    billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
-    memberships?: MembershipUpdateManyWithoutUserNestedInput
-    organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
-    ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
-    ownedProjects?: ProjectUpdateManyWithoutOwnerNestedInput
-    reviewLogs?: PublishingReviewUpdateManyWithoutReviewerNestedInput
-    subscriptions?: SubscriptionUpdateManyWithoutUserNestedInput
-  }
-
-  export type UserUncheckedUpdateWithoutCostLedgersInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
-    passwordHash?: StringFieldUpdateOperationsInput | string
-    avatar?: NullableStringFieldUpdateOperationsInput | string | null
-    userType?: EnumUserTypeFieldUpdateOperationsInput | $Enums.UserType
-    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
-    tier?: EnumUserTierFieldUpdateOperationsInput | $Enums.UserTier
-    quota?: NullableJsonNullValueInput | InputJsonValue
-    defaultOrganizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
-    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
-    billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
-    memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
-    organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
-    ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
-    ownedProjects?: ProjectUncheckedUpdateManyWithoutOwnerNestedInput
-    reviewLogs?: PublishingReviewUncheckedUpdateManyWithoutReviewerNestedInput
-    subscriptions?: SubscriptionUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ProjectUpsertWithoutCostLedgersInput = {
@@ -96891,6 +96894,63 @@ export namespace Prisma {
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
   }
 
+  export type UserUpsertWithoutCostLedgersInput = {
+    update: XOR<UserUpdateWithoutCostLedgersInput, UserUncheckedUpdateWithoutCostLedgersInput>
+    create: XOR<UserCreateWithoutCostLedgersInput, UserUncheckedCreateWithoutCostLedgersInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutCostLedgersInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutCostLedgersInput, UserUncheckedUpdateWithoutCostLedgersInput>
+  }
+
+  export type UserUpdateWithoutCostLedgersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    avatar?: NullableStringFieldUpdateOperationsInput | string | null
+    userType?: EnumUserTypeFieldUpdateOperationsInput | $Enums.UserType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    tier?: EnumUserTierFieldUpdateOperationsInput | $Enums.UserTier
+    quota?: NullableJsonNullValueInput | InputJsonValue
+    defaultOrganizationId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    apiKeys?: ApiKeyUpdateManyWithoutOwnerUserNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    billingEvents?: BillingEventUpdateManyWithoutUserNestedInput
+    memberships?: MembershipUpdateManyWithoutUserNestedInput
+    organizationMembers?: OrganizationMemberUpdateManyWithoutUserNestedInput
+    ownedOrganizations?: OrganizationUpdateManyWithoutOwnerNestedInput
+    ownedProjects?: ProjectUpdateManyWithoutOwnerNestedInput
+    reviewLogs?: PublishingReviewUpdateManyWithoutReviewerNestedInput
+    subscriptions?: SubscriptionUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutCostLedgersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    avatar?: NullableStringFieldUpdateOperationsInput | string | null
+    userType?: EnumUserTypeFieldUpdateOperationsInput | $Enums.UserType
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    tier?: EnumUserTierFieldUpdateOperationsInput | $Enums.UserTier
+    quota?: NullableJsonNullValueInput | InputJsonValue
+    defaultOrganizationId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerUserNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    billingEvents?: BillingEventUncheckedUpdateManyWithoutUserNestedInput
+    memberships?: MembershipUncheckedUpdateManyWithoutUserNestedInput
+    organizationMembers?: OrganizationMemberUncheckedUpdateManyWithoutUserNestedInput
+    ownedOrganizations?: OrganizationUncheckedUpdateManyWithoutOwnerNestedInput
+    ownedProjects?: ProjectUncheckedUpdateManyWithoutOwnerNestedInput
+    reviewLogs?: PublishingReviewUncheckedUpdateManyWithoutReviewerNestedInput
+    subscriptions?: SubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  }
+
   export type ApiKeyCreateManyOwnerUserInput = {
     id?: string
     key: string
@@ -96946,19 +97006,21 @@ export namespace Prisma {
 
   export type CostLedgerCreateManyUserInput = {
     id?: string
-    traceId: string
     projectId: string
-    orgId: string
-    jobId?: string | null
-    jobType?: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits?: number | null
-    quantity: number
-    totalCost: number
-    totalCredits?: number | null
-    modelName?: string | null
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
     timestamp?: Date | string
   }
 
@@ -97187,55 +97249,61 @@ export namespace Prisma {
 
   export type CostLedgerUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     project?: ProjectUpdateOneRequiredWithoutCostLedgersNestedInput
   }
 
   export type CostLedgerUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
     projectId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CostLedgerUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
     projectId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -98312,19 +98380,21 @@ export namespace Prisma {
 
   export type CostLedgerCreateManyProjectInput = {
     id?: string
-    traceId: string
-    orgId: string
     userId?: string | null
-    jobId?: string | null
-    jobType?: string | null
-    costType: string
-    unitCost: number
-    unitCostCredits?: number | null
-    quantity: number
-    totalCost: number
-    totalCredits?: number | null
-    modelName?: string | null
+    jobId: string
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
     timestamp?: Date | string
   }
 
@@ -98807,55 +98877,61 @@ export namespace Prisma {
 
   export type CostLedgerUpdateWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneWithoutCostLedgersNestedInput
   }
 
   export type CostLedgerUncheckedUpdateWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
     userId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CostLedgerUncheckedUpdateManyWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
-    traceId?: StringFieldUpdateOperationsInput | string
-    orgId?: StringFieldUpdateOperationsInput | string
     userId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobType?: NullableStringFieldUpdateOperationsInput | string | null
-    costType?: StringFieldUpdateOperationsInput | string
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    jobId?: StringFieldUpdateOperationsInput | string
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
-    modelName?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

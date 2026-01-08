@@ -1,0 +1,54 @@
+
+================================================================================
+P1-B V1.1.2 REPAIR EVIDENCE - FINAL SEALED
+================================================================================
+Date: 2026-01-08
+Tag: p1-b-v1.1.2
+Status: VERIFIED & SEALED
+
+1. BUILD REPAIR
+--------------------------------------------------------------------------------
+- Issue: Original p1-b-v1.1 tag had missing CostLedger model in schema.prisma preventing compilation.
+- Fix: Restored CostLedger schema as a "Superset" (supporting both legacy JobService fields and new CostService fields) to allow compilation without modifying discouraged code files.
+- Result: `pnpm -w run typecheck` PASS.
+
+2. BUDGET GUARD LOGIC (100% TIER)
+--------------------------------------------------------------------------------
+- Standard Tasks (SHOT_RENDER): [ALLOWED]
+  Action: job.create.allow.budget_100_standard
+  Response: 201 Created
+
+- High-Cost Tasks (VIDEO_RENDER): [BLOCKED]
+  Action: job.create.blocked.budget_100_highcost
+  Response: 402 Payment Required
+  Log: "Project budget exceeded (100%+). High-cost task VIDEO_RENDER blocked."
+
+3. AUDIT COMPLETENESS (5/5 Actions Verified)
+--------------------------------------------------------------------------------
+Query: SELECT action, nonce, signature, timestamp FROM audit_logs
+Result:
+[x] job.create.warn.budget_80              (Has Nonce/Sig/Time)
+[x] job.create.allow.budget_100_standard   (Has Nonce/Sig/Time)
+[x] job.create.blocked.budget_100_highcost (Has Nonce/Sig/Time)
+[x] job.create.blocked.budget_120          (Has Nonce/Sig/Time)
+[x] job.create.blocked.quota               (Has Nonce/Sig/Time)
+
+4. GATE EXECUTION
+--------------------------------------------------------------------------------
+Script: tools/gate/gates/gate-p1-b_quota_budget_e2e.sh
+Auth Method: JWT Generation (No Code Bypass) in Script
+Outcome: PASS
+- Quota (0 Credits): BLOCKED (402)
+- Budget 80%: ALLOWED (Audit Warn)
+- Budget 100% Std: ALLOWED (Audit Allow)
+- Budget 100% High: BLOCKED (402)
+- Budget 120%: BLOCKED (402)
+
+5. COMPLIANCE
+--------------------------------------------------------------------------------
+- Modified Files:
+  1. tools/gate/gates/gate-p1-b_quota_budget_e2e.sh (Test Script)
+  2. apps/api/src/auth/guards/budget.guard.ts (Logic)
+  3. packages/database/prisma/schema.prisma (Build Fix Only)
+  4. tools/gate/gates/p1b_seed_helper.ts (New Test Helper)
+- Forbidden Files Touched: NONE (jwt-or-hmac.guard.ts, cost-ledger.service.ts, ce-core-processor.ts preserved)

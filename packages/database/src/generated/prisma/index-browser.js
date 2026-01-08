@@ -826,20 +826,22 @@ exports.Prisma.TextSafetyResultScalarFieldEnum = {
 
 exports.Prisma.CostLedgerScalarFieldEnum = {
   id: 'id',
-  traceId: 'traceId',
-  projectId: 'projectId',
-  orgId: 'orgId',
   userId: 'userId',
+  projectId: 'projectId',
   jobId: 'jobId',
   jobType: 'jobType',
+  engineKey: 'engineKey',
+  costAmount: 'costAmount',
+  currency: 'currency',
+  billingUnit: 'billingUnit',
+  quantity: 'quantity',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  traceId: 'traceId',
+  orgId: 'orgId',
+  totalCost: 'totalCost',
   costType: 'costType',
   unitCost: 'unitCost',
-  unitCostCredits: 'unitCostCredits',
-  quantity: 'quantity',
-  totalCost: 'totalCost',
-  totalCredits: 'totalCredits',
-  modelName: 'modelName',
-  metadata: 'metadata',
   timestamp: 'timestamp'
 };
 
