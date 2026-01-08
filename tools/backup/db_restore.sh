@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+if [[ "${DATABASE_URL:-}" != *"localhost"* && "${DATABASE_URL:-}" != *"127.0.0.1"* ]]; then
+  echo "❌ REFUSE TO RUN ON NON-LOCAL DATABASE"
+  exit 99
+fi
+
 # P1-2: Database Restore Script
 # 从custom format备份恢复数据库
 
