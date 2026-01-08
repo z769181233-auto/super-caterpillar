@@ -69,12 +69,14 @@ log "== Phase B: Assertions =="
 
 # A1: Unique (jobId, jobType) no duplicates
 psql_out "A1_duplicates_jobId_jobType" -c "
-select \"jobId\", \"jobType\", count(*) as cnt
-from cost_ledger
-group by \"jobId\", \"jobType\"
-having count(*) > 1
-order by cnt desc;"
-if grep -Eq '\|\s*[1-9]' "$EVID/sql_outputs/A1_duplicates_jobId_jobType.log"; then
+select count(*)
+from (
+  select \"jobId\", \"jobType\"
+  from cost_ledger
+  group by \"jobId\", \"jobType\"
+  having count(*) > 1
+) sub;"
+if [[ "$(tr -d '[:space:]' < "$EVID/sql_outputs/A1_duplicates_jobId_jobType.log")" != "0" ]]; then
   echo "❌ A1 FAIL: duplicates detected on (jobId, jobType)"
   cat "$EVID/sql_outputs/A1_duplicates_jobId_jobType.log"
   exit 10
@@ -108,7 +110,7 @@ where \"jobId\" is null
    or \"costAmount\" is null
    or quantity is null
 limit 50;"
-if grep '\|\s*' "$EVID/sql_outputs/A3_required_fields_null.log" | grep -Eq '[0-9a-fA-F]{8}-|[0-9]+'; then
+if sed '/^\s*$/d' "$EVID/sql_outputs/A3_required_fields_null.log" | grep -Eq '[0-9a-fA-F]{8}-|[0-9]+'; then
   echo "❌ A3 FAIL: required fields contain NULL"
   cat "$EVID/sql_outputs/A3_required_fields_null.log"
   exit 12
@@ -123,7 +125,7 @@ from cost_ledger
 where currency not in ('USD','CNY')
    or \"billingUnit\" not in ('TOKEN','SHOT','IMAGE','SECOND','CHAR','JOB','CREDITS')
 limit 50;"
-if grep '\|\s*' "$EVID/sql_outputs/A4_currency_unit_whitelist.log" | grep -Eq '[A-Za-z]'; then
+if sed '/^\s*$/d' "$EVID/sql_outputs/A4_currency_unit_whitelist.log" | grep -Eq '[A-Za-z]'; then
   echo "❌ A4 FAIL: currency/billingUnit out of whitelist (adjust whitelist to your SSOT)"
   cat "$EVID/sql_outputs/A4_currency_unit_whitelist.log"
   exit 13

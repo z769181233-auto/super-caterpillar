@@ -1,0 +1,18 @@
+[08:34:04] 🚀 [P1-2] Billing Reconcile Gate Starting...
+[08:34:04] Target DB: postgresql://postgres:postgres@localhost:5432/scu
+[08:34:04] Evidence: docs/_evidence/p1_2_billing_reconcile_20260108_083404
+[08:34:04] == Schema Check: columns existence ==
+[08:34:04] ✅ cost_ledger schema columns present
+[08:34:04] == Phase A: Snapshot (pre) ==
+[08:34:04] == Phase B: Assertions ==
+[08:34:04] ✅ A1 PASS: no duplicates
+[08:34:04] ✅ A2 PASS: non-negative
+[08:34:04] ✅ A3 PASS: required fields are non-null
+[08:34:05] ✅ A4 PASS: currency & billingUnit in whitelist
+[08:34:05] ✅ A5 PASS: no orphan user/project
+[08:34:05] == A6: Job linkage/status (auto-detect) ==
+[08:34:05] Detected JOB_TABLE=shot_jobs, STATUS_COL=status
+[08:34:05] ✅ A6 PASS: job linkage & status policy ok
+[08:34:05] == Phase C: Snapshot (post) & Gate Idempotency (read-only) ==
+[08:34:05] ✅ Gate is read-only & repeatable (snapshot diff empty)
+[08:34:05] ✅ Billing Reconcile Gate PASS. Evidence: docs/_evidence/p1_2_billing_reconcile_20260108_083404
