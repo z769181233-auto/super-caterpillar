@@ -113,3 +113,19 @@ bash evidence/p1-2/run_ha_gates_3rounds.sh
 - **Safety**: Localhost Guard
 
 **证据目录**: `docs/_evidence/p1_2_billing_reconcile_*/`
+
+---
+
+## P1-3 Performance & Stress 验收 (Production Baseline)
+
+**执行 Gate**: `export TEST_TOKEN=...; bash tools/gate/gates/gate-p1-3_performance.sh`
+
+**审计模型 (Real Load Driver)**:
+
+- **Metrics**:
+  - Success Rate >= 98%
+  - p95 Latency <= 300s
+  - CostLedger Duplicates == 0 (Financial Guard)
+- **Phase B**: Concurrent API Load (Auto-Create N Jobs)
+- **Phase C**: Status Polling & Convergence Check
+- **Evidence**: `docs/_evidence/p1_3_performance_*/` (metrics.csv, latencies.csv)
