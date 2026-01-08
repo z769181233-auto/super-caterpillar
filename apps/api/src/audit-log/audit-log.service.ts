@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 /**
  * 审计日志服务
  * 负责记录关键操作的审计日志
- * 
+ *
  * 设计原则：
  * - 写入失败不得影响主业务流程
  * - 异步写入，不阻塞请求
@@ -14,7 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 记录审计日志
@@ -63,7 +63,7 @@ export class AuditLogService {
           details: options.details ? JSON.parse(JSON.stringify(options.details)) : null,
           nonce: options.nonce,
           signature: options.signature,
-          timestamp: options.timestamp ?? undefined,
+          ...(options.timestamp !== undefined && { timestamp: options.timestamp }),
           payload: payload, // S1-FIX-A: 新增 payload 字段
         },
       });
@@ -71,7 +71,7 @@ export class AuditLogService {
       // 写入失败时只记录警告，不抛出异常，避免影响主业务流程
       this.logger.warn(
         `Failed to record audit log: ${options.action} for ${options.resourceType}:${options.resourceId}`,
-        error instanceof Error ? error.stack : String(error),
+        error instanceof Error ? error.stack : String(error)
       );
     }
   }
@@ -88,14 +88,3 @@ export class AuditLogService {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
-

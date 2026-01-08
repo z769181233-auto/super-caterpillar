@@ -785,7 +785,7 @@ model AuditLog {
   createdAt    DateTime      @default(now())
   nonce        String?
   signature    String?
-  timestamp    DateTime?
+  timestamp    DateTime?     @default(now())
   payload      Json?
   orgId        String?
   apiKey       ApiKey?       @relation("ApiKeyAuditLogs", fields: [apiKeyId], references: [id])
