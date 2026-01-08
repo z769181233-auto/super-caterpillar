@@ -1,12 +1,10 @@
-
 import {
     EngineAdapter,
     EngineInvokeInput,
     EngineInvokeResult,
     EngineInvokeStatus,
-    CE03VisualDensityInput,
-    CE03VisualDensityOutput,
 } from '@scu/shared-types';
+import { CE03EngineSelector, CE03Input } from '@scu/engines/ce03';
 
 /**
  * Visual Density Local Adapter (Worker Side)
@@ -14,6 +12,7 @@ import {
  */
 export class VisualDensityLocalAdapterWorker implements EngineAdapter {
     public readonly name = 'ce03_visual_density';
+    private readonly selector = new CE03EngineSelector();
 
     supports(engineKey: string): boolean {
         return engineKey === this.name;
@@ -22,56 +21,24 @@ export class VisualDensityLocalAdapterWorker implements EngineAdapter {
     async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
         const startTime = Date.now();
         try {
-            const payload = input.payload as CE03VisualDensityInput;
-            const scenes = JSON.parse(payload.structured_text);
+            const payload = input.payload as CE03Input;
 
-            let totalTokens = 0;
-            let totalKeywords = 0;
+            // Invoke the selector (Real/Replay logic)
+            const result = await this.selector.invoke(payload);
 
-            // 简单的关键词列表
-            const keywords = ['light', 'shadow', 'color', 'dark', 'bright', 'red', 'blue', 'green', 'texture'];
-
-            // 计算指标
-            if (Array.isArray(scenes)) {
-                scenes.forEach((scene: any) => {
-                    const text = JSON.stringify(scene);
-                    totalTokens += text.split(/\s+/).length;
-
-                    keywords.forEach(kw => {
-                        const regex = new RegExp(kw, 'gi');
-                        const matches = text.match(regex);
-                        if (matches) {
-                            totalKeywords += matches.length;
-                        }
-                    });
-                });
+            if (!result) {
+                throw new Error('CE03 Selector returned null (Legacy Stub not supported)');
             }
 
-            const visualDensityScore = totalTokens > 0 ? (totalKeywords / totalTokens) * 100 : 0;
-
-            const output: CE03VisualDensityOutput = {
-                visual_density_score: Math.min(visualDensityScore, 100), // Cap at 100
-                quality_indicators: {
-                    token_count: totalTokens,
-                    keyword_count: totalKeywords,
-                    keyword_ratio: visualDensityScore / 100
-                },
-                audit_trail: JSON.stringify({
-                    message: `Calculated density: ${visualDensityScore.toFixed(2)}% (${totalKeywords}/${totalTokens})`,
-                    metrics: { totalTokens, totalKeywords }
-                }),
-                engine_version: '1.0.0',
-                latency_ms: 0
-            };
-
             const duration = Date.now() - startTime;
-            output.latency_ms = duration; // Update latency
 
             return {
                 status: 'SUCCESS' as EngineInvokeStatus,
-                output,
+                output: result, // Full CE03Output including billing_usage
                 metrics: {
                     durationMs: duration,
+                    tokensIn: result.billing_usage?.promptTokens || 0,
+                    tokensOut: result.billing_usage?.completionTokens || 0,
                 },
             };
 

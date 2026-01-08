@@ -685,12 +685,12 @@ model NovelChapter {
   novelSourceId  String
   orderIndex     Int
   title          String
-  rawText        String
-  startParagraph Int?
-  endParagraph   Int?
-  characterCount Int?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  rawText        String       @map("raw_text")
+  startParagraph Int?         @map("start_paragraph")
+  endParagraph   Int?         @map("end_paragraph")
+  characterCount Int?         @map("character_count")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
   summary        String?
   episode        Episode?     @relation("ChapterEpisode")
   novelSource    NovelSource  @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
@@ -863,16 +863,18 @@ model NovelVolume {
 
 model NovelScene {
   id                 String   @id @default(uuid())
-  chapterId          String
+  chapterId          String   @map("chapter_id")
   index              Int
-  rawText            String?
-  enrichedText       String?
-  visualDensityScore Float?
-  characterIds       Json?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  rawText            String?  @map("raw_text")
+  enrichedText       String?  @map("enriched_text")
+  visualDensityScore Float?   @map("visual_density_score")
+  characterIds       Json?    @map("character_ids")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  chunkIndex         Int      @default(0) @map("chunk_index")
 
   @@index([chapterId, index])
+  @@index([chunkIndex])
   @@map("novel_scenes")
 }
 
@@ -1345,26 +1347,32 @@ enum AssetStatus {
 }
 
 // P0: Cost Ledger for billing and cost tracking
+// Stage-3-B: 扩展 Credits 计费字段（零破坏，全部可空）
 model CostLedger {
-  id          String   @id @default(cuid())
-  userId      String
-  projectId   String
-  jobId       String // ⚠️ 非空: 避免unique对NULL失效
-  jobType     String // ⚠️ 非空: 避免unique对NULL失效
-  engineKey   String?
-  costAmount  Float
-  currency    String   @default("USD")
-  billingUnit String // e.g. "tokens", "seconds", "frames", "job"
-  quantity    Float
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  id        String  @id @default(cuid())
+  traceId   String // 全链路追踪 ID（数据库已设为 NOT NULL）
+  projectId String
+  orgId     String // 租户隔离（数据库已设为 NOT NULL）
+  userId    String? // 可空
+  jobId     String? // 任务 ID（可选，因某些成本不关联 Job）
+  jobType   String? // 任务类型
+  costType  String // AI_PARSE, AI_RENDER, STORAGE, EGRESS
 
-  user    User    @relation("UserCostLedgers", fields: [userId], references: [id])
+  // Credits 计费字段（Stage-3-B 新增）
+  unitCost        Float // 保留：单位成本（原字段）
+  unitCostCredits Float? // Credits per 1k tokens（新增）
+  quantity        Float // Tokens 数量（或其他计量单位）
+  totalCost       Float // 保留：总成本（原字段）
+  totalCredits    Float? // 总 Credits（主计费字段，新增）
+  modelName       String? // 模型名称（用于价格表查询，新增）
+  metadata        Json? // 元数据（Stage-3-B 新增，用于存储 Tokens 详情等）
+
+  timestamp DateTime @default(now()) // 时间戳（数据库实际字段名）
+
+  user    User?   @relation("UserCostLedgers", fields: [userId], references: [id])
   project Project @relation("ProjectCostLedgers", fields: [projectId], references: [id])
 
-  // ⚠️ 幂等唯一键: 同一 jobId + jobType 只能记一次
-  @@unique([jobId, jobType])
-  @@index([projectId, createdAt])
-  @@index([userId])
-  @@map("cost_ledger")
+  @@index([projectId, orgId, timestamp])
+  @@index([traceId])
+  @@map("cost_ledgers") // 物理表名（复数）
 }

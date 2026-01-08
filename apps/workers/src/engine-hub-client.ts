@@ -120,6 +120,9 @@ export class EngineHubClient {
     if (engineKey === 'novel_analysis' || engineKey === 'default_novel_analysis') {
       return 'NOVEL_ANALYSIS';
     }
+    if (engineKey === 'ce06_novel_parsing') {
+      return 'CE06_NOVEL_PARSING';
+    }
     if (engineKey === 'default_shot_render') {
       return 'SHOT_RENDER';
     }

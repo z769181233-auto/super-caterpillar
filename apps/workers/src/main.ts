@@ -184,7 +184,14 @@ async function sendHeartbeat(): Promise<void> {
       // @ts-expect-error - P1-1 extension
       capabilities: {
         concurrency_managed: true,
-        lease_supported: true
+        lease_supported: true,
+        // P1-3: Heartbeat must include supportedEngines otherwise API might clear it
+        supportedEngines: (process.env.WORKER_SUPPORTED_ENGINES || "")
+          .split(",")
+          .map(s => s.trim())
+          .filter(Boolean).length > 0
+          ? (process.env.WORKER_SUPPORTED_ENGINES || "").split(",").map(s => s.trim()).filter(Boolean)
+          : ["default_novel_analysis"]
       }
     });
     if (tasksRunning === 0) {
@@ -316,6 +323,14 @@ async function processJob(job: JobFromApi): Promise<void> {
       return;
     } else if (job.type === 'CE03_VISUAL_DENSITY') {
       const result = await processCE03Job(prisma, { ...job, projectId: job.projectId || '' }, engineHubClient, apiClient);
+      await apiClient.reportJobResult({
+        jobId: job.id,
+        status: 'SUCCEEDED',
+        result: result,
+      });
+      return;
+    } else if (job.type === 'CE06_NOVEL_PARSING') {
+      const result = await processCE06Job(prisma, { ...job, projectId: job.projectId || '' }, engineHubClient, apiClient);
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'SUCCEEDED',

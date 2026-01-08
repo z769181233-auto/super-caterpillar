@@ -12,7 +12,8 @@
     "@scu/storage": "workspace:^",
     "axios": "^1.6.0",
     "database": "workspace:*",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

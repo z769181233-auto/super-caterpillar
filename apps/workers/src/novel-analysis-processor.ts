@@ -1,5 +1,3 @@
-// apps/workers/src/novel-analysis-processor.ts
-
 import { PrismaClient, Prisma } from 'database';
 import {
   AnalyzedSeason,
@@ -10,6 +8,8 @@ import {
   WorkerJobBase,
   CE06NovelParsingOutput,
 } from '@scu/shared-types';
+import { CE06EngineSelector } from '@scu/engines/ce06/selector';
+import { CE06Input, CE06Output } from '@scu/engines/ce06/types';
 
 /**
  * 结构化日志输出函数
@@ -442,7 +442,11 @@ export async function applyAnalyzedStructureToDatabase(
   // S3-B Fine-Tune: 使用事务确保原子性
   // 如果 prisma 已经是 TransactionClient，直接使用；否则开启新事务
   const executeInTransaction = async (tx: Prisma.TransactionClient) => {
-    // 1. 查询当前 project 已有的结构（严格基于 projectId + index）
+    // S3-A: 同时也需要处理 NovelVolume / NovelChapter / NovelScene
+    // 我们先根据 projectId 找到关联的 NovelSource
+    const nSource = await tx.novelSource.findFirst({ where: { projectId } });
+
+    // 1. 查询当前 project 已有的结构
     const existingSeasons = await tx.season.findMany({
       where: { projectId },
       include: {
@@ -522,6 +526,20 @@ export async function applyAnalyzedStructureToDatabase(
       }
       finalSeasons.push(createdSeason);
 
+      const nVolume = await tx.novelVolume.findFirst({
+        where: { projectId, index: season.index }
+      });
+      if (nVolume) {
+        await tx.novelVolume.update({
+          where: { id: nVolume.id },
+          data: { title: season.title }
+        });
+      } else {
+        await tx.novelVolume.create({
+          data: { projectId, index: season.index, title: season.title }
+        });
+      }
+
       // 4. 处理 Episode（类似逻辑）
       const existingEpisodeMap = new Map<number, any>();
       if (existingSeason) {
@@ -559,6 +577,29 @@ export async function applyAnalyzedStructureToDatabase(
           stats.created.episodes++;
         }
 
+        // S3-A: 同步写入 NovelChapter
+        if (nSource) {
+          const existingNChapter = await tx.novelChapter.findUnique({
+            where: { novelSourceId_orderIndex: { novelSourceId: nSource.id, orderIndex: episode.index } }
+          });
+          if (existingNChapter) {
+            await tx.novelChapter.update({
+              where: { id: existingNChapter.id },
+              data: { title: episode.title, summary: episode.summary || '' }
+            });
+          } else {
+            await tx.novelChapter.create({
+              data: {
+                novelSourceId: nSource.id,
+                orderIndex: episode.index,
+                title: episode.title,
+                summary: episode.summary || '',
+                rawText: ''
+              }
+            });
+          }
+        }
+
         // 5. 处理 Scene（类似逻辑）
         const existingSceneMap = new Map<number, any>();
         if (existingEpisode) {
@@ -593,6 +634,42 @@ export async function applyAnalyzedStructureToDatabase(
               },
             });
             stats.created.scenes++;
+          }
+
+          // S3-A: 同步写入 NovelScene
+          if (nSource) {
+            // 首先通过 nSourceId 和 orderIndex 找到对应的 nChapterId
+            const nChapter = await tx.novelChapter.findUnique({
+              where: { novelSourceId_orderIndex: { novelSourceId: nSource.id, orderIndex: episode.index } }
+            });
+
+            if (nChapter) {
+              const existingNScene = await tx.novelScene.findFirst({
+                where: { chapterId: nChapter.id, index: scene.index }
+              });
+
+              if (existingNScene) {
+                await tx.novelScene.update({
+                  where: { id: existingNScene.id },
+                  data: {
+                    enrichedText: scene.summary,
+                    // @ts-ignore
+                    characterIds: (scene as any).characterIds as any,
+                  }
+                });
+              } else {
+                await tx.novelScene.create({
+                  data: {
+                    chapterId: nChapter.id,
+                    index: scene.index,
+                    rawText: '',
+                    enrichedText: scene.summary,
+                    // @ts-ignore
+                    characterIds: (scene as any).characterIds as any,
+                  }
+                });
+              }
+            }
           }
 
           // 6. 处理 Shot（类似逻辑）
@@ -815,12 +892,15 @@ export async function applyAnalyzedStructureToDatabase(
  */
 export function mapCE06OutputToProjectStructure(
   projectId: string,
-  output: CE06NovelParsingOutput,
+  output: CE06NovelParsingOutput | CE06Output,
 ): AnalyzedProjectStructure {
   const seasons: AnalyzedSeason[] = [];
   let sIndex = 1;
 
-  for (const vol of (output.volumes || [])) {
+  // 兼容性处理：CE06NovelParsingOutput 使用 content，CE06Output 使用 summary
+  const volumes = (output as any).volumes || [];
+
+  for (const vol of volumes) {
     const season: AnalyzedSeason = {
       index: sIndex++,
       title: vol.title || `第 ${sIndex - 1} 卷`,
@@ -833,7 +913,7 @@ export function mapCE06OutputToProjectStructure(
       const episode: AnalyzedEpisode = {
         index: eIndex++,
         title: chap.title || `第 ${eIndex - 1} 章`,
-        summary: '',
+        summary: chap.summary || '',
         scenes: [],
       };
 
@@ -842,13 +922,12 @@ export function mapCE06OutputToProjectStructure(
         const scene: AnalyzedScene = {
           index: scIndex++,
           title: sc.title || `场景 ${scIndex - 1}`,
-          summary: '',
+          summary: sc.summary || sc.content || '',
           shots: [],
         };
 
         // 对于 Scene Content，我们暂时使用标点分句逻辑来生成 Shots
-        // 后续如果 CE06 支持直接输出 Shots，则这里改为直接映射
-        const rawContent = sc.content || '';
+        const rawContent = sc.summary || sc.content || '';
         const sentences = rawContent.split(/(?<=[。！？!?])/);
         let shIndex = 1;
         for (const sentence of sentences) {
@@ -1031,6 +1110,34 @@ export async function processNovelAnalysisJob(
       totalDurationMs: totalDuration,
       stats: structure.stats,
     });
+
+    // ===== Stage-3-B: 记录计费 =====
+    try {
+      // 动态导入避免循环依赖
+      const { CostLedgerService } = await import('./billing/cost-ledger.service.js');
+      const costLedger = new CostLedgerService(prisma);
+
+      // 从 structure 中提取 billing_usage（如果有）
+      const billingUsage = (structure as any).billing_usage;
+
+      if (billingUsage && billingUsage.totalTokens > 0) {
+        await costLedger.recordCE06Billing({
+          jobId,
+          jobType: 'CE06_NOVEL_PARSING',
+          traceId: (job as any).traceId || `trace-${jobId}`,
+          projectId,
+          userId: (job as any).userId || 'system',
+          orgId: (job as any).organizationId || 'default-org',
+          engineKey: 'ce06_novel_parsing',
+          billingUsage,
+        });
+      } else {
+        console.warn(`[BILLING] ⚠️  Job ${jobId} missing billing_usage, skipping cost record (non-fatal)`);
+      }
+    } catch (billingError: any) {
+      // 计费失败不阻塞主流程
+      console.error(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message);
+    }
 
     // 返回统计信息，将写入 Job.output
     return {

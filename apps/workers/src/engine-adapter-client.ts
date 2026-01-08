@@ -19,11 +19,21 @@ import {
   EngineInvokeStatus,
 } from '@scu/shared-types';
 import {
-  basicTextSegmentation,
+  mapCE06OutputToProjectStructure,
   applyAnalyzedStructureToDatabase,
 } from './novel-analysis-processor';
 import { VisualDensityLocalAdapterWorker } from './adapters/visual-density.adapter';
 import { VisualEnrichmentLocalAdapterWorker } from './adapters/visual-enrichment.adapter';
+import { CE06EngineSelector } from '@scu/engines/ce06/selector';
+import { CE06Input } from '@scu/engines/ce06/types';
+import { createHash } from 'crypto';
+
+/**
+ * 计算输入/输出的哈希值（用于审计）
+ */
+function hashData(data: any): string {
+  return createHash('sha256').update(JSON.stringify(data)).digest('hex').substring(0, 16);
+}
 
 /**
  * 结构化日志输出函数（与 Worker 端保持一致）
@@ -51,6 +61,7 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
  */
 export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
   public readonly name = 'default_novel_analysis';
+  private readonly selector = new CE06EngineSelector();
 
   constructor(private readonly prisma: PrismaClient) { }
 
@@ -58,7 +69,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
    * 检查是否支持指定的引擎标识
    */
   supports(engineKey: string): boolean {
-    return engineKey === 'default_novel_analysis' || engineKey === 'local_novel_analysis';
+    return engineKey === 'default_novel_analysis' || engineKey === 'local_novel_analysis' || engineKey === 'ce06_novel_parsing';
   }
 
   /**
@@ -70,7 +81,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
 
     try {
       // 验证 JobType
-      if (input.jobType !== 'NOVEL_ANALYSIS') {
+      if (input.jobType !== 'NOVEL_ANALYSIS' && input.jobType !== 'CE06_NOVEL_PARSING') {
         throw new Error(`Unsupported job type: ${input.jobType}`);
       }
 
@@ -104,22 +115,38 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
 
       const rawText: string = novelSource.rawText as string;
 
-      // 记录解析开始日志
-      logStructured('info', {
-        action: 'NOVEL_ANALYSIS_START',
-        jobId: input.payload.jobId || 'unknown',
-        projectId,
-        novelSourceId: novelSource.id,
-        rawTextLength: rawText.length,
-        adapter: this.name,
-      });
-
       const parseStartTime = Date.now();
 
-      // 解析（使用原有的 basicTextSegmentation 函数）
-      const structure = basicTextSegmentation(rawText, projectId);
+      // S3-A: 尝试使用三态选择器 (Real/Replay/Legacy)
+      const ce06Input: CE06Input = {
+        structured_text: rawText,  // Stage-3-B: SSOT 要求字段
+        novelSourceId: novelSource.id,
+        projectId,
+        rawText,  // 向后兼容
+        options: {
+          model: input.payload.engineVersion || 'gemini-2.0-flash',
+        }
+      };
 
-      const parseDuration = Date.now() - parseStartTime;
+      const selectedOutput = await this.selector.invoke(ce06Input);
+      let structure: any;
+      let engineInfo = { key: 'legacy_stub', version: '1.0' };
+
+      if (selectedOutput) {
+        // 使用新引擎结果
+        structure = mapCE06OutputToProjectStructure(projectId, selectedOutput);
+        engineInfo = {
+          key: (selectedOutput as any).engineInfo?.key || 'ce06_engine',
+          version: (selectedOutput as any).engineInfo?.version || '1.0'
+        };
+      } else {
+        // 使用 Legacy Stub (Legacy 模式或选择器返回 null)
+        // @ts-ignore
+        const { basicTextSegmentation } = require('./novel-analysis-processor');
+        structure = basicTextSegmentation(rawText, projectId);
+      }
+
+      const parseDuration = selectedOutput ? ((selectedOutput as any).performance?.latencyMs || (Date.now() - parseStartTime)) : (Date.now() - parseStartTime);
 
       // 记录解析完成日志
       logStructured('info', {
@@ -127,8 +154,9 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
         jobId: input.payload.jobId || 'unknown',
         projectId,
         stats: structure.stats,
-        parsingDurationMs: parseDuration,
         adapter: this.name,
+        engineKey: engineInfo.key,
+        parsingDurationMs: parseDuration,
       });
 
       const writeStartTime = Date.now();
@@ -144,10 +172,57 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
 
       // S3-B Fine-Tune: 落库（使用增强后的 applyAnalyzedStructureToDatabase 函数）
       const applyResult = await applyAnalyzedStructureToDatabase(this.prisma, structure);
-      const writtenStructure = applyResult.finalStructure;
+      const writtenStructure = structure; // 已经更新了结构
 
       const writeDuration = Date.now() - writeStartTime;
       const totalDuration = Date.now() - startTime;
+
+      // S3-A: 写入 AuditLog 和 CostLedger (如果不是 LEGACY_STUB 模式)
+      if (selectedOutput) {
+        const jobId = input.payload.jobId || 'unknown';
+        const inputHash = hashData(ce06Input);
+        const outputHash = hashData(selectedOutput);
+
+        // 写入审计日志 (直接通过 DB)
+        await this.prisma.auditLog.create({
+          data: {
+            action: 'CE06_NOVEL_ANALYSIS_COMPLETE',
+            resourceType: 'PROJECT',
+            resourceId: projectId,
+            details: {
+              engineKey: engineInfo.key,
+              engineVersion: engineInfo.version,
+              inputHash,
+              outputHash,
+              latencyMs: parseDuration,
+              tokensIn: (selectedOutput as any).performance?.tokensIn || (selectedOutput as any).billing_usage?.promptTokens || 0,
+              tokensOut: (selectedOutput as any).performance?.tokensOut || (selectedOutput as any).billing_usage?.completionTokens || 0,
+            }
+          }
+        });
+
+        // Stage-3-B: 计费逻辑已由 CostLedgerService 统一处理
+        // 这段旧代码保留注释供参考
+        /*
+        if (selectedOutput.performance.tokensOut! > 0) {
+          await this.prisma.costLedger.create({
+            data: {
+              userId: novelSource.ownerId || 'system',
+              projectId,
+              jobId,
+              jobType: 'NOVEL_ANALYSIS',
+              engineKey: engineInfo.key,
+              costAmount: selectedOutput.performance.costUsd || 0,
+              billingUnit: 'tokens',
+              quantity: (selectedOutput.performance.tokensIn || 0) + (selectedOutput.performance.tokensOut || 0),
+              metadata: {
+                model: selectedOutput.engineInfo.model
+              }
+            }
+          }).catch(() => { }); // 幂等保护：unique(jobId, jobType) 会抛错
+        }
+        */
+      }
 
       // S3-B Fine-Tune: 记录写库完成日志（包含修正统计）
       logStructured('info', {
@@ -157,21 +232,24 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
         writeDurationMs: writeDuration,
         totalDurationMs: totalDuration,
         stats: writtenStructure.stats,
-        applyStats: applyResult.stats, // S3-B Fine-Tune: 包含创建/更新/删除统计
         adapter: this.name,
       });
 
       // S3-A: 返回成功结果，包含完整的 analyzed 结构（用于后续 Task 输出和前端展示）
+      const output = (input.jobType === 'CE06_NOVEL_PARSING' || input.engineKey === 'ce06_novel_parsing')
+        ? (selectedOutput || {})
+        : {
+          analyzed: writtenStructure,
+          stats: structure.stats,
+        };
+
       return {
         status: 'SUCCESS' as EngineInvokeStatus,
-        output: {
-          analyzed: writtenStructure, // 返回完整的 AnalyzedProjectStructure
-          stats: structure.stats, // 同时保留 stats 用于兼容
-        },
+        output,
         metrics: {
-          durationMs: totalDuration,
-          parsingDurationMs: parseDuration,
-          writeDurationMs: writeDuration,
+          latencyMs: parseDuration,
+          tokensIn: (selectedOutput as any).performance?.tokensIn || (selectedOutput as any).billing_usage?.promptTokens || 0,
+          tokensOut: (selectedOutput as any).performance?.tokensOut || (selectedOutput as any).billing_usage?.completionTokens || 0,
         },
       };
     } catch (error: any) {
@@ -264,11 +342,16 @@ export class EngineAdapterClient {
     const novelAdapter = new NovelAnalysisLocalAdapterWorker(prisma);
     this.adapters.set(novelAdapter.name, novelAdapter);
 
-    // 注册 CE06 Http 适配器
-    // 物理引擎基准地址由环境变量提供
+    // 注册 CE06 适配器 (根据模式选择 Local 或 Http)
     const ce06BaseUrl = env.engineRealHttpBaseUrl || process.env.CE06_BASE_URL || 'http://localhost:8000';
-    const ce06Adapter = new HttpEngineAdapterWorker('ce06_novel_parsing', ce06BaseUrl, '/story/parse');
-    this.adapters.set(ce06Adapter.name, ce06Adapter);
+    if (process.env.STAGE3_ENGINE_MODE === 'REPLAY') {
+      // Replay 模式下强制使用 Local Adapter mock 数据
+      this.adapters.set('ce06_novel_parsing', novelAdapter);
+      console.log('[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (REPLAY mode)');
+    } else {
+      const ce06Adapter = new HttpEngineAdapterWorker('ce06_novel_parsing', ce06BaseUrl, '/story/parse');
+      this.adapters.set(ce06Adapter.name, ce06Adapter);
+    }
 
     // 注册 CE07 Http 适配器
     const ce07Adapter = new HttpEngineAdapterWorker('ce07_memory_update', ce06BaseUrl, '/memory/update');

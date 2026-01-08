@@ -1,0 +1,46 @@
+{
+    "volumes": [
+        {
+            "index": 1,
+            "title": "第一卷：降临",
+            "chapters": [
+                {
+                    "index": 1,
+                    "title": "第一章：星空的裂痕",
+                    "summary": "描述了主人公在观测站意外发现天空出现紫色裂痕，引发了小镇的恐慌。",
+                    "scenes": [
+                        {
+                            "index": 1,
+                            "title": "深夜的观测站",
+                            "summary": "深秋寂静的深夜，林木坐在观测仪前，目光在那台老旧的屏幕上游移。突然，一道不属于自然光的紫芒划破了暗区。",
+                            "characterIds": [
+                                "char_lin_mu"
+                            ],
+                            "metadata": {
+                                "lighting": "low-key",
+                                "mood": "suspenseful"
+                            }
+                        },
+                        {
+                            "index": 2,
+                            "title": "不祥的前兆",
+                            "summary": "警告器发出了刺耳的鸣叫，整个观测站的电力开始不稳，灯泡闪烁着即将熄灭的光芒。",
+                            "characterIds": [
+                                "char_lin_mu"
+                            ],
+                            "metadata": {
+                                "lighting": "flickering",
+                                "mood": "panic"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "stats": {
+        "volumesCount": 1,
+        "chaptersCount": 1,
+        "scenesCount": 2
+    }
+}

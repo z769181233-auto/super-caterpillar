@@ -26,6 +26,7 @@ import {
   mapCE06OutputToProjectStructure,
   applyAnalyzedStructureToDatabase,
 } from './novel-analysis-processor';
+import { CostLedgerService } from './billing/cost-ledger.service';
 
 /**
  * 结构化日志输出函数
@@ -137,6 +138,47 @@ export async function processCE06Job(
     // 这是 P1 能力闭环的关键：让物理引擎的产物进入业务主表
     const structure = mapCE06OutputToProjectStructure(job.projectId, result);
     await applyAnalyzedStructureToDatabase(prisma, structure);
+
+    // 3.2 记录计费 (Stage-3-B)
+    try {
+      const costLedgerService = new CostLedgerService(prisma);
+      const shotJob = await prisma.shotJob.findUnique({
+        where: { id: jobId },
+        select: { organizationId: true }
+      });
+      const project = await prisma.project.findUnique({
+        where: { id: job.projectId },
+        select: { ownerId: true }
+      });
+      const userId = project?.ownerId || 'system';
+      const orgId = shotJob?.organizationId;
+
+      if (orgId && (result as any).billing_usage) {
+        await costLedgerService.recordCE06Billing({
+          jobId,
+          jobType: 'CE06_NOVEL_PARSING',
+          traceId,
+          projectId: job.projectId,
+          userId,
+          orgId,
+          engineKey: 'ce06_novel_parsing',
+          billingUsage: (result as any).billing_usage,
+        });
+      } else {
+        logStructured('warn', {
+          action: 'CE06_BILLING_SKIPPED',
+          jobId,
+          reason: !orgId ? 'Missing organizationId' : 'Missing billing_usage'
+        });
+      }
+    } catch (billingError: any) {
+      logStructured('error', {
+        action: 'CE06_BILLING_FAILED',
+        jobId,
+        error: billingError?.message
+      });
+      throw billingError;
+    }
 
     const duration = Date.now() - jobStartTime;
 
@@ -302,6 +344,47 @@ export async function processCE03Job(
         metadata: result.quality_indicators as any,
       },
     });
+
+    // 3.2 记录计费 (Stage-3-C)
+    try {
+      const costLedgerService = new CostLedgerService(prisma);
+      const shotJob = await prisma.shotJob.findUnique({
+        where: { id: jobId },
+        select: { organizationId: true }
+      });
+      const project = await prisma.project.findUnique({
+        where: { id: job.projectId },
+        select: { ownerId: true }
+      });
+      const userId = project?.ownerId || 'system';
+      const orgId = shotJob?.organizationId;
+
+      if (orgId && (result as any).billing_usage) {
+        await costLedgerService.recordCE03Billing({
+          jobId,
+          jobType: 'CE03_VISUAL_DENSITY',
+          traceId,
+          projectId: job.projectId,
+          userId,
+          orgId,
+          engineKey: 'ce03_visual_density',
+          billingUsage: (result as any).billing_usage,
+        });
+      } else {
+        logStructured('warn', {
+          action: 'CE03_BILLING_SKIPPED',
+          jobId,
+          reason: !orgId ? 'Missing organizationId' : 'Missing billing_usage'
+        });
+      }
+    } catch (billingError: any) {
+      logStructured('error', {
+        action: 'CE03_BILLING_FAILED',
+        jobId,
+        error: billingError?.message
+      });
+      throw billingError;
+    }
 
     const duration = Date.now() - jobStartTime;
 

@@ -30,6 +30,12 @@
       ],
       "@scu/shared-types": [
         "../../packages/shared-types/src"
+      ],
+      "@scu/engines/*": [
+        "../../packages/engines/*"
+      ],
+      "@scu/billing/*": [
+        "../../packages/billing/*"
       ]
     }
   },
@@ -39,7 +45,8 @@
     ]
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "../../packages/engines/**/*"
   ],
   "exclude": [
     "node_modules",

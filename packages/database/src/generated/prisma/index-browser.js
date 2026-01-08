@@ -698,7 +698,8 @@ exports.Prisma.NovelSceneScalarFieldEnum = {
   visualDensityScore: 'visualDensityScore',
   characterIds: 'characterIds',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  chunkIndex: 'chunkIndex'
 };
 
 exports.Prisma.MemoryShortTermScalarFieldEnum = {
@@ -825,17 +826,21 @@ exports.Prisma.TextSafetyResultScalarFieldEnum = {
 
 exports.Prisma.CostLedgerScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
+  traceId: 'traceId',
   projectId: 'projectId',
+  orgId: 'orgId',
+  userId: 'userId',
   jobId: 'jobId',
   jobType: 'jobType',
-  engineKey: 'engineKey',
-  costAmount: 'costAmount',
-  currency: 'currency',
-  billingUnit: 'billingUnit',
+  costType: 'costType',
+  unitCost: 'unitCost',
+  unitCostCredits: 'unitCostCredits',
   quantity: 'quantity',
+  totalCost: 'totalCost',
+  totalCredits: 'totalCredits',
+  modelName: 'modelName',
   metadata: 'metadata',
-  createdAt: 'createdAt'
+  timestamp: 'timestamp'
 };
 
 exports.Prisma.SortOrder = {
