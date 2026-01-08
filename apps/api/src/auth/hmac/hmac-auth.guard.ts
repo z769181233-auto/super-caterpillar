@@ -156,7 +156,6 @@ export class HmacAuthGuard implements CanActivate {
       (request as any).hmacSignature = signature;
       (request as any).authType = 'hmac'; // Identity marker for audit/logic
 
-      // Populate request.user for @CurrentUser()
       if (keyRecord.ownerUser) {
         (request as any).user = {
           userId: keyRecord.ownerUser.id,
@@ -167,6 +166,10 @@ export class HmacAuthGuard implements CanActivate {
           tier: keyRecord.ownerUser.tier || 'FREE', // Fallback
           organizationId: keyRecord.ownerOrgId, // Implicit context
         };
+      } else {
+        // Explicitly mark as having no user bound
+        (request as any).user = null;
+        (request as any).authHasUser = false;
       }
 
       if (process.env.NODE_ENV !== 'production') {

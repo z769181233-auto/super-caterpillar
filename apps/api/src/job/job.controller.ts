@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Param, Body, Query, UseGuards, Req, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Query, UseGuards, Req, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { JobService } from './job.service';
 import { JobReportFacade } from './job-report.facade';
 import { PermissionService } from '../permission/permission.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentOrganization } from '../auth/decorators/current-organization.decorator';
@@ -48,31 +48,21 @@ export class JobController {
     @Param('shotId') shotId: string,
     @Body() createJobDto: CreateJobDto,
     @CurrentUser() user: AuthenticatedUser,
-    @CurrentOrganization() organizationId: string
+    @CurrentOrganization() organizationId: string,
+    @Req() req: Request,
   ): Promise<any> {
-    const job = await this.jobService.create(shotId, createJobDto, user.userId, organizationId);
+    const u = (req as any).user;
+    if (!u?.userId) {
+      throw new ForbiddenException({
+        code: 'AUTH_NO_USER_BOUND',
+        message: 'HMAC key is valid but not bound to a user; cannot create jobs via user endpoint.',
+      });
+    }
+    // Fix: Use u.userId (checked above) instead of user.userId to ensure consistency
+    const job = await this.jobService.create(shotId, createJobDto, u.userId, organizationId);
     return {
       success: true,
       data: job,
-      requestId: randomUUID(),
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  /**
-   * 简单容量探测：Gate2 使用
-   * GET /api/jobs/capacity
-   */
-  @Get('jobs/capacity')
-  async getCapacity(
-    @CurrentUser() user: AuthenticatedUser,
-    @CurrentOrganization() organizationId: string
-  ): Promise<any> {
-    // 最小可验证实现：返回稳定结构，后续可接入真实 CapacityGateService
-    return {
-      ok: true,
-      limits: { maxConcurrentJobs: 1 },
-      usage: { runningJobs: 0 },
       requestId: randomUUID(),
       timestamp: new Date().toISOString(),
     };
