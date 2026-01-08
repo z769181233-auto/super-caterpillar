@@ -462,16 +462,23 @@ export async function processCE03Job(
 /**
  * 处理 CE04 Visual Enrichment Job
  */
+import { CE04EngineSelector, CE04Input, CE04Output } from '@scu/engines/ce04';
+
+// ... (existing imports)
+
+/**
+ * 处理 CE04 Visual Enrichment Job
+ */
 export async function processCE04Job(
   prisma: PrismaClient,
   job: WorkerJobBase,
-  engineClient: EngineHubClient,
+  engineClient: EngineHubClient, // Kept for interface compatibility, but we use selector directly
   apiClient: ApiClient,
-): Promise<CE04VisualEnrichmentOutput> {
+): Promise<CE04Output> { // Updated return type
   const jobStartTime = Date.now();
   const jobId = job.id;
-  // Stage13-Final: 使用 Job.traceId(Pipeline 级 traceId),如果缺失则生成fallback
   const traceId = job.traceId || `fallback_${jobId}_${Date.now()}`;
+  const selector = new CE04EngineSelector();
 
   logStructured('info', {
     action: 'CE04_JOB_START',
@@ -481,78 +488,44 @@ export async function processCE04Job(
   });
 
   try {
-    // 1) 获取输入数据（优先 job.payload，其次 CE06，再其次 CE03，最后 fallback）
-    let structuredText: string | undefined;
+    // 1. 获取输入 (Payload, CE06, CE03, Failback)
+    let structuredText: string = '["Fallback scene"]';
 
-    // 1.1 Gate/Test: direct payload input
-    if (job.payload && typeof job.payload === 'object' && (job.payload as any).structured_text) {
+    // Priority 1: Payload
+    if (job.payload && (job.payload as any).structured_text) {
       structuredText = (job.payload as any).structured_text;
     }
-
-    // 1.2 Production: from CE06 parse result (scenes)
-    if (!structuredText) {
+    // Priority 2: CE06 Parse Result
+    else {
       const parseResult = await prisma.novelParseResult.findUnique({
-        where: { projectId: job.projectId },
+        where: { projectId: job.projectId }
       });
-      if (parseResult?.scenes) structuredText = JSON.stringify(parseResult.scenes);
-    }
-
-    // 1.3 Fallback: from latest CE03 quality metrics metadata (only as fallback, never primary)
-    let ce03Meta: any = undefined;
-    if (!structuredText) {
-      const ce03 = await prisma.qualityMetrics.findFirst({
-        where: { projectId: job.projectId, engine: 'CE03' },
-        orderBy: { createdAt: 'desc' },
-      });
-      ce03Meta = ce03?.metadata ?? undefined;
-      // 尽量从 metadata 里提取可用文本字段（如果你将来在 CE03 metadata 存了 sample/text）
-      if (ce03Meta && typeof ce03Meta === 'object') {
-        const candidate =
-          (ce03Meta as any).structured_text ||
-          (ce03Meta as any).text ||
-          (ce03Meta as any).inputSample;
-        if (candidate && typeof candidate === 'string') structuredText = candidate;
+      if (parseResult?.scenes) {
+        structuredText = JSON.stringify(parseResult.scenes);
       }
     }
 
-    // 1.4 Final fallback
-    if (!structuredText) {
-      structuredText = '["CE04 fallback scene: close-up, cinematic lighting, rich details"]';
+    // 2. Invoke CE04 Engine (Real-Stub or Replay)
+    const input: CE04Input = {
+      structured_text: structuredText,
+      context: { projectId: job.projectId }
+    };
+
+    // Direct selector invocation to ensure we hit the new package logic
+    const result = await selector.invoke(input);
+
+    if (!result) {
+      throw new Error('CE04 Selector returned null');
     }
 
     logStructured('info', {
-      action: 'CE04_INPUT_RESOLVED',
+      action: 'CE04_ENGINE_RESULT',
       jobId,
-      projectId: job.projectId,
-      traceId,
-      inputSample: String(structuredText).slice(0, 120),
+      enrichmentQuality: result.enrichment_quality,
     });
 
-    // 2) 调用 CE04 Engine（注意：structured_text 应该是"文本/场景串"，不是 metadata JSON）
-    const input: CE04VisualEnrichmentInput = {
-      structured_text: structuredText,
-      context: { projectId: job.projectId },
-    };
-
-    const engineResult = await engineClient.invoke<CE04VisualEnrichmentInput, CE04VisualEnrichmentOutput>(
-      {
-        engineKey: 'ce04_visual_enrichment',
-        engineVersion: 'default',
-        payload: input,
-        metadata: {
-          jobId,
-          projectId: job.projectId,
-        },
-      },
-    );
-
-    if (!engineResult.success || !engineResult.output) {
-      throw new Error(engineResult.error?.message || 'CE04 engine execution failed');
-    }
-
-    const result = engineResult.output;
-
-    // 3. 落库
+    // 3. 落库 QualityMetrics
+    // Note: Storing prompt data in metadata as per capability matrix plan (pending dedicated prompt table)
     await prisma.qualityMetrics.create({
       data: {
         projectId: job.projectId,
@@ -560,17 +533,53 @@ export async function processCE04Job(
         jobId,
         traceId,
         enrichmentQuality: result.enrichment_quality,
-        metadata: result.metadata as any,
+        metadata: {
+          enrichedPrompt: result.enriched_prompt,
+          promptParts: result.prompt_parts,
+          billingUsage: result.billing_usage, // Audit redundancy
+          // ...result.metadata
+        } as any,
       },
     });
 
+    // 4.1 计费 (CostLedger)
+    try {
+      const costLedgerService = new CostLedgerService(prisma);
+      const shotJob = await prisma.shotJob.findUnique({
+        where: { id: jobId },
+        select: { organizationId: true }
+      });
+      const project = await prisma.project.findUnique({
+        where: { id: job.projectId },
+        select: { ownerId: true }
+      });
+      const userId = project?.ownerId || 'system';
+      const orgId = shotJob?.organizationId;
+
+      if (orgId && result.billing_usage) {
+        await costLedgerService.recordCE04Billing({
+          jobId,
+          jobType: 'CE04_VISUAL_ENRICHMENT',
+          traceId,
+          projectId: job.projectId,
+          userId,
+          orgId,
+          engineKey: 'ce04_visual_enrichment',
+          billingUsage: result.billing_usage,
+        });
+      } else {
+        logStructured('warn', { action: 'CE04_BILLING_SKIPPED', jobId, reason: 'Missing orgId or usage' });
+      }
+
+    } catch (billingError: any) {
+      logStructured('error', { action: 'CE04_BILLING_FAILED', jobId, error: billingError.message });
+      throw billingError;
+    }
+
+
     const duration = Date.now() - jobStartTime;
 
-    // 计算 input/output hash
-    const inputHash = hashData(input);
-    const outputHash = hashData(result);
-
-    // 上报审计日志
+    // 5. Audit Log
     try {
       await apiClient.postAuditLog({
         traceId,
@@ -579,29 +588,18 @@ export async function processCE04Job(
         jobType: 'CE04_VISUAL_ENRICHMENT',
         engineKey: 'ce04_visual_enrichment',
         status: 'SUCCESS',
-        inputHash,
-        outputHash,
+        inputHash: hashData(input),
+        outputHash: hashData(result),
         latencyMs: duration,
         cost: 0,
-        auditTrail: result.audit_trail || { message: 'missing' },
+        auditTrail: result.audit_trail,
       });
-    } catch (auditError: any) {
-      logStructured('warn', {
-        action: 'CE04_AUDIT_FAILED',
-        jobId,
-        error: auditError?.message || 'Unknown error',
-      });
+    } catch (e) {
+      // ignore
     }
 
-    logStructured('info', {
-      action: 'CE04_JOB_SUCCESS',
-      jobId,
-      projectId: job.projectId,
-      durationMs: duration,
-      enrichmentQuality: result.enrichment_quality,
-    });
-
     return result;
+
   } catch (error: any) {
     const duration = Date.now() - jobStartTime;
 

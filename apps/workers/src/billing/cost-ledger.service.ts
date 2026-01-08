@@ -109,4 +109,22 @@ export class CostLedgerService {
             // override specific fields if needed
         });
     }
+
+    /**
+     * 记录 CE04 计费 (Stage-3-D)
+     */
+    async recordCE04Billing(params: {
+        jobId: string;
+        jobType: string;
+        traceId: string;
+        projectId: string;
+        userId: string;
+        orgId: string;
+        engineKey?: string;
+        billingUsage: EngineBillingUsage;
+    }): Promise<void> {
+        return this.recordCE06Billing({
+            ...params,
+        });
+    }
 }
