@@ -1,7 +1,0 @@
-           id           |          email          |  credits   
-------------------------+-------------------------+------------
- user-stage5-no-perm    | gate5-guest@example.com | 100.000000
- user-stage5-no-credits | gate5-broke@example.com |   0.000000
- user-stage5-rich       | gate5-rich@example.com  |  41.500000
-(3 rows)
-

@@ -1,3 +1,0 @@
-gate_id=GATE-92
-resolved_script=tools/gate/gates/gate-92_reconciliation_zero_drift_check.sh
-manifest_sha256=be26663bcdd04afb2c081862b9e58a57b8b29055a433644624f4c4955dd21a5f

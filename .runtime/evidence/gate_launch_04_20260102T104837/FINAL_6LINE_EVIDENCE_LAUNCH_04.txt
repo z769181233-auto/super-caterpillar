@@ -1,6 +1,0 @@
-1) growth_invite_bind: PASS
-2) growth_first_order_bonus: PASS
-3) growth_share_reward: PASS
-4) growth_idempotency_enforced: PASS
-5) growth_release_mode_enforced: PASS
-6) gate_launch_04_growth_engine: PASSED

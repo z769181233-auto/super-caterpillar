@@ -1,8 +1,0 @@
-SECURITY_CRITICAL_CHANGE_REGISTERED=1
-generated_utc=20251231T095331Z
-head_sha=e2aa846fb96a
-base_sha=a1daabb6b33cc35e52af34fe1f15d22b690c29fc
-
-files:
-apps/api/src/security/api-security/api-security.spec.ts
-packages/database/prisma/schema.prisma

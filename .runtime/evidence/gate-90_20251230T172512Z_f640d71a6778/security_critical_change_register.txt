@@ -1,8 +1,0 @@
-SECURITY_CRITICAL_CHANGE_REGISTERED=1
-generated_utc=20251230T172512Z
-head_sha=f640d71a6778
-base_sha=2f9844fd578fedf07bad1a02d1dbe7bdd4303dfc
-
-files:
-apps/workers/src/api-client.ts
-apps/workers/src/main.ts

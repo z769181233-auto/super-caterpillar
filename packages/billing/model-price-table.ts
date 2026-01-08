@@ -15,6 +15,7 @@ export const MODEL_PRICE_TABLE: Record<string, number> = {
 
     // Mock/Replay（用于测试和门禁）
     'ce06-replay-mock': 0.2,        // 0.01 RMB / 1k tokens = 0.2 credits
+    'sdxl-turbo-stub': 50.0,        // High Cost Render: 2.5 RMB / 1k "tokens" (units) = 50.0 credits
 
     // 默认值（未知模型）
     'default': 1.0,                 // 0.05 RMB / 1k tokens = 1.0 credits

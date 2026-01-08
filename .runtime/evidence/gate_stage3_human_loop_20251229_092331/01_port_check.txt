@@ -1,7 +1,0 @@
-COMMAND     PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
-redis-ser 66337 adam    6u  IPv4 0xb6b2a9a25637db38      0t0  TCP 127.0.0.1:6379 (LISTEN)
-redis-ser 66337 adam    7u  IPv6 0xf92e0b4949e31745      0t0  TCP [::1]:6379 (LISTEN)
-COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
-minio   66340 adam   11u  IPv4 0x51b90bae3db0474c      0t0  TCP 127.0.0.1:9000 (LISTEN)
-minio   66340 adam   12u  IPv6 0xfebfd88fbfa4291b      0t0  TCP *:9000 (LISTEN)
-minio   66340 adam   13u  IPv6 0xfa3a67720e227239      0t0  TCP [::1]:9000 (LISTEN)

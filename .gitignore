@@ -52,3 +52,13 @@ docs/_evidence/*_hardpass_*/
 docs/_evidence/hmac_regression_*/
 docs/_evidence/ssot_regression_hardpass_*/
 docs/_evidence/p1_web_audit/
+
+# --- runtime artifacts (MUST NOT COMMIT) ---
+.runtime/
+**/.runtime/
+**/*.pid
+**/pids/
+apps/workers/.runtime/assets_gate_*/
+docs/_evidence/**/api.log
+docs/_evidence/**/worker.log
+docs/_evidence/**/gate.log

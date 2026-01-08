@@ -1,4 +1,0 @@
-change_class=CC3
-reason=security_critical_change
-head_sha=483d0d7e4e5f
-generated_utc=20251231T035249Z

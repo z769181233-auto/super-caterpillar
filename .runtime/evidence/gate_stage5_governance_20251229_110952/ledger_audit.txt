@@ -1,7 +1,0 @@
-      userId      |  type   |  amount   |                jobId                 |                  idempotencyKey                   
-------------------+---------+-----------+--------------------------------------+---------------------------------------------------
- user-stage5-rich | REFUND  |  1.500000 | 96f4a964-a8b8-448a-8616-f80dbf9f9c1b | refund-delta:96f4a964-a8b8-448a-8616-f80dbf9f9c1b
- user-stage5-rich | SETTLE  |  8.500000 | 96f4a964-a8b8-448a-8616-f80dbf9f9c1b | settle:96f4a964-a8b8-448a-8616-f80dbf9f9c1b
- user-stage5-rich | RESERVE | 10.000000 | 96f4a964-a8b8-448a-8616-f80dbf9f9c1b | reserve:96f4a964-a8b8-448a-8616-f80dbf9f9c1b
-(3 rows)
-

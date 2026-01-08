@@ -1,4 +1,0 @@
-gate_id=gate-92_reconciliation_zero_drift_check
-head_sha=85233caacedc
-timestamp_utc=20251231T160144Z
-repo_root=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar

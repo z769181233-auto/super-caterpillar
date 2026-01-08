@@ -640,6 +640,13 @@ export async function processCE04Job(
 /**
  * Stage 4: SHOT_RENDER Job Processor (Asset Generation Loop)
  */
+import { ShotRenderInput, ShotRenderSelector } from '@scu/engines/shot_render';
+
+// ... (existing imports)
+
+/**
+ * Stage 4: SHOT_RENDER Job Processor (Asset Generation Loop)
+ */
 export async function processShotRenderJob(
   prisma: PrismaClient,
   job: WorkerJobBase,
@@ -648,9 +655,14 @@ export async function processShotRenderJob(
 ): Promise<any> {
   const jobStartTime = Date.now();
   const jobId = job.id;
-  const traceId = job.traceId || `trace-${jobId}`;
+  // Stage13-Final: 使用 pipeline level traceId (job.traceId), fallback to generated if missing
+  const traceId = job.traceId || `trace-render-${jobId}`;
+
   // @ts-ignore
   const shotId = (job.payload as any).shotId || job['shotId'];
+
+  // Selector for Engine
+  const selector = new ShotRenderSelector();
 
   logStructured('info', {
     action: 'SHOT_RENDER_START',
@@ -665,59 +677,47 @@ export async function processShotRenderJob(
   }
 
   try {
-    // 1. Simulate Engine Call (Mock for Stage 4 MVP)
-    // In real life, would call Stable Diffusion / Midjourney via EngineHub
-    const mockEngineOutput = {
-      // P1-1: Storage Key Idempotency (Deterministic Key)
-      storageKey: `projects/${job.projectId}/shots/${shotId}/render-${jobId}.png`,
-      checksum: 'mock-checksum-1234567890abcdef',
-      width: 1024,
-      height: 576,
-      format: 'png'
+    // 1. Resolve Input (Priority: CE04 Enriched -> Shot Text -> Fallback)
+    let prompt = "Fallback generic scene";
+    let style = "cinematic";
+    let seed = 12345;
+
+    // Try getting enriched data from QualityMetrics (from CE04)
+    const ce04Metric = await prisma.qualityMetrics.findFirst({
+      where: { jobId: { not: jobId }, projectId: job.projectId, engine: 'CE04' }, // Find explicit previous CE04 execution related to this shot?
+      // Actually, usually CE04 runs before ShotRender in the graph. 
+      // In a real DAG, the input comes from the upstream job output.
+      // For now, we look for the latest CE04 metric for this project as a proxy or use payload.
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Use payload first if specific instructions provided
+    const payload = job.payload as any;
+    if (payload?.prompt) prompt = payload.prompt;
+    else if (ce04Metric?.metadata && (ce04Metric.metadata as any).enrichedPrompt) {
+      prompt = (ce04Metric.metadata as any).enrichedPrompt;
+    }
+
+    if (payload?.seed) seed = payload.seed;
+    if (payload?.style) style = payload.style;
+
+    const input: ShotRenderInput = {
+      shotId,
+      traceId,
+      prompt,
+      seed,
+      style,
+      context: { projectId: job.projectId }
     };
 
-    // P0-2 Fix: Generate valid 1280x720 PNG instead of corrupt 2x2
-    // 路径权威规则：优先使用 REPO_ROOT，否则使用 STORAGE_ROOT，禁止 process.cwd() 推导
-    let storageRoot: string;
-    if (process.env.REPO_ROOT) {
-      storageRoot = path.join(process.env.REPO_ROOT, '.data/storage');
-    } else if (process.env.STORAGE_ROOT) {
-      storageRoot = process.env.STORAGE_ROOT;
-    } else {
-      // 兜底：Worker 从 apps/workers 运行，向上两级到项目根目录
-      const repoRoot = path.resolve(process.cwd(), '../../');
-      storageRoot = path.join(repoRoot, '.data/storage');
-    }
-    const storage = new LocalStorageAdapter(storageRoot);
+    // 2. Invoke Engine (Real-Stub or Replay)
+    const result = await selector.invoke(input);
 
-    // Generate valid 1280x720 PNG
-    const validPng = await sharp({
-      create: {
-        width: 1280,
-        height: 720,
-        channels: 4,
-        background: { r: 20, g: 20, b: 20, alpha: 1 },
-      },
-    }).png().toBuffer();
+    // 3. Persist Asset
+    // P0 Requirement: Real asset file must exist on disk (Engine handles creation)
+    // We just record it in DB.
 
-    // Atomic write
-    const absPath = storage.getAbsolutePath(mockEngineOutput.storageKey);
-    await fs.mkdir(path.dirname(absPath), { recursive: true });
-    const tmpPath = absPath + '.tmp';
-    await fs.writeFile(tmpPath, validPng);
-    await fs.rename(tmpPath, absPath);
-
-    // Verify file size
-    const st = await fs.stat(absPath);
-    if (st.size < 10_000) {
-      throw new Error(`SHOT_RENDER PNG too small: ${absPath} size=${st.size}`);
-    }
-
-    // Simulate delay (extended for stress test to verify concurrency)
-    const delay = (job.payload as any)?.stress_test ? 20000 : 500;
-    await new Promise(resolve => setTimeout(resolve, delay));
-
-    // 2. Create Asset Record (The P0 Requirement)
+    // Upsert Asset Record
     const asset = await prisma.asset.upsert({
       where: {
         ownerType_ownerId_type: {
@@ -732,41 +732,88 @@ export async function processShotRenderJob(
         ownerId: shotId,
         type: 'IMAGE',
         status: 'GENERATED',
-        storageKey: mockEngineOutput.storageKey,
-        checksum: mockEngineOutput.checksum,
+        storageKey: result.asset.uri, // Engine returns absolute path or URI
+        checksum: result.asset.sha256,
         createdByJobId: jobId
       },
       update: {
         status: 'GENERATED',
-        storageKey: mockEngineOutput.storageKey,
-        checksum: mockEngineOutput.checksum,
+        storageKey: result.asset.uri,
+        checksum: result.asset.sha256,
         createdByJobId: jobId,
-        // 更新时保持 projectId 和 owner 不变
       }
     });
 
-    // 3. Link Asset to Shot (Optional, but good for completeness if relation exists)
-    // Note: The Asset->Shot relation is already handled by ownerId, but if Shot has a "coverAssetId" or similar, update it here.
-    // For now, we rely on the Asset table query.
+    // 4. Record Quality Metrics (Render Score equivalent)
+    await prisma.qualityMetrics.create({
+      data: {
+        projectId: job.projectId,
+        engine: 'SHOT_RENDER',
+        jobId,
+        traceId,
+        visualDensityScore: 0.95, // High score for successful render
+        metadata: {
+          ...result.render_meta,
+          assetUri: result.asset.uri,
+          auditTrail: result.audit_trail
+        } as any
+      }
+    });
+
+    // 5. Billing (High Cost)
+    try {
+      const costLedgerService = new CostLedgerService(prisma);
+      const shotJob = await prisma.shotJob.findUnique({
+        where: { id: jobId },
+        select: { organizationId: true }
+      });
+      const project = await prisma.project.findUnique({
+        where: { id: job.projectId },
+        select: { ownerId: true }
+      });
+      const userId = project?.ownerId || 'system';
+      const orgId = shotJob?.organizationId;
+
+      if (orgId) {
+        await costLedgerService.recordShotRenderBilling({
+          jobId,
+          jobType: 'SHOT_RENDER',
+          traceId,
+          projectId: job.projectId,
+          userId,
+          orgId,
+          engineKey: result.audit_trail.engineKey,
+          billingUsage: result.billing_usage
+        });
+      } else {
+        logStructured('warn', { action: 'SHOT_RENDER_BILLING_SKIPPED', jobId, reason: 'Missing orgId' });
+      }
+
+    } catch (billingError: any) {
+      logStructured('error', { action: 'SHOT_RENDER_BILLING_FAILED', jobId, error: billingError.message });
+      throw billingError;
+    }
 
     const duration = Date.now() - jobStartTime;
 
-    // 4. Audit Log
-    await apiClient.postAuditLog({
-      traceId,
-      projectId: job.projectId,
-      jobId,
-      jobType: 'SHOT_RENDER',
-      engineKey: 'mock_renderer',
-      status: 'SUCCESS',
-      inputHash: hashData(job.payload),
-      outputHash: hashData(mockEngineOutput),
-      latencyMs: duration,
-      cost: 0.05, // Mock cost
-      auditTrail: { message: 'Asset generated via mock renderer' },
-      resourceId: asset.id,
-      resourceType: 'asset'
-    }).catch(e => console.warn('Audit failed', e));
+    // 6. Audit Log
+    if (apiClient) {
+      await apiClient.postAuditLog({
+        traceId,
+        projectId: job.projectId,
+        jobId,
+        jobType: 'SHOT_RENDER',
+        engineKey: result.audit_trail.engineKey,
+        status: 'SUCCESS',
+        inputHash: hashData(input),
+        outputHash: hashData(result),
+        latencyMs: duration,
+        cost: 5.0, // High cost estimated here for audit log display
+        auditTrail: result.audit_trail,
+        resourceId: asset.id,
+        resourceType: 'asset'
+      }).catch(e => console.warn('Audit failed', e));
+    }
 
     logStructured('info', {
       action: 'SHOT_RENDER_SUCCESS',
@@ -777,7 +824,7 @@ export async function processShotRenderJob(
 
     return {
       assetId: asset.id,
-      secureUrl: `mock://${mockEngineOutput.storageKey}`, // Client will use AssetService to resolve this
+      secureUrl: result.asset.uri,
       status: 'SUCCESS'
     };
 

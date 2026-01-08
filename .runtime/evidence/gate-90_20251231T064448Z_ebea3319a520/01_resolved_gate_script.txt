@@ -1,3 +1,0 @@
-gate_id=GATE-90
-resolved_script=tools/gate/gates/gate-90_health_audit.sh
-manifest_sha256=28048ed4f3cb779d824c15ed198873c8ad646604367adb473f14500e63f66fc6

@@ -1,9 +1,0 @@
-apps/api/src/app.module.ts
-apps/api/src/cost/ce-cost.service.ts
-apps/api/src/cost/cost-ingest.job.ts
-apps/api/src/cost/cost.module.ts
-apps/api/src/cost/trigger.ts
-packages/database/prisma/schema.prisma
-tools/gate/gate_manifest.json
-tools/gate/gates/gate-80_telemetry_check.sh
-tools/gate/gates/gate-81_cost_integrity_check.sh

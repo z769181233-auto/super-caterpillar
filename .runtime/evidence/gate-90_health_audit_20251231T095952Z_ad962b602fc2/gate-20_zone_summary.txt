@@ -1,3 +1,0 @@
-security_critical_changed=2
-governance_changed=10
-business_changed=21

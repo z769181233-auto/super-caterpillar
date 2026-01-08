@@ -1,3 +1,0 @@
-BASELINE_STAGE11_GREEN.txt
-FINAL_6LINE_EVIDENCE_STAGE11.txt
-governance/impact-statements/security_85233caacedc.md

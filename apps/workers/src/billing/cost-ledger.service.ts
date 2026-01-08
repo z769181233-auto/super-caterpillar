@@ -127,4 +127,22 @@ export class CostLedgerService {
             ...params,
         });
     }
+
+    /**
+     * 记录 SHOT_RENDER 计费 (Stage-3-E)
+     */
+    async recordShotRenderBilling(params: {
+        jobId: string;
+        jobType: string;
+        traceId: string;
+        projectId: string;
+        userId: string;
+        orgId: string;
+        engineKey?: string;
+        billingUsage: EngineBillingUsage;
+    }): Promise<void> {
+        return this.recordCE06Billing({
+            ...params,
+        });
+    }
 }

@@ -1,2 +1,0 @@
-Case1: Pass (ActualUsed=8, Release=2, Drift=0)
-Case2: Pass (Overage Truncated to Reserved=10, Drift=0)
