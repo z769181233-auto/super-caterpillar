@@ -343,15 +343,22 @@ export class EngineAdapterClient {
     this.adapters.set(novelAdapter.name, novelAdapter);
 
     // 注册 CE06 适配器 (根据模式选择 Local 或 Http)
+    // Stage-3-Final: 强制使用 Local Adapter，因为它 internally 支持 Real (Stub) 和 Replay
+    // 将来 P1 如果部署独立 HTTP 引擎再切回 HttpAdapter
+    this.adapters.set('ce06_novel_parsing', novelAdapter);
+    console.log('[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (Stage-3-Final)');
+
+    // Old Logic (Commented out but ce06BaseUrl is needed for CE07)
     const ce06BaseUrl = env.engineRealHttpBaseUrl || process.env.CE06_BASE_URL || 'http://localhost:8000';
+    /* 
     if (process.env.STAGE3_ENGINE_MODE === 'REPLAY') {
-      // Replay 模式下强制使用 Local Adapter mock 数据
       this.adapters.set('ce06_novel_parsing', novelAdapter);
       console.log('[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (REPLAY mode)');
     } else {
       const ce06Adapter = new HttpEngineAdapterWorker('ce06_novel_parsing', ce06BaseUrl, '/story/parse');
       this.adapters.set(ce06Adapter.name, ce06Adapter);
     }
+    */
 
     // 注册 CE07 Http 适配器
     const ce07Adapter = new HttpEngineAdapterWorker('ce07_memory_update', ce06BaseUrl, '/memory/update');

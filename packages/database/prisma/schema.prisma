@@ -1374,5 +1374,6 @@ model CostLedger {
   
   @@index([projectId, orgId, timestamp])
   @@index([traceId])
+  @@unique([jobId, jobType])
   @@map("cost_ledgers") // 物理表名（复数）
 }

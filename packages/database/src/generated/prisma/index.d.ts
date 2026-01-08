@@ -71826,6 +71826,7 @@ export namespace Prisma {
 
   export type CostLedgerWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    jobId_jobType?: CostLedgerJobIdJobTypeCompoundUniqueInput
     AND?: CostLedgerWhereInput | CostLedgerWhereInput[]
     OR?: CostLedgerWhereInput[]
     NOT?: CostLedgerWhereInput | CostLedgerWhereInput[]
@@ -71846,7 +71847,7 @@ export namespace Prisma {
     timestamp?: DateTimeFilter<"CostLedger"> | Date | string
     user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
-  }, "id">
+  }, "id" | "jobId_jobType">
 
   export type CostLedgerOrderByWithAggregationInput = {
     id?: SortOrder
@@ -80914,6 +80915,11 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumTextSafetyDecisionFilter<$PrismaModel>
     _max?: NestedEnumTextSafetyDecisionFilter<$PrismaModel>
+  }
+
+  export type CostLedgerJobIdJobTypeCompoundUniqueInput = {
+    jobId: string
+    jobType: string
   }
 
   export type CostLedgerCountOrderByAggregateInput = {

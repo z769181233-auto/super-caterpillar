@@ -1372,6 +1372,7 @@ model CostLedger {
   user    User?   @relation("UserCostLedgers", fields: [userId], references: [id])
   project Project @relation("ProjectCostLedgers", fields: [projectId], references: [id])
 
+  @@unique([jobId, jobType])
   @@index([projectId, orgId, timestamp])
   @@index([traceId])
   @@map("cost_ledgers") // 物理表名（复数）
