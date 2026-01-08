@@ -1,9 +1,23 @@
-import { Controller, Get, Post, Param, Body, Query, UseGuards, Req, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { JobService } from './job.service';
 import { JobReportFacade } from './job-report.facade';
 import { PermissionService } from '../permission/permission.service';
 
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { QuotaGuard } from '../auth/guards/quota.guard';
+import { BudgetGuard } from '../auth/guards/budget.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentOrganization } from '../auth/decorators/current-organization.decorator';
 import { AuthenticatedUser } from '@scu/shared-types';
@@ -25,7 +39,7 @@ export class JobController {
     private readonly jobReportFacade: JobReportFacade,
     private readonly permissionService: PermissionService,
     private readonly auditLogService: AuditLogService,
-    private readonly capacityGateService: CapacityGateService,
+    private readonly capacityGateService: CapacityGateService
   ) { }
 
   @Get('debug-key/:key')
@@ -39,17 +53,18 @@ export class JobController {
       key,
       dbUrlEnv: process.env.DATABASE_URL,
       projectCount: count,
-      record: record ? { id: record.id, status: record.status } : null
+      record: record ? { id: record.id, status: record.status } : null,
     };
   }
 
   @Post('shots/:shotId/jobs')
+  @UseGuards(QuotaGuard, BudgetGuard)
   async createJob(
     @Param('shotId') shotId: string,
     @Body() createJobDto: CreateJobDto,
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() organizationId: string,
-    @Req() req: Request,
+    @Req() req: Request
   ): Promise<any> {
     const u = (req as any).user;
     if (!u?.userId) {
@@ -89,9 +104,13 @@ export class JobController {
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() organizationId: string
   ): Promise<any> {
-    console.log(`[DEBUG] Controller getJob: id=${id}, userId=${user?.userId}, orgId=${organizationId}`);
+    console.log(
+      `[DEBUG] Controller getJob: id=${id}, userId=${user?.userId}, orgId=${organizationId}`
+    );
     const job = await this.jobService.findJobById(id, user.userId, organizationId);
-    console.log(`[DEBUG] Controller job result: id=${job.id}, status=${job.status}, workerId=${job.workerId}`);
+    console.log(
+      `[DEBUG] Controller job result: id=${job.id}, status=${job.status}, workerId=${job.workerId}`
+    );
     return {
       success: true,
       data: job,
@@ -219,7 +238,12 @@ export class JobController {
   ): Promise<any> {
     // Studio v0.7: 权限检查（仅 OWNER/ADMIN 可操作）
     await this.permissionService.assertCanManageJobs(user.userId, organizationId);
-    const result = await this.jobService.batchRetry(body.jobIds, user.userId, organizationId, false);
+    const result = await this.jobService.batchRetry(
+      body.jobIds,
+      user.userId,
+      organizationId,
+      false
+    );
     return {
       success: true,
       data: result,
@@ -253,7 +277,12 @@ export class JobController {
   ): Promise<any> {
     // Studio v0.7: 权限检查（仅 OWNER/ADMIN 可操作）
     await this.permissionService.assertCanManageJobs(user.userId, organizationId);
-    const result = await this.jobService.batchForceFail(body.jobIds, user.userId, organizationId, body.note);
+    const result = await this.jobService.batchForceFail(
+      body.jobIds,
+      user.userId,
+      organizationId,
+      body.note
+    );
     return {
       success: true,
       data: result,
@@ -271,7 +300,7 @@ export class JobController {
   async startJob(
     @Param('id') jobId: string,
     @CurrentUser() user: AuthenticatedUser,
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     const requestInfo = AuditLogService.extractRequestInfo(request);
     const apiKeyId = (request as any).apiKey?.id;
@@ -316,7 +345,7 @@ export class JobController {
     @Param('id') jobId: string,
     @Body() reportDto: ReportJobDto,
     @CurrentUser() user: AuthenticatedUser,
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     const requestInfo = AuditLogService.extractRequestInfo(request);
     const apiKeyId = (request as any).apiKey?.id;
@@ -353,15 +382,3 @@ export class JobController {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-

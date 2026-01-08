@@ -1,14 +1,3 @@
-// 配置管理
-export { env as config } from './env';
-export { env } from './env';
-
-
-
-
-
-
-
-
-
-
-
+export { env as config, env } from './env';
+export { getRuntimeConfig } from './runtime-profile';
+export type { RuntimeConfig, RuntimeConfig as RuntimeConfigType } from './runtime-profile';

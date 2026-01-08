@@ -1,6 +1,6 @@
 /**
  * Worker 主入口文件
- * 
+ *
  * 功能：
  * 1. 连接数据库
  * 2. 注册 Worker 节点
@@ -10,7 +10,20 @@
 
 /// <reference path="./types/config.d.ts" />
 import { PrismaClient, Prisma } from 'database';
-import { env } from '@scu/config';
+import { env, config as appConfig } from '@scu/config';
+
+/**
+ * 运行时 Profile 配置 (内联版 - 解决 P1-B Gate 跨包导入死结)
+ */
+export function getRuntimeConfig() {
+  const isSafeMode = process.env.SAFE_MODE === '1' || process.env.SAFE_MODE === 'true';
+  return {
+    jobMaxInFlight: isSafeMode ? 2 : (env as any).jobMaxInFlight || 10,
+    nodeMaxOldSpaceMb: isSafeMode ? 4096 : (env as any).nodeMaxOldSpaceMb || 2048,
+    jobWaveSize: isSafeMode ? 1 : (env as any).jobWaveSize || 5,
+  };
+}
+
 import { ApiClient } from './api-client';
 import { EngineAdapterClient } from './engine-adapter-client';
 import { EngineHubClient } from './engine-hub-client';
@@ -27,7 +40,7 @@ import {
   processCE04Job,
   processShotRenderJob,
   processCE01Job,
-  processGenericCEJob
+  processGenericCEJob,
 } from './ce-core-processor';
 import { processVideoRenderJob as processVideoRenderJobImpl } from './video-render.processor';
 
@@ -44,7 +57,7 @@ const prisma = new PrismaClient({
  * Worker CLI参数解析(支持 --workerId=xxx 和 --workerId xxx)
  */
 function readArg(name: string): string | undefined {
-  const argv = process.argv.slice(2).filter(a => a !== "--");
+  const argv = process.argv.slice(2).filter((a) => a !== '--');
   const eqPrefix = `--${name}=`;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -54,34 +67,44 @@ function readArg(name: string): string | undefined {
   return undefined;
 }
 
-const workerIdFromCli = readArg("workerId");
+const workerIdFromCli = readArg('workerId');
 const workerIdFromEnv = process.env.WORKER_ID || process.env.WORKER_NAME;
 const workerId = workerIdFromCli || workerIdFromEnv || env.workerId;
 
-console.log(`[WorkerConfig] workerId=${workerId} (source=${workerIdFromCli ? "cli" : workerIdFromEnv ? "env(WORKER_ID/NAME)" : "config/default"})`);
+console.log(
+  `[WorkerConfig] workerId=${workerId} (source=${workerIdFromCli ? 'cli' : workerIdFromEnv ? 'env(WORKER_ID/NAME)' : 'config/default'})`
+);
 
 // Write PID file for HA gate / failover testing
-import { writeWorkerPidFile } from "./utils/pidfile";
+import { writeWorkerPidFile } from './utils/pidfile';
 const pidMeta = writeWorkerPidFile(workerId);
 console.log(`[Worker] PID file written: ${pidMeta.file}`);
 
+const apiUrlFromCli = readArg('apiUrl');
+const apiKeyFromCli = readArg('apiKey');
+const apiSecretFromCli = readArg('apiSecret');
+
 /**
  * Worker 使用的统一 API 基础地址
- * 优先 env.apiUrl，兜底 http://localhost:3000
+ * 优先 CLI -> env.apiUrl -> 兜底 http://localhost:3000
  */
-const apiBaseUrl = env.apiUrl || 'http://localhost:3000';
+const apiBaseUrl = apiUrlFromCli || env.apiUrl || 'http://localhost:3000';
+const workerApiKey = apiKeyFromCli || env.workerApiKey;
+const workerApiSecret = apiSecretFromCli || env.workerApiSecret;
+
+console.log(
+  `[WorkerConfig] apiBaseUrl=${apiBaseUrl} (source=${apiUrlFromCli ? 'cli' : 'config/env'})`
+);
 
 if (!apiBaseUrl) {
-  throw new Error(
-    '[Worker] 启动失败：apiBaseUrl 为空，请检查 env.apiUrl / API_HOST / API_PORT'
-  );
+  throw new Error('[Worker] 启动失败：apiBaseUrl 为空，请检查 --apiUrl / env.apiUrl');
 }
 
 const apiClient = new ApiClient(
   apiBaseUrl.replace(/\/api\/?$/, ''),
-  env.workerApiKey,
-  env.workerApiSecret,
-  workerId,
+  workerApiKey,
+  workerApiSecret,
+  workerId
 );
 
 let isRunning = false;
@@ -101,12 +124,16 @@ async function registerWorker(): Promise<void> {
   console.log(`[Worker] Worker ID: ${workerId}`);
   console.log(`[Worker] Worker Name: ${env.workerName}`);
   console.log(`[Worker] API URL: ${apiBaseUrl}`);
-  console.log(`[Worker] Database URL: ${env.databaseUrl ? env.databaseUrl.substring(0, 30) + '...' : '未配置'}`);
+  console.log(
+    `[Worker] Database URL: ${env.databaseUrl ? env.databaseUrl.substring(0, 30) + '...' : '未配置'}`
+  );
   console.log(`[Worker] JOB_WORKER_ENABLED: ${env.jobWorkerEnabled}`);
   if (!env.workerApiKey || !env.workerApiSecret) {
     console.warn('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!');
     console.warn('[Worker] ⚠️  Worker will not be able to authenticate with API server.');
-    console.warn('[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.');
+    console.warn(
+      '[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.'
+    );
   } else {
     console.log(`[Worker] API Key: ${env.workerApiKey.substring(0, 10)}... (configured)`);
     console.log(`[Worker] API Secret: ${env.workerApiSecret ? 'SET' : 'NOT SET'}`);
@@ -125,23 +152,21 @@ async function registerWorker(): Promise<void> {
 
   try {
     // ✅ P1-2 HA: 添加supportedEngines配置
-    const supportedEngines =
-      (process.env.WORKER_SUPPORTED_ENGINES || "")
-        .split(",")
-        .map(s => s.trim())
-        .filter(Boolean);
+    const supportedEngines = (process.env.WORKER_SUPPORTED_ENGINES || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     // 稳定兜底:至少要把本次P1-2验证用到的引擎带上
-    const supportedEnginesFinal = supportedEngines.length > 0
-      ? supportedEngines
-      : ["default_novel_analysis"];
+    const supportedEnginesFinal =
+      supportedEngines.length > 0 ? supportedEngines : ['default_novel_analysis'];
 
     console.log(`[Worker] supportedEngines=${JSON.stringify(supportedEnginesFinal)}`);
 
     // 通过 API 注册 Worker
     await apiClient.registerWorker({
       workerId: workerId,
-      name: env.workerName,
+      name: workerId, // 兜底使用 workerId，确保不为空
       capabilities: {
         supportedJobTypes: [
           'NOVEL_ANALYSIS',
@@ -186,13 +211,17 @@ async function sendHeartbeat(): Promise<void> {
         concurrency_managed: true,
         lease_supported: true,
         // P1-3: Heartbeat must include supportedEngines otherwise API might clear it
-        supportedEngines: (process.env.WORKER_SUPPORTED_ENGINES || "")
-          .split(",")
-          .map(s => s.trim())
-          .filter(Boolean).length > 0
-          ? (process.env.WORKER_SUPPORTED_ENGINES || "").split(",").map(s => s.trim()).filter(Boolean)
-          : ["default_novel_analysis"]
-      }
+        supportedEngines:
+          (process.env.WORKER_SUPPORTED_ENGINES || '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean).length > 0
+            ? (process.env.WORKER_SUPPORTED_ENGINES || '')
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+            : ['default_novel_analysis'],
+      },
     });
     if (tasksRunning === 0) {
       // 静默心跳，避免日志过多
@@ -271,16 +300,16 @@ function buildEngineInvokeInputForNovelAnalysis(job: JobFromApi): EngineInvokeIn
  */
 async function handleEngineResultAndReport(
   job: JobFromApi,
-  engineResult: EngineInvokeResult,
+  engineResult: EngineInvokeResult
 ): Promise<void> {
-  if (engineResult.status === 'SUCCESS' as EngineInvokeStatus) {
+  if (engineResult.status === ('SUCCESS' as EngineInvokeStatus)) {
     await apiClient.reportJobResult({
       jobId: job.id,
       status: 'SUCCEEDED',
       result: engineResult.output ?? null,
       metrics: engineResult.metrics ?? undefined,
     });
-  } else if (engineResult.status === 'RETRYABLE' as EngineInvokeStatus) {
+  } else if (engineResult.status === ('RETRYABLE' as EngineInvokeStatus)) {
     await apiClient.reportJobResult({
       jobId: job.id,
       status: 'FAILED',
@@ -314,7 +343,12 @@ async function processJob(job: JobFromApi): Promise<void> {
     // Stage13: CE Core Layer - 处理 CE06/CE03/CE04/CE01 等 Job
     // 优先匹配特定处理器，否则走通用处理器
     if (job.type === 'CE04_VISUAL_ENRICHMENT') {
-      const result = await processCE04Job(prisma, { ...job, projectId: job.projectId || '' }, engineHubClient, apiClient);
+      const result = await processCE04Job(
+        prisma,
+        { ...job, projectId: job.projectId || '' },
+        engineHubClient,
+        apiClient
+      );
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'SUCCEEDED',
@@ -322,7 +356,12 @@ async function processJob(job: JobFromApi): Promise<void> {
       });
       return;
     } else if (job.type === 'CE03_VISUAL_DENSITY') {
-      const result = await processCE03Job(prisma, { ...job, projectId: job.projectId || '' }, engineHubClient, apiClient);
+      const result = await processCE03Job(
+        prisma,
+        { ...job, projectId: job.projectId || '' },
+        engineHubClient,
+        apiClient
+      );
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'SUCCEEDED',
@@ -330,7 +369,12 @@ async function processJob(job: JobFromApi): Promise<void> {
       });
       return;
     } else if (job.type === 'CE06_NOVEL_PARSING') {
-      const result = await processCE06Job(prisma, { ...job, projectId: job.projectId || '' }, engineHubClient, apiClient);
+      const result = await processCE06Job(
+        prisma,
+        { ...job, projectId: job.projectId || '' },
+        engineHubClient,
+        apiClient
+      );
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'SUCCEEDED',
@@ -348,7 +392,11 @@ async function processJob(job: JobFromApi): Promise<void> {
     }
 
     // Stage2: 使用 Engine Hub 统一接口处理 NOVEL_ANALYSIS
-    if (job.type === 'NOVEL_ANALYSIS' || job.type === 'NOVEL_ANALYSIS_HTTP' || (job.type as any) === 'NOVEL_ANALYZE_CHAPTER') {
+    if (
+      job.type === 'NOVEL_ANALYSIS' ||
+      job.type === 'NOVEL_ANALYSIS_HTTP' ||
+      (job.type as any) === 'NOVEL_ANALYZE_CHAPTER'
+    ) {
       const payload = job.payload || {};
 
       // 构造 EngineInvocationRequest
@@ -371,7 +419,10 @@ async function processJob(job: JobFromApi): Promise<void> {
       };
 
       // 调用 Engine Hub
-      const result = await engineHubClient.invoke<NovelAnalysisEngineInput, NovelAnalysisEngineOutput>(engineReq);
+      const result = await engineHubClient.invoke<
+        NovelAnalysisEngineInput,
+        NovelAnalysisEngineOutput
+      >(engineReq);
 
       const duration = Date.now() - jobStartTime;
 
@@ -423,27 +474,34 @@ async function processJob(job: JobFromApi): Promise<void> {
 
     // Stage 4: SHOT_RENDER Handler
     if (job.type === 'SHOT_RENDER' || job.type === 'SHOT_RENDER_HTTP') {
-      const result = await processShotRenderJob(prisma, { ...job, projectId: job.projectId || '', shotId: job.shotId || undefined }, engineHubClient, apiClient);
+      const result = await processShotRenderJob(
+        prisma,
+        { ...job, projectId: job.projectId || '', shotId: job.shotId || undefined },
+        engineHubClient,
+        apiClient
+      );
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'SUCCEEDED',
-        result: result
+        result: result,
       });
       return;
     }
 
     // Stage 8: VIDEO_RENDER Handler
     if (job.type === 'VIDEO_RENDER') {
-      const result = await processVideoRenderJobImpl(prisma, { ...job, projectId: job.projectId || '' }, apiClient);
+      const result = await processVideoRenderJobImpl(
+        prisma,
+        { ...job, projectId: job.projectId || '' },
+        apiClient
+      );
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'SUCCEEDED',
-        result: result
+        result: result,
       });
       return;
     }
-
-
 
     // 其它 JobType 走现有逻辑（保持不变）
     throw new Error(`Unsupported job type: ${job.type}`);
@@ -486,11 +544,23 @@ async function processJob(job: JobFromApi): Promise<void> {
  */
 async function pollAndProcessJobs(): Promise<void> {
   // P1-1: 尊重本地并发上限与波次限制
-  // @ts-expect-error - P1-1 extension
-  const { jobWaveSize, jobMaxInFlight } = env;
+  const runtimeConfig = getRuntimeConfig();
+  const jobWaveSize = appConfig.jobWaveSize;
+  const { jobMaxInFlight } = runtimeConfig;
+
+  // P1-B 审计留痕：输出运行时 Profile
+  if (isRunning) { // 仅在轮询激活时输出一次
+    // console.log(`[WorkerRuntime] ${JSON.stringify(runtimeConfig)}`);
+  }
+  // 强制输出一次用于 Gate 捕获
+  if (tasksRunning === 0) {
+    console.log(`[WorkerRuntime] ${JSON.stringify(runtimeConfig)}`);
+  }
 
   if (tasksRunning >= jobMaxInFlight) {
-    // 达到单机上限，静默跳过
+    if (env.isDevelopment) {
+      // console.log(`[Worker] Max in-flight reached (${tasksRunning}/${jobMaxInFlight}). Waiting...`);
+    }
     return;
   }
 
@@ -613,4 +683,3 @@ main().catch((error) => {
   console.error('[Worker] ❌ 致命错误:', error);
   process.exit(1);
 });
-

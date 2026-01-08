@@ -6,6 +6,7 @@ export interface RouterV2Request {
   costLimit?: number; // Credits
   latencySLA?: number; // ms
   tags?: string[];
+  budgetLevel?: 'OK' | 'WARN' | 'BLOCK_HIGH_COST' | 'BLOCK_ALL_CONSUME';
 }
 
 export interface RouterV2Result {
@@ -31,7 +32,15 @@ export class ModelRouterV2 {
 
     // 2. ShotRender 路由规则
     if (jobType === 'SHOT_RENDER' || jobType === 'shot_render') {
-      // 如果预算极其有限
+      // 规格：预算达 100% (BLOCK_HIGH_COST) 时，禁止高成本模型，尝试降级
+      if (req.budgetLevel === 'BLOCK_HIGH_COST' || req.budgetLevel === 'BLOCK_ALL_CONSUME') {
+        return {
+          selectedModel: 'replay-stub',
+          reason: `Budget constraint (${req.budgetLevel}) enforced: Degrading to LOW_COST Stub`,
+        };
+      }
+
+      // 如果预算极其有限 (Legacy support)
       if (costLimit < 1.0) {
         return {
           selectedModel: 'replay-stub',

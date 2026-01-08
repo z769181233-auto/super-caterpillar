@@ -22,6 +22,7 @@ import { JobEngineBindingService } from './job-engine-binding.service';
 import { BillingService } from '../billing/billing.service';
 import { CopyrightService } from '../copyright/copyright.service';
 import { CapacityGateService } from '../capacity/capacity-gate.service';
+import { BudgetService } from '../billing/budget.service';
 import { CapacityExceededException, CapacityErrorCode } from '../common/errors/capacity-errors';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
@@ -92,6 +93,7 @@ export class JobService {
     @Inject(CapacityGateService) private readonly capacityGateService: CapacityGateService,
     @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService,
     @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService,
+    @Inject(BudgetService) private readonly budgetService: BudgetService,
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService
   ) { }
@@ -211,7 +213,7 @@ export class JobService {
           `Billing gate rejected job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}`
         );
         throw new ForbiddenException(
-          `Insufficient credits to start job. Required: ${requiredCredits} tokens.`
+          `Insufficient credits to start job. Required: ${requiredCredits} credits.`
         );
       }
     }
@@ -2308,10 +2310,48 @@ export class JobService {
       });
     }
 
+    // P1-B CostGuard: 启动前二次检查余额 (出口门禁)
+    const creditsObj = await this.billingService.getCredits('system', job.organizationId);
+    const credits = creditsObj.remaining;
+    if (credits <= 0) {
+      this.logger.warn(`Job ${jobId} blocked at startup: Insufficient credits (${credits})`);
+
+      // 记录硬拦截审计
+      await this.auditLogService.record({
+        userId: (job as any).userId,
+        action: 'job.execution.blocked.quota',
+        resourceType: 'job',
+        resourceId: jobId,
+        details: { credits, organizationId: job.organizationId }
+      }).catch(() => undefined);
+
+      // 断言状态流转合法性 (P1-B Budget Block)
+      transitionJobStatus(job.status, JobStatusEnum.FAILED, {
+        jobId: job.id,
+        jobType: job.type,
+      });
+
+      // Note: This update should ideally be part of a transaction if `markJobRunning` is transactional.
+      // For now, it's a direct update.
+      await this.prisma.shotJob.update({
+        where: { id: job.id },
+        data: {
+          status: JobStatusEnum.FAILED,
+          lastError: 'Insufficient credits to start job execution.'
+        },
+      });
+
+      throw new ForbiddenException({
+        code: 'PAYMENT_REQUIRED',
+        message: 'Insufficient credits to start job execution.',
+        statusCode: 402,
+      });
+    }
+
     // 验证状态转换：DISPATCHED -> RUNNING
     transitionJobStatus(JobStatusEnum.DISPATCHED, JobStatusEnum.RUNNING, {
       jobId: job.id,
-      jobType: job.type,
+      jobType: job.type as string,
       workerId: worker.id,
     });
 

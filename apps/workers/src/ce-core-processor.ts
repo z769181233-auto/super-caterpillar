@@ -19,7 +19,7 @@ import {
 } from '@scu/shared-types';
 import * as path from 'path';
 import * as fs from 'node:fs/promises';
-import sharp from 'sharp';
+// import sharp from 'sharp'; // 移除冗余引用以节省内存
 import { LocalStorageAdapter } from '@scu/storage';
 import { createHash } from 'crypto';
 import {
@@ -1023,9 +1023,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-          summary: previousMemory.summary || '',
-          character_states: (previousMemory.characterStates as any) || {},
-        }
+        summary: previousMemory.summary || '',
+        character_states: (previousMemory.characterStates as any) || {},
+      }
       : undefined,
     context: {
       projectId,
