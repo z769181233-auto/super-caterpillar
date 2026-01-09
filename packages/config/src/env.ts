@@ -174,6 +174,39 @@ export const env = {
   HMAC_SIGNATURE_ALGORITHM: getEnv('HMAC_SIGNATURE_ALGORITHM', 'sha256'),
 
   // --- P1-1: 并发与队列治理 (Concurrency Governance) ---
+  concurrencyLimiterEnabled: process.env.CONCURRENCY_LIMITER_ENABLED === 'true',
+  apiBackpressureEnabled: process.env.API_BACKPRESSURE_ENABLED === 'true',
+  execTimeoutEnabled: process.env.EXEC_TIMEOUT_ENABLED === 'true',
+  retryPolicyEnabled: process.env.RETRY_POLICY_ENABLED === 'true',
+
+  // 并发参数
+  maxInFlightTotal: getEnvNumber('MAX_IN_FLIGHT_TOTAL', 8),
+  maxInFlightTenant: getEnvNumber('MAX_IN_FLIGHT_TENANT', 2),
+
+  // 引擎并发：从环境变量动态读取或使用默认值
+  getEngineConcurrency: (engineKey: string): number => {
+    const envKey = `MAX_IN_FLIGHT_ENGINE_${engineKey.toUpperCase()}`;
+    return Number(process.env[envKey] ?? '2');
+  },
+
+  // 背压阈值
+  apiQueuePendingLimit: getEnvNumber('API_QUEUE_PENDING_LIMIT', 100),
+  apiQueueRunningLimit: getEnvNumber('API_QUEUE_RUNNING_LIMIT', 50),
+  apiRetryAfterSeconds: getEnvNumber('API_RETRY_AFTER_SECONDS', 15),
+
+  // 超时控制 (按 engineKey)
+  getEngineTimeoutSeconds: (engineKey: string): number => {
+    const envKey = `TIMEOUT_SECONDS_${engineKey.toUpperCase()}`;
+    const defaultVal = engineKey === 'shot_render' ? 120 : engineKey === 'video_merge' ? 60 : 180;
+    return Number(process.env[envKey] ?? defaultVal);
+  },
+
+  // 重试策略
+  retryMaxAttempts: getEnvNumber('RETRY_MAX_ATTEMPTS', 3),
+  retryBaseMs: getEnvNumber('RETRY_BASE_MS', 500),
+  retryMaxMs: getEnvNumber('RETRY_MAX_MS', 5000),
+  retryJitter: process.env.RETRY_JITTER !== 'false',
+
   // JOB_MAX_IN_FLIGHT: 全局或单 Worker 最大并发限制
   jobMaxInFlight: (() => {
     const val = getEnvNumber('JOB_MAX_IN_FLIGHT', 10);

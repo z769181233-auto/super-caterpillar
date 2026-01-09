@@ -329,7 +329,7 @@ export class ApiClient {
     result?: any;
     errorMessage?: string; // Correct parameter name
     error?: any; // internal input
-    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number; [key: string]: any };
+    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number;[key: string]: any };
     retryable?: boolean;
   }): Promise<any> {
     const requestBody: any = {
@@ -406,6 +406,7 @@ export class ApiClient {
     jobId: string;
     jobType: string;
     engineKey?: string;
+    attempt?: number; // ✅ P1-1: 试次支持
     costAmount: number;
     currency?: string;
     billingUnit: string;

@@ -1036,6 +1036,7 @@ model CostLedger {
   jobId           String
   jobType         String
   engineKey       String?
+  attempt         Int           @default(0)
   costAmount      Float         @default(0.0)
   currency        String        @default("USD")
   billingUnit     String?
@@ -1059,10 +1060,10 @@ model CostLedger {
   project         Project       @relation("ProjectCostLedgers", fields: [projectId], references: [id])
   user            User?         @relation("UserCostLedgers", fields: [userId], references: [id])
 
-  @@unique([jobId, jobType])
+  @@unique([jobId, attempt])
   @@index([projectId, billingStatus])
   @@index([projectId])
-  @@index([jobId, jobType])
+  @@index([jobId, attempt])
   @@index([createdAt])
   @@map("cost_ledgers")
 }

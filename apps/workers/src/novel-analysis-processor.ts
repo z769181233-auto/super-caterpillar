@@ -10,6 +10,7 @@ import {
 } from '@scu/shared-types';
 import { CE06EngineSelector } from '@scu/engines/ce06/selector';
 import { CE06Input, CE06Output } from '@scu/engines/ce06/types';
+import { ApiClient } from './api-client';
 
 /**
  * 结构化日志输出函数
@@ -932,8 +933,8 @@ export async function applyAnalyzedStructureToDatabase(
   const result =
     prisma instanceof PrismaClient
       ? await (prisma as any).$transaction(executeInTransaction, {
-          timeout: 5 * 60 * 1000, // 5 minutes
-        })
+        timeout: 5 * 60 * 1000, // 5 minutes
+      })
       : await executeInTransaction(prisma);
 
   return result;
@@ -1046,7 +1047,8 @@ export function mapCE06OutputToProjectStructure(
  */
 export async function processNovelAnalysisJob(
   prisma: PrismaClient,
-  job: WorkerJobBase
+  job: WorkerJobBase,
+  apiClient: ApiClient
 ): Promise<any> {
   const startTime = Date.now();
   const jobId = job.id;
@@ -1171,7 +1173,7 @@ export async function processNovelAnalysisJob(
     try {
       // 动态导入避免循环依赖
       const { CostLedgerService } = await import('./billing/cost-ledger.service.js');
-      const costLedger = new CostLedgerService(prisma);
+      const costLedger = new CostLedgerService(apiClient);
 
       // 从 structure 中提取 billing_usage（如果有）
       const billingUsage = (structure as any).billing_usage;
@@ -1184,6 +1186,7 @@ export async function processNovelAnalysisJob(
           projectId,
           userId: (job as any).userId || 'system',
           orgId: (job as any).organizationId || 'default-org',
+          attempt: (job as any).attempts ?? 1,
           engineKey: 'ce06_novel_parsing',
           billingUsage,
         });

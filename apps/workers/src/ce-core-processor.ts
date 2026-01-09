@@ -140,7 +140,7 @@ export async function processCE06Job(
 
     // 3.2 记录计费 (Stage-3-B)
     try {
-      const costLedgerService = new CostLedgerService(prisma);
+      const costLedgerService = new CostLedgerService(apiClient);
       const shotJob = await prisma.shotJob.findUnique({
         where: { id: jobId },
         select: { organizationId: true },
@@ -160,6 +160,7 @@ export async function processCE06Job(
           projectId: job.projectId,
           userId,
           orgId,
+          attempt: (job as any).attempts ?? 1,
           engineKey: 'ce06_novel_parsing',
           billingUsage: (result as any).billing_usage,
         });
@@ -346,7 +347,7 @@ export async function processCE03Job(
 
     // 3.2 记录计费 (Stage-3-C)
     try {
-      const costLedgerService = new CostLedgerService(prisma);
+      const costLedgerService = new CostLedgerService(apiClient);
       const shotJob = await prisma.shotJob.findUnique({
         where: { id: jobId },
         select: { organizationId: true },
@@ -366,6 +367,7 @@ export async function processCE03Job(
           projectId: job.projectId,
           userId,
           orgId,
+          attempt: (job as any).attempts ?? 1,
           engineKey: 'ce03_visual_density',
           billingUsage: (result as any).billing_usage,
         });
@@ -524,7 +526,7 @@ export async function processCE04Job(
     };
 
     // Direct selector invocation to ensure we hit the new package logic
-    const result = await selector.invoke(input, ctx);
+    const result = await selector.invoke(input);
 
     if (!result) {
       throw new Error('CE04 Selector returned null');
@@ -556,7 +558,7 @@ export async function processCE04Job(
 
     // 4.1 计费 (CostLedger)
     try {
-      const costLedgerService = new CostLedgerService(prisma);
+      const costLedgerService = new CostLedgerService(apiClient);
       const shotJob = await prisma.shotJob.findUnique({
         where: { id: jobId },
         select: { organizationId: true },
@@ -576,6 +578,7 @@ export async function processCE04Job(
           projectId: job.projectId,
           userId,
           orgId,
+          attempt: (job as any).attempts ?? 1,
           engineKey: 'ce04_visual_enrichment',
           billingUsage: result.billing_usage,
         });
@@ -736,7 +739,7 @@ export async function processShotRenderJob(
     };
 
     // 2. Invoke Engine (Real-Stub or Replay)
-    const result = await selector.invoke(input, ctx);
+    const result = await selector.invoke(input);
 
     // 3. Persist Asset
     // P0 Requirement: Real asset file must exist on disk (Engine handles creation)
@@ -787,7 +790,7 @@ export async function processShotRenderJob(
 
     // 5. Billing (High Cost)
     try {
-      const costLedgerService = new CostLedgerService(prisma);
+      const costLedgerService = new CostLedgerService(apiClient);
       const shotJob = await prisma.shotJob.findUnique({
         where: { id: jobId },
         select: { organizationId: true },
@@ -807,7 +810,8 @@ export async function processShotRenderJob(
           projectId: job.projectId,
           userId,
           orgId,
-          engineKey: result.audit_trail.engineKey,
+          attempt: (job as any).attempts ?? 1,
+          engineKey: 'shot_render',
           billingUsage: result.billing_usage,
         });
       } else {
@@ -1023,9 +1027,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-          summary: previousMemory.summary || '',
-          character_states: (previousMemory.characterStates as any) || {},
-        }
+        summary: previousMemory.summary || '',
+        character_states: (previousMemory.characterStates as any) || {},
+      }
       : undefined,
     context: {
       projectId,

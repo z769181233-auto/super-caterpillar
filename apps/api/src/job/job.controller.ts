@@ -10,6 +10,8 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { JobService } from './job.service';
 import { JobReportFacade } from './job-report.facade';
@@ -40,7 +42,7 @@ export class JobController {
     private readonly permissionService: PermissionService,
     private readonly auditLogService: AuditLogService,
     private readonly capacityGateService: CapacityGateService
-  ) {}
+  ) { }
 
   @Get('debug-key/:key')
   @Public()
@@ -67,12 +69,43 @@ export class JobController {
     @Req() req: Request
   ): Promise<any> {
     const u = (req as any).user;
-    if (!u?.userId) {
-      throw new ForbiddenException({
-        code: 'AUTH_NO_USER_BOUND',
-        message: 'HMAC key is valid but not bound to a user; cannot create jobs via user endpoint.',
-      });
+    // P1-1: API Backpressure Check
+    const { env: scuEnv } = await import('@scu/config');
+    if ((scuEnv as any).apiBackpressureEnabled) {
+      const snapshot = await this.jobService.getQueueSnapshot();
+      if (
+        snapshot.pending >= (scuEnv as any).apiQueuePendingLimit ||
+        snapshot.running >= (scuEnv as any).apiQueueRunningLimit
+      ) {
+        // Record rejection audit
+        await this.auditLogService.record({
+          userId: u.userId,
+          action: 'JOB_REJECTED_BACKPRESSURE',
+          resourceType: 'job',
+          details: {
+            snapshot,
+            limits: {
+              pending: (scuEnv as any).apiQueuePendingLimit,
+              running: (scuEnv as any).apiQueueRunningLimit,
+            },
+          },
+        });
+
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.TOO_MANY_REQUESTS,
+            message: 'System busy: Queue capacity reached. Please retry later.',
+            code: 'API_BACKPRESSURE_LIMIT',
+            retryAfter: (scuEnv as any).apiRetryAfterSeconds,
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+          {
+            cause: snapshot,
+          }
+        );
+      }
     }
+
     // Fix: Use u.userId (checked above) instead of user.userId to ensure consistency
     const job = await this.jobService.create(shotId, createJobDto, u.userId, organizationId);
     return {

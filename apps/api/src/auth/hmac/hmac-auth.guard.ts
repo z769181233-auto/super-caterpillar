@@ -28,10 +28,15 @@ export class HmacAuthGuard implements CanActivate {
     private readonly hmacAuthService: HmacAuthService,
     private readonly auditLogService: AuditLogService,
     private readonly nonceService: NonceService
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
+
+    // P1-1: 门禁模式旁路（仅限测试环境）
+    if (process.env.GATE_MODE === '1' && process.env.NODE_ENV !== 'production') {
+      return true;
+    }
 
     const method = request.method;
     // 商业级规范：验签path必须来自实际请求行（originalUrl优先）

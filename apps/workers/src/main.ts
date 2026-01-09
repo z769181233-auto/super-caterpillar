@@ -24,6 +24,10 @@ export function getRuntimeConfig() {
   };
 }
 
+import { engineLimiter } from './concurrency/engine-limiter';
+import { JobExecutor } from './executor/executor';
+
+let jobExecutor: JobExecutor;
 import { ApiClient } from './api-client';
 import { EngineAdapterClient } from './engine-adapter-client';
 import { EngineHubClient } from './engine-hub-client';
@@ -39,9 +43,13 @@ import {
   processCE03Job,
   processCE04Job,
   processShotRenderJob,
-  processCE01Job,
   processGenericCEJob,
 } from './ce-core-processor';
+import {
+  mapCE06OutputToProjectStructure,
+  applyAnalyzedStructureToDatabase,
+  processNovelAnalysisJob,
+} from './novel-analysis-processor';
 import { processVideoRenderJob as processVideoRenderJobImpl } from './video-render.processor';
 
 const prisma = new PrismaClient({
@@ -217,9 +225,9 @@ async function sendHeartbeat(): Promise<void> {
             .map((s) => s.trim())
             .filter(Boolean).length > 0
             ? (process.env.WORKER_SUPPORTED_ENGINES || '')
-                .split(',')
-                .map((s) => s.trim())
-                .filter(Boolean)
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
             : ['default_novel_analysis'],
       },
     });
@@ -325,215 +333,105 @@ async function handleEngineResultAndReport(
   }
 }
 
-async function processJob(job: JobFromApi): Promise<void> {
-  const jobStartTime = Date.now();
-
-  // 记录 Job 处理开始日志
-  logStructured('info', {
-    action: 'JOB_PROCESSING_START',
-    jobId: job.id,
-    jobType: job.type,
-    workerId,
-    projectId: job.projectId || job.payload?.projectId,
-  });
-
+/**
+ * 使用 JobExecutor 执行任务
+ */
+async function processJobWithExecutor(job: JobFromApi): Promise<void> {
+  const engineKey = (job as any).engineKey || 'default';
   tasksRunning++;
 
   try {
-    // Stage13: CE Core Layer - 处理 CE06/CE03/CE04/CE01 等 Job
-    // 优先匹配特定处理器，否则走通用处理器
-    if (job.type === 'CE04_VISUAL_ENRICHMENT') {
-      const result = await processCE04Job(
-        prisma,
-        { ...job, projectId: job.projectId || '' },
-        engineHubClient,
-        apiClient
-      );
-      await apiClient.reportJobResult({
-        jobId: job.id,
-        status: 'SUCCEEDED',
-        result: result,
-      });
-      return;
-    } else if (job.type === 'CE03_VISUAL_DENSITY') {
-      const result = await processCE03Job(
-        prisma,
-        { ...job, projectId: job.projectId || '' },
-        engineHubClient,
-        apiClient
-      );
-      await apiClient.reportJobResult({
-        jobId: job.id,
-        status: 'SUCCEEDED',
-        result: result,
-      });
-      return;
-    } else if (job.type === 'CE06_NOVEL_PARSING') {
-      const result = await processCE06Job(
-        prisma,
-        { ...job, projectId: job.projectId || '' },
-        engineHubClient,
-        apiClient
-      );
-      await apiClient.reportJobResult({
-        jobId: job.id,
-        status: 'SUCCEEDED',
-        result: result,
-      });
-      return;
-    } else if (job.type.startsWith('CE')) {
-      const result = await processGenericCEJob(prisma, job as any, engineHubClient, apiClient);
-      await apiClient.reportJobResult({
-        jobId: job.id,
-        status: 'SUCCEEDED',
-        result: result,
-      });
-      return;
-    }
-
-    // Stage2: 使用 Engine Hub 统一接口处理 NOVEL_ANALYSIS
-    if (
-      job.type === 'NOVEL_ANALYSIS' ||
-      job.type === 'NOVEL_ANALYSIS_HTTP' ||
-      (job.type as any) === 'NOVEL_ANALYZE_CHAPTER'
-    ) {
-      const payload = job.payload || {};
-
-      // 构造 EngineInvocationRequest
-      const engineReq: EngineInvocationRequest<NovelAnalysisEngineInput> = {
-        engineKey: payload.engineKey || 'novel_analysis',
-        engineVersion: payload.engineVersion || 'default',
-        payload: {
-          novelSourceId: payload.novelSourceId,
-          projectId: job.projectId || payload.projectId || '',
-          options: {
-            segmentationMode: payload.segmentationMode || 'auto',
+    const result = await jobExecutor.execute(job.id, engineKey, async () => {
+      // 内部逻辑：根据 job.type 调用不同的处理器
+      if (job.type === 'CE04_VISUAL_ENRICHMENT') {
+        return processCE04Job(
+          prisma,
+          { ...job, projectId: job.projectId || '' },
+          engineHubClient,
+          apiClient
+        );
+      } else if (job.type === 'CE03_VISUAL_DENSITY') {
+        return processCE03Job(
+          prisma,
+          { ...job, projectId: job.projectId || '' },
+          engineHubClient,
+          apiClient
+        );
+      } else if (job.type === 'CE06_NOVEL_PARSING') {
+        return processCE06Job(
+          prisma,
+          { ...job, projectId: job.projectId || '' },
+          engineHubClient,
+          apiClient
+        );
+      } else if (job.type === 'SHOT_RENDER' || job.type === 'SHOT_RENDER_HTTP') {
+        return processShotRenderJob(
+          prisma,
+          { ...job, projectId: job.projectId || '', shotId: job.shotId || undefined },
+          engineHubClient,
+          apiClient
+        );
+      } else if (job.type === 'VIDEO_RENDER') {
+        return processVideoRenderJobImpl(
+          prisma,
+          { ...job, projectId: job.projectId || '' },
+          apiClient
+        );
+      } else if (job.type.startsWith('CE')) {
+        return processGenericCEJob(prisma, job as any, engineHubClient, apiClient);
+      } else if (
+        job.type === 'NOVEL_ANALYSIS' ||
+        job.type === 'NOVEL_ANALYSIS_HTTP' ||
+        (job.type as any) === 'NOVEL_ANALYZE_CHAPTER'
+      ) {
+        return processNovelAnalysisJob(
+          prisma,
+          { ...job, projectId: job.projectId || '' },
+          apiClient
+        );
+        const payload = job.payload || {};
+        const engineReq: EngineInvocationRequest<NovelAnalysisEngineInput> = {
+          engineKey: payload.engineKey || 'novel_analysis',
+          engineVersion: payload.engineVersion || 'default',
+          payload: {
+            novelSourceId: payload.novelSourceId,
+            projectId: job.projectId || payload.projectId || '',
+            options: { segmentationMode: payload.segmentationMode || 'auto' },
           },
-        },
-        metadata: {
-          jobId: job.id,
-          taskId: job.taskId,
-          projectId: job.projectId || payload.projectId || '',
-          traceId: payload.traceId,
-        },
-      };
-
-      // 调用 Engine Hub
-      const result = await engineHubClient.invoke<
-        NovelAnalysisEngineInput,
-        NovelAnalysisEngineOutput
-      >(engineReq);
-
-      const duration = Date.now() - jobStartTime;
-
-      // 处理结果
-      if (!result.success || !result.output) {
-        // 回报告错：保持现有 Job 报告协议
-        logStructured('warn', {
-          action: 'JOB_PROCESSING_FAILED',
-          jobId: job.id,
-          jobType: job.type,
-          workerId,
-          error: result.error?.message || 'Engine execution failed',
-          errorCode: result.error?.code,
-          durationMs: duration,
-        });
-
-        await apiClient.reportJobResult({
-          jobId: job.id,
-          status: 'FAILED',
-          error: result.error || { message: 'Engine execution failed', code: 'ENGINE_CALL_FAILED' },
-        });
-        return;
+          metadata: {
+            jobId: job.id,
+            taskId: job.taskId,
+            projectId: job.projectId || payload.projectId || '',
+            traceId: payload.traceId,
+          },
+        };
+        const res = await engineHubClient.invoke<NovelAnalysisEngineInput, NovelAnalysisEngineOutput>(engineReq);
+        if (!res.success) throw res.error || new Error('Engine execution failed');
+        return res.output;
       }
-
-      // 成功：写库逻辑已经在 NovelAnalysisLocalAdapterWorker 内部完成
-      // 这里只需要上报成功结果
-      logStructured('info', {
-        action: 'JOB_PROCESSING_SUCCESS',
-        jobId: job.id,
-        jobType: job.type,
-        workerId,
-        durationMs: duration,
-        metrics: result.metrics,
-      });
-
-      // 注意：NovelAnalysisLocalAdapterWorker 返回的是 stats，不是完整的 analyzed 结构
-      // 为了保持兼容，我们上报 output 本身（包含 stats）
-      await apiClient.reportJobResult({
-        jobId: job.id,
-        status: 'SUCCEEDED',
-        result: result.output, // output 包含 stats（seasonsCount, episodesCount, scenesCount, shotsCount）
-        metrics: result.metrics,
-      });
-      return;
-    }
-
-    // 将来扩展 SHOT_RENDER_HTTP 时再按同样方式添加
-    // else if (job.type === 'SHOT_RENDER_HTTP') { ... }
-
-    // Stage 4: SHOT_RENDER Handler
-    if (job.type === 'SHOT_RENDER' || job.type === 'SHOT_RENDER_HTTP') {
-      const result = await processShotRenderJob(
-        prisma,
-        { ...job, projectId: job.projectId || '', shotId: job.shotId || undefined },
-        engineHubClient,
-        apiClient
-      );
-      await apiClient.reportJobResult({
-        jobId: job.id,
-        status: 'SUCCEEDED',
-        result: result,
-      });
-      return;
-    }
-
-    // Stage 8: VIDEO_RENDER Handler
-    if (job.type === 'VIDEO_RENDER') {
-      const result = await processVideoRenderJobImpl(
-        prisma,
-        { ...job, projectId: job.projectId || '' },
-        apiClient
-      );
-      await apiClient.reportJobResult({
-        jobId: job.id,
-        status: 'SUCCEEDED',
-        result: result,
-      });
-      return;
-    }
-
-    // 其它 JobType 走现有逻辑（保持不变）
-    throw new Error(`Unsupported job type: ${job.type}`);
-  } catch (error: any) {
-    const duration = Date.now() - jobStartTime;
-
-    // 记录 Job 处理失败日志
-    logStructured('error', {
-      action: 'JOB_PROCESSING_FAILED',
-      jobId: job.id,
-      jobType: job.type,
-      workerId,
-      error: error?.message || 'Unknown error',
-      errorStack: error?.stack,
-      durationMs: duration,
+      throw new Error(`Unsupported job type: ${job.type}`);
     });
 
-    // TODO: Audit hook (non-HTTP): once worker DI is wired, call AuditService.log with job context
-
-    try {
+    // 处理回执
+    if (result.success) {
+      await apiClient.reportJobResult({
+        jobId: job.id,
+        status: 'SUCCEEDED',
+        result: result.output,
+      });
+    } else {
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'FAILED',
-        errorMessage: error.message || 'Unknown error',
-      });
-    } catch (reportError: any) {
-      logStructured('error', {
-        action: 'JOB_REPORT_FAILED',
-        jobId: job.id,
-        error: reportError?.message || 'Unknown error',
+        error: result.error || { message: 'Execution failed' },
       });
     }
+  } catch (error: any) {
+    logStructured('error', {
+      action: 'JOB_EXECUTOR_UNCAUGHT_ERROR',
+      jobId: job.id,
+      error: error.message,
+    });
   } finally {
     tasksRunning--;
   }
@@ -545,8 +443,8 @@ async function processJob(job: JobFromApi): Promise<void> {
 async function pollAndProcessJobs(): Promise<void> {
   // P1-1: 尊重本地并发上限与波次限制
   const runtimeConfig = getRuntimeConfig();
-  const jobWaveSize = appConfig.jobWaveSize;
-  const { jobMaxInFlight } = runtimeConfig;
+  const { jobMaxInFlight } = runtimeConfig as any;
+  const jobWaveSize = (appConfig as any).jobWaveSize;
 
   // P1-B 审计留痕：输出运行时 Profile
   if (isRunning) {
@@ -558,25 +456,31 @@ async function pollAndProcessJobs(): Promise<void> {
     console.log(`[WorkerRuntime] ${JSON.stringify(runtimeConfig)}`);
   }
 
-  if (tasksRunning >= jobMaxInFlight) {
-    if (env.isDevelopment) {
+  if (tasksRunning >= (runtimeConfig as any).jobMaxInFlight) {
+    if ((env as any).isDevelopment) {
       // console.log(`[Worker] Max in-flight reached (${tasksRunning}/${jobMaxInFlight}). Waiting...`);
     }
     return;
   }
 
-  // 计算本波次还能领多少（不超过波次大小，也不超过剩余槽位）
-  const remainingSlots = jobMaxInFlight - tasksRunning;
+  // 计算本波次还能领多少（尊重 EngineLimiter 全局令牌）
+  let remainingSlots = ((runtimeConfig as any).jobMaxInFlight || 10) - tasksRunning;
+  if ((env as any).concurrencyLimiterEnabled) {
+    const localAvailable = (engineLimiter as any).getStats().global.available;
+    remainingSlots = Math.min(remainingSlots, localAvailable);
+  }
   const currentWaveLimit = Math.min(jobWaveSize, remainingSlots);
+
+  if (currentWaveLimit <= 0) return;
 
   for (let i = 0; i < currentWaveLimit; i++) {
     try {
       const job = await apiClient.getNextJob(workerId);
 
       if (job) {
-        // 异步处理 Job，不阻塞轮询
-        processJob(job).catch((error) => {
-          console.error(`[Worker] ❌ processJob 异常:`, error);
+        // 异步处理 Job，不阻塞轮询 (Stage P1-1: 切换到 Executor)
+        processJobWithExecutor(job).catch((error) => {
+          console.error(`[Worker] ❌ processJobWithExecutor 异常:`, error);
         });
       } else {
         // 本波次没领到，提前终止
@@ -598,6 +502,7 @@ async function main() {
   console.log('========================================\n');
 
   // 检查环境变量
+  jobExecutor = new JobExecutor(apiClient);
   if (!env.databaseUrl) {
     console.error('[Worker] ❌ DATABASE_URL 未配置');
     process.exit(1);

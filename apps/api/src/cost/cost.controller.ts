@@ -9,6 +9,7 @@ class CostEventDto implements RecordCostEventParams {
   @IsString() jobId!: string;
   @IsString() jobType!: string;
   @IsOptional() @IsString() engineKey?: string;
+  @IsOptional() @IsNumber() attempt?: number; // ✅ P1-1: 试次感知
   @IsNumber() costAmount!: number;
   @IsString() currency!: string; // 允许传入,但service会SSOT纠正
   @IsString() billingUnit!: string; // job/tokens/seconds/frames
@@ -24,7 +25,7 @@ class CostEventDto implements RecordCostEventParams {
 @Controller('internal/events')
 @RequireSignature() // P0-2: HMAC Guard 全局保护
 export class InternalEventsController {
-  constructor(private readonly costLedger: CostLedgerService) {}
+  constructor(private readonly costLedger: CostLedgerService) { }
 
   /**
    * Worker报告Job成本事件
@@ -44,7 +45,7 @@ export class InternalEventsController {
  */
 @Controller('projects/:projectId/costs')
 export class CostController {
-  constructor(private readonly costLedgerService: CostLedgerService) {}
+  constructor(private readonly costLedgerService: CostLedgerService) { }
 
   /**
    * 获取项目的所有成本记录(分页TODO)

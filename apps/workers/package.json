@@ -10,6 +10,9 @@
   "dependencies": {
     "@scu/config": "workspace:*",
     "@scu/storage": "workspace:^",
+    "@scu/router": "workspace:*",
+    "@scu/shared-types": "workspace:*",
+    "@scu/billing": "workspace:*",
     "axios": "^1.6.0",
     "database": "workspace:*",
     "sharp": "^0.34.5",

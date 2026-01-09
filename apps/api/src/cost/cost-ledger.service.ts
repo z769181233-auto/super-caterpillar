@@ -10,6 +10,7 @@ export interface RecordCostEventParams {
   jobId: string;
   jobType: string;
   engineKey?: string;
+  attempt?: number; // ✅ P1-1: 支持按试次记录
   costAmount: number;
   currency?: string;
   billingUnit: string;
@@ -21,15 +22,15 @@ export interface RecordCostEventParams {
 export class CostLedgerService {
   private readonly logger = new Logger(CostLedgerService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * 从Worker事件记录成本到账本
-   * 幂等:同一(jobId, jobType)only记一次
-   * SSOT:仅由API调用,Worker通过事件触发
+   * 幂等: 同一 (jobId, attempt) only 记一次
+   * SSOT: 仅由 API 调用, Worker 通过事件触发
    */
   async recordFromEvent(e: RecordCostEventParams) {
-    // 验证billingUnit白名单
+    // 验证 billingUnit 白名单
     if (!ALLOWED_BILLING_UNITS.has(e.billingUnit)) {
       throw new Error(`INVALID_BILLING_UNIT=${e.billingUnit}`);
     }
@@ -44,30 +45,32 @@ export class CostLedgerService {
       throw new Error(`INVALID_QUANTITY=${e.quantity}`);
     }
 
+    const attemptNum = e.attempt ?? 0;
+
     const data: Prisma.CostLedgerCreateInput = {
       user: { connect: { id: e.userId } },
       project: { connect: { id: e.projectId } },
       jobId: e.jobId,
       jobType: e.jobType,
       engineKey: e.engineKey,
+      attempt: attemptNum,
       costAmount: e.costAmount,
-      currency: 'USD', // ✅ SSOT统一;若有币种系统再扩
+      currency: 'USD', // ✅ SSOT 统一
       billingUnit: e.billingUnit,
       quantity: e.quantity,
       metadata: e.metadata ?? undefined,
     };
 
-    // ✅ 幂等:同一(jobId, jobType)只记一次
+    // ✅ 幂等: 同一 (jobId, attempt) 只记一次
     try {
       return await this.prisma.costLedger.create({ data });
     } catch (err: any) {
       // Prisma unique conflict: P2002
       if (err?.code === 'P2002') {
-        this.logger.warn(`COST_LEDGER_DEDUPED=1 jobId=${e.jobId} jobType=${e.jobType}`);
+        this.logger.warn(`COST_LEDGER_DEDUPED=1 jobId=${e.jobId} attempt=${attemptNum}`);
         // 返回既有记录作为幂等成功
-        const existing = await this.prisma.costLedger.findFirst({
-          where: { jobId: e.jobId, jobType: e.jobType },
-          orderBy: { createdAt: 'desc' },
+        const existing = await this.prisma.costLedger.findUnique({
+          where: { jobId_attempt: { jobId: e.jobId, attempt: attemptNum } },
         });
         if (existing) return existing;
       }

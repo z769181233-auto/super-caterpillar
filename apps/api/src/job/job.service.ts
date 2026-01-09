@@ -96,7 +96,7 @@ export class JobService {
     @Inject(BudgetService) private readonly budgetService: BudgetService,
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService
-  ) {}
+  ) { }
 
   async create(
     shotId: string,
@@ -787,12 +787,88 @@ export class JobService {
       const supportedEngines = (caps?.supportedEngines as string[]) || [];
       const filterTypes = jobType ? [jobType] : (caps?.supportedJobTypes as string[]) || [];
 
+      // P1-1: 细粒度并发校验
+      // 1. 获取候选 Job（带 Engine 绑定信息）
+      const candidates = await tx.$queryRaw<any[]>`
+        SELECT j.id, j."organizationId", jeb."engineKey"
+        FROM "shot_jobs" j
+        LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
+        WHERE j.status = 'PENDING'
+        AND (j.lease_until IS NULL OR j.lease_until < NOW())
+        ${filterTypes.length > 0
+          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+          : Prisma.empty
+        }
+        ${supportedEngines.length > 0
+          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+          : Prisma.empty
+        }
+        ORDER BY j.priority DESC, j."createdAt" ASC
+        LIMIT 10
+        FOR UPDATE OF j SKIP LOCKED
+      `;
+
+      if (candidates.length === 0) {
+        return null;
+      }
+
+      let selectedJobId: string | null = null;
+      let targetOrganizationId: string | null = null;
+      let targetEngineKey: string | null = null;
+
+      // 2. 逐个检查候选者的并发限制
+      if ((scuEnv as any).concurrencyLimiterEnabled) {
+        for (const cand of candidates) {
+          const orgId = cand.organizationId;
+          const eKey = cand.engineKey;
+
+          // 检查 Tenant 并发
+          if (orgId) {
+            const tenantRunningResult = await tx.$queryRaw<{ count: bigint }[]>`
+              SELECT COUNT(*)::int as count FROM "shot_jobs" 
+              WHERE "organizationId" = ${orgId} AND status = 'RUNNING' AND lease_until > NOW()
+            `;
+            if (Number(tenantRunningResult[0]?.count || 0) >= (scuEnv as any).maxInFlightTenant) {
+              continue;
+            }
+          }
+
+          // 检查 Engine 并发
+          if (eKey) {
+            const engineLimit = (scuEnv as any).getEngineConcurrency(eKey);
+            const engineRunningResult = await tx.$queryRaw<{ count: bigint }[]>`
+              SELECT COUNT(*)::int as count FROM "shot_jobs" j
+              JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
+              WHERE jeb."engineKey" = ${eKey} AND j.status = 'RUNNING' AND j.lease_until > NOW()
+            `;
+            if (Number(engineRunningResult[0]?.count || 0) >= engineLimit) {
+              continue;
+            }
+          }
+
+          // 走到这里说明都过了
+          selectedJobId = cand.id;
+          targetOrganizationId = orgId;
+          targetEngineKey = eKey;
+          break;
+        }
+      } else {
+        // 未开启限流，直接取第一个
+        selectedJobId = candidates[0].id;
+        targetOrganizationId = candidates[0].organizationId;
+        targetEngineKey = candidates[0].engineKey;
+      }
+
+      if (!selectedJobId) {
+        this.logger.debug(`[JobService] Candidates found but all hit concurrency limits for worker ${workerId}`);
+        return null;
+      }
+
       this.logger.log(
-        `[JobService] getAndMarkNextPendingJob: workerId=${workerId} running=${runningCount}/${jobMaxInFlight} filterTypes=${JSON.stringify(filterTypes)} engines=${JSON.stringify(supportedEngines)}`
+        `[JobService] getAndMarkNextPendingJob: workerId=${workerId} running=${runningCount}/${jobMaxInFlight} selectedJobId=${selectedJobId}`
       );
 
-      // P1-1: Strict Atomic Claim
-      // Condition: status='PENDING' AND (lease_until IS NULL OR lease_until < NOW())
+      // 3. 执行原子更新
       const now = new Date();
       const leaseExpiration = new Date(now.getTime() + jobLeaseTtlMs);
 
@@ -805,26 +881,7 @@ export class JobService {
           "lease_until" = ${leaseExpiration},
           "attempts" = "attempts" + 1,
           "updatedAt" = NOW()
-        WHERE id = (
-          SELECT j.id
-          FROM "shot_jobs" j
-          LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
-          WHERE j.status = 'PENDING'
-          AND (j.lease_until IS NULL OR j.lease_until < NOW())
-          ${
-            filterTypes.length > 0
-              ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-              : Prisma.empty
-          }
-          ${
-            supportedEngines.length > 0
-              ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-              : Prisma.empty
-          }
-          ORDER BY j.priority DESC, j."createdAt" ASC
-          FOR UPDATE OF j SKIP LOCKED
-          LIMIT 1
-        )
+        WHERE id = ${selectedJobId}
         RETURNING *
       `;
 
@@ -1237,9 +1294,9 @@ export class JobService {
           const totalCost = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
           await this.prisma.costLedger.upsert({
             where: {
-              jobId_jobType: {
+              jobId_attempt: {
                 jobId: updatedJob.id,
-                jobType: updatedJob.type,
+                attempt: updatedJob.attempts,
               },
             },
             create: {
@@ -1247,6 +1304,7 @@ export class JobService {
               userId: userId || 'system',
               jobId: updatedJob.id,
               jobType: updatedJob.type,
+              attempt: updatedJob.attempts,
               totalCost,
               totalCredits: totalCost, // P1-C strictly uses this for reconciliation
               unitCost: 0,
@@ -1649,6 +1707,7 @@ export class JobService {
     this.logger.log(
       `[DEBUG] findJobById: id = ${id} userId = ${userId} orgId = ${organizationId} `
     );
+
     const job = (await this.prisma.shotJob.findUnique({
       where: {
         id,
@@ -2678,5 +2737,26 @@ export class JobService {
         }
       }
     }
+  }
+
+  /**
+   * 获取队列快照，供背压限流使用
+   */
+  async getQueueSnapshot() {
+    const pending = await this.prisma.shotJob.count({
+      where: { status: JobStatusEnum.PENDING },
+    });
+    const running = await this.prisma.shotJob.count({
+      where: {
+        status: JobStatusEnum.RUNNING,
+        leaseUntil: { gt: new Date() },
+      },
+    });
+
+    return {
+      pending,
+      running,
+      timestamp: new Date().toISOString(),
+    };
   }
 }

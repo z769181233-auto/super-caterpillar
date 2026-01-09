@@ -108,7 +108,7 @@ async function processJob(job: {
         ...job,
         projectId,
         traceId: job.taskId,
-      });
+      }, apiClient);
     } else if (job.type === 'VIDEO_RENDER') {
       result = await processVideoRenderJob(
         prisma,

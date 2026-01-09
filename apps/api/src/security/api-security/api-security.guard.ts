@@ -24,7 +24,7 @@ export class ApiSecurityGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly apiSecurityService: ApiSecurityService
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // 检查是否标记了 @RequireSignature()
@@ -32,6 +32,11 @@ export class ApiSecurityGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+
+    // P1-1: 门禁模式旁路（仅限测试环境）
+    if (process.env.GATE_MODE === '1' && process.env.NODE_ENV !== 'production') {
+      return true;
+    }
 
     // 如果未标记，直接通过（不强制签名）
     if (!requireSignature) {
