@@ -1,9 +1,13 @@
-import { Controller, Post, Body, Get, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, UnauthorizedException, Query, BadRequestException } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BillingSettlementService } from './billing-settlement.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CurrentOrganization } from '../auth/decorators/current-organization.decorator';
+import { AuthenticatedUser } from '@scu/shared-types';
 
 @Controller('billing')
+@UseGuards(JwtAuthGuard)
 export class BillingController {
     constructor(
         private readonly billingService: BillingService,
@@ -11,17 +15,13 @@ export class BillingController {
     ) { }
 
     @Post('subscribe')
-    @UseGuards(JwtAuthGuard)
-    async subscribe(@Req() req: any, @Body('planId') planId: string) {
-        if (!req.user || !req.user.id) throw new UnauthorizedException();
-        return this.billingService.createSubscription(req.user.id, planId);
+    async subscribe(@CurrentUser() user: AuthenticatedUser, @Body('planId') planId: string) {
+        return this.billingService.createSubscription(user.userId, planId);
     }
 
     @Get('subscription')
-    @UseGuards(JwtAuthGuard)
-    async getSubscription(@Req() req: any) {
-        if (!req.user || !req.user.id) throw new UnauthorizedException();
-        return this.billingService.getSubscription(req.user.id);
+    async getSubscription(@CurrentUser() user: AuthenticatedUser) {
+        return this.billingService.getSubscription(user.userId);
     }
 
     @Get('plans')
@@ -30,11 +30,77 @@ export class BillingController {
     }
 
     @Post('settle')
-    @UseGuards(JwtAuthGuard)
-    async settle(@Req() req: any, @Body('projectId') projectId: string) {
-        const userId = req.user?.userId || req.user?.id;
-        if (!userId) throw new UnauthorizedException();
+    async settle(
+        @CurrentUser() user: AuthenticatedUser,
+        @CurrentOrganization() organizationId: string | null,
+        @Body('projectId') projectId: string
+    ) {
+        if (!organizationId) throw new BadRequestException('Organization context missing');
         // Entry point for P1-C Settlement
         return this.billingSettlementService.settleProject(projectId);
+    }
+
+    @Get('events')
+    async getEvents(
+        @CurrentOrganization() organizationId: string | null,
+        @Query('projectId') projectId?: string,
+        @Query('from') from?: string,
+        @Query('to') to?: string,
+        @Query('type') type?: string,
+        @Query('page') page?: string,
+        @Query('pageSize') pageSize?: string,
+    ) {
+        if (!organizationId) throw new BadRequestException('Organization context missing');
+        return this.billingService.getEvents({
+            projectId,
+            orgId: organizationId, // Mandatory org isolation
+            from: from ? new Date(from) : undefined,
+            to: to ? new Date(to) : undefined,
+            type,
+            page: page ? Number(page) : undefined,
+            pageSize: pageSize ? Number(pageSize) : undefined,
+        });
+    }
+
+    @Get('ledgers')
+    async getLedgers(
+        @CurrentOrganization() organizationId: string | null,
+        @Query('projectId') projectId?: string,
+        @Query('status') status?: any,
+        @Query('jobType') jobType?: string,
+        @Query('from') from?: string,
+        @Query('to') to?: string,
+        @Query('page') page?: string,
+        @Query('pageSize') pageSize?: string,
+    ) {
+        if (!organizationId) throw new BadRequestException('Organization context missing');
+        return this.billingService.getLedgers({
+            projectId,
+            status,
+            jobType,
+            from: from ? new Date(from) : undefined,
+            to: to ? new Date(to) : undefined,
+            page: page ? Number(page) : undefined,
+            pageSize: pageSize ? Number(pageSize) : undefined,
+        });
+    }
+
+    @Get('summary')
+    async getSummary(
+        @CurrentOrganization() organizationId: string | null,
+        @Query('projectId') projectId?: string,
+    ) {
+        if (!organizationId) throw new BadRequestException('Organization context missing');
+        return this.billingService.getSummary(projectId, organizationId);
+    }
+
+    @Get('reconcile/status')
+    async getReconcileStatus(
+        @CurrentOrganization() organizationId: string | null,
+        @Query('projectId') projectId: string,
+    ) {
+        if (!organizationId) throw new BadRequestException('Organization context missing');
+        if (!projectId) throw new BadRequestException('projectId is required');
+        return this.billingService.getReconcileStatus(projectId);
     }
 }

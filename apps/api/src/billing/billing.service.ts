@@ -162,4 +162,129 @@ export class BillingService {
             { id: 'pro', name: 'Pro Tier', price: 29, quota: { tokens: 5000 } },
         ];
     }
+
+    async getEvents(params: {
+        projectId?: string;
+        orgId?: string;
+        from?: Date;
+        to?: Date;
+        type?: string;
+        page?: number;
+        pageSize?: number;
+    }) {
+        const { projectId, orgId, from, to, type, page = 1, pageSize = 20 } = params;
+        const where: any = {};
+        if (projectId) where.projectId = projectId;
+        if (orgId) where.orgId = orgId;
+        if (type) where.type = type;
+        if (from || to) {
+            where.createdAt = {};
+            if (from) where.createdAt.gte = from;
+            if (to) where.createdAt.lte = to;
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.billingEvent.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+            }),
+            this.prisma.billingEvent.count({ where }),
+        ]);
+
+        return { items, total, page, pageSize };
+    }
+
+    async getLedgers(params: {
+        projectId?: string;
+        status?: any;
+        jobType?: string;
+        from?: Date;
+        to?: Date;
+        page?: number;
+        pageSize?: number;
+    }) {
+        const { projectId, status, jobType, from, to, page = 1, pageSize = 20 } = params;
+        const where: any = {};
+        if (projectId) where.projectId = projectId;
+        if (status) where.billingStatus = status;
+        if (jobType) where.jobType = jobType;
+        if (from || to) {
+            where.createdAt = {};
+            if (from) where.createdAt.gte = from;
+            if (to) where.createdAt.lte = to;
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.costLedger.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+            }),
+            this.prisma.costLedger.count({ where }),
+        ]);
+
+        return { items, total, page, pageSize };
+    }
+
+    async getSummary(projectId?: string, orgId?: string) {
+        const where: any = {};
+        if (projectId) where.projectId = projectId;
+        if (orgId) where.orgId = orgId;
+
+        const summary = await this.prisma.billingEvent.aggregate({
+            where,
+            _sum: {
+                creditsDelta: true,
+            },
+            _count: {
+                id: true,
+            },
+        });
+
+        return {
+            totalCreditsDelta: summary._sum?.creditsDelta || 0,
+            eventCount: summary._count?.id || 0,
+        };
+    }
+
+    async getReconcileStatus(projectId: string) {
+        // SSOT: Reconcile Logic (Read-only version)
+        const [ledgerSum, eventSum, billingEventsCount, billedLedgerCount] = await Promise.all([
+            this.prisma.costLedger.aggregate({
+                where: { projectId, billingStatus: 'BILLED' },
+                _sum: { totalCredits: true }
+            }),
+            this.prisma.billingEvent.aggregate({
+                where: { projectId },
+                _sum: { creditsDelta: true }
+            }),
+            this.prisma.billingEvent.count({
+                where: { projectId }
+            }),
+            this.prisma.costLedger.count({
+                where: { projectId, billingStatus: 'BILLED' }
+            })
+        ]);
+
+        const sumLedger = Number(ledgerSum._sum?.totalCredits || 0);
+        const sumEvent = Math.abs(Number(eventSum._sum?.creditsDelta || 0));
+
+        // Precision-safe comparison (ROUND 6 equivalent)
+        const drift = Math.abs(sumLedger - sumEvent);
+        const isConsistent = drift < 0.000001;
+
+        return {
+            projectId,
+            isConsistent,
+            drift,
+            sumLedger,
+            sumEvent,
+            billedLedgerCount,
+            billingEventsCount,
+            timestamp: new Date()
+        };
+    }
 }

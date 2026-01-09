@@ -18,6 +18,7 @@ export class BillingSettlementService {
      * Ensures SUM(Ledger) == SUM(Event) == Delta(Credits).
      */
     async settleProject(projectId: string, runId: string = 'batch-' + Date.now()) {
+        const startTime = Date.now();
         this.logger.log(`[P1-C] Starting settlement for project: ${projectId} (runId: ${runId})`);
 
         // Audit Start
@@ -136,14 +137,15 @@ export class BillingSettlementService {
         }
 
         this.logger.log(`[P1-C] Settlement summary: ${processedCount} BILLED, ${failedCount} FAILED`);
+        const durationMs = Date.now() - startTime;
 
         if (failedCount === 0) {
-            await this.recordAudit(null, projectId, 'billing.reconcile.pass', { processedCount }, runId);
+            await this.recordAudit(null, projectId, 'billing.reconcile.pass', { processedCount, durationMs }, runId);
         } else {
-            await this.recordAudit(null, projectId, 'billing.reconcile.fail', { processedCount, failedCount }, runId);
+            await this.recordAudit(null, projectId, 'billing.reconcile.fail', { processedCount, failedCount, durationMs }, runId);
         }
 
-        return { processedCount, failedCount };
+        return { processedCount, failedCount, durationMs };
     }
 
     private async recordAudit(request: any, resourceId: string, action: string, details: any, traceId?: string) {

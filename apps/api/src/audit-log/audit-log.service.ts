@@ -58,8 +58,11 @@ export class AuditLogService {
         traceId // Keep in signature payload
       ].join('|');
 
-      const secret = process.env.JWT_SECRET || 'test-secret';
-      const signature = createHmac('sha256', secret).update(signBase).digest('hex');
+      const secret = process.env.AUDIT_SIGNING_SECRET;
+      if (!secret) {
+        this.logger.error('[AuditLog] CRITICAL: AUDIT_SIGNING_SECRET is missing! Falling back to emergency warning.');
+      }
+      const signature = createHmac('sha256', secret || 'EMERGENCY_UNSECURE_FALLBACK').update(signBase).digest('hex');
 
       const payload = {
         action: options.action,
@@ -73,6 +76,7 @@ export class AuditLogService {
         timestamp: timestamp.toISOString(),
         details,
         traceId,
+        auditKeyVersion: 'v1',
       };
 
       await this.prisma.auditLog.create({
