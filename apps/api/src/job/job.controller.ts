@@ -7,6 +7,7 @@ import {
   Query,
   UseGuards,
   Req,
+  Res,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
@@ -30,7 +31,7 @@ import { ListJobsDto } from './dto/list-jobs.dto';
 import { RetryJobDto, ForceFailJobDto, BatchJobOperationDto } from './dto/job-operations.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { CapacityGateService } from '../capacity/capacity-gate.service';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 
 @Controller()
@@ -66,7 +67,8 @@ export class JobController {
     @Body() createJobDto: CreateJobDto,
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() organizationId: string,
-    @Req() req: Request
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
   ): Promise<any> {
     const u = (req as any).user;
     // P1-1: API Backpressure Check
@@ -91,17 +93,20 @@ export class JobController {
           },
         });
 
+        const retryAfter = (scuEnv as any).apiRetryAfterSeconds || 5;
+        // P1-1: 注入标准的 Retry-After 响应头
+        if (res && typeof res.set === 'function') {
+          res.set('Retry-After', retryAfter.toString());
+        }
+
         throw new HttpException(
           {
             statusCode: HttpStatus.TOO_MANY_REQUESTS,
             message: 'System busy: Queue capacity reached. Please retry later.',
             code: 'API_BACKPRESSURE_LIMIT',
-            retryAfter: (scuEnv as any).apiRetryAfterSeconds,
+            retryAfter,
           },
-          HttpStatus.TOO_MANY_REQUESTS,
-          {
-            cause: snapshot,
-          }
+          HttpStatus.TOO_MANY_REQUESTS
         );
       }
     }

@@ -1,6 +1,6 @@
 GATE P1-1 [CONCURRENCY_CAPACITY]: PASS
-Timestamp: 20260109T080922Z
-API_Backpressure: true (Limit=3)
-Worker_Concurrency: true (Limit=2, Observed=0)
-Billing_Idempotency: true (Attempt-aware unique key verified)
+Timestamp: 20260109T084443Z
+API_Backpressure: true (Limit=3, Header=Retry-After)
+Worker_Concurrency: true (Limit=2, ObservedMax=1)
+Billing_Hardening: true (FailedReject=true, FailedLedger=0, Dedupe=1)
 Verdict: Commercial-grade concurrency governance validated.

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Param } from '@nestjs/common';
+import { Body, Controller, Post, Get, Param, BadRequestException } from '@nestjs/common';
 import { IsNumber, IsOptional, IsString, IsObject } from 'class-validator';
 import { CostLedgerService, RecordCostEventParams } from './cost-ledger.service';
 import { RequireSignature } from '../security/api-security/api-security.decorator';
@@ -31,11 +31,21 @@ export class InternalEventsController {
    * Worker报告Job成本事件
    * Worker不直接写DB,由此endpoint统一落库
    * ✅ P0-2: HMAC签名验证已强制执行
+   * ✅ P1-1: 仅 SUCCEEDED job 允许计费（服务端硬校验）
    */
   @Post('cost-ledger')
   async recordCost(@Body() dto: CostEventDto) {
-    const row = await this.costLedger.recordFromEvent(dto);
-    return { ok: true, id: row.id, deduplicated: row.timestamp < new Date(Date.now() - 1000) };
+    try {
+      const row = await this.costLedger.recordFromEvent(dto);
+      return { ok: true, id: row.id, deduplicated: row.timestamp < new Date(Date.now() - 1000) };
+    } catch (e: any) {
+      const msg = String(e?.message ?? e);
+      // P1-1: 将计费拒绝错误映射为 400 而非 500
+      if (msg.startsWith('BILLING_REJECTED_') || msg.startsWith('INVALID_')) {
+        throw new BadRequestException({ code: 'BILLING_REJECTED', message: msg });
+      }
+      throw e;
+    }
   }
 }
 

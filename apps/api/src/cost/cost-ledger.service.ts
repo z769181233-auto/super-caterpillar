@@ -47,6 +47,29 @@ export class CostLedgerService {
 
     const attemptNum = e.attempt ?? 0;
 
+    // P1-1 商业级基线：强制校验 Job 状态，仅 SUCCEEDED 允许计费
+    const job = await this.prisma.shotJob.findUnique({
+      where: { id: e.jobId },
+      select: { id: true, status: true, attempts: true, type: true },
+    });
+
+    if (!job) {
+      throw new Error(`BILLING_REJECTED_JOB_NOT_FOUND jobId=${e.jobId}`);
+    }
+
+    // ✅ 仅成功任务允许计费
+    if (job.status !== 'SUCCEEDED') {
+      throw new Error(`BILLING_REJECTED_JOB_NOT_SUCCEEDED status=${job.status} jobId=${e.jobId}`);
+    }
+
+    // 验证 attempt 合法性：不允许 attempt > job.attempts 或 < 0
+    if (!Number.isInteger(attemptNum) || attemptNum < 0) {
+      throw new Error(`INVALID_ATTEMPT=${attemptNum}`);
+    }
+    if (attemptNum > (job.attempts ?? 0)) {
+      throw new Error(`BILLING_REJECTED_ATTEMPT_GT_JOB attempts=${job.attempts} attempt=${attemptNum} jobId=${e.jobId}`);
+    }
+
     const data: Prisma.CostLedgerCreateInput = {
       user: { connect: { id: e.userId } },
       project: { connect: { id: e.projectId } },
