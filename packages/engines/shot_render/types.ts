@@ -8,6 +8,7 @@ export interface ShotRenderInput {
     seed?: number;
     negative_prompt?: string;
     style?: string;
+    provider?: 'replicate' | 'hf' | 'local';
     context?: {
         projectId: string;
         [key: string]: any;
@@ -43,6 +44,7 @@ export interface ShotRenderOutput {
         engineVersion: string;
         timestamp: string;
         paramsHash: string;
+        traceId?: string;
     };
     billing_usage: EngineBillingUsage;
 }
