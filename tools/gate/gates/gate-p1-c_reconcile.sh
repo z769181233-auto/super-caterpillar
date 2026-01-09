@@ -120,8 +120,19 @@ echo "[4/4] Verifying Audit Logs..."
 INVALID_AUDITS=$(psql "$DATABASE_URL" -t -A -c "SELECT COUNT(*) FROM audit_logs WHERE action LIKE 'billing.%' AND (nonce IS NULL OR signature IS NULL OR timestamp IS NULL OR (details->>'_traceId') IS NULL);")
 AUDIT_COUNT=$(psql "$DATABASE_URL" -t -A -c "SELECT COUNT(*) FROM audit_logs WHERE (\"resourceId\" = '$PROJECT_ID' OR \"resourceId\" = '$ORG_ID') AND action LIKE 'billing.%';")
 
+# Check Legacy Column Isolation: physical trace_id column MUST BE NULL/EMPTY
+# Only perform check if the column actually exists in the DB (Legacy scenario)
+COLUMN_EXISTS=$(psql "$DATABASE_URL" -t -A -c "SELECT count(*) FROM information_schema.columns WHERE table_name='audit_logs' AND column_name='trace_id';")
+if [ "$COLUMN_EXISTS" -eq 1 ]; then
+    LEGACY_TRACE_WRITES=$(psql "$DATABASE_URL" -t -A -c "SELECT COUNT(*) FROM audit_logs WHERE action LIKE 'billing.%' AND (trace_id IS NOT NULL AND trace_id <> '');")
+else
+    LEGACY_TRACE_WRITES=0
+fi
+
 echo "Audit Integrity Check..."
 echo "  Invalid Audits (Null nonce/sig/ts or missing _traceId): $INVALID_AUDITS"
+echo "  Legacy Column Status: $(if [ "$COLUMN_EXISTS" -eq 1 ]; then echo "Exists"; else echo "Not Found (Safe)"; fi)"
+echo "  Legacy Column Writes (Should be 0): $LEGACY_TRACE_WRITES"
 echo "  Total Billing Audits: $AUDIT_COUNT"
 
 if [ "$INVALID_AUDITS" -ne 0 ]; then
@@ -131,8 +142,14 @@ if [ "$INVALID_AUDITS" -ne 0 ]; then
     exit 1
 fi
 
+if [ "$LEGACY_TRACE_WRITES" -ne 0 ]; then
+    echo "❌ Legacy Column Isolation Failed: Found $LEGACY_TRACE_WRITES audits writing to physical trace_id column!"
+    psql "$DATABASE_URL" -c "SELECT action, trace_id, (details->>'_traceId') as json_trace FROM audit_logs WHERE action LIKE 'billing.%' AND (trace_id IS NOT NULL AND trace_id <> '') LIMIT 5;"
+    exit 1
+fi
+
 if [ "$AUDIT_COUNT" -gt 0 ]; then
-    echo "✅ Audit Logs Verified (Integrity & Count OK)."
+    echo "✅ Audit Logs Verified (Integrity & Legacy Isolation OK)."
 else
     echo "❌ Missing Audit Logs (Found only $AUDIT_COUNT)!"
     exit 1
