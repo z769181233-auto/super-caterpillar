@@ -40,7 +40,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "5.22.0",
     "@scu/config": "workspace:*",
-    "@scu/shared-types": "workspace:*",
+    "@scu/observability": "workspace:*",
     "@scu/storage": "workspace:^",
     "@types/helmet": "^4.0.0",
     "@types/multer": "^2.0.0",

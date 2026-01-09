@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@scu/config": "workspace:*",
+    "@scu/observability": "workspace:*",
     "@scu/engines-ce03": "workspace:*",
     "@scu/engines-ce04": "workspace:*",
     "@scu/engines-ce06": "workspace:*",

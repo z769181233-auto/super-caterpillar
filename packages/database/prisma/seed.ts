@@ -51,6 +51,40 @@ async function main() {
       config: {},
       enabled: true,
     },
+    // P1-5 / P2 Engines (Aliased to default_novel_analysis for now)
+    {
+      code: 'ce03_visual_density',
+      name: 'CE03 Visual Density',
+      type: 'local',
+      isActive: true,
+      engineKey: 'ce03_visual_density',
+      adapterName: 'default_novel_analysis',
+      adapterType: 'local',
+      config: {},
+      enabled: true,
+    },
+    {
+      code: 'ce04_visual_enrichment',
+      name: 'CE04 Visual Enrichment',
+      type: 'local',
+      isActive: true,
+      engineKey: 'ce04_visual_enrichment',
+      adapterName: 'default_novel_analysis',
+      adapterType: 'local',
+      config: {},
+      enabled: true,
+    },
+    {
+      code: 'ce06_novel_parsing',
+      name: 'CE06 Novel Parsing',
+      type: 'local',
+      isActive: true,
+      engineKey: 'ce06_novel_parsing',
+      adapterName: 'default_novel_analysis',
+      adapterType: 'local',
+      config: {},
+      enabled: true,
+    },
   ];
 
   for (const e of engines) {

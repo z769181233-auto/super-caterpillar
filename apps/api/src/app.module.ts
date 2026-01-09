@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, RequestMethod, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { BillingModule } from './billing/billing.module';
@@ -51,6 +51,7 @@ import { LocalStorageService } from './storage/local-storage.service';
 import { SignedUrlService } from './storage/signed-url.service';
 import { StorageAuthService } from './storage/storage-auth.service';
 import { ApiSecurityGuard } from './security/api-security/api-security.guard';
+import { TraceMiddleware } from './observability/trace.middleware';
 
 // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
@@ -141,4 +142,8 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     StorageAuthService,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TraceMiddleware).forRoutes('*');
+  }
+}

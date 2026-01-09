@@ -19,6 +19,10 @@ AUTH_TOKEN_A="${AUTH_TOKEN_A:-}"
 AUTH_TOKEN_B="${AUTH_TOKEN_B:-}"
 AUTH_TOKEN="${AUTH_TOKEN:-$AUTH_TOKEN_A}" # 向后兼容
 
+# Token minting defaults (matches tools/smoke/init_api_key.ts)
+export AUTH_EMAIL="${AUTH_EMAIL:-smoke@example.com}"
+export AUTH_PASSWORD="${AUTH_PASSWORD:-smoke-dev-password}"
+
 # 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -314,22 +318,11 @@ fi
 echo -e "${BLUE}Gate 3: Signed URL Full Auto Test${NC}"
 echo "Testing signed URL security with real endpoints..."
 
-# --- local fallback: if NGINX_URL unreachable, use API_URL (only when not production) ---
-nginx_probe_code="$(req_code "${NGINX_URL}/api/health" || true)"
-if [ "${NODE_ENV:-}" = "production" ]; then
-  if [ "$nginx_probe_code" -lt 200 ] || [ "$nginx_probe_code" -ge 500 ] || [ "$nginx_probe_code" = "000" ]; then
-    echo "  [gate3] ERROR: NGINX_URL unreachable in production: ${NGINX_URL} (probe=$nginx_probe_code)" >> "$SIGNED_URL_OUTPUT"
-    SIGNED_URL_PASSED=false
-  fi
-else
-  if [ "$nginx_probe_code" = "000" ]; then
-    echo "  [gate3] NOTE: NGINX_URL unreachable (${NGINX_URL}); fallback to API_URL=${API_URL} for local smoke" >> "$SIGNED_URL_OUTPUT"
-    NGINX_URL="$API_URL"
-  fi
-fi
-# --- end fallback ---
 SIGNED_URL_PASSED=true
 SIGNED_URL_OUTPUT="$TEMP_DIR/signed_url.txt"
+
+# --- local fallback: if NGINX_URL unreachable, use API_URL (only when not production) ---
+nginx_probe_code="$(req_code "${NGINX_URL}/api/health" || true)"
 
 # 检查必需参数
 if [ -z "$TEST_STORAGE_KEY" ]; then
@@ -624,6 +617,62 @@ else
     echo -e "${RED}❌ Gate 5 failed${NC}\n"
 fi
 
+# 门禁 6: Video Merge Memory Safety
+echo -e "${BLUE}Gate 6: Video Merge Memory Safety${NC}"
+echo "Running video merge memory consumption regression test..."
+
+VIDEO_MERGE_MEM_PASSED=true
+VIDEO_MERGE_MEM_OUTPUT="$TEMP_DIR/video_merge_mem.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p0-r1_video_merge_hash_stream.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-p0-r1_video_merge_hash_stream.sh" > "$VIDEO_MERGE_MEM_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ Video Merge memory safety check passed${NC}"
+        echo "- ✅ Video Merge memory safety check passed" >> "$VIDEO_MERGE_MEM_OUTPUT"
+    else
+        echo -e "  ${RED}❌ Video Merge memory safety check failed${NC}"
+        echo "- ❌ Video Merge memory safety check failed" >> "$VIDEO_MERGE_MEM_OUTPUT"
+        VIDEO_MERGE_MEM_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Video Merge gate script not found${NC}"
+    echo "- ⚠️  Video Merge gate script not found" >> "$VIDEO_MERGE_MEM_OUTPUT"
+    VIDEO_MERGE_MEM_PASSED=false
+fi
+
+if [ "$VIDEO_MERGE_MEM_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 6 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 6 failed${NC}\n"
+fi
+
+# 门禁 7: Video Merge Resource Guardrails (Timeout/Threads)
+echo -e "${BLUE}Gate 7: Video Merge Resource Guardrails (Timeout/Threads)${NC}"
+echo "Running video merge timeout kill and threads configuration verification..."
+
+VIDEO_MERGE_GUARD_PASSED=true
+VIDEO_MERGE_GUARD_OUTPUT="$TEMP_DIR/video_merge_guard.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p0-r2_video_merge_timeout_threads.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-p0-r2_video_merge_timeout_threads.sh" > "$VIDEO_MERGE_GUARD_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ Video Merge resource guardrails check passed${NC}"
+        echo "- ✅ Video Merge resource guardrails check passed" >> "$VIDEO_MERGE_GUARD_OUTPUT"
+    else
+        echo -e "  ${RED}❌ Video Merge resource guardrails check failed${NC}"
+        echo "- ❌ Video Merge resource guardrails check failed" >> "$VIDEO_MERGE_GUARD_OUTPUT"
+        VIDEO_MERGE_GUARD_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Video Merge guardrails gate script not found${NC}"
+    echo "- ⚠️  Video Merge guardrails gate script not found" >> "$VIDEO_MERGE_GUARD_OUTPUT"
+    VIDEO_MERGE_GUARD_PASSED=false
+fi
+
+if [ "$VIDEO_MERGE_GUARD_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 7 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 7 failed${NC}\n"
+fi
+
 # 生成完整报告
 {
   echo ""
@@ -643,6 +692,12 @@ fi
   echo ""
   echo "### Gate 5: Capacity Report Data Completeness"
   cat "$CAPACITY_REPORT_OUTPUT"
+  echo ""
+  echo "### Gate 6: Video Merge Memory Safety"
+  cat "$VIDEO_MERGE_MEM_OUTPUT"
+  echo ""
+  echo "### Gate 7: Video Merge Resource Guardrails"
+  cat "$VIDEO_MERGE_GUARD_OUTPUT"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 {
@@ -654,6 +709,8 @@ fi
   echo "- Gate 3 (Signed URL): $([ "$SIGNED_URL_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 4 (Video E2E): $([ "$VIDEO_E2E_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 5 (Capacity Report): $([ "$CAPACITY_REPORT_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 6 (Video Merge Memory): $([ "$VIDEO_MERGE_MEM_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 7 (Video Merge Guardrails): $([ "$VIDEO_MERGE_GUARD_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 # 最终判断
@@ -663,6 +720,8 @@ ALL_PASSED=true
 [ "$SIGNED_URL_PASSED" != true ] && ALL_PASSED=false
 [ "$VIDEO_E2E_PASSED" != true ] && ALL_PASSED=false
 [ "$CAPACITY_REPORT_PASSED" != true ] && ALL_PASSED=false
+[ "$VIDEO_MERGE_MEM_PASSED" != true ] && ALL_PASSED=false
+[ "$VIDEO_MERGE_GUARD_PASSED" != true ] && ALL_PASSED=false
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

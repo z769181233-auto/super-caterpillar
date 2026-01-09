@@ -1688,6 +1688,28 @@ export class ProjectService {
       this.logger.log(`[DEMO] Found existing project: ${project.id}`);
     }
 
+    // Ensure Project Member (Idempotent)
+    const existingMember = await this.prisma.projectMember.findFirst({
+      where: { userId, projectId: project.id },
+    });
+
+    if (!existingMember) {
+      let ownerRole = await this.prisma.role.findFirst({ where: { name: 'OWNER' } });
+      if (!ownerRole) {
+        try {
+          ownerRole = await this.prisma.role.create({ data: { name: 'OWNER', level: 100 } });
+        } catch (e) {
+          ownerRole = await this.prisma.role.findFirst({ where: { name: 'OWNER' } });
+        }
+      }
+      if (ownerRole) {
+        await this.prisma.projectMember.create({
+          data: { projectId: project.id, userId, roleId: ownerRole.id },
+        });
+        this.logger.log(`[DEMO] Added owner member: ${userId}`);
+      }
+    }
+
     // 2. 幂等创建结构: 1 Season
     let season = await this.prisma.season.findFirst({
       where: { projectId: project.id, index: 1 },
@@ -1735,6 +1757,7 @@ export class ProjectService {
               projectId: project.id, // Legacy field
               index: scIndex,
               title: `Scene ${epIndex}-${scIndex}`,
+              summary: `Auto-generated summary for Scene ${epIndex}-${scIndex}`,
             },
           });
           this.logger.log(`[DEMO] Created Scene ${epIndex}-${scIndex}`);

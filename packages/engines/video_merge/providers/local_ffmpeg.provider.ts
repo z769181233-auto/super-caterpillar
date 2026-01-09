@@ -2,6 +2,8 @@ import { spawnSync } from 'child_process';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createHash } from 'crypto';
+import { spawnWithTimeout } from './spawn_with_timeout';
 
 export interface VideoResult {
   path: string;
@@ -15,9 +17,14 @@ export interface VideoResult {
   cpuSeconds: number;
 }
 
-function sha256File(path: string): string {
-  const fileBuffer = fs.readFileSync(path);
-  return crypto.createHash('sha256').update(fileBuffer).digest('hex');
+function sha256File(path: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha256');
+    const stream = fs.createReadStream(path, { highWaterMark: 1024 * 1024 }); // 1MB chunk
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
 }
 
 export const localFfmpegProvider = {
@@ -57,37 +64,12 @@ export const localFfmpegProvider = {
     const args: string[] = ['-y'];
 
     // Input
-    // Note: For simplicity in P0-R1, we assume framePattern is standard printf style e.g. "img_%04d.png"
-    // Or if framePaths are given, we might need to create a temporary concat list.
-    // For P0-R1 robustness, let's prefer framePattern if available, else glob/list.
-    // However, user Requirement said: "Input: shot_render 产出的 PNG 序列".
-    // shot_render naming: `{shotId}_{seed}_{hash}.png`. Not sequential.
-    // So we likely need to use glob or concat file.
-    // Let's implement concat file approach for robustness with non-sequential input.
-
     let inputArgs: string[] = [];
 
     if (input.framePattern) {
       inputArgs = ['-framerate', String(input.fps), '-i', input.framePattern];
     } else if (input.framePaths && input.framePaths.length > 0) {
-      // Create concat demuxer file
-      const concatListPath = path.join(outDir, `concat_${jobId}.txt`);
-      const concatContent = input.framePaths
-        .map((p) => `file '${p}'\nduration ${1 / input.fps}`)
-        .join('\n');
-      // Note: duration directive per image for image sequence behavior in concat demuxer
-      // Actually, safer is: "file 'path'" repeated, then -r on output?
-      // Best way for images -> video via concat is: each entry is an image.
-      // ffmpeg -f concat -i list.txt
-      // But we need to handle duration carefully.
-      // Alternative: symlink images to sequential filenames in a temp dir.
-
-      // Re-reading Ffmpeg concat docs.
-      // "file 'path'"
-      // "duration 0.0416" (1/24)
-      // Last file needs special handling or just rely on framerate.
-
-      // Simplest robust method: Symlink to temp dir with sequential names.
+      // Symlink to temp dir with sequential names.
       const tmpSeqDir = path.join(outDir, `temp_seq_${jobId}`);
       if (fs.existsSync(tmpSeqDir)) fs.rmSync(tmpSeqDir, { recursive: true });
       fs.mkdirSync(tmpSeqDir);
@@ -99,7 +81,6 @@ export const localFfmpegProvider = {
       });
 
       inputArgs = ['-framerate', String(input.fps), '-i', path.join(tmpSeqDir, 'frame_%04d.png')];
-      // Assumes png input as per requirement.
     } else {
       throw new Error('No input frames provided');
     }
@@ -110,16 +91,33 @@ export const localFfmpegProvider = {
     // -c:v libx264 -pix_fmt yuv420p
     args.push('-c:v', 'libx264', '-pix_fmt', 'yuv420p');
 
+    // Resource Guardrail: Thread limit
+    const threads = process.env.FFMPEG_THREADS || '1';
+    args.push('-threads', threads);
+
     // Output resolution
-    // args.push("-s", `${input.width}x${input.height}`); // -s is deprecated, use -vf scale
-    // Ensure even dimensions for yuv420p
     const w = input.width + (input.width % 2);
     const h = input.height + (input.height % 2);
     args.push('-vf', `scale=${w}:${h}`);
 
     args.push(outPath);
 
-    const child = spawnSync('ffmpeg', args, { encoding: 'utf-8' });
+    // Execution with Timeout (Phase 2 Guardrail)
+    const timeoutMs = Number(process.env.VIDEO_MERGE_TIMEOUT_MS) || 300000; // Default 5min
+
+    // Structured Log for Automated Verification (Gate 7)
+    console.info(
+      `video_merge_spawn jobId=${jobId} ffmpeg_threads=${threads} timeout_ms=${timeoutMs} args="${args.join(
+        ' '
+      )}"`
+    );
+
+    const result = await spawnWithTimeout({
+      cmd: 'ffmpeg',
+      args,
+      timeoutMs,
+      killSignal: 'SIGKILL',
+    });
 
     const t1 = Date.now();
     const cpuSeconds = (t1 - t0) / 1000;
@@ -128,8 +126,12 @@ export const localFfmpegProvider = {
     const tmpSeqDir = path.join(outDir, `temp_seq_${jobId}`);
     if (fs.existsSync(tmpSeqDir)) fs.rmSync(tmpSeqDir, { recursive: true });
 
-    if (child.status !== 0) {
-      throw new Error(`FFmpeg failed: ${child.stderr}`);
+    if (result.timedOut) {
+      throw new Error(`FFmpeg timed out after ${timeoutMs}ms`);
+    }
+
+    if (result.code !== 0) {
+      throw new Error(`FFmpeg failed (status ${result.code}): ${result.stderr}`);
     }
 
     // Get video duration
@@ -149,7 +151,7 @@ export const localFfmpegProvider = {
       path: outPath,
       mime: 'video/mp4',
       size: fs.statSync(outPath).size,
-      sha256: sha256File(outPath),
+      sha256: await sha256File(outPath),
       duration,
       width: w,
       height: h,

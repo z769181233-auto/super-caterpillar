@@ -202,6 +202,7 @@ export class WorkerController {
         shotId: job.shotId,
         projectId: job.projectId, // Add projectId
         traceId: job.traceId,
+        createdAt: job.createdAt, // P1-4: For queue time metric
       },
     };
   }

@@ -21,7 +21,10 @@
     "paths": {
       "@/*": ["src/*"],
       "@scu/shared-types": ["../../packages/shared-types/src"],
-      "database": ["../../packages/database/src"]
+      "database": ["../../packages/database/src"],
+      "@scu/engines/*": ["../../packages/engines/*"],
+      "@scu/billing/*": ["../../packages/billing/*"],
+      "@scu/observability": ["../../packages/observability/src"]
     }
   },
   "include": ["src/**/*", "test/**/*"],

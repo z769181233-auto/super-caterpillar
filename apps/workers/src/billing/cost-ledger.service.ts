@@ -1,4 +1,5 @@
 import { calculateTotalCredits, getModelPrice } from '@scu/billing/model-price-table';
+import { costLedgerRecordsTotal } from '@scu/observability';
 import type { EngineBillingUsage } from '@scu/engines-ce06';
 import { ApiClient } from '../api-client';
 
@@ -60,9 +61,11 @@ export class CostLedgerService {
       console.log(
         `[CostLedger] ✅ Event sent: jobId=${jobId}, attempt=${attempt}, credits=${totalCredits.toFixed(4)}, model=${billingUsage.model}`
       );
+      costLedgerRecordsTotal.inc({ status: 'success' });
     } catch (error: any) {
       // API 侧已处理 P2002 幂等，此处仅做降级日志
       console.error(`[CostLedger] ❌ Event failed: ${error.message}`);
+      costLedgerRecordsTotal.inc({ status: 'failed' });
     }
   }
 

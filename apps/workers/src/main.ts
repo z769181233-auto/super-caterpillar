@@ -4,6 +4,11 @@
  */
 
 async function boot() {
+  if (process.env.WORKER_METRICS_PORT) {
+    const { startMetricsServer } = await import('./metrics-server');
+    startMetricsServer(parseInt(process.env.WORKER_METRICS_PORT, 10));
+  }
+
   const isGate = process.env.GATE_MODE === '1';
 
   if (isGate) {
@@ -17,6 +22,7 @@ async function boot() {
   }
 
   console.log('[Bootstrap] Normal mode, loading full Worker...');
+
   const mod = await import('./worker-app');
   await mod.startWorkerApp();
 }

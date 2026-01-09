@@ -296,6 +296,7 @@ export class ApiClient {
     taskId: string;
     shotId?: string;
     projectId?: string;
+    createdAt: string; // P1-4: For queue time metric
   } | null> {
     const response = await this.request<{
       id: string;
@@ -304,6 +305,7 @@ export class ApiClient {
       taskId: string;
       shotId?: string;
       projectId?: string; // Add this
+      createdAt: string; // P1-4
     } | null>('POST', `/api/workers/${workerId}/jobs/next`, {}, { 'x-worker-id': workerId });
 
     if (!response.success) {

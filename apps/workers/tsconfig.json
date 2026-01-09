@@ -18,7 +18,8 @@
       "database": ["../../packages/database/src"],
       "@scu/shared-types": ["../../packages/shared-types/src"],
       "@scu/engines/*": ["../../packages/engines/*"],
-      "@scu/billing/*": ["../../packages/billing/*"]
+      "@scu/billing/*": ["../../packages/billing/*"],
+      "@scu/observability": ["../../packages/observability/src"]
     }
   },
   "ts-node": {

@@ -45,7 +45,7 @@ async function main() {
   const apiSecret = process.env.API_SECRET || 'scu_smoke_secret';
 
   // Smoke 默认种子数据（可通过环境变量覆盖）
-  const smokeUserEmail = process.env.SMOKE_USER_EMAIL || 'smoke@local';
+  const smokeUserEmail = process.env.SMOKE_USER_EMAIL || 'smoke@example.com';
   const smokeUserPasswordHash =
     process.env.SMOKE_USER_PASSWORD_HASH ||
     '$2a$10$nqOlsY8A4rwqENUT3ef5ruv4cLoT.vwZKqSu//xTNKoZXOcOu9QNS';
@@ -166,12 +166,12 @@ async function main() {
         },
       },
       update: {
-        role: 'Owner' as any,
+        role: 'OWNER' as any,
       },
       create: {
         userId: user.id,
         organizationId: organization.id,
-        role: 'Owner' as any,
+        role: 'OWNER' as any,
       },
     });
 

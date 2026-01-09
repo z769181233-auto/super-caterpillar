@@ -19,7 +19,19 @@ export class EngineLimiter {
   private getBucket(engineKey: string): TokenBucket {
     let bucket = this.buckets.get(engineKey);
     if (!bucket) {
-      const limit = (env as any).getEngineConcurrency(engineKey);
+      let limit = (env as any).getEngineConcurrency(engineKey);
+      // Hardguard: video_merge defaults to 1 to prevent OOM
+      if (engineKey === 'video_merge' || engineKey === 'local_ffmpeg') {
+        // Respect env override if present (via getEngineConcurrency logic usually), but if it returns default, we enforce 1.
+        // Assuming getEngineConcurrency returns a generic default.
+        // Let's force check process.env for this specific override or default to 1 directly here.
+        const explicitEnv = process.env.ENGINE_LIMIT_VIDEO_MERGE;
+        if (explicitEnv) {
+          limit = Number(explicitEnv);
+        } else {
+          limit = 1;
+        }
+      }
       bucket = new TokenBucket(limit);
       this.buckets.set(engineKey, bucket);
     }

@@ -8,6 +8,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { getTraceId } from '@scu/observability';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectService } from '../project/project.service';
 import { TaskService } from '../task/task.service';
@@ -305,7 +306,12 @@ export class JobService {
     ip?: string,
     userAgent?: string
   ) {
+    // S3-C.2: 提取并保留 payload
     const payload = (createJobDto.payload || {}) as Record<string, any>;
+
+    // P1-3: Inject TraceId from context if not provided
+    const traceId =
+      createJobDto.traceId || getTraceId() || createJobDto.payload?.traceId || randomUUID();
     let shotId = payload.shotId as string | undefined;
     let episodeId = payload.episodeId as string | undefined;
     let sceneId = payload.sceneId as string | undefined;

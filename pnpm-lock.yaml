@@ -98,9 +98,9 @@ importers:
       '@scu/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@scu/shared-types':
+      '@scu/observability':
         specifier: workspace:*
-        version: link:../../packages/shared-types
+        version: link:../../packages/observability
       '@scu/storage':
         specifier: workspace:^
         version: link:../../packages/storage
@@ -328,6 +328,9 @@ importers:
       '@scu/engines-video-merge':
         specifier: workspace:*
         version: link:../../packages/engines/video_merge
+      '@scu/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@scu/router':
         specifier: workspace:*
         version: link:../../packages/router

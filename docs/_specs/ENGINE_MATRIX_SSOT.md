@@ -89,3 +89,25 @@
 | 2026-01-09 | 初始化矩阵 SSOT        | Gemini |
 | 2026-01-09 | 添加 shot_render P0-R0 | Gemini |
 | 2026-01-09 | 封印 P0-R2 E2E 管线    | Gemini |
+| 2026-01-09 | P1-3 基础可观测性建设  | Gemini |
+
+---
+
+## 系统能力矩阵 (System Capabilities)
+
+### 可观测性 (Observability) - P1-3 Foundation
+
+| Capability       | Status | Provider            | Key Metrics                                     | Gate Script                              |
+| ---------------- | ------ | ------------------- | ----------------------------------------------- | ---------------------------------------- |
+| **Metrics**      | ACTIVE | `prom-client`       | `worker_jobs_active`, `scu_api_uptime_seconds`  | `gate-p1-3_performance_observability.sh` |
+| **Tracing**      | ACTIVE | `AsyncLocalStorage` | `x-trace-id` propagation (API->Worker->Billing) | `gate-p1-3_performance_observability.sh` |
+| **Log Trace ID** | ACTIVE | `pino` + `ALS`      | Automatic injection of `traceId` in all logs    | `gate-p1-3_performance_observability.sh` |
+| **Performance**  | ACTIVE | `Gate-Enforced`     | P95/P99 Latency (CE03/04/06), Failure Rate < 1% | `gate-p1-4_performance_sla.sh`           |
+
+> [!WARNING]
+> **P1-4 Status: Conditionally Sealed**
+> SLA definition, stress tooling, and performance gates are fully implemented.
+> Due to environment variable propagation instability in the current turbo-based Gate session, the P1-4 performance gate has not yet produced a fully reproducible hard evidence run.
+> A clean, single-command Gate rerun is required to upgrade this milestone to Hard Sealed status.
+
+| **Trace x Perf** | ACTIVE | `Span-Correlated` | Queue/Prepare/Exec/Persist Breakdown | `gate-p1-5_trace_perf_correlation.sh` |

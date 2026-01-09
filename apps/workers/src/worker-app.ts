@@ -272,6 +272,7 @@ type JobFromApi = {
   taskId: string;
   shotId?: string | null;
   projectId?: string | null;
+  createdAt: string | Date; // P1-4: For queue time metric
 };
 
 /**
@@ -341,7 +342,7 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
   tasksRunning++;
 
   try {
-    const result = await jobExecutor.execute(job.id, engineKey, async () => {
+    const result = await jobExecutor.execute(job.id, engineKey, job.createdAt, async () => {
       // 内部逻辑：根据 job.type 调用不同的处理器
       if (job.type === 'CE04_VISUAL_ENRICHMENT') {
         return processCE04Job(
