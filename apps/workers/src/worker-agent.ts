@@ -104,11 +104,15 @@ async function processJob(job: {
         throw new Error(`Missing projectId for ${job.type} job`);
       }
 
-      result = await processNovelAnalysisJob(prisma, {
-        ...job,
-        projectId,
-        traceId: job.taskId,
-      }, apiClient);
+      result = await processNovelAnalysisJob(
+        prisma,
+        {
+          ...job,
+          projectId,
+          traceId: job.taskId,
+        },
+        apiClient
+      );
     } else if (job.type === 'VIDEO_RENDER') {
       result = await processVideoRenderJob(
         prisma,

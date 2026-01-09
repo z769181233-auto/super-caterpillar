@@ -22,7 +22,7 @@ export interface RecordCostEventParams {
 export class CostLedgerService {
   private readonly logger = new Logger(CostLedgerService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 从Worker事件记录成本到账本
@@ -67,7 +67,9 @@ export class CostLedgerService {
       throw new Error(`INVALID_ATTEMPT=${attemptNum}`);
     }
     if (attemptNum > (job.attempts ?? 0)) {
-      throw new Error(`BILLING_REJECTED_ATTEMPT_GT_JOB attempts=${job.attempts} attempt=${attemptNum} jobId=${e.jobId}`);
+      throw new Error(
+        `BILLING_REJECTED_ATTEMPT_GT_JOB attempts=${job.attempts} attempt=${attemptNum} jobId=${e.jobId}`
+      );
     }
 
     const data: Prisma.CostLedgerCreateInput = {

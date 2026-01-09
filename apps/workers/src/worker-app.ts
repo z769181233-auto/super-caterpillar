@@ -225,9 +225,9 @@ async function sendHeartbeat(): Promise<void> {
             .map((s) => s.trim())
             .filter(Boolean).length > 0
             ? (process.env.WORKER_SUPPORTED_ENGINES || '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
             : ['default_novel_analysis'],
       },
     });
@@ -405,7 +405,10 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
             traceId: payload.traceId,
           },
         };
-        const res = await engineHubClient.invoke<NovelAnalysisEngineInput, NovelAnalysisEngineOutput>(engineReq);
+        const res = await engineHubClient.invoke<
+          NovelAnalysisEngineInput,
+          NovelAnalysisEngineOutput
+        >(engineReq);
         if (!res.success) throw res.error || new Error('Engine execution failed');
         return res.output;
       }

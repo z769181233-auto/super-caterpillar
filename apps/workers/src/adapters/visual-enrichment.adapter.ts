@@ -4,7 +4,7 @@ import {
   EngineInvokeResult,
   EngineInvokeStatus,
 } from '@scu/shared-types';
-import { CE04EngineSelector, CE04Input } from '@scu/engines/ce04';
+import { CE04EngineSelector, CE04Input } from '@scu/engines-ce04';
 
 /**
  * Visual Enrichment Local Adapter (Worker Side)

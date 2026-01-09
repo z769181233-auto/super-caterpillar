@@ -8,8 +8,8 @@ import {
   WorkerJobBase,
   CE06NovelParsingOutput,
 } from '@scu/shared-types';
-import { CE06EngineSelector } from '@scu/engines/ce06/selector';
-import { CE06Input, CE06Output } from '@scu/engines/ce06/types';
+import { CE06EngineSelector } from '@scu/engines-ce06';
+import { CE06Input, CE06Output } from '@scu/engines-ce06';
 import { ApiClient } from './api-client';
 
 /**
@@ -933,8 +933,8 @@ export async function applyAnalyzedStructureToDatabase(
   const result =
     prisma instanceof PrismaClient
       ? await (prisma as any).$transaction(executeInTransaction, {
-        timeout: 5 * 60 * 1000, // 5 minutes
-      })
+          timeout: 5 * 60 * 1000, // 5 minutes
+        })
       : await executeInTransaction(prisma);
 
   return result;

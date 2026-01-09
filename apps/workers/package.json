@@ -9,6 +9,11 @@
   },
   "dependencies": {
     "@scu/config": "workspace:*",
+    "@scu/engines-ce03": "workspace:*",
+    "@scu/engines-ce04": "workspace:*",
+    "@scu/engines-ce06": "workspace:*",
+    "@scu/engines-shot-render": "workspace:*",
+    "@scu/engines-video-merge": "workspace:*",
     "@scu/storage": "workspace:^",
     "@scu/router": "workspace:*",
     "@scu/shared-types": "workspace:*",

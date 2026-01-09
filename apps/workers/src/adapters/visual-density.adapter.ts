@@ -4,7 +4,7 @@ import {
   EngineInvokeResult,
   EngineInvokeStatus,
 } from '@scu/shared-types';
-import { CE03EngineSelector, CE03Input } from '@scu/engines/ce03';
+import { CE03EngineSelector, CE03Input } from '@scu/engines-ce03';
 
 /**
  * Visual Density Local Adapter (Worker Side)

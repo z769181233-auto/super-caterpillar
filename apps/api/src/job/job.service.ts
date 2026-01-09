@@ -96,7 +96,7 @@ export class JobService {
     @Inject(BudgetService) private readonly budgetService: BudgetService,
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService
-  ) { }
+  ) {}
 
   async create(
     shotId: string,
@@ -795,13 +795,15 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${filterTypes.length > 0
-          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-          : Prisma.empty
+        ${
+          filterTypes.length > 0
+            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+            : Prisma.empty
         }
-        ${supportedEngines.length > 0
-          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-          : Prisma.empty
+        ${
+          supportedEngines.length > 0
+            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+            : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10
@@ -860,7 +862,9 @@ export class JobService {
       }
 
       if (!selectedJobId) {
-        this.logger.debug(`[JobService] Candidates found but all hit concurrency limits for worker ${workerId}`);
+        this.logger.debug(
+          `[JobService] Candidates found but all hit concurrency limits for worker ${workerId}`
+        );
         return null;
       }
 

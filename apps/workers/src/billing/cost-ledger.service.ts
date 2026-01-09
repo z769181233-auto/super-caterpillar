@@ -1,5 +1,5 @@
 import { calculateTotalCredits, getModelPrice } from '@scu/billing/model-price-table';
-import type { EngineBillingUsage } from '@scu/engines/ce06';
+import type { EngineBillingUsage } from '@scu/engines-ce06';
 import { ApiClient } from '../api-client';
 
 /**
@@ -12,7 +12,7 @@ import { ApiClient } from '../api-client';
  */
 
 export class CostLedgerService {
-  constructor(private apiClient: ApiClient) { }
+  constructor(private apiClient: ApiClient) {}
 
   /**
    * 记录计费（通过 API 事件）

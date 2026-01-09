@@ -1,0 +1,580 @@
+--- [GATE] P1-2 Engines Packaging START ---
+[1/6] Build engines...
+
+> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run build "--filter" "@scu/engines-ce03"
+
+turbo 2.6.3
+
+• Packages in scope: @scu/engines-ce03
+• Running build in 1 packages
+• Remote caching disabled
+@scu/engines-ce03:build: cache hit, replaying logs 10a8ed7f0e28555c
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce03
+@scu/engines-ce03:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce03:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce03:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce03:build: [34mCLI[39m Target: es2020
+@scu/engines-ce03:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce03:build: [34mCJS[39m Build start
+@scu/engines-ce03:build: [32mCJS[39m [1mdist/index.js [22m[32m3.16 KB[39m
+@scu/engines-ce03:build: [32mCJS[39m ⚡️ Build success in 55ms
+@scu/engines-ce03:build: DTS Build start
+@scu/engines-ce03:build: DTS ⚡️ Build success in 679ms
+@scu/engines-ce03:build: DTS dist/index.d.ts 1.15 KB
+
+ Tasks:    1 successful, 1 total
+Cached:    1 cached, 1 total
+  Time:    293ms >>> FULL TURBO
+
+
+> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run build "--filter" "@scu/engines-ce04"
+
+turbo 2.6.3
+
+• Packages in scope: @scu/engines-ce04
+• Running build in 1 packages
+• Remote caching disabled
+@scu/engines-ce04:build: cache hit, replaying logs bd0988b62ae4fd2f
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: > @scu/engines-ce04@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce04
+@scu/engines-ce04:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce04:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce04:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce04:build: [34mCLI[39m Target: es2020
+@scu/engines-ce04:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce04:build: [34mCJS[39m Build start
+@scu/engines-ce04:build: [32mCJS[39m [1mdist/index.js [22m[32m3.29 KB[39m
+@scu/engines-ce04:build: [32mCJS[39m ⚡️ Build success in 54ms
+@scu/engines-ce04:build: DTS Build start
+@scu/engines-ce04:build: DTS ⚡️ Build success in 699ms
+@scu/engines-ce04:build: DTS dist/index.d.ts 1.28 KB
+
+ Tasks:    1 successful, 1 total
+Cached:    1 cached, 1 total
+  Time:    142ms >>> FULL TURBO
+
+
+> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run build "--filter" "@scu/engines-ce06"
+
+turbo 2.6.3
+
+• Packages in scope: @scu/engines-ce06
+• Running build in 1 packages
+• Remote caching disabled
+@scu/engines-ce06:build: cache hit, replaying logs d5270a2fbf72db4c
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: > @scu/engines-ce06@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce06
+@scu/engines-ce06:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce06:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce06:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce06:build: [34mCLI[39m Target: es2020
+@scu/engines-ce06:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce06:build: [34mCJS[39m Build start
+@scu/engines-ce06:build: [32mCJS[39m [1mdist/index.js [22m[32m5.06 KB[39m
+@scu/engines-ce06:build: [32mCJS[39m ⚡️ Build success in 54ms
+@scu/engines-ce06:build: DTS Build start
+@scu/engines-ce06:build: DTS ⚡️ Build success in 747ms
+@scu/engines-ce06:build: DTS dist/index.d.ts 1.73 KB
+
+ Tasks:    1 successful, 1 total
+Cached:    1 cached, 1 total
+  Time:    149ms >>> FULL TURBO
+
+
+> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run build "--filter" "@scu/engines-shot-render"
+
+turbo 2.6.3
+
+• Packages in scope: @scu/engines-shot-render
+• Running build in 1 packages
+• Remote caching disabled
+@scu/engines-shot-render:build: cache miss, executing 79b6ac80c256d375
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render
+@scu/engines-shot-render:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: CLI Building entry: src/index.ts
+@scu/engines-shot-render:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-shot-render:build: CLI tsup v8.5.1
+@scu/engines-shot-render:build: CLI Target: es2020
+@scu/engines-shot-render:build: CLI Cleaning output folder
+@scu/engines-shot-render:build: CJS Build start
+@scu/engines-shot-render:build: CJS dist/index.js 14.60 KB
+@scu/engines-shot-render:build: CJS ⚡️ Build success in 48ms
+@scu/engines-shot-render:build: DTS Build start
+@scu/engines-shot-render:build: DTS ⚡️ Build success in 540ms
+@scu/engines-shot-render:build: DTS dist/index.d.ts 1.56 KB
+
+ Tasks:    1 successful, 1 total
+Cached:    0 cached, 1 total
+  Time:    1.527s 
+
+
+> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run build "--filter" "@scu/engines-video-merge"
+
+turbo 2.6.3
+
+• Packages in scope: @scu/engines-video-merge
+• Running build in 1 packages
+• Remote caching disabled
+@scu/engines-video-merge:build: cache miss, executing 96541eafb1563d25
+@scu/engines-video-merge:build: 
+@scu/engines-video-merge:build: > @scu/engines-video-merge@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/video_merge
+@scu/engines-video-merge:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-video-merge:build: 
+@scu/engines-video-merge:build: CLI Building entry: src/index.ts
+@scu/engines-video-merge:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-video-merge:build: CLI tsup v8.5.1
+@scu/engines-video-merge:build: CLI Target: es2020
+@scu/engines-video-merge:build: CLI Cleaning output folder
+@scu/engines-video-merge:build: CJS Build start
+@scu/engines-video-merge:build: CJS dist/index.js 6.59 KB
+@scu/engines-video-merge:build: CJS ⚡️ Build success in 13ms
+@scu/engines-video-merge:build: DTS Build start
+@scu/engines-video-merge:build: DTS ⚡️ Build success in 473ms
+@scu/engines-video-merge:build: DTS dist/index.d.ts 1.35 KB
+
+ Tasks:    1 successful, 1 total
+Cached:    0 cached, 1 total
+  Time:    1.211s 
+
+
+> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run build "--filter" "@scu/billing"
+
+turbo 2.6.3
+
+• Packages in scope: @scu/billing
+• Running build in 1 packages
+• Remote caching disabled
+@scu/billing:build: cache hit, replaying logs 99282df05b357ef5
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: > @scu/billing@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/billing
+@scu/billing:build: > tsup index.ts model-price-table.ts --format cjs --dts --clean
+@scu/billing:build: 
+@scu/billing:build: [34mCLI[39m Building entry: index.ts, model-price-table.ts
+@scu/billing:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/billing:build: [34mCLI[39m tsup v8.5.1
+@scu/billing:build: [34mCLI[39m Target: es2020
+@scu/billing:build: [34mCLI[39m Cleaning output folder
+@scu/billing:build: [34mCJS[39m Build start
+@scu/billing:build: 
+@scu/billing:build: [90m[[90m18:30:45[90m][39m [43m[30m WARN [39m[49m [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mCannot find base config file "../../tsconfig.base.json"[0m [tsconfig.json]
+@scu/billing:build: 
+@scu/billing:build:     tsconfig.json:2:15:
+@scu/billing:build: [37m      2 │     "extends": [32m"../../tsconfig.base.json"[37m,
+@scu/billing:build:         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: [32mCJS[39m [1mdist/index.js             [22m[32m2.15 KB[39m
+@scu/billing:build: [32mCJS[39m [1mdist/model-price-table.js [22m[32m2.17 KB[39m
+@scu/billing:build: [32mCJS[39m ⚡️ Build success in 48ms
+@scu/billing:build: DTS Build start
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/billing:build: DTS ⚡️ Build success in 455ms
+@scu/billing:build: DTS dist/model-price-table.d.ts 1000.00 B
+@scu/billing:build: DTS dist/index.d.ts             112.00 B
+
+ Tasks:    1 successful, 1 total
+Cached:    1 cached, 1 total
+  Time:    145ms >>> FULL TURBO
+
+[2/6] Runtime require from worker dir...
+[
+  'CE03EngineSelector',
+  'ce03RealEngine',
+  'ce03ReplayEngine',
+  'ce03Selector'
+]
+[
+  'CE04EngineSelector',
+  'ce04RealEngine',
+  'ce04ReplayEngine',
+  'ce04Selector'
+]
+[
+  'CE06EngineSelector',
+  'ce06RealEngine',
+  'ce06ReplayEngine',
+  'ce06Selector'
+]
+[3/6] Typecheck & build worker...
+
+> super-caterpillar-universe@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run typecheck "--filter" "@scu/worker"
+
+turbo 2.6.3
+
+• Packages in scope: @scu/worker
+• Running typecheck in 1 packages
+• Remote caching disabled
+@scu/storage:build: cache hit, replaying logs e19801c0f7e3b780
+@scu/engines-ce03:build: cache hit, replaying logs 10a8ed7f0e28555c
+@scu/storage:build: 
+@scu/storage:build: 
+@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > tsc
+@scu/storage:build: 
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce03
+@scu/engines-ce03:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce03:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce03:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce03:build: [34mCLI[39m Target: es2020
+@scu/engines-ce03:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce03:build: [34mCJS[39m Build start
+@scu/engines-ce03:build: [32mCJS[39m [1mdist/index.js [22m[32m3.16 KB[39m
+@scu/engines-ce03:build: [32mCJS[39m ⚡️ Build success in 55ms
+@scu/engines-ce03:build: DTS Build start
+@scu/engines-ce03:build: DTS ⚡️ Build success in 679ms
+@scu/engines-ce03:build: DTS dist/index.d.ts 1.15 KB
+@scu/billing:build: cache hit, replaying logs 99282df05b357ef5
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: > @scu/billing@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/billing
+@scu/billing:build: > tsup index.ts model-price-table.ts --format cjs --dts --clean
+@scu/billing:build: 
+@scu/billing:build: [34mCLI[39m Building entry: index.ts, model-price-table.ts
+@scu/billing:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/billing:build: [34mCLI[39m tsup v8.5.1
+@scu/billing:build: [34mCLI[39m Target: es2020
+@scu/billing:build: [34mCLI[39m Cleaning output folder
+@scu/billing:build: [34mCJS[39m Build start
+@scu/billing:build: 
+@scu/billing:build: [90m[[90m18:30:45[90m][39m [43m[30m WARN [39m[49m [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mCannot find base config file "../../tsconfig.base.json"[0m [tsconfig.json]
+@scu/billing:build: 
+@scu/billing:build:     tsconfig.json:2:15:
+@scu/billing:build: [37m      2 │     "extends": [32m"../../tsconfig.base.json"[37m,
+@scu/billing:build:         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: [32mCJS[39m [1mdist/index.js             [22m[32m2.15 KB[39m
+@scu/billing:build: [32mCJS[39m [1mdist/model-price-table.js [22m[32m2.17 KB[39m
+@scu/billing:build: [32mCJS[39m ⚡️ Build success in 48ms
+@scu/billing:build: DTS Build start
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/billing:build: DTS ⚡️ Build success in 455ms
+@scu/billing:build: DTS dist/model-price-table.d.ts 1000.00 B
+@scu/billing:build: DTS dist/index.d.ts             112.00 B
+@scu/engines-video-merge:build: cache hit, replaying logs 96541eafb1563d25
+@scu/engines-video-merge:build: 
+@scu/engines-video-merge:build: > @scu/engines-video-merge@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/video_merge
+@scu/engines-video-merge:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-video-merge:build: 
+@scu/engines-video-merge:build: CLI Building entry: src/index.ts
+@scu/engines-video-merge:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-video-merge:build: CLI tsup v8.5.1
+@scu/engines-video-merge:build: CLI Target: es2020
+@scu/engines-video-merge:build: CLI Cleaning output folder
+@scu/engines-video-merge:build: CJS Build start
+@scu/engines-video-merge:build: CJS dist/index.js 6.59 KB
+@scu/engines-video-merge:build: CJS ⚡️ Build success in 13ms
+@scu/engines-video-merge:build: DTS Build start
+@scu/engines-video-merge:build: DTS ⚡️ Build success in 473ms
+@scu/engines-video-merge:build: DTS dist/index.d.ts 1.35 KB
+@scu/engines-ce06:build: cache hit, replaying logs d5270a2fbf72db4c
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: > @scu/engines-ce06@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce06
+@scu/engines-ce06:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce06:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce06:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce06:build: [34mCLI[39m Target: es2020
+@scu/engines-ce06:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce06:build: [34mCJS[39m Build start
+@scu/engines-ce06:build: [32mCJS[39m [1mdist/index.js [22m[32m5.06 KB[39m
+@scu/engines-ce06:build: [32mCJS[39m ⚡️ Build success in 54ms
+@scu/engines-ce06:build: DTS Build start
+@scu/engines-ce06:build: DTS ⚡️ Build success in 747ms
+@scu/engines-ce06:build: DTS dist/index.d.ts 1.73 KB
+@scu/engines-shot-render:build: cache hit, replaying logs 79b6ac80c256d375
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render
+@scu/engines-shot-render:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: CLI Building entry: src/index.ts
+@scu/engines-shot-render:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-shot-render:build: CLI tsup v8.5.1
+@scu/engines-shot-render:build: CLI Target: es2020
+@scu/engines-shot-render:build: CLI Cleaning output folder
+@scu/engines-shot-render:build: CJS Build start
+@scu/engines-shot-render:build: CJS dist/index.js 14.60 KB
+@scu/engines-shot-render:build: CJS ⚡️ Build success in 48ms
+@scu/engines-shot-render:build: DTS Build start
+@scu/engines-shot-render:build: DTS ⚡️ Build success in 540ms
+@scu/engines-shot-render:build: DTS dist/index.d.ts 1.56 KB
+@scu/config:build: cache hit, replaying logs b896bf4a4cdc7edc
+@scu/config:build: 
+@scu/config:build: 
+@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+@scu/config:build: > tsc
+@scu/config:build: 
+@scu/engines-ce04:build: cache hit, replaying logs bd0988b62ae4fd2f
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: > @scu/engines-ce04@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce04
+@scu/engines-ce04:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce04:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce04:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce04:build: [34mCLI[39m Target: es2020
+@scu/engines-ce04:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce04:build: [34mCJS[39m Build start
+@scu/engines-ce04:build: [32mCJS[39m [1mdist/index.js [22m[32m3.29 KB[39m
+@scu/engines-ce04:build: [32mCJS[39m ⚡️ Build success in 54ms
+@scu/engines-ce04:build: DTS Build start
+@scu/engines-ce04:build: DTS ⚡️ Build success in 699ms
+@scu/engines-ce04:build: DTS dist/index.d.ts 1.28 KB
+@scu/shared-types:build: cache hit, replaying logs e3669a51eecfed15
+@scu/shared-types:build: 
+@scu/shared-types:build: 
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > tsc -p tsconfig.build.json
+@scu/shared-types:build: 
+database:build: cache hit, replaying logs e01cd08d3972a80e
+database:build: 
+database:build: 
+database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
+database:build: 
+
+ Tasks:    10 successful, 10 total
+Cached:    10 cached, 10 total
+  Time:    237ms >>> FULL TURBO
+
+
+> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run build "--filter" "@scu/worker"
+
+turbo 2.6.3
+
+• Packages in scope: @scu/worker
+• Running build in 1 packages
+• Remote caching disabled
+@scu/engines-video-merge:build: cache hit, replaying logs 96541eafb1563d25
+@scu/engines-video-merge:build: 
+@scu/engines-video-merge:build: > @scu/engines-video-merge@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/video_merge
+@scu/engines-video-merge:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-video-merge:build: 
+@scu/engines-video-merge:build: CLI Building entry: src/index.ts
+@scu/engines-video-merge:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-video-merge:build: CLI tsup v8.5.1
+@scu/engines-video-merge:build: CLI Target: es2020
+@scu/engines-video-merge:build: CLI Cleaning output folder
+@scu/engines-video-merge:build: CJS Build start
+@scu/engines-video-merge:build: CJS dist/index.js 6.59 KB
+@scu/engines-video-merge:build: CJS ⚡️ Build success in 13ms
+@scu/engines-video-merge:build: DTS Build start
+@scu/engines-video-merge:build: DTS ⚡️ Build success in 473ms
+@scu/engines-video-merge:build: DTS dist/index.d.ts 1.35 KB
+@scu/engines-ce04:build: cache hit, replaying logs bd0988b62ae4fd2f
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: > @scu/engines-ce04@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce04
+@scu/engines-ce04:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce04:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce04:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce04:build: [34mCLI[39m Target: es2020
+@scu/engines-ce04:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce04:build: [34mCJS[39m Build start
+@scu/engines-ce04:build: [32mCJS[39m [1mdist/index.js [22m[32m3.29 KB[39m
+@scu/engines-ce04:build: [32mCJS[39m ⚡️ Build success in 54ms
+@scu/engines-ce04:build: DTS Build start
+@scu/engines-ce04:build: DTS ⚡️ Build success in 699ms
+@scu/engines-ce04:build: DTS dist/index.d.ts 1.28 KB
+@scu/engines-shot-render:build: cache hit, replaying logs 79b6ac80c256d375
+@scu/engines-ce06:build: cache hit, replaying logs d5270a2fbf72db4c
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render
+@scu/engines-shot-render:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: CLI Building entry: src/index.ts
+@scu/engines-shot-render:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-shot-render:build: CLI tsup v8.5.1
+@scu/engines-shot-render:build: CLI Target: es2020
+@scu/engines-shot-render:build: CLI Cleaning output folder
+@scu/engines-shot-render:build: CJS Build start
+@scu/engines-shot-render:build: CJS dist/index.js 14.60 KB
+@scu/engines-shot-render:build: CJS ⚡️ Build success in 48ms
+@scu/engines-shot-render:build: DTS Build start
+@scu/engines-shot-render:build: DTS ⚡️ Build success in 540ms
+@scu/engines-shot-render:build: DTS dist/index.d.ts 1.56 KB
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: > @scu/engines-ce06@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce06
+@scu/engines-ce06:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce06:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce06:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce06:build: [34mCLI[39m Target: es2020
+@scu/engines-ce06:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce06:build: [34mCJS[39m Build start
+@scu/engines-ce06:build: [32mCJS[39m [1mdist/index.js [22m[32m5.06 KB[39m
+@scu/engines-ce06:build: [32mCJS[39m ⚡️ Build success in 54ms
+@scu/engines-ce06:build: DTS Build start
+@scu/engines-ce06:build: DTS ⚡️ Build success in 747ms
+@scu/engines-ce06:build: DTS dist/index.d.ts 1.73 KB
+@scu/billing:build: cache hit, replaying logs 99282df05b357ef5
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: > @scu/billing@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/billing
+@scu/billing:build: > tsup index.ts model-price-table.ts --format cjs --dts --clean
+@scu/billing:build: 
+@scu/billing:build: [34mCLI[39m Building entry: index.ts, model-price-table.ts
+@scu/billing:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/billing:build: [34mCLI[39m tsup v8.5.1
+@scu/billing:build: [34mCLI[39m Target: es2020
+@scu/billing:build: [34mCLI[39m Cleaning output folder
+@scu/billing:build: [34mCJS[39m Build start
+@scu/billing:build: 
+@scu/billing:build: [90m[[90m18:30:45[90m][39m [43m[30m WARN [39m[49m [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mCannot find base config file "../../tsconfig.base.json"[0m [tsconfig.json]
+@scu/billing:build: 
+@scu/billing:build:     tsconfig.json:2:15:
+@scu/billing:build: [37m      2 │     "extends": [32m"../../tsconfig.base.json"[37m,
+@scu/billing:build:         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: [32mCJS[39m [1mdist/index.js             [22m[32m2.15 KB[39m
+@scu/billing:build: [32mCJS[39m [1mdist/model-price-table.js [22m[32m2.17 KB[39m
+@scu/billing:build: [32mCJS[39m ⚡️ Build success in 48ms
+@scu/billing:build: DTS Build start
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/billing:build: DTS ⚡️ Build success in 455ms
+@scu/billing:build: DTS dist/model-price-table.d.ts 1000.00 B
+@scu/billing:build: DTS dist/index.d.ts             112.00 B
+@scu/storage:build: cache hit, replaying logs e19801c0f7e3b780
+@scu/storage:build: 
+@scu/storage:build: 
+@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > tsc
+@scu/storage:build: 
+@scu/engines-ce03:build: cache hit, replaying logs 10a8ed7f0e28555c
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce03
+@scu/engines-ce03:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce03:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce03:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce03:build: [34mCLI[39m Target: es2020
+@scu/engines-ce03:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce03:build: [34mCJS[39m Build start
+@scu/engines-ce03:build: [32mCJS[39m [1mdist/index.js [22m[32m3.16 KB[39m
+@scu/engines-ce03:build: [32mCJS[39m ⚡️ Build success in 55ms
+@scu/engines-ce03:build: DTS Build start
+@scu/engines-ce03:build: DTS ⚡️ Build success in 679ms
+@scu/engines-ce03:build: DTS dist/index.d.ts 1.15 KB
+@scu/config:build: cache hit, replaying logs b896bf4a4cdc7edc
+@scu/config:build: 
+@scu/config:build: 
+@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+@scu/config:build: > tsc
+@scu/config:build: 
+@scu/shared-types:build: cache hit, replaying logs e3669a51eecfed15
+@scu/shared-types:build: 
+@scu/shared-types:build: 
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > tsc -p tsconfig.build.json
+@scu/shared-types:build: 
+database:build: cache hit, replaying logs e01cd08d3972a80e
+database:build: 
+database:build: 
+database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
+database:build: 
+@scu/worker:build: cache miss, executing 05d6e5048bb383d8
+@scu/worker:build: 
+@scu/worker:build: > @scu/worker@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers
+@scu/worker:build: > tsc -p tsconfig.json
+@scu/worker:build: 
+
+ Tasks:    11 successful, 11 total
+Cached:    10 cached, 11 total
+  Time:    1.706s 
+
+[4/6] Require worker dist main (smoke)...
+[Bootstrap] Normal mode, loading full Worker...
+[OK] worker dist main required
+[Config] process.env.WORKER_OFFLINE_GRACE_MS: undefined
+[Config] DATABASE_URL resolved from .env.local file
+[CONFIG_DEBUG] JWT_SECRET read from env: gate...
+[WorkerConfig] workerId=local-worker (source=config/default)
+[Worker] PID file written: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.runtime/pids/local-worker.pid
+[WorkerConfig] apiBaseUrl=http://localhost:3000 (source=config/env)
+[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (Stage-3-Final)
+[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (Stage-3-Final)
+========================================
+Super Caterpillar Worker
+========================================
+
+[Worker] ⚠️  API Key/Secret 未配置，Worker 可能无法通过 HMAC 认证
+[Worker] ⚠️  JOB_WORKER_ENABLED=false，Worker 将不会处理 Job
+[Worker] 正在连接数据库...
+[Worker] ✅ 数据库连接成功
+[Worker] 正在注册 Worker 节点...
+[Worker] Worker ID: local-worker
+[Worker] Worker Name: local-worker
+[Worker] API URL: http://localhost:3000
+[Worker] Database URL: postgresql://postgres:postgres...
+[Worker] JOB_WORKER_ENABLED: false
+[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!
+[Worker] ⚠️  Worker will not be able to authenticate with API server.
+[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.
+[Worker] supportedEngines=["default_novel_analysis"]
+[Worker DEBUG] ApiClient request: POST /api/workers/register
+[Worker] ⚠️  No API Key/Secret configured, requests may fail with 401
+[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.
+[Worker HTTP Error] POST http://localhost:3000/api/workers/register Network Error fetch failed
+[Worker] ❌ Worker 注册失败: API request failed: fetch failed
+[Worker] ❌ Worker 启动失败: API request failed: fetch failed
+Error: API request failed: fetch failed
+    at ApiClient.request (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/dist/apps/workers/src/api-client.js:169:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async ApiClient.registerWorker (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/dist/apps/workers/src/api-client.js:173:26)
+    at async registerWorker (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/dist/apps/workers/src/worker-app.js:129:9)
+    at async Object.startWorkerApp (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/dist/apps/workers/src/worker-app.js:432:9)
+    at async boot (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/dist/apps/workers/src/main.js:52:5)

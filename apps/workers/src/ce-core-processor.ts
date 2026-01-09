@@ -463,7 +463,7 @@ export async function processCE03Job(
 /**
  * 处理 CE04 Visual Enrichment Job
  */
-import { CE04EngineSelector, CE04Input, CE04Output } from '@scu/engines/ce04';
+import { CE04EngineSelector, CE04Input, CE04Output } from '@scu/engines-ce04';
 
 // ... (existing imports)
 
@@ -656,7 +656,7 @@ export async function processCE04Job(
 /**
  * Stage 4: SHOT_RENDER Job Processor (Asset Generation Loop)
  */
-import { ShotRenderInput, ShotRenderSelector } from '@scu/engines/shot_render';
+import { ShotRenderInput, ShotRenderSelector } from '@scu/engines-shot-render';
 
 // ... (existing imports)
 
@@ -1027,9 +1027,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-        summary: previousMemory.summary || '',
-        character_states: (previousMemory.characterStates as any) || {},
-      }
+          summary: previousMemory.summary || '',
+          character_states: (previousMemory.characterStates as any) || {},
+        }
       : undefined,
     context: {
       projectId,

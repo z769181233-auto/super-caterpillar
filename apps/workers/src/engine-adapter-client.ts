@@ -24,8 +24,8 @@ import {
 } from './novel-analysis-processor';
 import { VisualDensityLocalAdapterWorker } from './adapters/visual-density.adapter';
 import { VisualEnrichmentLocalAdapterWorker } from './adapters/visual-enrichment.adapter';
-import { CE06EngineSelector } from '@scu/engines/ce06/selector';
-import { CE06Input } from '@scu/engines/ce06/types';
+import { CE06EngineSelector } from '@scu/engines-ce06';
+import { CE06Input } from '@scu/engines-ce06';
 import { createHash } from 'crypto';
 
 /**
