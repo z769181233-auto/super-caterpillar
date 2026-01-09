@@ -30,7 +30,7 @@ lsof -t -i :$PORT | xargs kill -9 2>/dev/null || true
 # 2. 启动 API 与 Worker
 echo "===> [P1-B Gate] Starting Services in SAFE_MODE=1..."
 # NODE_ENV=development ensures logging
-( export API_PORT=$PORT PORT=$PORT DATABASE_URL="$DATABASE_URL" MENU_SECRET="$JWT_SECRET" JWT_SECRET="$JWT_SECRET" NODE_ENV=development; npx ts-node -r tsconfig-paths/register apps/api/src/main.ts > .runtime/api_p1b.log 2>&1 ) &
+( export API_PORT=$PORT PORT=$PORT DATABASE_URL="$DATABASE_URL" JWT_SECRET="$JWT_SECRET" NODE_ENV=development; npx ts-node -r tsconfig-paths/register apps/api/src/main.ts > .runtime/api_p1b.log 2>&1 ) &
 API_PID=$!
 sleep 25
 
@@ -80,6 +80,8 @@ npx ts-node tools/gate/gates/p1b_seed_helper.ts --action=setup_test_project --or
 
 JWT_QUOTA=$(generate_jwt $ORG_QUOTA)
 
+# Note: X-Signature is a placeholder for Audit Log completeness. 
+# Authentication is handled by Authorization: Bearer $JWT.
 RESP_Q=$(curl -s -X POST "http://localhost:$PORT/api/shots/p1b-test-shot/jobs" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $JWT_QUOTA" \

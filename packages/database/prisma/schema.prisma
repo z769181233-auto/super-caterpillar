@@ -1366,12 +1366,15 @@ model CostLedger {
   createdAt   DateTime @default(now())
 
   // Fields from JobService / Legacy
-  traceId   String?
-  orgId     String?
-  totalCost Float?
-  costType  String?
-  unitCost  Float?
-  timestamp DateTime @default(now()) // For cost.controller.ts
+  traceId         String?
+  orgId           String?
+  totalCost       Float?
+  costType        String?
+  unitCost        Float?
+  modelName       String?
+  totalCredits    Float?
+  unitCostCredits Float?
+  timestamp       DateTime @default(now()) // For cost.controller.ts
 
   // Relations
   project Project @relation("ProjectCostLedgers", fields: [projectId], references: [id])

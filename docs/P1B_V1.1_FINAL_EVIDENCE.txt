@@ -52,3 +52,49 @@ Outcome: PASS
   3. packages/database/prisma/schema.prisma (Build Fix Only)
   4. tools/gate/gates/p1b_seed_helper.ts (New Test Helper)
 - Forbidden Files Touched: NONE (jwt-or-hmac.guard.ts, cost-ledger.service.ts, ce-core-processor.ts preserved)
+
+6. DB STRUCTURE PROOF (Added in v1.1.2-proof)
+--------------------------------------------------------------------------------
+Captured via psql and prisma migrate diff on Fri Jan  9 07:59:00 +07 2026.
+Validation: Schema Superset matches Actual DB Structure. No Drift.
+
+=== DB STRUCTURE PROOF (AFTER) ===
+                                                            Table "public.cost_ledgers"
+     Column      |              Type              | Collation | Nullable |      Default      | Storage  | Compression | Stats target | Description 
+-----------------+--------------------------------+-----------+----------+-------------------+----------+-------------+--------------+-------------
+ id              | text                           |           | not null |                   | extended |             |              | 
+ traceId         | text                           |           |          |                   | extended |             |              | 
+ projectId       | text                           |           | not null |                   | extended |             |              | 
+ orgId           | text                           |           |          |                   | extended |             |              | 
+ userId          | text                           |           |          |                   | extended |             |              | 
+ jobId           | text                           |           | not null |                   | extended |             |              | 
+ jobType         | text                           |           | not null |                   | extended |             |              | 
+ costType        | text                           |           |          |                   | extended |             |              | 
+ unitCost        | double precision               |           |          |                   | plain    |             |              | 
+ unitCostCredits | double precision               |           |          |                   | plain    |             |              | 
+ quantity        | double precision               |           | not null | 0.0               | plain    |             |              | 
+ totalCost       | double precision               |           |          |                   | plain    |             |              | 
+ totalCredits    | double precision               |           |          |                   | plain    |             |              | 
+ modelName       | text                           |           |          |                   | extended |             |              | 
+ metadata        | jsonb                          |           |          |                   | extended |             |              | 
+ timestamp       | timestamp(3) without time zone |           | not null | CURRENT_TIMESTAMP | plain    |             |              | 
+ billingUnit     | text                           |           |          |                   | extended |             |              | 
+ costAmount      | double precision               |           | not null | 0.0               | plain    |             |              | 
+ createdAt       | timestamp(3) without time zone |           | not null | CURRENT_TIMESTAMP | plain    |             |              | 
+ currency        | text                           |           | not null | 'USD'::text       | extended |             |              | 
+ engineKey       | text                           |           |          |                   | extended |             |              | 
+Indexes:
+    "cost_ledgers_pkey" PRIMARY KEY, btree (id)
+    "cost_ledgers_createdAt_idx" btree ("createdAt")
+    "cost_ledgers_jobId_jobType_idx" btree ("jobId", "jobType")
+    "cost_ledgers_jobId_jobType_key" UNIQUE, btree ("jobId", "jobType")
+    "cost_ledgers_projectId_idx" btree ("projectId")
+Foreign-key constraints:
+    "cost_ledgers_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES projects(id) ON UPDATE CASCADE ON DELETE RESTRICT
+    "cost_ledgers_userId_fkey" FOREIGN KEY ("userId") REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+Access method: heap
+
+=== PRISMA MIGRATE DIFF (AFTER) ===
+No difference detected.
+
+EXIT_CODE=0
