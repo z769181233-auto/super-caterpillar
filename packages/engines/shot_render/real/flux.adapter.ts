@@ -1,16 +1,16 @@
 import { ShotRenderInput, ShotRenderOutput } from '../types';
-import { shotRenderRealEngine as realStub } from '../real';
+import { runShotRenderSDXL } from './sdxl.adapter';
 
 /**
  * P1-A: ShotRender Flux Adapter
- * 实现真实 Flux 模型渲染逻辑（模拟 I/O 持久化）
+ * 实现真实 Flux 模型渲染逻辑（目前复用 SDXL 逻辑作为 Real 实现）
  */
 export async function runShotRenderFlux(
   input: ShotRenderInput,
   ctx: any = {}
 ): Promise<ShotRenderOutput> {
-  // 复用 I/O 逻辑，标识为 Flux
-  const result = await realStub(input);
+  // 复用 Real Logic
+  const result = await runShotRenderSDXL(input, ctx);
 
   result.render_meta.model = 'flux-v1-dev';
   result.billing_usage = {

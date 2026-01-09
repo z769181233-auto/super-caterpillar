@@ -1,7 +1,6 @@
 import { ShotRenderInput, ShotRenderOutput } from '../types';
 import { runShotRenderSDXL } from './sdxl.adapter';
 import { runShotRenderFlux } from './flux.adapter';
-import { shotRenderRealEngine as realStub } from '../real';
 
 /**
  * P1-A: ShotRender Real Engine Selector
@@ -20,7 +19,7 @@ export async function shotRenderRealEngine(
     // 默认 SDXL
     return await runShotRenderSDXL(input, ctx);
   } catch (e: any) {
-    console.error(`[ShotRender] Model ${model} failed, falling back to Stub: ${e.message}`);
-    return await realStub(input);
+    console.error(`[ShotRender] Model ${model} failed: ${e.message}`);
+    throw e;
   }
 }

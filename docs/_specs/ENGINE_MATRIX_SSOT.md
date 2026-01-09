@@ -14,13 +14,13 @@
 
 ## 引擎矩阵
 
-| EngineKey     | JobType                | 实现状态  | 计费模型            | 审计 Action 前缀     | Gate 脚本                                  | 封印 Tag                          |
-| ------------- | ---------------------- | --------- | ------------------- | -------------------- | ------------------------------------------ | --------------------------------- |
-| `ce06`        | CE06_NOVEL_PARSING     | REAL-STUB | tokens @ 0.2/1k     | `engine.ce06`        | `gate-stage3-b_ce06_billing_closure.sh`    | `stage3b_ce06_billing_closure`    |
-| `ce03`        | CE03_VISUAL_DENSITY    | REAL      | tokens @ 1.0/1k     | `engine.ce03`        | `gate-stage3-c_ce03_density_closure.sh`    | `stage3c_ce03_density_closure`    |
-| `ce04`        | CE04_VISUAL_ENRICHMENT | REAL-STUB | tokens @ 1.0/1k     | `engine.ce04`        | `gate-stage3-d_ce04_enrichment_closure.sh` | `stage3d_ce04_enrichment_closure` |
-| `shot_render` | SHOT_RENDER            | REAL      | gpuSeconds @ 50/1k  | `engine.shot_render` | `gate-p0-r0_shot_render_real.sh`           | -                                 |
-| `video_merge` | VIDEO_MERGE            | PLANNED   | gpuSeconds @ 100/1k | `engine.video_merge` | -                                          | -                                 |
+| EngineKey     | JobType                | 实现状态  | 计费模型            | 审计 Action 前缀     | Gate 脚本                                  | 封印 Tag                                                    |
+| ------------- | ---------------------- | --------- | ------------------- | -------------------- | ------------------------------------------ | ----------------------------------------------------------- |
+| `ce06`        | CE06_NOVEL_PARSING     | REAL-STUB | tokens @ 0.2/1k     | `engine.ce06`        | `gate-stage3-b_ce06_billing_closure.sh`    | `stage3b_ce06_billing_closure`                              |
+| `ce03`        | CE03_VISUAL_DENSITY    | REAL      | tokens @ 1.0/1k     | `engine.ce03`        | `gate-stage3-c_ce03_density_closure.sh`    | `stage3c_ce03_density_closure`                              |
+| `ce04`        | CE04_VISUAL_ENRICHMENT | REAL-STUB | tokens @ 1.0/1k     | `engine.ce04`        | `gate-stage3-d_ce04_enrichment_closure.sh` | `stage3d_ce04_enrichment_closure`                           |
+| `shot_render` | SHOT_RENDER            | REAL      | gpuSeconds @ 50/1k  | `engine.shot_render` | `gate-p0-r0_shot_render_real.sh`           | `shot_render_local_mps_sealed_20260109`     |
+| `video_merge` | VIDEO_MERGE            | PLANNED   | gpuSeconds @ 100/1k | `engine.video_merge` | -                                          | -                                                           |
 
 ---
 
