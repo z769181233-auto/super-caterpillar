@@ -10,7 +10,7 @@
 
 - **功能名称**: Stage11 · Lint Fix（Lint 修复）
 - **关联 Stage**: Stage11
-- **关联约束（Stage5 / Stage6 / Others）**: 
+- **关联约束（Stage5 / Stage6 / Others）**:
   - **是** - 与 Stage5/Stage6/Stage7/Stage8 架构约束完全一致
   - Stage5: Prisma 单一来源约束
   - Stage6: 架构约束自动化防线
@@ -39,14 +39,17 @@
 **目标**: 修复 `pnpm -w lint` 全量 lint 的所有 FAIL 项（历史遗留问题）
 
 **修复项 1**: `apps/web/src/middleware.ts`
+
 - **问题**: `@typescript-eslint/no-unused-vars` - `'req' is defined but never used`
 - **修复方案**: 将参数 `req` 重命名为 `_req`（最小改动，符合 ESLint 未使用参数命名规范）
 
 **修复项 2**: `apps/web/src/app/tasks/[taskId]/graph/page.tsx`
+
 - **问题**: `react-hooks/rules-of-hooks` - React Hook "useSearchParams" is called conditionally
 - **修复方案**: 将 `useSearchParams()` 调用移到组件顶部（在条件返回之前），确保 Hooks 调用顺序一致
 
 **修复项 3**: `apps/api/package.json`
+
 - **问题**: ESLint 解析错误 - `src/scripts/**` 目录下的文件不在 `tsconfig.json` 的 include 中，导致 9 个 Parsing error
 - **修复方案**: 在 lint 命令中添加 `--ignore-pattern "src/scripts/**"` 排除 scripts 目录（与 `tsconfig.json` 的 exclude 保持一致）
 
@@ -55,11 +58,13 @@
 ## 3. 变更文件清单
 
 ### 修改文件（3个）
+
 1. `apps/web/src/middleware.ts` - 将参数 `req` 重命名为 `_req`（修复 `@typescript-eslint/no-unused-vars`）
 2. `apps/web/src/app/tasks/[taskId]/graph/page.tsx` - 将 `useSearchParams()` 调用移到组件顶部（修复 `react-hooks/rules-of-hooks` Error）
 3. `apps/api/package.json` - 在 lint 命令中添加 `--ignore-pattern "src/scripts/**"`（修复 ESLint Parsing error）
 
 ### 代码变更
+
 **仅修复 lint 错误的最小改动** - Stage11 仅修复 lint 错误，不涉及任何其他代码改动。
 
 ---
@@ -75,36 +80,43 @@
 ## 5. 实际执行的测试命令
 
 ### 5.1 全量 lint（核心 KPI）
+
 ```bash
 pnpm -w lint
 ```
 
 ### 5.2 Web 构建
+
 ```bash
 pnpm --filter web build
 ```
 
 ### 5.3 Stage6 Guard - Prisma Single Source
+
 ```bash
 bash tools/ci/check-prisma-single-source.sh
 ```
 
 ### 5.4 Stage6 Guard - Nonce Fallback
+
 ```bash
 bash tools/ci/check-nonce-fallback.sh
 ```
 
 ### 5.5 Stage7 Guard - Test Report Exists
+
 ```bash
 bash tools/ci/check-test-report-exists.sh
 ```
 
 ### 5.6 Stage8 Guard - Test Report Naming
+
 ```bash
 bash tools/ci/check-test-report-naming.sh
 ```
 
 ### 5.7 Stage8 Guard - Test Report Freshness
+
 ```bash
 bash tools/ci/check-test-report-fresh.sh
 ```
@@ -140,6 +152,7 @@ pnpm -w lint
 ```
 
 **完整输出（关键片段）**:
+
 ```
 > super-caterpillar-universe@1.0.0 lint
 > turbo run lint
@@ -172,11 +185,13 @@ Cached:    4 cached, 4 total
 **Exit Code**: ✅ **0**（PASS）
 
 **验证命令**:
+
 ```bash
 pnpm -w lint; echo "Exit Code: $?"
 ```
 
 **完整输出（最终验收）**:
+
 ```
 > super-caterpillar-universe@1.0.0 lint
 > turbo run lint
@@ -213,7 +228,8 @@ Exit Code: 0
 
 **结果**: ✅ **PASS** - 全量 lint 通过（exit code 0），无 Error
 
-**说明**: 
+**说明**:
+
 - ✅ Stage11 修复目标（修复 `pnpm -w lint` 的 FAIL 项）已达成
 - ✅ middleware.ts 的 `req` 未使用错误已修复（`req` → `_req`）
 - ✅ tasks/[taskId]/graph/page.tsx 的 `react-hooks/rules-of-hooks` Error 已修复（`useSearchParams` 移到组件顶部）
@@ -318,6 +334,7 @@ Desktop/adam/.../docs/TEST_REPORT_STAGE11_LINT_FIX_20251213.md
 **未影响** ✅
 
 **详细说明**:
+
 - ✅ **不改 UI**: 不涉及任何 UI 组件或页面修改（仅修复 lint 错误）
 - ✅ **不改 API**: 不涉及任何 API 接口修改
 - ✅ **不改数据结构**: 不涉及任何数据结构修改
@@ -326,6 +343,7 @@ Desktop/adam/.../docs/TEST_REPORT_STAGE11_LINT_FIX_20251213.md
 - ✅ **不改冻结范围**: Stage9 UI 冻结范围完全不受影响，Stage10 冻结声明仍然有效
 
 **修复范围**:
+
 - 修改 `apps/web/src/middleware.ts` 中参数名称：`req` → `_req`（符合 ESLint 未使用参数命名规范）
 - 修改 `apps/web/src/app/tasks/[taskId]/graph/page.tsx` 中 `useSearchParams()` 调用位置：移到组件顶部（确保 Hooks 调用顺序一致）
 - 修改 `apps/api/package.json` 中 lint 命令：添加 `--ignore-pattern "src/scripts/**"`（与 `tsconfig.json` 的 exclude 保持一致，修复 ESLint Parsing error）
@@ -338,6 +356,7 @@ Desktop/adam/.../docs/TEST_REPORT_STAGE11_LINT_FIX_20251213.md
 **YES** ✅
 
 **原因说明**:
+
 1. ✅ Stage11 修复已完成（`pnpm -w lint` 全量 lint 的 FAIL 项已修复）
 2. ✅ 所有测试命令已亲自执行并通过
 3. ✅ 核心 KPI（`pnpm -w lint` exit code 0）已通过
@@ -348,7 +367,8 @@ Desktop/adam/.../docs/TEST_REPORT_STAGE11_LINT_FIX_20251213.md
 8. ✅ 测试报告已进入 git 变更集
 9. ✅ 所有代码变更仅为修复 lint FAIL 所必需的最小改动
 
-**说明**: 
+**说明**:
+
 - Stage11 的修复目标（修复 `pnpm -w lint` 的 FAIL 项）已达成
 - 全量 lint exit code 0，满足 Stage11 完成标准
 - 仍存在大量 warning，但这些是 warning 而非 Error，不影响 exit code

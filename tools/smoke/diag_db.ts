@@ -30,7 +30,9 @@ async function getPrisma(): Promise<PrismaClient> {
       process.env.DATABASE_URL = assembled;
       console.log(`[diag] DATABASE_URL assembled from DB_*: ${maskDatabaseUrl(assembled).masked}`);
     } else {
-      console.warn('[diag] DATABASE_URL is not set and DB_HOST is empty; Prisma may fail to connect.');
+      console.warn(
+        '[diag] DATABASE_URL is not set and DB_HOST is empty; Prisma may fail to connect.'
+      );
     }
   }
   return new PrismaClient();
@@ -44,29 +46,38 @@ async function main() {
 
   try {
     const db = await prisma.$queryRawUnsafe<{ db: string; schema: string }[]>(
-      'select current_database() as db, current_schema() as schema',
+      'select current_database() as db, current_schema() as schema'
     );
     console.log('[diag] current_database/current_schema =', db?.[0]);
   } catch (err: any) {
-    console.error('[diag] ❌ failed to query current_database/current_schema:', err?.message || err);
+    console.error(
+      '[diag] ❌ failed to query current_database/current_schema:',
+      err?.message || err
+    );
     console.error('       Possible causes: DB not reachable, bad credentials, or schema missing.');
     throw err;
   }
 
   try {
     const migrations = await prisma.$queryRawUnsafe<any[]>(
-      'select id, name, finished_at from "prisma_migrations" order by finished_at desc limit 5',
+      'select id, name, finished_at from "prisma_migrations" order by finished_at desc limit 5'
     );
     console.log(`[diag] migrations count = ${migrations.length}`);
     if (migrations.length > 0) {
       const latest = migrations[0];
-      console.log('[diag] latest migration =', { id: latest.id, name: latest.name, finished_at: latest.finished_at });
+      console.log('[diag] latest migration =', {
+        id: latest.id,
+        name: latest.name,
+        finished_at: latest.finished_at,
+      });
     } else {
       console.warn('[diag] prisma_migrations table is empty (migrations may not have run).');
     }
   } catch (err: any) {
     console.warn('[diag] ⚠️  prisma_migrations not readable:', err?.message || err);
-    console.warn('       Possible causes: migrations not applied, table not created, or different schema.');
+    console.warn(
+      '       Possible causes: migrations not applied, table not created, or different schema.'
+    );
   }
 
   const keyTables = [
@@ -79,7 +90,9 @@ async function main() {
 
   for (const t of keyTables) {
     try {
-      const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(`select count(*)::bigint as count from "${t.name}"`);
+      const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+        `select count(*)::bigint as count from "${t.name}"`
+      );
       console.log(`[diag] ${t.label} count = ${rows[0]?.count ?? 'n/a'}`);
     } catch (err: any) {
       console.warn(`[diag] ⚠️  cannot count ${t.name}:`, err?.message || err);
@@ -91,7 +104,9 @@ async function main() {
     console.log('[diag] sample apiKey =', anyKey);
   } catch (e: any) {
     console.error('[diag] prisma.apiKey.findFirst ERROR =', e?.message || e);
-    console.error('       Possible causes: api_keys table missing columns or prisma schema mismatch.');
+    console.error(
+      '       Possible causes: api_keys table missing columns or prisma schema mismatch.'
+    );
     throw e;
   } finally {
     await prisma.$disconnect();

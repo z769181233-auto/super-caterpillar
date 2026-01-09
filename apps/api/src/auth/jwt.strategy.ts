@@ -46,10 +46,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // console.log('[DEBUG] User lookup result:', user ? 'Found' : 'Not Found', payload.sub);
 
     if (!user) {
-      this.prisma.user.findMany().then(all => JSON.stringify(all.map(u => u.id))).then(ids => {
-        // eslint-disable-next-line no-console
-        console.error(`[DEBUG] User NOT found. Payload sub: ${payload.sub}. Available IDs: ${ids}`);
-      });
+      this.prisma.user
+        .findMany()
+        .then((all) => JSON.stringify(all.map((u) => u.id)))
+        .then((ids) => {
+          // eslint-disable-next-line no-console
+          console.error(
+            `[DEBUG] User NOT found. Payload sub: ${payload.sub}. Available IDs: ${ids}`
+          );
+        });
       throw new UnauthorizedException('User not found');
     }
 
@@ -93,14 +98,3 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
-

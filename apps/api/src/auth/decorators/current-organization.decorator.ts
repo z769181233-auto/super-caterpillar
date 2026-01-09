@@ -11,14 +11,3 @@ export const CurrentOrganization = createParamDecorator(
     return request.user?.organizationId || null;
   }
 );
-
-
-
-
-
-
-
-
-
-
-

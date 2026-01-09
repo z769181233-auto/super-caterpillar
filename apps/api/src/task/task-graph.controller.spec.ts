@@ -1,6 +1,6 @@
 /**
  * S3-C.3 Phase 1 Finalization: Task Graph Controller 最小单元测试
- * 
+ *
  * 测试目标：验证 Task Graph API 返回的引擎信息、质量指标、性能指标字段符合 TaskGraphWithEngineInfo 类型
  */
 
@@ -302,4 +302,3 @@ describe('TaskGraphController - S3-C.3 Phase 1', () => {
     });
   });
 });
-

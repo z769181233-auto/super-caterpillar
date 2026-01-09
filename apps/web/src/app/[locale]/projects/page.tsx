@@ -53,7 +53,11 @@ export default function ProjectsPage() {
         // If it's a Shot and has videoUrl or assetId indicating video
         if (node.type === 'SHOT' || node.type === 'shot') {
           // Check common places where video url might be
-          if (node.videoUrl || node.assetId || (node.assets && node.assets.some((a: any) => a.type === 'video'))) {
+          if (
+            node.videoUrl ||
+            node.assetId ||
+            (node.assets && node.assets.some((a: any) => a.type === 'video'))
+          ) {
             return true;
           }
         }
@@ -117,12 +121,14 @@ export default function ProjectsPage() {
       );
 
       const finalProjects = projectsWithStats.map((result, index) =>
-        result.status === 'fulfilled' ? result.value : {
-          ...projectsList[index],
-          status: 'READY' as const,
-          hasVideo: false,
-          stats: { seasonsCount: 0, scenesCount: 0, shotsCount: 0 },
-        }
+        result.status === 'fulfilled'
+          ? result.value
+          : {
+              ...projectsList[index],
+              status: 'READY' as const,
+              hasVideo: false,
+              stats: { seasonsCount: 0, scenesCount: 0, shotsCount: 0 },
+            }
       );
 
       setProjects(finalProjects);
@@ -165,10 +171,13 @@ export default function ProjectsPage() {
       setCreatingDemo(true);
       setError('');
       // 调用 Demo Seed Endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/projects/demo-structure`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/projects/demo-structure`,
+        {
+          method: 'POST',
+          credentials: 'include',
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to create demo project');
@@ -195,7 +204,9 @@ export default function ProjectsPage() {
       {/* Page Header */}
       <div className="flex-between" style={{ marginBottom: '2rem' }}>
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{t('title')}</h1>
+          <h1 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+            {t('title')}
+          </h1>
           <p style={{ color: 'hsl(var(--hsl-text-muted))' }}>{t('subtitle')}</p>
         </div>
         <div className="flex gap-2">
@@ -219,45 +230,57 @@ export default function ProjectsPage() {
 
       {/* Error Banner */}
       {error && (
-        <div style={{
-          padding: '1rem',
-          marginBottom: '1.5rem',
-          borderRadius: 'var(--radius-md)',
-          background: 'hsla(var(--hsl-error), 0.1)',
-          border: '1px solid hsla(var(--hsl-error), 0.3)',
-          color: 'hsl(var(--hsl-error))'
-        }}>
+        <div
+          style={{
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            borderRadius: 'var(--radius-md)',
+            background: 'hsla(var(--hsl-error), 0.1)',
+            border: '1px solid hsla(var(--hsl-error), 0.3)',
+            color: 'hsl(var(--hsl-error))',
+          }}
+        >
           {error}
         </div>
       )}
 
       {/* Main Grid */}
       {loading ? (
-        <div className="flex-center" style={{ minHeight: '400px', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '3px solid hsla(var(--hsl-primary), 0.3)',
-            borderTopColor: 'hsl(var(--hsl-primary))',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }}>
+        <div
+          className="flex-center"
+          style={{ minHeight: '400px', flexDirection: 'column', gap: '1rem' }}
+        >
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              border: '3px solid hsla(var(--hsl-primary), 0.3)',
+              borderTopColor: 'hsl(var(--hsl-primary))',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }}
+          >
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
           <div style={{ color: 'hsl(var(--hsl-text-muted))' }}>{tCommon('loading')}</div>
         </div>
       ) : projects.length === 0 ? (
-        <div className="glass-panel flex-center" style={{ minHeight: '400px', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            background: 'hsla(var(--hsl-bg-surface), 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '2rem'
-          }}>
+        <div
+          className="glass-panel flex-center"
+          style={{ minHeight: '400px', flexDirection: 'column', gap: '1.5rem' }}
+        >
+          <div
+            style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: 'hsla(var(--hsl-bg-surface), 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2rem',
+            }}
+          >
             🪐
           </div>
           <div style={{ textAlign: 'center' }}>
@@ -279,12 +302,14 @@ export default function ProjectsPage() {
           </div>
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '1.5rem',
-          animation: 'fadeIn 0.5s ease-out'
-        }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '1.5rem',
+            animation: 'fadeIn 0.5s ease-out',
+          }}
+        >
           {projects.map((project) => (
             <ProjectCard
               key={project.id}
@@ -313,7 +338,7 @@ export default function ProjectsPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '1rem'
+            padding: '1rem',
           }}
           onClick={() => setShowCreateForm(false)}
         >
@@ -323,12 +348,17 @@ export default function ProjectsPage() {
               width: '100%',
               maxWidth: '480px',
               padding: '2rem',
-              animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+              animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>{t('createModalTitle')}</h2>
-            <form onSubmit={handleCreateProject} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h2 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>
+              {t('createModalTitle')}
+            </h2>
+            <form
+              onSubmit={handleCreateProject}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
+            >
               <Input
                 label={t('createModalName')}
                 value={newProjectName}
@@ -338,7 +368,15 @@ export default function ProjectsPage() {
                 autoFocus
               />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'hsl(var(--hsl-text-muted))', fontWeight: 500 }}>{t('createModalDesc')}</label>
+                <label
+                  style={{
+                    fontSize: '0.875rem',
+                    color: 'hsl(var(--hsl-text-muted))',
+                    fontWeight: 500,
+                  }}
+                >
+                  {t('createModalDesc')}
+                </label>
                 <textarea
                   value={newProjectDesc}
                   onChange={(e) => setNewProjectDesc(e.target.value)}
@@ -354,7 +392,7 @@ export default function ProjectsPage() {
                     fontSize: '1rem',
                     outline: 'none',
                     resize: 'none',
-                    fontFamily: 'inherit'
+                    fontFamily: 'inherit',
                   }}
                 />
               </div>
@@ -368,12 +406,7 @@ export default function ProjectsPage() {
                 >
                   {tCommon('cancel')}
                 </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={creating}
-                  style={{ flex: 1 }}
-                >
+                <Button type="submit" variant="primary" disabled={creating} style={{ flex: 1 }}>
                   {creating ? t('creatingButton') : t('createButton')}
                 </Button>
               </div>

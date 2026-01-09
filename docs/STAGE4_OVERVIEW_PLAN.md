@@ -18,6 +18,7 @@
 - ✅ 不改动已有 HMAC / Nonce / 签名 / 重放防护逻辑
 
 **允许范围**：
+
 - ✅ 在 Engine Hub 中新增引擎类型（语义增强、镜头规划、质量评估）
 - ✅ 在现有模型上新增可选字段（不破坏 Stage1 Schema）
 - ✅ 新增独立的增强数据表（如 `SemanticEnhancement`、`ShotPlanning`）
@@ -56,10 +57,12 @@
 ### 2.1 Stage1 基础能力
 
 **已冻结的 Schema**：
+
 - `Task`、`AuditLog`、`NovelChapter`、`Scene.projectId` 等核心模型
 - 审计日志逻辑和 HMAC/Nonce 安全链路
 
 **可复用的能力**：
+
 - 任务系统（Task/Job 体系）
 - 审计日志系统（AuditLogService）
 - 用户权限系统
@@ -67,11 +70,13 @@
 ### 2.2 Stage2 Engine Hub 架构
 
 **已实现的组件**：
+
 - `EngineRegistryHubService`：引擎注册表，维护引擎配置清单
 - `EngineInvokerHubService`：统一引擎调用服务，接收 `EngineInvocationRequest`，返回 `EngineInvocationResult`
 - `EngineInvocationRequest<TInput>` / `EngineInvocationResult<TOutput>`：标准调用接口
 
 **可复用的能力**：
+
 - 引擎注册机制（`register()`、`find()`）
 - 统一调用接口（`invoke<TInput, TOutput>()`）
 - Local/HTTP Adapter 模式
@@ -79,11 +84,13 @@
 ### 2.3 Stage3 结构树能力
 
 **已实现的功能**：
+
 - `NOVEL_ANALYSIS` 引擎：从小说文本生成 Project → Season → Episode → Scene → Shot 结构树
 - `ProjectStructureTree` API：`GET /api/projects/:projectId/structure`
 - Studio 前端结构树展示组件（`ProjectStructureTree`）
 
 **可复用的能力**：
+
 - 结构树构造器（`applyAnalyzedStructureToDatabase`）
 - 结构验证函数（`validateAnalyzedStructure`）
 - 前端结构树展示组件
@@ -91,10 +98,12 @@
 ### 2.4 现有数据结构基础
 
 **Episode 模型**（已有字段）：
+
 - `summary String?`：摘要（已有）
 - 可扩展：语义增强字段（通过新增表或 JSON 字段）
 
 **Scene 模型**（已有字段）：
+
 - `summary String?`：摘要（已有）
 - `characters Json?`：角色 ID 列表（已有，V1.1）
 - `visualDensityScore Float?`：视觉密度评分（已有，V1.1）
@@ -102,6 +111,7 @@
 - 可扩展：情绪、节奏、关键词等（通过新增表或 JSON 字段）
 
 **Shot 模型**（已有字段）：
+
 - `description String?`：描述（已有）
 - `enrichedPrompt String? @db.Text`：文本增强后的镜头 prompt（已有，V1.1）
 - `params Json`：引擎参数（已有）
@@ -325,17 +335,17 @@ export interface SemanticEnhancementEngineInput {
    * 目标节点类型
    */
   nodeType: 'episode' | 'scene' | 'shot';
-  
+
   /**
    * 节点 ID
    */
   nodeId: string;
-  
+
   /**
    * 节点文本内容
    */
   text: string;
-  
+
   /**
    * 上下文信息（可选）
    */
@@ -347,7 +357,7 @@ export interface SemanticEnhancementEngineInput {
     parentSummary?: string;
     [key: string]: unknown;
   };
-  
+
   /**
    * 增强选项
    */
@@ -356,27 +366,27 @@ export interface SemanticEnhancementEngineInput {
      * 是否生成摘要
      */
     generateSummary?: boolean;
-    
+
     /**
      * 是否提取关键词
      */
     extractKeywords?: boolean;
-    
+
     /**
      * 是否识别角色
      */
     identifyCharacters?: boolean;
-    
+
     /**
      * 是否分析情绪
      */
     analyzeEmotion?: boolean;
-    
+
     /**
      * 是否分析节奏
      */
     analyzeRhythm?: boolean;
-    
+
     [key: string]: unknown;
   };
 }
@@ -389,12 +399,12 @@ export interface SemanticEnhancementEngineOutput {
    * 摘要
    */
   summary?: string;
-  
+
   /**
    * 关键词列表
    */
   keywords?: string[];
-  
+
   /**
    * 角色信息
    */
@@ -405,7 +415,7 @@ export interface SemanticEnhancementEngineOutput {
     action?: string;
     dialogue?: string;
   }>;
-  
+
   /**
    * 情绪分析
    */
@@ -414,12 +424,12 @@ export interface SemanticEnhancementEngineOutput {
     secondary?: string[]; // 次要情绪
     intensity: number; // 强度（0-1）
   };
-  
+
   /**
    * 氛围分析
    */
   atmosphere?: string[];
-  
+
   /**
    * 节奏分析
    */
@@ -428,7 +438,7 @@ export interface SemanticEnhancementEngineOutput {
     intensity: number; // 强度（0-1）
     pace: 'slow' | 'medium' | 'fast'; // 节奏速度
   };
-  
+
   /**
    * 置信度（0-1）
    */
@@ -449,12 +459,12 @@ export interface ShotPlanningEngineInput {
    * Shot ID
    */
   shotId: string;
-  
+
   /**
    * Shot 文本内容
    */
   text: string;
-  
+
   /**
    * 语义信息（可选，如果已有语义增强结果）
    */
@@ -470,7 +480,7 @@ export interface ShotPlanningEngineInput {
       role?: string;
     }>;
   };
-  
+
   /**
    * 上下文信息
    */
@@ -481,7 +491,7 @@ export interface ShotPlanningEngineInput {
     previousShotType?: string;
     [key: string]: unknown;
   };
-  
+
   /**
    * 规划选项
    */
@@ -490,17 +500,17 @@ export interface ShotPlanningEngineInput {
      * 是否建议镜头类型
      */
     suggestShotType?: boolean;
-    
+
     /**
      * 是否建议运动方式
      */
     suggestMovement?: boolean;
-    
+
     /**
      * 是否建议构图
      */
     suggestComposition?: boolean;
-    
+
     [key: string]: unknown;
   };
 }
@@ -517,7 +527,7 @@ export interface ShotPlanningEngineOutput {
     alternatives?: string[];
     confidence: number;
   };
-  
+
   /**
    * 运动方式建议
    */
@@ -526,7 +536,7 @@ export interface ShotPlanningEngineOutput {
     alternatives?: string[];
     confidence: number;
   };
-  
+
   /**
    * 构图建议
    */
@@ -535,7 +545,7 @@ export interface ShotPlanningEngineOutput {
      * 主体位置
      */
     subjectPosition?: 'center' | 'left' | 'right' | 'foreground' | 'background';
-    
+
     /**
      * 景别层次
      */
@@ -544,18 +554,18 @@ export interface ShotPlanningEngineOutput {
       midground?: string;
       background?: string;
     };
-    
+
     /**
      * 构图类型
      */
     compositionType?: 'symmetrical' | 'rule-of-thirds' | 'golden-ratio' | 'other';
-    
+
     /**
      * 构图描述
      */
     description?: string;
   };
-  
+
   /**
    * 置信度（0-1）
    */
@@ -576,7 +586,7 @@ export interface StructureQAEngineInput {
    * 项目 ID
    */
   projectId: string;
-  
+
   /**
    * 评估选项
    */
@@ -585,27 +595,27 @@ export interface StructureQAEngineInput {
      * 是否检测孤儿节点
      */
     checkOrphanNodes?: boolean;
-    
+
     /**
      * 是否检测断层 Episode
      */
     checkEpisodeContinuity?: boolean;
-    
+
     /**
      * 是否检测空 Scene
      */
     checkEmptyScenes?: boolean;
-    
+
     /**
      * 是否检测内容完整性
      */
     checkContentIntegrity?: boolean;
-    
+
     /**
      * 是否检测长度分布异常
      */
     checkLengthDistribution?: boolean;
-    
+
     [key: string]: unknown;
   };
 }
@@ -618,7 +628,7 @@ export interface StructureQAEngineOutput {
    * 整体质量评分（0-1）
    */
   overallScore: number;
-  
+
   /**
    * 各维度评分
    */
@@ -627,7 +637,7 @@ export interface StructureQAEngineOutput {
     continuity: number; // 连续性（0-1）
     reasonableness: number; // 合理性（0-1）
   };
-  
+
   /**
    * 问题列表
    */
@@ -635,13 +645,19 @@ export interface StructureQAEngineOutput {
     /**
      * 问题类型
      */
-    type: 'orphan-node' | 'episode-discontinuity' | 'empty-scene' | 'missing-content' | 'length-anomaly' | 'other';
-    
+    type:
+      | 'orphan-node'
+      | 'episode-discontinuity'
+      | 'empty-scene'
+      | 'missing-content'
+      | 'length-anomaly'
+      | 'other';
+
     /**
      * 严重程度
      */
     severity: 'critical' | 'warning' | 'info';
-    
+
     /**
      * 问题位置
      */
@@ -651,18 +667,18 @@ export interface StructureQAEngineOutput {
       nodeIndex?: number;
       [key: string]: unknown;
     };
-    
+
     /**
      * 问题描述
      */
     description: string;
-    
+
     /**
      * 建议修复方案
      */
     suggestion?: string;
   }>;
-  
+
   /**
    * 统计信息
    */
@@ -732,6 +748,7 @@ private engines: EngineDescriptor[] = [
 #### 8.1 方案选择
 
 **原则**：
+
 - 不修改 Stage1 冻结的 Schema（Task、AuditLog、NovelChapter、Scene.projectId 等）
 - 优先使用新增表，避免在现有模型的必填字段上做修改
 - 如需扩展现有模型，仅添加可选字段（`String?`、`Json?`）
@@ -745,19 +762,19 @@ model SemanticEnhancement {
   id          String   @id @default(uuid())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   // 关联到目标节点（多态关联）
   nodeType    String   // 'episode' | 'scene' | 'shot'
   nodeId      String   // Episode/Scene/Shot ID
-  
+
   // 语义信息（JSON 存储）
   data        Json     // SemanticEnhancementEngineOutput 的完整数据
-  
+
   // 元数据
   engineKey   String   // 使用的引擎标识
   engineVersion String? // 引擎版本
   confidence  Float?   // 置信度（0-1）
-  
+
   // 索引
   @@unique([nodeType, nodeId])
   @@index([nodeType, nodeId])
@@ -773,18 +790,18 @@ model ShotPlanning {
   shotId      String   @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   // 规划信息（JSON 存储）
   data        Json     // ShotPlanningEngineOutput 的完整数据
-  
+
   // 元数据
   engineKey   String   // 使用的引擎标识
   engineVersion String? // 引擎版本
   confidence  Float?   // 置信度（0-1）
-  
+
   // 关联到 Shot
   shot        Shot     @relation("ShotPlanning", fields: [shotId], references: [id], onDelete: Cascade)
-  
+
   @@map("shot_plannings")
 }
 ```
@@ -797,17 +814,17 @@ model StructureQualityReport {
   projectId  String   @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   // 质量报告（JSON 存储）
   data        Json     // StructureQAEngineOutput 的完整数据
-  
+
   // 元数据
   engineKey   String   // 使用的引擎标识
   engineVersion String? // 引擎版本
-  
+
   // 关联到 Project
   project     Project  @relation("ProjectQualityReport", fields: [projectId], references: [id], onDelete: Cascade)
-  
+
   @@map("structure_quality_reports")
 }
 ```
@@ -819,10 +836,10 @@ model StructureQualityReport {
 ```prisma
 model Scene {
   // ... 现有字段 ...
-  
+
   // S4-A: 语义增强信息（可选，通过 JSON 存储）
   semanticEnhancement Json? // SemanticEnhancementEngineOutput
-  
+
   // S4-C: 质量标记（可选）
   qualityFlags Json? // { hasIssues: boolean, issueTypes: string[] }
 }
@@ -833,10 +850,10 @@ model Scene {
 ```prisma
 model Shot {
   // ... 现有字段 ...
-  
+
   // S4-B: 镜头规划信息（可选，通过 JSON 存储）
   shotPlanning Json? // ShotPlanningEngineOutput
-  
+
   // S4-A: 语义增强信息（可选）
   semanticEnhancement Json? // SemanticEnhancementEngineOutput
 }
@@ -847,7 +864,7 @@ model Shot {
 ```prisma
 model Project {
   // ... 现有字段 ...
-  
+
   // S4-C: 质量报告（可选，通过 JSON 存储）
   qualityReport Json? // StructureQAEngineOutput
 }
@@ -856,6 +873,7 @@ model Project {
 #### 8.4 推荐方案
 
 **推荐使用新增表方案**，原因：
+
 1. 不修改 Stage1 冻结的 Schema
 2. 数据更清晰，便于查询和索引
 3. 支持版本管理和历史记录
@@ -957,11 +975,13 @@ model Project {
 #### 9.4 API 安全与权限
 
 **安全机制**：
+
 - 所有 API 使用现有的 `JwtAuthGuard` 和 `PermissionsGuard`
 - 写入接口需要 `PROJECT_GENERATE` 权限
 - 查询接口需要 `PROJECT_READ` 权限
 
 **审计日志**：
+
 - 写入接口记录审计日志（使用现有的 `AuditInterceptor`）
 - 审计动作：`SEMANTIC_ENHANCEMENT_CREATE`、`SHOT_PLANNING_CREATE`、`STRUCTURE_QA_ASSESS`
 
@@ -988,12 +1008,14 @@ model Project {
 **位置**: `apps/web/src/components/studio/SemanticInfoPanel.tsx`
 
 **功能**：
+
 - 展示 Episode/Scene/Shot 的语义信息
 - 包括：摘要、关键词、角色、情绪、节奏
 - 支持展开/折叠
 - 支持编辑（如果用户有权限）
 
 **Props**:
+
 ```typescript
 interface SemanticInfoPanelProps {
   nodeType: 'episode' | 'scene' | 'shot';
@@ -1008,11 +1030,13 @@ interface SemanticInfoPanelProps {
 **位置**: `apps/web/src/components/studio/ShotPlanningPanel.tsx`
 
 **功能**：
+
 - 展示 Shot 的镜头规划建议
 - 包括：镜头类型、运动方式、构图 hint
 - 只读展示（MVP 阶段）
 
 **Props**:
+
 ```typescript
 interface ShotPlanningPanelProps {
   shotId: string;
@@ -1025,11 +1049,13 @@ interface ShotPlanningPanelProps {
 **位置**: `apps/web/src/components/studio/QualityHintPanel.tsx`
 
 **功能**：
+
 - 展示结构质量报告
 - 列出所有问题（按严重程度排序）
 - 点击问题可跳转到对应节点
 
 **Props**:
+
 ```typescript
 interface QualityHintPanelProps {
   projectId: string;
@@ -1041,6 +1067,7 @@ interface QualityHintPanelProps {
 **位置**: `apps/web/src/components/studio/TagBadge.tsx`
 
 **功能**：
+
 - 展示 Tag 标签（彩色标签）
 - 支持点击筛选
 
@@ -1049,6 +1076,7 @@ interface QualityHintPanelProps {
 **位置**: `apps/web/src/components/studio/EmotionBadge.tsx`
 
 **功能**：
+
 - 展示情绪标记（emoji 或图标）
 - 支持强度显示
 
@@ -1072,15 +1100,18 @@ interface QualityHintPanelProps {
 #### 10.3 交互说明
 
 **语义信息展示**：
+
 - 默认折叠，点击展开
 - Tag 支持点击筛选（高亮包含该 Tag 的节点）
 - 情绪图标支持 hover 显示详细信息
 
 **镜头建议展示**：
+
 - 只读展示，不支持编辑（MVP 阶段）
 - 支持图标和文字描述两种展示方式
 
 **质量提示**：
+
 - 默认折叠，有严重问题时自动展开
 - 问题列表支持按严重程度排序
 - 点击问题可跳转到对应节点并高亮
@@ -1275,6 +1306,7 @@ interface QualityHintPanelProps {
 **模式**: EXECUTE（MVP）
 
 ### 新增表（Prisma Schema）
+
 - `SemanticEnhancement`（nodeType/nodeId 唯一，存语义结果）
 - `ShotPlanning`（shotId 唯一，存镜头规划结果）
 - `StructureQualityReport`（projectId 唯一，存质量报告）
@@ -1282,11 +1314,13 @@ interface QualityHintPanelProps {
 > 备注：`prisma migrate dev --create-only --name stage4_semantic_shot_qa_tables` 生成需连接 DB，本地未连库，迁移文件待实际执行。
 
 ### 新增 DTO（@scu/shared-types）
+
 - `semantic-enhancement.dto.ts`（summary, keywords）
 - `shot-planning.dto.ts`（shotType.primary, movement.primary）
 - `structure-qa.dto.ts`（overallScore, issues[]）
 
 ### 引擎与 Adapter（Engine Hub）
+
 - 注册引擎：`semantic_enhancement` / `shot_planning` / `structure_qa`（mode: local）
 - 本地 Stub Adapter：
   - Semantic：summary=前 100 字符，keywords=前 5 个词
@@ -1294,22 +1328,25 @@ interface QualityHintPanelProps {
   - StructureQA：overallScore=0.85，issues=[]
 
 ### 新增 API（MVP）
+
 - Scene 语义增强：POST/GET `/api/projects/:projectId/scenes/:sceneId/semantic-enhancement`
 - Shot 镜头规划：POST/GET `/api/projects/:projectId/shots/:shotId/shot-planning`
 - Project 结构质量评估：POST/GET `/api/projects/:projectId/structure-quality/(assess|report)`
 - 安全：JwtAuthGuard + PermissionsGuard；写入审计动作：`SEMANTIC_ENHANCEMENT_RUN` / `SHOT_PLANNING_RUN` / `STRUCTURE_QA_RUN`
 
 ### 前端组件与集成
+
 - 新增组件（简化版）：`SemanticInfoPanel`、`ShotPlanningPanel`、`QualityHintPanel`
 - 集成位置：`/projects/[projectId]` 右侧详情区域（Scene → SemanticInfoPanel，Shot → ShotPlanningPanel，页面顶部 QualityHintPanel）
 
 ### 构建与自检
+
 - `@scu/worker`：build ✅
 - `web`：build ✅
 - `api`：待完成（依赖 Prisma 迁移，DB 未连接）
 - `lint`：待执行（建议在本地完整跑一遍）
 
 ### 状态
+
 - ✅ STAGE4_EXECUTE_MVP 已完成（代码与前端最小闭环）
 - ⚠️ Prisma 迁移需连接数据库后再执行
-

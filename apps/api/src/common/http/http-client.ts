@@ -34,7 +34,11 @@ export class HttpClient {
   /**
    * 发送 POST 请求
    */
-  async post<T = any>(path: string, data: any, config?: AxiosRequestConfig): Promise<HttpClientResponse<T>> {
+  async post<T = any>(
+    path: string,
+    data: any,
+    config?: AxiosRequestConfig
+  ): Promise<HttpClientResponse<T>> {
     try {
       const response = await this.client.post<T>(path, data, config);
       return {
@@ -75,4 +79,3 @@ export class HttpClient {
     }
   }
 }
-

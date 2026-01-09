@@ -1,5 +1,7 @@
 ## RC1 3-run Verification Log (2025年12月17日 星期三 07时45分16秒 UTC)
+
 ### Run 1
+
 ```
 🚀 Starting E2E Vertical Slice Verification (RC1)...
 API_BASE_URL=http://localhost:3000/api
@@ -165,7 +167,9 @@ tools/smoke/run_e2e_vertical_slice.sh: line 32:  5347 Terminated: 15          ( 
     echo "[Runner] Starting worker..." >> worker.log; pnpm -w --filter @scu/worker dev >> worker.log 2>&1; echo "[Runner] Worker exited with $?. Restarting in 2s..." >> worker.log; sleep 2;
 done )
 ```
+
 ### Run 2
+
 ```
 🚀 Starting E2E Vertical Slice Verification (RC1)...
 API_BASE_URL=http://localhost:3000/api
@@ -202,7 +206,9 @@ tools/smoke/run_e2e_vertical_slice.sh: line 32:  6585 Terminated: 15          ( 
     echo "[Runner] Starting worker..." >> worker.log; pnpm -w --filter @scu/worker dev >> worker.log 2>&1; echo "[Runner] Worker exited with $?. Restarting in 2s..." >> worker.log; sleep 2;
 done )
 ```
+
 ### Run 3
+
 ```
 🚀 Starting E2E Vertical Slice Verification (RC1)...
 API_BASE_URL=http://localhost:3000/api

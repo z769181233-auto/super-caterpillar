@@ -44,7 +44,12 @@ async function registerWorker() {
       workerId: WORKER_ID,
       name: WORKER_NAME,
       capabilities: {
-        supportedJobTypes: ['NOVEL_ANALYSIS', 'NOVEL_ANALYZE_CHAPTER', 'VIDEO_RENDER', 'CE01_REFERENCE_SHEET'],
+        supportedJobTypes: [
+          'NOVEL_ANALYSIS',
+          'NOVEL_ANALYZE_CHAPTER',
+          'VIDEO_RENDER',
+          'CE01_REFERENCE_SHEET',
+        ],
         supportedModels: [],
         maxBatchSize: 1,
       },
@@ -102,16 +107,20 @@ async function processJob(job: {
       result = await processNovelAnalysisJob(prisma, {
         ...job,
         projectId,
-        traceId: job.taskId
+        traceId: job.taskId,
       });
     } else if (job.type === 'VIDEO_RENDER') {
-      result = await processVideoRenderJob(prisma, {
-        id: job.id,
-        traceId: job.taskId, // Assuming taskId is traceId for now, or fetch job
-        projectId: job.payload?.projectId || job.projectId || 'unknown',
-        payload: job.payload,
-        type: 'VIDEO_RENDER'
-      } as any, apiClient);
+      result = await processVideoRenderJob(
+        prisma,
+        {
+          id: job.id,
+          traceId: job.taskId, // Assuming taskId is traceId for now, or fetch job
+          projectId: job.payload?.projectId || job.projectId || 'unknown',
+          payload: job.payload,
+          type: 'VIDEO_RENDER',
+        } as any,
+        apiClient
+      );
     } else if (job.type === 'CE01_REFERENCE_SHEET') {
       result = await processCE01Job(prisma, job as any, apiClient);
     } else {
@@ -150,8 +159,8 @@ async function processJob(job: {
           details: {
             blockingReason: jobError.blockingReason,
             nextAction: jobError.nextAction,
-          }
-        }
+          },
+        },
       });
     } catch (reportError: any) {
       console.error(`[Worker] Failed to report job failure:`, reportError.message);
@@ -232,13 +241,17 @@ async function main() {
     let waitCount = 0;
     const maxWait = 30; // 最多等待 30 秒
     while (tasksRunning > 0 && waitCount < maxWait) {
-      console.log(`[Worker] Waiting for ${tasksRunning} tasks to complete... (${waitCount}/${maxWait}s)`);
+      console.log(
+        `[Worker] Waiting for ${tasksRunning} tasks to complete... (${waitCount}/${maxWait}s)`
+      );
       await new Promise((resolve) => setTimeout(resolve, 1000));
       waitCount++;
     }
 
     if (tasksRunning > 0) {
-      console.warn(`[Worker] Shutdown timed out, ${tasksRunning} tasks still running. Forcing exit.`);
+      console.warn(
+        `[Worker] Shutdown timed out, ${tasksRunning} tasks still running. Forcing exit.`
+      );
     }
 
     // P1 修复：由于即将退出，强制清理所有子进程防止泄露

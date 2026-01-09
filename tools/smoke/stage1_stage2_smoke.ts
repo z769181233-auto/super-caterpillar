@@ -76,12 +76,15 @@ async function main() {
     console.log(healthOutput);
 
     // 提取 /health/ready 的 JSON 响应
-    const readyResult = healthResults.find(r => r.endpoint === '/health/ready');
+    const readyResult = healthResults.find((r) => r.endpoint === '/health/ready');
     const readyJson = readyResult ? JSON.stringify(readyResult.response, null, 2) : 'N/A';
 
-    appendReport('Health Check 结果', `**/health/ready 返回 JSON**:\n\`\`\`json\n${readyJson}\n\`\`\`\n\n**所有端点结果**:\n\`\`\`json\n${healthOutput}\n\`\`\``);
+    appendReport(
+      'Health Check 结果',
+      `**/health/ready 返回 JSON**:\n\`\`\`json\n${readyJson}\n\`\`\`\n\n**所有端点结果**:\n\`\`\`json\n${healthOutput}\n\`\`\``
+    );
 
-    const allHealthy = healthResults.every(r => r.status === 200);
+    const allHealthy = healthResults.every((r) => r.status === 200);
     if (!allHealthy) {
       console.error('❌ Health check failed');
       hasError = true;
@@ -114,10 +117,16 @@ async function main() {
       // 验证正常请求返回 200
       if (hmacResult.status === 200 || hmacResult.success) {
         console.log('✅ HMAC normal request: 200');
-        appendReport('HMAC 正常请求验证', `✅ **正常请求返回 200**\n\`\`\`json\n${hmacOutput}\n\`\`\``);
+        appendReport(
+          'HMAC 正常请求验证',
+          `✅ **正常请求返回 200**\n\`\`\`json\n${hmacOutput}\n\`\`\``
+        );
       } else {
         console.error(`❌ HMAC normal request failed: status ${hmacResult.status}`);
-        appendReport('HMAC 正常请求验证', `❌ **正常请求失败**: status=${hmacResult.status}\n\`\`\`json\n${hmacOutput}\n\`\`\``);
+        appendReport(
+          'HMAC 正常请求验证',
+          `❌ **正常请求失败**: status=${hmacResult.status}\n\`\`\`json\n${hmacOutput}\n\`\`\``
+        );
         hasError = true;
       }
 
@@ -141,7 +150,10 @@ async function main() {
       const firstBody = JSON.stringify(replayResult.firstRequest.response, null, 2);
 
       // 写入 HMAC 重放拒绝证据（必须包含真实输出）
-      appendReport('HMAC 重放拒绝证据', `**第一次请求（成功）**:\n- Status: ${firstStatus}\n- Response:\n\`\`\`json\n${firstBody}\n\`\`\`\n\n**第二次请求（重放，必须被拒绝）**:\n- Status: ${secondStatus}\n- Response:\n\`\`\`json\n${secondBody}\n\`\`\`\n\n**验证结果**: ${secondStatus === 400 || secondStatus === 403 || secondStatus === 401 ? '✅ 重放被正确拒绝' : '❌ 重放未被拒绝'}`);
+      appendReport(
+        'HMAC 重放拒绝证据',
+        `**第一次请求（成功）**:\n- Status: ${firstStatus}\n- Response:\n\`\`\`json\n${firstBody}\n\`\`\`\n\n**第二次请求（重放，必须被拒绝）**:\n- Status: ${secondStatus}\n- Response:\n\`\`\`json\n${secondBody}\n\`\`\`\n\n**验证结果**: ${secondStatus === 400 || secondStatus === 403 || secondStatus === 401 ? '✅ 重放被正确拒绝' : '❌ 重放未被拒绝'}`
+      );
 
       if (secondStatus === 400 || secondStatus === 403 || secondStatus === 401) {
         console.log(`✅ Nonce replay correctly rejected (status: ${secondStatus})`);
@@ -170,21 +182,29 @@ async function main() {
       });
       // 预期 403 (Forbidden) 因为项目不存在或不属于该用户
       if (rbacResult.status === 403) {
-        console.log('✅ RBAC check enforced: 403 Forbidden as expected for invalid resource access');
+        console.log(
+          '✅ RBAC check enforced: 403 Forbidden as expected for invalid resource access'
+        );
         appendReport('RBAC 权限拒绝验证 (P0-1)', '✅ **HMAC 请求未绕过 RBAC，无权访问时返回 403**');
       } else {
-        console.warn(`⚠️  RBAC check returned status ${rbacResult.status}, expected 403. Response: ${JSON.stringify(rbacResult.response)}`);
+        console.warn(
+          `⚠️  RBAC check returned status ${rbacResult.status}, expected 403. Response: ${JSON.stringify(rbacResult.response)}`
+        );
         // 如果返回 404，可能是 ProjectOwnershipGuard 先拦截并报错 404。
         // 关键是：不能是 200。
         if (rbacResult.status === 200) {
           console.error('❌ RBAC bypass detected: HMAC request returned 200 for invalid resource!');
           hasError = true;
         } else {
-          console.log(`✅ HMAC request was not 200 (Status: ${rbacResult.status}), RBAC/Guard is active.`);
-          appendReport('RBAC 权限拒绝验证 (P0-1)', `✅ **HMAC 请求被拦截 (Status: ${rbacResult.status})，未直接放行**`);
+          console.log(
+            `✅ HMAC request was not 200 (Status: ${rbacResult.status}), RBAC/Guard is active.`
+          );
+          appendReport(
+            'RBAC 权限拒绝验证 (P0-1)',
+            `✅ **HMAC 请求被拦截 (Status: ${rbacResult.status})，未直接放行**`
+          );
         }
       }
-
     } catch (error: any) {
       console.error('❌ HMAC test error:', error.message);
       appendReport('HMAC 测试错误', error.message);
@@ -212,7 +232,10 @@ async function main() {
         sceneId: crudResult.sceneId,
         shotId: crudResult.shotId,
       };
-      appendReport('CRUD 最小路径结果', `**关键 IDs**:\n\`\`\`json\n${JSON.stringify(keyIds, null, 2)}\n\`\`\`\n\n**完整结果**:\n\`\`\`json\n${crudOutput}\n\`\`\``);
+      appendReport(
+        'CRUD 最小路径结果',
+        `**关键 IDs**:\n\`\`\`json\n${JSON.stringify(keyIds, null, 2)}\n\`\`\`\n\n**完整结果**:\n\`\`\`json\n${crudOutput}\n\`\`\``
+      );
 
       // 保存 projectId 供后续 Engine Binding 测试使用
       crudProjectId = crudResult.projectId;
@@ -248,7 +271,7 @@ async function main() {
         workerId: workerResult.workerId,
         jobId: workerResult.jobId,
         reportStatusUsed,
-        steps: workerResult.steps.map(s => {
+        steps: workerResult.steps.map((s) => {
           const r: any = s.result;
           if (isHmacRequestResult(r)) {
             return {
@@ -270,8 +293,8 @@ async function main() {
       appendReport(
         'Worker 最小流程结果',
         `**关键信息（Job 状态变化）**:\n\`\`\`json\n${JSON.stringify(keyInfo, null, 2)}\n\`\`\`\n\n` +
-        `**最终采用的 Report 状态值**: \`${reportStatusUsed}\`\n\n` +
-        `**完整结果**:\n\`\`\`json\n${workerOutput}\n\`\`\``
+          `**最终采用的 Report 状态值**: \`${reportStatusUsed}\`\n\n` +
+          `**完整结果**:\n\`\`\`json\n${workerOutput}\n\`\`\``
       );
 
       if (!workerResult.success) {
@@ -294,7 +317,9 @@ async function main() {
     try {
       // 使用 CRUD 测试创建的 projectId
       if (!crudProjectId) {
-        throw new Error('projectId is required for Engine Binding test. CRUD test must pass first.');
+        throw new Error(
+          'projectId is required for Engine Binding test. CRUD test must pass first.'
+        );
       }
 
       const engineBindingResult = await runEngineBindingFlow(
@@ -303,29 +328,34 @@ async function main() {
         API_SECRET,
         TEST_ORG_ID,
         crudProjectId, // ✅ 传入真实 projectId
-        `smoke-worker-binding-${Date.now()}`,
+        `smoke-worker-binding-${Date.now()}`
       );
       const bindingOutput = JSON.stringify(engineBindingResult, null, 2);
       console.log('Engine Binding Result:', bindingOutput);
 
       appendReport(
         'Engine Binding + Worker Claim 闭环验证',
-        `**关键信息**:\n\`\`\`json\n${JSON.stringify({
-          jobId: engineBindingResult.jobId,
-          engineBindingId: engineBindingResult.engineBindingId,
-          engineId: engineBindingResult.engineId,
-          engineKey: engineBindingResult.engineKey,
-          bindingStatus: engineBindingResult.bindingStatus,
-          claimable: engineBindingResult.claimable,
-        }, null, 2)}\n\`\`\`\n\n` +
-        `**完整结果**:\n\`\`\`json\n${bindingOutput}\n\`\`\``
+        `**关键信息**:\n\`\`\`json\n${JSON.stringify(
+          {
+            jobId: engineBindingResult.jobId,
+            engineBindingId: engineBindingResult.engineBindingId,
+            engineId: engineBindingResult.engineId,
+            engineKey: engineBindingResult.engineKey,
+            bindingStatus: engineBindingResult.bindingStatus,
+            claimable: engineBindingResult.claimable,
+          },
+          null,
+          2
+        )}\n\`\`\`\n\n` + `**完整结果**:\n\`\`\`json\n${bindingOutput}\n\`\`\``
       );
 
       if (!engineBindingResult.success) {
         console.error('❌ Engine Binding test failed');
         hasError = true;
       } else if (engineBindingResult.bindingStatus !== 'BOUND') {
-        console.error(`❌ Engine binding status is not BOUND: ${engineBindingResult.bindingStatus}`);
+        console.error(
+          `❌ Engine binding status is not BOUND: ${engineBindingResult.bindingStatus}`
+        );
         hasError = true;
       } else {
         console.log('✅ Engine Binding test passed');
@@ -363,9 +393,12 @@ async function main() {
 
     const sqlOutput = JSON.stringify(sqlResults, null, 2);
     console.log('SQL Results:', sqlOutput);
-    appendReport('SQL 验证结果', sqlReport + `\n\n**完整 JSON 输出**:\n\`\`\`json\n${sqlOutput}\n\`\`\``);
+    appendReport(
+      'SQL 验证结果',
+      sqlReport + `\n\n**完整 JSON 输出**:\n\`\`\`json\n${sqlOutput}\n\`\`\``
+    );
 
-    const allSqlPassed = sqlResults.every(r => r.success);
+    const allSqlPassed = sqlResults.every((r) => r.success);
     if (!allSqlPassed) {
       console.error('❌ SQL verification failed');
       hasError = true;
@@ -448,8 +481,7 @@ function generateRiskReport(): string {
 `;
 }
 
-main().catch(error => {
+main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
-

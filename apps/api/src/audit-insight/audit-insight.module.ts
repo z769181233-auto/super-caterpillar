@@ -6,8 +6,8 @@ import { AuditNovelController } from './audit-novel.controller';
 import { ShotDirectorModule } from '../shot-director/shot-director.module';
 
 @Module({
-    imports: [ShotDirectorModule],
-    controllers: [AuditInsightController, AuditNovelController],
-    providers: [AuditInsightService],
+  imports: [ShotDirectorModule],
+  controllers: [AuditInsightController, AuditNovelController],
+  providers: [AuditInsightService],
 })
-export class AuditInsightModule { }
+export class AuditInsightModule {}

@@ -14,9 +14,7 @@ const TTL_SECONDS = 5 * 60; // 5 分钟
 export class SceneGraphCache {
   private readonly logger = new Logger(SceneGraphCache.name);
 
-  constructor(
-    @Optional() private readonly redis: RedisService,
-  ) {}
+  constructor(@Optional() private readonly redis: RedisService) {}
 
   /**
    * 获取项目的 SceneGraph 缓存
@@ -53,4 +51,3 @@ export class SceneGraphCache {
     // Redis 不可用时，静默失败（不影响主链路）
   }
 }
-

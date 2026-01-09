@@ -19,11 +19,11 @@ interface AdapterBadgeProps {
 
 /**
  * S3-C.3: 适配器标签组件
- * 
+ *
  * 统一展示适配器类型：
  * - HTTP 类：紫色标签（如 http、http_real_*）
  * - Local 类：灰色标签（默认）
- * 
+ *
  * 判断规则：基于 adapterName 或 engineKey 简单判断
  * - 包含 "http" 的 → 视为 HTTP 适配器
  * - 否则视为 local
@@ -54,4 +54,3 @@ export default function AdapterBadge({
     </span>
   );
 }
-

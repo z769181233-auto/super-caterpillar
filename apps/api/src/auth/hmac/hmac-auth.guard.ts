@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, BadRequestException } from '@nestjs/common';
 import { Request } from 'express';
 import { HmacAuthService } from './hmac-auth.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
@@ -14,10 +9,10 @@ import { buildHmacError } from '../../common/utils/hmac-error.utils';
 /**
  * HMAC 认证 Guard
  * 用于验证 API Key + HMAC 签名
- * 
+ *
  * 使用方式：
  * @UseGuards(HmacAuthGuard)
- * 
+ *
  * 签名规则：
  * 1. 构建消息：${method}\n${path}\n${bodyHash}\n${nonce}\n${timestamp}
  * 2. 计算签名：HMAC_SHA256(secret, message)，输出十六进制
@@ -32,8 +27,8 @@ export class HmacAuthGuard implements CanActivate {
   constructor(
     private readonly hmacAuthService: HmacAuthService,
     private readonly auditLogService: AuditLogService,
-    private readonly nonceService: NonceService,
-  ) { }
+    private readonly nonceService: NonceService
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -59,8 +54,7 @@ export class HmacAuthGuard implements CanActivate {
     const apiKey = (request.headers['x-api-key'] ||
       request.headers['x-api-key'.toLowerCase()] ||
       request.headers['x-api-key']) as string;
-    const nonce = (request.headers['x-nonce'] ||
-      request.headers['x-api-nonce']) as string;
+    const nonce = (request.headers['x-nonce'] || request.headers['x-api-nonce']) as string;
     const timestamp = (request.headers['x-timestamp'] ||
       request.headers['x-api-timestamp']) as string;
     const signature = (request.headers['x-signature'] ||
@@ -93,7 +87,8 @@ export class HmacAuthGuard implements CanActivate {
     }
 
     // 3. 获取原始 body 字符串
-    const hasBodyObject = request.body && typeof request.body === 'object' && Object.keys(request.body).length > 0;
+    const hasBodyObject =
+      request.body && typeof request.body === 'object' && Object.keys(request.body).length > 0;
     const bodyString =
       typeof request.body === 'string'
         ? request.body
@@ -143,7 +138,7 @@ export class HmacAuthGuard implements CanActivate {
           ip: request.ip || (request.headers['x-forwarded-for'] as string),
           ua: request.headers['user-agent'] as string,
           workerId: request.headers['x-worker-id'] as string,
-        },
+        }
       );
 
       // 7. 将 ApiKey 信息附加到请求对象，供后续使用
@@ -186,24 +181,26 @@ export class HmacAuthGuard implements CanActivate {
     } catch (error: any) {
       // 写审计：签名失败
       const requestInfo = AuditLogService.extractRequestInfo(request);
-      await this.auditLogService.record({
-        apiKeyId: undefined,
-        action: AuditActions.SECURITY_EVENT,
-        resourceType: 'api_security',
-        resourceId: apiKey,
-        ip: requestInfo.ip,
-        userAgent: requestInfo.userAgent,
-        details: {
-          reason: 'HMAC_AUTH_FAILED',
-          path,
-          method,
-          message: error?.response?.error?.message || error?.message,
-          code: error?.response?.error?.code || '4003',
-          incomingNonce: nonce,
-          incomingSignature: signature,
-        },
-        traceId: (request as any).traceId,
-      }).catch(() => undefined);
+      await this.auditLogService
+        .record({
+          apiKeyId: undefined,
+          action: AuditActions.SECURITY_EVENT,
+          resourceType: 'api_security',
+          resourceId: apiKey,
+          ip: requestInfo.ip,
+          userAgent: requestInfo.userAgent,
+          details: {
+            reason: 'HMAC_AUTH_FAILED',
+            path,
+            method,
+            message: error?.response?.error?.message || error?.message,
+            code: error?.response?.error?.code || '4003',
+            incomingNonce: nonce,
+            incomingSignature: signature,
+          },
+          traceId: (request as any).traceId,
+        })
+        .catch(() => undefined);
       throw error;
     }
   }

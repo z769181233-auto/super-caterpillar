@@ -10,7 +10,7 @@ import type {
 
 /**
  * S4-A: 引擎画像服务
- * 
+ *
  * 从历史 Job 数据中聚合引擎统计信息，生成引擎画像
  * 只读服务，不修改任何数据
  */
@@ -19,8 +19,8 @@ export class EngineProfileService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobService: JobService,
-    private readonly engineRegistryHub: EngineRegistryHubService,
-  ) { }
+    private readonly engineRegistryHub: EngineRegistryHubService
+  ) {}
 
   /**
    * 获取引擎画像统计摘要
@@ -59,12 +59,15 @@ export class EngineProfileService {
     });
 
     // 按 engineKey 分组聚合
-    const engineMap = new Map<string, {
-      engineKey: string;
-      engineVersion: string | null;
-      adapterName: string | null;
-      jobs: any[];
-    }>();
+    const engineMap = new Map<
+      string,
+      {
+        engineKey: string;
+        engineVersion: string | null;
+        adapterName: string | null;
+        jobs: any[];
+      }
+    >();
 
     for (const job of jobs) {
       // 使用 JobService 的统一方法提取引擎信息
@@ -76,9 +79,8 @@ export class EngineProfileService {
       try {
         const descriptor = this.engineRegistryHub.find(engineKey, engineVersion || undefined);
         if (descriptor) {
-          adapterName = descriptor.mode === 'local'
-            ? (descriptor.adapterToken?.name || engineKey)
-            : 'HTTP_API';
+          adapterName =
+            descriptor.mode === 'local' ? descriptor.adapterToken?.name || engineKey : 'HTTP_API';
         } else {
           adapterName = engineKey;
         }
@@ -111,8 +113,8 @@ export class EngineProfileService {
       const totalJobs = jobs.length;
 
       // 统计状态
-      const successCount = jobs.filter(j => j.status === 'SUCCEEDED').length;
-      const failedCount = jobs.filter(j => j.status === 'FAILED').length;
+      const successCount = jobs.filter((j) => j.status === 'SUCCEEDED').length;
+      const failedCount = jobs.filter((j) => j.status === 'FAILED').length;
       const retryCount = jobs.reduce((sum, j) => sum + (j.retryCount || 0), 0);
 
       // 提取质量指标和性能指标
@@ -146,21 +148,20 @@ export class EngineProfileService {
       }
 
       // 计算平均值
-      const avgQualityScore = qualityScores.length > 0
-        ? qualityScores.reduce((sum, v) => sum + v, 0) / qualityScores.length
-        : null;
-      const avgConfidence = confidences.length > 0
-        ? confidences.reduce((sum, v) => sum + v, 0) / confidences.length
-        : null;
-      const avgDurationMs = durations.length > 0
-        ? durations.reduce((sum, v) => sum + v, 0) / durations.length
-        : null;
-      const avgTokens = tokens.length > 0
-        ? tokens.reduce((sum, v) => sum + v, 0) / tokens.length
-        : null;
-      const avgCostUsd = costs.length > 0
-        ? costs.reduce((sum, v) => sum + v, 0) / costs.length
-        : null;
+      const avgQualityScore =
+        qualityScores.length > 0
+          ? qualityScores.reduce((sum, v) => sum + v, 0) / qualityScores.length
+          : null;
+      const avgConfidence =
+        confidences.length > 0
+          ? confidences.reduce((sum, v) => sum + v, 0) / confidences.length
+          : null;
+      const avgDurationMs =
+        durations.length > 0 ? durations.reduce((sum, v) => sum + v, 0) / durations.length : null;
+      const avgTokens =
+        tokens.length > 0 ? tokens.reduce((sum, v) => sum + v, 0) / tokens.length : null;
+      const avgCostUsd =
+        costs.length > 0 ? costs.reduce((sum, v) => sum + v, 0) / costs.length : null;
 
       // 计算成功率
       const successRate = totalJobs > 0 ? successCount / totalJobs : null;
@@ -188,4 +189,3 @@ export class EngineProfileService {
     };
   }
 }
-

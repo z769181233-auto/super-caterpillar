@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 /**
  * CEEngineService
  * CE 核心引擎服务层包装
- * 
+ *
  * 规则：
  * - 只负责参数校验 + 创建 Job
  * - 实际执行仍然走现有 JobService / Worker
@@ -23,8 +23,8 @@ export class CEEngineService {
     private readonly jobService: JobService,
     private readonly taskService: TaskService,
     private readonly textSafetyService: TextSafetyService,
-    private readonly prisma: PrismaService,
-  ) { }
+    private readonly prisma: PrismaService
+  ) {}
 
   /**
    * CE06: 解析小说
@@ -40,7 +40,7 @@ export class CEEngineService {
       };
     },
     userId: string,
-    organizationId: string,
+    organizationId: string
   ): Promise<{
     jobId: string;
     traceId: string;
@@ -105,7 +105,7 @@ export class CEEngineService {
       };
     },
     userId: string,
-    organizationId: string,
+    organizationId: string
   ): Promise<{
     jobId: string;
     traceId: string;
@@ -159,7 +159,7 @@ export class CEEngineService {
   /**
    * CE04: 文本增强
    * POST /text/enrich
-   * 
+   *
    * 前置 Safety Hook：在创建 Job 前进行安全清洗
    */
   async enrichText(
@@ -175,7 +175,7 @@ export class CEEngineService {
     organizationId: string,
     apiKeyId?: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ): Promise<{
     jobId: string;
     traceId: string;
@@ -233,7 +233,9 @@ export class CEEngineService {
       },
     });
 
-    this.logger.log(`CE04 Job created: ${job.id} for project ${dto.projectId} (safety check passed)`);
+    this.logger.log(
+      `CE04 Job created: ${job.id} for project ${dto.projectId} (safety check passed)`
+    );
 
     return {
       jobId: job.id,
@@ -242,4 +244,3 @@ export class CEEngineService {
     };
   }
 }
-

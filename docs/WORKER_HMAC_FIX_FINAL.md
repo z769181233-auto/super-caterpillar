@@ -87,17 +87,20 @@ a1b2c3d4e5f6...
 ## HMAC 认证要求
 
 ### 请求头
+
 - `X-API-KEY`: API Key ID（例如：`ak_worker_dev_0000000000000000`）
 - `X-API-NONCE`: 随机字符串（32 字符十六进制）
 - `X-API-TIMESTAMP`: 时间戳（毫秒，字符串）
 - `X-API-SIGNATURE`: HMAC-SHA256 签名（十六进制字符串）
 
 ### Secret 来源
+
 - Secret 存储在数据库 `ApiKey` 表的 `secretHash` 字段中
 - 通过 `X-API-KEY` 查找对应的 `ApiKey` 记录
 - 当前实现中，`secretHash` 直接存储 secret 明文（开发环境）
 
 ### 路由使用的 Guard
+
 - `WorkerController`: 使用 `@UseGuards(JwtOrHmacGuard)`
 - `JobController.reportJob`: 使用 `@UseGuards(JwtOrHmacGuard)`
 - `JwtOrHmacGuard` 会检查是否有 `x-api-key` 和 `x-api-signature` 头，如果有则使用 HMAC，否则使用 JWT
@@ -112,6 +115,7 @@ pnpm --filter @super-caterpillar/api init:worker-api-key
 ```
 
 这会：
+
 - 在数据库中创建 API Key 记录（如果不存在）
 - 输出配置说明
 
@@ -125,6 +129,7 @@ pnpm dev
 ### 3. 验证 Worker 状态
 
 查看 Worker 日志，应该看到：
+
 - `[Worker] API Key: ak_worker_dev_0000000000000000...`
 - `[Worker] API Secret: SET`
 - `[Worker HMAC] POST /api/workers/register ...`
@@ -167,6 +172,6 @@ WORKER_NAME=local-worker
 ```
 
 **不再出现：**
+
 - `401 Unauthorized` 错误
 - `Network Error fetch failed`（API 就绪后）
-

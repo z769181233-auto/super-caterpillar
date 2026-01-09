@@ -1,11 +1,13 @@
 # 任务系统"0雷区"修复 - RESEARCH 阶段报告
 
 ## 模式声明
+
 **MODE: RESEARCH** - 确认基线 + 判定是否必须回滚
 
 ## 一、当前状态检查
 
 ### 1.1 工作区位置
+
 - **当前目录**: `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar`
 - **当前分支**: `chore/zero-risk-hardening-task-system`
 - **分支状态**: 新分支，无提交历史
@@ -13,6 +15,7 @@
 ### 1.2 变更范围检查
 
 **发现越界变更：**
+
 - ❌ **health 模块**: `apps/api/src/health/` 目录存在未跟踪文件
   - `health.controller.ts`
   - `health.module.ts`
@@ -25,7 +28,8 @@
 
 **问题**: 当前分支无提交历史，无法直接查找基线
 
-**解决方案**: 
+**解决方案**:
+
 - 需要切换到主分支（main/master/develop）查找基线
 - 或基于 `docs/_risk/TASK_SYSTEM_RULES_ACCEPTANCE.md` 文件的存在性判断基线
 
@@ -36,6 +40,7 @@
 **✅ 判定：必须回滚**
 
 **理由**:
+
 1. **新增了 health 模块**（违反 PLAN 禁止项）
 2. **变更范围过大**（52 个文件，远超任务系统范围）
 3. **包含非任务系统目录修改**（auth/audit/engine 等）
@@ -43,6 +48,7 @@
 ### 2.2 基线确定策略
 
 由于当前分支无提交历史，需要：
+
 1. 切换到主分支
 2. 查找包含 `TASK_SYSTEM_RULES_ACCEPTANCE.md` 的提交作为基线
 3. 或查找包含 `job.rules.ts` 和 `job.retry.ts` 的提交作为基线
@@ -52,6 +58,7 @@
 ### 3.1 必须执行的操作
 
 1. **删除 health 模块**
+
    ```bash
    rm -rf apps/api/src/health/
    ```
@@ -87,4 +94,3 @@
 ## 五、进入 PLAN 模式
 
 基于 RESEARCH 结果，进入 PLAN 模式制定最小修复计划。
-

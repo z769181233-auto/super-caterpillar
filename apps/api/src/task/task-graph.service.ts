@@ -1,7 +1,7 @@
 /**
  * TaskGraphService
  * 任务依赖可视化服务，提供 Task → Job 的只读聚合查询
- * 
+ *
  * 职责：
  * - 从 Task / ShotJob 表聚合出 Task → Job 关系图
  * - 提供只读查询接口，不修改任何数据
@@ -91,4 +91,3 @@ export class TaskGraphService {
     };
   }
 }
-

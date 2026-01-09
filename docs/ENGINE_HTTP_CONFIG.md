@@ -113,17 +113,17 @@ HTTP 引擎配置的读取优先级（从高到低）：
 
 ### 4.1 环境变量列表
 
-| 变量名 | 类型 | 默认值 | 必填 | 生效位置 | 说明 |
-|--------|------|--------|------|----------|------|
-| `HTTP_ENGINE_BASE_URL` | string | `http://localhost:8000` | ❌ | `EngineConfigService` | 全局 HTTP 引擎基础 URL（向后兼容：`ENGINE_HTTP_BASE_URL`） |
-| `HTTP_ENGINE_API_KEY` | string | - | ❌ | `EngineConfigService` | 全局 API Key（用于 Bearer Token 认证，向后兼容：`ENGINE_HTTP_AUTH_TOKEN`） |
-| `HTTP_ENGINE_TIMEOUT_MS` | number | `30000` | ❌ | `EngineConfigService` | 全局 HTTP 请求超时时间（毫秒，向后兼容：`ENGINE_HTTP_TIMEOUT_MS`） |
-| `HTTP_ENGINE_PATH` | string | `/invoke` | ❌ | `EngineConfigService` | 全局 HTTP 引擎调用路径（向后兼容：`ENGINE_HTTP_PATH`） |
-| `HTTP_ENGINE_RETRY_MAX` | number | `3` | ❌ | 文档说明 | 最大重试次数（由 Job 重试机制控制，不在 Adapter 中使用） |
-| `HTTP_ENGINE_{engineKey}_BASE_URL` | string | 继承全局 | ❌ | `EngineConfigService` | 特定引擎的基础 URL（如 `HTTP_ENGINE_GEMINI_V1_BASE_URL`） |
-| `HTTP_ENGINE_{engineKey}_API_KEY` | string | 继承全局 | ❌ | `EngineConfigService` | 特定引擎的 API Key（如 `HTTP_ENGINE_GEMINI_V1_API_KEY`） |
-| `HTTP_ENGINE_{engineKey}_TIMEOUT_MS` | number | 继承全局 | ❌ | `EngineConfigService` | 特定引擎的超时时间（如 `HTTP_ENGINE_GEMINI_V1_TIMEOUT_MS`） |
-| `HTTP_ENGINE_{engineKey}_PATH` | string | 继承全局 | ❌ | `EngineConfigService` | 特定引擎的调用路径（如 `HTTP_ENGINE_GEMINI_V1_PATH`） |
+| 变量名                               | 类型   | 默认值                  | 必填 | 生效位置              | 说明                                                                       |
+| ------------------------------------ | ------ | ----------------------- | ---- | --------------------- | -------------------------------------------------------------------------- |
+| `HTTP_ENGINE_BASE_URL`               | string | `http://localhost:8000` | ❌   | `EngineConfigService` | 全局 HTTP 引擎基础 URL（向后兼容：`ENGINE_HTTP_BASE_URL`）                 |
+| `HTTP_ENGINE_API_KEY`                | string | -                       | ❌   | `EngineConfigService` | 全局 API Key（用于 Bearer Token 认证，向后兼容：`ENGINE_HTTP_AUTH_TOKEN`） |
+| `HTTP_ENGINE_TIMEOUT_MS`             | number | `30000`                 | ❌   | `EngineConfigService` | 全局 HTTP 请求超时时间（毫秒，向后兼容：`ENGINE_HTTP_TIMEOUT_MS`）         |
+| `HTTP_ENGINE_PATH`                   | string | `/invoke`               | ❌   | `EngineConfigService` | 全局 HTTP 引擎调用路径（向后兼容：`ENGINE_HTTP_PATH`）                     |
+| `HTTP_ENGINE_RETRY_MAX`              | number | `3`                     | ❌   | 文档说明              | 最大重试次数（由 Job 重试机制控制，不在 Adapter 中使用）                   |
+| `HTTP_ENGINE_{engineKey}_BASE_URL`   | string | 继承全局                | ❌   | `EngineConfigService` | 特定引擎的基础 URL（如 `HTTP_ENGINE_GEMINI_V1_BASE_URL`）                  |
+| `HTTP_ENGINE_{engineKey}_API_KEY`    | string | 继承全局                | ❌   | `EngineConfigService` | 特定引擎的 API Key（如 `HTTP_ENGINE_GEMINI_V1_API_KEY`）                   |
+| `HTTP_ENGINE_{engineKey}_TIMEOUT_MS` | number | 继承全局                | ❌   | `EngineConfigService` | 特定引擎的超时时间（如 `HTTP_ENGINE_GEMINI_V1_TIMEOUT_MS`）                |
+| `HTTP_ENGINE_{engineKey}_PATH`       | string | 继承全局                | ❌   | `EngineConfigService` | 特定引擎的调用路径（如 `HTTP_ENGINE_GEMINI_V1_PATH`）                      |
 
 ### 4.2 环境变量命名规则
 
@@ -164,11 +164,11 @@ HTTP_ENGINE_OPENAI_GPT4_PATH=/v1/chat/completions
  * 用于 HttpEngineAdapter 构造 HTTP 请求
  */
 export interface HttpEngineConfig {
-  baseUrl: string;           // HTTP 基础 URL（必填）
-  timeoutMs: number;          // 超时时间（毫秒，必填）
-  path?: string;             // 调用路径（可选，默认 '/invoke'）
-  authToken?: string;        // 认证 Token（可选，用于 Bearer Token）
-  apiKey?: string;           // API Key（可选，用于 X-API-Key Header）
+  baseUrl: string; // HTTP 基础 URL（必填）
+  timeoutMs: number; // 超时时间（毫秒，必填）
+  path?: string; // 调用路径（可选，默认 '/invoke'）
+  authToken?: string; // 认证 Token（可选，用于 Bearer Token）
+  apiKey?: string; // API Key（可选，用于 X-API-Key Header）
 }
 
 /**
@@ -176,34 +176,34 @@ export interface HttpEngineConfig {
  * 完整的引擎配置结构，用于 JSON 配置文件
  */
 export interface EngineConfig {
-  engineKey: string;         // 引擎标识（必填，唯一）
-  adapterName: string;       // 适配器名称（必填，如 'http'）
-  adapterType: 'local' | 'http';  // 适配器类型（必填）
-  
+  engineKey: string; // 引擎标识（必填，唯一）
+  adapterName: string; // 适配器名称（必填，如 'http'）
+  adapterType: 'local' | 'http'; // 适配器类型（必填）
+
   // HTTP 配置（仅当 adapterType='http' 时使用）
   httpConfig?: {
-    baseUrl: string;         // HTTP 基础 URL
-    path?: string;            // 调用路径（默认 '/invoke'）
-    timeoutMs?: number;      // 超时时间（毫秒，默认 30000）
+    baseUrl: string; // HTTP 基础 URL
+    path?: string; // 调用路径（默认 '/invoke'）
+    timeoutMs?: number; // 超时时间（毫秒，默认 30000）
     // 注意：authToken 和 apiKey 不应出现在 JSON 文件中，只从环境变量读取
   };
-  
+
   // 模型信息（可选）
   modelInfo?: {
-    modelName?: string;      // 模型名称（如 'gemini-pro'）
-    version?: string;         // 模型版本（如 'v1.0'）
+    modelName?: string; // 模型名称（如 'gemini-pro'）
+    version?: string; // 模型版本（如 'v1.0'）
   };
-  
+
   // 默认引擎配置
-  isDefault?: boolean;       // 是否为全局默认引擎
-  isDefaultForJobTypes?: Record<string, boolean>;  // 按 JobType 的默认引擎映射
-  
+  isDefault?: boolean; // 是否为全局默认引擎
+  isDefaultForJobTypes?: Record<string, boolean>; // 按 JobType 的默认引擎映射
+
   // 启用状态
-  enabled: boolean;          // 是否启用（默认 true）
-  
+  enabled: boolean; // 是否启用（默认 true）
+
   // 元数据
-  createdAt?: string;        // 创建时间（ISO 字符串）
-  updatedAt?: string;        // 更新时间（ISO 字符串）
+  createdAt?: string; // 创建时间（ISO 字符串）
+  updatedAt?: string; // 更新时间（ISO 字符串）
 }
 ```
 
@@ -294,27 +294,38 @@ export interface EngineConfig {
 // EngineConfigService.getHttpEngineConfig(engineKey: string): HttpEngineConfig
 function getHttpEngineConfig(engineKey: string): HttpEngineConfig {
   // 1. 读取引擎级环境变量（优先级最高）
-  const engineEnvBaseUrl = process.env[`HTTP_ENGINE_${engineKey.toUpperCase().replace(/-/g, '_')}_BASE_URL`];
-  const engineEnvApiKey = process.env[`HTTP_ENGINE_${engineKey.toUpperCase().replace(/-/g, '_')}_API_KEY`];
-  const engineEnvTimeout = process.env[`HTTP_ENGINE_${engineKey.toUpperCase().replace(/-/g, '_')}_TIMEOUT_MS`];
-  const engineEnvPath = process.env[`HTTP_ENGINE_${engineKey.toUpperCase().replace(/-/g, '_')}_PATH`];
-  
+  const engineEnvBaseUrl =
+    process.env[`HTTP_ENGINE_${engineKey.toUpperCase().replace(/-/g, '_')}_BASE_URL`];
+  const engineEnvApiKey =
+    process.env[`HTTP_ENGINE_${engineKey.toUpperCase().replace(/-/g, '_')}_API_KEY`];
+  const engineEnvTimeout =
+    process.env[`HTTP_ENGINE_${engineKey.toUpperCase().replace(/-/g, '_')}_TIMEOUT_MS`];
+  const engineEnvPath =
+    process.env[`HTTP_ENGINE_${engineKey.toUpperCase().replace(/-/g, '_')}_PATH`];
+
   // 2. 读取全局环境变量（次优先级）
   const globalEnvBaseUrl = process.env.HTTP_ENGINE_BASE_URL || process.env.ENGINE_HTTP_BASE_URL;
   const globalEnvApiKey = process.env.HTTP_ENGINE_API_KEY || process.env.ENGINE_HTTP_AUTH_TOKEN;
   const globalEnvTimeout = process.env.HTTP_ENGINE_TIMEOUT_MS || process.env.ENGINE_HTTP_TIMEOUT_MS;
   const globalEnvPath = process.env.HTTP_ENGINE_PATH || process.env.ENGINE_HTTP_PATH;
-  
+
   // 3. 读取 JSON 配置文件（再次优先级）
   const jsonConfig = loadEngineConfigFromJson(engineKey);
-  
+
   // 4. 合并配置（按优先级）
   return {
-    baseUrl: engineEnvBaseUrl || globalEnvBaseUrl || jsonConfig?.httpConfig?.baseUrl || 'http://localhost:8000',
-    timeoutMs: parseInt(engineEnvTimeout || globalEnvTimeout || String(jsonConfig?.httpConfig?.timeoutMs || 30000), 10),
+    baseUrl:
+      engineEnvBaseUrl ||
+      globalEnvBaseUrl ||
+      jsonConfig?.httpConfig?.baseUrl ||
+      'http://localhost:8000',
+    timeoutMs: parseInt(
+      engineEnvTimeout || globalEnvTimeout || String(jsonConfig?.httpConfig?.timeoutMs || 30000),
+      10
+    ),
     path: engineEnvPath || globalEnvPath || jsonConfig?.httpConfig?.path || '/invoke',
-    authToken: engineEnvApiKey || globalEnvApiKey,  // 只从环境变量读取，不从 JSON 读取
-    apiKey: engineEnvApiKey || globalEnvApiKey,     // 只从环境变量读取，不从 JSON 读取
+    authToken: engineEnvApiKey || globalEnvApiKey, // 只从环境变量读取，不从 JSON 读取
+    apiKey: engineEnvApiKey || globalEnvApiKey, // 只从环境变量读取，不从 JSON 读取
   };
 }
 ```
@@ -332,6 +343,7 @@ function getHttpEngineConfig(engineKey: string): HttpEngineConfig {
 - **使用场景**: 大多数现代 API 服务（OpenAI, Gemini, Anthropic 等）
 
 **实现逻辑**（伪代码）:
+
 ```typescript
 // 在 HttpEngineAdapter.invoke() 中
 const headers: Record<string, string> = {};
@@ -347,6 +359,7 @@ if (config.authToken) {
 - **使用场景**: 部分 API 服务要求使用 `X-API-Key` 而非 `Authorization`
 
 **实现逻辑**（伪代码）:
+
 ```typescript
 // 在 HttpEngineConfig 中增加 authType 字段（可选）
 // 如果 authType === 'api-key'，则使用 X-API-Key Header
@@ -428,6 +441,7 @@ if (config.hmacSecret) {
 #### 规则 1: 网络错误 → RETRYABLE
 
 **错误类型**:
+
 - `ECONNRESET` - 连接被重置
 - `ETIMEDOUT` - 连接超时
 - `ENETUNREACH` - 网络不可达
@@ -470,6 +484,7 @@ if (config.hmacSecret) {
 #### 规则 5: 业务层错误 → FAILED
 
 **判断条件**:
+
 - HTTP 状态码为 2xx，但 `response.success === false`
 - HTTP 状态码为 2xx，但 `response.error` 字段存在
 
@@ -483,7 +498,7 @@ if (config.hmacSecret) {
 // HttpEngineAdapter.invoke() 方法中的错误处理
 try {
   const response = await httpClient.post(url, requestBody);
-  
+
   // 1. 检查 HTTP 状态码
   if (response.status >= 200 && response.status < 300) {
     // 2. 检查业务层成功标志
@@ -512,7 +527,7 @@ try {
       return { status: EngineInvokeStatus.RETRYABLE, error: { code: 'HTTP_TEMPORARY_ERROR', ... } };
     }
   }
-  
+
   // 其他错误 → FAILED
   return { status: EngineInvokeStatus.FAILED, error: { code: 'HTTP_UNKNOWN_ERROR', ... } };
 }
@@ -521,16 +536,19 @@ try {
 ### 7.4 与 Job 重试系统的协调
 
 **Job 重试系统**（参考 STAGE2_REGRESSION_CHECKLIST.md）:
+
 - `getAndMarkNextPendingJob()`: 从 PENDING/RETRYING 状态领取 Job
 - `markJobFailedAndMaybeRetry()`: 将 RUNNING Job 标记为 RETRYING 或 FAILED
 - `processRetryJobs()`: 将到期的 RETRYING Job 放回 PENDING 队列
 
 **HttpEngineAdapter 的配合**:
+
 1. 返回 `RETRYABLE` → Worker 调用 `markJobFailedAndMaybeRetry()` → Job 状态变为 `RETRYING`
 2. Job 重试系统在下次调度时，将 `RETRYING` Job 放回 `PENDING` 队列
 3. Worker 再次拉取该 Job → 再次调用 `HttpEngineAdapter.invoke()` → 重试
 
 **重试次数控制**:
+
 - 由 Job 的 `maxRetry` 字段控制（不在 HttpEngineAdapter 中控制）
 - 如果达到 `maxRetry`，Job 状态变为 `FAILED`，不再重试
 
@@ -555,7 +573,7 @@ try {
        "jobType": "NOVEL_ANALYSIS",
        "status": "RETRYABLE",
        "httpStatusCode": 429,
-       "retryAfter": "60",  // 如果响应头中有 Retry-After
+       "retryAfter": "60", // 如果响应头中有 Retry-After
        "durationMs": 1234,
        "timestamp": "2024-12-11T10:30:00.000Z"
      }
@@ -567,16 +585,16 @@ try {
 
 #### 限流日志字段说明
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `event` | string | 固定值 `HTTP_ENGINE_INVOKE_RATE_LIMIT` |
-| `engineKey` | string | 引擎标识 |
-| `jobType` | string | Job 类型 |
-| `status` | string | 固定值 `RETRYABLE` |
-| `httpStatusCode` | number | 固定值 `429` |
-| `retryAfter` | string | Retry-After Header 的值（如果存在） |
-| `durationMs` | number | 请求耗时（毫秒） |
-| `timestamp` | string | 时间戳（ISO 格式） |
+| 字段             | 类型   | 说明                                   |
+| ---------------- | ------ | -------------------------------------- |
+| `event`          | string | 固定值 `HTTP_ENGINE_INVOKE_RATE_LIMIT` |
+| `engineKey`      | string | 引擎标识                               |
+| `jobType`        | string | Job 类型                               |
+| `status`         | string | 固定值 `RETRYABLE`                     |
+| `httpStatusCode` | number | 固定值 `429`                           |
+| `retryAfter`     | string | Retry-After Header 的值（如果存在）    |
+| `durationMs`     | number | 请求耗时（毫秒）                       |
+| `timestamp`      | string | 时间戳（ISO 格式）                     |
 
 ### 8.2 安全要求
 
@@ -596,7 +614,7 @@ try {
   "engineKey": "http_gemini_v1",
   "httpConfig": {
     "baseUrl": "https://api.gemini.com",
-    "authToken": "${HTTP_ENGINE_GEMINI_V1_API_KEY}"  // 占位符，实际值从环境变量读取
+    "authToken": "${HTTP_ENGINE_GEMINI_V1_API_KEY}" // 占位符，实际值从环境变量读取
   }
 }
 ```
@@ -619,13 +637,14 @@ try {
 - ✅ **允许**: 在日志中输出 API Key / Token 的长度（用于验证）
 
 **日志示例**:
+
 ```json
 {
   "event": "HTTP_ENGINE_INVOKE_START",
   "engineKey": "http_gemini_v1",
   "hasAuthToken": true,
-  "authTokenPrefix": "AIza",  // 仅显示前 4 位
-  "authTokenLength": 39       // 显示长度
+  "authTokenPrefix": "AIza", // 仅显示前 4 位
+  "authTokenLength": 39 // 显示长度
 }
 ```
 
@@ -644,12 +663,14 @@ try {
 **文件**: `apps/api/src/engine/adapters/http-engine.adapter.ts`
 
 **需要修改的点**:
+
 1. **配置读取**: 调用 `EngineConfigService.getHttpEngineConfig(engineKey)` 获取配置
 2. **认证 Header**: 根据配置中的 `authToken` 或 `apiKey` 构造 Header
 3. **错误分类**: 根据错误类型返回 `SUCCESS` / `FAILED` / `RETRYABLE`
 4. **日志记录**: 记录结构化日志（包含限流日志）
 
 **不修改的点**:
+
 - ❌ 不修改 `invoke()` 方法的接口签名
 - ❌ 不修改 `supports()` 方法的逻辑
 - ❌ 不添加重试逻辑
@@ -659,12 +680,14 @@ try {
 **文件**: `apps/api/src/config/engine.config.ts`
 
 **需要扩展的点**:
+
 1. **多引擎配置支持**: 支持根据 `engineKey` 读取不同的配置
 2. **JSON 配置文件读取**: 实现从 `config/engines.json` 读取配置
 3. **环境变量优先级**: 实现环境变量优先于 JSON 文件的优先级逻辑
 4. **配置验证**: 实现配置验证逻辑（URL 格式、超时时间等）
 
 **新增方法**（伪代码）:
+
 ```typescript
 // 读取 JSON 配置文件
 private loadEngineConfigsFromJson(): EngineConfig[] { ... }
@@ -681,11 +704,13 @@ private mergeConfig(engineKey: string, jsonConfig: EngineConfig | null): HttpEng
 **文件**: `apps/api/src/engine/engine-registry.service.ts`
 
 **不修改的点**:
+
 - ❌ 不修改 `findAdapter()` 方法
 - ❌ 不修改 `getAdapter()` 方法
 - ❌ 不修改适配器注册逻辑
 
 **依赖关系**:
+
 - `HttpEngineAdapter` 依赖 `EngineConfigService` 读取配置
 - `EngineRegistry` 注册 `HttpEngineAdapter` 时，`HttpEngineAdapter` 已注入 `EngineConfigService`
 
@@ -694,11 +719,13 @@ private mergeConfig(engineKey: string, jsonConfig: EngineConfig | null): HttpEng
 **文件**: `apps/api/src/job/job.service.ts`
 
 **不修改的点**:
+
 - ❌ 不修改 `getAndMarkNextPendingJob()` 方法
 - ❌ 不修改 `markJobFailedAndMaybeRetry()` 方法
 - ❌ 不修改 Job 状态流转逻辑
 
 **配合关系**:
+
 - `HttpEngineAdapter.invoke()` 返回 `RETRYABLE` → Worker 调用 `markJobFailedAndMaybeRetry()` → Job 状态变为 `RETRYING`
 - Job 重试系统在下次调度时，将 `RETRYING` Job 放回 `PENDING` 队列，实现重试
 
@@ -799,4 +826,3 @@ private mergeConfig(engineKey: string, jsonConfig: EngineConfig | null): HttpEng
 
 **文档状态**: ✅ 设计完成，待评审  
 **后续文档**: S3-A.2 HTTP 引擎调用路径设计
-

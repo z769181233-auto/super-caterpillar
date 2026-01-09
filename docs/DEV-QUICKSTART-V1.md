@@ -5,6 +5,7 @@
 本指南旨在帮助新开发者在本地环境中快速启动 Super Caterpillar V1 骨架，并完成一次端到端的验证流程。
 
 **重要说明：**
+
 - 本指南只解决"如何在本地跑起来 + 做一次完整自检"
 - 不涉及架构设计、商业逻辑等深度内容
 - 所有命令基于当前 V1 骨架的实际结构
@@ -87,6 +88,7 @@ pnpm --filter database prisma:generate
 ```
 
 预期输出：
+
 ```
 ✔ Generated Prisma Client (v5.22.0) to ./../node_modules/.prisma/client in XXXms
 ```
@@ -108,6 +110,7 @@ pnpm --filter ./apps/api dev
 ```
 
 **正常启动标志：**
+
 - 日志中出现：`🚀 API Server is running on: http://localhost:3000`
 - 无 `EADDRINUSE` 错误
 - 可以通过 `curl http://localhost:3000/api/health` 验证（返回 `{"status":"healthy"}`）
@@ -125,6 +128,7 @@ pnpm --filter @scu/worker dev
 ```
 
 **正常启动标志：**
+
 - 日志中出现：`✅ Worker 注册成功`
 - 日志中出现：`✅ Worker 启动成功`
 - 定期输出心跳日志：`[Worker HMAC] POST /api/workers/heartbeat`
@@ -140,6 +144,7 @@ pnpm --filter ./apps/web dev
 ```
 
 **正常启动标志：**
+
 - Next.js 编译成功：`✓ Ready in XXXXms`
 - 日志显示：`- Local: http://localhost:3001`
 - 浏览器访问 `http://localhost:3001` 能看到页面（即使显示"加载中..."也算正常）
@@ -160,6 +165,7 @@ pnpm --filter ./apps/api create:test-novel-job
 ```
 
 **预期输出：**
+
 ```
 [create-test-novel-job] created job: {
   id: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
@@ -199,6 +205,7 @@ pnpm --filter ./apps/api debug:jobs
 ```
 
 **预期输出：**
+
 - 至少看到一条 `type: 'NOVEL_ANALYSIS'`、`status: 'SUCCEEDED'` 的 Job
 - 可以通过数据库查询验证 `payload.result` 中包含：
   - `type: 'NOVEL_ANALYSIS'`
@@ -222,6 +229,7 @@ http://localhost:3001/projects
 - **有项目时：** 左侧显示项目列表卡片（包含项目名称、ID、创建时间等信息）
 
 **验证要点：**
+
 - 页面能正常加载（无白屏、无控制台错误）
 - UI 结构完整（有标题栏、侧边栏、主内容区）
 
@@ -259,6 +267,7 @@ lsof -i :3000 | grep LISTEN | awk '{print $2}' | xargs kill -9
 **现象：** Worker 日志中出现 `401 Unauthorized` 错误。
 
 **检查项：**
+
 1. 确认 `WORKER_API_KEY` 和 `WORKER_API_SECRET` 与 API 配置一致
 2. 确认 API 已正常启动（`http://localhost:3000/api/health` 可访问）
 3. 开发环境下，`/api/workers/:workerId/jobs/next` 和 `/api/jobs/:id/report` 已配置 HMAC 旁路，若仍报错，检查 `NODE_ENV=development`
@@ -272,11 +281,13 @@ lsof -i :3000 | grep LISTEN | awk '{print $2}' | xargs kill -9
 ### 5. Web 页面显示"加载中..."但无数据
 
 **可能原因：**
+
 - API 未启动或无法访问
 - 浏览器控制台可能有 CORS 或网络错误
 - 需要登录认证（当前 V1 阶段可能未实现完整鉴权流程）
 
 **排查：**
+
 - 检查 API 是否正常运行：`curl http://localhost:3000/api/health`
 - 检查浏览器控制台（F12）是否有错误信息
 
@@ -360,4 +371,3 @@ curl http://localhost:3001/projects
 **文档版本：** V1  
 **最后更新：** 2025-12-09  
 **维护者：** Super Caterpillar Team
-

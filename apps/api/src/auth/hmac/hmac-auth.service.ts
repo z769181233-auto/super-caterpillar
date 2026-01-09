@@ -1,4 +1,10 @@
-import { Injectable, HttpException, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  UnauthorizedException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { createHmac, createHash, randomUUID } from 'crypto';
@@ -36,10 +42,24 @@ export class HmacAuthService {
     console.error('[HMAC_TRACE] api_v2_inputs', {
       method: { val: parts.method, len: parts.method.length, hash: sha256(parts.method) },
       path: { val: parts.path, len: parts.path.length, hash: sha256(parts.path) },
-      timestamp: { val: parts.timestamp, len: parts.timestamp.length, hash: sha256(parts.timestamp) },
-      nonce: { val: parts.nonce.substring(0, 8) + '...', len: parts.nonce.length, hash: sha256(parts.nonce) },
-      bodyHash: { val: parts.bodyHash.substring(0, 16) + '...', len: parts.bodyHash.length, hash: sha256(parts.bodyHash) },
-      workerId: parts.workerId ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) } : 'N/A',
+      timestamp: {
+        val: parts.timestamp,
+        len: parts.timestamp.length,
+        hash: sha256(parts.timestamp),
+      },
+      nonce: {
+        val: parts.nonce.substring(0, 8) + '...',
+        len: parts.nonce.length,
+        hash: sha256(parts.nonce),
+      },
+      bodyHash: {
+        val: parts.bodyHash.substring(0, 16) + '...',
+        len: parts.bodyHash.length,
+        hash: sha256(parts.bodyHash),
+      },
+      workerId: parts.workerId
+        ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) }
+        : 'N/A',
       message: { len: parts.message.length, hash: sha256(parts.message) },
     });
   }
@@ -47,8 +67,8 @@ export class HmacAuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
-    private readonly auditLogService: AuditLogService,
-  ) { }
+    private readonly auditLogService: AuditLogService
+  ) {}
 
   /**
    * 验证 HMAC 签名
@@ -67,7 +87,7 @@ export class HmacAuthService {
     nonce: string,
     timestamp: string,
     signature: string,
-    debug?: { ip?: string; ua?: string; workerId?: string },
+    debug?: { ip?: string; ua?: string; workerId?: string }
   ) {
     // 1. 查找 ApiKey 记录
     const keyRecord = await (this.prisma as any).apiKey.findUnique({
@@ -108,19 +128,28 @@ export class HmacAuthService {
     const maxTimeDiff = env.HMAC_TIMESTAMP_WINDOW || 300000; // 默认 5 分钟（毫秒）
 
     if (timeDiff > maxTimeDiff) {
-      throw this.buildHmacError('4003', `时间戳超出允许范围（±${maxTimeDiff / 1000}秒）`, { path, method });
+      throw this.buildHmacError('4003', `时间戳超出允许范围（±${maxTimeDiff / 1000}秒）`, {
+        path,
+        method,
+      });
     }
 
     // 5. 校验 nonce 是否重复使用（Redis 优先，回退内存）
     const nonceKey = `hmac:nonce:${nonce}`;
     const nonceSaved = await this.saveNonce(nonceKey, timestampNum);
     if (!nonceSaved) {
-      await this.writeAudit(apiKey, AuditActions.SECURITY_EVENT, 'api_security', {
-        reason: 'HMAC_NONCE_REPLAY',
-        path,
-        method,
-        nonce,
-      }, debug);
+      await this.writeAudit(
+        apiKey,
+        AuditActions.SECURITY_EVENT,
+        'api_security',
+        {
+          reason: 'HMAC_NONCE_REPLAY',
+          path,
+          method,
+          nonce,
+        },
+        debug
+      );
       throw this.buildHmacError('4004', 'Nonce 已被使用，请重新生成请求', { path, method });
     }
 
@@ -155,7 +184,9 @@ export class HmacAuthService {
       });
       if (process.env.HMAC_TRACE === '1') {
         console.error('[HMAC_TRACE] api_v2_expected', {
-          expectedSigHash: createHash('sha256').update(expectedSignatureV2WithWorkerId).digest('hex'),
+          expectedSigHash: createHash('sha256')
+            .update(expectedSignatureV2WithWorkerId)
+            .digest('hex'),
           expectedSigLen: expectedSignatureV2WithWorkerId.length,
         });
       }
@@ -177,27 +208,35 @@ export class HmacAuthService {
           expectedV2WorkerId: expectedSignatureV2WithWorkerId,
           actual: signature,
           workerId,
-          secretPart: secret?.substring(0, 5)
+          secretPart: secret?.substring(0, 5),
         });
       }
 
-      await this.writeAudit(apiKey, AuditActions.SECURITY_EVENT, 'api_security', {
-        reason: 'HMAC_SIGNATURE_MISMATCH',
-        path,
-        method,
-        nonce,
-        timestamp,
-      }, debug);
+      await this.writeAudit(
+        apiKey,
+        AuditActions.SECURITY_EVENT,
+        'api_security',
+        {
+          reason: 'HMAC_SIGNATURE_MISMATCH',
+          path,
+          method,
+          nonce,
+          timestamp,
+        },
+        debug
+      );
       throw this.buildHmacError('4003', '签名验证失败', { path, method });
     }
 
     // 8. 更新最后使用时间
-    await (this.prisma as any).apiKey.update({
-      where: { id: keyRecord.id },
-      data: { lastUsedAt: new Date() },
-    }).catch(() => {
-      // 忽略更新失败，不影响认证流程
-    });
+    await (this.prisma as any).apiKey
+      .update({
+        where: { id: keyRecord.id },
+        data: { lastUsedAt: new Date() },
+      })
+      .catch(() => {
+        // 忽略更新失败，不影响认证流程
+      });
 
     return keyRecord;
   }
@@ -206,7 +245,14 @@ export class HmacAuthService {
    * 构建签名消息
    * Spec: ${method}\n${path}\n${timestamp}\n${nonce}\n${bodyHash}
    */
-  private buildMessage(method: string, path: string, nonce: string, timestamp: string, body: string, workerId?: string): string {
+  private buildMessage(
+    method: string,
+    path: string,
+    nonce: string,
+    timestamp: string,
+    body: string,
+    workerId?: string
+  ): string {
     const contentHash = HmacAuthService.computeBodyHash(body);
     let message = `${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}`;
     if (workerId) {
@@ -301,7 +347,11 @@ export class HmacAuthService {
   /**
    * 构造带错误码的异常（4003/4004）
    */
-  private buildHmacError(code: '4003' | '4004', message: string, debug?: { path?: string; method?: string }) {
+  private buildHmacError(
+    code: '4003' | '4004',
+    message: string,
+    debug?: { path?: string; method?: string }
+  ) {
     const body = {
       success: false,
       error: { code, message },
@@ -321,7 +371,7 @@ export class HmacAuthService {
     action: string,
     resourceType: string,
     details: any,
-    debug?: { ip?: string; ua?: string },
+    debug?: { ip?: string; ua?: string }
   ) {
     try {
       await this.auditLogService.record({
@@ -343,14 +393,3 @@ export class HmacAuthService {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-

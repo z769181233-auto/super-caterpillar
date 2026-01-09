@@ -17,13 +17,13 @@ export class TaskGraphController {
     private readonly engineRegistry: EngineRegistry,
     private readonly engineConfigStore: EngineConfigStoreService,
     private readonly prisma: PrismaService,
-    private readonly jobService: JobService, // S3-C.3: 注入 JobService 以使用统一的引擎信息提取方法
+    private readonly jobService: JobService // S3-C.3: 注入 JobService 以使用统一的引擎信息提取方法
   ) {}
 
   @Get(':taskId/graph')
   async getTaskGraph(@Param('taskId') taskId: string) {
     const graph = await this.taskGraphService.findTaskGraph(taskId);
-    
+
     if (!graph) {
       return {
         success: false,
@@ -165,11 +165,7 @@ export class TaskGraphController {
       const adapter = this.engineRegistry.getAdapter(engineKey);
 
       // 2.3 构建 QualityScoreRecord
-      const qualityScore = this.qualityScoreService.buildQualityScoreFromJob(
-        job,
-        adapter,
-        taskId,
-      );
+      const qualityScore = this.qualityScoreService.buildQualityScoreFromJob(job, adapter, taskId);
 
       if (qualityScore) {
         qualityScores.push(qualityScore);
@@ -178,6 +174,4 @@ export class TaskGraphController {
 
     return qualityScores;
   }
-
 }
-

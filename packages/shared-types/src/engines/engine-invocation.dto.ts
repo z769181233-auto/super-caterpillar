@@ -111,4 +111,3 @@ export interface NovelAnalysisEngineOutput {
    */
   analyzed: AnalyzedProjectStructure;
 }
-

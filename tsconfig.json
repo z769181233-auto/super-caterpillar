@@ -1,25 +1,17 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "target": "ES2022",
-        "baseUrl": ".",
-        "paths": {
-            "database": [
-                "packages/database/src"
-            ],
-            "@scu/shared-types": [
-                "packages/shared-types/src"
-            ]
-        },
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "moduleResolution": "node"
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2022",
+    "baseUrl": ".",
+    "paths": {
+      "database": ["packages/database/src"],
+      "@scu/shared-types": ["packages/shared-types/src"]
     },
-    "include": [
-        "tools/**/*",
-        "apps/**/*",
-        "packages/**/*"
-    ]
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node"
+  },
+  "include": ["tools/**/*", "apps/**/*", "packages/**/*"]
 }

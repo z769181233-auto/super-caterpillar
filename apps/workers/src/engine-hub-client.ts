@@ -1,7 +1,7 @@
 /**
  * Engine Hub Client (Worker 端)
  * Stage2: Worker 端的 Engine Hub 客户端实现
- * 
+ *
  * 注意：Worker 是独立进程，不能使用 NestJS 依赖注入
  * 因此这里创建一个简单的实现，直接使用 EngineAdapterClient
  */
@@ -33,7 +33,7 @@ export class EngineHubClient {
    * @returns 引擎调用结果
    */
   async invoke<TInput, TOutput>(
-    req: EngineInvocationRequest<TInput>,
+    req: EngineInvocationRequest<TInput>
   ): Promise<EngineInvocationResult<TOutput>> {
     const started = Date.now();
 
@@ -55,7 +55,7 @@ export class EngineHubClient {
       const engineResult: EngineInvokeResult = await this.engineAdapterClient.invoke(engineInput);
 
       // 3. 转换 EngineInvokeResult 为 EngineInvocationResult
-      if (engineResult.status === 'SUCCESS' as EngineInvokeStatus) {
+      if (engineResult.status === ('SUCCESS' as EngineInvokeStatus)) {
         // 对于 NOVEL_ANALYSIS，需要从 output 中提取 analyzed 结构
         // 注意：NovelAnalysisLocalAdapterWorker 返回的是 { ...structure.stats }
         // 但我们需要返回 { analyzed: AnalyzedProjectStructure }
@@ -129,4 +129,3 @@ export class EngineHubClient {
     return 'UNKNOWN';
   }
 }
-

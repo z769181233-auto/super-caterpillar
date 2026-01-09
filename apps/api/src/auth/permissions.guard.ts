@@ -18,8 +18,8 @@ import { PermissionService } from '../permission/permission.service';
 export class PermissionsGuard implements CanActivate {
   constructor(
     @Inject(Reflector) private readonly reflector: Reflector,
-    @Inject(PermissionService) private readonly permissionService: PermissionService,
-  ) { }
+    @Inject(PermissionService) private readonly permissionService: PermissionService
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<RequiredPermission[]>(PERMISSIONS_KEY, [
@@ -59,10 +59,13 @@ export class PermissionsGuard implements CanActivate {
     if (!ok) {
       // Debug: Get actual perms to show why it failed
       const sysPerms = await this.permissionService.getUserPermissions(user.userId);
-      const projPerms = projectId ? await this.permissionService.getProjectPermissions(projectId, user.userId) : [];
-      throw new ForbiddenException(`Permission denied. Required: [${required.join(', ')}]. Has: Sys=[${sysPerms.join(',')}], Proj=[${projPerms.join(',')}]`);
+      const projPerms = projectId
+        ? await this.permissionService.getProjectPermissions(projectId, user.userId)
+        : [];
+      throw new ForbiddenException(
+        `Permission denied. Required: [${required.join(', ')}]. Has: Sys=[${sysPerms.join(',')}], Proj=[${projPerms.join(',')}]`
+      );
     }
     return true;
   }
 }
-

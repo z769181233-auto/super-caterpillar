@@ -1,6 +1,6 @@
 {
-    "name": "@scu/billing",
-    "version": "1.0.0",
-    "main": "model-price-table.ts",
-    "types": "model-price-table.ts"
+  "name": "@scu/billing",
+  "version": "1.0.0",
+  "main": "model-price-table.ts",
+  "types": "model-price-table.ts"
 }

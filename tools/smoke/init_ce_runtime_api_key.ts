@@ -11,8 +11,7 @@ import { PrismaClient } from 'database';
 const prisma = new PrismaClient();
 
 const DEFAULT_API_KEY = 'ak_test_mj5h0knr';
-const DEFAULT_API_SECRET =
-  '3612e5bc385aaec44c3171156ee8a8be49aceb9ab1e6ce969ab7e0201674911c';
+const DEFAULT_API_SECRET = '3612e5bc385aaec44c3171156ee8a8be49aceb9ab1e6ce969ab7e0201674911c';
 
 async function main() {
   const apiKey = process.env.API_KEY || DEFAULT_API_KEY;
@@ -67,8 +66,7 @@ const prisma = new PrismaClient();
 // 与 tools/smoke/run-ce-core-runtime-verify.sh 中默认值保持一致
 const CE_API_KEY = process.env.API_KEY || 'ak_test_mj5h0knr';
 const CE_API_SECRET =
-  process.env.API_SECRET ||
-  '3612e5bc385aaec44c3171156ee8a8be49aceb9ab1e6ce969ab7e0201674911c';
+  process.env.API_SECRET || '3612e5bc385aaec44c3171156ee8a8be49aceb9ab1e6ce969ab7e0201674911c';
 
 async function main() {
   console.log('[init_ce_runtime_api_key] Using:');
@@ -94,11 +92,7 @@ async function main() {
         secretVersion: 1,
       },
     });
-    console.log(
-      '[init_ce_runtime_api_key] ✅ Updated existing ApiKey:',
-      updated.id,
-      updated.key,
-    );
+    console.log('[init_ce_runtime_api_key] ✅ Updated existing ApiKey:', updated.id, updated.key);
   } else {
     const created = await prisma.apiKey.create({
       data: {
@@ -115,11 +109,7 @@ async function main() {
         secretVersion: 1,
       },
     });
-    console.log(
-      '[init_ce_runtime_api_key] ✅ Created ApiKey:',
-      created.id,
-      created.key,
-    );
+    console.log('[init_ce_runtime_api_key] ✅ Created ApiKey:', created.id, created.key);
   }
 }
 
@@ -131,5 +121,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
-

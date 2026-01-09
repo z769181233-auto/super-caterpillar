@@ -108,4 +108,3 @@ export interface EngineAdapter {
    */
   invoke(input: EngineInvokeInput): Promise<EngineInvokeResult>;
 }
-

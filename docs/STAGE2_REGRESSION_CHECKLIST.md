@@ -65,7 +65,7 @@
     1. 如果指定了 `engineKey`，优先查找并验证 `supports(engineKey)`
     2. 如果未指定，根据 `jobType` 查找默认引擎（`getDefaultEngineKeyForJobType`）
     3. 回退到全局默认引擎（`default_novel_analysis`）
-  - **默认映射**: 
+  - **默认映射**:
     - `NOVEL_ANALYSIS` → `default_novel_analysis`
     - `SHOT_RENDER` → `default_shot_render`
 
@@ -102,7 +102,7 @@
 
 - [x] **EngineTaskSummary & EngineTaskService 的只读聚合逻辑**
   - **文件**: `apps/api/src/task/engine-task.service.ts`
-  - **方法**: 
+  - **方法**:
     - `findEngineTaskByTaskId(taskId)`: 根据 TaskId 查找
     - `findEngineTasksByProject(projectId, taskType?)`: 根据 ProjectId 查找列表
   - **聚合逻辑**:
@@ -179,10 +179,10 @@
   - **数据来源**: `TaskGraphService.findTaskGraph()` + `QualityScoreService` + `QualityFeedbackService`
 
 - [x] **/monitor/workers 与 /monitor/scheduler 页面基础渲染**
-  - **文件**: 
+  - **文件**:
     - `apps/web/src/app/monitor/workers/page.tsx`
     - `apps/web/src/app/monitor/scheduler/page.tsx`
-  - **功能**: 
+  - **功能**:
     - Workers 页面显示 Worker 状态统计
     - Scheduler 页面显示 Job 状态统计、重试分布、队列等待时间、故障恢复统计
   - **刷新机制**: Scheduler 页面每 5 秒自动刷新，使用 `cancelled` 标志防止内存泄漏
@@ -291,7 +291,6 @@
 **Lint 状态**: ⚠️ 265 个警告（无错误，主要为 `@typescript-eslint/no-explicit-any` 警告）  
 **功能完整性**: ✅ 所有 Stage2 模块均已实现  
 **代码质量**: ✅ 符合只读聚合设计原则，无数据库写入逻辑  
-**架构合理性**: ✅ 符合异步执行架构，职责划分清晰  
+**架构合理性**: ✅ 符合异步执行架构，职责划分清晰
 
 **总体评估**: Stage2 实现完整，各模块功能正常，符合设计文档要求。当前实现适用于单项目中低并发负载场景，为后续扩展预留了接口和架构空间。
-

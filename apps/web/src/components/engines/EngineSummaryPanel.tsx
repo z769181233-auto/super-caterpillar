@@ -31,7 +31,7 @@ interface EngineSummaryPanelProps {
 
 /**
  * S3-C.2: Engine 质量摘要面板组件
- * 
+ *
  * 功能：
  * - 从 URL Query 读取 engineKey
  * - 调用 /api/jobs/engine-summary 获取聚合数据
@@ -123,7 +123,17 @@ export default function EngineSummaryPanel({
         </div>
         <div>
           <div className="text-gray-500 text-xs">成功率</div>
-          <div className="text-lg font-semibold" style={{ color: summary.successRate >= 0.9 ? '#4CAF50' : summary.successRate >= 0.7 ? '#FF9800' : '#F44336' }}>
+          <div
+            className="text-lg font-semibold"
+            style={{
+              color:
+                summary.successRate >= 0.9
+                  ? '#4CAF50'
+                  : summary.successRate >= 0.7
+                    ? '#FF9800'
+                    : '#F44336',
+            }}
+          >
             {(summary.successRate * 100).toFixed(1)}%
           </div>
         </div>
@@ -171,4 +181,3 @@ export default function EngineSummaryPanel({
     </div>
   );
 }
-

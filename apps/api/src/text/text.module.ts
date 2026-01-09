@@ -11,10 +11,17 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [JobModule, PrismaModule, AuditLogModule, QualityModule, PermissionModule, ApiSecurityModule, AuthModule],
+  imports: [
+    JobModule,
+    PrismaModule,
+    AuditLogModule,
+    QualityModule,
+    PermissionModule,
+    ApiSecurityModule,
+    AuthModule,
+  ],
   controllers: [TextController],
   providers: [TextService, TextSafetyService],
   exports: [TextService, TextSafetyService],
 })
 export class TextModule {}
-

@@ -35,4 +35,3 @@ export class ImportNovelDto {
   @IsOptional()
   fileUrl?: string;
 }
-

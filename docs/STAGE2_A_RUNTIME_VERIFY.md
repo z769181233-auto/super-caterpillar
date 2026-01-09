@@ -3,6 +3,7 @@
 ## 验证目标
 
 验证 Stage2-A 最小可生产调度闭环的实现：
+
 - ✅ A. Job 状态机：DISPATCHED 状态 + 统一状态转换函数
 - ✅ B. Worker 心跳 + 超时回收
 - ✅ C. Orchestrator 并发安全领取
@@ -24,6 +25,7 @@ pnpm --filter api dev
 ```
 
 **预期输出：**
+
 ```
 [Nest] INFO [NestFactory] Starting Nest application...
 [Nest] INFO [InstanceLoader] AppModule dependencies initialized
@@ -31,6 +33,7 @@ pnpm --filter api dev
 ```
 
 **实际输出：**
+
 ```
 ✅ API 进程运行中（PID: 56422）
 ✅ 构建验证通过（webpack compiled successfully in 4684 ms）
@@ -59,6 +62,7 @@ curl -X POST "http://localhost:3000/api/shots/<shot_id>/jobs" \
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - Job 创建接口已实现：POST /api/shots/:shotId/jobs
@@ -76,6 +80,7 @@ WHERE id = '<job_id>';
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - Job 创建时 status = 'PENDING'
@@ -94,6 +99,7 @@ curl -X POST "http://localhost:3000/api/workers/test_worker_001/jobs/next" \
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 领取接口已实现：POST /api/workers/:workerId/jobs/next
@@ -112,6 +118,7 @@ WHERE id = '<job_id>';
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 状态转换逻辑：PENDING → DISPATCHED
@@ -125,6 +132,7 @@ WHERE id = '<job_id>';
 ### 3.3 验证并发安全（多次领取同一 Job）
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 并发安全机制已实现：
@@ -150,6 +158,7 @@ curl -X POST "http://localhost:3000/api/workers/test_worker_001/heartbeat" \
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 心跳接口已实现：POST /api/workers/:workerId/heartbeat
@@ -170,6 +179,7 @@ WHERE worker_id = 'test_worker_001';
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - WorkerHeartbeat 模型已存在：packages/database/prisma/schema.prisma (第 542-551 行)
@@ -191,6 +201,7 @@ WHERE worker_id = 'test_worker_001';
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 超时检测逻辑已实现：apps/api/src/worker/worker.service.ts (markOfflineWorkers, 第 348-430 行)
@@ -210,6 +221,7 @@ curl -X POST "http://localhost:3000/api/workers/any_worker/jobs/next" \
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 超时检测调用时机：在 dispatchNextJobForWorker 前自动调用
@@ -228,6 +240,7 @@ WHERE worker_id = 'test_worker_001';
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 超时检测逻辑：apps/api/src/worker/worker.service.ts (markOfflineWorkers)
@@ -245,6 +258,7 @@ WHERE worker_id = '<dead_worker_id>' AND status IN ('DISPATCHED', 'RUNNING');
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - Job 回收逻辑已实现：apps/api/src/orchestrator/orchestrator.service.ts (recoverJobsFromOfflineWorkers, 第 101-223 行)
@@ -267,6 +281,7 @@ LIMIT 1;
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 审计日志写入已实现：apps/api/src/orchestrator/orchestrator.service.ts (第 204-220 行)
@@ -293,6 +308,7 @@ curl -X POST "http://localhost:3000/api/jobs/<job_id>/report" \
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - Job 回报接口已实现：POST /api/jobs/:id/report
@@ -312,6 +328,7 @@ WHERE id = '<job_id>';
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 状态更新逻辑：apps/api/src/job/job.service.ts (reportJobResult, 第 602-611 行)
@@ -330,6 +347,7 @@ LIMIT 1;
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 审计日志写入已实现：apps/api/src/job/job.service.ts (第 570-589 行)
@@ -352,6 +370,7 @@ curl -X POST "http://localhost:3000/api/jobs/<pending_job_id>/report" \
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 状态检查已实现：apps/api/src/job/job.service.ts (第 591-593 行)
@@ -384,6 +403,7 @@ curl -X POST "http://localhost:3000/api/jobs/<pending_job_id>/report" \
 5. 验证状态转换链：PENDING → DISPATCHED → RUNNING → SUCCEEDED ✅
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 完整状态转换链已实现：
@@ -405,6 +425,7 @@ ORDER BY created_at ASC;
 ```
 
 **实际输出：**
+
 ```
 ✅ 代码实现验证：
 - 审计日志写入点：
@@ -434,6 +455,7 @@ pnpm -w --filter api build
 ```
 
 **结果：**
+
 ```
 webpack 5.97.1 compiled successfully in 4684 ms
 Tasks: 6 successful, 6 total
@@ -447,6 +469,7 @@ lsof -nP -iTCP:3000 -sTCP:LISTEN
 ```
 
 **结果：**
+
 ```
 API 进程运行中（PID: 56422）
 监听端口: 3000
@@ -455,11 +478,13 @@ API 进程运行中（PID: 56422）
 ### ⚠️ 运行时验证（需要完整测试环境）
 
 以下验证需要在有完整测试环境（API Key、数据库、测试数据）的情况下执行：
+
 - [ ] 实际 API 调用测试（需要认证）
 - [ ] 数据库状态验证（需要数据库连接）
 - [ ] 完整流程端到端测试
 
 **说明：**
+
 - 代码层面所有功能已实现并通过编译验证
 - 实际 API 调用测试需要认证和完整的测试环境
 - 所有核心逻辑已实现并通过构建验证
@@ -533,6 +558,7 @@ pnpm --filter api dev
 **状态：** ✅ **PASS**（代码实现完成并通过构建验证）
 
 **代码实现验证：**
+
 - ✅ 所有代码实现已完成
 - ✅ 所有状态转换使用统一函数（transitionJobStatus）
 - ✅ 并发安全已确保（事务 + updateMany）
@@ -541,6 +567,7 @@ pnpm --filter api dev
 - ✅ API 进程运行中（PID: 56422）
 
 **运行时验证说明：**
+
 - 完整运行时验证需要在有完整测试环境的情况下执行
 - 需要：有效的 API Key/Secret、数据库连接、测试数据
 - 代码层面所有功能已实现并通过编译验证

@@ -17,6 +17,7 @@
 ## 核心模型字段列表
 
 ### Task（平台级任务）
+
 - `id`: String (UUID)
 - `organizationId`: String? (组织ID)
 - `userId`: String? (用户ID)
@@ -29,6 +30,7 @@
 - `updatedAt`: DateTime
 
 ### ShotJob（Worker 执行单元）
+
 - `id`: String (UUID)
 - `organizationId`: String? (组织ID)
 - `projectId`: String? (项目ID)
@@ -49,6 +51,7 @@
 - `updatedAt`: DateTime
 
 ### Project（项目）
+
 - `id`: String (UUID)
 - `name`: String (项目名称)
 - `description`: String? (描述)
@@ -60,6 +63,7 @@
 - `updatedAt`: DateTime
 
 ### Episode（集）
+
 - `id`: String (UUID)
 - `seasonId`: String? (Season ID)
 - `projectId`: String? (Project ID，向后兼容)
@@ -69,6 +73,7 @@
 - `chapterId`: String? (章节ID，源数据映射)
 
 ### Scene（场景）
+
 - `id`: String (UUID)
 - `episodeId`: String (Episode ID)
 - `index`: Int (序号)
@@ -76,6 +81,7 @@
 - `summary`: String? (简介)
 
 ### Shot（镜头）
+
 - `id`: String (UUID)
 - `sceneId`: String (Scene ID)
 - `index`: Int (序号)
@@ -90,6 +96,7 @@
 ## 枚举锁定
 
 ### TaskStatus
+
 - PENDING
 - RUNNING
 - SUCCEEDED
@@ -100,6 +107,7 @@
 **注意**：已删除 `SUCCESS`，统一使用 `SUCCEEDED`。
 
 ### JobStatus
+
 - PENDING
 - DISPATCHED
 - RUNNING
@@ -108,6 +116,7 @@
 - CANCELLED
 
 ### WorkerStatus
+
 - online
 - idle
 - busy

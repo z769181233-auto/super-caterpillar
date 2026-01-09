@@ -1,13 +1,13 @@
 /**
  * Stage5: HMAC 安全链路 E2E 测试
- * 
+ *
  * 覆盖：
  * 1. 白名单免签接口（/api/health）应返回 200
  * 2. 必签接口缺少签名头应返回 4003
  * 3. 合法签名请求应成功（非签名错误）
  * 4. Nonce 重放应返回 4004
  * 5. 审计日志验证（SECURITY_EVENT with NONCE_REPLAY_DETECTED）
- * 
+ *
  * 注意：此测试需要有效的 API Key 和 Secret
  * 可通过环境变量提供：HMAC_API_KEY, HMAC_SECRET
  */
@@ -21,7 +21,7 @@ const SECRET = process.env.HMAC_SECRET || '';
 
 /**
  * 计算 HMAC-SHA256 签名
- * 
+ *
  * 注意：与 hmac-signature.interceptor.ts:107 对齐
  * interceptor 使用 request.originalUrl || request.url（不主动去掉 query string）
  * 所以这里也使用传入的 path（不主动处理 query string）
@@ -32,7 +32,7 @@ function computeSignature(
   path: string,
   timestamp: string,
   nonce: string,
-  body: string,
+  body: string
 ): string {
   // 使用传入的 path 作为 requestPath（与 interceptor:107 的 requestPath 逻辑一致）
   const requestPath = path;
@@ -47,7 +47,7 @@ function sendRequest(
   url: string,
   method: string,
   headers: Record<string, string>,
-  body?: string,
+  body?: string
 ): Promise<{ statusCode: number; body: string }> {
   return new Promise((resolve, reject) => {
     const urlObj = new URL(url);
@@ -115,7 +115,7 @@ async function runTests() {
       `${BASE_URL}/api/workers/test-worker-001/jobs/next`,
       'POST',
       { 'Content-Type': 'application/json' },
-      '{}',
+      '{}'
     );
     const body = JSON.parse(response.body);
     const passed =
@@ -173,23 +173,20 @@ async function runTests() {
           'X-Signature': signature,
           'Content-Type': 'application/json',
         },
-        body,
+        body
       );
       const responseBody = JSON.parse(response.body);
       // 第一次请求不应是签名错误（4003）或重放错误（4004）
-      const passed =
-        responseBody.error?.code !== '4003' && responseBody.error?.code !== '4004';
+      const passed = responseBody.error?.code !== '4003' && responseBody.error?.code !== '4004';
       results.push({
         name: '合法签名请求成功（非签名错误）',
         passed,
-        error: passed
-          ? undefined
-          : `不应返回签名/重放错误，实际 code:${responseBody.error?.code}`,
+        error: passed ? undefined : `不应返回签名/重放错误，实际 code:${responseBody.error?.code}`,
       });
       console.log(
         passed
           ? '✅ 通过'
-          : `❌ 失败: 返回 ${responseBody.error?.code} - ${responseBody.error?.message}`,
+          : `❌ 失败: 返回 ${responseBody.error?.code} - ${responseBody.error?.message}`
       );
     } catch (error: any) {
       results.push({
@@ -214,7 +211,7 @@ async function runTests() {
           'X-Signature': signature,
           'Content-Type': 'application/json',
         },
-        body,
+        body
       );
       const responseBody = JSON.parse(response.body);
       const passed =
@@ -228,11 +225,7 @@ async function runTests() {
           ? undefined
           : `期望 403 + code:4004，实际 ${response.statusCode} + code:${responseBody.error?.code}`,
       });
-      console.log(
-        passed
-          ? '✅ 通过'
-          : `❌ 失败: ${JSON.stringify(responseBody)}`,
-      );
+      console.log(passed ? '✅ 通过' : `❌ 失败: ${JSON.stringify(responseBody)}`);
     } catch (error: any) {
       results.push({
         name: 'Nonce 重放返回 4004',
@@ -265,4 +258,3 @@ runTests().catch((error) => {
   console.error('测试执行失败:', error);
   process.exit(1);
 });
-

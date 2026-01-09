@@ -6,7 +6,18 @@ export class UpdateShotDto {
   params?: Record<string, any>;
 
   @IsOptional()
-  @IsEnum(['DRAFT', 'READY', 'GENERATING', 'GENERATED', 'FAILED', 'pending', 'running', 'success', 'fail', 'need_fix'])
+  @IsEnum([
+    'DRAFT',
+    'READY',
+    'GENERATING',
+    'GENERATED',
+    'FAILED',
+    'pending',
+    'running',
+    'success',
+    'fail',
+    'need_fix',
+  ])
   status?: string;
 
   // Studio v0.2: 镜头编辑字段
@@ -39,14 +50,3 @@ export class UpdateShotDto {
   @IsString()
   previewUrl?: string;
 }
-
-
-
-
-
-
-
-
-
-
-

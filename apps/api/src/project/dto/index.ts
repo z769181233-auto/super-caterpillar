@@ -6,14 +6,3 @@ export * from './create-scene.dto';
 export * from './update-scene.dto';
 export * from './create-shot.dto';
 export * from './update-shot.dto';
-
-
-
-
-
-
-
-
-
-
-

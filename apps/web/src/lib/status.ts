@@ -4,7 +4,14 @@
  */
 
 // Job 状态枚举
-export type JobStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'FORCE_FAILED' | 'QUEUED';
+export type JobStatus =
+  | 'PENDING'
+  | 'RUNNING'
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'FORCE_FAILED'
+  | 'QUEUED';
 
 // Job 状态中文文案映射
 export const JobStatusMap: Record<JobStatus, string> = {
@@ -42,4 +49,3 @@ export function getAnalysisStatusText(status: string | null | undefined): string
   if (!status) return '等待分析';
   return AnalysisStatusMap[status as AnalysisStatus] || status;
 }
-

@@ -10,7 +10,7 @@ import { randomUUID } from 'crypto';
 /**
  * Story Service
  * CE06: Novel Parsing 服务层
- * 
+ *
  * 规则：
  * - 只负责参数校验 + 创建 Job
  * - 复用现有 JobService.createCECoreJob
@@ -23,12 +23,12 @@ export class StoryService {
   constructor(
     private readonly jobService: JobService,
     private readonly prisma: PrismaService,
-    private readonly auditLogService: AuditLogService,
+    private readonly auditLogService: AuditLogService
   ) {}
 
   /**
    * 解析小说（CE06）
-   * 
+   *
    * @param dto 输入参数
    * @param userId 用户 ID
    * @param organizationId 组织 ID
@@ -41,7 +41,7 @@ export class StoryService {
     userId?: string,
     organizationId?: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ) {
     // 1. 参数校验（DTO 已通过 class-validator）
     if (!dto.rawText || dto.rawText.trim().length === 0) {
@@ -58,7 +58,9 @@ export class StoryService {
         throw new BadRequestException(`Project ${projectId} not found`);
       }
       if (organizationId && project.organizationId !== organizationId) {
-        throw new BadRequestException(`Project ${projectId} does not belong to organization ${organizationId}`);
+        throw new BadRequestException(
+          `Project ${projectId} does not belong to organization ${organizationId}`
+        );
       }
     } else {
       // 如果没有提供 projectId，创建一个临时项目（可选，根据业务需求）
@@ -134,4 +136,3 @@ export class StoryService {
     };
   }
 }
-

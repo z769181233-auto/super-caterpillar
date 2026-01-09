@@ -302,6 +302,7 @@ logStructured('error', {
 ### 5.1 静态检查验证
 
 **验证方式**:
+
 - ✅ 执行 `pnpm --filter ./apps/api build` - **构建成功**
 - ✅ 检查导入路径正确性 - **所有导入路径正确**
 - ✅ 检查循环依赖 - **无循环依赖**
@@ -318,26 +319,26 @@ logStructured('error', {
 
 ```sql
 -- 查询 NOVEL_IMPORT_FILE 审计记录
-SELECT * FROM audit_logs 
-WHERE action = 'NOVEL_IMPORT_FILE' 
-ORDER BY "createdAt" DESC 
+SELECT * FROM audit_logs
+WHERE action = 'NOVEL_IMPORT_FILE'
+ORDER BY "createdAt" DESC
 LIMIT 10;
 
 -- 查询特定项目的所有 Novel Analysis 相关审计记录
-SELECT * FROM audit_logs 
-WHERE "resourceId" = 'project-uuid' 
+SELECT * FROM audit_logs
+WHERE "resourceId" = 'project-uuid'
   AND action IN ('NOVEL_IMPORT_FILE', 'NOVEL_IMPORT', 'NOVEL_ANALYZE')
 ORDER BY "createdAt" DESC;
 
 -- 查询特定用户的所有 Novel Analysis 操作
-SELECT * FROM audit_logs 
-WHERE "userId" = 'user-uuid' 
+SELECT * FROM audit_logs
+WHERE "userId" = 'user-uuid'
   AND action IN ('NOVEL_IMPORT_FILE', 'NOVEL_IMPORT', 'NOVEL_ANALYZE')
 ORDER BY "createdAt" DESC;
 
 -- 查询特定分析任务的审计记录
-SELECT * FROM audit_logs 
-WHERE action = 'NOVEL_ANALYZE' 
+SELECT * FROM audit_logs
+WHERE action = 'NOVEL_ANALYZE'
   AND "resourceId" = 'analysis-job-uuid';
 ```
 
@@ -372,18 +373,22 @@ const projectLogs = await prisma.auditLog.findMany({
 #### 5.2.2 过滤条件
 
 **按 action_type 过滤**:
+
 - `action = 'NOVEL_IMPORT_FILE'` - 上传文件操作
 - `action = 'NOVEL_IMPORT'` - 文本导入操作
 - `action = 'NOVEL_ANALYZE'` - 分析操作
 
 **按 projectId 过滤**:
+
 - `resourceId = projectId` AND `action IN ('NOVEL_IMPORT_FILE', 'NOVEL_IMPORT', 'NOVEL_ANALYZE')`
 - 或通过 `details` JSON 字段查询：`details->>'projectId' = 'project-uuid'`
 
 **按 userId 过滤**:
+
 - `userId = 'user-uuid'` AND `action IN ('NOVEL_IMPORT_FILE', 'NOVEL_IMPORT', 'NOVEL_ANALYZE')`
 
 **按时间范围过滤**:
+
 - `createdAt >= '2024-12-19'` AND `createdAt < '2024-12-20'`
 
 ### 5.3 日志验证设计
@@ -479,9 +484,11 @@ cat worker.log | jq 'select(.action == "NOVEL_ANALYSIS_WRITE_COMPLETE") | .total
 ### 6.1 静态检查结果
 
 ✅ **构建验证**: `pnpm --filter ./apps/api build` - **成功**
+
 - webpack 5.97.1 compiled successfully in 5273 ms
 
 ✅ **导入路径**: 所有导入路径正确
+
 - `AuditLogService` 正确导入
 - `AuditLogModule` 已在 module 中导入
 
@@ -490,12 +497,14 @@ cat worker.log | jq 'select(.action == "NOVEL_ANALYSIS_WRITE_COMPLETE") | .total
 ### 6.2 代码审查结果
 
 ✅ **审计日志实现**:
+
 - 三个接口都已添加审计日志记录
 - 使用统一的 `AuditLogService.record()` 方法
 - 使用 `AuditLogService.extractRequestInfo()` 提取 IP 和 UserAgent
 - 审计日志写入失败不影响主流程（有 try-catch 保护）
 
 ✅ **结构化日志实现**:
+
 - Worker 侧使用统一的 `logStructured` 函数
 - 所有日志为 JSON 格式
 - 包含必要的字段（action, jobId, projectId, timestamp 等）
@@ -504,6 +513,7 @@ cat worker.log | jq 'select(.action == "NOVEL_ANALYSIS_WRITE_COMPLETE") | .total
 ### 6.3 功能验证（待执行）
 
 ⚠️ **待执行验证**:
+
 - 数据库审计日志查询验证
 - Worker 日志输出验证
 - 端到端功能测试
@@ -515,6 +525,7 @@ cat worker.log | jq 'select(.action == "NOVEL_ANALYSIS_WRITE_COMPLETE") | .total
 ### 7.1 【假设】标记
 
 ⚠️ **Worker ID 假设**:
+
 - 在 `apps/workers/src/main.ts` 中，`workerId` 当前硬编码为 `'worker-main'`
 - **假设**: Worker ID 应从环境变量或配置获取，但当前实现使用硬编码值
 - **后续建议**: 从 Worker 注册信息中获取真实的 Worker ID
@@ -522,6 +533,7 @@ cat worker.log | jq 'select(.action == "NOVEL_ANALYSIS_WRITE_COMPLETE") | .total
 ### 7.2 审计日志 resource_type
 
 ⚠️ **resource_type 选择**:
+
 - `NOVEL_IMPORT_FILE` 和 `NOVEL_IMPORT` 使用 `resource_type: 'project'`
 - `NOVEL_ANALYZE` 使用 `resource_type: 'novel_analysis_job'`
 - **原因**: 按照操作的主要资源类型选择，符合现有审计日志规范
@@ -533,10 +545,12 @@ cat worker.log | jq 'select(.action == "NOVEL_ANALYSIS_WRITE_COMPLETE") | .total
 ### 8.1 完成情况
 
 ✅ **P1 - 审计日志**: 已完成
+
 - 3 个接口都已添加审计日志记录
 - 3 个新的审计事件类型已实现
 
 ✅ **P2 - 可观测性**: 已完成
+
 - Worker 侧结构化日志已实现
 - 8 个日志埋点已添加
 
@@ -562,4 +576,3 @@ cat worker.log | jq 'select(.action == "NOVEL_ANALYSIS_WRITE_COMPLETE") | .total
 
 **执行完成时间**: 2024-12-19  
 **状态**: ✅ **已完成，等待验证**
-

@@ -16,7 +16,7 @@ export class OrganizationController {
   constructor(
     private readonly organizationService: OrganizationService,
     private readonly authService: AuthService,
-    private readonly auditLogService: AuditLogService,
+    private readonly auditLogService: AuditLogService
   ) {}
 
   @Get()
@@ -68,29 +68,39 @@ export class OrganizationController {
     @Body() body: { organizationId: string },
     @CurrentUser() user: { userId: string; email: string; tier: string },
     @Res({ passthrough: true }) res: Response,
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     // Studio v0.7: 切换组织并重新签发 JWT
-    const result = await this.organizationService.switchOrganization(user.userId, body.organizationId);
-    
+    const result = await this.organizationService.switchOrganization(
+      user.userId,
+      body.organizationId
+    );
+
     // S1-FIX-B: 记录审计日志
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    await this.auditLogService.record({
-      userId: user.userId,
-      action: AuditActions.ORGANIZATION_SWITCH,
-      resourceType: 'organization',
-      resourceId: body.organizationId,
-      ip: requestInfo.ip,
-      userAgent: requestInfo.userAgent,
-      details: {
-        organizationName: result.organization?.name,
-        role: result.role,
-      },
-    }).catch(() => undefined);
-    
+    await this.auditLogService
+      .record({
+        userId: user.userId,
+        action: AuditActions.ORGANIZATION_SWITCH,
+        resourceType: 'organization',
+        resourceId: body.organizationId,
+        ip: requestInfo.ip,
+        userAgent: requestInfo.userAgent,
+        details: {
+          organizationName: result.organization?.name,
+          role: result.role,
+        },
+      })
+      .catch(() => undefined);
+
     // 重新签发 tokens（包含新的 organizationId）
-    const tokens = await this.authService.generateTokens(user.userId, user.email, user.tier, body.organizationId);
-    
+    const tokens = await this.authService.generateTokens(
+      user.userId,
+      user.email,
+      user.tier,
+      body.organizationId
+    );
+
     // 设置 cookies
     const isProduction = env.isProduction;
     res.cookie('accessToken', tokens.accessToken, {
@@ -108,7 +118,7 @@ export class OrganizationController {
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
     }
-    
+
     return {
       success: true,
       data: {
@@ -120,14 +130,3 @@ export class OrganizationController {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
-

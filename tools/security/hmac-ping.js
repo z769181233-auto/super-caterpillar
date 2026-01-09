@@ -14,8 +14,8 @@ const path = require('path');
 // 环境检查
 function checkEnvironment() {
   const requiredVars = ['JWT_SECRET', 'DATABASE_URL'];
-  const missingVars = requiredVars.filter(v => !process.env[v]);
-  
+  const missingVars = requiredVars.filter((v) => !process.env[v]);
+
   if (missingVars.length > 0) {
     console.error('========================================');
     console.error('❌ 环境变量缺失');
@@ -47,7 +47,9 @@ checkEnvironment();
 // 配置
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 const API_KEY = process.env.API_KEY || 'ak_worker_dev_0000000000000000';
-const API_SECRET = process.env.API_SECRET || 'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
+const API_SECRET =
+  process.env.API_SECRET ||
+  'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
 const PATH = '/api/_internal/hmac-ping';
 
 // 发送请求
@@ -56,7 +58,7 @@ function sendRequest(method, url, headers = {}) {
     const urlObj = new URL(url);
     const isHttps = urlObj.protocol === 'https:';
     const client = isHttps ? https : http;
-    
+
     const options = {
       hostname: urlObj.hostname,
       port: urlObj.port || (isHttps ? 443 : 80),
@@ -67,7 +69,7 @@ function sendRequest(method, url, headers = {}) {
         ...headers,
       },
     };
-    
+
     const req = client.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => {
@@ -80,7 +82,7 @@ function sendRequest(method, url, headers = {}) {
         } catch {
           responseBody = { raw: data };
         }
-        
+
         resolve({
           status: res.statusCode,
           statusText: res.statusMessage,
@@ -89,7 +91,7 @@ function sendRequest(method, url, headers = {}) {
         });
       });
     });
-    
+
     req.on('error', (error) => {
       resolve({
         status: 0,
@@ -98,7 +100,7 @@ function sendRequest(method, url, headers = {}) {
         bodyText: error.message,
       });
     });
-    
+
     req.end();
   });
 }
@@ -114,7 +116,7 @@ async function main() {
 
   // 生成 HMAC 头
   const headers = hmacLib.generateHmacHeaders(API_KEY, API_SECRET, 'GET', PATH, null);
-  
+
   console.log('Request Headers:');
   console.log(`  X-Api-Key: ${headers['X-Api-Key']}`);
   console.log(`  X-Nonce: ${headers['X-Nonce']}`);
@@ -124,7 +126,7 @@ async function main() {
 
   // 发送请求
   const result = await sendRequest('GET', `${API_BASE_URL}${PATH}`, headers);
-  
+
   console.log('Response:');
   console.log(`  Status: ${result.status}`);
   console.log(`  Status Text: ${result.statusText}`);
@@ -143,7 +145,7 @@ async function main() {
   console.log('========================================');
   console.log('验证结果');
   console.log('========================================');
-  
+
   if (result.status === 200) {
     console.log('✅ 接口生效且不需要 JWT');
     console.log(`   Response: ${JSON.stringify(result.body)}`);
@@ -171,15 +173,14 @@ async function main() {
     console.log(`❌ 未知错误: ${result.status}`);
     console.log(`   Body: ${result.bodyText.substring(0, 200)}`);
   }
-  
+
   console.log('========================================');
-  
+
   process.exit(result.status === 200 ? 0 : 1);
 }
 
-main().catch(error => {
+main().catch((error) => {
   console.error('错误:', error.message);
   console.error(error.stack);
   process.exit(1);
 });
-

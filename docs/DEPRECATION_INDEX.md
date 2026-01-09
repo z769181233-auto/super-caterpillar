@@ -14,20 +14,20 @@
 
 ## 索引表
 
-| DEP-ID | 类型 | 路径 | 风险等级 | 建议 Phase | 备注 |
-|:---|:---|:---|:---:|:---:|:---|
-| **DEP-001** | Code / Schema | `packages/database/src/generated/prisma/schema.prisma` | P1 | 已剥离 | Prisma `@deprecated` 关系，已从清理计划剥离，见 `docs/DB_DEPRECATION_REMOVAL_RFC.md` |
-| **DEP-002** | Code / Worker Demo | `apps/workers/minimal-worker/index.ts` | P2 | 永久保留 | Stage2 验证 Demo Worker，永久保留 |
-| **DEP-003** | Code / 前端组件 | `apps/web/src/components/_legacy/studio/*` | P2 | Phase B/C | 旧 Studio 组件，已标记为冻结区域 |
-| **DEP-010** | Test / Backup E2E | `apps/api_tests_backup/` | P1 | Phase B/C | 历史 E2E 场景库，仅参考，不接入 gate |
-| **DEP-020** | Script / 调试工具 | `tools/headless-worker.ts` | P1 | Phase B/C | 本地调试工具，禁止在 CI/Prod 使用（仅文档约束） |
-| **DEP-021** | Script / 调试工具 | `tools/mock-worker.ts` | P2 | Phase B/C | 本地调试工具，禁止在 CI/Prod 使用（仅文档约束） |
-| **DEP-022** | Script / Demo | `tools/dev/hmac-replay-demo.ts` | P2 | 永久保留 | 安全 Demo 工具，永久保留 |
-| **DEP-030** | Doc / 历史 Stage | `docs/stage1_*.md` | P2 | Phase B | 历史证据文档，保留原路径；若需归档仅做复制快照，不移动 |
-| **DEP-031** | Doc / 历史 Stage | `docs/STAGE2_*.md` | P2 | Phase B | 历史证据文档，保留原路径；若需归档仅做复制快照，不移动 |
-| **DEP-032** | Doc / 历史 Stage | `docs/STAGE3_*.md` | P2 | Phase B | 历史证据文档，保留原路径；若需归档仅做复制快照，不移动 |
-| **DEP-033** | Doc / 历史 Stage | `docs/STAGE4_*.md` | P2 | Phase B | 历史证据文档，保留原路径；若需归档仅做复制快照，不移动 |
-| **DEP-034** | Doc / 未来 Stage | `docs/STAGE9_*.md`, `docs/STAGE10_*.md`, `docs/STAGE12_*.md`, `docs/STAGE13_*.md` | P2 | 永久保留 | 未来路线图，永久保留 |
+| DEP-ID      | 类型               | 路径                                                                              | 风险等级 | 建议 Phase | 备注                                                                                 |
+| :---------- | :----------------- | :-------------------------------------------------------------------------------- | :------: | :--------: | :----------------------------------------------------------------------------------- |
+| **DEP-001** | Code / Schema      | `packages/database/src/generated/prisma/schema.prisma`                            |    P1    |   已剥离   | Prisma `@deprecated` 关系，已从清理计划剥离，见 `docs/DB_DEPRECATION_REMOVAL_RFC.md` |
+| **DEP-002** | Code / Worker Demo | `apps/workers/minimal-worker/index.ts`                                            |    P2    |  永久保留  | Stage2 验证 Demo Worker，永久保留                                                    |
+| **DEP-003** | Code / 前端组件    | `apps/web/src/components/_legacy/studio/*`                                        |    P2    | Phase B/C  | 旧 Studio 组件，已标记为冻结区域                                                     |
+| **DEP-010** | Test / Backup E2E  | `apps/api_tests_backup/`                                                          |    P1    | Phase B/C  | 历史 E2E 场景库，仅参考，不接入 gate                                                 |
+| **DEP-020** | Script / 调试工具  | `tools/headless-worker.ts`                                                        |    P1    | Phase B/C  | 本地调试工具，禁止在 CI/Prod 使用（仅文档约束）                                      |
+| **DEP-021** | Script / 调试工具  | `tools/mock-worker.ts`                                                            |    P2    | Phase B/C  | 本地调试工具，禁止在 CI/Prod 使用（仅文档约束）                                      |
+| **DEP-022** | Script / Demo      | `tools/dev/hmac-replay-demo.ts`                                                   |    P2    |  永久保留  | 安全 Demo 工具，永久保留                                                             |
+| **DEP-030** | Doc / 历史 Stage   | `docs/stage1_*.md`                                                                |    P2    |  Phase B   | 历史证据文档，保留原路径；若需归档仅做复制快照，不移动                               |
+| **DEP-031** | Doc / 历史 Stage   | `docs/STAGE2_*.md`                                                                |    P2    |  Phase B   | 历史证据文档，保留原路径；若需归档仅做复制快照，不移动                               |
+| **DEP-032** | Doc / 历史 Stage   | `docs/STAGE3_*.md`                                                                |    P2    |  Phase B   | 历史证据文档，保留原路径；若需归档仅做复制快照，不移动                               |
+| **DEP-033** | Doc / 历史 Stage   | `docs/STAGE4_*.md`                                                                |    P2    |  Phase B   | 历史证据文档，保留原路径；若需归档仅做复制快照，不移动                               |
+| **DEP-034** | Doc / 未来 Stage   | `docs/STAGE9_*.md`, `docs/STAGE10_*.md`, `docs/STAGE12_*.md`, `docs/STAGE13_*.md` |    P2    |  永久保留  | 未来路线图，永久保留                                                                 |
 
 ---
 
@@ -56,7 +56,7 @@
 ### DEP-003 — 旧 Studio 组件 `_legacy/studio/*`
 
 - **类型**: Code / 前端组件
-- **路径**: 
+- **路径**:
   - `apps/web/src/components/_legacy/studio/ProjectEmptyState.tsx`
   - `apps/web/src/components/_legacy/studio/SemanticInfoPanel.tsx`
   - `apps/web/src/components/_legacy/studio/QualityHintPanel.tsx`
@@ -218,4 +218,3 @@
 **As of 2025-12-19, Deprecation Cleanup Phases A/B/C are frozen.**
 
 Any future deviation requires a new Deprecation RFC and MUST NOT reuse historical evidence.
-

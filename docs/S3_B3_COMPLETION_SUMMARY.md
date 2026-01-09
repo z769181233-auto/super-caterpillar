@@ -9,6 +9,7 @@
 ## 一、已完成任务
 
 ### 1. 新增 EngineRoutingService（RoutingLayer）
+
 - **文件**: `apps/api/src/engine/engine-routing.service.ts`
 - **功能**: 负责路由决策，根据 `jobType`、`baseEngineKey`、`payload` 决定最终 `engineKey` 和 `resolvedVersion`
 - **核心规则**:
@@ -19,6 +20,7 @@
   5. 无特殊情况：返回 `baseEngineKey`（保持向后兼容）
 
 ### 2. EngineRegistry.invoke() 接入路由层
+
 - **文件**: `apps/api/src/engine/engine-registry.service.ts`
 - **变更**:
   - 更新引用：从 `../engines/engine-router.service` 改为 `./engine-routing.service`
@@ -31,6 +33,7 @@
     5. 直接调用 `adapter.invoke(nextInput)`
 
 ### 3. EngineModule 注册路由服务
+
 - **文件**: `apps/api/src/engines/engine.module.ts`
 - **变更**: 更新引用，使用新的 `EngineRoutingService`
 
@@ -40,17 +43,18 @@
 
 ### 测试用例验证（7/7 通过）
 
-| Case | 场景 | 预期结果 | 实际结果 | 状态 |
-|------|------|----------|----------|------|
-| 1 | `jobType=NOVEL_ANALYSIS`，无 `useHttpEngine`，无 `engineKey` | `engineKey=default_novel_analysis` | ✅ | ✅ |
-| 2 | `jobType=NOVEL_ANALYSIS_HTTP`，无 `engineKey` | `engineKey=http_real_novel_analysis` | ✅ | ✅ |
-| 3 | `jobType=NOVEL_ANALYSIS`，`payload.useHttpEngine=true` | `engineKey=http_real_novel_analysis` | ✅ | ✅ |
-| 4 | `payload.engineKey='http_mock_novel_analysis'` | `engineKey=http_mock_novel_analysis` | ✅ | ✅ |
-| 5 | `payload.engineVersion='v2'` | `resolvedVersion='v2'` | ✅ | ✅ |
-| 6 | `NOVEL_ANALYSIS` + `useHttpEngine=false` | `engineKey=default_novel_analysis` | ✅ | ✅ |
-| 7 | `SHOT_RENDER` + `useHttpEngine=true` | `engineKey=http_real_shot_render` | ✅ | ✅ |
+| Case | 场景                                                         | 预期结果                             | 实际结果 | 状态 |
+| ---- | ------------------------------------------------------------ | ------------------------------------ | -------- | ---- |
+| 1    | `jobType=NOVEL_ANALYSIS`，无 `useHttpEngine`，无 `engineKey` | `engineKey=default_novel_analysis`   | ✅       | ✅   |
+| 2    | `jobType=NOVEL_ANALYSIS_HTTP`，无 `engineKey`                | `engineKey=http_real_novel_analysis` | ✅       | ✅   |
+| 3    | `jobType=NOVEL_ANALYSIS`，`payload.useHttpEngine=true`       | `engineKey=http_real_novel_analysis` | ✅       | ✅   |
+| 4    | `payload.engineKey='http_mock_novel_analysis'`               | `engineKey=http_mock_novel_analysis` | ✅       | ✅   |
+| 5    | `payload.engineVersion='v2'`                                 | `resolvedVersion='v2'`               | ✅       | ✅   |
+| 6    | `NOVEL_ANALYSIS` + `useHttpEngine=false`                     | `engineKey=default_novel_analysis`   | ✅       | ✅   |
+| 7    | `SHOT_RENDER` + `useHttpEngine=true`                         | `engineKey=http_real_shot_render`    | ✅       | ✅   |
 
 ### 构建验证
+
 - ✅ `pnpm --filter api build` - 成功
 - ✅ `pnpm --filter @scu/worker build` - 成功
 - ✅ 无 TypeScript 编译错误
@@ -61,19 +65,23 @@
 ## 三、关键行为确认
 
 ### 1. NOVEL_ANALYSIS 默认路径保持不变 ✅
+
 - 当 `jobType === 'NOVEL_ANALYSIS'` 且未显式要求 HTTP 时，路由层强制返回 `default_novel_analysis`
 - 验证：Case 1 和 Case 6 均通过
 
-### 2. _HTTP JobType 与 useHttpEngine 灰度隔离 ✅
+### 2. \_HTTP JobType 与 useHttpEngine 灰度隔离 ✅
+
 - `_HTTP` JobType：默认走 HTTP 引擎
 - `useHttpEngine: true`：作为灰度开关，仅在明确设置时切到 HTTP
 - 验证：Case 2 和 Case 3 均按预期工作
 
 ### 3. 显式 engineKey 优先 ✅
+
 - `payload.engineKey` 显式指定时，优先于所有其他规则
 - 验证：Case 4 通过
 
 ### 4. 版本信息透传 ✅
+
 - `payload.engineVersion` 通过路由层透传到 `resolvedVersion`
 - 验证：Case 5 通过
 
@@ -82,6 +90,7 @@
 ## 四、封板文件确认
 
 ### 未修改的封板文件 ✅
+
 - `apps/api/src/config/engine.config.ts` - 未修改
 - `apps/api/src/engine/adapters/http-engine.adapter.ts` - 未修改
 
@@ -122,11 +131,13 @@
 ## 六、整体 Stage3 进度
 
 ### S3-A：HTTP 引擎真实接入
+
 - ✅ **S3-A.1**: HTTP 引擎配置与安全设计（已封板）
 - ✅ **S3-A.2**: HTTP 引擎调用路径设计（PLAN-only，已完成）
 - ✅ **S3-A.3**: HTTP 引擎调用路径实现（EXECUTE，已完成）
 
 ### S3-B：Engine 管理 & 配置中心 MVP
+
 - ⏳ **S3-B.1**: Engine 管理 API 设计（PLAN-only，待执行）
 - ⏳ **S3-B.2**: Engine 管理前端页面设计（PLAN-only，待执行）
 - ✅ **S3-B.3**: Engine RoutingLayer 实现（EXECUTE，**已完成**）
@@ -134,6 +145,7 @@
 - ⏳ **S3-B.5**: Engine 管理前端页面实现（EXECUTE，待执行）
 
 ### S3-C：Studio / 导入页联动增强
+
 - ⏳ **S3-C.1**: Studio/导入页联动信息架构（PLAN-only，待执行）
 
 ---
@@ -211,4 +223,3 @@
 
 **文档状态**: ✅ S3-B.3 已完成  
 **下一步**: 执行 S3-B.1（Engine 管理 API 设计，PLAN-only 模式）
-

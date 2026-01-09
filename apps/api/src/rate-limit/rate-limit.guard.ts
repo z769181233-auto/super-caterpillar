@@ -38,7 +38,7 @@ export class FineGrainedRateLimitGuard extends ThrottlerGuard {
           message: `请求过于频繁，请稍后再试。限制：${limit || 100} 次/${ttl || 60}秒`,
         },
       },
-      HttpStatus.TOO_MANY_REQUESTS,
+      HttpStatus.TOO_MANY_REQUESTS
     );
   }
 }
@@ -55,4 +55,3 @@ export const RateLimit = (limit: number, ttl: number = 60) => {
     return descriptor;
   };
 };
-

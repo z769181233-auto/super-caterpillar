@@ -21,11 +21,12 @@
 **文件**: `packages/database/prisma/schema.prisma`
 
 **修改内容**:
+
 ```prisma
 enum JobType {
   // existing
   NOVEL_ANALYSIS
-  
+
   // CE Core Layer
   CE06_NOVEL_PARSING
   CE03_VISUAL_DENSITY
@@ -33,7 +34,8 @@ enum JobType {
 }
 ```
 
-**验证**: 
+**验证**:
+
 - `npx prisma generate` 成功
 - TypeScript 类型正确生成
 
@@ -44,47 +46,50 @@ enum JobType {
 **文件**: `packages/database/prisma/schema.prisma`
 
 **新增表 1: novel_parse_result**
+
 ```prisma
 model NovelParseResult {
   id            String   @id @default(uuid())
   projectId     String
   project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+
   volumes       Json?    // CE06 解析出的卷信息
   chapters      Json?    // CE06 解析出的章节信息
   scenes        Json?    // CE06 解析出的场景信息
   parsingQuality Float?  // 解析质量评分
-  
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  
+
   @@unique([projectId])
   @@index([projectId])
 }
 ```
 
 **新增表 2: quality_metrics**
+
 ```prisma
 model QualityMetrics {
   id                String   @id @default(uuid())
   projectId         String
   project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+
   engine            String    // "CE03" | "CE04"
   visualDensityScore Float?  // CE03 输出
   enrichmentQuality  Float?  // CE04 输出
   parsingQuality     Float?  // CE06 输出（冗余，也可从 NovelParseResult 读取）
-  
+
   metadata          Json?     // 其他质量指标
-  
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  
+
   @@index([projectId, engine])
 }
 ```
 
 **修改 Project 模型**:
+
 ```prisma
 model Project {
   // ... existing fields
@@ -94,6 +99,7 @@ model Project {
 ```
 
 **验证**:
+
 - `npx prisma format` 通过
 - `npx prisma generate` 成功
 - 迁移文件生成成功
@@ -105,6 +111,7 @@ model Project {
 **文件**: `packages/shared-types/src/engines/ce-core.dto.ts` (新建)
 
 **内容**:
+
 ```typescript
 // CE06 Input/Output
 export interface CE06NovelParsingInput {
@@ -184,9 +191,15 @@ export interface CE04VisualEnrichmentOutput {
 **文件**: `apps/api/src/engine-hub/adapters/ce-core-http.adapter.ts` (新建)
 
 **内容**:
+
 ```typescript
 import { Injectable, Logger } from '@nestjs/common';
-import { EngineAdapter, EngineInvokeInput, EngineInvokeResult, EngineInvokeStatus } from '@scu/shared-types';
+import {
+  EngineAdapter,
+  EngineInvokeInput,
+  EngineInvokeResult,
+  EngineInvokeStatus,
+} from '@scu/shared-types';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -205,15 +218,17 @@ export class CECoreHttpAdapter implements EngineAdapter {
   constructor(private readonly httpService: HttpService) {}
 
   supports(engineKey: string): boolean {
-    return ['ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment'].includes(engineKey);
+    return ['ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment'].includes(
+      engineKey
+    );
   }
 
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const { engineKey, payload } = input;
-    
+
     try {
       let result: any;
-      
+
       if (engineKey === 'ce06_novel_parsing') {
         result = await this.invokeCE06(payload as CE06NovelParsingInput);
       } else if (engineKey === 'ce03_visual_density') {
@@ -284,6 +299,7 @@ export class CECoreHttpAdapter implements EngineAdapter {
 **文件**: `apps/api/src/engine-hub/engine-registry-hub.service.ts`
 
 **修改内容**:
+
 ```typescript
 private engines: EngineDescriptor[] = [
   // ... existing engines
@@ -326,6 +342,7 @@ private engines: EngineDescriptor[] = [
 **文件**: `apps/api/src/orchestrator/orchestrator.service.ts`
 
 **新增方法**:
+
 ```typescript
 /**
  * 创建 CE Core Layer 的固定 DAG Job 链
@@ -381,6 +398,7 @@ async createCECoreDAG(projectId: string, organizationId: string, novelSourceId: 
 **文件**: `apps/workers/src/ce-core-processor.ts` (新建)
 
 **内容**:
+
 ```typescript
 import { PrismaClient } from 'database';
 import { EngineAdapterClient } from './engine-adapter-client';
@@ -388,7 +406,7 @@ import { EngineAdapterClient } from './engine-adapter-client';
 export async function processCE06Job(
   prisma: PrismaClient,
   job: { id: string; payload: any; projectId: string },
-  engineClient: EngineAdapterClient,
+  engineClient: EngineAdapterClient
 ): Promise<any> {
   // 1. 获取输入数据
   const novelSource = await prisma.novelSource.findFirst({
@@ -438,7 +456,7 @@ export async function processCE06Job(
 export async function processCE03Job(
   prisma: PrismaClient,
   job: { id: string; payload: any; projectId: string },
-  engineClient: EngineAdapterClient,
+  engineClient: EngineAdapterClient
 ): Promise<any> {
   // 1. 获取 CE06 结果
   const parseResult = await prisma.novelParseResult.findUnique({
@@ -477,7 +495,7 @@ export async function processCE03Job(
 export async function processCE04Job(
   prisma: PrismaClient,
   job: { id: string; payload: any; projectId: string },
-  engineClient: EngineAdapterClient,
+  engineClient: EngineAdapterClient
 ): Promise<any> {
   // 1. 获取 CE03 结果
   const qualityMetrics = await prisma.qualityMetrics.findFirst({
@@ -523,6 +541,7 @@ export async function processCE04Job(
 **文件**: `apps/workers/src/ce-core-processor.ts`
 
 **在每个 processor 中添加**:
+
 ```typescript
 // 在 Job 完成后写审计日志
 await apiClient.post('/api/audit/logs', {
@@ -550,12 +569,13 @@ await apiClient.post('/api/audit/logs', {
 **文件**: `apps/api/src/novel-import/novel-import.controller.ts`
 
 **修改 `analyzeNovel` 方法**:
+
 ```typescript
 // 在创建 NOVEL_ANALYSIS Job 后，创建 CE Core DAG
 const ceDAG = await this.orchestratorService.createCECoreDAG(
   projectId,
   organizationId,
-  novelSourceId,
+  novelSourceId
 );
 ```
 
@@ -568,6 +588,7 @@ const ceDAG = await this.orchestratorService.createCECoreDAG(
 **验证脚本**: `tools/dev/stage13-ce-core-verification.sh` (新建)
 
 **验证步骤**:
+
 1. 启动 API 和 Worker
 2. 上传测试小说
 3. 检查 Job 状态（CE06 → CE03 → CE04）
@@ -582,6 +603,7 @@ const ceDAG = await this.orchestratorService.createCECoreDAG(
 ## 三、文件清单
 
 ### 新建文件
+
 1. `packages/shared-types/src/engines/ce-core.dto.ts`
 2. `apps/api/src/engine-hub/adapters/ce-core-http.adapter.ts`
 3. `apps/workers/src/ce-core-processor.ts`
@@ -589,6 +611,7 @@ const ceDAG = await this.orchestratorService.createCECoreDAG(
 5. `docs/TEST_REPORT_STAGE13_CE_CORE_LAYER_YYYYMMDD.md`
 
 ### 修改文件
+
 1. `packages/database/prisma/schema.prisma` - JobType enum, 新增表
 2. `packages/shared-types/src/index.ts` - 导出 CE DTO
 3. `apps/api/src/engine-hub/engine-registry-hub.service.ts` - 注册 CE 引擎
@@ -624,4 +647,3 @@ const ceDAG = await this.orchestratorService.createCECoreDAG(
 ---
 
 **PLAN 完成，准备进入 EXECUTE 阶段。**
-

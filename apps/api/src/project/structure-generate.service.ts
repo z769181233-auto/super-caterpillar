@@ -14,7 +14,7 @@ export class StructureGenerateService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
-    private readonly sceneGraphService: SceneGraphService,
+    private readonly sceneGraphService: SceneGraphService
   ) {}
 
   /**
@@ -22,11 +22,13 @@ export class StructureGenerateService {
    * 根据项目的 NovelChapter 自动生成 Episode/Scene/SceneDraft（四层结构：Project → Episode → Scene → Shot）
    */
   async generateStructure(projectId: string, organizationId: string): Promise<any> {
-    console.log(`[StructureGenerate] Starting generateStructure for projectId: ${projectId}, organizationId: ${organizationId}`);
-    
+    console.log(
+      `[StructureGenerate] Starting generateStructure for projectId: ${projectId}, organizationId: ${organizationId}`
+    );
+
     // 获取项目
     const project = await this.prisma.project.findFirst({
-      where: { 
+      where: {
         id: projectId,
         organizationId,
       },
@@ -53,7 +55,9 @@ export class StructureGenerateService {
       throw new BadRequestException('项目不存在，无法生成结构');
     }
 
-    console.log(`[StructureGenerate] Found project: ${project.name}, novelSources count: ${project.novelSources?.length || 0}`);
+    console.log(
+      `[StructureGenerate] Found project: ${project.name}, novelSources count: ${project.novelSources?.length || 0}`
+    );
 
     const novelSource = project.novelSources?.[0];
     if (!novelSource) {
@@ -62,15 +66,20 @@ export class StructureGenerateService {
     }
 
     const chapters = novelSource.chapters || [];
-    console.log(`[StructureGenerate] Found ${chapters.length} chapters in novel source: ${novelSource.id}`);
+    console.log(
+      `[StructureGenerate] Found ${chapters.length} chapters in novel source: ${novelSource.id}`
+    );
 
     // 检查是否已有结构（幂等性检查）
     const existingEpisodes = project.episodes || [];
-    const hasExistingStructure = existingEpisodes.length > 0 && 
+    const hasExistingStructure =
+      existingEpisodes.length > 0 &&
       existingEpisodes.some((e: any) => e.scenes && e.scenes.length > 0);
 
     if (hasExistingStructure) {
-      console.log(`[StructureGenerate] Existing structure found, returning current structure (idempotent)`);
+      console.log(
+        `[StructureGenerate] Existing structure found, returning current structure (idempotent)`
+      );
       // 如果已有结构，直接返回当前结构（幂等）
       return this.projectService.findTreeById(projectId, organizationId);
     }
@@ -84,7 +93,7 @@ export class StructureGenerateService {
     // 遍历章节，生成 Episode/Scene/SceneDraft（直接关联 Project，移除 Season 层）
     for (let chIdx = 0; chIdx < chapters.length; chIdx++) {
       const chapter = chapters[chIdx];
-      
+
       // 检查是否已有 Episode 关联到此 Chapter
       let episode = await this.prisma.episode.findFirst({
         where: {
@@ -100,7 +109,7 @@ export class StructureGenerateService {
           index: chIdx + 1,
           name: chapter.title,
         });
-        
+
         // 更新 Episode 关联到 NovelChapter
         await this.prisma.episode.update({
           where: { id: episode.id },
@@ -157,7 +166,7 @@ export class StructureGenerateService {
           summary,
           location,
         });
-        
+
         // 更新 Scene 关联到 SceneDraft
         await this.prisma.scene.update({
           where: { id: scene.id },
@@ -186,11 +195,7 @@ export class StructureGenerateService {
    * 简单提取地点（占位实现）
    */
   private extractLocation(text: string): string | undefined {
-    const locationPatterns = [
-      /在([^，。！？\n]+)/,
-      /到([^，。！？\n]+)/,
-      /来到([^，。！？\n]+)/,
-    ];
+    const locationPatterns = [/在([^，。！？\n]+)/, /到([^，。！？\n]+)/, /来到([^，。！？\n]+)/];
 
     for (const pattern of locationPatterns) {
       const match = text.match(pattern);
@@ -205,7 +210,7 @@ export class StructureGenerateService {
   /**
    * 将解析后的结构写入数据库
    * 用于 Worker 处理完分析后写入结构
-   * 
+   *
    * @param structure 解析后的项目结构
    */
   async applyAnalyzedStructureToDatabase(structure: AnalyzedProjectStructure): Promise<void> {
@@ -276,14 +281,3 @@ export class StructureGenerateService {
     await this.sceneGraphService.invalidateProjectSceneGraph(projectId);
   }
 }
-
-
-
-
-
-
-
-
-
-
-

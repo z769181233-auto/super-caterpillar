@@ -10,7 +10,7 @@ import {
   ProjectStructureSeasonNode,
   ProjectStructureEpisodeNode,
   ProjectStructureSceneNode,
-  ProjectStructureShotNode
+  ProjectStructureShotNode,
 } from '@scu/shared-types';
 
 interface ProjectStructureTreeProps {
@@ -116,7 +116,6 @@ export default function ProjectStructureTree({ projectId, data }: ProjectStructu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, structure?.statusSummary?.analysis]);
 
-
   // S3-D Fine-Tune: 切换节点展开/收起
   const toggleNode = (nodeId: string) => {
     setExpandedNodes((prev) => {
@@ -145,7 +144,9 @@ export default function ProjectStructureTree({ projectId, data }: ProjectStructu
     };
     const statusInfo = statusMap[status] || statusMap.PENDING;
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${statusInfo.className}`}>
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${statusInfo.className}`}
+      >
         <span>{statusInfo.icon}</span>
         <span>{statusInfo.label}</span>
       </span>
@@ -155,21 +156,26 @@ export default function ProjectStructureTree({ projectId, data }: ProjectStructu
   // Industrial Status Badge
   const getIndustrialStatusBadge = (qaStatus?: string, blockingReason?: string | null) => {
     if (!qaStatus) return null;
-    const map: Record<string, { class: string, icon: string }> = {
+    const map: Record<string, { class: string; icon: string }> = {
       PASS: { class: 'bg-green-100 text-green-800 border-green-200', icon: '✅' },
       WARN: { class: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: '⚠️' },
       FAIL: { class: 'bg-red-100 text-red-800 border-red-200', icon: '🚫' },
-      PENDING: { class: 'bg-gray-100 text-gray-500 border-gray-200', icon: '⏳' }
+      PENDING: { class: 'bg-gray-100 text-gray-500 border-gray-200', icon: '⏳' },
     };
     const style = map[qaStatus] || map.PENDING;
 
     return (
       <div className="flex items-center gap-2">
-        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 ${style.class}`}>
+        <span
+          className={`px-1.5 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 ${style.class}`}
+        >
           {style.icon} {qaStatus}
         </span>
         {blockingReason && (
-          <span className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 max-w-[200px] truncate" title={blockingReason}>
+          <span
+            className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100 max-w-[200px] truncate"
+            title={blockingReason}
+          >
             🔒 {blockingReason}
           </span>
         )}
@@ -214,7 +220,10 @@ export default function ProjectStructureTree({ projectId, data }: ProjectStructu
   }
 
   if (structure.tree.length === 0) {
-    if (structure.statusSummary?.analysis === 'ANALYZING' || structure.statusSummary?.analysis === 'PENDING') {
+    if (
+      structure.statusSummary?.analysis === 'ANALYZING' ||
+      structure.statusSummary?.analysis === 'PENDING'
+    ) {
       return (
         <div className="p-6 flex flex-col items-center justify-center text-center space-y-4 bg-blue-50/50 m-4 rounded-xl border border-blue-100">
           <div className="relative w-12 h-12">
@@ -309,9 +318,7 @@ export default function ProjectStructureTree({ projectId, data }: ProjectStructu
                         {episode.scenes.map((scene: ProjectStructureSceneNode) => (
                           <div key={scene.id} className="border-l-2 border-gray-200 pl-2">
                             {/* Scene 节点 */}
-                            <div
-                              className="flex items-center justify-between hover:bg-blue-50 rounded px-2 py-1 transition-colors"
-                            >
+                            <div className="flex items-center justify-between hover:bg-blue-50 rounded px-2 py-1 transition-colors">
                               <div
                                 className="flex items-center cursor-pointer focus:outline-none"
                                 onClick={() => toggleNode(scene.id)}
@@ -325,13 +332,19 @@ export default function ProjectStructureTree({ projectId, data }: ProjectStructu
                                   <span className="text-xs font-medium text-gray-700">
                                     SC{scene.index} - {getNodeTitle(scene)}
                                   </span>
-                                  {scene.visualDensityScore !== undefined && scene.visualDensityScore !== null && (
-                                    <span className="text-[10px] px-1 py-0.5 bg-purple-100 text-purple-700 rounded" title="Visual Density">
-                                      VD:{scene.visualDensityScore.toFixed(1)}
-                                    </span>
-                                  )}
+                                  {scene.visualDensityScore !== undefined &&
+                                    scene.visualDensityScore !== null && (
+                                      <span
+                                        className="text-[10px] px-1 py-0.5 bg-purple-100 text-purple-700 rounded"
+                                        title="Visual Density"
+                                      >
+                                        VD:{scene.visualDensityScore.toFixed(1)}
+                                      </span>
+                                    )}
                                   {scene.enrichedText && (
-                                    <span className="text-xs" title="Enriched">✨</span>
+                                    <span className="text-xs" title="Enriched">
+                                      ✨
+                                    </span>
                                   )}
                                 </div>
                               </div>

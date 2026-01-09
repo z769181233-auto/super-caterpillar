@@ -1,12 +1,11 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { NonceService } from '../nonce.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { shouldBypassSignature, shouldRequireSignature } from '../../common/utils/signature-path.utils';
+import {
+  shouldBypassSignature,
+  shouldRequireSignature,
+} from '../../common/utils/signature-path.utils';
 import { buildHmacError } from '../../common/utils/hmac-error.utils';
 
 /**
@@ -20,8 +19,8 @@ export class TimestampNonceGuard implements CanActivate {
 
   constructor(
     private readonly nonceService: NonceService,
-    private reflector: Reflector,
-  ) { }
+    private reflector: Reflector
+  ) {}
 
   private getPath(req: any): string {
     const raw = (req.originalUrl || req.url || '') as string;
@@ -88,4 +87,3 @@ export class TimestampNonceGuard implements CanActivate {
     return true;
   }
 }
-

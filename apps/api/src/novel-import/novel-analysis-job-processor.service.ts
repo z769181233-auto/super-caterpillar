@@ -8,4 +8,3 @@ import { Injectable } from '@nestjs/common';
 export class NovelAnalysisJobProcessorService {
   // 最小可用实现
 }
-

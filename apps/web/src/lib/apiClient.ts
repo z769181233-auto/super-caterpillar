@@ -9,8 +9,6 @@ import {
   ProjectStructureTree,
 } from '@scu/shared-types';
 
-
-
 export type UnauthorizedError = Error & { status: 401; code: 'UNAUTHORIZED' };
 
 interface ErrorResponse {
@@ -109,7 +107,9 @@ export const projectApi = {
         throw error;
       }
       const error = await res.json().catch(() => ({ message: '加载项目失败' }));
-      const err = new Error(error.message || `加载项目失败: ${res.status} ${res.statusText}`) as Error & { statusCode?: number };
+      const err = new Error(
+        error.message || `加载项目失败: ${res.status} ${res.statusText}`
+      ) as Error & { statusCode?: number };
       err.statusCode = res.status;
       throw err;
     }
@@ -133,7 +133,9 @@ export const projectApi = {
         throw error;
       }
       const error = await res.json().catch(() => ({ message: '加载场景图失败' }));
-      const err = new Error(error.message || `加载场景图失败: ${res.status} ${res.statusText}`) as Error & { statusCode?: number };
+      const err = new Error(
+        error.message || `加载场景图失败: ${res.status} ${res.statusText}`
+      ) as Error & { statusCode?: number };
       err.statusCode = res.status;
       throw err;
     }
@@ -143,8 +145,6 @@ export const projectApi = {
       return json.data;
     }
   },
-
-
 
   // ...
 
@@ -236,7 +236,12 @@ export const projectApi = {
     return json?.data ?? [];
   },
 
-  async batchGenerate(shotIds: string[], jobType: 'IMAGE' | 'VIDEO' | 'STORYBOARD' | 'AUDIO', engine?: string, engineConfig?: Record<string, unknown>) {
+  async batchGenerate(
+    shotIds: string[],
+    jobType: 'IMAGE' | 'VIDEO' | 'STORYBOARD' | 'AUDIO',
+    engine?: string,
+    engineConfig?: Record<string, unknown>
+  ) {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/shots/batch/generate`, {
       method: 'POST',
       credentials: 'include',
@@ -254,10 +259,13 @@ export const projectApi = {
   },
 
   async generateStructure(projectId: string) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/structure/generate`, {
-      method: 'POST',
-      credentials: 'include',
-    });
+    const res = await fetchWithAuth(
+      `${API_BASE_URL}/api/projects/${projectId}/structure/generate`,
+      {
+        method: 'POST',
+        credentials: 'include',
+      }
+    );
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: 'Structure generation failed' }));
@@ -284,7 +292,9 @@ export const projectApi = {
         throw error;
       }
       const error = await res.json().catch(() => ({ message: '加载项目结构失败' }));
-      const err = new Error(error.message || `加载项目结构失败: ${res.status} ${res.statusText}`) as Error & { statusCode?: number };
+      const err = new Error(
+        error.message || `加载项目结构失败: ${res.status} ${res.statusText}`
+      ) as Error & { statusCode?: number };
       err.statusCode = res.status;
       throw err;
     }
@@ -300,10 +310,12 @@ export const projectApi = {
   async getSceneSemanticEnhancement(projectId: string, sceneId: string) {
     const res = await fetchWithAuth(
       `${API_BASE_URL}/api/projects/${projectId}/scenes/${sceneId}/semantic-enhancement`,
-      { credentials: 'include' },
+      { credentials: 'include' }
     );
     if (!res.ok) {
-      const err = new Error(`加载语义信息失败: ${res.status} ${res.statusText}`) as Error & { statusCode?: number };
+      const err = new Error(`加载语义信息失败: ${res.status} ${res.statusText}`) as Error & {
+        statusCode?: number;
+      };
       err.statusCode = res.status;
       throw err;
     }
@@ -314,10 +326,12 @@ export const projectApi = {
   async runSceneSemanticEnhancement(projectId: string, sceneId: string) {
     const res = await fetchWithAuth(
       `${API_BASE_URL}/api/projects/${projectId}/scenes/${sceneId}/semantic-enhancement`,
-      { method: 'POST', credentials: 'include' },
+      { method: 'POST', credentials: 'include' }
     );
     if (!res.ok) {
-      const err = new Error(`生成语义信息失败: ${res.status} ${res.statusText}`) as Error & { statusCode?: number };
+      const err = new Error(`生成语义信息失败: ${res.status} ${res.statusText}`) as Error & {
+        statusCode?: number;
+      };
       err.statusCode = res.status;
       throw err;
     }
@@ -329,10 +343,12 @@ export const projectApi = {
   async getShotPlanning(projectId: string, shotId: string) {
     const res = await fetchWithAuth(
       `${API_BASE_URL}/api/projects/${projectId}/shots/${shotId}/shot-planning`,
-      { credentials: 'include' },
+      { credentials: 'include' }
     );
     if (!res.ok) {
-      const err = new Error(`加载镜头规划失败: ${res.status} ${res.statusText}`) as Error & { statusCode?: number };
+      const err = new Error(`加载镜头规划失败: ${res.status} ${res.statusText}`) as Error & {
+        statusCode?: number;
+      };
       err.statusCode = res.status;
       throw err;
     }
@@ -343,10 +359,12 @@ export const projectApi = {
   async runShotPlanning(projectId: string, shotId: string) {
     const res = await fetchWithAuth(
       `${API_BASE_URL}/api/projects/${projectId}/shots/${shotId}/shot-planning`,
-      { method: 'POST', credentials: 'include' },
+      { method: 'POST', credentials: 'include' }
     );
     if (!res.ok) {
-      const err = new Error(`生成镜头规划失败: ${res.status} ${res.statusText}`) as Error & { statusCode?: number };
+      const err = new Error(`生成镜头规划失败: ${res.status} ${res.statusText}`) as Error & {
+        statusCode?: number;
+      };
       err.statusCode = res.status;
       throw err;
     }
@@ -358,10 +376,12 @@ export const projectApi = {
   async getStructureQualityReport(projectId: string) {
     const res = await fetchWithAuth(
       `${API_BASE_URL}/api/projects/${projectId}/structure-quality/report`,
-      { credentials: 'include' },
+      { credentials: 'include' }
     );
     if (!res.ok) {
-      const err = new Error(`加载质量报告失败: ${res.status} ${res.statusText}`) as Error & { statusCode?: number };
+      const err = new Error(`加载质量报告失败: ${res.status} ${res.statusText}`) as Error & {
+        statusCode?: number;
+      };
       err.statusCode = res.status;
       throw err;
     }
@@ -372,10 +392,12 @@ export const projectApi = {
   async runStructureQualityAssess(projectId: string) {
     const res = await fetchWithAuth(
       `${API_BASE_URL}/api/projects/${projectId}/structure-quality/assess`,
-      { method: 'POST', credentials: 'include' },
+      { method: 'POST', credentials: 'include' }
     );
     if (!res.ok) {
-      const err = new Error(`评估结构质量失败: ${res.status} ${res.statusText}`) as Error & { statusCode?: number };
+      const err = new Error(`评估结构质量失败: ${res.status} ${res.statusText}`) as Error & {
+        statusCode?: number;
+      };
       err.statusCode = res.status;
       throw err;
     }
@@ -412,7 +434,9 @@ export const projectApi = {
       }
     );
     if (!res.ok) {
-      const err = new Error(`重新运行质量决策失败: ${res.status}`) as Error & { statusCode?: number };
+      const err = new Error(`重新运行质量决策失败: ${res.status}`) as Error & {
+        statusCode?: number;
+      };
       err.statusCode = res.status;
       throw err;
     }
@@ -550,13 +574,10 @@ export const novelImportApi = {
     });
 
     const json: unknown = await safeJson(res);
-    const obj = (json && typeof json === 'object') ? (json as ErrorResponse) : null;
+    const obj = json && typeof json === 'object' ? (json as ErrorResponse) : null;
 
     if (!res.ok) {
-      const msg =
-        obj?.error?.message ||
-        obj?.message ||
-        `上传失败 (${res.status})`;
+      const msg = obj?.error?.message || obj?.message || `上传失败 (${res.status})`;
       throw new Error(msg);
     }
 
@@ -564,7 +585,10 @@ export const novelImportApi = {
     return (obj?.data ?? json) as ImportNovelResultDTO;
   },
 
-  async importNovel(projectId: string, payload: { novelName: string; author: string; fileUrl: string }): Promise<ImportNovelResultDTO> {
+  async importNovel(
+    projectId: string,
+    payload: { novelName: string; author: string; fileUrl: string }
+  ): Promise<ImportNovelResultDTO> {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/novel/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -573,13 +597,10 @@ export const novelImportApi = {
     });
 
     const json: unknown = await safeJson(res);
-    const obj = (json && typeof json === 'object') ? (json as ErrorResponse) : null;
+    const obj = json && typeof json === 'object' ? (json as ErrorResponse) : null;
 
     if (!res.ok) {
-      const msg =
-        obj?.error?.message ||
-        obj?.message ||
-        `导入失败 (${res.status})`;
+      const msg = obj?.error?.message || obj?.message || `导入失败 (${res.status})`;
       throw new Error(msg);
     }
 
@@ -594,13 +615,10 @@ export const novelImportApi = {
     });
 
     const json: unknown = await safeJson(res);
-    const obj = (json && typeof json === 'object') ? (json as ErrorResponse) : null;
+    const obj = json && typeof json === 'object' ? (json as ErrorResponse) : null;
 
     if (!res.ok) {
-      const msg =
-        obj?.error?.message ||
-        obj?.message ||
-        `分析失败 (${res.status})`;
+      const msg = obj?.error?.message || obj?.message || `分析失败 (${res.status})`;
       throw new Error(msg);
     }
 
@@ -615,13 +633,10 @@ export const novelImportApi = {
     });
 
     const json: unknown = await safeJson(res);
-    const obj = (json && typeof json === 'object') ? (json as ErrorResponse) : null;
+    const obj = json && typeof json === 'object' ? (json as ErrorResponse) : null;
 
     if (!res.ok) {
-      const msg =
-        obj?.error?.message ||
-        obj?.message ||
-        `获取任务失败 (${res.status})`;
+      const msg = obj?.error?.message || obj?.message || `获取任务失败 (${res.status})`;
       throw new Error(msg);
     }
 
@@ -631,12 +646,21 @@ export const novelImportApi = {
 
     // Checked safe access
     const dataObj = data as { jobs?: unknown[] };
-    if (data && typeof data === 'object' && Array.isArray(dataObj.jobs)) return dataObj.jobs as JobDTO[];
+    if (data && typeof data === 'object' && Array.isArray(dataObj.jobs))
+      return dataObj.jobs as JobDTO[];
     return [];
   },
 };
 
-import type { WorkerStatsDTO, OrchestratorStatsDTO, ListJobsResponse, JobDTO, ProjectDTO, ProjectDetailDTO, ImportNovelResultDTO } from '@/types/dto';
+import type {
+  WorkerStatsDTO,
+  OrchestratorStatsDTO,
+  ListJobsResponse,
+  JobDTO,
+  ProjectDTO,
+  ProjectDetailDTO,
+  ImportNovelResultDTO,
+} from '@/types/dto';
 
 // ================= Worker Monitor API =================
 export async function getWorkerMonitorStats(signal?: AbortSignal): Promise<WorkerStatsDTO | null> {
@@ -654,7 +678,9 @@ export async function getWorkerMonitorStats(signal?: AbortSignal): Promise<Worke
 }
 
 // ================= Orchestrator Monitor API =================
-export async function getOrchestratorMonitorStats(signal?: AbortSignal): Promise<OrchestratorStatsDTO | null> {
+export async function getOrchestratorMonitorStats(
+  signal?: AbortSignal
+): Promise<OrchestratorStatsDTO | null> {
   const res = await fetchWithAuth(`${API_BASE_URL}/api/monitor/orchestrator`, {
     signal,
     credentials: 'include',
@@ -740,7 +766,12 @@ class ApiClient {
       };
     },
 
-    async createJob(shotId: string, type: string, params: Record<string, unknown>, engine?: string) {
+    async createJob(
+      shotId: string,
+      type: string,
+      params: Record<string, unknown>,
+      engine?: string
+    ) {
       const res = await fetchWithAuth(`${API_BASE_URL}/api/shots/${shotId}/jobs`, {
         method: 'POST',
         credentials: 'include',
@@ -919,39 +950,48 @@ export const pipelineApi = {
   },
 
   async retryNode(projectId: string, nodeId: string, reason?: string, signal?: AbortSignal) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/pipeline/nodes/${encodeURIComponent(nodeId)}/retry`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason }),
-      signal,
-    });
+    const res = await fetchWithAuth(
+      `${API_BASE_URL}/api/projects/${projectId}/pipeline/nodes/${encodeURIComponent(nodeId)}/retry`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+        signal,
+      }
+    );
     if (!res.ok) throw new Error(`Failed to retry node: ${res.status}`);
     const json = await res.json();
     return json?.data ?? json;
   },
 
   async skipNode(projectId: string, nodeId: string, reason: string, signal?: AbortSignal) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/pipeline/nodes/${encodeURIComponent(nodeId)}/skip`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason }),
-      signal,
-    });
+    const res = await fetchWithAuth(
+      `${API_BASE_URL}/api/projects/${projectId}/pipeline/nodes/${encodeURIComponent(nodeId)}/skip`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+        signal,
+      }
+    );
     if (!res.ok) throw new Error(`Failed to skip node: ${res.status}`);
     const json = await res.json();
     return json?.data ?? json;
   },
 
   async forcePassNode(projectId: string, nodeId: string, reason: string, signal?: AbortSignal) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/pipeline/nodes/${encodeURIComponent(nodeId)}/force-pass`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason }),
-      signal,
-    });
+    const res = await fetchWithAuth(
+      `${API_BASE_URL}/api/projects/${projectId}/pipeline/nodes/${encodeURIComponent(nodeId)}/force-pass`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+        signal,
+      }
+    );
     if (!res.ok) throw new Error(`Failed to force-pass node: ${res.status}`);
     const json = await res.json();
     return json?.data ?? json;

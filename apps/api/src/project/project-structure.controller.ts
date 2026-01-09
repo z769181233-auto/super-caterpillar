@@ -11,7 +11,10 @@ import { randomUUID } from 'crypto';
 @Controller('projects/:projectId/structure')
 @UseGuards(JwtOrHmacGuard)
 export class ProjectStructureController {
-  constructor(@Inject(ProjectStructureService) private readonly projectStructureService: ProjectStructureService) { }
+  constructor(
+    @Inject(ProjectStructureService)
+    private readonly projectStructureService: ProjectStructureService
+  ) {}
 
   /**
    * S3-C: GET /api/projects/:projectId/structure
@@ -21,7 +24,7 @@ export class ProjectStructureController {
   async getProjectStructure(
     @Param('projectId') projectId: string,
     @CurrentUser() user: { userId: string },
-    @CurrentOrganization() organizationId: string | null,
+    @CurrentOrganization() organizationId: string | null
   ): Promise<{
     success: boolean;
     data: ProjectStructureTree;
@@ -35,7 +38,7 @@ export class ProjectStructureController {
     const data = await this.projectStructureService.getProjectStructureTree(
       projectId,
       user.userId,
-      organizationId,
+      organizationId
     );
 
     return {
@@ -46,4 +49,3 @@ export class ProjectStructureController {
     };
   }
 }
-

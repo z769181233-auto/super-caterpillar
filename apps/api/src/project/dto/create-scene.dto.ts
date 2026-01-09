@@ -28,14 +28,3 @@ export class CreateSceneDto {
   @IsObject()
   metadata?: Record<string, any>;
 }
-
-
-
-
-
-
-
-
-
-
-

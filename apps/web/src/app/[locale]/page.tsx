@@ -1,4 +1,3 @@
-
 import { LandingPage } from '@/components/landing/LandingPage';
 
 interface PageProps {

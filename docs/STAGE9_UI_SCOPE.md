@@ -39,16 +39,17 @@
 
 ## 四、UI 优化允许范围
 
-✅ **允许修改**: 
-- UI 组件 (apps/web/src/components/**)
-- 页面布局 (apps/web/src/app/**)
-- 样式文件 (apps/web/src/styles/**)
+✅ **允许修改**:
+
+- UI 组件 (apps/web/src/components/\*\*)
+- 页面布局 (apps/web/src/app/\*\*)
+- 样式文件 (apps/web/src/styles/\*\*)
 - 交互细节 (hover / loading / empty state)
 
-❌ **禁止修改**: 
+❌ **禁止修改**:
+
 - API 接口
 - Worker / Job / Guard / Script
 - 数据库 / Prisma / Schema
 - Stage5-8 的 CI Guard
 - Props 语义 / 状态流转
-

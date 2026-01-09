@@ -11,5 +11,4 @@ import { AuthModule } from '../auth/auth.module';
   providers: [EngineAdminService],
   exports: [EngineAdminService], // S3-C.1: 导出以在 EngineController 中使用
 })
-export class EngineAdminModule { }
-
+export class EngineAdminModule {}

@@ -10,13 +10,15 @@ import { UserDTO } from '@/types/dto';
 export default function UserInfo() {
   const router = useRouter();
   const [user, setUser] = useState<UserDTO | null>(null);
-  const [organizations, setOrganizations] = useState<Array<{
-    id: string;
-    name: string;
-    slug?: string;
-    role: string;
-    joinedAt: string;
-  }>>([]);
+  const [organizations, setOrganizations] = useState<
+    Array<{
+      id: string;
+      name: string;
+      slug?: string;
+      role: string;
+      joinedAt: string;
+    }>
+  >([]);
   const [currentOrganizationId, setCurrentOrganizationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,7 +66,7 @@ export default function UserInfo() {
     }
   };
 
-  const currentOrganization = organizations.find(org => org.id === currentOrganizationId);
+  const currentOrganization = organizations.find((org) => org.id === currentOrganizationId);
 
   if (loading) {
     return <div>加载中...</div>;
@@ -154,14 +156,3 @@ export default function UserInfo() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

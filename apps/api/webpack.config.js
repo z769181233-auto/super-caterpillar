@@ -7,22 +7,9 @@ module.exports = function (options) {
       ...options.resolve,
       alias: {
         ...(options.resolve?.alias || {}),
-        'config': path.resolve(__dirname, '../../packages/config/src'),
+        config: path.resolve(__dirname, '../../packages/config/src'),
       },
     },
-    externals: [
-      ...(options.externals || []),
-    ],
+    externals: [...(options.externals || [])],
   };
 };
-
-
-
-
-
-
-
-
-
-
-

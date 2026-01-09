@@ -1,6 +1,12 @@
 // apps/api/src/project/project-structure.service.ts
 
-import { Injectable, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectService } from './project.service';
 import { TaskStatus } from 'database';
@@ -16,8 +22,8 @@ import {
 export class ProjectStructureService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => ProjectService)) private readonly projectService: ProjectService,
-  ) { }
+    @Inject(forwardRef(() => ProjectService)) private readonly projectService: ProjectService
+  ) {}
 
   /**
    * S3-C: Authoritative Project Structure Tree
@@ -26,7 +32,7 @@ export class ProjectStructureService {
   async getProjectStructureTree(
     projectId: string,
     userId: string,
-    organizationId: string,
+    organizationId: string
   ): Promise<ProjectStructureTree> {
     // 1. Check Ownership
     await this.projectService.checkOwnership(projectId, userId);
@@ -47,10 +53,11 @@ export class ProjectStructureService {
           orderBy: { updatedAt: 'desc' },
           take: 1,
         },
-        novelSources: { // Fetch for sourceType determination
+        novelSources: {
+          // Fetch for sourceType determination
           take: 1,
-          select: { id: true }
-        }
+          select: { id: true },
+        },
       },
     });
 
@@ -64,7 +71,8 @@ export class ProjectStructureService {
       const task = project.tasks[0];
       if (task.status === TaskStatus.SUCCEEDED) analysisStatus = 'DONE';
       else if (task.status === TaskStatus.FAILED) analysisStatus = 'FAILED';
-      else if (['PENDING', 'RUNNING', 'RETRYING'].includes(task.status)) analysisStatus = 'ANALYZING';
+      else if (['PENDING', 'RUNNING', 'RETRYING'].includes(task.status))
+        analysisStatus = 'ANALYZING';
     }
 
     // [Start] Strict Status Mapping Logic (Mirrors ProjectService)
@@ -72,7 +80,10 @@ export class ProjectStructureService {
     let sourceType: 'DEMO' | 'NOVEL' = 'NOVEL';
     const isDemoName = project.name.includes('Demo') || project.name.includes('示例');
     // If no novel source and has demo name or ID -> DEMO
-    if ((!project.novelSources || project.novelSources.length === 0) && (project.id === SMOKE_PROJECT_ID || isDemoName)) {
+    if (
+      (!project.novelSources || project.novelSources.length === 0) &&
+      (project.id === SMOKE_PROJECT_ID || isDemoName)
+    ) {
       sourceType = 'DEMO';
     }
 
@@ -229,4 +240,3 @@ export class ProjectStructureService {
     };
   }
 }
-

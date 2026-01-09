@@ -152,7 +152,7 @@ export class EngineConfigStoreService {
     const merged = this.deepMerge<any>(
       (jsonConfig as any) ?? {},
       (engine?.config as any) ?? {},
-      (versionConfig as any) ?? {},
+      (versionConfig as any) ?? {}
     );
 
     return merged;
@@ -165,4 +165,3 @@ export class EngineConfigStoreService {
     return enginesJson.engines.find((e: EngineJsonConfig) => e.engineKey === engineKey);
   }
 }
-

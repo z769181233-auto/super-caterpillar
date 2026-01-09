@@ -29,9 +29,9 @@ export class PrismaQueryRawAuditInterceptor implements NestInterceptor {
         // 实际禁止应该在代码层面通过 ESLint 规则实现
         this.logger.warn(
           `[PrismaAudit] Potential $queryRaw usage detected at ${method} ${path}. ` +
-          `Please ensure no SQL string concatenation is used.`,
+            `Please ensure no SQL string concatenation is used.`
         );
-      }),
+      })
     );
   }
 }
@@ -49,10 +49,11 @@ export function auditQueryRaw(sql: string, params?: any[]): void {
     if (sql.includes('${') || sql.includes('${') || sql.includes('+')) {
       logger.error(
         `[SECURITY] Detected potential SQL injection risk: string concatenation in $queryRaw. ` +
-        `SQL: ${sql.substring(0, 100)}...`,
+          `SQL: ${sql.substring(0, 100)}...`
       );
-      throw new Error('SQL string concatenation is forbidden in production. Use Prisma template literals instead.');
+      throw new Error(
+        'SQL string concatenation is forbidden in production. Use Prisma template literals instead.'
+      );
     }
   }
 }
-

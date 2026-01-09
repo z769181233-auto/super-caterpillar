@@ -10,12 +10,14 @@
 ### 1. 登录页面 (`/login`)
 
 **功能**:
+
 - 邮箱和密码输入
 - 登录按钮
 - 错误提示显示
 - 登录成功后自动跳转到项目列表
 
 **调用的后端接口**:
+
 - `POST /api/auth/login`
 
 **实现文件**: `apps/web/src/app/login/page.tsx`
@@ -25,12 +27,14 @@
 ### 2. 项目列表页面 (`/projects`)
 
 **功能**:
+
 - 显示项目列表（当前后端暂未实现列表接口，显示为空）
 - 创建新项目表单
 - 项目卡片展示（名称、描述、创建时间）
 - 点击项目卡片跳转到项目详情页
 
 **调用的后端接口**:
+
 - `GET /api/projects` (TODO: 后端暂未实现，当前返回空数组)
 - `POST /api/projects` (创建项目)
 
@@ -41,6 +45,7 @@
 ### 3. 项目详情页面 (`/projects/[id]`)
 
 **功能**:
+
 - 四栏布局展示层级结构：
   - Seasons 列
   - Episodes 列
@@ -51,6 +56,7 @@
 - 实时更新层级结构
 
 **调用的后端接口**:
+
 - `GET /api/projects/:id` (获取项目详情，包含完整层级)
 - `POST /api/projects/:projectId/seasons` (创建 Season)
 - `POST /api/projects/seasons/:seasonId/episodes` (创建 Episode)
@@ -64,6 +70,7 @@
 ### 4. 首页 (`/`)
 
 **功能**:
+
 - 自动检测 token
 - 有 token 则跳转到 `/projects`
 - 无 token 则跳转到 `/login`
@@ -75,11 +82,13 @@
 ### 5. 用户信息组件
 
 **功能**:
+
 - 显示当前用户邮箱
 - 退出登录按钮
 - 自动获取用户信息
 
 **调用的后端接口**:
+
 - `GET /api/users/me`
 
 **实现文件**: `apps/web/src/components/UserInfo.tsx`
@@ -144,6 +153,7 @@
 **文件**: `apps/web/src/lib/apiClient.ts`
 
 **功能**:
+
 - 统一封装 HTTP 请求（GET/POST/PATCH/DELETE）
 - 自动附加 Authorization 头（Bearer token）
 - 统一处理错误响应
@@ -182,6 +192,7 @@ projectApi.updateShot(id, data)
 **文件**: `apps/web/src/config/api.ts`
 
 **配置项**:
+
 - `baseURL`: 从环境变量 `NEXT_PUBLIC_API_BASE_URL` 读取，默认 `http://localhost:3000/api`
 - `timeout`: 请求超时时间（30秒）
 
@@ -192,10 +203,12 @@ projectApi.updateShot(id, data)
 ### Token 管理
 
 **当前实现**:
+
 - 使用 `localStorage` 存储 `accessToken` 和 `refreshToken`
 - TODO: 应改为 httpOnly cookie（需要后端支持）
 
 **方法**:
+
 - `apiClient.setToken(token)`: 保存 token
 - `apiClient.clearToken()`: 清除 token
 - `apiClient.getToken()`: 获取 token
@@ -203,6 +216,7 @@ projectApi.updateShot(id, data)
 ### 错误处理
 
 **统一错误格式**:
+
 ```typescript
 interface ApiError {
   code: string;
@@ -212,12 +226,14 @@ interface ApiError {
 ```
 
 **错误处理逻辑**:
+
 - 401 未授权：尝试刷新 token，失败则清除 token 并跳转登录
 - 其他错误：显示错误消息给用户
 
 ### 加载状态
 
 **实现方式**:
+
 - 使用 `useState` 管理 `loading` 状态
 - 在请求期间显示「加载中...」提示
 - 请求完成后隐藏加载状态
@@ -225,6 +241,7 @@ interface ApiError {
 ### 空态处理
 
 **实现位置**:
+
 - 项目列表页：显示「当前没有项目」提示
 - 项目详情页：各列显示「暂无 XXX」或「请先选择 XXX」提示
 
@@ -237,10 +254,12 @@ interface ApiError {
 **文件**: `apps/web/src/middleware.ts`
 
 **功能**:
+
 - 检查受保护的路由（`/projects` 及其子路由）
 - 当前仅做路径检查，实际 token 验证在客户端组件中进行
 
 **客户端验证**:
+
 - 在需要认证的页面组件中，调用 API 时如果返回 401，自动跳转到 `/login`
 - 在 `UserInfo` 组件中，获取用户信息失败时跳转登录
 
@@ -346,11 +365,13 @@ apps/web/
 ### 启动步骤
 
 1. **启动后端**（如果未启动）:
+
    ```bash
    pnpm dev:api
    ```
 
 2. **启动前端**:
+
    ```bash
    pnpm dev:web
    ```
@@ -414,30 +435,36 @@ apps/web/
 #### 1. `GET /api/projects` - 项目列表接口
 
 **功能**:
+
 - 返回当前用户有权限看到的项目列表
 - 支持分页参数（page, pageSize），默认单页全量返回
 - 返回字段：id, name, description, createdAt, updatedAt, status
 
 **实现文件**:
+
 - `apps/api/src/project/project.controller.ts`
 - `apps/api/src/project/project.service.ts` (新增 `findAll` 方法)
 
 **E2E 测试**:
+
 - `apps/api/test/e2e/project-list.e2e-spec.ts`
 - 测试覆盖：未登录 401、登录后获取列表、空列表情况
 
 #### 2. `GET /api/projects/:id/tree` - 项目树聚合接口
 
 **功能**:
+
 - 一次返回 Project → Seasons → Episodes → Scenes → Shots 的完整树结构
 - 优化前端数据获取，减少请求数
 - 返回结构包含每级的 id、name、index、状态字段
 
 **实现文件**:
+
 - `apps/api/src/project/project.controller.ts`
 - `apps/api/src/project/project.service.ts` (新增 `findTreeById` 方法)
 
 **E2E 测试**:
+
 - `apps/api/test/e2e/project-tree.e2e-spec.ts`
 - 测试覆盖：完整层级结构、层级关系正确性
 
@@ -446,27 +473,32 @@ apps/web/
 #### 后端改造
 
 **修改文件**:
+
 - `apps/api/src/main.ts` - 添加 cookie-parser 中间件
 - `apps/api/src/auth/auth.controller.ts` - 登录/注册/刷新接口设置 httpOnly cookie
 - `apps/api/src/auth/jwt.strategy.ts` - 从 cookie 读取 token（兼容 Authorization header）
 
 **Cookie 配置**:
+
 - `httpOnly: true` - 防止 XSS 攻击
 - `secure: true` (生产环境) - 仅 HTTPS 传输
 - `sameSite: 'strict'` (生产环境) / `'lax'` (开发环境) - CSRF 防护
 - `maxAge: 7 days` (accessToken) / `30 days` (refreshToken)
 
 **新增接口**:
+
 - `POST /api/auth/logout` - 清除 cookie
 
 #### 前端改造
 
 **修改文件**:
+
 - `apps/web/src/lib/apiClient.ts` - 移除 localStorage token 逻辑，使用 cookie 自动携带
 - `apps/web/src/components/UserInfo.tsx` - 更新 logout 逻辑
 - `apps/web/src/app/page.tsx` - 移除 localStorage 检查
 
 **改进**:
+
 - ✅ Token 通过 httpOnly cookie 自动管理，无需手动处理
 - ✅ 所有请求自动携带 cookie（`credentials: 'include'`）
 - ✅ 401 时自动尝试刷新 token（通过 cookie）
@@ -476,12 +508,14 @@ apps/web/
 #### 项目列表页 (`/projects`)
 
 **新设计**:
+
 - 左侧固定栏（320px）：项目列表 + 创建表单
 - 右侧占位区域：提示选择项目
 - 卡片式项目展示，hover 效果
 - 清晰的视觉层次和间距
 
 **改进点**:
+
 - ✅ 更清晰的信息架构
 - ✅ 更好的视觉反馈（hover、选中状态）
 - ✅ 统一的卡片样式
@@ -489,12 +523,14 @@ apps/web/
 #### 项目详情页 (`/projects/[id]`)
 
 **新设计**:
+
 - 左侧导航栏（240px）：项目基本信息 + 返回链接
 - 右侧主内容区：四栏网格布局（Seasons / Episodes / Scenes / Shots）
 - 每列独立卡片，支持滚动
 - 选中状态高亮显示
 
 **改进点**:
+
 - ✅ 更清晰的层级结构展示
 - ✅ 更好的交互体验（选中联动）
 - ✅ 统一的创建表单样式
@@ -506,6 +542,7 @@ apps/web/
 **测试文件**: `apps/web/e2e/smoke.spec.ts`
 
 **测试用例**:
+
 1. **完整流程测试**:
    - 打开登录页
    - 登录成功
@@ -521,6 +558,7 @@ apps/web/
    - 验证自动跳转到登录页
 
 **测试命令**:
+
 ```bash
 cd apps/web
 pnpm test:e2e        # 运行测试
@@ -528,6 +566,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 ```
 
 **前置条件**:
+
 - 后端 API 服务必须已启动（`pnpm dev:api`）
 - 测试账号必须存在（email: `test@example.com`, password: `password123`）
 
@@ -597,6 +636,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 #### Shot 模型扩展
 
 **新增字段**:
+
 - `title` (String?) - 镜头标题
 - `description` (String?) - 画面内容/动作/环境描述
 - `dialogue` (String?) - 对白或配音文本
@@ -608,18 +648,21 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 - `reviewedAt` (DateTime?) - 审核时间
 
 **状态枚举扩展**:
+
 - `ShotStatus`: 新增 `DRAFT`, `READY`, `GENERATING`, `GENERATED`, `FAILED`（保持向后兼容旧状态）
 - `ShotReviewStatus`: 新增枚举 `PENDING`, `APPROVED`, `REJECTED`
 
 #### ShotJob 模型（新增）
 
 **字段**:
+
 - `id`, `shotId`, `type` (JobType), `status` (JobStatus)
 - `payload` (Json) - 生成请求参数
 - `result` (Json?) - 生成结果元数据
 - `startedAt`, `finishedAt`, `createdAt`, `updatedAt`
 
 **枚举**:
+
 - `JobType`: IMAGE, VIDEO, STORYBOARD, AUDIO
 - `JobStatus`: PENDING, RUNNING, SUCCEEDED, FAILED, CANCELLED
 
@@ -641,6 +684,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 #### Mock 生成流程
 
 **当前实现**:
+
 - 创建 Job 后，异步处理（模拟 1-3 秒延迟）
 - 状态流转：`PENDING` → `RUNNING` → `SUCCEEDED` / `FAILED`
 - 自动更新 Shot：
@@ -649,6 +693,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
   - `generatedAt` = 当前时间
 
 **后续接入真实 Worker**:
+
 - `MockJobProcessor` 可替换为真实 Worker 调用
 - 预留接口：`JobService.processJobAsync()` 方法
 
@@ -659,6 +704,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 **位置**: `apps/web/src/components/ShotEditor.tsx`
 
 **功能**:
+
 1. **编辑模式**:
    - 编辑 title, description, dialogue, prompt
    - 保存按钮调用 `PATCH /api/projects/shots/:id`
@@ -680,10 +726,12 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 #### 集成到项目详情页
 
 **布局**:
+
 - 左侧：四栏结构（Seasons / Episodes / Scenes / Shots）
 - 右侧：Shot 编辑面板（ShotEditor 组件）
 
 **交互**:
+
 - 点击 Shots 列表中的 Shot，右侧显示编辑面板
 - 自动选中第一个 Shot（如果存在）
 
@@ -692,15 +740,18 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 #### 审核状态管理
 
 **字段**:
+
 - `reviewStatus`: PENDING / APPROVED / REJECTED
 - `reviewNote`: 驳回原因/修改建议
 - `reviewedAt`: 审核时间
 
 **操作**:
+
 - 通过：设置 `reviewStatus = APPROVED`, `reviewedAt = now`
 - 驳回：设置 `reviewStatus = REJECTED`, `reviewNote = 用户输入`, `reviewedAt = now`
 
 **权限**:
+
 - 当前无完整权限系统，所有登录用户可审核
 - TODO: 后续接入完整 PermissionModule
 
@@ -766,6 +817,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 #### 接口：`GET /api/projects/shots`
 
 **查询参数**（全部可选）:
+
 - `projectId` - 项目 ID
 - `seasonId` - Season ID
 - `episodeId` - Episode ID
@@ -776,6 +828,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 - `page` / `pageSize` - 分页参数
 
 **返回内容**:
+
 - `shots` - Shot 数组，每条包含：
   - Shot 基本字段（id, title, status, reviewStatus, previewUrl, generatedAt, reviewedAt）
   - 所属层级信息（projectId, projectName, seasonId, seasonName, episodeId, episodeName, sceneId, sceneIndex）
@@ -783,11 +836,13 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 - `page`, `pageSize`, `totalPages` - 分页信息
 
 **实现文件**:
+
 - `apps/api/src/project/project.service.ts` - `listShots` 方法
 - `apps/api/src/project/project.controller.ts` - `GET /api/projects/shots` 路由
 - `apps/api/src/project/dto/list-shots.dto.ts` - 查询参数 DTO
 
 **E2E 测试**:
+
 - `apps/api/test/e2e/shots-list.e2e-spec.ts`
 - 测试覆盖：未登录 401、登录后获取列表、按 projectId/status 过滤、分页功能
 
@@ -806,10 +861,12 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
    - 行为：为每个 Shot 创建 Job，使用 Mock 方式异步处理
 
 **实现文件**:
+
 - `apps/api/src/project/project.controller.ts` - 批量操作路由
 - `apps/api/src/project/project.service.ts` - 权限检查（复用现有方法）
 
 **E2E 测试**:
+
 - `apps/api/test/e2e/shots-batch.e2e-spec.ts`
 - 测试覆盖：批量审核、批量驳回、批量生成
 
@@ -822,6 +879,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 #### 页面结构
 
 **左侧过滤栏**（280px）:
+
 - 关键词搜索框（搜索 title/description/dialogue）
 - 生成状态下拉（DRAFT/READY/GENERATING/GENERATED/FAILED）
 - 审核状态下拉（PENDING/APPROVED/REJECTED）
@@ -829,6 +887,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 - 清除筛选按钮
 
 **右侧主内容区**:
+
 - **统计条**（顶部）:
   - 总计 Shots 数
   - 各 status 数量（带颜色标签）
@@ -858,6 +917,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 ### ✅ 基础统计视图
 
 **实现方式**:
+
 - 前端根据当前列表数据本地统计
 - 统计项：
   - 总 Shots 数（`stats.total`）
@@ -865,6 +925,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
   - 各 reviewStatus 数量（`stats.byReviewStatus`）
 
 **显示位置**:
+
 - 导演工作台页面顶部统计条
 - 实时更新（随过滤条件变化）
 
@@ -931,6 +992,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 #### ShotJob 模型扩展
 
 **新增字段**:
+
 - `priority` (Int, default: 100) - 任务优先级（数值越小优先级越高）
 - `attempts` (Int, default: 0) - 已尝试次数
 - `maxAttempts` (Int, default: 3) - 最大重试次数
@@ -940,6 +1002,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 - `processor` (String, default: "mock") - 标记由哪个 Processor 处理
 
 **数据库索引**:
+
 - 新增复合索引：`[status, priority, scheduledAt]` - 用于 Worker 高效查询
 
 ### ✅ JobProcessor 接口抽象
@@ -949,6 +1012,7 @@ pnpm test:e2e:ui     # 运行测试（UI 模式）
 **文件**: `apps/api/src/job/job-processor.interface.ts`
 
 **接口**:
+
 ```typescript
 interface JobProcessor {
   supports(type: JobType): boolean;
@@ -957,12 +1021,14 @@ interface JobProcessor {
 ```
 
 **实现**:
+
 - `MockJobProcessor` - 当前 Mock 实现
   - 支持所有 JobType（IMAGE/VIDEO/STORYBOARD/AUDIO）
   - 模拟 1-3 秒延迟
   - 5% 随机失败率（用于测试重试）
 
 **Processor Registry**:
+
 - `JobProcessorRegistry` - Processor 注册表
   - 支持注册多个 Processor
   - 根据 Job.processor 字段或 JobType 查找 Processor
@@ -975,6 +1041,7 @@ interface JobProcessor {
 **文件**: `apps/api/src/job/job-worker.service.ts`
 
 **功能**:
+
 - 周期性轮询待处理任务（默认 3 秒间隔）
 - 查询条件：
   - `status = PENDING`
@@ -985,10 +1052,12 @@ interface JobProcessor {
 - 批量处理（默认每次 5 个任务）
 
 **生命周期**:
+
 - `onModuleInit()` - 自动启动 Worker
 - `onModuleDestroy()` - 清理定时器
 
 **配置**:
+
 - `JOB_WORKER_ENABLED` - 是否启用（默认 true）
 - `JOB_WORKER_INTERVAL` - 轮询间隔（默认 3000ms）
 - `JOB_WORKER_BATCH_SIZE` - 批量大小（默认 5）
@@ -998,6 +1067,7 @@ interface JobProcessor {
 #### 处理逻辑（JobService.processJob）
 
 **流程**:
+
 1. 检查 Job 状态和重试次数
 2. 检查 scheduledAt（延迟重试）
 3. 加锁（lockedAt = now）并更新状态为 RUNNING
@@ -1007,11 +1077,13 @@ interface JobProcessor {
    - 失败：根据 attempts 决定重试或标记为 FAILED
 
 **重试机制**:
+
 - 失败后设置 `scheduledAt = now + 30秒`
 - 状态回退到 `PENDING`，等待下次轮询
 - 超过 `maxAttempts` 后标记为 `FAILED`
 
 **幂等控制**:
+
 - 通过 `lockedAt` 防止并发处理
 - 锁过期时间：5 分钟
 
@@ -1020,11 +1092,13 @@ interface JobProcessor {
 #### 批量生成逻辑调整
 
 **变更**:
+
 - 不再在 Controller 内部直接处理
 - 改为：创建 Job（status = PENDING）→ 交由 Worker 处理
 - 返回提示信息："已提交 X 个生成任务，将在后台队列中逐步处理"
 
 **保持兼容**:
+
 - API 接口不变
 - 前端行为不变（仍可调用批量生成接口）
 - 状态更新方式不变（通过轮询或手动刷新查看）
@@ -1034,12 +1108,14 @@ interface JobProcessor {
 #### ShotEditor 组件
 
 **增强**:
+
 - Job 历史列表显示新字段：`attempts`, `maxAttempts`, `lastError`
 - 生成按钮下方提示："任务将在后台队列中处理，请稍后刷新查看状态"
 
 #### 导演工作台
 
 **增强**:
+
 - 批量生成后显示提示信息（从后端返回的 message）
 - 提示："已提交 X 个镜头的生成任务，将在后台逐步处理"
 
@@ -1150,17 +1226,20 @@ interface JobProcessor {
    - 返回：`{ succeeded, failed, total }`
 
 **实现文件**:
+
 - `apps/api/src/job/dto/list-jobs.dto.ts` - 查询参数 DTO（新建）
 - `apps/api/src/job/dto/job-operations.dto.ts` - 运维操作 DTO（新建）
 - `apps/api/src/job/job.service.ts` - 新增 `listJobs`, `retryJob`, `cancelJob`, `forceFailJob`, `batchRetry`, `batchCancel`, `batchForceFail` 方法
 - `apps/api/src/job/job.controller.ts` - 新增 7 个路由
 
 **状态机约束**:
+
 - 只允许对 PENDING/FAILED/CANCELLED 进行 retry
 - RUNNING 状态的 cancel/force-fail 需要等锁过期后生效，或直接拒绝
 - 运维接口不破坏 Worker 的锁定逻辑
 
 **E2E 测试**:
+
 - `apps/api/test/e2e/job-dashboard.e2e-spec.ts`
 - 测试覆盖：查询过滤、分页、单 Job 运维、批量运维
 
@@ -1173,6 +1252,7 @@ interface JobProcessor {
 #### 页面结构
 
 **左侧过滤栏**（280px）:
+
 - 状态下拉（PENDING/RUNNING/SUCCEEDED/FAILED/CANCELLED）
 - 类型下拉（IMAGE/VIDEO/STORYBOARD/AUDIO）
 - Processor 下拉（当前：mock）
@@ -1182,6 +1262,7 @@ interface JobProcessor {
 - 清除筛选按钮
 
 **右侧主内容区**:
+
 - **统计条**（顶部）:
   - Job 总数
   - 各状态数量（带颜色标签）
@@ -1218,15 +1299,18 @@ interface JobProcessor {
 #### JobWorkerService 日志增强
 
 **日志记录**:
+
 - Job 进入 RUNNING 时输出日志（包含 jobId, type, attempt）
 - Job 成功/失败/最终失败时输出日志
 - 使用 Nest Logger
 
 **实现位置**:
+
 - `apps/api/src/job/job-worker.service.ts` - 在处理完成后记录日志
 - `apps/api/src/job/job.service.ts` - 在 processJob 方法中记录处理开始日志
 
 **日志格式**:
+
 ```
 [JobWorker] Processing job {jobId} ({type}), attempt {attempt}/{maxAttempts}
 [JobWorker] Job {jobId} ({type}) succeeded after {attempts} attempts
@@ -1307,6 +1391,7 @@ interface JobProcessor {
 #### ShotJob 模型扩展
 
 **新增字段**:
+
 - `engine` (String, default: "mock") - 目标引擎标识
   - `"mock"` - 模拟引擎（默认）
   - `"real-http"` - 真实 HTTP 引擎骨架
@@ -1317,9 +1402,11 @@ interface JobProcessor {
 #### Shot 模型扩展
 
 **新增字段**:
+
 - `preferredEngine` (String?) - 引擎偏好（如不设置则用默认引擎）
 
 **数据库迁移**:
+
 - 执行 `pnpm db:generate` + `pnpm db:push`
 - 已有数据不崩溃（engine 默认值为 "mock"）
 
@@ -1330,6 +1417,7 @@ interface JobProcessor {
 **文件**: `apps/api/src/engine/engine-adapter.interface.ts`
 
 **接口**:
+
 ```typescript
 interface EngineAdapter {
   readonly name: string;
@@ -1339,12 +1427,14 @@ interface EngineAdapter {
 ```
 
 **EngineRequest**:
+
 - `jobId` - Job ID
 - `type` - JobType
 - `payload` - 请求参数
 - `engineConfig` - 引擎配置
 
 **EngineResult**:
+
 - `success` - 是否成功
 - `previewUrl` - 预览 URL
 - `fileUrl` - 文件 URL
@@ -1357,6 +1447,7 @@ interface EngineAdapter {
 **文件**: `apps/api/src/engine/engine-registry.service.ts`
 
 **功能**:
+
 - 注册引擎适配器
 - 根据引擎名称查找适配器
 - 支持回退到默认引擎
@@ -1369,6 +1460,7 @@ interface EngineAdapter {
 **文件**: `apps/api/src/engine/adapters/mock-engine.adapter.ts`
 
 **功能**:
+
 - 实现 `EngineAdapter` 接口
 - `name = "mock"`
 - 支持所有 JobType（IMAGE/VIDEO/STORYBOARD/AUDIO）
@@ -1384,6 +1476,7 @@ interface EngineAdapter {
 **文件**: `apps/api/src/engine/adapters/http-engine.adapter.ts`
 
 **功能**:
+
 - 实现 `EngineAdapter` 接口
 - `name = "real-http"`
 - 支持 IMAGE 和 VIDEO 类型
@@ -1394,6 +1487,7 @@ interface EngineAdapter {
   - TODO: 后续接入真实引擎时，只需替换 `execute()` 方法的内部逻辑
 
 **占位实现示例**:
+
 ```typescript
 // 当前：模拟 HTTP 调用延迟，返回固定成功结果
 // 后续：实现真实 HTTP 调用
@@ -1409,6 +1503,7 @@ const response = await fetch(`${this.baseUrl}/api/generate`, {
 #### 调整逻辑
 
 **变更**:
+
 - 保留 `JobProcessor` 接口（向后兼容）
 - `JobService.processJob()` 内部逻辑调整：
   - 根据 `Job.engine` 字段，向 `EngineRegistry` 请求对应 `EngineAdapter`
@@ -1417,6 +1512,7 @@ const response = await fetch(`${this.baseUrl}/api/generate`, {
   - 根据 `EngineResult` 更新 Job 和 Shot
 
 **调用链**:
+
 ```
 Job (engine="mock" or "real-http")
   → EngineRegistry.findAdapter(engine)
@@ -1431,14 +1527,17 @@ Job (engine="mock" or "real-http")
 #### API 层变更
 
 **CreateJobDto 扩展**:
+
 - `engine?: string` - 引擎标识（可选）
 - `engineConfig?: Record<string, any>` - 引擎配置（可选）
 
 **Job 创建逻辑**:
+
 - 优先级：请求指定 > Shot 偏好 > 默认配置
 - 创建 Job 时写入 `engine` 和 `engineConfig` 字段
 
 **批量生成支持**:
+
 - `POST /api/projects/shots/batch/generate` 支持 `engine` 和 `engineConfig` 参数
 
 ### ✅ 前端可选增强
@@ -1446,6 +1545,7 @@ Job (engine="mock" or "real-http")
 #### ShotEditor 组件
 
 **增强**:
+
 - 增加引擎选择下拉框：
   - 选项：Mock（模拟）/ Real HTTP（真实引擎骨架）
   - 默认值：`"mock"`
@@ -1454,6 +1554,7 @@ Job (engine="mock" or "real-http")
 #### 导演工作台
 
 **增强**:
+
 - 批量生成支持引擎选择（可选，当前保持默认行为）
 
 ### ✅ 配置项
@@ -1461,10 +1562,12 @@ Job (engine="mock" or "real-http")
 #### 环境变量
 
 **新增配置**:
+
 - `ENGINE_DEFAULT` - 默认使用的引擎（默认：`"mock"`）
 - `ENGINE_REAL_HTTP_BASE_URL` - 真实 HTTP 引擎基础 URL（默认：`"http://localhost:8000"`）
 
 **配置位置**:
+
 - `packages/config/src/env.ts`
 
 ### ✅ 新增/修改的主要文件
@@ -1561,14 +1664,3 @@ Job (engine="mock" or "real-http")
 **报告生成时间**: 2025-12-07  
 **报告版本**: 7.0 (Studio v0.6)  
 **状态**: ✅ 第七阶段改造完成，EngineAdapter v1 可用（引擎抽象、Mock/Real 适配器、配置化引擎选择）
-
-
-
-
-
-
-
-
-
-
-

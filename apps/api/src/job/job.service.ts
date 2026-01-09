@@ -96,7 +96,7 @@ export class JobService {
     @Inject(BudgetService) private readonly budgetService: BudgetService,
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService
-  ) { }
+  ) {}
 
   async create(
     shotId: string,
@@ -690,7 +690,7 @@ export class JobService {
           type: jobType,
           status: JobStatusEnum.PENDING,
           payload: {
-            shotId,
+            shotId, // Explicitly include shotId in payload for Processor
             frameKeys,
             fps: 24, // Default FPS
           },
@@ -698,7 +698,33 @@ export class JobService {
         },
       });
 
-      this.logger.log(`[JobService] ensureVideoRenderJob: Created job ${job.id}`);
+      // 5. Select & Bind Engine (P0-R2 Fix)
+      // Must happen in the same transaction to prevent "headless" jobs
+      const engineSelection = await this.jobEngineBindingService.selectEngineForJob(jobType);
+
+      if (!engineSelection) {
+        // Hard failure if no engine is mapped (config error)
+        throw new BadRequestException(`No engine available for job type: ${jobType}`);
+      }
+
+      await tx.jobEngineBinding.create({
+        data: {
+          jobId: job.id,
+          engineId: engineSelection.engineId,
+          engineKey: engineSelection.engineKey,
+          engineVersionId: engineSelection.engineVersionId,
+          status: JobEngineBindingStatus.BOUND,
+          metadata: {
+            strategy: 'default',
+            jobType: jobType,
+            reason: 'ensureVideoRenderJob',
+          },
+        },
+      });
+
+      this.logger.log(
+        `[JobService] ensureVideoRenderJob: Created job ${job.id} and bound to ${engineSelection.engineKey}`
+      );
       return job;
     });
   }
@@ -785,14 +811,16 @@ export class JobService {
           LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
           WHERE j.status = 'PENDING'
           AND (j.lease_until IS NULL OR j.lease_until < NOW())
-          ${filterTypes.length > 0
-          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-          : Prisma.empty
-        }
-          ${supportedEngines.length > 0
-          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-          : Prisma.empty
-        }
+          ${
+            filterTypes.length > 0
+              ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+              : Prisma.empty
+          }
+          ${
+            supportedEngines.length > 0
+              ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+              : Prisma.empty
+          }
           ORDER BY j.priority DESC, j."createdAt" ASC
           FOR UPDATE OF j SKIP LOCKED
           LIMIT 1
@@ -1021,6 +1049,7 @@ export class JobService {
           data: {
             status: JobStatusEnum.SUCCEEDED,
             payload: updatedPayload ?? undefined,
+            result: result ?? undefined,
             attempts: job.attempts, // attempts 只在领取时递增，不在此处递增
             retryCount: job.retryCount,
             lastError: null,
@@ -2327,13 +2356,15 @@ export class JobService {
       this.logger.warn(`Job ${jobId} blocked at startup: Insufficient credits (${credits})`);
 
       // 记录硬拦截审计
-      await this.auditLogService.record({
-        userId: (job as any).userId,
-        action: 'job.execution.blocked.quota',
-        resourceType: 'job',
-        resourceId: jobId,
-        details: { credits, organizationId: job.organizationId }
-      }).catch(() => undefined);
+      await this.auditLogService
+        .record({
+          userId: (job as any).userId,
+          action: 'job.execution.blocked.quota',
+          resourceType: 'job',
+          resourceId: jobId,
+          details: { credits, organizationId: job.organizationId },
+        })
+        .catch(() => undefined);
 
       // 断言状态流转合法性 (P1-B Budget Block)
       transitionJobStatus(job.status, JobStatusEnum.FAILED, {
@@ -2347,7 +2378,7 @@ export class JobService {
         where: { id: job.id },
         data: {
           status: JobStatusEnum.FAILED,
-          lastError: 'Insufficient credits to start job execution.'
+          lastError: 'Insufficient credits to start job execution.',
         },
       });
 

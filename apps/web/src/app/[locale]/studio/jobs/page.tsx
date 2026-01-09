@@ -378,7 +378,14 @@ function JobDashboardPageContent() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               状态
             </label>
             <select
@@ -404,7 +411,14 @@ function JobDashboardPageContent() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               类型
             </label>
             <select
@@ -430,7 +444,14 @@ function JobDashboardPageContent() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               处理器
             </label>
             <select
@@ -450,7 +471,14 @@ function JobDashboardPageContent() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               时间范围
             </label>
             <select
@@ -473,7 +501,14 @@ function JobDashboardPageContent() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               镜头 ID
             </label>
             <input
@@ -492,7 +527,14 @@ function JobDashboardPageContent() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               项目 ID
             </label>
             <input
@@ -512,7 +554,14 @@ function JobDashboardPageContent() {
 
           {/* S3-C.1: Engine 筛选器 */}
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               引擎
             </label>
             <EngineFilter
@@ -558,7 +607,13 @@ function JobDashboardPageContent() {
       {/* 右侧主内容区 */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* S3-C.2: Engine 质量摘要面板 */}
-        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e0e0e0', backgroundColor: '#fafafa' }}>
+        <div
+          style={{
+            padding: '1rem 1.5rem',
+            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: '#fafafa',
+          }}
+        >
           <EngineSummaryPanel projectId={filters.projectId || undefined} />
         </div>
 
@@ -611,8 +666,16 @@ function JobDashboardPageContent() {
           <div style={{ display: 'flex', gap: '1rem' }}>
             {Object.entries(stats.byStatus).map(([status, count]) => (
               <div key={status}>
-                <span style={{ fontSize: '0.75rem', color: '#666' }}>{getJobStatusText(status)}: </span>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: statusColors[status] || '#666' }}>
+                <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                  {getJobStatusText(status)}:{' '}
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: statusColors[status] || '#666',
+                  }}
+                >
                   {count}
                 </span>
               </div>
@@ -712,8 +775,12 @@ function JobDashboardPageContent() {
           {/* Jobs 表格 */}
           <div style={{ flex: 1, overflow: 'auto', padding: '1.5rem' }}>
             {/* S3-C.2: 分组查看按钮 */}
-            <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.875rem', color: '#666', marginRight: '0.5rem' }}>分组查看:</span>
+            <div
+              style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+            >
+              <span style={{ fontSize: '0.875rem', color: '#666', marginRight: '0.5rem' }}>
+                分组查看:
+              </span>
               <button
                 onClick={() => setGroupBy(groupBy === 'engine' ? 'none' : 'engine')}
                 style={{
@@ -756,19 +823,35 @@ function JobDashboardPageContent() {
                         style={{ cursor: 'pointer' }}
                       />
                     </th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>任务 ID</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                      任务 ID
+                    </th>
                     <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>类型</th>
                     <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>状态</th>
                     {/* S3-C.1: 新增 Engine 相关列 */}
                     <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>引擎</th>
                     <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>版本</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>适配器</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>质量评分</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>处理器</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>重试次数</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>优先级</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>创建时间</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>更新时间</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                      适配器
+                    </th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                      质量评分
+                    </th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                      处理器
+                    </th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                      重试次数
+                    </th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                      优先级
+                    </th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                      创建时间
+                    </th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                      更新时间
+                    </th>
                     <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>错误</th>
                     <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>关联</th>
                     <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>操作</th>
@@ -796,7 +879,13 @@ function JobDashboardPageContent() {
                           style={{ cursor: 'pointer' }}
                         />
                       </td>
-                      <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.8125rem' }}>
+                      <td
+                        style={{
+                          padding: '0.75rem',
+                          fontFamily: 'monospace',
+                          fontSize: '0.8125rem',
+                        }}
+                      >
                         <span
                           title={job.id}
                           onClick={(e) => {
@@ -811,7 +900,11 @@ function JobDashboardPageContent() {
                       </td>
                       <td style={{ padding: '0.75rem' }}>{typeMap[job.type] || job.type}</td>
                       <td style={{ padding: '0.75rem' }}>
-                        <StatusBadge status={job.status} showPulse={job.status === 'RUNNING'} size="sm" />
+                        <StatusBadge
+                          status={job.status}
+                          showPulse={job.status === 'RUNNING'}
+                          size="sm"
+                        />
                       </td>
                       {/* S3-C.3: 使用统一组件展示 Engine 相关信息 */}
                       <td style={{ padding: '0.75rem' }}>
@@ -823,7 +916,9 @@ function JobDashboardPageContent() {
                       </td>
                       <td style={{ padding: '0.75rem' }}>
                         {job.engineVersion ? (
-                          <span style={{ fontSize: '0.8125rem', color: '#666' }}>{job.engineVersion}</span>
+                          <span style={{ fontSize: '0.8125rem', color: '#666' }}>
+                            {job.engineVersion}
+                          </span>
                         ) : (
                           '-'
                         )}
@@ -857,9 +952,24 @@ function JobDashboardPageContent() {
                       <td style={{ padding: '0.75rem', fontSize: '0.8125rem', color: '#666' }}>
                         {job.finishedAt ? new Date(job.finishedAt).toLocaleString('zh-CN') : '-'}
                       </td>
-                      <td style={{ padding: '0.75rem', fontSize: '0.75rem', color: '#F44336', maxWidth: '200px' }}>
+                      <td
+                        style={{
+                          padding: '0.75rem',
+                          fontSize: '0.75rem',
+                          color: '#F44336',
+                          maxWidth: '200px',
+                        }}
+                      >
                         {job.lastError ? (
-                          <span title={job.lastError} style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', whiteSpace: 'nowrap' }}>
+                          <span
+                            title={job.lastError}
+                            style={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: 'block',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
                             {job.lastError.substring(0, 30)}...
                           </span>
                         ) : (
@@ -970,28 +1080,42 @@ function JobDashboardPageContent() {
                           {groupBy === 'engine' ? (
                             <>
                               <span className="font-mono text-xs">{groupKey}</span>
-                              <span style={{ marginLeft: '0.5rem', color: '#666', fontWeight: 400 }}>
+                              <span
+                                style={{ marginLeft: '0.5rem', color: '#666', fontWeight: 400 }}
+                              >
                                 ({groupJobs.length} 条)
                               </span>
                             </>
                           ) : (
                             <>
                               <span className="font-mono text-xs">{groupKey}</span>
-                              <span style={{ marginLeft: '0.5rem', color: '#666', fontWeight: 400 }}>
+                              <span
+                                style={{ marginLeft: '0.5rem', color: '#666', fontWeight: 400 }}
+                              >
                                 ({groupJobs.length} 条)
                               </span>
                             </>
                           )}
                         </div>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                        <table
+                          style={{
+                            width: '100%',
+                            borderCollapse: 'collapse',
+                            fontSize: '0.875rem',
+                          }}
+                        >
                           <thead>
                             <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
                                 <input
                                   type="checkbox"
                                   checked={groupJobs.every((j) => selectedJobs.has(j.id))}
                                   onChange={() => {
-                                    const allSelected = groupJobs.every((j) => selectedJobs.has(j.id));
+                                    const allSelected = groupJobs.every((j) =>
+                                      selectedJobs.has(j.id)
+                                    );
                                     if (allSelected) {
                                       const newSelected = new Set(selectedJobs);
                                       groupJobs.forEach((j) => newSelected.delete(j.id));
@@ -1005,21 +1129,81 @@ function JobDashboardPageContent() {
                                   style={{ cursor: 'pointer' }}
                                 />
                               </th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>任务 ID</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>类型</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>状态</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>引擎</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>版本</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>适配器</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>质量评分</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>处理器</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>重试次数</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>优先级</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>创建时间</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>更新时间</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>错误</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>关联</th>
-                              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>操作</th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                任务 ID
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                类型
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                状态
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                引擎
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                版本
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                适配器
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                质量评分
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                处理器
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                重试次数
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                优先级
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                创建时间
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                更新时间
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                错误
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                关联
+                              </th>
+                              <th
+                                style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}
+                              >
+                                操作
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1036,7 +1220,10 @@ function JobDashboardPageContent() {
                                   loadJobDetail(job.id);
                                 }}
                               >
-                                <td style={{ padding: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
+                                <td
+                                  style={{ padding: '0.75rem' }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <input
                                     type="checkbox"
                                     checked={selectedJobs.has(job.id)}
@@ -1044,7 +1231,13 @@ function JobDashboardPageContent() {
                                     style={{ cursor: 'pointer' }}
                                   />
                                 </td>
-                                <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.8125rem' }}>
+                                <td
+                                  style={{
+                                    padding: '0.75rem',
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.8125rem',
+                                  }}
+                                >
                                   <span
                                     title={job.id}
                                     onClick={(e) => {
@@ -1057,9 +1250,15 @@ function JobDashboardPageContent() {
                                     {formatJobId(job.id)}
                                   </span>
                                 </td>
-                                <td style={{ padding: '0.75rem' }}>{typeMap[job.type] || job.type}</td>
                                 <td style={{ padding: '0.75rem' }}>
-                                  <StatusBadge status={job.status} showPulse={job.status === 'RUNNING'} size="sm" />
+                                  {typeMap[job.type] || job.type}
+                                </td>
+                                <td style={{ padding: '0.75rem' }}>
+                                  <StatusBadge
+                                    status={job.status}
+                                    showPulse={job.status === 'RUNNING'}
+                                    size="sm"
+                                  />
                                 </td>
                                 {/* S3-C.3: 使用统一组件展示 Engine 相关信息 */}
                                 <td style={{ padding: '0.75rem' }}>
@@ -1071,7 +1270,9 @@ function JobDashboardPageContent() {
                                 </td>
                                 <td style={{ padding: '0.75rem' }}>
                                   {job.engineVersion ? (
-                                    <span style={{ fontSize: '0.8125rem', color: '#666' }}>{job.engineVersion}</span>
+                                    <span style={{ fontSize: '0.8125rem', color: '#666' }}>
+                                      {job.engineVersion}
+                                    </span>
                                   ) : (
                                     '-'
                                   )}
@@ -1098,14 +1299,37 @@ function JobDashboardPageContent() {
                                 <td style={{ padding: '0.75rem', fontSize: '0.8125rem' }}>
                                   {job.attempts} / {job.maxAttempts}
                                 </td>
-                                <td style={{ padding: '0.75rem', fontSize: '0.8125rem' }}>{job.priority}</td>
-                                <td style={{ padding: '0.75rem', fontSize: '0.8125rem', color: '#666' }}>
+                                <td style={{ padding: '0.75rem', fontSize: '0.8125rem' }}>
+                                  {job.priority}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '0.75rem',
+                                    fontSize: '0.8125rem',
+                                    color: '#666',
+                                  }}
+                                >
                                   {new Date(job.createdAt).toLocaleString('zh-CN')}
                                 </td>
-                                <td style={{ padding: '0.75rem', fontSize: '0.8125rem', color: '#666' }}>
-                                  {job.finishedAt ? new Date(job.finishedAt).toLocaleString('zh-CN') : '-'}
+                                <td
+                                  style={{
+                                    padding: '0.75rem',
+                                    fontSize: '0.8125rem',
+                                    color: '#666',
+                                  }}
+                                >
+                                  {job.finishedAt
+                                    ? new Date(job.finishedAt).toLocaleString('zh-CN')
+                                    : '-'}
                                 </td>
-                                <td style={{ padding: '0.75rem', fontSize: '0.75rem', color: '#F44336', maxWidth: '200px' }}>
+                                <td
+                                  style={{
+                                    padding: '0.75rem',
+                                    fontSize: '0.75rem',
+                                    color: '#F44336',
+                                    maxWidth: '200px',
+                                  }}
+                                >
                                   {job.lastError ? (
                                     <span
                                       title={job.lastError}
@@ -1122,14 +1346,27 @@ function JobDashboardPageContent() {
                                     '-'
                                   )}
                                 </td>
-                                <td style={{ padding: '0.75rem', fontSize: '0.8125rem', color: '#666' }}>
+                                <td
+                                  style={{
+                                    padding: '0.75rem',
+                                    fontSize: '0.8125rem',
+                                    color: '#666',
+                                  }}
+                                >
                                   <div>{job.projectName}</div>
                                   {job.shotTitle && (
-                                    <div style={{ fontSize: '0.75rem', color: '#999' }}>{job.shotTitle}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#999' }}>
+                                      {job.shotTitle}
+                                    </div>
                                   )}
                                 </td>
-                                <td style={{ padding: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
-                                  <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                                <td
+                                  style={{ padding: '0.75rem' }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div
+                                    style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}
+                                  >
                                     {(job.status === 'FAILED' || job.status === 'CANCELLED') && (
                                       <button
                                         onClick={() => handleRetry(job.id)}
@@ -1205,7 +1442,11 @@ function JobDashboardPageContent() {
               setSelectedJob(null);
               setJobDetail(null);
             }}
-            title={jobDetail ? `${typeMap[jobDetail.type] || jobDetail.type} - ${jobDetail.id.substring(0, 8)}...` : ''}
+            title={
+              jobDetail
+                ? `${typeMap[jobDetail.type] || jobDetail.type} - ${jobDetail.id.substring(0, 8)}...`
+                : ''
+            }
             id={jobDetail?.id || ''}
             status={jobDetail?.status || 'PENDING'}
             createdAt={jobDetail?.createdAt}
@@ -1233,7 +1474,9 @@ function JobDashboardPageContent() {
                     </div>
                     <div className="flex justify-between">
                       <span>重试次数:</span>
-                      <span>{jobDetail.attempts} / {jobDetail.maxAttempts}</span>
+                      <span>
+                        {jobDetail.attempts} / {jobDetail.maxAttempts}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>优先级:</span>
@@ -1250,7 +1493,12 @@ function JobDashboardPageContent() {
                       <div>状态: {getJobStatusText(jobDetail.shot.status)}</div>
                       {jobDetail.shot.previewUrl && (
                         <div>
-                          <a href={jobDetail.shot.previewUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                          <a
+                            href={jobDetail.shot.previewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800"
+                          >
                             预览链接
                           </a>
                         </div>
@@ -1274,9 +1522,7 @@ function JobDashboardPageContent() {
               alignItems: 'center',
             }}
           >
-            <div style={{ fontSize: '0.875rem', color: '#666' }}>
-              第 {filters.page} 页
-            </div>
+            <div style={{ fontSize: '0.875rem', color: '#666' }}>第 {filters.page} 页</div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
                 onClick={() => setFilters({ ...filters, page: Math.max(1, filters.page - 1) })}
@@ -1413,13 +1659,3 @@ export default function JobDashboardPage() {
     </Suspense>
   );
 }
-
-
-
-
-
-
-
-
-
-

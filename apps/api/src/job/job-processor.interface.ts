@@ -39,14 +39,3 @@ export interface JobProcessor {
     error?: string;
   }>;
 }
-
-
-
-
-
-
-
-
-
-
-

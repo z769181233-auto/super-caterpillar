@@ -5,12 +5,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    RedisModule,
-  ],
+  imports: [PrismaModule, RedisModule],
   providers: [PermissionService, PermissionCache],
   exports: [PermissionService],
 })
 export class PermissionModule {}
-

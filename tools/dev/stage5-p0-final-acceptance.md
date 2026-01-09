@@ -27,6 +27,7 @@ bash tools/dev/stage5-p0-verification.sh
 ```
 
 **必须满足的 4 个硬条件**:
+
 1. ✅ 第一次请求：≠ 4003 / ≠ 4004
 2. ✅ nonce_store：COUNT > 0（能查到第一次请求的 nonce）
 3. ✅ 第二次请求（同 nonce）：必须返回 4004
@@ -46,6 +47,7 @@ pnpm exec ts-node apps/api/test/hmac-security.e2e-spec.ts
 ### 步骤 4: 记录验证结果
 
 将以下信息记录到报告中：
+
 - 验证脚本的完整输出
 - E2E 测试的完整输出
 - nonce_store 查询结果
@@ -54,9 +56,9 @@ pnpm exec ts-node apps/api/test/hmac-security.e2e-spec.ts
 ## 验收标准
 
 **Stage5 = DONE 的条件（缺一不可）**:
+
 1. ✅ 自动脚本 PASS（4 个硬条件全部满足）
 2. ✅ E2E 4/4 PASS
 3. ✅ 报告更新完成（真实证据）
 
 **否则**: Stage5 = NOT DONE
-

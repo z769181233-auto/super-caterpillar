@@ -8,11 +8,11 @@ import { JobModule } from './job.module';
  * Only imported when JOB_WORKER_ENABLED=true.
  */
 @Module({
-    imports: [
-        PrismaModule,
-        JobModule, // ensure JobService is available if JobWorkerService depends on it
-    ],
-    providers: [JobWorkerService],
-    exports: [JobWorkerService],
+  imports: [
+    PrismaModule,
+    JobModule, // ensure JobService is available if JobWorkerService depends on it
+  ],
+  providers: [JobWorkerService],
+  exports: [JobWorkerService],
 })
-export class JobWorkerModule { }
+export class JobWorkerModule {}

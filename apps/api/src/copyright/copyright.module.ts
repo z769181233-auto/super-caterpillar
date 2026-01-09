@@ -3,8 +3,8 @@ import { CopyrightService } from './copyright.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    providers: [CopyrightService],
-    exports: [CopyrightService],
+  imports: [PrismaModule],
+  providers: [CopyrightService],
+  exports: [CopyrightService],
 })
-export class CopyrightModule { }
+export class CopyrightModule {}

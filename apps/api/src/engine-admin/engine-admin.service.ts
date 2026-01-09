@@ -33,7 +33,7 @@ export interface UpdateEngineVersionInput {
 
 @Injectable()
 export class EngineAdminService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async list(): Promise<any[]> {
     // S3-C.1: 返回包含 versions 和 defaultVersion 的完整信息
@@ -141,14 +141,19 @@ export class EngineAdminService {
     });
   }
 
-  async updateVersion(engineKey: string, versionName: string, input: UpdateEngineVersionInput): Promise<any> {
+  async updateVersion(
+    engineKey: string,
+    versionName: string,
+    input: UpdateEngineVersionInput
+  ): Promise<any> {
     const engine = await (this.prisma as any).engine.findUnique({ where: { engineKey } });
     if (!engine) throw new NotFoundException(`Engine not found: ${engineKey}`);
 
     const existing = await (this.prisma as any).engineVersion.findUnique({
       where: { engineId_versionName: { engineId: engine.id, versionName } },
     });
-    if (!existing) throw new NotFoundException(`Engine version not found: ${engineKey}/${versionName}`);
+    if (!existing)
+      throw new NotFoundException(`Engine version not found: ${engineKey}/${versionName}`);
 
     return (this.prisma as any).engineVersion.update({
       where: { engineId_versionName: { engineId: engine.id, versionName } },
@@ -185,7 +190,8 @@ export class EngineAdminService {
       const ver = await (this.prisma as any).engineVersion.findUnique({
         where: { engineId_versionName: { engineId: engine.id, versionName: defaultVersion } },
       });
-      if (!ver) throw new NotFoundException(`Engine version not found: ${engineKey}/${defaultVersion}`);
+      if (!ver)
+        throw new NotFoundException(`Engine version not found: ${engineKey}/${defaultVersion}`);
     }
 
     return (this.prisma as any).engine.update({
@@ -194,4 +200,3 @@ export class EngineAdminService {
     });
   }
 }
-

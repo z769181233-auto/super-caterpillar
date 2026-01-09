@@ -66,7 +66,8 @@ async function testQualityMetricsWrite() {
 
     // 4. 模拟写入（使用 QualityMetricsWriter）
     console.log('\n=== Simulating Quality Metrics Write ===');
-    const { QualityMetricsWriter } = await import('../../apps/api/src/quality/quality-metrics.writer');
+    const { QualityMetricsWriter } =
+      await import('../../apps/api/src/quality/quality-metrics.writer');
     const { PrismaService } = await import('../../apps/api/src/prisma/prisma.service');
     const prismaService = new PrismaService();
     const writer = new QualityMetricsWriter(prismaService);
@@ -118,4 +119,3 @@ if (require.main === module) {
     process.exit(1);
   });
 }
-

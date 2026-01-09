@@ -11,7 +11,7 @@ import { Public } from './decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   @Public() // 标记为公开路由，跳过 HMAC 校验
@@ -124,13 +124,3 @@ export class AuthController {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-

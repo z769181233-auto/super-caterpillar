@@ -33,7 +33,9 @@ export class LoggingInterceptor implements NestInterceptor {
         error: (err) => {
           const costMs = Date.now() - now;
           const status = err?.status || res?.statusCode || 500;
-          this.logger.error(`REQ_OUT traceId=${traceId} status=${status} costMs=${costMs} error=${err?.message}`);
+          this.logger.error(
+            `REQ_OUT traceId=${traceId} status=${status} costMs=${costMs} error=${err?.message}`
+          );
         },
       })
     );

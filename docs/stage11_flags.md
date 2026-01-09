@@ -3,12 +3,13 @@
 ## Flag 定义
 
 ### 1. FEATURE_SIGNED_URL_ENFORCED
+
 - **用途**: 控制是否强制所有媒体资源返回签名 URL
 - **默认值**:
   - Production: `false`
   - Staging: `true`
   - Development: `true`
-- **影响范围**: 
+- **影响范围**:
   - `GET /api/projects/:id/structure`
   - `GET /api/assets/*`
   - 任何返回 Asset 的接口
@@ -17,6 +18,7 @@
   - `false`: 仅返回 `storageKey`（向后兼容）
 
 ### 2. FEATURE_TEXT_SAFETY_TRI_STATE
+
 - **用途**: 启用文本安全三态决策（PASS/WARN/BLOCK）
 - **默认值**:
   - Production: `false`
@@ -28,6 +30,7 @@
   - `false`: 仅执行基础清洗（旧行为）
 
 ### 3. FEATURE_TEXT_SAFETY_BLOCK_ON_IMPORT
+
 - **用途**: 控制是否在小说导入时阻止违规文本
 - **默认值**:
   - Production: `false`
@@ -40,6 +43,7 @@
   - `false`: BLOCK 决策 -> 仅记录，不阻止
 
 ### 4. FEATURE_TEXT_SAFETY_BLOCK_ON_JOB_CREATE
+
 - **用途**: 控制是否在任务创建时阻止违规文本
 - **默认值**:
   - Production: `false`
@@ -56,6 +60,7 @@
 ## 配置方式
 
 ### 环境变量
+
 ```bash
 # .env.production
 FEATURE_SIGNED_URL_ENFORCED=false
@@ -81,7 +86,9 @@ FEATURE_TEXT_SAFETY_BLOCK_ON_JOB_CREATE=true
 ## 回滚策略
 
 ### 紧急回滚
+
 如遇生产问题，立即设置对应 Flag 为 `false`：
+
 ```bash
 # 方式 1: 修改 .env 并重启服务
 FEATURE_SIGNED_URL_ENFORCED=false
@@ -91,6 +98,7 @@ kubectl set env deployment/api FEATURE_SIGNED_URL_ENFORCED=false
 ```
 
 ### 灰度发布
+
 1. **Week 1**: Staging 环境启用（`true`），观察指标
 2. **Week 2**: 生产环境启用 20% 流量（通过 Canary 部署 + Flag）
 3. **Week 3**: 逐步扩大到 50%、100%
@@ -101,11 +109,11 @@ kubectl set env deployment/api FEATURE_SIGNED_URL_ENFORCED=false
 ## 监控与告警
 
 ### 关键指标
+
 - **Signed URL**:
   - 签名 URL 生成耗时（P95 < 5ms）
   - 签名 URL 过期导致的 403 错误率（< 1%）
   - 刷新签名请求 QPS
-  
 - **Text Safety**:
   - BLOCK 决策比例（预期 < 0.1%）
   - WARN 决策比例（预期 < 5%）
@@ -113,6 +121,7 @@ kubectl set env deployment/api FEATURE_SIGNED_URL_ENFORCED=false
   - 422 错误的用户反馈率
 
 ### 告警规则
+
 ```yaml
 # Prometheus Alert
 - alert: SignedUrlExpireRateHigh
@@ -121,7 +130,7 @@ kubectl set env deployment/api FEATURE_SIGNED_URL_ENFORCED=false
   labels:
     severity: warning
   annotations:
-    summary: "签名 URL 过期导致的 403 错误率过高"
+    summary: '签名 URL 过期导致的 403 错误率过高'
 
 - alert: TextSafetyBlockRateHigh
   expr: rate(text_safety_block_total[1h]) > 0.01
@@ -129,5 +138,5 @@ kubectl set env deployment/api FEATURE_SIGNED_URL_ENFORCED=false
   labels:
     severity: critical
   annotations:
-    summary: "文本安全 BLOCK 决策比例异常"
+    summary: '文本安全 BLOCK 决策比例异常'
 ```

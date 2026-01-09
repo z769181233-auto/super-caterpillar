@@ -18,16 +18,16 @@ const prisma = new PrismaClient();
 
 async function checkAndMigrate() {
   const scenesWithNullProjectId = await prisma.scene.count({
-    where: { projectId: null }
+    where: { projectId: null },
   });
-  
+
   console.log(`Scenes with null projectId: ${scenesWithNullProjectId}`);
-  
+
   if (scenesWithNullProjectId === 0) {
     console.log('No migration needed, all scenes have projectId');
     return;
   }
-  
+
   // 执行迁移
   const scenes = await prisma.scene.findMany({
     where: { projectId: null },
@@ -37,27 +37,27 @@ async function checkAndMigrate() {
           project: true,
           season: {
             include: {
-              project: true
-            }
-          }
-        }
-      }
-    }
+              project: true,
+            },
+          },
+        },
+      },
+    },
   });
-  
+
   for (const scene of scenes) {
     const projectId = scene.episode?.projectId || scene.episode?.season?.projectId;
     if (projectId) {
       await prisma.scene.update({
         where: { id: scene.id },
-        data: { projectId }
+        data: { projectId },
       });
       console.log(`Updated scene ${scene.id} with projectId ${projectId}`);
     } else {
       console.error(`Scene ${scene.id} cannot derive projectId, manual intervention needed`);
     }
   }
-  
+
   await prisma.$disconnect();
 }
 
@@ -86,4 +86,3 @@ pnpm --filter @scu/database prisma migrate dev --name make_scene_projectid_requi
 ---
 
 **注意**: 如果存在无法推导 projectId 的 Scene，需要手动处理或删除这些记录。
-

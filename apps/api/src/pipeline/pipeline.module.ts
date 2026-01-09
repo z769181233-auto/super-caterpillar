@@ -4,8 +4,8 @@ import { PipelineService } from './pipeline.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [PipelineController],
-    providers: [PipelineService],
+  imports: [PrismaModule],
+  controllers: [PipelineController],
+  providers: [PipelineService],
 })
-export class PipelineModule { }
+export class PipelineModule {}

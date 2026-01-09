@@ -99,7 +99,7 @@ async function main() {
   ];
 
   // 清理非标角色 (强制收敛)
-  const standardRoleNames = roles.map(r => r.name);
+  const standardRoleNames = roles.map((r) => r.name);
   await prisma.role.deleteMany({
     where: {
       name: { notIn: standardRoleNames },
@@ -114,7 +114,7 @@ async function main() {
       create: roleData,
     });
   }
-  console.log('✅ Created/Updated roles:', roles.map(r => r.name).join(', '));
+  console.log('✅ Created/Updated roles:', roles.map((r) => r.name).join(', '));
 
   // 2. 创建 Permissions (system scope)
   const permissions = [
@@ -145,15 +145,93 @@ async function main() {
       create: permData,
     });
   }
-  console.log('✅ Created/Updated permissions:', permissions.map(p => p.key).join(', '));
+  console.log('✅ Created/Updated permissions:', permissions.map((p) => p.key).join(', '));
 
   // 3. 创建 RolePermissions (关联 Role 和 Permission)
   const rolePermissions = [
-    { roleName: 'VIEWER', permKeys: ['auth', 'project.read', 'novel.read', 'structure.read', 'billing.view'] },
-    { roleName: 'EDITOR', permKeys: ['auth', 'project.read', 'project.write', 'project.update', 'project.generate', 'project.review', 'novel.read', 'novel.update', 'structure.read', 'billing.view'] },
-    { roleName: 'CREATOR', permKeys: ['auth', 'project.create', 'project.read', 'project.write', 'project.update', 'project.generate', 'project.review', 'novel.upload', 'novel.read', 'novel.update', 'structure.read', 'billing.view', 'model.use.base'] },
-    { roleName: 'ADMIN', permKeys: ['auth', 'project.create', 'project.read', 'project.write', 'project.update', 'project.generate', 'project.review', 'project.publish', 'project.delete', 'project.manage', 'user.manage', 'billing.view', 'billing.manage', 'novel.upload', 'novel.read', 'novel.update', 'structure.read', 'model.use.base'] },
-    { roleName: 'OWNER', permKeys: ['auth', 'project.create', 'project.read', 'project.write', 'project.update', 'project.generate', 'project.review', 'project.publish', 'project.delete', 'project.manage', 'user.manage', 'billing.view', 'billing.manage', 'novel.upload', 'novel.read', 'novel.update', 'structure.read', 'model.use.base'] },
+    {
+      roleName: 'VIEWER',
+      permKeys: ['auth', 'project.read', 'novel.read', 'structure.read', 'billing.view'],
+    },
+    {
+      roleName: 'EDITOR',
+      permKeys: [
+        'auth',
+        'project.read',
+        'project.write',
+        'project.update',
+        'project.generate',
+        'project.review',
+        'novel.read',
+        'novel.update',
+        'structure.read',
+        'billing.view',
+      ],
+    },
+    {
+      roleName: 'CREATOR',
+      permKeys: [
+        'auth',
+        'project.create',
+        'project.read',
+        'project.write',
+        'project.update',
+        'project.generate',
+        'project.review',
+        'novel.upload',
+        'novel.read',
+        'novel.update',
+        'structure.read',
+        'billing.view',
+        'model.use.base',
+      ],
+    },
+    {
+      roleName: 'ADMIN',
+      permKeys: [
+        'auth',
+        'project.create',
+        'project.read',
+        'project.write',
+        'project.update',
+        'project.generate',
+        'project.review',
+        'project.publish',
+        'project.delete',
+        'project.manage',
+        'user.manage',
+        'billing.view',
+        'billing.manage',
+        'novel.upload',
+        'novel.read',
+        'novel.update',
+        'structure.read',
+        'model.use.base',
+      ],
+    },
+    {
+      roleName: 'OWNER',
+      permKeys: [
+        'auth',
+        'project.create',
+        'project.read',
+        'project.write',
+        'project.update',
+        'project.generate',
+        'project.review',
+        'project.publish',
+        'project.delete',
+        'project.manage',
+        'user.manage',
+        'billing.view',
+        'billing.manage',
+        'novel.upload',
+        'novel.read',
+        'novel.update',
+        'structure.read',
+        'model.use.base',
+      ],
+    },
   ];
 
   for (const { roleName, permKeys } of rolePermissions) {
@@ -192,7 +270,8 @@ async function main() {
   // ========== API Keys Seed: Worker Key ==========
   console.log('🌱 Seeding API Keys...');
   const workerApiKey = 'ak_worker_dev_0000000000000000';
-  const workerApiSecret = 'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
+  const workerApiSecret =
+    'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
 
   await prisma.apiKey.upsert({
     where: { key: workerApiKey },
@@ -208,6 +287,20 @@ async function main() {
     },
   });
   console.log('✅ API Key seeding completed!');
+
+  // ========== System User Seed ==========
+  console.log('🌱 Seeding System User...');
+  await prisma.user.upsert({
+    where: { id: 'system' },
+    update: {},
+    create: {
+      id: 'system',
+      email: 'system@supercaterpillar.com',
+      passwordHash: 'system_reserved_do_not_use',
+      role: 'admin',
+    },
+  });
+  console.log('✅ System User seeding completed!');
 }
 
 main()
@@ -219,4 +312,3 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
-

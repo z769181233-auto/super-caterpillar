@@ -12,7 +12,7 @@ import { Request } from 'express';
 /**
  * Story Controller
  * 提供 CE06 (Novel Parsing) 标准 API
- * 
+ *
  * 规则：
  * - API 只负责参数校验 + 创建 Job
  * - 实际执行仍然走现有 JobService + Worker
@@ -26,7 +26,7 @@ export class StoryController {
   /**
    * POST /story/parse
    * CE06: Novel Parsing
-   * 
+   *
    * 输入：raw_text
    * 输出：jobId, traceId, status
    */
@@ -37,15 +37,14 @@ export class StoryController {
     @Body() dto: ParseStoryDto,
     @CurrentUser() user: any,
     @CurrentOrganization() org: any,
-    @Req() req: Request,
+    @Req() req: Request
   ) {
     return this.storyService.parseStory(
       dto,
       user?.id,
       org?.id,
       req.ip || (req.headers['x-forwarded-for'] as string) || undefined,
-      req.headers['user-agent'] || undefined,
+      req.headers['user-agent'] || undefined
     );
   }
 }
-

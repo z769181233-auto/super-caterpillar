@@ -12,7 +12,7 @@ describe('ApiSecurityService', () => {
   let prismaService: jest.Mocked<PrismaService>;
   let redisService: jest.Mocked<RedisService>;
   let auditLogService: jest.Mocked<AuditLogService>;
-  
+
   // 测试用的主密钥（32 bytes base64）
   const testMasterKey = randomBytes(32).toString('base64');
 
@@ -86,7 +86,7 @@ describe('ApiSecurityService', () => {
     timestamp: string,
     nonce: string,
     contentSha256: string,
-    secret: string,
+    secret: string
   ): string {
     const canonicalString = `v2\n${method}\n${pathWithQuery}\n${apiKey}\n${timestamp}\n${nonce}\n${contentSha256}\n`;
     const hmac = createHmac('sha256', secret);
@@ -100,7 +100,14 @@ describe('ApiSecurityService', () => {
       const pathWithQuery = '/api/test';
       const body = JSON.stringify({ test: 'data' });
       const contentSha256 = service.sha256Hex(body);
-      const canonicalV2 = service.buildCanonicalStringV2(method, pathWithQuery, mockApiKey, mockTimestamp, mockNonce, contentSha256);
+      const canonicalV2 = service.buildCanonicalStringV2(
+        method,
+        pathWithQuery,
+        mockApiKey,
+        mockTimestamp,
+        mockNonce,
+        contentSha256
+      );
       const signature = service.computeSignature(mockSecret, canonicalV2);
 
       // 加密 secret
@@ -137,7 +144,7 @@ describe('ApiSecurityService', () => {
       expect(redisService.set).toHaveBeenCalledWith(
         `api_security:nonce:${mockApiKey}:${mockNonce}`,
         mockTimestamp,
-        300,
+        300
       );
     });
 
@@ -145,7 +152,14 @@ describe('ApiSecurityService', () => {
       const method = 'POST';
       const pathWithQuery = '/api/projects/123/novel/import-file';
       const contentSha256 = 'UNSIGNED';
-      const canonicalV2 = service.buildCanonicalStringV2(method, pathWithQuery, mockApiKey, mockTimestamp, mockNonce, contentSha256);
+      const canonicalV2 = service.buildCanonicalStringV2(
+        method,
+        pathWithQuery,
+        mockApiKey,
+        mockTimestamp,
+        mockNonce,
+        contentSha256
+      );
       const signature = service.computeSignature(mockSecret, canonicalV2);
 
       // 加密 secret
@@ -185,7 +199,15 @@ describe('ApiSecurityService', () => {
       const pathWithQuery = '/api/test';
       const body = JSON.stringify({ test: 'data' });
       const contentSha256 = service.sha256Hex(body);
-      const signature = computeTestSignatureV2(method, pathWithQuery, mockApiKey, expiredTimestamp, mockNonce, contentSha256, mockSecret);
+      const signature = computeTestSignatureV2(
+        method,
+        pathWithQuery,
+        mockApiKey,
+        expiredTimestamp,
+        mockNonce,
+        contentSha256,
+        mockSecret
+      );
 
       prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
         id: 'key_id_123',
@@ -216,7 +238,15 @@ describe('ApiSecurityService', () => {
       const pathWithQuery = '/api/test';
       const body = JSON.stringify({ test: 'data' });
       const contentSha256 = service.sha256Hex(body);
-      const signature = computeTestSignatureV2(method, pathWithQuery, mockApiKey, mockTimestamp, mockNonce, contentSha256, mockSecret);
+      const signature = computeTestSignatureV2(
+        method,
+        pathWithQuery,
+        mockApiKey,
+        mockTimestamp,
+        mockNonce,
+        contentSha256,
+        mockSecret
+      );
 
       prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
         id: 'key_id_123',
@@ -348,7 +378,14 @@ describe('ApiSecurityService', () => {
       const nonce = 'nonce_123';
       const contentSha256 = 'a1b2c3d4...';
 
-      const canonical = service.buildCanonicalStringV2(method, pathWithQuery, apiKey, timestamp, nonce, contentSha256);
+      const canonical = service.buildCanonicalStringV2(
+        method,
+        pathWithQuery,
+        apiKey,
+        timestamp,
+        nonce,
+        contentSha256
+      );
       const expected = `v2\n${method}\n${pathWithQuery}\n${apiKey}\n${timestamp}\n${nonce}\n${contentSha256}\n`;
       expect(canonical).toBe(expected);
     });
@@ -361,7 +398,14 @@ describe('ApiSecurityService', () => {
       const nonce = 'nonce_123';
       const contentSha256 = '';
 
-      const canonical = service.buildCanonicalStringV2(method, pathWithQuery, apiKey, timestamp, nonce, contentSha256);
+      const canonical = service.buildCanonicalStringV2(
+        method,
+        pathWithQuery,
+        apiKey,
+        timestamp,
+        nonce,
+        contentSha256
+      );
       expect(canonical).toContain(pathWithQuery);
       expect(canonical).toContain('status=SUCCEEDED');
       expect(canonical).toContain('limit=10');
@@ -375,7 +419,14 @@ describe('ApiSecurityService', () => {
       const nonce = 'nonce_123';
       const contentSha256 = 'UNSIGNED';
 
-      const canonical = service.buildCanonicalStringV2(method, pathWithQuery, apiKey, timestamp, nonce, contentSha256);
+      const canonical = service.buildCanonicalStringV2(
+        method,
+        pathWithQuery,
+        apiKey,
+        timestamp,
+        nonce,
+        contentSha256
+      );
       expect(canonical).toContain('UNSIGNED');
       expect(canonical.endsWith('UNSIGNED\n')).toBe(true);
     });
@@ -423,4 +474,3 @@ describe('ApiSecurityService', () => {
     });
   });
 });
-

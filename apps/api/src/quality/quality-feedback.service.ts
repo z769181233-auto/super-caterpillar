@@ -1,7 +1,7 @@
 /**
  * QualityFeedbackService
  * 质量反馈服务，提供质量评分的聚合分析功能
- * 
+ *
  * 职责：
  * - 对 QualityScoreRecord 列表进行聚合分析
  * - 只读聚合，不写入数据库
@@ -51,4 +51,3 @@ export class QualityFeedbackService {
     };
   }
 }
-

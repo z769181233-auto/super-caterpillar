@@ -22,14 +22,14 @@ async function main() {
     });
 
     // 优先使用有 secretHash 的（开发环境通常使用这个）
-    let apiKey = allApiKeys.find(k => k.secretHash) || allApiKeys[0];
+    let apiKey = allApiKeys.find((k) => k.secretHash) || allApiKeys[0];
 
     if (!apiKey) {
       console.error('⚠️  未找到可用的 API Key，创建测试用的 API Key...');
       // 创建测试用的 API Key
       const testKey = `ak_test_${Date.now().toString(36)}`;
       const testSecret = require('crypto').randomBytes(32).toString('hex');
-      
+
       const newApiKey = await prisma.apiKey.create({
         data: {
           key: testKey,
@@ -38,7 +38,7 @@ async function main() {
           status: 'ACTIVE',
         },
       });
-      
+
       console.error(`✅ 已创建测试 API Key: ${testKey}`);
       apiKey = newApiKey;
       secret = testSecret;
@@ -66,12 +66,12 @@ async function main() {
 
     if (!project) {
       console.error('⚠️  未找到可用的 Project，创建测试用的 Project...');
-      
+
       // 查找或创建测试用户
       let user = await prisma.user.findFirst({
         orderBy: { createdAt: 'desc' },
       });
-      
+
       if (!user) {
         console.error('⚠️  未找到用户，创建测试用户...');
         user = await prisma.user.create({
@@ -82,12 +82,12 @@ async function main() {
         });
         console.error(`✅ 已创建测试用户: ${user.id}`);
       }
-      
+
       // 查找或创建测试组织
       let org = await prisma.organization.findFirst({
         orderBy: { createdAt: 'desc' },
       });
-      
+
       if (!org) {
         console.error('⚠️  未找到组织，创建测试组织...');
         org = await prisma.organization.create({
@@ -98,7 +98,7 @@ async function main() {
         });
         console.error(`✅ 已创建测试组织: ${org.id}`);
       }
-      
+
       // 创建测试 Project
       project = await prisma.project.create({
         data: {
@@ -128,4 +128,3 @@ async function main() {
 }
 
 main();
-

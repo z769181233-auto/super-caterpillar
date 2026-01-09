@@ -1,4 +1,14 @@
-import { Controller, Post, Param, Body, Get, UseGuards, Req, Inject, forwardRef } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Param,
+  Body,
+  Get,
+  UseGuards,
+  Req,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { WorkerService } from './worker.service';
 import { RegisterWorkerDto } from './dto/register-worker.dto';
@@ -20,8 +30,8 @@ export class WorkerAliasController {
     private readonly workerService: WorkerService,
     @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestratorService: OrchestratorService,
-    private readonly auditLogService: AuditLogService,
-  ) { }
+    private readonly auditLogService: AuditLogService
+  ) {}
 
   /**
    * Worker 注册
@@ -31,7 +41,7 @@ export class WorkerAliasController {
   async register(
     @Body() registerDto: RegisterWorkerDto,
     @CurrentUser() user: { userId: string },
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     const requestInfo = AuditLogService.extractRequestInfo(request);
     const apiKeyId = (request as any).apiKey?.id;
@@ -46,7 +56,7 @@ export class WorkerAliasController {
       user?.userId,
       apiKeyId,
       requestInfo.ip,
-      requestInfo.userAgent,
+      requestInfo.userAgent
     );
 
     if (!worker) {
@@ -73,7 +83,7 @@ export class WorkerAliasController {
     @Param('workerId') workerId: string,
     @Body() heartbeatDto: HeartbeatDto,
     @CurrentUser() user: { userId: string },
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     const requestInfo = AuditLogService.extractRequestInfo(request);
     const apiKeyId = (request as any).apiKey?.id;
@@ -86,7 +96,7 @@ export class WorkerAliasController {
       user?.userId,
       apiKeyId,
       requestInfo.ip,
-      requestInfo.userAgent,
+      requestInfo.userAgent
     );
 
     return {
@@ -106,7 +116,7 @@ export class WorkerAliasController {
   async getNextJob(
     @Param('workerId') workerId: string,
     @CurrentUser() user: { userId: string },
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     // 通过调度器获取下一条待处理的 Job（最小闭环版）
     const job = await this.orchestratorService.dispatchNextJobForWorker(workerId);
@@ -153,4 +163,3 @@ export class WorkerAliasController {
     };
   }
 }
-

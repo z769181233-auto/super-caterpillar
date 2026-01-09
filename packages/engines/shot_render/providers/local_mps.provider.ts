@@ -37,9 +37,10 @@ export const localMpsProvider = {
     }
 
     const outPath = path.join(outDir, `shot_render_local_${Date.now()}_${seed}.png`);
+    const pythonBin = process.env.PYTHON_BIN || 'python3';
 
     const py = spawnSync(
-      'python3',
+      pythonBin,
       [
         'tools/local_render/sd15_mps.py',
         '--out',

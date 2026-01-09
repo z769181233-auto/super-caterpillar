@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const projectId = process.env.TEST_PROJECT_ID;
-  
+
   if (!projectId) {
     console.error('❌ TEST_PROJECT_ID 未设置');
     process.exit(1);
@@ -22,7 +22,7 @@ async function main() {
 
   try {
     console.log('=== Quality Metrics 查询 ===\n');
-    
+
     const qualityMetrics = await prisma.qualityMetrics.findMany({
       where: {
         projectId,
@@ -51,7 +51,7 @@ async function main() {
     }
 
     console.log('\n=== Audit Logs 查询 ===\n');
-    
+
     const auditLogs = await prisma.auditLog.findMany({
       where: {
         OR: [
@@ -78,7 +78,9 @@ async function main() {
         console.log(`   Trace ID: ${details.traceId || 'N/A'}`);
         console.log(`   Status: ${details.status || 'N/A'}`);
         console.log(`   Job Type: ${details.jobType || 'N/A'}`);
-        console.log(`   Safety Check: ${details.safetyCheck ? JSON.stringify(details.safetyCheck).substring(0, 100) : 'N/A'}`);
+        console.log(
+          `   Safety Check: ${details.safetyCheck ? JSON.stringify(details.safetyCheck).substring(0, 100) : 'N/A'}`
+        );
         console.log(`   Created At: ${log.createdAt}`);
         console.log('');
       });
@@ -93,4 +95,3 @@ async function main() {
 }
 
 main();
-

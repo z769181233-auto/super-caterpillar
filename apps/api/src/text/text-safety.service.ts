@@ -5,7 +5,7 @@ import { AuditActions } from '../audit/audit.constants';
 /**
  * Text Safety Service
  * CE04 前置安全检测（最小实现）
- * 
+ *
  * 规则：
  * - 关键词黑名单
  * - 占位清洗
@@ -29,7 +29,7 @@ export class TextSafetyService {
 
   /**
    * 文本安全清洗
-   * 
+   *
    * @param text 原始文本
    * @param userId 用户 ID（用于审计）
    * @param ip IP 地址（用于审计）
@@ -40,7 +40,7 @@ export class TextSafetyService {
     text: string,
     userId?: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ): Promise<{
     passed: boolean;
     sanitizedText: string;
@@ -93,4 +93,3 @@ export class TextSafetyService {
     };
   }
 }
-

@@ -20,4 +20,3 @@ export class VisualDensityDto {
     engineVersion?: string;
   };
 }
-

@@ -5,4 +5,3 @@ import { InternalController } from './internal.controller';
   controllers: [InternalController],
 })
 export class InternalModule {}
-

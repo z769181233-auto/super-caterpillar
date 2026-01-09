@@ -1,7 +1,7 @@
 /**
  * S3-A.1 验证脚本
  * 用于验证 HTTP 引擎配置与安全设计的实现
- * 
+ *
  * 运行方式：ts-node apps/api/scripts/verify-s3a1.ts
  */
 
@@ -18,11 +18,17 @@ class MockLogger {
   }
   warn(message: any) {
     this.logs.push({ level: 'warn', message });
-    console.warn('[WARN]', typeof message === 'string' ? message : JSON.stringify(message, null, 2));
+    console.warn(
+      '[WARN]',
+      typeof message === 'string' ? message : JSON.stringify(message, null, 2)
+    );
   }
   error(message: any) {
     this.logs.push({ level: 'error', message });
-    console.error('[ERROR]', typeof message === 'string' ? message : JSON.stringify(message, null, 2));
+    console.error(
+      '[ERROR]',
+      typeof message === 'string' ? message : JSON.stringify(message, null, 2)
+    );
   }
 }
 
@@ -156,14 +162,20 @@ async function main() {
   try {
     const configA = serviceA.getHttpEngineConfig('http_gemini_v1');
     console.log('✓ 配置结果（场景 a）：');
-    console.log(JSON.stringify({
-      baseUrl: configA.baseUrl,
-      timeoutMs: configA.timeoutMs,
-      path: configA.path,
-      authMode: configA.authMode,
-      hasApiKey: !!configA.apiKey,
-      apiKeyLength: configA.apiKey?.length,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          baseUrl: configA.baseUrl,
+          timeoutMs: configA.timeoutMs,
+          path: configA.path,
+          authMode: configA.authMode,
+          hasApiKey: !!configA.apiKey,
+          apiKeyLength: configA.apiKey?.length,
+        },
+        null,
+        2
+      )
+    );
   } catch (error) {
     console.log('✗ 配置读取失败:', error);
   }
@@ -175,7 +187,10 @@ async function main() {
   console.log('场景 b: 只配置引擎级环境变量（清除全局变量）');
   envSnapshot.clearHttpEngineVars(); // 清除所有 HTTP_ENGINE_* 变量
   // 设置引擎级变量
-  envSnapshot.setHttpEngineVar('HTTP_ENGINE_GEMINI_V1_BASE_URL', 'https://gemini-specific.example.com');
+  envSnapshot.setHttpEngineVar(
+    'HTTP_ENGINE_GEMINI_V1_BASE_URL',
+    'https://gemini-specific.example.com'
+  );
   envSnapshot.setHttpEngineVar('HTTP_ENGINE_GEMINI_V1_API_KEY', 'gemini-specific-key-67890');
   envSnapshot.setHttpEngineVar('HTTP_ENGINE_GEMINI_V1_TIMEOUT_MS', '60000');
   envSnapshot.setHttpEngineVar('HTTP_ENGINE_GEMINI_V1_PATH', '/gemini/invoke');
@@ -192,16 +207,26 @@ async function main() {
   try {
     const configB = serviceB.getHttpEngineConfig('http_gemini_v1');
     console.log('✓ 配置结果（场景 b）：');
-    console.log(JSON.stringify({
-      baseUrl: configB.baseUrl,
-      timeoutMs: configB.timeoutMs,
-      path: configB.path,
-      authMode: configB.authMode,
-      hasApiKey: !!configB.apiKey,
-      apiKeyLength: configB.apiKey?.length,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          baseUrl: configB.baseUrl,
+          timeoutMs: configB.timeoutMs,
+          path: configB.path,
+          authMode: configB.authMode,
+          hasApiKey: !!configB.apiKey,
+          apiKeyLength: configB.apiKey?.length,
+        },
+        null,
+        2
+      )
+    );
     const match = configB.baseUrl === 'https://gemini-specific.example.com';
-    console.log(match ? '✓ 符合预期：baseUrl 是引擎级配置' : `✗ 不符合预期：baseUrl 应该是 https://gemini-specific.example.com，实际是 ${configB.baseUrl}`);
+    console.log(
+      match
+        ? '✓ 符合预期：baseUrl 是引擎级配置'
+        : `✗ 不符合预期：baseUrl 应该是 https://gemini-specific.example.com，实际是 ${configB.baseUrl}`
+    );
   } catch (error) {
     console.log('✗ 配置读取失败:', error instanceof Error ? error.message : String(error));
   }
@@ -219,15 +244,25 @@ async function main() {
     // 使用 http_local_llm（authMode=none，不需要 API Key）
     const configC = serviceC.getHttpEngineConfig('http_local_llm');
     console.log('✓ 配置结果（场景 c，使用 http_local_llm）：');
-    console.log(JSON.stringify({
-      baseUrl: configC.baseUrl,
-      timeoutMs: configC.timeoutMs,
-      path: configC.path,
-      authMode: configC.authMode,
-      hasApiKey: !!configC.apiKey,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          baseUrl: configC.baseUrl,
+          timeoutMs: configC.timeoutMs,
+          path: configC.path,
+          authMode: configC.authMode,
+          hasApiKey: !!configC.apiKey,
+        },
+        null,
+        2
+      )
+    );
     const match = configC.baseUrl === 'http://localhost:11434';
-    console.log(match ? '✓ 符合预期：baseUrl 来自 JSON 配置' : '✗ 不符合预期：baseUrl 应该是 http://localhost:11434');
+    console.log(
+      match
+        ? '✓ 符合预期：baseUrl 来自 JSON 配置'
+        : '✗ 不符合预期：baseUrl 应该是 http://localhost:11434'
+    );
   } catch (error) {
     console.log('✗ 配置读取失败:', error);
   }
@@ -317,7 +352,11 @@ async function main() {
     },
     {
       name: 'HTTP 200 + success=false',
-      response: { status: 200, data: { success: false, error: { message: 'Business error' } }, headers: {} },
+      response: {
+        status: 200,
+        data: { success: false, error: { message: 'Business error' } },
+        headers: {},
+      },
       expectedStatus: EngineInvokeStatus.FAILED,
       expectedErrorType: 'BUSINESS_ERROR',
     },
@@ -348,16 +387,19 @@ async function main() {
         testCase.response,
         'http_test',
         'TEST_JOB',
-        1000,
+        1000
       );
       const actualStatus = result.status;
       const actualErrorType = result.error?.details?.errorType || null;
-      const match = actualStatus === testCase.expectedStatus && actualErrorType === testCase.expectedErrorType;
+      const match =
+        actualStatus === testCase.expectedStatus && actualErrorType === testCase.expectedErrorType;
       console.log(
         match ? '✓' : '✗',
         `输入: ${testCase.name}`,
         `→ 输出: status=${actualStatus}, errorType=${actualErrorType}`,
-        match ? '(符合预期)' : `(预期: status=${testCase.expectedStatus}, errorType=${testCase.expectedErrorType})`,
+        match
+          ? '(符合预期)'
+          : `(预期: status=${testCase.expectedStatus}, errorType=${testCase.expectedErrorType})`
       );
     } catch (error) {
       console.log('✗ 测试失败:', error);
@@ -368,9 +410,21 @@ async function main() {
   // 网络错误测试
   console.log('网络错误测试:');
   const networkErrorCases = [
-    { code: 'ECONNRESET', expectedStatus: EngineInvokeStatus.RETRYABLE, expectedErrorType: 'NETWORK_ERROR' },
-    { code: 'ETIMEDOUT', expectedStatus: EngineInvokeStatus.RETRYABLE, expectedErrorType: 'NETWORK_ERROR' },
-    { code: 'ENETUNREACH', expectedStatus: EngineInvokeStatus.RETRYABLE, expectedErrorType: 'NETWORK_ERROR' },
+    {
+      code: 'ECONNRESET',
+      expectedStatus: EngineInvokeStatus.RETRYABLE,
+      expectedErrorType: 'NETWORK_ERROR',
+    },
+    {
+      code: 'ETIMEDOUT',
+      expectedStatus: EngineInvokeStatus.RETRYABLE,
+      expectedErrorType: 'NETWORK_ERROR',
+    },
+    {
+      code: 'ENETUNREACH',
+      expectedStatus: EngineInvokeStatus.RETRYABLE,
+      expectedErrorType: 'NETWORK_ERROR',
+    },
   ];
 
   for (const testCase of networkErrorCases) {
@@ -380,12 +434,15 @@ async function main() {
       const result = (adapter as any).handleHttpError(error, 'http_test', 'TEST_JOB', 1000);
       const actualStatus = result.status;
       const actualErrorType = result.error?.details?.errorType || null;
-      const match = actualStatus === testCase.expectedStatus && actualErrorType === testCase.expectedErrorType;
+      const match =
+        actualStatus === testCase.expectedStatus && actualErrorType === testCase.expectedErrorType;
       console.log(
         match ? '✓' : '✗',
         `输入: error.code=${testCase.code}`,
         `→ 输出: status=${actualStatus}, errorType=${actualErrorType}`,
-        match ? '(符合预期)' : `(预期: status=${testCase.expectedStatus}, errorType=${testCase.expectedErrorType})`,
+        match
+          ? '(符合预期)'
+          : `(预期: status=${testCase.expectedStatus}, errorType=${testCase.expectedErrorType})`
       );
     } catch (error) {
       console.log('✗ 测试失败:', error);
@@ -408,20 +465,36 @@ async function main() {
   };
 
   mockLogger.logs = [];
-  (adapter as any).logRequestStart('http_test', 'TEST_JOB', 'https://example.com/invoke', configWithApiKey, {}, {});
-  
-  const logEntry = mockLogger.logs.find((l) => l.message && typeof l.message === 'string' && l.message.includes('HTTP_ENGINE_INVOKE_START'));
+  (adapter as any).logRequestStart(
+    'http_test',
+    'TEST_JOB',
+    'https://example.com/invoke',
+    configWithApiKey,
+    {},
+    {}
+  );
+
+  const logEntry = mockLogger.logs.find(
+    (l) =>
+      l.message && typeof l.message === 'string' && l.message.includes('HTTP_ENGINE_INVOKE_START')
+  );
   if (logEntry) {
     try {
       const logData = JSON.parse(logEntry.message);
       console.log('✓ 日志内容（脱敏检查）：');
-      console.log(JSON.stringify({
-        hasApiKey: logData.hasApiKey,
-        apiKeyPrefix: logData.apiKeyPrefix,
-        apiKeySuffix: logData.apiKeySuffix,
-        apiKeyLength: logData.apiKeyLength,
-        hasFullApiKey: logData.apiKey !== undefined,
-      }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            hasApiKey: logData.hasApiKey,
+            apiKeyPrefix: logData.apiKeyPrefix,
+            apiKeySuffix: logData.apiKeySuffix,
+            apiKeyLength: logData.apiKeyLength,
+            hasFullApiKey: logData.apiKey !== undefined,
+          },
+          null,
+          2
+        )
+      );
       console.log('预期：hasFullApiKey=false（不包含完整 API Key）');
     } catch (error) {
       console.log('⚠ 日志解析失败:', error);
@@ -478,7 +551,14 @@ async function main() {
   // 所以这个测试需要特殊处理：直接测试 validateHttpEngineConfig
   try {
     // 直接调用验证函数测试空 baseUrl
-    (serviceEmpty as any).validateHttpEngineConfig('', 30000, '/invoke', 'none', undefined, undefined);
+    (serviceEmpty as any).validateHttpEngineConfig(
+      '',
+      30000,
+      '/invoke',
+      'none',
+      undefined,
+      undefined
+    );
     console.log('✗ 应该抛出错误，但验证通过');
   } catch (error) {
     console.log('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error));
@@ -500,4 +580,3 @@ main().catch((error) => {
   console.error('验证脚本执行失败:', error);
   process.exit(1);
 });
-

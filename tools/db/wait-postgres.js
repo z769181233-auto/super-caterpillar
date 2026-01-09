@@ -12,7 +12,8 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const { Client } = require('pg');
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/scu?schema=public';
+const DATABASE_URL =
+  process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/scu?schema=public';
 const MAX_WAIT_MS = 30000; // 30 秒
 const RETRY_INTERVAL_MS = 1000; // 1 秒
 
@@ -92,7 +93,7 @@ async function main() {
     }
 
     // 等待后重试
-    await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL_MS));
+    await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL_MS));
   }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -130,4 +131,3 @@ async function main() {
 }
 
 main();
-

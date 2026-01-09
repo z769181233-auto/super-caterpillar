@@ -39,9 +39,12 @@ function generateSignature(
   nonce: string,
   body: string,
   secret: string,
-  apiKey: string,
+  apiKey: string
 ): string {
-  const contentHash = crypto.createHash('sha256').update(body || '').digest('hex');
+  const contentHash = crypto
+    .createHash('sha256')
+    .update(body || '')
+    .digest('hex');
   // Unified with ApiSecurityService v2 spec
   const stringToSign = `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${contentHash}\n`;
   return crypto.createHmac('sha256', secret).update(stringToSign).digest('hex');
@@ -63,7 +66,15 @@ export async function makeHmacRequest(options: HmacRequestOptions): Promise<Hmac
   const nonce = providedNonce || `nonce-${timestamp}-${Math.random().toString(36).substring(7)}`;
   const bodyString = body ? JSON.stringify(body) : '';
 
-  const signature = generateSignature(method, path, timestamp, nonce, bodyString, apiSecret, apiKey);
+  const signature = generateSignature(
+    method,
+    path,
+    timestamp,
+    nonce,
+    bodyString,
+    apiSecret,
+    apiKey
+  );
 
   const headers: Record<string, string> = {
     'X-Api-Key': apiKey,
@@ -112,7 +123,7 @@ export async function makeHmacRequest(options: HmacRequestOptions): Promise<Hmac
 }
 
 export async function testNonceReplay(
-  options: Omit<HmacRequestOptions, 'nonce' | 'timestamp'>,
+  options: Omit<HmacRequestOptions, 'nonce' | 'timestamp'>
 ): Promise<{ firstRequest: HmacRequestResult; secondRequest: HmacRequestResult }> {
   const timestamp = Math.floor(Date.now() / 1000);
   const nonce = `replay-test-${timestamp}-${Math.random().toString(36).substring(7)}`;
@@ -123,7 +134,7 @@ export async function testNonceReplay(
     timestamp,
   });
 
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
   const secondRequest = await makeHmacRequest({
     ...options,

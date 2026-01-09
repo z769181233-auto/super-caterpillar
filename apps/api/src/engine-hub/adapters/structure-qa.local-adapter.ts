@@ -1,14 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { EngineAdapter, EngineInvokeInput, EngineInvokeResult, EngineInvokeStatus } from '@scu/shared-types';
+import {
+  EngineAdapter,
+  EngineInvokeInput,
+  EngineInvokeResult,
+  EngineInvokeStatus,
+} from '@scu/shared-types';
 import { StructureQAEngineInput } from '@scu/shared-types';
 
 /**
  * Stage4 MVP: Structure QA local stub
  */
 @Injectable()
-export class StructureQALocalAdapter
-  implements EngineAdapter
-{
+export class StructureQALocalAdapter implements EngineAdapter {
   readonly name = 'StructureQALocalAdapter';
   readonly mode = 'local';
 
@@ -16,9 +19,7 @@ export class StructureQALocalAdapter
     return engineKey === 'structure_qa';
   }
 
-  async invoke(
-    input: EngineInvokeInput,
-  ): Promise<EngineInvokeResult> {
+  async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const payload = input.payload as StructureQAEngineInput;
     void payload;
     // Stub: return fixed score and empty issues
@@ -31,4 +32,3 @@ export class StructureQALocalAdapter
     };
   }
 }
-

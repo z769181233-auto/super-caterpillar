@@ -34,15 +34,15 @@ Local File System
 # 内部 location，仅允许 X-Accel-Redirect 访问
 location /protected_storage/ {
     internal;  # 只允许内部跳转，禁止外部直接访问
-    
+
     alias /path/to/storage/;  # 存储根目录
-    
+
     # 支持 Range 请求（视频播放必需）
     add_header Accept-Ranges bytes;
-    
+
     # 禁用缓冲，支持流式传输
     proxy_buffering off;
-    
+
     # 设置超时
     proxy_read_timeout 300s;
     proxy_connect_timeout 10s;
@@ -67,9 +67,9 @@ services:
     image: nginx:alpine
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./storage:/var/storage:ro  # 只读挂载存储目录
+      - ./storage:/var/storage:ro # 只读挂载存储目录
     ports:
-      - "80:80"
+      - '80:80'
     depends_on:
       - api
     networks:
@@ -81,7 +81,7 @@ services:
       - STORAGE_ACCEL_REDIRECT_ENABLED=true
       - STORAGE_ROOT=/var/storage
     volumes:
-      - ./storage:/var/storage:rw  # API 需要读写权限
+      - ./storage:/var/storage:rw # API 需要读写权限
     networks:
       - app-network
 ```
@@ -102,17 +102,17 @@ http {
     location /protected_storage/ {
         internal;
         alias /var/storage/;
-        
+
         # 支持 Range 请求
         add_header Accept-Ranges bytes;
-        
+
         # 禁用缓冲
         proxy_buffering off;
-        
+
         # 超时设置
         proxy_read_timeout 300s;
         proxy_connect_timeout 10s;
-        
+
         # 日志
         access_log /var/log/nginx/storage_access.log;
     }
@@ -305,7 +305,7 @@ access_log /var/log/nginx/storage_access.log;
 ```nginx
 location /protected_storage/ {
     # ... 其他配置 ...
-    
+
     # 缓存配置
     expires 1h;
     add_header Cache-Control "public, immutable";
@@ -321,6 +321,7 @@ location /protected_storage/ {
 ### 问题 1: X-Accel-Redirect 不工作
 
 **检查项**:
+
 - Nginx 配置中 `internal` 指令是否正确
 - 存储路径是否正确
 - 文件权限是否正确
@@ -328,12 +329,14 @@ location /protected_storage/ {
 ### 问题 2: Range 请求失败
 
 **检查项**:
+
 - Nginx 配置中 `Accept-Ranges` 头是否正确
 - 文件是否存在且可读
 
 ### 问题 3: 权限验证失败
 
 **检查项**:
+
 - 签名中的 tenantId + userId 是否正确
 - Asset 表中的 organizationId 是否正确
 - 用户是否是组织成员
@@ -342,4 +345,3 @@ location /protected_storage/ {
 
 - [Nginx X-Accel-Redirect](https://nginx.org/en/docs/http/ngx_http_core_module.html#internal)
 - [Nginx Range 请求支持](https://nginx.org/en/docs/http/ngx_http_core_module.html#max_ranges)
-

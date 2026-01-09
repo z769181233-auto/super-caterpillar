@@ -7,6 +7,7 @@
 **症状：** Job 长时间处于 PENDING，未被 Worker 领取
 
 **排查步骤：**
+
 1. 检查是否有 Engine 绑定：
    ```sql
    SELECT j.id, j.type, j.status, jeb.id as binding_id, jeb.status as binding_status
@@ -21,6 +22,7 @@
 3. 如果有绑定但状态不是 BOUND，检查绑定状态
 
 **处理：**
+
 - 如果没有 Engine 绑定：手动绑定 Engine 或检查 Engine 选择逻辑
 - 如果绑定状态异常：检查 `JobEngineBindingService.selectEngineForJob` 逻辑
 
@@ -29,6 +31,7 @@
 **症状：** Job 被领取（DISPATCHED）但 Worker 未开始执行
 
 **排查步骤：**
+
 1. 检查 Worker 是否在线：
    ```sql
    SELECT w.worker_id, w.status, w.last_heartbeat, wh.status as heartbeat_status
@@ -36,9 +39,10 @@
    LEFT JOIN worker_heartbeats wh ON w.worker_id = wh.worker_id
    WHERE w.id = '<worker_id>';
    ```
-2. 检查 Worker 是否超时（HEARTBEAT_TTL_SECONDS * 3）
+2. 检查 Worker 是否超时（HEARTBEAT_TTL_SECONDS \* 3）
 
 **处理：**
+
 - Worker 超时：等待 Orchestrator 自动回收（或手动触发）
 - Worker 在线但未执行：检查 Worker 日志，确认是否调用了 `/api/jobs/:id/start`
 
@@ -47,6 +51,7 @@
 **症状：** Job 长时间处于 RUNNING，Worker 未上报结果
 
 **排查步骤：**
+
 1. 检查 Worker 心跳：
    ```sql
    SELECT worker_id, last_seen_at, status
@@ -63,6 +68,7 @@
    ```
 
 **处理：**
+
 - Worker 超时：等待自动回收或手动触发回收
 - Worker 在线：检查 Worker 日志，确认是否调用了 `/api/jobs/:id/report`
 
@@ -71,6 +77,7 @@
 **症状：** `retry_count >= max_retry` 但 Job 状态不是 FAILED
 
 **排查步骤：**
+
 ```sql
 SELECT id, type, status, retry_count, max_retry, last_error
 FROM shot_jobs
@@ -79,6 +86,7 @@ WHERE retry_count >= max_retry
 ```
 
 **处理：**
+
 - 手动标记为 FAILED（使用 `forceFailJob` 接口）
 - 检查重试逻辑是否正确更新状态
 
@@ -87,8 +95,9 @@ WHERE retry_count >= max_retry
 **症状：** Job 状态与 Engine 绑定状态不一致
 
 **排查步骤：**
+
 ```sql
-SELECT 
+SELECT
   j.id,
   j.status as job_status,
   jeb.status as binding_status,
@@ -99,6 +108,7 @@ WHERE j.id = '<job_id>';
 ```
 
 **处理：**
+
 - Job SUCCEEDED 但绑定未 COMPLETED：检查 `markBindingCompleted` 是否被调用
 - Job FAILED 但绑定未 FAILED：检查 `markBindingFailed` 是否被调用
 - 绑定失败但 Job 未失败：检查绑定失败是否影响 Job 状态
@@ -111,7 +121,7 @@ WHERE j.id = '<job_id>';
 INSERT INTO job_engine_bindings (
   id, job_id, engine_id, engine_key, status, bound_at, created_at, updated_at
 )
-SELECT 
+SELECT
   gen_random_uuid(),
   '<job_id>',
   e.id,
@@ -180,12 +190,14 @@ WHERE id = '<job_id>';
 **环境限制：** 仅 dev 或设置 `ALLOW_OPS_ENDPOINTS=true`
 
 **返回内容：**
+
 - Job 基本信息（id, type, status, attempts, retryCount 等）
 - Worker 信息（如果已分配）
 - Engine 绑定信息
 - 最近 20 条 audit_logs
 
 **使用示例：**
+
 ```bash
 curl -X GET "http://localhost:3000/api/ops/jobs/<job_id>/diagnose" \
   -H "Authorization: Bearer <token>"
@@ -196,6 +208,7 @@ curl -X GET "http://localhost:3000/api/ops/jobs/<job_id>/diagnose" \
 ### Q: Job 创建后没有 Engine 绑定
 
 **A:** 检查：
+
 1. Engine 是否可用（`enabled = true`）
 2. `JobEngineBindingService.selectEngineForJob` 是否返回结果
 3. 绑定失败是否被捕获（检查日志）
@@ -203,6 +216,7 @@ curl -X GET "http://localhost:3000/api/ops/jobs/<job_id>/diagnose" \
 ### Q: Worker 领取不到 Job
 
 **A:** 检查：
+
 1. Job 是否有 Engine 绑定且状态为 BOUND
 2. Job 状态是否为 PENDING
 3. Worker 是否被禁用（`capabilities.disabled = true`）
@@ -210,7 +224,7 @@ curl -X GET "http://localhost:3000/api/ops/jobs/<job_id>/diagnose" \
 ### Q: attempts 和 retryCount 的区别
 
 **A:**
+
 - `attempts`: 领取次数（PENDING → DISPATCHED 时递增）
 - `retryCount`: 重试次数（RUNNING → RETRYING 时递增）
 - 判断是否达到最大重试：使用 `retryCount >= maxRetry`，不使用 `attempts`
-

@@ -16,19 +16,19 @@
 
 ### 1.1 字段对比
 
-| 字段名 | 规范要求 | 当前实现 | 差异 | 必要性 |
-|--------|---------|---------|------|--------|
-| id | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持 |
-| email | String (unique) | String @unique | ✅ 符合 | 保持 |
-| passwordHash | String | String | ✅ 符合 | 保持 |
-| avatar | String? | String? | ✅ 符合 | 保持 |
-| userType | Enum | UserType @default(individual) | ✅ 符合 | 保持 |
-| role | Enum | UserRole @default(viewer) | ✅ 符合 | 保持 |
-| tier | Enum | UserTier @default(Free) | ✅ 符合 | 保持 |
-| quota | Json? | Json? | ✅ 符合 | 保持 |
-| defaultOrganizationId | - | String? | ⚠️ 规范未提及 | P2（Studio v0.7 扩展） |
-| createdAt | DateTime | DateTime @default(now()) | ✅ 符合 | 保持 |
-| updatedAt | DateTime | DateTime @updatedAt | ✅ 符合 | 保持 |
+| 字段名                | 规范要求        | 当前实现                      | 差异          | 必要性                 |
+| --------------------- | --------------- | ----------------------------- | ------------- | ---------------------- |
+| id                    | String (UUID)   | String @id @default(uuid())   | ✅ 符合       | 保持                   |
+| email                 | String (unique) | String @unique                | ✅ 符合       | 保持                   |
+| passwordHash          | String          | String                        | ✅ 符合       | 保持                   |
+| avatar                | String?         | String?                       | ✅ 符合       | 保持                   |
+| userType              | Enum            | UserType @default(individual) | ✅ 符合       | 保持                   |
+| role                  | Enum            | UserRole @default(viewer)     | ✅ 符合       | 保持                   |
+| tier                  | Enum            | UserTier @default(Free)       | ✅ 符合       | 保持                   |
+| quota                 | Json?           | Json?                         | ✅ 符合       | 保持                   |
+| defaultOrganizationId | -               | String?                       | ⚠️ 规范未提及 | P2（Studio v0.7 扩展） |
+| createdAt             | DateTime        | DateTime @default(now())      | ✅ 符合       | 保持                   |
+| updatedAt             | DateTime        | DateTime @updatedAt           | ✅ 符合       | 保持                   |
 
 ### 1.2 关系检查
 
@@ -50,6 +50,7 @@
 **无 P0/P1 级差异**，所有字段符合规范或为合理扩展。
 
 **P2 级差异**:
+
 - `defaultOrganizationId`: Studio v0.7 扩展字段，用于默认组织选择，不影响核心功能。
 
 ### 1.5 迁移风险
@@ -62,15 +63,15 @@
 
 ### 2.1 字段对比
 
-| 字段名 | 规范要求 | 当前实现 | 差异 | 必要性 |
-|--------|---------|---------|------|--------|
-| id | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持 |
-| name | String | String | ✅ 符合 | 保持 |
-| ownerId | String | String | ✅ 符合 | 保持 |
-| slug | - | String? @unique | ⚠️ 规范未提及 | P2（Studio v0.7 扩展） |
-| quota | Json? | Json? | ✅ 符合 | 保持 |
-| createdAt | DateTime | DateTime @default(now()) | ✅ 符合 | 保持 |
-| updatedAt | DateTime | DateTime @updatedAt | ✅ 符合 | 保持 |
+| 字段名    | 规范要求      | 当前实现                    | 差异          | 必要性                 |
+| --------- | ------------- | --------------------------- | ------------- | ---------------------- |
+| id        | String (UUID) | String @id @default(uuid()) | ✅ 符合       | 保持                   |
+| name      | String        | String                      | ✅ 符合       | 保持                   |
+| ownerId   | String        | String                      | ✅ 符合       | 保持                   |
+| slug      | -             | String? @unique             | ⚠️ 规范未提及 | P2（Studio v0.7 扩展） |
+| quota     | Json?         | Json?                       | ✅ 符合       | 保持                   |
+| createdAt | DateTime      | DateTime @default(now())    | ✅ 符合       | 保持                   |
+| updatedAt | DateTime      | DateTime @updatedAt         | ✅ 符合       | 保持                   |
 
 ### 2.2 关系检查
 
@@ -94,6 +95,7 @@
 **无 P0/P1 级差异**，所有字段符合规范或为合理扩展。
 
 **P2 级差异**:
+
 - `slug`: Studio v0.7 扩展字段，用于 URL 友好标识，不影响核心功能。
 
 ### 2.5 迁移风险
@@ -106,15 +108,15 @@
 
 ### 3.1 字段对比
 
-| 字段名 | 规范要求 | 当前实现 | 差异 | 必要性 |
-|--------|---------|---------|------|--------|
-| id | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持 |
-| userId | String | String | ✅ 符合 | 保持 |
-| organizationId | String | String | ✅ 符合 | 保持 |
-| role | Enum | MembershipRole | ✅ 符合 | 保持 |
-| permissions | Json? | Json? | ✅ 符合 | 保持 |
-| createdAt | DateTime | DateTime @default(now()) | ✅ 符合 | 保持 |
-| updatedAt | DateTime | DateTime @updatedAt | ✅ 符合 | 保持 |
+| 字段名         | 规范要求      | 当前实现                    | 差异    | 必要性 |
+| -------------- | ------------- | --------------------------- | ------- | ------ |
+| id             | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持   |
+| userId         | String        | String                      | ✅ 符合 | 保持   |
+| organizationId | String        | String                      | ✅ 符合 | 保持   |
+| role           | Enum          | MembershipRole              | ✅ 符合 | 保持   |
+| permissions    | Json?         | Json?                       | ✅ 符合 | 保持   |
+| createdAt      | DateTime      | DateTime @default(now())    | ✅ 符合 | 保持   |
+| updatedAt      | DateTime      | DateTime @updatedAt         | ✅ 符合 | 保持   |
 
 ### 3.2 关系检查
 
@@ -139,14 +141,14 @@
 
 ### 4.1 字段对比
 
-| 字段名 | 规范要求 | 当前实现 | 差异 | 必要性 |
-|--------|---------|---------|------|--------|
-| id | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持 |
-| userId | String | String | ✅ 符合 | 保持 |
-| organizationId | String | String | ✅ 符合 | 保持 |
-| role | Enum | OrganizationRole @default(MEMBER) | ✅ 符合 | 保持 |
-| createdAt | DateTime | DateTime @default(now()) | ✅ 符合 | 保持 |
-| updatedAt | DateTime | DateTime @updatedAt | ✅ 符合 | 保持 |
+| 字段名         | 规范要求      | 当前实现                          | 差异    | 必要性 |
+| -------------- | ------------- | --------------------------------- | ------- | ------ |
+| id             | String (UUID) | String @id @default(uuid())       | ✅ 符合 | 保持   |
+| userId         | String        | String                            | ✅ 符合 | 保持   |
+| organizationId | String        | String                            | ✅ 符合 | 保持   |
+| role           | Enum          | OrganizationRole @default(MEMBER) | ✅ 符合 | 保持   |
+| createdAt      | DateTime      | DateTime @default(now())          | ✅ 符合 | 保持   |
+| updatedAt      | DateTime      | DateTime @updatedAt               | ✅ 符合 | 保持   |
 
 ### 4.2 关系检查
 
@@ -173,14 +175,14 @@
 
 ### 5.1 字段对比
 
-| 字段名 | 规范要求 | 当前实现 | 差异 | 必要性 |
-|--------|---------|---------|------|--------|
-| id | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持 |
-| userId | String | String | ✅ 符合 | 保持 |
-| projectId | String | String | ✅ 符合 | 保持 |
-| roleId | String | String | ✅ 符合 | 保持 |
-| createdAt | DateTime | DateTime @default(now()) | ✅ 符合 | 保持 |
-| updatedAt | DateTime | DateTime @updatedAt | ✅ 符合 | 保持 |
+| 字段名    | 规范要求      | 当前实现                    | 差异    | 必要性 |
+| --------- | ------------- | --------------------------- | ------- | ------ |
+| id        | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持   |
+| userId    | String        | String                      | ✅ 符合 | 保持   |
+| projectId | String        | String                      | ✅ 符合 | 保持   |
+| roleId    | String        | String                      | ✅ 符合 | 保持   |
+| createdAt | DateTime      | DateTime @default(now())    | ✅ 符合 | 保持   |
+| updatedAt | DateTime      | DateTime @updatedAt         | ✅ 符合 | 保持   |
 
 ### 5.2 关系检查
 
@@ -205,13 +207,13 @@
 
 ### 6.1 字段对比
 
-| 字段名 | 规范要求 | 当前实现 | 差异 | 必要性 |
-|--------|---------|---------|------|--------|
-| id | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持 |
-| name | String (unique) | String @unique | ✅ 符合 | 保持 |
-| level | Int | Int | ✅ 符合 | 保持 |
-| createdAt | DateTime | DateTime @default(now()) | ✅ 符合 | 保持 |
-| updatedAt | DateTime | DateTime @updatedAt | ✅ 符合 | 保持 |
+| 字段名    | 规范要求        | 当前实现                    | 差异    | 必要性 |
+| --------- | --------------- | --------------------------- | ------- | ------ |
+| id        | String (UUID)   | String @id @default(uuid()) | ✅ 符合 | 保持   |
+| name      | String (unique) | String @unique              | ✅ 符合 | 保持   |
+| level     | Int             | Int                         | ✅ 符合 | 保持   |
+| createdAt | DateTime        | DateTime @default(now())    | ✅ 符合 | 保持   |
+| updatedAt | DateTime        | DateTime @updatedAt         | ✅ 符合 | 保持   |
 
 ### 6.2 关系检查
 
@@ -236,13 +238,13 @@
 
 ### 7.1 字段对比
 
-| 字段名 | 规范要求 | 当前实现 | 差异 | 必要性 |
-|--------|---------|---------|------|--------|
-| id | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持 |
-| key | String (unique) | String @unique | ✅ 符合 | 保持 |
-| scope | String | String | ✅ 符合 | 保持 |
-| createdAt | DateTime | DateTime @default(now()) | ✅ 符合 | 保持 |
-| updatedAt | DateTime | DateTime @updatedAt | ✅ 符合 | 保持 |
+| 字段名    | 规范要求        | 当前实现                    | 差异    | 必要性 |
+| --------- | --------------- | --------------------------- | ------- | ------ |
+| id        | String (UUID)   | String @id @default(uuid()) | ✅ 符合 | 保持   |
+| key       | String (unique) | String @unique              | ✅ 符合 | 保持   |
+| scope     | String          | String                      | ✅ 符合 | 保持   |
+| createdAt | DateTime        | DateTime @default(now())    | ✅ 符合 | 保持   |
+| updatedAt | DateTime        | DateTime @updatedAt         | ✅ 符合 | 保持   |
 
 ### 7.2 关系检查
 
@@ -266,12 +268,12 @@
 
 ### 8.1 字段对比
 
-| 字段名 | 规范要求 | 当前实现 | 差异 | 必要性 |
-|--------|---------|---------|------|--------|
-| id | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持 |
-| roleId | String | String | ✅ 符合 | 保持 |
-| permissionId | String | String | ✅ 符合 | 保持 |
-| createdAt | DateTime | DateTime @default(now()) | ✅ 符合 | 保持 |
+| 字段名       | 规范要求      | 当前实现                    | 差异    | 必要性 |
+| ------------ | ------------- | --------------------------- | ------- | ------ |
+| id           | String (UUID) | String @id @default(uuid()) | ✅ 符合 | 保持   |
+| roleId       | String        | String                      | ✅ 符合 | 保持   |
+| permissionId | String        | String                      | ✅ 符合 | 保持   |
+| createdAt    | DateTime      | DateTime @default(now())    | ✅ 符合 | 保持   |
 
 ### 8.2 关系检查
 
@@ -296,17 +298,17 @@
 
 ### 字段差异统计
 
-| 模型 | P0 | P1 | P2 | 保持 | 总计 |
-|------|----|----|----|------|------|
-| User | 0 | 0 | 1 | 10 | 11 |
-| Organization | 0 | 0 | 1 | 6 | 7 |
-| Membership | 0 | 0 | 0 | 7 | 7 |
-| OrganizationMember | 0 | 0 | 0 | 6 | 6 |
-| ProjectMember | 0 | 0 | 0 | 6 | 6 |
-| Role | 0 | 0 | 0 | 5 | 5 |
-| Permission | 0 | 0 | 0 | 5 | 5 |
-| RolePermission | 0 | 0 | 0 | 4 | 4 |
-| **总计** | **0** | **0** | **2** | **50** | **52** |
+| 模型               | P0    | P1    | P2    | 保持   | 总计   |
+| ------------------ | ----- | ----- | ----- | ------ | ------ |
+| User               | 0     | 0     | 1     | 10     | 11     |
+| Organization       | 0     | 0     | 1     | 6      | 7      |
+| Membership         | 0     | 0     | 0     | 7      | 7      |
+| OrganizationMember | 0     | 0     | 0     | 6      | 6      |
+| ProjectMember      | 0     | 0     | 0     | 6      | 6      |
+| Role               | 0     | 0     | 0     | 5      | 5      |
+| Permission         | 0     | 0     | 0     | 5      | 5      |
+| RolePermission     | 0     | 0     | 0     | 4      | 4      |
+| **总计**           | **0** | **0** | **2** | **50** | **52** |
 
 ### 关系差异统计
 
@@ -331,36 +333,36 @@
 
 建议初始化以下角色：
 
-| 角色名 | Level | 说明 |
-|--------|-------|------|
-| viewer | 1 | 查看者 |
-| editor | 2 | 编辑者 |
-| creator | 3 | 创建者 |
-| admin | 4 | 管理员 |
+| 角色名  | Level | 说明   |
+| ------- | ----- | ------ |
+| viewer  | 1     | 查看者 |
+| editor  | 2     | 编辑者 |
+| creator | 3     | 创建者 |
+| admin   | 4     | 管理员 |
 
 ### 权限（Permission）种子数据
 
 建议初始化以下权限：
 
-| 权限 Key | Scope | 说明 |
-|----------|-------|------|
-| project.read | project | 项目查看 |
-| project.write | project | 项目编辑 |
+| 权限 Key         | Scope   | 说明     |
+| ---------------- | ------- | -------- |
+| project.read     | project | 项目查看 |
+| project.write    | project | 项目编辑 |
 | project.generate | project | 项目生成 |
-| project.publish | project | 项目发布 |
-| project.manage | project | 项目管理 |
-| system.admin | system | 系统管理 |
+| project.publish  | project | 项目发布 |
+| project.manage   | project | 项目管理 |
+| system.admin     | system  | 系统管理 |
 
 ### 角色权限（RolePermission）种子数据
 
 建议初始化以下角色权限关联：
 
-| 角色 | 权限 |
-|------|------|
-| viewer | project.read |
-| editor | project.read, project.write |
-| creator | project.read, project.write, project.generate |
-| admin | project.read, project.write, project.generate, project.publish, project.manage, system.admin |
+| 角色    | 权限                                                                                         |
+| ------- | -------------------------------------------------------------------------------------------- |
+| viewer  | project.read                                                                                 |
+| editor  | project.read, project.write                                                                  |
+| creator | project.read, project.write, project.generate                                                |
+| admin   | project.read, project.write, project.generate, project.publish, project.manage, system.admin |
 
 ---
 
@@ -381,4 +383,3 @@
 ---
 
 **文档状态**: ✅ 审计完成，无必须修复项
-

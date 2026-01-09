@@ -217,9 +217,9 @@ async function sendHeartbeat(): Promise<void> {
             .map((s) => s.trim())
             .filter(Boolean).length > 0
             ? (process.env.WORKER_SUPPORTED_ENGINES || '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
             : ['default_novel_analysis'],
       },
     });
@@ -549,7 +549,8 @@ async function pollAndProcessJobs(): Promise<void> {
   const { jobMaxInFlight } = runtimeConfig;
 
   // P1-B 审计留痕：输出运行时 Profile
-  if (isRunning) { // 仅在轮询激活时输出一次
+  if (isRunning) {
+    // 仅在轮询激活时输出一次
     // console.log(`[WorkerRuntime] ${JSON.stringify(runtimeConfig)}`);
   }
   // 强制输出一次用于 Gate 捕获

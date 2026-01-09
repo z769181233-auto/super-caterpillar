@@ -9,9 +9,15 @@ import { AuthModule } from '../auth/auth.module';
 import { PermissionModule } from '../permission/permission.module';
 
 @Module({
-  imports: [PrismaModule, EngineHubModule, ProjectModule, AuditLogModule, AuthModule, PermissionModule],
+  imports: [
+    PrismaModule,
+    EngineHubModule,
+    ProjectModule,
+    AuditLogModule,
+    AuthModule,
+    PermissionModule,
+  ],
   controllers: [Stage4Controller],
   providers: [Stage4Service],
 })
 export class Stage4Module {}
-

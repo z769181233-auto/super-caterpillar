@@ -320,7 +320,9 @@ async function testCE04SafetyFail() {
           error: 'Expected FAILED status with SAFETY_CHECK_FAILED reason',
           evidence: { statusCode: response.statusCode, body: response.body },
         });
-        console.log(`❌ ${testName}: FAILED - Expected FAILED status with SAFETY_CHECK_FAILED reason`);
+        console.log(
+          `❌ ${testName}: FAILED - Expected FAILED status with SAFETY_CHECK_FAILED reason`
+        );
         return { success: false };
       }
     } else {
@@ -402,7 +404,7 @@ async function main() {
   const ce04FailResult = await testCE04SafetyFail();
 
   console.log('\n=== Quality Metrics Trigger (Job Report) ===');
-  
+
   // 触发质量闭环写入：对 CE03/CE04 的 jobId 调用 report
   if (ce03Result.success && ce03Result.jobId) {
     console.log(`\n📊 Reporting CE03 job ${ce03Result.jobId} as SUCCEEDED...`);
@@ -457,4 +459,3 @@ if (require.main === module) {
 }
 
 export { results };
-

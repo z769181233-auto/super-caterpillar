@@ -1,30 +1,30 @@
 // packages/shared-types/src/novel-analysis.dto.ts
 
 export interface AnalyzedShot {
-  index: number;          // 镜头序号，从 1 开始
-  title: string;          // 镜头标题（可用一句话概括）
-  summary: string;        // 镜头简介
-  text: string;           // 镜头原始文本
+  index: number; // 镜头序号，从 1 开始
+  title: string; // 镜头标题（可用一句话概括）
+  summary: string; // 镜头简介
+  text: string; // 镜头原始文本
 }
 
 export interface AnalyzedScene {
-  index: number;          // 场景序号，从 1 开始
-  title: string;          // 场景标题
-  summary: string;        // 场景简介
+  index: number; // 场景序号，从 1 开始
+  title: string; // 场景标题
+  summary: string; // 场景简介
   shots: AnalyzedShot[];
 }
 
 export interface AnalyzedEpisode {
-  index: number;          // 集数，从 1 开始
-  title: string;          // 集标题
-  summary: string;        // 集简介
+  index: number; // 集数，从 1 开始
+  title: string; // 集标题
+  summary: string; // 集简介
   scenes: AnalyzedScene[];
 }
 
 export interface AnalyzedSeason {
-  index: number;          // 季，从 1 开始
-  title: string;          // 季标题
-  summary: string;        // 季简介
+  index: number; // 季，从 1 开始
+  title: string; // 季标题
+  summary: string; // 季简介
   episodes: AnalyzedEpisode[];
 }
 

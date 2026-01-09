@@ -26,7 +26,9 @@ interface ContentListProps {
  * 状态推断函数（UI-only）
  * 将 NovelAnalysisStatus 映射到 StatusBadge 支持的枚举
  */
-function inferStatus(analysisStatus: NovelAnalysisStatus | null | undefined): 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'QUEUED' | 'CANCELLED' | 'FORCE_FAILED' {
+function inferStatus(
+  analysisStatus: NovelAnalysisStatus | null | undefined
+): 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'QUEUED' | 'CANCELLED' | 'FORCE_FAILED' {
   if (analysisStatus === 'ANALYZING') return 'RUNNING';
   if (analysisStatus === 'DONE') return 'SUCCEEDED';
   if (analysisStatus === 'FAILED') return 'FAILED';
@@ -102,9 +104,7 @@ export default function ContentList({
                 title={episode.name}
                 description={episode.summary || null}
                 badgeStatus={badgeStatus}
-                metrics={[
-                  { label: 'Scenes', value: `${episode.scenes?.length || 0}` },
-                ]}
+                metrics={[{ label: 'Scenes', value: `${episode.scenes?.length || 0}` }]}
                 blockers={blockers.length > 0 ? blockers : undefined}
                 onClick={() => onSelectNode?.({ type: 'episode', id: episode.id, data: episode })}
               />
@@ -136,9 +136,7 @@ export default function ContentList({
                 title={scene.title}
                 description={scene.summary || null}
                 badgeStatus={badgeStatus}
-                metrics={[
-                  { label: 'Shots', value: `${scene.shots?.length || 0}` },
-                ]}
+                metrics={[{ label: 'Shots', value: `${scene.shots?.length || 0}` }]}
                 blockers={blockers.length > 0 ? blockers : undefined}
                 onClick={() => onSelectNode?.({ type: 'scene', id: scene.id, data: scene })}
               />
@@ -175,19 +173,26 @@ export default function ContentList({
                     </span>
                     <StatusBadge status={shotStatus} size="sm" />
                     {shot.type && (
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{shot.type}</span>
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                        {shot.type}
+                      </span>
                     )}
                   </div>
                 </div>
                 <h4 className="font-bold text-sm mb-1 text-gray-900">{shot.title || '未命名'}</h4>
                 {shot.description && (
-                  <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed mb-2">{shot.description}</p>
+                  <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed mb-2">
+                    {shot.description}
+                  </p>
                 )}
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
                   {/* Quality Score */}
                   {shot.qualityScore && shot.qualityScore.score !== null && (
                     <div className="text-xs text-gray-500">
-                      质量评分: <span className="font-medium text-gray-800">{shot.qualityScore.score.toFixed(2)}</span>
+                      质量评分:{' '}
+                      <span className="font-medium text-gray-800">
+                        {shot.qualityScore.score.toFixed(2)}
+                      </span>
                     </div>
                   )}
                   {/* Blockers & Time */}
@@ -197,9 +202,7 @@ export default function ContentList({
                         {blockers[0].message}
                       </span>
                     )}
-                    {relativeTime && (
-                      <span className="text-xs text-gray-400">{relativeTime}</span>
-                    )}
+                    {relativeTime && <span className="text-xs text-gray-400">{relativeTime}</span>}
                   </div>
                 </div>
               </div>

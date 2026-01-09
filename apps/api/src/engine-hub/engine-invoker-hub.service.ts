@@ -5,10 +5,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import {
-  EngineInvocationRequest,
-  EngineInvocationResult,
-} from '@scu/shared-types';
+import { EngineInvocationRequest, EngineInvocationResult } from '@scu/shared-types';
 import { EngineRegistryHubService } from './engine-registry-hub.service';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
@@ -24,8 +21,8 @@ export class EngineInvokerHubService {
   constructor(
     private readonly engineRegistry: EngineRegistryHubService,
     private readonly moduleRef: ModuleRef,
-    private readonly httpEngineAdapter: HttpEngineAdapter,
-  ) { }
+    private readonly httpEngineAdapter: HttpEngineAdapter
+  ) {}
 
   /**
    * 调用引擎
@@ -33,15 +30,12 @@ export class EngineInvokerHubService {
    * @returns 引擎调用结果
    */
   async invoke<TInput, TOutput>(
-    req: EngineInvocationRequest<TInput>,
+    req: EngineInvocationRequest<TInput>
   ): Promise<EngineInvocationResult<TOutput>> {
     const started = Date.now();
 
     // 1. 查找引擎描述符
-    const descriptor = this.engineRegistry.find(
-      req.engineKey,
-      req.engineVersion,
-    );
+    const descriptor = this.engineRegistry.find(req.engineKey, req.engineVersion);
 
     if (!descriptor) {
       return {
@@ -66,15 +60,12 @@ export class EngineInvokerHubService {
           throw new Error(`Local adapter token not specified for ${descriptor.key}`);
         }
 
-        const adapter = this.moduleRef.get<EngineAdapter>(
-          descriptor.adapterToken,
-          { strict: false },
-        );
+        const adapter = this.moduleRef.get<EngineAdapter>(descriptor.adapterToken, {
+          strict: false,
+        });
 
         if (!adapter) {
-          throw new Error(
-            `Adapter ${descriptor.adapterToken} not found in module`,
-          );
+          throw new Error(`Adapter ${descriptor.adapterToken} not found in module`);
         }
 
         // 转换 EngineInvocationRequest 为 EngineInvokeInput
@@ -96,9 +87,7 @@ export class EngineInvokerHubService {
         if (engineResult.status === 'SUCCESS') {
           output = engineResult.output as TOutput;
         } else {
-          throw new Error(
-            engineResult.error?.message || 'Engine execution failed',
-          );
+          throw new Error(engineResult.error?.message || 'Engine execution failed');
         }
       } else {
         // 3. HTTP adapter 调用
@@ -124,9 +113,7 @@ export class EngineInvokerHubService {
         if (engineResult.status === 'SUCCESS') {
           output = engineResult.output as TOutput;
         } else {
-          throw new Error(
-            engineResult.error?.message || 'Engine execution failed',
-          );
+          throw new Error(engineResult.error?.message || 'Engine execution failed');
         }
       }
 
@@ -142,7 +129,7 @@ export class EngineInvokerHubService {
       const errorObj = e as any;
       this.logger.error(
         `Engine invocation failed: ${req.engineKey}@${req.engineVersion ?? 'default'}`,
-        errorObj?.stack || errorObj?.message,
+        errorObj?.stack || errorObj?.message
       );
 
       return {
@@ -187,4 +174,3 @@ export class EngineInvokerHubService {
     return 'UNKNOWN';
   }
 }
-

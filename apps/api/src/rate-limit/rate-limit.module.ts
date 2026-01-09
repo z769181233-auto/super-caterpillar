@@ -31,4 +31,3 @@ import { FineGrainedRateLimitGuard } from './rate-limit.guard';
   exports: [FineGrainedRateLimitGuard],
 })
 export class RateLimitModule {}
-

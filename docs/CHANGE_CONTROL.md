@@ -143,11 +143,13 @@
 ### 每次变更必须验证
 
 1. **Preflight Gate**
+
    ```bash
    pnpm run preflight
    ```
 
 2. **Contract Gate**
+
    ```bash
    pnpm run test:contract
    ```
@@ -210,4 +212,3 @@
 2. 更新相关规范文档
 3. 提供完整的迁移/回滚计划
 4. 更新所有相关测试
-

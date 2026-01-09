@@ -34,6 +34,7 @@
 - **前端调用**：`apps/web/src/lib/apiClient.ts` 中 Job 创建接口（通过共享 DTO 或 `payload` 传递）
 
 对齐结论：
+
 - 字段名 / 类型：`shotId`, `frameKeys`, `fps` 在 shared-types 中定义为严格类型，后端通过 `CreateJobDto.payload` 接收，未发现重命名或类型冲突。
 - 前端使用 shared DTO（通过 `@/types/dto` 聚合），未发现自造与后端不一致的类型定义。
 
@@ -98,5 +99,3 @@
 
 - **字段对齐状态**：在现有类型系统与 shared-types 约束下，未发现阻塞上线的字段/类型不一致问题。
 - **残余风险级别**：P2（主要为 `any` 使用过多导致的潜在盲区），建议在后续迭代中通过加强 shared DTO 使用和减少 `any` 继续收口。
-
-

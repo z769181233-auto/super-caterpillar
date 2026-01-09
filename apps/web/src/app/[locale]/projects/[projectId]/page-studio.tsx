@@ -130,7 +130,11 @@ export default function ProjectDetailPage() {
     e.preventDefault();
     if (!selectedEpisode) return;
     try {
-      await projectApi.createScene(selectedEpisode, formData.sceneIndex, formData.sceneSummary || undefined);
+      await projectApi.createScene(
+        selectedEpisode,
+        formData.sceneIndex,
+        formData.sceneSummary || undefined
+      );
       await loadProject();
       setShowCreateScene(false);
       setFormData({ ...formData, sceneIndex: formData.sceneIndex + 1, sceneSummary: '' });
@@ -225,10 +229,35 @@ export default function ProjectDetailPage() {
         )}
 
         {/* 四栏结构 */}
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', padding: '1rem', overflow: 'auto' }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr 1fr',
+            gap: '1rem',
+            padding: '1rem',
+            overflow: 'auto',
+          }}
+        >
           {/* Seasons 列 */}
-          <div style={{ border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '1rem', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                padding: '1rem',
+                borderBottom: '1px solid #e0e0e0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Seasons</h3>
               <button
                 onClick={() => setShowCreateSeason(true)}
@@ -248,15 +277,28 @@ export default function ProjectDetailPage() {
             {showCreateSeason && (
               <form
                 onSubmit={handleCreateSeason}
-                style={{ padding: '0.75rem', borderBottom: '1px solid #e0e0e0', backgroundColor: '#f9f9f9' }}
+                style={{
+                  padding: '0.75rem',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: '#f9f9f9',
+                }}
               >
                 <input
                   type="number"
                   placeholder="Index"
                   value={formData.seasonIndex}
-                  onChange={(e) => setFormData({ ...formData, seasonIndex: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, seasonIndex: parseInt(e.target.value) })
+                  }
                   required
-                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem', fontSize: '0.8125rem', border: '1px solid #d0d0d0', borderRadius: '4px' }}
+                  style={{
+                    width: '100%',
+                    marginBottom: '0.5rem',
+                    padding: '0.25rem',
+                    fontSize: '0.8125rem',
+                    border: '1px solid #d0d0d0',
+                    borderRadius: '4px',
+                  }}
                 />
                 <input
                   type="text"
@@ -264,11 +306,46 @@ export default function ProjectDetailPage() {
                   value={formData.seasonName}
                   onChange={(e) => setFormData({ ...formData, seasonName: e.target.value })}
                   required
-                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem', fontSize: '0.8125rem', border: '1px solid #d0d0d0', borderRadius: '4px' }}
+                  style={{
+                    width: '100%',
+                    marginBottom: '0.5rem',
+                    padding: '0.25rem',
+                    fontSize: '0.8125rem',
+                    border: '1px solid #d0d0d0',
+                    borderRadius: '4px',
+                  }}
                 />
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.75rem', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>创建</button>
-                  <button type="button" onClick={() => setShowCreateSeason(false)} style={{ flex: 1, padding: '0.25rem', fontSize: '0.75rem', backgroundColor: '#f0f0f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>取消</button>
+                  <button
+                    type="submit"
+                    style={{
+                      flex: 1,
+                      padding: '0.25rem',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#0070f3',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    创建
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateSeason(false)}
+                    style={{
+                      flex: 1,
+                      padding: '0.25rem',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#f0f0f0',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    取消
+                  </button>
                 </div>
               </form>
             )}
@@ -292,25 +369,53 @@ export default function ProjectDetailPage() {
                       marginBottom: '0.5rem',
                       textAlign: 'left',
                       backgroundColor: selectedSeason === season.id ? '#e3f2fd' : 'transparent',
-                      border: selectedSeason === season.id ? '1px solid #0070f3' : '1px solid #e0e0e0',
+                      border:
+                        selectedSeason === season.id ? '1px solid #0070f3' : '1px solid #e0e0e0',
                       borderRadius: '6px',
                       cursor: 'pointer',
                       fontSize: '0.875rem',
                     }}
                   >
                     <div style={{ fontWeight: 600 }}>{season.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>Index: {season.index}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+                      Index: {season.index}
+                    </div>
                   </button>
                 ))
               ) : (
-                <div style={{ padding: '1rem', textAlign: 'center', color: '#999', fontSize: '0.8125rem' }}>暂无 Seasons</div>
+                <div
+                  style={{
+                    padding: '1rem',
+                    textAlign: 'center',
+                    color: '#999',
+                    fontSize: '0.8125rem',
+                  }}
+                >
+                  暂无 Seasons
+                </div>
               )}
             </div>
           </div>
 
           {/* Episodes 列 */}
-          <div style={{ border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '1rem', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                padding: '1rem',
+                borderBottom: '1px solid #e0e0e0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Episodes</h3>
               {selectedSeason && (
                 <button
@@ -332,15 +437,28 @@ export default function ProjectDetailPage() {
             {showCreateEpisode && selectedSeason && (
               <form
                 onSubmit={handleCreateEpisode}
-                style={{ padding: '0.75rem', borderBottom: '1px solid #e0e0e0', backgroundColor: '#f9f9f9' }}
+                style={{
+                  padding: '0.75rem',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: '#f9f9f9',
+                }}
               >
                 <input
                   type="number"
                   placeholder="Index"
                   value={formData.episodeIndex}
-                  onChange={(e) => setFormData({ ...formData, episodeIndex: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, episodeIndex: parseInt(e.target.value) })
+                  }
                   required
-                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem', fontSize: '0.8125rem', border: '1px solid #d0d0d0', borderRadius: '4px' }}
+                  style={{
+                    width: '100%',
+                    marginBottom: '0.5rem',
+                    padding: '0.25rem',
+                    fontSize: '0.8125rem',
+                    border: '1px solid #d0d0d0',
+                    borderRadius: '4px',
+                  }}
                 />
                 <input
                   type="text"
@@ -348,11 +466,46 @@ export default function ProjectDetailPage() {
                   value={formData.episodeName}
                   onChange={(e) => setFormData({ ...formData, episodeName: e.target.value })}
                   required
-                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem', fontSize: '0.8125rem', border: '1px solid #d0d0d0', borderRadius: '4px' }}
+                  style={{
+                    width: '100%',
+                    marginBottom: '0.5rem',
+                    padding: '0.25rem',
+                    fontSize: '0.8125rem',
+                    border: '1px solid #d0d0d0',
+                    borderRadius: '4px',
+                  }}
                 />
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.75rem', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>创建</button>
-                  <button type="button" onClick={() => setShowCreateEpisode(false)} style={{ flex: 1, padding: '0.25rem', fontSize: '0.75rem', backgroundColor: '#f0f0f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>取消</button>
+                  <button
+                    type="submit"
+                    style={{
+                      flex: 1,
+                      padding: '0.25rem',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#0070f3',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    创建
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateEpisode(false)}
+                    style={{
+                      flex: 1,
+                      padding: '0.25rem',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#f0f0f0',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    取消
+                  </button>
                 </div>
               </form>
             )}
@@ -373,18 +526,28 @@ export default function ProjectDetailPage() {
                       marginBottom: '0.5rem',
                       textAlign: 'left',
                       backgroundColor: selectedEpisode === episode.id ? '#e3f2fd' : 'transparent',
-                      border: selectedEpisode === episode.id ? '1px solid #0070f3' : '1px solid #e0e0e0',
+                      border:
+                        selectedEpisode === episode.id ? '1px solid #0070f3' : '1px solid #e0e0e0',
                       borderRadius: '6px',
                       cursor: 'pointer',
                       fontSize: '0.875rem',
                     }}
                   >
                     <div style={{ fontWeight: 600 }}>{episode.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>Index: {episode.index}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+                      Index: {episode.index}
+                    </div>
                   </button>
                 ))
               ) : (
-                <div style={{ padding: '1rem', textAlign: 'center', color: '#999', fontSize: '0.8125rem' }}>
+                <div
+                  style={{
+                    padding: '1rem',
+                    textAlign: 'center',
+                    color: '#999',
+                    fontSize: '0.8125rem',
+                  }}
+                >
                   {selectedSeason ? '暂无 Episodes' : '请先选择 Season'}
                 </div>
               )}
@@ -392,8 +555,24 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Scenes 列 */}
-          <div style={{ border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '1rem', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                padding: '1rem',
+                borderBottom: '1px solid #e0e0e0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Scenes</h3>
               {selectedEpisode && (
                 <button
@@ -415,25 +594,74 @@ export default function ProjectDetailPage() {
             {showCreateScene && selectedEpisode && (
               <form
                 onSubmit={handleCreateScene}
-                style={{ padding: '0.75rem', borderBottom: '1px solid #e0e0e0', backgroundColor: '#f9f9f9' }}
+                style={{
+                  padding: '0.75rem',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: '#f9f9f9',
+                }}
               >
                 <input
                   type="number"
                   placeholder="Index"
                   value={formData.sceneIndex}
-                  onChange={(e) => setFormData({ ...formData, sceneIndex: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sceneIndex: parseInt(e.target.value) })
+                  }
                   required
-                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem', fontSize: '0.8125rem', border: '1px solid #d0d0d0', borderRadius: '4px' }}
+                  style={{
+                    width: '100%',
+                    marginBottom: '0.5rem',
+                    padding: '0.25rem',
+                    fontSize: '0.8125rem',
+                    border: '1px solid #d0d0d0',
+                    borderRadius: '4px',
+                  }}
                 />
                 <textarea
                   placeholder="Summary"
                   value={formData.sceneSummary}
                   onChange={(e) => setFormData({ ...formData, sceneSummary: e.target.value })}
-                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem', fontSize: '0.8125rem', border: '1px solid #d0d0d0', borderRadius: '4px', minHeight: '60px' }}
+                  style={{
+                    width: '100%',
+                    marginBottom: '0.5rem',
+                    padding: '0.25rem',
+                    fontSize: '0.8125rem',
+                    border: '1px solid #d0d0d0',
+                    borderRadius: '4px',
+                    minHeight: '60px',
+                  }}
                 />
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.75rem', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>创建</button>
-                  <button type="button" onClick={() => setShowCreateScene(false)} style={{ flex: 1, padding: '0.25rem', fontSize: '0.75rem', backgroundColor: '#f0f0f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>取消</button>
+                  <button
+                    type="submit"
+                    style={{
+                      flex: 1,
+                      padding: '0.25rem',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#0070f3',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    创建
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateScene(false)}
+                    style={{
+                      flex: 1,
+                      padding: '0.25rem',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#f0f0f0',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    取消
+                  </button>
                 </div>
               </form>
             )}
@@ -449,7 +677,8 @@ export default function ProjectDetailPage() {
                       marginBottom: '0.5rem',
                       textAlign: 'left',
                       backgroundColor: selectedScene === scene.id ? '#e3f2fd' : 'transparent',
-                      border: selectedScene === scene.id ? '1px solid #0070f3' : '1px solid #e0e0e0',
+                      border:
+                        selectedScene === scene.id ? '1px solid #0070f3' : '1px solid #e0e0e0',
                       borderRadius: '6px',
                       cursor: 'pointer',
                       fontSize: '0.875rem',
@@ -464,7 +693,14 @@ export default function ProjectDetailPage() {
                   </button>
                 ))
               ) : (
-                <div style={{ padding: '1rem', textAlign: 'center', color: '#999', fontSize: '0.8125rem' }}>
+                <div
+                  style={{
+                    padding: '1rem',
+                    textAlign: 'center',
+                    color: '#999',
+                    fontSize: '0.8125rem',
+                  }}
+                >
                   {selectedEpisode ? '暂无 Scenes' : '请先选择 Episode'}
                 </div>
               )}
@@ -472,8 +708,24 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Shots 列 */}
-          <div style={{ border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '1rem', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                padding: '1rem',
+                borderBottom: '1px solid #e0e0e0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Shots</h3>
               {selectedScene && (
                 <button
@@ -495,28 +747,76 @@ export default function ProjectDetailPage() {
             {showCreateShot && selectedScene && (
               <form
                 onSubmit={handleCreateShot}
-                style={{ padding: '0.75rem', borderBottom: '1px solid #e0e0e0', backgroundColor: '#f9f9f9' }}
+                style={{
+                  padding: '0.75rem',
+                  borderBottom: '1px solid #e0e0e0',
+                  backgroundColor: '#f9f9f9',
+                }}
               >
                 <input
                   type="number"
                   placeholder="Index"
                   value={formData.shotIndex}
-                  onChange={(e) => setFormData({ ...formData, shotIndex: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, shotIndex: parseInt(e.target.value) })
+                  }
                   required
-                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem', fontSize: '0.8125rem', border: '1px solid #d0d0d0', borderRadius: '4px' }}
+                  style={{
+                    width: '100%',
+                    marginBottom: '0.5rem',
+                    padding: '0.25rem',
+                    fontSize: '0.8125rem',
+                    border: '1px solid #d0d0d0',
+                    borderRadius: '4px',
+                  }}
                 />
                 <select
                   value={formData.shotType}
                   onChange={(e) => setFormData({ ...formData, shotType: e.target.value })}
-                  style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem', fontSize: '0.8125rem', border: '1px solid #d0d0d0', borderRadius: '4px' }}
+                  style={{
+                    width: '100%',
+                    marginBottom: '0.5rem',
+                    padding: '0.25rem',
+                    fontSize: '0.8125rem',
+                    border: '1px solid #d0d0d0',
+                    borderRadius: '4px',
+                  }}
                 >
                   <option value="close_up">Close Up</option>
                   <option value="wide_shot">Wide Shot</option>
                   <option value="medium_shot">Medium Shot</option>
                 </select>
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.75rem', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>创建</button>
-                  <button type="button" onClick={() => setShowCreateShot(false)} style={{ flex: 1, padding: '0.25rem', fontSize: '0.75rem', backgroundColor: '#f0f0f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>取消</button>
+                  <button
+                    type="submit"
+                    style={{
+                      flex: 1,
+                      padding: '0.25rem',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#0070f3',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    创建
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateShot(false)}
+                    style={{
+                      flex: 1,
+                      padding: '0.25rem',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#f0f0f0',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    取消
+                  </button>
                 </div>
               </form>
             )}
@@ -535,12 +835,21 @@ export default function ProjectDetailPage() {
                     }}
                   >
                     <div style={{ fontWeight: 600 }}>Shot {shot.index}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>Type: {shot.type}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+                      Type: {shot.type}
+                    </div>
                     <div style={{ fontSize: '0.75rem', color: '#666' }}>Status: {shot.status}</div>
                   </div>
                 ))
               ) : (
-                <div style={{ padding: '1rem', textAlign: 'center', color: '#999', fontSize: '0.8125rem' }}>
+                <div
+                  style={{
+                    padding: '1rem',
+                    textAlign: 'center',
+                    color: '#999',
+                    fontSize: '0.8125rem',
+                  }}
+                >
                   {selectedScene ? '暂无 Shots' : '请先选择 Scene'}
                 </div>
               )}
@@ -551,4 +860,3 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
-

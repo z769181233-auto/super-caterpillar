@@ -5,6 +5,7 @@
 ### 【任务目标】
 
 对 Stage4 Close-MVP 进行最终运行时验收，确认：
+
 1. P0 修复（错误码 4003/4004 + Nonce 重放审计）已生效
 2. 所有文档对齐要求已满足
 3. Stage4 Close-MVP 条件已全部满足，允许进入下一 Stage
@@ -14,10 +15,12 @@
 #### 1. P0 修复摘要
 
 **修复内容**：
+
 - ✅ 统一错误码为 4003（签名不合法）/ 4004（重放拒绝）
 - ✅ Nonce 重放拒绝写入审计日志（`SECURITY_EVENT`，reason: `NONCE_REPLAY_DETECTED`）
 
 **修改文件**：
+
 1. `apps/api/src/common/utils/hmac-error.utils.ts` - 新增统一错误构造器
 2. `apps/api/src/auth/hmac.guard.ts` - 错误码 4003
 3. `apps/api/src/auth/guards/timestamp-nonce.guard.ts` - 错误码 4003
@@ -34,17 +37,20 @@
 ##### 2.1 启动验证
 
 **命令**:
+
 ```bash
 pnpm --filter api dev
 ```
 
 **实际结果**（清理旧进程并重启后）:
+
 ```
 [PermissionService] 构造成功，PrismaService 已注入
 [Nest] 75213  - 12/12/2025, 10:43:45 PM     LOG [NestApplication] Nest application successfully started +1ms
 ```
 
 **验证结果**:
+
 - ✅ Nest application successfully started（已满足）
 - ✅ PermissionService 构造成功（已满足）
 - ✅ 无 EADDRINUSE 错误（已满足）
@@ -57,11 +63,13 @@ pnpm --filter api dev
 ##### 2.2 白名单免签验证（回归测试）
 
 **命令**:
+
 ```bash
 curl -i http://localhost:3000/api/health
 ```
 
 **实际响应**:
+
 ```
 HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
@@ -71,6 +79,7 @@ Content-Length: 77
 ```
 
 **验证结果**:
+
 - ✅ HTTP 200（已满足）
 - ✅ 不触发签名校验（已满足）
 - ✅ 行为与修复前一致（已满足）
@@ -82,11 +91,13 @@ Content-Length: 77
 ##### 2.3 必签接口：缺少签名头 → 4003
 
 **命令**:
+
 ```bash
 curl -i -X POST "http://localhost:3000/api/workers/test-worker-001/jobs/next"
 ```
 
 **实际响应**（清理并重启后）:
+
 ```
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json; charset=utf-8
@@ -106,6 +117,7 @@ Content-Length: 228
 ```
 
 **验证结果**:
+
 - ✅ HTTP status: 401（已满足）
 - ✅ body.success === false（已满足）
 - ✅ body.error.code === "4003"（已满足）
@@ -118,11 +130,13 @@ Content-Length: 228
 ##### 2.4 Nonce 重放验证 → 4004 + 审计
 
 **步骤**:
+
 1. 使用有效 HMAC 签名构造一次合法请求（带 X-Api-Key / X-Timestamp / X-Nonce / X-Signature）
 2. 记录使用的 nonce
 3. 使用完全相同的 nonce，再发送一次请求
 
 **第二次请求期望结果**:
+
 ```json
 HTTP/1.1 403 Forbidden
 {
@@ -137,15 +151,19 @@ HTTP/1.1 403 Forbidden
 ```
 
 **验证点**:
+
 - ⏳ body.error.code === "4004"（需要有效 HMAC 签名测试）
 - ⏳ body.error.message 包含 "Nonce replay detected"（需要有效 HMAC 签名测试）
 
 **签名生成说明**:
 根据 `hmac-signature.interceptor.ts:110` 的实现，签名 payload 格式为：
+
 ```
 ${method}\n${path}\n${timestamp}\n${nonce}\n${body}
 ```
+
 其中：
+
 - `method`: HTTP 方法（如 `POST`）
 - `path`: 请求路径（如 `/api/workers/test-worker-001/jobs/next`）
 - `timestamp`: 时间戳（秒级，字符串）
@@ -155,6 +173,7 @@ ${method}\n${path}\n${timestamp}\n${nonce}\n${body}
 签名计算：`HMAC-SHA256(secret, payload)`，输出十六进制
 
 **测试命令示例**（需要根据实际 API Key 和 Secret 调整）:
+
 ```bash
 # 需要从数据库获取有效的 API_KEY 和对应的 SECRET
 # 第一次请求（合法）
@@ -187,6 +206,7 @@ curl -i -X POST "http://localhost:3000/api/workers/test-worker-001/jobs/next" \
 **结果**: ⏳ 待用户提供有效 API Key 和 Secret 后执行测试
 
 **期望响应**（第二次请求）:
+
 ```json
 HTTP/1.1 403 Forbidden
 {
@@ -205,10 +225,12 @@ HTTP/1.1 403 Forbidden
 ##### 2.5 审计日志验收
 
 **验证点**:
+
 - ✅ 在审计日志/审计表中能找到 `SECURITY_EVENT`
 - ✅ `details.reason === "NONCE_REPLAY_DETECTED"`
 
 **查询命令**（PostgreSQL）:
+
 ```sql
 SELECT action, resource_type, resource_id, details, created_at
 FROM audit_logs
@@ -219,6 +241,7 @@ LIMIT 10;
 ```
 
 **或日志查询**:
+
 ```bash
 grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 ```
@@ -229,18 +252,18 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 
 ### 【引用文档条目】
 
-1. 《10毛毛虫宇宙_API设计规范_APISpec_V1.1》
+1. 《10毛毛虫宇宙\_API设计规范\_APISpec_V1.1》
    - ✅ 错误码 4003（签名不合法）
    - ✅ 错误码 4004（重放拒绝）
 
-2. 《14毛毛虫宇宙_内容安全与审核体系说明书_SafetySpec》
+2. 《14毛毛虫宇宙\_内容安全与审核体系说明书\_SafetySpec》
    - ✅ API 签名错误日志写入审计
    - ✅ Nonce 重放检测写入审计
 
 3. 《AI开发文档规则》
    - ✅ 所有任务写入审计日志
 
-4. 《毛毛虫宇宙_开发执行顺序说明书》
+4. 《毛毛虫宇宙\_开发执行顺序说明书》
    - ✅ Stage4 Close-MVP 已完成
 
 ---
@@ -248,7 +271,7 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 ### 【验证方式】
 
 1. **编译验证**: `pnpm --filter api build` ✅ 通过
-2. **运行时验证**: 
+2. **运行时验证**:
    - 白名单免签回归测试
    - 必签接口 4003 错误码验证
    - Nonce 重放 4004 错误码验证
@@ -259,10 +282,12 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 ### 【验证结果】
 
 #### 编译验证
+
 - ✅ **通过**: `pnpm --filter api build` 编译成功
 
 #### 运行时验证
-- ✅ **部分完成**: 
+
+- ✅ **部分完成**:
   1. ✅ API 启动成功日志（已获取，新进程 PID: 75213）
   2. ✅ 白名单免签接口响应（200，已满足）
   3. ✅ 必签接口缺少签名头响应（4003 错误码，响应格式符合 API Spec）
@@ -270,6 +295,7 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
   5. ⏳ 审计日志查询结果（需要 Nonce 重放测试后查询）
 
 **已验证项**:
+
 - ✅ API 进程已清理并重启（新进程运行最新代码）
 - ✅ 4003 错误码修复已生效（响应格式：`{success: false, error: {code: "4003", message: ...}}`）
 - ⏳ 4004 错误码验证（需要有效 HMAC 签名）
@@ -280,14 +306,17 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 ### 【文档对齐声明】
 
 #### APISpec 对齐
+
 - ✅ **错误码规范**: 已统一为 4003/4004
 - ✅ **错误响应格式**: body 包含 `{ success: false, error: { code, message }, ... }`
 
 #### SafetySpec 对齐
+
 - ✅ **安全事件审计**: Nonce 重放检测已写入审计日志
 - ✅ **审计字段**: 包含 `action`, `resourceType`, `resourceId`, `details.reason` 等
 
 #### 开发执行顺序对齐
+
 - ✅ **Stage4 Close-MVP**: 已完成所有必需修复
 - ✅ **文档输出**: 已生成所有必需报告
 
@@ -319,7 +348,8 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 7. ✅ **审计日志**: Nonce 重放审计代码已实现（待 Nonce 重放测试后验证）
 8. ✅ **运行时验证**: 部分完成（4003 已验证，4004 和审计日志待有效 HMAC 签名测试）
 
-**当前状态**: 
+**当前状态**:
+
 - ✅ 代码修复已完成
 - ✅ 编译通过
 - ✅ 白名单免签回归测试通过
@@ -331,6 +361,7 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 **允许进入下一 Stage**: ⏳ **待确认**（需要完成 4004 和审计日志验证）
 
 **下一步行动**:
+
 1. ✅ 清理旧 API 进程（已完成）
 2. ✅ 重启 API（已完成）
 3. ✅ 4003 错误码验证（已完成）
@@ -339,6 +370,7 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 6. ✅ **Stage4 Close-MVP 正式关闭**（2025-12-12）
 
 **关闭动作**:
+
 - ✅ Stage4 相关代码已冻结（仅允许 Bugfix，不允许结构性修改）
 - ✅ Stage4 标记为 DONE
 - ✅ P1 项（Nonce TTL / Role Level）已进入 Backlog
@@ -373,6 +405,7 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 **报告状态**: ✅ **Stage4 Close-MVP 已通过最终验收**
 
 **最终验证清单**:
+
 - ✅ API 进程清理并重启（新进程 PID: 75213）
 - ✅ 4003 错误码运行态验证（响应格式完全符合 API Spec）
 - ✅ 白名单免签回归测试（功能正常，未破坏）
@@ -381,6 +414,7 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 - ✅ 文档对齐完成（APISpec、SafetySpec、开发执行顺序）
 
 **验收结论**:
+
 - ✅ **P0 项（4003 / 4004 / Nonce 重放审计）满足文档要求**
 - ✅ **Stage4 Close-MVP 已通过最终验收**
 - ✅ **允许进入下一 Stage**
@@ -394,12 +428,13 @@ grep -E "NONCE_REPLAY_DETECTED|SECURITY_EVENT" /tmp/api_final_validation.log
 **关闭状态**: ✅ **DONE**
 
 **冻结范围**:
+
 - Stage4 相关代码已冻结（仅允许 Bugfix，不允许结构性修改）
 - HMAC / Nonce / ErrorCode 设计已冻结（不得回滚）
 
 **P1 Backlog 项**:
+
 1. Nonce TTL/清理机制（P1 - 不阻断）
 2. 角色等级定义确认（P1 - 不阻断）
 
 **下一 Stage**: 待规划
-

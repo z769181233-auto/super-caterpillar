@@ -4,12 +4,12 @@ const prisma = new PrismaClient();
 
 async function main() {
   const args = process.argv.slice(2);
-  const actionArg = args.find(a => a.startsWith('--action='));
+  const actionArg = args.find((a) => a.startsWith('--action='));
   const action = actionArg ? actionArg.split('=')[1] : 'default';
 
   if (action === 'create_org_with_credits') {
-    const orgId = args.find(a => a.startsWith('--orgId='))?.split('=')[1];
-    const credits = parseFloat(args.find(a => a.startsWith('--credits='))?.split('=')[1] || '0');
+    const orgId = args.find((a) => a.startsWith('--orgId='))?.split('=')[1];
+    const credits = parseFloat(args.find((a) => a.startsWith('--credits='))?.split('=')[1] || '0');
 
     if (!orgId) throw new Error('Missing orgId');
 
@@ -20,15 +20,17 @@ async function main() {
         name: `Test Org ${orgId}`,
         slug: orgId,
         credits: credits,
-        ownerId: (await prisma.user.findFirstOrThrow()).id
+        ownerId: (await prisma.user.findFirstOrThrow()).id,
       },
-      update: { credits }
+      update: { credits },
     });
     console.log(`✅ Organization ${orgId} setup with ${credits} credits`);
   } else if (action === 'setup_budget') {
-    const orgId = args.find(a => a.startsWith('--orgId='))?.split('=')[1];
-    const budget = parseFloat(args.find(a => a.startsWith('--budget='))?.split('=')[1] || '0');
-    const currentCost = parseFloat(args.find(a => a.startsWith('--currentCost='))?.split('=')[1] || '0');
+    const orgId = args.find((a) => a.startsWith('--orgId='))?.split('=')[1];
+    const budget = parseFloat(args.find((a) => a.startsWith('--budget='))?.split('=')[1] || '0');
+    const currentCost = parseFloat(
+      args.find((a) => a.startsWith('--currentCost='))?.split('=')[1] || '0'
+    );
 
     if (!orgId) throw new Error('Missing orgId');
 
@@ -40,7 +42,7 @@ async function main() {
         email: 'gate-tester@test.local',
         passwordHash: 'unused',
       },
-      update: {}
+      update: {},
     });
 
     // Ensure Org exists
@@ -51,9 +53,9 @@ async function main() {
         name: `Budget Org ${orgId}`,
         slug: orgId,
         credits: 10000,
-        ownerId: (await prisma.user.findFirstOrThrow()).id
+        ownerId: (await prisma.user.findFirstOrThrow()).id,
       },
-      update: { credits: 10000 }
+      update: { credits: 10000 },
     });
 
     await prisma.costCenter.upsert({
@@ -63,15 +65,16 @@ async function main() {
         organizationId: orgId,
         name: 'Default Cost Center',
         budget: budget,
-        currentCost: currentCost
+        currentCost: currentCost,
       },
-      update: { budget, currentCost }
+      update: { budget, currentCost },
     });
     console.log(`✅ CostCenter for ${orgId} setup: budget=${budget}, currentCost=${currentCost}`);
   } else if (action === 'setup_worker') {
-    const workerId = args.find(a => a.startsWith('--workerId='))?.split('=')[1] || 'p1b-tester';
-    const apiKey = args.find(a => a.startsWith('--apiKey='))?.split('=')[1] || 'ak_worker_tester';
-    const apiSecret = args.find(a => a.startsWith('--apiSecret='))?.split('=')[1] || 'sk_worker_tester';
+    const workerId = args.find((a) => a.startsWith('--workerId='))?.split('=')[1] || 'p1b-tester';
+    const apiKey = args.find((a) => a.startsWith('--apiKey='))?.split('=')[1] || 'ak_worker_tester';
+    const apiSecret =
+      args.find((a) => a.startsWith('--apiSecret='))?.split('=')[1] || 'sk_worker_tester';
 
     // 1. Ensure WorkerNode exists (without apiKey field)
     await prisma.workerNode.upsert({
@@ -80,9 +83,9 @@ async function main() {
         workerId,
         name: 'Test Worker',
         status: 'offline',
-        capabilities: {}
+        capabilities: {},
       },
-      update: {}
+      update: {},
     });
 
     // 2. Ensure ApiKey exists (which HmacAuthService checks)
@@ -92,16 +95,17 @@ async function main() {
         key: apiKey,
         secretHash: apiSecret,
         name: `Worker Key for ${workerId}`,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
       },
       update: {
         secretHash: apiSecret,
-        status: 'ACTIVE'
-      }
+        status: 'ACTIVE',
+      },
     });
     console.log(`✅ Worker ${workerId} and ApiKey ${apiKey} setup successfully.`);
   } else if (action === 'setup_test_project') {
-    const orgId = args.find(a => a.startsWith('--orgId='))?.split('=')[1] || 'p1b-org-quota-blocked';
+    const orgId =
+      args.find((a) => a.startsWith('--orgId='))?.split('=')[1] || 'p1b-org-quota-blocked';
     const firstUser = await prisma.user.findFirstOrThrow();
 
     // 1. Project
@@ -113,7 +117,7 @@ async function main() {
         organizationId: orgId,
         ownerId: firstUser.id,
       },
-      update: { organizationId: orgId }
+      update: { organizationId: orgId },
     });
 
     // 2. Season
@@ -125,7 +129,7 @@ async function main() {
         projectId: 'p1b-test-proj',
         index: 1,
       },
-      update: {}
+      update: {},
     });
 
     // 3. Episode
@@ -137,7 +141,7 @@ async function main() {
         seasonId: 'p1b-test-season',
         index: 1,
       },
-      update: {}
+      update: {},
     });
 
     // 4. Scene
@@ -150,7 +154,7 @@ async function main() {
         episodeId: 'p1b-test-ep',
         index: 1,
       },
-      update: { summary: 'P1-B Test Scene Summary' }
+      update: { summary: 'P1-B Test Scene Summary' },
     });
 
     // 5. Shot
@@ -163,7 +167,7 @@ async function main() {
         title: 'Test Shot',
         type: 'SHOT_RENDER',
       },
-      update: {}
+      update: {},
     });
     console.log(`✅ Test project structure (p1b-test-proj -> p1b-test-shot) setup ok.`);
   } else {

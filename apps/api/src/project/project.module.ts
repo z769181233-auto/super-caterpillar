@@ -18,9 +18,26 @@ import { RedisModule } from '../redis/redis.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
 
 @Module({
-  imports: [UserModule, PrismaModule, forwardRef(() => JobModule), PermissionModule, TaskModule, AuthModule, AuditLogModule, AuditModule, RedisModule, ApiSecurityModule],
+  imports: [
+    UserModule,
+    PrismaModule,
+    forwardRef(() => JobModule),
+    PermissionModule,
+    TaskModule,
+    AuthModule,
+    AuditLogModule,
+    AuditModule,
+    RedisModule,
+    ApiSecurityModule,
+  ],
   controllers: [ProjectController, ProjectStructureController],
-  providers: [ProjectService, ProjectStructureService, StructureGenerateService, SceneGraphService, SceneGraphCache],
+  providers: [
+    ProjectService,
+    ProjectStructureService,
+    StructureGenerateService,
+    SceneGraphService,
+    SceneGraphCache,
+  ],
   exports: [ProjectService, ProjectStructureService, StructureGenerateService, SceneGraphService],
 })
-export class ProjectModule { }
+export class ProjectModule {}

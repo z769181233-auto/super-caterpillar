@@ -190,14 +190,3 @@ export class OrganizationService {
     return membership?.role || null;
   }
 }
-
-
-
-
-
-
-
-
-
-
-

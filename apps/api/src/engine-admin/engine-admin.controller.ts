@@ -14,7 +14,7 @@ import { PermissionsGuard } from '../auth/permissions.guard';
 @Controller('admin/engines')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class EngineAdminController {
-  constructor(private readonly service: EngineAdminService) { }
+  constructor(private readonly service: EngineAdminService) {}
 
   @Get()
   @Permissions(SystemPermissions.AUTH)
@@ -33,10 +33,11 @@ export class EngineAdminController {
       adapterName: engine.adapterName,
       adapterType: engine.adapterType,
       defaultVersion: engine.defaultVersion,
-      versions: engine.versions?.map((v: any) => ({
-        versionName: v.versionName,
-        enabled: v.enabled,
-      })) || [],
+      versions:
+        engine.versions?.map((v: any) => ({
+          versionName: v.versionName,
+          enabled: v.enabled,
+        })) || [],
       enabled: engine.enabled,
     }));
     return { success: true, data: publicData };
@@ -83,7 +84,7 @@ export class EngineAdminController {
   async updateVersion(
     @Param('key') key: string,
     @Param('versionName') versionName: string,
-    @Body() body: UpdateEngineVersionInput,
+    @Body() body: UpdateEngineVersionInput
   ) {
     const data = await this.service.updateVersion(key, versionName, body);
     return { success: true, data };
@@ -98,9 +99,11 @@ export class EngineAdminController {
 
   @Patch(':key/default-version')
   @Permissions(SystemPermissions.AUTH)
-  async updateDefaultVersion(@Param('key') key: string, @Body() body: { defaultVersion: string | null }) {
+  async updateDefaultVersion(
+    @Param('key') key: string,
+    @Body() body: { defaultVersion: string | null }
+  ) {
     const data = await this.service.updateDefaultVersion(key, body.defaultVersion ?? null);
     return { success: true, data };
   }
 }
-

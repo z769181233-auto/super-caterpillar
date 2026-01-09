@@ -142,21 +142,21 @@ function TaskGraphPageContent() {
                     <td className="border p-2">{job.jobType}</td>
                     <td className="border p-2">
                       <div className="flex flex-col gap-1">
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          job.status === 'SUCCEEDED'
-                            ? 'bg-green-100 text-green-800'
-                            : job.status === 'FAILED'
-                            ? 'bg-red-100 text-red-800'
-                            : job.status === 'RUNNING'
-                            ? 'bg-blue-100 text-blue-800'
-                            : job.status === 'RETRYING'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {job.status}
-                      </span>
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            job.status === 'SUCCEEDED'
+                              ? 'bg-green-100 text-green-800'
+                              : job.status === 'FAILED'
+                                ? 'bg-red-100 text-red-800'
+                                : job.status === 'RUNNING'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : job.status === 'RETRYING'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {job.status}
+                        </span>
                         {/* S3-C.3: 使用统一组件展示 Engine 相关信息 */}
                         {job.engineKey && (
                           <EngineTag
@@ -232,4 +232,3 @@ export default function TaskGraphPage() {
     </Suspense>
   );
 }
-

@@ -10,7 +10,14 @@ interface ProgressCardProps {
   index: number;
   title: string;
   description?: string | null;
-  badgeStatus: 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'QUEUED' | 'CANCELLED' | 'FORCE_FAILED';
+  badgeStatus:
+    | 'PENDING'
+    | 'RUNNING'
+    | 'SUCCEEDED'
+    | 'FAILED'
+    | 'QUEUED'
+    | 'CANCELLED'
+    | 'FORCE_FAILED';
   metrics: Array<{ label: string; value: string }>;
   relativeTime?: string;
   blockers?: Array<{ severity: 'warning' | 'info'; message: string }>;
@@ -55,12 +62,12 @@ export function ProgressCard({
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span
-            className={`text-xs font-bold px-2 py-1 rounded-md ${type === 'episode'
-                ? 'text-purple-600 bg-purple-50'
-                : 'text-green-600 bg-green-50'
-              }`}
+            className={`text-xs font-bold px-2 py-1 rounded-md ${
+              type === 'episode' ? 'text-purple-600 bg-purple-50' : 'text-green-600 bg-green-50'
+            }`}
           >
-            {typeLabel}{index.toString().padStart(2, '0')}
+            {typeLabel}
+            {index.toString().padStart(2, '0')}
           </span>
           <h4 className="font-bold text-base text-gray-900 line-clamp-1">{title}</h4>
         </div>
@@ -94,10 +101,11 @@ export function ProgressCard({
             {blockers.map((blocker, idx) => (
               <span
                 key={idx}
-                className={`text-xs px-2 py-0.5 rounded-md ${blocker.severity === 'warning'
+                className={`text-xs px-2 py-0.5 rounded-md ${
+                  blocker.severity === 'warning'
                     ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
                     : 'bg-blue-50 text-blue-700 border border-blue-200'
-                  }`}
+                }`}
               >
                 {blocker.message}
               </span>
@@ -105,11 +113,8 @@ export function ProgressCard({
           </div>
         )}
         {/* Relative Time */}
-        {relativeTime && (
-          <span className="text-xs text-gray-400 ml-auto">{relativeTime}</span>
-        )}
+        {relativeTime && <span className="text-xs text-gray-400 ml-auto">{relativeTime}</span>}
       </div>
     </div>
   );
 }
-

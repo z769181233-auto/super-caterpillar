@@ -11,11 +11,13 @@
 ### 1.1 构建验证
 
 **命令**:
+
 ```bash
 pnpm -w --filter api build
 ```
 
 **结果**:
+
 ```
 apps/api build: webpack 5.97.1 compiled successfully in 4066 ms
 ```
@@ -25,6 +27,7 @@ apps/api build: webpack 5.97.1 compiled successfully in 4066 ms
 ### 1.2 API 启动
 
 **命令**:
+
 ```bash
 pnpm --filter api dev
 ```
@@ -38,6 +41,7 @@ pnpm --filter api dev
 ### 2.1 POST /api/story/parse (CE06)
 
 **请求示例**:
+
 ```bash
 curl -X POST "http://localhost:3000/api/story/parse" \
   -H "Content-Type: application/json" \
@@ -55,6 +59,7 @@ curl -X POST "http://localhost:3000/api/story/parse" \
 ```
 
 **预期返回**:
+
 ```json
 {
   "jobId": "<job_id>",
@@ -68,12 +73,14 @@ curl -X POST "http://localhost:3000/api/story/parse" \
 
 **验证结果**: ⏳ **待执行**（需要 API 启动后运行）
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 smoke 脚本实际输出]
 ```
 
 **API Spec 对照**:
+
 - ✅ 端点存在：`POST /api/story/parse`
 - ✅ 返回字段：`jobId`, `traceId`, `status`, `taskId`
 - ✅ 符合 API Spec V1.1 要求
@@ -83,6 +90,7 @@ curl -X POST "http://localhost:3000/api/story/parse" \
 ### 2.2 POST /api/text/visual-density (CE03)
 
 **请求示例**:
+
 ```bash
 curl -X POST "http://localhost:3000/api/text/visual-density" \
   -H "Content-Type: application/json" \
@@ -98,6 +106,7 @@ curl -X POST "http://localhost:3000/api/text/visual-density" \
 ```
 
 **预期返回**:
+
 ```json
 {
   "jobId": "<job_id>",
@@ -109,12 +118,14 @@ curl -X POST "http://localhost:3000/api/text/visual-density" \
 
 **验证结果**: ⏳ **待执行**（需要 API 启动后运行）
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 smoke 脚本实际输出]
 ```
 
 **API Spec 对照**:
+
 - ✅ 端点存在：`POST /api/text/visual-density`
 - ✅ 返回字段：`jobId`, `traceId`, `status`, `taskId`
 - ✅ 符合 API Spec V1.1 要求
@@ -124,6 +135,7 @@ curl -X POST "http://localhost:3000/api/text/visual-density" \
 ### 2.3 POST /api/text/enrich (CE04) - Safety Pass
 
 **请求示例**:
+
 ```bash
 curl -X POST "http://localhost:3000/api/text/enrich" \
   -H "Content-Type: application/json" \
@@ -139,6 +151,7 @@ curl -X POST "http://localhost:3000/api/text/enrich" \
 ```
 
 **预期返回**:
+
 ```json
 {
   "jobId": "<job_id>",
@@ -150,7 +163,8 @@ curl -X POST "http://localhost:3000/api/text/enrich" \
 
 **验证结果**: ⏳ **待执行**（需要 API 启动后运行）
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 smoke 脚本实际输出]
 ```
@@ -160,6 +174,7 @@ curl -X POST "http://localhost:3000/api/text/enrich" \
 ### 2.4 POST /api/text/enrich (CE04) - Safety Fail
 
 **请求示例**:
+
 ```bash
 curl -X POST "http://localhost:3000/api/text/enrich" \
   -H "Content-Type: application/json" \
@@ -175,6 +190,7 @@ curl -X POST "http://localhost:3000/api/text/enrich" \
 ```
 
 **预期返回**:
+
 ```json
 {
   "jobId": "<job_id>",
@@ -188,12 +204,14 @@ curl -X POST "http://localhost:3000/api/text/enrich" \
 
 **验证结果**: ⏳ **待执行**（需要 API 启动后运行）
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 smoke 脚本实际输出]
 ```
 
 **Safety Spec 对照**:
+
 - ✅ 前置拦截：CE04 创建 Job 前进行 Safety Hook
 - ✅ 可审计：`audit_log` 记录 `SAFETY_CHECK` 事件（包含清洗前后文本）
 - ✅ 符合 Safety Spec 要求
@@ -205,8 +223,9 @@ curl -X POST "http://localhost:3000/api/text/enrich" \
 ### 3.1 Quality Metrics 验证
 
 **SQL 查询**:
+
 ```sql
-SELECT 
+SELECT
   engine,
   project_id,
   visual_density_score,
@@ -222,18 +241,21 @@ LIMIT 10;
 ```
 
 **预期结果**:
+
 - ✅ 每次 CE03/CE04 SUCCEEDED 都有一条新记录
 - ✅ `metadata` 包含 `jobId`, `traceId`, `engineKey`
 - ✅ 不覆盖历史记录
 
 **验证结果**: ⏳ **待执行**（需要 API 启动并完成 Job 后查询）
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 SQL 查询实际结果]
 ```
 
 **Quality Spec 对照**:
+
 - ✅ 质量指标写入：CE03/CE04 完成后写入 `quality_metrics`
 - ✅ 历史保留：每次 SUCCEEDED 创建新记录，不覆盖
 - ✅ 可追溯：metadata 包含 `jobId`, `traceId`, `engineKey`
@@ -244,8 +266,9 @@ LIMIT 10;
 ### 3.2 Audit Log 验证
 
 **SQL 查询**:
+
 ```sql
-SELECT 
+SELECT
   action,
   resource_type,
   resource_id,
@@ -255,7 +278,7 @@ SELECT
   details->>'safetyCheck' AS safety_check,
   created_at
 FROM audit_logs
-WHERE 
+WHERE
   details::text ILIKE '%SAFETY%'
   OR details::text ILIKE '%CE03%'
   OR details::text ILIKE '%CE04%'
@@ -265,6 +288,7 @@ LIMIT 20;
 ```
 
 **预期结果**:
+
 - ✅ `SAFETY_CHECK` 事件（CE04 前置检测）
 - ✅ `JOB_CREATED` 事件（包含 `traceId`）
 - ✅ `JOB_SUCCEEDED` 事件（包含 `traceId`）
@@ -272,7 +296,8 @@ LIMIT 20;
 
 **验证结果**: ⏳ **待执行**（需要 API 启动并完成 Job 后查询）
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 SQL 查询实际结果]
 ```
@@ -286,6 +311,7 @@ LIMIT 20;
 **位置**: API 服务启动输出
 
 **预期内容**:
+
 ```
 [Nest] INFO StoryModule dependencies initialized
 [Nest] INFO TextModule dependencies initialized
@@ -294,7 +320,8 @@ LIMIT 20;
 
 **验证结果**: ⏳ **待执行**
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 API 启动日志]
 ```
@@ -306,6 +333,7 @@ LIMIT 20;
 **位置**: API 服务日志
 
 **预期内容**:
+
 ```
 [StoryService] CE06 Job created: <job_id>, traceId: ce_pipeline_<uuid>
 [TextService] CE03 Job created: <job_id>, traceId: ce_pipeline_<uuid>
@@ -314,7 +342,8 @@ LIMIT 20;
 
 **验证结果**: ⏳ **待执行**
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 Job 创建日志]
 ```
@@ -326,6 +355,7 @@ LIMIT 20;
 **位置**: API 服务日志
 
 **预期内容**:
+
 ```
 [TextSafetyService] Text safety check failed: flags=BLACKLIST_KEYWORD:暴力
 [TextService] CE04 Job rejected due to safety check: <job_id>, flags: BLACKLIST_KEYWORD:暴力
@@ -333,7 +363,8 @@ LIMIT 20;
 
 **验证结果**: ⏳ **待执行**
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 Safety Check 日志]
 ```
@@ -345,6 +376,7 @@ LIMIT 20;
 **位置**: API 服务日志
 
 **预期内容**:
+
 ```
 [QualityMetricsWriter] QualityMetrics created for CE03 job <job_id>, project <project_id> (traceId: ce_pipeline_<uuid>)
 [QualityMetricsWriter] QualityMetrics created for CE04 job <job_id>, project <project_id> (traceId: ce_pipeline_<uuid>)
@@ -352,7 +384,8 @@ LIMIT 20;
 
 **验证结果**: ⏳ **待执行**
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 Quality Metrics 写入日志]
 ```
@@ -364,11 +397,13 @@ LIMIT 20;
 ### 5.1 Git Diff 检查
 
 **命令**:
+
 ```bash
 git diff --name-only | grep -E "job\.service\.ts|job\.rules\.ts|job\.retry\.ts|orchestrator|worker\.service|env\.ts"
 ```
 
 **结果**:
+
 ```
 ✅ 冻结区文件未修改
 ```
@@ -384,11 +419,13 @@ git diff --name-only | grep -E "job\.service\.ts|job\.rules\.ts|job\.retry\.ts|o
 **要求**: 三个端点存在，返回字段齐全
 
 **验证项**:
+
 - ✅ `POST /api/story/parse` (CE06)
 - ✅ `POST /api/text/visual-density` (CE03)
 - ✅ `POST /api/text/enrich` (CE04)
 
 **返回字段**:
+
 - ✅ `jobId`: Job ID
 - ✅ `traceId`: Pipeline 级 traceId（格式：`ce_pipeline_<uuid>`）
 - ✅ `status`: Job 状态（`PENDING` 或 `FAILED`）
@@ -403,6 +440,7 @@ git diff --name-only | grep -E "job\.service\.ts|job\.rules\.ts|job\.retry\.ts|o
 **要求**: CE04 safety fail 是否"前置拦截 + 可审计"
 
 **验证项**:
+
 - ✅ 前置拦截：CE04 创建 Job 前调用 `TextSafetyService.sanitize()`
 - ✅ 不通过时直接创建 `FAILED` Job（不进入 Worker 执行）
 - ✅ 可审计：`audit_log` 记录 `SAFETY_CHECK` 事件（包含清洗前后文本）
@@ -417,6 +455,7 @@ git diff --name-only | grep -E "job\.service\.ts|job\.rules\.ts|job\.retry\.ts|o
 **要求**: CE03/CE04 成功上报后是否写入质量指标
 
 **验证项**:
+
 - ✅ 写入时机：CE03/CE04 SUCCEEDED 时自动写入
 - ✅ 写入位置：`JobReportFacade.handleReport()` 调用 `QualityMetricsWriter.writeQualityMetrics()`
 - ✅ 历史保留：每次 SUCCEEDED 创建新记录，不覆盖历史
@@ -431,6 +470,7 @@ git diff --name-only | grep -E "job\.service\.ts|job\.rules\.ts|job\.retry\.ts|o
 **要求**: 冻结区文件未改
 
 **验证项**:
+
 - ✅ `apps/api/src/job/job.service.ts` 未修改
 - ✅ `apps/api/src/job/job.rules.ts` 未修改
 - ✅ `apps/api/src/job/job.retry.ts` 未修改
@@ -447,6 +487,7 @@ git diff --name-only | grep -E "job\.service\.ts|job\.rules\.ts|job\.retry\.ts|o
 ### 7.1 环境准备
 
 **设置环境变量**:
+
 ```bash
 export API_BASE_URL="http://localhost:3000"
 export API_KEY="<your-api-key>"
@@ -457,6 +498,7 @@ export TEST_PROJECT_ID="<your-existing-project-id>"
 ### 7.2 启动 API 服务
 
 **命令**:
+
 ```bash
 pnpm --filter api dev
 ```
@@ -466,6 +508,7 @@ pnpm --filter api dev
 ### 7.3 运行验证脚本
 
 **命令**:
+
 ```bash
 # 使用 tsx（推荐）
 pnpm -w dlx tsx tools/smoke/ce-core-commercialization-smoke.ts
@@ -474,13 +517,15 @@ pnpm -w dlx tsx tools/smoke/ce-core-commercialization-smoke.ts
 pnpm -w dlx ts-node tools/smoke/ce-core-commercialization-smoke.ts
 ```
 
-**说明**: 
+**说明**:
+
 - 脚本会自动测试 4 个端点（CE06、CE03、CE04 pass、CE04 fail）
 - 脚本会自动调用 `/api/jobs/:id/report` 触发质量闭环写入（CE03/CE04）
 
 **验证结果**: ⏳ **待执行**
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 smoke 脚本完整输出]
 ```
@@ -488,12 +533,13 @@ pnpm -w dlx ts-node tools/smoke/ce-core-commercialization-smoke.ts
 ### 7.4 SQL 校验（只读）
 
 **Quality Metrics 查询**:
+
 ```sql
-SELECT 
-  engine, 
-  project_id, 
-  visual_density_score, 
-  enrichment_quality, 
+SELECT
+  engine,
+  project_id,
+  visual_density_score,
+  enrichment_quality,
   metadata->>'jobId' AS job_id,
   metadata->>'traceId' AS trace_id,
   metadata->>'engineKey' AS engine_key,
@@ -505,11 +551,12 @@ LIMIT 10;
 ```
 
 **Audit Logs 查询**:
+
 ```sql
-SELECT 
-  action, 
-  resource_type, 
-  resource_id, 
+SELECT
+  action,
+  resource_type,
+  resource_id,
   details->>'traceId' AS trace_id,
   details->>'status' AS status,
   details->>'jobType' AS job_type,
@@ -526,7 +573,8 @@ LIMIT 20;
 
 **验证结果**: ⏳ **待执行**
 
-**实际输出**: 
+**实际输出**:
+
 ```
 [待填入 SQL 查询实际结果]
 ```
@@ -560,18 +608,17 @@ LIMIT 20;
 
 **报告状态**: ✅ **代码层面验证通过，运行时验证待执行**
 
-**执行步骤**: 
+**执行步骤**:
+
 1. 设置环境变量（API_KEY、API_SECRET、TEST_PROJECT_ID）
 2. 启动 API 服务：`pnpm --filter api dev`
 3. 运行验证脚本：`pnpm -w dlx tsx tools/smoke/ce-core-commercialization-smoke.ts`
 4. 执行 SQL 查询验证数据写入
 5. 更新报告中的实际输出结果（将所有"⏳ 待执行"改为"✅ 已验证（附证据）"）
 
-
 ## 运行时验证实际输出（自动采集）
 
 **采集时间**: 2025-12-14 15:49:06
-
 
 ### Smoke 测试输出
 
@@ -580,10 +627,10 @@ LIMIT 20;
 
 API Base URL: http://localhost:3000
 
-❌ CE06: POST /api/story/parse: FAILED - 
-❌ CE03: POST /api/text/visual-density: FAILED - 
-❌ CE04: POST /api/text/enrich (Safety Pass): FAILED - 
-❌ CE04: POST /api/text/enrich (Safety Fail): FAILED - 
+❌ CE06: POST /api/story/parse: FAILED -
+❌ CE03: POST /api/text/visual-density: FAILED -
+❌ CE04: POST /api/text/enrich (Safety Pass): FAILED -
+❌ CE04: POST /api/text/enrich (Safety Fail): FAILED -
 
 === Quality Metrics Trigger (Job Report) ===
 

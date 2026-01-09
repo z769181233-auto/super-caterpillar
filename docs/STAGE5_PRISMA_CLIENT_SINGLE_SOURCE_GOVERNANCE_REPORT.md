@@ -15,7 +15,8 @@
 - API 运行时加载的 Client 与生成的 Client 不一致
 - 导致模型（如 `nonceStore`）在运行时不可见
 
-**本 Stage 的目标**：  
+**本 Stage 的目标**：
+
 > **彻底消除 Prisma Client 多来源问题，建立全仓唯一、可验证、不可回滚的 Prisma Client 单一来源机制。**
 
 ---
@@ -96,6 +97,7 @@ import { PrismaClient } from 'database';
 ```
 
 **规则**：
+
 - PrismaClient 只能存在于 `packages/database`
 - 所有运行时代码必须通过 workspace 依赖获取
 
@@ -111,6 +113,7 @@ import { PrismaClient } from 'database';
 ```
 
 **禁止项**：
+
 - ❌ apps/api 禁止再引入 `@prisma/client`
 - ❌ 禁止通过 devDependencies / indirect 方式引入
 
@@ -126,6 +129,7 @@ import { PrismaClient } from 'database';
 ```
 
 **效果**：
+
 - 每次 `pnpm install` 后自动生成 Prisma Client
 - 避免"本地有 / CI 没有 / 运行时不一致"问题
 
@@ -142,6 +146,7 @@ import { PrismaClient } from 'database';
 ```
 
 **规则**：
+
 - scripts 目录允许使用 `@prisma/client`（独立工具脚本）
 - 生产代码不允许
 
@@ -157,6 +162,7 @@ import { PrismaClient } from 'database';
 ### 删除 $queryRaw 的唯一条件（必须全部满足）
 
 1. ✅ PrismaService 启动日志持续显示：
+
    ```
    hasNonceStore: true
    ```
@@ -178,18 +184,19 @@ pnpm --filter api build
 ```
 
 **结果**: ✅ 通过
+
 ```
 webpack 5.97.1 compiled successfully in 17268 ms
 ```
 
 ### 2. 行为验收（Stage5 P0 硬条件）
 
-| 条目 | 结果 |
-|------|------|
-| 第一次合法请求 | ≠ 4003 / 4004 ✅ |
-| nonce_store 写入 | COUNT > 0 ✅ |
-| 第二次同 nonce | 4004 ✅ |
-| 审计日志 | 仅重放写入 NONCE_REPLAY_DETECTED ✅ |
+| 条目             | 结果                                |
+| ---------------- | ----------------------------------- |
+| 第一次合法请求   | ≠ 4003 / 4004 ✅                    |
+| nonce_store 写入 | COUNT > 0 ✅                        |
+| 第二次同 nonce   | 4004 ✅                             |
+| 审计日志         | 仅重放写入 NONCE_REPLAY_DETECTED ✅ |
 
 ### 3. E2E 最终验收
 
@@ -198,6 +205,7 @@ pnpm exec ts-node apps/api/test/hmac-security.e2e-spec.ts
 ```
 
 **结果**:
+
 ```
 测试 1: 白名单免签接口 (/api/health)
 ✅ 通过
@@ -284,6 +292,7 @@ pnpm exec ts-node apps/api/test/hmac-security.e2e-spec.ts
 **状态**: ✅ **DONE (Final)**
 
 **验收结论**:
+
 - ✅ 技术目标完成
 - ✅ 架构约束固化
 - ✅ 行为与 E2E 全量验证通过

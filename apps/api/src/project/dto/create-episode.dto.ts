@@ -21,14 +21,3 @@ export class CreateEpisodeDto {
   @MaxLength(2000, { message: 'Episode summary must not exceed 2000 characters' })
   summary?: string;
 }
-
-
-
-
-
-
-
-
-
-
-

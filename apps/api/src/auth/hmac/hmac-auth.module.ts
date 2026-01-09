@@ -13,17 +13,14 @@ import { NonceModule } from '../nonce.module';
  * 提供 API Key + HMAC 签名验证能力
  */
 @Module({
-  imports: [PrismaModule, RedisModule, forwardRef(() => AuditLogModule), ApiSecurityModule, NonceModule],
+  imports: [
+    PrismaModule,
+    RedisModule,
+    forwardRef(() => AuditLogModule),
+    ApiSecurityModule,
+    NonceModule,
+  ],
   providers: [HmacAuthService, HmacAuthGuard, ApiKeyService],
   exports: [HmacAuthService, HmacAuthGuard, ApiKeyService, NonceModule],
 })
-export class HmacAuthModule { }
-
-
-
-
-
-
-
-
-
+export class HmacAuthModule {}

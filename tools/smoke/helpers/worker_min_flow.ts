@@ -2,7 +2,7 @@
  * Worker 最小流程 Helper
  * 实现 Stage2 最小闭环：
  * Worker 注册 → 心跳 → 领取任务/Job → 回传结果
- * 
+ *
  * 任务生命周期：PENDING→RUNNING→SUCCESS / RETRY≤3→FAILED
  */
 
@@ -24,7 +24,7 @@ export async function runWorkerMinFlow(
   apiBaseUrl: string,
   apiKey: string,
   apiSecret: string,
-  workerId: string = `smoke-worker-${Date.now()}`,
+  workerId: string = `smoke-worker-${Date.now()}`
 ): Promise<WorkerMinFlowResult> {
   const steps: WorkerMinFlowResult['steps'] = [];
   let jobId: string | undefined;
@@ -146,4 +146,3 @@ export async function runWorkerMinFlow(
     };
   }
 }
-

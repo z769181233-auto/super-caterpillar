@@ -15,17 +15,19 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly organizationService: OrganizationService,
-    private readonly auditLogService: AuditLogService,
+    private readonly auditLogService: AuditLogService
   ) {}
 
   @Get('me')
   async getCurrentUser(@CurrentUser() user: { userId: string }): Promise<any> {
     const userData = await this.userService.findById(user.userId);
-    
+
     // Studio v0.7: 获取当前组织
-    const currentOrganizationId = await this.organizationService.getCurrentOrganization(user.userId);
+    const currentOrganizationId = await this.organizationService.getCurrentOrganization(
+      user.userId
+    );
     const organizations = await this.organizationService.getUserOrganizations(user.userId);
-    
+
     return {
       success: true,
       data: {
@@ -43,28 +45,30 @@ export class UserController {
   async switchOrganization(
     @Body() body: { organizationId: string },
     @CurrentUser() user: { userId: string },
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     const result = await this.organizationService.switchOrganization(
       user.userId,
       body.organizationId
     );
-    
+
     // S1-FIX-B: 记录审计日志
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    await this.auditLogService.record({
-      userId: user.userId,
-      action: AuditActions.ORGANIZATION_SWITCH,
-      resourceType: 'organization',
-      resourceId: body.organizationId,
-      ip: requestInfo.ip,
-      userAgent: requestInfo.userAgent,
-      details: {
-        organizationName: result.organization?.name,
-        role: result.role,
-      },
-    }).catch(() => undefined);
-    
+    await this.auditLogService
+      .record({
+        userId: user.userId,
+        action: AuditActions.ORGANIZATION_SWITCH,
+        resourceType: 'organization',
+        resourceId: body.organizationId,
+        ip: requestInfo.ip,
+        userAgent: requestInfo.userAgent,
+        details: {
+          organizationName: result.organization?.name,
+          role: result.role,
+        },
+      })
+      .catch(() => undefined);
+
     return {
       success: true,
       data: result,
@@ -84,13 +88,3 @@ export class UserController {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-

@@ -1,6 +1,7 @@
 # Stage1 DB Migration SOP（PLAN-only）
 
 **适用范围**
+
 - 迁移版本：`20251211091222_stage1_add_safe`（packages/database/prisma/migrations）
 - 规范来源：`docs/STAGE1_OFFICIAL_SPECS_EXTRACT.md`、`docs/STAGE1_DB_SCHEMA_DELTA_PLAN.md`
 - 本文档仅为**操作手册与检查/清洗方案**，**禁止视为已执行**，所有命令/SQL 仅为“建议模板”。
@@ -144,6 +145,7 @@
 **只读检查示例：**
 
 - 统计 NULL 数量：
+
 ```sql
 SELECT COUNT(*) AS null_season_episodes
 FROM episodes
@@ -151,6 +153,7 @@ WHERE "seasonId" IS NULL;
 ```
 
 - 按 project 维度查看分布：
+
 ```sql
 SELECT e."projectId", COUNT(*) AS cnt
 FROM episodes e
@@ -160,6 +163,7 @@ ORDER BY cnt DESC;
 ```
 
 - 查看部分样本：
+
 ```sql
 SELECT e.*
 FROM episodes e
@@ -171,6 +175,7 @@ LIMIT 50;
 ### 3.2 清洗策略 A：为孤立 episodes 创建/指派“默认 Season”
 
 **思路：**
+
 - 对每个有 `seasonId IS NULL` 的 Episode：
   - 若所在 project 已存在 Season，则：
     - 将 Episode 关联到某个合适的 Season（例如 index 最小的 Season 或专门的 “Unassigned/Default Season”）。
@@ -178,16 +183,19 @@ LIMIT 50;
     - 先为该 project 创建一个默认 Season（如 `title='Default Season'`，`index=1`），再将所有孤立 Episode 关联到该 Season。
 
 **优点：**
+
 - 保留所有 Episode 数据，不丢失业务历史。
 - 满足 Spec 对 Season 归属的约束。
 
 **缺点：**
+
 - 需要与产品/业务确认“默认 Season”语义是否可接受。
 - 需要额外写入 Season 记录，有轻微业务语义偏差。
 
 **示例 SQL（需根据实际 schema 字段名调整，仅为模板）：**
 
 1. 为无 Season 的 project 创建默认 Season：
+
 ```sql
 -- 找出存在孤立 episodes 且没有任何 season 的 project
 WITH projects_with_null_episodes AS (
@@ -207,6 +215,7 @@ projects_without_season AS (
 ```
 
 2. 将孤立 episodes 绑定到某个 Season（如 index 最小的 Season）：
+
 ```sql
 UPDATE episodes e
 SET "seasonId" = s.id
@@ -221,14 +230,17 @@ WHERE e."seasonId" IS NULL
 ### 3.3 清洗策略 B：将孤立 episodes 标记为废弃或删除
 
 **思路：**
+
 - 若业务允许认为这些孤立 Episodes 无价值：
   - 可选择软删除（例如设置 `status='DEPRECATED'` 或 `deletedAt` 字段，如存在）。
   - 或在极端情况下物理删除记录。
 
 **优点：**
+
 - 保持 Season 约束干净，不引入“默认 Season”的语义。
 
 **缺点：**
+
 - 可能丢失历史数据，需要业务方明确同意，并确认与上层 UI/接口的一致性。
 
 **示例 SQL（软删除/硬删除模板）：**
@@ -249,17 +261,21 @@ WHERE "seasonId" IS NULL;
 ### 3.4 清洗策略 C：保留 seasonId 可空（偏离 Spec 的备选方案）
 
 **思路：**
+
 - 若短期内无法完成数据清洗，也不希望在 Stage1 立即收紧约束：
   - 可考虑暂缓执行 `ALTER COLUMN "seasonId" SET NOT NULL`，保持其为可空。
 
 **优点：**
+
 - 不需要在当前迁移窗口内处理历史数据。
 
 **缺点：**
+
 - 与 DB Spec V1.1 不完全一致，需要在 `STAGE1_OFFICIAL_SPECS_EXTRACT` 上追加“已知偏差”记录。
 - 需要在后续 Stage（例如 Stage1.5 / Stage2）中专门开批次收紧约束。
 
 **操作建议：**
+
 - 在 PROD 中执行迁移前，可由 DBA 编辑 `migration.sql`，暂时移除 `ALTER TABLE "episodes" ALTER COLUMN "seasonId" SET NOT NULL;` 行，并在文档中记录该偏差。
 - 由后续专门“Constraint Tightening” 批次重新补上。
 
@@ -367,11 +383,10 @@ pnpm prisma:migrate           # 已创建的迁移会被应用
 ---
 
 ## 7. DEV 执行记录（2025-12-11）
+
 - 目标库：DEV（`postgresql://localhost:5432/super_caterpillar_dev`，本地实验库，非 PROD）
 - Step1 检查（迁移前）：episodes 总 483；seasonId IS NULL 472；涉及 4 个 project（06fa9a92…, 50dda522…, 849f47d5…, da8c5a9e…）。
 - Step2 清洗（策略 A）：为每个 project 绑定 index 最小的 Season（本次均已有 Season，未新建）；更新结果 118/236/59/59；清洗后 NULL=0。
 - Step3 迁移：`pnpm --filter database prisma:migrate:deploy`（DEV 数据库），迁移 `20251211091222_stage1_add_safe` 成功应用。
 - Step4 验证：新增表 assets/security_fingerprints/shot_variants/video_jobs/characters/novel_volumes/novel_scenes/memory_short_term/memory_long_term 存在；audit_logs 含 nonce/signature/timestamp；索引 scenes(projectId,index)、shots(sceneId,index)、tasks(status,createdAt)、worker_nodes(status)、audit_logs(nonce,timestamp) 均存在。
 - Step5 应用侧（DEV）简要：`pnpm build` 通过；HMAC/权限/审计链路已按 Stage1 完成（如出现 500，请复查清洗与迁移）。
-
-

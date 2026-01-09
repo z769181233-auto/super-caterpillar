@@ -91,4 +91,3 @@ export interface ProjectStructureShotNode {
   blockingReason?: string | null;
   canGenerate?: boolean;
 }
-

@@ -1,14 +1,15 @@
 /**
  * EngineModule
  * 引擎模块，负责注册和管理所有 EngineAdapter
- * 
+ *
  * 参考《毛毛虫宇宙_引擎体系说明书_EngineSpec_V1.1》第 3 章
  * 参考《毛毛虫宇宙_模型宇宙说明书_ModelUniverseSpec_V1.0》中与引擎注册相关的部分
  */
 
 import { Module, OnModuleInit } from '@nestjs/common';
 import { EngineRegistry } from '../engine/engine-registry.service';
-import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter';
+import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter.NEW';
+import { VideoMergeLocalAdapter } from './adapters/video-merge.local.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -30,6 +31,7 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     EngineStrategyService, // S4-B: 策略路由层
     EngineInvokerService,
     NovelAnalysisLocalAdapter,
+    VideoMergeLocalAdapter,
     HttpEngineAdapter,
   ],
   exports: [
@@ -44,12 +46,15 @@ export class EngineModule implements OnModuleInit {
   constructor(
     private readonly registry: EngineRegistry,
     private readonly novelAdapter: NovelAnalysisLocalAdapter,
-    private readonly httpAdapter: HttpEngineAdapter,
-  ) { }
+    private readonly videoMergeAdapter: VideoMergeLocalAdapter,
+    private readonly httpAdapter: HttpEngineAdapter
+  ) {}
 
   onModuleInit() {
     if (!this.registry) {
-      console.warn('[EngineModule] EngineRegistry is undefined during onModuleInit, skipping early registration. Dependants will need to register manually or via ModuleRef.');
+      console.warn(
+        '[EngineModule] EngineRegistry is undefined during onModuleInit, skipping early registration. Dependants will need to register manually or via ModuleRef.'
+      );
       return;
     }
     // 注册默认的 NovelAnalysisLocalAdapter
@@ -66,6 +71,7 @@ export class EngineModule implements OnModuleInit {
     this.registry.registerAlias('ce04_visual_enrichment', this.novelAdapter);
     this.registry.registerAlias('default_shot_render', this.novelAdapter); // Safety fallback
 
+    // P0-R2: Register Video Merge Adapter
+    this.registry.register(this.videoMergeAdapter);
   }
 }
-

@@ -10,7 +10,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 /**
  * Asset Controller
  * 提供 CE09 (Media Security) 标准 API
- * 
+ *
  * 功能：
  * - GET /assets/:assetId/secure-url: 获取安全签名 URL
  * - GET /assets/:assetId/hls: 获取 HLS 播放列表
@@ -29,10 +29,7 @@ export class AssetController {
   @RequireSignature() // CE10: 高成本接口，强制签名验证
   @AuditAction(AuditActions.ASSET_ACCESS)
   @HttpCode(HttpStatus.OK)
-  async getSecureUrl(
-    @Param('assetId') assetId: string,
-    @CurrentUser() user: any,
-  ) {
+  async getSecureUrl(@Param('assetId') assetId: string, @CurrentUser() user: any) {
     return this.assetService.getSecureUrl(assetId, user?.id);
   }
 
@@ -44,10 +41,7 @@ export class AssetController {
   @RequireSignature() // CE10: 高成本接口，强制签名验证
   @AuditAction(AuditActions.ASSET_ACCESS)
   @HttpCode(HttpStatus.OK)
-  async getHls(
-    @Param('assetId') assetId: string,
-    @CurrentUser() user: any,
-  ) {
+  async getHls(@Param('assetId') assetId: string, @CurrentUser() user: any) {
     return this.assetService.getHls(assetId, user?.id);
   }
 
@@ -59,11 +53,7 @@ export class AssetController {
   @RequireSignature() // CE10: 高成本接口，强制签名验证
   @AuditAction(AuditActions.ASSET_WATERMARK)
   @HttpCode(HttpStatus.ACCEPTED)
-  async addWatermark(
-    @Param('assetId') assetId: string,
-    @CurrentUser() user: any,
-  ) {
+  async addWatermark(@Param('assetId') assetId: string, @CurrentUser() user: any) {
     return this.assetService.addWatermark(assetId, user?.id);
   }
 }
-

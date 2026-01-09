@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectService } from '../project/project.service';
 import { NovelAnalysisProcessorService } from './novel-analysis-processor.service';
@@ -273,20 +278,13 @@ export class NovelImportService {
     if (lowerText.includes('特写') || lowerText.includes('close') || lowerText.includes('face')) {
       return 'close_up';
     }
-    if (lowerText.includes('全景') || lowerText.includes('wide') || lowerText.includes('landscape')) {
+    if (
+      lowerText.includes('全景') ||
+      lowerText.includes('wide') ||
+      lowerText.includes('landscape')
+    ) {
       return 'wide_shot';
     }
     return 'medium_shot';
   }
 }
-
-
-
-
-
-
-
-
-
-
-

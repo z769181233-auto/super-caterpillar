@@ -1,6 +1,6 @@
 /**
  * Contract Gate - HMAC/Nonce/Timestamp 校验测试
- * 
+ *
  * 验证 APISpec V1.1 要求：
  * - 4003: 签名错误
  * - 4004: Nonce 重放
@@ -37,7 +37,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
       data: {
         email: `hmac-test-${Date.now()}@example.com`,
         passwordHash: 'hash',
-      }
+      },
     });
     userId = user.id;
 
@@ -48,14 +48,14 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
         secretHash: API_SECRET, // Dev environment allows using secretHash as plain secret
         status: 'ACTIVE',
         ownerUserId: userId,
-      }
+      },
     });
     apiKeyId = apiKey.id;
   });
 
   afterAll(async () => {
-    if (apiKeyId) await prisma.apiKey.delete({ where: { id: apiKeyId } }).catch(() => { });
-    if (userId) await prisma.user.delete({ where: { id: userId } }).catch(() => { });
+    if (apiKeyId) await prisma.apiKey.delete({ where: { id: apiKeyId } }).catch(() => {});
+    if (userId) await prisma.user.delete({ where: { id: userId } }).catch(() => {});
     await app.close();
   });
 
@@ -71,12 +71,12 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
       // Should contain 4003 error code or signature-related error
       expect(
         response.body?.error?.code === '4003' ||
-        response.body?.code === '4003' ||
-        response.body?.code === 'SIGNATURE_ERROR' ||
-        response.body?.message?.toLowerCase().includes('signature') ||
-        response.status === 401 ||
-        response.status === 403 ||
-        response.status === 400 // HmacAuthService returns 400
+          response.body?.code === '4003' ||
+          response.body?.code === 'SIGNATURE_ERROR' ||
+          response.body?.message?.toLowerCase().includes('signature') ||
+          response.status === 401 ||
+          response.status === 403 ||
+          response.status === 400 // HmacAuthService returns 400
       ).toBe(true);
     });
 
@@ -93,11 +93,11 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
       expect(response.status).toBeGreaterThanOrEqual(400);
       expect(
         response.body?.error?.code === '4003' ||
-        response.body?.code === '4003' ||
-        response.body?.code === 'SIGNATURE_ERROR' ||
-        response.status === 401 ||
-        response.status === 403 ||
-        response.status === 400
+          response.body?.code === '4003' ||
+          response.body?.code === 'SIGNATURE_ERROR' ||
+          response.status === 401 ||
+          response.status === 403 ||
+          response.status === 400
       ).toBe(true);
     });
   });
@@ -139,10 +139,10 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
       // If nonce replay detection is working, second request should return 4004
       expect(
         secondResponse.body?.error?.code === '4004' ||
-        secondResponse.body?.code === '4004' ||
-        secondResponse.body?.code === 'NONCE_REPLAY' ||
-        secondResponse.status === 403 ||
-        secondResponse.status === 400
+          secondResponse.body?.code === '4004' ||
+          secondResponse.body?.code === 'NONCE_REPLAY' ||
+          secondResponse.status === 403 ||
+          secondResponse.status === 400
       ).toBe(true);
     });
   });
@@ -181,4 +181,3 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
     });
   });
 });
-

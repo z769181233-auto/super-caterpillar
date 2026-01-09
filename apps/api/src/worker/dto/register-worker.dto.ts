@@ -27,4 +27,3 @@ export class RegisterWorkerDto {
   @IsOptional()
   gpuType?: string;
 }
-

@@ -10,7 +10,7 @@ import { CurrentOrganization } from '../auth/decorators/current-organization.dec
 @Controller('stage4')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class Stage4Controller {
-  constructor(private readonly stage4Service: Stage4Service) { }
+  constructor(private readonly stage4Service: Stage4Service) {}
 
   // Scene 级语义增强
   @Post('projects/:projectId/scenes/:sceneId/semantic-enhancement')
@@ -19,10 +19,16 @@ export class Stage4Controller {
     @Param('projectId') projectId: string,
     @Param('sceneId') sceneId: string,
     @CurrentUser() user: { userId: string },
-    @CurrentOrganization() organizationId: string | null,
+    @CurrentOrganization() organizationId: string | null
   ) {
     const data = await this.stage4Service.runSemanticEnhancement(projectId, sceneId, user.userId);
-    await this.stage4Service.recordAudit('SEMANTIC_ENHANCEMENT_RUN', 'scene', sceneId, user.userId, { projectId, organizationId });
+    await this.stage4Service.recordAudit(
+      'SEMANTIC_ENHANCEMENT_RUN',
+      'scene',
+      sceneId,
+      user.userId,
+      { projectId, organizationId }
+    );
     return { success: true, data };
   }
 
@@ -30,7 +36,7 @@ export class Stage4Controller {
   @Permissions(ProjectPermissions.PROJECT_READ)
   async getSemanticEnhancement(
     @Param('projectId') projectId: string,
-    @Param('sceneId') sceneId: string,
+    @Param('sceneId') sceneId: string
   ) {
     const record = await this.stage4Service.getSemanticEnhancement(sceneId);
     return { success: true, data: record?.data || null };
@@ -43,19 +49,19 @@ export class Stage4Controller {
     @Param('projectId') projectId: string,
     @Param('shotId') shotId: string,
     @CurrentUser() user: { userId: string },
-    @CurrentOrganization() organizationId: string | null,
+    @CurrentOrganization() organizationId: string | null
   ) {
     const data = await this.stage4Service.runShotPlanning(projectId, shotId, user.userId);
-    await this.stage4Service.recordAudit('SHOT_PLANNING_RUN', 'shot', shotId, user.userId, { projectId, organizationId });
+    await this.stage4Service.recordAudit('SHOT_PLANNING_RUN', 'shot', shotId, user.userId, {
+      projectId,
+      organizationId,
+    });
     return { success: true, data };
   }
 
   @Get('projects/:projectId/shots/:shotId/shot-planning')
   @Permissions(ProjectPermissions.PROJECT_READ)
-  async getShotPlanning(
-    @Param('projectId') projectId: string,
-    @Param('shotId') shotId: string,
-  ) {
+  async getShotPlanning(@Param('projectId') projectId: string, @Param('shotId') shotId: string) {
     const record = await this.stage4Service.getShotPlanning(shotId);
     return { success: true, data: record?.data || null };
   }
@@ -66,10 +72,12 @@ export class Stage4Controller {
   async runStructureQA(
     @Param('projectId') projectId: string,
     @CurrentUser() user: { userId: string },
-    @CurrentOrganization() organizationId: string | null,
+    @CurrentOrganization() organizationId: string | null
   ) {
     const data = await this.stage4Service.runStructureQA(projectId, user.userId);
-    await this.stage4Service.recordAudit('STRUCTURE_QA_RUN', 'project', projectId, user.userId, { organizationId });
+    await this.stage4Service.recordAudit('STRUCTURE_QA_RUN', 'project', projectId, user.userId, {
+      organizationId,
+    });
     return { success: true, data };
   }
 
@@ -80,4 +88,3 @@ export class Stage4Controller {
     return { success: true, data: record?.data || null };
   }
 }
-

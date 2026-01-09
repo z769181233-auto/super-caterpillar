@@ -5,7 +5,7 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 /**
  * Shot Director Service
  * CE05: Director Control 服务层
- * 
+ *
  * TODO: 实现真实逻辑
  * - inpaint: 图像修复（移除/替换区域）
  * - pose: 姿态控制（调整角色姿态）
@@ -16,8 +16,8 @@ export class ShotDirectorService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditLogService: AuditLogService,
-  ) { }
+    private readonly auditLogService: AuditLogService
+  ) {}
 
   async inpaint(shotId: string, userId?: string) {
     // TODO: 实现真实逻辑
@@ -47,7 +47,6 @@ export class ShotDirectorService {
       },
     };
   }
-
 
   async pose(shotId: string, userId?: string) {
     // TODO: 实现真实逻辑
@@ -94,20 +93,20 @@ export class ShotDirectorService {
               assets: {
                 where: { type: 'IMAGE', status: 'GENERATED' }, // Only take generated images
                 orderBy: { createdAt: 'desc' },
-                take: 1 // Take the latest one
-              }
-            }
+                take: 1, // Take the latest one
+              },
+            },
           },
           episode: {
             include: {
               season: {
                 include: {
-                  project: true
-                }
-              }
-            }
-          }
-        }
+                  project: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!scene) {
@@ -134,7 +133,7 @@ export class ShotDirectorService {
       // For now, I will create Job directly via Prisma to avoid refactoring dependency injection graph if complex.
       // Wait, creating Job involves triggers? No, just DB insert and notifying worker.
       // But JobService.create handles logic.
-      // Let's rely on JobService. 
+      // Let's rely on JobService.
       // I need to add JobService to constructor.
       // But I cannot easily change constructor in replace_file_content if I don't see it.
       // I saw constructor in Step 22.
@@ -143,7 +142,7 @@ export class ShotDirectorService {
 
       // Actually, `JobService` creates `ShotJob`. `VIDEO_RENDER` is a `ShotJob`?
       // Yes, enum `JobType` has `VIDEO_RENDER`.
-      // But `ShotJob` table has mandatory `shotId`. 
+      // But `ShotJob` table has mandatory `shotId`.
       // `VIDEO_RENDER` is usually for a Scene or Episode.
       // If it's for a Scene, `shotId` might be nullable?
       // In `schema.prisma`:
@@ -168,15 +167,17 @@ export class ShotDirectorService {
       // We need a Task first? JobService automatically creates Task.
       // Manually creating Task + Job.
 
-      const taskId = (await this.prisma.task.create({
-        data: {
-          organizationId: organizationId || scene.episode.season.project.organizationId,
-          projectId: scene.episode.season.project.id,
-          type: 'VIDEO_RENDER',
-          status: 'PENDING',
-          payload: { sceneId, assetsCount: assets.length }
-        }
-      })).id;
+      const taskId = (
+        await this.prisma.task.create({
+          data: {
+            organizationId: organizationId || scene.episode.season.project.organizationId,
+            projectId: scene.episode.season.project.id,
+            type: 'VIDEO_RENDER',
+            status: 'PENDING',
+            payload: { sceneId, assetsCount: assets.length },
+          },
+        })
+      ).id;
 
       const job = await this.prisma.shotJob.create({
         data: {
@@ -191,11 +192,11 @@ export class ShotDirectorService {
           payload: {
             sceneId,
             assets,
-            outputFormat: 'mp4'
+            outputFormat: 'mp4',
           },
           retryCount: 0,
-          priority: 10
-        }
+          priority: 10,
+        },
       });
 
       // Bind Engine? VIDEO_RENDER uses 'ffmpeg' engine.
@@ -220,8 +221,8 @@ export class ShotDirectorService {
             adapterName: 'default_shot_render', // Reuse existing adapter or mock
             adapterType: 'local',
             config: {},
-            isActive: true
-          }
+            isActive: true,
+          },
         });
       }
 
@@ -231,8 +232,8 @@ export class ShotDirectorService {
           engineId: engine.id,
           engineKey: engine.engineKey,
           status: 'BOUND',
-          metadata: { strategy: 'default' }
-        }
+          metadata: { strategy: 'default' },
+        },
       });
 
       this.auditLogService.record({
@@ -248,8 +249,8 @@ export class ShotDirectorService {
         data: {
           jobId: job.id,
           status: 'PENDING',
-          assetsCount: assets.length
-        }
+          assetsCount: assets.length,
+        },
       };
     } catch (e) {
       this.logger.error('Failed to compose video', e);

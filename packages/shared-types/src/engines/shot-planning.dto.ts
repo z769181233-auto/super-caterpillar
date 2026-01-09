@@ -21,4 +21,3 @@ export interface ShotPlanningEngineOutput {
     confidence?: number;
   };
 }
-

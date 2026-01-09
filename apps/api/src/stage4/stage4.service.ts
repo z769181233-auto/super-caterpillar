@@ -18,8 +18,8 @@ export class Stage4Service {
     private readonly prisma: PrismaService,
     private readonly engineInvoker: EngineInvokerHubService,
     private readonly projectService: ProjectService,
-    private readonly auditLogService: AuditLogService,
-  ) { }
+    private readonly auditLogService: AuditLogService
+  ) {}
 
   async ensureSceneInProject(projectId: string, sceneId: string) {
     const scene = await this.prisma.scene.findUnique({
@@ -160,15 +160,14 @@ export class Stage4Service {
   async runStructureQA(projectId: string, userId: string) {
     await this.projectService.checkOwnership(projectId, userId);
     const prisma = this.prisma as any;
-    const result = await this.engineInvoker.invoke<
-      StructureQAEngineInput,
-      StructureQAEngineOutput
-    >({
-      engineKey: 'structure_qa',
-      payload: {
-        projectId,
-      },
-    });
+    const result = await this.engineInvoker.invoke<StructureQAEngineInput, StructureQAEngineOutput>(
+      {
+        engineKey: 'structure_qa',
+        payload: {
+          projectId,
+        },
+      }
+    );
 
     if (!result.success || !result.output) {
       throw new Error(result.error?.message || 'Structure QA failed');
@@ -199,7 +198,13 @@ export class Stage4Service {
     });
   }
 
-  async recordAudit(action: string, resourceType: string, resourceId: string | null, userId: string, details?: any) {
+  async recordAudit(
+    action: string,
+    resourceType: string,
+    resourceId: string | null,
+    userId: string,
+    details?: any
+  ) {
     try {
       await this.auditLogService.record({
         userId,
@@ -213,4 +218,3 @@ export class Stage4Service {
     }
   }
 }
-

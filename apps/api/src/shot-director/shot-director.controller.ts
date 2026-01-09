@@ -10,7 +10,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 /**
  * Shot Director Controller
  * 提供 CE05 (Director Control) 标准 API
- * 
+ *
  * 功能：
  * - POST /shots/:shotId/inpaint: 图像修复
  * - POST /shots/:shotId/pose: 姿态控制
@@ -18,7 +18,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('shots')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class ShotDirectorController {
-  constructor(private readonly shotDirectorService: ShotDirectorService) { }
+  constructor(private readonly shotDirectorService: ShotDirectorService) {}
 
   /**
    * POST /shots/:shotId/inpaint
@@ -28,10 +28,7 @@ export class ShotDirectorController {
   @RequireSignature() // CE10: 高成本接口，强制签名验证
   @AuditAction(AuditActions.SHOT_INPAINT)
   @HttpCode(HttpStatus.ACCEPTED)
-  async inpaint(
-    @Param('shotId') shotId: string,
-    @CurrentUser() user: any,
-  ) {
+  async inpaint(@Param('shotId') shotId: string, @CurrentUser() user: any) {
     return this.shotDirectorService.inpaint(shotId, user?.id);
   }
 
@@ -43,10 +40,7 @@ export class ShotDirectorController {
   @RequireSignature() // CE10: 高成本接口，强制签名验证
   @AuditAction(AuditActions.SHOT_POSE)
   @HttpCode(HttpStatus.ACCEPTED)
-  async pose(
-    @Param('shotId') shotId: string,
-    @CurrentUser() user: any,
-  ) {
+  async pose(@Param('shotId') shotId: string, @CurrentUser() user: any) {
     return this.shotDirectorService.pose(shotId, user?.id);
   }
 
@@ -57,11 +51,7 @@ export class ShotDirectorController {
   @Post('scene/:sceneId/compose-video')
   @RequireSignature()
   @HttpCode(HttpStatus.OK)
-  async composeVideo(
-    @Param('sceneId') sceneId: string,
-    @CurrentUser() user: any,
-  ) {
+  async composeVideo(@Param('sceneId') sceneId: string, @CurrentUser() user: any) {
     return this.shotDirectorService.composeVideo(sceneId, user?.id);
   }
 }
-

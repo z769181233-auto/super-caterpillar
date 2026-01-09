@@ -1,6 +1,6 @@
 /**
  * Contract Gate - Job 状态机基线测试
- * 
+ *
  * 验证 Job 状态转换规则：
  * - PENDING → DISPATCHED → RUNNING → SUCCEEDED/FAILED
  * - 禁止非法状态转换
@@ -46,8 +46,8 @@ describe('Job State Machine Contract Tests', () => {
         email: `test-user-${Date.now()}@example.com`,
         passwordHash: 'hash',
         userType: 'admin',
-        role: 'admin'
-      }
+        role: 'admin',
+      },
     });
     userId = user.id;
 
@@ -55,8 +55,8 @@ describe('Job State Machine Contract Tests', () => {
     const org = await prisma.organization.create({
       data: {
         name: `Test Org ${Date.now()}`,
-        ownerId: userId
-      }
+        ownerId: userId,
+      },
     });
     orgId = org.id;
 
@@ -66,8 +66,8 @@ describe('Job State Machine Contract Tests', () => {
         name: `Test Project ${Date.now()}`,
         ownerId: userId,
         organizationId: orgId,
-        status: 'in_progress'
-      }
+        status: 'in_progress',
+      },
     });
     projectId = project.id;
 
@@ -76,8 +76,8 @@ describe('Job State Machine Contract Tests', () => {
       data: {
         projectId: projectId,
         index: 1,
-        title: 'Season 1'
-      }
+        title: 'Season 1',
+      },
     });
     seasonId = season.id;
 
@@ -87,8 +87,8 @@ describe('Job State Machine Contract Tests', () => {
         seasonId: seasonId,
         projectId: projectId,
         index: 1,
-        name: 'Episode 1'
-      }
+        name: 'Episode 1',
+      },
     });
     episodeId = episode.id;
 
@@ -98,8 +98,8 @@ describe('Job State Machine Contract Tests', () => {
         episodeId: episodeId,
         projectId: projectId,
         index: 1,
-        title: 'Scene 1'
-      }
+        title: 'Scene 1',
+      },
     });
     sceneId = scene.id;
 
@@ -110,8 +110,8 @@ describe('Job State Machine Contract Tests', () => {
         index: 1,
         type: 'shot',
         params: {},
-        organizationId: orgId
-      }
+        organizationId: orgId,
+      },
     });
     shotId = shot.id;
 
@@ -129,18 +129,18 @@ describe('Job State Machine Contract Tests', () => {
   afterAll(async () => {
     // Cleanup in reverse order
     if (testJobId) {
-      await prisma.shotJob.deleteMany({ where: { id: testJobId } }).catch(() => { });
+      await prisma.shotJob.deleteMany({ where: { id: testJobId } }).catch(() => {});
     }
-    if (shotId) await prisma.shot.deleteMany({ where: { id: shotId } }).catch(() => { });
-    if (sceneId) await prisma.scene.deleteMany({ where: { id: sceneId } }).catch(() => { });
-    if (episodeId) await prisma.episode.deleteMany({ where: { id: episodeId } }).catch(() => { });
-    if (seasonId) await prisma.season.deleteMany({ where: { id: seasonId } }).catch(() => { });
-    if (projectId) await prisma.project.deleteMany({ where: { id: projectId } }).catch(() => { });
-    if (orgId) await prisma.organization.deleteMany({ where: { id: orgId } }).catch(() => { });
-    if (userId) await prisma.user.deleteMany({ where: { id: userId } }).catch(() => { });
+    if (shotId) await prisma.shot.deleteMany({ where: { id: shotId } }).catch(() => {});
+    if (sceneId) await prisma.scene.deleteMany({ where: { id: sceneId } }).catch(() => {});
+    if (episodeId) await prisma.episode.deleteMany({ where: { id: episodeId } }).catch(() => {});
+    if (seasonId) await prisma.season.deleteMany({ where: { id: seasonId } }).catch(() => {});
+    if (projectId) await prisma.project.deleteMany({ where: { id: projectId } }).catch(() => {});
+    if (orgId) await prisma.organization.deleteMany({ where: { id: orgId } }).catch(() => {});
+    if (userId) await prisma.user.deleteMany({ where: { id: userId } }).catch(() => {});
 
     if (testWorkerId) {
-      await prisma.workerNode.deleteMany({ where: { workerId: testWorkerId } }).catch(() => { });
+      await prisma.workerNode.deleteMany({ where: { workerId: testWorkerId } }).catch(() => {});
     }
     await app.close();
   });
@@ -225,18 +225,16 @@ describe('Job State Machine Contract Tests', () => {
         },
       });
 
-      const response = await request(app.getHttpServer())
-        .post(`/api/jobs/${job.id}/report`)
-        .send({
-          status: 'FAILED',
-          reason: 'Test failure',
-        });
+      const response = await request(app.getHttpServer()).post(`/api/jobs/${job.id}/report`).send({
+        status: 'FAILED',
+        reason: 'Test failure',
+      });
 
       // Should succeed (might require auth)
       expect([200, 201, 401, 403]).toContain(response.status);
 
       // Cleanup
-      await prisma.shotJob.delete({ where: { id: job.id } }).catch(() => { });
+      await prisma.shotJob.delete({ where: { id: job.id } }).catch(() => {});
     });
   });
 
@@ -269,7 +267,7 @@ describe('Job State Machine Contract Tests', () => {
       expect([400, 403, 401]).toContain(response.status);
 
       // Cleanup
-      await prisma.shotJob.delete({ where: { id: job.id } }).catch(() => { });
+      await prisma.shotJob.delete({ where: { id: job.id } }).catch(() => {});
     });
 
     it('should reject SUCCEEDED → RUNNING (illegal transition)', async () => {
@@ -290,17 +288,15 @@ describe('Job State Machine Contract Tests', () => {
       });
 
       // Try to start a succeeded job (should fail)
-      const response = await request(app.getHttpServer())
-        .post(`/api/jobs/${job.id}/start`)
-        .send({
-          workerId: testWorkerId,
-        });
+      const response = await request(app.getHttpServer()).post(`/api/jobs/${job.id}/start`).send({
+        workerId: testWorkerId,
+      });
 
       // Should reject (400 or 403)
       expect([400, 403, 401]).toContain(response.status);
 
       // Cleanup
-      await prisma.shotJob.delete({ where: { id: job.id } }).catch(() => { });
+      await prisma.shotJob.delete({ where: { id: job.id } }).catch(() => {});
     });
   });
 
@@ -339,8 +335,7 @@ describe('Job State Machine Contract Tests', () => {
       }
 
       // Cleanup
-      await prisma.shotJob.delete({ where: { id: job.id } }).catch(() => { });
+      await prisma.shotJob.delete({ where: { id: job.id } }).catch(() => {});
     });
   });
 });
-

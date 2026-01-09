@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Preflight Gate - 本地起跑线一致检查
- * 
+ *
  * 检查项：
  * - Node/pnpm 版本
  * - 环境变量
@@ -68,18 +68,18 @@ check('Environment variables', () => {
   // DATABASE_URL is required for runtime, but optional for preflight (can be set later)
   const required = []; // No hard requirements for preflight
   const optional = ['DATABASE_URL', 'REDIS_URL', 'API_PORT', 'NODE_ENV'];
-  
-  const missing = required.filter(key => !process.env[key]);
+
+  const missing = required.filter((key) => !process.env[key]);
   if (missing.length > 0) {
     throw new Error(`Missing required env vars: ${missing.join(', ')}`);
   }
-  
-  const missingOptional = optional.filter(key => !process.env[key]);
+
+  const missingOptional = optional.filter((key) => !process.env[key]);
   if (missingOptional.length > 0) {
     warnings.push(`⚠️  Optional env vars not set: ${missingOptional.join(', ')}`);
     return 'warning';
   }
-  
+
   return true;
 });
 
@@ -87,20 +87,20 @@ check('Environment variables', () => {
 check('Storage path configuration', () => {
   const hasRepoRoot = !!process.env.REPO_ROOT;
   const hasStorageRoot = !!process.env.STORAGE_ROOT;
-  
+
   if (!hasRepoRoot && !hasStorageRoot) {
     throw new Error(
       'REPO_ROOT or STORAGE_ROOT must be set.\n' +
-      '  Recommended: export REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"\n' +
-      '  Or set: export STORAGE_ROOT="/path/to/storage"'
+        '  Recommended: export REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"\n' +
+        '  Or set: export STORAGE_ROOT="/path/to/storage"'
     );
   }
-  
+
   if (hasRepoRoot && hasStorageRoot) {
     warnings.push(`⚠️  Both REPO_ROOT and STORAGE_ROOT are set. REPO_ROOT takes precedence.`);
     return 'warning';
   }
-  
+
   return true;
 });
 
@@ -125,12 +125,12 @@ check('Prisma generated files', () => {
   if (!existsSync(prismaClientPath)) {
     throw new Error('Prisma client not generated. Run: pnpm -w --filter database prisma:generate');
   }
-  
+
   const indexFile = join(prismaClientPath, 'index.js');
   if (!existsSync(indexFile) && !existsSync(join(prismaClientPath, 'index.mjs'))) {
     throw new Error('Prisma client index file not found');
   }
-  
+
   return true;
 });
 
@@ -139,7 +139,7 @@ check('Database connectivity', () => {
   if (!process.env.DATABASE_URL) {
     return 'warning'; // Skip if no DB URL
   }
-  
+
   try {
     // Try to connect using psql or node script
     const testScript = `
@@ -156,7 +156,7 @@ check('Database connectivity', () => {
           process.exit(1);
         });
     `;
-    
+
     execSync(`node -e "${testScript.replace(/"/g, '\\"')}"`, {
       cwd: rootDir,
       stdio: 'ignore',
@@ -173,7 +173,7 @@ check('Redis connectivity', () => {
   if (!process.env.REDIS_URL) {
     return 'warning'; // Skip if no Redis URL
   }
-  
+
   try {
     // Simple Redis check (if redis-cli is available)
     execSync('redis-cli ping', { stdio: 'ignore', timeout: 2000 });
@@ -191,12 +191,12 @@ check('Key files existence', () => {
     'packages/database/prisma/schema.prisma',
     'apps/api/src/main.ts',
   ];
-  
-  const missing = keyFiles.filter(file => !existsSync(join(rootDir, file)));
+
+  const missing = keyFiles.filter((file) => !existsSync(join(rootDir, file)));
   if (missing.length > 0) {
     throw new Error(`Missing key files: ${missing.join(', ')}`);
   }
-  
+
   return true;
 });
 
@@ -205,17 +205,16 @@ console.log('\n=== Preflight Check Summary ===\n');
 
 if (warnings.length > 0) {
   console.log('Warnings:');
-  warnings.forEach(w => console.log(`  ${w}`));
+  warnings.forEach((w) => console.log(`  ${w}`));
   console.log('');
 }
 
 if (errors.length > 0) {
   console.log('Errors:');
-  errors.forEach(e => console.log(`  ${e}`));
+  errors.forEach((e) => console.log(`  ${e}`));
   console.log('\n❌ Preflight check FAILED. Please fix the errors above.\n');
   process.exit(1);
 } else {
   console.log('✅ All preflight checks passed!\n');
   process.exit(0);
 }
-

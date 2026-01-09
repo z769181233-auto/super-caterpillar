@@ -8,7 +8,7 @@ import { DirectorConstraintSolverService } from '../shot-director/director-solve
 /**
  * Job Report Facade
  * Worker 回报入口的 Facade 层
- * 
+ *
  * 规则：
  * - 封装 reportJobResult 调用
  * - CE03/CE04 完成后自动触发 QualityMetrics 写入
@@ -22,12 +22,12 @@ export class JobReportFacade {
     private readonly jobService: JobService,
     private readonly qualityMetricsWriter: QualityMetricsWriter,
     private readonly prisma: PrismaService,
-    private readonly directorSolver: DirectorConstraintSolverService,
-  ) { }
+    private readonly directorSolver: DirectorConstraintSolverService
+  ) {}
 
   /**
    * 处理 Job 回报（Facade 层）
-   * 
+   *
    * @param params 回报参数
    * @returns Job 更新结果
    */
@@ -54,7 +54,7 @@ export class JobReportFacade {
       params.ip,
       params.userAgent,
       params.hmacMeta,
-      params.attempts,
+      params.attempts
     );
 
     // 2. 如果是 CE03/CE04 且成功，触发质量闭环写入
@@ -87,11 +87,11 @@ export class JobReportFacade {
 
           if (success) {
             this.logger.log(
-              `QualityMetrics written for ${job.type} job ${job.id}, project ${job.projectId}`,
+              `QualityMetrics written for ${job.type} job ${job.id}, project ${job.projectId}`
             );
           } else {
             this.logger.warn(
-              `QualityMetrics write skipped for ${job.type} job ${job.id} (no metrics found)`,
+              `QualityMetrics write skipped for ${job.type} job ${job.id} (no metrics found)`
             );
           }
         }
@@ -99,7 +99,7 @@ export class JobReportFacade {
         // 质量指标写入失败不影响主流程
         this.logger.error(
           `Failed to write QualityMetrics for job ${params.jobId}: ${error.message}`,
-          error.stack,
+          error.stack
         );
       }
 
@@ -116,7 +116,7 @@ export class JobReportFacade {
             // 2) 调用约束验证器
             const shotInput = {
               id: shotId,
-              type: payload.type ?? 'DEFAULT',  // 添加required字段
+              type: payload.type ?? 'DEFAULT', // 添加required字段
               params: {
                 durationSec: payload.durationSec ?? 5,
                 prompt: payload.prompt ?? '',
@@ -133,28 +133,29 @@ export class JobReportFacade {
                 engineKey: 'CE05_DIRECTOR',
                 engineVersion: null,
                 confidence: validation.violations.length === 0 ? 1.0 : 0.5,
-                data: JSON.parse(JSON.stringify(validation)) as any,  // 序列化
+                data: JSON.parse(JSON.stringify(validation)) as any, // 序列化
               },
               update: {
                 engineKey: 'CE05_DIRECTOR',
                 confidence: validation.violations.length === 0 ? 1.0 : 0.5,
-                data: JSON.parse(JSON.stringify(validation)) as any,  // 序列化
+                data: JSON.parse(JSON.stringify(validation)) as any, // 序列化
               },
             });
 
-            this.logger.log(`[CE05] ShotPlanning upserted shotId=${shotId} isValid=${validation.isValid} violations=${validation.violations.length}`);
+            this.logger.log(
+              `[CE05] ShotPlanning upserted shotId=${shotId} isValid=${validation.isValid} violations=${validation.violations.length}`
+            );
           }
         } catch (e: any) {
-          this.logger.warn(`[CE05] failed (non-blocking) jobId=${updatedJob.id} err=${e?.message ?? e}`);
+          this.logger.warn(
+            `[CE05] failed (non-blocking) jobId=${updatedJob.id} err=${e?.message ?? e}`
+          );
         }
       }
     }
 
     // 3. Stage 8: Trigger Video Render & Create Asset (Structure -> Video Loop)
-    if (
-      updatedJob &&
-      updatedJob.status === JobStatusEnum.SUCCEEDED
-    ) {
+    if (updatedJob && updatedJob.status === JobStatusEnum.SUCCEEDED) {
       try {
         // Case A: SHOT_RENDER finished -> Trigger VIDEO_RENDER
         if (updatedJob.type === JobTypeEnum.SHOT_RENDER) {
@@ -167,7 +168,9 @@ export class JobReportFacade {
               params.userId || 'system',
               updatedJob.organizationId
             );
-            this.logger.log(`[JobReportFacade] Triggered VIDEO_RENDER for Shot ${updatedJob.shotId}`);
+            this.logger.log(
+              `[JobReportFacade] Triggered VIDEO_RENDER for Shot ${updatedJob.shotId}`
+            );
           }
         }
 
@@ -175,7 +178,8 @@ export class JobReportFacade {
         // This ensures the UI (ProjectStructureService) can see the video.
         if (updatedJob.type === JobTypeEnum.VIDEO_RENDER && updatedJob.shotId) {
           // P0-2: Accept outputKey (from Worker), storageKey or videoUrl
-          const videoUrl = params.result?.outputKey || params.result?.storageKey || params.result?.videoUrl;
+          const videoUrl =
+            params.result?.outputKey || params.result?.storageKey || params.result?.videoUrl;
           if (videoUrl) {
             // Stage 10 Refactor: Business Key Idempotency (One Asset per Type per Owner)
             // Stage 10 Refactor: Business Key Idempotency (One Asset per Type per Owner)
@@ -185,8 +189,8 @@ export class JobReportFacade {
                 ownerType_ownerId_type: {
                   ownerType: 'SHOT',
                   ownerId: updatedJob.shotId,
-                  type: 'VIDEO'
-                }
+                  type: 'VIDEO',
+                },
               },
               create: {
                 projectId: updatedJob.projectId,
@@ -200,17 +204,21 @@ export class JobReportFacade {
               update: {
                 storageKey: videoUrl, // Explicitly update storageKey
                 status: 'GENERATED',
-                createdByJobId: updatedJob.id // Update latest job ID
-              }
+                createdByJobId: updatedJob.id, // Update latest job ID
+              },
             });
             this.logger.log(`[JobReportFacade] Created Video Asset for Shot ${updatedJob.shotId}`);
           } else {
-            this.logger.warn(`[JobReportFacade] VIDEO_RENDER succeeded but no videoUrl/storageKey found in result.`);
+            this.logger.warn(
+              `[JobReportFacade] VIDEO_RENDER succeeded but no videoUrl/storageKey found in result.`
+            );
           }
         }
-
       } catch (e: any) {
-        this.logger.error(`[JobReportFacade] Failed to handle Job Success Side-effects: ${e.message}`, e.stack);
+        this.logger.error(
+          `[JobReportFacade] Failed to handle Job Success Side-effects: ${e.message}`,
+          e.stack
+        );
       }
     }
 

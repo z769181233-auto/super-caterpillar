@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsObject, IsNumber, Min, MaxLength, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsObject,
+  IsNumber,
+  Min,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateShotDto {
   @IsNumber()
@@ -24,4 +32,3 @@ export class CreateShotDto {
   @IsOptional()
   params?: Record<string, any>;
 }
-

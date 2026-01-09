@@ -5,6 +5,7 @@
 ### 【任务目标】
 
 修复文档一致性偏差报告中的 P0 偏离项：
+
 1. 将 Guard/Interceptor/NonceService 中的 `UnauthorizedException`/`ForbiddenException` 统一改为 API Spec 业务错误码 4003/4004
 2. Nonce 重放拒绝必须写入审计（`SECURITY_EVENT`）
 
@@ -41,8 +42,8 @@
 
 ### 【引用文档条目】
 
-1. 《10毛毛虫宇宙_API设计规范_APISpec_V1.1》- 错误码规范：4003（签名不合法）、4004（重放拒绝）
-2. 《14毛毛虫宇宙_内容安全与审核体系说明书_SafetySpec》- API 签名错误日志必须写入审计
+1. 《10毛毛虫宇宙\_API设计规范\_APISpec_V1.1》- 错误码规范：4003（签名不合法）、4004（重放拒绝）
+2. 《14毛毛虫宇宙\_内容安全与审核体系说明书\_SafetySpec》- API 签名错误日志必须写入审计
 3. 《AI开发文档规则》- 所有任务必须写入审计日志
 
 ### 【验证方式】
@@ -107,4 +108,3 @@ curl -i -X POST "http://localhost:3000/api/workers/test-worker-001/jobs/next"
 - ✅ 错误码统一为 4003/4004
 - ✅ Nonce 重放审计已实现
 - ⏳ 等待运行时验证确认
-

@@ -55,8 +55,6 @@ if (!process.env.DATABASE_URL_SET_BY_SYSTEM) {
   console.log(`[Config] DATABASE_URL resolved from environment variable (System Override)`);
 }
 
-
-
 /**
  * 环境变量配置模块
  * 提供类型安全的环境变量读取
@@ -86,7 +84,9 @@ function getEnvNumber(key: string, defaultValue?: number): number {
   return num;
 }
 
-console.log(`[CONFIG_DEBUG] JWT_SECRET read from env: ${process.env.JWT_SECRET?.substring(0, 4)}...`);
+console.log(
+  `[CONFIG_DEBUG] JWT_SECRET read from env: ${process.env.JWT_SECRET?.substring(0, 4)}...`
+);
 export const env = {
   // Node Environment
   nodeEnv: getEnv('NODE_ENV', 'development'),
@@ -110,8 +110,10 @@ export const env = {
   // API
   apiPort: getEnvNumber('API_PORT', 3000),
   apiHost: getEnv('API_HOST', 'localhost'),
-  apiUrl: process.env.API_BASE_URL || process.env.API_URL || `http://${getEnv('API_HOST', 'localhost')}:${getEnvNumber('API_PORT', 3000)}`,
-
+  apiUrl:
+    process.env.API_BASE_URL ||
+    process.env.API_URL ||
+    `http://${getEnv('API_HOST', 'localhost')}:${getEnvNumber('API_PORT', 3000)}`,
 
   // JWT
   jwtSecret: getEnv('JWT_SECRET'),
@@ -141,15 +143,18 @@ export const env = {
   workerId: (() => {
     const id = (process.env.WORKER_ID || process.env.WORKER_NAME || '').trim();
     const isGateRun =
-      Object.keys(process.env).some(k => k.endsWith('_GATE_FAIL_ONCE') && process.env[k] === '1') ||
-      process.env.HMAC_TRACE === '1';
+      Object.keys(process.env).some(
+        (k) => k.endsWith('_GATE_FAIL_ONCE') && process.env[k] === '1'
+      ) || process.env.HMAC_TRACE === '1';
 
     // 商业级鲁棒性：只有在 Gate/Trace 模式下且非 API 服务器进程（即 Worker 进程）时才进行硬断言
-    const isApiProcess = !!process.env.API_PORT || !!process.env.NEST_APP_NAME || process.env.SERVICE_TYPE === 'api';
+    const isApiProcess =
+      !!process.env.API_PORT || !!process.env.NEST_APP_NAME || process.env.SERVICE_TYPE === 'api';
 
     if (isGateRun && !isApiProcess) {
       if (!id) throw new Error('[Strict] WORKER_ID is required in gate/trace mode for Worker');
-      if (id === 'local-worker') throw new Error('[Strict] WORKER_ID must not be "local-worker" in gate/trace mode');
+      if (id === 'local-worker')
+        throw new Error('[Strict] WORKER_ID must not be "local-worker" in gate/trace mode');
     }
     return id || 'local-worker';
   })(),
@@ -184,7 +189,8 @@ export const env = {
   // JOB_BACKPRESSURE_THRESHOLD: 背压触发阈值（in-flight / max）
   jobBackpressureThreshold: (() => {
     const val = parseFloat(getEnv('JOB_BACKPRESSURE_THRESHOLD', '0.8'));
-    if (isNaN(val) || val <= 0 || val > 1) throw new Error('JOB_BACKPRESSURE_THRESHOLD must be between (0, 1]');
+    if (isNaN(val) || val <= 0 || val > 1)
+      throw new Error('JOB_BACKPRESSURE_THRESHOLD must be between (0, 1]');
     return val;
   })(),
   // JOB_LEASE_TTL_MS: 任务租约时长（毫秒），超时可被回收
@@ -192,14 +198,3 @@ export const env = {
   // WORKER_OFFLINE_GRACE_MS: Worker 判定离线的宽限期
   workerOfflineGraceMs: getEnvNumber('WORKER_OFFLINE_GRACE_MS', 180000), // 默认 3 分钟
 };
-
-
-
-
-
-
-
-
-
-
-

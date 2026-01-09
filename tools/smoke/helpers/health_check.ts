@@ -14,7 +14,7 @@ export interface HealthCheckResult {
 
 export async function checkHealth(
   apiBaseUrl: string,
-  endpoints: string[] = ['/health/ready', '/health/live', '/health/gpu', '/health'],
+  endpoints: string[] = ['/health/ready', '/health/live', '/health/gpu', '/health']
 ): Promise<HealthCheckResult[]> {
   const results: HealthCheckResult[] = [];
 

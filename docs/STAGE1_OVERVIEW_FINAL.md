@@ -15,6 +15,7 @@ Stage1 主要完成两件事：
 **目标**: 通过字段级审计识别与 DBSpec V1.1 规范的差异，修复 P1 级必要字段缺失问题。
 
 **执行内容**:
+
 - 对 23 个核心模型进行字段级审计（见 `docs/STAGE1_SCHEMA_FIELD_AUDIT.md`）
 - 修复 Task 模型缺失字段（`output`, `workerId`）
 - 修复 AuditLog 模型结构差异（新增 `payload` 字段）
@@ -26,6 +27,7 @@ Stage1 主要完成两件事：
 **目标**: 通过六大场景审计检查，补齐 P1 级缺失的审计日志。
 
 **执行内容**:
+
 - 检查六大审计场景的覆盖率（见 `docs/STAGE1_AUDIT_LOG_COVERAGE.md`）
 - 补充切换组织操作的审计日志
 - 为权限变更和 DELETE 操作预留审计动作枚举
@@ -39,11 +41,13 @@ Stage1 主要完成两件事：
 **文件**: `packages/database/prisma/schema.prisma`
 
 **修复内容**:
+
 - ✅ 新增 `output Json?` 字段：任务输出结果，Engine/Worker 执行完成后写入
 - ✅ 新增 `workerId String?` 字段：实际执行该 Task 的 Worker 节点 ID
 - ✅ 新增 `worker WorkerNode? @relation("TaskWorker", ...)` 关系
 
 **服务层实现**:
+
 - ✅ `apps/api/src/task/task.service.ts`: `updateStatus()` 方法新增 `output` 和 `workerId` 参数
 - ✅ `apps/api/src/job/job.service.ts`: 在 `updateTaskStatusIfAllJobsCompleted()` 中，当所有 Job 完成时收集结果写入 `task.output`，并记录 `workerId`
 
@@ -56,12 +60,15 @@ Stage1 主要完成两件事：
 **文件**: `packages/database/prisma/schema.prisma`
 
 **修复内容**:
+
 - ✅ 新增 `payload Json?` 字段：包含 action/resourceType/resourceId/ip/ua/nonce/signature/timestamp/details 等的完整快照
 
 **服务层实现**:
+
 - ✅ `apps/api/src/audit-log/audit-log.service.ts`: 在 `record()` 方法中组装 payload 对象，包含所有审计信息，写入 `payload` 字段
 
 **关键实现**:
+
 ```typescript
 // S1-FIX-A: 组装 payload，包含所有审计信息的完整快照
 const payload = {
@@ -86,6 +93,7 @@ const payload = {
 **文件**: `packages/database/prisma/schema.prisma`
 
 **修复内容**:
+
 - ✅ 新增 `summary String? @db.Text` 字段：引擎对章节的摘要，后续由小说分析引擎生成
 
 **说明**: 当前仅补上 Schema 字段，写入逻辑待后续实现。
@@ -99,14 +107,17 @@ const payload = {
 #### 2.4.1 切换组织操作审计 ✅
 
 **修改文件**:
+
 - `apps/api/src/organization/organization.controller.ts`
 - `apps/api/src/user/user.controller.ts`
 
 **修复内容**:
+
 - ✅ `OrganizationController.switchOrganization()` 已记录 `ORGANIZATION_SWITCH` 审计
 - ✅ `UserController.switchOrganization()` 已记录 `ORGANIZATION_SWITCH` 审计
 
 **审计字段**:
+
 - `action`: `ORGANIZATION_SWITCH`
 - `resourceType`: `organization`
 - `resourceId`: `organizationId`
@@ -123,6 +134,7 @@ const payload = {
 **当前状态**: 系统中不存在 Role/Permission/RolePermission 的写操作接口
 
 **已预留审计动作**（在 `apps/api/src/audit/audit.constants.ts` 中）:
+
 - `ROLE_CREATE`
 - `ROLE_UPDATE`
 - `ROLE_DELETE`
@@ -142,6 +154,7 @@ const payload = {
 **当前状态**: 系统中不存在 Episode/Scene/Shot 的 DELETE API
 
 **已预留审计动作**（在 `apps/api/src/audit/audit.constants.ts` 中，S1-FIX-A 阶段添加）:
+
 - `EPISODE_DELETE`
 - `SCENE_DELETE`
 - `SHOT_DELETE`
@@ -166,7 +179,7 @@ const payload = {
 
 ```typescript
 const scenesWithNullProjectId = await prisma.scene.count({
-  where: { projectId: null }
+  where: { projectId: null },
 });
 ```
 
@@ -179,7 +192,7 @@ const projectId = scene.episode?.projectId || scene.episode?.season?.projectId;
 if (projectId) {
   await prisma.scene.update({
     where: { id: scene.id },
-    data: { projectId }
+    data: { projectId },
   });
 }
 ```
@@ -214,6 +227,7 @@ pnpm --filter @scu/database prisma migrate dev --name make_scene_projectid_requi
 ### 5.1 S1-FIX-A 自检结果
 
 **Prisma Client 生成**: ✅ 通过
+
 ```
 ✔ Generated Prisma Client (v5.22.0) to ./../node_modules/.prisma/client in 209ms
 ```
@@ -221,6 +235,7 @@ pnpm --filter @scu/database prisma migrate dev --name make_scene_projectid_requi
 **TypeScript 编译**: ✅ 通过
 
 **API 构建**: ✅ 通过
+
 ```
 webpack 5.97.1 compiled successfully in 3439 ms
 ```
@@ -234,6 +249,7 @@ webpack 5.97.1 compiled successfully in 3439 ms
 ### 5.2 S1-FIX-B 自检结果
 
 **API 构建**: ✅ 通过
+
 ```
 webpack 5.97.1 compiled successfully in 3081 ms
 ```
@@ -248,12 +264,12 @@ webpack 5.97.1 compiled successfully in 3081 ms
 
 ### 5.3 总体自检结果
 
-| 检查项 | 结果 | 说明 |
-|--------|------|------|
-| Prisma Client 生成 | ✅ 通过 | 所有 Schema 修改已生效 |
-| TypeScript 编译 | ✅ 通过 | 无类型错误 |
-| API 构建 | ✅ 通过 | webpack 编译成功 |
-| Lint 检查 | ⚠️ 有警告 | 仅历史 any 类型警告，非本轮引入 |
+| 检查项             | 结果      | 说明                            |
+| ------------------ | --------- | ------------------------------- |
+| Prisma Client 生成 | ✅ 通过   | 所有 Schema 修改已生效          |
+| TypeScript 编译    | ✅ 通过   | 无类型错误                      |
+| API 构建           | ✅ 通过   | webpack 编译成功                |
+| Lint 检查          | ⚠️ 有警告 | 仅历史 any 类型警告，非本轮引入 |
 
 ---
 
@@ -298,4 +314,3 @@ webpack 5.97.1 compiled successfully in 3081 ms
 **文档状态**: ✅ Stage1 已在文档层面标记为"冻结"，后续如需变更需开启新的 Stage 或 FIX 批次
 
 **最后更新**: 2025-12-11
-

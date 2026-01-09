@@ -2,7 +2,7 @@ import { Request } from 'express';
 
 /**
  * API Security Types
- * 
+ *
  * 定义 API 安全相关的类型定义
  */
 

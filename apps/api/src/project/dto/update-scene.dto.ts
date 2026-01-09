@@ -9,4 +9,3 @@ export class UpdateSceneDto {
   @IsOptional()
   summary?: string;
 }
-

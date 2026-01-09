@@ -1,6 +1,6 @@
 /**
  * Stage2-B: 最小真实 Worker 执行闭环
- * 
+ *
  * 功能：
  * 1. 轮询调用 POST /api/workers/{workerId}/jobs/next
  * 2. 若无 job，sleep 3s
@@ -28,12 +28,7 @@ function generateNonce(): string {
 /**
  * 构建 HMAC 签名消息
  */
-function buildMessage(
-  apiKey: string,
-  nonce: string,
-  timestamp: string,
-  body: string,
-): string {
+function buildMessage(apiKey: string, nonce: string, timestamp: string, body: string): string {
   return `${apiKey}${nonce}${timestamp}${body || ''}`;
 }
 
@@ -68,11 +63,7 @@ function generateHmacHeaders(body: string = '') {
 /**
  * 发送 HTTP 请求
  */
-async function httpRequest(
-  method: string,
-  path: string,
-  body?: any,
-): Promise<any> {
+async function httpRequest(method: string, path: string, body?: any): Promise<any> {
   const url = `${API_BASE_URL}${path}`;
   const bodyStr = body ? JSON.stringify(body) : '';
   const headers = generateHmacHeaders(bodyStr);
@@ -112,11 +103,11 @@ async function sendHeartbeat(): Promise<void> {
 async function fetchNextJob(): Promise<any | null> {
   try {
     const result = await httpRequest('POST', `/api/workers/${WORKER_ID}/jobs/next`);
-    
+
     if (result.success && result.data) {
       return result.data;
     }
-    
+
     return null;
   } catch (error: any) {
     console.error(`[${new Date().toISOString()}] ❌ Fetch job failed:`, error.message);
@@ -161,7 +152,7 @@ async function reportJobSucceeded(jobId: string, output: any): Promise<void> {
 async function processJob(job: any): Promise<void> {
   const jobId = job.id;
   const jobType = job.type;
-  
+
   console.log(`[${new Date().toISOString()}] 📦 Processing job ${jobId} (${jobType})`);
 
   try {
@@ -170,8 +161,10 @@ async function processJob(job: any): Promise<void> {
 
     // 2. 模拟执行（sleep 2~5 秒）
     const durationMs = 2000 + Math.random() * 3000;
-    console.log(`[${new Date().toISOString()}] ⏳ Executing job ${jobId} (${Math.round(durationMs)}ms)...`);
-    await new Promise(resolve => setTimeout(resolve, durationMs));
+    console.log(
+      `[${new Date().toISOString()}] ⏳ Executing job ${jobId} (${Math.round(durationMs)}ms)...`
+    );
+    await new Promise((resolve) => setTimeout(resolve, durationMs));
 
     // 3. 上报 SUCCEEDED
     await reportJobSucceeded(jobId, {
@@ -182,7 +175,10 @@ async function processJob(job: any): Promise<void> {
 
     console.log(`[${new Date().toISOString()}] ✅ Job ${jobId} completed successfully`);
   } catch (error: any) {
-    console.error(`[${new Date().toISOString()}] ❌ Job ${jobId} processing failed:`, error.message);
+    console.error(
+      `[${new Date().toISOString()}] ❌ Job ${jobId} processing failed:`,
+      error.message
+    );
   }
 }
 
@@ -206,7 +202,7 @@ async function main() {
 
   // 主循环：轮询 Job
   let consecutiveEmptyPolls = 0;
-  
+
   while (true) {
     try {
       const job = await fetchNextJob();
@@ -217,13 +213,15 @@ async function main() {
       } else {
         consecutiveEmptyPolls++;
         if (consecutiveEmptyPolls % 10 === 0) {
-          console.log(`[${new Date().toISOString()}] 💤 No job available (poll ${consecutiveEmptyPolls})`);
+          console.log(
+            `[${new Date().toISOString()}] 💤 No job available (poll ${consecutiveEmptyPolls})`
+          );
         }
-        await new Promise(resolve => setTimeout(resolve, 3000)); // sleep 3s
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // sleep 3s
       }
     } catch (error: any) {
       console.error(`[${new Date().toISOString()}] ❌ Main loop error:`, error.message);
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     }
   }
 
@@ -232,8 +230,7 @@ async function main() {
 }
 
 // 启动 Worker
-main().catch(error => {
+main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
-

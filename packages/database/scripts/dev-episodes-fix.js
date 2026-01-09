@@ -37,7 +37,12 @@ async function main() {
       where: { projectId, seasonId: null },
       data: { seasonId: season.id },
     });
-    updates.push({ projectId, updated: updated.count, seasonId: season.id, createdSeason: !season ? true : false });
+    updates.push({
+      projectId,
+      updated: updated.count,
+      seasonId: season.id,
+      createdSeason: !season ? true : false,
+    });
   }
 
   console.log(
@@ -48,8 +53,8 @@ async function main() {
         updates,
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 
@@ -61,4 +66,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

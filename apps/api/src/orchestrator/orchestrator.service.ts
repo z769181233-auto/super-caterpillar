@@ -6,7 +6,13 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { TaskService } from '../task/task.service';
 import { JobService } from '../job/job.service';
 import { EngineRegistry } from '../engine/engine-registry.service';
-import { Prisma, JobStatus as JobStatusEnum, JobType as JobTypeEnum, TaskType as TaskTypeEnum, TaskStatus as TaskStatusEnum } from 'database';
+import {
+  Prisma,
+  JobStatus as JobStatusEnum,
+  JobType as JobTypeEnum,
+  TaskType as TaskTypeEnum,
+  TaskStatus as TaskStatusEnum,
+} from 'database';
 import { assertTransition, transitionJobStatusAdmin } from '../job/job.rules';
 
 /**
@@ -23,14 +29,14 @@ export class OrchestratorService {
     private readonly auditLogService: AuditLogService,
     private readonly taskService: TaskService,
     private readonly jobService: JobService,
-    private readonly engineRegistry: EngineRegistry,
-  ) { }
+    private readonly engineRegistry: EngineRegistry
+  ) {}
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
    * 注意：此方法已废弃，改为使用 Worker 主动拉取模式（dispatchNextJobForWorker）
    * 保留此方法仅用于兼容，实际调度由 Worker 主动调用 dispatchNextJobForWorker
-   * 
+   *
    * 参考《调度系统设计书_V1.0》第 3.1~3.5 章：统一使用安全的 Job 领取逻辑
    * 参考《调度系统设计书_V1.0》第 5 章：故障恢复机制
    */
@@ -84,7 +90,7 @@ export class OrchestratorService {
         retryReadyJobs: retryReadyCount,
         offlineWorkers: offlineCount,
         timestamp: new Date().toISOString(),
-      }),
+      })
     );
 
     // 注意：不再主动分配 Job，改为 Worker 主动拉取模式
@@ -98,14 +104,15 @@ export class OrchestratorService {
       errors: 0,
       recovered: recoveredCount,
       retryReady: retryReadyCount,
-      message: 'Job dispatch is now handled by worker pull model. Workers should call dispatchNextJobForWorker.',
+      message:
+        'Job dispatch is now handled by worker pull model. Workers should call dispatchNextJobForWorker.',
     };
   }
 
   /**
    * 故障恢复：处理 offline Worker 的 RUNNING Job
    * 参考《调度系统设计书_V1.0》§5.3：Worker 异常退出时的 Job 恢复
-   * 
+   *
    * 策略：
    * - 扫描所有 status=RUNNING && worker.status=offline 的 Job
    * - 将这些 Job 标记为可重试（调用 JobService.markJobFailedAndMaybeRetry）
@@ -173,7 +180,7 @@ export class OrchestratorService {
         offlineWorkerCount: offlineWorkers.length,
         stuckJobCount: stuckJobs.length,
         timestamp: new Date().toISOString(),
-      }),
+      })
     );
 
     let recoveredCount = 0;
@@ -202,7 +209,7 @@ export class OrchestratorService {
             // RUNNING -> PENDING（通过重试机制）
             await this.jobService.markJobFailedAndMaybeRetry(
               job.id,
-              `Worker ${job.worker?.workerId || job.workerId} went dead while processing this job`,
+              `Worker ${job.worker?.workerId || job.workerId} went dead while processing this job`
             );
           }
 
@@ -223,19 +230,18 @@ export class OrchestratorService {
             statusAfter: job.status === JobStatusEnum.DISPATCHED ? 'PENDING' : 'PENDING/FAILED',
             reason: 'worker_offline',
             timestamp: new Date().toISOString(),
-          }),
+          })
         );
       } catch (error: any) {
-        this.logger.error(
-          `[Orchestrator] Failed to recover job ${job.id}: ${error.message}`,
-        );
+        this.logger.error(`[Orchestrator] Failed to recover job ${job.id}: ${error.message}`);
       }
     }
 
     // Stage2-B: 写入 audit_logs（WORKER_DEAD_RECOVERY）
     if (recoveredCount > 0 && deadHeartbeats.length > 0) {
       const workerId = deadWorkerIds[0] || 'unknown';
-      const lastSeenAt = deadHeartbeats.find((h) => h.workerId === workerId)?.lastSeenAt || new Date();
+      const lastSeenAt =
+        deadHeartbeats.find((h) => h.workerId === workerId)?.lastSeenAt || new Date();
       const HEARTBEAT_TTL_SECONDS = parseInt(process.env.HEARTBEAT_TTL_SECONDS || '30', 10);
 
       await this.auditLogService.record({
@@ -257,7 +263,7 @@ export class OrchestratorService {
   /**
    * 处理到期的重试 Job（原子化释放）
    * 将 RETRYING 状态且 nextRetryAt 已到期的 Job 放回 PENDING 队列
-   * 
+   *
    * 规则：使用 updateMany 一次性原子释放，避免逐条查询再更新的竞态窗口
    */
   private async processRetryJobs(): Promise<number> {
@@ -332,7 +338,7 @@ export class OrchestratorService {
           maxRetry: job.maxRetry,
           nextRetryAt: payload.nextRetryAt || null,
           timestamp: new Date().toISOString(),
-        }),
+        })
       );
 
       // P2 修复：记录审计日志
@@ -356,7 +362,7 @@ export class OrchestratorService {
   /**
    * 获取调度器统计信息（可观测性增强）
    * 参考《平台日志监控与可观测性体系说明书_ObservabilityMonitoringSpec_V1.0》和《调度系统设计书_V1.0》中关于监控与指标的章节
-   * 
+   *
    * 提供只读的调度状态快照，不执行任何调度动作
    */
   async getStats() {
@@ -430,10 +436,13 @@ export class OrchestratorService {
     });
 
     const now = new Date();
-    const waitTimes = pendingJobsWithTime.map((job: any) => now.getTime() - job.createdAt.getTime());
-    const avgWaitTimeMs = waitTimes.length > 0
-      ? waitTimes.reduce((sum: number, time: number) => sum + time, 0) / waitTimes.length
-      : 0;
+    const waitTimes = pendingJobsWithTime.map(
+      (job: any) => now.getTime() - job.createdAt.getTime()
+    );
+    const avgWaitTimeMs =
+      waitTimes.length > 0
+        ? waitTimes.reduce((sum: number, time: number) => sum + time, 0) / waitTimes.length
+        : 0;
 
     // 5. 故障恢复统计（最近 1 小时内的恢复操作）
     // 使用聚合查询获取最近恢复的 Job 数量（通过 lastError 包含 "offline" 的 Job）
@@ -514,11 +523,10 @@ export class OrchestratorService {
     };
   }
 
-
   /**
    * Worker 拉取下一个待处理的 Job（安全版本）
    * 参考《调度系统设计书_V1.0》第 3.1~3.5 章：使用 JobService 的安全领取方法防止竞态
-   * 
+   *
    * @param workerId Worker ID
    * @returns 领取到的 Job，如果没有可用的 Job 则返回 null
    */
@@ -544,7 +552,7 @@ export class OrchestratorService {
         statusBefore: job.status,
         statusAfter: 'RUNNING',
         timestamp: new Date().toISOString(),
-      }),
+      })
     );
 
     // 记录审计日志
@@ -565,19 +573,21 @@ export class OrchestratorService {
   /**
    * 创建 CE Core Layer 的固定 DAG Job 链
    * Upload Novel → CE06 → CE03 → CE04
-   * 
+   *
    * Stage13: 固定执行顺序，禁止并行、禁止跳过
    * Stage13-Final: 生成 Pipeline 级 traceId
    */
   async createCECoreDAG(
     projectId: string,
     organizationId: string,
-    novelSourceId: string,
+    novelSourceId: string
   ): Promise<{
     taskId: string;
     jobIds: string[];
   }> {
-    this.logger.log(`Creating CE Core DAG for project ${projectId}, novelSourceId ${novelSourceId}`);
+    this.logger.log(
+      `Creating CE Core DAG for project ${projectId}, novelSourceId ${novelSourceId}`
+    );
 
     // Stage13-Final: 生成 Pipeline 级 traceId
     const { randomUUID } = await import('crypto');
@@ -612,9 +622,7 @@ export class OrchestratorService {
     // 3. CE03 和 CE04 Job 将在前一个 Job 完成时由 Worker 回调触发
     // 这里只创建 CE06，后续 Job 通过 JobService 的完成回调创建
 
-    this.logger.log(
-      `CE Core DAG created: taskId=${task.id}, ce06JobId=${ce06Job.id}`,
-    );
+    this.logger.log(`CE Core DAG created: taskId=${task.id}, ce06JobId=${ce06Job.id}`);
 
     return {
       taskId: task.id,
@@ -622,9 +630,3 @@ export class OrchestratorService {
     };
   }
 }
-
-
-
-
-
-

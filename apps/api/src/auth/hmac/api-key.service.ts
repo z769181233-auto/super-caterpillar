@@ -6,7 +6,7 @@ import { SecretEncryptionService } from '../../security/api-security/secret-encr
 /**
  * API Key 管理服务
  * 提供 API Key 的创建、查询、禁用等基础功能
- * 
+ *
  * 注意：这是最小可用版，生产环境需要：
  * 1. 使用加密存储 secret（而非明文）
  * 2. 提供完整的 API Key 管理界面
@@ -18,7 +18,7 @@ export class ApiKeyService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly secretEncryptionService: SecretEncryptionService,
+    private readonly secretEncryptionService: SecretEncryptionService
   ) {}
 
   /**
@@ -28,10 +28,10 @@ export class ApiKeyService {
   private generateApiKey(): { key: string; secret: string } {
     // 生成公钥 ID（格式：ak_xxx）
     const keyId = `ak_${randomBytes(16).toString('hex')}`;
-    
+
     // 生成密钥（32 字节，64 字符的十六进制字符串）
     const secret = randomBytes(32).toString('hex');
-    
+
     return { key: keyId, secret };
   }
 
@@ -67,12 +67,12 @@ export class ApiKeyService {
         if (isProduction) {
           throw new BadRequestException(
             'API_KEY_MASTER_KEY_B64 is required in production environment. ' +
-            'Please configure the master key before creating API keys.',
+              'Please configure the master key before creating API keys.'
           );
         }
         // dev/test: 使用旧字段（fallback）
         this.logger.warn(
-          'API_KEY_MASTER_KEY_B64 not configured. Using insecure secretHash storage (dev/test only).',
+          'API_KEY_MASTER_KEY_B64 not configured. Using insecure secretHash storage (dev/test only).'
         );
         secretHash = secret;
       }
@@ -83,7 +83,7 @@ export class ApiKeyService {
         // 脱敏错误消息，详细错误记录到日志
         this.logger.error(`Failed to encrypt secret: ${error.message}`, error.stack);
         throw new BadRequestException(
-          'Failed to encrypt secret. Production environment requires encrypted storage.',
+          'Failed to encrypt secret. Production environment requires encrypted storage.'
         );
       }
       // dev/test: fallback
@@ -112,13 +112,13 @@ export class ApiKeyService {
       ...apiKey,
       secret, // 只返回一次，客户端应保存
     };
-    
+
     // 从返回结果中删除敏感字段（避免意外泄露）
     delete (result as any).secretHash;
     delete (result as any).secretEnc;
     delete (result as any).secretEncIv;
     delete (result as any).secretEncTag;
-    
+
     return result;
   }
 
@@ -191,14 +191,3 @@ export class ApiKeyService {
     });
   }
 }
-
-
-
-
-
-
-
-
-
-
-

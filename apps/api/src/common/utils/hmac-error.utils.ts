@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 export function buildHmacError(
   code: '4003' | '4004',
   message: string,
-  debug?: { path?: string; method?: string },
+  debug?: { path?: string; method?: string }
 ): HttpException {
   const body = {
     success: false,
@@ -23,4 +23,3 @@ export function buildHmacError(
   const status = code === '4003' ? 401 : 403;
   return new HttpException(body, status);
 }
-

@@ -11,6 +11,7 @@
 本文档检查六大审计场景的覆盖率，逐 Controller 验证是否全部落库、是否包含 nonce/signature/timestamp、是否包含 resourceType/resourceId。
 
 **六大场景**:
+
 1. 登录 / 登出
 2. 用户资料操作
 3. 权限变更（RolePermission）
@@ -31,6 +32,7 @@
 **审计状态**: ✅ **已覆盖**
 
 **审计实现**:
+
 ```typescript
 @Post('login')
 @Public()
@@ -42,6 +44,7 @@ async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Respons
 ```
 
 **审计字段检查**:
+
 - ✅ `action`: `AuditActions.LOGIN`
 - ✅ `resourceType`: 通过 AuditInterceptor 自动设置（应为 `auth`）
 - ✅ `resourceId`: 通过 AuditInterceptor 自动设置（应为 `userId`）
@@ -64,6 +67,7 @@ async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Respons
 **审计状态**: ✅ **已覆盖**
 
 **审计实现**:
+
 ```typescript
 @Post('logout')
 @UseInterceptors(AuditInterceptor)
@@ -74,6 +78,7 @@ async logout(@Res({ passthrough: true }) res: Response) {
 ```
 
 **审计字段检查**:
+
 - ✅ `action`: `AuditActions.LOGOUT`
 - ✅ `resourceType`: 通过 AuditInterceptor 自动设置（应为 `auth`）
 - ✅ `resourceId`: 通过 AuditInterceptor 自动设置（应为 `userId`）
@@ -96,6 +101,7 @@ async logout(@Res({ passthrough: true }) res: Response) {
 **审计状态**: ✅ **已覆盖**
 
 **审计实现**:
+
 ```typescript
 @Post('register')
 @Public()
@@ -169,6 +175,7 @@ async register(@Body() registerDto: RegisterDto, @Res({ passthrough: true }) res
 **建议**: **P1（重要操作，应审计）**
 
 **需要检查**:
+
 - Role 创建/更新/删除
 - Permission 创建/更新/删除
 - RolePermission 关联/解除关联
@@ -181,7 +188,8 @@ async register(@Body() registerDto: RegisterDto, @Res({ passthrough: true }) res
 
 **Controller**: `apps/api/src/project/project.controller.ts`
 
-**方法**: 
+**方法**:
+
 - `createProject()` ✅
 - `updateProject()` ✅
 - `deleteProject()` ✅
@@ -189,6 +197,7 @@ async register(@Body() registerDto: RegisterDto, @Res({ passthrough: true }) res
 **审计状态**: ✅ **已覆盖**
 
 **审计实现**:
+
 ```typescript
 @Post()
 @UseInterceptors(AuditInterceptor)
@@ -207,6 +216,7 @@ async deleteProject(...) { ... }
 ```
 
 **审计字段检查**:
+
 - ✅ `action`: `PROJECT_CREATE` / `PROJECT_UPDATE` / `PROJECT_DELETE`
 - ✅ `resourceType`: 通过 AuditInterceptor 自动设置（应为 `project`）
 - ✅ `resourceId`: 通过 AuditInterceptor 自动设置（应为 `projectId`）
@@ -224,7 +234,8 @@ async deleteProject(...) { ... }
 
 **Controller**: `apps/api/src/project/project.controller.ts`
 
-**方法**: 
+**方法**:
+
 - `createEpisode()` ✅
 - `updateEpisode()` ⚠️ 未找到
 - `deleteEpisode()` ⚠️ 未找到
@@ -232,6 +243,7 @@ async deleteProject(...) { ... }
 **审计状态**: ⚠️ **部分覆盖**
 
 **审计实现**:
+
 ```typescript
 @Post(':projectId/episodes')
 @UseInterceptors(AuditInterceptor)
@@ -251,6 +263,7 @@ async createEpisode(...) {
 ```
 
 **审计字段检查**:
+
 - ✅ `action`: `EPISODE_CREATE`
 - ✅ `resourceType`: `episode`
 - ✅ `resourceId`: `episode.id`
@@ -261,6 +274,7 @@ async createEpisode(...) {
 - ✅ `userAgent`: 已提取
 
 **缺失操作**:
+
 - ⚠️ `updateEpisode()`: 未找到方法
 - ⚠️ `deleteEpisode()`: 未找到方法
 
@@ -272,7 +286,8 @@ async createEpisode(...) {
 
 **Controller**: `apps/api/src/project/project.controller.ts`
 
-**方法**: 
+**方法**:
+
 - `createScene()` ✅
 - `updateScene()` ✅
 - `deleteScene()` ⚠️ 未找到
@@ -280,6 +295,7 @@ async createEpisode(...) {
 **审计状态**: ⚠️ **部分覆盖**
 
 **审计实现**:
+
 ```typescript
 @Post('episodes/:episodeId/scenes')
 @UseInterceptors(AuditInterceptor)
@@ -317,6 +333,7 @@ async updateScene(...) {
 **审计字段检查**: 同 Episode CRUD
 
 **缺失操作**:
+
 - ⚠️ `deleteScene()`: 未找到方法
 
 **结论**: ⚠️ **部分覆盖**（CREATE 和 UPDATE 已覆盖）
@@ -327,7 +344,8 @@ async updateScene(...) {
 
 **Controller**: `apps/api/src/project/project.controller.ts`
 
-**方法**: 
+**方法**:
+
 - `createShot()` ✅
 - `updateShot()` ✅
 - `deleteShot()` ⚠️ 未找到
@@ -335,6 +353,7 @@ async updateScene(...) {
 **审计状态**: ⚠️ **部分覆盖**
 
 **审计实现**:
+
 ```typescript
 @Post('scenes/:sceneId/shots')
 @UseInterceptors(AuditInterceptor)
@@ -372,6 +391,7 @@ async updateShot(...) {
 **审计字段检查**: 同 Episode CRUD
 
 **缺失操作**:
+
 - ⚠️ `deleteShot()`: 未找到方法
 
 **结论**: ⚠️ **部分覆盖**（CREATE 和 UPDATE 已覆盖）
@@ -389,6 +409,7 @@ async updateShot(...) {
 **审计状态**: ✅ **已覆盖**
 
 **审计实现**:
+
 ```typescript
 @Post(':workerId/jobs/next')
 async getNextJob(...) {
@@ -414,6 +435,7 @@ async getNextJob(...) {
 ```
 
 **审计字段检查**:
+
 - ✅ `action`: `JOB_STARTED`
 - ✅ `resourceType`: `job`
 - ✅ `resourceId`: `job.id`
@@ -437,6 +459,7 @@ async getNextJob(...) {
 **审计状态**: ✅ **已覆盖**
 
 **审计实现**:
+
 ```typescript
 @Post('jobs/:id/report')
 @UseGuards(JwtOrHmacGuard)
@@ -461,6 +484,7 @@ async reportJob(...) {
 ```
 
 **审计字段检查**:
+
 - ✅ `action`: `JOB_SUCCEEDED` / `JOB_FAILED` / `JOB_RETRYING`
 - ✅ `resourceType`: `job`
 - ✅ `resourceId`: `jobId`
@@ -486,6 +510,7 @@ async reportJob(...) {
 **审计状态**: ✅ **已覆盖**
 
 **审计实现**:
+
 ```typescript
 async canActivate(context: ExecutionContext): Promise<boolean> {
   try {
@@ -517,6 +542,7 @@ async canActivate(context: ExecutionContext): Promise<boolean> {
 ```
 
 **审计字段检查**:
+
 - ✅ `action`: `SECURITY_EVENT`
 - ✅ `resourceType`: `api_security`
 - ✅ `resourceId`: `apiKey`
@@ -540,20 +566,28 @@ async canActivate(context: ExecutionContext): Promise<boolean> {
 **审计状态**: ✅ **已覆盖**
 
 **审计实现**:
+
 ```typescript
 const nonceSaved = await this.saveNonce(nonceKey, timestampNum);
 if (!nonceSaved) {
-  await this.writeAudit(apiKey, AuditActions.SECURITY_EVENT, 'api_security', {
-    reason: 'HMAC_NONCE_REPLAY',
-    path: debug?.path,
-    method: debug?.method,
-    nonce,
-  }, debug);
+  await this.writeAudit(
+    apiKey,
+    AuditActions.SECURITY_EVENT,
+    'api_security',
+    {
+      reason: 'HMAC_NONCE_REPLAY',
+      path: debug?.path,
+      method: debug?.method,
+      nonce,
+    },
+    debug
+  );
   throw this.buildHmacError('4004', 'Nonce 已被使用，请重新生成请求', debug);
 }
 ```
 
 **审计字段检查**:
+
 - ✅ `action`: `SECURITY_EVENT`
 - ✅ `resourceType`: `api_security`
 - ✅ `resourceId`: `apiKey`
@@ -577,15 +611,22 @@ if (!nonceSaved) {
 **审计状态**: ✅ **已覆盖**
 
 **审计实现**:
+
 ```typescript
 if (signature !== expectedSignature) {
-  await this.writeAudit(apiKey, AuditActions.SECURITY_EVENT, 'api_security', {
-    reason: 'HMAC_SIGNATURE_MISMATCH',
-    path: debug?.path,
-    method: debug?.method,
-    nonce,
-    timestamp,
-  }, debug);
+  await this.writeAudit(
+    apiKey,
+    AuditActions.SECURITY_EVENT,
+    'api_security',
+    {
+      reason: 'HMAC_SIGNATURE_MISMATCH',
+      path: debug?.path,
+      method: debug?.method,
+      nonce,
+      timestamp,
+    },
+    debug
+  );
   throw this.buildHmacError('4003', '签名验证失败', debug);
 }
 ```
@@ -600,24 +641,24 @@ if (signature !== expectedSignature) {
 
 ### 覆盖率统计
 
-| 场景 | 子场景 | 状态 | 覆盖率 |
-|------|--------|------|--------|
-| 1. 登录/登出 | 登录 | ✅ 已覆盖 | 100% |
-| | 登出 | ✅ 已覆盖 | 100% |
-| | 注册 | ✅ 已覆盖 | 100% |
-| 2. 用户资料操作 | 获取当前用户 | ⚠️ 未覆盖 | 0% |
-| | 切换组织 | ⚠️ 未覆盖 | 0% |
-| | 获取配额 | ⚠️ 未覆盖 | 0% |
-| 3. 权限变更 | 所有权限操作 | ⚠️ 未覆盖 | 0% |
-| 4. Project/Episode/Scene/Shot CRUD | Project CRUD | ✅ 已覆盖 | 100% |
-| | Episode CRUD | ⚠️ 部分覆盖 | 33% (仅 CREATE) |
-| | Scene CRUD | ⚠️ 部分覆盖 | 67% (CREATE + UPDATE) |
-| | Shot CRUD | ⚠️ 部分覆盖 | 67% (CREATE + UPDATE) |
-| 5. Worker/Job 报告链路 | Worker 获取 Job | ✅ 已覆盖 | 100% |
-| | Job 回报告 | ✅ 已覆盖 | 100% |
-| 6. HMAC 错误/签名失败/重放攻击 | 签名失败 | ✅ 已覆盖 | 100% |
-| | Nonce 重放 | ✅ 已覆盖 | 100% |
-| | 签名验证失败 | ✅ 已覆盖 | 100% |
+| 场景                               | 子场景          | 状态        | 覆盖率                |
+| ---------------------------------- | --------------- | ----------- | --------------------- |
+| 1. 登录/登出                       | 登录            | ✅ 已覆盖   | 100%                  |
+|                                    | 登出            | ✅ 已覆盖   | 100%                  |
+|                                    | 注册            | ✅ 已覆盖   | 100%                  |
+| 2. 用户资料操作                    | 获取当前用户    | ⚠️ 未覆盖   | 0%                    |
+|                                    | 切换组织        | ⚠️ 未覆盖   | 0%                    |
+|                                    | 获取配额        | ⚠️ 未覆盖   | 0%                    |
+| 3. 权限变更                        | 所有权限操作    | ⚠️ 未覆盖   | 0%                    |
+| 4. Project/Episode/Scene/Shot CRUD | Project CRUD    | ✅ 已覆盖   | 100%                  |
+|                                    | Episode CRUD    | ⚠️ 部分覆盖 | 33% (仅 CREATE)       |
+|                                    | Scene CRUD      | ⚠️ 部分覆盖 | 67% (CREATE + UPDATE) |
+|                                    | Shot CRUD       | ⚠️ 部分覆盖 | 67% (CREATE + UPDATE) |
+| 5. Worker/Job 报告链路             | Worker 获取 Job | ✅ 已覆盖   | 100%                  |
+|                                    | Job 回报告      | ✅ 已覆盖   | 100%                  |
+| 6. HMAC 错误/签名失败/重放攻击     | 签名失败        | ✅ 已覆盖   | 100%                  |
+|                                    | Nonce 重放      | ✅ 已覆盖   | 100%                  |
+|                                    | 签名验证失败    | ✅ 已覆盖   | 100%                  |
 
 ### 总体覆盖率
 
@@ -651,19 +692,19 @@ if (signature !== expectedSignature) {
 
 ### 已覆盖场景的字段完整性
 
-| 场景 | action | resourceType | resourceId | nonce | signature | timestamp | ip | userAgent |
-|------|--------|--------------|------------|-------|-----------|-----------|----|-----------| 
-| 登录/登出 | ✅ | ✅ | ✅ | ⚠️ (JWT) | ⚠️ (JWT) | ⚠️ (JWT) | ✅ | ✅ |
-| Project CRUD | ✅ | ✅ | ✅ | ⚠️ (JWT) | ⚠️ (JWT) | ⚠️ (JWT) | ✅ | ✅ |
-| Episode/Scene/Shot CRUD | ✅ | ✅ | ✅ | ⚠️ (JWT) | ⚠️ (JWT) | ⚠️ (JWT) | ✅ | ✅ |
-| Worker/Job 报告 | ✅ | ✅ | ✅ | ✅ (HMAC) | ✅ (HMAC) | ✅ (HMAC) | ✅ | ✅ |
-| HMAC 错误 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 场景                    | action | resourceType | resourceId | nonce     | signature | timestamp | ip  | userAgent |
+| ----------------------- | ------ | ------------ | ---------- | --------- | --------- | --------- | --- | --------- |
+| 登录/登出               | ✅     | ✅           | ✅         | ⚠️ (JWT)  | ⚠️ (JWT)  | ⚠️ (JWT)  | ✅  | ✅        |
+| Project CRUD            | ✅     | ✅           | ✅         | ⚠️ (JWT)  | ⚠️ (JWT)  | ⚠️ (JWT)  | ✅  | ✅        |
+| Episode/Scene/Shot CRUD | ✅     | ✅           | ✅         | ⚠️ (JWT)  | ⚠️ (JWT)  | ⚠️ (JWT)  | ✅  | ✅        |
+| Worker/Job 报告         | ✅     | ✅           | ✅         | ✅ (HMAC) | ✅ (HMAC) | ✅ (HMAC) | ✅  | ✅        |
+| HMAC 错误               | ✅     | ✅           | ✅         | ✅        | ✅        | ✅        | ✅  | ✅        |
 
-**说明**: 
+**说明**:
+
 - JWT 认证的接口不使用 HMAC，因此无 nonce/signature/timestamp（符合规范）
 - HMAC 认证的接口必须包含 nonce/signature/timestamp（已完整实现）
 
 ---
 
 **文档状态**: ✅ 审计完成，待下一批次修复
-

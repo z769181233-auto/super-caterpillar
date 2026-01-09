@@ -16,7 +16,8 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 const { Client } = require('pg');
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/scu?schema=public';
+const DATABASE_URL =
+  process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/scu?schema=public';
 
 function parseDatabaseUrl(url) {
   try {
@@ -51,12 +52,11 @@ async function ensureDatabaseExists() {
 
   try {
     await adminClient.connect();
-    
+
     // 检查数据库是否存在
-    const result = await adminClient.query(
-      'SELECT 1 FROM pg_database WHERE datname = $1',
-      [config.database]
-    );
+    const result = await adminClient.query('SELECT 1 FROM pg_database WHERE datname = $1', [
+      config.database,
+    ]);
 
     if (result.rows.length === 0) {
       console.log(`📦 创建数据库: ${config.database}`);
@@ -79,9 +79,10 @@ function hasMigrations() {
   if (!fs.existsSync(migrationsDir)) {
     return false;
   }
-  const migrations = fs.readdirSync(migrationsDir, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .filter(dirent => dirent.name.match(/^\d{14}_/)); // Prisma migration 命名格式
+  const migrations = fs
+    .readdirSync(migrationsDir, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .filter((dirent) => dirent.name.match(/^\d{14}_/)); // Prisma migration 命名格式
   return migrations.length > 0;
 }
 
@@ -146,7 +147,7 @@ async function main() {
   console.log('步骤 3/3: 运行 Prisma 迁移...');
   const hasMigrationsDir = hasMigrations();
   const dbEmpty = await isDatabaseEmpty();
-  
+
   try {
     // 如果数据库为空，优先使用 db push（更安全，不需要 shadow database）
     if (dbEmpty) {
@@ -201,4 +202,3 @@ async function main() {
 }
 
 main();
-

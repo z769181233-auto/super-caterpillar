@@ -95,10 +95,13 @@ async function runLoadTest(config: LoadTestConfig): Promise<any> {
     avgResponseTime: Math.round(avgResponseTime),
     maxResponseTime,
     minResponseTime,
-    statusCodeDistribution: results.reduce((acc, r) => {
-      acc[r.statusCode] = (acc[r.statusCode] || 0) + 1;
-      return acc;
-    }, {} as Record<number, number>),
+    statusCodeDistribution: results.reduce(
+      (acc, r) => {
+        acc[r.statusCode] = (acc[r.statusCode] || 0) + 1;
+        return acc;
+      },
+      {} as Record<number, number>
+    ),
   };
 }
 
@@ -222,14 +225,3 @@ ${report.tests
 }
 
 main().catch(console.error);
-
-
-
-
-
-
-
-
-
-
-

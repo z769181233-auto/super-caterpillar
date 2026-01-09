@@ -67,12 +67,13 @@
 
 **当前状态**（Stage2 已实现）：
 
-| JobType | 默认 engineKey | 适配器类型 | 是否允许 HTTP | 备注 |
-|---------|---------------|-----------|-------------|------|
-| `NOVEL_ANALYSIS` | `default_novel_analysis` | `local` | ❌ **禁止** | 使用本地适配器，禁止切换到 HTTP |
-| `SHOT_RENDER` | `default_shot_render` | `local` 或 `http` | ✅ 允许 | 可通过 feature flag 使用 HTTP 引擎 |
+| JobType          | 默认 engineKey           | 适配器类型        | 是否允许 HTTP | 备注                               |
+| ---------------- | ------------------------ | ----------------- | ------------- | ---------------------------------- |
+| `NOVEL_ANALYSIS` | `default_novel_analysis` | `local`           | ❌ **禁止**   | 使用本地适配器，禁止切换到 HTTP    |
+| `SHOT_RENDER`    | `default_shot_render`    | `local` 或 `http` | ✅ 允许       | 可通过 feature flag 使用 HTTP 引擎 |
 
 **映射逻辑**（`EngineRegistry.getDefaultEngineKeyForJobType()`）：
+
 ```typescript
 const jobTypeToEngineKey: Record<string, string> = {
   NOVEL_ANALYSIS: 'default_novel_analysis', // 本地 Adapter
@@ -86,12 +87,13 @@ const jobTypeToEngineKey: Record<string, string> = {
 
 #### 2.2.1 新增 JobType 列表
 
-| 新 JobType | 对应原始 JobType | 默认 engineKey | 适配器类型 | 用途 |
-|-----------|----------------|---------------|-----------|------|
-| `NOVEL_ANALYSIS_HTTP` | `NOVEL_ANALYSIS` | `http_gemini_v1` | `http` | 实验性：使用 HTTP 引擎进行小说分析 |
-| `SHOT_RENDER_HTTP` | `SHOT_RENDER` | `http_gemini_v1` | `http` | 实验性：使用 HTTP 引擎进行镜头渲染 |
+| 新 JobType            | 对应原始 JobType | 默认 engineKey   | 适配器类型 | 用途                               |
+| --------------------- | ---------------- | ---------------- | ---------- | ---------------------------------- |
+| `NOVEL_ANALYSIS_HTTP` | `NOVEL_ANALYSIS` | `http_gemini_v1` | `http`     | 实验性：使用 HTTP 引擎进行小说分析 |
+| `SHOT_RENDER_HTTP`    | `SHOT_RENDER`    | `http_gemini_v1` | `http`     | 实验性：使用 HTTP 引擎进行镜头渲染 |
 
 **注意**：
+
 - `NOVEL_ANALYSIS_HTTP` 与 `NOVEL_ANALYSIS` **完全隔离**，不会影响现有 NOVEL_ANALYSIS 链路
 - 这些 JobType 仅用于**实验性测试**，不接入现有业务流程
 
@@ -100,13 +102,14 @@ const jobTypeToEngineKey: Record<string, string> = {
 **修改位置**：`apps/api/src/engine/engine-registry.service.ts`
 
 **修改内容**：
+
 ```typescript
 private getDefaultEngineKeyForJobType(jobType: string): string | null {
   const jobTypeToEngineKey: Record<string, string> = {
     // 现有 JobType（保持不变）
     NOVEL_ANALYSIS: 'default_novel_analysis', // 本地 Adapter
     SHOT_RENDER: 'default_shot_render',
-    
+
     // 新增实验性 HTTP JobType
     NOVEL_ANALYSIS_HTTP: 'http_gemini_v1', // HTTP 引擎
     SHOT_RENDER_HTTP: 'http_gemini_v1',    // HTTP 引擎
@@ -117,6 +120,7 @@ private getDefaultEngineKeyForJobType(jobType: string): string | null {
 ```
 
 **约束**：
+
 - ✅ 允许新增 `*_HTTP` JobType
 - ❌ 禁止修改 `NOVEL_ANALYSIS` 的映射（仍指向 `default_novel_analysis`）
 
@@ -127,16 +131,17 @@ private getDefaultEngineKeyForJobType(jobType: string): string | null {
 #### 2.3.1 Feature Flag 结构
 
 **Task/Job payload 扩展**：
+
 ```typescript
 interface TaskPayload {
   // 现有字段...
   projectId: string;
   novelSourceId?: string;
   // ...
-  
+
   // 新增字段（可选）
-  useHttpEngine?: boolean;        // 是否使用 HTTP 引擎（默认 false）
-  engineKey?: string;              // 显式指定 engineKey（可选）
+  useHttpEngine?: boolean; // 是否使用 HTTP 引擎（默认 false）
+  engineKey?: string; // 显式指定 engineKey（可选）
 }
 ```
 
@@ -145,6 +150,7 @@ interface TaskPayload {
 **修改位置**：`apps/api/src/engine/engine-registry.service.ts`
 
 **修改内容**：
+
 ```typescript
 findAdapter(engineKey?: string, jobType?: string, payload?: any): EngineAdapter {
   // 1. 如果 payload 中有 useHttpEngine=true，强制使用 HTTP 引擎
@@ -155,17 +161,18 @@ findAdapter(engineKey?: string, jobType?: string, payload?: any): EngineAdapter 
       return adapter;
     }
   }
-  
+
   // 2. 原有逻辑（保持不变）
   if (engineKey) {
     // ...
   }
-  
+
   // ...
 }
 ```
 
 **约束**：
+
 - ✅ 允许在 payload 中添加 `useHttpEngine` flag
 - ❌ 禁止修改 `NOVEL_ANALYSIS` 的默认行为（除非显式设置 flag）
 - ⚠️ 需要确保 flag 在创建 Job 时设置，执行过程中不自动切换
@@ -180,6 +187,7 @@ findAdapter(engineKey?: string, jobType?: string, payload?: any): EngineAdapter 
 4. **符合约束**：不修改 NOVEL_ANALYSIS 现有链路
 
 **方案 B（Feature Flag）可作为补充**，用于：
+
 - 在现有 JobType 中临时启用 HTTP 引擎（需谨慎）
 - 支持按项目/租户配置不同的引擎（后续扩展）
 
@@ -190,10 +198,11 @@ findAdapter(engineKey?: string, jobType?: string, payload?: any): EngineAdapter 
 ### 3.1 HttpEngineAdapter.invoke() 输入
 
 **输入结构**（`EngineInvokeInput`）：
+
 ```typescript
 interface EngineInvokeInput {
-  jobType: string;              // 如 'NOVEL_ANALYSIS_HTTP'
-  engineKey: string;            // 如 'http_gemini_v1'
+  jobType: string; // 如 'NOVEL_ANALYSIS_HTTP'
+  engineKey: string; // 如 'http_gemini_v1'
   payload: Record<string, any>; // Job 负载数据
   context: {
     projectId?: string;
@@ -216,10 +225,10 @@ const config = this.engineConfigService.getHttpEngineConfig(engineKey);
 const url = `${config.baseUrl}${config.path || '/invoke'}`;
 
 const requestBody = {
-  jobType,        // 从 EngineInvokeInput 传入
-  engineKey,      // 从 EngineInvokeInput 传入
-  payload,        // 从 EngineInvokeInput 传入（Job 负载数据）
-  context,        // 从 EngineInvokeInput 传入（上下文信息）
+  jobType, // 从 EngineInvokeInput 传入
+  engineKey, // 从 EngineInvokeInput 传入
+  payload, // 从 EngineInvokeInput 传入（Job 负载数据）
+  context, // 从 EngineInvokeInput 传入（上下文信息）
 };
 
 // 构造认证 Header（由 S3-A.1 实现）
@@ -236,12 +245,14 @@ const response = await httpClient.post(url, requestBody, { headers });
 **请求 URL**：`POST https://api.gemini.com/v1/invoke`
 
 **请求 Headers**：
+
 ```
 Authorization: Bearer sk-xxx...
 Content-Type: application/json
 ```
 
 **请求 Body**：
+
 ```json
 {
   "jobType": "NOVEL_ANALYSIS_HTTP",
@@ -263,12 +274,14 @@ Content-Type: application/json
 **请求 URL**：`POST https://api.gemini.com/v1/invoke`
 
 **请求 Headers**：
+
 ```
 Authorization: Bearer sk-xxx...
 Content-Type: application/json
 ```
 
 **请求 Body**：
+
 ```json
 {
   "jobType": "SHOT_RENDER_HTTP",
@@ -290,11 +303,13 @@ Content-Type: application/json
 ### 3.4 与 S3-A.1 的边界
 
 **S3-A.1 已实现**（禁止修改）：
+
 - ✅ `buildAuthHeaders()` - 认证 Header 拼装
 - ✅ `getHttpEngineConfig()` - 配置读取
 - ✅ URL 构造逻辑（`baseUrl + path`）
 
 **S3-A.2 需要实现**（允许扩展）：
+
 - ✅ HTTP 请求 Body 的构造（将 `EngineInvokeInput` 转换为 HTTP 请求）
 - ✅ 支持不同 JobType 的 payload 结构（不修改 S3-A.1 的认证逻辑）
 
@@ -305,11 +320,12 @@ Content-Type: application/json
 ### 4.1 外部 HTTP 服务响应格式
 
 **标准响应格式**（参考 S3-A.1 设计）：
+
 ```typescript
 interface HttpEngineResponse {
-  success: boolean;              // 业务层成功标志
-  status?: 'SUCCESS' | 'FAILED';  // 状态（可选）
-  data?: any;                     // 输出数据（成功时）
+  success: boolean; // 业务层成功标志
+  status?: 'SUCCESS' | 'FAILED'; // 状态（可选）
+  data?: any; // 输出数据（成功时）
   error?: {
     message: string;
     code?: string;
@@ -331,10 +347,11 @@ interface HttpEngineResponse {
 ### 4.2 EngineInvokeResult 结构
 
 **目标结构**（`packages/shared-types/src/engines/engine-adapter.ts`）：
+
 ```typescript
 interface EngineInvokeResult {
-  status: EngineInvokeStatus;     // SUCCESS | FAILED | RETRYABLE
-  output?: Record<string, any>;   // 输出数据（成功时）
+  status: EngineInvokeStatus; // SUCCESS | FAILED | RETRYABLE
+  output?: Record<string, any>; // 输出数据（成功时）
   error?: {
     message: string;
     code?: string;
@@ -356,6 +373,7 @@ interface EngineInvokeResult {
 #### 规则 1：HTTP 200 + success=true → SUCCESS
 
 **输入**：
+
 ```json
 {
   "status": 200,
@@ -375,6 +393,7 @@ interface EngineInvokeResult {
 ```
 
 **输出**：
+
 ```typescript
 {
   status: EngineInvokeStatus.SUCCESS,
@@ -393,6 +412,7 @@ interface EngineInvokeResult {
 #### 规则 2：HTTP 200 + success=false → FAILED
 
 **输入**：
+
 ```json
 {
   "status": 200,
@@ -407,6 +427,7 @@ interface EngineInvokeResult {
 ```
 
 **输出**：
+
 ```typescript
 {
   status: EngineInvokeStatus.FAILED,
@@ -423,6 +444,7 @@ interface EngineInvokeResult {
 #### 规则 3：HTTP 5xx → RETRYABLE
 
 **输入**：
+
 ```json
 {
   "status": 500,
@@ -431,6 +453,7 @@ interface EngineInvokeResult {
 ```
 
 **输出**：
+
 ```typescript
 {
   status: EngineInvokeStatus.RETRYABLE,
@@ -447,6 +470,7 @@ interface EngineInvokeResult {
 #### 规则 4：HTTP 429 → RETRYABLE
 
 **输入**：
+
 ```json
 {
   "status": 429,
@@ -458,6 +482,7 @@ interface EngineInvokeResult {
 ```
 
 **输出**：
+
 ```typescript
 {
   status: EngineInvokeStatus.RETRYABLE,
@@ -475,6 +500,7 @@ interface EngineInvokeResult {
 #### 规则 5：网络错误 → RETRYABLE
 
 **输入**：
+
 ```typescript
 {
   type: 'NETWORK_ERROR',
@@ -484,6 +510,7 @@ interface EngineInvokeResult {
 ```
 
 **输出**：
+
 ```typescript
 {
   status: EngineInvokeStatus.RETRYABLE,
@@ -500,11 +527,13 @@ interface EngineInvokeResult {
 ### 4.4 与 S3-A.1 的边界
 
 **S3-A.1 已实现**（禁止修改）：
+
 - ✅ `handleHttpResponse()` - HTTP 响应分类逻辑
 - ✅ `handleHttpError()` - 网络错误分类逻辑
 - ✅ 错误分类规则（RETRYABLE / FAILED / SUCCESS）
 
 **S3-A.2 需要实现**（允许扩展）：
+
 - ✅ 支持不同 JobType 的响应数据解析（不修改错误分类逻辑）
 - ✅ 支持 metrics 字段的映射（tokens → tokensUsed, costUsd → cost）
 
@@ -580,6 +609,7 @@ interface EngineInvokeResult {
 **位置**：`apps/workers/src/main.ts`
 
 **逻辑**：
+
 ```typescript
 const job = await apiClient.getNextJob(workerId);
 // job: { id, type, payload, taskId, projectId, ... }
@@ -590,11 +620,12 @@ const job = await apiClient.getNextJob(workerId);
 **位置**：`apps/workers/src/main.ts`
 
 **逻辑**：
+
 ```typescript
 const engineInput: EngineInvokeInput = {
-  jobType: job.type,                    // 如 'NOVEL_ANALYSIS_HTTP'
-  engineKey: job.payload?.engineKey,     // 如 'http_gemini_v1'（可选）
-  payload: job.payload,                  // Job 负载数据
+  jobType: job.type, // 如 'NOVEL_ANALYSIS_HTTP'
+  engineKey: job.payload?.engineKey, // 如 'http_gemini_v1'（可选）
+  payload: job.payload, // Job 负载数据
   context: {
     projectId: job.projectId,
     taskId: job.taskId,
@@ -608,6 +639,7 @@ const engineInput: EngineInvokeInput = {
 **位置**：`apps/api/src/engine/engine-registry.service.ts`
 
 **逻辑**：
+
 ```typescript
 // EngineRegistry.findAdapter()
 const adapter = this.findAdapter(engineKey, jobType);
@@ -621,6 +653,7 @@ const adapter = this.findAdapter(engineKey, jobType);
 **位置**：`apps/api/src/engine/adapters/http-engine.adapter.ts`
 
 **逻辑**：
+
 ```typescript
 // HttpEngineAdapter.invoke()
 const config = this.engineConfigService.getHttpEngineConfig(engineKey);
@@ -635,6 +668,7 @@ const result = this.handleHttpResponse(response, engineKey, jobType, durationMs)
 **位置**：`apps/workers/src/main.ts`
 
 **逻辑**：
+
 ```typescript
 if (engineResult.status === EngineInvokeStatus.SUCCESS) {
   await apiClient.reportJobResult(job.id, {
@@ -646,7 +680,7 @@ if (engineResult.status === EngineInvokeStatus.SUCCESS) {
   await apiClient.reportJobResult(job.id, {
     status: 'FAILED',
     error: engineResult.error,
-    retryable: true,  // 标记为可重试
+    retryable: true, // 标记为可重试
   });
 } else {
   await apiClient.reportJobResult(job.id, {
@@ -733,6 +767,7 @@ if (engineResult.status === EngineInvokeStatus.SUCCESS) {
 **重要**：本设计文档不得作为回溯性调整 S3-A.1 封板内容（配置读取、认证逻辑、错误分类）的依据，任何相关调整必须新建 S3-A.x 批次，并按新批次生成 REVIEW 报告。
 
 S3-A.1 已封板的内容（见 `docs/S3A1_REVIEW_REPORT.md` 第 10 章）包括：
+
 - `apps/api/src/config/engine.config.ts` - 配置读取逻辑
 - `apps/api/src/engine/adapters/http-engine.adapter.ts` - 认证和错误分类逻辑
 - `apps/api/config/engines.json` - 引擎配置文件结构
@@ -860,4 +895,3 @@ S3-A.1 已封板的内容（见 `docs/S3A1_REVIEW_REPORT.md` 第 10 章）包括
 **文档状态**: ✅ 设计完成，待评审  
 **前置文档**: [ENGINE_HTTP_CONFIG.md](./ENGINE_HTTP_CONFIG.md) (S3-A.1)  
 **后续批次**: S3-A.3（如需要）或 S3-B.1（Engine 管理 API）
-

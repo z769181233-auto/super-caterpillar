@@ -1,11 +1,13 @@
 # S3-C.2 前端联动体验增强 - 完成总结
 
 ## 任务完成时间
+
 2025-12-11
 
 ## 修改文件列表
 
 ### 后端 API
+
 1. **`apps/api/src/job/job.controller.ts`**
    - 新增 `GET /api/jobs/engine-summary` 端点
 
@@ -14,6 +16,7 @@
    - 实现 O(1 query) 聚合逻辑：查询最近 100 条 Job，计算 avgScore, avgConfidence, successRate, avgDurationMs, avgCostUsd
 
 ### 前端组件
+
 3. **`apps/web/src/components/engines/EngineSummaryPanel.tsx`** (新建)
    - Engine 质量摘要面板组件
    - 从 URL Query 读取 engineKey
@@ -24,6 +27,7 @@
    - 扩展 `extendedJobApi`，添加 `getEngineSummary()` 方法
 
 ### 前端页面
+
 5. **`apps/web/src/app/studio/jobs/page.tsx`**
    - 顶部添加 EngineSummaryPanel
    - 实现 Engine 切换后自动联动刷新（监听 URL 变化）
@@ -51,10 +55,12 @@
 ### GET /api/jobs/engine-summary
 
 **Query Parameters:**
+
 - `engineKey` (required): 引擎标识
 - `projectId` (optional): 项目 ID（用于筛选）
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -71,6 +77,7 @@
 ```
 
 **Prisma 查询逻辑:**
+
 - 查询最近 1000 条 Job（多取以应对内存过滤）
 - 在内存中按 `extractEngineKeyFromJob()` 过滤匹配的 engineKey
 - 取前 100 条进行聚合计算
@@ -79,18 +86,21 @@
 ## 新增 UI 组件说明
 
 ### EngineSummaryPanel
+
 - **位置**: `/studio/jobs` 顶部、`/projects/[projectId]/import-novel` 右侧栏
 - **功能**: 展示当前筛选 engine 的质量摘要
 - **数据来源**: `/api/jobs/engine-summary`
 - **响应式**: 自动响应 URL `engineKey` 参数变化
 
 ### Job 列表分组视图
+
 - **位置**: `/studio/jobs`
 - **功能**: 支持按 Engine 或 Version 分组查看
 - **实现**: 纯前端分组，不依赖后端
 - **限制**: 约 500 行以内无分页渲染
 
 ### Recent Engine Comparison
+
 - **位置**: `/projects/[projectId]/import-novel`
 - **功能**: 展示过去 5 条分析任务的引擎效果与成本对比
 - **数据来源**: `/api/jobs?projectId=xxx&type=NOVEL_ANALYSIS*`
@@ -99,12 +109,14 @@
 ## 终端构建报告
 
 ### API 构建
+
 ```bash
 pnpm --filter api build
 ✓ webpack 5.97.1 compiled successfully in 3154 ms
 ```
 
 ### Web 构建
+
 ```bash
 pnpm --filter web build
 ✓ Generating static pages (12/12)
@@ -113,12 +125,14 @@ pnpm --filter web build
 ```
 
 ### Lint 检查
+
 - ✅ 所有文件通过 lint 检查
 - ✅ TypeScript 类型检查通过
 
 ## 自测说明
 
 ### 验证 Engine 切换联动刷新
+
 1. **`/studio/jobs`**
    - 使用 EngineFilter 切换 engineKey
    - 验证：URL 更新 → 页面自动刷新 → EngineSummaryPanel 更新 → Job 列表更新
@@ -136,12 +150,14 @@ pnpm --filter web build
    - 验证：EngineSummaryPanel 更新
 
 ### 验证分组查看
+
 1. **`/studio/jobs`**
    - 点击「按 Engine 分组」→ 验证列表按 engineKey 分组显示
    - 点击「按 Version 分组」→ 验证列表按 `engineKey@version` 分组显示
    - 再次点击按钮 → 验证恢复单列表格
 
 ### 验证 Engine 信息显示
+
 1. **`/tasks/[taskId]/graph`**
    - 验证每个 Job 显示：
      - Engine 标签：`<engineKey>@<version>`
@@ -155,7 +171,9 @@ pnpm --filter web build
      - HTTP adapter 显示 "http" 标签
 
 ### 测试用 EngineKey
+
 建议使用以下 engineKey 进行验证：
+
 - `default_novel_analysis`（本地引擎）
 - `http_real_novel_analysis`（HTTP 引擎）
 - `http_mock_novel_analysis`（Mock HTTP 引擎）
@@ -179,4 +197,3 @@ pnpm --filter web build
 ## 下一步建议
 
 S3-C.2 已完成，建议进入 S3-C.3 或后续阶段。
-

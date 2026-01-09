@@ -15,53 +15,61 @@
 ### 1.2 三条主线
 
 #### S3-A：HTTP 引擎真实接入（Engine Online）
+
 - **目标**: 在现有 `HttpEngineAdapter` 基础上，规划如何挂接真实 LLM 服务（本地推理服务 / 云端 HTTP 模型）
-- **约束**: 
+- **约束**:
   - 不能直接改现有 NOVEL_ANALYSIS 链路
   - 必须通过新增 JobType 或试验性 flag 来引入真实 HTTP 引擎
   - 保持 Stage2 调度核心不变
 
 #### S3-B：Engine 管理 & 配置中心 MVP
+
 - **目标**: 规划一套「Engine 配置管理」API + 简单的管理页面
 - **功能范围**:
   - 列出 engineKey → Adapter / HTTP endpoint / Model 信息 / 默认与否
   - 支持按项目/租户配置默认引擎（先从全局配置开始）
-- **约束**: 
+- **约束**:
   - 不引入复杂的计费/多租户策略
   - 先做单租户 + 全局配置 MVP
   - 不修改 schema.prisma（使用 JSON 配置存储）
 
 #### S3-C：Studio / 导入页联动增强
+
 - **目标**: 利用已有的 EngineTaskSummary / Task Graph / QualityScore 等能力，规划前端展示增强
 - **功能范围**:
   - 导入页和 Studio 如何展示/筛选不同 engine 的任务和质量指标
   - Task Graph / Monitor 如何支撑"按 engine / jobType / 项目"维度查看调度 & 质量情况
-- **约束**: 
+- **约束**:
   - 先以"只读展示 + 简单筛选"为主
   - 暂不做复杂交互（如在线重跑、多引擎对比实验）
 
 ### 1.3 不动边界（禁止修改）
 
 #### 核心调度系统（S2-A）
+
 - ❌ **禁止修改**: `apps/api/src/job/job.service.ts` 中的 `getAndMarkNextPendingJob` 方法
 - ❌ **禁止修改**: `apps/api/src/orchestrator/orchestrator.service.ts` 中的调度核心逻辑
 - ❌ **禁止修改**: Job 状态流转机制（PENDING → RUNNING → RETRYING/FAILED）
 - ❌ **禁止修改**: Worker 离线恢复逻辑
 
 #### 数据库 Schema
+
 - ❌ **禁止修改**: `schema.prisma`（除非 Stage3 明确要求的新表，如 Engine 配置表）
 - ❌ **禁止修改**: 现有 Task / ShotJob / WorkerNode 表结构
 
 #### NOVEL_ANALYSIS 链路（S2-C）
+
 - ❌ **禁止修改**: `apps/api/src/novel-import/novel-import.controller.ts` 的核心导入逻辑
 - ❌ **禁止修改**: `apps/workers/src/novel-analysis-processor.ts` 的分析处理逻辑
 - ❌ **禁止修改**: NOVEL_ANALYSIS 的默认引擎（仍使用 `default_novel_analysis` 本地适配器）
 
 #### EngineAdapter 接口（S2-B）
+
 - ❌ **禁止修改**: `packages/shared-types/src/engines/engine-adapter.ts` 中的 `EngineAdapter` 接口定义
 - ❌ **禁止修改**: `EngineInvokeInput` 和 `EngineInvokeResult` 接口（除非扩展字段）
 
 #### 监控与可视化核心（S2-D）
+
 - ❌ **禁止修改**: `apps/api/src/orchestrator/orchestrator-monitor.controller.ts` 的返回结构
 - ❌ **禁止修改**: `apps/api/src/task/task-graph.service.ts` 的核心聚合逻辑
 
@@ -74,6 +82,7 @@
 #### S3-A.0：HTTP 引擎接入约束与策略（重要约束）
 
 **核心约束**:
+
 1. **禁止修改 NOVEL_ANALYSIS 现有执行链路**:
    - ❌ 禁止修改 `apps/api/src/novel-import/novel-import.controller.ts` 的核心导入逻辑
    - ❌ 禁止修改 `apps/workers/src/novel-analysis-processor.ts` 的分析处理逻辑
@@ -92,46 +101,51 @@
 
 4. **JobType 配置矩阵**:
 
-| JobType | 默认 engineKey | 是否允许 HTTP | Feature Flag 名称 | 说明 |
-|---------|---------------|--------------|------------------|------|
-| `NOVEL_ANALYSIS` | `default_novel_analysis` | ❌ 禁止 | - | 现有链路，禁止修改 |
-| `EXPERIMENTAL_NOVEL_ANALYSIS_HTTP` | `http_gemini_v1` | ✅ 允许 | - | 新增实验性 JobType |
-| `SHOT_RENDER` | `default_shot_render` | ⚠️ 可选 | `useHttpEngine` | 可通过 flag 切换 |
-| `EXPERIMENTAL_SHOT_RENDER_HTTP` | `http_gemini_v1` | ✅ 允许 | - | 新增实验性 JobType |
+| JobType                            | 默认 engineKey           | 是否允许 HTTP | Feature Flag 名称 | 说明               |
+| ---------------------------------- | ------------------------ | ------------- | ----------------- | ------------------ |
+| `NOVEL_ANALYSIS`                   | `default_novel_analysis` | ❌ 禁止       | -                 | 现有链路，禁止修改 |
+| `EXPERIMENTAL_NOVEL_ANALYSIS_HTTP` | `http_gemini_v1`         | ✅ 允许       | -                 | 新增实验性 JobType |
+| `SHOT_RENDER`                      | `default_shot_render`    | ⚠️ 可选       | `useHttpEngine`   | 可通过 flag 切换   |
+| `EXPERIMENTAL_SHOT_RENDER_HTTP`    | `http_gemini_v1`         | ✅ 允许       | -                 | 新增实验性 JobType |
 
 **Feature Flag 使用示例**:
+
 ```typescript
 // 创建 Task 时设置 feature flag
 const task = await taskService.createTask({
   type: 'SHOT_RENDER',
   payload: {
-    useHttpEngine: true,  // 显式启用 HTTP 引擎
-    engineKey: 'http_gemini_v1',  // 可选：显式指定 engineKey
+    useHttpEngine: true, // 显式启用 HTTP 引擎
+    engineKey: 'http_gemini_v1', // 可选：显式指定 engineKey
     // ... 其他 payload
-  }
+  },
 });
 ```
 
 #### S3-A.1：HTTP 引擎配置与安全设计（仅文档）
 
-**目标**: 
+**目标**:
+
 - 设计 HTTP 引擎的环境变量配置方案
 - 定义 HTTP 引擎的认证方式（API Key / Bearer Token / HMAC）
 - 规划错误处理和限流策略
 - 设计引擎配置的存储方式（环境变量 → 配置服务）
 
 **允许修改的文件范围**（未来 EXECUTE）:
+
 - `apps/api/src/config/engine.config.ts` - 扩展配置读取逻辑
 - `apps/api/src/engine/adapters/http-engine.adapter.ts` - 增强认证和错误处理
 - `.env.example` - 新增 HTTP 引擎相关环境变量示例
 - `docs/ENGINE_HTTP_CONFIG.md` - 新增配置文档
 
 **与 Stage2 的依赖关系**:
+
 - 依赖 `HttpEngineAdapter` 现有实现（S2-B）
 - 依赖 `EngineConfigService` 配置读取机制
 - 依赖 `HttpClient` 通用 HTTP 客户端
 
 **设计要点**:
+
 1. **环境变量配置**:
    - `HTTP_ENGINE_BASE_URL`: 基础 URL（如 `http://localhost:8000` 或 `https://api.openai.com`）
    - `HTTP_ENGINE_API_KEY`: API Key（可选，用于 Bearer Token 认证）
@@ -156,22 +170,26 @@ const task = await taskService.createTask({
 #### S3-A.2：HTTP 引擎调用路径设计（仅文档）
 
 **目标**:
+
 - 设计如何通过新增 JobType 或试验性 flag 引入真实 HTTP 引擎
 - 规划 HTTP 引擎的请求/响应格式
 - 设计引擎路由路径（如 `/invoke`, `/v1/chat/completions` 等）
 - 规划模型信息（modelName, version）的传递方式
 
 **允许修改的文件范围**（未来 EXECUTE）:
+
 - `apps/api/src/engine/adapters/http-engine.adapter.ts` - 实现请求构造和响应解析
 - `packages/shared-types/src/engines/engine-adapter.ts` - 扩展 `EngineInvokeResult` 的 `metrics` 字段（如需要）
 - `apps/api/src/config/engine.config.ts` - 支持多引擎配置（engineKey → config 映射）
 
 **与 Stage2 的依赖关系**:
+
 - 依赖 `EngineRegistry.findAdapter()` 的引擎选择逻辑
 - 依赖 `EngineAdapter.invoke()` 接口规范
 - 依赖 Job 重试机制处理 HTTP 引擎的临时错误
 
 **设计要点**:
+
 1. **新增 JobType 方案**:
    - 新增 `NOVEL_ANALYSIS_HTTP` JobType（试验性）
    - 或新增 `SHOT_RENDER_HTTP` JobType
@@ -183,6 +201,7 @@ const task = await taskService.createTask({
    - 如果 flag=true，强制使用 HTTP 引擎（如 `http_gemini_v1`）
 
 3. **HTTP 请求格式**:
+
    ```typescript
    POST /invoke
    {
@@ -194,6 +213,7 @@ const task = await taskService.createTask({
    ```
 
 4. **HTTP 响应格式**:
+
    ```typescript
    {
      "success": true,
@@ -221,6 +241,7 @@ const task = await taskService.createTask({
 #### S3-B.1：Engine 管理 API 设计（仅文档）
 
 **目标**:
+
 - 设计 Engine 配置的 CRUD API（只读为主，简单写入）
 - 设计 Engine 配置的数据模型（配置存储策略）
 - 规划 Engine 配置的查询接口（列表、详情、按 engineKey 查询）
@@ -232,13 +253,13 @@ const task = await taskService.createTask({
    - 不支持按项目/租户的独立配置（后续扩展）
 
 2. **配置存储方案决策**:
-   
+
    **方案 A: 环境变量 + JSON 配置文件（推荐，MVP 阶段）**
    - ✅ 不修改 schema.prisma
    - ✅ 配置存储在 `config/engines.json` 或环境变量
    - ✅ 简单易维护，适合 MVP
    - ⚠️ 配置更新需要重启服务（或实现配置热加载）
-   
+
    **方案 B: 新增数据库表（可选，需明确设计）**
    - ✅ 支持动态配置更新
    - ✅ 支持配置版本管理
@@ -248,6 +269,7 @@ const task = await taskService.createTask({
    **决策**: Stage3 MVP 阶段采用**方案 A**（环境变量 + JSON 配置文件），后续可迁移到方案 B。
 
 3. **EngineConfig 表结构草案**（如果采用方案 B）:
+
    ```prisma
    model EngineConfig {
      id                  String   @id @default(cuid())
@@ -264,13 +286,14 @@ const task = await taskService.createTask({
      enabled             Boolean  @default(true)
      createdAt           DateTime @default(now())
      updatedAt           DateTime @updatedAt
-     
+
      @@index([engineKey])
      @@index([enabled])
    }
    ```
 
 **允许修改的文件范围**（未来 EXECUTE）:
+
 - 新增 `apps/api/src/engine/engine-config.service.ts` - Engine 配置服务
 - 新增 `apps/api/src/engine/engine-config.controller.ts` - Engine 配置 API
 - 新增 `apps/api/src/engine/dto/engine-config.dto.ts` - DTO 定义
@@ -279,12 +302,15 @@ const task = await taskService.createTask({
 - 可选：修改 `schema.prisma` 新增 `EngineConfig` 表（方案 B）
 
 **与 Stage2 的依赖关系**:
+
 - 依赖 `EngineRegistry` 的适配器注册机制
 - 依赖 `EngineConfigService` 的配置读取（S2-B）
 - 依赖 `HttpEngineAdapter` 的配置结构
 
 **设计要点**:
+
 1. **数据模型**（JSON 存储，方案 A）:
+
    ```typescript
    interface EngineConfig {
      engineKey: string;
@@ -326,15 +352,16 @@ const task = await taskService.createTask({
 
 5. **EngineKey → Adapter/Endpoint/默认引擎配置矩阵示例**:
 
-| engineKey | adapterName | adapterType | HTTP Endpoint | 默认 JobType | enabled | isDefault |
-|-----------|-------------|-------------|---------------|--------------|---------|-----------|
-| `default_novel_analysis` | `default_novel_analysis` | `local` | - | `NOVEL_ANALYSIS` | ✅ | ✅ |
-| `default_shot_render` | `http` | `http` | `http://localhost:8000/invoke` | `SHOT_RENDER` | ✅ | ✅ |
-| `http_gemini_v1` | `http` | `http` | `https://api.gemini.com/v1/invoke` | - | ✅ | ❌ |
-| `http_openai_gpt4` | `http` | `http` | `https://api.openai.com/v1/chat/completions` | - | ✅ | ❌ |
-| `http_local_llm` | `http` | `http` | `http://localhost:11434/api/generate` | - | ✅ | ❌ |
+| engineKey                | adapterName              | adapterType | HTTP Endpoint                                | 默认 JobType     | enabled | isDefault |
+| ------------------------ | ------------------------ | ----------- | -------------------------------------------- | ---------------- | ------- | --------- |
+| `default_novel_analysis` | `default_novel_analysis` | `local`     | -                                            | `NOVEL_ANALYSIS` | ✅      | ✅        |
+| `default_shot_render`    | `http`                   | `http`      | `http://localhost:8000/invoke`               | `SHOT_RENDER`    | ✅      | ✅        |
+| `http_gemini_v1`         | `http`                   | `http`      | `https://api.gemini.com/v1/invoke`           | -                | ✅      | ❌        |
+| `http_openai_gpt4`       | `http`                   | `http`      | `https://api.openai.com/v1/chat/completions` | -                | ✅      | ❌        |
+| `http_local_llm`         | `http`                   | `http`      | `http://localhost:11434/api/generate`        | -                | ✅      | ❌        |
 
 **配置示例**（`config/engines.json`）:
+
 ```json
 {
   "engines": [
@@ -369,11 +396,13 @@ const task = await taskService.createTask({
 #### S3-B.2：Engine 管理前端页面设计（仅文档）
 
 **目标**:
+
 - 设计 Engine 管理页面的信息架构
 - 规划引擎列表、详情、编辑的 UI 流程
 - 设计引擎配置的表单字段
 
 **允许修改的文件范围**（未来 EXECUTE）:
+
 - 新增 `apps/web/src/app/admin/engines/page.tsx` - Engine 管理页面
 - 新增 `apps/web/src/app/admin/engines/[engineKey]/page.tsx` - Engine 详情页面
 - 新增 `apps/web/src/components/engines/EngineList.tsx` - 引擎列表组件
@@ -381,10 +410,12 @@ const task = await taskService.createTask({
 - 修改 `apps/web/src/lib/apiClient.ts` - 新增 Engine API 客户端方法
 
 **与 Stage2 的依赖关系**:
+
 - 依赖 `EngineTaskService` 的引擎信息聚合
 - 依赖 `QualityScoreService` 的质量指标（用于展示引擎性能）
 
 **设计要点**:
+
 1. **页面结构**:
    - 列表页: 显示所有引擎（engineKey, adapterName, type, enabled, isDefault）
    - 详情页: 显示引擎配置详情、最近使用统计、质量指标
@@ -407,21 +438,23 @@ const task = await taskService.createTask({
 #### S3-C.1：Studio/导入页联动信息架构（仅文档）
 
 **目标**:
+
 - 设计如何在前端展示不同 engine 的任务和质量指标
 - 规划 Task Graph / Monitor 的筛选维度（engine / jobType / 项目）
 - 设计质量指标的展示方式（表格、图表、对比视图）
 
 **路由与数据来源 API 对应关系**:
 
-| 前端路由 | 数据来源 API | API 方法 | 说明 |
-|---------|-------------|---------|------|
-| `/monitor/workers` | `GET /api/workers/monitor/stats` | `WorkerService.getWorkerMonitorSnapshot()` | Worker 状态统计 |
-| `/monitor/scheduler` | `GET /api/orchestrator/monitor/stats` | `OrchestratorService.getStats()` | 调度统计（Job 状态、重试分布、队列等待时间） |
-| `/tasks/[taskId]/graph` | `GET /api/tasks/:taskId/graph` | `TaskGraphService.findTaskGraph()` + `QualityScoreService` + `QualityFeedbackService` | Task → Job 关系图 + 质量评分 |
-| `/projects/[projectId]/import-novel` | `GET /api/tasks?projectId=xxx&taskType=NOVEL_ANALYSIS` | `EngineTaskService.findEngineTasksByProject()` | 导入历史任务列表（新增只读区块） |
-| `/studio/jobs` | `GET /api/jobs?engineKey=xxx&jobType=xxx` | `JobService.findAll()`（需扩展筛选参数） | Job 列表（需新增 engine 筛选） |
+| 前端路由                             | 数据来源 API                                           | API 方法                                                                              | 说明                                         |
+| ------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `/monitor/workers`                   | `GET /api/workers/monitor/stats`                       | `WorkerService.getWorkerMonitorSnapshot()`                                            | Worker 状态统计                              |
+| `/monitor/scheduler`                 | `GET /api/orchestrator/monitor/stats`                  | `OrchestratorService.getStats()`                                                      | 调度统计（Job 状态、重试分布、队列等待时间） |
+| `/tasks/[taskId]/graph`              | `GET /api/tasks/:taskId/graph`                         | `TaskGraphService.findTaskGraph()` + `QualityScoreService` + `QualityFeedbackService` | Task → Job 关系图 + 质量评分                 |
+| `/projects/[projectId]/import-novel` | `GET /api/tasks?projectId=xxx&taskType=NOVEL_ANALYSIS` | `EngineTaskService.findEngineTasksByProject()`                                        | 导入历史任务列表（新增只读区块）             |
+| `/studio/jobs`                       | `GET /api/jobs?engineKey=xxx&jobType=xxx`              | `JobService.findAll()`（需扩展筛选参数）                                              | Job 列表（需新增 engine 筛选）               |
 
 **导入页增强设计**:
+
 - **原有功能**: 保持现有导入逻辑不变（`POST /api/novels/import-file`、`POST /api/novels/import`）
 - **新增只读区块**: 在导入页底部或侧边栏展示：
   - 调用 `GET /api/tasks?projectId={projectId}&taskType=NOVEL_ANALYSIS` 获取历史任务
@@ -430,6 +463,7 @@ const task = await taskService.createTask({
   - 显示最近 5 条导入记录的时间、引擎、质量指标
 
 **允许修改的文件范围**（未来 EXECUTE）:
+
 - 修改 `apps/web/src/app/studio/jobs/page.tsx` - 添加 engine 筛选和展示
 - 修改 `apps/web/src/app/projects/[projectId]/import-novel/page.tsx` - 添加 engine 选择和质量预览（只读区块）
 - 修改 `apps/web/src/app/tasks/[taskId]/graph/page.tsx` - 增强质量指标展示
@@ -438,11 +472,13 @@ const task = await taskService.createTask({
 - 修改 `apps/web/src/lib/apiClient.ts` - 新增筛选参数支持
 
 **与 Stage2 的依赖关系**:
+
 - 依赖 `EngineTaskService.findEngineTasksByProject()` 的引擎任务聚合
 - 依赖 `TaskGraphController` 的 qualityScores 和 qualityFeedback 返回
 - 依赖 `OrchestratorService.getStats()` 的调度统计
 
 **UI 行为限制**（本阶段）:
+
 - ✅ **允许**: 只读展示、简单筛选（按 engine / jobType / project）
 - ✅ **允许**: 查看详情、查看质量指标
 - ❌ **禁止**: 重跑 Job、取消 Job、切换引擎
@@ -450,6 +486,7 @@ const task = await taskService.createTask({
 - ❌ **禁止**: 多引擎对比实验界面
 
 **设计要点**:
+
 1. **Studio Jobs 页面增强**:
    - 添加 engine 筛选器（下拉选择: 全部 / default_novel_analysis / http_gemini_v1 / ...）
    - 在 Job 列表中显示 engineKey 和 adapterName
@@ -485,6 +522,7 @@ const task = await taskService.createTask({
 ### 3.1 禁止修改的核心模块
 
 #### 调度系统核心（S2-A）
+
 - **文件**: `apps/api/src/job/job.service.ts`
   - `getAndMarkNextPendingJob()` - Job 领取逻辑
   - `markJobFailedAndMaybeRetry()` - 失败重试逻辑
@@ -494,16 +532,19 @@ const task = await taskService.createTask({
 - **风险**: 修改可能导致并发安全问题或状态流转错误
 
 #### 数据库 Schema
+
 - **文件**: `schema.prisma`
 - **禁止修改的表**: Task, ShotJob, WorkerNode, Project, Season, Episode, Scene, Shot
 - **例外**: 如果 S3-B 需要 Engine 配置表，可新增 `EngineConfig` 表（需明确设计）
 
 #### NOVEL_ANALYSIS 链路
+
 - **文件**: `apps/api/src/novel-import/novel-import.controller.ts`
 - **文件**: `apps/workers/src/novel-analysis-processor.ts`
 - **风险**: 修改可能影响现有分析流程的稳定性
 
 #### EngineAdapter 接口
+
 - **文件**: `packages/shared-types/src/engines/engine-adapter.ts`
 - **风险**: 修改接口可能导致前后端类型不一致
 
@@ -513,7 +554,7 @@ const task = await taskService.createTask({
 
 1. **HTTP 引擎超时/失败率影响**:
    - **风险**: HTTP 引擎的网络延迟和失败率可能高于本地适配器，导致 Job 重试次数增加
-   - **缓解**: 
+   - **缓解**:
      - 设置合理的超时时间（默认 30s）
      - 区分可重试错误（网络错误）和不可重试错误（业务错误）
      - 监控 HTTP 引擎的失败率，设置告警阈值
@@ -570,7 +611,7 @@ const task = await taskService.createTask({
 
 1. **HttpEngineAdapter 重试策略约束**:
    - **风险**: HttpEngineAdapter 内部如果实现重试逻辑，可能与 Job 重试机制冲突
-   - **约束**: 
+   - **约束**:
      - HttpEngineAdapter 内部**只允许一次请求 + 错误分类（FAILED/RETRYABLE）**
      - **禁止**在 Adapter 内部实现重试循环、退避策略
      - 所有重试必须走 Job 重试系统（S2-A）
@@ -590,11 +631,11 @@ const task = await taskService.createTask({
 
 1. **监控 API 性能约束**:
    - **风险**: 监控 / TaskGraph / Quality / EngineTask 相关 API 如果实现复杂查询，可能影响性能
-   - **约束**: 
+   - **约束**:
      - Stage3 阶段**只做单请求聚合视图**，不做复杂分页/时间区间筛选
      - 所有聚合查询在单次请求中完成，不实现分页
      - 不实现时间区间筛选（如"最近 7 天"、"最近 30 天"）
-   - **未来扩展**: 
+   - **未来扩展**:
      - 若未来需要分页，会在后续 Stage 专门设计
      - 若未来需要时间区间筛选，会引入时间序列数据库或缓存层
 
@@ -683,21 +724,22 @@ const task = await taskService.createTask({
    - 时间: 2-3 天
    - **内容要求**:
      - **数据流信息架构图**（文字说明 + 列表）:
+
        ```
        前端页面 → API 调用 → 后端服务 → 数据聚合 → 返回结果
-       
+
        /monitor/workers
          → GET /api/workers/monitor/stats
          → WorkerService.getWorkerMonitorSnapshot()
          → 聚合 WorkerNode 表数据
          → 返回 WorkerMonitorSnapshot
-       
+
        /monitor/scheduler
          → GET /api/orchestrator/monitor/stats
          → OrchestratorService.getStats()
          → 聚合 ShotJob 表数据（按 status、engineKey 分组）
          → 返回调度统计（jobs, workers, retries, queue, recovery）
-       
+
        /tasks/[taskId]/graph
          → GET /api/tasks/:taskId/graph
          → TaskGraphService.findTaskGraph(taskId)
@@ -705,7 +747,7 @@ const task = await taskService.createTask({
          → QualityScoreService.buildQualityScoreFromJob() (循环)
          → QualityFeedbackService.evaluateQualityScores()
          → 返回 TaskGraph + qualityScores + qualityFeedback
-       
+
        /projects/[projectId]/import-novel
          → GET /api/tasks?projectId=xxx&taskType=NOVEL_ANALYSIS
          → EngineTaskService.findEngineTasksByProject(projectId, 'NOVEL_ANALYSIS')
@@ -714,6 +756,7 @@ const task = await taskService.createTask({
          → 返回 EngineTaskSummary[]
          → 前端调用 QualityScoreService 聚合质量指标（可选）
        ```
+
      - 筛选维度设计（engine / jobType / project 的组合筛选）
      - 质量指标展示方式（表格、卡片、简单图表）
      - UI 组件设计（QualityMetrics, EngineFilter, TaskList）
@@ -725,6 +768,7 @@ const task = await taskService.createTask({
 **重要**: 只有当 `STAGE3_PLAN.md` 完成本次修订并通过人工 Review，才允许进入任何 S3-x.y 批次的 `MODE: EXECUTE`。
 
 **Review 检查清单**:
+
 - [ ] S3-A 约束与策略已明确（禁止修改 NOVEL_ANALYSIS，HTTP 引擎接入方式）
 - [ ] S3-B 配置存储策略已确定（环境变量 + JSON 或数据库表）
 - [ ] S3-C 路由与 API 对应关系已列出
@@ -734,11 +778,13 @@ const task = await taskService.createTask({
 ### 4.2 执行模式说明
 
 **当前阶段**: PLAN-only（规划阶段）
+
 - ✅ 已完成: Stage3 规划文档（本文档）
 - ⏳ 待执行: 各批次的详细设计文档
 - 🚫 禁止: 修改任何代码文件
 
 **后续阶段**: MODE: EXECUTE（执行阶段）
+
 - 每个批次完成后，进入 `MODE: EXECUTE` 执行代码实现
 - 执行前需确认设计文档已通过评审
 - 执行后需进行回归测试，确保 Stage2 功能不受影响
@@ -783,4 +829,3 @@ S3-C.1 (Studio 联动设计) ← 依赖 S3-A.1/A.2, S3-B.1/B.2
 
 **文档状态**: ✅ 规划完成，待评审  
 **后续文档**: 各批次的详细设计文档将在执行前生成
-

@@ -12,6 +12,7 @@
 防止测试报告复用、错配、混用。
 
 **核心原则**:
+
 - 每个功能变更必须对应一个新的测试报告
 - 测试报告命名必须规范且唯一
 - 禁止复用旧报告
@@ -25,12 +26,14 @@
 **格式**: `docs/TEST_REPORT_<STAGE>_<FEATURE>_<YYYYMMDD>.md`
 
 **示例**:
+
 - ✅ `docs/TEST_REPORT_STAGE6_GUARDRAILS_20251213.md`
 - ✅ `docs/TEST_REPORT_STAGE7_TEST_GOVERNANCE_20251213.md`
 - ❌ `docs/TEST_REPORT_stage6.md`（不符合规范）
 - ❌ `docs/TEST_REPORT_20251213.md`（缺少 Stage 和 Feature）
 
 **规则说明**:
+
 - `STAGE`: 必须为 `STAGE` + 数字（如 `STAGE6`、`STAGE7`）
 - `FEATURE`: 必须为大写字母、数字、下划线（如 `GUARDRAILS`、`TEST_GOVERNANCE`）
 - `YYYYMMDD`: 必须为 8 位日期（如 `20251213`）
@@ -38,6 +41,7 @@
 ### 2.2 每次变更必须新增测试报告
 
 **规则**:
+
 - ❌ **复用旧报告 = 架构违规**
 - ✅ 每次功能变更必须新增对应的测试报告
 - ✅ 测试报告必须与功能变更在同一提交中
@@ -45,6 +49,7 @@
 ### 2.3 测试报告与功能强绑定
 
 **要求**:
+
 - 测试报告必须明确关联的功能/Stage
 - 测试报告必须包含实际执行的测试命令和真实输出
 - 测试报告必须明确测试结论
@@ -58,10 +63,12 @@
 **文件**: `tools/ci/check-test-report-naming.sh`
 
 **功能**:
+
 - 检查所有 `docs/TEST_REPORT_*.md` 文件是否符合命名规范
 - 不符合规范的文件会被列出并导致 CI 失败
 
 **执行**:
+
 ```bash
 bash tools/ci/check-test-report-naming.sh
 ```
@@ -71,16 +78,19 @@ bash tools/ci/check-test-report-naming.sh
 **文件**: `tools/ci/check-test-report-fresh.sh`
 
 **功能**:
+
 - 检查当前变更集中是否包含新的测试报告
 - 如果没有新增测试报告，CI 直接失败
 - 防止复用旧报告
 
 **执行**:
+
 ```bash
 bash tools/ci/check-test-report-fresh.sh
 ```
 
 **逻辑**:
+
 - PR 事件：比较 `origin/main` 和 `HEAD`
 - Push 事件：比较 `HEAD~1` 和 `HEAD`
 - 必须检测到至少一个新增的 `docs/TEST_REPORT_*.md` 文件
@@ -90,6 +100,7 @@ bash tools/ci/check-test-report-fresh.sh
 **文件**: `.github/workflows/ci.yml`
 
 **新增步骤**（在 Stage7 guard 之后，Lint 之前）:
+
 ```yaml
 - name: Stage8 guard - Test report naming
   run: bash tools/ci/check-test-report-naming.sh
@@ -99,6 +110,7 @@ bash tools/ci/check-test-report-fresh.sh
 ```
 
 **执行顺序**:
+
 1. Checkout
 2. Setup pnpm / Node.js
 3. Install dependencies
@@ -117,30 +129,36 @@ bash tools/ci/check-test-report-fresh.sh
 ### 示例 1：命名不规范
 
 **违规操作**:
+
 - 创建 `docs/TEST_REPORT_stage6.md`（小写 stage）
 - 创建 `docs/TEST_REPORT_20251213.md`（缺少 Stage 和 Feature）
 
 **拦截方式**:
+
 - CI 脚本失败：`❌ Invalid TEST_REPORT naming detected:`
 - 列出所有不符合规范的文件
 
 ### 示例 2：复用旧报告
 
 **违规操作**:
+
 - 提交代码变更但未新增测试报告
 - 引用已有的测试报告文件
 
 **拦截方式**:
+
 - CI 脚本失败：`❌ No new TEST_REPORT added in this change set`
 - `❌ Reusing old reports is forbidden`
 
 ### 示例 3：测试报告与功能不匹配
 
 **违规操作**:
+
 - 使用其他功能的测试报告
 - 测试报告中的功能说明与实际变更不符
 
 **拦截方式**:
+
 - 虽然 CI 脚本可能通过（文件存在且命名正确），但 Code Review 阶段应拒绝
 - 测试报告内容必须与功能变更一致
 
@@ -195,12 +213,14 @@ bash tools/ci/check-test-report-fresh.sh
 ### Stage8 = 不允许回滚
 
 **理由**:
+
 1. ✅ 防止测试报告复用、错配、混用
 2. ✅ 确保测试报告与功能强绑定
 3. ✅ CI 自动检查，不可绕过
 4. ✅ 与 Stage5/Stage6/Stage7 完全一致
 
 **约束执行**:
+
 - 任何违反约束的提交**直接拒绝**（无需讨论）
 - 命名不规范 → CI 失败
 - 复用旧报告 → CI 失败
@@ -228,4 +248,3 @@ bash tools/ci/check-test-report-fresh.sh
 ---
 
 **报告结束**
-

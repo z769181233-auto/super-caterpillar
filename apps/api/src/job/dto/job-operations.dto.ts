@@ -43,4 +43,3 @@ export class BatchJobOperationDto {
   @IsOptional()
   note?: string;
 }
-

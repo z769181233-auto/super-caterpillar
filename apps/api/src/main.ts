@@ -29,17 +29,27 @@ async function bootstrap() {
   );
 
   // Security: Helmet
-  app.use(helmet({
-    contentSecurityPolicy: env.isProduction,
-    crossOriginEmbedderPolicy: false, // 允许跨域嵌入（如果需要）
-  }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: env.isProduction,
+      crossOriginEmbedderPolicy: false, // 允许跨域嵌入（如果需要）
+    })
+  );
 
   // Cookie parser
   app.use(cookieParser());
 
   // Global prefix (排除健康检查端点)
   app.setGlobalPrefix('api', {
-    exclude: ['/health', '/health/live', '/health/ready', '/health/gpu', '/ping', '/metrics', '/api/health'],
+    exclude: [
+      '/health',
+      '/health/live',
+      '/health/ready',
+      '/health/gpu',
+      '/ping',
+      '/metrics',
+      '/api/health',
+    ],
   });
 
   // CORS: 生产环境使用白名单，开发环境允许前端 URL
@@ -53,7 +63,7 @@ async function bootstrap() {
   }
 
   const corsOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
     : ['http://localhost:3001', 'http://localhost:3000'];
 
   app.enableCors({

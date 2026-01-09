@@ -24,13 +24,3 @@ export interface ApiResponse<T> {
   requestId: string;
   timestamp: string;
 }
-
-
-
-
-
-
-
-
-
-

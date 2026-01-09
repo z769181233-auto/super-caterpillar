@@ -1,6 +1,6 @@
 /**
  * S3-C.3: 统一 Task Graph 数据模型（带引擎信息）
- * 
+ *
  * 用于 Task Graph API 的响应结构
  */
 
@@ -51,4 +51,3 @@ export interface TaskGraphWithEngineInfo {
     total: number;
   };
 }
-

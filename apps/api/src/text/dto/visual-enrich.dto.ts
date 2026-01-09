@@ -25,4 +25,3 @@ export class VisualEnrichDto {
   @IsOptional()
   shotId?: string;
 }
-

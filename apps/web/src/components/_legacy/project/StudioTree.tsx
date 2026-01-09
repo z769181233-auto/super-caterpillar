@@ -36,21 +36,26 @@ export default function StudioTree({ treeData, selectedIds, onSelect }: StudioTr
 
   if (seasons.length === 0 && legacyEpisodes.length === 0) {
     return (
-      <div className="p-4 text-sm text-balance text-center" style={{ color: 'hsl(var(--hsl-text-muted))' }}>
+      <div
+        className="p-4 text-sm text-balance text-center"
+        style={{ color: 'hsl(var(--hsl-text-muted))' }}
+      >
         暂无结构，请先完成分析或生成结构。
       </div>
     );
   }
 
   return (
-    <div style={{
-      padding: '0.75rem',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.25rem',
-      overflowY: 'auto',
-      maxHeight: 'calc(100vh - 140px)'
-    }}>
+    <div
+      style={{
+        padding: '0.75rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.25rem',
+        overflowY: 'auto',
+        maxHeight: 'calc(100vh - 140px)',
+      }}
+    >
       {seasons.map((season: SeasonNode, si: number) => {
         const seasonLabel = season.title || `Season ${season.index ?? si + 1}`;
         const seasonActive = selectedIds.seasonId === season.id;
@@ -97,41 +102,54 @@ export default function StudioTree({ treeData, selectedIds, onSelect }: StudioTr
         );
       })}
 
-      {seasons.length === 0 && legacyEpisodes.map((ep: EpisodeNode, ei: number) => {
-        const epLabel = ep.name || `Episode ${ep.index ?? ei + 1}`;
-        const epActive = selectedIds.episodeId === ep.id;
-        return (
-          <div key={ep.id}>
-            <TreeItem
-              label={epLabel}
-              active={epActive}
-              level={0}
-              onClick={() => onSelect('episode', ep.id)}
-              type="episode"
-            />
-            {ep.scenes?.map((sc: SceneNode, sci: number) => {
-              const scLabel = sc.title || `Scene ${sc.index ?? sci + 1}`;
-              const scActive = selectedIds.sceneId === sc.id;
-              return (
-                <div key={sc.id}>
-                  <TreeItem
-                    label={scLabel}
-                    active={scActive}
-                    level={1}
-                    onClick={() => onSelect('scene', sc.id)}
-                    type="scene"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
+      {seasons.length === 0 &&
+        legacyEpisodes.map((ep: EpisodeNode, ei: number) => {
+          const epLabel = ep.name || `Episode ${ep.index ?? ei + 1}`;
+          const epActive = selectedIds.episodeId === ep.id;
+          return (
+            <div key={ep.id}>
+              <TreeItem
+                label={epLabel}
+                active={epActive}
+                level={0}
+                onClick={() => onSelect('episode', ep.id)}
+                type="episode"
+              />
+              {ep.scenes?.map((sc: SceneNode, sci: number) => {
+                const scLabel = sc.title || `Scene ${sc.index ?? sci + 1}`;
+                const scActive = selectedIds.sceneId === sc.id;
+                return (
+                  <div key={sc.id}>
+                    <TreeItem
+                      label={scLabel}
+                      active={scActive}
+                      level={1}
+                      onClick={() => onSelect('scene', sc.id)}
+                      type="scene"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
     </div>
   );
 }
 
-function TreeItem({ label, active, level, onClick, type }: { label: string, active: boolean, level: number, onClick: () => void, type: string }) {
+function TreeItem({
+  label,
+  active,
+  level,
+  onClick,
+  type,
+}: {
+  label: string;
+  active: boolean;
+  level: number;
+  onClick: () => void;
+  type: string;
+}) {
   const isSeason = type === 'season';
 
   return (
@@ -141,12 +159,8 @@ function TreeItem({ label, active, level, onClick, type }: { label: string, acti
         padding: '0.5rem 0.75rem',
         paddingLeft: `${level * 12 + 12}px`,
         borderRadius: 'var(--radius-md)',
-        backgroundColor: active
-          ? 'hsla(var(--hsl-primary), 0.15)'
-          : 'transparent',
-        color: active
-          ? 'hsl(var(--hsl-primary-glow))'
-          : 'hsl(var(--hsl-text-muted))',
+        backgroundColor: active ? 'hsla(var(--hsl-primary), 0.15)' : 'transparent',
+        color: active ? 'hsl(var(--hsl-primary-glow))' : 'hsl(var(--hsl-text-muted))',
         fontSize: isSeason ? '0.95rem' : '0.875rem',
         fontWeight: active || isSeason ? 600 : 400,
         cursor: 'pointer',
@@ -154,7 +168,7 @@ function TreeItem({ label, active, level, onClick, type }: { label: string, acti
         borderLeft: active ? '2px solid hsl(var(--hsl-primary))' : '2px solid transparent',
         display: 'flex',
         alignItems: 'center',
-        gap: '0.5rem'
+        gap: '0.5rem',
       }}
       className="hover:bg-white/5"
     >
@@ -168,6 +182,5 @@ function TreeItem({ label, active, level, onClick, type }: { label: string, acti
         {label}
       </span>
     </div>
-  )
+  );
 }
-

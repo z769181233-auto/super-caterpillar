@@ -10,7 +10,7 @@
 
 - **功能名称**: Stage8 · 测试报告与功能强绑定 + 防复用
 - **关联 Stage**: Stage8
-- **关联约束（Stage5 / Stage6 / Others）**: 
+- **关联约束（Stage5 / Stage6 / Others）**:
   - **是** - 与 Stage5/Stage6/Stage7 架构约束完全一致
   - Stage5: Prisma 单一来源约束
   - Stage6: 架构约束自动化防线
@@ -22,11 +22,13 @@
 ## 2. 变更文件清单
 
 ### 新增文件（3个）
+
 1. `tools/ci/check-test-report-naming.sh` - 命名规范检查脚本
 2. `tools/ci/check-test-report-fresh.sh` - 防复用检查脚本
 3. `docs/STAGE8_TEST_REPORT_BINDING_FINAL.md` - Stage8 Final 文档
 
 ### 修改文件（1个）
+
 4. `.github/workflows/ci.yml` - 新增 Stage8 guard 步骤
 
 ---
@@ -42,31 +44,37 @@
 ## 4. 实际执行的测试命令
 
 ### 4.1 验证命名规范脚本
+
 ```bash
 bash tools/ci/check-test-report-naming.sh
 ```
 
 ### 4.2 验证防复用脚本逻辑
+
 ```bash
 git diff --name-only HEAD~1...HEAD | grep '^docs/TEST_REPORT_.*\.md$'
 ```
 
 ### 4.3 验证 CI Workflow
+
 ```bash
 grep -A 2 "Stage8 guard" .github/workflows/ci.yml
 ```
 
 ### 4.4 验证 Stage8 文档
+
 ```bash
 test -f docs/STAGE8_TEST_REPORT_BINDING_FINAL.md
 ```
 
 ### 4.5 验证 API 构建
+
 ```bash
 pnpm --filter api build
 ```
 
 ### 4.6 列出所有测试报告
+
 ```bash
 ls -1 docs/TEST_REPORT_*.md
 ```
@@ -76,6 +84,7 @@ ls -1 docs/TEST_REPORT_*.md
 ## 5. 真实输出（禁止伪造）
 
 ### 5.1 命名规范脚本验证输出
+
 ```
 🔍 [Stage8] Checking TEST_REPORT naming convention...
 ✅ [Stage8] TEST_REPORT naming OK
@@ -84,6 +93,7 @@ ls -1 docs/TEST_REPORT_*.md
 **结果**: ✅ PASS - 所有现有测试报告符合命名规范
 
 ### 5.2 防复用脚本逻辑验证
+
 ```
 （当前无变更，脚本逻辑已验证）
 ```
@@ -91,10 +101,11 @@ ls -1 docs/TEST_REPORT_*.md
 **结果**: ✅ PASS - 脚本逻辑正确（在 CI 环境中会检查 git diff）
 
 ### 5.3 CI Workflow 验证输出
+
 ```
       - name: Stage8 guard - Test report naming
         run: bash tools/ci/check-test-report-naming.sh
-      
+
       - name: Stage8 guard - Test report freshness
         run: bash tools/ci/check-test-report-fresh.sh
 ```
@@ -102,6 +113,7 @@ ls -1 docs/TEST_REPORT_*.md
 **结果**: ✅ PASS - CI Workflow 已包含两个 Stage8 guard 步骤
 
 ### 5.4 Stage8 文档验证输出
+
 ```
 ✅ Stage8 Final 文档存在
 ```
@@ -109,6 +121,7 @@ ls -1 docs/TEST_REPORT_*.md
 **结果**: ✅ PASS - Stage8 Final 文档存在
 
 ### 5.5 API 构建验证输出
+
 ```
 > api@1.0.0 build
 > nest build
@@ -119,6 +132,7 @@ webpack 5.97.1 compiled successfully in 3312 ms
 **结果**: ✅ PASS - 构建成功，无错误
 
 ### 5.6 测试报告列表输出
+
 ```
 docs/TEST_REPORT_STAGE6_GUARDRAILS_20251213.md
 docs/TEST_REPORT_STAGE7_TEST_GOVERNANCE_20251213.md
@@ -155,6 +169,7 @@ docs/TEST_REPORT_STAGE8_TEST_REPORT_BINDING_20251213.md
 **YES** ✅
 
 **原因说明**:
+
 1. ✅ 所有代码修改已完成
 2. ✅ 所有测试命令已亲自执行并通过
 3. ✅ 测试报告已生成并落盘
@@ -174,4 +189,3 @@ docs/TEST_REPORT_STAGE8_TEST_REPORT_BINDING_20251213.md
 ---
 
 **报告文件**: `docs/TEST_REPORT_STAGE8_TEST_REPORT_BINDING_20251213.md`
-

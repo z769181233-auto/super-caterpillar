@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Runtime Gate - 烟雾验证闭环
- * 
+ *
  * 启动 API/DB/Redis → 跑 smoke → 跑关键 SQL → 自动写入验证报告
  */
 
@@ -27,7 +27,6 @@ const results = {
     warnings: 0,
   },
 };
-
 
 function runScript(script) {
   const tmpPath = join(rootDir, `smoke-check-${Date.now()}.js`);
@@ -72,7 +71,6 @@ function warning(name, message) {
 console.log('=== Runtime Smoke Tests ===\n');
 
 async function runSmoke() {
-
   // 1. API 健康检查
   check('API health check', () => {
     try {
@@ -220,8 +218,7 @@ async function runSmoke() {
   }
 }
 
-runSmoke().catch(error => {
+runSmoke().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
-

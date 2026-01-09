@@ -17,4 +17,3 @@ export class CreateSeasonDto {
   @MaxLength(2000, { message: 'Season description must not exceed 2000 characters' })
   description?: string;
 }
-

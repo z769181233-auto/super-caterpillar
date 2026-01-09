@@ -4,13 +4,13 @@ import { PrismaClient } from '../packages/database/src/generated/prisma/index';
 import fetch from 'node-fetch'; // assuming node environment
 
 const prisma = new PrismaClient();
-const API_BASE_URL = 'http://localhost:3001'; // Assuming web app handles API routes at /api or separate API server at 3000? 
+const API_BASE_URL = 'http://localhost:3001'; // Assuming web app handles API routes at /api or separate API server at 3000?
 // Actually apiClient says http://localhost:3000 by default. Let's use 3000.
 const API_SERVER_URL = 'http://localhost:3000';
 
 const PROJECT_ID = '99a1bcdb-fe85-4244-9a80-dabae0a3dbe1';
 
-// Need a worker key or auth token? 
+// Need a worker key or auth token?
 // Usually user triggers this. So we need to simulate user login or use a bypassing way.
 // The API endpoints are protected.
 // Let's try to simulate login first to get a cookie/token, or use the database directly to "mock" the analysis result if the analysis itself is what we want to verify.
@@ -31,45 +31,45 @@ const PROJECT_ID = '99a1bcdb-fe85-4244-9a80-dabae0a3dbe1';
 // `ce-core-processor.ts`? "CE" might mean Creative Engine or Content Enhancement.
 
 async function main() {
-    // 1. Get a scene
-    const scene = await prisma.scene.findFirst({
-        where: {
-            episode: {
-                season: {
-                    projectId: PROJECT_ID
-                }
-            }
-        }
-    });
+  // 1. Get a scene
+  const scene = await prisma.scene.findFirst({
+    where: {
+      episode: {
+        season: {
+          projectId: PROJECT_ID,
+        },
+      },
+    },
+  });
 
-    if (!scene) {
-        console.log("No scene found.");
-        return;
-    }
+  if (!scene) {
+    console.log('No scene found.');
+    return;
+  }
 
-    console.log(`Found Scene: ${scene.id} (${scene.title})`);
+  console.log(`Found Scene: ${scene.id} (${scene.title})`);
 
-    // 2. Trigger Enhancement?
-    // Since I cannot easily call API without auth, I will simulate what the API does: Create a Job.
-    // I need to know the Job Type for semantic enhancement.
-    // Let's guess or grep.
+  // 2. Trigger Enhancement?
+  // Since I cannot easily call API without auth, I will simulate what the API does: Create a Job.
+  // I need to know the Job Type for semantic enhancement.
+  // Let's guess or grep.
 
-    const JOB_TYPE = 'SCENE_SEMANTIC_ANALYSIS'; // Hypothesis
+  const JOB_TYPE = 'SCENE_SEMANTIC_ANALYSIS'; // Hypothesis
 
-    // Create Job
-    const job = await prisma.job.create({
-        data: {
-            type: JOB_TYPE,
-            status: 'PENDING',
-            projectId: PROJECT_ID,
-            payload: {
-                sceneId: scene.id,
-                projectId: PROJECT_ID
-            }
-        }
-    });
+  // Create Job
+  const job = await prisma.job.create({
+    data: {
+      type: JOB_TYPE,
+      status: 'PENDING',
+      projectId: PROJECT_ID,
+      payload: {
+        sceneId: scene.id,
+        projectId: PROJECT_ID,
+      },
+    },
+  });
 
-    console.log(`Created Job ${job.id} of type ${JOB_TYPE}`);
+  console.log(`Created Job ${job.id} of type ${JOB_TYPE}`);
 }
 
 // main().catch(console.error);

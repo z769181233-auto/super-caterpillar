@@ -1,10 +1,10 @@
 /**
  * EngineAdapterClient
  * Worker 端使用 EngineAdapter 的客户端
- * 
+ *
  * 【重要】该文件只在 Worker 进程中使用，不可被 API 端 import。
  * Worker 端与 API 端完全解耦，Worker 端的 Adapter 注册来源只在 Worker 侧代码范围内。
- * 
+ *
  * 注意：Worker 是独立进程，不能使用 NestJS 依赖注入
  * 因此这里创建一个简单的 Adapter 实例，直接调用处理逻辑
  */
@@ -63,13 +63,17 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
   public readonly name = 'default_novel_analysis';
   private readonly selector = new CE06EngineSelector();
 
-  constructor(private readonly prisma: PrismaClient) { }
+  constructor(private readonly prisma: PrismaClient) {}
 
   /**
    * 检查是否支持指定的引擎标识
    */
   supports(engineKey: string): boolean {
-    return engineKey === 'default_novel_analysis' || engineKey === 'local_novel_analysis' || engineKey === 'ce06_novel_parsing';
+    return (
+      engineKey === 'default_novel_analysis' ||
+      engineKey === 'local_novel_analysis' ||
+      engineKey === 'ce06_novel_parsing'
+    );
   }
 
   /**
@@ -119,13 +123,13 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
 
       // S3-A: 尝试使用三态选择器 (Real/Replay/Legacy)
       const ce06Input: CE06Input = {
-        structured_text: rawText,  // Stage-3-B: SSOT 要求字段
+        structured_text: rawText, // Stage-3-B: SSOT 要求字段
         novelSourceId: novelSource.id,
         projectId,
-        rawText,  // 向后兼容
+        rawText, // 向后兼容
         options: {
           model: input.payload.engineVersion || 'gemini-2.0-flash',
-        }
+        },
       };
 
       const selectedOutput = await this.selector.invoke(ce06Input);
@@ -137,7 +141,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
         structure = mapCE06OutputToProjectStructure(projectId, selectedOutput);
         engineInfo = {
           key: (selectedOutput as any).engineInfo?.key || 'ce06_engine',
-          version: (selectedOutput as any).engineInfo?.version || '1.0'
+          version: (selectedOutput as any).engineInfo?.version || '1.0',
         };
       } else {
         // 使用 Legacy Stub (Legacy 模式或选择器返回 null)
@@ -146,7 +150,9 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
         structure = basicTextSegmentation(rawText, projectId);
       }
 
-      const parseDuration = selectedOutput ? ((selectedOutput as any).performance?.latencyMs || (Date.now() - parseStartTime)) : (Date.now() - parseStartTime);
+      const parseDuration = selectedOutput
+        ? (selectedOutput as any).performance?.latencyMs || Date.now() - parseStartTime
+        : Date.now() - parseStartTime;
 
       // 记录解析完成日志
       logStructured('info', {
@@ -195,10 +201,16 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
               inputHash,
               outputHash,
               latencyMs: parseDuration,
-              tokensIn: (selectedOutput as any).performance?.tokensIn || (selectedOutput as any).billing_usage?.promptTokens || 0,
-              tokensOut: (selectedOutput as any).performance?.tokensOut || (selectedOutput as any).billing_usage?.completionTokens || 0,
-            }
-          }
+              tokensIn:
+                (selectedOutput as any).performance?.tokensIn ||
+                (selectedOutput as any).billing_usage?.promptTokens ||
+                0,
+              tokensOut:
+                (selectedOutput as any).performance?.tokensOut ||
+                (selectedOutput as any).billing_usage?.completionTokens ||
+                0,
+            },
+          },
         });
 
         // Stage-3-B: 计费逻辑已由 CostLedgerService 统一处理
@@ -236,20 +248,27 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
       });
 
       // S3-A: 返回成功结果，包含完整的 analyzed 结构（用于后续 Task 输出和前端展示）
-      const output = (input.jobType === 'CE06_NOVEL_PARSING' || input.engineKey === 'ce06_novel_parsing')
-        ? (selectedOutput || {})
-        : {
-          analyzed: writtenStructure,
-          stats: structure.stats,
-        };
+      const output =
+        input.jobType === 'CE06_NOVEL_PARSING' || input.engineKey === 'ce06_novel_parsing'
+          ? selectedOutput || {}
+          : {
+              analyzed: writtenStructure,
+              stats: structure.stats,
+            };
 
       return {
         status: 'SUCCESS' as EngineInvokeStatus,
         output,
         metrics: {
           latencyMs: parseDuration,
-          tokensIn: (selectedOutput as any).performance?.tokensIn || (selectedOutput as any).billing_usage?.promptTokens || 0,
-          tokensOut: (selectedOutput as any).performance?.tokensOut || (selectedOutput as any).billing_usage?.completionTokens || 0,
+          tokensIn:
+            (selectedOutput as any).performance?.tokensIn ||
+            (selectedOutput as any).billing_usage?.promptTokens ||
+            0,
+          tokensOut:
+            (selectedOutput as any).performance?.tokensOut ||
+            (selectedOutput as any).billing_usage?.completionTokens ||
+            0,
         },
       };
     } catch (error: any) {
@@ -290,8 +309,8 @@ export class HttpEngineAdapterWorker implements EngineAdapter {
   constructor(
     public readonly name: string,
     private readonly baseUrl: string,
-    private readonly path: string = '/story/parse',
-  ) { }
+    private readonly path: string = '/story/parse'
+  ) {}
 
   supports(engineKey: string): boolean {
     return engineKey === this.name;
@@ -349,7 +368,8 @@ export class EngineAdapterClient {
     console.log('[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (Stage-3-Final)');
 
     // Old Logic (Commented out but ce06BaseUrl is needed for CE07)
-    const ce06BaseUrl = env.engineRealHttpBaseUrl || process.env.CE06_BASE_URL || 'http://localhost:8000';
+    const ce06BaseUrl =
+      env.engineRealHttpBaseUrl || process.env.CE06_BASE_URL || 'http://localhost:8000';
     /* 
     if (process.env.STAGE3_ENGINE_MODE === 'REPLAY') {
       this.adapters.set('ce06_novel_parsing', novelAdapter);
@@ -361,7 +381,11 @@ export class EngineAdapterClient {
     */
 
     // 注册 CE07 Http 适配器
-    const ce07Adapter = new HttpEngineAdapterWorker('ce07_memory_update', ce06BaseUrl, '/memory/update');
+    const ce07Adapter = new HttpEngineAdapterWorker(
+      'ce07_memory_update',
+      ce06BaseUrl,
+      '/memory/update'
+    );
     this.adapters.set(ce07Adapter.name, ce07Adapter);
 
     // [P2] 注册 CE03 视觉密度适配器
@@ -379,8 +403,10 @@ export class EngineAdapterClient {
       invoke: async (input) => {
         // 由于这只是一个适配器层，真正的 logic 已经在 ce-core-processor.ts 中由 main.ts 分发了。
         // 但为了 EngineHubClient.invoke 能够正常工作，我们需要在这里也注册它。
-        throw new Error('Direct invocation of default_shot_render via adapter is not recommended. Use dedicated processor.');
-      }
+        throw new Error(
+          'Direct invocation of default_shot_render via adapter is not recommended. Use dedicated processor.'
+        );
+      },
     });
   }
 
@@ -412,7 +438,7 @@ export class EngineAdapterClient {
     }
 
     throw new Error(
-      `No engine adapter found for engineKey="${engineKey || 'undefined'}" jobType="${jobType || 'undefined'}"`,
+      `No engine adapter found for engineKey="${engineKey || 'undefined'}" jobType="${jobType || 'undefined'}"`
     );
   }
 
@@ -424,4 +450,3 @@ export class EngineAdapterClient {
     return adapter.invoke(input);
   }
 }
-

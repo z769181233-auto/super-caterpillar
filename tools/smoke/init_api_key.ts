@@ -20,10 +20,14 @@ async function testConnection(maxRetries = 5, delay = 1000): Promise<boolean> {
       return true;
     } catch (error: any) {
       if (i < maxRetries - 1) {
-        console.log(`   Database connection failed, retrying in ${delay}ms... (attempt ${i + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        console.log(
+          `   Database connection failed, retrying in ${delay}ms... (attempt ${i + 1}/${maxRetries})`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
       } else {
-        console.error(`   Database connection failed after ${maxRetries} attempts: ${error.message}`);
+        console.error(
+          `   Database connection failed after ${maxRetries} attempts: ${error.message}`
+        );
         return false;
       }
     }
@@ -42,7 +46,9 @@ async function main() {
 
   // Smoke 默认种子数据（可通过环境变量覆盖）
   const smokeUserEmail = process.env.SMOKE_USER_EMAIL || 'smoke@local';
-  const smokeUserPasswordHash = process.env.SMOKE_USER_PASSWORD_HASH || '$2a$10$nqOlsY8A4rwqENUT3ef5ruv4cLoT.vwZKqSu//xTNKoZXOcOu9QNS';
+  const smokeUserPasswordHash =
+    process.env.SMOKE_USER_PASSWORD_HASH ||
+    '$2a$10$nqOlsY8A4rwqENUT3ef5ruv4cLoT.vwZKqSu//xTNKoZXOcOu9QNS';
   const smokeOrgSlug = process.env.SMOKE_ORG_SLUG || 'smoke-org';
   const smokeOrgName = process.env.SMOKE_ORG_NAME || 'Smoke Org';
 
@@ -59,7 +65,7 @@ async function main() {
       // 3. Update User to remove defaultOrg (break circular dep if strictly required)
       await prisma.user.updateMany({
         where: { email: smokeUserEmail },
-        data: { defaultOrganizationId: null }
+        data: { defaultOrganizationId: null },
       });
       // 4. Try delete Org (might fail if projects exist, so wrap in try-catch or safe delete)
       try {
@@ -192,7 +198,9 @@ async function main() {
           name: 'Smoke Test API Key',
         },
       });
-      console.log(`✅ Updated existing API Key: ${apiKey} (bound to ${organization.id}, User Role: admin)`);
+      console.log(
+        `✅ Updated existing API Key: ${apiKey} (bound to ${organization.id}, User Role: admin)`
+      );
     } else {
       await prisma.apiKey.create({
         data: {
@@ -205,13 +213,17 @@ async function main() {
           ownerOrgId: organization.id,
         },
       });
-      console.log(`✅ Created new API Key: ${apiKey} (bound to ${organization.id}, User Role: admin)`);
-      console.log(`✅ Created new API Key: ${apiKey} (bound to ${organization.id}, User Role: admin)`);
+      console.log(
+        `✅ Created new API Key: ${apiKey} (bound to ${organization.id}, User Role: admin)`
+      );
+      console.log(
+        `✅ Created new API Key: ${apiKey} (bound to ${organization.id}, User Role: admin)`
+      );
     }
 
     // [DETERMINISTIC FIX] Ensure user is actually a member (re-check upsert logic above is enough, but to be 100% sure for existing users):
     const membership = await prisma.organizationMember.findUnique({
-      where: { userId_organizationId: { userId: user.id, organizationId: organization.id } }
+      where: { userId_organizationId: { userId: user.id, organizationId: organization.id } },
     });
     if (!membership) {
       console.log(`[smoke] Repairing membership for ${user.email} in ${organization.slug}...`);
@@ -219,8 +231,8 @@ async function main() {
         data: {
           userId: user.id,
           organizationId: organization.id,
-          role: 'OWNER' as any // Use OrganizationRole enum typically
-        }
+          role: 'OWNER' as any, // Use OrganizationRole enum typically
+        },
       });
     }
 
@@ -233,8 +245,8 @@ async function main() {
         id: SMOKE_PROJECT_ID,
         name: 'Smoke Verification Project',
         organizationId: organization.id,
-        ownerId: user.id
-      }
+        ownerId: user.id,
+      },
     });
     console.log(`✅ Seeded Smoke Project: ${SMOKE_PROJECT_ID}`);
 
@@ -277,15 +289,16 @@ async function main() {
     if (check.ownerUserId !== user.id || check.ownerOrgId !== organization.id) {
       throw new Error(
         `[smoke] apiKey binding mismatch. expected user=${user.id} org=${organization.id} but got user=${check.ownerUserId} org=${check.ownerOrgId}. ` +
-        `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
+          `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
       );
     }
     console.log(`✅ Verified apiKey binding: ${apiKey} -> user=${user.id} org=${organization.id}`);
-
   } catch (error: any) {
     console.error(`❌ Failed to initialize API Key: ${error.message}`);
     if (error.message?.includes('secretEnc')) {
-      console.error(`   Hint: Database schema may not be up to date. Run: pnpm --filter database prisma generate`);
+      console.error(
+        `   Hint: Database schema may not be up to date. Run: pnpm --filter database prisma generate`
+      );
     }
     process.exit(1);
   }

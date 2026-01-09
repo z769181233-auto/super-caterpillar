@@ -180,7 +180,6 @@ async function main() {
     console.log('Worker ID:', workerId);
     console.log('Shot ID:', shot.id);
     console.log('\n请继续手动执行 API 测试步骤...');
-
   } catch (error) {
     console.error('❌ 错误:', error.message);
     console.error(error.stack);
@@ -191,4 +190,3 @@ async function main() {
 }
 
 main();
-

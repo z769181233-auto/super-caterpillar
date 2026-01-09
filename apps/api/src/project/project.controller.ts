@@ -24,7 +24,11 @@ import { ProjectOwnershipGuard } from './guards/project-ownership.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentOrganization } from '../auth/decorators/current-organization.decorator';
 import { AuthenticatedUser } from '@scu/shared-types';
-import { TaskType as TaskTypeEnum, TaskStatus as TaskStatusEnum, JobType as JobTypeEnum } from 'database';
+import {
+  TaskType as TaskTypeEnum,
+  TaskStatus as TaskStatusEnum,
+  JobType as JobTypeEnum,
+} from 'database';
 import { Req } from '@nestjs/common';
 import { Request } from 'express';
 import { Permissions } from '../auth/permissions.decorator';
@@ -55,7 +59,7 @@ export class ProjectController {
     private readonly taskService: TaskService,
     private readonly permissionService: PermissionService,
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   @Get()
   async getProjects(
@@ -69,7 +73,12 @@ export class ProjectController {
     }
     const pageNum = page ? parseInt(page, 10) : 1;
     const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 100;
-    const result = await this.projectService.findAll(user.userId, organizationId, pageNum, pageSizeNum);
+    const result = await this.projectService.findAll(
+      user.userId,
+      organizationId,
+      pageNum,
+      pageSizeNum
+    );
     return {
       success: true,
       data: result,
@@ -87,7 +96,7 @@ export class ProjectController {
   @Permissions(SystemPermissions.AUTH) // 仅需登录
   async createDemoStructure(
     @CurrentUser() user: AuthenticatedUser,
-    @CurrentOrganization() organizationId: string | null,
+    @CurrentOrganization() organizationId: string | null
   ): Promise<any> {
     // 环境门禁: 仅 dev/smoke 开启
     const isDemoEnabled = process.env.ENABLE_DEMO_SEED_ENDPOINT === 'true';
@@ -245,7 +254,7 @@ export class ProjectController {
       projectId,
       seasonId,
       page: page ? parseInt(page) : 1,
-      pageSize: pageSize ? parseInt(pageSize) : 100
+      pageSize: pageSize ? parseInt(pageSize) : 100,
     });
     return {
       success: true,
@@ -271,7 +280,7 @@ export class ProjectController {
       projectId,
       episodeId,
       page: page ? parseInt(page) : 1,
-      pageSize: pageSize ? parseInt(pageSize) : 100
+      pageSize: pageSize ? parseInt(pageSize) : 100,
     });
     return {
       success: true,
@@ -297,7 +306,7 @@ export class ProjectController {
       projectId, // 传入 projectId 以确保范围
       sceneId,
       page: page ? parseInt(page) : 1,
-      pageSize: pageSize ? parseInt(pageSize) : 100
+      pageSize: pageSize ? parseInt(pageSize) : 100,
     });
     return {
       success: true,
@@ -374,14 +383,16 @@ export class ProjectController {
 
     // 记录审计日志
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    await this.auditLogService.record({
-      userId: user.userId,
-      action: AuditActions.PROJECT_DELETE,
-      resourceType: 'project',
-      resourceId: id,
-      ip: requestInfo.ip,
-      userAgent: requestInfo.userAgent,
-    }).catch(() => undefined);
+    await this.auditLogService
+      .record({
+        userId: user.userId,
+        action: AuditActions.PROJECT_DELETE,
+        resourceType: 'project',
+        resourceId: id,
+        ip: requestInfo.ip,
+        userAgent: requestInfo.userAgent,
+      })
+      .catch(() => undefined);
 
     return {
       success: true,
@@ -406,15 +417,17 @@ export class ProjectController {
 
     // 记录审计日志（AuditInterceptor 会自动记录，此处显式记录以包含更多细节）
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    await this.auditLogService.record({
-      userId: user.userId,
-      action: AuditActions.EPISODE_CREATE,
-      resourceType: 'episode',
-      resourceId: episode.id,
-      ip: requestInfo.ip,
-      userAgent: requestInfo.userAgent,
-      details: { projectId, episodeIndex: episode.index },
-    }).catch(() => undefined); // 审计失败不阻断业务
+    await this.auditLogService
+      .record({
+        userId: user.userId,
+        action: AuditActions.EPISODE_CREATE,
+        resourceType: 'episode',
+        resourceId: episode.id,
+        ip: requestInfo.ip,
+        userAgent: requestInfo.userAgent,
+        details: { projectId, episodeIndex: episode.index },
+      })
+      .catch(() => undefined); // 审计失败不阻断业务
 
     return {
       success: true,
@@ -438,15 +451,17 @@ export class ProjectController {
 
     // 记录审计日志
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    await this.auditLogService.record({
-      userId: user.userId,
-      action: AuditActions.SCENE_CREATE,
-      resourceType: 'scene',
-      resourceId: scene.id,
-      ip: requestInfo.ip,
-      userAgent: requestInfo.userAgent,
-      details: { episodeId, sceneIndex: scene.index },
-    }).catch(() => undefined);
+    await this.auditLogService
+      .record({
+        userId: user.userId,
+        action: AuditActions.SCENE_CREATE,
+        resourceType: 'scene',
+        resourceId: scene.id,
+        ip: requestInfo.ip,
+        userAgent: requestInfo.userAgent,
+        details: { episodeId, sceneIndex: scene.index },
+      })
+      .catch(() => undefined);
 
     return {
       success: true,
@@ -470,15 +485,17 @@ export class ProjectController {
 
     // 记录审计日志
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    await this.auditLogService.record({
-      userId: user.userId,
-      action: AuditActions.SCENE_UPDATE,
-      resourceType: 'scene',
-      resourceId: id,
-      ip: requestInfo.ip,
-      userAgent: requestInfo.userAgent,
-      details: { sceneIndex: scene.index },
-    }).catch(() => undefined);
+    await this.auditLogService
+      .record({
+        userId: user.userId,
+        action: AuditActions.SCENE_UPDATE,
+        resourceType: 'scene',
+        resourceId: id,
+        ip: requestInfo.ip,
+        userAgent: requestInfo.userAgent,
+        details: { sceneIndex: scene.index },
+      })
+      .catch(() => undefined);
 
     return {
       success: true,
@@ -502,15 +519,17 @@ export class ProjectController {
 
     // 记录审计日志
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    await this.auditLogService.record({
-      userId: user.userId,
-      action: AuditActions.SHOT_CREATE,
-      resourceType: 'shot',
-      resourceId: shot.id,
-      ip: requestInfo.ip,
-      userAgent: requestInfo.userAgent,
-      details: { sceneId, shotIndex: shot.index },
-    }).catch(() => undefined);
+    await this.auditLogService
+      .record({
+        userId: user.userId,
+        action: AuditActions.SHOT_CREATE,
+        resourceType: 'shot',
+        resourceId: shot.id,
+        ip: requestInfo.ip,
+        userAgent: requestInfo.userAgent,
+        details: { sceneId, shotIndex: shot.index },
+      })
+      .catch(() => undefined);
 
     return {
       success: true,
@@ -558,15 +577,17 @@ export class ProjectController {
 
     // 记录审计日志
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    await this.auditLogService.record({
-      userId: user.userId,
-      action: AuditActions.SHOT_UPDATE,
-      resourceType: 'shot',
-      resourceId: id,
-      ip: requestInfo.ip,
-      userAgent: requestInfo.userAgent,
-      details: { shotIndex: shot.index },
-    }).catch(() => undefined);
+    await this.auditLogService
+      .record({
+        userId: user.userId,
+        action: AuditActions.SHOT_UPDATE,
+        resourceType: 'shot',
+        resourceId: id,
+        ip: requestInfo.ip,
+        userAgent: requestInfo.userAgent,
+        details: { shotIndex: shot.index },
+      })
+      .catch(() => undefined);
 
     return {
       success: true,
@@ -612,11 +633,15 @@ export class ProjectController {
 
     const updated = await Promise.all(
       body.shotIds.map((shotId) =>
-        this.projectService.updateShot(shotId, {
-          reviewStatus: body.reviewStatus,
-          reviewNote: body.reviewNote,
-          reviewedAt: new Date().toISOString(),
-        } as any, organizationId)
+        this.projectService.updateShot(
+          shotId,
+          {
+            reviewStatus: body.reviewStatus,
+            reviewNote: body.reviewNote,
+            reviewedAt: new Date().toISOString(),
+          } as any,
+          organizationId
+        )
       )
     );
 
@@ -631,10 +656,16 @@ export class ProjectController {
   @Post('shots/batch/generate')
   @AuditAction(AuditActions.PROJECT_UPDATE)
   async batchGenerate(
-    @Body() body: { shotIds: string[]; jobType: 'IMAGE' | 'VIDEO' | 'STORYBOARD' | 'AUDIO'; engine?: string; engineConfig?: any },
+    @Body()
+    body: {
+      shotIds: string[];
+      jobType: 'IMAGE' | 'VIDEO' | 'STORYBOARD' | 'AUDIO';
+      engine?: string;
+      engineConfig?: any;
+    },
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() organizationId: string | null,
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     if (!organizationId) {
       throw new Error('No organization context');
@@ -680,7 +711,11 @@ export class ProjectController {
           shotId,
           {
             type: JobTypeEnum.SHOT_RENDER as any,
-            payload: { engine: body.engine, engineConfig: body.engineConfig, jobType: body.jobType },
+            payload: {
+              engine: body.engine,
+              engineConfig: body.engineConfig,
+              jobType: body.jobType,
+            },
           },
           user.userId,
           organizationId,
@@ -709,14 +744,3 @@ export class ProjectController {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
-

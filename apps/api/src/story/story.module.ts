@@ -9,10 +9,16 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [JobModule, PrismaModule, AuditLogModule, PermissionModule, ApiSecurityModule, AuthModule],
+  imports: [
+    JobModule,
+    PrismaModule,
+    AuditLogModule,
+    PermissionModule,
+    ApiSecurityModule,
+    AuthModule,
+  ],
   controllers: [StoryController],
   providers: [StoryService],
   exports: [StoryService],
 })
 export class StoryModule {}
-

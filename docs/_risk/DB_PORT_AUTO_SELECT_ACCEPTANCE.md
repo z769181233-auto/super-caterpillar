@@ -1,10 +1,13 @@
 # 数据库端口自动选择功能 - 实机验收报告
 
 ## 模式声明
+
 **MODE: EXECUTE → REVIEW** - 执行验收测试，发现问题并修复
 
 ## 验收目标
+
 验证以下 4 项功能：
+
 1. 坏容器自愈（Created 状态 + 端口绑定失败 → 自动删除重建）
 2. 端口自动切换（5432 被占用 → 自动选择 5433）
 3. .env.local 自动同步（DATABASE_URL 端口与 docker port 一致）
@@ -25,12 +28,14 @@ pnpm: 9.1.0
 ### ✅ 1. 坏容器自愈 - 通过
 
 #### Before
+
 ```
 容器状态: Created
 错误信息: "port is already allocated" (端口 5432 已被占用)
 ```
 
 #### 执行 db:up
+
 ```
 ⚠️  检测到容器处于 Created 状态，检查是否端口绑定失败...
 ❌ 容器端口绑定失败，正在删除并重建...
@@ -38,6 +43,7 @@ pnpm: 9.1.0
 ```
 
 #### After
+
 ```
 容器状态: Up (running)
 错误信息: (空)
@@ -50,17 +56,20 @@ pnpm: 9.1.0
 ### ✅ 2. 端口自动切换 - 通过
 
 #### 端口占用情况
+
 ```
 5432 端口被占用: com.docke 72474 (Docker 进程)
 ```
 
 #### 端口选择过程
+
 ```
 ⚠️  端口 5432 已被占用，尝试下一个...
 ✅ 选择端口: 5433
 ```
 
 #### 验证结果
+
 ```
 docker port scu-postgres:
   5432/tcp -> 0.0.0.0:5433
@@ -74,18 +83,21 @@ docker port scu-postgres:
 ### ✅ 3. .env.local 自动同步 - 通过
 
 #### 自动更新过程
+
 ```
 📝 自动更新 .env.local 中的 DATABASE_URL 端口...
 ✅ 已更新 .env.local
 ```
 
 #### 验证结果
+
 ```
 .env.local DATABASE_URL:
   postgresql://postgres:postgres@localhost:5433/scu?schema=public
 ```
 
 #### 端口一致性验证
+
 - docker port: `5433`
 - .env.local DATABASE_URL: `localhost:5433`
 
@@ -96,6 +108,7 @@ docker port scu-postgres:
 ### ✅ 4. 端到端可用 - 通过（修复后）
 
 #### 4.1 wait-postgres.js
+
 ```
 ✅ 数据库连接成功！
    尝试次数: 1
@@ -107,6 +120,7 @@ docker port scu-postgres:
 #### 4.2 db:init（修复前失败，修复后成功）
 
 **修复前问题**:
+
 ```
 Error: P3006
 Migration `20241212_stage4_semantic_shot_qa_tables` failed to apply cleanly to the shadow database.
@@ -114,12 +128,14 @@ Error: The underlying table for model `shots` does not exist.
 ```
 
 **原因分析**:
+
 - 数据库是全新的（空数据库）
 - `migrate dev` 需要 shadow database，但 migrations 依赖已存在的表
 - 应该使用 `db push` 而不是 `migrate dev`（对于空数据库）
 
 **修复方案**:
 修改 `tools/db/init-db.js`:
+
 1. 新增 `isDatabaseEmpty()` 函数：检查数据库是否为空
 2. 修改迁移策略：
    - 如果数据库为空 → 使用 `db push`（更安全，不需要 shadow database）
@@ -127,6 +143,7 @@ Error: The underlying table for model `shots` does not exist.
    - 如果没有 migrations → 使用 `db push`
 
 **修复后结果**:
+
 ```
 步骤 3/3: 运行 Prisma 迁移...
 📦 检测到数据库为空，使用 db push（更安全）...
@@ -140,6 +157,7 @@ Error: The underlying table for model `shots` does not exist.
 #### 4.3 API dev smoke test
 
 **结果**:
+
 ```
 ✅ Nest application successfully started
 ✅ Redis connected
@@ -159,17 +177,19 @@ Error: The underlying table for model `shots` does not exist.
 **文件**: `tools/db/init-db.js`
 
 **修改**:
+
 1. 新增 `isDatabaseEmpty()` 函数
 2. 修改迁移策略：数据库为空时优先使用 `db push`
 
 **代码变更**:
+
 ```javascript
 // 新增函数
 async function isDatabaseEmpty() {
   // 检查数据库表数量
   const result = await client.query(`
-    SELECT COUNT(*) as count 
-    FROM information_schema.tables 
+    SELECT COUNT(*) as count
+    FROM information_schema.tables
     WHERE table_schema = 'public'
   `);
   return parseInt(result.rows[0].count, 10) === 0;
@@ -192,6 +212,7 @@ if (dbEmpty) {
 **修改**: 增强端口提取逻辑，正确处理 `docker port` 的输出格式
 
 **代码变更**:
+
 ```bash
 # 修复前
 SELECTED_PORT=$(docker port "${CONTAINER_NAME}" 5432/tcp 2>/dev/null | cut -d: -f1 || echo "5432")
@@ -253,4 +274,3 @@ fi
 **验收完成时间**: 2025-12-13 23:59
 **验收人**: Cursor AI (EXECUTE → REVIEW 模式)
 **结论**: ✅ **验收通过，功能可用**
-

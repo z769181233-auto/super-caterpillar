@@ -7,4 +7,3 @@ export class AppController {
     return { message: 'Super Caterpillar Universe API' };
   }
 }
-

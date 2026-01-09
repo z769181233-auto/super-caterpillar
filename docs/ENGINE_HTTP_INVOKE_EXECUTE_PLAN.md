@@ -4,7 +4,8 @@
 **生成时间**: 2024-12-11  
 **对应批次**: S3-A.3 (EXECUTE)  
 **实现模式**: 本批次负责在"已封板的 S3-A.1"和"PLAN-only 的 S3-A.2"基础上落地实现 HTTP 调用链路，不回头改 S3-A.1 封板内容。  
-**前置文档**: 
+**前置文档**:
+
 - [ENGINE_HTTP_CONFIG.md](./ENGINE_HTTP_CONFIG.md) (S3-A.1 配置与安全设计)
 - [S3A1_REVIEW_REPORT.md](./S3A1_REVIEW_REPORT.md) (S3-A.1 封板报告，特别是第 10 章)
 - [ENGINE_HTTP_INVOKE_DESIGN.md](./ENGINE_HTTP_INVOKE_DESIGN.md) (S3-A.2 调用路径设计)
@@ -54,13 +55,14 @@
 **位置**：`private getDefaultEngineKeyForJobType(jobType: string): string | null`
 
 **实现逻辑**（伪代码）：
+
 ```typescript
 private getDefaultEngineKeyForJobType(jobType: string): string | null {
   const jobTypeToEngineKey: Record<string, string> = {
     // 现有 JobType（保持不变，禁止修改）
     NOVEL_ANALYSIS: 'default_novel_analysis', // 本地 Adapter
     SHOT_RENDER: 'default_shot_render',
-    
+
     // 新增实验性 HTTP JobType（S3-A.3 实现）
     NOVEL_ANALYSIS_HTTP: 'http_gemini_v1', // HTTP 引擎
     SHOT_RENDER_HTTP: 'http_gemini_v1',    // HTTP 引擎
@@ -71,6 +73,7 @@ private getDefaultEngineKeyForJobType(jobType: string): string | null {
 ```
 
 **关键约束**：
+
 - ✅ 只允许**新增** `*_HTTP` JobType 映射
 - ❌ **禁止修改** `NOVEL_ANALYSIS` 的映射（仍指向 `default_novel_analysis`）
 - ❌ **禁止修改** 现有 JobType 的映射关系
@@ -80,6 +83,7 @@ private getDefaultEngineKeyForJobType(jobType: string): string | null {
 **位置**：`findAdapter(engineKey?: string, jobType?: string): EngineAdapter`
 
 **实现逻辑**（伪代码，可选实现）：
+
 ```typescript
 findAdapter(engineKey?: string, jobType?: string, payload?: any): EngineAdapter {
   // 可选：如果 payload 中有 useHttpEngine=true，强制使用 HTTP 引擎
@@ -91,13 +95,14 @@ findAdapter(engineKey?: string, jobType?: string, payload?: any): EngineAdapter 
       return adapter;
     }
   }
-  
+
   // 原有逻辑（保持不变）
   // ... 现有实现
 }
 ```
 
 **关键约束**：
+
 - ⚠️ 此功能为**可选实现**，如果实现需要确保：
   - 不影响现有 `findAdapter()` 的调用方式（向后兼容）
   - 不修改现有 JobType 的默认行为
@@ -116,11 +121,13 @@ findAdapter(engineKey?: string, jobType?: string, payload?: any): EngineAdapter 
 #### 2.2.1 允许扩展的范围
 
 **只能在以下层面新增逻辑**：
+
 - ✅ HTTP 请求 Body 构造（将 `EngineInvokeInput` 转换为 HTTP 请求格式）
 - ✅ HTTP 响应数据解析（将外部服务响应转换为 `EngineInvokeResult.output`）
 - ✅ metrics 字段映射（tokens → tokensUsed, costUsd → cost）
 
 **禁止修改的范围**：
+
 - ❌ **禁止修改** `buildAuthHeaders()`, `buildHmacHeaders()` - 认证 Header 拼装（S3-A.1 封板）
 - ❌ **禁止修改** `handleHttpResponse()`, `handleHttpError()` - 错误分类逻辑（S3-A.1 封板）
 - ❌ **禁止修改** `logRequestStart()` - 日志脱敏逻辑（S3-A.1 封板）
@@ -132,13 +139,14 @@ findAdapter(engineKey?: string, jobType?: string, payload?: any): EngineAdapter 
 **位置**：`invoke()` 方法内部，在调用 `buildAuthHeaders()` 之前
 
 **实现逻辑**（伪代码）：
+
 ```typescript
 async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
   // ... 现有逻辑（获取 config、构造 URL）
-  
+
   // S3-A.3 新增：根据 JobType 构造不同的请求 Body
   const requestBody = this.buildRequestBody(input);
-  
+
   // 现有逻辑（调用 buildAuthHeaders，发送请求）
   const headers = this.buildAuthHeaders(config, requestBody);
   // ...
@@ -153,7 +161,7 @@ private buildRequestBody(input: EngineInvokeInput): any {
     payload: input.payload,
     context: input.context,
   };
-  
+
   // 根据 JobType 进行特殊处理（如果需要）
   if (input.jobType === 'NOVEL_ANALYSIS_HTTP') {
     // 可以在这里对 payload 进行格式化或验证
@@ -162,13 +170,14 @@ private buildRequestBody(input: EngineInvokeInput): any {
     // 可以在这里对 payload 进行格式化或验证
     return baseBody;
   }
-  
+
   // 默认返回基础结构
   return baseBody;
 }
 ```
 
 **关键约束**：
+
 - ✅ 只允许构造请求 Body，**不修改**认证 Header 的生成逻辑
 - ✅ 请求 Body 结构必须符合 S3-A.2 设计文档中的格式
 
@@ -177,6 +186,7 @@ private buildRequestBody(input: EngineInvokeInput): any {
 **位置**：`handleHttpResponse()` 方法内部，在错误分类之后
 
 **实现逻辑**（伪代码）：
+
 ```typescript
 private handleHttpResponse(
   response: { status: number; data: HttpEngineResponse; headers: Record<string, string> },
@@ -190,7 +200,7 @@ private handleHttpResponse(
       // S3-A.3 新增：根据 JobType 解析响应数据
       const output = this.parseResponseData(response.data, jobType);
       const metrics = this.parseMetrics(response.data.metrics);
-      
+
       return {
         status: EngineInvokeStatus.SUCCESS,
         output,
@@ -213,7 +223,7 @@ private parseResponseData(responseData: HttpEngineResponse, jobType: string): Re
     // 解析镜头渲染结果
     return responseData.data || {};
   }
-  
+
   // 默认返回原始 data
   return responseData.data || {};
 }
@@ -221,7 +231,7 @@ private parseResponseData(responseData: HttpEngineResponse, jobType: string): Re
 // S3-A.3 新增方法：解析 metrics
 private parseMetrics(metrics?: any): EngineInvokeResult['metrics'] {
   if (!metrics) return undefined;
-  
+
   return {
     durationMs: metrics.durationMs,
     tokensUsed: metrics.tokens || metrics.tokensUsed, // 支持两种字段名
@@ -232,6 +242,7 @@ private parseMetrics(metrics?: any): EngineInvokeResult['metrics'] {
 ```
 
 **关键约束**：
+
 - ✅ 只允许解析响应数据，**不修改**错误分类规则
 - ✅ 必须保持 `handleHttpResponse()` 的错误分类逻辑不变（SUCCESS / FAILED / RETRYABLE）
 - ✅ 必须支持不同 JobType 的响应格式（通过 `jobType` 参数区分）
@@ -253,6 +264,7 @@ private parseMetrics(metrics?: any): EngineInvokeResult['metrics'] {
 **位置**：`processJob()` 函数内部
 
 **实现逻辑**（伪代码）：
+
 ```typescript
 async function processJob(job: {
   id: string;
@@ -263,7 +275,7 @@ async function processJob(job: {
   projectId?: string;
 }): Promise<void> {
   // ... 现有逻辑（日志记录等）
-  
+
   try {
     // S3-A.3 扩展：支持 *_HTTP JobType
     if (job.type === 'NOVEL_ANALYSIS' || job.type === 'NOVEL_ANALYSIS_HTTP') {
@@ -282,7 +294,7 @@ async function processJob(job: {
           // 可以添加更多上下文信息
         },
       };
-      
+
       const engineResult = await engineAdapterClient.invoke(engineInput);
       // ... 处理结果
     } else if (job.type === 'SHOT_RENDER_HTTP') {
@@ -302,13 +314,13 @@ async function processJob(job: {
           shotId: job.shotId,
         },
       };
-      
+
       const engineResult = await engineAdapterClient.invoke(engineInput);
       // ... 处理结果
     } else {
       throw new Error(`Unsupported job type: ${job.type}`);
     }
-    
+
     // ... 上报结果
   } catch (error) {
     // ... 错误处理
@@ -317,6 +329,7 @@ async function processJob(job: {
 ```
 
 **关键约束**：
+
 - ✅ 必须保持现有 `NOVEL_ANALYSIS` 的处理逻辑不变
 - ✅ 新增的 `*_HTTP` JobType 处理逻辑必须与现有逻辑隔离
 - ✅ `context` 字段必须包含足够的上下文信息（projectId, jobId, taskId 等）
@@ -326,6 +339,7 @@ async function processJob(job: {
 **位置**：`processJob()` 函数内部，处理 `EngineInvokeResult` 之后
 
 **实现逻辑**（伪代码）：
+
 ```typescript
 const engineResult = await engineAdapterClient.invoke(engineInput);
 
@@ -357,6 +371,7 @@ if (engineResult.status === EngineInvokeStatus.SUCCESS) {
 ```
 
 **关键约束**：
+
 - ✅ 必须遵守现有 JobStatus 状态机（PENDING → RUNNING → SUCCEEDED/FAILED/RETRYING）
 - ✅ `RETRYABLE` 状态必须转换为 `FAILED` 状态，并设置 `retryable: true`
 - ✅ 不能直接修改 Job 状态，必须通过 `apiClient.reportJobResult()` 上报
@@ -374,6 +389,7 @@ if (engineResult.status === EngineInvokeStatus.SUCCESS) {
 #### 2.4.1 扩展 metrics 字段类型
 
 **当前结构**：
+
 ```typescript
 interface EngineInvokeResult {
   status: EngineInvokeStatus;
@@ -389,6 +405,7 @@ interface EngineInvokeResult {
 ```
 
 **扩展方案**（如果需要）：
+
 ```typescript
 interface EngineInvokeResult {
   // ... 现有字段
@@ -397,14 +414,15 @@ interface EngineInvokeResult {
     tokensUsed?: number;
     cost?: number;
     // S3-A.3 可选扩展：支持更多 metrics 字段
-    tokens?: number;        // 向后兼容：支持 tokens 字段名
-    costUsd?: number;       // 向后兼容：支持 costUsd 字段名
-    [key: string]: any;     // 保留索引签名，支持任意字段
+    tokens?: number; // 向后兼容：支持 tokens 字段名
+    costUsd?: number; // 向后兼容：支持 costUsd 字段名
+    [key: string]: any; // 保留索引签名，支持任意字段
   };
 }
 ```
 
 **关键约束**：
+
 - ✅ 必须保持向后兼容（现有字段不能删除或修改类型）
 - ✅ 只能**新增可选字段**，不能修改现有字段
 - ✅ 必须保留 `[key: string]: any` 索引签名，支持任意扩展字段
@@ -427,12 +445,14 @@ interface EngineInvokeResult {
 #### 2.5.1 是否需要 DTO
 
 **评估**：
+
 - 如果 HTTP 请求/响应的结构相对简单，可以直接使用 `Record<string, any>`
 - 如果需要对请求/响应进行严格的类型检查和验证，建议创建 DTO
 
 **推荐方案**：**暂不创建 DTO 文件**（MVP 阶段）
 
 **理由**：
+
 1. HTTP 请求 Body 结构相对简单（jobType, engineKey, payload, context）
 2. HTTP 响应结构由外部服务决定，难以提前定义严格类型
 3. 使用 `Record<string, any>` 可以保持灵活性，后续需要时再创建 DTO
@@ -440,6 +460,7 @@ interface EngineInvokeResult {
 #### 2.5.2 如果未来需要创建 DTO
 
 **文件结构**（仅供参考，本批次不实现）：
+
 ```typescript
 // apps/api/src/engine/dto/http-engine-payload.dto.ts
 export interface HttpEngineRequestPayload {
@@ -484,28 +505,33 @@ export interface HttpEngineResponse {
 #### 步骤 1.1：扩展 `getDefaultEngineKeyForJobType()`
 
 **任务**：
+
 1. 在 `apps/api/src/engine/engine-registry.service.ts` 中修改 `getDefaultEngineKeyForJobType()` 方法
 2. 新增 `NOVEL_ANALYSIS_HTTP` 和 `SHOT_RENDER_HTTP` 的映射
 3. 确保 `NOVEL_ANALYSIS` 的映射保持不变
 
 **验证**：
+
 - 运行现有测试，确保 `NOVEL_ANALYSIS` 仍然映射到 `default_novel_analysis`
 - 手动测试 `getDefaultEngineKeyForJobType('NOVEL_ANALYSIS_HTTP')` 返回 `'http_gemini_v1'`
 
 #### 步骤 1.2：可选扩展 `findAdapter()`（支持 feature flag）
 
 **任务**（可选）：
+
 1. 如果采用 feature flag 方案，扩展 `findAdapter()` 方法签名，添加 `payload?: any` 参数
 2. 在方法开头添加 `useHttpEngine` 分支逻辑
 3. 确保不影响现有调用方式（向后兼容）
 
 **验证**：
+
 - 运行现有测试，确保不传 `payload` 参数时行为不变
 - 测试传入 `payload: { useHttpEngine: true }` 时使用 HTTP 引擎
 
 #### 步骤 1.3：自检
 
 **检查项**：
+
 - ✅ 所有与 S3-A.1 封板文件的依赖关系保持单向（不修改封板文件）
 - ✅ `NOVEL_ANALYSIS` 的默认引擎绑定保持不变
 - ✅ 新增的 `*_HTTP` JobType 映射不影响现有逻辑
@@ -519,50 +545,59 @@ export interface HttpEngineResponse {
 #### 步骤 2.1：在 Worker 中统一构造 `EngineInvokeInput`
 
 **任务**：
+
 1. 在 `apps/workers/src/main.ts` 的 `processJob()` 函数中扩展 JobType 处理逻辑
 2. 支持 `NOVEL_ANALYSIS_HTTP` 和 `SHOT_RENDER_HTTP` JobType
 3. 统一构造 `EngineInvokeInput`（包含 jobType, engineKey, payload, context）
 
 **验证**：
+
 - 确保 `NOVEL_ANALYSIS` 的处理逻辑保持不变
 - 测试 `NOVEL_ANALYSIS_HTTP` JobType 能正确构造 `EngineInvokeInput`
 
 #### 步骤 2.2：在 HttpEngineAdapter 中扩展请求 Body 构造
 
 **任务**：
+
 1. 在 `apps/api/src/engine/adapters/http-engine.adapter.ts` 的 `invoke()` 方法中新增 `buildRequestBody()` 方法
 2. 根据 `EngineInvokeInput` 构造 HTTP 请求 Body
 3. 确保不修改 `buildAuthHeaders()` 的调用逻辑
 
 **验证**：
+
 - 确保请求 Body 结构符合 S3-A.2 设计文档
 - 确保认证 Header 的生成逻辑不变
 
 #### 步骤 2.3：在 HttpEngineAdapter 中扩展响应数据解析
 
 **任务**：
+
 1. 在 `handleHttpResponse()` 方法中新增 `parseResponseData()` 和 `parseMetrics()` 方法
 2. 根据 JobType 解析不同的响应格式
 3. 确保不修改错误分类逻辑（SUCCESS / FAILED / RETRYABLE）
 
 **验证**：
+
 - 确保错误分类逻辑保持不变
 - 测试不同 JobType 的响应数据能正确解析
 
 #### 步骤 2.4：扩展 Job 状态更新逻辑
 
 **任务**：
+
 1. 在 `apps/workers/src/main.ts` 中扩展 `EngineInvokeResult` 处理逻辑
 2. 正确处理 `SUCCESS`、`FAILED`、`RETRYABLE` 三种状态
 3. 确保 `RETRYABLE` 状态转换为 `FAILED` 状态，并设置 `retryable: true`
 
 **验证**：
+
 - 确保 Job 状态更新符合现有状态机规则
 - 测试 `RETRYABLE` 状态能正确触发重试机制
 
 #### 步骤 2.5：自检
 
 **检查项**：
+
 - ✅ 在代码层面不会引入任何 retry / sleep / 延时逻辑
 - ✅ HttpEngineAdapter 的认证和错误分类逻辑保持不变
 - ✅ Worker 的 Job 状态更新逻辑符合现有状态机
@@ -576,11 +611,13 @@ export interface HttpEngineResponse {
 #### 步骤 3.1：设计最小的 `NOVEL_ANALYSIS_HTTP` 调用流
 
 **任务**：
+
 1. 设计一个简单的 mock HTTP 服务（或使用现有的测试 HTTP 服务）
 2. 定义 mock 服务的请求/响应格式
 3. 确保 mock 服务能返回 SUCCESS / FAILED / RETRYABLE 三种场景
 
 **验证方案**（伪代码）：
+
 ```typescript
 // 最小验证场景
 // 1. SUCCESS 场景：返回 success=true, data={...}
@@ -591,6 +628,7 @@ export interface HttpEngineResponse {
 #### 步骤 3.2：规划测试 Job 创建方式
 
 **任务**：
+
 1. 设计一个临时验证脚本 `apps/api/scripts/verify-s3a3-http-invoke.ts`（本批次只描述，不创建）
 2. 脚本功能：
    - 直接创建一条 `NOVEL_ANALYSIS_HTTP` 类型的测试 Job
@@ -598,6 +636,7 @@ export interface HttpEngineResponse {
    - 可以通过 API 或直接操作数据库创建
 
 **脚本设计思路**（伪代码）：
+
 ```typescript
 // verify-s3a3-http-invoke.ts
 // 1. 创建测试 Task
@@ -609,6 +648,7 @@ export interface HttpEngineResponse {
 #### 步骤 3.3：验证链路隔离
 
 **任务**：
+
 1. 运行现有 `NOVEL_ANALYSIS` 的测试，确保行为不变
 2. 运行新的 `NOVEL_ANALYSIS_HTTP` 测试，验证新链路工作正常
 3. 确保两个链路完全隔离，互不影响
@@ -616,6 +656,7 @@ export interface HttpEngineResponse {
 #### 步骤 3.4：自检
 
 **检查项**：
+
 - ✅ 验证链路不影响现有 `NOVEL_ANALYSIS`
 - ✅ 新的 `*_HTTP` JobType 能正确调用 HTTP 引擎
 - ✅ 所有三种 `EngineInvokeResult` 状态都能正确处理
@@ -691,6 +732,7 @@ export interface HttpEngineResponse {
 **文件**：`apps/api/scripts/verify-s3a3-http-invoke.ts`（本批次只描述，不创建）
 
 **功能**：
+
 1. **创建测试 Job**：
    - 直接通过 API 或数据库创建一条 `NOVEL_ANALYSIS_HTTP` 类型的测试 Job
    - 不依赖 Studio UI
@@ -706,6 +748,7 @@ export interface HttpEngineResponse {
    - 验证 metrics 字段是否正确映射
 
 **脚本结构**（伪代码）：
+
 ```typescript
 // verify-s3a3-http-invoke.ts
 async function main() {
@@ -714,10 +757,10 @@ async function main() {
     type: 'NOVEL_ANALYSIS_HTTP',
     payload: { ... },
   });
-  
+
   // 2. 等待处理
   const result = await waitForJobCompletion(job.id);
-  
+
   // 3. 验证结果
   verifyJobResult(result, expectedStatus);
 }
@@ -728,6 +771,7 @@ async function main() {
 **方案**：使用简单的 HTTP mock 服务（如 `httpbin.org` 或本地 mock 服务）
 
 **场景覆盖**：
+
 1. **SUCCESS 场景**：
    - 返回 HTTP 200，`{ success: true, data: {...} }`
    - 验证 `EngineInvokeResult.status === SUCCESS`
@@ -748,18 +792,21 @@ async function main() {
 #### 5.2.1 覆盖 SUCCESS / FAILED / RETRYABLE 三种状态
 
 **SUCCESS 场景验证**：
+
 - [ ] HTTP 200 + `success=true` → `EngineInvokeResult.status === SUCCESS`
 - [ ] `output` 字段正确解析
 - [ ] `metrics` 字段正确映射（tokens → tokensUsed, costUsd → cost）
 - [ ] Job 状态更新为 `SUCCEEDED`
 
 **FAILED 场景验证**：
+
 - [ ] HTTP 200 + `success=false` → `EngineInvokeResult.status === FAILED`
 - [ ] HTTP 400 → `EngineInvokeResult.status === FAILED`
 - [ ] `error` 字段正确设置
 - [ ] Job 状态更新为 `FAILED`
 
 **RETRYABLE 场景验证**：
+
 - [ ] HTTP 500 → `EngineInvokeResult.status === RETRYABLE`
 - [ ] HTTP 429 → `EngineInvokeResult.status === RETRYABLE`
 - [ ] 网络错误（ECONNRESET） → `EngineInvokeResult.status === RETRYABLE`
@@ -769,6 +816,7 @@ async function main() {
 #### 5.2.2 验证 Worker 对 RETRYABLE 的处理
 
 **验证点**：
+
 - [ ] Worker 正确识别 `RETRYABLE` 状态
 - [ ] Worker 调用 `reportJobResult(FAILED, retryable=true)`
 - [ ] API 的 `markJobFailedAndMaybeRetry()` 正确标记 Job 为 `RETRYING`
@@ -780,6 +828,7 @@ async function main() {
 #### 5.3.1 现有功能回归
 
 **测试范围**：
+
 - [ ] 运行现有 `NOVEL_ANALYSIS` 的所有测试用例
 - [ ] 验证现有业务流程不受影响
 - [ ] 验证现有 API 接口行为不变
@@ -787,6 +836,7 @@ async function main() {
 #### 5.3.2 新功能隔离测试
 
 **测试范围**：
+
 - [ ] 测试 `NOVEL_ANALYSIS_HTTP` JobType 的完整调用链路
 - [ ] 测试 `SHOT_RENDER_HTTP` JobType 的完整调用链路（如果实现）
 - [ ] 验证新功能不影响现有功能
@@ -794,6 +844,7 @@ async function main() {
 ### 5.4 性能与稳定性验证
 
 **验证点**：
+
 - [ ] HTTP 请求超时处理正确（使用 S3-A.1 配置的 `timeoutMs`）
 - [ ] 并发请求不会相互干扰
 - [ ] 大量 RETRYABLE 错误不会导致系统阻塞
@@ -862,9 +913,9 @@ async function main() {
 ---
 
 **文档状态**: ✅ 实现计划完成，待评审  
-**前置文档**: 
+**前置文档**:
+
 - [ENGINE_HTTP_CONFIG.md](./ENGINE_HTTP_CONFIG.md) (S3-A.1)
 - [ENGINE_HTTP_INVOKE_DESIGN.md](./ENGINE_HTTP_INVOKE_DESIGN.md) (S3-A.2)
 - [S3A1_REVIEW_REPORT.md](./S3A1_REVIEW_REPORT.md) (S3-A.1 封板报告)  
-**后续批次**: S3-B.1（Engine 管理 API）或 S3-C.1（Studio/导入页联动增强）
-
+  **后续批次**: S3-B.1（Engine 管理 API）或 S3-C.1（Studio/导入页联动增强）

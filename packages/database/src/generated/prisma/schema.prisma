@@ -43,7 +43,6 @@ model Organization {
   updatedAt     DateTime             @updatedAt
   credits       Float                @default(0)
   type          String?
-  shotJobs      ShotJob[]            @relation("OrganizationShotJobs")
   tasks         Task[]               @relation("OrganizationTasks")
   apiKeys       ApiKey[]             @relation("OrganizationApiKeys")
   auditLogs     AuditLog[]           @relation("OrganizationAuditLogs")
@@ -53,6 +52,7 @@ model Organization {
   members       OrganizationMember[] @relation("OrganizationMembers")
   owner         User                 @relation("OrganizationOwner", fields: [ownerId], references: [id])
   projects      Project[]            @relation("OrganizationProjects")
+  shotJobs      ShotJob[]            @relation("OrganizationShotJobs")
   shots         Shot[]               @relation("OrganizationShots")
   subscriptions Subscription[]       @relation("OrganizationSubscription")
 
@@ -86,10 +86,10 @@ model Project {
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   settingsJson           Json?
-  shotJobs               ShotJob[]               @relation("ProjectShotJobs")
   tasks                  Task[]                  @relation("ProjectTasks")
   assets                 Asset[]                 @relation("ProjectAssets")
   billingEvents          BillingEvent[]          @relation("BillingEventProject")
+  costLedgers            CostLedger[]            @relation("ProjectCostLedgers")
   engineTasks            EngineTask[]            @relation("ProjectEngineTask")
   episodes               Episode[]               @relation("ProjectEpisodes")
   novelAnalysisJobs      NovelAnalysisJob[]      @relation("ProjectNovelAnalysisJobs")
@@ -100,8 +100,8 @@ model Project {
   owner                  User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
   qualityMetrics         QualityMetrics[]        @relation("ProjectQualityMetrics")
   seasons                Season[]                @relation("ProjectSeasons")
+  shotJobs               ShotJob[]               @relation("ProjectShotJobs")
   structureQualityReport StructureQualityReport? @relation("ProjectQualityReport")
-  costLedgers            CostLedger[]            @relation("ProjectCostLedgers")
 
   @@map("projects")
 }
@@ -131,12 +131,12 @@ model Episode {
   name              String
   summary           String?
   chapterId         String?            @unique
-  shotJobs          ShotJob[]          @relation("EpisodeShotJobs")
   chapter           NovelChapter?      @relation("ChapterEpisode", fields: [chapterId], references: [id])
   project           Project?           @relation("ProjectEpisodes", fields: [projectId], references: [id], onDelete: Cascade)
   season            Season             @relation("SeasonEpisodes", fields: [seasonId], references: [id], onDelete: Cascade)
   publishingReviews PublishingReview[] @relation("EpisodePublishingReview")
   scenes            Scene[]            @relation("EpisodeScenes")
+  shotJobs          ShotJob[]          @relation("EpisodeShotJobs")
 
   @@map("episodes")
 }
@@ -152,10 +152,10 @@ model Scene {
   enrichedText       String?
   projectId          String?
   visualDensityScore Float?
-  shotJobs           ShotJob[]    @relation("SceneShotJobs")
   engineTasks        EngineTask[] @relation("SceneEngineTask")
   episode            Episode      @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
   sceneDraft         SceneDraft?  @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
+  shotJobs           ShotJob[]    @relation("SceneShotJobs")
   shots              Shot[]       @relation("SceneShots")
 
   @@index([projectId, index])
@@ -175,12 +175,12 @@ model Shot {
   durationSeconds   Int?
   organizationId    String?
   enrichedPrompt    String?
-  jobs              ShotJob[]          @relation("ShotJobs")
   assets            Asset[]            @relation("ShotAssets")
   engineTasks       EngineTask[]       @relation("ShotEngineTask")
   publishingReviews PublishingReview[] @relation("ShotPublishingReview")
   qualityScores     QualityScore[]     @relation("ShotQualityScore")
   safetyResults     SafetyResult[]     @relation("ShotSafetyResult")
+  jobs              ShotJob[]          @relation("ShotJobs")
   shotPlanning      ShotPlanning?      @relation("ShotPlanning")
   organization      Organization?      @relation("OrganizationShots", fields: [organizationId], references: [id])
   scene             Scene              @relation("SceneShots", fields: [sceneId], references: [id], onDelete: Cascade)
@@ -412,10 +412,10 @@ model Task {
   output         Json?
   traceId        String?
   workerId       String?
-  jobs           ShotJob[]    @relation("TaskJobs")
   organization   Organization @relation("OrganizationTasks", fields: [organizationId], references: [id])
   project        Project      @relation("ProjectTasks", fields: [projectId], references: [id], onDelete: Cascade)
   worker         WorkerNode?  @relation("TaskWorker", fields: [workerId], references: [id])
+  jobs           ShotJob[]    @relation("TaskJobs")
 
   @@index([status, createdAt])
 }
@@ -461,6 +461,9 @@ model ShotJob {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   traceId        String?
+  result         Json?
+  generatedAsset Asset[]           @relation("JobGeneratedAsset")
+  engineBinding  JobEngineBinding? @relation("JobEngineBinding")
   episode        Episode           @relation("EpisodeShotJobs", fields: [episodeId], references: [id], onDelete: Cascade)
   organization   Organization      @relation("OrganizationShotJobs", fields: [organizationId], references: [id])
   project        Project           @relation("ProjectShotJobs", fields: [projectId], references: [id], onDelete: Cascade)
@@ -468,8 +471,6 @@ model ShotJob {
   shot           Shot              @relation("ShotJobs", fields: [shotId], references: [id], onDelete: Cascade)
   task           Task?             @relation("TaskJobs", fields: [taskId], references: [id], onDelete: Cascade)
   worker         WorkerNode?       @relation("WorkerNodeShotJobs", fields: [workerId], references: [id])
-  generatedAsset Asset[]           @relation("JobGeneratedAsset")
-  engineBinding  JobEngineBinding? @relation("JobEngineBinding")
 
   @@map("shot_jobs")
 }
@@ -488,8 +489,8 @@ model WorkerNode {
   lastHeartbeat DateTime     @default(now())
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
-  shotJobs      ShotJob[]    @relation("WorkerNodeShotJobs")
   tasks         Task[]       @relation("TaskWorker")
+  shotJobs      ShotJob[]    @relation("WorkerNodeShotJobs")
   jobs          WorkerJob[]  @relation("WorkerNodeJobs")
 
   @@index([status])
@@ -566,21 +567,19 @@ model SafetyResult {
 }
 
 model BillingEvent {
-  id           String   @id @default(uuid())
-  costLedgerId String?  @unique @map("cost_ledger_id")
-  projectId    String   @map("project_id")
-  orgId        String   @map("org_id")
-  userId       String?  @map("user_id")
-  type         String   @default("CONSUME") // CONSUME / REFUND / ADJUST
-  creditsDelta Float    @map("credits_delta")
-  currency     String   @default("USD")
+  id           String       @id @default(uuid())
+  costLedgerId String?      @unique @map("cost_ledger_id")
+  projectId    String       @map("project_id")
+  orgId        String       @map("org_id")
+  userId       String?      @map("user_id")
+  type         String       @default("CONSUME")
+  creditsDelta Float        @map("credits_delta")
+  currency     String       @default("USD")
   metadata     Json?
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  // Relations
+  createdAt    DateTime     @default(now()) @map("created_at")
   costLedger   CostLedger?  @relation("LedgerToEvent", fields: [costLedgerId], references: [id])
-  project      Project      @relation("BillingEventProject", fields: [projectId], references: [id])
   organization Organization @relation("BillingEventOrganization", fields: [orgId], references: [id])
+  project      Project      @relation("BillingEventProject", fields: [projectId], references: [id])
   user         User?        @relation("BillingEventUser", fields: [userId], references: [id])
 
   @@index([projectId, createdAt])
@@ -1030,6 +1029,44 @@ model TextSafetyResult {
   @@map("text_safety_results")
 }
 
+model CostLedger {
+  id              String        @id @default(uuid())
+  userId          String?
+  projectId       String
+  jobId           String
+  jobType         String
+  engineKey       String?
+  costAmount      Float         @default(0.0)
+  currency        String        @default("USD")
+  billingUnit     String?
+  quantity        Float         @default(0.0)
+  metadata        Json?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  traceId         String?
+  orgId           String?
+  totalCost       Float?
+  costType        String?
+  unitCost        Float?
+  modelName       String?
+  totalCredits    Float?
+  unitCostCredits Float?
+  timestamp       DateTime      @default(now())
+  billingStatus   BillingStatus @default(PENDING) @map("billing_status")
+  billingEventId  String?       @map("billing_event_id")
+  billedAt        DateTime?     @map("billed_at")
+  billingError    String?       @map("billing_error")
+  billingEvent    BillingEvent? @relation("LedgerToEvent")
+  project         Project       @relation("ProjectCostLedgers", fields: [projectId], references: [id])
+  user            User?         @relation("UserCostLedgers", fields: [userId], references: [id])
+
+  @@unique([jobId, jobType])
+  @@index([projectId, billingStatus])
+  @@index([projectId])
+  @@index([jobId, jobType])
+  @@index([createdAt])
+  @@map("cost_ledgers")
+}
+
 enum UserType {
   individual
   organization_member
@@ -1329,54 +1366,4 @@ enum AssetStatus {
   GENERATED
   LOCKED
   PUBLISHED
-}
-
-// P0: Cost Ledger for billing and cost tracking
-// Stage-3-B: 扩展 Credits 计费字段（零破坏，全部可空）
-// [P1-C] Reconciled Schema Setup
-
-model CostLedger {
-  id String @id @default(uuid())
-
-  // Fields from CostLedgerService
-  userId      String?
-  projectId   String
-  jobId       String
-  jobType     String
-  engineKey   String?
-  costAmount  Float    @default(0.0)
-  currency    String   @default("USD")
-  billingUnit String?
-  quantity    Float    @default(0.0)
-  metadata    Json?
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // Fields from JobService / Legacy
-  traceId         String?
-  orgId           String?
-  totalCost       Float?
-  costType        String?
-  unitCost        Float?
-  modelName       String?
-  totalCredits    Float?
-  unitCostCredits Float?
-  timestamp       DateTime @default(now()) // For cost.controller.ts
-
-  // P1-C: Settlement Fields
-  billingStatus  BillingStatus @default(PENDING) @map("billing_status")
-  billingEventId String?       @map("billing_event_id")
-  billedAt       DateTime?     @map("billed_at")
-  billingError   String?       @map("billing_error")
-
-  // Relations
-  project      Project       @relation("ProjectCostLedgers", fields: [projectId], references: [id])
-  user         User?         @relation("UserCostLedgers", fields: [userId], references: [id])
-  billingEvent BillingEvent? @relation("LedgerToEvent")
-
-  @@unique([jobId, jobType])
-  @@index([projectId, billingStatus])
-  @@index([projectId])
-  @@index([jobId, jobType])
-  @@index([createdAt])
-  @@map("cost_ledgers")
 }

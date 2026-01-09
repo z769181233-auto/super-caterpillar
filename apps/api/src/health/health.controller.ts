@@ -8,8 +8,8 @@ import { JobStatus, JobType } from 'database';
 export class HealthController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redisService?: RedisService,
-  ) { }
+    private readonly redisService?: RedisService
+  ) {}
 
   @Get('/health')
   health() {
@@ -81,18 +81,20 @@ export class HealthController {
     const memUsage = process.memoryUsage();
 
     // 收集 Job 统计信息
-    const [totalJobs, pendingJobs, runningJobs, failedJobs, videoRenderPending] = await Promise.all([
-      this.prisma.shotJob.count(),
-      this.prisma.shotJob.count({ where: { status: JobStatus.PENDING } }),
-      this.prisma.shotJob.count({ where: { status: JobStatus.RUNNING } }),
-      this.prisma.shotJob.count({ where: { status: JobStatus.FAILED } }),
-      this.prisma.shotJob.count({
-        where: {
-          type: JobType.VIDEO_RENDER,
-          status: JobStatus.PENDING,
-        },
-      }),
-    ]);
+    const [totalJobs, pendingJobs, runningJobs, failedJobs, videoRenderPending] = await Promise.all(
+      [
+        this.prisma.shotJob.count(),
+        this.prisma.shotJob.count({ where: { status: JobStatus.PENDING } }),
+        this.prisma.shotJob.count({ where: { status: JobStatus.RUNNING } }),
+        this.prisma.shotJob.count({ where: { status: JobStatus.FAILED } }),
+        this.prisma.shotJob.count({
+          where: {
+            type: JobType.VIDEO_RENDER,
+            status: JobStatus.PENDING,
+          },
+        }),
+      ]
+    );
 
     // Prometheus 格式的指标
     return `# scu_api_metrics
@@ -156,4 +158,3 @@ ${TextSafetyMetrics.getPrometheusOutput()}
     return this.gpu();
   }
 }
-

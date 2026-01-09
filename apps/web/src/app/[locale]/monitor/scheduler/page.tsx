@@ -40,7 +40,13 @@ function SchedulerMonitorPageContent() {
   // S3-C.1: 按 engineKey 过滤统计（如果指定了 engineKey）
   const enginesStats = stats.engines || {};
   const filteredEnginesStats = selectedEngineKey
-    ? { [selectedEngineKey]: enginesStats[selectedEngineKey] || { pending: 0, running: 0, failed: 0 } }
+    ? {
+        [selectedEngineKey]: enginesStats[selectedEngineKey] || {
+          pending: 0,
+          running: 0,
+          failed: 0,
+        },
+      }
     : enginesStats;
 
   return (
@@ -106,11 +112,13 @@ function SchedulerMonitorPageContent() {
             <div>总重试次数: {stats.retries.recent24h.total || 0}</div>
             {stats.retries.recent24h.byType && (
               <div className="mt-2">
-                {Object.entries(stats.retries.recent24h.byType).map(([type, data]: [string, any]) => (
-                  <div key={type} className="ml-4">
-                    {type}: {data.count || 0} 次 (累计重试: {data.totalRetryCount || 0})
-                  </div>
-                ))}
+                {Object.entries(stats.retries.recent24h.byType).map(
+                  ([type, data]: [string, any]) => (
+                    <div key={type} className="ml-4">
+                      {type}: {data.count || 0} 次 (累计重试: {data.totalRetryCount || 0})
+                    </div>
+                  )
+                )}
               </div>
             )}
           </div>
@@ -190,4 +198,3 @@ export default function SchedulerMonitorPage() {
     </Suspense>
   );
 }
-

@@ -4,9 +4,9 @@ import { CostLedgerService } from './cost-ledger.service';
 import { CostController, InternalEventsController } from './cost.controller';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [CostController, InternalEventsController],
-    providers: [CostLedgerService],
-    exports: [CostLedgerService],
+  imports: [PrismaModule],
+  controllers: [CostController, InternalEventsController],
+  providers: [CostLedgerService],
+  exports: [CostLedgerService],
 })
-export class CostModule { }
+export class CostModule {}

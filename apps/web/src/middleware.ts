@@ -10,15 +10,12 @@ const intlMiddleware = createIntlMiddleware({
   defaultLocale: 'en',
 
   // Prefix strategy
-  localePrefix: 'as-needed'
+  localePrefix: 'as-needed',
 });
 
 function pickLocale(req: NextRequest): 'zh' | 'en' {
   // 1) cookie 优先（按你们项目实际 cookie 名，如果没有就删掉这一段）
-  const raw =
-    req.cookies.get('NEXT_LOCALE')?.value ||
-    req.cookies.get('locale')?.value ||
-    '';
+  const raw = req.cookies.get('NEXT_LOCALE')?.value || req.cookies.get('locale')?.value || '';
 
   const norm = raw.toLowerCase();
 
@@ -73,5 +70,5 @@ export const config = {
   // Match all pathnames except for
   // - … if they start with `/api`, `/_next` or `/_vercel`
   // - … the ones containing a dot (e.g. `favicon.ico`)
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 };

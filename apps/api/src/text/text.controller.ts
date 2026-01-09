@@ -13,7 +13,7 @@ import { Request } from 'express';
 /**
  * Text Controller
  * 提供 CE03 (Visual Density) 和 CE04 (Visual Enrichment) 标准 API
- * 
+ *
  * 规则：
  * - API 只负责参数校验 + 创建 Job
  * - 实际执行仍然走现有 JobService + Worker
@@ -27,7 +27,7 @@ export class TextController {
   /**
    * POST /text/visual-density
    * CE03: Visual Density
-   * 
+   *
    * 输入：text, projectId
    * 输出：jobId, traceId, status
    */
@@ -38,24 +38,24 @@ export class TextController {
     @Body() dto: VisualDensityDto,
     @CurrentUser() user: any,
     @CurrentOrganization() org: any,
-    @Req() req: Request,
+    @Req() req: Request
   ) {
     return this.textService.visualDensity(
       dto,
       user?.id,
       org?.id,
       req.ip || (req.headers['x-forwarded-for'] as string) || undefined,
-      req.headers['user-agent'] || undefined,
+      req.headers['user-agent'] || undefined
     );
   }
 
   /**
    * POST /text/enrich
    * CE04: Visual Enrichment
-   * 
+   *
    * 输入：text, projectId, previousJobId (可选)
    * 输出：jobId, traceId, status
-   * 
+   *
    * 前置：TextSafetyService.sanitize
    */
   @Post('enrich')
@@ -65,15 +65,14 @@ export class TextController {
     @Body() dto: VisualEnrichDto,
     @CurrentUser() user: any,
     @CurrentOrganization() org: any,
-    @Req() req: Request,
+    @Req() req: Request
   ) {
     return this.textService.visualEnrich(
       dto,
       user?.id,
       org?.id,
       req.ip || (req.headers['x-forwarded-for'] as string) || undefined,
-      req.headers['user-agent'] || undefined,
+      req.headers['user-agent'] || undefined
     );
   }
 }
-

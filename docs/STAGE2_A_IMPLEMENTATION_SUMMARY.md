@@ -12,12 +12,14 @@
 ### ✅ A. Job 状态机（已完成）
 
 **实现内容：**
+
 - DISPATCHED 状态已在 schema 中
 - 统一状态转换函数 `transitionJobStatus` 已实现
 - 管理性状态转换函数 `transitionJobStatusAdmin` 已实现
 - 所有状态更新都通过统一函数验证
 
 **文件：**
+
 - `packages/database/prisma/schema.prisma` - DISPATCHED 状态
 - `apps/api/src/job/job.rules.ts` - 状态转换函数和规则
 - `apps/api/src/job/job.service.ts` - 所有状态转换使用统一函数
@@ -27,6 +29,7 @@
 ### ✅ B. Worker 心跳 + 超时回收（已完成）
 
 **实现内容：**
+
 1. **WorkerHeartbeat 模型** ✅
    - 已存在于 schema 中
    - 字段：workerId, lastSeenAt, status (ALIVE/DEAD)
@@ -39,7 +42,7 @@
 
 3. **超时检测** ✅
    - 方法：`markOfflineWorkers()` 在 `worker.service.ts`
-   - 逻辑：lastSeenAt < now - TTL*3 → status=DEAD
+   - 逻辑：lastSeenAt < now - TTL\*3 → status=DEAD
    - 配置：HEARTBEAT_TTL_SECONDS（默认 30）
 
 4. **Job 回收** ✅
@@ -56,6 +59,7 @@
    - 在 `dispatchNextJobForWorker` 前自动调用超时检测和回收
 
 **文件：**
+
 - `apps/api/src/worker/worker.controller.ts` - 心跳接口
 - `apps/api/src/worker/worker.service.ts` - 心跳和超时检测
 - `apps/api/src/orchestrator/orchestrator.service.ts` - Job 回收
@@ -65,6 +69,7 @@
 ### ✅ C. Orchestrator 并发安全领取（已完成）
 
 **实现内容：**
+
 1. **使用事务** ✅
    - `getAndMarkNextPendingJob` 使用 `prisma.$transaction`
 
@@ -85,6 +90,7 @@
    - 使用 `transitionJobStatus` 验证 PENDING → DISPATCHED
 
 **文件：**
+
 - `apps/api/src/job/job.service.ts` - `getAndMarkNextPendingJob` 方法
 
 ---
@@ -92,10 +98,12 @@
 ### ✅ D. Job 回报接口（已完成）
 
 **实现内容：**
+
 1. **接口路径** ✅
    - `POST /api/jobs/:id/report`
 
 2. **请求体** ✅
+
    ```json
    {
      "status": "SUCCEEDED" | "FAILED",
@@ -117,6 +125,7 @@
    - `{ ok: true, jobId, status }`
 
 **文件：**
+
 - `apps/api/src/job/job.controller.ts` - 接口定义
 - `apps/api/src/job/job.service.ts` - `reportJobResult` 方法
 
@@ -125,6 +134,7 @@
 ### ✅ E. 运行时验证报告（已完成）
 
 **文件：**
+
 - `docs/STAGE2_A_RUNTIME_VERIFY.md` - 完整的验证步骤和预期输出
 
 ---
@@ -179,6 +189,7 @@ pnpm -w --filter database prisma:generate
 ```
 
 **结果：** ✅ 成功
+
 ```
 ✔ Generated Prisma Client (v5.22.0) to ./src/generated/prisma in 275ms
 ```
@@ -190,6 +201,7 @@ pnpm -w --filter api build
 ```
 
 **结果：** ✅ 成功
+
 ```
 webpack 5.97.1 compiled successfully in 5533 ms
 Tasks: 6 successful, 6 total
@@ -202,12 +214,14 @@ Tasks: 6 successful, 6 total
 ### ✅ 所有状态变更只通过 transitionJobStatus
 
 **验证：**
+
 - 所有状态更新都通过 `transitionJobStatus` 或 `transitionJobStatusAdmin` 验证
 - 包括：`getAndMarkNextPendingJob`、`reportJobResult`、`markJobSucceeded`、`markJobFailed`、`recoverJobsFromOfflineWorkers` 等
 
 ### ✅ DISPATCHED 不会被重复领取
 
 **验证：**
+
 - 使用 `prisma.$transaction` 确保原子性
 - 使用 `updateMany` 和条件更新（id + status=PENDING + workerId=null）
 - 只有 `count === 1` 才算成功
@@ -215,7 +229,8 @@ Tasks: 6 successful, 6 total
 ### ✅ Worker 超时一定触发回收 + 审计
 
 **验证：**
-- `markOfflineWorkers` 基于 WorkerHeartbeat 检测超时（TTL * 3）
+
+- `markOfflineWorkers` 基于 WorkerHeartbeat 检测超时（TTL \* 3）
 - `recoverJobsFromOfflineWorkers` 回收 DISPATCHED 和 RUNNING Job
 - 使用 `transitionJobStatusAdmin` 验证状态转换
 - 写入 audit_logs（WORKER_DEAD_RECOVERY）
@@ -224,6 +239,7 @@ Tasks: 6 successful, 6 total
 ### ✅ Report 接口严格限制 RUNNING → 终态
 
 **验证：**
+
 - `reportJobResult` 检查状态必须是 RUNNING
 - 使用 `transitionJobStatus` 验证状态转换
 - 只允许 RUNNING → SUCCEEDED | FAILED
@@ -232,6 +248,7 @@ Tasks: 6 successful, 6 total
 ### ✅ STAGE2_A_RUNTIME_VERIFY.md 有完整证据
 
 **验证：**
+
 - 文档已创建：`docs/STAGE2_A_RUNTIME_VERIFY.md`
 - 包含所有验证步骤和预期输出
 - 待实际运行时填充实际输出
@@ -251,6 +268,7 @@ Tasks: 6 successful, 6 total
 5. ✅ **E. 运行时验证报告**：文档已创建
 
 **代码质量：**
+
 - ✅ 所有状态转换都通过统一函数验证
 - ✅ 并发安全已确保（事务 + updateMany）
 - ✅ 审计日志已写入（WORKER_DEAD_RECOVERY, JOB_REPORT_RECEIVED）
@@ -258,6 +276,7 @@ Tasks: 6 successful, 6 total
 - ✅ 构建验证通过（0 errors）
 
 **下一步：**
+
 - 实际运行时验证（启动 API 并执行测试）
 - 填充 `docs/STAGE2_A_RUNTIME_VERIFY.md` 中的实际输出
 
@@ -268,4 +287,3 @@ Tasks: 6 successful, 6 total
 - **审查时间：** 2024-01-XX
 - **审查结论：** ✅ **PASS**
 - **备注：** 所有代码实现已完成并通过构建验证，待实际运行时验证
-

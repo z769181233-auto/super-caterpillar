@@ -15,7 +15,7 @@ import { createHmac, randomBytes, createHash } from 'crypto';
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 记录审计日志
@@ -55,14 +55,18 @@ export class AuditLogService {
         timestamp.toISOString(),
         nonce,
         detailsDigest,
-        traceId // Keep in signature payload
+        traceId, // Keep in signature payload
       ].join('|');
 
       const secret = process.env.AUDIT_SIGNING_SECRET;
       if (!secret) {
-        this.logger.error('[AuditLog] CRITICAL: AUDIT_SIGNING_SECRET is missing! Falling back to emergency warning.');
+        this.logger.error(
+          '[AuditLog] CRITICAL: AUDIT_SIGNING_SECRET is missing! Falling back to emergency warning.'
+        );
       }
-      const signature = createHmac('sha256', secret || 'EMERGENCY_UNSECURE_FALLBACK').update(signBase).digest('hex');
+      const signature = createHmac('sha256', secret || 'EMERGENCY_UNSECURE_FALLBACK')
+        .update(signBase)
+        .digest('hex');
 
       const payload = {
         action: options.action,

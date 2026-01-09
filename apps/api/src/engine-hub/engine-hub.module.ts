@@ -23,4 +23,3 @@ import { StructureQALocalAdapter } from './adapters/structure-qa.local-adapter';
   exports: [EngineRegistryHubService, EngineInvokerHubService],
 })
 export class EngineHubModule {}
-

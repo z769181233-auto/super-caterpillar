@@ -5,7 +5,7 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 /**
  * Asset Service
  * CE09: Media Security 服务层
- * 
+ *
  * TODO: 实现真实逻辑
  * - secure-url: 生成带签名的临时访问 URL
  * - hls: 生成 HLS 播放列表（如果未生成则触发生成）
@@ -17,8 +17,8 @@ export class AssetService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditLogService: AuditLogService,
-  ) { }
+    private readonly auditLogService: AuditLogService
+  ) {}
 
   /**
    * MVP Implementation of Secure URL
@@ -74,7 +74,7 @@ export class AssetService {
   async assertAssetAccessible(userId: string, assetId: string) {
     const asset = await this.prisma.asset.findUnique({
       where: { id: assetId },
-      select: { projectId: true }
+      select: { projectId: true },
     });
     if (!asset) throw new NotFoundException('Asset not found');
 
@@ -83,13 +83,13 @@ export class AssetService {
     const member = await this.prisma.projectMember.findFirst({
       where: {
         userId,
-        projectId: asset.projectId
-      }
+        projectId: asset.projectId,
+      },
     });
 
     // Also check ownership if not a member (e.g. project owner)
     const project = await this.prisma.project.findUnique({
-      where: { id: asset.projectId }
+      where: { id: asset.projectId },
     });
 
     if (!member && project?.ownerId !== userId) {
@@ -103,8 +103,7 @@ export class AssetService {
     this.logger.warn(`Watermarking requested for ${assetId} but not implemented in MVP`);
     return {
       success: false,
-      message: "Watermarking not supported in MVP"
-    }
+      message: 'Watermarking not supported in MVP',
+    };
   }
 }
-

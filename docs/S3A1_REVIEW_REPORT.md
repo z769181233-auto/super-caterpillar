@@ -44,17 +44,18 @@
 
 ### 验证场景
 
-| 场景 | 配置来源 | 最终 baseUrl | 最终 timeoutMs | 最终 path | 验证结果 |
-|------|---------|--------------|----------------|-----------|----------|
-| **场景 a** | 全局环境变量 | `https://global.example.com` | `45000` | `/global/invoke` | ✅ 通过 |
-| **场景 b** | 引擎级环境变量 | `https://gemini-specific.example.com` | `60000` | `/gemini/invoke` | ⚠️ 部分通过（见说明） |
-| **场景 c** | JSON 配置文件 | `http://localhost:11434` | `120000` | `/api/generate` | ✅ 通过 |
+| 场景       | 配置来源       | 最终 baseUrl                          | 最终 timeoutMs | 最终 path        | 验证结果              |
+| ---------- | -------------- | ------------------------------------- | -------------- | ---------------- | --------------------- |
+| **场景 a** | 全局环境变量   | `https://global.example.com`          | `45000`        | `/global/invoke` | ✅ 通过               |
+| **场景 b** | 引擎级环境变量 | `https://gemini-specific.example.com` | `60000`        | `/gemini/invoke` | ⚠️ 部分通过（见说明） |
+| **场景 c** | JSON 配置文件  | `http://localhost:11434`              | `120000`       | `/api/generate`  | ✅ 通过               |
 
 ### 场景 b 说明
 
 场景 b 验证时，由于 JSON 配置中 `http_gemini_v1` 的 `authMode='bearer'`，但清除全局环境变量后没有提供引擎级 API Key，导致验证失败。这是**符合预期的行为**（配置验证正确拒绝无效配置）。
 
 **修正验证**：如果同时提供引擎级环境变量（包括 API Key），优先级验证通过：
+
 - 引擎级 `HTTP_ENGINE_GEMINI_V1_BASE_URL` 会覆盖全局 `HTTP_ENGINE_BASE_URL`
 - 引擎级 `HTTP_ENGINE_GEMINI_V1_API_KEY` 会覆盖全局 `HTTP_ENGINE_API_KEY`
 
@@ -73,40 +74,49 @@
 ### Bearer Token 模式（authMode='bearer'）
 
 **输入**:
+
 - `authMode: 'bearer'`
 - `apiKey: 'test-api-key-1234567890'`
 
 **输出 Headers 键名**:
+
 - `['Authorization']`
 
 **验证结果**: ✅ **通过**
+
 - 确认只包含 `Authorization` header
 - 值格式为 `Bearer ${apiKey}`（未在日志中打印完整值）
 
 ### API Key 模式（authMode='apiKey'）
 
 **输入**:
+
 - `authMode: 'apiKey'`
 - `apiKey: 'test-api-key-1234567890'`
 - `apiKeyHeader: 'X-Custom-API-Key'`
 
 **输出 Headers 键名**:
+
 - `['X-Custom-API-Key']`
 
 **验证结果**: ✅ **通过**
+
 - 确认只包含自定义的 `X-Custom-API-Key` header
 - 默认使用 `X-API-Key`（如果未指定 `apiKeyHeader`）
 
 ### None 模式（authMode='none'）
 
 **输入**:
+
 - `authMode: 'none'`
 - 无 `apiKey`
 
 **输出 Headers 键名**:
+
 - `[]`（空数组）
 
 **验证结果**: ✅ **通过**
+
 - 确认不包含任何认证 header
 - 生产环境 HTTPS + `authMode='none'` 会记录警告日志（但不阻止运行）
 
@@ -120,30 +130,32 @@
 
 ### HTTP 响应错误分类
 
-| Case | 输入条件 | 输出 status | error.details.errorType | 验证结果 |
-|------|---------|-------------|------------------------|----------|
-| **Case 1** | HTTP 200 + `success=true` | `SUCCESS` | `null` | ✅ 通过 |
-| **Case 2** | HTTP 200 + `success=false` | `FAILED` | `BUSINESS_ERROR` | ✅ 通过 |
-| **Case 3** | HTTP 500 | `RETRYABLE` | `HTTP_5XX` | ✅ 通过 |
-| **Case 4** | HTTP 429 + `Retry-After: 60` | `RETRYABLE` | `HTTP_429` | ✅ 通过 |
-| **Case 5** | HTTP 400 | `FAILED` | `HTTP_4XX` | ✅ 通过 |
+| Case       | 输入条件                     | 输出 status | error.details.errorType | 验证结果 |
+| ---------- | ---------------------------- | ----------- | ----------------------- | -------- |
+| **Case 1** | HTTP 200 + `success=true`    | `SUCCESS`   | `null`                  | ✅ 通过  |
+| **Case 2** | HTTP 200 + `success=false`   | `FAILED`    | `BUSINESS_ERROR`        | ✅ 通过  |
+| **Case 3** | HTTP 500                     | `RETRYABLE` | `HTTP_5XX`              | ✅ 通过  |
+| **Case 4** | HTTP 429 + `Retry-After: 60` | `RETRYABLE` | `HTTP_429`              | ✅ 通过  |
+| **Case 5** | HTTP 400                     | `FAILED`    | `HTTP_4XX`              | ✅ 通过  |
 
 ### 网络错误分类
 
-| Case | 输入条件 | 输出 status | error.details.errorType | 验证结果 |
-|------|---------|-------------|------------------------|----------|
-| **Case 6** | `error.code='ECONNRESET'` | `RETRYABLE` | `NETWORK_ERROR` | ✅ 通过 |
-| **Case 7** | `error.code='ETIMEDOUT'` | `RETRYABLE` | `NETWORK_ERROR` | ✅ 通过 |
-| **Case 8** | `error.code='ENETUNREACH'` | `RETRYABLE` | `NETWORK_ERROR` | ✅ 通过 |
+| Case       | 输入条件                   | 输出 status | error.details.errorType | 验证结果 |
+| ---------- | -------------------------- | ----------- | ----------------------- | -------- |
+| **Case 6** | `error.code='ECONNRESET'`  | `RETRYABLE` | `NETWORK_ERROR`         | ✅ 通过  |
+| **Case 7** | `error.code='ETIMEDOUT'`   | `RETRYABLE` | `NETWORK_ERROR`         | ✅ 通过  |
+| **Case 8** | `error.code='ENETUNREACH'` | `RETRYABLE` | `NETWORK_ERROR`         | ✅ 通过  |
 
 ### 错误分类摘要
 
 **RETRYABLE 场景**（由 Job 重试系统处理）:
+
 - ✅ 网络错误（ECONNRESET, ETIMEDOUT, ENETUNREACH 等）
 - ✅ HTTP 5xx 服务器错误
 - ✅ HTTP 429 限流错误
 
 **FAILED 场景**（不重试）:
+
 - ✅ HTTP 4xx 客户端错误（除 429）
 - ✅ 业务层错误（`success=false` 或 `error` 字段存在）
 
@@ -178,6 +190,7 @@
 ### 脱敏验证结果
 
 ✅ **验证通过**：
+
 - ❌ **未打印完整 API Key**：日志中不包含 `apiKey` 字段
 - ✅ **只显示前 4 位**：`apiKeyPrefix: "sk-1"`
 - ✅ **只显示后 4 位**：`apiKeySuffix: "wxyz"`
@@ -194,6 +207,7 @@
 **测试输入**: `baseUrl = 'not-a-url'`
 
 **行为**: ✅ **抛出错误**
+
 ```
 Invalid HTTP_ENGINE_BASE_URL format: not-a-url
 ```
@@ -205,6 +219,7 @@ Invalid HTTP_ENGINE_BASE_URL format: not-a-url
 **测试输入**: `timeoutMs = -1000`
 
 **行为**: ✅ **抛出错误**
+
 ```
 HTTP_ENGINE_TIMEOUT_MS must be a positive integer, got: -1000
 ```
@@ -216,6 +231,7 @@ HTTP_ENGINE_TIMEOUT_MS must be a positive integer, got: -1000
 **测试输入**: `baseUrl = ''`（无任何 fallback）
 
 **行为**: ✅ **抛出错误**
+
 ```
 HTTP_ENGINE_BASE_URL is required but not set
 ```
@@ -225,6 +241,7 @@ HTTP_ENGINE_BASE_URL is required but not set
 ### 配置校验总结
 
 ✅ **验证通过**：
+
 - 所有非法配置都会被 `validateHttpEngineConfig()` 拒绝
 - 不会出现"静默使用非法配置"的情况
 - 错误信息清晰，便于排查配置问题
@@ -258,11 +275,13 @@ HTTP_ENGINE_BASE_URL is required but not set
 ### 重试责任划分
 
 **HttpEngineAdapter 的责任**:
+
 - ✅ 发送一次 HTTP 请求
 - ✅ 根据响应/错误分类为 `SUCCESS` / `FAILED` / `RETRYABLE`
 - ❌ **不负责重试**（禁止实现重试循环）
 
 **Job 重试系统的责任**（S2-A）:
+
 - ✅ `markJobFailedAndMaybeRetry()`: 将 `RETRYABLE` 状态的 Job 标记为 `RETRYING`
 - ✅ `processRetryJobs()`: 将到期的 `RETRYING` Job 放回 `PENDING` 队列
 - ✅ Worker 再次拉取 Job → 再次调用 `HttpEngineAdapter.invoke()` → 实现重试
@@ -356,6 +375,7 @@ pnpm --filter api exec ts-node scripts/verify-s3a1.ts
 ### 10.2 变更约束
 
 **严格禁止**：
+
 - ❌ 禁止在未新建批次的情况下修改上述封板文件
 - ❌ 禁止变更 `HttpEngineAdapter.invoke()` 的对外接口签名
 - ❌ 禁止变更错误分类规则（SUCCESS / FAILED / RETRYABLE）
@@ -363,6 +383,7 @@ pnpm --filter api exec ts-node scripts/verify-s3a1.ts
 - ❌ 禁止在 `HttpEngineAdapter` 中引入任何 retry 循环、sleep、延时逻辑
 
 **允许变更**（需新建批次）：
+
 - ✅ 如需扩展配置读取逻辑，必须新建 S3-A.x 批次
 - ✅ 如需新增认证模式，必须新建 S3-A.x 批次
 - ✅ 如需调整错误分类规则，必须新建 S3-A.x 批次
@@ -371,6 +392,7 @@ pnpm --filter api exec ts-node scripts/verify-s3a1.ts
 ### 10.3 违规变更处理
 
 **未按批次流程修改封板文件视为违规变更**，必须：
+
 1. 立即回滚违规变更
 2. 按照批次流程重新规划变更
 3. 生成新的 REVIEW 报告
@@ -381,4 +403,3 @@ pnpm --filter api exec ts-node scripts/verify-s3a1.ts
 **验证脚本**: `apps/api/scripts/verify-s3a1.ts`  
 **设计文档**: `docs/ENGINE_HTTP_CONFIG.md`  
 **封板状态**: ✅ 已封板
-

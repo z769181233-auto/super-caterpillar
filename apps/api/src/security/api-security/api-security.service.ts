@@ -1,4 +1,10 @@
-import { Injectable, HttpException, UnauthorizedException, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  UnauthorizedException,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { createHmac, createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
@@ -14,9 +20,9 @@ import {
 
 /**
  * API Security Service
- * 
+ *
  * 负责 HMAC 签名验证、时间戳校验、Nonce 防重放
- * 
+ *
  * 参考文档：
  * - 《10毛毛虫宇宙_API设计规范_APISpec_V1.1》
  */
@@ -30,12 +36,12 @@ export class ApiSecurityService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly auditLogService: AuditLogService,
-    private readonly secretEncryptionService: SecretEncryptionService,
-  ) { }
+    private readonly secretEncryptionService: SecretEncryptionService
+  ) {}
 
   /**
    * 验证 HMAC 签名（v2 规范）
-   * 
+   *
    * 流程：
    * 1. 验证 API Key 存在且有效
    * 2. 验证时间戳在允许窗口内（±5 分钟）
@@ -44,9 +50,10 @@ export class ApiSecurityService {
    * 5. 写入审计日志（成功/失败）
    */
   async verifySignature(
-    context: SignatureVerificationContext,
+    context: SignatureVerificationContext
   ): Promise<SignatureVerificationResult> {
-    const { apiKey, nonce, timestamp, signature, method, path, contentSha256, ip, userAgent } = context;
+    const { apiKey, nonce, timestamp, signature, method, path, contentSha256, ip, userAgent } =
+      context;
 
     try {
       // 1. 查找 API Key 记录
@@ -59,16 +66,20 @@ export class ApiSecurityService {
       });
 
       if (!keyRecord) {
-        await this.writeAuditLog({
-          nonce,
-          signature,
-          timestamp,
-          path,
-          method,
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'INVALID_API_KEY',
-          errorCode: '4003',
-        }, ip, userAgent);
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'INVALID_API_KEY',
+            errorCode: '4003',
+          },
+          ip,
+          userAgent
+        );
         return {
           success: false,
           errorCode: '4003',
@@ -78,16 +89,20 @@ export class ApiSecurityService {
 
       // 2. 检查状态
       if (keyRecord.status !== 'ACTIVE') {
-        await this.writeAuditLog({
-          nonce,
-          signature,
-          timestamp,
-          path,
-          method,
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'API_KEY_DISABLED',
-          errorCode: '4003',
-        }, ip, userAgent);
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'API_KEY_DISABLED',
+            errorCode: '4003',
+          },
+          ip,
+          userAgent
+        );
         return {
           success: false,
           errorCode: '4003',
@@ -97,16 +112,20 @@ export class ApiSecurityService {
 
       // 3. 检查过期时间
       if (keyRecord.expiresAt && keyRecord.expiresAt < new Date()) {
-        await this.writeAuditLog({
-          nonce,
-          signature,
-          timestamp,
-          path,
-          method,
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'API_KEY_EXPIRED',
-          errorCode: '4003',
-        }, ip, userAgent);
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'API_KEY_EXPIRED',
+            errorCode: '4003',
+          },
+          ip,
+          userAgent
+        );
         return {
           success: false,
           errorCode: '4003',
@@ -117,16 +136,20 @@ export class ApiSecurityService {
       // 4. 验证时间戳（秒级，允许 ±300 秒）
       const timestampNum = parseInt(timestamp, 10);
       if (isNaN(timestampNum)) {
-        await this.writeAuditLog({
-          nonce,
-          signature,
-          timestamp,
-          path,
-          method,
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'INVALID_TIMESTAMP_FORMAT',
-          errorCode: '4003',
-        }, ip, userAgent);
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'INVALID_TIMESTAMP_FORMAT',
+            errorCode: '4003',
+          },
+          ip,
+          userAgent
+        );
         return {
           success: false,
           errorCode: '4003',
@@ -138,16 +161,20 @@ export class ApiSecurityService {
       const timeDiff = Math.abs(nowSec - timestampNum);
 
       if (timeDiff > this.TIMESTAMP_WINDOW_SECONDS) {
-        await this.writeAuditLog({
-          nonce,
-          signature,
-          timestamp,
-          path,
-          method,
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'TIMESTAMP_OUT_OF_WINDOW',
-          errorCode: '4003',
-        }, ip, userAgent);
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'TIMESTAMP_OUT_OF_WINDOW',
+            errorCode: '4003',
+          },
+          ip,
+          userAgent
+        );
         return {
           success: false,
           errorCode: '4003',
@@ -159,16 +186,20 @@ export class ApiSecurityService {
       const nonceKey = `api_security:nonce:${apiKey}:${nonce}`;
       const nonceExists = await this.redis.get(nonceKey);
       if (nonceExists) {
-        await this.writeAuditLog({
-          nonce,
-          signature,
-          timestamp,
-          path,
-          method,
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'NONCE_REPLAY',
-          errorCode: '4004',
-        }, ip, userAgent);
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'NONCE_REPLAY',
+            errorCode: '4004',
+          },
+          ip,
+          userAgent
+        );
         return {
           success: false,
           errorCode: '4004',
@@ -183,27 +214,40 @@ export class ApiSecurityService {
       const secret = await this.resolveSecretForApiKey(keyRecord, apiKey, ip, userAgent);
 
       // 7. 计算服务器端签名（v2 规范）
-      const canonicalString = this.buildCanonicalStringV2(method, path, apiKey, timestamp, nonce, contentSha256);
+      const canonicalString = this.buildCanonicalStringV2(
+        method,
+        path,
+        apiKey,
+        timestamp,
+        nonce,
+        contentSha256
+      );
       const expectedSignature = this.computeSignature(secret, canonicalString);
 
       // 8. 对比签名
       if (signature !== expectedSignature) {
-        this.logger.warn(`[ApiSecurity Debug] Mismatch: ${JSON.stringify({
-          canonicalString,
-          expectedSignature,
-          signature,
-          secretPart: secret ? secret.substring(0, 3) : 'NULL'
-        })}`);
-        await this.writeAuditLog({
-          nonce,
-          signature,
-          timestamp,
-          path,
-          method,
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'SIGNATURE_MISMATCH',
-          errorCode: '4003',
-        }, ip, userAgent);
+        this.logger.warn(
+          `[ApiSecurity Debug] Mismatch: ${JSON.stringify({
+            canonicalString,
+            expectedSignature,
+            signature,
+            secretPart: secret ? secret.substring(0, 3) : 'NULL',
+          })}`
+        );
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'SIGNATURE_MISMATCH',
+            errorCode: '4003',
+          },
+          ip,
+          userAgent
+        );
         return {
           success: false,
           errorCode: '4003',
@@ -212,23 +256,30 @@ export class ApiSecurityService {
       }
 
       // 9. 更新最后使用时间
-      await this.prisma.apiKey.update({
-        where: { id: keyRecord.id },
-        data: { lastUsedAt: new Date() },
-      }).catch(() => {
-        // 忽略更新失败，不影响认证流程
-      });
+      await this.prisma.apiKey
+        .update({
+          where: { id: keyRecord.id },
+          data: { lastUsedAt: new Date() },
+        })
+        .catch(() => {
+          // 忽略更新失败，不影响认证流程
+        });
 
       // 10. 写入成功审计日志
-      await this.writeAuditLog({
-        nonce,
-        signature,
-        timestamp,
-        path,
-        method,
-        apiKey: this.maskApiKey(apiKey),
-        reason: 'SIGNATURE_VERIFIED',
-      }, ip, userAgent, keyRecord.id);
+      await this.writeAuditLog(
+        {
+          nonce,
+          signature,
+          timestamp,
+          path,
+          method,
+          apiKey: this.maskApiKey(apiKey),
+          reason: 'SIGNATURE_VERIFIED',
+        },
+        ip,
+        userAgent,
+        keyRecord.id
+      );
 
       return {
         success: true,
@@ -238,16 +289,20 @@ export class ApiSecurityService {
     } catch (error: unknown) {
       const err = error as Error;
       // 记录异常审计
-      await this.writeAuditLog({
-        nonce,
-        signature,
-        timestamp,
-        path,
-        method,
-        apiKey: this.maskApiKey(apiKey),
-        reason: 'VERIFICATION_ERROR',
-        errorCode: '500',
-      }, ip, userAgent);
+      await this.writeAuditLog(
+        {
+          nonce,
+          signature,
+          timestamp,
+          path,
+          method,
+          apiKey: this.maskApiKey(apiKey),
+          reason: 'VERIFICATION_ERROR',
+          errorCode: '500',
+        },
+        ip,
+        userAgent
+      );
 
       return {
         success: false,
@@ -259,7 +314,7 @@ export class ApiSecurityService {
 
   /**
    * 构建规范字符串 v2（Canonical String v2）
-   * 
+   *
    * 格式：
    * v2\n
    * {METHOD}\n
@@ -268,7 +323,7 @@ export class ApiSecurityService {
    * {TIMESTAMP}\n
    * {NONCE}\n
    * {CONTENT_SHA256}\n
-   * 
+   *
    * 规则：
    * - 第一行固定为 "v2"
    * - 每行用 \n 分隔（严格换行符）
@@ -281,7 +336,7 @@ export class ApiSecurityService {
     apiKey: string,
     timestamp: string,
     nonce: string,
-    contentSha256: string,
+    contentSha256: string
   ): string {
     // 确保 pathWithQuery 以 / 开头（移除 /api 前缀如果存在）
     const normalizedPath = pathWithQuery.startsWith('/api')
@@ -295,7 +350,7 @@ export class ApiSecurityService {
 
   /**
    * 计算 SHA256 哈希（十六进制）
-   * 
+   *
    * @param data 原始数据（Buffer 或 string）
    * @returns 十六进制哈希值
    */
@@ -311,7 +366,7 @@ export class ApiSecurityService {
 
   /**
    * 构建规范字符串 v1（已废弃，保留用于兼容）
-   * 
+   *
    * @deprecated 使用 buildCanonicalStringV2 代替
    */
   buildCanonicalString(apiKey: string, nonce: string, timestamp: string, body: string): string {
@@ -330,13 +385,13 @@ export class ApiSecurityService {
 
   /**
    * 解析 secret（优先使用加密存储，fallback 旧字段）
-   * 
+   *
    * 规则：
    * 1. 优先读取新字段（secretEnc/secretEncIv/secretEncTag），解密得到 secret
    * 2. 如果仅存在旧字段（secretHash）：
    *    - dev/test: 允许 fallback，但写警告日志 and 审计
    *    - 生产: 拒绝并写审计 INSECURE_SECRET_STORAGE
-   * 
+   *
    * @param keyRecord API Key 记录
    * @param apiKey API Key ID（用于审计）
    * @param ip 请求 IP（用于审计）
@@ -348,7 +403,7 @@ export class ApiSecurityService {
     keyRecord: Prisma.ApiKeyGetPayload<any>,
     apiKey: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ): Promise<string> {
     // 1. 优先使用新字段（加密存储）
     if (keyRecord.secretEnc && keyRecord.secretEncIv && keyRecord.secretEncTag) {
@@ -356,30 +411,35 @@ export class ApiSecurityService {
         const secret = this.secretEncryptionService.decryptSecret(
           keyRecord.secretEnc,
           keyRecord.secretEncIv,
-          keyRecord.secretEncTag,
+          keyRecord.secretEncTag
         );
         return secret;
       } catch (error: unknown) {
         const err = error as Error;
         // 解密失败，写审计
-        await this.writeAuditLog({
-          nonce: '',
-          signature: '',
-          timestamp: new Date().toISOString(),
-          path: '',
-          method: '',
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'SECRET_DECRYPTION_FAILED',
-          errorCode: '500',
-        }, ip, userAgent, keyRecord.id);
+        await this.writeAuditLog(
+          {
+            nonce: '',
+            signature: '',
+            timestamp: new Date().toISOString(),
+            path: '',
+            method: '',
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'SECRET_DECRYPTION_FAILED',
+            errorCode: '500',
+          },
+          ip,
+          userAgent,
+          keyRecord.id
+        );
 
         // 脱敏错误消息，详细错误记录到日志
         this.logger.error(
           `Failed to decrypt secret for API Key ${this.maskApiKey(apiKey)}: ${err.message}`,
-          err.stack,
+          err.stack
         );
         throw new InternalServerErrorException(
-          `Failed to decrypt secret for API Key ${this.maskApiKey(apiKey)}.`,
+          `Failed to decrypt secret for API Key ${this.maskApiKey(apiKey)}.`
         );
       }
     }
@@ -391,57 +451,72 @@ export class ApiSecurityService {
 
       if (isProduction || isMasterKeyConfigured) {
         // 生产环境或已配置主密钥：禁止 fallback
-        await this.writeAuditLog({
-          nonce: '',
-          signature: '',
-          timestamp: new Date().toISOString(),
-          path: '',
-          method: '',
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'INSECURE_SECRET_STORAGE',
-          errorCode: '500',
-        }, ip, userAgent, keyRecord.id);
+        await this.writeAuditLog(
+          {
+            nonce: '',
+            signature: '',
+            timestamp: new Date().toISOString(),
+            path: '',
+            method: '',
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'INSECURE_SECRET_STORAGE',
+            errorCode: '500',
+          },
+          ip,
+          userAgent,
+          keyRecord.id
+        );
 
         throw new InternalServerErrorException(
           `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-          `Production environment requires encrypted storage (secretEnc/secretEncIv/secretEncTag).`,
+            `Production environment requires encrypted storage (secretEnc/secretEncIv/secretEncTag).`
         );
       } else {
         // dev/test 环境：允许 fallback，但写警告
         this.logger.warn(
           `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-          `Please migrate to encrypted storage (secretEnc/secretEncIv/secretEncTag).`,
+            `Please migrate to encrypted storage (secretEnc/secretEncIv/secretEncTag).`
         );
 
-        await this.writeAuditLog({
-          nonce: '',
-          signature: '',
-          timestamp: new Date().toISOString(),
-          path: '',
-          method: '',
-          apiKey: this.maskApiKey(apiKey),
-          reason: 'SECRET_FALLBACK_USED',
-          errorCode: 'WARN',
-        }, ip, userAgent, keyRecord.id);
+        await this.writeAuditLog(
+          {
+            nonce: '',
+            signature: '',
+            timestamp: new Date().toISOString(),
+            path: '',
+            method: '',
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'SECRET_FALLBACK_USED',
+            errorCode: 'WARN',
+          },
+          ip,
+          userAgent,
+          keyRecord.id
+        );
 
         return keyRecord.secretHash;
       }
     }
 
     // 3. 既没有新字段也没有旧字段：错误
-    await this.writeAuditLog({
-      nonce: '',
-      signature: '',
-      timestamp: new Date().toISOString(),
-      path: '',
-      method: '',
-      apiKey: this.maskApiKey(apiKey),
-      reason: 'SECRET_NOT_FOUND',
-      errorCode: '500',
-    }, ip, userAgent, keyRecord.id);
+    await this.writeAuditLog(
+      {
+        nonce: '',
+        signature: '',
+        timestamp: new Date().toISOString(),
+        path: '',
+        method: '',
+        apiKey: this.maskApiKey(apiKey),
+        reason: 'SECRET_NOT_FOUND',
+        errorCode: '500',
+      },
+      ip,
+      userAgent,
+      keyRecord.id
+    );
 
     throw new InternalServerErrorException(
-      `API Key ${this.maskApiKey(apiKey)} has no secret stored (neither encrypted nor hash).`,
+      `API Key ${this.maskApiKey(apiKey)} has no secret stored (neither encrypted nor hash).`
     );
   }
 
@@ -462,7 +537,7 @@ export class ApiSecurityService {
     details: SignatureAuditDetails,
     ip?: string,
     userAgent?: string,
-    apiKeyId?: string,
+    apiKeyId?: string
   ): Promise<void> {
     try {
       await this.auditLogService.record({

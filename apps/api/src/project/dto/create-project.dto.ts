@@ -11,4 +11,3 @@ export class CreateProjectDto {
   @MaxLength(1000, { message: 'Project description must not exceed 1000 characters' })
   description?: string;
 }
-

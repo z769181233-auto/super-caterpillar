@@ -6,13 +6,7 @@ import { PermissionModule } from '../permission/permission.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    AuthModule,
-    PermissionModule,
-    ApiSecurityModule,
-  ],
+  imports: [PrismaModule, AuthModule, PermissionModule, ApiSecurityModule],
   controllers: [OpsController],
 })
 export class OpsModule {}
-

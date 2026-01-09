@@ -6,7 +6,7 @@ import type { EngineProfileQuery, EngineProfileResponse } from '@scu/shared-type
 
 /**
  * S4-A: 引擎画像控制器
- * 
+ *
  * 提供只读的引擎画像统计 API
  */
 @Controller('engine-profile')
@@ -16,9 +16,9 @@ export class EngineProfileController {
 
   /**
    * GET /api/engine-profile/summary
-   * 
+   *
    * 获取引擎画像统计摘要
-   * 
+   *
    * 查询参数：
    * - engineKey?: string - 可选，若为空则统计所有引擎
    * - projectId?: string - 可选，用于单项目视角
@@ -30,8 +30,13 @@ export class EngineProfileController {
     @Query('engineKey') engineKey?: string,
     @Query('projectId') projectId?: string,
     @Query('from') from?: string,
-    @Query('to') to?: string,
-  ): Promise<{ success: boolean; data: EngineProfileResponse; requestId: string; timestamp: string }> {
+    @Query('to') to?: string
+  ): Promise<{
+    success: boolean;
+    data: EngineProfileResponse;
+    requestId: string;
+    timestamp: string;
+  }> {
     const query: EngineProfileQuery = {
       engineKey: engineKey || undefined,
       projectId: projectId || undefined,
@@ -49,4 +54,3 @@ export class EngineProfileController {
     };
   }
 }
-

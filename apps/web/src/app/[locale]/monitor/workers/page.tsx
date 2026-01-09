@@ -44,9 +44,7 @@ export default function WorkerMonitorPage() {
               <td className="border p-2">{w.isOnline ? '在线' : '离线'}</td>
               <td className="border p-2">{w.tasksRunning}</td>
               {/* S3-C.1: 显示当前引擎 */}
-              <td className="border p-2 font-mono text-sm">
-                {w.currentEngineKey || '-'}
-              </td>
+              <td className="border p-2 font-mono text-sm">{w.currentEngineKey || '-'}</td>
               <td className="border p-2">{w.lastHeartbeat}</td>
             </tr>
           ))}
@@ -55,4 +53,3 @@ export default function WorkerMonitorPage() {
     </div>
   );
 }
-

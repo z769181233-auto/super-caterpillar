@@ -14,7 +14,9 @@ function sha16(s: string) {
   return crypto.createHash('sha256').update(s).digest('hex').slice(0, 16);
 }
 
-function ensureDir(p: string) { fs.mkdirSync(p, { recursive: true }); }
+function ensureDir(p: string) {
+  fs.mkdirSync(p, { recursive: true });
+}
 
 function main() {
   const root = process.cwd();

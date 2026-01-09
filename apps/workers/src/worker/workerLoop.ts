@@ -6,5 +6,3 @@
 export async function workerLoop() {
   console.warn('[Worker] workerLoop() 已迁移到 main.ts，请使用 main.ts 作为入口');
 }
-
-

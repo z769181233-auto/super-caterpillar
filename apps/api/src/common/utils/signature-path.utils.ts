@@ -16,9 +16,7 @@ const SIGN_EXEMPT_PREFIX = [
 ];
 
 // 内部接口（仅 HMAC，不需要 JWT）
-const INTERNAL_HMAC_ONLY_PREFIX = [
-  '/api/_internal',
-];
+const INTERNAL_HMAC_ONLY_PREFIX = ['/api/_internal'];
 
 /**
  * 判断路径是否应该绕过签名校验
@@ -34,4 +32,3 @@ export function shouldBypassSignature(pathname: string): boolean {
 export function shouldRequireSignature(pathname: string): boolean {
   return !shouldBypassSignature(pathname);
 }
-

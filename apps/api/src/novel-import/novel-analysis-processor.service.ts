@@ -80,11 +80,7 @@ export class NovelAnalysisProcessorService {
    */
   private extractLocation(text: string): string | undefined {
     // 简单规则：查找包含"在"、"到"、"来到"等词的句子
-    const locationPatterns = [
-      /在([^，。！？\n]+)/,
-      /到([^，。！？\n]+)/,
-      /来到([^，。！？\n]+)/,
-    ];
+    const locationPatterns = [/在([^，。！？\n]+)/, /到([^，。！？\n]+)/, /来到([^，。！？\n]+)/];
 
     for (const pattern of locationPatterns) {
       const match = text.match(pattern);
@@ -96,14 +92,3 @@ export class NovelAnalysisProcessorService {
     return undefined;
   }
 }
-
-
-
-
-
-
-
-
-
-
-

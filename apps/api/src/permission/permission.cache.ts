@@ -14,9 +14,7 @@ const TTL_SECONDS = 10;
 export class PermissionCache {
   private readonly logger = new Logger(PermissionCache.name);
 
-  constructor(
-    @Optional() private readonly redis: RedisService,
-  ) {}
+  constructor(@Optional() private readonly redis: RedisService) {}
 
   async getUserPerms(userId: string): Promise<string[] | null> {
     if (this.redis) {
@@ -66,4 +64,3 @@ export class PermissionCache {
     // Redis 不可用时，静默失败（不影响主链路）
   }
 }
-

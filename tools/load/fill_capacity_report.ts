@@ -66,8 +66,6 @@ console.log(
       p95: j.latencyMs?.p95,
     },
     null,
-    2,
-  ),
+    2
+  )
 );
-
-

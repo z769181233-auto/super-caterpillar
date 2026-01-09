@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const projectId = process.argv[2];
-  
+
   if (!projectId) {
     console.error('Usage: node stage2-b-create-job.js <projectId>');
     process.exit(1);
@@ -64,11 +64,13 @@ async function main() {
         RETURNING id, scene_id
       `;
 
-      shot = [{
-        id: newShot[0].id,
-        scene_id: newShot[0].scene_id,
-        episode_id: episode[0].id,
-      }];
+      shot = [
+        {
+          id: newShot[0].id,
+          scene_id: newShot[0].scene_id,
+          episode_id: episode[0].id,
+        },
+      ];
     }
 
     const shotData = shot[0];
@@ -101,7 +103,6 @@ async function main() {
     console.log(`Job ID: ${jobData.id}`);
     console.log(`Status: ${jobData.status}`);
     console.log(`Type: ${jobData.type}`);
-
   } catch (error) {
     console.error('❌ 错误:', error.message);
     process.exit(1);
@@ -111,4 +112,3 @@ async function main() {
 }
 
 main();
-

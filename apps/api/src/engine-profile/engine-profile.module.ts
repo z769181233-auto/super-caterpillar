@@ -9,7 +9,7 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
 
 /**
  * S4-A: 引擎画像模块
- * 
+ *
  * 提供引擎画像统计功能，只读服务
  */
 @Module({
@@ -24,5 +24,4 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   providers: [EngineProfileService],
   exports: [EngineProfileService],
 })
-export class EngineProfileModule { }
-
+export class EngineProfileModule {}

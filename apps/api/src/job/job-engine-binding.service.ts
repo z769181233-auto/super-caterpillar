@@ -1,6 +1,6 @@
 /**
  * Stage3-A: Job-Engine 绑定服务
- * 
+ *
  * 核心设计：
  * 1. Job → EngineBinding（逻辑绑定，不是物理）
  * 2. Worker 只消费"可执行 Job"，不直接知道 Engine 细节
@@ -20,15 +20,17 @@ export class JobEngineBindingService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(EngineConfigStoreService) private readonly engineConfigStore: EngineConfigStoreService,
-    @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry,
-  ) { }
+    @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry
+  ) {}
 
   /**
    * 根据 JobType 选择 Engine
    * Stage3-A: 必须按 Engine.code(engineKey) 选引擎，确保返回真实 engineId
    * 只选 isActive=true，找不到就返回 null（由 create() 回滚）
    */
-  async selectEngineForJob(jobType: JobType): Promise<{ engineId: string; engineKey: string; engineVersionId?: string } | null> {
+  async selectEngineForJob(
+    jobType: JobType
+  ): Promise<{ engineId: string; engineKey: string; engineVersionId?: string } | null> {
     // Stage3-A: 根据 JobType 获取 engineKey（通过 EngineRegistry）
     const engineKey = this.engineRegistry.getDefaultEngineKeyForJobType(jobType);
     if (!engineKey) {
@@ -80,7 +82,7 @@ export class JobEngineBindingService {
     engineId: string,
     engineKey: string,
     engineVersionId?: string,
-    metadata?: any,
+    metadata?: any
   ) {
     const binding = await this.prisma.jobEngineBinding.create({
       data: {
@@ -156,4 +158,3 @@ export class JobEngineBindingService {
     });
   }
 }
-

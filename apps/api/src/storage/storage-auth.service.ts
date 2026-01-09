@@ -1,4 +1,11 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -9,14 +16,16 @@ import { PrismaService } from '../prisma/prisma.service';
 export class StorageAuthService {
   private readonly logger = new Logger(StorageAuthService.name);
 
-  constructor(
-    @Inject(forwardRef(() => PrismaService)) private readonly prisma: PrismaService
-  ) {
+  constructor(@Inject(forwardRef(() => PrismaService)) private readonly prisma: PrismaService) {
     if (!this.prisma) {
-      this.logger.error('CRITICAL: PrismaService injected as undefined! Check for circular dependencies.');
+      this.logger.error(
+        'CRITICAL: PrismaService injected as undefined! Check for circular dependencies.'
+      );
     } else {
       // eslint-disable-next-line no-console
-      console.log('[DEBUG] StorageAuthService init. Prisma is defined via ' + this.prisma.constructor.name);
+      console.log(
+        '[DEBUG] StorageAuthService init. Prisma is defined via ' + this.prisma.constructor.name
+      );
     }
   }
 
@@ -54,25 +63,30 @@ export class StorageAuthService {
     // 2. If no Asset found by storageKey, return 404
     if (!asset) {
       this.logger.debug(`[StorageAuth] Asset not found for key: ${key}`);
-      this.logger.warn(`[StorageAuth] Asset not found for key: ${key}, tenantId: ${tenantId}, userId: ${userId}`);
+      this.logger.warn(
+        `[StorageAuth] Asset not found for key: ${key}, tenantId: ${tenantId}, userId: ${userId}`
+      );
       throw new NotFoundException('Resource not found');
     }
 
-    console.log('[StorageAuth] asset-found', { assetId: asset.id, projectId: asset.projectId, orgId: asset.project?.organizationId });
+    console.log('[StorageAuth] asset-found', {
+      assetId: asset.id,
+      projectId: asset.projectId,
+      orgId: asset.project?.organizationId,
+    });
 
     // 3. Validate tenant (projectId or organizationId)
     const organizationId = asset.project?.organizationId;
 
     // Commercial-grade: allow tenant matching by projectId OR organizationId
-    const tenantMatches = (
+    const tenantMatches =
       asset.projectId === tenantId ||
       organizationId === tenantId ||
-      tenantId.startsWith('proj_') && asset.projectId === tenantId
-    );
+      (tenantId.startsWith('proj_') && asset.projectId === tenantId);
 
     if (!tenantMatches) {
       this.logger.warn(
-        `[StorageAuth] Tenant mismatch: key=${key}, expected=${tenantId}, asset.projectId=${asset.projectId}, asset.orgId=${organizationId}`,
+        `[StorageAuth] Tenant mismatch: key=${key}, expected=${tenantId}, asset.projectId=${asset.projectId}, asset.orgId=${organizationId}`
       );
       // P0 Fix: In dev, allow mismatch with warning; in prod, enforce strict
       if (process.env.NODE_ENV === 'production') {
@@ -94,7 +108,7 @@ export class StorageAuthService {
       const isOwner = asset.project?.ownerId === userId;
       if (!isOwner) {
         this.logger.warn(
-          `[StorageAuth] User ${userId} has no access to key ${key} in tenant ${tenantId}`,
+          `[StorageAuth] User ${userId} has no access to key ${key} in tenant ${tenantId}`
         );
         throw new NotFoundException('Resource not found'); // 404 to prevent enumeration
       }
@@ -130,4 +144,3 @@ export class StorageAuthService {
     return `/protected_storage/${key}`;
   }
 }
-

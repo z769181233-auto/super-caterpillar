@@ -5,7 +5,7 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 /**
  * Memory Service
  * CE07/CE08: Story Memory 服务层
- * 
+ *
  * TODO: 实现真实逻辑
  * - short-term: 读取/更新章节短期记忆（摘要、角色状态）
  * - long-term: 读取/更新实体长期记忆（知识图谱、向量）
@@ -16,7 +16,7 @@ export class MemoryService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditLogService: AuditLogService,
+    private readonly auditLogService: AuditLogService
   ) {}
 
   async getShortTermMemory(chapterId: string, userId?: string) {
@@ -95,7 +95,7 @@ export class MemoryService {
 
   async updateMemory(
     body: { type: 'short-term' | 'long-term'; chapterId?: string; entityId?: string; data: any },
-    userId?: string,
+    userId?: string
   ) {
     // TODO: 实现真实逻辑
     if (body.type === 'short-term' && body.chapterId) {
@@ -137,4 +137,3 @@ export class MemoryService {
     throw new NotFoundException('Invalid memory type or missing ID');
   }
 }
-

@@ -31,7 +31,9 @@ describe('EngineProfileService', () => {
         {
           provide: EngineRegistryHubService,
           useValue: {
-            find: jest.fn().mockReturnValue({ mode: 'local', adapterToken: { name: 'mock_adapter' } }),
+            find: jest
+              .fn()
+              .mockReturnValue({ mode: 'local', adapterToken: { name: 'mock_adapter' } }),
           },
         },
       ],
@@ -127,7 +129,8 @@ describe('EngineProfileService', () => {
       ];
 
       jest.spyOn(prisma.shotJob, 'findMany').mockResolvedValue(mockJobs as any);
-      jest.spyOn(jobService, 'extractEngineKeyFromJob')
+      jest
+        .spyOn(jobService, 'extractEngineKeyFromJob')
         .mockReturnValueOnce('default_novel_analysis')
         .mockReturnValueOnce('http_gemini_v1');
       jest.spyOn(jobService, 'extractEngineVersionFromJob').mockReturnValue(null);
@@ -139,4 +142,3 @@ describe('EngineProfileService', () => {
     });
   });
 });
-

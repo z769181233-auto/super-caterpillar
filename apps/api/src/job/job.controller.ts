@@ -40,7 +40,7 @@ export class JobController {
     private readonly permissionService: PermissionService,
     private readonly auditLogService: AuditLogService,
     private readonly capacityGateService: CapacityGateService
-  ) { }
+  ) {}
 
   @Get('debug-key/:key')
   @Public()

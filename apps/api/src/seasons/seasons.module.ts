@@ -7,13 +7,8 @@ import { PermissionModule } from '../permission/permission.module';
 import { ProjectModule } from '../project/project.module';
 
 @Module({
-    imports: [
-        PrismaModule,
-        AuthModule,
-        PermissionModule,
-        ProjectModule
-    ],
-    controllers: [SeasonsController],
-    providers: [SeasonsService],
+  imports: [PrismaModule, AuthModule, PermissionModule, ProjectModule],
+  controllers: [SeasonsController],
+  providers: [SeasonsService],
 })
-export class SeasonsModule { }
+export class SeasonsModule {}

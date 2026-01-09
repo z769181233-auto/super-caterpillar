@@ -13,14 +13,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           prismaClientSource: this.constructor.name,
           prismaClientPath: require.resolve('database'),
           hasNonceStore: 'nonceStore' in this,
-          modelKeys: Object.keys(this).filter(k => !k.startsWith('_') && !k.startsWith('$')).slice(0, 30),
+          modelKeys: Object.keys(this)
+            .filter((k) => !k.startsWith('_') && !k.startsWith('$'))
+            .slice(0, 30),
         });
       } catch (e) {
         // eslint-disable-next-line no-console
         console.log('[PrismaService] Prisma Client 诊断信息:', {
           prismaClientSource: this.constructor.name,
           hasNonceStore: 'nonceStore' in this,
-          modelKeys: Object.keys(this).filter(k => !k.startsWith('_') && !k.startsWith('$')).slice(0, 30),
+          modelKeys: Object.keys(this)
+            .filter((k) => !k.startsWith('_') && !k.startsWith('$'))
+            .slice(0, 30),
           note: 'database 包路径解析失败（可能为 TypeScript 路径映射）',
         });
       }
@@ -41,4 +45,3 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     await this.$disconnect();
   }
 }
-

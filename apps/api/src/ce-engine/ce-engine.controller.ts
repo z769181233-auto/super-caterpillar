@@ -14,7 +14,7 @@ import { Req } from '@nestjs/common';
 /**
  * CEEngineController
  * CE 核心引擎标准 API 端点
- * 
+ *
  * 规则：
  * - 只负责参数校验 + 调用 Service
  * - 实际执行仍然走现有 JobService / Worker
@@ -37,9 +37,11 @@ export class CEEngineController {
     @Body() dto: ParseStoryDto,
     @CurrentUser() userId: string,
     @CurrentOrganization() organizationId: string,
-    @Req() req: Request,
+    @Req() req: Request
   ) {
-    this.logger.log(`CE06 parseStory request: projectId=${dto.projectId}, textLength=${dto.rawText.length}`);
+    this.logger.log(
+      `CE06 parseStory request: projectId=${dto.projectId}, textLength=${dto.rawText.length}`
+    );
 
     const result = await this.ceEngineService.parseStory(
       {
@@ -48,7 +50,7 @@ export class CEEngineController {
         options: dto.options,
       },
       userId,
-      organizationId,
+      organizationId
     );
 
     return result;
@@ -64,9 +66,11 @@ export class CEEngineController {
     @Body() dto: VisualDensityDto,
     @CurrentUser() userId: string,
     @CurrentOrganization() organizationId: string,
-    @Req() req: Request,
+    @Req() req: Request
   ) {
-    this.logger.log(`CE03 analyzeVisualDensity request: projectId=${dto.projectId}, textLength=${dto.text.length}`);
+    this.logger.log(
+      `CE03 analyzeVisualDensity request: projectId=${dto.projectId}, textLength=${dto.text.length}`
+    );
 
     const result = await this.ceEngineService.analyzeVisualDensity(
       {
@@ -75,7 +79,7 @@ export class CEEngineController {
         options: dto.options,
       },
       userId,
-      organizationId,
+      organizationId
     );
 
     return result;
@@ -91,9 +95,11 @@ export class CEEngineController {
     @Body() dto: EnrichTextDto,
     @CurrentUser() userId: string,
     @CurrentOrganization() organizationId: string,
-    @Req() req: Request,
+    @Req() req: Request
   ) {
-    this.logger.log(`CE04 enrichText request: projectId=${dto.projectId}, textLength=${dto.text.length}`);
+    this.logger.log(
+      `CE04 enrichText request: projectId=${dto.projectId}, textLength=${dto.text.length}`
+    );
 
     // 提取 API Key ID（如果有）
     const apiKeyId = (req as any).apiKeyId;
@@ -108,10 +114,9 @@ export class CEEngineController {
       organizationId,
       apiKeyId,
       req.ip || (req.headers['x-forwarded-for'] as string) || undefined,
-      req.headers['user-agent'] || undefined,
+      req.headers['user-agent'] || undefined
     );
 
     return result;
   }
 }
-

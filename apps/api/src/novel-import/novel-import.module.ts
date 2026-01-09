@@ -19,7 +19,19 @@ import { PermissionModule } from '../permission/permission.module';
 import { OrchestratorModule } from '../orchestrator/orchestrator.module';
 
 @Module({
-  imports: [PrismaModule, ProjectModule, TaskModule, JobModule, AuditLogModule, AuditModule, PermissionModule, OrchestratorModule, ApiSecurityModule, AuthModule, TextSafetyModule],
+  imports: [
+    PrismaModule,
+    ProjectModule,
+    TaskModule,
+    JobModule,
+    AuditLogModule,
+    AuditModule,
+    PermissionModule,
+    OrchestratorModule,
+    ApiSecurityModule,
+    AuthModule,
+    TextSafetyModule,
+  ],
   controllers: [NovelImportController],
   providers: [
     NovelImportService,
@@ -29,12 +41,11 @@ import { OrchestratorModule } from '../orchestrator/orchestrator.module';
     NovelStructureGeneratorService,
     NovelAnalysisJobProcessorService,
   ],
-  exports: [NovelImportService, FileParserService, NovelAnalysisProcessorService, NovelAnalysisEngineService],
+  exports: [
+    NovelImportService,
+    FileParserService,
+    NovelAnalysisProcessorService,
+    NovelAnalysisEngineService,
+  ],
 })
-export class NovelImportModule { }
-
-
-
-
-
-
+export class NovelImportModule {}

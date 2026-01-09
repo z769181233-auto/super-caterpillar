@@ -14,4 +14,3 @@ import { PermissionModule } from '../permission/permission.module';
   exports: [MemoryService],
 })
 export class MemoryModule {}
-

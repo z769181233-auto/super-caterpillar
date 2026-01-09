@@ -22,7 +22,12 @@ import {
 import { CreateSeasonDto } from './dto/create-season.dto';
 import { SceneGraphService } from './scene-graph.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { ProjectOverviewDTO, ProjectFlowDTO, ProjectFlowStepDTO, BlockReasonCode } from '@scu/shared-types';
+import {
+  ProjectOverviewDTO,
+  ProjectFlowDTO,
+  ProjectFlowStepDTO,
+  BlockReasonCode,
+} from '@scu/shared-types';
 
 @Injectable()
 export class ProjectService {
@@ -31,40 +36,44 @@ export class ProjectService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
-    @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
-  ) { }
+    @Inject(AuditLogService) private readonly auditLogService: AuditLogService
+  ) {}
 
   async create(createProjectDto: CreateProjectDto, ownerId: string, organizationId: string) {
-    process.stdout.write("!!! PROJECT SERVICE CREATE CALLED - FIX VERIFICATION !!!\n");
+    process.stdout.write('!!! PROJECT SERVICE CREATE CALLED - FIX VERIFICATION !!!\n');
 
     // Studio v0.7: 创建项目时必须指定组织
     // Studio v0.7: Find 'OWNER' role
     // Using findFirst/findUnique. Modified for Robustness.
     let finalOwnerRole = await this.prisma.role.findFirst({
-      where: { name: 'OWNER' }
+      where: { name: 'OWNER' },
     });
 
     if (!finalOwnerRole) {
-      process.stdout.write("!!! WARN: OWNER ROLE MISSING IN DB. ATTEMPTING SELF-HEALING !!!\n");
+      process.stdout.write('!!! WARN: OWNER ROLE MISSING IN DB. ATTEMPTING SELF-HEALING !!!\n');
       try {
         finalOwnerRole = await this.prisma.role.create({
           data: {
             name: 'OWNER',
             level: 100, // Assuming 100 is Owner level
-          }
+          },
         });
         process.stdout.write(`!!! SUCCESS: Created OWNER role with ID ${finalOwnerRole.id} !!!\n`);
       } catch (err) {
         process.stdout.write(`!!! ERROR: Failed to create OWNER role: ${err.message} !!!\n`);
         // If unique constraint violation, it means it exists. Try finding it again.
-        process.stdout.write("!!! RETRYING FIND OWNER ROLE ... !!!\n");
+        process.stdout.write('!!! RETRYING FIND OWNER ROLE ... !!!\n');
         finalOwnerRole = await this.prisma.role.findFirst({
-          where: { name: 'OWNER' }
+          where: { name: 'OWNER' },
         });
         if (finalOwnerRole) {
-          process.stdout.write(`!!! SUCCESS: Found OWNER role after retry: ${finalOwnerRole.id} !!!\n`);
+          process.stdout.write(
+            `!!! SUCCESS: Found OWNER role after retry: ${finalOwnerRole.id} !!!\n`
+          );
         } else {
-          process.stdout.write(`!!! FATAL: OWNER role still not found after creation failure !!!\n`);
+          process.stdout.write(
+            `!!! FATAL: OWNER role still not found after creation failure !!!\n`
+          );
         }
       }
     } else {
@@ -84,7 +93,9 @@ export class ProjectService {
       });
 
       if (finalOwnerRole) {
-        process.stdout.write(`[ProjectService] Creating OWNER member for user ${ownerId} in project ${p.id} with role ${finalOwnerRole.id}\n`);
+        process.stdout.write(
+          `[ProjectService] Creating OWNER member for user ${ownerId} in project ${p.id} with role ${finalOwnerRole.id}\n`
+        );
         await tx.projectMember.create({
           data: {
             projectId: p.id,
@@ -93,7 +104,9 @@ export class ProjectService {
           },
         });
       } else {
-        process.stdout.write(`[ProjectService] OWNER role STILL NOT FOUND! Skipping member creation for project ${p.id}\n`);
+        process.stdout.write(
+          `[ProjectService] OWNER role STILL NOT FOUND! Skipping member creation for project ${p.id}\n`
+        );
       }
 
       // CE01: 项目创建后生成角色三视图（占位实现）
@@ -112,7 +125,9 @@ export class ProjectService {
       } catch (error: any) {
         // 软失败：记录 audit_logs 并继续（符合 SafetySpec，Character 非阻断性）
         // 注意：事务中无法直接调用 auditLogService (外部服务)，记录日志即可
-        process.stdout.write(`!!! WARN: CE01 placeholder failed in transaction: ${error?.message}\n`);
+        process.stdout.write(
+          `!!! WARN: CE01 placeholder failed in transaction: ${error?.message}\n`
+        );
       }
 
       return p;
@@ -209,7 +224,7 @@ export class ProjectService {
                     title: true,
                     summary: true,
                     visualDensityScore: true, // V1.1 新增
-                    enrichedText: true,       // V1.1 新增
+                    enrichedText: true, // V1.1 新增
                     shots: {
                       select: {
                         id: true,
@@ -221,13 +236,14 @@ export class ProjectService {
                         qualityScore: true,
                         durationSeconds: true,
                         reviewedAt: true,
-                        assets: {          // Stage 4: Include Assets
+                        assets: {
+                          // Stage 4: Include Assets
                           select: {
                             id: true,
                             type: true,
-                            status: true
-                          }
-                        }
+                            status: true,
+                          },
+                        },
                       },
                       orderBy: { index: 'asc' },
                     },
@@ -293,9 +309,9 @@ export class ProjectService {
                       select: {
                         id: true,
                         type: true,
-                        status: true
-                      }
-                    }
+                        status: true,
+                      },
+                    },
                   },
                   orderBy: { index: 'asc' },
                 },
@@ -314,7 +330,9 @@ export class ProjectService {
 
     // 计算分析状态（统一使用 NovelAnalysisStatus）
     // 类型断言：Prisma include 后的类型推断可能不完整
-    const projectWithTasks = project as typeof project & { tasks: Array<{ id: string; type: string; status: string; updatedAt: Date }> };
+    const projectWithTasks = project as typeof project & {
+      tasks: Array<{ id: string; type: string; status: string; updatedAt: Date }>;
+    };
     const tasks = projectWithTasks.tasks || [];
     const succeeded = tasks.find((t: any) => t.status === TaskStatus.SUCCEEDED);
     const failed = tasks.find((t: any) => t.status === TaskStatus.FAILED);
@@ -333,7 +351,7 @@ export class ProjectService {
         (t: any) =>
           t.status === TaskStatus.PENDING ||
           t.status === TaskStatus.RUNNING ||
-          t.status === TaskStatus.RETRYING,
+          t.status === TaskStatus.RETRYING
       );
       if (pendingOrRunning) {
         analysisStatus = 'ANALYZING';
@@ -355,7 +373,8 @@ export class ProjectService {
       }
 
       // 2. Asset Check
-      const generatedAssets = shot.assets?.filter((a: any) => a.status === 'GENERATED' || a.status === 'PUBLISHED') || [];
+      const generatedAssets =
+        shot.assets?.filter((a: any) => a.status === 'GENERATED' || a.status === 'PUBLISHED') || [];
       const hasAssets = generatedAssets.length > 0;
 
       // 3. Gate Logic
@@ -379,7 +398,7 @@ export class ProjectService {
         qaStatus,
         blockingReason: canGenerate ? null : blockingReason, // Clear reason if actionable
         canGenerate,
-        assets: undefined // Clean up DTO if not needed explicitly in list (or keep if frontend needs it)
+        assets: undefined, // Clean up DTO if not needed explicitly in list (or keep if frontend needs it)
       };
     };
 
@@ -403,7 +422,7 @@ export class ProjectService {
         qaStatus,
         blockingReason,
         canGenerate,
-        shots: scene.shots.map(enrichShot({ qaStatus, blockingReason, canGenerate })) // Pass parent scene's QA status to shots
+        shots: scene.shots.map(enrichShot({ qaStatus, blockingReason, canGenerate })), // Pass parent scene's QA status to shots
       };
     };
 
@@ -411,17 +430,16 @@ export class ProjectService {
       ...season,
       episodes: season.episodes.map((episode: any) => ({
         ...episode,
-        scenes: episode.scenes.map(enrichScene)
-      }))
+        scenes: episode.scenes.map(enrichScene),
+      })),
     }));
 
     // For legacy episodes root
     // Note: This modifies the specialized 'episodes' property for backward compat
     const legacyEpisodes = project.episodes?.map((episode: any) => ({
       ...episode,
-      scenes: episode.scenes.map(enrichScene)
+      scenes: episode.scenes.map(enrichScene),
     }));
-
 
     // [Start] Strict Status Mapping Logic
     // 1. Determine sourceType
@@ -429,7 +447,11 @@ export class ProjectService {
     // In future: Check novelSources table
     const SMOKE_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
     let sourceType: 'DEMO' | 'NOVEL' = 'NOVEL';
-    if (project.id === SMOKE_PROJECT_ID || project.name.includes('Demo') || project.name.includes('示例')) {
+    if (
+      project.id === SMOKE_PROJECT_ID ||
+      project.name.includes('Demo') ||
+      project.name.includes('示例')
+    ) {
       sourceType = 'DEMO';
     }
 
@@ -463,7 +485,6 @@ export class ProjectService {
     }
     // [End] Strict Status Mapping Logic
 
-
     // 返回项目树结构，包含分析状态
     const { tasks: _, ...projectWithoutTasks } = projectWithTasks;
     return {
@@ -475,7 +496,7 @@ export class ProjectService {
       // New Fields
       sourceType,
       productionStatus,
-      structureStatus
+      structureStatus,
     };
   }
 
@@ -584,7 +605,10 @@ export class ProjectService {
   /**
    * 创建 Season（影视工业标准）
    */
-  async createSeason(projectId: string, createSeasonDto: { index: number; title: string; description?: string; metadata?: any }) {
+  async createSeason(
+    projectId: string,
+    createSeasonDto: { index: number; title: string; description?: string; metadata?: any }
+  ) {
     // 检查 Project 是否存在
     await this.findById(projectId);
 
@@ -601,7 +625,9 @@ export class ProjectService {
       });
 
       if (existing) {
-        throw new ConflictException(`Season with index ${createSeasonDto.index} already exists in this project`);
+        throw new ConflictException(
+          `Season with index ${createSeasonDto.index} already exists in this project`
+        );
       }
 
       return tx.season.create({
@@ -649,7 +675,10 @@ export class ProjectService {
             seasonId: projectIdOrSeasonId,
             projectId: season.projectId, // 保留 projectId 用于向下兼容
             index: createEpisodeDto.index,
-            name: createEpisodeDto.name || createEpisodeDto.title || `Episode ${createEpisodeDto.index}`, // Episode 使用 name 字段
+            name:
+              createEpisodeDto.name ||
+              createEpisodeDto.title ||
+              `Episode ${createEpisodeDto.index}`, // Episode 使用 name 字段
             summary: createEpisodeDto.summary,
           },
         });
@@ -683,7 +712,10 @@ export class ProjectService {
             seasonId: defaultSeason.id,
             projectId: projectIdOrSeasonId,
             index: createEpisodeDto.index,
-            name: createEpisodeDto.name || createEpisodeDto.title || `Episode ${createEpisodeDto.index}`, // Episode 使用 name 字段
+            name:
+              createEpisodeDto.name ||
+              createEpisodeDto.title ||
+              `Episode ${createEpisodeDto.index}`, // Episode 使用 name 字段
             summary: createEpisodeDto.summary,
           },
         });
@@ -692,7 +724,12 @@ export class ProjectService {
 
     // 清理缓存（需要获取 projectId）
     const projectId = isSeasonId
-      ? (await this.prisma.season.findUnique({ where: { id: projectIdOrSeasonId }, select: { projectId: true } }))?.projectId
+      ? (
+          await this.prisma.season.findUnique({
+            where: { id: projectIdOrSeasonId },
+            select: { projectId: true },
+          })
+        )?.projectId
       : projectIdOrSeasonId;
     if (projectId) {
       await this.sceneGraphService.invalidateProjectSceneGraph(projectId);
@@ -755,26 +792,31 @@ export class ProjectService {
         } catch (error: any) {
           // 软失败：记录 audit_logs（符合 SafetySpec）
           // 注意：在事务中无法直接注入 AuditLogService，使用 Prisma 直接写入
-          await tx.auditLog.create({
-            data: {
-              action: 'CE07_MEMORY_READ_FAIL',
-              resourceType: 'memory',
-              resourceId: episode.chapter.id,
-              details: {
-                reason: 'CE07 short-term memory read failed',
-                error: error?.message || 'Unknown error',
-                chapterId: episode.chapter.id,
+          await tx.auditLog
+            .create({
+              data: {
+                action: 'CE07_MEMORY_READ_FAIL',
+                resourceType: 'memory',
+                resourceId: episode.chapter.id,
+                details: {
+                  reason: 'CE07 short-term memory read failed',
+                  error: error?.message || 'Unknown error',
+                  chapterId: episode.chapter.id,
+                },
               },
-            },
-          }).catch(() => {
-            // 审计失败不阻断
-          });
+            })
+            .catch(() => {
+              // 审计失败不阻断
+            });
           // 结构化日志（不打堆栈）
-          this.logger.warn({
-            tag: 'CE07_MEMORY_READ_FAIL',
-            chapterId: episode.chapter.id,
-            error: error?.message || 'Unknown error',
-          }, 'CE07 memory read failed');
+          this.logger.warn(
+            {
+              tag: 'CE07_MEMORY_READ_FAIL',
+              chapterId: episode.chapter.id,
+              error: error?.message || 'Unknown error',
+            },
+            'CE07 memory read failed'
+          );
         }
       }
 
@@ -853,7 +895,8 @@ export class ProjectService {
         },
       },
     });
-    const projectId = sceneWithProject?.episode?.projectId || sceneWithProject?.episode?.season?.projectId;
+    const projectId =
+      sceneWithProject?.episode?.projectId || sceneWithProject?.episode?.season?.projectId;
     if (projectId) {
       await this.sceneGraphService.invalidateProjectSceneGraph(projectId);
     }
@@ -886,7 +929,10 @@ export class ProjectService {
       }
 
       // Studio v0.7: 如果未传入 organizationId，从 Project 推导
-      const finalOrganizationId = organizationId || scene.episode.project?.organizationId || scene.episode.season?.project?.organizationId;
+      const finalOrganizationId =
+        organizationId ||
+        scene.episode.project?.organizationId ||
+        scene.episode.season?.project?.organizationId;
 
       if (!finalOrganizationId) {
         throw new BadRequestException('Cannot determine organizationId for shot');
@@ -1065,7 +1111,9 @@ export class ProjectService {
         },
       },
     });
-    const projectId = shotWithProject?.scene?.episode?.projectId || shotWithProject?.scene?.episode?.season?.projectId;
+    const projectId =
+      shotWithProject?.scene?.episode?.projectId ||
+      shotWithProject?.scene?.episode?.season?.projectId;
     if (projectId) {
       await this.sceneGraphService.invalidateProjectSceneGraph(projectId);
     }
@@ -1073,20 +1121,24 @@ export class ProjectService {
     return shot;
   }
 
-  async listEpisodes(userId: string, organizationId: string, filters: {
-    projectId?: string;
-    seasonId?: string;
-    page?: number;
-    pageSize?: number;
-  }) {
+  async listEpisodes(
+    userId: string,
+    organizationId: string,
+    filters: {
+      projectId?: string;
+      seasonId?: string;
+      page?: number;
+      pageSize?: number;
+    }
+  ) {
     const { projectId, seasonId, page = 1, pageSize = 20 } = filters;
     const skip = (page - 1) * pageSize;
     const take = pageSize;
 
     const where: any = {
       season: {
-        project: { organizationId }
-      }
+        project: { organizationId },
+      },
     };
     if (seasonId) where.seasonId = seasonId;
     if (projectId) where.season.projectId = projectId;
@@ -1097,14 +1149,15 @@ export class ProjectService {
         orderBy: { index: 'asc' }, // Strict Sort by Index
         skip,
         take,
-        select: { // Strict Minimal Selection
+        select: {
+          // Strict Minimal Selection
           id: true,
           projectId: true, // Legacy field
           seasonId: true,
           index: true,
           name: true,
           // Episode has no createdAt/updatedAt in schema
-        }
+        },
       }),
       this.prisma.episode.count({ where }),
     ]);
@@ -1112,12 +1165,16 @@ export class ProjectService {
     return { data, total, page, pageSize };
   }
 
-  async listScenes(userId: string, organizationId: string, filters: {
-    projectId?: string;
-    episodeId?: string;
-    page?: number;
-    pageSize?: number;
-  }) {
+  async listScenes(
+    userId: string,
+    organizationId: string,
+    filters: {
+      projectId?: string;
+      episodeId?: string;
+      page?: number;
+      pageSize?: number;
+    }
+  ) {
     const { projectId, episodeId, page = 1, pageSize = 20 } = filters;
     const skip = (page - 1) * pageSize;
     const take = pageSize;
@@ -1125,9 +1182,9 @@ export class ProjectService {
     const where: any = {
       episode: {
         season: {
-          project: { organizationId }
-        }
-      }
+          project: { organizationId },
+        },
+      },
     };
     if (episodeId) where.episodeId = episodeId;
     if (projectId) where.episode.season.projectId = projectId;
@@ -1138,16 +1195,17 @@ export class ProjectService {
         orderBy: { index: 'asc' },
         skip,
         take,
-        select: { // Strict Minimal Selection
+        select: {
+          // Strict Minimal Selection
           id: true,
           projectId: true, // Legacy field
           episodeId: true,
           index: true,
           title: true,
           // Scene has no createdAt/updatedAt in schema
-        }
+        },
       }),
-      this.prisma.scene.count({ where })
+      this.prisma.scene.count({ where }),
     ]);
 
     return {
@@ -1159,17 +1217,30 @@ export class ProjectService {
     };
   }
 
-  async listShots(userId: string, organizationId: string, filters: {
-    projectId?: string;
-    episodeId?: string;
-    sceneId?: string;
-    status?: string;
-    reviewStatus?: string;
-    q?: string;
-    page?: number;
-    pageSize?: number;
-  }) {
-    const { projectId, episodeId, sceneId, status, reviewStatus, q, page = 1, pageSize = 20 } = filters;
+  async listShots(
+    userId: string,
+    organizationId: string,
+    filters: {
+      projectId?: string;
+      episodeId?: string;
+      sceneId?: string;
+      status?: string;
+      reviewStatus?: string;
+      q?: string;
+      page?: number;
+      pageSize?: number;
+    }
+  ) {
+    const {
+      projectId,
+      episodeId,
+      sceneId,
+      status,
+      reviewStatus,
+      q,
+      page = 1,
+      pageSize = 20,
+    } = filters;
     const skip = (page - 1) * pageSize;
     const take = pageSize;
 
@@ -1313,38 +1384,38 @@ export class ProjectService {
       this.prisma.shotJob.findMany({
         where: {
           task: { projectId },
-          status: { in: ['RUNNING', 'PENDING', 'FAILED'] }
+          status: { in: ['RUNNING', 'PENDING', 'FAILED'] },
         },
         select: { id: true, type: true, status: true, workerId: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
-        take: 5
+        take: 5,
       }),
       // Real Cost: Sum of all billing events for this project
       this.prisma.billingEvent.aggregate({
         _sum: { creditsDelta: true },
         where: {
-          projectId
-        }
+          projectId,
+        },
       }),
       // Real Audit Logs: Recent actions on this project
       this.prisma.auditLog.findMany({
         where: {
           OR: [
             { resourceType: 'project', resourceId: projectId },
-            { resourceType: 'scene', details: { path: ['projectId'], equals: projectId } } // Optional: if details had projectId, but simpler to rely on resourceId for now OR extensive linking. 
-            // For MVP, strictly matching resourceId=projectId or generic project actions is safest/fastest. 
+            { resourceType: 'scene', details: { path: ['projectId'], equals: projectId } }, // Optional: if details had projectId, but simpler to rely on resourceId for now OR extensive linking.
+            // For MVP, strictly matching resourceId=projectId or generic project actions is safest/fastest.
             // Let's stick to resourceType 'project' + 'novel_source' etc if we can link them, but simpler is better first.
-          ]
+          ],
         },
         include: { user: { select: { id: true, email: true, avatar: true } } }, // Get actor info
         orderBy: { createdAt: 'desc' },
-        take: 5
-      })
+        take: 5,
+      }),
     ]);
 
     // 2. Flow Status Logic
     const hasNovel = project.novelSources.length > 0;
-    const structureTask = project.tasks.find(t => t.type === TaskTypeEnum.NOVEL_ANALYSIS);
+    const structureTask = project.tasks.find((t) => t.type === TaskTypeEnum.NOVEL_ANALYSIS);
     const structureStatus = structureTask?.status;
 
     // Node 1: Import
@@ -1353,12 +1424,14 @@ export class ProjectService {
       label: 'Novel Import',
       status: hasNovel ? 'DONE' : 'PENDING',
       gate: { canRun: true },
-      actions: [{
-        key: 'RUN',
-        label: hasNovel ? 'Re-Import' : 'Import Novel',
-        enabled: true,
-        href: '/import'
-      }]
+      actions: [
+        {
+          key: 'RUN',
+          label: hasNovel ? 'Re-Import' : 'Import Novel',
+          enabled: true,
+          href: '/import',
+        },
+      ],
     };
 
     // Node 2: Structure
@@ -1375,87 +1448,155 @@ export class ProjectService {
       gate: {
         canRun: canRunStructure,
         blockedReason: !canRunStructure ? 'Depends on Novel Import' : undefined,
-        missingInputs: !canRunStructure ? [{ code: 'MISSING_NOVEL', title: 'Missing Novel' }] : []
+        missingInputs: !canRunStructure ? [{ code: 'MISSING_NOVEL', title: 'Missing Novel' }] : [],
       },
-      actions: [{
-        key: 'RUN',
-        label: structureNodeStatus === 'RUNNING' ? 'Analyzing...' : (structureNodeStatus === 'DONE' ? 'Re-Analyze' : 'Start Analysis'),
-        enabled: canRunStructure && structureNodeStatus !== 'RUNNING',
-        disabledReason: structureNodeStatus === 'RUNNING' ? 'Analysis in progress' : (!canRunStructure ? 'Missing Novel' : undefined)
-      }]
+      actions: [
+        {
+          key: 'RUN',
+          label:
+            structureNodeStatus === 'RUNNING'
+              ? 'Analyzing...'
+              : structureNodeStatus === 'DONE'
+                ? 'Re-Analyze'
+                : 'Start Analysis',
+          enabled: canRunStructure && structureNodeStatus !== 'RUNNING',
+          disabledReason:
+            structureNodeStatus === 'RUNNING'
+              ? 'Analysis in progress'
+              : !canRunStructure
+                ? 'Missing Novel'
+                : undefined,
+        },
+      ],
     };
 
     // Placeholders for future nodes (using cast to any to avoid strict typing needed for strict DTO matching right now)
-    const flowScript: any = { key: 'SCRIPT_SEMANTIC', label: 'Script Semantic', status: 'PENDING', gate: { canRun: structureNodeStatus === 'DONE' }, actions: [] };
-    const flowShot: any = { key: 'SHOT_PLANNING', label: 'Shot Planning', status: 'PENDING', gate: { canRun: false }, actions: [] };
-    const flowAsset: any = { key: 'ASSET_GENERATION', label: 'Asset Gen', status: 'PENDING', gate: { canRun: false }, actions: [] };
-    const flowVideo: any = { key: 'VIDEO_GENERATION', label: 'Video Gen', status: 'PENDING', gate: { canRun: false }, actions: [] };
-    const flowExport: any = { key: 'COMPOSE_EXPORT', label: 'Export', status: 'PENDING', gate: { canRun: false }, actions: [] };
+    const flowScript: any = {
+      key: 'SCRIPT_SEMANTIC',
+      label: 'Script Semantic',
+      status: 'PENDING',
+      gate: { canRun: structureNodeStatus === 'DONE' },
+      actions: [],
+    };
+    const flowShot: any = {
+      key: 'SHOT_PLANNING',
+      label: 'Shot Planning',
+      status: 'PENDING',
+      gate: { canRun: false },
+      actions: [],
+    };
+    const flowAsset: any = {
+      key: 'ASSET_GENERATION',
+      label: 'Asset Gen',
+      status: 'PENDING',
+      gate: { canRun: false },
+      actions: [],
+    };
+    const flowVideo: any = {
+      key: 'VIDEO_GENERATION',
+      label: 'Video Gen',
+      status: 'PENDING',
+      gate: { canRun: false },
+      actions: [],
+    };
+    const flowExport: any = {
+      key: 'COMPOSE_EXPORT',
+      label: 'Export',
+      status: 'PENDING',
+      gate: { canRun: false },
+      actions: [],
+    };
 
     // 3. Next Action Calculation
     // Stage 4: Industrial Grade Next Action
     let nextAction: any = {
-      action: { key: 'CHECK', label: 'Check Status', canRun: false, disabledReason: 'Unknown state' },
+      action: {
+        key: 'CHECK',
+        label: 'Check Status',
+        canRun: false,
+        disabledReason: 'Unknown state',
+      },
       why: 'Unknown state',
-      estimate: { etaSec: 0 }
+      estimate: { etaSec: 0 },
     };
 
     if (!hasNovel) {
       nextAction = {
         action: { key: 'IMPORT', label: 'Go to Import', href: '/import', canRun: true },
         why: 'Project is empty. Novel import required to start.',
-        estimate: { etaSec: 60 }
+        estimate: { etaSec: 60 },
       };
     } else if (structureNodeStatus !== 'DONE') {
       if (structureNodeStatus === 'RUNNING') {
         nextAction = {
-          action: { key: 'VIEW_LOGS', label: 'View Analysis Logs', href: `/projects/${projectId}/logs`, canRun: true },
+          action: {
+            key: 'VIEW_LOGS',
+            label: 'View Analysis Logs',
+            href: `/projects/${projectId}/logs`,
+            canRun: true,
+          },
           why: 'Structure analysis is currently running.',
-          estimate: { etaSec: 120 }
+          estimate: { etaSec: 120 },
         };
       } else if (structureNodeStatus === 'FAILED') {
         nextAction = {
-          action: { key: 'RETRY', label: 'Retry Structure Analysis', href: `/projects/${projectId}/structure`, canRun: true },
+          action: {
+            key: 'RETRY',
+            label: 'Retry Structure Analysis',
+            href: `/projects/${projectId}/structure`,
+            canRun: true,
+          },
           why: 'Previous analysis failed. Please retry or check logs.',
-          estimate: { etaSec: 300 }
+          estimate: { etaSec: 300 },
         };
       } else {
         nextAction = {
           action: { key: 'RUN', label: 'Start Structure Analysis', canRun: true },
           why: 'Novel imported. Ready for structure analysis.',
-          estimate: { etaSec: 300 }
+          estimate: { etaSec: 300 },
         };
       }
     } else {
       const sceneCount = scenes;
       if (sceneCount === 0) {
         nextAction = {
-          action: { key: 'REVIEW', label: 'Review Structure', href: `/projects/${projectId}/structure`, canRun: true },
+          action: {
+            key: 'REVIEW',
+            label: 'Review Structure',
+            href: `/projects/${projectId}/structure`,
+            canRun: true,
+          },
           why: 'Analysis done but no scenes found. Please review.',
-          estimate: { etaSec: 60 }
+          estimate: { etaSec: 60 },
         };
       } else {
         nextAction = {
-          action: { key: 'REVIEW', label: 'Enter Workbench', href: `/projects/${projectId}/structure`, canRun: true },
+          action: {
+            key: 'REVIEW',
+            label: 'Enter Workbench',
+            href: `/projects/${projectId}/structure`,
+            canRun: true,
+          },
           why: 'Structure ready. Proceed to scene refinement and shot planning.',
-          estimate: { etaSec: 600 }
+          estimate: { etaSec: 600 },
         };
       }
     }
 
     // 4. Quality Status Aggregation
     // MVP: If we have seasons/episodes, structure is likely OK.
-    const structureQuality = (seasons > 0 && episodes > 0) ? 'OK' : (structureNodeStatus === 'DONE' ? 'WARN' : 'OK');
+    const structureQuality =
+      seasons > 0 && episodes > 0 ? 'OK' : structureNodeStatus === 'DONE' ? 'WARN' : 'OK';
 
     // 5. Audit Log Transformation
     const recentAudit = auditLogs.map((log: any) => ({
       at: log.createdAt.toISOString(),
       actor: {
         id: log.userId || log.apiKeyId || 'system',
-        name: log.user?.email?.split('@')[0] || log.apiKeyId || 'System' // Fallback name
+        name: log.user?.email?.split('@')[0] || log.apiKeyId || 'System', // Fallback name
       },
       action: log.action,
-      result: 'OK' as const // AuditLog doesn't explicitly store result status (assumed OK if logged, or details has it)
+      result: 'OK' as const, // AuditLog doesn't explicitly store result status (assumed OK if logged, or details has it)
     }));
 
     return {
@@ -1466,12 +1607,16 @@ export class ProjectService {
         createdAt: project.createdAt.toISOString(),
         updatedAt: project.updatedAt.toISOString(),
         status: project.status === 'in_progress' ? 'RUNNING' : 'DRAFT',
-        stage: { currentKey: structureNodeStatus === 'DONE' ? 'SCRIPT_SEMANTIC' : 'STRUCTURE_ANALYSIS', currentLabel: 'Development', progressPct: 30 },
+        stage: {
+          currentKey: structureNodeStatus === 'DONE' ? 'SCRIPT_SEMANTIC' : 'STRUCTURE_ANALYSIS',
+          currentLabel: 'Development',
+          progressPct: 30,
+        },
         blocking: { isBlocked: false },
-        risk: { quality: structureQuality, cost: 'OK', compliance: 'OK' }
+        risk: { quality: structureQuality, cost: 'OK', compliance: 'OK' },
       },
       flow: {
-        nodes: [flowImport, flowStructure, flowScript, flowShot, flowAsset, flowVideo, flowExport]
+        nodes: [flowImport, flowStructure, flowScript, flowShot, flowAsset, flowVideo, flowExport],
       },
       next: nextAction,
       stats: {
@@ -1480,7 +1625,7 @@ export class ProjectService {
         scenes: scenes,
         shots: shots,
         issues: { total: 0, missingBindings: 0, semanticConflicts: 0, qaFailed: 0 },
-        links: { structureView: '', issuesView: '' }
+        links: { structureView: '', issuesView: '' },
       },
       jobs: {
         running: jobs.map((j: any) => ({
@@ -1489,26 +1634,26 @@ export class ProjectService {
           status: j.status,
           progressPct: 0, // Not in basic Job model, could invoke Redis or Task payload if needed
           startedAt: j.createdAt.toISOString(),
-          workerId: j.workerId
+          workerId: j.workerId,
         })),
         queuedCount: 0,
-        failed: []
+        failed: [],
       },
       quality: {
         structure: structureQuality as any,
         semantic: 'OK', // Placeholder for now
-        visual: 'OK'
+        visual: 'OK',
       },
       cost: {
-        total: { money: Math.abs(costAgg._sum.creditsDelta || 0.00) },
-        last24h: { money: 0.00 }, // Pending implementation: filter by createdAt > now-24h
-        currentRunEstimate: { money: 0.00 },
+        total: { money: Math.abs(costAgg._sum.creditsDelta || 0.0) },
+        last24h: { money: 0.0 }, // Pending implementation: filter by createdAt > now-24h
+        currentRunEstimate: { money: 0.0 },
         alert: { level: 'OK' },
       },
       audit: {
         recent: recentAudit,
-        href: `/projects/audit` // General audit log page
-      }
+        href: `/projects/audit`, // General audit log page
+      },
     };
   }
 
@@ -1620,16 +1765,3 @@ export class ProjectService {
     return { projectId: project.id };
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

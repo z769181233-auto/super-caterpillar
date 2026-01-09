@@ -52,7 +52,6 @@ import { SignedUrlService } from './storage/signed-url.service';
 import { StorageAuthService } from './storage/storage-auth.service';
 import { ApiSecurityGuard } from './security/api-security/api-security.guard';
 
-
 // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
 
@@ -65,10 +64,12 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
       isGlobal: true,
       ignoreEnvFile: true, // 禁止 ConfigModule 读文件，统一使用 packages/config（避免 split-brain）
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     ScheduleModule.forRoot(), // P1 修复：启用定时任务模块（用于 Job Watchdog）
     LoggerModule.forRoot({
       pinoHttp: {
@@ -109,7 +110,9 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     SeasonsModule, // 补齐 Seasons API (Smoke Test Fix)
     CostModule, // P0: Cost tracking & billing foundation
     AdminModule, // P1-2: Admin endpoints for gate scripts (GATE_MODE=1 only)
-    ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS ? [OpsModule] : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
+    ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS
+      ? [OpsModule]
+      : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
   ],
   controllers: [
     AppController,
@@ -138,4 +141,4 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     StorageAuthService,
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,4 +1,11 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { JobStatus as JobStatusEnum } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobService } from './job.service';
@@ -13,26 +20,48 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(forwardRef(() => PrismaService)) private readonly prisma: PrismaService,
     @Inject(forwardRef(() => JobService)) private readonly jobService: JobService
-  ) { }
+  ) {}
 
   async onModuleInit() {
     if ((env as any).enableInternalJobWorker) {
-      this.logger.log(`Job Worker enabled, starting with interval ${(env as any).jobWorkerInterval}ms`);
+      this.logger.log(
+        `Job Worker enabled, starting with interval ${(env as any).jobWorkerInterval}ms`
+      );
 
       // P0-4: 自动注册或更新内置 Worker 节点信息，确保 getAndMarkNextPendingJob 能领到任务
       await this.prisma.workerNode.upsert({
         where: { workerId: 'internal-api-worker' },
         update: {
-          status: 'online', // Prisma 枚举通常为小写或严格匹配
+          status: 'online',
           lastHeartbeat: new Date(),
-          capabilities: { supportedEngines: ['default_novel_analysis'] },
+          capabilities: {
+            supportedEngines: [
+              'default_novel_analysis',
+              'ce06_novel_parsing',
+              'ce03_visual_density',
+              'ce04_visual_enrichment',
+              'default_shot_render',
+              'video_merge',
+              'default_video_render', // fallback
+            ],
+          },
         },
         create: {
           workerId: 'internal-api-worker',
           name: 'Internal API Worker',
           status: 'online',
           lastHeartbeat: new Date(),
-          capabilities: { supportedEngines: ['default_novel_analysis'] },
+          capabilities: {
+            supportedEngines: [
+              'default_novel_analysis',
+              'ce06_novel_parsing',
+              'ce03_visual_density',
+              'ce04_visual_enrichment',
+              'default_shot_render',
+              'video_merge',
+              'default_video_render',
+            ],
+          },
         },
       });
 
@@ -51,9 +80,12 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
     this.processJobs();
 
     // 设置定时器
-    this.intervalId = setInterval(() => {
-      this.processJobs();
-    }, (env as any).jobWorkerInterval);
+    this.intervalId = setInterval(
+      () => {
+        this.processJobs();
+      },
+      (env as any).jobWorkerInterval
+    );
   }
 
   private stop() {
@@ -100,7 +132,6 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
       );
 
       await Promise.all(processingPromises);
-
     } catch (error: any) {
       this.logger.error('Error in Job Worker:', error.stack || error.message || error);
     } finally {
@@ -108,14 +139,3 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-

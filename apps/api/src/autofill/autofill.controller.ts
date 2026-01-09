@@ -8,4 +8,3 @@ import { Controller } from '@nestjs/common';
 export class AutofillController {
   // 最小可用实现
 }
-

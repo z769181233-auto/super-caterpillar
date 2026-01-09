@@ -6,7 +6,7 @@ import { Prisma, TaskType as TaskTypeEnum, TaskStatus as TaskStatusEnum } from '
 /**
  * Task Service
  * 平台级任务管理服务
- * 
+ *
  * Task 定义：跨 Worker、跨重试、带业务语义的任务
  * 职责：包含任务类型、业务对象关联、重试策略、优先级等平台级元信息
  */
@@ -15,7 +15,7 @@ export class TaskService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   /**
    * 创建 Task
@@ -83,7 +83,7 @@ export class TaskService {
     payload?: any,
     errorMessage?: string,
     output?: any,
-    workerId?: string | null,
+    workerId?: string | null
   ) {
     return this.prisma.task.update({
       where: { id },
@@ -96,16 +96,4 @@ export class TaskService {
       },
     });
   }
-
 }
-
-
-
-
-
-
-
-
-
-
-

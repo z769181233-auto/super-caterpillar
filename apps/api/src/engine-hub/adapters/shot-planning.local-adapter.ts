@@ -1,14 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { EngineAdapter, EngineInvokeInput, EngineInvokeResult, EngineInvokeStatus } from '@scu/shared-types';
+import {
+  EngineAdapter,
+  EngineInvokeInput,
+  EngineInvokeResult,
+  EngineInvokeStatus,
+} from '@scu/shared-types';
 import { ShotPlanningEngineInput } from '@scu/shared-types';
 
 /**
  * Stage4 MVP: Shot Planning local stub
  */
 @Injectable()
-export class ShotPlanningLocalAdapter
-  implements EngineAdapter
-{
+export class ShotPlanningLocalAdapter implements EngineAdapter {
   readonly name = 'ShotPlanningLocalAdapter';
   readonly mode = 'local';
 
@@ -16,9 +19,7 @@ export class ShotPlanningLocalAdapter
     return engineKey === 'shot_planning';
   }
 
-  async invoke(
-    input: EngineInvokeInput,
-  ): Promise<EngineInvokeResult> {
+  async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const payload = input.payload as ShotPlanningEngineInput;
     void payload;
     return {
@@ -30,4 +31,3 @@ export class ShotPlanningLocalAdapter
     };
   }
 }
-

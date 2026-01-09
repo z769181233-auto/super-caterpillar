@@ -30,24 +30,26 @@ function loadEnvFile(filePath) {
   if (!fileExists(filePath)) {
     return {};
   }
-  
+
   const env = {};
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const lines = content.split('\n');
-    
+
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#')) {
         continue;
       }
-      
+
       const match = trimmed.match(/^([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/);
       if (match) {
         const key = match[1];
         let value = match[2];
-        if ((value.startsWith('"') && value.endsWith('"')) || 
-            (value.startsWith("'") && value.endsWith("'"))) {
+        if (
+          (value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))
+        ) {
           value = value.slice(1, -1);
         }
         env[key] = value;
@@ -56,7 +58,7 @@ function loadEnvFile(filePath) {
   } catch (error) {
     // 忽略读取错误
   }
-  
+
   return env;
 }
 
@@ -66,16 +68,16 @@ function main() {
   console.log('========================================');
   console.log(`当前工作目录: ${ROOT_DIR}`);
   console.log('');
-  
+
   // 检查文件
   const envExists = fileExists(ENV_PATH);
   const envLocalExists = fileExists(ENV_LOCAL_PATH);
-  
+
   console.log('文件检查：');
   console.log(`  .env:        ${envExists ? '✅ 存在' : '❌ 不存在'}`);
   console.log(`  .env.local:  ${envLocalExists ? '✅ 存在' : '❌ 不存在'}`);
   console.log('');
-  
+
   // 加载环境变量文件
   const envVars = {};
   if (envExists) {
@@ -84,17 +86,17 @@ function main() {
   if (envLocalExists) {
     Object.assign(envVars, loadEnvFile(ENV_LOCAL_PATH));
   }
-  
+
   // 合并到 process.env（用于检查）
   for (const [key, value] of Object.entries(envVars)) {
     if (!process.env[key]) {
       process.env[key] = value;
     }
   }
-  
+
   // 检查必需变量
   const requiredKeys = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL'];
-  
+
   console.log('必需变量检查：');
   for (const key of requiredKeys) {
     const status = checkEnvVar(key);
@@ -102,10 +104,10 @@ function main() {
     console.log(`  ${key}: ${icon} ${status}`);
   }
   console.log('');
-  
+
   // 总结
-  const missingKeys = requiredKeys.filter(key => checkEnvVar(key) === 'NOT_SET');
-  
+  const missingKeys = requiredKeys.filter((key) => checkEnvVar(key) === 'NOT_SET');
+
   if (missingKeys.length === 0) {
     console.log('✅ 所有必需变量已设置');
     console.log('');
@@ -122,11 +124,10 @@ function main() {
     console.log('解决方案：');
     console.log('  运行 pnpm env:init 初始化环境变量');
   }
-  
+
   console.log('========================================');
-  
+
   process.exit(missingKeys.length === 0 ? 0 : 1);
 }
 
 main();
-

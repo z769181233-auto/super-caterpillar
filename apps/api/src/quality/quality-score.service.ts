@@ -1,7 +1,7 @@
 /**
  * QualityScoreService
  * 质量评分服务，提供从 Job 构建 QualityScoreRecord 的只读聚合功能
- * 
+ *
  * 职责：
  * - 从 Job 和 Adapter 中提取质量评分数据
  * - 只读聚合，不写入数据库
@@ -15,7 +15,7 @@ import { EngineAdapter } from '@scu/shared-types';
 export class QualityScoreService {
   private readonly logger = new Logger(QualityScoreService.name);
 
-  constructor() { }
+  constructor() {}
 
   /**
    * 从 Job 和 Adapter 构建 QualityScoreRecord
@@ -27,7 +27,7 @@ export class QualityScoreService {
   buildQualityScoreFromJob(
     job: any,
     adapter: EngineAdapter | null,
-    taskId: string,
+    taskId: string
   ): QualityScoreRecord | null {
     try {
       // 1. 提取 engineKey
@@ -154,7 +154,10 @@ export class QualityScoreService {
   /**
    * 从 Job 和 Adapter 中提取 modelInfo
    */
-  private extractModelInfo(job: any, adapter: EngineAdapter | null): QualityScoreRecord['modelInfo'] | undefined {
+  private extractModelInfo(
+    job: any,
+    adapter: EngineAdapter | null
+  ): QualityScoreRecord['modelInfo'] | undefined {
     const modelInfo: QualityScoreRecord['modelInfo'] = {};
 
     // 1. 优先从 job.payload.result.modelInfo 读取
@@ -185,4 +188,3 @@ export class QualityScoreService {
     return undefined;
   }
 }
-

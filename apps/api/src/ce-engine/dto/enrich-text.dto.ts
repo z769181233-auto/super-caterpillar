@@ -20,4 +20,3 @@ export class EnrichTextDto {
     engineVersion?: string;
   };
 }
-

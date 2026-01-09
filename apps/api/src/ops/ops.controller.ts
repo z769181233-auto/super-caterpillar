@@ -64,46 +64,56 @@ export class OpsController {
         retryCount: job.retryCount,
         attempts: job.attempts,
         workerId: job.workerId,
-        worker: job.worker ? {
-          id: job.worker.id,
-          workerId: job.worker.workerId,
-          status: job.worker.status,
-          lastHeartbeat: job.worker.lastHeartbeat,
-        } : null,
+        worker: job.worker
+          ? {
+              id: job.worker.id,
+              workerId: job.worker.workerId,
+              status: job.worker.status,
+              lastHeartbeat: job.worker.lastHeartbeat,
+            }
+          : null,
         taskId: job.taskId,
-        task: job.task ? {
-          id: job.task.id,
-          type: job.task.type,
-          status: job.task.status,
-        } : null,
+        task: job.task
+          ? {
+              id: job.task.id,
+              type: job.task.type,
+              status: job.task.status,
+            }
+          : null,
         createdAt: job.createdAt,
         updatedAt: job.updatedAt,
         lastError: job.lastError,
         traceId: job.traceId,
       },
-      engineBinding: job.engineBinding ? {
-        id: job.engineBinding.id,
-        engineId: job.engineBinding.engineId,
-        engineKey: job.engineBinding.engineKey,
-        engineVersionId: job.engineBinding.engineVersionId,
-        status: job.engineBinding.status,
-        boundAt: job.engineBinding.boundAt,
-        executedAt: job.engineBinding.executedAt,
-        completedAt: job.engineBinding.completedAt,
-        errorMessage: job.engineBinding.errorMessage,
-        engine: job.engineBinding.engine ? {
-          id: job.engineBinding.engine.id,
-          engineKey: job.engineBinding.engine.engineKey,
-          adapterName: job.engineBinding.engine.adapterName,
-          enabled: job.engineBinding.engine.enabled,
-        } : null,
-        engineVersion: job.engineBinding.engineVersion ? {
-          id: job.engineBinding.engineVersion.id,
-          versionName: job.engineBinding.engineVersion.versionName,
-          enabled: job.engineBinding.engineVersion.enabled,
-        } : null,
-      } : null,
-      auditLogs: auditLogs.map(log => ({
+      engineBinding: job.engineBinding
+        ? {
+            id: job.engineBinding.id,
+            engineId: job.engineBinding.engineId,
+            engineKey: job.engineBinding.engineKey,
+            engineVersionId: job.engineBinding.engineVersionId,
+            status: job.engineBinding.status,
+            boundAt: job.engineBinding.boundAt,
+            executedAt: job.engineBinding.executedAt,
+            completedAt: job.engineBinding.completedAt,
+            errorMessage: job.engineBinding.errorMessage,
+            engine: job.engineBinding.engine
+              ? {
+                  id: job.engineBinding.engine.id,
+                  engineKey: job.engineBinding.engine.engineKey,
+                  adapterName: job.engineBinding.engine.adapterName,
+                  enabled: job.engineBinding.engine.enabled,
+                }
+              : null,
+            engineVersion: job.engineBinding.engineVersion
+              ? {
+                  id: job.engineBinding.engineVersion.id,
+                  versionName: job.engineBinding.engineVersion.versionName,
+                  enabled: job.engineBinding.engineVersion.enabled,
+                }
+              : null,
+          }
+        : null,
+      auditLogs: auditLogs.map((log) => ({
         id: log.id,
         action: log.action,
         resourceType: log.resourceType,
@@ -114,4 +124,3 @@ export class OpsController {
     };
   }
 }
-

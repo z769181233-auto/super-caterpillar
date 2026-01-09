@@ -15,5 +15,4 @@ import { DirectorConstraintSolverService } from './director-solver.service';
   providers: [ShotDirectorService, DirectorConstraintSolverService],
   exports: [ShotDirectorService, DirectorConstraintSolverService],
 })
-export class ShotDirectorModule { }
-
+export class ShotDirectorModule {}

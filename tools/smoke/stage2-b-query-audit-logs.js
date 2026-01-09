@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const jobId = process.argv[2];
-  
+
   if (!jobId) {
     console.error('Usage: node stage2-b-query-audit-logs.js <jobId>');
     process.exit(1);
@@ -37,16 +37,15 @@ async function main() {
     }
 
     // 验证必需的动作
-    const actions = logs.map(l => l.action);
+    const actions = logs.map((l) => l.action);
     const required = ['JOB_DISPATCHED', 'JOB_STARTED', 'JOB_REPORT_RECEIVED'];
-    const missing = required.filter(a => !actions.includes(a));
+    const missing = required.filter((a) => !actions.includes(a));
 
     if (missing.length === 0) {
       console.log('✅ 所有必需的 audit_logs 动作都已记录');
     } else {
       console.log(`⚠️  缺少以下动作: ${missing.join(', ')}`);
     }
-
   } catch (error) {
     console.error('❌ 查询失败:', error.message);
     process.exit(1);
@@ -56,4 +55,3 @@ async function main() {
 }
 
 main();
-

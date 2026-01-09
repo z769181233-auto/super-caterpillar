@@ -1,4 +1,16 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Req, NotFoundException, Inject, forwardRef, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+  NotFoundException,
+  Inject,
+  forwardRef,
+  Logger,
+} from '@nestjs/common';
 import { WorkerService } from './worker.service';
 import { RegisterWorkerDto } from './dto/register-worker.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
@@ -15,8 +27,8 @@ export class WorkerController {
     private readonly workerService: WorkerService,
     @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestratorService: OrchestratorService,
-    private readonly auditLogService: AuditLogService,
-  ) { }
+    private readonly auditLogService: AuditLogService
+  ) {}
 
   /**
    * Worker 注册
@@ -26,7 +38,7 @@ export class WorkerController {
   async register(
     @Body() registerDto: RegisterWorkerDto,
     @CurrentUser() user: { userId: string },
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     const requestInfo = AuditLogService.extractRequestInfo(request);
     const apiKeyId = (request as any).apiKey?.id;
@@ -41,7 +53,7 @@ export class WorkerController {
       user?.userId,
       apiKeyId,
       requestInfo.ip,
-      requestInfo.userAgent,
+      requestInfo.userAgent
     );
 
     if (!worker) {
@@ -69,7 +81,7 @@ export class WorkerController {
     @Param('workerId') workerId: string,
     @Body() heartbeatDto: HeartbeatDto,
     @CurrentUser() user: { userId: string },
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     const requestInfo = AuditLogService.extractRequestInfo(request);
     const apiKeyId = (request as any).apiKey?.id;
@@ -82,7 +94,7 @@ export class WorkerController {
       user?.userId,
       apiKeyId,
       requestInfo.ip,
-      requestInfo.userAgent,
+      requestInfo.userAgent
     );
 
     return {
@@ -121,15 +133,17 @@ export class WorkerController {
   async getNextJob(
     @Param('workerId') workerId: string,
     @CurrentUser() user: { userId: string },
-    @Req() request: Request,
+    @Req() request: Request
   ): Promise<any> {
     // 商业级审计：强制要求x-worker-id header
-    const headerWorkerId = (request.headers['x-worker-id'] as string || '').trim();
+    const headerWorkerId = ((request.headers['x-worker-id'] as string) || '').trim();
     if (!headerWorkerId) {
       throw new NotFoundException('Missing x-worker-id header for claim audit');
     }
     if (headerWorkerId !== workerId) {
-      throw new NotFoundException(`x-worker-id header mismatch: expected=${workerId} actual=${headerWorkerId}`);
+      throw new NotFoundException(
+        `x-worker-id header mismatch: expected=${workerId} actual=${headerWorkerId}`
+      );
     }
 
     // 通过调度器获取下一条待处理的 Job（最小闭环版）
@@ -137,13 +151,15 @@ export class WorkerController {
 
     // 结构化日志：WORKER_JOBS_NEXT_RESULT
     const logger = new Logger(WorkerController.name);
-    logger.log(JSON.stringify({
-      event: 'WORKER_JOBS_NEXT_RESULT',
-      workerId,
-      statusCode: 200,
-      returnedJobId: job?.id || null,
-      timestamp: new Date().toISOString()
-    }));
+    logger.log(
+      JSON.stringify({
+        event: 'WORKER_JOBS_NEXT_RESULT',
+        workerId,
+        statusCode: 200,
+        returnedJobId: job?.id || null,
+        timestamp: new Date().toISOString(),
+      })
+    );
 
     if (!job) {
       return {

@@ -18,4 +18,3 @@ export class ListShotsDto {
   @IsString()
   sceneId?: string;
 }
-

@@ -21,4 +21,3 @@ export class HeartbeatDto {
   @IsOptional()
   capabilities?: any;
 }
-

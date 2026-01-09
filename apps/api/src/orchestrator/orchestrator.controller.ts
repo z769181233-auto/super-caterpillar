@@ -23,7 +23,7 @@ export class OrchestratorController {
   /**
    * 获取调度器统计信息（可观测性增强）
    * GET /api/orchestrator/stats
-   * 
+   *
    * 参考《平台日志监控与可观测性体系说明书_ObservabilityMonitoringSpec_V1.0》
    * 提供只读的调度状态快照，不执行任何调度动作
    */
@@ -38,4 +38,3 @@ export class OrchestratorController {
     };
   }
 }
-

@@ -54,7 +54,7 @@ async switchOrganization(
   @Req() request: Request,
 ): Promise<any> {
   const result = await this.organizationService.switchOrganization(user.userId, body.organizationId);
-  
+
   // S1-FIX-B: 记录审计日志
   const requestInfo = AuditLogService.extractRequestInfo(request);
   await this.auditLogService.record({
@@ -69,7 +69,7 @@ async switchOrganization(
       role: result.role,
     },
   }).catch(() => undefined);
-  
+
   // ... 其余业务逻辑 ...
 }
 ```
@@ -87,11 +87,13 @@ async switchOrganization(
 **未找到权限变更相关的 Controller 或 Service 方法**
 
 通过代码搜索，未发现以下操作：
+
 - Role 的 create / update / delete 操作
 - Permission 的 create / update / delete 操作
 - RolePermission 的 grant / revoke 操作
 
 **可能原因**：
+
 1. 权限变更操作可能仅在数据库迁移或种子脚本中执行
 2. 权限变更操作可能尚未实现（未来功能）
 3. 权限变更操作可能在内部脚本中，不在 API 层暴露
@@ -99,6 +101,7 @@ async switchOrganization(
 ### 已准备的审计动作枚举
 
 已在 `apps/api/src/audit/audit.constants.ts` 中新增以下审计动作（供未来使用）：
+
 - `ROLE_CREATE`
 - `ROLE_UPDATE`
 - `ROLE_DELETE`
@@ -120,16 +123,19 @@ async switchOrganization(
 **未找到 DELETE 接口**
 
 通过代码搜索，未发现以下方法：
+
 - `deleteEpisode()`
 - `deleteScene()`
 - `deleteShot()`
 
 **已存在的 DELETE 操作**：
+
 - ✅ `deleteProject()` - 已有审计日志（`PROJECT_DELETE`）
 
 ### 已准备的审计动作枚举
 
 已在 `apps/api/src/audit/audit.constants.ts` 中定义了以下审计动作（已在 S1-FIX-A 阶段添加）：
+
 - `EPISODE_DELETE`
 - `SCENE_DELETE`
 - `SHOT_DELETE`
@@ -146,22 +152,22 @@ async switchOrganization(
 
 #### 1. 组织模块 (organization)
 
-| 文件路径 | 修改目的 |
-|---------|---------|
-| `apps/api/src/organization/organization.controller.ts` | 为切换组织接口添加审计日志记录 |
-| `apps/api/src/organization/organization.module.ts` | 导入 AuditLogModule，使 Controller 可以注入 AuditLogService |
+| 文件路径                                               | 修改目的                                                    |
+| ------------------------------------------------------ | ----------------------------------------------------------- |
+| `apps/api/src/organization/organization.controller.ts` | 为切换组织接口添加审计日志记录                              |
+| `apps/api/src/organization/organization.module.ts`     | 导入 AuditLogModule，使 Controller 可以注入 AuditLogService |
 
 #### 2. 用户模块 (user)
 
-| 文件路径 | 修改目的 |
-|---------|---------|
-| `apps/api/src/user/user.controller.ts` | 为切换组织接口添加审计日志记录 |
-| `apps/api/src/user/user.module.ts` | 导入 AuditLogModule，使 Controller 可以注入 AuditLogService |
+| 文件路径                               | 修改目的                                                    |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `apps/api/src/user/user.controller.ts` | 为切换组织接口添加审计日志记录                              |
+| `apps/api/src/user/user.module.ts`     | 导入 AuditLogModule，使 Controller 可以注入 AuditLogService |
 
 #### 3. 审计模块 (audit)
 
-| 文件路径 | 修改目的 |
-|---------|---------|
+| 文件路径                                | 修改目的                                               |
+| --------------------------------------- | ------------------------------------------------------ |
 | `apps/api/src/audit/audit.constants.ts` | 新增组织切换和权限变更相关的审计动作枚举（供未来使用） |
 
 ---
@@ -175,6 +181,7 @@ async switchOrganization(
 ### 已预留的审计动作
 
 以下审计动作已定义，供未来实现权限变更 API 时使用：
+
 - `ROLE_CREATE` / `ROLE_UPDATE` / `ROLE_DELETE`
 - `PERMISSION_CREATE` / `PERMISSION_DELETE`
 - `ROLE_PERMISSION_GRANT` / `ROLE_PERMISSION_REVOKE`
@@ -195,6 +202,7 @@ async switchOrganization(
 ### 已预留的审计动作
 
 以下审计动作已定义（在 S1-FIX-A 阶段添加），供未来实现 DELETE API 时使用：
+
 - `EPISODE_DELETE`
 - `SCENE_DELETE`
 - `SHOT_DELETE`
@@ -202,6 +210,7 @@ async switchOrganization(
 ### 建议
 
 如果未来需要实现 DELETE 功能，建议：
+
 1. 使用 `@UseInterceptors(AuditInterceptor)` + `@AuditAction(...)` 装饰器
 2. 在删除前记录被删除实体的关键信息（projectId, episodeId, sceneId, index 等）
 3. 参考 `deleteProject()` 的实现方式
@@ -215,6 +224,7 @@ async switchOrganization(
 **结果**: ⚠️ 有历史警告（any 类型），非本轮引入
 
 **警告详情**:
+
 - Web 模块有 `any` 类型警告（历史遗留）
 - API 模块无错误
 
@@ -251,4 +261,3 @@ webpack 5.97.1 compiled successfully in 3081 ms
 ---
 
 **修复状态**: ✅ S1-FIX-B 修复完成，所有可执行的 P1 级审计日志补充已完成，权限变更和 DELETE 操作的审计动作枚举已预留供未来使用
-

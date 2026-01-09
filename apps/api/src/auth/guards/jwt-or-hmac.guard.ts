@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  Inject,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { HmacAuthGuard } from '../hmac/hmac-auth.guard';
@@ -18,8 +24,8 @@ export class JwtOrHmacGuard implements CanActivate {
   constructor(
     @Inject(JwtAuthGuard) private readonly jwtAuthGuard: JwtAuthGuard,
     @Inject(HmacAuthGuard) private readonly hmacAuthGuard: HmacAuthGuard,
-    @Inject(Reflector) private readonly reflector: Reflector,
-  ) { }
+    @Inject(Reflector) private readonly reflector: Reflector
+  ) {}
 
   private hasJwt(req: any): boolean {
     const authHeader = req?.headers?.['authorization'];
@@ -62,14 +68,3 @@ export class JwtOrHmacGuard implements CanActivate {
     throw new UnauthorizedException('Missing auth header (JWT or HMAC required)');
   }
 }
-
-
-
-
-
-
-
-
-
-
-

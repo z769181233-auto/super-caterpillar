@@ -16,6 +16,7 @@
 - ✅ 不改动已有 HMAC / Nonce / 签名 / 重放防护逻辑
 
 **允许范围**：
+
 - ✅ 在 Engine 层 / Engine Hub 层新增模块、DTO、服务
 - ✅ 为 Engine Hub 新增内部使用的 Prisma 模型 / 配置表（如果确有必要）
 - ✅ 新增与 Engine Hub 相关的 API（例如统一的 Engine 调用接口），但不能破坏 Stage1 已确认的 API 安全链路
@@ -112,6 +113,7 @@
 #### 内容
 
 **职责**：
+
 - 维护引擎适配器清单（`Map<string, EngineAdapter>`）
 - 提供适配器注册接口（`register(adapter: EngineAdapter)`）
 - 提供适配器查找接口（`getAdapter(engineKey)`, `findAdapter(engineKey, jobType, payload)`）
@@ -126,24 +128,25 @@
 class EngineRegistry {
   // 注册适配器
   register(adapter: EngineAdapter): void;
-  
+
   // 查找适配器
   getAdapter(engineKey: string): EngineAdapter | null;
   findAdapter(engineKey?: string, jobType?: string, payload?: any): EngineAdapter;
-  
+
   // 默认引擎映射
   getDefaultEngineKeyForJobType(jobType: string): string | null;
-  
+
   // 配置解析
   resolveEngineConfig(engineKey: string): Promise<any | null>;
   resolveEngineConfigWithVersion(engineKey: string, version?: string): Promise<any | null>;
-  
+
   // 统一调用入口（内部会调用 EngineRouter 和 EngineInvoker）
   invoke(input: EngineInvokeInput): Promise<EngineInvokeResult>;
 }
 ```
 
 **当前实现状态**：
+
 - ✅ `apps/api/src/engine/engine-registry.service.ts` 已实现
 - ✅ 支持适配器注册和查找
 - ✅ 支持配置解析（JSON + DB）
@@ -203,6 +206,7 @@ class EngineInvokerService {
 ```
 
 **当前实现状态**：
+
 - ✅ `apps/api/src/engine/engine-routing.service.ts` 已实现
 - ✅ `apps/api/src/engines/engine-invoker.service.ts` 已实现
 - ✅ 路由逻辑已集成到 `EngineRegistry.invoke()` 中
@@ -225,6 +229,7 @@ class EngineInvokerService {
 **核心 DTO**（放在 `@scu/shared-types` 中）：
 
 1. **EngineInvocationRequest**（统一输入）：
+
    ```typescript
    interface EngineInvokeInput {
      engineKey?: string;
@@ -241,13 +246,14 @@ class EngineInvokerService {
    ```
 
 2. **EngineInvocationResult**（统一输出）：
+
    ```typescript
    enum EngineInvokeStatus {
      SUCCESS = 'SUCCESS',
      FAILED = 'FAILED',
      TIMEOUT = 'TIMEOUT',
    }
-   
+
    interface EngineInvokeResult {
      status: EngineInvokeStatus;
      output?: any;
@@ -280,6 +286,7 @@ class EngineInvokerService {
    ```
 
 **当前实现状态**：
+
 - ✅ `packages/shared-types/src/engines/engine-adapter.ts` 已定义 `EngineAdapter` 接口
 - ✅ `EngineInvokeInput` 和 `EngineInvokeResult` 已定义
 - ✅ `packages/shared-types/src/novel-analysis.dto.ts` 已定义 `AnalyzedProjectStructure`
@@ -346,6 +353,7 @@ class EngineInvokerService {
    - 将 `AnalyzedProjectStructure` 写入 Project/Episode/Scene/Shot 表
 
 **当前实现状态**：
+
 - ✅ Worker 端 EngineAdapterClient 已实现
 - ✅ NovelAnalysisLocalAdapterWorker 已实现
 - ✅ 文本解析和数据库写入逻辑已实现
@@ -445,11 +453,11 @@ class EngineInvokerService {
 // 未来新增引擎示例
 class ImageGenerationAdapter implements EngineAdapter {
   public readonly name = 'image_generation_v1';
-  
+
   supports(engineKey: string): boolean {
     return engineKey === 'image_generation_v1';
   }
-  
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     // 实现图像生成逻辑
     return { status: EngineInvokeStatus.SUCCESS, output: {...} };
@@ -611,33 +619,33 @@ engineRegistry.register(new ImageGenerationAdapter());
 
 #### Phase 1: 统一 Engine Hub DTO
 
-| 文件路径 | 说明 |
-|---------|------|
+| 文件路径                                                     | 说明                                                                                               |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | `packages/shared-types/src/engines/engine-invocation.dto.ts` | 新增统一的 Engine Hub 调用接口（EngineInvocationRequest/Result + NovelAnalysisEngineInput/Output） |
 
 #### Phase 2: API 端 Engine Hub 核心服务
 
-| 文件路径 | 说明 |
-|---------|------|
-| `apps/api/src/engine-hub/engine-descriptor.interface.ts` | 引擎描述符接口定义 |
-| `apps/api/src/engine-hub/engine-registry-hub.service.ts` | Engine Registry Hub 服务（维护引擎配置表） |
-| `apps/api/src/engine-hub/engine-invoker-hub.service.ts` | Engine Invoker Hub 服务（路由 + 调用聚合） |
-| `apps/api/src/engine-hub/engine-hub.module.ts` | Engine Hub 模块（导出 Registry 和 Invoker） |
+| 文件路径                                                 | 说明                                        |
+| -------------------------------------------------------- | ------------------------------------------- |
+| `apps/api/src/engine-hub/engine-descriptor.interface.ts` | 引擎描述符接口定义                          |
+| `apps/api/src/engine-hub/engine-registry-hub.service.ts` | Engine Registry Hub 服务（维护引擎配置表）  |
+| `apps/api/src/engine-hub/engine-invoker-hub.service.ts`  | Engine Invoker Hub 服务（路由 + 调用聚合）  |
+| `apps/api/src/engine-hub/engine-hub.module.ts`           | Engine Hub 模块（导出 Registry 和 Invoker） |
 
 #### Phase 3: Worker 端 Engine Hub 客户端
 
-| 文件路径 | 说明 |
-|---------|------|
+| 文件路径                                | 说明                                                  |
+| --------------------------------------- | ----------------------------------------------------- |
 | `apps/workers/src/engine-hub-client.ts` | Worker 端的 Engine Hub 客户端实现（不使用 NestJS DI） |
 
 ---
 
 ### 10.2 修改文件清单
 
-| 文件路径 | 修改内容 |
-|---------|---------|
-| `packages/shared-types/src/engines/index.ts` | 导出新的 `engine-invocation.dto.ts` |
-| `apps/workers/src/main.ts` | 修改 `processJob` 函数，使用新的 `EngineInvocationRequest`/`Result` 接口调用 Engine Hub |
+| 文件路径                                     | 修改内容                                                                                |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `packages/shared-types/src/engines/index.ts` | 导出新的 `engine-invocation.dto.ts`                                                     |
+| `apps/workers/src/main.ts`                   | 修改 `processJob` 函数，使用新的 `EngineInvocationRequest`/`Result` 接口调用 Engine Hub |
 
 ---
 
@@ -708,6 +716,7 @@ engineRegistry.register(new ImageGenerationAdapter());
 **Lint 检查**: ⚠️ 有历史警告（any 类型），非本轮引入
 
 **Build 检查**: ✅ 通过
+
 - `@scu/shared-types`: ✅ 构建成功
 - `api`: ✅ 构建成功（webpack compiled successfully）
 - `@scu/worker`: ✅ 构建成功
@@ -737,4 +746,3 @@ engineRegistry.register(new ImageGenerationAdapter());
 **执行状态**: ✅ Stage2 Engine Hub Step2 执行完成，NOVEL_ANALYSIS 在 Engine Hub 下的最小闭环实现已完成
 
 **最后更新**: 2025-12-11
-

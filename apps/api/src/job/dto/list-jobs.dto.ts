@@ -1,7 +1,14 @@
 import { IsOptional, IsString, IsEnum, IsInt, Min, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 // JobType 和 JobStatus 枚举类型
-type JobType = 'IMAGE' | 'VIDEO' | 'STORYBOARD' | 'AUDIO' | 'NOVEL_ANALYZE_CHAPTER' | 'NOVEL_ANALYSIS' | 'VIDEO_RENDER';
+type JobType =
+  | 'IMAGE'
+  | 'VIDEO'
+  | 'STORYBOARD'
+  | 'AUDIO'
+  | 'NOVEL_ANALYZE_CHAPTER'
+  | 'NOVEL_ANALYSIS'
+  | 'VIDEO_RENDER';
 type JobStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 
 export class ListJobsDto {
@@ -10,7 +17,15 @@ export class ListJobsDto {
   status?: JobStatus;
 
   @IsOptional()
-  @IsEnum(['IMAGE', 'VIDEO', 'STORYBOARD', 'AUDIO', 'NOVEL_ANALYZE_CHAPTER', 'NOVEL_ANALYSIS', 'VIDEO_RENDER'] as const)
+  @IsEnum([
+    'IMAGE',
+    'VIDEO',
+    'STORYBOARD',
+    'AUDIO',
+    'NOVEL_ANALYZE_CHAPTER',
+    'NOVEL_ANALYSIS',
+    'VIDEO_RENDER',
+  ] as const)
   type?: JobType;
 
   @IsOptional()
@@ -49,14 +64,3 @@ export class ListJobsDto {
   @Min(1)
   pageSize?: number = 20;
 }
-
-
-
-
-
-
-
-
-
-
-

@@ -23,7 +23,7 @@ function getCurrentTimestamp() {
 /**
  * 构建签名消息（根据 hmac-signature.interceptor.ts 的实现）
  * 格式：${method}\n${requestPath}\n${timestamp}\n${nonce}\n${body}
- * 
+ *
  * @param {string} method - HTTP 方法
  * @param {string} path - 请求路径（含 /api 前缀，不含 query string）
  * @param {string} timestamp - 时间戳（秒级字符串）
@@ -59,7 +59,7 @@ function generateHmacHeaders(apiKey, apiSecret, method, path, body) {
   const nonce = generateNonce();
   const message = buildMessage(method, path, timestamp, nonce, body);
   const signature = computeSignature(apiSecret, message);
-  
+
   return {
     'X-Api-Key': apiKey,
     'X-Nonce': nonce,
@@ -75,4 +75,3 @@ module.exports = {
   computeSignature,
   generateHmacHeaders,
 };
-

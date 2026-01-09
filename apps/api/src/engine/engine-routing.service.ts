@@ -13,9 +13,9 @@ interface EngineRoutingResult {
 
 /**
  * EngineRoutingService (RoutingLayer)
- * 
+ *
  * 负责只做决策：选出 { engineKey, resolvedVersion }
- * 
+ *
  * 规则：
  * 1. NOVEL_ANALYSIS 默认：除非显式要求 HTTP，否则必须走 default_novel_analysis
  * 2. payload.engineKey 显式指定时优先使用
@@ -79,4 +79,3 @@ export class EngineRoutingService {
     };
   }
 }
-

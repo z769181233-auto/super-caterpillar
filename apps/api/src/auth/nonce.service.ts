@@ -20,7 +20,7 @@ export class NonceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    private readonly redisService?: RedisService,
+    private readonly redisService?: RedisService
   ) {}
 
   /**
@@ -34,7 +34,7 @@ export class NonceService {
     nonce: string,
     apiKey: string,
     timestamp: number,
-    requestInfo?: { path?: string; method?: string; ip?: string; ua?: string },
+    requestInfo?: { path?: string; method?: string; ip?: string; ua?: string }
   ) {
     // 开发/测试环境：记录写入前信息
     if (process.env.NODE_ENV !== 'production') {
@@ -64,13 +64,13 @@ export class NonceService {
         // 当 Prisma Client 单一来源治理完成，
         // 且运行时确认 prisma.nonceStore 稳定存在后，
         // 必须删除此 $queryRaw fallback，仅保留 prisma.nonceStore.create 路径
-        
+
         // 开发/测试环境：记录 fallback 使用
         if (process.env.NODE_ENV !== 'production') {
           // eslint-disable-next-line no-console
           console.warn('[NonceService] ⚠️  使用 $queryRaw fallback（prisma.nonceStore 不可用）');
         }
-        
+
         // 后备方案：使用 $queryRaw 直接执行 SQL
         // 先检查是否已存在（用于重放检测）
         const existing = await (this.prisma as any).$queryRaw<Array<{ count: bigint }>>`
@@ -78,7 +78,7 @@ export class NonceService {
           FROM nonce_store
           WHERE nonce = ${nonce} AND "apiKey" = ${apiKey}
         `;
-        
+
         if (existing && existing.length > 0 && Number(existing[0].count) > 0) {
           // 已存在，视为重放
           throw {
@@ -87,7 +87,7 @@ export class NonceService {
             meta: { target: ['nonce', 'apiKey'] },
           };
         }
-        
+
         // 不存在，执行插入
         await (this.prisma as any).$queryRaw`
           INSERT INTO nonce_store (id, nonce, "apiKey", timestamp)
@@ -119,28 +119,30 @@ export class NonceService {
       // 唯一索引冲突视为重放（P2002: Unique constraint failed）
       // 其他错误（如连接失败、表不存在等）也应该记录并抛出
       const isUniqueConstraintError = err.code === 'P2002';
-      
+
       if (isUniqueConstraintError) {
         // 唯一索引冲突：这是重放攻击
         // P0 必须：写入审计日志
         const traceId = randomUUID();
-        await this.auditService.log({
-          action: AuditActions.SECURITY_EVENT,
-          resourceType: 'api_key',
-          resourceId: apiKey,
-          traceId,
-          ip: requestInfo?.ip || null,
-          userAgent: requestInfo?.ua || null,
-          details: {
-            reason: 'NONCE_REPLAY_DETECTED',
-            nonce,
-            timestamp,
-            path: requestInfo?.path,
-            method: requestInfo?.method,
-          },
-        }).catch(() => {
-          // 审计失败不阻断
-        });
+        await this.auditService
+          .log({
+            action: AuditActions.SECURITY_EVENT,
+            resourceType: 'api_key',
+            resourceId: apiKey,
+            traceId,
+            ip: requestInfo?.ip || null,
+            userAgent: requestInfo?.ua || null,
+            details: {
+              reason: 'NONCE_REPLAY_DETECTED',
+              nonce,
+              timestamp,
+              path: requestInfo?.path,
+              method: requestInfo?.method,
+            },
+          })
+          .catch(() => {
+            // 审计失败不阻断
+          });
 
         throw buildHmacError('4004', 'Nonce replay detected', {
           path: requestInfo?.path,
@@ -156,7 +158,9 @@ export class NonceService {
             errorMessage: err?.message,
             errorCode: err?.code,
             errorMeta: err?.meta,
-            isPrismaClientKnownRequestError: err?.constructor?.name === 'PrismaClientKnownRequestError' || err?.name === 'PrismaClientKnownRequestError',
+            isPrismaClientKnownRequestError:
+              err?.constructor?.name === 'PrismaClientKnownRequestError' ||
+              err?.name === 'PrismaClientKnownRequestError',
             prismaServiceConstructor: this.prisma?.constructor?.name,
             prismaServiceKeys: Object.keys(this.prisma || {}).slice(0, 50),
             hasNonceStore: 'nonceStore' in (this.prisma || {}),
@@ -193,4 +197,3 @@ export class NonceService {
     }
   }
 }
-

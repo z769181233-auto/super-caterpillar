@@ -5,7 +5,11 @@ import { TextSafetyService } from './text-safety.service';
 import { QualityMetricsWriter } from '../quality/quality-metrics.writer';
 import { VisualDensityDto } from './dto/visual-density.dto';
 import { VisualEnrichDto } from './dto/visual-enrich.dto';
-import { JobType as JobTypeEnum, TaskType as TaskTypeEnum, JobStatus as JobStatusEnum } from 'database';
+import {
+  JobType as JobTypeEnum,
+  TaskType as TaskTypeEnum,
+  JobStatus as JobStatusEnum,
+} from 'database';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditActions } from '../audit/audit.constants';
 import { randomUUID } from 'crypto';
@@ -13,7 +17,7 @@ import { randomUUID } from 'crypto';
 /**
  * Text Service
  * CE03/CE04 服务层
- * 
+ *
  * 规则：
  * - 只负责参数校验 + 创建 Job
  * - CE04 前置 Safety Hook（TextSafetyService.sanitize）
@@ -29,12 +33,12 @@ export class TextService {
     private readonly prisma: PrismaService,
     private readonly textSafetyService: TextSafetyService,
     private readonly auditLogService: AuditLogService,
-    private readonly qualityMetricsWriter: QualityMetricsWriter,
+    private readonly qualityMetricsWriter: QualityMetricsWriter
   ) {}
 
   /**
    * 视觉密度分析（CE03）
-   * 
+   *
    * @param dto 输入参数
    * @param userId 用户 ID
    * @param organizationId 组织 ID
@@ -47,7 +51,7 @@ export class TextService {
     userId?: string,
     organizationId?: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ) {
     // 1. 参数校验（DTO 已通过 class-validator）
     if (!dto.text || dto.text.trim().length === 0) {
@@ -62,7 +66,9 @@ export class TextService {
       throw new BadRequestException(`Project ${dto.projectId} not found`);
     }
     if (organizationId && project.organizationId !== organizationId) {
-      throw new BadRequestException(`Project ${dto.projectId} does not belong to organization ${organizationId}`);
+      throw new BadRequestException(
+        `Project ${dto.projectId} does not belong to organization ${organizationId}`
+      );
     }
 
     // 3. 生成 traceId（Pipeline 级）
@@ -135,7 +141,7 @@ export class TextService {
 
   /**
    * 视觉增强（CE04）
-   * 
+   *
    * @param dto 输入参数
    * @param userId 用户 ID
    * @param organizationId 组织 ID
@@ -148,7 +154,7 @@ export class TextService {
     userId?: string,
     organizationId?: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ) {
     // 1. 参数校验（DTO 已通过 class-validator）
     if (!dto.text || dto.text.trim().length === 0) {
@@ -163,7 +169,9 @@ export class TextService {
       throw new BadRequestException(`Project ${dto.projectId} not found`);
     }
     if (organizationId && project.organizationId !== organizationId) {
-      throw new BadRequestException(`Project ${dto.projectId} does not belong to organization ${organizationId}`);
+      throw new BadRequestException(
+        `Project ${dto.projectId} does not belong to organization ${organizationId}`
+      );
     }
 
     // 3. CE04 前置 Safety Hook（最小实现）
@@ -252,7 +260,9 @@ export class TextService {
         },
       });
 
-      this.logger.warn(`CE04 Job rejected due to safety check: ${job.id}, flags: ${safetyResult.flags.join(', ')}`);
+      this.logger.warn(
+        `CE04 Job rejected due to safety check: ${job.id}, flags: ${safetyResult.flags.join(', ')}`
+      );
 
       return {
         jobId: job.id,
@@ -349,4 +359,3 @@ export class TextService {
     };
   }
 }
-

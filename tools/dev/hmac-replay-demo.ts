@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * Stage5: HMAC 签名重放演练工具
- * 
+ *
  * 用途：本地开发工具，用于验证 HMAC 签名和 Nonce 重放防护
  * 注意：仅用于开发/测试环境，不进入生产代码
- * 
+ *
  * 使用方法：
  *   pnpm tsx tools/dev/hmac-replay-demo.ts \
  *     --api-key <API_KEY> \
@@ -72,16 +72,16 @@ function parseArgs(): Options {
 
 /**
  * 计算 HMAC-SHA256 签名
- * 
+ *
  * Payload 格式（与 hmac-signature.interceptor.ts 对齐）：
  * ${method}\n${path}\n${timestamp}\n${nonce}\n${body}
  */
 /**
  * 计算 HMAC-SHA256 签名
- * 
+ *
  * Payload 格式（与 hmac-signature.interceptor.ts:110 对齐）：
  * ${method}\n${requestPath}\n${timestamp}\n${nonce}\n${body}
- * 
+ *
  * 注意：
  * - interceptor:107 使用 `request.originalUrl || request.url`（包含完整路径，可能包含 query string）
  * - 但实际测试中，我们传入的 path 通常不包含 query string
@@ -93,7 +93,7 @@ function computeSignature(
   path: string,
   timestamp: string,
   nonce: string,
-  body: string,
+  body: string
 ): string {
   // 使用传入的 path 作为 requestPath（与 interceptor:107 的 requestPath 逻辑一致）
   // 注意：如果 path 包含 query string，需要保留（与 interceptor 行为一致）
@@ -109,7 +109,7 @@ function sendRequest(
   url: string,
   method: string,
   headers: Record<string, string>,
-  body?: string,
+  body?: string
 ): Promise<{ statusCode: number; headers: any; body: string }> {
   return new Promise((resolve, reject) => {
     const urlObj = new URL(url);
@@ -233,7 +233,10 @@ async function main() {
         console.log('\n✅ 第二次请求正确返回 4004（Nonce replay detected）');
         console.log('✅ Stage5 验证通过：Nonce 重放防护生效');
       } else {
-        console.error('\n❌ 错误: 第二次请求应返回 4004（Nonce replay），但实际返回:', jsonBody.error?.code);
+        console.error(
+          '\n❌ 错误: 第二次请求应返回 4004（Nonce replay），但实际返回:',
+          jsonBody.error?.code
+        );
         process.exit(1);
       }
     } catch {
@@ -253,4 +256,3 @@ main().catch((error) => {
   console.error('执行失败:', error);
   process.exit(1);
 });
-

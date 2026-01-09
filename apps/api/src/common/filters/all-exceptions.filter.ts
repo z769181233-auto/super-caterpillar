@@ -17,7 +17,7 @@ import { maskSensitiveData, maskSensitiveString } from '../utils/sensitive-data-
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  constructor(@Inject(AuditLogService) private readonly auditLogService: AuditLogService) { }
+  constructor(@Inject(AuditLogService) private readonly auditLogService: AuditLogService) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -25,13 +25,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const res = ctx.getResponse<Response>();
 
     const isHttp = exception instanceof HttpException;
-    const status = isHttp
-      ? exception.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status = isHttp ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const payload = isHttp
-      ? exception.getResponse()
-      : { message: 'Internal server error' };
+    const payload = isHttp ? exception.getResponse() : { message: 'Internal server error' };
 
     const err = exception as any;
     const errorBody = typeof payload === 'object' ? payload : { message: payload };
@@ -53,10 +49,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // 预期安全拒绝（4003/4004/401/403）：降噪处理，不打堆栈
     const isExpectedSecurityRejection =
-      status === 401 ||
-      status === 403 ||
-      errorCode === '4003' ||
-      errorCode === '4004';
+      status === 401 || status === 403 || errorCode === '4003' || errorCode === '4004';
 
     if (isExpectedSecurityRejection) {
       // 结构化日志（warn 级别，不打堆栈）
@@ -71,42 +64,50 @@ export class AllExceptionsFilter implements ExceptionFilter {
         apiKeyId: (req as any).apiKeyId,
         nonce: req.headers['x-nonce'] || (req as any).hmac?.nonce,
         timestamp: req.headers['x-timestamp'] || (req as any).hmac?.timestamp,
-        ip: req.ip || (Array.isArray(req.headers['x-forwarded-for']) ? req.headers['x-forwarded-for'][0] : req.headers['x-forwarded-for']) || undefined,
+        ip:
+          req.ip ||
+          (Array.isArray(req.headers['x-forwarded-for'])
+            ? req.headers['x-forwarded-for'][0]
+            : req.headers['x-forwarded-for']) ||
+          undefined,
         ua: req.headers['user-agent'] || undefined,
       };
 
       this.logger.warn(JSON.stringify(securityContext, null, 2));
 
       // 写入 audit_logs（符合 SafetySpec 要求）
-      const auditAction = errorCode === '4004'
-        ? 'API_NONCE_REPLAY'
-        : errorCode === '4003'
-          ? 'API_SIGNATURE_ERROR'
-          : status === 403
-            ? 'API_FORBIDDEN'
-            : 'API_UNAUTHORIZED';
+      const auditAction =
+        errorCode === '4004'
+          ? 'API_NONCE_REPLAY'
+          : errorCode === '4003'
+            ? 'API_SIGNATURE_ERROR'
+            : status === 403
+              ? 'API_FORBIDDEN'
+              : 'API_UNAUTHORIZED';
 
-      this.auditLogService.record({
-        userId: securityContext.userId,
-        apiKeyId: securityContext.apiKeyId,
-        action: auditAction,
-        resourceType: 'api',
-        resourceId: undefined,
-        ip: securityContext.ip,
-        userAgent: securityContext.ua,
-        details: {
-          path: securityContext.path,
-          method: securityContext.method,
-          code: errorCode,
-          message: securityContext.message,
-          incomingNonce: securityContext.nonce,
-          incomingSignature: req.headers['x-signature'] || (req as any).hmac?.signature,
-          incomingTimestamp: securityContext.timestamp,
-        },
-      }).catch((auditErr) => {
-        // 审计失败不阻断，但记录警告
-        this.logger.warn('Failed to write audit log for security rejection', auditErr);
-      });
+      this.auditLogService
+        .record({
+          userId: securityContext.userId,
+          apiKeyId: securityContext.apiKeyId,
+          action: auditAction,
+          resourceType: 'api',
+          resourceId: undefined,
+          ip: securityContext.ip,
+          userAgent: securityContext.ua,
+          details: {
+            path: securityContext.path,
+            method: securityContext.method,
+            code: errorCode,
+            message: securityContext.message,
+            incomingNonce: securityContext.nonce,
+            incomingSignature: req.headers['x-signature'] || (req as any).hmac?.signature,
+            incomingTimestamp: securityContext.timestamp,
+          },
+        })
+        .catch((auditErr) => {
+          // 审计失败不阻断，但记录警告
+          this.logger.warn('Failed to write audit log for security rejection', auditErr);
+        });
     } else {
       // P1 修复：生产环境脱敏，不输出全量堆栈
       const isProduction = process.env.NODE_ENV === 'production';
@@ -127,8 +128,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
               // 不输出 stack 和 payload（可能包含敏感信息）
             },
             null,
-            2,
-          ),
+            2
+          )
         );
       } else {
         // 开发环境：输出完整信息（包括堆栈）
@@ -146,17 +147,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
               stack: err?.stack,
             },
             null,
-            2,
-          ),
+            2
+          )
         );
       }
     }
 
-    res.status(status).json(
-      typeof payload === 'string'
-        ? { statusCode: status, message: payload }
-        : payload,
-    );
+    res
+      .status(status)
+      .json(typeof payload === 'string' ? { statusCode: status, message: payload } : payload);
   }
 }
-

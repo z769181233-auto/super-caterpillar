@@ -25,18 +25,15 @@ export class CapacityGateService {
   // 配置项（可从环境变量读取）
   private readonly MAX_CONCURRENT_VIDEO_RENDER = parseInt(
     process.env.MAX_CONCURRENT_VIDEO_RENDER || '10',
-    10,
+    10
   );
-  private readonly MAX_PENDING_JOBS = parseInt(
-    process.env.MAX_PENDING_JOBS || '100',
-    10,
-  );
+  private readonly MAX_PENDING_JOBS = parseInt(process.env.MAX_PENDING_JOBS || '100', 10);
   private readonly MAX_PENDING_VIDEO_RENDER = parseInt(
     process.env.MAX_PENDING_VIDEO_RENDER || '50',
-    10,
+    10
   );
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 检查是否可以创建新的 VIDEO_RENDER job
@@ -47,7 +44,7 @@ export class CapacityGateService {
   async checkVideoRenderCapacity(
     organizationId: string,
     userId?: string,
-    tx?: Prisma.TransactionClient,
+    tx?: Prisma.TransactionClient
   ): Promise<CapacityCheckResult> {
     // Feature Flag: 容量门禁开关
     if (process.env.CAPACITY_GATE_ENABLED === 'false') {
@@ -134,7 +131,7 @@ export class CapacityGateService {
         // 用户级限制（可配置，默认与组织级相同）
         const userMaxConcurrent = parseInt(
           process.env.MAX_USER_CONCURRENT_VIDEO_RENDER || String(this.MAX_CONCURRENT_VIDEO_RENDER),
-          10,
+          10
         );
 
         if (userInProgressCount >= userMaxConcurrent) {
@@ -172,7 +169,7 @@ export class CapacityGateService {
   async checkJobCapacity(
     jobType: JobType,
     organizationId: string,
-    userId?: string,
+    userId?: string
   ): Promise<CapacityCheckResult> {
     if (jobType === JobTypeEnum.VIDEO_RENDER) {
       return this.checkVideoRenderCapacity(organizationId, userId);
@@ -253,4 +250,3 @@ export class CapacityGateService {
     };
   }
 }
-

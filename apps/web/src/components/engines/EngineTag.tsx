@@ -31,7 +31,7 @@ interface EngineTagProps {
 
 /**
  * S3-C.3: Engine 标签组件
- * 
+ *
  * 统一展示 engineKey 和 engineVersion
  * 格式：engineKey 主体 + @version 小号灰字（version 为空时只显示 key）
  */
@@ -61,10 +61,7 @@ export default function EngineTag({
       {engineVersion && (
         <span className={`${fontClasses[size]} text-gray-500`}>@{engineVersion}</span>
       )}
-      {showAdapter && adapterName && (
-        <span className="text-xs text-gray-400">({adapterName})</span>
-      )}
+      {showAdapter && adapterName && <span className="text-xs text-gray-400">({adapterName})</span>}
     </span>
   );
 }
-

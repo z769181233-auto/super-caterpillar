@@ -21,4 +21,3 @@ export class VisualDensityDto {
   @IsOptional()
   shotId?: string;
 }
-

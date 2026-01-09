@@ -12,4 +12,4 @@ import { PrismaModule } from '../prisma/prisma.module';
   providers: [BillingService, BudgetService, BillingSettlementService],
   exports: [BillingService, BudgetService, BillingSettlementService],
 })
-export class BillingModule { }
+export class BillingModule {}

@@ -77,4 +77,3 @@ export interface ProjectSceneGraph {
   episodes?: EpisodeNode[]; // @deprecated 保留用于向下兼容
   engineContext?: Record<string, any>; // 预留：项目级引擎上下文
 }
-

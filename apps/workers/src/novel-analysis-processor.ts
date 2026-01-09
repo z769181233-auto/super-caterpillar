@@ -34,7 +34,10 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
  * 基础规则解析：从 rawText 解析出 Season/Episode/Scene/Shot 结构
  * 这是 MVP 版本，后续可以替换为 LLM 分析。
  */
-export function basicTextSegmentation(rawText: string, projectId: string): AnalyzedProjectStructure {
+export function basicTextSegmentation(
+  rawText: string,
+  projectId: string
+): AnalyzedProjectStructure {
   const lines = rawText.split(/\r?\n/);
 
   const seasons: AnalyzedSeason[] = [];
@@ -312,7 +315,9 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
   for (const season of seasons) {
     // 检查 Season index 连续性
     if (season.index !== expectedSeasonIndex) {
-      warnings.push(`Season index discontinuity: expected ${expectedSeasonIndex}, got ${season.index}`);
+      warnings.push(
+        `Season index discontinuity: expected ${expectedSeasonIndex}, got ${season.index}`
+      );
       // 自动修正 index
       season.index = expectedSeasonIndex;
     }
@@ -331,14 +336,18 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
     for (const episode of season.episodes) {
       // 检查 Episode index 连续性
       if (episode.index !== expectedEpisodeIndex) {
-        warnings.push(`Episode ${episode.index} in Season ${season.index}: index discontinuity, expected ${expectedEpisodeIndex}`);
+        warnings.push(
+          `Episode ${episode.index} in Season ${season.index}: index discontinuity, expected ${expectedEpisodeIndex}`
+        );
         episode.index = expectedEpisodeIndex;
       }
       expectedEpisodeIndex++;
 
       // 检查 scenes
       if (!episode.scenes || !Array.isArray(episode.scenes)) {
-        errors.push(`Episode ${episode.index} in Season ${season.index} has null/undefined or non-array scenes`);
+        errors.push(
+          `Episode ${episode.index} in Season ${season.index} has null/undefined or non-array scenes`
+        );
         continue;
       }
       if (episode.scenes.length === 0) {
@@ -349,32 +358,42 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
       for (const scene of episode.scenes) {
         // 检查 Scene index 连续性
         if (scene.index !== expectedSceneIndex) {
-          warnings.push(`Scene ${scene.index} in Episode ${episode.index} (Season ${season.index}): index discontinuity, expected ${expectedSceneIndex}`);
+          warnings.push(
+            `Scene ${scene.index} in Episode ${episode.index} (Season ${season.index}): index discontinuity, expected ${expectedSceneIndex}`
+          );
           scene.index = expectedSceneIndex;
         }
         expectedSceneIndex++;
 
         // 检查 shots
         if (!scene.shots || !Array.isArray(scene.shots)) {
-          errors.push(`Scene ${scene.index} in Episode ${episode.index} (Season ${season.index}) has null/undefined or non-array shots`);
+          errors.push(
+            `Scene ${scene.index} in Episode ${episode.index} (Season ${season.index}) has null/undefined or non-array shots`
+          );
           continue;
         }
         if (scene.shots.length === 0) {
-          warnings.push(`Scene ${scene.index} in Episode ${episode.index} (Season ${season.index}) has no shots`);
+          warnings.push(
+            `Scene ${scene.index} in Episode ${episode.index} (Season ${season.index}) has no shots`
+          );
         }
 
         let expectedShotIndex = 1;
         for (const shot of scene.shots) {
           // 检查 Shot index 连续性
           if (shot.index !== expectedShotIndex) {
-            warnings.push(`Shot ${shot.index} in Scene ${scene.index} (Episode ${episode.index}, Season ${season.index}): index discontinuity, expected ${expectedShotIndex}`);
+            warnings.push(
+              `Shot ${shot.index} in Scene ${scene.index} (Episode ${episode.index}, Season ${season.index}): index discontinuity, expected ${expectedShotIndex}`
+            );
             shot.index = expectedShotIndex;
           }
           expectedShotIndex++;
 
           // 检查必填字段
           if (!shot.text || typeof shot.text !== 'string') {
-            warnings.push(`Shot ${shot.index} in Scene ${scene.index} (Episode ${episode.index}, Season ${season.index}) has no text`);
+            warnings.push(
+              `Shot ${shot.index} in Scene ${scene.index} (Episode ${episode.index}, Season ${season.index}) has no text`
+            );
           }
         }
       }
@@ -399,7 +418,7 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
  */
 export async function applyAnalyzedStructureToDatabase(
   prisma: PrismaClient | Prisma.TransactionClient,
-  structure: AnalyzedProjectStructure,
+  structure: AnalyzedProjectStructure
 ): Promise<{
   finalStructure: AnalyzedProjectStructure;
   stats: {
@@ -527,16 +546,16 @@ export async function applyAnalyzedStructureToDatabase(
       finalSeasons.push(createdSeason);
 
       const nVolume = await tx.novelVolume.findFirst({
-        where: { projectId, index: season.index }
+        where: { projectId, index: season.index },
       });
       if (nVolume) {
         await tx.novelVolume.update({
           where: { id: nVolume.id },
-          data: { title: season.title }
+          data: { title: season.title },
         });
       } else {
         await tx.novelVolume.create({
-          data: { projectId, index: season.index, title: season.title }
+          data: { projectId, index: season.index, title: season.title },
         });
       }
 
@@ -580,12 +599,14 @@ export async function applyAnalyzedStructureToDatabase(
         // S3-A: 同步写入 NovelChapter
         if (nSource) {
           const existingNChapter = await tx.novelChapter.findUnique({
-            where: { novelSourceId_orderIndex: { novelSourceId: nSource.id, orderIndex: episode.index } }
+            where: {
+              novelSourceId_orderIndex: { novelSourceId: nSource.id, orderIndex: episode.index },
+            },
           });
           if (existingNChapter) {
             await tx.novelChapter.update({
               where: { id: existingNChapter.id },
-              data: { title: episode.title, summary: episode.summary || '' }
+              data: { title: episode.title, summary: episode.summary || '' },
             });
           } else {
             await tx.novelChapter.create({
@@ -594,8 +615,8 @@ export async function applyAnalyzedStructureToDatabase(
                 orderIndex: episode.index,
                 title: episode.title,
                 summary: episode.summary || '',
-                rawText: ''
-              }
+                rawText: '',
+              },
             });
           }
         }
@@ -640,12 +661,14 @@ export async function applyAnalyzedStructureToDatabase(
           if (nSource) {
             // 首先通过 nSourceId 和 orderIndex 找到对应的 nChapterId
             const nChapter = await tx.novelChapter.findUnique({
-              where: { novelSourceId_orderIndex: { novelSourceId: nSource.id, orderIndex: episode.index } }
+              where: {
+                novelSourceId_orderIndex: { novelSourceId: nSource.id, orderIndex: episode.index },
+              },
             });
 
             if (nChapter) {
               const existingNScene = await tx.novelScene.findFirst({
-                where: { chapterId: nChapter.id, index: scene.index }
+                where: { chapterId: nChapter.id, index: scene.index },
               });
 
               if (existingNScene) {
@@ -655,7 +678,7 @@ export async function applyAnalyzedStructureToDatabase(
                     enrichedText: scene.summary,
                     // @ts-ignore
                     characterIds: (scene as any).characterIds as any,
-                  }
+                  },
                 });
               } else {
                 await tx.novelScene.create({
@@ -666,7 +689,7 @@ export async function applyAnalyzedStructureToDatabase(
                     enrichedText: scene.summary,
                     // @ts-ignore
                     characterIds: (scene as any).characterIds as any,
-                  }
+                  },
                 });
               }
             }
@@ -736,7 +759,9 @@ export async function applyAnalyzedStructureToDatabase(
           // 7. S3-B Fine-Tune: 删除不再存在的 Shot（如果新结构中的 shots 数量少于现有结构）
           if (existingScene && existingScene.shots.length > scene.shots.length) {
             const newShotIndexes = new Set(scene.shots.map((s: AnalyzedShot) => s.index));
-            const shotsToDelete = existingScene.shots.filter((s: any) => !newShotIndexes.has(s.index) && s.index < 9000);
+            const shotsToDelete = existingScene.shots.filter(
+              (s: any) => !newShotIndexes.has(s.index) && s.index < 9000
+            );
             for (const shotToDelete of shotsToDelete) {
               await tx.shotJob.deleteMany({ where: { shotId: shotToDelete.id } });
               await tx.shot.delete({ where: { id: shotToDelete.id } });
@@ -748,7 +773,9 @@ export async function applyAnalyzedStructureToDatabase(
         // 8. S3-B Fine-Tune: 删除不再存在的 Scene
         if (existingEpisode && existingEpisode.scenes.length > episode.scenes.length) {
           const newSceneIndexes = new Set(episode.scenes.map((s: AnalyzedScene) => s.index));
-          const scenesToDelete = existingEpisode.scenes.filter((s: any) => !newSceneIndexes.has(s.index) && s.index < 9000);
+          const scenesToDelete = existingEpisode.scenes.filter(
+            (s: any) => !newSceneIndexes.has(s.index) && s.index < 9000
+          );
           for (const sceneToDelete of scenesToDelete) {
             await tx.shotJob.deleteMany({ where: { sceneId: sceneToDelete.id } });
             await tx.shot.deleteMany({ where: { sceneId: sceneToDelete.id } });
@@ -762,7 +789,9 @@ export async function applyAnalyzedStructureToDatabase(
       // 9. S3-B Fine-Tune: 删除不再存在的 Episode
       if (existingSeason && existingSeason.episodes.length > season.episodes.length) {
         const newEpisodeIndexes = new Set(season.episodes.map((e: AnalyzedEpisode) => e.index));
-        const episodesToDelete = existingSeason.episodes.filter((e: any) => !newEpisodeIndexes.has(e.index) && e.index < 9000);
+        const episodesToDelete = existingSeason.episodes.filter(
+          (e: any) => !newEpisodeIndexes.has(e.index) && e.index < 9000
+        );
         for (const episodeToDelete of episodesToDelete) {
           // 先删除关联的 Scene 和 Shot
           // S3-B Fix: Must delete ShotJobs first to avoid FKey violation
@@ -782,7 +811,9 @@ export async function applyAnalyzedStructureToDatabase(
     // 10. S3-B Fine-Tune: 删除不再存在的 Season
     if (existingSeasons.length > seasons.length) {
       const newSeasonIndexes = new Set(seasons.map((s: AnalyzedSeason) => s.index));
-      const seasonsToDelete = existingSeasons.filter((s: typeof existingSeasons[0]) => !newSeasonIndexes.has(s.index) && s.index < 9000);
+      const seasonsToDelete = existingSeasons.filter(
+        (s: (typeof existingSeasons)[0]) => !newSeasonIndexes.has(s.index) && s.index < 9000
+      );
       for (const seasonToDelete of seasonsToDelete) {
         // 先删除关联的 Episode、Scene 和 Shot
         // S3-B Fix: Must delete ShotJobs first to avoid FKey violation
@@ -837,19 +868,19 @@ export async function applyAnalyzedStructureToDatabase(
     // S3-B Fine-Tune: 构建 finalStructure
     const finalStructure: AnalyzedProjectStructure = {
       projectId,
-      seasons: finalSeasonsFromDb.map((s: typeof finalSeasonsFromDb[0]) => ({
+      seasons: finalSeasonsFromDb.map((s: (typeof finalSeasonsFromDb)[0]) => ({
         index: s.index,
         title: s.title,
         summary: s.description || '',
-        episodes: s.episodes.map((e: typeof s.episodes[0]) => ({
+        episodes: s.episodes.map((e: (typeof s.episodes)[0]) => ({
           index: e.index,
           title: e.name,
           summary: e.summary || '',
-          scenes: e.scenes.map((sc: typeof e.scenes[0]) => ({
+          scenes: e.scenes.map((sc: (typeof e.scenes)[0]) => ({
             index: sc.index,
             title: sc.title,
             summary: sc.summary || '',
-            shots: sc.shots.map((sh: typeof sc.shots[0]) => ({
+            shots: sc.shots.map((sh: (typeof sc.shots)[0]) => ({
               index: sh.index,
               title: sh.title || '',
               summary: sh.description || '',
@@ -860,9 +891,33 @@ export async function applyAnalyzedStructureToDatabase(
       })),
       stats: {
         seasonsCount: finalSeasonsFromDb.length,
-        episodesCount: finalSeasonsFromDb.reduce((sum: number, s: typeof finalSeasonsFromDb[0]) => sum + s.episodes.length, 0),
-        scenesCount: finalSeasonsFromDb.reduce((sum: number, s: typeof finalSeasonsFromDb[0]) => sum + s.episodes.reduce((sum2: number, e: typeof s.episodes[0]) => sum2 + e.scenes.length, 0), 0),
-        shotsCount: finalSeasonsFromDb.reduce((sum: number, s: typeof finalSeasonsFromDb[0]) => sum + s.episodes.reduce((sum2: number, e: typeof s.episodes[0]) => sum2 + e.scenes.reduce((sum3: number, sc: typeof e.scenes[0]) => sum3 + sc.shots.length, 0), 0), 0),
+        episodesCount: finalSeasonsFromDb.reduce(
+          (sum: number, s: (typeof finalSeasonsFromDb)[0]) => sum + s.episodes.length,
+          0
+        ),
+        scenesCount: finalSeasonsFromDb.reduce(
+          (sum: number, s: (typeof finalSeasonsFromDb)[0]) =>
+            sum +
+            s.episodes.reduce(
+              (sum2: number, e: (typeof s.episodes)[0]) => sum2 + e.scenes.length,
+              0
+            ),
+          0
+        ),
+        shotsCount: finalSeasonsFromDb.reduce(
+          (sum: number, s: (typeof finalSeasonsFromDb)[0]) =>
+            sum +
+            s.episodes.reduce(
+              (sum2: number, e: (typeof s.episodes)[0]) =>
+                sum2 +
+                e.scenes.reduce(
+                  (sum3: number, sc: (typeof e.scenes)[0]) => sum3 + sc.shots.length,
+                  0
+                ),
+              0
+            ),
+          0
+        ),
       },
     };
 
@@ -874,25 +929,26 @@ export async function applyAnalyzedStructureToDatabase(
   // - NOVEL_ANALYSIS 可能需要创建/更新数万条 Shot 记录，默认 5s 事务超时会导致
   //   "Transaction already closed / Transaction not found" 错误。
   // - 这里显式将 interactive transaction timeout 调高（例如 5 分钟），避免长事务被过早关闭。
-  const result = prisma instanceof PrismaClient
-    ? await (prisma as any).$transaction(executeInTransaction, {
-      timeout: 5 * 60 * 1000, // 5 minutes
-    })
-    : await executeInTransaction(prisma);
+  const result =
+    prisma instanceof PrismaClient
+      ? await (prisma as any).$transaction(executeInTransaction, {
+          timeout: 5 * 60 * 1000, // 5 minutes
+        })
+      : await executeInTransaction(prisma);
 
   return result;
 }
 
 /**
  * 将 CE06 引擎的结构化输出转换为项目层级结构 (Season/Episode/Scene/Shot)
- * 
+ *
  * @param projectId 项目 ID
  * @param output CE06 引擎输出
  * @returns 转换后的 AnalyzedProjectStructure
  */
 export function mapCE06OutputToProjectStructure(
   projectId: string,
-  output: CE06NovelParsingOutput | CE06Output,
+  output: CE06NovelParsingOutput | CE06Output
 ): AnalyzedProjectStructure {
   const seasons: AnalyzedSeason[] = [];
   let sIndex = 1;
@@ -909,7 +965,7 @@ export function mapCE06OutputToProjectStructure(
     };
 
     let eIndex = 1;
-    for (const chap of (vol.chapters || [])) {
+    for (const chap of vol.chapters || []) {
       const episode: AnalyzedEpisode = {
         index: eIndex++,
         title: chap.title || `第 ${eIndex - 1} 章`,
@@ -918,7 +974,7 @@ export function mapCE06OutputToProjectStructure(
       };
 
       let scIndex = 1;
-      for (const sc of (chap.scenes || [])) {
+      for (const sc of chap.scenes || []) {
         const scene: AnalyzedScene = {
           index: scIndex++,
           title: sc.title || `场景 ${scIndex - 1}`,
@@ -990,7 +1046,7 @@ export function mapCE06OutputToProjectStructure(
  */
 export async function processNovelAnalysisJob(
   prisma: PrismaClient,
-  job: WorkerJobBase,
+  job: WorkerJobBase
 ): Promise<any> {
   const startTime = Date.now();
   const jobId = job.id;
@@ -1021,7 +1077,7 @@ export async function processNovelAnalysisJob(
         if (novelSource) sourceText = novelSource.rawText;
       } else if (payload.chapterId) {
         const chapter = await prisma.novelChapter.findUnique({
-          where: { id: payload.chapterId }
+          where: { id: payload.chapterId },
         });
         if (chapter) sourceText = chapter.rawText;
       } else {
@@ -1132,7 +1188,9 @@ export async function processNovelAnalysisJob(
           billingUsage,
         });
       } else {
-        console.warn(`[BILLING] ⚠️  Job ${jobId} missing billing_usage, skipping cost record (non-fatal)`);
+        console.warn(
+          `[BILLING] ⚠️  Job ${jobId} missing billing_usage, skipping cost record (non-fatal)`
+        );
       }
     } catch (billingError: any) {
       // 计费失败不阻塞主流程

@@ -11,4 +11,3 @@ export class ProjectOwnershipGuard implements CanActivate {
     return true;
   }
 }
-

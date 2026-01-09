@@ -52,7 +52,7 @@ export async function runSqlVerify(sqlFiles: string[]): Promise<SqlResult[]> {
 
       // 执行 SQL（Prisma 的 $queryRawUnsafe 支持多语句）
       // 注意：如果 SQL 包含多个语句，需要分别执行
-      const statements = sql.split(';').filter(s => s.trim().length > 0);
+      const statements = sql.split(';').filter((s) => s.trim().length > 0);
       let allResults: any[] = [];
 
       for (const statement of statements) {
@@ -91,11 +91,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     // 默认执行所有 SQL 文件
     const defaultFiles = ['audit_recent.sql', 'job_status_agg.sql', 'entity_integrity.sql'];
     runSqlVerify(defaultFiles)
-      .then(results => {
+      .then((results) => {
         console.log(JSON.stringify(results, null, 2));
-        process.exit(results.every(r => r.success) ? 0 : 1);
+        process.exit(results.every((r) => r.success) ? 0 : 1);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error:', error);
         process.exit(1);
       })
@@ -104,11 +104,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       });
   } else {
     runSqlVerify(sqlFiles)
-      .then(results => {
+      .then((results) => {
         console.log(JSON.stringify(results, null, 2));
-        process.exit(results.every(r => r.success) ? 0 : 1);
+        process.exit(results.every((r) => r.success) ? 0 : 1);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error:', error);
         process.exit(1);
       })
@@ -117,4 +117,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       });
   }
 }
-

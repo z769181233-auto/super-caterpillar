@@ -55,8 +55,6 @@ export default function StudioReviewPage() {
     byReviewStatus: {} as Record<string, number>,
   });
 
-
-
   const loadShots = useCallback(async () => {
     try {
       setLoading(true);
@@ -71,7 +69,8 @@ export default function StudioReviewPage() {
 
       result?.shots?.forEach((shot: Shot) => {
         byStatus[shot.status] = (byStatus[shot.status] || 0) + 1;
-        byReviewStatus[shot.reviewStatus || 'PENDING'] = (byReviewStatus[shot.reviewStatus || 'PENDING'] || 0) + 1;
+        byReviewStatus[shot.reviewStatus || 'PENDING'] =
+          (byReviewStatus[shot.reviewStatus || 'PENDING'] || 0) + 1;
       });
 
       setStats({ total, byStatus, byReviewStatus });
@@ -193,7 +192,14 @@ export default function StudioReviewPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               关键词搜索
             </label>
             <input
@@ -212,7 +218,14 @@ export default function StudioReviewPage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               生成状态
             </label>
             <select
@@ -236,7 +249,14 @@ export default function StudioReviewPage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               审核状态
             </label>
             <select
@@ -258,7 +278,14 @@ export default function StudioReviewPage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
               项目 ID
             </label>
             <input
@@ -326,7 +353,13 @@ export default function StudioReviewPage() {
             {Object.entries(stats.byStatus).map(([status, count]) => (
               <div key={status}>
                 <span style={{ fontSize: '0.75rem', color: '#666' }}>{status}: </span>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: statusColors[status] || '#666' }}>
+                <span
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: statusColors[status] || '#666',
+                  }}
+                >
                   {count}
                 </span>
               </div>
@@ -460,10 +493,16 @@ export default function StudioReviewPage() {
                     />
                   </th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>标题</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>所属层级</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                    所属层级
+                  </th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>状态</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>审核状态</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>生成时间</th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                    审核状态
+                  </th>
+                  <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                    生成时间
+                  </th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>操作</th>
                 </tr>
               </thead>
@@ -484,9 +523,7 @@ export default function StudioReviewPage() {
                         style={{ cursor: 'pointer' }}
                       />
                     </td>
-                    <td style={{ padding: '0.75rem' }}>
-                      {shot.title || `Shot ${shot.index}`}
-                    </td>
+                    <td style={{ padding: '0.75rem' }}>{shot.title || `Shot ${shot.index}`}</td>
                     <td style={{ padding: '0.75rem', fontSize: '0.8125rem', color: '#666' }}>
                       <div>{shot.projectName}</div>
                       <div style={{ fontSize: '0.75rem', color: '#999' }}>
@@ -511,7 +548,8 @@ export default function StudioReviewPage() {
                         style={{
                           padding: '0.25rem 0.5rem',
                           fontSize: '0.75rem',
-                          backgroundColor: reviewStatusColors[shot.reviewStatus || 'PENDING'] || '#999',
+                          backgroundColor:
+                            reviewStatusColors[shot.reviewStatus || 'PENDING'] || '#999',
                           color: 'white',
                           borderRadius: '4px',
                         }}
@@ -520,9 +558,7 @@ export default function StudioReviewPage() {
                       </span>
                     </td>
                     <td style={{ padding: '0.75rem', fontSize: '0.8125rem', color: '#666' }}>
-                      {shot.generatedAt
-                        ? new Date(shot.generatedAt).toLocaleString('zh-CN')
-                        : '-'}
+                      {shot.generatedAt ? new Date(shot.generatedAt).toLocaleString('zh-CN') : '-'}
                     </td>
                     <td style={{ padding: '0.75rem' }}>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -596,12 +632,17 @@ export default function StudioReviewPage() {
                   padding: '0.375rem 0.75rem',
                   fontSize: '0.8125rem',
                   backgroundColor:
-                    filters.page >= Math.ceil(stats.total / filters.pageSize) ? '#f0f0f0' : '#0070f3',
-                  color: filters.page >= Math.ceil(stats.total / filters.pageSize) ? '#999' : 'white',
+                    filters.page >= Math.ceil(stats.total / filters.pageSize)
+                      ? '#f0f0f0'
+                      : '#0070f3',
+                  color:
+                    filters.page >= Math.ceil(stats.total / filters.pageSize) ? '#999' : 'white',
                   border: 'none',
                   borderRadius: '4px',
                   cursor:
-                    filters.page >= Math.ceil(stats.total / filters.pageSize) ? 'not-allowed' : 'pointer',
+                    filters.page >= Math.ceil(stats.total / filters.pageSize)
+                      ? 'not-allowed'
+                      : 'pointer',
                 }}
               >
                 下一页
@@ -691,14 +732,3 @@ export default function StudioReviewPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

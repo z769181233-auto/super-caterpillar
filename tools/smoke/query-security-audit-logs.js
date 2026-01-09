@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 async function main() {
   try {
     console.log('=== 查询安全相关 Audit Logs ===\n');
-    
+
     // 查询最近 50 条安全相关审计日志
     const auditLogs = await prisma.auditLog.findMany({
       where: {
@@ -45,7 +45,9 @@ async function main() {
         console.log(`   Resource Type: ${log.resourceType || 'N/A'}`);
         console.log(`   Resource ID: ${log.resourceId || 'N/A'}`);
         console.log(`   IP: ${log.ip || 'N/A'}`);
-        console.log(`   User Agent: ${log.userAgent ? log.userAgent.substring(0, 50) + '...' : 'N/A'}`);
+        console.log(
+          `   User Agent: ${log.userAgent ? log.userAgent.substring(0, 50) + '...' : 'N/A'}`
+        );
         console.log(`   Details: ${JSON.stringify(details).substring(0, 150)}...`);
         console.log(`   Created At: ${log.createdAt}`);
         console.log('');
@@ -76,7 +78,6 @@ async function main() {
       }
     });
     console.log('');
-
   } catch (error) {
     console.error('❌ 查询失败:', error.message);
     console.error(error.stack);
@@ -87,4 +88,3 @@ async function main() {
 }
 
 main();
-

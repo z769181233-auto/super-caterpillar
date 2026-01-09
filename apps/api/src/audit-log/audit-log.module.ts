@@ -11,4 +11,3 @@ import { HmacAuthModule } from '../auth/hmac/hmac-auth.module';
   exports: [AuditLogService],
 })
 export class AuditLogModule {}
-

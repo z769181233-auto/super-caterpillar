@@ -5,7 +5,7 @@ import { JobType as JobTypeEnum } from 'database';
 /**
  * Quality Metrics Writer
  * 质量指标写入服务（只启用写入，不启用阻断）
- * 
+ *
  * 规则：
  * - CE03/CE04 执行完成后必须写 QualityMetrics
  * - 暂不阻断、不回滚、不打分裁决，只是为后续自动优化留钩子
@@ -15,11 +15,11 @@ import { JobType as JobTypeEnum } from 'database';
 export class QualityMetricsWriter {
   private readonly logger = new Logger(QualityMetricsWriter.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 写入质量指标
-   * 
+   *
    * @param params 写入参数
    * @returns 是否写入成功
    */
@@ -34,7 +34,10 @@ export class QualityMetricsWriter {
       const { jobId, jobType, projectId, traceId, result } = params;
 
       // 只处理 CE03 和 CE04
-      if (jobType !== JobTypeEnum.CE03_VISUAL_DENSITY && jobType !== JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
+      if (
+        jobType !== JobTypeEnum.CE03_VISUAL_DENSITY &&
+        jobType !== JobTypeEnum.CE04_VISUAL_ENRICHMENT
+      ) {
         return false;
       }
 
@@ -94,11 +97,13 @@ export class QualityMetricsWriter {
           },
         });
 
-        this.logger.log(`QualityMetrics created for ${engine} job ${jobId}, project ${projectId} (traceId: ${traceId || 'N/A'})`);
+        this.logger.log(
+          `QualityMetrics created for ${engine} job ${jobId}, project ${projectId} (traceId: ${traceId || 'N/A'})`
+        );
         return true;
       } else {
         this.logger.warn(
-          `No quality metrics found in result for ${engine} job ${jobId}, skipping QualityMetrics write`,
+          `No quality metrics found in result for ${engine} job ${jobId}, skipping QualityMetrics write`
         );
         return false;
       }
@@ -106,10 +111,9 @@ export class QualityMetricsWriter {
       // 质量指标写入失败不影响主流程
       this.logger.error(
         `Failed to write QualityMetrics for job ${params.jobId}: ${error.message}`,
-        error.stack,
+        error.stack
       );
       return false;
     }
   }
 }
-

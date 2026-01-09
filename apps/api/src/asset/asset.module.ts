@@ -14,4 +14,3 @@ import { PermissionModule } from '../permission/permission.module';
   exports: [AssetService],
 })
 export class AssetModule {}
-

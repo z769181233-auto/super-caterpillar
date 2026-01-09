@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 import EngineTag from '@/components/engines/EngineTag';
 import AdapterBadge from '@/components/engines/AdapterBadge';
 import QualityScoreBadge from '@/components/quality/QualityScoreBadge';
-import type {
-  EngineProfileSummary,
-} from '@scu/shared-types';
+import type { EngineProfileSummary } from '@scu/shared-types';
 
 interface EngineProfilePanelProps {
   engineKey?: string;
@@ -16,7 +14,7 @@ interface EngineProfilePanelProps {
 
 /**
  * S4-A: 引擎画像面板组件
- * 
+ *
  * 只读展示引擎统计信息，不触发任何执行操作
  */
 export default function EngineProfilePanel({
@@ -131,9 +129,7 @@ export default function EngineProfilePanel({
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="text-sm">
-                    <div className="text-gray-900 font-medium">
-                      总计: {profile.totalJobs}
-                    </div>
+                    <div className="text-gray-900 font-medium">总计: {profile.totalJobs}</div>
                     <div className="text-gray-500 text-xs mt-1">
                       成功: {profile.successCount} | 失败: {profile.failedCount}
                       {profile.retryCount > 0 && ` | 重试: ${profile.retryCount}`}
@@ -166,9 +162,7 @@ export default function EngineProfilePanel({
                     )}
                     {profile.avgDurationMs === null &&
                       profile.avgTokens === null &&
-                      profile.avgCostUsd === null && (
-                        <div className="text-gray-400">-</div>
-                      )}
+                      profile.avgCostUsd === null && <div className="text-gray-400">-</div>}
                   </div>
                 </td>
               </tr>
@@ -179,4 +173,3 @@ export default function EngineProfilePanel({
     </div>
   );
 }
-

@@ -54,8 +54,6 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
     prompt: '',
   });
 
-
-
   const loadJobs = useCallback(async () => {
     if (!shot) return;
     try {
@@ -106,17 +104,21 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
     try {
       setGenerating(true);
       // Studio v0.6: 使用 jobApi.createJob 并传递 engine
-      await jobApi.createJob(shot.id, 'IMAGE', {
-        prompt: formData.prompt || formData.description,
-        style: shot.type,
-      }, selectedEngine);
+      await jobApi.createJob(
+        shot.id,
+        'IMAGE',
+        {
+          prompt: formData.prompt || formData.description,
+          style: shot.type,
+        },
+        selectedEngine
+      );
       // 等待一下让后端处理
       setTimeout(() => {
         onUpdate();
         loadJobs();
         setGenerating(false);
       }, 2000);
-
     } catch (error: unknown) {
       alert((error as Error).message || '生成失败');
       setGenerating(false);
@@ -207,7 +209,14 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
       }}
     >
       <div style={{ padding: '1.5rem', borderBottom: '1px solid #e0e0e0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem',
+          }}
+        >
           <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>Shot {shot.index}</h3>
           {!editing && (
             <button
@@ -257,7 +266,14 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '0.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                }}
+              >
                 标题
               </label>
               <input
@@ -275,7 +291,14 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '0.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                }}
+              >
                 描述
               </label>
               <textarea
@@ -294,7 +317,14 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '0.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                }}
+              >
                 对白
               </label>
               <textarea
@@ -313,7 +343,14 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '0.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                }}
+              >
                 Prompt
               </label>
               <textarea
@@ -378,35 +415,49 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {shot.title && (
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>标题</div>
+                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>
+                  标题
+                </div>
                 <div style={{ fontSize: '0.875rem' }}>{shot.title}</div>
               </div>
             )}
 
             {shot.description && (
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>描述</div>
-                <div style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap' }}>{shot.description}</div>
+                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>
+                  描述
+                </div>
+                <div style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap' }}>
+                  {shot.description}
+                </div>
               </div>
             )}
 
             {shot.dialogue && (
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>对白</div>
+                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>
+                  对白
+                </div>
                 <div style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap' }}>{shot.dialogue}</div>
               </div>
             )}
 
             {shot.prompt && (
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>Prompt</div>
-                <div style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap', color: '#666' }}>{shot.prompt}</div>
+                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>
+                  Prompt
+                </div>
+                <div style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap', color: '#666' }}>
+                  {shot.prompt}
+                </div>
               </div>
             )}
 
             {shot.previewUrl && (
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>预览</div>
+                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>
+                  预览
+                </div>
                 <div
                   style={{
                     width: '100%',
@@ -427,8 +478,12 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
 
             {shot.reviewNote && (
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>审核意见</div>
-                <div style={{ fontSize: '0.875rem', color: '#F44336', whiteSpace: 'pre-wrap' }}>{shot.reviewNote}</div>
+                <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>
+                  审核意见
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#F44336', whiteSpace: 'pre-wrap' }}>
+                  {shot.reviewNote}
+                </div>
               </div>
             )}
           </div>
@@ -436,10 +491,19 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
 
         {/* 操作按钮 */}
         {!editing && (
-          <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div
+            style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+          >
             {/* Studio v0.6: 引擎选择 */}
             <div>
-              <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500 }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '0.25rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                }}
+              >
                 引擎
               </label>
               <select
@@ -474,7 +538,14 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
             >
               {generating || shot.status === 'GENERATING' ? '生成中...' : '发起生成'}
             </button>
-            <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
+            <div
+              style={{
+                fontSize: '0.75rem',
+                color: '#666',
+                marginTop: '0.5rem',
+                textAlign: 'center',
+              }}
+            >
               任务将在后台队列中处理，请稍后刷新查看状态
             </div>
 
@@ -485,7 +556,8 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
                 style={{
                   flex: 1,
                   padding: '0.5rem',
-                  backgroundColor: reviewing || shot.reviewStatus === 'APPROVED' ? '#ccc' : '#4CAF50',
+                  backgroundColor:
+                    reviewing || shot.reviewStatus === 'APPROVED' ? '#ccc' : '#4CAF50',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
@@ -501,7 +573,8 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
                 style={{
                   flex: 1,
                   padding: '0.5rem',
-                  backgroundColor: reviewing || shot.reviewStatus === 'REJECTED' ? '#ccc' : '#F44336',
+                  backgroundColor:
+                    reviewing || shot.reviewStatus === 'REJECTED' ? '#ccc' : '#F44336',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
@@ -517,7 +590,9 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
 
         {/* Job 历史 */}
         <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e0e0e0' }}>
-          <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem' }}>生成历史</div>
+          <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+            生成历史
+          </div>
           {loadingJobs ? (
             <div style={{ fontSize: '0.8125rem', color: '#999' }}>加载中...</div>
           ) : jobs.length === 0 ? (
@@ -534,13 +609,24 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
                     fontSize: '0.8125rem',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '0.25rem',
+                    }}
+                  >
                     <span style={{ fontWeight: 600 }}>{job.type}</span>
                     <span
                       style={{
                         padding: '0.125rem 0.375rem',
                         fontSize: '0.75rem',
-                        backgroundColor: job.status === 'SUCCEEDED' ? '#4CAF50' : job.status === 'FAILED' ? '#F44336' : '#FF9800',
+                        backgroundColor:
+                          job.status === 'SUCCEEDED'
+                            ? '#4CAF50'
+                            : job.status === 'FAILED'
+                              ? '#F44336'
+                              : '#FF9800',
                         color: 'white',
                         borderRadius: '4px',
                       }}
@@ -649,14 +735,3 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

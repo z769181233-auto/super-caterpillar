@@ -16,8 +16,8 @@ export class WorkerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
-    private readonly jobService: JobService, // S3-C.3: 注入 JobService 以使用统一的引擎信息提取方法
-  ) { }
+    private readonly jobService: JobService // S3-C.3: 注入 JobService 以使用统一的引擎信息提取方法
+  ) {}
 
   /**
    * 注册或更新 Worker
@@ -35,7 +35,7 @@ export class WorkerService {
     userId?: string,
     apiKeyId?: string,
     ip?: string,
-    userAgent?: string,
+    userAgent?: string
   ) {
     // 查找或创建 WorkerNode
     let worker = await this.prisma.workerNode.findUnique({
@@ -94,7 +94,7 @@ export class WorkerService {
    * Worker 心跳
    * Stage2-B: 使用 WorkerHeartbeat 模型记录心跳
    * 参考《调度系统设计书_V1.0》§3.2~3.3：Worker 心跳机制和状态判断
-   * 
+   *
    * @param workerId Worker 唯一标识
    * @param status Worker 状态（可选，用于更新状态）
    * @param tasksRunning 当前运行的任务数（可选）
@@ -112,7 +112,7 @@ export class WorkerService {
     _userId?: string,
     _apiKeyId?: string,
     _ip?: string,
-    _userAgent?: string,
+    _userAgent?: string
   ) {
     const worker = await this.prisma.workerNode.findUnique({
       where: { workerId },
@@ -193,7 +193,7 @@ export class WorkerService {
   /**
    * 获取在线 Worker 列表
    * 参考《调度系统设计书_V1.0》§3.3~3.4：Worker 状态判断和 Disabled Worker 跳过逻辑
-   * 
+   *
    * @param jobType 可选，过滤支持特定 jobType 的 Worker
    */
   async getOnlineWorkers(jobType?: string): Promise<any[]> {
@@ -350,7 +350,9 @@ export class WorkerService {
     const { workerOfflineGraceMs } = scuEnv;
     const timeoutThreshold = new Date(Date.now() - workerOfflineGraceMs);
 
-    this.logger.log(`[Recovery] Checking for dead workers... threshold: ${timeoutThreshold.toISOString()}, grace: ${workerOfflineGraceMs}ms`);
+    this.logger.log(
+      `[Recovery] Checking for dead workers... threshold: ${timeoutThreshold.toISOString()}, grace: ${workerOfflineGraceMs}ms`
+    );
 
     // 1. 获取所有心跳超时的 Worker 并标记为 DEAD
     const timedOutHeartbeats = await this.prisma.workerHeartbeat.findMany({
@@ -366,7 +368,9 @@ export class WorkerService {
 
     if (timedOutHeartbeats.length > 0) {
       const idsToMark = timedOutHeartbeats.map((h) => h.workerId);
-      this.logger.warn(`[Recovery] Marking ${idsToMark.length} workers as DEAD: ${idsToMark.join(', ')}`);
+      this.logger.warn(
+        `[Recovery] Marking ${idsToMark.length} workers as DEAD: ${idsToMark.join(', ')}`
+      );
 
       await this.prisma.workerHeartbeat.updateMany({
         where: { workerId: { in: idsToMark } },
@@ -378,11 +382,12 @@ export class WorkerService {
       });
     }
 
-
     // 统一回收入口(商业级:三重断言 + 事务 + 审计)
     const reclaimedCount = await this.reclaimJobsFromDeadWorkers();
     if (reclaimedCount > 0) {
-      this.logger.warn(`[WorkerService] Reclaimed ${reclaimedCount} jobs from dead workers (unified).`);
+      this.logger.warn(
+        `[WorkerService] Reclaimed ${reclaimedCount} jobs from dead workers (unified).`
+      );
     }
     return reclaimedCount;
   }
@@ -390,7 +395,7 @@ export class WorkerService {
   /**
    * 判断 Worker 状态（Idle/Busy/Dead）
    * 参考《调度系统设计书_V1.0》§3.3：Worker 状态判断
-   * 
+   *
    * @param worker Worker 对象
    * @returns 'idle' | 'busy' | 'dead'
    */
@@ -552,13 +557,15 @@ export class WorkerService {
       // fail-fast: projectId 不能为空(避免静默过滤导致审计缺失)
       for (const j of orphaned) {
         if (!j.projectId) {
-          throw new Error(`Cannot reclaim job without projectId: jobId=${j.id}, deadWorkerId=${j.lockedBy}`);
+          throw new Error(
+            `Cannot reclaim job without projectId: jobId=${j.id}, deadWorkerId=${j.lockedBy}`
+          );
         }
       }
 
       // 批量回到 PENDING
       await tx.shotJob.updateMany({
-        where: { id: { in: orphaned.map(j => j.id) } },
+        where: { id: { in: orphaned.map((j) => j.id) } },
         data: {
           status: 'PENDING',
           workerId: null,
@@ -574,19 +581,21 @@ export class WorkerService {
         where: { id: { in: projectIds } },
         select: { id: true, organizationId: true },
       });
-      const projToOrg = new Map(projects.map(p => [p.id, p.organizationId]));
+      const projToOrg = new Map(projects.map((p) => [p.id, p.organizationId]));
 
       // 校验: org 不能为空(避免回收成功但审计缺失)
       for (const j of orphaned) {
         const org = projToOrg.get(j.projectId);
         if (!org) {
-          throw new Error(`Cannot resolve org for projectId=${j.projectId} when reclaiming jobId=${j.id}`);
+          throw new Error(
+            `Cannot resolve org for projectId=${j.projectId} when reclaiming jobId=${j.id}`
+          );
         }
       }
 
       // 审计(按 orgId 写)
       await tx.auditLog.createMany({
-        data: orphaned.map(j => ({
+        data: orphaned.map((j) => ({
           action: 'JOB_RECLAIMED_FROM_DEAD_WORKER',
           resourceType: 'shot_job',
           resourceId: j.id,
@@ -596,9 +605,10 @@ export class WorkerService {
         })),
       });
 
-      this.logger.warn(`Reclaimed ${orphaned.length} jobs from ${deadWorkerIds.length} dead workers`);
+      this.logger.warn(
+        `Reclaimed ${orphaned.length} jobs from ${deadWorkerIds.length} dead workers`
+      );
       return orphaned.length;
     });
   }
-
 }

@@ -74,4 +74,3 @@ bash tools/ci/check-prisma-single-source.sh
 ---
 
 **报告文件**: `docs/TEST_REPORT_<功能名>_<YYYYMMDD>.md`
-

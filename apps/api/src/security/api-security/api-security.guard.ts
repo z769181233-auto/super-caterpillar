@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  HttpException,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, HttpException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { ApiSecurityService } from './api-security.service';
@@ -13,14 +8,14 @@ import { RequestWithApiSecurity } from './api-security.types';
 
 /**
  * API Security Guard
- * 
+ *
  * 只对标记了 @RequireSignature() 的端点生效
- * 
+ *
  * 功能：
  * 1. 检查请求头（X-Api-Key, X-Nonce, X-Timestamp, X-Signature）
  * 2. 调用 ApiSecurityService 验证签名
  * 3. 验证失败时抛出带错误码的异常
- * 
+ *
  * 参考文档：
  * - 《10毛毛虫宇宙_API设计规范_APISpec_V1.1》
  */
@@ -28,8 +23,8 @@ import { RequestWithApiSecurity } from './api-security.types';
 export class ApiSecurityGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly apiSecurityService: ApiSecurityService,
-  ) { }
+    private readonly apiSecurityService: ApiSecurityService
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // 检查是否标记了 @RequireSignature()
@@ -58,15 +53,21 @@ export class ApiSecurityGuard implements CanActivate {
 
     // 2. 检查必需的头字段
     if (!apiKey || !nonce || !timestamp || !contentSha256 || !signature) {
-      throw buildHmacError('4003', 'Missing required security headers (X-Api-Key, X-Nonce, X-Timestamp, X-Content-SHA256, X-Signature)', {
-        path,
-        method,
-      });
+      throw buildHmacError(
+        '4003',
+        'Missing required security headers (X-Api-Key, X-Nonce, X-Timestamp, X-Content-SHA256, X-Signature)',
+        {
+          path,
+          method,
+        }
+      );
     }
 
     // 3. 判断是否为 multipart 端点（import-file）
     // 注意：使用 pathWithQuery 判断，但匹配时不包含 query string
-    const isMultipartEndpoint = method === 'POST' && pathWithQuery.match(/^\/api\/projects\/[^/]+\/novel\/import-file(\?.*)?$/);
+    const isMultipartEndpoint =
+      method === 'POST' &&
+      pathWithQuery.match(/^\/api\/projects\/[^/]+\/novel\/import-file(\?.*)?$/);
 
     let finalContentSha256 = contentSha256;
 
@@ -129,11 +130,7 @@ export class ApiSecurityGuard implements CanActivate {
     if (!result.success) {
       // 确保错误码符合规范（4003/4004）
       const errorCode = (result.errorCode === '4004' ? '4004' : '4003') as '4003' | '4004';
-      throw buildHmacError(
-        errorCode,
-        result.errorMessage || '签名验证失败',
-        { path, method },
-      );
+      throw buildHmacError(errorCode, result.errorMessage || '签名验证失败', { path, method });
     }
 
     // 6. 验证成功，将 API Key 信息附加到请求对象
@@ -143,4 +140,3 @@ export class ApiSecurityGuard implements CanActivate {
     return true;
   }
 }
-

@@ -37,4 +37,3 @@ export interface EngineDescriptor {
     [key: string]: unknown;
   };
 }
-

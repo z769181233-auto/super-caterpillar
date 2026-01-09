@@ -3,10 +3,10 @@
 /**
  * API 负载测试脚本（真实端点版本）
  * 测试 POST /api/shots/:shotId/jobs 创建 job 的性能
- * 
+ *
  * 使用方法:
  *   node tools/load/api_smoke_load.js [options]
- * 
+ *
  * 选项:
  *   --url <url>          API 基础 URL (默认: http://localhost:3000)
  *   --concurrent <n>     并发请求数 (默认: 10)
@@ -43,7 +43,7 @@ for (let i = 0; i < args.length; i += 2) {
   else if (key === '--shot-id') options.shotId = value;
   else if (key === '--job-type') options.jobType = value;
   else if (key === '--auth-token') options.authToken = value;
-  else if (key === '--json') options.json = (value === 'true' || value === '1');
+  else if (key === '--json') options.json = value === 'true' || value === '1';
   else if (key === '--out') options.out = value;
 }
 
@@ -96,7 +96,7 @@ function makeRequest() {
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
-        'Authorization': `Bearer ${options.authToken}`,
+        Authorization: `Bearer ${options.authToken}`,
         'User-Agent': 'SCU-LoadTest/1.0',
       },
     };
@@ -244,9 +244,15 @@ async function runLoadTest() {
   console.log('\n📊 Load Test Results:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log(`Total Requests:     ${stats.total}`);
-  console.log(`Successful:        ${stats.success} (${((stats.success / stats.total) * 100).toFixed(2)}%)`);
-  console.log(`Failed:            ${stats.failed} (${((stats.failed / stats.total) * 100).toFixed(2)}%)`);
-  console.log(`Capacity Exceeded: ${stats.capacityExceeded} (${((stats.capacityExceeded / stats.total) * 100).toFixed(2)}%)`);
+  console.log(
+    `Successful:        ${stats.success} (${((stats.success / stats.total) * 100).toFixed(2)}%)`
+  );
+  console.log(
+    `Failed:            ${stats.failed} (${((stats.failed / stats.total) * 100).toFixed(2)}%)`
+  );
+  console.log(
+    `Capacity Exceeded: ${stats.capacityExceeded} (${((stats.capacityExceeded / stats.total) * 100).toFixed(2)}%)`
+  );
   console.log(`Duration:          ${duration.toFixed(2)}s`);
   console.log(`Requests/sec:      ${(stats.total / duration).toFixed(2)}`);
   console.log('\nResponse Times (ms):');

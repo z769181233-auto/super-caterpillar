@@ -159,4 +159,3 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 }
-

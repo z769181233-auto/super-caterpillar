@@ -9,4 +9,3 @@ export class UpdateProjectDto {
   @IsOptional()
   description?: string;
 }
-

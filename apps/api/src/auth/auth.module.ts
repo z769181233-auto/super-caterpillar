@@ -42,7 +42,15 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
     ApiSecurityModule, // 导入 API Security 模块（JwtOrHmacGuard 需要 ApiSecurityGuard）
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, JwtOrHmacGuard, PermissionsGuard, QuotaGuard, BudgetGuard],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    JwtAuthGuard,
+    JwtOrHmacGuard,
+    PermissionsGuard,
+    QuotaGuard,
+    BudgetGuard,
+  ],
   exports: [
     AuthService,
     HmacAuthModule,
@@ -54,4 +62,4 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
     NonceModule,
   ], // 导出供其他模块使用
 })
-export class AuthModule { }
+export class AuthModule {}

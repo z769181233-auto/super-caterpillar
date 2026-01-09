@@ -31,7 +31,11 @@ import { JobService } from '../job/job.service';
 import { StructureGenerateService } from '../project/structure-generate.service';
 import { SceneGraphService } from '../project/scene-graph.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { TaskType as TaskTypeEnum, TaskStatus as TaskStatusEnum, JobType as JobTypeEnum } from 'database';
+import {
+  TaskType as TaskTypeEnum,
+  TaskStatus as TaskStatusEnum,
+  JobType as JobTypeEnum,
+} from 'database';
 import { NovelAnalysisStatus } from '@scu/shared-types';
 import { randomUUID } from 'crypto';
 import { Request } from 'express';
@@ -58,17 +62,19 @@ export class NovelImportController {
   constructor(
     @Inject(NovelImportService) private readonly novelImportService: NovelImportService,
     @Inject(FileParserService) private readonly fileParserService: FileParserService,
-    @Inject(NovelAnalysisProcessorService) private readonly analysisProcessor: NovelAnalysisProcessorService,
+    @Inject(NovelAnalysisProcessorService)
+    private readonly analysisProcessor: NovelAnalysisProcessorService,
     @Inject(ProjectService) private readonly projectService: ProjectService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(TaskService) private readonly taskService: TaskService,
     @Inject(EngineTaskService) private readonly engineTaskService: EngineTaskService,
     @Inject(JobService) private readonly jobService: JobService,
-    @Inject(StructureGenerateService) private readonly structureGenerateService: StructureGenerateService,
+    @Inject(StructureGenerateService)
+    private readonly structureGenerateService: StructureGenerateService,
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService,
-    @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService,
+    @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService
   ) {
     // 确保上传目录存在
     fs.mkdir(this.uploadDir, { recursive: true }).catch(console.error);
@@ -144,7 +150,12 @@ export class NovelImportController {
         if (allowedExtensions.includes(ext)) {
           cb(null, true);
         } else {
-          cb(new BadRequestException(`File type ${ext} is not allowed. Allowed types: ${allowedExtensions.join(', ')}`), false);
+          cb(
+            new BadRequestException(
+              `File type ${ext} is not allowed. Allowed types: ${allowedExtensions.join(', ')}`
+            ),
+            false
+          );
         }
       },
     })
@@ -157,7 +168,7 @@ export class NovelImportController {
     @Body() importNovelFileDto: ImportNovelFileDto,
     @CurrentUser() user: { userId: string },
     @CurrentOrganization() organizationId: string | null,
-    @Req() request: Request,
+    @Req() request: Request
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -188,7 +199,11 @@ export class NovelImportController {
 
       // 使用解析后的数据或用户输入的数据
       // 优先级：用户输入 > 解析结果 > 文件名
-      const novelTitle = importNovelFileDto.title || parsed.title || this.fileParserService.extractTitleFromFileName(file.originalname) || path.basename(file.originalname, path.extname(file.originalname));
+      const novelTitle =
+        importNovelFileDto.title ||
+        parsed.title ||
+        this.fileParserService.extractTitleFromFileName(file.originalname) ||
+        path.basename(file.originalname, path.extname(file.originalname));
       const novelAuthor = importNovelFileDto.author || parsed.author;
 
       // 创建 NovelSource（使用 novelTitle 和 novelAuthor）
@@ -291,8 +306,8 @@ export class NovelImportController {
           organizationId,
           task.id,
           undefined, // apiKeyId
-          request.ip || request.headers['x-forwarded-for'] as string,
-          request.headers['user-agent'],
+          request.ip || (request.headers['x-forwarded-for'] as string),
+          request.headers['user-agent']
         );
 
         // 3. 更新 NovelAnalysisJob 状态为 PENDING（等待 Worker 处理）
@@ -334,7 +349,11 @@ export class NovelImportController {
         });
 
         // 统一错误处理：将错误转换为明确的业务异常
-        if (error instanceof NotFoundException || error instanceof BadRequestException || error instanceof ConflictException) {
+        if (
+          error instanceof NotFoundException ||
+          error instanceof BadRequestException ||
+          error instanceof ConflictException
+        ) {
           throw error;
         }
 
@@ -361,7 +380,10 @@ export class NovelImportController {
         errorMessage = error.message;
       } else if (error.message?.includes('Unsupported file type')) {
         errorMessage = '文件格式错误：不支持的文件类型';
-      } else if (error.message?.includes('Failed to decode') || error.message?.includes('encoding')) {
+      } else if (
+        error.message?.includes('Failed to decode') ||
+        error.message?.includes('encoding')
+      ) {
         errorMessage = '编码错误：无法识别文件编码，请确保文件为 UTF-8 编码';
       } else if (error.message?.includes('parse') || error.message?.includes('解析')) {
         errorMessage = '解析错误：无法解析小说文本，请检查文件编码或内容格式';
@@ -380,7 +402,7 @@ export class NovelImportController {
     @Body() importNovelDto: ImportNovelDto,
     @CurrentUser() user: { userId: string },
     @CurrentOrganization() organizationId: string | null,
-    @Req() request: Request,
+    @Req() request: Request
   ) {
     if (!organizationId) {
       throw new ForbiddenException('No organization context');
@@ -391,7 +413,11 @@ export class NovelImportController {
 
     // 1. 创建 NovelSource（文本导入模式）
     // 兼容多种 Payload 字段（支持前端直接传 title+content 或 title+rawText）
-    let rawText = importNovelDto.rawText || importNovelDto.content || (request.body as any)?.rawText || (request.body as any)?.content;
+    let rawText =
+      importNovelDto.rawText ||
+      importNovelDto.content ||
+      (request.body as any)?.rawText ||
+      (request.body as any)?.content;
     const title = importNovelDto.title || (request.body as any)?.title || '未命名作品';
 
     // 尝试查找已存在的最新 NovelSource（由 import-file 创建）
@@ -402,7 +428,10 @@ export class NovelImportController {
 
     // 如果没有 rawText，检查是否是仅更新元数据或确认
     if (!rawText) {
-      if (novelSource && (importNovelDto.novelName || importNovelDto.author || importNovelDto.fileUrl)) {
+      if (
+        novelSource &&
+        (importNovelDto.novelName || importNovelDto.author || importNovelDto.fileUrl)
+      ) {
         // 更新元数据模式
         novelSource = await this.prisma.novelSource.update({
           where: { id: novelSource.id },
@@ -443,7 +472,9 @@ export class NovelImportController {
     }
 
     if (!novelSource) {
-      throw new BadRequestException('无法定位小说源且未提供新内容 (Novel source not found and no content provided)');
+      throw new BadRequestException(
+        '无法定位小说源且未提供新内容 (Novel source not found and no content provided)'
+      );
     }
 
     // 2. 检查现存章节（幂等性处理）
@@ -500,8 +531,8 @@ export class NovelImportController {
         organizationId,
         task.id,
         undefined, // apiKeyId
-        request.ip || request.headers['x-forwarded-for'] as string,
-        request.headers['user-agent'],
+        request.ip || (request.headers['x-forwarded-for'] as string),
+        request.headers['user-agent']
       );
       jobIds.push(job.id);
     }
@@ -584,7 +615,7 @@ export class NovelImportController {
     // 查询 EngineTask 视图（只读聚合，不修改数据）
     const engineTasks = await this.engineTaskService.findEngineTasksByProject(
       projectId,
-      'NOVEL_ANALYSIS',
+      'NOVEL_ANALYSIS'
     );
 
     return {
@@ -607,7 +638,7 @@ export class NovelImportController {
     @Body() body: { chapterId?: string }, // 如果提供 chapterId，只分析单章；否则分析全书
     @CurrentUser() user: { userId: string },
     @CurrentOrganization() organizationId: string | null,
-    @Req() request: Request,
+    @Req() request: Request
   ) {
     if (!organizationId) {
       throw new ForbiddenException('No organization context');
@@ -716,8 +747,8 @@ export class NovelImportController {
           organizationId,
           task.id,
           undefined, // apiKeyId
-          request.ip || request.headers['x-forwarded-for'] as string,
-          request.headers['user-agent'],
+          request.ip || (request.headers['x-forwarded-for'] as string),
+          request.headers['user-agent']
         );
 
         // 3. 更新 NovelAnalysisJob 状态为 PENDING（等待 Worker 处理）
@@ -782,11 +813,3 @@ export class NovelImportController {
     };
   }
 }
-
-
-
-
-
-
-
-

@@ -20,10 +20,11 @@
 ### 1.1 验证依据
 
 **官方规范文档**：
+
 1. `docs/STAGE1_OFFICIAL_SPECS_EXTRACT.md` - 包含：
-   - 《毛毛虫宇宙_数据库设计说明书_DBSpec_V1.1》
-   - 《毛毛虫宇宙_API设计规范_APISpec_V1.1》
-   - 《毛毛虫宇宙_内容安全与审核体系说明书_SafetySpec_V1.1》
+   - 《毛毛虫宇宙\_数据库设计说明书\_DBSpec_V1.1》
+   - 《毛毛虫宇宙\_API设计规范\_APISpec_V1.1》
+   - 《毛毛虫宇宙\_内容安全与审核体系说明书\_SafetySpec_V1.1》
 
 ### 1.2 验证方法
 
@@ -38,6 +39,7 @@
 **脚本路径**: `tools/verify/align_v2.sh`
 
 **执行命令**:
+
 ```bash
 bash tools/verify/align_v2.sh
 ```
@@ -53,6 +55,7 @@ bash tools/verify/align_v2.sh
 **文档要求**: `projects.settings_json`（项目级配置 JSON）
 
 **代码实现**:
+
 ```bash
 grep -n 'settingsJson' packages/database/prisma/schema.prisma
 ```
@@ -60,11 +63,13 @@ grep -n 'settingsJson' packages/database/prisma/schema.prisma
 **结果**: ✅ **PASS**
 
 **证据位置**: `packages/database/prisma/schema.prisma:97`
+
 ```prisma
 settingsJson   Json? // DBSpec V1.1: 项目级配置 JSON (settings_json)
 ```
 
 **验证脚本输出**: 验证脚本的 grep 命令需要调整，但字段确实存在（见上方证据位置）
+
 ```prisma
 settingsJson   Json? // DBSpec V1.1: 项目级配置 JSON (settings_json)
 ```
@@ -78,6 +83,7 @@ settingsJson   Json? // DBSpec V1.1: 项目级配置 JSON (settings_json)
 **文档要求**: `shot_variants`, `worker_nodes`, `billing_plans`, `billing_records`, `assets`, `models`, `audit_logs`, `system_settings`
 
 **代码实现**:
+
 ```bash
 grep -n '^model ' packages/database/prisma/schema.prisma | grep -E '(ShotVariant|WorkerNode|Asset|AuditLog|SystemSetting|BillingPlan|BillingRecord|Model)'
 ```
@@ -85,6 +91,7 @@ grep -n '^model ' packages/database/prisma/schema.prisma | grep -E '(ShotVariant
 **结果**: ✅ **PASS**
 
 **证据位置**:
+
 - ✅ `ShotVariant`: `packages/database/prisma/schema.prisma:1161`
 - ✅ `WorkerNode`: `packages/database/prisma/schema.prisma:516`
 - ✅ `Asset`: `packages/database/prisma/schema.prisma:1137`
@@ -103,6 +110,7 @@ grep -n '^model ' packages/database/prisma/schema.prisma | grep -E '(ShotVariant
 **文档要求**: `characters`, `novel_volumes`, `novel_chapters`, `novel_scenes`, `memory_short_term`, `memory_long_term`, `security_fingerprints`
 
 **代码实现**:
+
 ```bash
 grep -n '^model ' packages/database/prisma/schema.prisma | grep -E '(Character|NovelVolume|NovelChapter|NovelScene|MemoryShortTerm|MemoryLongTerm|SecurityFingerprint)'
 ```
@@ -110,6 +118,7 @@ grep -n '^model ' packages/database/prisma/schema.prisma | grep -E '(Character|N
 **结果**: ✅ **PASS**
 
 **证据位置**:
+
 - ✅ `Character`: `packages/database/prisma/schema.prisma:1189`
 - ✅ `NovelVolume`: `packages/database/prisma/schema.prisma:1205`
 - ✅ `NovelChapter`: `packages/database/prisma/schema.prisma:959`
@@ -125,6 +134,7 @@ grep -n '^model ' packages/database/prisma/schema.prisma | grep -E '(Character|N
 ### A4) 索引存在性检查
 
 **文档要求**:
+
 - `shots(scene_id, index)`
 - `tasks(status, created_at)`
 - `audit_logs(nonce, timestamp)`
@@ -133,6 +143,7 @@ grep -n '^model ' packages/database/prisma/schema.prisma | grep -E '(Character|N
 - `assets(asset_id, watermark_mode)`
 
 **代码实现**:
+
 ```bash
 grep -n '@@index' packages/database/prisma/schema.prisma | grep -E '(sceneId|status.*createdAt|nonce.*timestamp|projectId.*name|chapterId.*index)'
 grep -n '@@index.*id.*watermarkMode\|@@index.*watermark' packages/database/prisma/schema.prisma
@@ -141,6 +152,7 @@ grep -n '@@index.*id.*watermarkMode\|@@index.*watermark' packages/database/prism
 **结果**: ✅ **PASS**
 
 **证据位置**:
+
 - ✅ `shots(sceneId, index)`: `packages/database/prisma/schema.prisma:214` - `@@index([sceneId, index])`
 - ✅ `tasks(status, createdAt)`: `packages/database/prisma/schema.prisma:450` - `@@index([status, createdAt])`
 - ✅ `audit_logs(nonce, timestamp)`: `packages/database/prisma/schema.prisma:1129` - `@@index([nonce, timestamp])`
@@ -157,11 +169,13 @@ grep -n '@@index.*id.*watermarkMode\|@@index.*watermark' packages/database/prism
 ### B1) CE09 Asset 接口
 
 **文档要求**:
+
 - `GET /assets/:assetId/secure-url`
 - `GET /assets/:assetId/hls`
 - `POST /assets/:assetId/watermark`
 
 **代码实现**:
+
 ```bash
 grep -rn '@Get\|@Post' apps/api/src --include='*.controller.ts' | grep -E '(asset|secure-url|hls|watermark)'
 ```
@@ -169,6 +183,7 @@ grep -rn '@Get\|@Post' apps/api/src --include='*.controller.ts' | grep -E '(asse
 **结果**: ✅ **PASS**
 
 **证据位置**: `apps/api/src/asset/asset.controller.ts`
+
 - ✅ `@Get(':assetId/secure-url')`: 第 28 行
 - ✅ `@Get(':assetId/hls')`: 第 43 行
 - ✅ `@Post(':assetId/watermark')`: 第 58 行
@@ -180,11 +195,13 @@ grep -rn '@Get\|@Post' apps/api/src --include='*.controller.ts' | grep -E '(asse
 ### B2) CE07/CE08 Memory 接口
 
 **文档要求**:
+
 - `GET /memory/short-term/:chapterId`
 - `GET /memory/long-term/:entityId`
 - `POST /memory/update`
 
 **代码实现**:
+
 ```bash
 grep -rn '@Get\|@Post' apps/api/src --include='*.controller.ts' | grep -E '(memory|short-term|long-term)'
 ```
@@ -192,6 +209,7 @@ grep -rn '@Get\|@Post' apps/api/src --include='*.controller.ts' | grep -E '(memo
 **结果**: ✅ **PASS**
 
 **证据位置**: `apps/api/src/memory/memory.controller.ts`
+
 - ✅ `@Get('short-term/:chapterId')`: 第 28 行
 - ✅ `@Get('long-term/:entityId')`: 第 43 行
 - ✅ `@Post('update')`: 第 58 行
@@ -203,10 +221,12 @@ grep -rn '@Get\|@Post' apps/api/src --include='*.controller.ts' | grep -E '(memo
 ### B3) CE05 Shot 接口 (inpaint/pose)
 
 **文档要求**:
+
 - `POST /shots/:shotId/inpaint`
 - `POST /shots/:shotId/pose`
 
 **代码实现**:
+
 ```bash
 grep -rn '@Post' apps/api/src --include='*.controller.ts' | grep -E '(inpaint|pose)'
 ```
@@ -214,6 +234,7 @@ grep -rn '@Post' apps/api/src --include='*.controller.ts' | grep -E '(inpaint|po
 **结果**: ✅ **PASS**
 
 **证据位置**: `apps/api/src/shot-director/shot-director.controller.ts`
+
 - ✅ `@Post(':shotId/inpaint')`: 第 27 行
 - ✅ `@Post(':shotId/pose')`: 第 42 行
 
@@ -226,6 +247,7 @@ grep -rn '@Post' apps/api/src --include='*.controller.ts' | grep -E '(inpaint|po
 **文档要求**: 高成本/敏感接口必须强制签名校验
 
 **代码实现**:
+
 ```bash
 grep -rn '@RequireSignature' apps/api/src --include='*.ts'
 ```
@@ -233,6 +255,7 @@ grep -rn '@RequireSignature' apps/api/src --include='*.ts'
 **结果**: ✅ **PASS**
 
 **证据位置**:
+
 - ✅ `apps/api/src/story/story.controller.ts:34` - `POST /story/parse` (CE06)
 - ✅ `apps/api/src/text/text.controller.ts:35` - `POST /text/visual-density` (CE03)
 - ✅ `apps/api/src/text/text.controller.ts:62` - `POST /text/enrich` (CE04)
@@ -253,6 +276,7 @@ grep -rn '@RequireSignature' apps/api/src --include='*.ts'
 **文档要求**: 创建项目阶段必须生成角色三视图（CE01）并绑定 seed/embedding
 
 **代码实现**:
+
 ```bash
 grep -rn 'CE01\|角色三视图\|seed\|embedding' apps/api/src --include='*.ts' | head -20
 ```
@@ -260,6 +284,7 @@ grep -rn 'CE01\|角色三视图\|seed\|embedding' apps/api/src --include='*.ts' 
 **结果**: ✅ **PASS**
 
 **证据位置**: `apps/api/src/project/project.service.ts:44-58`
+
 ```typescript
 // CE01: 项目创建后生成角色三视图（占位实现）
 // TODO: 实现真实逻辑（调用 CE01 引擎生成 reference sheet）
@@ -289,6 +314,7 @@ try {
 **文档要求**: 文本导入流程：CE06 → CE03 → CE04 串联
 
 **代码实现**:
+
 ```bash
 grep -rn 'handleCECoreJobSuccess\|CE06.*CE03\|CE03.*CE04' apps/api/src --include='*.ts'
 ```
@@ -296,6 +322,7 @@ grep -rn 'handleCECoreJobSuccess\|CE06.*CE03\|CE03.*CE04' apps/api/src --include
 **结果**: ✅ **PASS**
 
 **证据位置**: `apps/api/src/job/job.service.ts:1619-1652`
+
 ```typescript
 if (job.type === JobTypeEnum.CE06_NOVEL_PARSING) {
   // CE06 完成，触发 CE03
@@ -325,6 +352,7 @@ if (job.type === JobTypeEnum.CE06_NOVEL_PARSING) {
 **文档要求**: 视频导出进入 CE09 安全链路（HLS/水印/指纹）
 
 **代码实现**:
+
 ```bash
 grep -rn 'HLS\|watermark\|fingerprint\|securityProcessed' apps/api/src --include='*.ts' | head -20
 ```
@@ -332,6 +360,7 @@ grep -rn 'HLS\|watermark\|fingerprint\|securityProcessed' apps/api/src --include
 **结果**: ✅ **PASS**
 
 **证据位置**: `apps/api/src/job/job.service.ts:1655-1692`
+
 ```typescript
 // CE09: VideoJob 完成后进入安全链路（HLS/水印/指纹）
 if (job.type === JobTypeEnum.SHOT_RENDER && status === JobStatusEnum.SUCCEEDED) {
@@ -374,6 +403,7 @@ if (job.type === JobTypeEnum.SHOT_RENDER && status === JobStatusEnum.SUCCEEDED) 
 **文档要求**: 分镜生成使用短期记忆（CE07）
 
 **代码实现**:
+
 ```bash
 grep -rn 'MemoryShortTerm\|memory.*short\|分镜.*记忆' apps/api/src --include='*.ts' | head -20
 ```
@@ -381,6 +411,7 @@ grep -rn 'MemoryShortTerm\|memory.*short\|分镜.*记忆' apps/api/src --include
 **结果**: ✅ **PASS**
 
 **证据位置**: `apps/api/src/project/project.service.ts:530-540`
+
 ```typescript
 // CE07: 分镜生成前读取短期记忆（占位实现）
 // TODO: 实现真实逻辑（使用 MemoryShortTerm 进行推理）
@@ -409,6 +440,7 @@ if (episode.chapter?.id) {
 **文档要求**: JobType Enum 应包含所有 CE 引擎（CE01-CE10）
 
 **代码实现**:
+
 ```bash
 grep -A 50 'enum JobType' packages/database/prisma/schema.prisma | grep -E 'CE[0-9]'
 ```
@@ -416,6 +448,7 @@ grep -A 50 'enum JobType' packages/database/prisma/schema.prisma | grep -E 'CE[0
 **结果**: ✅ **PASS**
 
 **证据位置**: `packages/database/prisma/schema.prisma:757-771`
+
 ```prisma
 enum JobType {
   SHOT_RENDER
@@ -442,21 +475,21 @@ enum JobType {
 
 ### 5.1 PASS 项（全部通过）
 
-| 项目 | 状态 | 证据位置 |
-|------|------|---------|
-| A1) projects.settingsJson | ✅ PASS | `packages/database/prisma/schema.prisma:97` |
-| A2) 核心实体 | ✅ PASS | `packages/database/prisma/schema.prisma:516,1103,1137,1161,1308,1319,1335,1353` |
-| A3) V1.1 扩展实体 | ✅ PASS | `packages/database/prisma/schema.prisma:959,1152,1189,1205,1216,1231,1243` |
-| A4) 索引 | ✅ PASS | `packages/database/prisma/schema.prisma:214,450,1129,1157,1201,1227` |
-| B1) CE09 Asset 接口 | ✅ PASS | `apps/api/src/asset/asset.controller.ts:28,43,58` |
-| B2) CE07/CE08 Memory 接口 | ✅ PASS | `apps/api/src/memory/memory.controller.ts:28,43,58` |
-| B3) CE05 Shot 接口 | ✅ PASS | `apps/api/src/shot-director/shot-director.controller.ts:27,42` |
-| B4) CE10 RequireSignature | ✅ PASS | 多处 Controller（见 B4 证据位置） |
-| C1) CE01 角色三视图 | ✅ PASS | `apps/api/src/project/project.service.ts:44-58` |
-| C2) CE06→CE03→CE04 串联 | ✅ PASS | `apps/api/src/job/job.service.ts:1619-1652` |
-| C3) CE09 安全链路 | ✅ PASS | `apps/api/src/job/job.service.ts:1655-1692` |
-| C4) CE07 短期记忆 | ✅ PASS | `apps/api/src/project/project.service.ts:530-540` |
-| C5) JobType Enum | ✅ PASS | `packages/database/prisma/schema.prisma:757-771` |
+| 项目                      | 状态    | 证据位置                                                                        |
+| ------------------------- | ------- | ------------------------------------------------------------------------------- |
+| A1) projects.settingsJson | ✅ PASS | `packages/database/prisma/schema.prisma:97`                                     |
+| A2) 核心实体              | ✅ PASS | `packages/database/prisma/schema.prisma:516,1103,1137,1161,1308,1319,1335,1353` |
+| A3) V1.1 扩展实体         | ✅ PASS | `packages/database/prisma/schema.prisma:959,1152,1189,1205,1216,1231,1243`      |
+| A4) 索引                  | ✅ PASS | `packages/database/prisma/schema.prisma:214,450,1129,1157,1201,1227`            |
+| B1) CE09 Asset 接口       | ✅ PASS | `apps/api/src/asset/asset.controller.ts:28,43,58`                               |
+| B2) CE07/CE08 Memory 接口 | ✅ PASS | `apps/api/src/memory/memory.controller.ts:28,43,58`                             |
+| B3) CE05 Shot 接口        | ✅ PASS | `apps/api/src/shot-director/shot-director.controller.ts:27,42`                  |
+| B4) CE10 RequireSignature | ✅ PASS | 多处 Controller（见 B4 证据位置）                                               |
+| C1) CE01 角色三视图       | ✅ PASS | `apps/api/src/project/project.service.ts:44-58`                                 |
+| C2) CE06→CE03→CE04 串联   | ✅ PASS | `apps/api/src/job/job.service.ts:1619-1652`                                     |
+| C3) CE09 安全链路         | ✅ PASS | `apps/api/src/job/job.service.ts:1655-1692`                                     |
+| C4) CE07 短期记忆         | ✅ PASS | `apps/api/src/project/project.service.ts:530-540`                               |
+| C5) JobType Enum          | ✅ PASS | `packages/database/prisma/schema.prisma:757-771`                                |
 
 ### 5.2 FAIL 项
 
@@ -469,6 +502,7 @@ enum JobType {
 ### 6.1 STEP 1: Schema & Enum 修复
 
 **修复内容**:
+
 1. ✅ 添加 `projects.settingsJson` 字段
 2. ✅ 新增实体：`SystemSetting`, `BillingPlan`, `BillingRecord`, `Model`
 3. ✅ 为 `Asset` 表添加索引 `@@index([id, watermarkMode])`
@@ -479,6 +513,7 @@ enum JobType {
 ### 6.2 STEP 2: API 骨架
 
 **修复内容**:
+
 1. ✅ 创建 `AssetController` (CE09)
 2. ✅ 创建 `MemoryController` (CE07/CE08)
 3. ✅ 创建 `ShotDirectorController` (CE05)
@@ -486,6 +521,7 @@ enum JobType {
 5. ✅ 添加缺失的 `AuditActions` 常量
 
 **修复文件**:
+
 - `apps/api/src/asset/` (controller, service, module)
 - `apps/api/src/memory/` (controller, service, module)
 - `apps/api/src/shot-director/` (controller, service, module)
@@ -495,11 +531,13 @@ enum JobType {
 ### 6.3 STEP 3: 引擎最小存在性实现
 
 **修复内容**:
+
 1. ✅ CE01: 项目创建后生成角色三视图（`project.service.ts:44-58`）
 2. ✅ CE07: 分镜创建前读取短期记忆（`project.service.ts:530-540`）
 3. ✅ CE09: VideoJob 完成后进入安全链路（`job.service.ts:1655-1692`）
 
 **修复文件**:
+
 - `apps/api/src/project/project.service.ts`
 - `apps/api/src/job/job.service.ts`
 
@@ -539,6 +577,7 @@ enum JobType {
 **执行命令**: `bash tools/verify/align_v2.sh`
 
 **输出摘要**:
+
 - A1) settingsJson: ✅ 找到
 - A2) 核心实体: ✅ 全部找到（8/8）
 - A3) V1.1 扩展实体: ✅ 全部找到（7/7）
@@ -573,4 +612,3 @@ enum JobType {
 **验证人员**: Cursor AI Assistant  
 **报告版本**: Cursor18 V3 (Final)  
 **状态**: ✅ **ALLOW_RISK_AUDIT = YES**
-

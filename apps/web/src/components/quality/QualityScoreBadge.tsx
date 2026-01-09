@@ -31,7 +31,7 @@ interface QualityScoreBadgeProps {
 
 /**
  * S3-C.3: 质量评分标签组件
- * 
+ *
  * 按设计文档规则对 score 做颜色编码：
  * - score >= 0.8 → 绿色
  * - 0.6 <= score < 0.8 → 橙/黄
@@ -107,4 +107,3 @@ export default function QualityScoreBadge({
     </span>
   );
 }
-

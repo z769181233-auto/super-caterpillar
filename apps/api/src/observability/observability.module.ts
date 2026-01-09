@@ -8,5 +8,4 @@ import { ObservabilityService } from './observability.service';
   controllers: [ObservabilityController],
   providers: [ObservabilityService],
 })
-export class ObservabilityModule { }
-
+export class ObservabilityModule {}

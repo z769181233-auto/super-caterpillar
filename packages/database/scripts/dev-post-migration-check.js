@@ -44,8 +44,8 @@ async function main() {
         keyIndexes: scenesShotsIdx,
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 
@@ -57,4 +57,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

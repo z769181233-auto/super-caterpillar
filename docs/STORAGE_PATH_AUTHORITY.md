@@ -105,12 +105,14 @@ curl -I http://localhost:3000/api/storage/videos/{videoKey}
 ### Q: 为什么 API 返回 404，但文件在磁盘上存在？
 
 **A**: 通常是因为 API 和 Worker 使用了不同的存储路径。解决方式：
+
 1. 设置 `REPO_ROOT` 环境变量
 2. 确保 API 和 Worker 使用相同的环境变量
 
 ### Q: 生产环境如何配置？
 
 **A**: 推荐方式：
+
 1. 在部署配置中设置 `REPO_ROOT` 为项目根目录的绝对路径
 2. 或在 Docker 容器中设置 `REPO_ROOT=/app`（假设项目在 `/app`）
 
@@ -137,6 +139,7 @@ export NODE_ENV="development"
 ```
 
 调试日志会输出：
+
 - Storage key
 - Storage root path
 - Full file path
@@ -154,4 +157,3 @@ export NODE_ENV="development"
 ---
 
 **最后更新**: 2024-12-18
-

@@ -18,8 +18,8 @@ async function main() {
           shotId,
         },
         null,
-        2,
-      ),
+        2
+      )
     );
     process.exit(2);
   }
@@ -41,5 +41,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
-

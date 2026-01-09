@@ -1,7 +1,7 @@
 /**
  * HTTP Engine Adapter
  * HTTP 引擎适配器实现
- * 
+ *
  * 参考《毛毛虫宇宙_引擎体系说明书_EngineSpec_V1.1》第 3.6 节（HTTP 引擎适配器）
  * 参考《毛毛虫宇宙_TaskSystemAsyncExecutionSpec_V1.0》中 Engine 调用 / 错误处理相关部分
  * 参考 docs/ENGINE_HTTP_CONFIG.md (S3-A.1)
@@ -67,7 +67,7 @@ export class HttpEngineAdapter implements EngineAdapter {
 
   /**
    * 调用 HTTP 引擎执行任务
-   * 
+   *
    * 注意：HttpEngineAdapter 内部绝对不要做重试或 sleep，重试交给已有 Job 重试机制（S2-A.2）
    * 参考 docs/ENGINE_HTTP_CONFIG.md 第 7.1 节
    */
@@ -97,7 +97,10 @@ export class HttpEngineAdapter implements EngineAdapter {
       // 5. 记录请求开始日志（脱敏处理）
       this.logRequestStart(engineKey, jobType, url, config, payload, context);
 
-      const response = await httpClient.post<HttpEngineResponse>(config.path || '/invoke', requestBody);
+      const response = await httpClient.post<HttpEngineResponse>(
+        config.path || '/invoke',
+        requestBody
+      );
       const durationMs = Date.now() - startTime;
 
       // 6. 处理响应
@@ -107,7 +110,7 @@ export class HttpEngineAdapter implements EngineAdapter {
         { status: response.status, data: response.data, headers: response.headers as any },
         engineKey,
         jobType,
-        durationMs,
+        durationMs
       );
     } catch (error: any) {
       const durationMs = Date.now() - startTime;
@@ -189,7 +192,10 @@ export class HttpEngineAdapter implements EngineAdapter {
    * 参考 docs/ENGINE_HTTP_CONFIG.md 第 6.1 节（方式 3）
    * 复用项目现有的 HMAC 签名机制
    */
-  private buildHmacHeaders(hmacConfig: { keyId: string; secret: string; algorithm: 'sha256'; header?: string }, requestBody: any): Record<string, string> {
+  private buildHmacHeaders(
+    hmacConfig: { keyId: string; secret: string; algorithm: 'sha256'; header?: string },
+    requestBody: any
+  ): Record<string, string> {
     const timestamp = Date.now().toString();
     const nonce = randomBytes(16).toString('hex');
     const bodyString = JSON.stringify(requestBody);
@@ -236,7 +242,7 @@ export class HttpEngineAdapter implements EngineAdapter {
     url: string,
     config: HttpEngineConfig,
     payload: any,
-    context: any,
+    context: any
   ): void {
     const logData: any = {
       event: 'HTTP_ENGINE_INVOKE_START',
@@ -275,7 +281,7 @@ export class HttpEngineAdapter implements EngineAdapter {
     response: { status: number; data: HttpEngineResponse; headers: Record<string, string> },
     engineKey: string,
     jobType: string,
-    durationMs: number,
+    durationMs: number
   ): EngineInvokeResult {
     const responseData = response.data;
 
@@ -296,7 +302,7 @@ export class HttpEngineAdapter implements EngineAdapter {
             durationMs,
             httpStatusCode: response.status,
             outputSize: output ? JSON.stringify(output).length : 0,
-          }),
+          })
         );
 
         return {
@@ -320,7 +326,7 @@ export class HttpEngineAdapter implements EngineAdapter {
           httpStatusCode: response.status,
           errorCode,
           errorMessage,
-        }),
+        })
       );
 
       return {
@@ -352,7 +358,7 @@ export class HttpEngineAdapter implements EngineAdapter {
           retryAfter: retryAfter || undefined,
           durationMs,
           timestamp: new Date().toISOString(),
-        }),
+        })
       );
 
       return {
@@ -379,7 +385,7 @@ export class HttpEngineAdapter implements EngineAdapter {
           durationMs,
           httpStatusCode: response.status,
           errorCode: 'HTTP_SERVER_ERROR',
-        }),
+        })
       );
 
       return {
@@ -405,7 +411,7 @@ export class HttpEngineAdapter implements EngineAdapter {
         durationMs,
         httpStatusCode: response.status,
         errorCode: 'HTTP_CLIENT_ERROR',
-      }),
+      })
     );
 
     return {
@@ -425,7 +431,10 @@ export class HttpEngineAdapter implements EngineAdapter {
    * S3-A.3 阶段 2：解析响应数据
    * 根据 JobType 解析不同的响应格式，不修改错误分类逻辑
    */
-  private parseResponseData(responseData: HttpEngineResponse, jobType: string): Record<string, any> {
+  private parseResponseData(
+    responseData: HttpEngineResponse,
+    jobType: string
+  ): Record<string, any> {
     if (!responseData) return {};
 
     const data = (responseData as any).data ?? {};
@@ -445,7 +454,10 @@ export class HttpEngineAdapter implements EngineAdapter {
    * S3-A.3 阶段 2：解析 metrics
    * 将外部服务的 metrics 字段映射到 EngineInvokeResult.metrics 格式
    */
-  private parseMetrics(rawMetrics?: any, durationMs?: number): EngineInvokeResult['metrics'] | undefined {
+  private parseMetrics(
+    rawMetrics?: any,
+    durationMs?: number
+  ): EngineInvokeResult['metrics'] | undefined {
     if (!rawMetrics && durationMs === undefined) return undefined;
 
     return {
@@ -461,7 +473,12 @@ export class HttpEngineAdapter implements EngineAdapter {
    * 处理 HTTP 错误
    * 参考 docs/ENGINE_HTTP_CONFIG.md 第 7.2、7.3 节
    */
-  private handleHttpError(error: any, engineKey: string, jobType: string, durationMs: number): EngineInvokeResult {
+  private handleHttpError(
+    error: any,
+    engineKey: string,
+    jobType: string,
+    durationMs: number
+  ): EngineInvokeResult {
     // 规则 1：网络错误 → RETRYABLE
     if (error.type === 'NETWORK_ERROR') {
       const errorCode = this.mapNetworkErrorCode(error.code);
@@ -475,7 +492,7 @@ export class HttpEngineAdapter implements EngineAdapter {
           durationMs,
           errorCode,
           errorMessage: error.message,
-        }),
+        })
       );
 
       return {
@@ -504,7 +521,7 @@ export class HttpEngineAdapter implements EngineAdapter {
             httpStatusCode: 429,
             durationMs,
             timestamp: new Date().toISOString(),
-          }),
+          })
         );
 
         return {
@@ -531,7 +548,7 @@ export class HttpEngineAdapter implements EngineAdapter {
             durationMs,
             httpStatusCode: error.status,
             errorCode: 'HTTP_SERVER_ERROR',
-          }),
+          })
         );
 
         return {
@@ -557,7 +574,7 @@ export class HttpEngineAdapter implements EngineAdapter {
           durationMs,
           httpStatusCode: error.status,
           errorCode: 'HTTP_CLIENT_ERROR',
-        }),
+        })
       );
 
       return {
@@ -583,7 +600,7 @@ export class HttpEngineAdapter implements EngineAdapter {
         durationMs,
         errorCode: 'UNKNOWN_ERROR',
         errorMessage: error.message || 'Unknown error',
-      }),
+      })
     );
 
     return {
@@ -623,4 +640,3 @@ export class HttpEngineAdapter implements EngineAdapter {
     return 'HTTP_TEMPORARY_ERROR'; // 默认也认为是可重试的临时错误
   }
 }
-

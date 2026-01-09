@@ -35,9 +35,10 @@ export class FileParserService {
    */
   parseChaptersFromText(text: string): Array<{ title: string; content: string }> {
     const chapters: Array<{ title: string; content: string }> = [];
-    
+
     // 匹配 "第X章" 或 "第一章" 等格式
-    const chapterPattern = /(第[一二三四五六七八九十\d]+章[：:]\s*.+?)(?=第[一二三四五六七八九十\d]+章|$)/gs;
+    const chapterPattern =
+      /(第[一二三四五六七八九十\d]+章[：:]\s*.+?)(?=第[一二三四五六七八九十\d]+章|$)/gs;
     let match: RegExpExecArray | null;
     let lastIndex = 0;
 
@@ -92,17 +93,17 @@ export class FileParserService {
    */
   extractTitleFromFileName(fileName: string): string | undefined {
     if (!fileName) return undefined;
-    
+
     // 去除扩展名
     const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
-    
+
     // 去除常见后缀（如：_v1, -副本, (1) 等）
     const cleaned = nameWithoutExt
       .replace(/[_\-]\s*v?\d+$/i, '') // 去除 _v1, -1 等
       .replace(/[\(（]\d+[\)）]$/, '') // 去除 (1), （1）等
       .replace(/\s*[-_]\s*副本$/, '') // 去除 -副本
       .trim();
-    
+
     return cleaned || undefined;
   }
 
@@ -112,7 +113,7 @@ export class FileParserService {
    */
   private extractMetadata(text: string, fileName?: string): { title?: string; author?: string } {
     const metadata: { title?: string; author?: string } = {};
-    
+
     // 优先从文件名提取作品名
     if (fileName) {
       metadata.title = this.extractTitleFromFileName(fileName);
@@ -155,7 +156,7 @@ export class FileParserService {
    */
   private async parseTxt(filePath: string, fileName?: string): Promise<ParsedNovel> {
     console.log(`[FileParser] Parsing TXT file: ${filePath}`);
-    
+
     // 读取文件为 Buffer（必须用 Buffer，不能直接用 utf-8）
     const buffer = await fs.readFile(filePath);
     console.log(`[FileParser] File size: ${buffer.length} bytes`);
@@ -164,10 +165,15 @@ export class FileParserService {
     const detectedEncoding = chardet.detect(buffer);
     let encoding = detectedEncoding || 'utf-8';
     console.log(`[FileParser] Detected encoding: ${detectedEncoding}, using: ${encoding}`);
-    
+
     // 统一处理常见中文编码
     const encodingLower = encoding.toLowerCase();
-    if (encodingLower.includes('gb') || encodingLower.includes('gbk') || encodingLower.includes('gb2312') || encodingLower.includes('gb18030')) {
+    if (
+      encodingLower.includes('gb') ||
+      encodingLower.includes('gbk') ||
+      encodingLower.includes('gb2312') ||
+      encodingLower.includes('gb18030')
+    ) {
       encoding = 'gbk'; // iconv-lite 使用 gbk 可以处理 gb2312/gb18030
       console.log(`[FileParser] Normalized to GBK for Chinese encoding`);
     }
@@ -181,12 +187,16 @@ export class FileParserService {
       } else {
         // 从其他编码转换为 UTF-8
         content = iconv.decode(buffer, encoding);
-        console.log(`[FileParser] Decoded from ${encoding} to UTF-8, content length: ${content.length}`);
-        
+        console.log(
+          `[FileParser] Decoded from ${encoding} to UTF-8, content length: ${content.length}`
+        );
+
         // 验证解码结果是否包含乱码（简单检查：如果全是问号或特殊字符，可能解码失败）
         const suspiciousChars = content.match(/[]/g);
         if (suspiciousChars && suspiciousChars.length > content.length * 0.1) {
-          console.warn(`[FileParser] Warning: Detected ${suspiciousChars.length} suspicious characters, may need different encoding`);
+          console.warn(
+            `[FileParser] Warning: Detected ${suspiciousChars.length} suspicious characters, may need different encoding`
+          );
         }
       }
     } catch (error) {
@@ -505,14 +515,3 @@ export class FileParserService {
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
-

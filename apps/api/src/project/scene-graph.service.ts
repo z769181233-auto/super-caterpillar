@@ -11,8 +11,8 @@ import { SceneGraphCache } from './scene-graph.cache';
 export class SceneGraphService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cache: SceneGraphCache,
-  ) { }
+    private readonly cache: SceneGraphCache
+  ) {}
 
   /**
    * 获取项目的完整 SceneGraph
@@ -85,7 +85,7 @@ export class SceneGraphService {
       analysisUpdatedAt = failed.updatedAt.toISOString();
     } else {
       const pendingOrRunning = tasks.find(
-        (t: any) => t.status === 'PENDING' || t.status === 'RUNNING' || t.status === 'RETRYING',
+        (t: any) => t.status === 'PENDING' || t.status === 'RUNNING' || t.status === 'RETRYING'
       );
       if (pendingOrRunning) {
         analysisStatus = 'ANALYZING';
@@ -101,9 +101,12 @@ export class SceneGraphService {
       analysisStatus,
       analysisUpdatedAt,
       seasons: projectData.seasons.map((season: any) => this.mapSeasonToNode(season)),
-      episodes: (project as any).episodes?.length > 0
-        ? (project as any).episodes.map((episode: any) => this.mapEpisodeToNode(episode, project.id))
-        : undefined,
+      episodes:
+        (project as any).episodes?.length > 0
+          ? (project as any).episodes.map((episode: any) =>
+              this.mapEpisodeToNode(episode, project.id)
+            )
+          : undefined,
     };
 
     // 5. 写入缓存
@@ -130,7 +133,9 @@ export class SceneGraphService {
       index: season.index,
       title: season.title,
       description: season.description || null,
-      episodes: season.episodes.map((episode: any) => this.mapEpisodeToNode(episode, season.projectId)),
+      episodes: season.episodes.map((episode: any) =>
+        this.mapEpisodeToNode(episode, season.projectId)
+      ),
       engineContext: season.metadata || undefined,
     };
   }
@@ -184,4 +189,3 @@ export class SceneGraphService {
     };
   }
 }
-

@@ -16,8 +16,8 @@ async function main() {
           email,
         },
         null,
-        2,
-      ),
+        2
+      )
     );
     process.exit(1);
   }
@@ -48,8 +48,8 @@ async function main() {
         membershipsUpdated: memberships.count,
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 
@@ -62,5 +62,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
-

@@ -1,7 +1,7 @@
 /**
  * EngineTaskService
  * 引擎任务视图服务，提供 Task → EngineTask 的只读聚合查询
- * 
+ *
  * 职责：
  * - 从 Task / ShotJob 表聚合出 EngineTask 视图
  * - 解析 engineKey 和 adapterName
@@ -20,7 +20,7 @@ export class EngineTaskService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly engineRegistry: EngineRegistry,
+    private readonly engineRegistry: EngineRegistry
   ) {}
 
   /**
@@ -83,7 +83,7 @@ export class EngineTaskService {
    */
   async findEngineTasksByProject(
     projectId: string,
-    taskType?: string,
+    taskType?: string
   ): Promise<EngineTaskSummary[]> {
     // 1. 构建查询条件
     const where: any = {
@@ -212,11 +212,16 @@ export class EngineTaskService {
       }
 
       // 3. 降级：使用 engineKey 作为 adapterName
-      this.logger.warn(`Adapter not found for engineKey: ${engineKey}, using engineKey as adapterName`);
+      this.logger.warn(
+        `Adapter not found for engineKey: ${engineKey}, using engineKey as adapterName`
+      );
       return engineKey;
     } catch (error) {
       // 4. 异常降级：使用 engineKey
-      this.logger.warn(`Error finding adapter for engineKey: ${engineKey}, using engineKey as adapterName`, error);
+      this.logger.warn(
+        `Error finding adapter for engineKey: ${engineKey}, using engineKey as adapterName`,
+        error
+      );
       return engineKey;
     }
   }
@@ -249,4 +254,3 @@ export class EngineTaskService {
     };
   }
 }
-

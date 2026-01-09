@@ -8,4 +8,3 @@ import { RedisModule } from '../redis/redis.module';
   controllers: [HealthController],
 })
 export class HealthModule {}
-

@@ -7,7 +7,7 @@ import { TextSafetyMetrics } from '../observability/text_safety.metrics';
 
 /**
  * TextSafetyService - Stage 11 三态决策实现
- * 
+ *
  * 决策规则：
  * - BLOCK: 黑名单关键词 → critical
  * - WARN: 灰名单关键词（联系方式等）→ medium
@@ -63,16 +63,13 @@ export class TextSafetyService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
-    @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService,
-  ) { }
+    @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService
+  ) {}
 
   /**
    * 清洗并审查文本
    */
-  async sanitize(
-    inputText: string,
-    context: TextSafetyContext,
-  ): Promise<TextSafetyOutcome> {
+  async sanitize(inputText: string, context: TextSafetyContext): Promise<TextSafetyOutcome> {
     const start = Date.now();
     try {
       const triStateEnabled = this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_TRI_STATE');
@@ -105,7 +102,7 @@ export class TextSafetyService {
         decision = 'BLOCK';
         riskLevel = 'critical';
         flags.push('BLACKLIST_MATCH');
-        reasons.push(...blacklistMatches.map(kw => `含违禁词: ${kw}`));
+        reasons.push(...blacklistMatches.map((kw) => `含违禁词: ${kw}`));
       }
 
       // 2. 灰名单检查（仅在未BLOCK时）
@@ -115,7 +112,7 @@ export class TextSafetyService {
           decision = 'WARN';
           riskLevel = 'medium';
           flags.push('GREYLIST_MATCH');
-          reasons.push(...greylistMatches.map(m => `含灰名单内容: ${m}`));
+          reasons.push(...greylistMatches.map((m) => `含灰名单内容: ${m}`));
         }
       }
 
@@ -160,9 +157,12 @@ export class TextSafetyService {
       }
 
       // 5. 写审计日志
-      const action = decision === 'PASS' ? 'TEXT_SAFETY_PASS' :
-        decision === 'WARN' ? 'TEXT_SAFETY_WARN' :
-          'TEXT_SAFETY_BLOCK';
+      const action =
+        decision === 'PASS'
+          ? 'TEXT_SAFETY_PASS'
+          : decision === 'WARN'
+            ? 'TEXT_SAFETY_WARN'
+            : 'TEXT_SAFETY_BLOCK';
 
       await this.auditLogService.record({
         userId: context.userId,
@@ -184,17 +184,19 @@ export class TextSafetyService {
       });
 
       this.logger.log(
-        `Text safety check: decision=${decision} riskLevel=${riskLevel} flags=${flags.join(',')}`,
+        `Text safety check: decision=${decision} riskLevel=${riskLevel} flags=${flags.join(',')}`
       );
 
       TextSafetyMetrics.recordDecision(decision);
       TextSafetyMetrics.recordLatency(Date.now() - start);
 
       return outcome;
-
     } catch (error) {
       // Fail-safe: 自动降级为 PASS
-      this.logger.error(`TextSafetyService.sanitize FAILED, fallback to PASS. Error: ${error.message}`, error.stack);
+      this.logger.error(
+        `TextSafetyService.sanitize FAILED, fallback to PASS. Error: ${error.message}`,
+        error.stack
+      );
 
       // 尝试记录审计
       try {
@@ -203,9 +205,11 @@ export class TextSafetyService {
           action: 'TEXT_SAFETY_FAILSAFE',
           resourceType: 'text',
           resourceId: context.resourceId || 'unknown',
-          details: { error: error.message }
+          details: { error: error.message },
         });
-      } catch (e) { /* ignore audit error during fail-safe */ }
+      } catch (e) {
+        /* ignore audit error during fail-safe */
+      }
 
       // Metrics
       TextSafetyMetrics.recordDecision('PASS'); // Fail-safe counts as PASS for external flow
@@ -250,12 +254,7 @@ export class TextSafetyService {
   }
 
   private removePlaceholders(text: string): string {
-    const placeholders = [
-      /\[待填充\]/g,
-      /\[TODO\]/g,
-      /\[占位\]/g,
-      /\[placeholder\]/gi,
-    ];
+    const placeholders = [/\[待填充\]/g, /\[TODO\]/g, /\[占位\]/g, /\[placeholder\]/gi];
 
     let sanitized = text;
     for (const pattern of placeholders) {

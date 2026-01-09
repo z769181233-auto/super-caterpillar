@@ -26,14 +26,14 @@ export type ProjectPermission = (typeof ProjectPermissions)[keyof typeof Project
 
 /**
  * TODO: 权限获取接口（占位实现）
- * 
+ *
  * 当前权限判断为占位逻辑，所有权限默认返回 true。
- * 
+ *
  * 未来接入真实权限时，需要：
  * 1. 从用户信息或权限接口获取当前用户的权限列表
  * 2. 实现 usePermissions(projectId) hook 或从 userStore 中读取
  * 3. 统一在此处判断权限，不要在组件内部写死权限字符串或随意判断
- * 
+ *
  * 示例实现（未来）：
  * ```typescript
  * export async function getUserPermissions(userId: string, projectId?: string): Promise<{
@@ -74,10 +74,9 @@ export function hasPermission(
     // 占位实现：默认有权限
     return true;
   }
-  
+
   return (
     userPermissions.system.includes(permission as SystemPermission) ||
     userPermissions.project.includes(permission as ProjectPermission)
   );
 }
-

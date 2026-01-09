@@ -33,7 +33,7 @@ async function main() {
   }
 
   console.log(
-    `[fix_access] using project ${project.id} (name=${project.name}, org=${project.organizationId})`,
+    `[fix_access] using project ${project.id} (name=${project.name}, org=${project.organizationId})`
   );
 
   // Ensure user is admin
@@ -94,8 +94,8 @@ async function main() {
         },
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 
@@ -108,6 +108,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
-
-

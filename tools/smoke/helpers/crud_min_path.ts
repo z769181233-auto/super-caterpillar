@@ -2,7 +2,7 @@
  * CRUD 最小路径 Helper
  * 实现五层 CRUD 最小路径：
  * 创建 Project → Season → Episode → Scene → Shot → 查询回读
- * 
+ *
  * 每个请求都走 HMAC 强校验
  */
 
@@ -26,7 +26,7 @@ export async function runCrudMinPath(
   apiBaseUrl: string,
   apiKey: string,
   apiSecret: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<CrudMinPathResult> {
   const steps: CrudMinPathResult['steps'] = [];
   let projectId: string | undefined;
@@ -148,9 +148,9 @@ export async function runCrudMinPath(
 
     // 7. Read Shot —— 由于各项目实现差异，做 fallback 探测（仍然走 HMAC，仍记录证据）
     const shotReadCandidates = [
-      `/api/projects/shots/${shotId}`,          // 标准：/api/projects/shots/:id
+      `/api/projects/shots/${shotId}`, // 标准：/api/projects/shots/:id
       `/api/projects/scenes/${sceneId}/shots/${shotId}`, // 路径探测
-      `/api/shots/${shotId}`,                   // Legacy fallback
+      `/api/shots/${shotId}`, // Legacy fallback
     ];
     let readShotResult: any = null;
 
@@ -194,4 +194,3 @@ export async function runCrudMinPath(
     };
   }
 }
-

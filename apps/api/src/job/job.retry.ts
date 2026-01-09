@@ -1,6 +1,6 @@
 /**
  * Job 重试规则与计算
- * 
+ *
  * 统一重试上限判断、nextRetryAt/backoff 计算、统一入口。
  * 参考《平台任务系统与异步执行机制说明书_TaskSystemAsyncExecutionSpec_V1.0》
  */
@@ -19,19 +19,16 @@ export interface RetryComputation {
 
 /**
  * 计算下次重试信息
- * 
+ *
  * 规则：
  * - nextRetryCount = retryCount + 1
  * - 若 nextRetryCount >= maxRetry → shouldFail = true（直接 FAILED）
  * - 否则使用指数退避：backoffMs = baseDelay * 2^(nextRetryCount - 1)
- * 
+ *
  * @param job Job 对象（必须包含 retryCount 和 maxRetry）
  * @returns 重试计算结果
  */
-export function computeNextRetry(job: {
-  retryCount: number;
-  maxRetry: number;
-}): RetryComputation {
+export function computeNextRetry(job: { retryCount: number; maxRetry: number }): RetryComputation {
   const nextRetryCount = job.retryCount + 1;
   const shouldFail = nextRetryCount >= job.maxRetry;
 
@@ -51,12 +48,12 @@ export function computeNextRetry(job: {
 
 /**
  * 统一把 RUNNING job 写入 RETRYING 或 FAILED
- * 
+ *
  * 规则：
  * - 只用 retryCount/maxRetry 判断，不使用 attempts
  * - 如果 shouldFail = true → status = FAILED
  * - 如果 shouldFail = false → status = RETRYING，并在 payload 中存储 nextRetryAt
- * 
+ *
  * @param tx 事务客户端
  * @param job Job 对象
  * @param failPayload 失败时的额外信息（errorMessage 等）
@@ -72,7 +69,7 @@ export async function markRetryOrFail(
   },
   failPayload: {
     errorMessage?: string;
-  } = {},
+  } = {}
 ): Promise<{ status: JobStatus; retryCount: number; nextRetryAt: Date | null }> {
   const computation = computeNextRetry(job);
 
@@ -110,4 +107,3 @@ export async function markRetryOrFail(
     nextRetryAt: computation.nextRetryAt,
   };
 }
-

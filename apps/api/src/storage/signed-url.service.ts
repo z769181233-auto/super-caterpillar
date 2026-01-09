@@ -29,12 +29,17 @@ export class SignedUrlService {
 
   constructor() {
     // 从环境变量读取密钥（如果没有则使用 JWT_SECRET 作为后备）
-    this.secret = process.env.STORAGE_SIGNED_URL_SECRET || env.jwtSecret || 'default-secret-change-in-production';
+    this.secret =
+      process.env.STORAGE_SIGNED_URL_SECRET ||
+      env.jwtSecret ||
+      'default-secret-change-in-production';
     this.defaultExpiresIn = parseInt(process.env.STORAGE_SIGNED_URL_TTL || '3600', 10); // 默认 1 小时
     this.baseUrl = process.env.STORAGE_BASE_URL || env.apiUrl || 'http://localhost:3000';
 
     if (this.secret === 'default-secret-change-in-production') {
-      this.logger.warn('[SignedUrlService] Using default secret! Change STORAGE_SIGNED_URL_SECRET in production!');
+      this.logger.warn(
+        '[SignedUrlService] Using default secret! Change STORAGE_SIGNED_URL_SECRET in production!'
+      );
     }
   }
 
@@ -60,9 +65,7 @@ export class SignedUrlService {
     const signString = `${method}:${key}:${tenantId}:${userId}:${expires}`;
 
     // 生成 HMAC-SHA256 签名
-    const signature = createHmac('sha256', this.secret)
-      .update(signString)
-      .digest('hex');
+    const signature = createHmac('sha256', this.secret).update(signString).digest('hex');
 
     // 构建 URL：/api/storage/signed/:key?expires=xxx&tenantId=xxx&userId=xxx&signature=xxx
     const safePathKey = this.encodeKeyAsPath(key);
@@ -89,13 +92,15 @@ export class SignedUrlService {
     signature: string,
     tenantId: string,
     userId: string,
-    method: string = 'GET',
+    method: string = 'GET'
   ): boolean {
     try {
       // 检查过期时间
       const now = Math.floor(Date.now() / 1000);
       if (expires < now) {
-        this.logger.warn(`[SignedUrlService] Signed URL expired: key=${key}, expires=${expires}, now=${now}`);
+        this.logger.warn(
+          `[SignedUrlService] Signed URL expired: key=${key}, expires=${expires}, now=${now}`
+        );
         return false;
       }
 
@@ -109,9 +114,7 @@ export class SignedUrlService {
       const signString = `${method}:${key}:${tenantId}:${userId}:${expires}`;
 
       // 计算期望的签名
-      const expectedSignature = createHmac('sha256', this.secret)
-        .update(signString)
-        .digest('hex');
+      const expectedSignature = createHmac('sha256', this.secret).update(signString).digest('hex');
 
       // 使用 timing-safe comparison 防止时序攻击
       if (signature.length !== expectedSignature.length) {
@@ -120,7 +123,10 @@ export class SignedUrlService {
 
       return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
     } catch (error) {
-      this.logger.error(`[SignedUrlService] Error verifying signed URL: ${error.message}`, error.stack);
+      this.logger.error(
+        `[SignedUrlService] Error verifying signed URL: ${error.message}`,
+        error.stack
+      );
       return false;
     }
   }
@@ -132,11 +138,9 @@ export class SignedUrlService {
     keys: string[],
     tenantId: string,
     userId: string,
-    expiresIn?: number,
+    expiresIn?: number
   ): SignedUrlResult[] {
-    return keys.map((key) =>
-      this.generateSignedUrl({ key, tenantId, userId, expiresIn }),
-    );
+    return keys.map((key) => this.generateSignedUrl({ key, tenantId, userId, expiresIn }));
   }
   /**
    * 安全编码 key 为路径，保留 / 分隔符
@@ -149,4 +153,3 @@ export class SignedUrlService {
       .join('/');
   }
 }
-

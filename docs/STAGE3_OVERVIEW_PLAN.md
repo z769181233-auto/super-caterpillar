@@ -17,6 +17,7 @@
 - ✅ 不改动已有 HMAC / Nonce / 签名 / 重放防护逻辑
 
 **允许范围**：
+
 - ✅ 在结构分析引擎层新增模块、DTO、服务
 - ✅ 优化结构树构造器逻辑（不改变 Schema）
 - ✅ 扩展 Engine Hub 以支持结构分析引擎
@@ -83,10 +84,10 @@
 interface StructureTreeBuilder {
   // 从 AnalyzedProjectStructure 生成数据库结构
   buildFromAnalyzed(projectId: string, analyzed: AnalyzedProjectStructure): Promise<StructureTree>;
-  
+
   // 校正现有结构（增量更新）
   correctExisting(projectId: string, analyzed: AnalyzedProjectStructure): Promise<StructureTree>;
-  
+
   // 验证结构完整性
   validateStructure(structure: StructureTree): ValidationResult;
 }
@@ -167,6 +168,7 @@ applyAnalyzedStructureToDatabase() → 写入数据库
 **数据契约定义**（在 `@scu/shared-types` 中）：
 
 1. **项目结构树 DTO**：
+
    ```typescript
    interface ProjectStructureTree {
      projectId: string;
@@ -180,7 +182,7 @@ applyAnalyzedStructureToDatabase() → 写入数据库
        shotsCount: number;
      };
    }
-   
+
    interface SeasonNode {
      id: string;
      index: number;
@@ -188,7 +190,7 @@ applyAnalyzedStructureToDatabase() → 写入数据库
      summary?: string;
      episodes: EpisodeNode[];
    }
-   
+
    interface EpisodeNode {
      id: string;
      index: number;
@@ -196,7 +198,7 @@ applyAnalyzedStructureToDatabase() → 写入数据库
      summary?: string;
      scenes: SceneNode[];
    }
-   
+
    interface SceneNode {
      id: string;
      index: number;
@@ -204,7 +206,7 @@ applyAnalyzedStructureToDatabase() → 写入数据库
      summary?: string;
      shots: ShotNode[];
    }
-   
+
    interface ShotNode {
      id: string;
      index: number;
@@ -355,11 +357,13 @@ Studio 前端轮询 → GET /api/projects/:projectId/structure
 **目标**：将结构分析引擎集成到 Engine Hub，确保调用链路符合 Stage2 架构。
 
 **内容**：
+
 - 在 `EngineRegistryHubService` 中注册结构分析引擎
 - 确保 `NovelAnalysisLocalAdapterWorker` 正确返回 `NovelAnalysisEngineOutput`
 - 优化错误处理和重试逻辑
 
 **关键结果**：
+
 - ✅ 结构分析引擎已注册到 Engine Hub
 - ✅ 调用链路完整，符合 Stage2 架构
 
@@ -370,12 +374,14 @@ Studio 前端轮询 → GET /api/projects/:projectId/structure
 **目标**：优化结构树构造器逻辑，支持数据校正、验证和增量更新。
 
 **内容**：
+
 - 优化 `applyAnalyzedStructureToDatabase()` 函数
 - 添加结构验证逻辑
 - 支持增量更新（检查已存在的结构）
 - 处理数据不一致的情况
 
 **关键结果**：
+
 - ✅ 结构树构造器逻辑优化完成
 - ✅ 支持增量更新和数据校正
 - ✅ 符合 DBSpec V1.1 规范
@@ -387,12 +393,14 @@ Studio 前端轮询 → GET /api/projects/:projectId/structure
 **目标**：提供项目结构树 API，供 Studio 前端调用。
 
 **内容**：
+
 - 实现 `GET /api/projects/:projectId/structure` API
 - 聚合 Season/Episode/Scene/Shot 数据
 - 返回 `ProjectStructureTree` DTO
 - 支持分析状态同步
 
 **关键结果**：
+
 - ✅ 项目结构树 API 已实现
 - ✅ 返回数据符合前端契约
 - ✅ 支持分析状态同步
@@ -404,12 +412,14 @@ Studio 前端轮询 → GET /api/projects/:projectId/structure
 **目标**：在 Studio 前端实现项目结构树展示组件。
 
 **内容**：
+
 - 实现 `ProjectStructureTree` 组件
 - 支持树形结构展示（展开/折叠）
 - 显示分析状态（PENDING / ANALYZING / DONE / FAILED）
 - 支持轮询更新状态（可选：WebSocket）
 
 **关键结果**：
+
 - ✅ Studio 前端可以展示项目结构树
 - ✅ 支持分析状态显示和更新
 - ✅ 用户体验良好
@@ -680,12 +690,14 @@ Studio 前端轮询 → GET /api/projects/:projectId/structure
 **文件**: `apps/workers/src/novel-analysis-processor.ts`
 
 **功能**:
+
 - ✅ 检查 seasons/episodes/scenes/shots 是否为空
 - ✅ 检查 index 是否连续（自动修正不连续的 index）
 - ✅ 检查字段是否符合 DBSpec V1.1
 - ✅ 返回验证结果（valid、errors、warnings）
 
 **关键实现**:
+
 - 自动修正 index 不连续问题（将 index 重置为期望值）
 - 区分 errors（阻止执行）和 warnings（记录但继续执行）
 
@@ -717,19 +729,29 @@ Studio 前端轮询 → GET /api/projects/:projectId/structure
 #### 3. 统一 apply 执行结果 ✅
 
 **返回结构**:
+
 ```typescript
 {
   finalStructure: AnalyzedProjectStructure; // 完整的最终结构（从数据库查询）
   stats: {
-    created: { seasons, episodes, scenes, shots };
-    updated: { seasons, episodes, scenes, shots };
-    deleted: { seasons, episodes, scenes, shots };
-    skipped: { seasons, episodes, scenes, shots };
-  };
+    created: {
+      (seasons, episodes, scenes, shots);
+    }
+    updated: {
+      (seasons, episodes, scenes, shots);
+    }
+    deleted: {
+      (seasons, episodes, scenes, shots);
+    }
+    skipped: {
+      (seasons, episodes, scenes, shots);
+    }
+  }
 }
 ```
 
 **关键改进**:
+
 - 返回 `finalStructure`（从数据库查询的完整结构，确保与数据库一致）
 - 返回修正统计（创建/更新/删除/跳过数量）
 - 统计信息用于调试和监控
@@ -764,6 +786,7 @@ Studio 前端轮询 → GET /api/projects/:projectId/structure
 #### 2. API 调用增强 ✅
 
 **轮询机制**:
+
 - ✅ 当 `analysisStatus != DONE` 时，每 5 秒轮询结构树
 - ✅ 使用 `useRef` 管理轮询间隔
 - ✅ 组件卸载时清理轮询
@@ -774,6 +797,7 @@ Studio 前端轮询 → GET /api/projects/:projectId/structure
 **文件**: `apps/web/src/app/projects/[projectId]/page.tsx`
 
 **改进点**:
+
 - ✅ 在项目主页顶部展示分析状态（通过 `AnalysisStatusPanel`）
 - ✅ 结构树与其他区域不冲突（布局微调）
   - 左侧栏使用 `flex` 布局，`overflow: hidden`
@@ -855,4 +879,3 @@ Studio 前端轮询 → GET /api/projects/:projectId/structure
 **执行状态**: ✅ STAGE3_FINE_TUNE 已完成
 
 **最后更新**: 2025-12-11
-

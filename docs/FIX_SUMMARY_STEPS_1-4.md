@@ -5,9 +5,11 @@
 **状态：** ✅ 完成
 
 **修复内容：**
+
 - 文件 `packages/shared-types/package.json` 为空，已修复为合法的最小版本
 
 **最终内容：**
+
 ```json
 {
   "name": "@scu/shared-types",
@@ -24,6 +26,7 @@
 ```
 
 **验证：**
+
 - ✅ JSON 语法正确（已验证）
 - ✅ pnpm 能正确解析（`pnpm list --filter shared-types` 成功）
 
@@ -32,6 +35,7 @@
 **状态：** ✅ 完成
 
 **检查结果：**
+
 - ✅ 包名为 `"api"`（正确）
 - ✅ `init:worker-api-key` 脚本存在且配置正确：
   ```json
@@ -43,13 +47,16 @@
 **状态：** ⚠️ 部分完成
 
 **已完成：**
+
 - ✅ `pnpm list --filter shared-types` 成功，不再出现 JSON 解析错误
 - ✅ `packages/shared-types/package.json` 修复成功
 
 **未完成：**
+
 - ❌ `pnpm --filter api init:worker-api-key` 因多个空文件导致 TypeScript 编译错误
 
 **已修复的空文件：**
+
 1. ✅ `apps/api/src/worker/worker.module.ts`
 2. ✅ `apps/api/src/orchestrator/orchestrator.module.ts`
 3. ✅ `apps/api/src/auth/guards/jwt-auth.guard.ts`
@@ -58,11 +65,13 @@
 6. ✅ `apps/api/src/auth/hmac/hmac-auth.guard.ts`
 
 **仍需修复的空文件（影响初始化脚本）：**
+
 1. ❌ `apps/api/src/permission/permission.module.ts`
 2. ❌ `apps/api/src/audit-log/audit-log.module.ts`
 3. ❌ 其他空文件（见下方列表）
 
 **所有空文件列表（从 find 命令获取）：**
+
 ```
 ./auth/dto/login-response.dto.ts
 ./audit-log/audit-log.module.ts
@@ -86,15 +95,18 @@
 ## 📋 关键修复内容
 
 ### 1. packages/shared-types/package.json
+
 - **修复前：** 空文件
 - **修复后：** 合法的 package.json，包含基本配置
 
 ### 2. apps/api/package.json
+
 - **状态：** 已正确配置
 - **包名：** `api`
 - **脚本：** `init:worker-api-key` 已存在
 
 ### 3. 已创建的模块文件
+
 - `apps/api/src/worker/worker.module.ts` - Worker 模块
 - `apps/api/src/orchestrator/orchestrator.module.ts` - Orchestrator 模块
 - `apps/api/src/auth/guards/jwt-auth.guard.ts` - JWT 认证 Guard
@@ -105,12 +117,14 @@
 ## 🔍 验证结果
 
 ### pnpm workspace 验证
+
 ```bash
 $ pnpm list --filter shared-types
 ✅ 成功，无 JSON 解析错误
 ```
 
 ### 初始化脚本验证
+
 ```bash
 $ pnpm --filter api init:worker-api-key
 ❌ TypeScript 编译错误（因空文件导致）
@@ -128,4 +142,3 @@ $ pnpm --filter api init:worker-api-key
 - ✅ **已修复：** 6 个文件
 - ❌ **待修复：** ~20 个空文件
 - ✅ **主要问题解决：** `packages/shared-types/package.json` 修复成功，pnpm workspace 不再崩溃
-

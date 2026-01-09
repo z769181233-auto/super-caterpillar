@@ -8,7 +8,7 @@ import { EngineDescriptor } from './engine-descriptor.interface';
 import { SemanticEnhancementLocalAdapter } from './adapters/semantic-enhancement.local-adapter';
 import { ShotPlanningLocalAdapter } from './adapters/shot-planning.local-adapter';
 import { StructureQALocalAdapter } from './adapters/structure-qa.local-adapter';
-import { NovelAnalysisLocalAdapter } from '../engines/adapters/novel-analysis.local.adapter';
+import { NovelAnalysisLocalAdapter } from '../engines/adapters/novel-analysis.local.adapter.NEW';
 
 /**
  * Engine Registry Hub
@@ -91,23 +91,17 @@ export class EngineRegistryHubService {
     const targetVersion = version || 'default';
 
     // 优先匹配精确版本
-    const exactMatch = this.engines.find(
-      (e) => e.key === engineKey && e.version === targetVersion,
-    );
+    const exactMatch = this.engines.find((e) => e.key === engineKey && e.version === targetVersion);
 
     if (exactMatch) {
       return exactMatch;
     }
 
     // 如果没有精确匹配，fallback 到默认版本
-    const defaultMatch = this.engines.find(
-      (e) => e.key === engineKey && e.version === 'default',
-    );
+    const defaultMatch = this.engines.find((e) => e.key === engineKey && e.version === 'default');
 
     if (defaultMatch) {
-      this.logger.debug(
-        `Engine ${engineKey}@${targetVersion} not found, using default version`,
-      );
+      this.logger.debug(`Engine ${engineKey}@${targetVersion} not found, using default version`);
       return defaultMatch;
     }
 
@@ -120,12 +114,12 @@ export class EngineRegistryHubService {
    */
   register(descriptor: EngineDescriptor): void {
     const existing = this.engines.find(
-      (e) => e.key === descriptor.key && e.version === descriptor.version,
+      (e) => e.key === descriptor.key && e.version === descriptor.version
     );
 
     if (existing) {
       this.logger.warn(
-        `Engine ${descriptor.key}@${descriptor.version} already registered, overwriting`,
+        `Engine ${descriptor.key}@${descriptor.version} already registered, overwriting`
       );
       const index = this.engines.indexOf(existing);
       this.engines[index] = descriptor;
@@ -134,7 +128,7 @@ export class EngineRegistryHubService {
     }
 
     this.logger.log(
-      `Registered engine: ${descriptor.key}@${descriptor.version} (mode: ${descriptor.mode})`,
+      `Registered engine: ${descriptor.key}@${descriptor.version} (mode: ${descriptor.mode})`
     );
   }
 
@@ -145,4 +139,3 @@ export class EngineRegistryHubService {
     return [...this.engines];
   }
 }
-

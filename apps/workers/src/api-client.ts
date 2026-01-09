@@ -29,7 +29,9 @@ function generateNonce(): string {
  * 计算 Body Hash
  */
 function computeBodyHash(body: string): string {
-  return createHash('sha256').update(body || '').digest('hex');
+  return createHash('sha256')
+    .update(body || '')
+    .digest('hex');
 }
 
 /**
@@ -51,9 +53,19 @@ function fingerprintParts(parts: {
     method: { val: parts.method, len: parts.method.length, hash: sha256(parts.method) },
     path: { val: parts.path, len: parts.path.length, hash: sha256(parts.path) },
     timestamp: { val: parts.timestamp, len: parts.timestamp.length, hash: sha256(parts.timestamp) },
-    nonce: { val: parts.nonce.substring(0, 8) + '...', len: parts.nonce.length, hash: sha256(parts.nonce) },
-    bodyHash: { val: parts.bodyHash.substring(0, 16) + '...', len: parts.bodyHash.length, hash: sha256(parts.bodyHash) },
-    workerId: parts.workerId ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) } : 'N/A',
+    nonce: {
+      val: parts.nonce.substring(0, 8) + '...',
+      len: parts.nonce.length,
+      hash: sha256(parts.nonce),
+    },
+    bodyHash: {
+      val: parts.bodyHash.substring(0, 16) + '...',
+      len: parts.bodyHash.length,
+      hash: sha256(parts.bodyHash),
+    },
+    workerId: parts.workerId
+      ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) }
+      : 'N/A',
     message: { len: parts.message.length, hash: sha256(parts.message) },
   });
   console.error('[HMAC_TRACE] worker_signature', {
@@ -73,7 +85,7 @@ function buildMessage(
   nonce: string,
   timestamp: string,
   body: string,
-  workerId?: string,
+  workerId?: string
 ): string {
   const contentHash = computeBodyHash(body);
   let message = `${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}`;
@@ -101,9 +113,7 @@ export class ApiClient {
 
   constructor(baseURL: string | undefined, apiKey?: string, apiSecret?: string, workerId?: string) {
     if (!baseURL) {
-      throw new Error(
-        'ApiClient: baseURL 不能为空（请检查 env.apiUrl / API_HOST / API_PORT）'
-      );
+      throw new Error('ApiClient: baseURL 不能为空（请检查 env.apiUrl / API_HOST / API_PORT）');
     }
 
     // 删除末尾斜杠，保证 URL 拼接正确
@@ -118,7 +128,7 @@ export class ApiClient {
     method: string,
     path: string,
     body?: any,
-    extraHeaders?: Record<string, string>,
+    extraHeaders?: Record<string, string>
   ): Promise<ApiResponse<T>> {
     console.log(`[Worker DEBUG] ApiClient request: ${method} ${path}`);
     const url = `${this.baseURL}${path}`;
@@ -128,7 +138,7 @@ export class ApiClient {
 
     // 序列化请求体（商业级规范：空对象视为 empty string 以对齐 API Guard 逻辑）
     const hasBodyContent = body && typeof body === 'object' && Object.keys(body).length > 0;
-    const bodyString = typeof body === 'string' ? body : (hasBodyContent ? JSON.stringify(body) : '');
+    const bodyString = typeof body === 'string' ? body : hasBodyContent ? JSON.stringify(body) : '';
 
     // 如果配置了 API Key 和 Secret，使用 HMAC 认证
     if (this.apiKey && this.apiSecret) {
@@ -174,11 +184,13 @@ export class ApiClient {
         `nonce=${nonce.substring(0, 8)}...`,
         `timestamp=${timestamp}`,
         `workerId=${workerId}`,
-        `bodyString=${bodyString}`,
+        `bodyString=${bodyString}`
       );
     } else {
       console.warn('[Worker] ⚠️  No API Key/Secret configured, requests may fail with 401');
-      console.warn('[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.');
+      console.warn(
+        '[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.'
+      );
     }
 
     // 商业级审计：添加extraHeaders（v2时workerId已参与签名）
@@ -204,7 +216,7 @@ export class ApiClient {
           method,
           url,
           response.status,
-          data?.message || data?.error?.message || `HTTP ${response.status}`,
+          data?.message || data?.error?.message || `HTTP ${response.status}`
         );
         // 打印请求头（不打印密钥）
         console.error('[Worker HTTP Error] Headers sent:', {
@@ -232,7 +244,7 @@ export class ApiClient {
     capabilities?: {
       supportedJobTypes?: string[];
       supportedModels?: string[];
-      supportedEngines?: string[];  // ✅ P1-2 HA: 添加引擎支持
+      supportedEngines?: string[]; // ✅ P1-2 HA: 添加引擎支持
       maxBatchSize?: number;
     };
     gpuCount?: number;
@@ -299,12 +311,14 @@ export class ApiClient {
     }
 
     // 增强日志：GET_NEXT_JOB_RES
-    console.log(JSON.stringify({
-      event: 'GET_NEXT_JOB_RES',
-      status: (response as any).status || 200, // Assuming 200 if not present in successful response
-      jobId: (response.data as any)?.id || null,
-      timestamp: new Date().toISOString()
-    }));
+    console.log(
+      JSON.stringify({
+        event: 'GET_NEXT_JOB_RES',
+        status: (response as any).status || 200, // Assuming 200 if not present in successful response
+        jobId: (response.data as any)?.id || null,
+        timestamp: new Date().toISOString(),
+      })
+    );
 
     return response.data || null;
   }
@@ -315,7 +329,7 @@ export class ApiClient {
     result?: any;
     errorMessage?: string; // Correct parameter name
     error?: any; // internal input
-    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number;[key: string]: any };
+    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number; [key: string]: any };
     retryable?: boolean;
   }): Promise<any> {
     const requestBody: any = {
@@ -326,7 +340,10 @@ export class ApiClient {
       requestBody.result = params.result;
     } else {
       // API expects 'errorMessage' string
-      const msg = params.errorMessage || (params.error?.message ?? (typeof params.error === 'string' ? params.error : JSON.stringify(params.error)));
+      const msg =
+        params.errorMessage ||
+        (params.error?.message ??
+          (typeof params.error === 'string' ? params.error : JSON.stringify(params.error)));
       if (msg) requestBody.errorMessage = msg;
     }
 
@@ -339,7 +356,11 @@ export class ApiClient {
 
     // The `request` method handles HMAC signature using global generateNonce and computeSignature.
     // We just pass the body.
-    const response = await this.request<any>('POST', `/api/jobs/${params.jobId}/report`, requestBody);
+    const response = await this.request<any>(
+      'POST',
+      `/api/jobs/${params.jobId}/report`,
+      requestBody
+    );
 
     return response.data;
   }
@@ -364,11 +385,7 @@ export class ApiClient {
     resourceId?: string;
     resourceType?: string;
   }): Promise<{ success: boolean }> {
-    const response = await this.request<{ success: boolean }>(
-      'POST',
-      '/api/audit/logs',
-      payload,
-    );
+    const response = await this.request<{ success: boolean }>('POST', '/api/audit/logs', payload);
 
     if (!response.success) {
       throw new Error('Failed to post audit log');
@@ -398,7 +415,7 @@ export class ApiClient {
     const response = await this.request<{ ok: boolean; id: string; deduplicated: boolean }>(
       'POST',
       '/internal/events/cost-ledger',
-      payload,
+      payload
     );
 
     if (!response.success) {

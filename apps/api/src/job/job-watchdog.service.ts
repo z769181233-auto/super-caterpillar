@@ -82,14 +82,15 @@ export class JobWatchdogService {
             }
 
             // 检查 Worker 是否在线
-            const workerIsOnline = currentJob.worker && currentJob.worker.lastHeartbeat >= workerTimeoutThreshold;
+            const workerIsOnline =
+              currentJob.worker && currentJob.worker.lastHeartbeat >= workerTimeoutThreshold;
 
             if (workerIsOnline) {
               // Worker 在线但 job 超时，可能是 job 执行时间过长
               // 记录警告但不恢复（可能需要调整超时时间）
               this.logger.warn(
                 `[JobWatchdog] Job ${currentJob.id} is stuck but worker ${currentJob.worker?.workerId} is online. ` +
-                `Consider increasing timeout or checking job execution.`,
+                  `Consider increasing timeout or checking job execution.`
               );
               return { action: 'ONLINE_SKIP' as const };
             }
@@ -112,11 +113,13 @@ export class JobWatchdogService {
             });
 
             if (shouldFail) {
-              this.logger.warn(`[JobWatchdog] Job ${currentJob.id} marked as FAILED (max retries exceeded)`);
+              this.logger.warn(
+                `[JobWatchdog] Job ${currentJob.id} marked as FAILED (max retries exceeded)`
+              );
               return { action: 'FAILED' as const };
             } else {
               this.logger.log(
-                `[JobWatchdog] Recovered job ${currentJob.id} from RUNNING to RETRYING (worker ${currentJob.workerId} offline)`,
+                `[JobWatchdog] Recovered job ${currentJob.id} from RUNNING to RETRYING (worker ${currentJob.workerId} offline)`
               );
               return { action: 'RECOVERED' as const };
             }
@@ -131,15 +134,20 @@ export class JobWatchdogService {
           // P0 修复：生产日志禁止输出 stack
           const isProd = process.env.NODE_ENV === 'production';
           if (isProd) {
-            this.logger.error(`[JobWatchdog] Failed to recover job ${job.id}: ${error?.message || 'error'}`);
+            this.logger.error(
+              `[JobWatchdog] Failed to recover job ${job.id}: ${error?.message || 'error'}`
+            );
           } else {
-            this.logger.error(`[JobWatchdog] Failed to recover job ${job.id}: ${error.message}`, error.stack);
+            this.logger.error(
+              `[JobWatchdog] Failed to recover job ${job.id}: ${error.message}`,
+              error.stack
+            );
           }
         }
       }
 
       this.logger.log(
-        `[JobWatchdog] Recovery completed: ${recoveredCount} recovered, ${failedCount} failed`,
+        `[JobWatchdog] Recovery completed: ${recoveredCount} recovered, ${failedCount} failed`
       );
     } catch (error) {
       // P0 修复：生产日志禁止输出 stack
@@ -147,9 +155,11 @@ export class JobWatchdogService {
       if (isProd) {
         this.logger.error(`[JobWatchdog] Error during recovery scan: ${error?.message || 'error'}`);
       } else {
-        this.logger.error(`[JobWatchdog] Error during recovery scan: ${error.message}`, error.stack);
+        this.logger.error(
+          `[JobWatchdog] Error during recovery scan: ${error.message}`,
+          error.stack
+        );
       }
     }
   }
 }
-

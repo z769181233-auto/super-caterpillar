@@ -34,7 +34,7 @@ async function auditJobIndexes() {
 
   // 2. 分析领取 SQL 的查询计划
   console.log('2. Analyzing Query Plan for Job Claiming SQL:');
-  console.log('   (SELECT ... WHERE status = \'PENDING\' ORDER BY priority DESC, createdAt ASC)\n');
+  console.log("   (SELECT ... WHERE status = 'PENDING' ORDER BY priority DESC, createdAt ASC)\n");
 
   const explainResult = await prisma.$queryRaw<Array<{ 'QUERY PLAN': string }>>`
     EXPLAIN ANALYZE
@@ -55,7 +55,7 @@ async function auditJobIndexes() {
 
   // 3. 检查关键字段的索引覆盖
   console.log('3. Checking Index Coverage:');
-  
+
   const criticalFields = [
     { field: 'status', usedIn: 'WHERE clause' },
     { field: 'type', usedIn: 'WHERE clause' },
@@ -73,11 +73,12 @@ async function auditJobIndexes() {
     .flat();
 
   criticalFields.forEach((field) => {
-    const hasIndex = indexFields.some((idxField) => 
-      idxField.toLowerCase() === field.field.toLowerCase() ||
-      idxField.toLowerCase().endsWith(`_${field.field.toLowerCase()}`)
+    const hasIndex = indexFields.some(
+      (idxField) =>
+        idxField.toLowerCase() === field.field.toLowerCase() ||
+        idxField.toLowerCase().endsWith(`_${field.field.toLowerCase()}`)
     );
-    
+
     const status = hasIndex ? '✅' : '❌';
     console.log(`   ${status} ${field.field} (${field.usedIn})`);
   });
@@ -108,12 +109,14 @@ async function auditJobIndexes() {
   // 6. 慢查询检查（如果有 pg_stat_statements）
   try {
     console.log('6. Slow Query Analysis (if pg_stat_statements is enabled):');
-    const slowQueries = await prisma.$queryRaw<Array<{
-      query: string;
-      calls: bigint;
-      total_time: number;
-      mean_time: number;
-    }>>`
+    const slowQueries = await prisma.$queryRaw<
+      Array<{
+        query: string;
+        calls: bigint;
+        total_time: number;
+        mean_time: number;
+      }>
+    >`
       SELECT 
         LEFT(query, 100) as query,
         calls,
@@ -148,4 +151,3 @@ auditJobIndexes()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

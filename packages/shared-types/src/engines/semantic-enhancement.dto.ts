@@ -15,4 +15,3 @@ export interface SemanticEnhancementEngineOutput {
   summary?: string;
   keywords?: string[];
 }
-

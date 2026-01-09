@@ -28,12 +28,12 @@ E2E 测试依赖：
 
 1. `e2e/smoke.spec.ts`
    - 完整流程：登录 → 创建项目 → 查看项目详情 → 创建层级结构
-   - 失败原因：`page.waitForURL(/\/projects/, { timeout: 60000 })` 超时  
+   - 失败原因：`page.waitForURL(/\/projects/, { timeout: 60000 })` 超时
      - 说明：访问 `/login` 后未成功跳转到 `/projects`，高度怀疑是 **后端未启动或登录失败**。
 
 2. `e2e/smoke.spec.ts`
    - 未登录访问受保护页面应跳转到登录页
-   - 失败原因：`page.waitForURL('/login', { timeout: 60000 })` 超时  
+   - 失败原因：`page.waitForURL('/login', { timeout: 60000 })` 超时
      - 说明：访问 `/projects` 后未触发到 `/login` 重定向，可能是 **中间件/路由未生效或后端未运行**。
 
 3. `e2e/smoke.spec.ts`
@@ -46,12 +46,12 @@ E2E 测试依赖：
 
 5. `e2e/snapshots.spec.ts`
    - UI snapshots: overview + structure tree
-   - 失败原因：`Error: Missing SNAP_PROJECT_ID`  
+   - 失败原因：`Error: Missing SNAP_PROJECT_ID`
      - 说明：环境变量未设置，属 **环境配置缺失**，非代码逻辑错误。
 
 6. `e2e/verify-stage4-ui.spec.ts`
    - Stage 4 UI Verification：完整流程：创建项目 -> 创建结构 -> 触发语义分析 -> 验证面板数据
-   - 失败原因：整体用例超时（120s），在 `page.fill('input[type="email"]', 'admin@example.com')` 卡住  
+   - 失败原因：整体用例超时（120s），在 `page.fill('input[type="email"]', 'admin@example.com')` 卡住
      - 说明：页面可能未正确渲染登录表单，多为 **后端未启动 / 路由未可用** 的连锁效应。
 
 ---
@@ -92,5 +92,3 @@ E2E 测试依赖：
 - **当前 E2E 失败的主因是环境未准备充分**，而非直接的字段不对齐或重大逻辑错误；
 - 只要按建议准备环境，预期用例可进一步跑通，并暴露更细粒度的 UI/字段问题；
 - 就“字段对齐”视角而言，本轮 E2E 未发现新字段不一致问题（因为尚未走到深度表单交互阶段）。
-
-

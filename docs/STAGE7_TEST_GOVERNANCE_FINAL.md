@@ -47,11 +47,13 @@
 **文件**: `tools/ci/check-test-report-exists.sh`
 
 **功能**:
+
 - 检查 `docs/TEST_REPORT_*.md` 文件是否存在
 - 如果不存在，CI 直接失败
 - 如果存在，列出所有测试报告文件
 
 **执行**:
+
 ```bash
 bash tools/ci/check-test-report-exists.sh
 ```
@@ -61,12 +63,14 @@ bash tools/ci/check-test-report-exists.sh
 **文件**: `.github/workflows/ci.yml`
 
 **新增步骤**（在 Stage6 guard 之后，Lint 之前）:
+
 ```yaml
 - name: Stage7 guard - Test report required
   run: bash tools/ci/check-test-report-exists.sh
 ```
 
 **执行顺序**:
+
 1. Checkout
 2. Setup pnpm / Node.js
 3. Install dependencies
@@ -114,6 +118,7 @@ bash tools/ci/check-test-report-exists.sh
 ### 5.2 模板内容
 
 包含以下必需章节：
+
 1. 功能说明
 2. 变更文件清单
 3. 测试环境
@@ -137,27 +142,33 @@ bash tools/ci/check-test-report-exists.sh
 ### 示例 1：无测试报告
 
 **违规操作**:
+
 - 提交代码但未生成测试报告
 
 **拦截方式**:
+
 - CI 脚本失败：`❌ No TEST_REPORT found under docs/`
 - CI 直接失败，不允许合并
 
 ### 示例 2：测试报告未落盘
 
 **违规操作**:
+
 - 仅在回复中提到测试结果，但未生成文件
 
 **拦截方式**:
+
 - CI 脚本失败：`❌ No TEST_REPORT found under docs/`
 - 不符合 Stage7 强制规则
 
 ### 示例 3：测试报告内容不完整
 
 **违规操作**:
+
 - 测试报告缺少真实输出或测试结论
 
 **拦截方式**:
+
 - 虽然 CI 脚本可能通过（文件存在），但不符合模板要求
 - Code Review 阶段应拒绝
 
@@ -189,12 +200,14 @@ bash tools/ci/check-test-report-exists.sh
 ### Stage7 = 强制制度，不允许回滚
 
 **理由**:
+
 1. ✅ 与 Stage5/Stage6 架构约束完全一致
 2. ✅ 确保功能交付质量
 3. ✅ CI 自动检查，不可绕过
 4. ✅ 可长期扩展（以后每个 Stage 都可套用）
 
 **约束执行**:
+
 - 任何违反约束的提交**直接拒绝**（无需讨论）
 - 无测试报告 → CI 失败
 - 测试报告未落盘 → CI 失败
@@ -222,4 +235,3 @@ bash tools/ci/check-test-report-exists.sh
 ---
 
 **报告结束**
-

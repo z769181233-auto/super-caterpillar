@@ -3,7 +3,7 @@
 /**
  * CE API Smoke Test
  * 最小 e2e 验证脚本（不依赖 Worker 真跑）
- * 
+ *
  * 验证：
  * - API 可创建 job
  * - traceId 正常
@@ -297,7 +297,9 @@ async function testCE04SafetyFail() {
           error: 'Expected FAILED status with SAFETY_CHECK_FAILED reason',
           response: response.body,
         });
-        console.log(`❌ ${testName}: FAILED - Expected FAILED status with SAFETY_CHECK_FAILED reason`);
+        console.log(
+          `❌ ${testName}: FAILED - Expected FAILED status with SAFETY_CHECK_FAILED reason`
+        );
         return false;
       }
     } else {
@@ -353,4 +355,3 @@ if (require.main === module) {
     process.exit(1);
   });
 }
-

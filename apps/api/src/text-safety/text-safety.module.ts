@@ -9,5 +9,4 @@ import { PrismaModule } from '../prisma/prisma.module';
   providers: [TextSafetyService],
   exports: [TextSafetyService],
 })
-export class TextSafetyModule { }
-
+export class TextSafetyModule {}

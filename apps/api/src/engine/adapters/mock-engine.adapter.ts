@@ -30,10 +30,13 @@ export class MockEngineAdapter implements EngineAdapter {
         message: 'Mock engine executed successfully',
         jobType: input.jobType,
         // Mock Video URL (Public reliable test video)
-        videoUrl: isVideoJob ? 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' : undefined,
-        storageKey: isVideoJob ? 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' : undefined,
+        videoUrl: isVideoJob
+          ? 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
+          : undefined,
+        storageKey: isVideoJob
+          ? 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
+          : undefined,
       },
     };
   }
 }
-

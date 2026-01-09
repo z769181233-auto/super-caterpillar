@@ -86,10 +86,7 @@ export default function ProjectDetailPage() {
         setSelectedSeason(data.seasons[0].id);
         if (data.seasons[0].episodes && data.seasons[0].episodes.length > 0) {
           setSelectedEpisode(data.seasons[0].episodes[0].id);
-          if (
-            data.seasons[0].episodes[0].scenes &&
-            data.seasons[0].episodes[0].scenes.length > 0
-          ) {
+          if (data.seasons[0].episodes[0].scenes && data.seasons[0].episodes[0].scenes.length > 0) {
             setSelectedScene(data.seasons[0].episodes[0].scenes[0].id);
           }
         }
@@ -125,11 +122,7 @@ export default function ProjectDetailPage() {
     e.preventDefault();
     if (!selectedSeason) return;
     try {
-      await projectApi.createEpisode(
-        selectedSeason,
-        formData.episodeIndex,
-        formData.episodeName
-      );
+      await projectApi.createEpisode(selectedSeason, formData.episodeIndex, formData.episodeName);
       await loadProject();
       setShowCreateEpisode(false);
       setFormData({ ...formData, episodeIndex: formData.episodeIndex + 1, episodeName: '' });
@@ -159,15 +152,10 @@ export default function ProjectDetailPage() {
     e.preventDefault();
     if (!selectedScene) return;
     try {
-      await projectApi.createShot(
-        selectedScene,
-        formData.shotIndex,
-        formData.shotType,
-        {
-          shotType: formData.shotType,
-          style: 'realistic',
-        }
-      );
+      await projectApi.createShot(selectedScene, formData.shotIndex, formData.shotType, {
+        shotType: formData.shotType,
+        style: 'realistic',
+      });
       await loadProject();
       setShowCreateShot(false);
       setFormData({ ...formData, shotIndex: formData.shotIndex + 1 });
@@ -193,12 +181,8 @@ export default function ProjectDetailPage() {
   }
 
   const selectedSeasonData = project.seasons?.find((s) => s.id === selectedSeason);
-  const selectedEpisodeData = selectedSeasonData?.episodes?.find(
-    (e) => e.id === selectedEpisode
-  );
-  const selectedSceneData = selectedEpisodeData?.scenes?.find(
-    (s) => s.id === selectedScene
-  );
+  const selectedEpisodeData = selectedSeasonData?.episodes?.find((e) => e.id === selectedEpisode);
+  const selectedSceneData = selectedEpisodeData?.scenes?.find((s) => s.id === selectedScene);
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
@@ -259,7 +243,12 @@ export default function ProjectDetailPage() {
           {showCreateSeason && (
             <form
               onSubmit={handleCreateSeason}
-              style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f9f9f9', borderRadius: '4px' }}
+              style={{
+                marginBottom: '1rem',
+                padding: '0.75rem',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '4px',
+              }}
             >
               <input
                 type="number"
@@ -280,7 +269,9 @@ export default function ProjectDetailPage() {
                 style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem' }}
               />
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.875rem' }}>创建</button>
+                <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.875rem' }}>
+                  创建
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateSeason(false)}
@@ -348,7 +339,12 @@ export default function ProjectDetailPage() {
           {showCreateEpisode && selectedSeason && (
             <form
               onSubmit={handleCreateEpisode}
-              style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f9f9f9', borderRadius: '4px' }}
+              style={{
+                marginBottom: '1rem',
+                padding: '0.75rem',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '4px',
+              }}
             >
               <input
                 type="number"
@@ -369,7 +365,9 @@ export default function ProjectDetailPage() {
                 style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem' }}
               />
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.875rem' }}>创建</button>
+                <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.875rem' }}>
+                  创建
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateEpisode(false)}
@@ -436,15 +434,18 @@ export default function ProjectDetailPage() {
           {showCreateScene && selectedEpisode && (
             <form
               onSubmit={handleCreateScene}
-              style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f9f9f9', borderRadius: '4px' }}
+              style={{
+                marginBottom: '1rem',
+                padding: '0.75rem',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '4px',
+              }}
             >
               <input
                 type="number"
                 placeholder="Index"
                 value={formData.sceneIndex}
-                onChange={(e) =>
-                  setFormData({ ...formData, sceneIndex: parseInt(e.target.value) })
-                }
+                onChange={(e) => setFormData({ ...formData, sceneIndex: parseInt(e.target.value) })}
                 required
                 style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem' }}
               />
@@ -452,10 +453,17 @@ export default function ProjectDetailPage() {
                 placeholder="Summary"
                 value={formData.sceneSummary}
                 onChange={(e) => setFormData({ ...formData, sceneSummary: e.target.value })}
-                style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem', minHeight: '60px' }}
+                style={{
+                  width: '100%',
+                  marginBottom: '0.5rem',
+                  padding: '0.25rem',
+                  minHeight: '60px',
+                }}
               />
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.875rem' }}>创建</button>
+                <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.875rem' }}>
+                  创建
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateScene(false)}
@@ -521,15 +529,18 @@ export default function ProjectDetailPage() {
           {showCreateShot && selectedScene && (
             <form
               onSubmit={handleCreateShot}
-              style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f9f9f9', borderRadius: '4px' }}
+              style={{
+                marginBottom: '1rem',
+                padding: '0.75rem',
+                backgroundColor: '#f9f9f9',
+                borderRadius: '4px',
+              }}
             >
               <input
                 type="number"
                 placeholder="Index"
                 value={formData.shotIndex}
-                onChange={(e) =>
-                  setFormData({ ...formData, shotIndex: parseInt(e.target.value) })
-                }
+                onChange={(e) => setFormData({ ...formData, shotIndex: parseInt(e.target.value) })}
                 required
                 style={{ width: '100%', marginBottom: '0.5rem', padding: '0.25rem' }}
               />
@@ -543,7 +554,9 @@ export default function ProjectDetailPage() {
                 <option value="medium_shot">Medium Shot</option>
               </select>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.875rem' }}>创建</button>
+                <button type="submit" style={{ flex: 1, padding: '0.25rem', fontSize: '0.875rem' }}>
+                  创建
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateShot(false)}
@@ -570,9 +583,7 @@ export default function ProjectDetailPage() {
                   <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.25rem' }}>
                     Type: {shot.type}
                   </div>
-                  <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                    Status: {shot.status}
-                  </div>
+                  <div style={{ fontSize: '0.875rem', color: '#666' }}>Status: {shot.status}</div>
                 </div>
               ))}
             </div>
@@ -586,4 +597,3 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
-

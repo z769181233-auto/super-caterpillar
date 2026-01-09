@@ -31,7 +31,9 @@ export function PanelShell({
   className = '',
 }: PanelShellProps) {
   return (
-    <div className={`border border-gray-200 rounded-lg shadow-sm bg-white flex flex-col h-full ${className}`}>
+    <div
+      className={`border border-gray-200 rounded-lg shadow-sm bg-white flex flex-col h-full ${className}`}
+    >
       {/* Header */}
       {(title || actions) && (
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
@@ -86,4 +88,3 @@ export function PanelShell({
     </div>
   );
 }
-

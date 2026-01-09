@@ -29,6 +29,7 @@
 **修改内容**: 为 Season 模型添加 `@deprecated` 注释，说明应使用四层结构（Project → Episode → Scene → Shot）
 
 **关键代码片段**:
+
 ```prisma
 // @deprecated 根据 DBSpec V1.1，应使用四层结构（Project → Episode → Scene → Shot）
 // 保留此模型用于向后兼容，新代码应直接使用 Project → Episode 关联
@@ -44,6 +45,7 @@ model Season {
 ### S1-2/S1-3/S1-4/S1-5: API 安全链路检查 ✅
 
 **检查结果**:
+
 - ✅ `HmacAuthService` 已完整实现 Nonce 防重放（Redis + 内存兜底，5 分钟 TTL）
 - ✅ `HmacAuthService` 已完整实现 Timestamp 时间窗校验（±5 分钟，可配置）
 - ✅ `WorkerController` 所有接口已使用 `JwtOrHmacGuard`
@@ -58,6 +60,7 @@ model Season {
 
 **文件**: `apps/api/src/project/project.controller.ts`  
 **修改内容**: 为以下方法添加审计日志记录：
+
 - `createEpisode` - 使用 `AuditInterceptor` + `AuditActions.EPISODE_CREATE`
 - `createScene` - 使用 `AuditInterceptor` + `AuditActions.SCENE_CREATE`
 - `updateScene` - 使用 `AuditInterceptor` + `AuditActions.SCENE_UPDATE`
@@ -66,6 +69,7 @@ model Season {
 - `deleteProject` - 使用 `AuditInterceptor` + `AuditActions.PROJECT_DELETE`
 
 **关键代码片段**:
+
 ```typescript
 @Post(':projectId/episodes')
 @UseGuards(ProjectOwnershipGuard)
@@ -73,7 +77,7 @@ model Season {
 @AuditAction(AuditActions.EPISODE_CREATE)
 async createEpisode(...) {
   // ... 业务逻辑 ...
-  
+
   // 记录审计日志
   const requestInfo = AuditLogService.extractRequestInfo(request);
   await this.auditLogService.record({
@@ -85,7 +89,7 @@ async createEpisode(...) {
     userAgent: requestInfo.userAgent,
     details: { projectId, episodeIndex: episode.index },
   }).catch(() => undefined);
-  
+
   // ...
 }
 ```
@@ -97,6 +101,7 @@ async createEpisode(...) {
 ### S1-7: 登录/退出审计日志 ✅
 
 **检查结果**:
+
 - ✅ `AuthController.login` 已使用 `AuditInterceptor` + `AuditActions.LOGIN`
 - ✅ `AuthController.logout` 已使用 `AuditInterceptor` + `AuditActions.LOGOUT`
 - ✅ `AuthController.register` 已使用 `AuditInterceptor` + `AuditActions.LOGIN`
@@ -108,6 +113,7 @@ async createEpisode(...) {
 ### S1-8: 任务创建/执行审计日志 ✅
 
 **检查结果**:
+
 - ✅ `WorkerController.getNextJob` 已记录 `JOB_STARTED` 审计日志（包含 nonce/signature/timestamp）
 - ✅ `JobController.reportJob` 已记录 `JOB_REPORT` 审计日志（包含 nonce/signature/timestamp）
 - ✅ `JobService.reportJobResult` 内部已记录 `JOB_SUCCEEDED` / `JOB_FAILED` 审计日志
@@ -119,6 +125,7 @@ async createEpisode(...) {
 ### S1-9: 错误码统一 ✅
 
 **检查结果**:
+
 - ✅ `HmacAuthService.buildHmacError` 已使用 `4003`（签名不合法）和 `4004`（重放请求）错误码
 - ✅ 错误响应格式符合 APISpec（包含 `success: false`, `error: { code, message }`, `requestId`, `timestamp`）
 
@@ -139,34 +146,43 @@ async createEpisode(...) {
 ### 构建检查
 
 **shared-types 构建**:
+
 ```bash
 pnpm --filter @scu/shared-types build
 ```
+
 **结果**: ✅ 通过
 
 **API 构建**:
+
 ```bash
 pnpm --filter api build
 ```
+
 **结果**: ✅ 通过
 
 ### Lint 检查
 
 **Project Controller Lint**:
+
 ```bash
 # 通过 read_lints 工具检查
 ```
+
 **结果**: ✅ 无错误
 
 **Audit Constants Lint**:
+
 ```bash
 # 通过 read_lints 工具检查
 ```
+
 **结果**: ✅ 无错误
 
 ### 封板区域检查
 
 **检查结果**:
+
 - ✅ 未修改 `apps/api/src/job/job.service.ts` 中的 Job 调度核心逻辑
 - ✅ 未修改 `apps/api/src/orchestrator/orchestrator.service.ts` 中的调度主流程
 - ✅ 未修改 `apps/api/src/worker/worker.service.ts` 中的 Worker 注册与心跳核心逻辑
@@ -185,6 +201,7 @@ pnpm --filter api build
 ### Engine Hub 架构检查
 
 **检查结果**:
+
 - ✅ `EngineRegistry` 与 `EngineRoutingService` 职责边界清晰
 - ✅ `EngineStrategyService` 策略层默认透传，不改变 Stage2/Stage3 行为
 - ✅ `EngineProfileService` 只做只读统计，不触发任何任务或写操作
@@ -220,4 +237,3 @@ pnpm --filter api build
 **执行状态**: ✅ Stage1 P0 级偏差已修复完毕；Stage2 仅做结构收口与策略层占位，未改变既有调度与路由行为。
 
 **报告生成时间**: 2025-12-11
-
