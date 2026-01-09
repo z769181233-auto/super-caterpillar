@@ -46,6 +46,7 @@ reports/stability/*.md
 
 # Data
 .data/
+uploads/
 
 # Gate 自动化运行证据(保留在本地,不提交)
 docs/_evidence/*_hardpass_*/
