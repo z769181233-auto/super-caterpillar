@@ -62,3 +62,7 @@ apps/workers/.runtime/assets_gate_*/
 docs/_evidence/**/api.log
 docs/_evidence/**/worker.log
 docs/_evidence/**/gate.log
+
+# Gate evidence
+api_gate_*.txt
+.envrc
