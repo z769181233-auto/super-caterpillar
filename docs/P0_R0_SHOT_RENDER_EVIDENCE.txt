@@ -1,0 +1,28 @@
+--- [GATE] P0-R0 ShotRender Real START ---
+[1/6] Syncing DB Schema...
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "scu", schema "public" at "localhost:5432"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v5.22.0) to ./src/generated/prisma in 258ms
+
+[2/6] Creating test data...
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ERROR:  column "title" of relation "episodes" does not exist
+LINE 1: INSERT INTO episodes (id, "projectId", title, "updatedAt") V...
+                                               ^
+ERROR:  column "updatedAt" of relation "scenes" does not exist
+LINE 1: ...INTO scenes (id, "projectId", "episodeId", title, "updatedAt...
+                                                             ^
+ERROR:  column "projectId" of relation "shots" does not exist
+LINE 1: INSERT INTO shots (id, "projectId", "sceneId", prompt, "upda...
+                               ^
+✅ Test data created.
+[3/6] Starting API...
+API is up.
+[4/6] Invoking ShotRender engine directly...

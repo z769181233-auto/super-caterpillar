@@ -66,3 +66,4 @@ docs/_evidence/**/gate.log
 # Gate evidence
 api_gate_*.txt
 .envrc
+.venv

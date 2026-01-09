@@ -1,12 +1,5 @@
---- [GATE] P0-R0 ShotRender Real START ---
-[1/6] Syncing DB Schema...
-Prisma schema loaded from prisma/schema.prisma
-Datasource "db": PostgreSQL database "scu", schema "public" at "localhost:5432"
-
-The database is already in sync with the Prisma schema.
-
-Running generate... (Use --skip-generate to skip the generators)
-[2K[1A[2K[GRunning generate... - Prisma Client
-[2K[1A[2K[G✔ Generated Prisma Client (v5.22.0) to ./src/generated/prisma in 270ms
-
-[2/6] Creating test data via Prisma...
+GATE_STATUS: PASSED
+ASSET_PATH: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p0r0/shot-p0r0-gate_42_259ad5d11e99.png
+SHA256: 07e8df8ae413409dcb8f22176b116106400f921ef95ff2bcf78caac1225c7d63
+ENGINE_KEY: shot_render_real
+TS: Fri Jan  9 13:01:02 +07 2026

@@ -7,11 +7,15 @@ set -e
 GATE_NAME="P0-R0 ShotRender Real"
 echo "--- [GATE] $GATE_NAME START ---"
 
-# 0. 环境变量检查（REPLICATE_API_TOKEN 必须外部提供，不泄露到日志）
-if [ -z "$REPLICATE_API_TOKEN" ]; then
-    echo "❌ [FATAL] REPLICATE_API_TOKEN is required but not set."
-    echo "   请在终端执行: export REPLICATE_API_TOKEN=\"r8_xxx...\""
-    exit 1
+# 0. 环境变量检查
+export SHOT_RENDER_PROVIDER="${SHOT_RENDER_PROVIDER:-local_mps}"
+
+if [ "$SHOT_RENDER_PROVIDER" = "replicate" ]; then
+    if [ -z "$REPLICATE_API_TOKEN" ]; then
+        echo "❌ [FATAL] REPLICATE_API_TOKEN is required for provider=replicate but not set."
+        echo "   请在终端执行: export REPLICATE_API_TOKEN=\"r8_xxx...\""
+        exit 1
+    fi
 fi
 
 # 测试环境变量（可使用默认值）
@@ -21,12 +25,13 @@ export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_SECRET}"
 export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 export API_PORT=3020
 export ASSET_STORAGE_DIR="$(pwd)/apps/workers/.runtime/assets_gate_p0r0"
-export SHOT_RENDER_PROVIDER="replicate"
 export LOG_LEVEL="debug"
 export NODE_ENV="development"
 
 
 # 创建资产目录
+# 清理旧资产
+rm -rf "$ASSET_STORAGE_DIR"
 mkdir -p "$ASSET_STORAGE_DIR"
 
 # 1. 清理旧进程
@@ -81,8 +86,8 @@ async function main() {
         shotId: process.env.SHOT_ID,
         traceId: process.env.TRACE_ID,
         prompt: 'A beautiful sunset over mountains with golden light',
-        width: 1024,
-        height: 1024,
+        width: 512,
+        height: 512,
         seed: 42,
     };
     
@@ -103,10 +108,14 @@ main();
 EOF
 )
 
+# 使用 set +e 临时允许失败，以便捕获日志
+set +e
 SHOT_ID="$SHOT_ID" TRACE_ID="$TRACE_ID" npx ts-node -e "$RENDER_SCRIPT" > "$RENDER_OUTPUT" 2>&1
+CMD_STATUS=$?
+set -e
 
-if [ $? -ne 0 ]; then
-    echo "❌ Render failed:"
+if [ $CMD_STATUS -ne 0 ]; then
+    echo "❌ Render failed (Exit code: $CMD_STATUS):"
     cat "$RENDER_OUTPUT"
     exit 1
 fi

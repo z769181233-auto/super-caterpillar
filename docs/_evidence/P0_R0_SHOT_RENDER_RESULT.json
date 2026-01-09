@@ -1,0 +1,31 @@
+{
+  "asset": {
+    "uri": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p0r0/shot-p0r0-gate_42_259ad5d11e99.png",
+    "mimeType": "image/png",
+    "sizeBytes": 470499,
+    "sha256": "07e8df8ae413409dcb8f22176b116106400f921ef95ff2bcf78caac1225c7d63",
+    "width": 512,
+    "height": 512
+  },
+  "render_meta": {
+    "model": "runwayml/stable-diffusion-v1-5",
+    "steps": 4,
+    "sampler": "euler_ancestral",
+    "cfg_scale": 1.5,
+    "seed": 42
+  },
+  "audit_trail": {
+    "engineKey": "shot_render_real",
+    "engineVersion": "1.0.0-real",
+    "timestamp": "2026-01-09T06:01:01.955Z",
+    "paramsHash": "e629d3af2cef2855b9f3b587e07ae567916b47f2cf00e496adcd0147ecf68888",
+    "traceId": "trace-p0r0-1767938410"
+  },
+  "billing_usage": {
+    "promptTokens": 51,
+    "completionTokens": 200,
+    "totalTokens": 251,
+    "model": "runwayml/stable-diffusion-v1-5",
+    "gpuSeconds": 49.687
+  }
+}

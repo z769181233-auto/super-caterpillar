@@ -7,12 +7,20 @@
 
 import { PrismaClient } from '../../../packages/database/src/generated/prisma/index.js';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+    datasources: {
+        db: {
+            url: process.env.DATABASE_URL,
+        },
+    },
+});
+
 
 // 固定 ID（幂等清理）
 const ORG_ID = 'org-p0r0-gate';
 const USER_ID = 'user-p0r0-gate';
 const PROJECT_ID = 'proj-p0r0-gate';
+const SEASON_ID = 'season-p0r0-gate';
 const EPISODE_ID = 'episode-p0r0-gate';
 const SCENE_ID = 'scene-p0r0-gate';
 const SHOT_ID = 'shot-p0r0-gate';
@@ -25,6 +33,7 @@ async function main() {
     await prisma.shot.deleteMany({ where: { id: { startsWith: 'shot-p0r0' } } }).catch(() => { });
     await prisma.scene.deleteMany({ where: { id: { startsWith: 'scene-p0r0' } } }).catch(() => { });
     await prisma.episode.deleteMany({ where: { id: { startsWith: 'episode-p0r0' } } }).catch(() => { });
+    await prisma.season.deleteMany({ where: { id: { startsWith: 'season-p0r0' } } }).catch(() => { });
     await prisma.project.deleteMany({ where: { id: PROJECT_ID } }).catch(() => { });
     await prisma.organization.deleteMany({ where: { id: ORG_ID } }).catch(() => { });
     await prisma.user.deleteMany({ where: { id: USER_ID } }).catch(() => { });
@@ -59,12 +68,23 @@ async function main() {
         },
     });
 
+    console.log('[P0R0-Seed] Creating Season...');
+    const season = await prisma.season.create({
+        data: {
+            id: SEASON_ID,
+            projectId: project.id,
+            index: 1,
+            title: 'P0-R0 Season',
+        },
+    });
+
     console.log('[P0R0-Seed] Creating Episode...');
     const episode = await prisma.episode.create({
         data: {
             id: EPISODE_ID,
-            projectId: project.id,
+            seasonId: season.id,
             index: 1,
+            name: 'P0-R0 Episode',
         },
     });
 
@@ -75,6 +95,7 @@ async function main() {
             projectId: project.id,
             episodeId: episode.id,
             index: 1,
+            title: 'P0-R0 Scene',
         },
     });
 
@@ -84,6 +105,7 @@ async function main() {
             id: SHOT_ID,
             sceneId: scene.id,
             index: 1,
+            type: 'SHOT',
         },
     });
 

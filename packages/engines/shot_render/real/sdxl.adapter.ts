@@ -6,7 +6,7 @@ import * as crypto from 'crypto';
 
 /**
  * P0-R0: ShotRender SDXL Adapter (真实渲染)
- * 
+ *
  * 调用 Provider API 生成真实图片并写入文件系统
  */
 
@@ -20,7 +20,8 @@ export async function runShotRenderSDXL(
   input: ShotRenderInput,
   ctx: any = {}
 ): Promise<ShotRenderOutput> {
-  const ASSET_DIR = process.env.ASSET_STORAGE_DIR || path.join(process.cwd(), 'apps/workers/.runtime/assets');
+  const ASSET_DIR =
+    process.env.ASSET_STORAGE_DIR || path.join(process.cwd(), 'apps/workers/.runtime/assets');
   ensureDir(ASSET_DIR);
 
   const seed = input.seed || Math.floor(Math.random() * 1000000);
@@ -36,7 +37,11 @@ export async function runShotRenderSDXL(
     height,
   });
   const paramsHash = crypto.createHash('sha256').update(paramsStr).digest('hex');
-  const promptHash = crypto.createHash('sha256').update(input.prompt).digest('hex').substring(0, 12);
+  const promptHash = crypto
+    .createHash('sha256')
+    .update(input.prompt)
+    .digest('hex')
+    .substring(0, 12);
 
   // 2. 确定文件名
   const filename = `${input.shotId}_${seed}_${promptHash}.png`;
@@ -84,12 +89,28 @@ export async function runShotRenderSDXL(
 
   // 4. 调用真实 Provider
   console.log(`[ShotRender] Calling real provider for: ${input.shotId}`);
-  const renderResult: RenderResult = await renderWithProvider(input.prompt, {
-    width,
-    height,
-    seed,
-    negativePrompt: input.negative_prompt,
-  });
+
+  const providerKey = (process.env.SHOT_RENDER_PROVIDER || 'local_mps').trim();
+  let renderResult: RenderResult;
+
+  if (providerKey === 'replicate') {
+    const { replicateProvider } = require('../providers/replicate.provider');
+    renderResult = await replicateProvider.render(input.prompt, {
+      width,
+      height,
+      seed,
+      negativePrompt: input.negative_prompt,
+    });
+  } else if (providerKey === 'local_mps') {
+    const { localMpsProvider } = require('../providers/local_mps.provider');
+    renderResult = await localMpsProvider.render(input.prompt, {
+      width,
+      height,
+      seed,
+    });
+  } else {
+    throw new Error(`[ShotRender] Unknown SHOT_RENDER_PROVIDER=${providerKey}`);
+  }
 
   // 5. 写入文件
   fs.writeFileSync(filePath, renderResult.bytes);
@@ -97,15 +118,24 @@ export async function runShotRenderSDXL(
 
   // 6. 写入 manifest
   const manifestPath = filePath + '.json';
-  fs.writeFileSync(manifestPath, JSON.stringify({
-    input: { ...input, seed },
-    paramsHash,
-    generatedAt: new Date().toISOString(),
-    provider: renderResult.model,
-    gpuSeconds: renderResult.gpuSeconds,
-  }, null, 2));
+  fs.writeFileSync(
+    manifestPath,
+    JSON.stringify(
+      {
+        input: { ...input, seed },
+        paramsHash,
+        generatedAt: new Date().toISOString(),
+        provider: renderResult.model,
+        gpuSeconds: renderResult.gpuSeconds,
+      },
+      null,
+      2
+    )
+  );
 
-  console.log(`[ShotRender] ✅ Generated real image: ${filePath} (${renderResult.bytes.length} bytes)`);
+  console.log(
+    `[ShotRender] ✅ Generated real image: ${filePath} (${renderResult.bytes.length} bytes)`
+  );
 
   return {
     asset: {
