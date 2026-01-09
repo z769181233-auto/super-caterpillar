@@ -193,16 +193,16 @@ export class HmacAuthGuard implements CanActivate {
         resourceId: apiKey,
         ip: requestInfo.ip,
         userAgent: requestInfo.userAgent,
-        nonce,
-        signature,
-        timestamp: new Date(),
         details: {
           reason: 'HMAC_AUTH_FAILED',
           path,
           method,
           message: error?.response?.error?.message || error?.message,
           code: error?.response?.error?.code || '4003',
+          incomingNonce: nonce,
+          incomingSignature: signature,
         },
+        traceId: (request as any).traceId,
       }).catch(() => undefined);
       throw error;
     }

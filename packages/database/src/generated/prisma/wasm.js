@@ -482,22 +482,15 @@ exports.Prisma.SafetyResultScalarFieldEnum = {
 
 exports.Prisma.BillingEventScalarFieldEnum = {
   id: 'id',
-  eventType: 'eventType',
-  userId: 'userId',
-  organizationId: 'organizationId',
+  costLedgerId: 'costLedgerId',
   projectId: 'projectId',
-  jobId: 'jobId',
-  amount: 'amount',
-  creditsConsumed: 'creditsConsumed',
-  computeSecondsUsed: 'computeSecondsUsed',
-  gpuCost: 'gpuCost',
-  modelCost: 'modelCost',
-  storageCost: 'storageCost',
-  totalCost: 'totalCost',
-  billingStatus: 'billingStatus',
-  invoiceId: 'invoiceId',
-  timestamp: 'timestamp',
-  metadata: 'metadata'
+  orgId: 'orgId',
+  userId: 'userId',
+  type: 'type',
+  creditsDelta: 'creditsDelta',
+  currency: 'currency',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.CostCenterScalarFieldEnum = {
@@ -842,7 +835,14 @@ exports.Prisma.CostLedgerScalarFieldEnum = {
   totalCost: 'totalCost',
   costType: 'costType',
   unitCost: 'unitCost',
-  timestamp: 'timestamp'
+  modelName: 'modelName',
+  totalCredits: 'totalCredits',
+  unitCostCredits: 'unitCostCredits',
+  timestamp: 'timestamp',
+  billingStatus: 'billingStatus',
+  billingEventId: 'billingEventId',
+  billedAt: 'billedAt',
+  billingError: 'billingError'
 };
 
 exports.Prisma.SortOrder = {
@@ -1021,21 +1021,6 @@ exports.ReviewStatus = exports.$Enums.ReviewStatus = {
   require_human_review: 'require_human_review'
 };
 
-exports.BillingEventType = exports.$Enums.BillingEventType = {
-  subscription: 'subscription',
-  pay_as_you_go: 'pay_as_you_go',
-  organization_billing: 'organization_billing',
-  auto_fix: 'auto_fix',
-  render: 'render',
-  model_call: 'model_call'
-};
-
-exports.BillingStatus = exports.$Enums.BillingStatus = {
-  pending: 'pending',
-  completed: 'completed',
-  failed: 'failed'
-};
-
 exports.SubscriptionStatus = exports.$Enums.SubscriptionStatus = {
   ACTIVE: 'ACTIVE',
   PAST_DUE: 'PAST_DUE',
@@ -1108,6 +1093,13 @@ exports.TextSafetyDecision = exports.$Enums.TextSafetyDecision = {
   PASS: 'PASS',
   WARN: 'WARN',
   BLOCK: 'BLOCK'
+};
+
+exports.BillingStatus = exports.$Enums.BillingStatus = {
+  PENDING: 'PENDING',
+  BILLING: 'BILLING',
+  BILLED: 'BILLED',
+  FAILED: 'FAILED'
 };
 
 exports.Prisma.ModelName = {

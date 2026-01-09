@@ -472,14 +472,14 @@ export class ApiSecurityService {
         resourceId: details.apiKey || undefined,
         ip,
         userAgent,
-        nonce: details.nonce,
-        signature: details.signature,
-        timestamp: details.timestamp ? new Date(parseInt(details.timestamp, 10) * 1000) : undefined,
         details: {
           reason: details.reason,
           path: details.path,
           method: details.method,
           errorCode: details.errorCode,
+          incomingNonce: details.nonce,
+          incomingSignature: details.signature,
+          incomingTimestamp: details.timestamp,
         },
       });
     } catch (error) {

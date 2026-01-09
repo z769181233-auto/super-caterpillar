@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { createHmac, randomBytes, createHash } from 'crypto';
 
 /**
  * 审计日志服务
@@ -14,7 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * 记录审计日志
@@ -23,7 +24,7 @@ export class AuditLogService {
    */
   async record(options: {
     userId?: string;
-    orgId?: string; // Stage 10
+    orgId?: string;
     apiKeyId?: string;
     action: string;
     resourceType: string;
@@ -31,12 +32,35 @@ export class AuditLogService {
     ip?: string;
     userAgent?: string;
     details?: any;
-    nonce?: string;
-    signature?: string;
-    timestamp?: Date;
+    traceId?: string;
+    // nonce, signature, timestamp are now server-generated
   }): Promise<void> {
     try {
-      // S1-FIX-A: 组装 payload，包含所有审计信息的完整快照
+      // SSOT: Server-generated evidence (Mandatory for Commercial Grade)
+      const timestamp = new Date();
+      const nonce = randomBytes(16).toString('hex');
+      const traceId = options.traceId || `trace-${randomBytes(8).toString('hex')}`;
+
+      // Inject traceId into details for persistence without dedicated column
+      const details = options.details ? { ...options.details } : {};
+      details._traceId = traceId;
+
+      const detailsStr = JSON.stringify(details);
+      const detailsDigest = createHash('sha256').update(detailsStr).digest('hex');
+
+      const signBase = [
+        options.action,
+        options.resourceType,
+        options.resourceId || '',
+        timestamp.toISOString(),
+        nonce,
+        detailsDigest,
+        traceId // Keep in signature payload
+      ].join('|');
+
+      const secret = process.env.JWT_SECRET || 'test-secret';
+      const signature = createHmac('sha256', secret).update(signBase).digest('hex');
+
       const payload = {
         action: options.action,
         resourceType: options.resourceType,
@@ -44,13 +68,14 @@ export class AuditLogService {
         orgId: options.orgId ?? null,
         ip: options.ip ?? null,
         userAgent: options.userAgent ?? null,
-        nonce: options.nonce ?? null,
-        signature: options.signature ?? null,
-        timestamp: options.timestamp ? options.timestamp.toISOString() : null,
-        details: options.details ? JSON.parse(JSON.stringify(options.details)) : null,
+        nonce,
+        signature,
+        timestamp: timestamp.toISOString(),
+        details,
+        traceId,
       };
 
-      await (this.prisma as any).auditLog.create({
+      await this.prisma.auditLog.create({
         data: {
           userId: options.userId,
           orgId: options.orgId,
@@ -60,18 +85,17 @@ export class AuditLogService {
           resourceId: options.resourceId,
           ip: options.ip,
           userAgent: options.userAgent,
-          details: options.details ? JSON.parse(JSON.stringify(options.details)) : null,
-          nonce: options.nonce,
-          signature: options.signature,
-          ...(options.timestamp !== undefined && { timestamp: options.timestamp }),
-          payload: payload, // S1-FIX-A: 新增 payload 字段
+          details: details as any,
+          nonce,
+          signature,
+          timestamp,
+          payload: payload as any,
         },
       });
-    } catch (error) {
-      // 写入失败时只记录警告，不抛出异常，避免影响主业务流程
-      this.logger.warn(
+    } catch (error: any) {
+      this.logger.error(
         `Failed to record audit log: ${options.action} for ${options.resourceType}:${options.resourceId}`,
-        error instanceof Error ? error.stack : String(error)
+        error?.stack
       );
     }
   }

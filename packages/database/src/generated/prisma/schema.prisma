@@ -433,7 +433,6 @@ model WorkerJob {
   modelVersion  String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-  billingEvents BillingEvent[]  @relation("BillingEventJob")
   worker        WorkerNode?     @relation("WorkerNodeJobs", fields: [workerId], references: [id])
 
   @@map("worker_jobs")
@@ -567,28 +566,24 @@ model SafetyResult {
 }
 
 model BillingEvent {
-  id                 String           @id @default(uuid())
-  eventType          BillingEventType
-  userId             String
-  organizationId     String?
-  projectId          String?
-  jobId              String?
-  amount             Float
-  creditsConsumed    Float
-  computeSecondsUsed Float
-  gpuCost            Float
-  modelCost          Float
-  storageCost        Float
-  totalCost          Float
-  billingStatus      BillingStatus    @default(pending)
-  invoiceId          String?
-  timestamp          DateTime         @default(now())
-  metadata           Json?
-  job                WorkerJob?       @relation("BillingEventJob", fields: [jobId], references: [id])
-  organization       Organization?    @relation("BillingEventOrganization", fields: [organizationId], references: [id])
-  project            Project?         @relation("BillingEventProject", fields: [projectId], references: [id])
-  user               User             @relation("BillingEventUser", fields: [userId], references: [id])
+  id           String   @id @default(uuid())
+  costLedgerId String?  @unique @map("cost_ledger_id")
+  projectId    String   @map("project_id")
+  orgId        String   @map("org_id")
+  userId       String?  @map("user_id")
+  type         String   @default("CONSUME") // CONSUME / REFUND / ADJUST
+  creditsDelta Float    @map("credits_delta")
+  currency     String   @default("USD")
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
 
+  // Relations
+  costLedger   CostLedger?  @relation("LedgerToEvent", fields: [costLedgerId], references: [id])
+  project      Project      @relation("BillingEventProject", fields: [projectId], references: [id])
+  organization Organization @relation("BillingEventOrganization", fields: [orgId], references: [id])
+  user         User?        @relation("BillingEventUser", fields: [userId], references: [id])
+
+  @@index([projectId, createdAt])
   @@map("billing_events")
 }
 
@@ -1253,21 +1248,11 @@ enum ReviewStatus {
   @@map("review_status")
 }
 
-enum BillingEventType {
-  subscription
-  pay_as_you_go
-  organization_billing
-  auto_fix
-  render
-  model_call
-
-  @@map("billing_event_type")
-}
-
 enum BillingStatus {
-  pending
-  completed
-  failed
+  PENDING
+  BILLING
+  BILLED
+  FAILED
 
   @@map("billing_status")
 }
@@ -1348,7 +1333,8 @@ enum AssetStatus {
 
 // P0: Cost Ledger for billing and cost tracking
 // Stage-3-B: 扩展 Credits 计费字段（零破坏，全部可空）
-// [P1-B Fix] Superset Schema (Final)
+// [P1-C] Reconciled Schema Setup
+
 model CostLedger {
   id String @id @default(uuid())
 
@@ -1363,21 +1349,32 @@ model CostLedger {
   billingUnit String?
   quantity    Float    @default(0.0)
   metadata    Json?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
 
   // Fields from JobService / Legacy
-  traceId   String?
-  orgId     String?
-  totalCost Float?
-  costType  String?
-  unitCost  Float?
-  timestamp DateTime @default(now()) // For cost.controller.ts
+  traceId         String?
+  orgId           String?
+  totalCost       Float?
+  costType        String?
+  unitCost        Float?
+  modelName       String?
+  totalCredits    Float?
+  unitCostCredits Float?
+  timestamp       DateTime @default(now()) // For cost.controller.ts
+
+  // P1-C: Settlement Fields
+  billingStatus  BillingStatus @default(PENDING) @map("billing_status")
+  billingEventId String?       @map("billing_event_id")
+  billedAt       DateTime?     @map("billed_at")
+  billingError   String?       @map("billing_error")
 
   // Relations
-  project Project @relation("ProjectCostLedgers", fields: [projectId], references: [id])
-  user    User?   @relation("UserCostLedgers", fields: [userId], references: [id])
+  project      Project       @relation("ProjectCostLedgers", fields: [projectId], references: [id])
+  user         User?         @relation("UserCostLedgers", fields: [userId], references: [id])
+  billingEvent BillingEvent? @relation("LedgerToEvent")
 
   @@unique([jobId, jobType])
+  @@index([projectId, billingStatus])
   @@index([projectId])
   @@index([jobId, jobType])
   @@index([createdAt])

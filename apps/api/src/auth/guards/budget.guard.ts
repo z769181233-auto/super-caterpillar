@@ -84,10 +84,13 @@ export class BudgetGuard implements CanActivate {
                 resourceId: orgId,
                 ip: requestInfo.ip,
                 userAgent: requestInfo.userAgent,
-                details: details,
-                nonce: request.hmacNonce || request.headers['x-nonce'],
-                signature: request.hmacSignature || request.headers['x-signature'],
-                timestamp: timestamp,
+                details: {
+                    ...details,
+                    incomingNonce: request.hmacNonce || request.headers['x-nonce'],
+                    incomingSignature: request.hmacSignature || request.headers['x-signature'],
+                    incomingTimestamp: request.headers['x-timestamp'],
+                },
+                traceId: (request as any).traceId,
             })
             .catch(err => {
                 this.logger.error(`Failed to record audit log ${action}: ${err.message}`, err.stack);

@@ -1,10 +1,14 @@
 import { Controller, Post, Body, Get, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { BillingSettlementService } from './billing-settlement.service';
 
 @Controller('billing')
 export class BillingController {
-    constructor(private readonly billingService: BillingService) { }
+    constructor(
+        private readonly billingService: BillingService,
+        private readonly billingSettlementService: BillingSettlementService
+    ) { }
 
     @Post('subscribe')
     @UseGuards(JwtAuthGuard)
@@ -23,5 +27,14 @@ export class BillingController {
     @Get('plans')
     async getPlans() {
         return this.billingService.getPlans();
+    }
+
+    @Post('settle')
+    @UseGuards(JwtAuthGuard)
+    async settle(@Req() req: any, @Body('projectId') projectId: string) {
+        const userId = req.user?.userId || req.user?.id;
+        if (!userId) throw new UnauthorizedException();
+        // Entry point for P1-C Settlement
+        return this.billingSettlementService.settleProject(projectId);
     }
 }

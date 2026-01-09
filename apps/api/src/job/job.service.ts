@@ -202,6 +202,7 @@ export class JobService {
         // TraceId for audit
         const traceId = `JOB_CREATE_${shotId}_${createJobDto.type}_${Date.now()}`;
         await this.billingService.consumeCredits(
+          project.id,
           userId,
           organizationId,
           requiredCredits,
@@ -915,20 +916,21 @@ export class JobService {
 
       try {
         await this.auditLogService.record({
-          userId,
-          apiKeyId,
+          userId: userId,
+          apiKeyId: apiKeyId,
           action: 'JOB_REPORT_IGNORED',
           resourceType: 'job',
           resourceId: jobId,
           ip,
           userAgent,
-          timestamp,
           details: {
             reason: 'stale_attempts_mismatch',
             dbAttempts: job.attempts,
             reportAttempts: attempts,
             workerId: job.workerId || undefined,
+            incomingTimestamp: timestamp,
           },
+          traceId: job.traceId || undefined,
         });
       } catch (e) {
         this.logger.warn(`[JobService] Failed to record JOB_REPORT_IGNORED: ${e}`);
@@ -948,16 +950,17 @@ export class JobService {
         resourceId: jobId,
         ip,
         userAgent,
-        nonce: hmacMeta?.nonce,
-        signature: hmacMeta?.signature,
-        timestamp,
         details: {
           jobId,
           status,
           reason: errorMessage,
           workerId: job.workerId || undefined,
           taskId: job.taskId || undefined,
+          incomingNonce: hmacMeta?.nonce,
+          incomingSignature: hmacMeta?.signature,
+          incomingTimestamp: timestamp,
         },
+        traceId: job.traceId || undefined,
       });
     } catch (e: unknown) {
       const err = e as Error;
@@ -996,6 +999,7 @@ export class JobService {
     });
 
     if (status === JobStatusEnum.SUCCEEDED) {
+      let updatedJob: ShotJobWithShotHierarchy | undefined = undefined;
       try {
         // 为 payload 构造“精简结果”，避免把超大结构写进 job.payload
         let resultForPayload: unknown = result;
@@ -1012,7 +1016,7 @@ export class JobService {
             ? { ...currentPayload, result: resultForPayload }
             : currentPayload;
 
-        const updatedJob = (await this.prisma.shotJob.update({
+        updatedJob = (await this.prisma.shotJob.update({
           where: { id: jobId },
           data: {
             status: JobStatusEnum.SUCCEEDED,
@@ -1070,212 +1074,218 @@ export class JobService {
           resourceId: jobId,
           ip,
           userAgent,
-          nonce: hmacMeta?.nonce,
-          signature: hmacMeta?.signature,
-          timestamp,
           details: {
             taskId: job.taskId || undefined,
             workerId: job.workerId || undefined,
             attempts: job.attempts, // attempts 只作为"领取次数统计"
             duration, // 执行耗时（毫秒），注意：包含队列等待时间
+            incomingNonce: hmacMeta?.nonce,
+            incomingSignature: hmacMeta?.signature,
+            incomingTimestamp: timestamp,
             spanId, // 分布式追踪 ID（使用 traceId）
             modelUsed, // 使用的模型/引擎
           },
+          traceId: job.traceId || undefined,
         });
+      } catch (e: any) {
+        this.logger.warn(`Failed to record JOB_SUCCEEDED audit log: ${e.message}`);
+      }
 
-        // Full Implementation: Integration with Billing System
-        if (userId && this.billingService) {
-          try {
-            const cost = 1.0;
-            // TraceId for legacy path
-            const traceId = `LEGACY_JOB_COMPLETE_${jobId}_${Date.now()} `;
-            // Use consumeCredits for deduction
-            await this.billingService.consumeCredits(
-              userId,
-              job.organizationId,
-              cost,
-              'LEGACY_JOB',
-              traceId
-            );
-          } catch (error) {
-            this.logger.error(
-              `Failed to deduct credits for job ${jobId}: ${(error as Error).message} `
-            );
-          }
+      // 提取 SUCCEEDED 后的状态用于后续逻辑
+      if (!updatedJob) {
+        // 兜底防御：理论上 update 成功后 updatedJob 必有值
+        return job;
+      }
+
+      // Full Implementation: Integration with Billing System
+      if (userId && this.billingService) {
+        try {
+          const cost = 1.0;
+          // TraceId for legacy path
+          const traceId = `LEGACY_JOB_COMPLETE_${jobId}_${Date.now()} `;
+          // Use consumeCredits for deduction
+          // P1-C: Use consumeCredits with projectId
+          await this.billingService.consumeCredits(
+            job.projectId,
+            userId,
+            job.organizationId,
+            cost,
+            'LEGACY_JOB',
+            traceId
+          );
+        } catch (error) {
+          this.logger.error(
+            `Failed to deduct credits for job ${jobId}: ${(error as Error).message} `
+          );
         }
+      }
 
-        // Full Implementation: Integration with Copyright System
-        if (userId && this.copyrightService && job.type === JobTypeEnum.SHOT_RENDER) {
-          try {
-            // Mock asset registration for the rendered shot
-            // In a real scenario, we'd hash the output file
-            const contentHash = `job - ${job.id} -content`;
-            await this.copyrightService.registerAsset(userId, 'shot_render', contentHash);
-          } catch (error) {
-            this.logger.error(
-              `Failed to register copyright for job ${jobId}: ${(error as Error).message} `
-            );
-          }
+      // Full Implementation: Integration with Copyright System
+      if (userId && this.copyrightService && job.type === JobTypeEnum.SHOT_RENDER) {
+        try {
+          // Mock asset registration for the rendered shot
+          // In a real scenario, we'd hash the output file
+          const contentHash = `job - ${job.id} -content`;
+          await this.copyrightService.registerAsset(userId, 'shot_render', contentHash);
+        } catch (error) {
+          this.logger.error(
+            `Failed to register copyright for job ${jobId}: ${(error as Error).message} `
+          );
         }
+      }
 
-        if (job.taskId) {
-          await this.updateTaskStatusIfAllJobsCompleted(job.taskId);
-        }
+      if (job.taskId) {
+        await this.updateTaskStatusIfAllJobsCompleted(job.taskId);
+      }
 
-        // Stage13: CE Core Layer - 处理 CE Job 完成后的 DAG 触发
-        if (
-          job.type === JobTypeEnum.CE06_NOVEL_PARSING ||
-          job.type === JobTypeEnum.CE03_VISUAL_DENSITY ||
-          job.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT
-        ) {
-          await this.handleCECoreJobCompletion(job, result);
-        }
+      // Stage13: CE Core Layer - 处理 CE Job 完成后的 DAG 触发
+      if (
+        job.type === JobTypeEnum.CE06_NOVEL_PARSING ||
+        job.type === JobTypeEnum.CE03_VISUAL_DENSITY ||
+        job.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT
+      ) {
+        await this.handleCECoreJobCompletion(job, result);
+      }
 
-        // CE09: SHOT_RENDER 完成后进入安全链路（HLS/水印/指纹）
-        if (job.type === JobTypeEnum.SHOT_RENDER) {
-          await this.handleShotRenderSecurityPipeline(updatedJob, result);
-        }
+      // CE09: SHOT_RENDER 完成后进入安全链路（HLS/水印/指纹）
+      if (job.type === JobTypeEnum.SHOT_RENDER) {
+        await this.handleShotRenderSecurityPipeline(updatedJob, result);
+      }
 
-        // 如果是 NOVEL_ANALYSIS Job，更新对应的 NovelAnalysisJob 状态
-        if (job.type === JobTypeEnum.NOVEL_ANALYSIS) {
-          try {
-            const task = await this.prisma.task.findUnique({
-              where: { id: job.taskId || '' },
-            });
-            if (task?.payload && typeof task.payload === 'object') {
-              const payload = task.payload as any;
-              const analysisJobId = payload.analysisJobId;
-              if (analysisJobId) {
-                // 只写入轻量进度信息，避免把巨大 result 复制到 progress（progress 设计用途：{ current, total, message }）
-                const safeProgress: any = {
-                  message: 'Analysis completed',
-                  jobId: job.id,
-                };
-                if (result?.stats) safeProgress.stats = result.stats;
-                if (result?.metrics) safeProgress.metrics = result.metrics;
+      // 如果是 NOVEL_ANALYSIS Job，更新对应的 NovelAnalysisJob 状态
+      if (job.type === JobTypeEnum.NOVEL_ANALYSIS) {
+        try {
+          const task = await this.prisma.task.findUnique({
+            where: { id: job.taskId || '' },
+          });
+          if (task?.payload && typeof task.payload === 'object') {
+            const payload = task.payload as any;
+            const analysisJobId = payload.analysisJobId;
+            if (analysisJobId) {
+              // 只写入轻量进度信息，避免把巨大 result 复制到 progress（progress 设计用途：{ current, total, message }）
+              const safeProgress: any = {
+                message: 'Analysis completed',
+                jobId: job.id,
+              };
+              if (result?.stats) safeProgress.stats = result.stats;
+              if (result?.metrics) safeProgress.metrics = result.metrics;
 
-                await this.prisma.novelAnalysisJob.update({
-                  where: { id: analysisJobId },
-                  data: {
-                    status: 'DONE',
-                    progress: safeProgress,
-                  },
-                });
-              }
-            }
-          } catch (e: any) {
-            // NovelAnalysisJob 同步失败不应阻断 Job 主状态写入（否则会造成 UI 永久 RUNNING + Worker 重试风暴）
-            this.logger.warn(
-              `[Job] reportJobResult: failed to update NovelAnalysisJob for job ${jobId}: ${e?.message || e} `
-            );
-          }
-
-          // 清除 SceneGraph 缓存，确保前端能获取最新结构
-          if (this.sceneGraphService && job.projectId) {
-            try {
-              await this.sceneGraphService.invalidateProjectSceneGraph(job.projectId);
-            } catch (cacheError) {
-              // 缓存清除失败不影响主流程
-              this.logger.warn(
-                `Failed to invalidate SceneGraph cache for project ${job.projectId}: ${cacheError} `
-              );
-            }
-          }
-        }
-
-        // P0-2: Record cost to ledger for billable jobs (idempotent)
-        if (
-          updatedJob.type === JobTypeEnum.VIDEO_RENDER ||
-          updatedJob.type === JobTypeEnum.SHOT_RENDER
-        ) {
-          try {
-            const totalCost = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
-            await this.prisma.costLedger.upsert({
-              where: {
-                jobId_jobType: {
-                  jobId: updatedJob.id,
-                  jobType: updatedJob.type,
+              await this.prisma.novelAnalysisJob.update({
+                where: { id: analysisJobId },
+                data: {
+                  status: 'DONE',
+                  progress: safeProgress,
                 },
-              },
-              create: {
-                projectId: updatedJob.projectId,
-                userId: userId || 'system',
+              });
+            }
+          }
+        } catch (e: any) {
+          // NovelAnalysisJob 同步失败不应阻断 Job 主状态写入（否则会造成 UI 永久 RUNNING + Worker 重试风暴）
+          this.logger.warn(
+            `[Job] reportJobResult: failed to update NovelAnalysisJob for job ${jobId}: ${e?.message || e} `
+          );
+        }
+
+        // 清除 SceneGraph 缓存，确保前端能获取最新结构
+        if (this.sceneGraphService && job.projectId) {
+          try {
+            await this.sceneGraphService.invalidateProjectSceneGraph(job.projectId);
+          } catch (cacheError) {
+            // 缓存清除失败不影响主流程
+            this.logger.warn(
+              `Failed to invalidate SceneGraph cache for project ${job.projectId}: ${cacheError} `
+            );
+          }
+        }
+      }
+
+      // P0-2: Record cost to ledger for billable jobs (idempotent)
+      if (
+        updatedJob.type === JobTypeEnum.VIDEO_RENDER ||
+        updatedJob.type === JobTypeEnum.SHOT_RENDER
+      ) {
+        try {
+          const totalCost = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
+          await this.prisma.costLedger.upsert({
+            where: {
+              jobId_jobType: {
                 jobId: updatedJob.id,
                 jobType: updatedJob.type,
-                totalCost,
-                unitCost: 0,
-                costType: 'AI_RENDER',
-                quantity: 1,
-                orgId: updatedJob.organizationId,
-                traceId: updatedJob.traceId || `trace-${updatedJob.id}`,
               },
-              update: {
-                // Idempotent: no-op on duplicate
-                totalCost,
-              },
-            });
-            this.logger.log(
-              `[Job] Recorded cost_ledger for ${updatedJob.type} job ${updatedJob.id}: ${totalCost} `
-            );
-          } catch (costError: any) {
-            this.logger.warn(
-              `[Job] Failed to record cost_ledger for job ${jobId}: ${costError?.message} `
-            );
-          }
+            },
+            create: {
+              projectId: updatedJob.projectId,
+              userId: userId || 'system',
+              jobId: updatedJob.id,
+              jobType: updatedJob.type,
+              totalCost,
+              totalCredits: totalCost, // P1-C strictly uses this for reconciliation
+              unitCost: 0,
+              costType: 'AI_RENDER',
+              quantity: 1,
+              orgId: updatedJob.organizationId,
+              traceId: updatedJob.traceId || `trace-${updatedJob.id}`,
+            },
+            update: {
+              // Idempotent: no-op on duplicate
+              totalCost,
+              totalCredits: totalCost,
+            },
+          });
+          this.logger.log(
+            `[Job] Recorded cost_ledger for ${updatedJob.type} job ${updatedJob.id}: ${totalCost} `
+          );
+        } catch (costError: any) {
+          this.logger.warn(
+            `[Job] Failed to record cost_ledger for job ${jobId}: ${costError?.message} `
+          );
         }
-
-        return updatedJob;
-      } catch (e: any) {
-        // 防御性兜底：若 SUCCEEDED 分支内部抛错，不再把错误冒泡为 500，而是按 FAILED 处理并进入统一重试/失败逻辑
-        const msg = e?.message || 'Unexpected error in reportJobResult(SUCCEEDED)';
-        this.logger.error(
-          `[Job] reportJobResult SUCCEEDED branch failed for job ${jobId}: ${msg} `
-        );
-        return this.markJobFailedAndMaybeRetry(jobId, msg, userId, apiKeyId, ip, userAgent);
       }
-    }
 
-    // 如果是 NOVEL_ANALYSIS Job 失败，更新对应的 NovelAnalysisJob 状态
-    if (job.type === JobTypeEnum.NOVEL_ANALYSIS) {
-      try {
-        const task = await this.prisma.task.findUnique({
-          where: { id: job.taskId || '' },
-        });
-        if (task?.payload && typeof task.payload === 'object') {
-          const payload = task.payload as any;
-          const analysisJobId = payload.analysisJobId;
-          if (analysisJobId) {
-            await this.prisma.novelAnalysisJob.update({
-              where: { id: analysisJobId },
-              data: {
-                status: 'FAILED',
-                errorMessage: errorMessage || 'Unknown error',
-                progress: {
-                  message: 'Analysis failed',
-                  jobId: job.id,
+      return updatedJob;
+    } else {
+      // 如果是 NOVEL_ANALYSIS Job 失败，更新对应的 NovelAnalysisJob 状态
+      if (job.type === JobTypeEnum.NOVEL_ANALYSIS) {
+        try {
+          const task = await this.prisma.task.findUnique({
+            where: { id: job.taskId || '' },
+          });
+          if (task?.payload && typeof task.payload === 'object') {
+            const payload = task.payload as any;
+            const analysisJobId = payload.analysisJobId;
+            if (analysisJobId) {
+              await this.prisma.novelAnalysisJob.update({
+                where: { id: analysisJobId },
+                data: {
+                  status: 'FAILED',
+                  errorMessage: errorMessage || 'Unknown error',
+                  progress: {
+                    message: 'Analysis failed',
+                    jobId: job.id,
+                  },
                 },
-              },
-            });
+              });
+            }
           }
+        } catch (e: any) {
+          this.logger.warn(
+            `[Job] reportJobResult: failed to mark NovelAnalysisJob FAILED for job ${jobId}: ${e?.message || e} `
+          );
         }
-      } catch (e: any) {
-        this.logger.warn(
-          `[Job] reportJobResult: failed to mark NovelAnalysisJob FAILED for job ${jobId}: ${e?.message || e} `
-        );
       }
-    }
 
-    // Stage13: CE Core Layer - 处理 CE Job 失败后的 DAG 阻断
-    if (
-      job.type === JobTypeEnum.CE06_NOVEL_PARSING ||
-      job.type === JobTypeEnum.CE03_VISUAL_DENSITY ||
-      job.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT
-    ) {
-      await this.handleCECoreJobFailure(job);
-    }
+      // Stage13: CE Core Layer - 处理 CE Job 失败后的 DAG 阻断
+      if (
+        job.type === JobTypeEnum.CE06_NOVEL_PARSING ||
+        job.type === JobTypeEnum.CE03_VISUAL_DENSITY ||
+        job.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT
+      ) {
+        await this.handleCECoreJobFailure(job);
+      }
 
-    // 使用统一的重试入口方法
-    return this.markJobFailedAndMaybeRetry(jobId, errorMessage, userId, apiKeyId, ip, userAgent);
+      // 使用统一的重试入口方法
+      return this.markJobFailedAndMaybeRetry(jobId, errorMessage, userId, apiKeyId, ip, userAgent);
+    }
   }
 
   /**

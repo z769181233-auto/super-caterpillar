@@ -21,7 +21,7 @@ export class WorkerAliasController {
     @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestratorService: OrchestratorService,
     private readonly auditLogService: AuditLogService,
-  ) {}
+  ) { }
 
   /**
    * Worker 注册
@@ -133,14 +133,12 @@ export class WorkerAliasController {
       resourceId: job.id,
       ip: requestInfo.ip,
       userAgent: requestInfo.userAgent,
-      nonce,
-      signature,
-      timestamp: hmacTimestamp ? new Date(Number(hmacTimestamp)) : undefined,
       details: {
         workerId,
         taskId: job.taskId,
         type: job.type,
       },
+      traceId: job.traceId || undefined,
     });
 
     return {

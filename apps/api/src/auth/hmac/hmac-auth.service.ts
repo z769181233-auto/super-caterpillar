@@ -331,10 +331,12 @@ export class HmacAuthService {
         resourceId: apiKey,
         ip: debug?.ip,
         userAgent: debug?.ua,
-        nonce: details?.nonce,
-        signature: details?.signature,
-        timestamp: details?.timestamp ? new Date(Number(details.timestamp)) : undefined,
-        details,
+        details: {
+          ...details,
+          incomingNonce: details?.nonce,
+          incomingSignature: details?.signature,
+          incomingTimestamp: details?.timestamp,
+        },
       });
     } catch {
       // 审计失败不阻断

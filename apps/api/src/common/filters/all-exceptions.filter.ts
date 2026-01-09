@@ -94,14 +94,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         resourceId: undefined,
         ip: securityContext.ip,
         userAgent: securityContext.ua,
-        nonce: securityContext.nonce,
-        signature: req.headers['x-signature'] || (req as any).hmac?.signature,
-        timestamp: securityContext.timestamp ? new Date(Number(securityContext.timestamp) * 1000) : undefined,
         details: {
           path: securityContext.path,
           method: securityContext.method,
           code: errorCode,
           message: securityContext.message,
+          incomingNonce: securityContext.nonce,
+          incomingSignature: req.headers['x-signature'] || (req as any).hmac?.signature,
+          incomingTimestamp: securityContext.timestamp,
         },
       }).catch((auditErr) => {
         // 审计失败不阻断，但记录警告

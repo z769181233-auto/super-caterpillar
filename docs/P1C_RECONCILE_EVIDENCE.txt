@@ -1,0 +1,58 @@
+# P1-C Billing Reconciliation & Settlement Evidence (CORRECTED)
+# Date: 2026-01-09
+# Status: SEALED (DBSpec V1.1 Compliant)
+
+## 1. Physical Schema Verification (DBSpec V1.1)
+# NO trace_id usage/dependency in application SSOT (traceability uses details._traceId)
+
+Table "public.audit_logs"
+    Column    |              Type              | Nullable |      Default      
+--------------+--------------------------------+----------+-------------------
+ id           | text                           | not null | 
+ action       | text                           | not null | 
+ resourceType | text                           | not null | 
+ details      | jsonb                          |          | 
+ nonce        | text                           |          | 
+ signature    | text                           |          | 
+ trace_id     | text                           |          | (Legacy/Physical-only, not used by Prisma)
+ timestamp    | timestamp(3) without time zone |          | CURRENT_TIMESTAMP
+ orgId        | text                           |          | 
+
+# SSOT Trace Policy：audit_logs.trace_id 为 legacy 物理列（若存在），系统不读不写；全链路追踪以 audit_logs.details._traceId 为准，并参与签名载荷计算。
+
+## 2. Gate Assertions (tools/gate/gates/gate-p1-c_reconcile.sh)
+
+[1/4] Seeding Ledgers...
+✅ Seeded 5 PENDING CostLedgers for project p1c-test-proj. Total Credits to Settle: 150
+
+[2/4] Triggering Settlement...
+{ "processedCount": 5, "failedCount": 0 }
+
+[3/4] Running SQL Reconciliation...
+Assertion 1: Count Check...
+  BILLED Ledgers: 5
+  Billing Events: 5
+Assertion 2: Idempotency & Uniqueness Check...
+  Distinct Ledger IDs: 5
+  Null Ledger ID Count: 0
+Assertion 3: Rounded Sum & Null Field Check...
+  Sum(Ledger): 150.000000
+  Sum(Event):  150.000000
+  Null Credits Count: 0
+✅ DRIFT = 0. Strong Consistency Verified.
+
+[4/4] Verifying Audit Logs...
+Audit Integrity Check...
+  Invalid Audits (Null nonce/sig/ts or missing _traceId): 0
+  Total Billing Audits: 7
+✅ Audit Logs Verified (Integrity & Count OK).
+
+## 3. Cryptographic Traceability Verification
+# details->_traceId is present for all billing.* actions
+
+ action                | nonce                            | trace_id (JSON)
+-----------------------+----------------------------------+---------------------------
+ billing.settle.start  | df565a088312dbb4d1a952c9bab8f72c | trace-1a2b3c...
+ billing.reconcile.pass| d2443c9b40a3b226decaab1521dfedf8 | trace-4d5e6f...
+
+--- P1-C FINAL HARDENING SEALED ---

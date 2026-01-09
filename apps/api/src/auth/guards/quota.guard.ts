@@ -72,9 +72,12 @@ export class QuotaGuard implements CanActivate {
             resourceId: orgId,
             ip: requestInfo.ip,
             userAgent: requestInfo.userAgent,
-            details: details,
-            nonce: request.hmacNonce || request.headers['x-nonce'],
-            signature: request.hmacSignature || request.headers['x-signature']
+            details: {
+                ...details,
+                incomingNonce: request.hmacNonce || request.headers['x-nonce'],
+                incomingSignature: request.hmacSignature || request.headers['x-signature'],
+            },
+            traceId: (request as any).traceId,
         }).catch(err => {
             this.logger.error(`Failed to record audit log for ${action}: ${err.message}`);
         });

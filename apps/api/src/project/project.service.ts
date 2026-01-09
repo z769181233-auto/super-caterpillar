@@ -1319,12 +1319,11 @@ export class ProjectService {
         orderBy: { createdAt: 'desc' },
         take: 5
       }),
-      // Real Cost: Sum of all non-failed billing events for this project
+      // Real Cost: Sum of all billing events for this project
       this.prisma.billingEvent.aggregate({
-        _sum: { totalCost: true },
+        _sum: { creditsDelta: true },
         where: {
-          projectId,
-          billingStatus: { not: 'failed' } // Include pending for "Estimate"
+          projectId
         }
       }),
       // Real Audit Logs: Recent actions on this project
@@ -1501,7 +1500,7 @@ export class ProjectService {
         visual: 'OK'
       },
       cost: {
-        total: { money: costAgg._sum.totalCost || 0.00 },
+        total: { money: Math.abs(costAgg._sum.creditsDelta || 0.00) },
         last24h: { money: 0.00 }, // Pending implementation: filter by createdAt > now-24h
         currentRunEstimate: { money: 0.00 },
         alert: { level: 'OK' },

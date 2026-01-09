@@ -507,27 +507,6 @@ export const ReviewStatus: {
 export type ReviewStatus = (typeof ReviewStatus)[keyof typeof ReviewStatus]
 
 
-export const BillingEventType: {
-  subscription: 'subscription',
-  pay_as_you_go: 'pay_as_you_go',
-  organization_billing: 'organization_billing',
-  auto_fix: 'auto_fix',
-  render: 'render',
-  model_call: 'model_call'
-};
-
-export type BillingEventType = (typeof BillingEventType)[keyof typeof BillingEventType]
-
-
-export const BillingStatus: {
-  pending: 'pending',
-  completed: 'completed',
-  failed: 'failed'
-};
-
-export type BillingStatus = (typeof BillingStatus)[keyof typeof BillingStatus]
-
-
 export const SubscriptionStatus: {
   ACTIVE: 'ACTIVE',
   PAST_DUE: 'PAST_DUE',
@@ -637,6 +616,16 @@ export const TextSafetyDecision: {
 
 export type TextSafetyDecision = (typeof TextSafetyDecision)[keyof typeof TextSafetyDecision]
 
+
+export const BillingStatus: {
+  PENDING: 'PENDING',
+  BILLING: 'BILLING',
+  BILLED: 'BILLED',
+  FAILED: 'FAILED'
+};
+
+export type BillingStatus = (typeof BillingStatus)[keyof typeof BillingStatus]
+
 }
 
 export type UserType = $Enums.UserType
@@ -715,14 +704,6 @@ export type ReviewStatus = $Enums.ReviewStatus
 
 export const ReviewStatus: typeof $Enums.ReviewStatus
 
-export type BillingEventType = $Enums.BillingEventType
-
-export const BillingEventType: typeof $Enums.BillingEventType
-
-export type BillingStatus = $Enums.BillingStatus
-
-export const BillingStatus: typeof $Enums.BillingStatus
-
 export type SubscriptionStatus = $Enums.SubscriptionStatus
 
 export const SubscriptionStatus: typeof $Enums.SubscriptionStatus
@@ -770,6 +751,10 @@ export const AssetType: typeof $Enums.AssetType
 export type TextSafetyDecision = $Enums.TextSafetyDecision
 
 export const TextSafetyDecision: typeof $Enums.TextSafetyDecision
+
+export type BillingStatus = $Enums.BillingStatus
+
+export const BillingStatus: typeof $Enums.BillingStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -6864,37 +6849,6 @@ export namespace Prisma {
    */
   export type TaskCountOutputTypeCountJobsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ShotJobWhereInput
-  }
-
-
-  /**
-   * Count Type WorkerJobCountOutputType
-   */
-
-  export type WorkerJobCountOutputType = {
-    billingEvents: number
-  }
-
-  export type WorkerJobCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    billingEvents?: boolean | WorkerJobCountOutputTypeCountBillingEventsArgs
-  }
-
-  // Custom InputTypes
-  /**
-   * WorkerJobCountOutputType without action
-   */
-  export type WorkerJobCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the WorkerJobCountOutputType
-     */
-    select?: WorkerJobCountOutputTypeSelect<ExtArgs> | null
-  }
-
-  /**
-   * WorkerJobCountOutputType without action
-   */
-  export type WorkerJobCountOutputTypeCountBillingEventsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: BillingEventWhereInput
   }
 
 
@@ -29596,9 +29550,7 @@ export namespace Prisma {
     modelVersion?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    billingEvents?: boolean | WorkerJob$billingEventsArgs<ExtArgs>
     worker?: boolean | WorkerJob$workerArgs<ExtArgs>
-    _count?: boolean | WorkerJobCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["workerJob"]>
 
   export type WorkerJobSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -29633,9 +29585,7 @@ export namespace Prisma {
   }
 
   export type WorkerJobInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    billingEvents?: boolean | WorkerJob$billingEventsArgs<ExtArgs>
     worker?: boolean | WorkerJob$workerArgs<ExtArgs>
-    _count?: boolean | WorkerJobCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type WorkerJobIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     worker?: boolean | WorkerJob$workerArgs<ExtArgs>
@@ -29644,7 +29594,6 @@ export namespace Prisma {
   export type $WorkerJobPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "WorkerJob"
     objects: {
-      billingEvents: Prisma.$BillingEventPayload<ExtArgs>[]
       worker: Prisma.$WorkerNodePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -30024,7 +29973,6 @@ export namespace Prisma {
    */
   export interface Prisma__WorkerJobClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    billingEvents<T extends WorkerJob$billingEventsArgs<ExtArgs> = {}>(args?: Subset<T, WorkerJob$billingEventsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BillingEventPayload<ExtArgs>, T, "findMany"> | Null>
     worker<T extends WorkerJob$workerArgs<ExtArgs> = {}>(args?: Subset<T, WorkerJob$workerArgs<ExtArgs>>): Prisma__WorkerNodeClient<$Result.GetResult<Prisma.$WorkerNodePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -30382,26 +30330,6 @@ export namespace Prisma {
      * Filter which WorkerJobs to delete
      */
     where?: WorkerJobWhereInput
-  }
-
-  /**
-   * WorkerJob.billingEvents
-   */
-  export type WorkerJob$billingEventsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the BillingEvent
-     */
-    select?: BillingEventSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: BillingEventInclude<ExtArgs> | null
-    where?: BillingEventWhereInput
-    orderBy?: BillingEventOrderByWithRelationInput | BillingEventOrderByWithRelationInput[]
-    cursor?: BillingEventWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: BillingEventScalarFieldEnum | BillingEventScalarFieldEnum[]
   }
 
   /**
@@ -37623,161 +37551,95 @@ export namespace Prisma {
   }
 
   export type BillingEventAvgAggregateOutputType = {
-    amount: number | null
-    creditsConsumed: number | null
-    computeSecondsUsed: number | null
-    gpuCost: number | null
-    modelCost: number | null
-    storageCost: number | null
-    totalCost: number | null
+    creditsDelta: number | null
   }
 
   export type BillingEventSumAggregateOutputType = {
-    amount: number | null
-    creditsConsumed: number | null
-    computeSecondsUsed: number | null
-    gpuCost: number | null
-    modelCost: number | null
-    storageCost: number | null
-    totalCost: number | null
+    creditsDelta: number | null
   }
 
   export type BillingEventMinAggregateOutputType = {
     id: string | null
-    eventType: $Enums.BillingEventType | null
-    userId: string | null
-    organizationId: string | null
+    costLedgerId: string | null
     projectId: string | null
-    jobId: string | null
-    amount: number | null
-    creditsConsumed: number | null
-    computeSecondsUsed: number | null
-    gpuCost: number | null
-    modelCost: number | null
-    storageCost: number | null
-    totalCost: number | null
-    billingStatus: $Enums.BillingStatus | null
-    invoiceId: string | null
-    timestamp: Date | null
+    orgId: string | null
+    userId: string | null
+    type: string | null
+    creditsDelta: number | null
+    currency: string | null
+    createdAt: Date | null
   }
 
   export type BillingEventMaxAggregateOutputType = {
     id: string | null
-    eventType: $Enums.BillingEventType | null
-    userId: string | null
-    organizationId: string | null
+    costLedgerId: string | null
     projectId: string | null
-    jobId: string | null
-    amount: number | null
-    creditsConsumed: number | null
-    computeSecondsUsed: number | null
-    gpuCost: number | null
-    modelCost: number | null
-    storageCost: number | null
-    totalCost: number | null
-    billingStatus: $Enums.BillingStatus | null
-    invoiceId: string | null
-    timestamp: Date | null
+    orgId: string | null
+    userId: string | null
+    type: string | null
+    creditsDelta: number | null
+    currency: string | null
+    createdAt: Date | null
   }
 
   export type BillingEventCountAggregateOutputType = {
     id: number
-    eventType: number
-    userId: number
-    organizationId: number
+    costLedgerId: number
     projectId: number
-    jobId: number
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus: number
-    invoiceId: number
-    timestamp: number
+    orgId: number
+    userId: number
+    type: number
+    creditsDelta: number
+    currency: number
     metadata: number
+    createdAt: number
     _all: number
   }
 
 
   export type BillingEventAvgAggregateInputType = {
-    amount?: true
-    creditsConsumed?: true
-    computeSecondsUsed?: true
-    gpuCost?: true
-    modelCost?: true
-    storageCost?: true
-    totalCost?: true
+    creditsDelta?: true
   }
 
   export type BillingEventSumAggregateInputType = {
-    amount?: true
-    creditsConsumed?: true
-    computeSecondsUsed?: true
-    gpuCost?: true
-    modelCost?: true
-    storageCost?: true
-    totalCost?: true
+    creditsDelta?: true
   }
 
   export type BillingEventMinAggregateInputType = {
     id?: true
-    eventType?: true
-    userId?: true
-    organizationId?: true
+    costLedgerId?: true
     projectId?: true
-    jobId?: true
-    amount?: true
-    creditsConsumed?: true
-    computeSecondsUsed?: true
-    gpuCost?: true
-    modelCost?: true
-    storageCost?: true
-    totalCost?: true
-    billingStatus?: true
-    invoiceId?: true
-    timestamp?: true
+    orgId?: true
+    userId?: true
+    type?: true
+    creditsDelta?: true
+    currency?: true
+    createdAt?: true
   }
 
   export type BillingEventMaxAggregateInputType = {
     id?: true
-    eventType?: true
-    userId?: true
-    organizationId?: true
+    costLedgerId?: true
     projectId?: true
-    jobId?: true
-    amount?: true
-    creditsConsumed?: true
-    computeSecondsUsed?: true
-    gpuCost?: true
-    modelCost?: true
-    storageCost?: true
-    totalCost?: true
-    billingStatus?: true
-    invoiceId?: true
-    timestamp?: true
+    orgId?: true
+    userId?: true
+    type?: true
+    creditsDelta?: true
+    currency?: true
+    createdAt?: true
   }
 
   export type BillingEventCountAggregateInputType = {
     id?: true
-    eventType?: true
-    userId?: true
-    organizationId?: true
+    costLedgerId?: true
     projectId?: true
-    jobId?: true
-    amount?: true
-    creditsConsumed?: true
-    computeSecondsUsed?: true
-    gpuCost?: true
-    modelCost?: true
-    storageCost?: true
-    totalCost?: true
-    billingStatus?: true
-    invoiceId?: true
-    timestamp?: true
+    orgId?: true
+    userId?: true
+    type?: true
+    creditsDelta?: true
+    currency?: true
     metadata?: true
+    createdAt?: true
     _all?: true
   }
 
@@ -37869,22 +37731,15 @@ export namespace Prisma {
 
   export type BillingEventGroupByOutputType = {
     id: string
-    eventType: $Enums.BillingEventType
-    userId: string
-    organizationId: string | null
-    projectId: string | null
-    jobId: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus: $Enums.BillingStatus
-    invoiceId: string | null
-    timestamp: Date
+    costLedgerId: string | null
+    projectId: string
+    orgId: string
+    userId: string | null
+    type: string
+    creditsDelta: number
+    currency: string
     metadata: JsonValue | null
+    createdAt: Date
     _count: BillingEventCountAggregateOutputType | null
     _avg: BillingEventAvgAggregateOutputType | null
     _sum: BillingEventSumAggregateOutputType | null
@@ -37908,111 +37763,83 @@ export namespace Prisma {
 
   export type BillingEventSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    eventType?: boolean
-    userId?: boolean
-    organizationId?: boolean
+    costLedgerId?: boolean
     projectId?: boolean
-    jobId?: boolean
-    amount?: boolean
-    creditsConsumed?: boolean
-    computeSecondsUsed?: boolean
-    gpuCost?: boolean
-    modelCost?: boolean
-    storageCost?: boolean
-    totalCost?: boolean
-    billingStatus?: boolean
-    invoiceId?: boolean
-    timestamp?: boolean
+    orgId?: boolean
+    userId?: boolean
+    type?: boolean
+    creditsDelta?: boolean
+    currency?: boolean
     metadata?: boolean
-    job?: boolean | BillingEvent$jobArgs<ExtArgs>
-    organization?: boolean | BillingEvent$organizationArgs<ExtArgs>
-    project?: boolean | BillingEvent$projectArgs<ExtArgs>
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    createdAt?: boolean
+    costLedger?: boolean | BillingEvent$costLedgerArgs<ExtArgs>
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+    organization?: boolean | OrganizationDefaultArgs<ExtArgs>
+    user?: boolean | BillingEvent$userArgs<ExtArgs>
   }, ExtArgs["result"]["billingEvent"]>
 
   export type BillingEventSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
-    eventType?: boolean
-    userId?: boolean
-    organizationId?: boolean
+    costLedgerId?: boolean
     projectId?: boolean
-    jobId?: boolean
-    amount?: boolean
-    creditsConsumed?: boolean
-    computeSecondsUsed?: boolean
-    gpuCost?: boolean
-    modelCost?: boolean
-    storageCost?: boolean
-    totalCost?: boolean
-    billingStatus?: boolean
-    invoiceId?: boolean
-    timestamp?: boolean
+    orgId?: boolean
+    userId?: boolean
+    type?: boolean
+    creditsDelta?: boolean
+    currency?: boolean
     metadata?: boolean
-    job?: boolean | BillingEvent$jobArgs<ExtArgs>
-    organization?: boolean | BillingEvent$organizationArgs<ExtArgs>
-    project?: boolean | BillingEvent$projectArgs<ExtArgs>
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    createdAt?: boolean
+    costLedger?: boolean | BillingEvent$costLedgerArgs<ExtArgs>
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+    organization?: boolean | OrganizationDefaultArgs<ExtArgs>
+    user?: boolean | BillingEvent$userArgs<ExtArgs>
   }, ExtArgs["result"]["billingEvent"]>
 
   export type BillingEventSelectScalar = {
     id?: boolean
-    eventType?: boolean
-    userId?: boolean
-    organizationId?: boolean
+    costLedgerId?: boolean
     projectId?: boolean
-    jobId?: boolean
-    amount?: boolean
-    creditsConsumed?: boolean
-    computeSecondsUsed?: boolean
-    gpuCost?: boolean
-    modelCost?: boolean
-    storageCost?: boolean
-    totalCost?: boolean
-    billingStatus?: boolean
-    invoiceId?: boolean
-    timestamp?: boolean
+    orgId?: boolean
+    userId?: boolean
+    type?: boolean
+    creditsDelta?: boolean
+    currency?: boolean
     metadata?: boolean
+    createdAt?: boolean
   }
 
   export type BillingEventInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    job?: boolean | BillingEvent$jobArgs<ExtArgs>
-    organization?: boolean | BillingEvent$organizationArgs<ExtArgs>
-    project?: boolean | BillingEvent$projectArgs<ExtArgs>
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    costLedger?: boolean | BillingEvent$costLedgerArgs<ExtArgs>
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+    organization?: boolean | OrganizationDefaultArgs<ExtArgs>
+    user?: boolean | BillingEvent$userArgs<ExtArgs>
   }
   export type BillingEventIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    job?: boolean | BillingEvent$jobArgs<ExtArgs>
-    organization?: boolean | BillingEvent$organizationArgs<ExtArgs>
-    project?: boolean | BillingEvent$projectArgs<ExtArgs>
-    user?: boolean | UserDefaultArgs<ExtArgs>
+    costLedger?: boolean | BillingEvent$costLedgerArgs<ExtArgs>
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+    organization?: boolean | OrganizationDefaultArgs<ExtArgs>
+    user?: boolean | BillingEvent$userArgs<ExtArgs>
   }
 
   export type $BillingEventPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "BillingEvent"
     objects: {
-      job: Prisma.$WorkerJobPayload<ExtArgs> | null
-      organization: Prisma.$OrganizationPayload<ExtArgs> | null
-      project: Prisma.$ProjectPayload<ExtArgs> | null
-      user: Prisma.$UserPayload<ExtArgs>
+      costLedger: Prisma.$CostLedgerPayload<ExtArgs> | null
+      project: Prisma.$ProjectPayload<ExtArgs>
+      organization: Prisma.$OrganizationPayload<ExtArgs>
+      user: Prisma.$UserPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      eventType: $Enums.BillingEventType
-      userId: string
-      organizationId: string | null
-      projectId: string | null
-      jobId: string | null
-      amount: number
-      creditsConsumed: number
-      computeSecondsUsed: number
-      gpuCost: number
-      modelCost: number
-      storageCost: number
-      totalCost: number
-      billingStatus: $Enums.BillingStatus
-      invoiceId: string | null
-      timestamp: Date
+      costLedgerId: string | null
+      projectId: string
+      orgId: string
+      userId: string | null
+      type: string
+      creditsDelta: number
+      currency: string
       metadata: Prisma.JsonValue | null
+      createdAt: Date
     }, ExtArgs["result"]["billingEvent"]>
     composites: {}
   }
@@ -38377,10 +38204,10 @@ export namespace Prisma {
    */
   export interface Prisma__BillingEventClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    job<T extends BillingEvent$jobArgs<ExtArgs> = {}>(args?: Subset<T, BillingEvent$jobArgs<ExtArgs>>): Prisma__WorkerJobClient<$Result.GetResult<Prisma.$WorkerJobPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
-    organization<T extends BillingEvent$organizationArgs<ExtArgs> = {}>(args?: Subset<T, BillingEvent$organizationArgs<ExtArgs>>): Prisma__OrganizationClient<$Result.GetResult<Prisma.$OrganizationPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
-    project<T extends BillingEvent$projectArgs<ExtArgs> = {}>(args?: Subset<T, BillingEvent$projectArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
-    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    costLedger<T extends BillingEvent$costLedgerArgs<ExtArgs> = {}>(args?: Subset<T, BillingEvent$costLedgerArgs<ExtArgs>>): Prisma__CostLedgerClient<$Result.GetResult<Prisma.$CostLedgerPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    organization<T extends OrganizationDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OrganizationDefaultArgs<ExtArgs>>): Prisma__OrganizationClient<$Result.GetResult<Prisma.$OrganizationPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    user<T extends BillingEvent$userArgs<ExtArgs> = {}>(args?: Subset<T, BillingEvent$userArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -38411,22 +38238,15 @@ export namespace Prisma {
    */ 
   interface BillingEventFieldRefs {
     readonly id: FieldRef<"BillingEvent", 'String'>
-    readonly eventType: FieldRef<"BillingEvent", 'BillingEventType'>
-    readonly userId: FieldRef<"BillingEvent", 'String'>
-    readonly organizationId: FieldRef<"BillingEvent", 'String'>
+    readonly costLedgerId: FieldRef<"BillingEvent", 'String'>
     readonly projectId: FieldRef<"BillingEvent", 'String'>
-    readonly jobId: FieldRef<"BillingEvent", 'String'>
-    readonly amount: FieldRef<"BillingEvent", 'Float'>
-    readonly creditsConsumed: FieldRef<"BillingEvent", 'Float'>
-    readonly computeSecondsUsed: FieldRef<"BillingEvent", 'Float'>
-    readonly gpuCost: FieldRef<"BillingEvent", 'Float'>
-    readonly modelCost: FieldRef<"BillingEvent", 'Float'>
-    readonly storageCost: FieldRef<"BillingEvent", 'Float'>
-    readonly totalCost: FieldRef<"BillingEvent", 'Float'>
-    readonly billingStatus: FieldRef<"BillingEvent", 'BillingStatus'>
-    readonly invoiceId: FieldRef<"BillingEvent", 'String'>
-    readonly timestamp: FieldRef<"BillingEvent", 'DateTime'>
+    readonly orgId: FieldRef<"BillingEvent", 'String'>
+    readonly userId: FieldRef<"BillingEvent", 'String'>
+    readonly type: FieldRef<"BillingEvent", 'String'>
+    readonly creditsDelta: FieldRef<"BillingEvent", 'Float'>
+    readonly currency: FieldRef<"BillingEvent", 'String'>
     readonly metadata: FieldRef<"BillingEvent", 'Json'>
+    readonly createdAt: FieldRef<"BillingEvent", 'DateTime'>
   }
     
 
@@ -38745,48 +38565,33 @@ export namespace Prisma {
   }
 
   /**
-   * BillingEvent.job
+   * BillingEvent.costLedger
    */
-  export type BillingEvent$jobArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type BillingEvent$costLedgerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the WorkerJob
+     * Select specific fields to fetch from the CostLedger
      */
-    select?: WorkerJobSelect<ExtArgs> | null
+    select?: CostLedgerSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: WorkerJobInclude<ExtArgs> | null
-    where?: WorkerJobWhereInput
+    include?: CostLedgerInclude<ExtArgs> | null
+    where?: CostLedgerWhereInput
   }
 
   /**
-   * BillingEvent.organization
+   * BillingEvent.user
    */
-  export type BillingEvent$organizationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type BillingEvent$userArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the Organization
+     * Select specific fields to fetch from the User
      */
-    select?: OrganizationSelect<ExtArgs> | null
+    select?: UserSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: OrganizationInclude<ExtArgs> | null
-    where?: OrganizationWhereInput
-  }
-
-  /**
-   * BillingEvent.project
-   */
-  export type BillingEvent$projectArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Project
-     */
-    select?: ProjectSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ProjectInclude<ExtArgs> | null
-    where?: ProjectWhereInput
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
   }
 
   /**
@@ -64500,6 +64305,8 @@ export namespace Prisma {
     quantity: number | null
     totalCost: number | null
     unitCost: number | null
+    totalCredits: number | null
+    unitCostCredits: number | null
   }
 
   export type CostLedgerSumAggregateOutputType = {
@@ -64507,6 +64314,8 @@ export namespace Prisma {
     quantity: number | null
     totalCost: number | null
     unitCost: number | null
+    totalCredits: number | null
+    unitCostCredits: number | null
   }
 
   export type CostLedgerMinAggregateOutputType = {
@@ -64526,7 +64335,14 @@ export namespace Prisma {
     totalCost: number | null
     costType: string | null
     unitCost: number | null
+    modelName: string | null
+    totalCredits: number | null
+    unitCostCredits: number | null
     timestamp: Date | null
+    billingStatus: $Enums.BillingStatus | null
+    billingEventId: string | null
+    billedAt: Date | null
+    billingError: string | null
   }
 
   export type CostLedgerMaxAggregateOutputType = {
@@ -64546,7 +64362,14 @@ export namespace Prisma {
     totalCost: number | null
     costType: string | null
     unitCost: number | null
+    modelName: string | null
+    totalCredits: number | null
+    unitCostCredits: number | null
     timestamp: Date | null
+    billingStatus: $Enums.BillingStatus | null
+    billingEventId: string | null
+    billedAt: Date | null
+    billingError: string | null
   }
 
   export type CostLedgerCountAggregateOutputType = {
@@ -64567,7 +64390,14 @@ export namespace Prisma {
     totalCost: number
     costType: number
     unitCost: number
+    modelName: number
+    totalCredits: number
+    unitCostCredits: number
     timestamp: number
+    billingStatus: number
+    billingEventId: number
+    billedAt: number
+    billingError: number
     _all: number
   }
 
@@ -64577,6 +64407,8 @@ export namespace Prisma {
     quantity?: true
     totalCost?: true
     unitCost?: true
+    totalCredits?: true
+    unitCostCredits?: true
   }
 
   export type CostLedgerSumAggregateInputType = {
@@ -64584,6 +64416,8 @@ export namespace Prisma {
     quantity?: true
     totalCost?: true
     unitCost?: true
+    totalCredits?: true
+    unitCostCredits?: true
   }
 
   export type CostLedgerMinAggregateInputType = {
@@ -64603,7 +64437,14 @@ export namespace Prisma {
     totalCost?: true
     costType?: true
     unitCost?: true
+    modelName?: true
+    totalCredits?: true
+    unitCostCredits?: true
     timestamp?: true
+    billingStatus?: true
+    billingEventId?: true
+    billedAt?: true
+    billingError?: true
   }
 
   export type CostLedgerMaxAggregateInputType = {
@@ -64623,7 +64464,14 @@ export namespace Prisma {
     totalCost?: true
     costType?: true
     unitCost?: true
+    modelName?: true
+    totalCredits?: true
+    unitCostCredits?: true
     timestamp?: true
+    billingStatus?: true
+    billingEventId?: true
+    billedAt?: true
+    billingError?: true
   }
 
   export type CostLedgerCountAggregateInputType = {
@@ -64644,7 +64492,14 @@ export namespace Prisma {
     totalCost?: true
     costType?: true
     unitCost?: true
+    modelName?: true
+    totalCredits?: true
+    unitCostCredits?: true
     timestamp?: true
+    billingStatus?: true
+    billingEventId?: true
+    billedAt?: true
+    billingError?: true
     _all?: true
   }
 
@@ -64752,7 +64607,14 @@ export namespace Prisma {
     totalCost: number | null
     costType: string | null
     unitCost: number | null
+    modelName: string | null
+    totalCredits: number | null
+    unitCostCredits: number | null
     timestamp: Date
+    billingStatus: $Enums.BillingStatus
+    billingEventId: string | null
+    billedAt: Date | null
+    billingError: string | null
     _count: CostLedgerCountAggregateOutputType | null
     _avg: CostLedgerAvgAggregateOutputType | null
     _sum: CostLedgerSumAggregateOutputType | null
@@ -64792,9 +64654,17 @@ export namespace Prisma {
     totalCost?: boolean
     costType?: boolean
     unitCost?: boolean
+    modelName?: boolean
+    totalCredits?: boolean
+    unitCostCredits?: boolean
     timestamp?: boolean
+    billingStatus?: boolean
+    billingEventId?: boolean
+    billedAt?: boolean
+    billingError?: boolean
     project?: boolean | ProjectDefaultArgs<ExtArgs>
     user?: boolean | CostLedger$userArgs<ExtArgs>
+    billingEvent?: boolean | CostLedger$billingEventArgs<ExtArgs>
   }, ExtArgs["result"]["costLedger"]>
 
   export type CostLedgerSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -64815,7 +64685,14 @@ export namespace Prisma {
     totalCost?: boolean
     costType?: boolean
     unitCost?: boolean
+    modelName?: boolean
+    totalCredits?: boolean
+    unitCostCredits?: boolean
     timestamp?: boolean
+    billingStatus?: boolean
+    billingEventId?: boolean
+    billedAt?: boolean
+    billingError?: boolean
     project?: boolean | ProjectDefaultArgs<ExtArgs>
     user?: boolean | CostLedger$userArgs<ExtArgs>
   }, ExtArgs["result"]["costLedger"]>
@@ -64838,12 +64715,20 @@ export namespace Prisma {
     totalCost?: boolean
     costType?: boolean
     unitCost?: boolean
+    modelName?: boolean
+    totalCredits?: boolean
+    unitCostCredits?: boolean
     timestamp?: boolean
+    billingStatus?: boolean
+    billingEventId?: boolean
+    billedAt?: boolean
+    billingError?: boolean
   }
 
   export type CostLedgerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     project?: boolean | ProjectDefaultArgs<ExtArgs>
     user?: boolean | CostLedger$userArgs<ExtArgs>
+    billingEvent?: boolean | CostLedger$billingEventArgs<ExtArgs>
   }
   export type CostLedgerIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     project?: boolean | ProjectDefaultArgs<ExtArgs>
@@ -64855,6 +64740,7 @@ export namespace Prisma {
     objects: {
       project: Prisma.$ProjectPayload<ExtArgs>
       user: Prisma.$UserPayload<ExtArgs> | null
+      billingEvent: Prisma.$BillingEventPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -64874,7 +64760,14 @@ export namespace Prisma {
       totalCost: number | null
       costType: string | null
       unitCost: number | null
+      modelName: string | null
+      totalCredits: number | null
+      unitCostCredits: number | null
       timestamp: Date
+      billingStatus: $Enums.BillingStatus
+      billingEventId: string | null
+      billedAt: Date | null
+      billingError: string | null
     }, ExtArgs["result"]["costLedger"]>
     composites: {}
   }
@@ -65241,6 +65134,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     user<T extends CostLedger$userArgs<ExtArgs> = {}>(args?: Subset<T, CostLedger$userArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    billingEvent<T extends CostLedger$billingEventArgs<ExtArgs> = {}>(args?: Subset<T, CostLedger$billingEventArgs<ExtArgs>>): Prisma__BillingEventClient<$Result.GetResult<Prisma.$BillingEventPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -65287,7 +65181,14 @@ export namespace Prisma {
     readonly totalCost: FieldRef<"CostLedger", 'Float'>
     readonly costType: FieldRef<"CostLedger", 'String'>
     readonly unitCost: FieldRef<"CostLedger", 'Float'>
+    readonly modelName: FieldRef<"CostLedger", 'String'>
+    readonly totalCredits: FieldRef<"CostLedger", 'Float'>
+    readonly unitCostCredits: FieldRef<"CostLedger", 'Float'>
     readonly timestamp: FieldRef<"CostLedger", 'DateTime'>
+    readonly billingStatus: FieldRef<"CostLedger", 'BillingStatus'>
+    readonly billingEventId: FieldRef<"CostLedger", 'String'>
+    readonly billedAt: FieldRef<"CostLedger", 'DateTime'>
+    readonly billingError: FieldRef<"CostLedger", 'String'>
   }
     
 
@@ -65618,6 +65519,21 @@ export namespace Prisma {
      */
     include?: UserInclude<ExtArgs> | null
     where?: UserWhereInput
+  }
+
+  /**
+   * CostLedger.billingEvent
+   */
+  export type CostLedger$billingEventArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BillingEvent
+     */
+    select?: BillingEventSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: BillingEventInclude<ExtArgs> | null
+    where?: BillingEventWhereInput
   }
 
   /**
@@ -66096,22 +66012,15 @@ export namespace Prisma {
 
   export const BillingEventScalarFieldEnum: {
     id: 'id',
-    eventType: 'eventType',
-    userId: 'userId',
-    organizationId: 'organizationId',
+    costLedgerId: 'costLedgerId',
     projectId: 'projectId',
-    jobId: 'jobId',
-    amount: 'amount',
-    creditsConsumed: 'creditsConsumed',
-    computeSecondsUsed: 'computeSecondsUsed',
-    gpuCost: 'gpuCost',
-    modelCost: 'modelCost',
-    storageCost: 'storageCost',
-    totalCost: 'totalCost',
-    billingStatus: 'billingStatus',
-    invoiceId: 'invoiceId',
-    timestamp: 'timestamp',
-    metadata: 'metadata'
+    orgId: 'orgId',
+    userId: 'userId',
+    type: 'type',
+    creditsDelta: 'creditsDelta',
+    currency: 'currency',
+    metadata: 'metadata',
+    createdAt: 'createdAt'
   };
 
   export type BillingEventScalarFieldEnum = (typeof BillingEventScalarFieldEnum)[keyof typeof BillingEventScalarFieldEnum]
@@ -66537,7 +66446,14 @@ export namespace Prisma {
     totalCost: 'totalCost',
     costType: 'costType',
     unitCost: 'unitCost',
-    timestamp: 'timestamp'
+    modelName: 'modelName',
+    totalCredits: 'totalCredits',
+    unitCostCredits: 'unitCostCredits',
+    timestamp: 'timestamp',
+    billingStatus: 'billingStatus',
+    billingEventId: 'billingEventId',
+    billedAt: 'billedAt',
+    billingError: 'billingError'
   };
 
   export type CostLedgerScalarFieldEnum = (typeof CostLedgerScalarFieldEnum)[keyof typeof CostLedgerScalarFieldEnum]
@@ -66947,34 +66863,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'BillingEventType'
-   */
-  export type EnumBillingEventTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BillingEventType'>
-    
-
-
-  /**
-   * Reference to a field of type 'BillingEventType[]'
-   */
-  export type ListEnumBillingEventTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BillingEventType[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'BillingStatus'
-   */
-  export type EnumBillingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BillingStatus'>
-    
-
-
-  /**
-   * Reference to a field of type 'BillingStatus[]'
-   */
-  export type ListEnumBillingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BillingStatus[]'>
-    
-
-
-  /**
    * Reference to a field of type 'SubscriptionStatus'
    */
   export type EnumSubscriptionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SubscriptionStatus'>
@@ -67139,6 +67027,20 @@ export namespace Prisma {
    * Reference to a field of type 'TextSafetyDecision[]'
    */
   export type ListEnumTextSafetyDecisionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TextSafetyDecision[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'BillingStatus'
+   */
+  export type EnumBillingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BillingStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'BillingStatus[]'
+   */
+  export type ListEnumBillingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BillingStatus[]'>
     
   /**
    * Deep Input Types
@@ -68933,7 +68835,6 @@ export namespace Prisma {
     modelVersion?: StringNullableFilter<"WorkerJob"> | string | null
     createdAt?: DateTimeFilter<"WorkerJob"> | Date | string
     updatedAt?: DateTimeFilter<"WorkerJob"> | Date | string
-    billingEvents?: BillingEventListRelationFilter
     worker?: XOR<WorkerNodeNullableRelationFilter, WorkerNodeWhereInput> | null
   }
 
@@ -68950,7 +68851,6 @@ export namespace Prisma {
     modelVersion?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    billingEvents?: BillingEventOrderByRelationAggregateInput
     worker?: WorkerNodeOrderByWithRelationInput
   }
 
@@ -68970,7 +68870,6 @@ export namespace Prisma {
     modelVersion?: StringNullableFilter<"WorkerJob"> | string | null
     createdAt?: DateTimeFilter<"WorkerJob"> | Date | string
     updatedAt?: DateTimeFilter<"WorkerJob"> | Date | string
-    billingEvents?: BillingEventListRelationFilter
     worker?: XOR<WorkerNodeNullableRelationFilter, WorkerNodeWhereInput> | null
   }, "id" | "jobId">
 
@@ -69632,97 +69531,69 @@ export namespace Prisma {
     OR?: BillingEventWhereInput[]
     NOT?: BillingEventWhereInput | BillingEventWhereInput[]
     id?: StringFilter<"BillingEvent"> | string
-    eventType?: EnumBillingEventTypeFilter<"BillingEvent"> | $Enums.BillingEventType
-    userId?: StringFilter<"BillingEvent"> | string
-    organizationId?: StringNullableFilter<"BillingEvent"> | string | null
-    projectId?: StringNullableFilter<"BillingEvent"> | string | null
-    jobId?: StringNullableFilter<"BillingEvent"> | string | null
-    amount?: FloatFilter<"BillingEvent"> | number
-    creditsConsumed?: FloatFilter<"BillingEvent"> | number
-    computeSecondsUsed?: FloatFilter<"BillingEvent"> | number
-    gpuCost?: FloatFilter<"BillingEvent"> | number
-    modelCost?: FloatFilter<"BillingEvent"> | number
-    storageCost?: FloatFilter<"BillingEvent"> | number
-    totalCost?: FloatFilter<"BillingEvent"> | number
-    billingStatus?: EnumBillingStatusFilter<"BillingEvent"> | $Enums.BillingStatus
-    invoiceId?: StringNullableFilter<"BillingEvent"> | string | null
-    timestamp?: DateTimeFilter<"BillingEvent"> | Date | string
+    costLedgerId?: StringNullableFilter<"BillingEvent"> | string | null
+    projectId?: StringFilter<"BillingEvent"> | string
+    orgId?: StringFilter<"BillingEvent"> | string
+    userId?: StringNullableFilter<"BillingEvent"> | string | null
+    type?: StringFilter<"BillingEvent"> | string
+    creditsDelta?: FloatFilter<"BillingEvent"> | number
+    currency?: StringFilter<"BillingEvent"> | string
     metadata?: JsonNullableFilter<"BillingEvent">
-    job?: XOR<WorkerJobNullableRelationFilter, WorkerJobWhereInput> | null
-    organization?: XOR<OrganizationNullableRelationFilter, OrganizationWhereInput> | null
-    project?: XOR<ProjectNullableRelationFilter, ProjectWhereInput> | null
-    user?: XOR<UserRelationFilter, UserWhereInput>
+    createdAt?: DateTimeFilter<"BillingEvent"> | Date | string
+    costLedger?: XOR<CostLedgerNullableRelationFilter, CostLedgerWhereInput> | null
+    project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+    organization?: XOR<OrganizationRelationFilter, OrganizationWhereInput>
+    user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
   }
 
   export type BillingEventOrderByWithRelationInput = {
     id?: SortOrder
-    eventType?: SortOrder
-    userId?: SortOrder
-    organizationId?: SortOrderInput | SortOrder
-    projectId?: SortOrderInput | SortOrder
-    jobId?: SortOrderInput | SortOrder
-    amount?: SortOrder
-    creditsConsumed?: SortOrder
-    computeSecondsUsed?: SortOrder
-    gpuCost?: SortOrder
-    modelCost?: SortOrder
-    storageCost?: SortOrder
-    totalCost?: SortOrder
-    billingStatus?: SortOrder
-    invoiceId?: SortOrderInput | SortOrder
-    timestamp?: SortOrder
+    costLedgerId?: SortOrderInput | SortOrder
+    projectId?: SortOrder
+    orgId?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    type?: SortOrder
+    creditsDelta?: SortOrder
+    currency?: SortOrder
     metadata?: SortOrderInput | SortOrder
-    job?: WorkerJobOrderByWithRelationInput
-    organization?: OrganizationOrderByWithRelationInput
+    createdAt?: SortOrder
+    costLedger?: CostLedgerOrderByWithRelationInput
     project?: ProjectOrderByWithRelationInput
+    organization?: OrganizationOrderByWithRelationInput
     user?: UserOrderByWithRelationInput
   }
 
   export type BillingEventWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    costLedgerId?: string
     AND?: BillingEventWhereInput | BillingEventWhereInput[]
     OR?: BillingEventWhereInput[]
     NOT?: BillingEventWhereInput | BillingEventWhereInput[]
-    eventType?: EnumBillingEventTypeFilter<"BillingEvent"> | $Enums.BillingEventType
-    userId?: StringFilter<"BillingEvent"> | string
-    organizationId?: StringNullableFilter<"BillingEvent"> | string | null
-    projectId?: StringNullableFilter<"BillingEvent"> | string | null
-    jobId?: StringNullableFilter<"BillingEvent"> | string | null
-    amount?: FloatFilter<"BillingEvent"> | number
-    creditsConsumed?: FloatFilter<"BillingEvent"> | number
-    computeSecondsUsed?: FloatFilter<"BillingEvent"> | number
-    gpuCost?: FloatFilter<"BillingEvent"> | number
-    modelCost?: FloatFilter<"BillingEvent"> | number
-    storageCost?: FloatFilter<"BillingEvent"> | number
-    totalCost?: FloatFilter<"BillingEvent"> | number
-    billingStatus?: EnumBillingStatusFilter<"BillingEvent"> | $Enums.BillingStatus
-    invoiceId?: StringNullableFilter<"BillingEvent"> | string | null
-    timestamp?: DateTimeFilter<"BillingEvent"> | Date | string
+    projectId?: StringFilter<"BillingEvent"> | string
+    orgId?: StringFilter<"BillingEvent"> | string
+    userId?: StringNullableFilter<"BillingEvent"> | string | null
+    type?: StringFilter<"BillingEvent"> | string
+    creditsDelta?: FloatFilter<"BillingEvent"> | number
+    currency?: StringFilter<"BillingEvent"> | string
     metadata?: JsonNullableFilter<"BillingEvent">
-    job?: XOR<WorkerJobNullableRelationFilter, WorkerJobWhereInput> | null
-    organization?: XOR<OrganizationNullableRelationFilter, OrganizationWhereInput> | null
-    project?: XOR<ProjectNullableRelationFilter, ProjectWhereInput> | null
-    user?: XOR<UserRelationFilter, UserWhereInput>
-  }, "id">
+    createdAt?: DateTimeFilter<"BillingEvent"> | Date | string
+    costLedger?: XOR<CostLedgerNullableRelationFilter, CostLedgerWhereInput> | null
+    project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+    organization?: XOR<OrganizationRelationFilter, OrganizationWhereInput>
+    user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+  }, "id" | "costLedgerId">
 
   export type BillingEventOrderByWithAggregationInput = {
     id?: SortOrder
-    eventType?: SortOrder
-    userId?: SortOrder
-    organizationId?: SortOrderInput | SortOrder
-    projectId?: SortOrderInput | SortOrder
-    jobId?: SortOrderInput | SortOrder
-    amount?: SortOrder
-    creditsConsumed?: SortOrder
-    computeSecondsUsed?: SortOrder
-    gpuCost?: SortOrder
-    modelCost?: SortOrder
-    storageCost?: SortOrder
-    totalCost?: SortOrder
-    billingStatus?: SortOrder
-    invoiceId?: SortOrderInput | SortOrder
-    timestamp?: SortOrder
+    costLedgerId?: SortOrderInput | SortOrder
+    projectId?: SortOrder
+    orgId?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    type?: SortOrder
+    creditsDelta?: SortOrder
+    currency?: SortOrder
     metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
     _count?: BillingEventCountOrderByAggregateInput
     _avg?: BillingEventAvgOrderByAggregateInput
     _max?: BillingEventMaxOrderByAggregateInput
@@ -69735,22 +69606,15 @@ export namespace Prisma {
     OR?: BillingEventScalarWhereWithAggregatesInput[]
     NOT?: BillingEventScalarWhereWithAggregatesInput | BillingEventScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"BillingEvent"> | string
-    eventType?: EnumBillingEventTypeWithAggregatesFilter<"BillingEvent"> | $Enums.BillingEventType
-    userId?: StringWithAggregatesFilter<"BillingEvent"> | string
-    organizationId?: StringNullableWithAggregatesFilter<"BillingEvent"> | string | null
-    projectId?: StringNullableWithAggregatesFilter<"BillingEvent"> | string | null
-    jobId?: StringNullableWithAggregatesFilter<"BillingEvent"> | string | null
-    amount?: FloatWithAggregatesFilter<"BillingEvent"> | number
-    creditsConsumed?: FloatWithAggregatesFilter<"BillingEvent"> | number
-    computeSecondsUsed?: FloatWithAggregatesFilter<"BillingEvent"> | number
-    gpuCost?: FloatWithAggregatesFilter<"BillingEvent"> | number
-    modelCost?: FloatWithAggregatesFilter<"BillingEvent"> | number
-    storageCost?: FloatWithAggregatesFilter<"BillingEvent"> | number
-    totalCost?: FloatWithAggregatesFilter<"BillingEvent"> | number
-    billingStatus?: EnumBillingStatusWithAggregatesFilter<"BillingEvent"> | $Enums.BillingStatus
-    invoiceId?: StringNullableWithAggregatesFilter<"BillingEvent"> | string | null
-    timestamp?: DateTimeWithAggregatesFilter<"BillingEvent"> | Date | string
+    costLedgerId?: StringNullableWithAggregatesFilter<"BillingEvent"> | string | null
+    projectId?: StringWithAggregatesFilter<"BillingEvent"> | string
+    orgId?: StringWithAggregatesFilter<"BillingEvent"> | string
+    userId?: StringNullableWithAggregatesFilter<"BillingEvent"> | string | null
+    type?: StringWithAggregatesFilter<"BillingEvent"> | string
+    creditsDelta?: FloatWithAggregatesFilter<"BillingEvent"> | number
+    currency?: StringWithAggregatesFilter<"BillingEvent"> | string
     metadata?: JsonNullableWithAggregatesFilter<"BillingEvent">
+    createdAt?: DateTimeWithAggregatesFilter<"BillingEvent"> | Date | string
   }
 
   export type CostCenterWhereInput = {
@@ -71822,9 +71686,17 @@ export namespace Prisma {
     totalCost?: FloatNullableFilter<"CostLedger"> | number | null
     costType?: StringNullableFilter<"CostLedger"> | string | null
     unitCost?: FloatNullableFilter<"CostLedger"> | number | null
+    modelName?: StringNullableFilter<"CostLedger"> | string | null
+    totalCredits?: FloatNullableFilter<"CostLedger"> | number | null
+    unitCostCredits?: FloatNullableFilter<"CostLedger"> | number | null
     timestamp?: DateTimeFilter<"CostLedger"> | Date | string
+    billingStatus?: EnumBillingStatusFilter<"CostLedger"> | $Enums.BillingStatus
+    billingEventId?: StringNullableFilter<"CostLedger"> | string | null
+    billedAt?: DateTimeNullableFilter<"CostLedger"> | Date | string | null
+    billingError?: StringNullableFilter<"CostLedger"> | string | null
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
     user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    billingEvent?: XOR<BillingEventNullableRelationFilter, BillingEventWhereInput> | null
   }
 
   export type CostLedgerOrderByWithRelationInput = {
@@ -71845,9 +71717,17 @@ export namespace Prisma {
     totalCost?: SortOrderInput | SortOrder
     costType?: SortOrderInput | SortOrder
     unitCost?: SortOrderInput | SortOrder
+    modelName?: SortOrderInput | SortOrder
+    totalCredits?: SortOrderInput | SortOrder
+    unitCostCredits?: SortOrderInput | SortOrder
     timestamp?: SortOrder
+    billingStatus?: SortOrder
+    billingEventId?: SortOrderInput | SortOrder
+    billedAt?: SortOrderInput | SortOrder
+    billingError?: SortOrderInput | SortOrder
     project?: ProjectOrderByWithRelationInput
     user?: UserOrderByWithRelationInput
+    billingEvent?: BillingEventOrderByWithRelationInput
   }
 
   export type CostLedgerWhereUniqueInput = Prisma.AtLeast<{
@@ -71872,9 +71752,17 @@ export namespace Prisma {
     totalCost?: FloatNullableFilter<"CostLedger"> | number | null
     costType?: StringNullableFilter<"CostLedger"> | string | null
     unitCost?: FloatNullableFilter<"CostLedger"> | number | null
+    modelName?: StringNullableFilter<"CostLedger"> | string | null
+    totalCredits?: FloatNullableFilter<"CostLedger"> | number | null
+    unitCostCredits?: FloatNullableFilter<"CostLedger"> | number | null
     timestamp?: DateTimeFilter<"CostLedger"> | Date | string
+    billingStatus?: EnumBillingStatusFilter<"CostLedger"> | $Enums.BillingStatus
+    billingEventId?: StringNullableFilter<"CostLedger"> | string | null
+    billedAt?: DateTimeNullableFilter<"CostLedger"> | Date | string | null
+    billingError?: StringNullableFilter<"CostLedger"> | string | null
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
     user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    billingEvent?: XOR<BillingEventNullableRelationFilter, BillingEventWhereInput> | null
   }, "id" | "jobId_jobType">
 
   export type CostLedgerOrderByWithAggregationInput = {
@@ -71895,7 +71783,14 @@ export namespace Prisma {
     totalCost?: SortOrderInput | SortOrder
     costType?: SortOrderInput | SortOrder
     unitCost?: SortOrderInput | SortOrder
+    modelName?: SortOrderInput | SortOrder
+    totalCredits?: SortOrderInput | SortOrder
+    unitCostCredits?: SortOrderInput | SortOrder
     timestamp?: SortOrder
+    billingStatus?: SortOrder
+    billingEventId?: SortOrderInput | SortOrder
+    billedAt?: SortOrderInput | SortOrder
+    billingError?: SortOrderInput | SortOrder
     _count?: CostLedgerCountOrderByAggregateInput
     _avg?: CostLedgerAvgOrderByAggregateInput
     _max?: CostLedgerMaxOrderByAggregateInput
@@ -71924,7 +71819,14 @@ export namespace Prisma {
     totalCost?: FloatNullableWithAggregatesFilter<"CostLedger"> | number | null
     costType?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
     unitCost?: FloatNullableWithAggregatesFilter<"CostLedger"> | number | null
+    modelName?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
+    totalCredits?: FloatNullableWithAggregatesFilter<"CostLedger"> | number | null
+    unitCostCredits?: FloatNullableWithAggregatesFilter<"CostLedger"> | number | null
     timestamp?: DateTimeWithAggregatesFilter<"CostLedger"> | Date | string
+    billingStatus?: EnumBillingStatusWithAggregatesFilter<"CostLedger"> | $Enums.BillingStatus
+    billingEventId?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
+    billedAt?: DateTimeNullableWithAggregatesFilter<"CostLedger"> | Date | string | null
+    billingError?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
   }
 
   export type UserCreateInput = {
@@ -73863,7 +73765,6 @@ export namespace Prisma {
     modelVersion?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    billingEvents?: BillingEventCreateNestedManyWithoutJobInput
     worker?: WorkerNodeCreateNestedOneWithoutJobsInput
   }
 
@@ -73880,7 +73781,6 @@ export namespace Prisma {
     modelVersion?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    billingEvents?: BillingEventUncheckedCreateNestedManyWithoutJobInput
   }
 
   export type WorkerJobUpdateInput = {
@@ -73895,7 +73795,6 @@ export namespace Prisma {
     modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    billingEvents?: BillingEventUpdateManyWithoutJobNestedInput
     worker?: WorkerNodeUpdateOneWithoutJobsNestedInput
   }
 
@@ -73912,7 +73811,6 @@ export namespace Prisma {
     modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    billingEvents?: BillingEventUncheckedUpdateManyWithoutJobNestedInput
   }
 
   export type WorkerJobCreateManyInput = {
@@ -74644,138 +74542,89 @@ export namespace Prisma {
 
   export type BillingEventCreateInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
-    job?: WorkerJobCreateNestedOneWithoutBillingEventsInput
-    organization?: OrganizationCreateNestedOneWithoutBillingEventsInput
-    project?: ProjectCreateNestedOneWithoutBillingEventsInput
-    user: UserCreateNestedOneWithoutBillingEventsInput
+    createdAt?: Date | string
+    costLedger?: CostLedgerCreateNestedOneWithoutBillingEventInput
+    project: ProjectCreateNestedOneWithoutBillingEventsInput
+    organization: OrganizationCreateNestedOneWithoutBillingEventsInput
+    user?: UserCreateNestedOneWithoutBillingEventsInput
   }
 
   export type BillingEventUncheckedCreateInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    userId: string
-    organizationId?: string | null
-    projectId?: string | null
-    jobId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    costLedgerId?: string | null
+    projectId: string
+    orgId: string
+    userId?: string | null
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type BillingEventUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
-    job?: WorkerJobUpdateOneWithoutBillingEventsNestedInput
-    organization?: OrganizationUpdateOneWithoutBillingEventsNestedInput
-    project?: ProjectUpdateOneWithoutBillingEventsNestedInput
-    user?: UserUpdateOneRequiredWithoutBillingEventsNestedInput
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedger?: CostLedgerUpdateOneWithoutBillingEventNestedInput
+    project?: ProjectUpdateOneRequiredWithoutBillingEventsNestedInput
+    organization?: OrganizationUpdateOneRequiredWithoutBillingEventsNestedInput
+    user?: UserUpdateOneWithoutBillingEventsNestedInput
   }
 
   export type BillingEventUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    userId?: StringFieldUpdateOperationsInput | string
-    organizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedgerId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
+    orgId?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BillingEventCreateManyInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    userId: string
-    organizationId?: string | null
-    projectId?: string | null
-    jobId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    costLedgerId?: string | null
+    projectId: string
+    orgId: string
+    userId?: string | null
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type BillingEventUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BillingEventUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    userId?: StringFieldUpdateOperationsInput | string
-    organizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedgerId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
+    orgId?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CostCenterCreateInput = {
@@ -77063,9 +76912,17 @@ export namespace Prisma {
     totalCost?: number | null
     costType?: string | null
     unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
     timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
     project: ProjectCreateNestedOneWithoutCostLedgersInput
     user?: UserCreateNestedOneWithoutCostLedgersInput
+    billingEvent?: BillingEventCreateNestedOneWithoutCostLedgerInput
   }
 
   export type CostLedgerUncheckedCreateInput = {
@@ -77086,7 +76943,15 @@ export namespace Prisma {
     totalCost?: number | null
     costType?: string | null
     unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
     timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
+    billingEvent?: BillingEventUncheckedCreateNestedOneWithoutCostLedgerInput
   }
 
   export type CostLedgerUpdateInput = {
@@ -77105,9 +76970,17 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
     project?: ProjectUpdateOneRequiredWithoutCostLedgersNestedInput
     user?: UserUpdateOneWithoutCostLedgersNestedInput
+    billingEvent?: BillingEventUpdateOneWithoutCostLedgerNestedInput
   }
 
   export type CostLedgerUncheckedUpdateInput = {
@@ -77128,7 +77001,15 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
+    billingEvent?: BillingEventUncheckedUpdateOneWithoutCostLedgerNestedInput
   }
 
   export type CostLedgerCreateManyInput = {
@@ -77149,7 +77030,14 @@ export namespace Prisma {
     totalCost?: number | null
     costType?: string | null
     unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
     timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
   }
 
   export type CostLedgerUpdateManyMutationInput = {
@@ -77168,7 +77056,14 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type CostLedgerUncheckedUpdateManyInput = {
@@ -77189,7 +77084,14 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -79515,121 +79417,59 @@ export namespace Prisma {
     _max?: NestedEnumReviewStatusFilter<$PrismaModel>
   }
 
-  export type EnumBillingEventTypeFilter<$PrismaModel = never> = {
-    equals?: $Enums.BillingEventType | EnumBillingEventTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.BillingEventType[] | ListEnumBillingEventTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.BillingEventType[] | ListEnumBillingEventTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumBillingEventTypeFilter<$PrismaModel> | $Enums.BillingEventType
+  export type CostLedgerNullableRelationFilter = {
+    is?: CostLedgerWhereInput | null
+    isNot?: CostLedgerWhereInput | null
   }
 
-  export type EnumBillingStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.BillingStatus | EnumBillingStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumBillingStatusFilter<$PrismaModel> | $Enums.BillingStatus
-  }
-
-  export type WorkerJobNullableRelationFilter = {
-    is?: WorkerJobWhereInput | null
-    isNot?: WorkerJobWhereInput | null
+  export type UserNullableRelationFilter = {
+    is?: UserWhereInput | null
+    isNot?: UserWhereInput | null
   }
 
   export type BillingEventCountOrderByAggregateInput = {
     id?: SortOrder
-    eventType?: SortOrder
-    userId?: SortOrder
-    organizationId?: SortOrder
+    costLedgerId?: SortOrder
     projectId?: SortOrder
-    jobId?: SortOrder
-    amount?: SortOrder
-    creditsConsumed?: SortOrder
-    computeSecondsUsed?: SortOrder
-    gpuCost?: SortOrder
-    modelCost?: SortOrder
-    storageCost?: SortOrder
-    totalCost?: SortOrder
-    billingStatus?: SortOrder
-    invoiceId?: SortOrder
-    timestamp?: SortOrder
+    orgId?: SortOrder
+    userId?: SortOrder
+    type?: SortOrder
+    creditsDelta?: SortOrder
+    currency?: SortOrder
     metadata?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type BillingEventAvgOrderByAggregateInput = {
-    amount?: SortOrder
-    creditsConsumed?: SortOrder
-    computeSecondsUsed?: SortOrder
-    gpuCost?: SortOrder
-    modelCost?: SortOrder
-    storageCost?: SortOrder
-    totalCost?: SortOrder
+    creditsDelta?: SortOrder
   }
 
   export type BillingEventMaxOrderByAggregateInput = {
     id?: SortOrder
-    eventType?: SortOrder
-    userId?: SortOrder
-    organizationId?: SortOrder
+    costLedgerId?: SortOrder
     projectId?: SortOrder
-    jobId?: SortOrder
-    amount?: SortOrder
-    creditsConsumed?: SortOrder
-    computeSecondsUsed?: SortOrder
-    gpuCost?: SortOrder
-    modelCost?: SortOrder
-    storageCost?: SortOrder
-    totalCost?: SortOrder
-    billingStatus?: SortOrder
-    invoiceId?: SortOrder
-    timestamp?: SortOrder
+    orgId?: SortOrder
+    userId?: SortOrder
+    type?: SortOrder
+    creditsDelta?: SortOrder
+    currency?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type BillingEventMinOrderByAggregateInput = {
     id?: SortOrder
-    eventType?: SortOrder
-    userId?: SortOrder
-    organizationId?: SortOrder
+    costLedgerId?: SortOrder
     projectId?: SortOrder
-    jobId?: SortOrder
-    amount?: SortOrder
-    creditsConsumed?: SortOrder
-    computeSecondsUsed?: SortOrder
-    gpuCost?: SortOrder
-    modelCost?: SortOrder
-    storageCost?: SortOrder
-    totalCost?: SortOrder
-    billingStatus?: SortOrder
-    invoiceId?: SortOrder
-    timestamp?: SortOrder
+    orgId?: SortOrder
+    userId?: SortOrder
+    type?: SortOrder
+    creditsDelta?: SortOrder
+    currency?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type BillingEventSumOrderByAggregateInput = {
-    amount?: SortOrder
-    creditsConsumed?: SortOrder
-    computeSecondsUsed?: SortOrder
-    gpuCost?: SortOrder
-    modelCost?: SortOrder
-    storageCost?: SortOrder
-    totalCost?: SortOrder
-  }
-
-  export type EnumBillingEventTypeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.BillingEventType | EnumBillingEventTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.BillingEventType[] | ListEnumBillingEventTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.BillingEventType[] | ListEnumBillingEventTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumBillingEventTypeWithAggregatesFilter<$PrismaModel> | $Enums.BillingEventType
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumBillingEventTypeFilter<$PrismaModel>
-    _max?: NestedEnumBillingEventTypeFilter<$PrismaModel>
-  }
-
-  export type EnumBillingStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.BillingStatus | EnumBillingStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumBillingStatusWithAggregatesFilter<$PrismaModel> | $Enums.BillingStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumBillingStatusFilter<$PrismaModel>
-    _max?: NestedEnumBillingStatusFilter<$PrismaModel>
+    creditsDelta?: SortOrder
   }
 
   export type CostCenterCountOrderByAggregateInput = {
@@ -79677,11 +79517,6 @@ export namespace Prisma {
     in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumSubscriptionStatusFilter<$PrismaModel> | $Enums.SubscriptionStatus
-  }
-
-  export type UserNullableRelationFilter = {
-    is?: UserWhereInput | null
-    isNot?: UserWhereInput | null
   }
 
   export type SubscriptionCountOrderByAggregateInput = {
@@ -80963,6 +80798,18 @@ export namespace Prisma {
     _max?: NestedEnumTextSafetyDecisionFilter<$PrismaModel>
   }
 
+  export type EnumBillingStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.BillingStatus | EnumBillingStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumBillingStatusFilter<$PrismaModel> | $Enums.BillingStatus
+  }
+
+  export type BillingEventNullableRelationFilter = {
+    is?: BillingEventWhereInput | null
+    isNot?: BillingEventWhereInput | null
+  }
+
   export type CostLedgerJobIdJobTypeCompoundUniqueInput = {
     jobId: string
     jobType: string
@@ -80986,7 +80833,14 @@ export namespace Prisma {
     totalCost?: SortOrder
     costType?: SortOrder
     unitCost?: SortOrder
+    modelName?: SortOrder
+    totalCredits?: SortOrder
+    unitCostCredits?: SortOrder
     timestamp?: SortOrder
+    billingStatus?: SortOrder
+    billingEventId?: SortOrder
+    billedAt?: SortOrder
+    billingError?: SortOrder
   }
 
   export type CostLedgerAvgOrderByAggregateInput = {
@@ -80994,6 +80848,8 @@ export namespace Prisma {
     quantity?: SortOrder
     totalCost?: SortOrder
     unitCost?: SortOrder
+    totalCredits?: SortOrder
+    unitCostCredits?: SortOrder
   }
 
   export type CostLedgerMaxOrderByAggregateInput = {
@@ -81013,7 +80869,14 @@ export namespace Prisma {
     totalCost?: SortOrder
     costType?: SortOrder
     unitCost?: SortOrder
+    modelName?: SortOrder
+    totalCredits?: SortOrder
+    unitCostCredits?: SortOrder
     timestamp?: SortOrder
+    billingStatus?: SortOrder
+    billingEventId?: SortOrder
+    billedAt?: SortOrder
+    billingError?: SortOrder
   }
 
   export type CostLedgerMinOrderByAggregateInput = {
@@ -81033,7 +80896,14 @@ export namespace Prisma {
     totalCost?: SortOrder
     costType?: SortOrder
     unitCost?: SortOrder
+    modelName?: SortOrder
+    totalCredits?: SortOrder
+    unitCostCredits?: SortOrder
     timestamp?: SortOrder
+    billingStatus?: SortOrder
+    billingEventId?: SortOrder
+    billedAt?: SortOrder
+    billingError?: SortOrder
   }
 
   export type CostLedgerSumOrderByAggregateInput = {
@@ -81041,6 +80911,18 @@ export namespace Prisma {
     quantity?: SortOrder
     totalCost?: SortOrder
     unitCost?: SortOrder
+    totalCredits?: SortOrder
+    unitCostCredits?: SortOrder
+  }
+
+  export type EnumBillingStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.BillingStatus | EnumBillingStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumBillingStatusWithAggregatesFilter<$PrismaModel> | $Enums.BillingStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumBillingStatusFilter<$PrismaModel>
+    _max?: NestedEnumBillingStatusFilter<$PrismaModel>
   }
 
   export type ApiKeyCreateNestedManyWithoutOwnerUserInput = {
@@ -83887,24 +83769,10 @@ export namespace Prisma {
     deleteMany?: ShotJobScalarWhereInput | ShotJobScalarWhereInput[]
   }
 
-  export type BillingEventCreateNestedManyWithoutJobInput = {
-    create?: XOR<BillingEventCreateWithoutJobInput, BillingEventUncheckedCreateWithoutJobInput> | BillingEventCreateWithoutJobInput[] | BillingEventUncheckedCreateWithoutJobInput[]
-    connectOrCreate?: BillingEventCreateOrConnectWithoutJobInput | BillingEventCreateOrConnectWithoutJobInput[]
-    createMany?: BillingEventCreateManyJobInputEnvelope
-    connect?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
-  }
-
   export type WorkerNodeCreateNestedOneWithoutJobsInput = {
     create?: XOR<WorkerNodeCreateWithoutJobsInput, WorkerNodeUncheckedCreateWithoutJobsInput>
     connectOrCreate?: WorkerNodeCreateOrConnectWithoutJobsInput
     connect?: WorkerNodeWhereUniqueInput
-  }
-
-  export type BillingEventUncheckedCreateNestedManyWithoutJobInput = {
-    create?: XOR<BillingEventCreateWithoutJobInput, BillingEventUncheckedCreateWithoutJobInput> | BillingEventCreateWithoutJobInput[] | BillingEventUncheckedCreateWithoutJobInput[]
-    connectOrCreate?: BillingEventCreateOrConnectWithoutJobInput | BillingEventCreateOrConnectWithoutJobInput[]
-    createMany?: BillingEventCreateManyJobInputEnvelope
-    connect?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
   }
 
   export type EnumWorkerJobTypeFieldUpdateOperationsInput = {
@@ -83915,20 +83783,6 @@ export namespace Prisma {
     set?: $Enums.WorkerJobStatus
   }
 
-  export type BillingEventUpdateManyWithoutJobNestedInput = {
-    create?: XOR<BillingEventCreateWithoutJobInput, BillingEventUncheckedCreateWithoutJobInput> | BillingEventCreateWithoutJobInput[] | BillingEventUncheckedCreateWithoutJobInput[]
-    connectOrCreate?: BillingEventCreateOrConnectWithoutJobInput | BillingEventCreateOrConnectWithoutJobInput[]
-    upsert?: BillingEventUpsertWithWhereUniqueWithoutJobInput | BillingEventUpsertWithWhereUniqueWithoutJobInput[]
-    createMany?: BillingEventCreateManyJobInputEnvelope
-    set?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
-    disconnect?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
-    delete?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
-    connect?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
-    update?: BillingEventUpdateWithWhereUniqueWithoutJobInput | BillingEventUpdateWithWhereUniqueWithoutJobInput[]
-    updateMany?: BillingEventUpdateManyWithWhereWithoutJobInput | BillingEventUpdateManyWithWhereWithoutJobInput[]
-    deleteMany?: BillingEventScalarWhereInput | BillingEventScalarWhereInput[]
-  }
-
   export type WorkerNodeUpdateOneWithoutJobsNestedInput = {
     create?: XOR<WorkerNodeCreateWithoutJobsInput, WorkerNodeUncheckedCreateWithoutJobsInput>
     connectOrCreate?: WorkerNodeCreateOrConnectWithoutJobsInput
@@ -83937,20 +83791,6 @@ export namespace Prisma {
     delete?: WorkerNodeWhereInput | boolean
     connect?: WorkerNodeWhereUniqueInput
     update?: XOR<XOR<WorkerNodeUpdateToOneWithWhereWithoutJobsInput, WorkerNodeUpdateWithoutJobsInput>, WorkerNodeUncheckedUpdateWithoutJobsInput>
-  }
-
-  export type BillingEventUncheckedUpdateManyWithoutJobNestedInput = {
-    create?: XOR<BillingEventCreateWithoutJobInput, BillingEventUncheckedCreateWithoutJobInput> | BillingEventCreateWithoutJobInput[] | BillingEventUncheckedCreateWithoutJobInput[]
-    connectOrCreate?: BillingEventCreateOrConnectWithoutJobInput | BillingEventCreateOrConnectWithoutJobInput[]
-    upsert?: BillingEventUpsertWithWhereUniqueWithoutJobInput | BillingEventUpsertWithWhereUniqueWithoutJobInput[]
-    createMany?: BillingEventCreateManyJobInputEnvelope
-    set?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
-    disconnect?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
-    delete?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
-    connect?: BillingEventWhereUniqueInput | BillingEventWhereUniqueInput[]
-    update?: BillingEventUpdateWithWhereUniqueWithoutJobInput | BillingEventUpdateWithWhereUniqueWithoutJobInput[]
-    updateMany?: BillingEventUpdateManyWithWhereWithoutJobInput | BillingEventUpdateManyWithWhereWithoutJobInput[]
-    deleteMany?: BillingEventScalarWhereInput | BillingEventScalarWhereInput[]
   }
 
   export type EpisodeCreateNestedOneWithoutShotJobsInput = {
@@ -84311,16 +84151,10 @@ export namespace Prisma {
     update?: XOR<XOR<ShotUpdateToOneWithWhereWithoutSafetyResultsInput, ShotUpdateWithoutSafetyResultsInput>, ShotUncheckedUpdateWithoutSafetyResultsInput>
   }
 
-  export type WorkerJobCreateNestedOneWithoutBillingEventsInput = {
-    create?: XOR<WorkerJobCreateWithoutBillingEventsInput, WorkerJobUncheckedCreateWithoutBillingEventsInput>
-    connectOrCreate?: WorkerJobCreateOrConnectWithoutBillingEventsInput
-    connect?: WorkerJobWhereUniqueInput
-  }
-
-  export type OrganizationCreateNestedOneWithoutBillingEventsInput = {
-    create?: XOR<OrganizationCreateWithoutBillingEventsInput, OrganizationUncheckedCreateWithoutBillingEventsInput>
-    connectOrCreate?: OrganizationCreateOrConnectWithoutBillingEventsInput
-    connect?: OrganizationWhereUniqueInput
+  export type CostLedgerCreateNestedOneWithoutBillingEventInput = {
+    create?: XOR<CostLedgerCreateWithoutBillingEventInput, CostLedgerUncheckedCreateWithoutBillingEventInput>
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutBillingEventInput
+    connect?: CostLedgerWhereUniqueInput
   }
 
   export type ProjectCreateNestedOneWithoutBillingEventsInput = {
@@ -84329,54 +84163,50 @@ export namespace Prisma {
     connect?: ProjectWhereUniqueInput
   }
 
+  export type OrganizationCreateNestedOneWithoutBillingEventsInput = {
+    create?: XOR<OrganizationCreateWithoutBillingEventsInput, OrganizationUncheckedCreateWithoutBillingEventsInput>
+    connectOrCreate?: OrganizationCreateOrConnectWithoutBillingEventsInput
+    connect?: OrganizationWhereUniqueInput
+  }
+
   export type UserCreateNestedOneWithoutBillingEventsInput = {
     create?: XOR<UserCreateWithoutBillingEventsInput, UserUncheckedCreateWithoutBillingEventsInput>
     connectOrCreate?: UserCreateOrConnectWithoutBillingEventsInput
     connect?: UserWhereUniqueInput
   }
 
-  export type EnumBillingEventTypeFieldUpdateOperationsInput = {
-    set?: $Enums.BillingEventType
+  export type CostLedgerUpdateOneWithoutBillingEventNestedInput = {
+    create?: XOR<CostLedgerCreateWithoutBillingEventInput, CostLedgerUncheckedCreateWithoutBillingEventInput>
+    connectOrCreate?: CostLedgerCreateOrConnectWithoutBillingEventInput
+    upsert?: CostLedgerUpsertWithoutBillingEventInput
+    disconnect?: CostLedgerWhereInput | boolean
+    delete?: CostLedgerWhereInput | boolean
+    connect?: CostLedgerWhereUniqueInput
+    update?: XOR<XOR<CostLedgerUpdateToOneWithWhereWithoutBillingEventInput, CostLedgerUpdateWithoutBillingEventInput>, CostLedgerUncheckedUpdateWithoutBillingEventInput>
   }
 
-  export type EnumBillingStatusFieldUpdateOperationsInput = {
-    set?: $Enums.BillingStatus
-  }
-
-  export type WorkerJobUpdateOneWithoutBillingEventsNestedInput = {
-    create?: XOR<WorkerJobCreateWithoutBillingEventsInput, WorkerJobUncheckedCreateWithoutBillingEventsInput>
-    connectOrCreate?: WorkerJobCreateOrConnectWithoutBillingEventsInput
-    upsert?: WorkerJobUpsertWithoutBillingEventsInput
-    disconnect?: WorkerJobWhereInput | boolean
-    delete?: WorkerJobWhereInput | boolean
-    connect?: WorkerJobWhereUniqueInput
-    update?: XOR<XOR<WorkerJobUpdateToOneWithWhereWithoutBillingEventsInput, WorkerJobUpdateWithoutBillingEventsInput>, WorkerJobUncheckedUpdateWithoutBillingEventsInput>
-  }
-
-  export type OrganizationUpdateOneWithoutBillingEventsNestedInput = {
-    create?: XOR<OrganizationCreateWithoutBillingEventsInput, OrganizationUncheckedCreateWithoutBillingEventsInput>
-    connectOrCreate?: OrganizationCreateOrConnectWithoutBillingEventsInput
-    upsert?: OrganizationUpsertWithoutBillingEventsInput
-    disconnect?: OrganizationWhereInput | boolean
-    delete?: OrganizationWhereInput | boolean
-    connect?: OrganizationWhereUniqueInput
-    update?: XOR<XOR<OrganizationUpdateToOneWithWhereWithoutBillingEventsInput, OrganizationUpdateWithoutBillingEventsInput>, OrganizationUncheckedUpdateWithoutBillingEventsInput>
-  }
-
-  export type ProjectUpdateOneWithoutBillingEventsNestedInput = {
+  export type ProjectUpdateOneRequiredWithoutBillingEventsNestedInput = {
     create?: XOR<ProjectCreateWithoutBillingEventsInput, ProjectUncheckedCreateWithoutBillingEventsInput>
     connectOrCreate?: ProjectCreateOrConnectWithoutBillingEventsInput
     upsert?: ProjectUpsertWithoutBillingEventsInput
-    disconnect?: ProjectWhereInput | boolean
-    delete?: ProjectWhereInput | boolean
     connect?: ProjectWhereUniqueInput
     update?: XOR<XOR<ProjectUpdateToOneWithWhereWithoutBillingEventsInput, ProjectUpdateWithoutBillingEventsInput>, ProjectUncheckedUpdateWithoutBillingEventsInput>
   }
 
-  export type UserUpdateOneRequiredWithoutBillingEventsNestedInput = {
+  export type OrganizationUpdateOneRequiredWithoutBillingEventsNestedInput = {
+    create?: XOR<OrganizationCreateWithoutBillingEventsInput, OrganizationUncheckedCreateWithoutBillingEventsInput>
+    connectOrCreate?: OrganizationCreateOrConnectWithoutBillingEventsInput
+    upsert?: OrganizationUpsertWithoutBillingEventsInput
+    connect?: OrganizationWhereUniqueInput
+    update?: XOR<XOR<OrganizationUpdateToOneWithWhereWithoutBillingEventsInput, OrganizationUpdateWithoutBillingEventsInput>, OrganizationUncheckedUpdateWithoutBillingEventsInput>
+  }
+
+  export type UserUpdateOneWithoutBillingEventsNestedInput = {
     create?: XOR<UserCreateWithoutBillingEventsInput, UserUncheckedCreateWithoutBillingEventsInput>
     connectOrCreate?: UserCreateOrConnectWithoutBillingEventsInput
     upsert?: UserUpsertWithoutBillingEventsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutBillingEventsInput, UserUpdateWithoutBillingEventsInput>, UserUncheckedUpdateWithoutBillingEventsInput>
   }
@@ -85019,6 +84849,22 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput
   }
 
+  export type BillingEventCreateNestedOneWithoutCostLedgerInput = {
+    create?: XOR<BillingEventCreateWithoutCostLedgerInput, BillingEventUncheckedCreateWithoutCostLedgerInput>
+    connectOrCreate?: BillingEventCreateOrConnectWithoutCostLedgerInput
+    connect?: BillingEventWhereUniqueInput
+  }
+
+  export type BillingEventUncheckedCreateNestedOneWithoutCostLedgerInput = {
+    create?: XOR<BillingEventCreateWithoutCostLedgerInput, BillingEventUncheckedCreateWithoutCostLedgerInput>
+    connectOrCreate?: BillingEventCreateOrConnectWithoutCostLedgerInput
+    connect?: BillingEventWhereUniqueInput
+  }
+
+  export type EnumBillingStatusFieldUpdateOperationsInput = {
+    set?: $Enums.BillingStatus
+  }
+
   export type ProjectUpdateOneRequiredWithoutCostLedgersNestedInput = {
     create?: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
     connectOrCreate?: ProjectCreateOrConnectWithoutCostLedgersInput
@@ -85035,6 +84881,26 @@ export namespace Prisma {
     delete?: UserWhereInput | boolean
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCostLedgersInput, UserUpdateWithoutCostLedgersInput>, UserUncheckedUpdateWithoutCostLedgersInput>
+  }
+
+  export type BillingEventUpdateOneWithoutCostLedgerNestedInput = {
+    create?: XOR<BillingEventCreateWithoutCostLedgerInput, BillingEventUncheckedCreateWithoutCostLedgerInput>
+    connectOrCreate?: BillingEventCreateOrConnectWithoutCostLedgerInput
+    upsert?: BillingEventUpsertWithoutCostLedgerInput
+    disconnect?: BillingEventWhereInput | boolean
+    delete?: BillingEventWhereInput | boolean
+    connect?: BillingEventWhereUniqueInput
+    update?: XOR<XOR<BillingEventUpdateToOneWithWhereWithoutCostLedgerInput, BillingEventUpdateWithoutCostLedgerInput>, BillingEventUncheckedUpdateWithoutCostLedgerInput>
+  }
+
+  export type BillingEventUncheckedUpdateOneWithoutCostLedgerNestedInput = {
+    create?: XOR<BillingEventCreateWithoutCostLedgerInput, BillingEventUncheckedCreateWithoutCostLedgerInput>
+    connectOrCreate?: BillingEventCreateOrConnectWithoutCostLedgerInput
+    upsert?: BillingEventUpsertWithoutCostLedgerInput
+    disconnect?: BillingEventWhereInput | boolean
+    delete?: BillingEventWhereInput | boolean
+    connect?: BillingEventWhereUniqueInput
+    update?: XOR<XOR<BillingEventUpdateToOneWithWhereWithoutCostLedgerInput, BillingEventUpdateWithoutCostLedgerInput>, BillingEventUncheckedUpdateWithoutCostLedgerInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -85664,40 +85530,6 @@ export namespace Prisma {
     _max?: NestedEnumReviewStatusFilter<$PrismaModel>
   }
 
-  export type NestedEnumBillingEventTypeFilter<$PrismaModel = never> = {
-    equals?: $Enums.BillingEventType | EnumBillingEventTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.BillingEventType[] | ListEnumBillingEventTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.BillingEventType[] | ListEnumBillingEventTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumBillingEventTypeFilter<$PrismaModel> | $Enums.BillingEventType
-  }
-
-  export type NestedEnumBillingStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.BillingStatus | EnumBillingStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumBillingStatusFilter<$PrismaModel> | $Enums.BillingStatus
-  }
-
-  export type NestedEnumBillingEventTypeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.BillingEventType | EnumBillingEventTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.BillingEventType[] | ListEnumBillingEventTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.BillingEventType[] | ListEnumBillingEventTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumBillingEventTypeWithAggregatesFilter<$PrismaModel> | $Enums.BillingEventType
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumBillingEventTypeFilter<$PrismaModel>
-    _max?: NestedEnumBillingEventTypeFilter<$PrismaModel>
-  }
-
-  export type NestedEnumBillingStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.BillingStatus | EnumBillingStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumBillingStatusWithAggregatesFilter<$PrismaModel> | $Enums.BillingStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumBillingStatusFilter<$PrismaModel>
-    _max?: NestedEnumBillingStatusFilter<$PrismaModel>
-  }
-
   export type NestedEnumSubscriptionStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.SubscriptionStatus | EnumSubscriptionStatusFieldRefInput<$PrismaModel>
     in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
@@ -85902,6 +85734,23 @@ export namespace Prisma {
     _max?: NestedEnumTextSafetyDecisionFilter<$PrismaModel>
   }
 
+  export type NestedEnumBillingStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.BillingStatus | EnumBillingStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumBillingStatusFilter<$PrismaModel> | $Enums.BillingStatus
+  }
+
+  export type NestedEnumBillingStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.BillingStatus | EnumBillingStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.BillingStatus[] | ListEnumBillingStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumBillingStatusWithAggregatesFilter<$PrismaModel> | $Enums.BillingStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumBillingStatusFilter<$PrismaModel>
+    _max?: NestedEnumBillingStatusFilter<$PrismaModel>
+  }
+
   export type ApiKeyCreateWithoutOwnerUserInput = {
     id?: string
     key: string
@@ -85994,40 +85843,26 @@ export namespace Prisma {
 
   export type BillingEventCreateWithoutUserInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
-    job?: WorkerJobCreateNestedOneWithoutBillingEventsInput
-    organization?: OrganizationCreateNestedOneWithoutBillingEventsInput
-    project?: ProjectCreateNestedOneWithoutBillingEventsInput
+    createdAt?: Date | string
+    costLedger?: CostLedgerCreateNestedOneWithoutBillingEventInput
+    project: ProjectCreateNestedOneWithoutBillingEventsInput
+    organization: OrganizationCreateNestedOneWithoutBillingEventsInput
   }
 
   export type BillingEventUncheckedCreateWithoutUserInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    organizationId?: string | null
-    projectId?: string | null
-    jobId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    costLedgerId?: string | null
+    projectId: string
+    orgId: string
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type BillingEventCreateOrConnectWithoutUserInput = {
@@ -86056,8 +85891,16 @@ export namespace Prisma {
     totalCost?: number | null
     costType?: string | null
     unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
     timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
     project: ProjectCreateNestedOneWithoutCostLedgersInput
+    billingEvent?: BillingEventCreateNestedOneWithoutCostLedgerInput
   }
 
   export type CostLedgerUncheckedCreateWithoutUserInput = {
@@ -86077,7 +85920,15 @@ export namespace Prisma {
     totalCost?: number | null
     costType?: string | null
     unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
     timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
+    billingEvent?: BillingEventUncheckedCreateNestedOneWithoutCostLedgerInput
   }
 
   export type CostLedgerCreateOrConnectWithoutUserInput = {
@@ -86419,22 +86270,15 @@ export namespace Prisma {
     OR?: BillingEventScalarWhereInput[]
     NOT?: BillingEventScalarWhereInput | BillingEventScalarWhereInput[]
     id?: StringFilter<"BillingEvent"> | string
-    eventType?: EnumBillingEventTypeFilter<"BillingEvent"> | $Enums.BillingEventType
-    userId?: StringFilter<"BillingEvent"> | string
-    organizationId?: StringNullableFilter<"BillingEvent"> | string | null
-    projectId?: StringNullableFilter<"BillingEvent"> | string | null
-    jobId?: StringNullableFilter<"BillingEvent"> | string | null
-    amount?: FloatFilter<"BillingEvent"> | number
-    creditsConsumed?: FloatFilter<"BillingEvent"> | number
-    computeSecondsUsed?: FloatFilter<"BillingEvent"> | number
-    gpuCost?: FloatFilter<"BillingEvent"> | number
-    modelCost?: FloatFilter<"BillingEvent"> | number
-    storageCost?: FloatFilter<"BillingEvent"> | number
-    totalCost?: FloatFilter<"BillingEvent"> | number
-    billingStatus?: EnumBillingStatusFilter<"BillingEvent"> | $Enums.BillingStatus
-    invoiceId?: StringNullableFilter<"BillingEvent"> | string | null
-    timestamp?: DateTimeFilter<"BillingEvent"> | Date | string
+    costLedgerId?: StringNullableFilter<"BillingEvent"> | string | null
+    projectId?: StringFilter<"BillingEvent"> | string
+    orgId?: StringFilter<"BillingEvent"> | string
+    userId?: StringNullableFilter<"BillingEvent"> | string | null
+    type?: StringFilter<"BillingEvent"> | string
+    creditsDelta?: FloatFilter<"BillingEvent"> | number
+    currency?: StringFilter<"BillingEvent"> | string
     metadata?: JsonNullableFilter<"BillingEvent">
+    createdAt?: DateTimeFilter<"BillingEvent"> | Date | string
   }
 
   export type CostLedgerUpsertWithWhereUniqueWithoutUserInput = {
@@ -86474,7 +86318,14 @@ export namespace Prisma {
     totalCost?: FloatNullableFilter<"CostLedger"> | number | null
     costType?: StringNullableFilter<"CostLedger"> | string | null
     unitCost?: FloatNullableFilter<"CostLedger"> | number | null
+    modelName?: StringNullableFilter<"CostLedger"> | string | null
+    totalCredits?: FloatNullableFilter<"CostLedger"> | number | null
+    unitCostCredits?: FloatNullableFilter<"CostLedger"> | number | null
     timestamp?: DateTimeFilter<"CostLedger"> | Date | string
+    billingStatus?: EnumBillingStatusFilter<"CostLedger"> | $Enums.BillingStatus
+    billingEventId?: StringNullableFilter<"CostLedger"> | string | null
+    billedAt?: DateTimeNullableFilter<"CostLedger"> | Date | string | null
+    billingError?: StringNullableFilter<"CostLedger"> | string | null
   }
 
   export type MembershipUpsertWithWhereUniqueWithoutUserInput = {
@@ -86859,40 +86710,26 @@ export namespace Prisma {
 
   export type BillingEventCreateWithoutOrganizationInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
-    job?: WorkerJobCreateNestedOneWithoutBillingEventsInput
-    project?: ProjectCreateNestedOneWithoutBillingEventsInput
-    user: UserCreateNestedOneWithoutBillingEventsInput
+    createdAt?: Date | string
+    costLedger?: CostLedgerCreateNestedOneWithoutBillingEventInput
+    project: ProjectCreateNestedOneWithoutBillingEventsInput
+    user?: UserCreateNestedOneWithoutBillingEventsInput
   }
 
   export type BillingEventUncheckedCreateWithoutOrganizationInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    userId: string
-    projectId?: string | null
-    jobId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    costLedgerId?: string | null
+    projectId: string
+    userId?: string | null
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type BillingEventCreateOrConnectWithoutOrganizationInput = {
@@ -87851,40 +87688,26 @@ export namespace Prisma {
 
   export type BillingEventCreateWithoutProjectInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
-    job?: WorkerJobCreateNestedOneWithoutBillingEventsInput
-    organization?: OrganizationCreateNestedOneWithoutBillingEventsInput
-    user: UserCreateNestedOneWithoutBillingEventsInput
+    createdAt?: Date | string
+    costLedger?: CostLedgerCreateNestedOneWithoutBillingEventInput
+    organization: OrganizationCreateNestedOneWithoutBillingEventsInput
+    user?: UserCreateNestedOneWithoutBillingEventsInput
   }
 
   export type BillingEventUncheckedCreateWithoutProjectInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    userId: string
-    organizationId?: string | null
-    jobId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    costLedgerId?: string | null
+    orgId: string
+    userId?: string | null
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type BillingEventCreateOrConnectWithoutProjectInput = {
@@ -88303,8 +88126,16 @@ export namespace Prisma {
     totalCost?: number | null
     costType?: string | null
     unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
     timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
     user?: UserCreateNestedOneWithoutCostLedgersInput
+    billingEvent?: BillingEventCreateNestedOneWithoutCostLedgerInput
   }
 
   export type CostLedgerUncheckedCreateWithoutProjectInput = {
@@ -88324,7 +88155,15 @@ export namespace Prisma {
     totalCost?: number | null
     costType?: string | null
     unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
     timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
+    billingEvent?: BillingEventUncheckedCreateNestedOneWithoutCostLedgerInput
   }
 
   export type CostLedgerCreateOrConnectWithoutProjectInput = {
@@ -92227,54 +92066,6 @@ export namespace Prisma {
     jobs?: WorkerJobUncheckedUpdateManyWithoutWorkerNestedInput
   }
 
-  export type BillingEventCreateWithoutJobInput = {
-    id?: string
-    eventType: $Enums.BillingEventType
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    organization?: OrganizationCreateNestedOneWithoutBillingEventsInput
-    project?: ProjectCreateNestedOneWithoutBillingEventsInput
-    user: UserCreateNestedOneWithoutBillingEventsInput
-  }
-
-  export type BillingEventUncheckedCreateWithoutJobInput = {
-    id?: string
-    eventType: $Enums.BillingEventType
-    userId: string
-    organizationId?: string | null
-    projectId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-  }
-
-  export type BillingEventCreateOrConnectWithoutJobInput = {
-    where: BillingEventWhereUniqueInput
-    create: XOR<BillingEventCreateWithoutJobInput, BillingEventUncheckedCreateWithoutJobInput>
-  }
-
-  export type BillingEventCreateManyJobInputEnvelope = {
-    data: BillingEventCreateManyJobInput | BillingEventCreateManyJobInput[]
-    skipDuplicates?: boolean
-  }
-
   export type WorkerNodeCreateWithoutJobsInput = {
     id?: string
     workerId: string
@@ -92314,22 +92105,6 @@ export namespace Prisma {
   export type WorkerNodeCreateOrConnectWithoutJobsInput = {
     where: WorkerNodeWhereUniqueInput
     create: XOR<WorkerNodeCreateWithoutJobsInput, WorkerNodeUncheckedCreateWithoutJobsInput>
-  }
-
-  export type BillingEventUpsertWithWhereUniqueWithoutJobInput = {
-    where: BillingEventWhereUniqueInput
-    update: XOR<BillingEventUpdateWithoutJobInput, BillingEventUncheckedUpdateWithoutJobInput>
-    create: XOR<BillingEventCreateWithoutJobInput, BillingEventUncheckedCreateWithoutJobInput>
-  }
-
-  export type BillingEventUpdateWithWhereUniqueWithoutJobInput = {
-    where: BillingEventWhereUniqueInput
-    data: XOR<BillingEventUpdateWithoutJobInput, BillingEventUncheckedUpdateWithoutJobInput>
-  }
-
-  export type BillingEventUpdateManyWithWhereWithoutJobInput = {
-    where: BillingEventScalarWhereInput
-    data: XOR<BillingEventUpdateManyMutationInput, BillingEventUncheckedUpdateManyWithoutJobInput>
   }
 
   export type WorkerNodeUpsertWithoutJobsInput = {
@@ -93261,7 +93036,6 @@ export namespace Prisma {
     modelVersion?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    billingEvents?: BillingEventCreateNestedManyWithoutJobInput
   }
 
   export type WorkerJobUncheckedCreateWithoutWorkerInput = {
@@ -93276,7 +93050,6 @@ export namespace Prisma {
     modelVersion?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    billingEvents?: BillingEventUncheckedCreateNestedManyWithoutJobInput
   }
 
   export type WorkerJobCreateOrConnectWithoutWorkerInput = {
@@ -93555,86 +93328,65 @@ export namespace Prisma {
     shotPlanning?: ShotPlanningUncheckedUpdateOneWithoutShotNestedInput
   }
 
-  export type WorkerJobCreateWithoutBillingEventsInput = {
+  export type CostLedgerCreateWithoutBillingEventInput = {
     id?: string
-    type: $Enums.WorkerJobType
-    payload: JsonNullValueInput | InputJsonValue
-    status?: $Enums.WorkerJobStatus
-    retryCount?: number
-    traceId: string
     jobId: string
-    engineVersion?: string | null
-    modelVersion?: string | null
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
-    updatedAt?: Date | string
-    worker?: WorkerNodeCreateNestedOneWithoutJobsInput
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
+    timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
+    project: ProjectCreateNestedOneWithoutCostLedgersInput
+    user?: UserCreateNestedOneWithoutCostLedgersInput
   }
 
-  export type WorkerJobUncheckedCreateWithoutBillingEventsInput = {
+  export type CostLedgerUncheckedCreateWithoutBillingEventInput = {
     id?: string
-    type: $Enums.WorkerJobType
-    payload: JsonNullValueInput | InputJsonValue
-    status?: $Enums.WorkerJobStatus
-    workerId?: string | null
-    retryCount?: number
-    traceId: string
+    userId?: string | null
+    projectId: string
     jobId: string
-    engineVersion?: string | null
-    modelVersion?: string | null
+    jobType: string
+    engineKey?: string | null
+    costAmount?: number
+    currency?: string
+    billingUnit?: string | null
+    quantity?: number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
-    updatedAt?: Date | string
+    traceId?: string | null
+    orgId?: string | null
+    totalCost?: number | null
+    costType?: string | null
+    unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
+    timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
   }
 
-  export type WorkerJobCreateOrConnectWithoutBillingEventsInput = {
-    where: WorkerJobWhereUniqueInput
-    create: XOR<WorkerJobCreateWithoutBillingEventsInput, WorkerJobUncheckedCreateWithoutBillingEventsInput>
-  }
-
-  export type OrganizationCreateWithoutBillingEventsInput = {
-    id?: string
-    name: string
-    slug?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    credits?: number
-    type?: string | null
-    shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
-    tasks?: TaskCreateNestedManyWithoutOrganizationInput
-    apiKeys?: ApiKeyCreateNestedManyWithoutOwnerOrgInput
-    auditLogs?: AuditLogCreateNestedManyWithoutOrganizationInput
-    costCenters?: CostCenterCreateNestedManyWithoutOrganizationInput
-    memberships?: MembershipCreateNestedManyWithoutOrganizationInput
-    members?: OrganizationMemberCreateNestedManyWithoutOrganizationInput
-    owner: UserCreateNestedOneWithoutOwnedOrganizationsInput
-    projects?: ProjectCreateNestedManyWithoutOrganizationInput
-    shots?: ShotCreateNestedManyWithoutOrganizationInput
-    subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
-  }
-
-  export type OrganizationUncheckedCreateWithoutBillingEventsInput = {
-    id?: string
-    name: string
-    ownerId: string
-    slug?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    credits?: number
-    type?: string | null
-    shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
-    tasks?: TaskUncheckedCreateNestedManyWithoutOrganizationInput
-    apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerOrgInput
-    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutOrganizationInput
-    costCenters?: CostCenterUncheckedCreateNestedManyWithoutOrganizationInput
-    memberships?: MembershipUncheckedCreateNestedManyWithoutOrganizationInput
-    members?: OrganizationMemberUncheckedCreateNestedManyWithoutOrganizationInput
-    projects?: ProjectUncheckedCreateNestedManyWithoutOrganizationInput
-    shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
-    subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
-  }
-
-  export type OrganizationCreateOrConnectWithoutBillingEventsInput = {
-    where: OrganizationWhereUniqueInput
-    create: XOR<OrganizationCreateWithoutBillingEventsInput, OrganizationUncheckedCreateWithoutBillingEventsInput>
+  export type CostLedgerCreateOrConnectWithoutBillingEventInput = {
+    where: CostLedgerWhereUniqueInput
+    create: XOR<CostLedgerCreateWithoutBillingEventInput, CostLedgerUncheckedCreateWithoutBillingEventInput>
   }
 
   export type ProjectCreateWithoutBillingEventsInput = {
@@ -93694,6 +93446,53 @@ export namespace Prisma {
     create: XOR<ProjectCreateWithoutBillingEventsInput, ProjectUncheckedCreateWithoutBillingEventsInput>
   }
 
+  export type OrganizationCreateWithoutBillingEventsInput = {
+    id?: string
+    name: string
+    slug?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    credits?: number
+    type?: string | null
+    shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
+    tasks?: TaskCreateNestedManyWithoutOrganizationInput
+    apiKeys?: ApiKeyCreateNestedManyWithoutOwnerOrgInput
+    auditLogs?: AuditLogCreateNestedManyWithoutOrganizationInput
+    costCenters?: CostCenterCreateNestedManyWithoutOrganizationInput
+    memberships?: MembershipCreateNestedManyWithoutOrganizationInput
+    members?: OrganizationMemberCreateNestedManyWithoutOrganizationInput
+    owner: UserCreateNestedOneWithoutOwnedOrganizationsInput
+    projects?: ProjectCreateNestedManyWithoutOrganizationInput
+    shots?: ShotCreateNestedManyWithoutOrganizationInput
+    subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+  }
+
+  export type OrganizationUncheckedCreateWithoutBillingEventsInput = {
+    id?: string
+    name: string
+    ownerId: string
+    slug?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    credits?: number
+    type?: string | null
+    shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
+    tasks?: TaskUncheckedCreateNestedManyWithoutOrganizationInput
+    apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerOrgInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutOrganizationInput
+    costCenters?: CostCenterUncheckedCreateNestedManyWithoutOrganizationInput
+    memberships?: MembershipUncheckedCreateNestedManyWithoutOrganizationInput
+    members?: OrganizationMemberUncheckedCreateNestedManyWithoutOrganizationInput
+    projects?: ProjectUncheckedCreateNestedManyWithoutOrganizationInput
+    shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
+    subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+  }
+
+  export type OrganizationCreateOrConnectWithoutBillingEventsInput = {
+    where: OrganizationWhereUniqueInput
+    create: XOR<OrganizationCreateWithoutBillingEventsInput, OrganizationUncheckedCreateWithoutBillingEventsInput>
+  }
+
   export type UserCreateWithoutBillingEventsInput = {
     id?: string
     email: string
@@ -93745,98 +93544,71 @@ export namespace Prisma {
     create: XOR<UserCreateWithoutBillingEventsInput, UserUncheckedCreateWithoutBillingEventsInput>
   }
 
-  export type WorkerJobUpsertWithoutBillingEventsInput = {
-    update: XOR<WorkerJobUpdateWithoutBillingEventsInput, WorkerJobUncheckedUpdateWithoutBillingEventsInput>
-    create: XOR<WorkerJobCreateWithoutBillingEventsInput, WorkerJobUncheckedCreateWithoutBillingEventsInput>
-    where?: WorkerJobWhereInput
+  export type CostLedgerUpsertWithoutBillingEventInput = {
+    update: XOR<CostLedgerUpdateWithoutBillingEventInput, CostLedgerUncheckedUpdateWithoutBillingEventInput>
+    create: XOR<CostLedgerCreateWithoutBillingEventInput, CostLedgerUncheckedCreateWithoutBillingEventInput>
+    where?: CostLedgerWhereInput
   }
 
-  export type WorkerJobUpdateToOneWithWhereWithoutBillingEventsInput = {
-    where?: WorkerJobWhereInput
-    data: XOR<WorkerJobUpdateWithoutBillingEventsInput, WorkerJobUncheckedUpdateWithoutBillingEventsInput>
+  export type CostLedgerUpdateToOneWithWhereWithoutBillingEventInput = {
+    where?: CostLedgerWhereInput
+    data: XOR<CostLedgerUpdateWithoutBillingEventInput, CostLedgerUncheckedUpdateWithoutBillingEventInput>
   }
 
-  export type WorkerJobUpdateWithoutBillingEventsInput = {
+  export type CostLedgerUpdateWithoutBillingEventInput = {
     id?: StringFieldUpdateOperationsInput | string
-    type?: EnumWorkerJobTypeFieldUpdateOperationsInput | $Enums.WorkerJobType
-    payload?: JsonNullValueInput | InputJsonValue
-    status?: EnumWorkerJobStatusFieldUpdateOperationsInput | $Enums.WorkerJobStatus
-    retryCount?: IntFieldUpdateOperationsInput | number
-    traceId?: StringFieldUpdateOperationsInput | string
     jobId?: StringFieldUpdateOperationsInput | string
-    engineVersion?: NullableStringFieldUpdateOperationsInput | string | null
-    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    worker?: WorkerNodeUpdateOneWithoutJobsNestedInput
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
+    project?: ProjectUpdateOneRequiredWithoutCostLedgersNestedInput
+    user?: UserUpdateOneWithoutCostLedgersNestedInput
   }
 
-  export type WorkerJobUncheckedUpdateWithoutBillingEventsInput = {
+  export type CostLedgerUncheckedUpdateWithoutBillingEventInput = {
     id?: StringFieldUpdateOperationsInput | string
-    type?: EnumWorkerJobTypeFieldUpdateOperationsInput | $Enums.WorkerJobType
-    payload?: JsonNullValueInput | InputJsonValue
-    status?: EnumWorkerJobStatusFieldUpdateOperationsInput | $Enums.WorkerJobStatus
-    workerId?: NullableStringFieldUpdateOperationsInput | string | null
-    retryCount?: IntFieldUpdateOperationsInput | number
-    traceId?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     jobId?: StringFieldUpdateOperationsInput | string
-    engineVersion?: NullableStringFieldUpdateOperationsInput | string | null
-    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    jobType?: StringFieldUpdateOperationsInput | string
+    engineKey?: NullableStringFieldUpdateOperationsInput | string | null
+    costAmount?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    billingUnit?: NullableStringFieldUpdateOperationsInput | string | null
+    quantity?: FloatFieldUpdateOperationsInput | number
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type OrganizationUpsertWithoutBillingEventsInput = {
-    update: XOR<OrganizationUpdateWithoutBillingEventsInput, OrganizationUncheckedUpdateWithoutBillingEventsInput>
-    create: XOR<OrganizationCreateWithoutBillingEventsInput, OrganizationUncheckedCreateWithoutBillingEventsInput>
-    where?: OrganizationWhereInput
-  }
-
-  export type OrganizationUpdateToOneWithWhereWithoutBillingEventsInput = {
-    where?: OrganizationWhereInput
-    data: XOR<OrganizationUpdateWithoutBillingEventsInput, OrganizationUncheckedUpdateWithoutBillingEventsInput>
-  }
-
-  export type OrganizationUpdateWithoutBillingEventsInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    slug?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    credits?: FloatFieldUpdateOperationsInput | number
-    type?: NullableStringFieldUpdateOperationsInput | string | null
-    shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
-    tasks?: TaskUpdateManyWithoutOrganizationNestedInput
-    apiKeys?: ApiKeyUpdateManyWithoutOwnerOrgNestedInput
-    auditLogs?: AuditLogUpdateManyWithoutOrganizationNestedInput
-    costCenters?: CostCenterUpdateManyWithoutOrganizationNestedInput
-    memberships?: MembershipUpdateManyWithoutOrganizationNestedInput
-    members?: OrganizationMemberUpdateManyWithoutOrganizationNestedInput
-    owner?: UserUpdateOneRequiredWithoutOwnedOrganizationsNestedInput
-    projects?: ProjectUpdateManyWithoutOrganizationNestedInput
-    shots?: ShotUpdateManyWithoutOrganizationNestedInput
-    subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
-  }
-
-  export type OrganizationUncheckedUpdateWithoutBillingEventsInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    name?: StringFieldUpdateOperationsInput | string
-    ownerId?: StringFieldUpdateOperationsInput | string
-    slug?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    credits?: FloatFieldUpdateOperationsInput | number
-    type?: NullableStringFieldUpdateOperationsInput | string | null
-    shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
-    tasks?: TaskUncheckedUpdateManyWithoutOrganizationNestedInput
-    apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerOrgNestedInput
-    auditLogs?: AuditLogUncheckedUpdateManyWithoutOrganizationNestedInput
-    costCenters?: CostCenterUncheckedUpdateManyWithoutOrganizationNestedInput
-    memberships?: MembershipUncheckedUpdateManyWithoutOrganizationNestedInput
-    members?: OrganizationMemberUncheckedUpdateManyWithoutOrganizationNestedInput
-    projects?: ProjectUncheckedUpdateManyWithoutOrganizationNestedInput
-    shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
-    subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    traceId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    costType?: NullableStringFieldUpdateOperationsInput | string | null
+    unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ProjectUpsertWithoutBillingEventsInput = {
@@ -93900,6 +93672,59 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
+  }
+
+  export type OrganizationUpsertWithoutBillingEventsInput = {
+    update: XOR<OrganizationUpdateWithoutBillingEventsInput, OrganizationUncheckedUpdateWithoutBillingEventsInput>
+    create: XOR<OrganizationCreateWithoutBillingEventsInput, OrganizationUncheckedCreateWithoutBillingEventsInput>
+    where?: OrganizationWhereInput
+  }
+
+  export type OrganizationUpdateToOneWithWhereWithoutBillingEventsInput = {
+    where?: OrganizationWhereInput
+    data: XOR<OrganizationUpdateWithoutBillingEventsInput, OrganizationUncheckedUpdateWithoutBillingEventsInput>
+  }
+
+  export type OrganizationUpdateWithoutBillingEventsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    credits?: FloatFieldUpdateOperationsInput | number
+    type?: NullableStringFieldUpdateOperationsInput | string | null
+    shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
+    tasks?: TaskUpdateManyWithoutOrganizationNestedInput
+    apiKeys?: ApiKeyUpdateManyWithoutOwnerOrgNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutOrganizationNestedInput
+    costCenters?: CostCenterUpdateManyWithoutOrganizationNestedInput
+    memberships?: MembershipUpdateManyWithoutOrganizationNestedInput
+    members?: OrganizationMemberUpdateManyWithoutOrganizationNestedInput
+    owner?: UserUpdateOneRequiredWithoutOwnedOrganizationsNestedInput
+    projects?: ProjectUpdateManyWithoutOrganizationNestedInput
+    shots?: ShotUpdateManyWithoutOrganizationNestedInput
+    subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+  }
+
+  export type OrganizationUncheckedUpdateWithoutBillingEventsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    ownerId?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    credits?: FloatFieldUpdateOperationsInput | number
+    type?: NullableStringFieldUpdateOperationsInput | string | null
+    shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
+    tasks?: TaskUncheckedUpdateManyWithoutOrganizationNestedInput
+    apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerOrgNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutOrganizationNestedInput
+    costCenters?: CostCenterUncheckedUpdateManyWithoutOrganizationNestedInput
+    memberships?: MembershipUncheckedUpdateManyWithoutOrganizationNestedInput
+    members?: OrganizationMemberUncheckedUpdateManyWithoutOrganizationNestedInput
+    projects?: ProjectUncheckedUpdateManyWithoutOrganizationNestedInput
+    shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
+    subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type UserUpsertWithoutBillingEventsInput = {
@@ -96831,6 +96656,35 @@ export namespace Prisma {
     create: XOR<UserCreateWithoutCostLedgersInput, UserUncheckedCreateWithoutCostLedgersInput>
   }
 
+  export type BillingEventCreateWithoutCostLedgerInput = {
+    id?: string
+    type?: string
+    creditsDelta: number
+    currency?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    project: ProjectCreateNestedOneWithoutBillingEventsInput
+    organization: OrganizationCreateNestedOneWithoutBillingEventsInput
+    user?: UserCreateNestedOneWithoutBillingEventsInput
+  }
+
+  export type BillingEventUncheckedCreateWithoutCostLedgerInput = {
+    id?: string
+    projectId: string
+    orgId: string
+    userId?: string | null
+    type?: string
+    creditsDelta: number
+    currency?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type BillingEventCreateOrConnectWithoutCostLedgerInput = {
+    where: BillingEventWhereUniqueInput
+    create: XOR<BillingEventCreateWithoutCostLedgerInput, BillingEventUncheckedCreateWithoutCostLedgerInput>
+  }
+
   export type ProjectUpsertWithoutCostLedgersInput = {
     update: XOR<ProjectUpdateWithoutCostLedgersInput, ProjectUncheckedUpdateWithoutCostLedgersInput>
     create: XOR<ProjectCreateWithoutCostLedgersInput, ProjectUncheckedCreateWithoutCostLedgersInput>
@@ -96951,6 +96805,41 @@ export namespace Prisma {
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutUserNestedInput
   }
 
+  export type BillingEventUpsertWithoutCostLedgerInput = {
+    update: XOR<BillingEventUpdateWithoutCostLedgerInput, BillingEventUncheckedUpdateWithoutCostLedgerInput>
+    create: XOR<BillingEventCreateWithoutCostLedgerInput, BillingEventUncheckedCreateWithoutCostLedgerInput>
+    where?: BillingEventWhereInput
+  }
+
+  export type BillingEventUpdateToOneWithWhereWithoutCostLedgerInput = {
+    where?: BillingEventWhereInput
+    data: XOR<BillingEventUpdateWithoutCostLedgerInput, BillingEventUncheckedUpdateWithoutCostLedgerInput>
+  }
+
+  export type BillingEventUpdateWithoutCostLedgerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    project?: ProjectUpdateOneRequiredWithoutBillingEventsNestedInput
+    organization?: OrganizationUpdateOneRequiredWithoutBillingEventsNestedInput
+    user?: UserUpdateOneWithoutBillingEventsNestedInput
+  }
+
+  export type BillingEventUncheckedUpdateWithoutCostLedgerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    orgId?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type ApiKeyCreateManyOwnerUserInput = {
     id?: string
     key: string
@@ -96987,21 +96876,14 @@ export namespace Prisma {
 
   export type BillingEventCreateManyUserInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    organizationId?: string | null
-    projectId?: string | null
-    jobId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    costLedgerId?: string | null
+    projectId: string
+    orgId: string
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type CostLedgerCreateManyUserInput = {
@@ -97021,7 +96903,14 @@ export namespace Prisma {
     totalCost?: number | null
     costType?: string | null
     unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
     timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
   }
 
   export type MembershipCreateManyUserInput = {
@@ -97192,59 +97081,38 @@ export namespace Prisma {
 
   export type BillingEventUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
-    job?: WorkerJobUpdateOneWithoutBillingEventsNestedInput
-    organization?: OrganizationUpdateOneWithoutBillingEventsNestedInput
-    project?: ProjectUpdateOneWithoutBillingEventsNestedInput
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedger?: CostLedgerUpdateOneWithoutBillingEventNestedInput
+    project?: ProjectUpdateOneRequiredWithoutBillingEventsNestedInput
+    organization?: OrganizationUpdateOneRequiredWithoutBillingEventsNestedInput
   }
 
   export type BillingEventUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    organizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedgerId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
+    orgId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BillingEventUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    organizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedgerId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
+    orgId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CostLedgerUpdateWithoutUserInput = {
@@ -97263,8 +97131,16 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
     project?: ProjectUpdateOneRequiredWithoutCostLedgersNestedInput
+    billingEvent?: BillingEventUpdateOneWithoutCostLedgerNestedInput
   }
 
   export type CostLedgerUncheckedUpdateWithoutUserInput = {
@@ -97284,7 +97160,15 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
+    billingEvent?: BillingEventUncheckedUpdateOneWithoutCostLedgerNestedInput
   }
 
   export type CostLedgerUncheckedUpdateManyWithoutUserInput = {
@@ -97304,7 +97188,14 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type MembershipUpdateWithoutUserInput = {
@@ -97620,21 +97511,14 @@ export namespace Prisma {
 
   export type BillingEventCreateManyOrganizationInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    userId: string
-    projectId?: string | null
-    jobId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    costLedgerId?: string | null
+    projectId: string
+    userId?: string | null
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type CostCenterCreateManyOrganizationInput = {
@@ -97936,59 +97820,38 @@ export namespace Prisma {
 
   export type BillingEventUpdateWithoutOrganizationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
-    job?: WorkerJobUpdateOneWithoutBillingEventsNestedInput
-    project?: ProjectUpdateOneWithoutBillingEventsNestedInput
-    user?: UserUpdateOneRequiredWithoutBillingEventsNestedInput
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedger?: CostLedgerUpdateOneWithoutBillingEventNestedInput
+    project?: ProjectUpdateOneRequiredWithoutBillingEventsNestedInput
+    user?: UserUpdateOneWithoutBillingEventsNestedInput
   }
 
   export type BillingEventUncheckedUpdateWithoutOrganizationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    userId?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedgerId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BillingEventUncheckedUpdateManyWithoutOrganizationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    userId?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedgerId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CostCenterUpdateWithoutOrganizationInput = {
@@ -98280,21 +98143,14 @@ export namespace Prisma {
 
   export type BillingEventCreateManyProjectInput = {
     id?: string
-    eventType: $Enums.BillingEventType
-    userId: string
-    organizationId?: string | null
-    jobId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
+    costLedgerId?: string | null
+    orgId: string
+    userId?: string | null
+    type?: string
+    creditsDelta: number
+    currency?: string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
   }
 
   export type EngineTaskCreateManyProjectInput = {
@@ -98395,7 +98251,14 @@ export namespace Prisma {
     totalCost?: number | null
     costType?: string | null
     unitCost?: number | null
+    modelName?: string | null
+    totalCredits?: number | null
+    unitCostCredits?: number | null
     timestamp?: Date | string
+    billingStatus?: $Enums.BillingStatus
+    billingEventId?: string | null
+    billedAt?: Date | string | null
+    billingError?: string | null
   }
 
   export type ShotJobUpdateWithoutProjectInput = {
@@ -98565,59 +98428,38 @@ export namespace Prisma {
 
   export type BillingEventUpdateWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
-    job?: WorkerJobUpdateOneWithoutBillingEventsNestedInput
-    organization?: OrganizationUpdateOneWithoutBillingEventsNestedInput
-    user?: UserUpdateOneRequiredWithoutBillingEventsNestedInput
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedger?: CostLedgerUpdateOneWithoutBillingEventNestedInput
+    organization?: OrganizationUpdateOneRequiredWithoutBillingEventsNestedInput
+    user?: UserUpdateOneWithoutBillingEventsNestedInput
   }
 
   export type BillingEventUncheckedUpdateWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    userId?: StringFieldUpdateOperationsInput | string
-    organizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedgerId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BillingEventUncheckedUpdateManyWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    userId?: StringFieldUpdateOperationsInput | string
-    organizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    jobId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    costLedgerId?: NullableStringFieldUpdateOperationsInput | string | null
+    orgId?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    creditsDelta?: FloatFieldUpdateOperationsInput | number
+    currency?: StringFieldUpdateOperationsInput | string
     metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type EngineTaskUpdateWithoutProjectInput = {
@@ -98891,8 +98733,16 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
     user?: UserUpdateOneWithoutCostLedgersNestedInput
+    billingEvent?: BillingEventUpdateOneWithoutCostLedgerNestedInput
   }
 
   export type CostLedgerUncheckedUpdateWithoutProjectInput = {
@@ -98912,7 +98762,15 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
+    billingEvent?: BillingEventUncheckedUpdateOneWithoutCostLedgerNestedInput
   }
 
   export type CostLedgerUncheckedUpdateManyWithoutProjectInput = {
@@ -98932,7 +98790,14 @@ export namespace Prisma {
     totalCost?: NullableFloatFieldUpdateOperationsInput | number | null
     costType?: NullableStringFieldUpdateOperationsInput | string | null
     unitCost?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalCredits?: NullableFloatFieldUpdateOperationsInput | number | null
+    unitCostCredits?: NullableFloatFieldUpdateOperationsInput | number | null
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
+    billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
+    billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingError?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type EpisodeCreateManySeasonInput = {
@@ -100071,82 +99936,6 @@ export namespace Prisma {
     traceId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
-  export type BillingEventCreateManyJobInput = {
-    id?: string
-    eventType: $Enums.BillingEventType
-    userId: string
-    organizationId?: string | null
-    projectId?: string | null
-    amount: number
-    creditsConsumed: number
-    computeSecondsUsed: number
-    gpuCost: number
-    modelCost: number
-    storageCost: number
-    totalCost: number
-    billingStatus?: $Enums.BillingStatus
-    invoiceId?: string | null
-    timestamp?: Date | string
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-  }
-
-  export type BillingEventUpdateWithoutJobInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    organization?: OrganizationUpdateOneWithoutBillingEventsNestedInput
-    project?: ProjectUpdateOneWithoutBillingEventsNestedInput
-    user?: UserUpdateOneRequiredWithoutBillingEventsNestedInput
-  }
-
-  export type BillingEventUncheckedUpdateWithoutJobInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    userId?: StringFieldUpdateOperationsInput | string
-    organizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-  }
-
-  export type BillingEventUncheckedUpdateManyWithoutJobInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    eventType?: EnumBillingEventTypeFieldUpdateOperationsInput | $Enums.BillingEventType
-    userId?: StringFieldUpdateOperationsInput | string
-    organizationId?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
-    creditsConsumed?: FloatFieldUpdateOperationsInput | number
-    computeSecondsUsed?: FloatFieldUpdateOperationsInput | number
-    gpuCost?: FloatFieldUpdateOperationsInput | number
-    modelCost?: FloatFieldUpdateOperationsInput | number
-    storageCost?: FloatFieldUpdateOperationsInput | number
-    totalCost?: FloatFieldUpdateOperationsInput | number
-    billingStatus?: EnumBillingStatusFieldUpdateOperationsInput | $Enums.BillingStatus
-    invoiceId?: NullableStringFieldUpdateOperationsInput | string | null
-    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-  }
-
   export type AssetCreateManyJobInput = {
     id?: string
     projectId: string
@@ -100391,7 +100180,6 @@ export namespace Prisma {
     modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    billingEvents?: BillingEventUpdateManyWithoutJobNestedInput
   }
 
   export type WorkerJobUncheckedUpdateWithoutWorkerInput = {
@@ -100406,7 +100194,6 @@ export namespace Prisma {
     modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    billingEvents?: BillingEventUncheckedUpdateManyWithoutJobNestedInput
   }
 
   export type WorkerJobUncheckedUpdateManyWithoutWorkerInput = {
@@ -100710,10 +100497,6 @@ export namespace Prisma {
      * @deprecated Use TaskCountOutputTypeDefaultArgs instead
      */
     export type TaskCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = TaskCountOutputTypeDefaultArgs<ExtArgs>
-    /**
-     * @deprecated Use WorkerJobCountOutputTypeDefaultArgs instead
-     */
-    export type WorkerJobCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = WorkerJobCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use ShotJobCountOutputTypeDefaultArgs instead
      */

@@ -35,6 +35,7 @@ export class BillingService {
      * Throws error if insufficient funds.
      */
     async consumeCredits(
+        projectId: string,
         userId: string,
         organizationId: string,
         amount: number,
@@ -71,18 +72,12 @@ export class BillingService {
             // 3. Record Billing Event (Ledger)
             await tx.billingEvent.create({
                 data: {
+                    projectId,
                     userId,
-                    organizationId,
-                    eventType: 'pay_as_you_go',
-                    amount: -amount,
-                    creditsConsumed: amount,
-                    totalCost: amount,
-                    computeSecondsUsed: 0,
-                    gpuCost: 0,
-                    modelCost: 0,
-                    storageCost: 0,
-                    billingStatus: 'completed',
-                    metadata: { type, traceId }
+                    orgId: organizationId,
+                    type: 'pay_as_you_go',
+                    creditsDelta: -amount,
+                    metadata: { type, traceId, legacyEventType: 'pay_as_you_go' }
                 }
             });
 
