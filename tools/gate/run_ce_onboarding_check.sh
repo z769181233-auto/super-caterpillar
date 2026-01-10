@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "[FAIL] pnpm not found in PATH"
+  exit 21
+fi
+if ! command -v git >/dev/null 2>&1; then
+  echo "[FAIL] git not found in PATH"
+  exit 22
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
@@ -24,13 +33,26 @@ TMP_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
-# Control concurrency to avoid OOM
-CE_ONBOARDING_PNPM_WS_CONCURRENCY="${CE_ONBOARDING_PNPM_WS_CONCURRENCY:-1}"
+# Control memory to avoid OOM
 CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB="${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB:-4096}"
 
 # Compose pnpm commands with controlled concurrency (avoid OOM spikes)
 PNPM_LINT_CMD="NODE_OPTIONS=--max-old-space-size=${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB} pnpm -w lint"
 PNPM_TYPECHECK_CMD="NODE_OPTIONS=--max-old-space-size=${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB} pnpm -w typecheck"
+
+
+mem_snap() {
+  echo "[MEM] time=$(date -Iseconds)"
+  if command -v free >/dev/null 2>&1; then
+    free -m || true
+    echo "[MEM] /proc/meminfo (head):"
+    sed -n '1,8p' /proc/meminfo 2>/dev/null || true
+  elif command -v vm_stat >/dev/null 2>&1; then
+    vm_stat || true
+  else
+    echo "[MEM] no mem tool (free/vm_stat) found"
+  fi
+}
 
 divider() {
   echo "=================================================="
@@ -42,9 +64,11 @@ run_step() {
   echo
   divider
   echo "[RUN] ${name}"
+  mem_snap
   divider
   # shellcheck disable=SC2086
   bash -lc "$cmd"
+  mem_snap
   echo "[OK] ${name}"
 }
 
