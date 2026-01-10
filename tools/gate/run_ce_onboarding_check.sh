@@ -35,10 +35,12 @@ trap cleanup EXIT
 
 # Control memory to avoid OOM
 CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB="${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB:-4096}"
+CE_ONBOARDING_TURBO_CONCURRENCY="${CE_ONBOARDING_TURBO_CONCURRENCY:-1}"
+CE_ONBOARDING_STEP_TIMEOUT_SEC="${CE_ONBOARDING_STEP_TIMEOUT_SEC:-1800}"
 
 # Compose pnpm commands with controlled concurrency (avoid OOM spikes)
-PNPM_LINT_CMD="NODE_OPTIONS=--max-old-space-size=${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB} pnpm -w lint"
-PNPM_TYPECHECK_CMD="NODE_OPTIONS=--max-old-space-size=${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB} pnpm -w typecheck"
+PNPM_LINT_CMD="NODE_OPTIONS=--max-old-space-size=${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB} pnpm exec turbo run lint --concurrency=${CE_ONBOARDING_TURBO_CONCURRENCY}"
+PNPM_TYPECHECK_CMD="NODE_OPTIONS=--max-old-space-size=${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB} pnpm exec turbo run typecheck --concurrency=${CE_ONBOARDING_TURBO_CONCURRENCY}"
 
 
 mem_snap() {
@@ -67,7 +69,11 @@ run_step() {
   mem_snap
   divider
   # shellcheck disable=SC2086
-  bash -lc "$cmd"
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "${CE_ONBOARDING_STEP_TIMEOUT_SEC}" bash -lc "$cmd"
+  else
+    bash -lc "$cmd"
+  fi
   mem_snap
   echo "[OK] ${name}"
 }
