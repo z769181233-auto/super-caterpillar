@@ -384,18 +384,16 @@ function main() {
     const jsonPath = path.join(absOutDir, 'engine_invocation_surface_ssot.json');
     writeFileAtomic(jsonPath, jsonText);
 
-    // Format with prettier to match repo standards (only if outputting to repo)
-    if (outputDir === 'docs/ssot') {
-        try {
-            execSync(`pnpm -w prettier --write ${shellQuote(jsonPath)}`, {
-                stdio: 'ignore',
-                encoding: 'utf8',
-            });
-        } catch (e) {
-            // Prettier formatting is optional; if it fails, continue with unformatted JSON
-            // eslint-disable-next-line no-console
-            console.warn('[WARN] Prettier formatting failed, continuing with unformatted JSON');
-        }
+    // Format with prettier to match repo standards (always format for consistency)
+    try {
+        execSync(`pnpm -w prettier --write ${shellQuote(jsonPath)}`, {
+            stdio: 'ignore',
+            encoding: 'utf8',
+        });
+    } catch (e) {
+        // Prettier formatting is optional; if it fails, continue with unformatted JSON
+        // eslint-disable-next-line no-console
+        console.warn('[WARN] Prettier formatting failed, continuing with unformatted JSON');
     }
 
     // Deterministic Markdown (no timestamps/statistics)
