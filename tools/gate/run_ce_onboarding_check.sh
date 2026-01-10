@@ -24,6 +24,14 @@ TMP_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
+# Control concurrency to avoid OOM
+CE_ONBOARDING_PNPM_WS_CONCURRENCY="${CE_ONBOARDING_PNPM_WS_CONCURRENCY:-1}"
+CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB="${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB:-4096}"
+
+# Compose pnpm commands with controlled concurrency (avoid OOM spikes)
+PNPM_LINT_CMD="NODE_OPTIONS=--max-old-space-size=${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB} pnpm -w lint"
+PNPM_TYPECHECK_CMD="NODE_OPTIONS=--max-old-space-size=${CE_ONBOARDING_NODE_MAX_OLD_SPACE_MB} pnpm -w typecheck"
+
 divider() {
   echo "=================================================="
 }
@@ -47,7 +55,7 @@ run_step() {
   echo "Mode: $([[ "$UPDATE_MODE" -eq 1 ]] && echo "UPDATE (--update)" || echo "CHECK (default)")"
   echo "Repo: ${ROOT_DIR}"
   echo "Tmp:  ${TMP_DIR}"
-  echo "Time: $(date '+%Y-%m-%dT%H:%M:%S%z')"
+  echo "Time: $(date -Iseconds)"
 
   # [1/5] SSOT Generator
   if [[ "$UPDATE_MODE" -eq 1 ]]; then
@@ -68,12 +76,10 @@ run_step() {
     "bash tools/gate/gates/gate-ce-arch-guard-02_engine_invocation_surface_ssot.sh"
 
   # [4/5] Lint
-  run_step "[4/5] Lint" \
-    "pnpm -w lint"
+  run_step "[4/5] Lint" "$PNPM_LINT_CMD"
 
   # [5/5] TypeCheck
-  run_step "[5/5] TypeCheck" \
-    "pnpm -w typecheck"
+  run_step "[5/5] TypeCheck" "$PNPM_TYPECHECK_CMD"
 
   echo
   divider
