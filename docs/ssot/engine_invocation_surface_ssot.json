@@ -6,58 +6,97 @@
     {
       "engineKey": "ce03_visual_density",
       "version": "default",
-      "mode": "unknown",
+      "mode": "http",
+      "httpConfig": {
+        "baseUrl": "process.env.CE03_BASE_URL || 'http:",
+        "path": "/text/visual-density"
+      },
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     },
     {
       "engineKey": "ce04_visual_enrichment",
       "version": "default",
-      "mode": "unknown",
+      "mode": "http",
+      "httpConfig": {
+        "baseUrl": "process.env.CE04_BASE_URL || 'http:",
+        "path": "/text/enrich"
+      },
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     },
     {
       "engineKey": "ce05_example",
-      "version": "default",
-      "mode": "unknown",
+      "version": "example",
+      "mode": "http",
+      "httpConfig": {
+        "baseUrl": "process.env.CE05_EXAMPLE_BASE_URL || 'http:",
+        "path": "/ce05/example"
+      },
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     },
     {
       "engineKey": "ce06_novel_parsing",
       "version": "default",
-      "mode": "unknown",
+      "mode": "http",
+      "httpConfig": {
+        "baseUrl": "process.env.CE06_BASE_URL || 'http:",
+        "path": "/story/parse"
+      },
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     },
     {
       "engineKey": "novel_analysis",
       "version": "default",
       "mode": "local",
-      "adapterToken": "ShotRenderLocalAdapter",
+      "adapterToken": "NovelAnalysisLocalAdapter",
+      "httpConfig": {
+        "baseUrl": "process.env.CE05_EXAMPLE_BASE_URL || 'http:",
+        "path": "/ce05/example"
+      },
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "novel_analysis",
+      "version": "default",
+      "mode": "local",
+      "adapterToken": "NovelAnalysisLocalAdapter",
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     },
     {
       "engineKey": "semantic_enhancement",
       "version": "default",
       "mode": "local",
-      "adapterToken": "ShotRenderLocalAdapter",
+      "adapterToken": "SemanticEnhancementLocalAdapter",
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     },
     {
       "engineKey": "shot_planning",
       "version": "default",
-      "mode": "unknown",
+      "mode": "local",
+      "adapterToken": "ShotPlanningLocalAdapter",
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     },
     {
       "engineKey": "shot_render",
       "version": "default",
-      "mode": "local",
+      "mode": "http",
+      "httpConfig": {
+        "baseUrl": "process.env.SHOT_RENDER_BASE_URL || 'http:",
+        "path": "/render/shot"
+      },
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "shot_render",
+      "version": "local",
+      "mode": "gpu",
       "adapterToken": "ShotRenderLocalAdapter",
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     },
     {
       "engineKey": "structure_qa",
       "version": "default",
-      "mode": "unknown",
+      "mode": "local",
+      "adapterToken": "StructureQALocalAdapter",
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     }
   ],

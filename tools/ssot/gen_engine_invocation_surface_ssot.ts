@@ -239,53 +239,144 @@ function collectEngineSurface(repoRoot: string): EngineSurfaceItem[] {
     }
 
     const txt = fs.readFileSync(registryAbs, 'utf8');
-
-    // Heuristic: extract engineKey: 'xxx' or engineKey: "xxx"
-    const re = /engineKey\s*:\s*['"]([^'"]+)['"]/g;
-    const keys: string[] = [];
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(txt))) {
-        keys.push(m[1]);
-    }
-
-    const uniqKeys = stableSort(Array.from(new Set(keys)), (k) => k);
-
     const items: EngineSurfaceItem[] = [];
-    for (const k of uniqKeys) {
-        // Heuristic infer mode
-        // If same block contains "adapterToken" -> local; if contains "httpConfig" -> http; else unknown
-        const blockIdx = txt.indexOf(`engineKey: '${k}'`) >= 0 ? txt.indexOf(`engineKey: '${k}'`) : txt.indexOf(`engineKey: "${k}"`);
-        let mode: EngineSurfaceItem['mode'] = 'unknown';
-        let adapterToken: string | undefined;
-        let httpConfig: EngineSurfaceItem['httpConfig'] | undefined;
 
-        if (blockIdx >= 0) {
-            const slice = txt.slice(blockIdx, Math.min(txt.length, blockIdx + 600));
-            const mAdapter = slice.match(/adapterToken\s*:\s*['"]([^'"]+)['"]/);
-            if (mAdapter) {
-                mode = 'local';
-                adapterToken = mAdapter[1];
-            }
-            const mHttpBase = slice.match(/baseUrl\s*:\s*['"]([^'"]+)['"]/);
-            const mHttpPath = slice.match(/path\s*:\s*['"]([^'"]+)['"]/);
-            if (mHttpBase && mHttpPath) {
-                mode = 'http';
-                httpConfig = { baseUrl: mHttpBase[1], path: mHttpPath[1] };
+    // Robust Block-Level Parsing
+    // 1. Iterate through file to find all object literals starting with '{'
+    // 2. Extract balanced block
+    // 3. If block contains 'engineKey', parse fields STRICTLY within that block
+
+    for (let i = 0; i < txt.length; i++) {
+        if (txt[i] === '{') {
+            const block = extractBalancedBlock(txt, i);
+            if (block) {
+                const parsed = parseEngineBlock(block, registryRel);
+                if (parsed) {
+                    items.push(parsed);
+                }
+                // Skip ahead to avoid re-parsing inside the block (though engine objects shouldn't nest engine objects)
+                // Actually, just proceeding is fine, but skipping is optimization.
             }
         }
-
-        items.push({
-            engineKey: k,
-            version: 'default',
-            mode,
-            adapterToken,
-            httpConfig,
-            registeredIn: registryRel,
-        });
     }
 
     const uniqItems = uniqBy(items, (x) => `${x.engineKey}|${x.version}|${x.mode}|${x.adapterToken || ''}|${x.httpConfig?.baseUrl || ''}|${x.httpConfig?.path || ''}|${x.registeredIn}`);
     return stableSort(uniqItems, (x) => `${x.engineKey}|${x.version}|${x.mode}|${x.registeredIn}`);
+}
+
+function extractBalancedBlock(text: string, startIndex: number): string | null {
+    let braceCount = 0;
+    let inString = false;
+    let stringChar = '';
+
+    // Safety cap
+    const maxLen = 5000;
+
+    for (let i = startIndex; i < Math.min(text.length, startIndex + maxLen); i++) {
+        const c = text[i];
+
+        if (inString) {
+            if (c === stringChar && text[i - 1] !== '\\') {
+                inString = false;
+            }
+            continue;
+        }
+
+        if (c === "'" || c === '"' || c === '`') {
+            inString = true;
+            stringChar = c;
+            continue;
+        }
+
+        if (c === '{') {
+            braceCount++;
+        } else if (c === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+                return text.slice(startIndex, i + 1);
+            }
+        }
+    }
+    return null;
+}
+
+function parseEngineBlock(block: string, registryRel: string): EngineSurfaceItem | null {
+    // Clean comments (// ...) to avoid false positives in commented out code
+    // Simple greedy line comment removal
+    const cleanBlock = block.replace(/\/\/.*$/gm, '');
+
+    // Check for engineKey (mandatory)
+    const mKey = cleanBlock.match(/engineKey\s*:\s*['"]([^'"]+)['"]/);
+    if (!mKey) return null; // Not an engine descriptor block
+
+    const engineKey = mKey[1];
+
+    // Version
+    const mVer = cleanBlock.match(/version\s*:\s*['"]([^'"]+)['"]/);
+    const version = mVer ? mVer[1] : 'default';
+
+    // Mode
+    const mMode = cleanBlock.match(/mode\s*:\s*['"]([^'"]+)['"]/);
+    let mode = mMode ? mMode[1] : 'unknown';
+    // Validate mode against allowed values? No, SSOT should reflect reality, even if unknown.
+    // If user deleted mode, we fallback to unknown which flags attention.
+
+    // Adapter Token
+    let adapterToken: string | undefined;
+    const mToken = cleanBlock.match(/adapterToken\s*:\s*(['"]?)([^'",\s}]+)\1/);
+    if (mToken) {
+        // If it was quoted, mToken[1] is result. If unquoted (variable/class), still captured.
+        // cleanBlock usage: adapterToken: NovelAnalysisLocalAdapter,
+        // mToken[2] will be NovelAnalysisLocalAdapter
+        // adapterToken: 'ShotRenderLocalAdapter'
+        // mToken[2] will be ShotRenderLocalAdapter
+        adapterToken = mToken[2];
+    }
+
+    // Http Config
+    let httpConfig: EngineSurfaceItem['httpConfig'] | undefined;
+    // Check if httpConfig object exists
+    if (cleanBlock.includes('httpConfig:')) {
+        const mBase = cleanBlock.match(/baseUrl\s*:\s*([^,\n}]+)/); // lenient match until comma/newline
+        const mPath = cleanBlock.match(/path\s*:\s*['"]([^'"]+)['"]/);
+
+        if (mBase && mPath) {
+            let baseUrl = mBase[1].trim();
+            // Clean quotes if present
+            if ((baseUrl.startsWith("'") && baseUrl.endsWith("'")) || (baseUrl.startsWith('"') && baseUrl.endsWith('"'))) {
+                baseUrl = baseUrl.slice(1, -1);
+            }
+            // Handle process.env fallback logic roughly:
+            // process.env.FOO || 'http://...' -> we want the logical representation or a placeholder?
+            // User requested: "reflect Registry content".
+            // If it's code, we might want to capture the code or text.
+            // For SSOT json simplicity, let's capture the raw string if it's simple, or "DYNAMIC" if complex?
+            // Actually, for ce05 fix, we expect the value.
+            // But JSON shouldn't contain JS code 'process.env...'.
+            // Let's settle on: if it looks like process.env, store "ENV_VAR".
+            // OR store the exact fallback string?
+            // The requirement was: "ce05_example baseUrl 不是字面量 ${...}"
+            // The user wants to see "process.env... || 'http...'"? 
+            // Or does the user imply the SSOT logic *in the generator* needs to handle this?
+            // The current generator previously extracted literal match.
+            // If we blindly extract "process.env.X || 'Y'", that's valid string for SSOT field?
+            // Yes, let's keep the raw value found in source for full transparency.
+
+            httpConfig = {
+                baseUrl: baseUrl,
+                path: mPath[1]
+            };
+        }
+    }
+
+    return {
+        engineKey,
+        version,
+        mode,
+        adapterToken,
+        httpConfig,
+        registeredIn: registryRel
+    };
 }
 
 function collectSecurityAuditSurface(repoRoot: string): SecurityAuditSurface {
