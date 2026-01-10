@@ -23,7 +23,7 @@ export class JobReportFacade {
     private readonly qualityMetricsWriter: QualityMetricsWriter,
     private readonly prisma: PrismaService,
     private readonly directorSolver: DirectorConstraintSolverService
-  ) { }
+  ) {}
 
   /**
    * 处理 Job 回报（Facade 层）
@@ -176,7 +176,9 @@ export class JobReportFacade {
           });
 
           if (!binding) {
-            this.logger.warn(`[CE01] No binding found for job ${updatedJob.id}, skipping asset binding`);
+            this.logger.warn(
+              `[CE01] No binding found for job ${updatedJob.id}, skipping asset binding`
+            );
           } else {
             // 3) Merge metadata（保留已有字段，防止覆盖）
             const oldMetadata = (binding.metadata as any) || {};

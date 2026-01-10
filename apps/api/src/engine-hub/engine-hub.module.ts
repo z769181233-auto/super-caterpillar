@@ -27,4 +27,4 @@ import { HmacAuthModule } from '../auth/hmac/hmac-auth.module';
   ],
   exports: [EngineRegistryHubService, EngineInvokerHubService],
 })
-export class EngineHubModule { }
+export class EngineHubModule {}

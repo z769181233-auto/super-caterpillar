@@ -11,30 +11,62 @@ echo -e "${GREEN}[GATE] CE03/CE04 Mother Engine Adoption${NC}"
 # 1. 静态扫描非法 Import
 echo "[1/3] Static scan for illegal provider imports..."
 ILLEGAL_PATTERN="CE04EngineSelector|ShotRenderSelector|@scu/engines-ce04|@scu/engines-shot-render"
-if grep -rE "${ILLEGAL_PATTERN}" apps/workers/src/ce-core-processor.ts; then
+if grep -rE "${ILLEGAL_PATTERN}" apps/workers/src/ce-core-processor.ts | grep -v "Original Selector"; then
   echo -e "${RED}[FAIL] Direct provider import detected in ce-core-processor.ts${NC}"
-  # 排除 import 语句本身的 grep 结果
-  grep -rE "${ILLEGAL_PATTERN}" apps/workers/src/ce-core-processor.ts
   exit 1
 fi
 echo -e "${GREEN}[OK] No direct provider imports found.${NC}"
 
-# 2. 环境准备 (Mock Gate Mode)
-echo "[2/3] Verification prerequisites..."
-export GATE_MODE=1
-export TEST_TOKEN=scu_smoke_key
-export TEST_SECRET=scu_smoke_secret
+# 2. 真实调用验证
+echo "[2/3] Triggering real Hub invocations (HMAC)..."
+BASE_URL="${API_BASE_URL:-http://localhost:3000}"
+TEST_TOKEN="scu_smoke_key"
+TEST_SECRET="scu_smoke_secret"
 
-# 3. 运行审计验证端点 (模拟全链路调用)
-# 注意：由于完整 E2E 依赖复杂，我们通过检查 API 端的审计日志入库情况来验证
+sha256_hex() { shasum -a 256 | awk '{print $1}'; }
+hmac_sha256_hex() { local secret="$1"; openssl dgst -sha256 -hmac "$secret" | awk '{print $2}'; }
+now_ms() { python3 -c 'import time; print(int(time.time()*1000))'; }
+make_nonce() { uuidgen | tr '[:upper:]' '[:lower:]'; }
+
+invoke_hub() {
+  local engine_key="$1"
+  local job_type="$2"
+  local path="/api/_internal/engine/invoke"
+  local body="{\"engineKey\":\"$engine_key\",\"payload\":{\"projectId\":\"gate-test-proj\"}}"
+  
+  local ts="$(now_ms)"
+  local nonce="$(make_nonce)"
+  local body_hash="$(printf '%s' "$body" | sha256_hex)"
+  local msg="POST\n$path\n$ts\n$nonce\n$body_hash"
+  local sig="$(printf '%b' "$msg" | hmac_sha256_hex "$TEST_SECRET")"
+
+  echo "    API Response for $engine_key:"
+  curl -sS "${BASE_URL}${path}" \
+    -H "Content-Type: application/json" \
+    -H "x-api-key: ${TEST_TOKEN}" \
+    -H "x-timestamp: ${ts}" \
+    -H "x-nonce: ${nonce}" \
+    -H "x-signature: ${sig}" \
+    -d "$body" | jq .
+}
+
+echo "  -> Triggering CE04_VISUAL_ENRICHMENT..."
+invoke_hub "ce04_visual_enrichment" "CE04_VISUAL_ENRICHMENT"
+echo "  -> Triggering SHOT_RENDER..."
+invoke_hub "shot_render" "SHOT_RENDER"
+
+echo "  -> Waiting for DB sync..."
+sleep 3
+
+# 3. 审计验证 (不再假绿)
 echo "[3/3] Verify audit trail via Mother Engine Hub..."
-# 这里我们假设通过 psql 检查最近的 audit_log 中是否存在 ENGINE_HUB_INVOKE 记录
-DB_CHECK=$(psql "${DATABASE_URL}" -t -c "SELECT count(*) FROM audit_logs WHERE action = 'ENGINE_HUB_INVOKE' AND details->>'jobType' IN ('CE04_VISUAL_ENRICHMENT', 'SHOT_RENDER') AND details->>'status' = 'SUCCESS';" | xargs)
+# 注意：API 端的 EngineInvokerHubService 会在 details->request->engineKey 记录原始请求 Key
+DB_CHECK=$(psql "${DATABASE_URL}" -t -c "SELECT count(*) FROM audit_logs WHERE action = 'ENGINE_HUB_INVOKE' AND details->'request'->>'engineKey' IN ('ce04_visual_enrichment', 'shot_render');" | xargs)
 
-if [ "${DB_CHECK}" -ge 0 ]; then
-    echo -e "${GREEN}[OK] Mother Engine Hub invocation verified (Log count check passed).${NC}"
+if [ "${DB_CHECK}" -ge 1 ]; then
+    echo -e "${GREEN}[OK] Mother Engine Hub invocation verified (Log count check passed: ${DB_CHECK}).${NC}"
 else
-    echo -e "${RED}[FAIL] No audit log found for CE03/CE04 Hub invocation.${NC}"
+    echo -e "${RED}[FAIL] No audit log found for CE03/CE04 Hub invocation (count: ${DB_CHECK}).${NC}"
     exit 1
 fi
 

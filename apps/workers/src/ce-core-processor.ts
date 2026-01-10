@@ -11,7 +11,7 @@ import {
   CE07MemoryUpdateInput,
   CE07MemoryUpdateOutput,
   WorkerJobBase,
-  EngineInvocationRequest
+  EngineInvocationRequest,
 } from '@scu/shared-types';
 import { createHash } from 'crypto';
 import {
@@ -502,7 +502,10 @@ export async function processCE04Job(
       },
     };
 
-    const engineResult = await engineClient.invoke<CE04VisualEnrichmentInput, CE04VisualEnrichmentOutput>(engineReq);
+    const engineResult = await engineClient.invoke<
+      CE04VisualEnrichmentInput,
+      CE04VisualEnrichmentOutput
+    >(engineReq);
 
     if (!engineResult.success || !engineResult.output) {
       throw new Error(engineResult.error?.message || 'CE04 engine hub invocation failed');
@@ -525,8 +528,8 @@ export async function processCE04Job(
         traceId,
         enrichmentQuality: result.enrichment_quality,
         metadata: {
-          enrichedPrompt: (result as any).enriched_prompt,
-          promptParts: (result as any).prompt_parts,
+          enrichedPrompt: result.enriched_prompt,
+          promptParts: result.prompt_parts,
           billingUsage: engineResult.metrics?.usage,
         } as any,
       },
@@ -536,9 +539,16 @@ export async function processCE04Job(
     const usage = engineResult.metrics?.usage;
     if (usage) {
       const costLedgerService = new CostLedgerService(apiClient);
-      const project = await prisma.project.findUnique({ where: { id: job.projectId }, select: { ownerId: true } });
-      const shotJob = await prisma.shotJob.findUnique({ where: { id: jobId }, select: { organizationId: true } });
+      const project = await prisma.project.findUnique({
+        where: { id: job.projectId },
+        select: { ownerId: true },
+      });
+      const shotJob = await prisma.shotJob.findUnique({
+        where: { id: jobId },
+        select: { organizationId: true },
+      });
 
+      const attempts = (job as any).attempts ?? 1;
       if (shotJob?.organizationId) {
         await costLedgerService.recordCE04Billing({
           jobId,
@@ -547,7 +557,7 @@ export async function processCE04Job(
           projectId: job.projectId,
           userId: project?.ownerId || 'system',
           orgId: shotJob.organizationId,
-          attempt: (job as any).attempts ?? 1,
+          attempt: attempts,
           engineKey: 'ce04_visual_enrichment',
           billingUsage: usage,
         });
@@ -557,18 +567,20 @@ export async function processCE04Job(
     const duration = Date.now() - jobStartTime;
 
     // 审计日志上报
-    await apiClient.postAuditLog({
-      traceId,
-      projectId: job.projectId,
-      jobId,
-      jobType: 'CE04_VISUAL_ENRICHMENT',
-      engineKey: 'ce04_visual_enrichment',
-      status: 'SUCCESS',
-      inputHash: hashData(engineReq.payload),
-      outputHash: hashData(result),
-      latencyMs: duration,
-      auditTrail: result.audit_trail,
-    }).catch(() => { });
+    await apiClient
+      .postAuditLog({
+        traceId,
+        projectId: job.projectId,
+        jobId,
+        jobType: 'CE04_VISUAL_ENRICHMENT',
+        engineKey: 'ce04_visual_enrichment',
+        status: 'SUCCESS',
+        inputHash: hashData(engineReq.payload),
+        outputHash: hashData(result),
+        latencyMs: duration,
+        auditTrail: result.audit_trail,
+      })
+      .catch(() => { });
 
     return result;
   } catch (error: any) {
@@ -693,8 +705,14 @@ export async function processShotRenderJob(
     const usage = engineResult.metrics?.usage;
     if (usage) {
       const costLedgerService = new CostLedgerService(apiClient);
-      const project = await prisma.project.findUnique({ where: { id: job.projectId }, select: { ownerId: true } });
-      const shotJob = await prisma.shotJob.findUnique({ where: { id: jobId }, select: { organizationId: true } });
+      const project = await prisma.project.findUnique({
+        where: { id: job.projectId },
+        select: { ownerId: true },
+      });
+      const shotJob = await prisma.shotJob.findUnique({
+        where: { id: jobId },
+        select: { organizationId: true },
+      });
 
       if (shotJob?.organizationId) {
         await costLedgerService.recordShotRenderBilling({
@@ -714,20 +732,22 @@ export async function processShotRenderJob(
     const duration = Date.now() - jobStartTime;
 
     // 6. Audit Log
-    await apiClient.postAuditLog({
-      traceId,
-      projectId: job.projectId,
-      jobId,
-      jobType: 'SHOT_RENDER',
-      engineKey: 'shot_render',
-      status: 'SUCCESS',
-      inputHash: hashData({ prompt, seed, style }),
-      outputHash: hashData(result),
-      latencyMs: duration,
-      auditTrail: result.audit_trail,
-      resourceId: asset.id,
-      resourceType: 'asset',
-    }).catch(() => { });
+    await apiClient
+      .postAuditLog({
+        traceId,
+        projectId: job.projectId,
+        jobId,
+        jobType: 'SHOT_RENDER',
+        engineKey: 'shot_render',
+        status: 'SUCCESS',
+        inputHash: hashData({ prompt, seed, style }),
+        outputHash: hashData(result),
+        latencyMs: duration,
+        auditTrail: result.audit_trail,
+        resourceId: asset.id,
+        resourceType: 'asset',
+      })
+      .catch(() => { });
 
     return {
       assetId: asset.id,

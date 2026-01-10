@@ -24,7 +24,7 @@ export class EngineInvokerHubService {
     private readonly moduleRef: ModuleRef,
     private readonly httpEngineAdapter: HttpEngineAdapter,
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   /**
    * 调用引擎
@@ -61,7 +61,9 @@ export class EngineInvokerHubService {
 
     // 1.1 检查禁用列表
     if (isGateMode && descriptor && disableKeys.includes(descriptor.key)) {
-      this.logger.warn(`Engine ${descriptor.key} is disabled via ENGINE_DISABLE_KEYS, attempting fallback...`);
+      this.logger.warn(
+        `Engine ${descriptor.key} is disabled via ENGINE_DISABLE_KEYS, attempting fallback...`
+      );
       fallbackReason = `Engine ${descriptor.key} disabled by Gate`;
       descriptor = null; // 强制触发找不到引擎的逻辑或后续 fallback
     }
@@ -160,8 +162,14 @@ export class EngineInvokerHubService {
           usage: {
             inputTokens: engineResult?.metrics?.tokensIn || 0,
             outputTokens: engineResult?.metrics?.tokensOut || 0,
-            totalTokens: (engineResult?.metrics?.tokensUsed as number) || (engineResult?.metrics?.tokens as number) || 0,
-            costUsd: (engineResult?.metrics?.cost as number) || (engineResult?.metrics?.costUsd as number) || 0,
+            totalTokens:
+              (engineResult?.metrics?.tokensUsed as number) ||
+              (engineResult?.metrics?.tokens as number) ||
+              0,
+            costUsd:
+              (engineResult?.metrics?.cost as number) ||
+              (engineResult?.metrics?.costUsd as number) ||
+              0,
           },
           ...(engineResult?.metrics || {}),
         },

@@ -8,6 +8,9 @@ import helmet from 'helmet';
 import { env } from '@scu/config';
 
 async function bootstrap() {
+  // 诊断环境变量加载情况
+  console.log(`[GATE_DIAGNOSTIC] GATE_MODE=${process.env.GATE_MODE}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}`);
+
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
 

@@ -14,12 +14,14 @@
 ## 执行步骤
 
 ### 1. 创建证据目录
+
 ```bash
 # 在 repo 根目录
 mkdir -p docs/_evidence/CE01_SEAL_20260110
 ```
 
 ### 2. 启动 API（严格禁用内置 Worker）
+
 ```bash
 # Terminal A - repo 根目录
 export GATE_MODE=1
@@ -31,6 +33,7 @@ pnpm --filter api dev
 ```
 
 ### 3. 启动 Worker
+
 ```bash
 # Terminal B - repo 根目录
 export WORKER_ID=worker_ce01_gate_1
@@ -40,6 +43,7 @@ pnpm --filter @scu/worker dev
 ```
 
 ### 4. 运行 Gate 并收集输出
+
 ```bash
 # Terminal C - repo 根目录
 export TEST_TOKEN="your-valid-jwt"
@@ -50,13 +54,16 @@ bash tools/gate/gates/gate-ce01_protocol_instantiation.sh 2>&1 | tee docs/_evide
 ```
 
 ### 5. 收集 Worker 日志证据
+
 从 Terminal B (Worker) 复制认领与完成的关键日志段：
+
 ```bash
 # 保存 Worker 输出关键片段（包含 jobId / bindingId / status）
 nano docs/_evidence/CE01_SEAL_20260110/worker_consume_log.txt
 ```
 
 ### 6. 导出 DB 证据
+
 ```bash
 # A. binding_metadata.csv
 psql "$DATABASE_URL" -c "\
@@ -83,6 +90,7 @@ COPY ( \
 ```
 
 ### 7. 完成封板提交
+
 ```bash
 # 在 repo 根目录
 pnpm -w run typecheck

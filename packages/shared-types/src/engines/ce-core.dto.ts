@@ -73,6 +73,15 @@ export interface CE04VisualEnrichmentInput {
 
 export interface CE04VisualEnrichmentOutput {
   enriched_text: string;
+  enriched_prompt: string;
+  prompt_parts: {
+    style?: string;
+    lighting?: string;
+    camera?: string;
+    composition?: string;
+    negatives?: string;
+    seed?: number;
+  };
   enrichment_quality: number;
   metadata: Record<string, any>;
   audit_trail: string;

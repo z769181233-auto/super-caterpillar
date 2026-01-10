@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# 强制清理端口占用
+echo "Cleaning up port 3000..."
+lsof -ti:3000 | xargs kill -9 || true
+sleep 2
+
 # 强制加载环境变量
 if [ -f .env.local ]; then
   # 移除旧的混淆环境变量
@@ -20,9 +25,15 @@ export TEST_SECRET=scu_smoke_secret
 EVDIR="docs/_evidence/CE02_SEAL_20260110"
 mkdir -p "$EVDIR"
 
-echo "Starting API in background..."
-# 显式传递多个可能被读取的环境变量变量名
-PORT=3000 GATE_MODE=1 TEST_TOKEN=scu_smoke_key pnpm dev:api > "$EVDIR/api_start.log" 2>&1 &
+# 创建 Gate 专用环境配置
+cat > .env.gate <<EOF
+GATE_MODE=1
+PORT=3000
+EOF
+
+echo "Starting API in background with GATE_MODE..."
+# 使用 .env.gate 启动 API
+NODE_ENV=gate GATE_MODE=1 PORT=3000 pnpm dev:api > "$EVDIR/api_start.log" 2>&1 &
 API_PID=$!
 
 # 退出时清理
@@ -45,5 +56,8 @@ done
 # 执行 Gate 脚本
 echo "Executing CE02 Gate Script..."
 bash tools/gate/gates/gate-ce02_mother_engine.sh 2>&1 | tee "$EVDIR/gate_output.log"
+
+echo "Executing CE03/CE04 Adoption Gate Script..."
+bash tools/gate/gates/gate-ce03_ce04_mother_engine_adoption.sh 2>&1 | tee -a "$EVDIR/gate_output.log"
 
 echo "Gate execution finished."

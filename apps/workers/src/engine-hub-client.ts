@@ -6,10 +6,7 @@
  * 远程化版本：通过 ApiClient 转发请求至 API 母引擎入口
  */
 
-import {
-  EngineInvocationRequest,
-  EngineInvocationResult,
-} from '@scu/shared-types';
+import { EngineInvocationRequest, EngineInvocationResult } from '@scu/shared-types';
 import { ApiClient } from './api-client';
 
 /**
@@ -17,7 +14,7 @@ import { ApiClient } from './api-client';
  * 提供统一的引擎调用接口，使用 EngineInvocationRequest/Result
  */
 export class EngineHubClient {
-  constructor(private readonly apiClient: ApiClient) { }
+  constructor(private readonly apiClient: ApiClient) {}
 
   /**
    * 调用引擎
@@ -70,7 +67,7 @@ export class EngineHubClient {
         metrics: {
           ...result.metrics,
           latencyMs: Date.now() - started, // 覆盖为端到端总延迟
-        }
+        },
       };
     } catch (e: any) {
       return {

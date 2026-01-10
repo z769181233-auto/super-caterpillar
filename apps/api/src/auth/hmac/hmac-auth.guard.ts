@@ -28,7 +28,7 @@ export class HmacAuthGuard implements CanActivate {
     private readonly hmacAuthService: HmacAuthService,
     private readonly auditLogService: AuditLogService,
     private readonly nonceService: NonceService
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();

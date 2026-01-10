@@ -78,6 +78,15 @@ export class EngineRegistryHubService {
         path: '/text/enrich',
       },
     },
+    {
+      key: 'shot_render',
+      version: 'default',
+      mode: 'http',
+      httpConfig: {
+        baseUrl: process.env.SHOT_RENDER_BASE_URL || 'http://localhost:8003',
+        path: '/render/shot',
+      },
+    },
     // 其它引擎占位以后再加
   ];
 

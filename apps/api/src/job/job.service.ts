@@ -97,7 +97,7 @@ export class JobService {
     @Inject(BudgetService) private readonly budgetService: BudgetService,
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService
-  ) { }
+  ) {}
 
   async create(
     shotId: string,
@@ -634,8 +634,21 @@ export class JobService {
     styleSeed?: string;
     userId: string;
     traceId?: string;
-  }): Promise<{ referenceSheetId: string; engineKey: string; engineVersion: string; fingerprint: string }> {
-    const { characterId, organizationId, projectId, posePreset = 'front', styleSeed = 'default', userId, traceId } = params;
+  }): Promise<{
+    referenceSheetId: string;
+    engineKey: string;
+    engineVersion: string;
+    fingerprint: string;
+  }> {
+    const {
+      characterId,
+      organizationId,
+      projectId,
+      posePreset = 'front',
+      styleSeed = 'default',
+      userId,
+      traceId,
+    } = params;
     const engineKey = 'character_visual';
     const jobType = JobTypeEnum.CE01_REFERENCE_SHEET;
 
@@ -651,7 +664,13 @@ export class JobService {
     const existingBinding = await this.prisma.jobEngineBinding.findFirst({
       where: {
         engineKey,
-        status: { in: [JobEngineBindingStatus.BOUND, JobEngineBindingStatus.EXECUTING, JobEngineBindingStatus.COMPLETED] },
+        status: {
+          in: [
+            JobEngineBindingStatus.BOUND,
+            JobEngineBindingStatus.EXECUTING,
+            JobEngineBindingStatus.COMPLETED,
+          ],
+        },
         metadata: {
           path: ['fingerprint'],
           equals: fingerprint,
@@ -665,7 +684,9 @@ export class JobService {
     });
 
     if (existingBinding) {
-      this.logger.log(`[CE01] Idempotency hit: found existing binding ${existingBinding.id} for fingerprint ${fingerprint}`);
+      this.logger.log(
+        `[CE01] Idempotency hit: found existing binding ${existingBinding.id} for fingerprint ${fingerprint}`
+      );
       return {
         referenceSheetId: existingBinding.id,
         engineKey: existingBinding.engineKey,
@@ -715,7 +736,7 @@ export class JobService {
           where: { id: b.id },
           data: {
             metadata: {
-              ...(b.metadata as any || {}),
+              ...((b.metadata as any) || {}),
               characterId,
               fingerprint,
               posePreset,
@@ -765,7 +786,8 @@ export class JobService {
     if (!binding) {
       throw new BadRequestException({
         code: 'REFERENCE_SHEET_FORBIDDEN',
-        message: 'referenceSheetId does not exist or does not belong to current organization/project',
+        message:
+          'referenceSheetId does not exist or does not belong to current organization/project',
       });
     }
   }
@@ -959,13 +981,15 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${filterTypes.length > 0
-          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-          : Prisma.empty
+        ${
+          filterTypes.length > 0
+            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+            : Prisma.empty
         }
-        ${supportedEngines.length > 0
-          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-          : Prisma.empty
+        ${
+          supportedEngines.length > 0
+            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+            : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10
