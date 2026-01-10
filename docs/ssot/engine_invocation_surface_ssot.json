@@ -2,7 +2,65 @@
   "version": "1.0",
   "scanRanges": ["apps/api/src", "apps/workers/src"],
   "callSites": [],
-  "engineSurface": [],
+  "engineSurface": [
+    {
+      "engineKey": "ce03_visual_density",
+      "version": "default",
+      "mode": "unknown",
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "ce04_visual_enrichment",
+      "version": "default",
+      "mode": "unknown",
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "ce05_example",
+      "version": "default",
+      "mode": "unknown",
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "ce06_novel_parsing",
+      "version": "default",
+      "mode": "unknown",
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "novel_analysis",
+      "version": "default",
+      "mode": "local",
+      "adapterToken": "ShotRenderLocalAdapter",
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "semantic_enhancement",
+      "version": "default",
+      "mode": "local",
+      "adapterToken": "ShotRenderLocalAdapter",
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "shot_planning",
+      "version": "default",
+      "mode": "unknown",
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "shot_render",
+      "version": "default",
+      "mode": "local",
+      "adapterToken": "ShotRenderLocalAdapter",
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    },
+    {
+      "engineKey": "structure_qa",
+      "version": "default",
+      "mode": "unknown",
+      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
+    }
+  ],
   "securityAuditSurface": {
     "hmacProtected": ["/_internal/engine/invoke"],
     "auditActions": ["ENGINE_HUB_INVOKE"],

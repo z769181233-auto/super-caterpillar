@@ -60,11 +60,11 @@ export class EngineInvokerHubService {
     let descriptor = this.engineRegistry.find(req.engineKey, req.engineVersion);
 
     // 1.1 检查禁用列表
-    if (isGateMode && descriptor && disableKeys.includes(descriptor.key)) {
+    if (isGateMode && descriptor && disableKeys.includes(descriptor.engineKey)) {
       this.logger.warn(
-        `Engine ${descriptor.key} is disabled via ENGINE_DISABLE_KEYS, attempting fallback...`
+        `Engine ${descriptor.engineKey} is disabled via ENGINE_DISABLE_KEYS, attempting fallback...`
       );
-      fallbackReason = `Engine ${descriptor.key} disabled by Gate`;
+      fallbackReason = `Engine ${descriptor.engineKey} disabled by Gate`;
       descriptor = null; // 强制触发找不到引擎的逻辑或后续 fallback
     }
 
@@ -91,7 +91,7 @@ export class EngineInvokerHubService {
       if (descriptor.mode === 'local') {
         // 2. 本地 adapter 调用
         if (!descriptor.adapterToken) {
-          throw new Error(`Local adapter token not specified for ${descriptor.key}`);
+          throw new Error(`Local adapter token not specified for ${descriptor.engineKey}`);
         }
 
         const adapter = this.moduleRef.get<EngineAdapter>(descriptor.adapterToken, {
@@ -126,7 +126,7 @@ export class EngineInvokerHubService {
       } else {
         // 3. HTTP adapter 调用
         if (!descriptor.httpConfig) {
-          throw new Error(`HTTP config not specified for ${descriptor.key}`);
+          throw new Error(`HTTP config not specified for ${descriptor.engineKey}`);
         }
 
         // 使用现有的 HttpEngineAdapter
@@ -153,7 +153,7 @@ export class EngineInvokerHubService {
 
       const finalResult: EngineInvocationResult<TOutput> = {
         success: true,
-        selectedEngineKey: descriptor.key,
+        selectedEngineKey: descriptor.engineKey,
         selectedEngineVersion: descriptor.version,
         fallbackReason,
         output,
@@ -186,7 +186,7 @@ export class EngineInvokerHubService {
 
       const result: EngineInvocationResult<TOutput> = {
         success: false,
-        selectedEngineKey: descriptor.key,
+        selectedEngineKey: descriptor.engineKey,
         selectedEngineVersion: descriptor.version,
         fallbackReason,
         error: {

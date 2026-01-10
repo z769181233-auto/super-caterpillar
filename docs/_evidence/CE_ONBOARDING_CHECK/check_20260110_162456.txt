@@ -1,89 +1,89 @@
 ==================================================
 [CE ONBOARDING CHECK] START
 ==================================================
-Mode: UPDATE (--update)
+Mode: CHECK (default)
 Repo: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
-Tmp:  /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.ESqTzFP2Rr
-Time: 2026-01-10T16:24:54+07:00
+Tmp:  /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.pgZVjllXLU
+Time: 2026-01-10T16:24:56+07:00
 
 ==================================================
-[RUN] [1/5] SSOT Generator (UPDATE repo SSOT)
-[MEM] time=2026-01-10T16:24:54+07:00
-Mach Virtual Memory Statistics: (page size of 16384 bytes)
-Pages free:                               33278.
-Pages active:                            336586.
-Pages inactive:                          333372.
-Pages speculative:                         2091.
-Pages throttled:                              0.
-Pages wired down:                         95432.
-Pages purgeable:                           3175.
-"Translation faults":                  28474078.
-Pages copy-on-write:                    2603324.
-Pages zero filled:                      9110113.
-Pages reactivated:                      4867155.
-Pages purged:                            132696.
-File-backed pages:                       167557.
-Anonymous pages:                         504492.
-Pages stored in compressor:              427817.
-Pages occupied by compressor:            211524.
-Decompressions:                         4102188.
-Compressions:                           5444615.
-Pageins:                                 985398.
-Pageouts:                                  5662.
-Swapins:                                  27942.
-Swapouts:                                 50936.
-==================================================
-[OK] SSOT generated: docs/ssot/engine_invocation_surface_ssot.json
-[OK] SSOT doc generated: docs/ssot/ENGINE_INVOCATION_SURFACE_SSOT.md
+[RUN] [1/5] SSOT Generator (CHECK, temp output only)
 [MEM] time=2026-01-10T16:24:56+07:00
 Mach Virtual Memory Statistics: (page size of 16384 bytes)
-Pages free:                               39013.
-Pages active:                            327917.
-Pages inactive:                          324605.
-Pages speculative:                         2300.
+Pages free:                                5405.
+Pages active:                            344119.
+Pages inactive:                          342179.
+Pages speculative:                         2232.
 Pages throttled:                              0.
-Pages wired down:                        102713.
-Pages purgeable:                            453.
-"Translation faults":                  28684870.
-Pages copy-on-write:                    2643419.
-Pages zero filled:                      9175680.
-Pages reactivated:                      4882044.
-Pages purged:                            134135.
-File-backed pages:                       168445.
-Anonymous pages:                         486377.
-Pages stored in compressor:              440982.
-Pages occupied by compressor:            215753.
-Decompressions:                         4106829.
-Compressions:                           5463862.
-Pageins:                                 987124.
+Pages wired down:                        102638.
+Pages purgeable:                            451.
+"Translation faults":                  28667438.
+Pages copy-on-write:                    2642195.
+Pages zero filled:                      9166949.
+Pages reactivated:                      4881748.
+Pages purged:                            134131.
+File-backed pages:                       168699.
+Anonymous pages:                         519831.
+Pages stored in compressor:              440860.
+Pages occupied by compressor:            215771.
+Decompressions:                         4105450.
+Compressions:                           5462361.
+Pageins:                                 986961.
 Pageouts:                                  5741.
 Swapins:                                  27942.
 Swapouts:                                 50936.
-[OK] [1/5] SSOT Generator (UPDATE repo SSOT)
+==================================================
+[OK] SSOT generated: ../../../../../../var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.pgZVjllXLU/engine_invocation_surface_ssot.json
+[OK] SSOT doc generated: ../../../../../../var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.pgZVjllXLU/ENGINE_INVOCATION_SURFACE_SSOT.md
+[MEM] time=2026-01-10T16:24:58+07:00
+Mach Virtual Memory Statistics: (page size of 16384 bytes)
+Pages free:                               38771.
+Pages active:                            310670.
+Pages inactive:                          306315.
+Pages speculative:                         3516.
+Pages throttled:                              0.
+Pages wired down:                        101559.
+Pages purgeable:                            469.
+"Translation faults":                  28871508.
+Pages copy-on-write:                    2655701.
+Pages zero filled:                      9287492.
+Pages reactivated:                      4913997.
+Pages purged:                            134531.
+File-backed pages:                       170518.
+Anonymous pages:                         449983.
+Pages stored in compressor:              532274.
+Pages occupied by compressor:            251461.
+Decompressions:                         4107487.
+Compressions:                           5555972.
+Pageins:                                 988435.
+Pageouts:                                  5741.
+Swapins:                                  27942.
+Swapouts:                                 50936.
+[OK] [1/5] SSOT Generator (CHECK, temp output only)
 
 ==================================================
 [RUN] [2/5] Zero Direct Link Gate
-[MEM] time=2026-01-10T16:24:56+07:00
+[MEM] time=2026-01-10T16:24:58+07:00
 Mach Virtual Memory Statistics: (page size of 16384 bytes)
-Pages free:                               38979.
-Pages active:                            328013.
-Pages inactive:                          324619.
-Pages speculative:                         2300.
+Pages free:                               38814.
+Pages active:                            310696.
+Pages inactive:                          306366.
+Pages speculative:                         3516.
 Pages throttled:                              0.
-Pages wired down:                        102713.
-Pages purgeable:                            453.
-"Translation faults":                  28686471.
-Pages copy-on-write:                    2643600.
-Pages zero filled:                      9175828.
-Pages reactivated:                      4882044.
-Pages purged:                            134135.
-File-backed pages:                       168476.
-Anonymous pages:                         486456.
-Pages stored in compressor:              440982.
-Pages occupied by compressor:            215753.
-Decompressions:                         4106829.
-Compressions:                           5463862.
-Pageins:                                 987157.
+Pages wired down:                        101559.
+Pages purgeable:                            469.
+"Translation faults":                  28872118.
+Pages copy-on-write:                    2655843.
+Pages zero filled:                      9287646.
+Pages reactivated:                      4913997.
+Pages purged:                            134531.
+File-backed pages:                       170518.
+Anonymous pages:                         450060.
+Pages stored in compressor:              532269.
+Pages occupied by compressor:            251458.
+Decompressions:                         4107492.
+Compressions:                           5555972.
+Pageins:                                 988437.
 Pageouts:                                  5741.
 Swapins:                                  27942.
 Swapouts:                                 50936.
@@ -112,28 +112,28 @@ Summary:
 ----
 [2/3] PASS. Business layer zero-direct-link satisfied.
 [3/3] Technical debt acknowledged (legacy adapters excluded from gate).
-Evidence: docs/_evidence/CE02_SEAL_20260110/zero_direct_link/zero_direct_link_repo_scan_20260110_162456.txt
-[MEM] time=2026-01-10T16:24:56+07:00
+Evidence: docs/_evidence/CE02_SEAL_20260110/zero_direct_link/zero_direct_link_repo_scan_20260110_162458.txt
+[MEM] time=2026-01-10T16:24:58+07:00
 Mach Virtual Memory Statistics: (page size of 16384 bytes)
-Pages free:                               34568.
-Pages active:                            330045.
-Pages inactive:                          326959.
-Pages speculative:                         2302.
+Pages free:                               36357.
+Pages active:                            311933.
+Pages inactive:                          307534.
+Pages speculative:                         3560.
 Pages throttled:                              0.
-Pages wired down:                        102713.
-Pages purgeable:                            455.
-"Translation faults":                  28703094.
-Pages copy-on-write:                    2646571.
-Pages zero filled:                      9181482.
-Pages reactivated:                      4882044.
-Pages purged:                            134135.
-File-backed pages:                       168522.
-Anonymous pages:                         490784.
-Pages stored in compressor:              440976.
-Pages occupied by compressor:            215752.
-Decompressions:                         4106835.
-Compressions:                           5463862.
-Pageins:                                 987233.
+Pages wired down:                        101559.
+Pages purgeable:                            654.
+"Translation faults":                  28889235.
+Pages copy-on-write:                    2659345.
+Pages zero filled:                      9291578.
+Pages reactivated:                      4913997.
+Pages purged:                            134531.
+File-backed pages:                       170624.
+Anonymous pages:                         452403.
+Pages stored in compressor:              532173.
+Pages occupied by compressor:            251423.
+Decompressions:                         4107588.
+Compressions:                           5555972.
+Pageins:                                 988541.
 Pageouts:                                  5741.
 Swapins:                                  27942.
 Swapouts:                                 50936.
@@ -141,58 +141,58 @@ Swapouts:                                 50936.
 
 ==================================================
 [RUN] [3/5] SSOT Gate (CE-ARCH-GUARD-02)
-[MEM] time=2026-01-10T16:24:56+07:00
+[MEM] time=2026-01-10T16:24:58+07:00
 Mach Virtual Memory Statistics: (page size of 16384 bytes)
-Pages free:                               34534.
-Pages active:                            330081.
-Pages inactive:                          326995.
-Pages speculative:                         2302.
+Pages free:                               36281.
+Pages active:                            311987.
+Pages inactive:                          307577.
+Pages speculative:                         3564.
 Pages throttled:                              0.
-Pages wired down:                        102713.
-Pages purgeable:                            455.
-"Translation faults":                  28703693.
-Pages copy-on-write:                    2646714.
-Pages zero filled:                      9181626.
-Pages reactivated:                      4882044.
-Pages purged:                            134135.
-File-backed pages:                       168524.
-Anonymous pages:                         490854.
-Pages stored in compressor:              440976.
-Pages occupied by compressor:            215752.
-Decompressions:                         4106835.
-Compressions:                           5463862.
-Pageins:                                 987235.
+Pages wired down:                        101559.
+Pages purgeable:                            654.
+"Translation faults":                  28890278.
+Pages copy-on-write:                    2659487.
+Pages zero filled:                      9291754.
+Pages reactivated:                      4913997.
+Pages purged:                            134531.
+File-backed pages:                       170634.
+Anonymous pages:                         452494.
+Pages stored in compressor:              532170.
+Pages occupied by compressor:            251421.
+Decompressions:                         4107591.
+Compressions:                           5555972.
+Pageins:                                 988549.
 Pageouts:                                  5741.
 Swapins:                                  27942.
 Swapouts:                                 50936.
 ==================================================
 --- [GATE] CE-ARCH-GUARD-02_ENGINE_INVOCATION_SURFACE_SSOT START ---
-[SCAN] Generating SSOT to temp: /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.nsFdtplAav
+[SCAN] Generating SSOT to temp: /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.FRq1i84Uen
 [ALLOWLIST] Technical Debt allowlist unchanged ✓
 [DIFF] SSOT synchronized ✓
-[EVIDENCE] docs/_evidence/CE02_SEAL_20260110/engine_invocation_surface_ssot/gate_ce_arch_guard_02_20260110_162458.txt
+[EVIDENCE] docs/_evidence/CE02_SEAL_20260110/engine_invocation_surface_ssot/gate_ce_arch_guard_02_20260110_162500.txt
 --- [GATE] CE-ARCH-GUARD-02_ENGINE_INVOCATION_SURFACE_SSOT END ---
-[MEM] time=2026-01-10T16:24:58+07:00
+[MEM] time=2026-01-10T16:25:00+07:00
 Mach Virtual Memory Statistics: (page size of 16384 bytes)
-Pages free:                               65998.
-Pages active:                            297111.
-Pages inactive:                          292780.
-Pages speculative:                         3633.
+Pages free:                               34931.
+Pages active:                            310091.
+Pages inactive:                          301971.
+Pages speculative:                         6976.
 Pages throttled:                              0.
-Pages wired down:                        101559.
-Pages purgeable:                            654.
-"Translation faults":                  28906327.
-Pages copy-on-write:                    2660856.
-Pages zero filled:                      9300556.
-Pages reactivated:                      4913997.
-Pages purged:                            134531.
-File-backed pages:                       170637.
-Anonymous pages:                         422887.
-Pages stored in compressor:              532057.
-Pages occupied by compressor:            251359.
-Decompressions:                         4107703.
-Compressions:                           5555972.
-Pageins:                                 988895.
+Pages wired down:                         99383.
+Pages purgeable:                           1621.
+"Translation faults":                  29108091.
+Pages copy-on-write:                    2674497.
+Pages zero filled:                      9403914.
+Pages reactivated:                      4921502.
+Pages purged:                            134614.
+File-backed pages:                       175628.
+Anonymous pages:                         443410.
+Pages stored in compressor:              551348.
+Pages occupied by compressor:            258922.
+Decompressions:                         4110459.
+Compressions:                           5579024.
+Pageins:                                 992181.
 Pageouts:                                  5741.
 Swapins:                                  27942.
 Swapouts:                                 50936.
@@ -200,27 +200,27 @@ Swapouts:                                 50936.
 
 ==================================================
 [RUN] [4/5] Lint
-[MEM] time=2026-01-10T16:24:58+07:00
+[MEM] time=2026-01-10T16:25:00+07:00
 Mach Virtual Memory Statistics: (page size of 16384 bytes)
-Pages free:                               65872.
-Pages active:                            297145.
-Pages inactive:                          292781.
-Pages speculative:                         3633.
+Pages free:                               34917.
+Pages active:                            310161.
+Pages inactive:                          302088.
+Pages speculative:                         6956.
 Pages throttled:                              0.
-Pages wired down:                        101557.
-Pages purgeable:                            654.
-"Translation faults":                  28906921.
-Pages copy-on-write:                    2660995.
-Pages zero filled:                      9300692.
-Pages reactivated:                      4913997.
-Pages purged:                            134531.
-File-backed pages:                       170637.
-Anonymous pages:                         422922.
-Pages stored in compressor:              532052.
-Pages occupied by compressor:            251359.
-Decompressions:                         4107712.
-Compressions:                           5555972.
-Pageins:                                 988897.
+Pages wired down:                         99383.
+Pages purgeable:                           1621.
+"Translation faults":                  29108813.
+Pages copy-on-write:                    2674638.
+Pages zero filled:                      9404166.
+Pages reactivated:                      4921502.
+Pages purged:                            134614.
+File-backed pages:                       175628.
+Anonymous pages:                         443577.
+Pages stored in compressor:              551344.
+Pages occupied by compressor:            258920.
+Decompressions:                         4110469.
+Compressions:                           5579024.
+Pageins:                                 992183.
 Pageouts:                                  5741.
 Swapins:                                  27942.
 Swapouts:                                 50936.
@@ -230,6 +230,11 @@ turbo 2.6.3
 • Packages in scope: @scu/billing, @scu/config, @scu/engines-ce03, @scu/engines-ce04, @scu/engines-ce06, @scu/engines-shot-render, @scu/engines-video-merge, @scu/observability, @scu/router, @scu/shared-types, @scu/storage, @scu/worker, api, database, web
 • Running lint in 15 packages
 • Remote caching disabled
+@scu/shared-types:build: cache hit, replaying logs 752f7e6c9000a96d
+@scu/shared-types:build: 
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > tsc -p tsconfig.build.json
+@scu/shared-types:build: 
 @scu/billing:build: cache hit, replaying logs 33fc0feda7d9897e
 @scu/billing:build: 
 @scu/billing:build: 
@@ -264,29 +269,12 @@ turbo 2.6.3
 @scu/billing:build: DTS ⚡️ Build success in 3213ms
 @scu/billing:build: DTS dist/model-price-table.d.ts 1000.00 B
 @scu/billing:build: DTS dist/index.d.ts             112.00 B
-@scu/engines-ce06:build: cache hit, replaying logs 63d6059df83837d3
-@scu/engines-ce06:build: 
-@scu/engines-ce06:build: 
-@scu/engines-ce06:build: > @scu/engines-ce06@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce06
-@scu/engines-ce06:build: > tsup src/index.ts --format cjs --dts --clean
-@scu/engines-ce06:build: 
-@scu/engines-ce06:build: [34mCLI[39m Building entry: src/index.ts
-@scu/engines-ce06:build: [34mCLI[39m Using tsconfig: tsconfig.json
-@scu/engines-ce06:build: [34mCLI[39m tsup v8.5.1
-@scu/engines-ce06:build: [34mCLI[39m Target: es2020
-@scu/engines-ce06:build: [34mCLI[39m Cleaning output folder
-@scu/engines-ce06:build: [34mCJS[39m Build start
-@scu/engines-ce06:build: [32mCJS[39m [1mdist/index.js [22m[32m5.06 KB[39m
-@scu/engines-ce06:build: [32mCJS[39m ⚡️ Build success in 68ms
-@scu/engines-ce06:build: DTS Build start
-@scu/engines-ce06:build: DTS ⚡️ Build success in 3489ms
-@scu/engines-ce06:build: DTS dist/index.d.ts 1.73 KB
-@scu/config:build: cache hit, replaying logs c8fd5b1023fd4456
-@scu/config:build: 
-@scu/config:build: 
-@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
-@scu/config:build: > tsc
-@scu/config:build: 
+database:build: cache hit, replaying logs c41143c742c6c2f6
+database:build: 
+database:build: 
+database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
+database:build: 
 @scu/engines-video-merge:build: cache hit, replaying logs 0ebc99be36d380f2
 @scu/engines-video-merge:build: 
 @scu/engines-video-merge:build: 
@@ -304,6 +292,46 @@ turbo 2.6.3
 @scu/engines-video-merge:build: DTS Build start
 @scu/engines-video-merge:build: DTS ⚡️ Build success in 3445ms
 @scu/engines-video-merge:build: DTS dist/index.d.ts 1.35 KB
+@scu/engines-ce03:build: cache hit, replaying logs 1477071f50ce4656
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce03
+@scu/engines-ce03:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce03:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce03:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce03:build: [34mCLI[39m Target: es2020
+@scu/engines-ce03:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce03:build: [34mCJS[39m Build start
+@scu/engines-ce03:build: [32mCJS[39m [1mdist/index.js [22m[32m3.16 KB[39m
+@scu/engines-ce03:build: [32mCJS[39m ⚡️ Build success in 320ms
+@scu/engines-ce03:build: DTS Build start
+@scu/engines-ce03:build: DTS ⚡️ Build success in 3409ms
+@scu/engines-ce03:build: DTS dist/index.d.ts 1.15 KB
+@scu/config:build: cache hit, replaying logs c8fd5b1023fd4456
+@scu/config:build: 
+@scu/config:build: 
+@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+@scu/config:build: > tsc
+@scu/config:build: 
+@scu/engines-ce06:build: cache hit, replaying logs 63d6059df83837d3
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: > @scu/engines-ce06@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce06
+@scu/engines-ce06:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce06:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce06:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce06:build: [34mCLI[39m Target: es2020
+@scu/engines-ce06:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce06:build: [34mCJS[39m Build start
+@scu/engines-ce06:build: [32mCJS[39m [1mdist/index.js [22m[32m5.06 KB[39m
+@scu/engines-ce06:build: [32mCJS[39m ⚡️ Build success in 68ms
+@scu/engines-ce06:build: DTS Build start
+@scu/engines-ce06:build: DTS ⚡️ Build success in 3489ms
+@scu/engines-ce06:build: DTS dist/index.d.ts 1.73 KB
 @scu/storage:build: cache hit, replaying logs 4a0fb300c8435271
 @scu/storage:build: 
 @scu/storage:build: 
@@ -327,46 +355,6 @@ turbo 2.6.3
 @scu/observability:build: DTS Build start
 @scu/observability:build: DTS ⚡️ Build success in 3155ms
 @scu/observability:build: DTS dist/index.d.ts 1.48 KB
-@scu/engines-ce03:build: cache hit, replaying logs 1477071f50ce4656
-@scu/engines-ce03:build: 
-@scu/engines-ce03:build: 
-@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce03
-@scu/engines-ce03:build: > tsup src/index.ts --format cjs --dts --clean
-@scu/engines-ce03:build: 
-@scu/engines-ce03:build: [34mCLI[39m Building entry: src/index.ts
-@scu/engines-ce03:build: [34mCLI[39m Using tsconfig: tsconfig.json
-@scu/engines-ce03:build: [34mCLI[39m tsup v8.5.1
-@scu/engines-ce03:build: [34mCLI[39m Target: es2020
-@scu/engines-ce03:build: [34mCLI[39m Cleaning output folder
-@scu/engines-ce03:build: [34mCJS[39m Build start
-@scu/engines-ce03:build: [32mCJS[39m [1mdist/index.js [22m[32m3.16 KB[39m
-@scu/engines-ce03:build: [32mCJS[39m ⚡️ Build success in 320ms
-@scu/engines-ce03:build: DTS Build start
-@scu/engines-ce03:build: DTS ⚡️ Build success in 3409ms
-@scu/engines-ce03:build: DTS dist/index.d.ts 1.15 KB
-@scu/engines-shot-render:build: cache hit, replaying logs 64e71ad3b52c79bd
-@scu/engines-shot-render:build: 
-@scu/engines-shot-render:build: 
-@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render
-@scu/engines-shot-render:build: > tsup src/index.ts --format cjs --dts --clean
-@scu/engines-shot-render:build: 
-@scu/engines-shot-render:build: [34mCLI[39m Building entry: src/index.ts
-@scu/engines-shot-render:build: [34mCLI[39m Using tsconfig: tsconfig.json
-@scu/engines-shot-render:build: [34mCLI[39m tsup v8.5.1
-@scu/engines-shot-render:build: [34mCLI[39m Target: es2020
-@scu/engines-shot-render:build: [34mCLI[39m Cleaning output folder
-@scu/engines-shot-render:build: [34mCJS[39m Build start
-@scu/engines-shot-render:build: [32mCJS[39m [1mdist/index.js [22m[32m14.60 KB[39m
-@scu/engines-shot-render:build: [32mCJS[39m ⚡️ Build success in 92ms
-@scu/engines-shot-render:build: DTS Build start
-@scu/engines-shot-render:build: DTS ⚡️ Build success in 3508ms
-@scu/engines-shot-render:build: DTS dist/index.d.ts 1.56 KB
-database:build: cache hit, replaying logs c41143c742c6c2f6
-database:build: 
-database:build: 
-database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
-database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
-database:build: 
 @scu/engines-ce04:build: cache hit, replaying logs f274f35e76d7c1d4
 @scu/engines-ce04:build: 
 @scu/engines-ce04:build: 
@@ -384,11 +372,128 @@ database:build:
 @scu/engines-ce04:build: DTS Build start
 @scu/engines-ce04:build: DTS ⚡️ Build success in 3395ms
 @scu/engines-ce04:build: DTS dist/index.d.ts 1.28 KB
-@scu/shared-types:build: cache hit, replaying logs 752f7e6c9000a96d
-@scu/shared-types:build: 
-@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
-@scu/shared-types:build: > tsc -p tsconfig.build.json
-@scu/shared-types:build: 
+@scu/engines-shot-render:build: cache hit, replaying logs 64e71ad3b52c79bd
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render
+@scu/engines-shot-render:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-shot-render:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-shot-render:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-shot-render:build: [34mCLI[39m Target: es2020
+@scu/engines-shot-render:build: [34mCLI[39m Cleaning output folder
+@scu/engines-shot-render:build: [34mCJS[39m Build start
+@scu/engines-shot-render:build: [32mCJS[39m [1mdist/index.js [22m[32m14.60 KB[39m
+@scu/engines-shot-render:build: [32mCJS[39m ⚡️ Build success in 92ms
+@scu/engines-shot-render:build: DTS Build start
+@scu/engines-shot-render:build: DTS ⚡️ Build success in 3508ms
+@scu/engines-shot-render:build: DTS dist/index.d.ts 1.56 KB
+web:lint: cache hit, replaying logs 6b6ac64adc46e5f6
+web:lint: 
+web:lint: > web@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web
+web:lint: > next lint
+web:lint: 
+web:lint: 
+web:lint: ./src/app/[locale]/projects/[projectId]/import/page.tsx
+web:lint: 49:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/app/[locale]/projects/[projectId]/import-novel/page.tsx
+web:lint: 6:10  Warning: 'ProjectPermissions' is defined but never used.  @typescript-eslint/no-unused-vars
+web:lint: 7:10  Warning: 'getJobStatusText' is defined but never used.  @typescript-eslint/no-unused-vars
+web:lint: 8:8  Warning: 'EngineFilter' is defined but never used.  @typescript-eslint/no-unused-vars
+web:lint: 13:8  Warning: 'ProjectStructureTree' is defined but never used.  @typescript-eslint/no-unused-vars
+web:lint: 30:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 90:23  Warning: 'setPermissions' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+web:lint: 102:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 291:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 347:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 364:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 672:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 673:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 745:25  Warning: 'isHttp' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+web:lint: 983:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 984:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 985:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 987:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 988:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/app/[locale]/projects/[projectId]/pipeline/page.tsx
+web:lint: 85:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/app/[locale]/projects/[projectId]/quality/review-queue/page.tsx
+web:lint: 15:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 30:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 41:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+web:lint: 61:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 93:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/app/[locale]/projects/[projectId]/video/page.tsx
+web:lint: 11:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 12:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 18:6  Warning: React Hook useEffect has a missing dependency: 'loadFirstVideo'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+web:lint: 28:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 29:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 29:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 29:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 30:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 30:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 41:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 42:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 60:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 61:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 62:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 63:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 79:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/app/[locale]/projects/page.tsx
+web:lint: 44:6  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+web:lint: 47:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 50:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 59:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 97:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 135:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 162:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 195:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/app/[locale]/register/page.tsx
+web:lint: 32:9  Warning: 'redirect' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+web:lint: 51:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/app/[locale]/tasks/[taskId]/graph/page.tsx
+web:lint: 15:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 36:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 61:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 70:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 135:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 138:69  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/components/project/DetailPanel.tsx
+web:lint: 69:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 364:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 376:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 383:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 400:91  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/components/project/MainActionDispatcher.tsx
+web:lint: 19:26  Warning: 'productionStatus' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+web:lint: 19:44  Warning: 'sourceType' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+web:lint: 68:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 82:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/components/project/ProductionTimeline.tsx
+web:lint: 22:3  Warning: 'productionStatus' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+web:lint: 
+web:lint: ./src/components/project/ProjectStructureTree.tsx
+web:lint: 133:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+web:lint: 
+web:lint: ./src/lib/apiClient.ts
+web:lint: 6:3  Warning: 'ProjectSceneGraph' is defined but never used.  @typescript-eslint/no-unused-vars
+web:lint: 7:3  Warning: 'NovelAnalysisStatus' is defined but never used.  @typescript-eslint/no-unused-vars
+web:lint: 658:3  Warning: 'ListJobsResponse' is defined but never used.  @typescript-eslint/no-unused-vars
+web:lint: 661:3  Warning: 'ProjectDetailDTO' is defined but never used.  @typescript-eslint/no-unused-vars
+web:lint: 
+web:lint: info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
 api:lint: cache miss, executing 8f600887f3d4ec68
 api:lint: 
 api:lint: > api@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
@@ -1377,137 +1482,32 @@ api:lint:   162:19  warning  'e' is defined but never used. Allowed unused args 
 api:lint: 
 api:lint: ✖ 736 problems (0 errors, 736 warnings)
 api:lint: 
-web:lint: cache hit, replaying logs 6b6ac64adc46e5f6
-web:lint: 
-web:lint: > web@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web
-web:lint: > next lint
-web:lint: 
-web:lint: 
-web:lint: ./src/app/[locale]/projects/[projectId]/import/page.tsx
-web:lint: 49:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/app/[locale]/projects/[projectId]/import-novel/page.tsx
-web:lint: 6:10  Warning: 'ProjectPermissions' is defined but never used.  @typescript-eslint/no-unused-vars
-web:lint: 7:10  Warning: 'getJobStatusText' is defined but never used.  @typescript-eslint/no-unused-vars
-web:lint: 8:8  Warning: 'EngineFilter' is defined but never used.  @typescript-eslint/no-unused-vars
-web:lint: 13:8  Warning: 'ProjectStructureTree' is defined but never used.  @typescript-eslint/no-unused-vars
-web:lint: 30:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 90:23  Warning: 'setPermissions' is assigned a value but never used.  @typescript-eslint/no-unused-vars
-web:lint: 102:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 291:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 347:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 364:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 672:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 673:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 745:25  Warning: 'isHttp' is assigned a value but never used.  @typescript-eslint/no-unused-vars
-web:lint: 983:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 984:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 985:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 987:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 988:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/app/[locale]/projects/[projectId]/pipeline/page.tsx
-web:lint: 85:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/app/[locale]/projects/[projectId]/quality/review-queue/page.tsx
-web:lint: 15:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 30:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 41:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
-web:lint: 61:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 93:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/app/[locale]/projects/[projectId]/video/page.tsx
-web:lint: 11:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 12:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 18:6  Warning: React Hook useEffect has a missing dependency: 'loadFirstVideo'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
-web:lint: 28:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 29:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 29:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 29:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 30:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 30:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 41:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 42:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 60:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 61:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 62:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 63:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 79:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/app/[locale]/projects/page.tsx
-web:lint: 44:6  Warning: React Hook useEffect has a missing dependency: 'loadProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
-web:lint: 47:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 50:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 59:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 97:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 135:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 162:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 195:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/app/[locale]/register/page.tsx
-web:lint: 32:9  Warning: 'redirect' is assigned a value but never used.  @typescript-eslint/no-unused-vars
-web:lint: 51:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/app/[locale]/tasks/[taskId]/graph/page.tsx
-web:lint: 15:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 36:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 61:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 70:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 135:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 138:69  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/components/project/DetailPanel.tsx
-web:lint: 69:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 364:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 376:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 383:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 400:91  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/components/project/MainActionDispatcher.tsx
-web:lint: 19:26  Warning: 'productionStatus' is assigned a value but never used.  @typescript-eslint/no-unused-vars
-web:lint: 19:44  Warning: 'sourceType' is assigned a value but never used.  @typescript-eslint/no-unused-vars
-web:lint: 68:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 82:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/components/project/ProductionTimeline.tsx
-web:lint: 22:3  Warning: 'productionStatus' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
-web:lint: 
-web:lint: ./src/components/project/ProjectStructureTree.tsx
-web:lint: 133:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-web:lint: 
-web:lint: ./src/lib/apiClient.ts
-web:lint: 6:3  Warning: 'ProjectSceneGraph' is defined but never used.  @typescript-eslint/no-unused-vars
-web:lint: 7:3  Warning: 'NovelAnalysisStatus' is defined but never used.  @typescript-eslint/no-unused-vars
-web:lint: 658:3  Warning: 'ListJobsResponse' is defined but never used.  @typescript-eslint/no-unused-vars
-web:lint: 661:3  Warning: 'ProjectDetailDTO' is defined but never used.  @typescript-eslint/no-unused-vars
-web:lint: 
-web:lint: info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
 
  Tasks:    13 successful, 13 total
 Cached:    12 cached, 13 total
-  Time:    4.577s 
+  Time:    3.862s 
 
-[MEM] time=2026-01-10T16:25:04+07:00
+[MEM] time=2026-01-10T16:25:06+07:00
 Mach Virtual Memory Statistics: (page size of 16384 bytes)
-Pages free:                               56826.
-Pages active:                            291676.
-Pages inactive:                          288136.
-Pages speculative:                         2572.
+Pages free:                              101169.
+Pages active:                            270308.
+Pages inactive:                          268069.
+Pages speculative:                         3014.
 Pages throttled:                              0.
-Pages wired down:                         99643.
-Pages purgeable:                           1287.
-"Translation faults":                  29470858.
-Pages copy-on-write:                    2695532.
-Pages zero filled:                      9610303.
+Pages wired down:                        100170.
+Pages purgeable:                           1373.
+"Translation faults":                  29585487.
+Pages copy-on-write:                    2704151.
+Pages zero filled:                      9658701.
 Pages reactivated:                      4964408.
 Pages purged:                            135402.
-File-backed pages:                       174030.
-Anonymous pages:                         408354.
-Pages stored in compressor:              587437.
-Pages occupied by compressor:            273400.
-Decompressions:                         4135491.
+File-backed pages:                       173965.
+Anonymous pages:                         367426.
+Pages stored in compressor:              579864.
+Pages occupied by compressor:            269710.
+Decompressions:                         4139212.
 Compressions:                           5658508.
-Pageins:                                 993795.
+Pageins:                                 994583.
 Pageouts:                                  5756.
 Swapins:                                  27942.
 Swapouts:                                 50936.
@@ -1515,27 +1515,27 @@ Swapouts:                                 50936.
 
 ==================================================
 [RUN] [5/5] TypeCheck
-[MEM] time=2026-01-10T16:25:04+07:00
+[MEM] time=2026-01-10T16:25:06+07:00
 Mach Virtual Memory Statistics: (page size of 16384 bytes)
-Pages free:                               56872.
-Pages active:                            291631.
-Pages inactive:                          288247.
-Pages speculative:                         2572.
+Pages free:                              100702.
+Pages active:                            270748.
+Pages inactive:                          268064.
+Pages speculative:                         3011.
 Pages throttled:                              0.
-Pages wired down:                         99643.
-Pages purgeable:                           1287.
-"Translation faults":                  29471470.
-Pages copy-on-write:                    2695672.
-Pages zero filled:                      9610434.
+Pages wired down:                        100170.
+Pages purgeable:                           1373.
+"Translation faults":                  29586450.
+Pages copy-on-write:                    2704294.
+Pages zero filled:                      9659216.
 Pages reactivated:                      4964408.
 Pages purged:                            135402.
-File-backed pages:                       174030.
-Anonymous pages:                         408420.
-Pages stored in compressor:              587421.
-Pages occupied by compressor:            273393.
-Decompressions:                         4135512.
+File-backed pages:                       173965.
+Anonymous pages:                         367858.
+Pages stored in compressor:              579864.
+Pages occupied by compressor:            269710.
+Decompressions:                         4139219.
 Compressions:                           5658508.
-Pageins:                                 993797.
+Pageins:                                 994585.
 Pageouts:                                  5756.
 Swapins:                                  27942.
 Swapouts:                                 50936.
@@ -1545,41 +1545,17 @@ turbo 2.6.3
 • Packages in scope: @scu/billing, @scu/config, @scu/engines-ce03, @scu/engines-ce04, @scu/engines-ce06, @scu/engines-shot-render, @scu/engines-video-merge, @scu/observability, @scu/router, @scu/shared-types, @scu/storage, @scu/worker, api, database, web
 • Running typecheck in 15 packages
 • Remote caching disabled
-@scu/engines-ce03:build: cache hit, replaying logs 1477071f50ce4656
-@scu/engines-ce03:build: 
-@scu/engines-ce03:build: 
-@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce03
-@scu/engines-ce03:build: > tsup src/index.ts --format cjs --dts --clean
-@scu/engines-ce03:build: 
-@scu/engines-ce03:build: [34mCLI[39m Building entry: src/index.ts
-@scu/engines-ce03:build: [34mCLI[39m Using tsconfig: tsconfig.json
-@scu/engines-ce03:build: [34mCLI[39m tsup v8.5.1
-@scu/engines-ce03:build: [34mCLI[39m Target: es2020
-@scu/engines-ce03:build: [34mCLI[39m Cleaning output folder
-@scu/engines-ce03:build: [34mCJS[39m Build start
-@scu/engines-ce03:build: [32mCJS[39m [1mdist/index.js [22m[32m3.16 KB[39m
-@scu/engines-ce03:build: [32mCJS[39m ⚡️ Build success in 320ms
-@scu/engines-ce03:build: DTS Build start
-@scu/engines-ce03:build: DTS ⚡️ Build success in 3409ms
-@scu/engines-ce03:build: DTS dist/index.d.ts 1.15 KB
-@scu/storage:build: cache hit, replaying logs 4a0fb300c8435271
-@scu/storage:build: 
-@scu/storage:build: 
-@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
-@scu/storage:build: > tsc
-@scu/storage:build: 
+@scu/shared-types:build: cache hit, replaying logs 752f7e6c9000a96d
+@scu/shared-types:build: 
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > tsc -p tsconfig.build.json
+@scu/shared-types:build: 
 database:build: cache hit, replaying logs c41143c742c6c2f6
 database:build: 
 database:build: 
 database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
 database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
 database:build: 
-@scu/config:build: cache hit, replaying logs c8fd5b1023fd4456
-@scu/config:build: 
-@scu/config:build: 
-@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
-@scu/config:build: > tsc
-@scu/config:build: 
 @scu/observability:build: cache hit, replaying logs f20900639e6990db
 @scu/observability:build: 
 @scu/observability:build: 
@@ -1597,6 +1573,18 @@ database:build:
 @scu/observability:build: DTS Build start
 @scu/observability:build: DTS ⚡️ Build success in 3155ms
 @scu/observability:build: DTS dist/index.d.ts 1.48 KB
+@scu/config:build: cache hit, replaying logs c8fd5b1023fd4456
+@scu/config:build: 
+@scu/config:build: 
+@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+@scu/config:build: > tsc
+@scu/config:build: 
+@scu/storage:build: cache hit, replaying logs 4a0fb300c8435271
+@scu/storage:build: 
+@scu/storage:build: 
+@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > tsc
+@scu/storage:build: 
 @scu/engines-ce04:build: cache hit, replaying logs f274f35e76d7c1d4
 @scu/engines-ce04:build: 
 @scu/engines-ce04:build: 
@@ -1614,6 +1602,23 @@ database:build:
 @scu/engines-ce04:build: DTS Build start
 @scu/engines-ce04:build: DTS ⚡️ Build success in 3395ms
 @scu/engines-ce04:build: DTS dist/index.d.ts 1.28 KB
+@scu/engines-ce03:build: cache hit, replaying logs 1477071f50ce4656
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce03
+@scu/engines-ce03:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-ce03:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-ce03:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-ce03:build: [34mCLI[39m Target: es2020
+@scu/engines-ce03:build: [34mCLI[39m Cleaning output folder
+@scu/engines-ce03:build: [34mCJS[39m Build start
+@scu/engines-ce03:build: [32mCJS[39m [1mdist/index.js [22m[32m3.16 KB[39m
+@scu/engines-ce03:build: [32mCJS[39m ⚡️ Build success in 320ms
+@scu/engines-ce03:build: DTS Build start
+@scu/engines-ce03:build: DTS ⚡️ Build success in 3409ms
+@scu/engines-ce03:build: DTS dist/index.d.ts 1.15 KB
 @scu/billing:build: cache hit, replaying logs 33fc0feda7d9897e
 @scu/billing:build: 
 @scu/billing:build: 
@@ -1665,23 +1670,6 @@ database:build:
 @scu/engines-ce06:build: DTS Build start
 @scu/engines-ce06:build: DTS ⚡️ Build success in 3489ms
 @scu/engines-ce06:build: DTS dist/index.d.ts 1.73 KB
-@scu/engines-shot-render:build: cache hit, replaying logs 64e71ad3b52c79bd
-@scu/engines-shot-render:build: 
-@scu/engines-shot-render:build: 
-@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render
-@scu/engines-shot-render:build: > tsup src/index.ts --format cjs --dts --clean
-@scu/engines-shot-render:build: 
-@scu/engines-shot-render:build: [34mCLI[39m Building entry: src/index.ts
-@scu/engines-shot-render:build: [34mCLI[39m Using tsconfig: tsconfig.json
-@scu/engines-shot-render:build: [34mCLI[39m tsup v8.5.1
-@scu/engines-shot-render:build: [34mCLI[39m Target: es2020
-@scu/engines-shot-render:build: [34mCLI[39m Cleaning output folder
-@scu/engines-shot-render:build: [34mCJS[39m Build start
-@scu/engines-shot-render:build: [32mCJS[39m [1mdist/index.js [22m[32m14.60 KB[39m
-@scu/engines-shot-render:build: [32mCJS[39m ⚡️ Build success in 92ms
-@scu/engines-shot-render:build: DTS Build start
-@scu/engines-shot-render:build: DTS ⚡️ Build success in 3508ms
-@scu/engines-shot-render:build: DTS dist/index.d.ts 1.56 KB
 @scu/engines-video-merge:build: cache hit, replaying logs 0ebc99be36d380f2
 @scu/engines-video-merge:build: 
 @scu/engines-video-merge:build: 
@@ -1699,11 +1687,23 @@ database:build:
 @scu/engines-video-merge:build: DTS Build start
 @scu/engines-video-merge:build: DTS ⚡️ Build success in 3445ms
 @scu/engines-video-merge:build: DTS dist/index.d.ts 1.35 KB
-@scu/shared-types:build: cache hit, replaying logs 752f7e6c9000a96d
-@scu/shared-types:build: 
-@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
-@scu/shared-types:build: > tsc -p tsconfig.build.json
-@scu/shared-types:build: 
+@scu/engines-shot-render:build: cache hit, replaying logs 64e71ad3b52c79bd
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render
+@scu/engines-shot-render:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: [34mCLI[39m Building entry: src/index.ts
+@scu/engines-shot-render:build: [34mCLI[39m Using tsconfig: tsconfig.json
+@scu/engines-shot-render:build: [34mCLI[39m tsup v8.5.1
+@scu/engines-shot-render:build: [34mCLI[39m Target: es2020
+@scu/engines-shot-render:build: [34mCLI[39m Cleaning output folder
+@scu/engines-shot-render:build: [34mCJS[39m Build start
+@scu/engines-shot-render:build: [32mCJS[39m [1mdist/index.js [22m[32m14.60 KB[39m
+@scu/engines-shot-render:build: [32mCJS[39m ⚡️ Build success in 92ms
+@scu/engines-shot-render:build: DTS Build start
+@scu/engines-shot-render:build: DTS ⚡️ Build success in 3508ms
+@scu/engines-shot-render:build: DTS dist/index.d.ts 1.56 KB
 api:typecheck: cache miss, executing 915b186b8a7b1f22
 api:typecheck: 
 api:typecheck: > api@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
@@ -1722,7 +1722,7 @@ api#typecheck: command (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpill
 
  Tasks:    11 successful, 12 total
 Cached:    11 cached, 12 total
-  Time:    2.241s 
+  Time:    2.086s 
 Failed:    api#typecheck
 
  ERROR  run failed: command  exited (2)
