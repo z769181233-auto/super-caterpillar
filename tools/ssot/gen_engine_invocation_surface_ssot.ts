@@ -241,21 +241,63 @@ function collectEngineSurface(repoRoot: string): EngineSurfaceItem[] {
     const txt = fs.readFileSync(registryAbs, 'utf8');
     const items: EngineSurfaceItem[] = [];
 
-    // Robust Block-Level Parsing
-    // 1. Iterate through file to find all object literals starting with '{'
-    // 2. Extract balanced block
-    // 3. If block contains 'engineKey', parse fields STRICTLY within that block
+    // Robust Block-Level Parsing with Anchor
+    // 1. Find all `engineKey:` occurrences.
+    // 2. Backtrack to find the opening `{` for that object.
+    // 3. Extract balance block from that `{`.
+    // 4. Parse strictly within that block.
 
-    for (let i = 0; i < txt.length; i++) {
-        if (txt[i] === '{') {
-            const block = extractBalancedBlock(txt, i);
+    // Regex to find "engineKey" property start
+    const keyRe = /engineKey\s*:/g;
+    let m: RegExpExecArray | null;
+
+    // Keep track of processed ranges to prevent overlaps
+    // A simplified approach: for each key, find its enclosing block. 
+    // If that block has already been processed, skip.
+    const processedRanges: Array<{ start: number, end: number }> = [];
+
+    while ((m = keyRe.exec(txt))) {
+        const keyIndex = m.index;
+
+        // Backtrack to find opening brace '{'
+        // Strategy: simplified backward scan.
+        // We assume valid TS/JSON-like object structure.
+        let braceIndex = -1;
+        let balance = 0;
+
+        // limit lookback to avoid infinite loops in weird files
+        const lookbackLimit = 2000;
+        const startScan = Math.max(0, keyIndex - lookbackLimit);
+
+        for (let i = keyIndex; i >= startScan; i--) {
+            const char = txt[i];
+            // We ignore strings/comments logic for backward scan for simplicity 
+            // as engineKey usually isn't inside a nested structure that confuses this simple heuristic
+            // unless formatted very poorly.
+            if (char === '}') balance++;
+            if (char === '{') {
+                if (balance === 0) {
+                    braceIndex = i;
+                    break;
+                }
+                balance--;
+            }
+        }
+
+        if (braceIndex !== -1) {
+            // Check if this braceIndex is within an already processed range (this would mean it's a nested key or re-discovery)
+            const alreadyProcessed = processedRanges.some(r => braceIndex >= r.start && braceIndex < r.end);
+            if (alreadyProcessed) {
+                continue;
+            }
+
+            const block = extractBalancedBlock(txt, braceIndex);
             if (block) {
                 const parsed = parseEngineBlock(block, registryRel);
                 if (parsed) {
                     items.push(parsed);
                 }
-                // Skip ahead to avoid re-parsing inside the block (though engine objects shouldn't nest engine objects)
-                // Actually, just proceeding is fine, but skipping is optimization.
+                processedRanges.push({ start: braceIndex, end: braceIndex + block.length });
             }
         }
     }
@@ -268,6 +310,7 @@ function extractBalancedBlock(text: string, startIndex: number): string | null {
     let braceCount = 0;
     let inString = false;
     let stringChar = '';
+    let inLineComment = false;
 
     // Safety cap
     const maxLen = 5000;
@@ -275,10 +318,26 @@ function extractBalancedBlock(text: string, startIndex: number): string | null {
     for (let i = startIndex; i < Math.min(text.length, startIndex + maxLen); i++) {
         const c = text[i];
 
+        // Handle Line Comments
+        if (inLineComment) {
+            if (c === '\n') {
+                inLineComment = false;
+            }
+            continue;
+        }
+
+        // Handle Strings
         if (inString) {
             if (c === stringChar && text[i - 1] !== '\\') {
                 inString = false;
             }
+            continue;
+        }
+
+        // Check for comment start (outside string)
+        if (c === '/' && text[i + 1] === '/') {
+            inLineComment = true;
+            i++; // skip next slash
             continue;
         }
 
@@ -300,72 +359,108 @@ function extractBalancedBlock(text: string, startIndex: number): string | null {
     return null;
 }
 
-function parseEngineBlock(block: string, registryRel: string): EngineSurfaceItem | null {
-    // Clean comments (// ...) to avoid false positives in commented out code
-    // Simple greedy line comment removal
-    const cleanBlock = block.replace(/\/\/.*$/gm, '');
+function stripLineCommentsOutsideStrings(code: string): string {
+    let result = '';
+    let inString = false;
+    let stringChar = '';
+    let inLineComment = false;
 
-    // Check for engineKey (mandatory)
+    for (let i = 0; i < code.length; i++) {
+        const c = code[i];
+
+        if (inLineComment) {
+            if (c === '\n') {
+                inLineComment = false;
+                result += c;
+            }
+            continue;
+        }
+
+        if (inString) {
+            result += c;
+            if (c === stringChar && code[i - 1] !== '\\') {
+                inString = false;
+            }
+            continue;
+        }
+
+        // Check start of comment
+        if (c === '/' && code[i + 1] === '/') {
+            inLineComment = true;
+            i++; // Skip the second slash
+            continue;
+        }
+
+        // Check start of string
+        if (c === "'" || c === '"' || c === '`') {
+            inString = true;
+            stringChar = c;
+            result += c;
+            continue;
+        }
+
+        result += c;
+    }
+    return result;
+}
+
+function parseEngineBlock(block: string, registryRel: string): EngineSurfaceItem | null {
+    // 1. Safe comment stripping
+    const cleanBlock = stripLineCommentsOutsideStrings(block);
+
+    // 2. Parse fields
     const mKey = cleanBlock.match(/engineKey\s*:\s*['"]([^'"]+)['"]/);
     if (!mKey) return null; // Not an engine descriptor block
-
     const engineKey = mKey[1];
 
-    // Version
     const mVer = cleanBlock.match(/version\s*:\s*['"]([^'"]+)['"]/);
     const version = mVer ? mVer[1] : 'default';
 
-    // Mode
     const mMode = cleanBlock.match(/mode\s*:\s*['"]([^'"]+)['"]/);
     let mode = mMode ? mMode[1] : 'unknown';
-    // Validate mode against allowed values? No, SSOT should reflect reality, even if unknown.
-    // If user deleted mode, we fallback to unknown which flags attention.
 
-    // Adapter Token
+    // 3. Adapter Token
     let adapterToken: string | undefined;
     const mToken = cleanBlock.match(/adapterToken\s*:\s*(['"]?)([^'",\s}]+)\1/);
     if (mToken) {
-        // If it was quoted, mToken[1] is result. If unquoted (variable/class), still captured.
-        // cleanBlock usage: adapterToken: NovelAnalysisLocalAdapter,
-        // mToken[2] will be NovelAnalysisLocalAdapter
-        // adapterToken: 'ShotRenderLocalAdapter'
-        // mToken[2] will be ShotRenderLocalAdapter
         adapterToken = mToken[2];
     }
 
-    // Http Config
+    // 4. Scoped Http Config
     let httpConfig: EngineSurfaceItem['httpConfig'] | undefined;
-    // Check if httpConfig object exists
-    if (cleanBlock.includes('httpConfig:')) {
-        const mBase = cleanBlock.match(/baseUrl\s*:\s*([^,\n}]+)/); // lenient match until comma/newline
-        const mPath = cleanBlock.match(/path\s*:\s*['"]([^'"]+)['"]/);
+    const httpConfigMatch = cleanBlock.match(/httpConfig\s*:/);
 
-        if (mBase && mPath) {
-            let baseUrl = mBase[1].trim();
-            // Clean quotes if present
-            if ((baseUrl.startsWith("'") && baseUrl.endsWith("'")) || (baseUrl.startsWith('"') && baseUrl.endsWith('"'))) {
-                baseUrl = baseUrl.slice(1, -1);
+    if (httpConfigMatch && httpConfigMatch.index !== undefined) {
+        // Find the block starting for httpConfig
+        // We look for the first '{' after httpConfig:
+        const configStartIdx = cleanBlock.indexOf('{', httpConfigMatch.index);
+        if (configStartIdx !== -1) {
+            const httpBlock = extractBalancedBlock(cleanBlock, configStartIdx);
+            if (httpBlock) {
+                // Parse baseUrl and path INSIDE this block
+                // Capture baseUrl value up to comma or newline or closing brace.
+                // We want to verify if it is a quoted string or a processed string.
+
+                // path is simple: path: '/foo/bar'
+                const mPath = httpBlock.match(/path\s*:\s*['"]([^'"]+)['"]/);
+
+                // baseUrl: extract raw value.
+                // Look for baseUrl: <value> [, or } or \n]
+                const mBase = httpBlock.match(/baseUrl\s*:\s*([^,\n}]+)/);
+
+                if (mBase && mPath) {
+                    let baseUrl = mBase[1].trim();
+                    // unquote if quoted
+                    if ((baseUrl.startsWith("'") && baseUrl.endsWith("'")) || (baseUrl.startsWith('"') && baseUrl.endsWith('"'))) {
+                        baseUrl = baseUrl.slice(1, -1);
+                    }
+
+                    httpConfig = {
+                        baseUrl: baseUrl,
+                        path: mPath[1]
+                    };
+                }
             }
-            // Handle process.env fallback logic roughly:
-            // process.env.FOO || 'http://...' -> we want the logical representation or a placeholder?
-            // User requested: "reflect Registry content".
-            // If it's code, we might want to capture the code or text.
-            // For SSOT json simplicity, let's capture the raw string if it's simple, or "DYNAMIC" if complex?
-            // Actually, for ce05 fix, we expect the value.
-            // But JSON shouldn't contain JS code 'process.env...'.
-            // Let's settle on: if it looks like process.env, store "ENV_VAR".
-            // OR store the exact fallback string?
-            // The requirement was: "ce05_example baseUrl 不是字面量 ${...}"
-            // The user wants to see "process.env... || 'http...'"? 
-            // Or does the user imply the SSOT logic *in the generator* needs to handle this?
-            // The current generator previously extracted literal match.
-            // If we blindly extract "process.env.X || 'Y'", that's valid string for SSOT field?
-            // Yes, let's keep the raw value found in source for full transparency.
-
-            httpConfig = {
-                baseUrl: baseUrl,
-                path: mPath[1]
-            };
         }
     }
 

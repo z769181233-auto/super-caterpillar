@@ -8,7 +8,7 @@
       "version": "default",
       "mode": "http",
       "httpConfig": {
-        "baseUrl": "process.env.CE03_BASE_URL || 'http:",
+        "baseUrl": "process.env.CE03_BASE_URL || 'http://localhost:8001'",
         "path": "/text/visual-density"
       },
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
@@ -18,7 +18,7 @@
       "version": "default",
       "mode": "http",
       "httpConfig": {
-        "baseUrl": "process.env.CE04_BASE_URL || 'http:",
+        "baseUrl": "process.env.CE04_BASE_URL || 'http://localhost:8002'",
         "path": "/text/enrich"
       },
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
@@ -28,7 +28,7 @@
       "version": "example",
       "mode": "http",
       "httpConfig": {
-        "baseUrl": "process.env.CE05_EXAMPLE_BASE_URL || 'http:",
+        "baseUrl": "process.env.CE05_EXAMPLE_BASE_URL || 'http://127.0.0.1:8999'",
         "path": "/ce05/example"
       },
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
@@ -38,19 +38,8 @@
       "version": "default",
       "mode": "http",
       "httpConfig": {
-        "baseUrl": "process.env.CE06_BASE_URL || 'http:",
+        "baseUrl": "process.env.CE06_BASE_URL || 'http://localhost:8000'",
         "path": "/story/parse"
-      },
-      "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
-    },
-    {
-      "engineKey": "novel_analysis",
-      "version": "default",
-      "mode": "local",
-      "adapterToken": "NovelAnalysisLocalAdapter",
-      "httpConfig": {
-        "baseUrl": "process.env.CE05_EXAMPLE_BASE_URL || 'http:",
-        "path": "/ce05/example"
       },
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
     },
@@ -80,7 +69,7 @@
       "version": "default",
       "mode": "http",
       "httpConfig": {
-        "baseUrl": "process.env.SHOT_RENDER_BASE_URL || 'http:",
+        "baseUrl": "process.env.SHOT_RENDER_BASE_URL || 'http://localhost:8003'",
         "path": "/render/shot"
       },
       "registeredIn": "apps/api/src/engine-hub/engine-registry-hub.service.ts"
