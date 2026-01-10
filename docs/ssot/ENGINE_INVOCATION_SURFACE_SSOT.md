@@ -9,8 +9,8 @@
 
 ## 扫描范围（固定）
 
-- apps/api/src
-- apps/workers/src
+-apps/api/src
+-apps/workers/src
 
 ## 产物
 
