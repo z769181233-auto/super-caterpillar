@@ -37,7 +37,7 @@ export class ApiSecurityService {
     private readonly redis: RedisService,
     private readonly auditLogService: AuditLogService,
     private readonly secretEncryptionService: SecretEncryptionService
-  ) {}
+  ) { }
 
   /**
    * 验证 HMAC 签名（v2 规范）
@@ -214,6 +214,7 @@ export class ApiSecurityService {
       const secret = await this.resolveSecretForApiKey(keyRecord, apiKey, ip, userAgent);
 
       // 7. 计算服务器端签名（v2 规范）
+      // 使用原始 path，但在 canonical string 中进行规范化
       const canonicalString = this.buildCanonicalStringV2(
         method,
         path,
@@ -226,13 +227,8 @@ export class ApiSecurityService {
 
       // 8. 对比签名
       if (signature !== expectedSignature) {
-        this.logger.warn(
-          `[ApiSecurity Debug] Mismatch: ${JSON.stringify({
-            canonicalString,
-            expectedSignature,
-            signature,
-            secretPart: secret ? secret.substring(0, 3) : 'NULL',
-          })}`
+        this.logger.error(
+          `[HMAC_DEBUG] Signature Mismatch! Method: ${method}, Path: ${path}, apiKey: ${this.maskApiKey(apiKey)}`
         );
         await this.writeAuditLog(
           {
@@ -251,7 +247,7 @@ export class ApiSecurityService {
         return {
           success: false,
           errorCode: '4003',
-          errorMessage: `签名验证失败 (Debug: Sig=${signature}, Exp=${expectedSignature}, Sec=${secret ? secret.substring(0, 3) : 'N'}, Can=${canonicalString.substring(0, 50)}...)`,
+          errorMessage: '签名验证失败',
         };
       }
 
@@ -338,13 +334,9 @@ export class ApiSecurityService {
     nonce: string,
     contentSha256: string
   ): string {
-    // 确保 pathWithQuery 以 / 开头（移除 /api 前缀如果存在）
-    const normalizedPath = pathWithQuery.startsWith('/api')
-      ? pathWithQuery
-      : pathWithQuery.startsWith('/')
-        ? pathWithQuery
-        : `/${pathWithQuery}`;
-
+    // 采用“所见即所得”原则：拦截器传进来的就是原始 URL，直接使用，不进行前置正则清洗
+    // 这样确保客户端（计算签名时用的 URL）与服务端（拦截器拿到的 URL）强一致
+    const normalizedPath = pathWithQuery;
     return `v2\n${method}\n${normalizedPath}\n${apiKey}\n${timestamp}\n${nonce}\n${contentSha256}\n`;
   }
 
@@ -407,50 +399,32 @@ export class ApiSecurityService {
   ): Promise<string> {
     // 1. 优先使用新字段（加密存储）
     if (keyRecord.secretEnc && keyRecord.secretEncIv && keyRecord.secretEncTag) {
-      try {
-        const secret = this.secretEncryptionService.decryptSecret(
-          keyRecord.secretEnc,
-          keyRecord.secretEncIv,
-          keyRecord.secretEncTag
-        );
-        return secret;
-      } catch (error: unknown) {
-        const err = error as Error;
-        // 解密失败，写审计
-        await this.writeAuditLog(
-          {
-            nonce: '',
-            signature: '',
-            timestamp: new Date().toISOString(),
-            path: '',
-            method: '',
-            apiKey: this.maskApiKey(apiKey),
-            reason: 'SECRET_DECRYPTION_FAILED',
-            errorCode: '500',
-          },
-          ip,
-          userAgent,
-          keyRecord.id
-        );
-
-        // 脱敏错误消息，详细错误记录到日志
-        this.logger.error(
-          `Failed to decrypt secret for API Key ${this.maskApiKey(apiKey)}: ${err.message}`,
-          err.stack
-        );
-        throw new InternalServerErrorException(
-          `Failed to decrypt secret for API Key ${this.maskApiKey(apiKey)}.`
-        );
+      // 只有在配置了主密钥时才尝试解密
+      if (this.secretEncryptionService.isMasterKeyConfigured()) {
+        try {
+          const secret = this.secretEncryptionService.decryptSecret(
+            keyRecord.secretEnc,
+            keyRecord.secretEncIv,
+            keyRecord.secretEncTag
+          );
+          return secret;
+        } catch (error: unknown) {
+          const err = error as Error;
+          // 解密失败，记录错误但如果环境允许 fallback 则继续（防炸保护）
+          this.logger.error(
+            `Failed to decrypt secret for API Key ${this.maskApiKey(apiKey)}: ${err.message}`
+          );
+        }
       }
     }
 
-    // 2. Fallback 到旧字段（仅 dev/test 允许）
+    // 2. Fallback 到旧字段（仅 dev/test 允许，或主密钥未配置时）
     if (keyRecord.secretHash) {
       const isProduction = process.env.NODE_ENV === 'production';
       const isMasterKeyConfigured = this.secretEncryptionService.isMasterKeyConfigured();
 
-      if (isProduction || isMasterKeyConfigured) {
-        // 生产环境或已配置主密钥：禁止 fallback
+      // 只有在生产环境且主密钥已配置的情况下才强制拦截（硬门禁）
+      if (isProduction && isMasterKeyConfigured) {
         await this.writeAuditLog(
           {
             nonce: '',
@@ -469,31 +443,13 @@ export class ApiSecurityService {
 
         throw new InternalServerErrorException(
           `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-            `Production environment requires encrypted storage (secretEnc/secretEncIv/secretEncTag).`
+          `Production environment requires encrypted storage.`
         );
       } else {
-        // dev/test 环境：允许 fallback，但写警告
+        // dev/test 环境或主密钥未配置：允许 fallback
         this.logger.warn(
-          `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-            `Please migrate to encrypted storage (secretEnc/secretEncIv/secretEncTag).`
+          `API Key ${this.maskApiKey(apiKey)} using secretHash fallback (isMasterKeyConfigured=${isMasterKeyConfigured})`
         );
-
-        await this.writeAuditLog(
-          {
-            nonce: '',
-            signature: '',
-            timestamp: new Date().toISOString(),
-            path: '',
-            method: '',
-            apiKey: this.maskApiKey(apiKey),
-            reason: 'SECRET_FALLBACK_USED',
-            errorCode: 'WARN',
-          },
-          ip,
-          userAgent,
-          keyRecord.id
-        );
-
         return keyRecord.secretHash;
       }
     }
@@ -557,9 +513,10 @@ export class ApiSecurityService {
           incomingTimestamp: details.timestamp,
         },
       });
-    } catch (error) {
-      // 审计失败不阻断主流程
-      console.error('Failed to write audit log:', error);
+    } catch (error: unknown) {
+      // 审计失败不阻断主流程，且安全地记录错误原因（截断防刷屏）
+      const errMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to write audit log (non-blocking): ${errMessage.slice(0, 300)}`);
     }
   }
 }

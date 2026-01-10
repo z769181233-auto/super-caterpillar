@@ -23,8 +23,8 @@ export class StorageAuthService {
       );
     } else {
       // eslint-disable-next-line no-console
-      console.log(
-        '[DEBUG] StorageAuthService init. Prisma is defined via ' + this.prisma.constructor.name
+      this.logger.log(
+        'StorageAuthService init. Prisma is defined via ' + this.prisma.constructor.name
       );
     }
   }
@@ -37,11 +37,11 @@ export class StorageAuthService {
    * @returns 如果无权限，抛出异常；如果有权限，返回 true
    */
   async verifyAccess(key: string, tenantId: string, userId: string): Promise<boolean> {
-    console.log('[StorageAuth] verify', { key, tenantId, userId });
+    this.logger.debug(`verify: key=${key}, tenantId=${tenantId}, userId=${userId}`);
 
     // 0. System-level audit bypass (bound by signature verification in controller)
     if (userId === 'system-audit-viewer') {
-      console.log('[StorageAuth] Access granted for system-audit-viewer');
+      this.logger.log('Access granted for system-audit-viewer');
       return true;
     }
 
@@ -69,11 +69,7 @@ export class StorageAuthService {
       throw new NotFoundException('Resource not found');
     }
 
-    console.log('[StorageAuth] asset-found', {
-      assetId: asset.id,
-      projectId: asset.projectId,
-      orgId: asset.project?.organizationId,
-    });
+    this.logger.log(`asset-found: assetId=${asset.id}, projectId=${asset.projectId}, orgId=${asset.project?.organizationId}`);
 
     // 3. Validate tenant (projectId or organizationId)
     const organizationId = asset.project?.organizationId;
@@ -92,7 +88,7 @@ export class StorageAuthService {
       if (process.env.NODE_ENV === 'production') {
         throw new NotFoundException('Resource not found'); // 404 to prevent enumeration
       } else {
-        console.warn('[StorageAuth] WARN_TENANT_MISMATCH: allowing in dev mode');
+        this.logger.warn('WARN_TENANT_MISMATCH: allowing in dev mode');
       }
     }
 
@@ -114,7 +110,7 @@ export class StorageAuthService {
       }
     }
 
-    console.log('[StorageAuth] access-granted', { key, tenantId, userId });
+    this.logger.log(`access-granted: key=${key}, tenantId=${tenantId}, userId=${userId}`);
     return true;
   }
 

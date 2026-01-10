@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, Inject } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Inject, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -11,12 +11,13 @@ import { UserRole } from 'database';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(JwtService)
     private readonly jwtService: JwtService
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto) {
     const { email, password, userType = 'individual' as any } = registerDto;
@@ -90,7 +91,7 @@ export class AuthService {
         data: { defaultOrganizationId: org.id },
       });
 
-      console.log(`[AUTH_REG] Success: userId=${newUser.id} orgId=${org.id} role=OWNER`);
+      this.logger.log(`[AUTH_REG] Success: userId=${newUser.id} orgId=${org.id} role=OWNER`);
 
       return { user: newUser, organizationId: org.id };
     });
@@ -141,7 +142,7 @@ export class AuthService {
 
     // FIX: 如果用户没有任何组织成员关系（可能是老数据或脏数据），自动补齐个人组织
     if (!organizationId) {
-      console.warn(
+      this.logger.warn(
         `[AUTH_FIX] User ${user.email} (id=${user.id}) has no organization. Creating Personal Org...`
       );
       await this.ensurePersonalOrganization(user.id, user.email);

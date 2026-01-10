@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectService } from './project.service';
 import { SceneGraphService } from './scene-graph.service';
@@ -11,19 +11,21 @@ import { Prisma } from 'database';
  */
 @Injectable()
 export class StructureGenerateService {
+  private readonly logger = new Logger(StructureGenerateService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly sceneGraphService: SceneGraphService
-  ) {}
+  ) { }
 
   /**
    * 生成剧集结构
    * 根据项目的 NovelChapter 自动生成 Episode/Scene/SceneDraft（四层结构：Project → Episode → Scene → Shot）
    */
   async generateStructure(projectId: string, organizationId: string): Promise<any> {
-    console.log(
-      `[StructureGenerate] Starting generateStructure for projectId: ${projectId}, organizationId: ${organizationId}`
+    this.logger.log(
+      `Starting generateStructure for projectId: ${projectId}, organizationId: ${organizationId}`
     );
 
     // 获取项目
@@ -51,23 +53,23 @@ export class StructureGenerateService {
     });
 
     if (!project) {
-      console.error(`[StructureGenerate] Project not found: ${projectId}`);
+      this.logger.error(`Project not found: ${projectId}`);
       throw new BadRequestException('项目不存在，无法生成结构');
     }
 
-    console.log(
-      `[StructureGenerate] Found project: ${project.name}, novelSources count: ${project.novelSources?.length || 0}`
+    this.logger.log(
+      `Found project: ${project.name}, novelSources count: ${project.novelSources?.length || 0}`
     );
 
     const novelSource = project.novelSources?.[0];
     if (!novelSource) {
-      console.error(`[StructureGenerate] No novel source found for project: ${projectId}`);
+      this.logger.error(`No novel source found for project: ${projectId}`);
       throw new NotFoundException('No novel source found for this project');
     }
 
     const chapters = novelSource.chapters || [];
-    console.log(
-      `[StructureGenerate] Found ${chapters.length} chapters in novel source: ${novelSource.id}`
+    this.logger.log(
+      `Found ${chapters.length} chapters in novel source: ${novelSource.id}`
     );
 
     // 检查是否已有结构（幂等性检查）
@@ -77,8 +79,8 @@ export class StructureGenerateService {
       existingEpisodes.some((e: any) => e.scenes && e.scenes.length > 0);
 
     if (hasExistingStructure) {
-      console.log(
-        `[StructureGenerate] Existing structure found, returning current structure (idempotent)`
+      this.logger.log(
+        `Existing structure found, returning current structure (idempotent)`
       );
       // 如果已有结构，直接返回当前结构（幂等）
       return this.projectService.findTreeById(projectId, organizationId);
@@ -86,7 +88,7 @@ export class StructureGenerateService {
 
     // 如果没有章节，且也没有现有结构，才报错
     if (chapters.length === 0) {
-      console.error(`[StructureGenerate] No chapters found in novel source: ${novelSource.id}`);
+      this.logger.error(`No chapters found in novel source: ${novelSource.id}`);
       throw new NotFoundException('当前项目没有可用的小说章节，请先导入并解析小说文件');
     }
 
@@ -115,7 +117,7 @@ export class StructureGenerateService {
           where: { id: episode.id },
           data: { chapterId: chapter.id },
         });
-        console.log(`Episode ${chIdx + 1} created: ${episode.id} (Chapter: ${chapter.title})`);
+        this.logger.log(`Episode ${chIdx + 1} created: ${episode.id} (Chapter: ${chapter.title})`);
       }
 
       // 检查是否已有 Scene，如果有则跳过
@@ -124,7 +126,7 @@ export class StructureGenerateService {
       });
 
       if (existingScenes.length > 0) {
-        console.log(`Episode ${episode.id} already has ${existingScenes.length} scenes, skipping`);
+        this.logger.log(`Episode ${episode.id} already has ${existingScenes.length} scenes, skipping`);
         continue;
       }
 
@@ -156,7 +158,7 @@ export class StructureGenerateService {
             status: 'DRAFT',
           },
         });
-        console.log(`SceneDraft created: ${sceneDraft.id}`);
+        this.logger.log(`SceneDraft created: ${sceneDraft.id}`);
 
         // 创建 Scene（关联到 SceneDraft）
         // 使用 ProjectService 创建 Scene，确保组织隔离
@@ -172,7 +174,7 @@ export class StructureGenerateService {
           where: { id: scene.id },
           data: { sceneDraftId: sceneDraft.id },
         });
-        console.log(`Scene ${scIdx + 1} created: ${scene.id}`);
+        this.logger.log(`Scene ${scIdx + 1} created: ${scene.id}`);
       }
     }
 

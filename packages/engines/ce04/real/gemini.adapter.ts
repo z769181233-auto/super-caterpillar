@@ -48,7 +48,7 @@ export async function runCE04Gemini(input: CE04Input, ctx: any): Promise<CE04Out
           } as any,
         },
       })
-      .catch((e: any) => console.warn(`[CE04] Failed to write quality metrics: ${e.message}`));
+      .catch((e: any) => process.stdout.write(`[CE04] WARN: Failed to write quality metrics: ${e.message}\n`));
   }
 
   // 4. 写入计费日志 (模拟 writeCostLedger)

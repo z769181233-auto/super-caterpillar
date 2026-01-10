@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, BadRequestException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, BadRequestException, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { HmacAuthService } from './hmac-auth.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
@@ -24,11 +24,12 @@ import { buildHmacError } from '../../common/utils/hmac-error.utils';
  */
 @Injectable()
 export class HmacAuthGuard implements CanActivate {
+  private readonly logger = new Logger(HmacAuthGuard.name);
   constructor(
     private readonly hmacAuthService: HmacAuthService,
     private readonly auditLogService: AuditLogService,
     private readonly nonceService: NonceService
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -43,14 +44,14 @@ export class HmacAuthGuard implements CanActivate {
 
     // DEBUG: 输出所有path相关字段以定位问题
     if (process.env.HMAC_TRACE === '1') {
-      console.error('[HMAC_TRACE] path_debug', {
+      this.logger.error(`[HMAC_TRACE] path_debug: ${JSON.stringify({
         originalUrl: request.originalUrl,
         url: request.url,
         path: request.path,
         baseUrl: request.baseUrl,
         route_path: (request as any).route?.path,
         computed_path: path,
-      });
+      })}`);
     }
 
     // 1. 提取 HTTP 头
@@ -101,19 +102,19 @@ export class HmacAuthGuard implements CanActivate {
 
     // HMAC_TRACE: Guard入口必达日志
     if (process.env.HMAC_TRACE === '1') {
-      console.error('[HMAC_TRACE] guard_enter', {
+      this.logger.error(`[HMAC_TRACE] guard_enter: ${JSON.stringify({
         path: request.originalUrl ?? request.url,
         method: request.method,
         hasSig: !!request.headers['x-signature'],
         hasV: !!request.headers['x-hmac-version'],
         hasWorker: !!request.headers['x-worker-id'],
-      });
+      })}`);
     }
 
     // 4. 可选调试日志（仅非生产环境）
     if (process.env.NODE_ENV !== 'production') {
       /* eslint-disable no-console */
-      console.log('[HMAC DEBUG]', {
+      this.logger.log(`[HMAC DEBUG]: ${JSON.stringify({
         method,
         path,
         headers: {
@@ -123,7 +124,7 @@ export class HmacAuthGuard implements CanActivate {
           'x-signature': signature,
         },
         bodyString,
-      });
+      })}`);
       /* eslint-enable no-console */
     }
 
@@ -171,13 +172,12 @@ export class HmacAuthGuard implements CanActivate {
       }
 
       if (process.env.NODE_ENV !== 'production') {
-        // eslint-disable-next-line no-console
-        console.log('[SMOKE_KEY_RESOLVE]', {
+        this.logger.log(`[SMOKE_KEY_RESOLVE]: ${JSON.stringify({
           apiKeyKey: keyRecord.key,
           apiKeyId: keyRecord.id,
           ownerUserId: keyRecord.ownerUserId,
           ownerOrgId: keyRecord.ownerOrgId,
-        });
+        })}`);
       }
 
       return true;

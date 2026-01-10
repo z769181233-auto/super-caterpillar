@@ -8,27 +8,22 @@
 import { EngineConfigService } from '../src/config/engine.config';
 import { HttpEngineAdapter } from '../src/engine/adapters/http-engine.adapter';
 import { EngineInvokeInput, EngineInvokeStatus } from '@scu/shared-types';
+import * as util from "util";
 
 // 模拟 Logger
 class MockLogger {
   logs: any[] = [];
   log(message: any) {
     this.logs.push({ level: 'log', message });
-    console.log('[LOG]', typeof message === 'string' ? message : JSON.stringify(message, null, 2));
+    process.stdout.write(util.format('[LOG]', typeof message === 'string' ? message : JSON.stringify(message, null, 2)) + "\n");
   }
   warn(message: any) {
     this.logs.push({ level: 'warn', message });
-    console.warn(
-      '[WARN]',
-      typeof message === 'string' ? message : JSON.stringify(message, null, 2)
-    );
+    process.stdout.write(util.format('[WARN]', typeof message === 'string' ? message : JSON.stringify(message, null, 2)) + "\n");
   }
   error(message: any) {
     this.logs.push({ level: 'error', message });
-    console.error(
-      '[ERROR]',
-      typeof message === 'string' ? message : JSON.stringify(message, null, 2)
-    );
+    process.stderr.write(util.format('[ERROR]', typeof message === 'string' ? message : JSON.stringify(message, null, 2)) + "\n");
   }
 }
 
@@ -116,16 +111,16 @@ async function main() {
     process.exit(1);
   });
 
-  console.log('='.repeat(80));
-  console.log('S3-A.1 HTTP 引擎配置与安全设计 - 验证脚本');
-  console.log('='.repeat(80));
-  console.log('');
+  process.stdout.write(util.format('='.repeat(80)) + "\n");
+  process.stdout.write(util.format('S3-A.1 HTTP 引擎配置与安全设计 - 验证脚本') + "\n");
+  process.stdout.write(util.format('='.repeat(80)) + "\n");
+  process.stdout.write(util.format('') + "\n");
 
   // ============================================
   // 【1】配置读取验证
   // ============================================
-  console.log('【1】配置读取验证');
-  console.log('-'.repeat(80));
+  process.stdout.write(util.format('【1】配置读取验证') + "\n");
+  process.stdout.write(util.format('-'.repeat(80)) + "\n");
 
   // 读取 engines.json
   const fs = require('fs');
@@ -135,15 +130,15 @@ async function main() {
   try {
     enginesJsonContent = fs.readFileSync(enginesJsonPath, 'utf-8');
     const enginesJson = JSON.parse(enginesJsonContent);
-    console.log('✓ engines.json 内容（脱敏）：');
-    console.log(JSON.stringify(enginesJson, null, 2));
+    process.stdout.write(util.format('✓ engines.json 内容（脱敏）：') + "\n");
+    process.stdout.write(util.format(JSON.stringify(enginesJson, null, 2)) + "\n");
   } catch (error) {
-    console.log('⚠ engines.json 读取失败:', error);
+    process.stdout.write(util.format('⚠ engines.json 读取失败:', error) + "\n");
   }
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // 场景 a: 只配置全局环境变量
-  console.log('场景 a: 只配置全局环境变量');
+  process.stdout.write(util.format('场景 a: 只配置全局环境变量') + "\n");
   envSnapshot.clearHttpEngineVars(); // 清除所有 HTTP_ENGINE_* 变量
   envSnapshot.setHttpEngineVar('HTTP_ENGINE_BASE_URL', 'https://global.example.com');
   envSnapshot.setHttpEngineVar('HTTP_ENGINE_API_KEY', 'global-api-key-12345');
@@ -161,30 +156,28 @@ async function main() {
   serviceA.clearCache(); // 清除缓存
   try {
     const configA = serviceA.getHttpEngineConfig('http_gemini_v1');
-    console.log('✓ 配置结果（场景 a）：');
-    console.log(
-      JSON.stringify(
-        {
-          baseUrl: configA.baseUrl,
-          timeoutMs: configA.timeoutMs,
-          path: configA.path,
-          authMode: configA.authMode,
-          hasApiKey: !!configA.apiKey,
-          apiKeyLength: configA.apiKey?.length,
-        },
-        null,
-        2
-      )
-    );
+    process.stdout.write(util.format('✓ 配置结果（场景 a）：') + "\n");
+    process.stdout.write(util.format(JSON.stringify(
+              {
+                baseUrl: configA.baseUrl,
+                timeoutMs: configA.timeoutMs,
+                path: configA.path,
+                authMode: configA.authMode,
+                hasApiKey: !!configA.apiKey,
+                apiKeyLength: configA.apiKey?.length,
+              },
+              null,
+              2
+            )) + "\n");
   } catch (error) {
-    console.log('✗ 配置读取失败:', error);
+    process.stdout.write(util.format('✗ 配置读取失败:', error) + "\n");
   }
   // 场景 a 结束，恢复环境变量
   envSnapshot.restore();
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // 场景 b: 只配置引擎级环境变量（清除全局变量）
-  console.log('场景 b: 只配置引擎级环境变量（清除全局变量）');
+  process.stdout.write(util.format('场景 b: 只配置引擎级环境变量（清除全局变量）') + "\n");
   envSnapshot.clearHttpEngineVars(); // 清除所有 HTTP_ENGINE_* 变量
   // 设置引擎级变量
   envSnapshot.setHttpEngineVar(
@@ -206,36 +199,32 @@ async function main() {
   serviceB.clearCache();
   try {
     const configB = serviceB.getHttpEngineConfig('http_gemini_v1');
-    console.log('✓ 配置结果（场景 b）：');
-    console.log(
-      JSON.stringify(
-        {
-          baseUrl: configB.baseUrl,
-          timeoutMs: configB.timeoutMs,
-          path: configB.path,
-          authMode: configB.authMode,
-          hasApiKey: !!configB.apiKey,
-          apiKeyLength: configB.apiKey?.length,
-        },
-        null,
-        2
-      )
-    );
+    process.stdout.write(util.format('✓ 配置结果（场景 b）：') + "\n");
+    process.stdout.write(util.format(JSON.stringify(
+              {
+                baseUrl: configB.baseUrl,
+                timeoutMs: configB.timeoutMs,
+                path: configB.path,
+                authMode: configB.authMode,
+                hasApiKey: !!configB.apiKey,
+                apiKeyLength: configB.apiKey?.length,
+              },
+              null,
+              2
+            )) + "\n");
     const match = configB.baseUrl === 'https://gemini-specific.example.com';
-    console.log(
-      match
-        ? '✓ 符合预期：baseUrl 是引擎级配置'
-        : `✗ 不符合预期：baseUrl 应该是 https://gemini-specific.example.com，实际是 ${configB.baseUrl}`
-    );
+    process.stdout.write(util.format(match
+              ? '✓ 符合预期：baseUrl 是引擎级配置'
+              : `✗ 不符合预期：baseUrl 应该是 https://gemini-specific.example.com，实际是 ${configB.baseUrl}`) + "\n");
   } catch (error) {
-    console.log('✗ 配置读取失败:', error instanceof Error ? error.message : String(error));
+    process.stdout.write(util.format('✗ 配置读取失败:', error instanceof Error ? error.message : String(error)) + "\n");
   }
   // 场景 b 结束，恢复环境变量
   envSnapshot.restore();
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // 场景 c: 只配置 JSON（不配 env，但需要 authMode=none 或提供 API Key）
-  console.log('场景 c: 只配置 JSON（不配 env，使用 authMode=none）');
+  process.stdout.write(util.format('场景 c: 只配置 JSON（不配 env，使用 authMode=none）') + "\n");
   envSnapshot.clearHttpEngineVars(); // 清除所有 HTTP_ENGINE_* 环境变量
 
   const serviceC = new EngineConfigService();
@@ -243,45 +232,41 @@ async function main() {
   try {
     // 使用 http_local_llm（authMode=none，不需要 API Key）
     const configC = serviceC.getHttpEngineConfig('http_local_llm');
-    console.log('✓ 配置结果（场景 c，使用 http_local_llm）：');
-    console.log(
-      JSON.stringify(
-        {
-          baseUrl: configC.baseUrl,
-          timeoutMs: configC.timeoutMs,
-          path: configC.path,
-          authMode: configC.authMode,
-          hasApiKey: !!configC.apiKey,
-        },
-        null,
-        2
-      )
-    );
+    process.stdout.write(util.format('✓ 配置结果（场景 c，使用 http_local_llm）：') + "\n");
+    process.stdout.write(util.format(JSON.stringify(
+              {
+                baseUrl: configC.baseUrl,
+                timeoutMs: configC.timeoutMs,
+                path: configC.path,
+                authMode: configC.authMode,
+                hasApiKey: !!configC.apiKey,
+              },
+              null,
+              2
+            )) + "\n");
     const match = configC.baseUrl === 'http://localhost:11434';
-    console.log(
-      match
-        ? '✓ 符合预期：baseUrl 来自 JSON 配置'
-        : '✗ 不符合预期：baseUrl 应该是 http://localhost:11434'
-    );
+    process.stdout.write(util.format(match
+              ? '✓ 符合预期：baseUrl 来自 JSON 配置'
+              : '✗ 不符合预期：baseUrl 应该是 http://localhost:11434') + "\n");
   } catch (error) {
-    console.log('✗ 配置读取失败:', error);
+    process.stdout.write(util.format('✗ 配置读取失败:', error) + "\n");
   }
   // 场景 c 结束，恢复环境变量
   envSnapshot.restore();
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // ============================================
   // 【2】认证头拼装验证
   // ============================================
-  console.log('【2】认证头拼装验证');
-  console.log('-'.repeat(80));
+  process.stdout.write(util.format('【2】认证头拼装验证') + "\n");
+  process.stdout.write(util.format('-'.repeat(80)) + "\n");
 
   const adapter = new HttpEngineAdapter(new EngineConfigService());
   const mockLogger = new MockLogger();
   (adapter as any).logger = mockLogger;
 
   // 场景 a: authMode='bearer'
-  console.log('场景 a: authMode="bearer"');
+  process.stdout.write(util.format('场景 a: authMode="bearer"') + "\n");
   const configBearer = {
     baseUrl: 'https://example.com',
     timeoutMs: 30000,
@@ -291,16 +276,16 @@ async function main() {
   };
   try {
     const headersBearer = (adapter as any).buildAuthHeaders(configBearer, { test: 'data' });
-    console.log('✓ Bearer 认证 Headers（只显示键名）：');
-    console.log(JSON.stringify(Object.keys(headersBearer), null, 2));
-    console.log('预期：只有 Authorization header');
+    process.stdout.write(util.format('✓ Bearer 认证 Headers（只显示键名）：') + "\n");
+    process.stdout.write(util.format(JSON.stringify(Object.keys(headersBearer), null, 2)) + "\n");
+    process.stdout.write(util.format('预期：只有 Authorization header') + "\n");
   } catch (error) {
-    console.log('✗ Bearer 认证失败:', error);
+    process.stdout.write(util.format('✗ Bearer 认证失败:', error) + "\n");
   }
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // 场景 b: authMode='apiKey'
-  console.log('场景 b: authMode="apiKey"');
+  process.stdout.write(util.format('场景 b: authMode="apiKey"') + "\n");
   const configApiKey = {
     baseUrl: 'https://example.com',
     timeoutMs: 30000,
@@ -311,16 +296,16 @@ async function main() {
   };
   try {
     const headersApiKey = (adapter as any).buildAuthHeaders(configApiKey, { test: 'data' });
-    console.log('✓ API Key 认证 Headers（只显示键名）：');
-    console.log(JSON.stringify(Object.keys(headersApiKey), null, 2));
-    console.log('预期：只有 X-Custom-API-Key header');
+    process.stdout.write(util.format('✓ API Key 认证 Headers（只显示键名）：') + "\n");
+    process.stdout.write(util.format(JSON.stringify(Object.keys(headersApiKey), null, 2)) + "\n");
+    process.stdout.write(util.format('预期：只有 X-Custom-API-Key header') + "\n");
   } catch (error) {
-    console.log('✗ API Key 认证失败:', error);
+    process.stdout.write(util.format('✗ API Key 认证失败:', error) + "\n");
   }
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // 场景 c: authMode='none'
-  console.log('场景 c: authMode="none"');
+  process.stdout.write(util.format('场景 c: authMode="none"') + "\n");
   const configNone = {
     baseUrl: 'https://example.com',
     timeoutMs: 30000,
@@ -329,19 +314,19 @@ async function main() {
   };
   try {
     const headersNone = (adapter as any).buildAuthHeaders(configNone, { test: 'data' });
-    console.log('✓ None 认证 Headers（只显示键名）：');
-    console.log(JSON.stringify(Object.keys(headersNone), null, 2));
-    console.log('预期：空的 headers 对象');
+    process.stdout.write(util.format('✓ None 认证 Headers（只显示键名）：') + "\n");
+    process.stdout.write(util.format(JSON.stringify(Object.keys(headersNone), null, 2)) + "\n");
+    process.stdout.write(util.format('预期：空的 headers 对象') + "\n");
   } catch (error) {
-    console.log('✗ None 认证失败:', error);
+    process.stdout.write(util.format('✗ None 认证失败:', error) + "\n");
   }
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // ============================================
   // 【3】错误分类验证
   // ============================================
-  console.log('【3】错误分类验证');
-  console.log('-'.repeat(80));
+  process.stdout.write(util.format('【3】错误分类验证') + "\n");
+  process.stdout.write(util.format('-'.repeat(80)) + "\n");
 
   const testCases = [
     {
@@ -381,7 +366,7 @@ async function main() {
   ];
 
   for (const testCase of testCases) {
-    console.log(`测试: ${testCase.name}`);
+    process.stdout.write(util.format(`测试: ${testCase.name}`) + "\n");
     try {
       const result = (adapter as any).handleHttpResponse(
         testCase.response,
@@ -393,22 +378,17 @@ async function main() {
       const actualErrorType = result.error?.details?.errorType || null;
       const match =
         actualStatus === testCase.expectedStatus && actualErrorType === testCase.expectedErrorType;
-      console.log(
-        match ? '✓' : '✗',
-        `输入: ${testCase.name}`,
-        `→ 输出: status=${actualStatus}, errorType=${actualErrorType}`,
-        match
-          ? '(符合预期)'
-          : `(预期: status=${testCase.expectedStatus}, errorType=${testCase.expectedErrorType})`
-      );
+      process.stdout.write(util.format(match ? '✓' : '✗', `输入: ${testCase.name}`, `→ 输出: status=${actualStatus}, errorType=${actualErrorType}`, match
+                  ? '(符合预期)'
+                  : `(预期: status=${testCase.expectedStatus}, errorType=${testCase.expectedErrorType})`) + "\n");
     } catch (error) {
-      console.log('✗ 测试失败:', error);
+      process.stdout.write(util.format('✗ 测试失败:', error) + "\n");
     }
   }
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // 网络错误测试
-  console.log('网络错误测试:');
+  process.stdout.write(util.format('网络错误测试:') + "\n");
   const networkErrorCases = [
     {
       code: 'ECONNRESET',
@@ -428,7 +408,7 @@ async function main() {
   ];
 
   for (const testCase of networkErrorCases) {
-    console.log(`测试: error.code=${testCase.code}`);
+    process.stdout.write(util.format(`测试: error.code=${testCase.code}`) + "\n");
     try {
       const error = { type: 'NETWORK_ERROR', code: testCase.code, message: 'Network error' };
       const result = (adapter as any).handleHttpError(error, 'http_test', 'TEST_JOB', 1000);
@@ -436,25 +416,20 @@ async function main() {
       const actualErrorType = result.error?.details?.errorType || null;
       const match =
         actualStatus === testCase.expectedStatus && actualErrorType === testCase.expectedErrorType;
-      console.log(
-        match ? '✓' : '✗',
-        `输入: error.code=${testCase.code}`,
-        `→ 输出: status=${actualStatus}, errorType=${actualErrorType}`,
-        match
-          ? '(符合预期)'
-          : `(预期: status=${testCase.expectedStatus}, errorType=${testCase.expectedErrorType})`
-      );
+      process.stdout.write(util.format(match ? '✓' : '✗', `输入: error.code=${testCase.code}`, `→ 输出: status=${actualStatus}, errorType=${actualErrorType}`, match
+                  ? '(符合预期)'
+                  : `(预期: status=${testCase.expectedStatus}, errorType=${testCase.expectedErrorType})`) + "\n");
     } catch (error) {
-      console.log('✗ 测试失败:', error);
+      process.stdout.write(util.format('✗ 测试失败:', error) + "\n");
     }
   }
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // ============================================
   // 【4】日志脱敏验证
   // ============================================
-  console.log('【4】日志脱敏验证');
-  console.log('-'.repeat(80));
+  process.stdout.write(util.format('【4】日志脱敏验证') + "\n");
+  process.stdout.write(util.format('-'.repeat(80)) + "\n");
 
   const configWithApiKey = {
     baseUrl: 'https://example.com',
@@ -481,67 +456,65 @@ async function main() {
   if (logEntry) {
     try {
       const logData = JSON.parse(logEntry.message);
-      console.log('✓ 日志内容（脱敏检查）：');
-      console.log(
-        JSON.stringify(
-          {
-            hasApiKey: logData.hasApiKey,
-            apiKeyPrefix: logData.apiKeyPrefix,
-            apiKeySuffix: logData.apiKeySuffix,
-            apiKeyLength: logData.apiKeyLength,
-            hasFullApiKey: logData.apiKey !== undefined,
-          },
-          null,
-          2
-        )
-      );
-      console.log('预期：hasFullApiKey=false（不包含完整 API Key）');
+      process.stdout.write(util.format('✓ 日志内容（脱敏检查）：') + "\n");
+      process.stdout.write(util.format(JSON.stringify(
+                  {
+                    hasApiKey: logData.hasApiKey,
+                    apiKeyPrefix: logData.apiKeyPrefix,
+                    apiKeySuffix: logData.apiKeySuffix,
+                    apiKeyLength: logData.apiKeyLength,
+                    hasFullApiKey: logData.apiKey !== undefined,
+                  },
+                  null,
+                  2
+                )) + "\n");
+      process.stdout.write(util.format('预期：hasFullApiKey=false（不包含完整 API Key）') + "\n");
     } catch (error) {
-      console.log('⚠ 日志解析失败:', error);
+      process.stdout.write(util.format('⚠ 日志解析失败:', error) + "\n");
     }
   } else {
-    console.log('⚠ 未找到 HTTP_ENGINE_INVOKE_START 日志');
+    process.stdout.write(util.format('⚠ 未找到 HTTP_ENGINE_INVOKE_START 日志') + "\n");
   }
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // ============================================
   // 【5】边界与失败配置验证
   // ============================================
-  console.log('【5】边界与失败配置验证');
-  console.log('-'.repeat(80));
+  process.stdout.write(util.format('【5】边界与失败配置验证') + "\n");
+  process.stdout.write(util.format('-'.repeat(80)) + "\n");
 
   // 测试非法 baseUrl
-  console.log('测试: 非法 baseUrl');
+  process.stdout.write(util.format('测试: 非法 baseUrl') + "\n");
   envSnapshot.clearHttpEngineVars(); // 清除所有 HTTP_ENGINE_* 变量
   envSnapshot.setHttpEngineVar('HTTP_ENGINE_BASE_URL', 'not-a-url');
   const serviceInvalid = new EngineConfigService();
   serviceInvalid.clearCache();
   try {
     const configInvalid = serviceInvalid.getHttpEngineConfig('http_test');
-    console.log('✗ 应该抛出错误，但配置读取成功:', configInvalid.baseUrl);
+    process.stdout.write(util.format('✗ 应该抛出错误，但配置读取成功:', configInvalid.baseUrl) + "\n");
   } catch (error) {
-    console.log('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error));
+    process.stdout.write(util.format('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error)) + "\n");
   }
   envSnapshot.restore(); // 恢复环境变量
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // 测试负数 timeoutMs
-  console.log('测试: 负数 timeoutMs');
+  process.stdout.write(util.format('测试: 负数 timeoutMs') + "\n");
   envSnapshot.clearHttpEngineVars(); // 清除所有 HTTP_ENGINE_* 变量
   envSnapshot.setHttpEngineVar('HTTP_ENGINE_TIMEOUT_MS', '-1000');
   const serviceNegative = new EngineConfigService();
   serviceNegative.clearCache();
   try {
     const configNegative = serviceNegative.getHttpEngineConfig('http_test');
-    console.log('✗ 应该抛出错误或使用默认值，但配置读取成功:', configNegative.timeoutMs);
+    process.stdout.write(util.format('✗ 应该抛出错误或使用默认值，但配置读取成功:', configNegative.timeoutMs) + "\n");
   } catch (error) {
-    console.log('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error));
+    process.stdout.write(util.format('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error)) + "\n");
   }
   envSnapshot.restore(); // 恢复环境变量
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // 测试空 baseUrl（需要确保没有 fallback）
-  console.log('测试: 空 baseUrl（无 fallback）');
+  process.stdout.write(util.format('测试: 空 baseUrl（无 fallback）') + "\n");
   envSnapshot.clearHttpEngineVars(); // 清除所有 HTTP_ENGINE_* 变量
   const serviceEmpty = new EngineConfigService();
   serviceEmpty.clearCache();
@@ -559,24 +532,24 @@ async function main() {
       undefined,
       undefined
     );
-    console.log('✗ 应该抛出错误，但验证通过');
+    process.stdout.write(util.format('✗ 应该抛出错误，但验证通过') + "\n");
   } catch (error) {
-    console.log('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error));
+    process.stdout.write(util.format('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error)) + "\n");
   }
   envSnapshot.restore(); // 恢复环境变量
-  console.log('');
+  process.stdout.write(util.format('') + "\n");
 
   // ============================================
   // 最终环境变量恢复（脚本退出前）
   // ============================================
   envSnapshot.restore();
-  console.log('='.repeat(80));
-  console.log('验证完成');
-  console.log('='.repeat(80));
-  console.log('✓ 环境变量已恢复到初始状态');
+  process.stdout.write(util.format('='.repeat(80)) + "\n");
+  process.stdout.write(util.format('验证完成') + "\n");
+  process.stdout.write(util.format('='.repeat(80)) + "\n");
+  process.stdout.write(util.format('✓ 环境变量已恢复到初始状态') + "\n");
 }
 
 main().catch((error) => {
-  console.error('验证脚本执行失败:', error);
+  process.stderr.write(util.format('验证脚本执行失败:', error) + "\n");
   process.exit(1);
 });

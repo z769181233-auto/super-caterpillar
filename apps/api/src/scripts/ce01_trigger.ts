@@ -1,12 +1,13 @@
 import { PrismaClient } from 'database';
 import { randomUUID } from 'crypto';
+import * as util from "util";
 
 const prisma = new PrismaClient();
 
 async function main() {
   try {
     // === Worker UPSERT Regression Test ===
-    console.log('[Regression] Testing Worker UPSERT...');
+    process.stdout.write(util.format('[Regression] Testing Worker UPSERT...') + "\n");
     const workerId = 'reg-test-worker';
     // 1. First Register
     await prisma.workerNode.upsert({
@@ -44,14 +45,11 @@ async function main() {
     const w = await prisma.workerNode.findUnique({ where: { workerId } });
     const caps = w?.capabilities as any;
     if (!w || !caps?.supportedJobTypes?.includes('B') || caps?.supportedJobTypes?.includes('A')) {
-      console.error(
-        "FATAL: Worker UPSERT regression failed. Expected ['B'], got",
-        caps?.supportedJobTypes
-      );
-      console.error('Worker state:', w);
+      process.stderr.write(util.format("FATAL: Worker UPSERT regression failed. Expected ['B'], got", caps?.supportedJobTypes) + "\n");
+      process.stderr.write(util.format('Worker state:', w) + "\n");
       process.exit(1);
     }
-    console.log('[Regression] Worker UPSERT Passed.');
+    process.stdout.write(util.format('[Regression] Worker UPSERT Passed.') + "\n");
     // =====================================
 
     // 1. Find a valid context (Project -> Season -> Episode -> Scene -> Shot)
@@ -79,7 +77,7 @@ async function main() {
 
     // Create dummy hierarchy if missing
     if (!shot) {
-      console.log('Creating dummy hierarchy...');
+      process.stdout.write(util.format('Creating dummy hierarchy...') + "\n");
       // This might fail if constraints exist, but assuming basic creation works
       // If strict constraints, we might need more data.
       // Try finding any shot or just failing if empty DB.
@@ -89,7 +87,7 @@ async function main() {
     }
 
     if (!shotId) {
-      console.error('No shots found. Cannot create CE01 job.');
+      process.stderr.write(util.format('No shots found. Cannot create CE01 job.') + "\n");
       process.exit(1);
     }
 
@@ -101,7 +99,7 @@ async function main() {
       traceId: `gate-${Date.now()}`,
     };
 
-    console.log(`Triggering CE01 Job with ID: ${jobId}`);
+    process.stdout.write(util.format(`Triggering CE01 Job with ID: ${jobId}`) + "\n");
 
     const job = await prisma.shotJob.create({
       data: {
@@ -122,9 +120,9 @@ async function main() {
       },
     });
 
-    console.log(`JOB_ID=${job.id}`);
+    process.stdout.write(util.format(`JOB_ID=${job.id}`) + "\n");
   } catch (e) {
-    console.error(e);
+    process.stderr.write(util.format(e) + "\n");
     process.exit(1);
   } finally {
     await prisma.$disconnect();

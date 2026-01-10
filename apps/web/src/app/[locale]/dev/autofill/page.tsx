@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import * as util from "util";
+
 // TODO: autofillApi 未实现，暂时注释
 // import { autofillApi } from '@/lib/apiClient';
 
@@ -19,11 +21,11 @@ export default function AutofillPage() {
       // const response = await autofillApi.runAutofill();
       const response = { message: 'Autofill API not implemented yet' };
       setResult(response);
-      console.log('Autofill result:', response);
+      process.stdout.write(util.format('Autofill result:', response) + "\n");
     } catch (err: any) {
       const errorMessage = err?.message || 'Autofill failed';
       setError(errorMessage);
-      console.error('Autofill error:', err);
+      process.stderr.write(util.format('Autofill error:', err) + "\n");
     } finally {
       setLoading(false);
     }

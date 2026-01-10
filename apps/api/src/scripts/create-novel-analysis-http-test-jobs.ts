@@ -9,6 +9,7 @@ import {
   JobType,
   JobStatus,
 } from 'database';
+import * as util from "util";
 
 // 加载根目录 .env，确保数据库配置生效
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
@@ -169,13 +170,13 @@ async function main() {
       },
     });
 
-    console.log(`[CreateHttpTestJob] Created job ${job.id} with mode=${mode}`);
+    process.stdout.write(util.format(`[CreateHttpTestJob] Created job ${job.id} with mode=${mode}`) + "\n");
   }
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    process.stderr.write(util.format(e) + "\n");
     process.exit(1);
   })
   .finally(async () => {

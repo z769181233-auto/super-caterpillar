@@ -20,6 +20,7 @@ import {
 } from './novel-analysis-processor';
 import { CostLedgerService } from './billing/cost-ledger.service';
 import { ModelRouterV2 } from '@scu/router';
+import * as util from "util";
 
 /**
  * 结构化日志输出函数
@@ -32,11 +33,11 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
   };
   const logMessage = JSON.stringify(logEntry);
   if (level === 'error') {
-    console.error(logMessage);
+    process.stderr.write(util.format(logMessage) + "\n");
   } else if (level === 'warn') {
-    console.warn(logMessage);
+    process.stdout.write(util.format(logMessage) + "\n");
   } else {
-    console.log(logMessage);
+    process.stdout.write(util.format(logMessage) + "\n");
   }
 }
 
@@ -798,9 +799,7 @@ export async function processCE01Job(
     // API的getAndMarkNextPendingJob在标记RUNNING时已将attempts递增(0→1)
     // 商业级容错：使用<=1而非==1，对未来API时序调整有容错
     if (attemptsFromDb <= 1) {
-      console.log(
-        `[Worker] ${failOnceEnv} is set, failing job ${jobId} (attemptsFromDb=${attemptsFromDb})`
-      );
+      process.stdout.write(util.format(`[Worker] ${failOnceEnv} is set, failing job ${jobId} (attemptsFromDb=${attemptsFromDb})`) + "\n");
       throw new Error(`Simulated failure for ${failOnceEnv}`);
     }
   }
@@ -819,7 +818,7 @@ export async function processCE01Job(
       latencyMs: duration,
       auditTrail: { message: 'Reference sheet generated (mock)' },
     })
-    .catch((e) => console.warn('Audit log failed', e));
+    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + "\n"));
 
   logStructured('info', {
     action: 'CE01_JOB_SUCCESS',
@@ -986,7 +985,7 @@ export async function processCE07Job(
         factsCount: result.key_facts?.length || 0,
       },
     })
-    .catch((e) => console.warn('Audit log failed', e));
+    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + "\n"));
 
   logStructured('info', {
     action: 'CE07_MEMORY_UPDATE_SUCCESS',
@@ -1082,7 +1081,7 @@ export async function processGenericCEJob(
       latencyMs: duration,
       auditTrail: { message: `${(job as any).type} processed (generic mock)` },
     })
-    .catch((e) => console.warn('Audit log failed', e));
+    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + "\n"));
 
   logStructured('info', {
     action: 'GENERIC_CE_JOB_SUCCESS',

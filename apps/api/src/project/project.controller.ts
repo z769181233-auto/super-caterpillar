@@ -10,6 +10,7 @@ import {
   UseGuards,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { StructureGenerateService } from './structure-generate.service';
@@ -51,6 +52,7 @@ import { AuditActions } from '../audit/audit.constants';
 @Controller('projects')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class ProjectController {
+  private readonly logger = new Logger(ProjectController.name);
   constructor(
     private readonly projectService: ProjectService,
     private readonly structureGenerateService: StructureGenerateService,
@@ -59,7 +61,7 @@ export class ProjectController {
     private readonly taskService: TaskService,
     private readonly permissionService: PermissionService,
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   @Get()
   async getProjects(
@@ -724,7 +726,7 @@ export class ProjectController {
 
         successfulJobs.push(job);
       } catch (err) {
-        console.error(`Failed to create task/job for shot ${shotId}:`, err);
+        this.logger.error(`Failed to create task/job for shot ${shotId}: ${err instanceof Error ? err.message : String(err)}`);
         // 如果 Job 创建失败，尝试更新 Task 状态为失败
         // 注意：这里可能 Task 已经创建但 Job 创建失败，需要回滚 Task
         // 为了简化，这里只记录错误，Task 状态由后续的重试机制处理

@@ -11,6 +11,7 @@ import { processVideoRenderJob, cleanupVideoRenderProcesses } from './video-rend
 import { processCE01Job } from './ce-core-processor.js';
 import { createHash } from 'crypto';
 import { env } from '@scu/config';
+import * as util from "util";
 
 const prisma = new PrismaClient({
   datasources: {
@@ -37,7 +38,7 @@ let tasksRunning = 0;
  * 注册 Worker
  */
 async function registerWorker() {
-  console.log(`[Worker] Registering worker: ${WORKER_ID}...`);
+  process.stdout.write(util.format(`[Worker] Registering worker: ${WORKER_ID}...`) + "\n");
 
   try {
     const result = await apiClient.registerWorker({
@@ -55,10 +56,10 @@ async function registerWorker() {
       },
     });
 
-    console.log(`[Worker] Registered successfully:`, result);
+    process.stdout.write(util.format(`[Worker] Registered successfully:`, result) + "\n");
     return result;
   } catch (error: any) {
-    console.error(`[Worker] Failed to register:`, error.message);
+    process.stderr.write(util.format(`[Worker] Failed to register:`, error.message) + "\n");
     throw error;
   }
 }
@@ -74,7 +75,7 @@ async function sendHeartbeat() {
       tasksRunning,
     });
   } catch (error: any) {
-    console.error(`[Worker] Failed to send heartbeat:`, error.message);
+    process.stderr.write(util.format(`[Worker] Failed to send heartbeat:`, error.message) + "\n");
   }
 }
 
@@ -89,7 +90,7 @@ async function processJob(job: {
   shotId?: string;
   projectId?: string;
 }) {
-  console.log(`[Worker] Processing job: ${job.id} (type: ${job.type})`);
+  process.stdout.write(util.format(`[Worker] Processing job: ${job.id} (type: ${job.type})`) + "\n");
 
   tasksRunning++;
   let result: { success: boolean; result?: any; error?: string };
@@ -143,13 +144,13 @@ async function processJob(job: {
     });
 
     if (result.success) {
-      console.log(`[Worker] Job ${job.id} completed successfully`);
+      process.stdout.write(util.format(`[Worker] Job ${job.id} completed successfully`) + "\n");
     } else {
-      console.error(`[Worker] Job ${job.id} failed:`, result.error);
+      process.stderr.write(util.format(`[Worker] Job ${job.id} failed:`, result.error) + "\n");
     }
   } catch (error: unknown) {
     const jobError = error as Error & { blockingReason?: string; nextAction?: string };
-    console.error(`[Worker] Error processing job ${job.id}:`, jobError.message);
+    process.stderr.write(util.format(`[Worker] Error processing job ${job.id}:`, jobError.message) + "\n");
 
     // 报告失败
     try {
@@ -167,7 +168,7 @@ async function processJob(job: {
         },
       });
     } catch (reportError: any) {
-      console.error(`[Worker] Failed to report job failure:`, reportError.message);
+      process.stderr.write(util.format(`[Worker] Failed to report job failure:`, reportError.message) + "\n");
     }
   } finally {
     tasksRunning--;
@@ -184,11 +185,11 @@ async function pollAndProcessJobs() {
     if (job) {
       // 立即处理 Job（不等待）
       processJob(job).catch((error) => {
-        console.error(`[Worker] Error in processJob:`, error);
+        process.stderr.write(util.format(`[Worker] Error in processJob:`, error) + "\n");
       });
     }
   } catch (error: any) {
-    console.error(`[Worker] Error polling jobs:`, error.message);
+    process.stderr.write(util.format(`[Worker] Error polling jobs:`, error.message) + "\n");
   }
 }
 
@@ -196,17 +197,17 @@ async function pollAndProcessJobs() {
  * 主循环
  */
 async function main() {
-  console.log(`[Worker] Starting Worker Agent...`);
-  console.log(`[Worker] Worker ID: ${WORKER_ID}`);
-  console.log(`[Worker] API Base URL: ${API_BASE_URL}`);
-  console.log(`[Worker] API Key: ${API_KEY ? API_KEY.substring(0, 20) + '...' : 'NOT SET'}`);
-  console.log(`[Worker] API Secret: ${API_SECRET ? 'SET' : 'NOT SET'}`);
+  process.stdout.write(util.format(`[Worker] Starting Worker Agent...`) + "\n");
+  process.stdout.write(util.format(`[Worker] Worker ID: ${WORKER_ID}`) + "\n");
+  process.stdout.write(util.format(`[Worker] API Base URL: ${API_BASE_URL}`) + "\n");
+  process.stdout.write(util.format(`[Worker] API Key: ${API_KEY ? API_KEY.substring(0, 20) + '...' : 'NOT SET'}`) + "\n");
+  process.stdout.write(util.format(`[Worker] API Secret: ${API_SECRET ? 'SET' : 'NOT SET'}`) + "\n");
 
   // 注册 Worker
   try {
     await registerWorker();
   } catch (error: any) {
-    console.error(`[Worker] Failed to register, exiting...`);
+    process.stderr.write(util.format(`[Worker] Failed to register, exiting...`) + "\n");
     process.exit(1);
   }
 
@@ -232,36 +233,32 @@ async function main() {
   // 立即开始轮询
   pollAndProcessJobs();
 
-  console.log(`[Worker] Worker Agent started successfully`);
-  console.log(`[Worker] Heartbeat interval: ${HEARTBEAT_INTERVAL_MS}ms`);
-  console.log(`[Worker] Job poll interval: ${JOB_POLL_INTERVAL_MS}ms`);
+  process.stdout.write(util.format(`[Worker] Worker Agent started successfully`) + "\n");
+  process.stdout.write(util.format(`[Worker] Heartbeat interval: ${HEARTBEAT_INTERVAL_MS}ms`) + "\n");
+  process.stdout.write(util.format(`[Worker] Job poll interval: ${JOB_POLL_INTERVAL_MS}ms`) + "\n");
 
   // 优雅退出处理
   const shutdown = async (signal: string) => {
-    console.log(`[Worker] Received ${signal}, shutting down gracefully...`);
+    process.stdout.write(util.format(`[Worker] Received ${signal}, shutting down gracefully...`) + "\n");
     isRunning = false; // 停止领新任务
 
     // 等待现有任务完成
     let waitCount = 0;
     const maxWait = 30; // 最多等待 30 秒
     while (tasksRunning > 0 && waitCount < maxWait) {
-      console.log(
-        `[Worker] Waiting for ${tasksRunning} tasks to complete... (${waitCount}/${maxWait}s)`
-      );
+      process.stdout.write(util.format(`[Worker] Waiting for ${tasksRunning} tasks to complete... (${waitCount}/${maxWait}s)`) + "\n");
       await new Promise((resolve) => setTimeout(resolve, 1000));
       waitCount++;
     }
 
     if (tasksRunning > 0) {
-      console.warn(
-        `[Worker] Shutdown timed out, ${tasksRunning} tasks still running. Forcing exit.`
-      );
+      process.stdout.write(util.format(`[Worker] Shutdown timed out, ${tasksRunning} tasks still running. Forcing exit.`) + "\n");
     }
 
     // P1 修复：由于即将退出，强制清理所有子进程防止泄露
     cleanupVideoRenderProcesses();
 
-    console.log(`[Worker] Exiting.`);
+    process.stdout.write(util.format(`[Worker] Exiting.`) + "\n");
     process.exit(0);
   };
 
@@ -271,6 +268,6 @@ async function main() {
 
 // 启动
 main().catch((error) => {
-  console.error(`[Worker] Fatal error:`, error);
+  process.stderr.write(util.format(`[Worker] Fatal error:`, error) + "\n");
   process.exit(1);
 });

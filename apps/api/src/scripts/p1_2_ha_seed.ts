@@ -3,6 +3,7 @@ import { PrismaClient } from 'database';
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import * as util from "util";
 
 const prisma = new PrismaClient();
 
@@ -72,7 +73,7 @@ async function main() {
   const pidRes = readPidFileMaybe(killWorkerId);
   let killPid = pidRes.pid;
   if (killPid) {
-    console.log(`PIDFILE_HIT=${pidRes.hit}`);
+    process.stdout.write(util.format(`PIDFILE_HIT=${pidRes.hit}`) + "\n");
   }
 
   if (!killPid) {
@@ -302,15 +303,15 @@ async function main() {
   });
 
   // 输出给 gate
-  console.log(`PROJECT_ID=${job.projectId}`);
-  console.log(`TEST_JOB_ID=${job.id}`);
-  console.log(`KILL_WORKER_ID=${killWorkerId}`);
-  console.log(`KILL_WORKER_PID=${killPid}`);
+  process.stdout.write(util.format(`PROJECT_ID=${job.projectId}`) + "\n");
+  process.stdout.write(util.format(`TEST_JOB_ID=${job.id}`) + "\n");
+  process.stdout.write(util.format(`KILL_WORKER_ID=${killWorkerId}`) + "\n");
+  process.stdout.write(util.format(`KILL_WORKER_PID=${killPid}`) + "\n");
 }
 
 main()
   .catch((e) => {
-    console.error(String(e?.stack ?? e));
+    process.stderr.write(util.format(String(e?.stack ?? e)) + "\n");
     process.exit(1);
   })
   .finally(async () => {

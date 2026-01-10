@@ -1,3 +1,5 @@
+import * as util from "util";
+
 'use strict';
 var aa = Object.create;
 var tr = Object.defineProperty;
@@ -229,9 +231,7 @@ var mi = ge((tt) => {
   !T.TYPED_ARRAY_SUPPORT &&
     typeof console < 'u' &&
     typeof console.error == 'function' &&
-    console.error(
-      'This browser lacks typed array (Uint8Array) support which is required by `buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
-    );
+    process.stderr.write(util.format('This browser lacks typed array (Uint8Array) support which is required by `buffer` v5.x. Use `buffer` v4.x if you require old browser support.') + "\n");
   function ga() {
     try {
       let e = new Uint8Array(1),
@@ -2095,19 +2095,19 @@ var It = {
   },
   Ni = { warn: () => !y.env.PRISMA_DISABLE_WARNINGS };
 function hl(...e) {
-  console.log(...e);
+  process.stdout.write(util.format(...e) + "\n");
 }
 function un(e, ...t) {
-  Ni.warn() && console.warn(`${It.warn} ${e}`, ...t);
+  Ni.warn() && process.stdout.write(util.format(`${It.warn} ${e}`, ...t) + "\n");
 }
 function yl(e, ...t) {
   console.info(`${It.info} ${e}`, ...t);
 }
 function wl(e, ...t) {
-  console.error(`${It.error} ${e}`, ...t);
+  process.stderr.write(util.format(`${It.error} ${e}`, ...t) + "\n");
 }
 function bl(e, ...t) {
-  console.log(`${It.query} ${e}`, ...t);
+  process.stdout.write(util.format(`${It.query} ${e}`, ...t) + "\n");
 }
 m();
 c();
@@ -7426,7 +7426,7 @@ function gs({ postinstall: e, ciName: t, clientVersion: r }) {
     let n = `Prisma has detected that this project was built on ${t}, which caches dependencies. This leads to an outdated Prisma Client because Prisma's auto-generation isn't triggered. To fix this, make sure to run the \`prisma generate\` command during the build process.
 
 Learn how: https://pris.ly/d/${ms[t]}-build`;
-    throw (console.error(n), new V(n, r));
+    throw (process.stderr.write(util.format(n) + "\n"), new V(n, r));
   }
 }
 m();

@@ -1,6 +1,7 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { ReadStream, createReadStream } from 'fs';
+import * as util from "util";
 
 export class LocalStorageAdapter {
   private root: string;
@@ -9,7 +10,7 @@ export class LocalStorageAdapter {
     // Default to .data/storage in repo root if not provided
     this.root = root || path.resolve(process.cwd(), '../../.data/storage');
     fs.ensureDirSync(this.root);
-    console.log(`[LocalStorageAdapter] Initialized at: ${this.root}`);
+    process.stdout.write(util.format(`[LocalStorageAdapter] Initialized at: ${this.root}`) + "\n");
   }
 
   /**

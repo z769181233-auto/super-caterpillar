@@ -2,6 +2,7 @@
 import { PrismaClient } from 'database';
 import path from 'path';
 import fs from 'fs';
+import * as util from "util";
 
 const prisma = new PrismaClient();
 
@@ -15,7 +16,7 @@ async function main() {
       where: { engineKey: engine.engineKey },
     });
     if (exists) {
-      console.log(`[sync-engines] skip existing ${engine.engineKey}`);
+      process.stdout.write(util.format(`[sync-engines] skip existing ${engine.engineKey}`) + "\n");
       continue;
     }
 
@@ -29,15 +30,15 @@ async function main() {
         version: engine.modelInfo?.version ?? null,
       },
     });
-    console.log(`[sync-engines] created ${engine.engineKey}`);
+    process.stdout.write(util.format(`[sync-engines] created ${engine.engineKey}`) + "\n");
   }
 
-  console.log('[sync-engines] done');
+  process.stdout.write(util.format('[sync-engines] done') + "\n");
 }
 
 main()
   .catch((err) => {
-    console.error(err);
+    process.stderr.write(util.format(err) + "\n");
     process.exit(1);
   })
   .finally(async () => {

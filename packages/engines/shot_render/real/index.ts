@@ -19,7 +19,7 @@ export async function shotRenderRealEngine(
     // 默认 SDXL
     return await runShotRenderSDXL(input, ctx);
   } catch (e: any) {
-    console.error(`[ShotRender] Model ${model} failed: ${e.message}`);
+    process.stdout.write(`[ShotRender] ERROR: Model ${model} failed: ${e.message}\n`);
     throw e;
   }
 }

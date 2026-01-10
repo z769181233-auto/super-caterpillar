@@ -37,10 +37,10 @@ export class ProjectService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   async create(createProjectDto: CreateProjectDto, ownerId: string, organizationId: string) {
-    process.stdout.write('!!! PROJECT SERVICE CREATE CALLED - FIX VERIFICATION !!!\n');
+    this.logger.log('PROJECT SERVICE CREATE CALLED');
 
     // Studio v0.7: 创建项目时必须指定组织
     // Studio v0.7: Find 'OWNER' role
@@ -50,7 +50,7 @@ export class ProjectService {
     });
 
     if (!finalOwnerRole) {
-      process.stdout.write('!!! WARN: OWNER ROLE MISSING IN DB. ATTEMPTING SELF-HEALING !!!\n');
+      this.logger.warn('OWNER ROLE MISSING IN DB. ATTEMPTING SELF-HEALING');
       try {
         finalOwnerRole = await this.prisma.role.create({
           data: {
@@ -58,26 +58,26 @@ export class ProjectService {
             level: 100, // Assuming 100 is Owner level
           },
         });
-        process.stdout.write(`!!! SUCCESS: Created OWNER role with ID ${finalOwnerRole.id} !!!\n`);
+        this.logger.log(`SUCCESS: Created OWNER role with ID ${finalOwnerRole.id}`);
       } catch (err) {
-        process.stdout.write(`!!! ERROR: Failed to create OWNER role: ${err.message} !!!\n`);
+        this.logger.error(`ERROR: Failed to create OWNER role: ${err.message}`);
         // If unique constraint violation, it means it exists. Try finding it again.
-        process.stdout.write('!!! RETRYING FIND OWNER ROLE ... !!!\n');
+        this.logger.log('RETRYING FIND OWNER ROLE ...');
         finalOwnerRole = await this.prisma.role.findFirst({
           where: { name: 'OWNER' },
         });
         if (finalOwnerRole) {
-          process.stdout.write(
-            `!!! SUCCESS: Found OWNER role after retry: ${finalOwnerRole.id} !!!\n`
+          this.logger.log(
+            `SUCCESS: Found OWNER role after retry: ${finalOwnerRole.id}`
           );
         } else {
-          process.stdout.write(
-            `!!! FATAL: OWNER role still not found after creation failure !!!\n`
+          this.logger.error(
+            `FATAL: OWNER role still not found after creation failure`
           );
         }
       }
     } else {
-      process.stdout.write(`!!! FOUND OWNER ROLE: ${finalOwnerRole.id} !!!\n`);
+      this.logger.log(`FOUND OWNER ROLE: ${finalOwnerRole.id}`);
     }
 
     // 使用事务确保 Project 和 Membership 同时创建
@@ -93,8 +93,8 @@ export class ProjectService {
       });
 
       if (finalOwnerRole) {
-        process.stdout.write(
-          `[ProjectService] Creating OWNER member for user ${ownerId} in project ${p.id} with role ${finalOwnerRole.id}\n`
+        this.logger.log(
+          `Creating OWNER member for user ${ownerId} in project ${p.id} with role ${finalOwnerRole.id}`
         );
         await tx.projectMember.create({
           data: {
@@ -104,8 +104,8 @@ export class ProjectService {
           },
         });
       } else {
-        process.stdout.write(
-          `[ProjectService] OWNER role STILL NOT FOUND! Skipping member creation for project ${p.id}\n`
+        this.logger.error(
+          `OWNER role STILL NOT FOUND! Skipping member creation for project ${p.id}`
         );
       }
 
@@ -125,8 +125,8 @@ export class ProjectService {
       } catch (error: any) {
         // 软失败：记录 audit_logs 并继续（符合 SafetySpec，Character 非阻断性）
         // 注意：事务中无法直接调用 auditLogService (外部服务)，记录日志即可
-        process.stdout.write(
-          `!!! WARN: CE01 placeholder failed in transaction: ${error?.message}\n`
+        this.logger.warn(
+          `CE01 placeholder failed in transaction: ${error?.message}`
         );
       }
 
@@ -590,9 +590,9 @@ export class ProjectService {
   }
 
   async checkOwnership(projectId: string, userId: string) {
-    console.log('checkOwnership:', { projectId, userId, hasPrisma: !!this.prisma });
+    this.logger.log(`checkOwnership: projectId=${projectId}, userId=${userId}, hasPrisma=${!!this.prisma}`);
     if (!this.prisma) {
-      console.error('CRITICAL: this.prisma is undefined in checkOwnership!');
+      this.logger.error('CRITICAL: this.prisma is undefined in checkOwnership!');
       // Emergency fix attempt? No, just throw so we see log
     }
     const project = await this.findById(projectId);
@@ -725,11 +725,11 @@ export class ProjectService {
     // 清理缓存（需要获取 projectId）
     const projectId = isSeasonId
       ? (
-          await this.prisma.season.findUnique({
-            where: { id: projectIdOrSeasonId },
-            select: { projectId: true },
-          })
-        )?.projectId
+        await this.prisma.season.findUnique({
+          where: { id: projectIdOrSeasonId },
+          select: { projectId: true },
+        })
+      )?.projectId
       : projectIdOrSeasonId;
     if (projectId) {
       await this.sceneGraphService.invalidateProjectSceneGraph(projectId);

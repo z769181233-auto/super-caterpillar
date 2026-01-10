@@ -24,7 +24,7 @@ export class CEEngineService {
     private readonly taskService: TaskService,
     private readonly textSafetyService: TextSafetyService,
     private readonly prisma: PrismaService
-  ) {}
+  ) { }
 
   /**
    * CE06: 解析小说
@@ -40,7 +40,8 @@ export class CEEngineService {
       };
     },
     userId: string,
-    organizationId: string
+    organizationId: string,
+    apiKeyId?: string
   ): Promise<{
     jobId: string;
     traceId: string;
@@ -79,10 +80,11 @@ export class CEEngineService {
         rawText: dto.rawText,
         engineKey: dto.options?.engineKey || 'ce06_novel_parsing',
         engineVersion: dto.options?.engineVersion,
+        apiKeyId,
       },
     });
 
-    this.logger.log(`CE06 Job created: ${job.id} for project ${dto.projectId}`);
+    this.logger.log(`CE06 Job created: ${job.id} for project ${dto.projectId} (apiKeyId: ${apiKeyId || 'none'})`);
 
     return {
       jobId: job.id,
@@ -105,7 +107,8 @@ export class CEEngineService {
       };
     },
     userId: string,
-    organizationId: string
+    organizationId: string,
+    apiKeyId?: string
   ): Promise<{
     jobId: string;
     traceId: string;
@@ -144,10 +147,11 @@ export class CEEngineService {
         text: dto.text,
         engineKey: dto.options?.engineKey || 'ce03_visual_density',
         engineVersion: dto.options?.engineVersion,
+        apiKeyId,
       },
     });
 
-    this.logger.log(`CE03 Job created: ${job.id} for project ${dto.projectId}`);
+    this.logger.log(`CE03 Job created: ${job.id} for project ${dto.projectId} (apiKeyId: ${apiKeyId || 'none'})`);
 
     return {
       jobId: job.id,

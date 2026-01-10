@@ -42,7 +42,7 @@ export class StorageController {
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService
-  ) {}
+  ) { }
 
   @Public()
   @Get('__probe')
@@ -56,7 +56,7 @@ export class StorageController {
   raw(@Param('key') key: string, @Res() res: Response) {
     const abs = this.storageService.getAbsolutePath(key);
     const exists = this.storageService.exists(key);
-    console.log('[StorageRaw]', { key, abs, exists });
+    this.logger.log(`raw: key=${key}, abs=${abs}, exists=${exists}`);
     if (!exists) throw new NotFoundException('Resource not found');
     return res.sendFile(abs);
   }
@@ -300,14 +300,14 @@ export class StorageController {
     // Debug logging for 404 diagnosis (ALWAYS ON for troubleshooting)
     const resolved = this.storageService.getAbsolutePath(key);
     const exists = this.storageService.exists(key);
-    console.log(`[StorageSigned] key=${key}`);
-    console.log(`[StorageSigned] resolved=${resolved}`);
-    console.log(`[StorageSigned] exists=${exists}`);
+    this.logger.log(`key=${key}`);
+    this.logger.log(`resolved=${resolved}`);
+    this.logger.log(`exists=${exists}`);
     try {
       const st = fs.statSync(resolved);
-      console.log(`[StorageSigned] stat.size=${st.size}`);
+      this.logger.log(`stat.size=${st.size}`);
     } catch (e) {
-      console.log(`[StorageSigned] stat.error=${(e as any)?.message}`);
+      this.logger.log(`stat.error=${(e as any)?.message}`);
     }
 
     if (!this.storageService.exists(key)) {

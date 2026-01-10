@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Logger } from '@nestjs/common';
 import { FeatureFlagService } from '../../feature-flag/feature-flag.service';
 
 /**
@@ -78,7 +79,7 @@ export class AssetPublicDto {
           dto.signedUrlExpiresAt = expiresAt.toISOString();
         } catch (error) {
           // 签名失败不阻断主流程，仅记录日志
-          console.error('Failed to generate signed URL:', error);
+          new Logger('AssetPublicDto').error(`Failed to generate signed URL: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     }

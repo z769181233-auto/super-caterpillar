@@ -43,7 +43,9 @@
     "verify:stage12": "pnpm -w exec tsx scripts/verify_stage12.ts",
     "verify:all": "pnpm verify:cold-start && pnpm verify:stage10 && pnpm verify:signed-url && pnpm verify:text-safety",
     "prepare": "husky",
-    "gate:audit": "bash tools/audit/run_full_audit_v3.sh"
+    "gate:audit": "bash tools/audit/run_full_audit_v3.sh",
+    "gate:risk": "bash tools/audit/run_risk_pack_v1.sh",
+    "gate:health": "bash tools/health/run_health_pack.sh"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

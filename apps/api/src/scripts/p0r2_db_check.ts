@@ -1,4 +1,6 @@
 import { PrismaClient } from 'database';
+import * as util from "util";
+
 const prisma = new PrismaClient();
 
 async function check() {
@@ -7,18 +9,18 @@ async function check() {
   });
 
   if (!binding) {
-    console.error('❌ FAIL: No binding found for video job');
+    process.stderr.write(util.format('❌ FAIL: No binding found for video job') + "\n");
     process.exit(1);
   }
 
-  console.log('Engine Key:', binding.engineKey);
+  process.stdout.write(util.format('Engine Key:', binding.engineKey) + "\n");
 
   if (binding.engineKey !== 'video_merge') {
-    console.error('❌ FAIL: Engine Key mismatch. Expected video_merge, got ' + binding.engineKey);
+    process.stderr.write(util.format('❌ FAIL: Engine Key mismatch. Expected video_merge, got ' + binding.engineKey) + "\n");
     process.exit(1);
   }
 
-  console.log('✅ PASS: Engine Binding is correct');
+  process.stdout.write(util.format('✅ PASS: Engine Binding is correct') + "\n");
 
   // Check Billing
   // We expect some billing records with this traceId
@@ -29,17 +31,17 @@ async function check() {
   });
 
   if (billing) {
-    console.log('✅ PASS: CostLedger found');
+    process.stdout.write(util.format('✅ PASS: CostLedger found') + "\n");
   } else {
-    console.log('⚠️ WARNING: CostLedger not found immediately (might be async)');
+    process.stdout.write(util.format('⚠️ WARNING: CostLedger not found immediately (might be async)') + "\n");
   }
 
-  console.log('✅ PASS: DB Checks');
+  process.stdout.write(util.format('✅ PASS: DB Checks') + "\n");
 }
 
 check()
   .catch((e) => {
-    console.error(e);
+    process.stderr.write(util.format(e) + "\n");
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

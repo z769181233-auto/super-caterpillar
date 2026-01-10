@@ -30,6 +30,7 @@ import {
 } from 'database';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as util from "util";
 
 type EpisodeWithScenesAndShots = Episode & {
   scenes: (Scene & { shots: Shot[] })[];
@@ -52,7 +53,7 @@ async function createOrGetTestUser(
   prisma: PrismaService,
   authService: AuthService
 ): Promise<{ userId: string; organizationId: string }> {
-  console.log('[E2E] 步骤 1: 创建或获取测试用户和组织...');
+  process.stdout.write(util.format('[E2E] 步骤 1: 创建或获取测试用户和组织...') + "\n");
 
   // 查找或创建用户
   let user = await prisma.user.findUnique({
@@ -60,7 +61,7 @@ async function createOrGetTestUser(
   });
 
   if (!user) {
-    console.log('[E2E] 创建新测试用户...');
+    process.stdout.write(util.format('[E2E] 创建新测试用户...') + "\n");
     await authService.register({
       email: TEST_USER_EMAIL,
       password: TEST_USER_PASSWORD,
@@ -81,7 +82,7 @@ async function createOrGetTestUser(
   });
 
   if (!organization) {
-    console.log('[E2E] 创建新测试组织...');
+    process.stdout.write(util.format('[E2E] 创建新测试组织...') + "\n");
     organization = await prisma.organization.create({
       data: {
         name: 'E2E Test Organization',
@@ -110,7 +111,7 @@ async function createOrGetTestUser(
     });
   }
 
-  console.log(`[E2E] ✅ 用户 ID: ${user.id}, 组织 ID: ${organization.id}`);
+  process.stdout.write(util.format(`[E2E] ✅ 用户 ID: ${user.id}, 组织 ID: ${organization.id}`) + "\n");
   return { userId: user.id, organizationId: organization.id };
 }
 
@@ -120,7 +121,7 @@ async function createOrGetTestProject(
   userId: string,
   organizationId: string
 ): Promise<string> {
-  console.log('[E2E] 步骤 2: 创建或获取测试项目...');
+  process.stdout.write(util.format('[E2E] 步骤 2: 创建或获取测试项目...') + "\n");
 
   // 查找现有项目
   let project = await prisma.project.findFirst({
@@ -132,7 +133,7 @@ async function createOrGetTestProject(
   });
 
   if (!project) {
-    console.log('[E2E] 创建新测试项目...');
+    process.stdout.write(util.format('[E2E] 创建新测试项目...') + "\n");
     project = await projectService.create(
       {
         name: TEST_PROJECT_NAME,
@@ -143,7 +144,7 @@ async function createOrGetTestProject(
     );
   }
 
-  console.log(`[E2E] ✅ 项目 ID: ${project.id}`);
+  process.stdout.write(util.format(`[E2E] ✅ 项目 ID: ${project.id}`) + "\n");
   return project.id;
 }
 
@@ -154,7 +155,7 @@ async function importNovel(
   organizationId: string,
   userId: string
 ): Promise<{ novelSourceId: string; taskId: string; jobIds: string[] }> {
-  console.log('[E2E] 步骤 3: 导入测试小说...');
+  process.stdout.write(util.format('[E2E] 步骤 3: 导入测试小说...') + "\n");
 
   // 读取测试小说文件
   const novelText = await fs.readFile(TEST_NOVEL_FILE, 'utf-8');
@@ -170,7 +171,7 @@ async function importNovel(
     },
   });
 
-  console.log(`[E2E] ✅ NovelSource ID: ${novelSource.id}`);
+  process.stdout.write(util.format(`[E2E] ✅ NovelSource ID: ${novelSource.id}`) + "\n");
 
   // 解析章节
   const chapterPattern =
@@ -193,7 +194,7 @@ async function importNovel(
     });
   }
 
-  console.log(`[E2E] 解析到 ${chapters.length} 个章节`);
+  process.stdout.write(util.format(`[E2E] 解析到 ${chapters.length} 个章节`) + "\n");
 
   // 保存章节
   const savedChapters = [];
@@ -269,7 +270,7 @@ async function importNovel(
     organizationId,
   });
 
-  console.log(`[E2E] ✅ Task ID: ${task.id}`);
+  process.stdout.write(util.format(`[E2E] ✅ Task ID: ${task.id}`) + "\n");
 
   // 创建 Jobs
   const jobService = app.get(JobService);
@@ -294,23 +295,21 @@ async function importNovel(
     jobIds.push(job.id);
   }
 
-  console.log(`[E2E] ✅ 创建了 ${jobIds.length} 个 Job`);
+  process.stdout.write(util.format(`[E2E] ✅ 创建了 ${jobIds.length} 个 Job`) + "\n");
   return { novelSourceId: novelSource.id, taskId: task.id, jobIds };
 }
 
 async function triggerOrchestrator(app: any): Promise<void> {
-  console.log('[E2E] 步骤 4: 触发 Orchestrator 调度...');
+  process.stdout.write(util.format('[E2E] 步骤 4: 触发 Orchestrator 调度...') + "\n");
 
   const orchestratorService = app.get(OrchestratorService);
 
   const result = await orchestratorService.dispatch();
-  console.log(
-    `[E2E] ✅ Orchestrator 调度完成: dispatched=${result.dispatched}, skipped=${result.skipped || 0}, errors=${result.errors || 0}`
-  );
+  process.stdout.write(util.format(`[E2E] ✅ Orchestrator 调度完成: dispatched=${result.dispatched}, skipped=${result.skipped || 0}, errors=${result.errors || 0}`) + "\n");
 
   // 如果调度成功，等待一下让 Worker 有机会拉取
   if (result.dispatched > 0) {
-    console.log(`[E2E] 等待 2 秒让 Worker 拉取 Job...`);
+    process.stdout.write(util.format(`[E2E] 等待 2 秒让 Worker 拉取 Job...`) + "\n");
     await sleep(2000);
   }
 }
@@ -327,9 +326,9 @@ async function waitJobsHandledByRealWorker(
 ): Promise<void> {
   const start = Date.now();
 
-  console.log(`[E2E] 步骤 5: 等待真实 Worker 处理 Job...`);
-  console.log(`[E2E] 监控 Job 数量: ${jobIds.length}`);
-  console.log(`[E2E] 允许超时时间: ${timeoutMs / 1000} 秒`);
+  process.stdout.write(util.format(`[E2E] 步骤 5: 等待真实 Worker 处理 Job...`) + "\n");
+  process.stdout.write(util.format(`[E2E] 监控 Job 数量: ${jobIds.length}`) + "\n");
+  process.stdout.write(util.format(`[E2E] 允许超时时间: ${timeoutMs / 1000} 秒`) + "\n");
 
   // 简单轮询：直到全部 SUCCEEDED / 有 FAILED / 超时
   // eslint-disable-next-line no-constant-condition
@@ -350,23 +349,21 @@ async function waitJobsHandledByRealWorker(
     const failed = statusCount[JobStatus.FAILED] ?? 0;
     const retrying = statusCount[JobStatus.RETRYING] ?? 0;
 
-    console.log(
-      `[E2E] Job 状态: PENDING=${pending}, RUNNING=${running}, ` +
-        `SUCCEEDED=${succeeded}, FAILED=${failed}, RETRYING=${retrying}`
-    );
+    process.stdout.write(util.format(`[E2E] Job 状态: PENDING=${pending}, RUNNING=${running}, ` +
+              `SUCCEEDED=${succeeded}, FAILED=${failed}, RETRYING=${retrying}`) + "\n");
 
     // 判定 1：全部成功
     if (succeeded === jobs.length && jobs.length > 0) {
-      console.log('[E2E] ✅ 所有 Job 已由真实 Worker 处理完成');
+      process.stdout.write(util.format('[E2E] ✅ 所有 Job 已由真实 Worker 处理完成') + "\n");
       return;
     }
 
     // 判定 2：有失败
     if (failed > 0) {
       const failedJobs = jobs.filter((j) => j.status === JobStatus.FAILED);
-      console.error(`[E2E] ❌ 存在 ${failed} 个 FAILED Job:`);
+      process.stderr.write(util.format(`[E2E] ❌ 存在 ${failed} 个 FAILED Job:`) + "\n");
       failedJobs.forEach((job) => {
-        console.error(`[E2E]   - Job ${job.id}: ${job.lastError || 'Unknown error'}`);
+        process.stderr.write(util.format(`[E2E]   - Job ${job.id}: ${job.lastError || 'Unknown error'}`) + "\n");
       });
       throw new Error('[E2E] ❌ 存在 FAILED Job，真实 Worker 处理失败');
     }
@@ -381,7 +378,7 @@ async function waitJobsHandledByRealWorker(
 }
 
 async function verifyStructure(prisma: PrismaService, projectId: string): Promise<void> {
-  console.log('[E2E] 步骤 6: 验证生成的结构...');
+  process.stdout.write(util.format('[E2E] 步骤 6: 验证生成的结构...') + "\n");
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -402,8 +399,8 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
 
   const tree = project as ProjectWithTree;
 
-  console.log(`[E2E] 项目: ${tree.name}`);
-  console.log(`[E2E] Episode 数量: ${tree.episodes.length}`);
+  process.stdout.write(util.format(`[E2E] 项目: ${tree.name}`) + "\n");
+  process.stdout.write(util.format(`[E2E] Episode 数量: ${tree.episodes.length}`) + "\n");
 
   if (tree.episodes.length === 0) {
     throw new Error('❌ 没有生成任何 Episode');
@@ -411,9 +408,7 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
 
   // 检查第一个 Episode
   const firstEpisode = tree.episodes[0];
-  console.log(
-    `[E2E] 第一集: ${firstEpisode.name || '未命名'} (${firstEpisode.scenes.length} 个 Scene)`
-  );
+  process.stdout.write(util.format(`[E2E] 第一集: ${firstEpisode.name || '未命名'} (${firstEpisode.scenes.length} 个 Scene)`) + "\n");
 
   if (firstEpisode.scenes.length === 0) {
     throw new Error('❌ 第一集没有生成任何 Scene');
@@ -421,9 +416,7 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
 
   // 检查第一个 Scene
   const firstScene = firstEpisode.scenes[0];
-  console.log(
-    `[E2E] 第一个 Scene: ${firstScene.title || '未命名'} (${firstScene.shots.length} 个 Shot)`
-  );
+  process.stdout.write(util.format(`[E2E] 第一个 Scene: ${firstScene.title || '未命名'} (${firstScene.shots.length} 个 Shot)`) + "\n");
 
   if (firstScene.shots.length === 0) {
     throw new Error('❌ 第一个 Scene 没有生成任何 Shot');
@@ -431,10 +424,10 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
 
   // 打印 Shot 信息
   firstScene.shots.slice(0, 5).forEach((shot, index) => {
-    console.log(`[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`);
+    process.stdout.write(util.format(`[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`) + "\n");
   });
   if (firstScene.shots.length > 5) {
-    console.log(`[E2E]   ... 还有 ${firstScene.shots.length - 5} 个 Shot`);
+    process.stdout.write(util.format(`[E2E]   ... 还有 ${firstScene.shots.length - 5} 个 Shot`) + "\n");
   }
 
   // 汇总统计
@@ -444,16 +437,14 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
     0
   );
 
-  console.log(
-    `[E2E] 汇总: ${tree.episodes.length} 个 Episode, ${totalScenes} 个 Scene, ${totalShots} 个 Shot`
-  );
-  console.log('[E2E] ✅ 结构验证通过');
+  process.stdout.write(util.format(`[E2E] 汇总: ${tree.episodes.length} 个 Episode, ${totalScenes} 个 Scene, ${totalShots} 个 Shot`) + "\n");
+  process.stdout.write(util.format('[E2E] ✅ 结构验证通过') + "\n");
 }
 
 async function main() {
-  console.log('========================================');
-  console.log('E2E 测试：真实 Worker 联调版（小说 → 分析 → 结构生成）');
-  console.log('========================================\n');
+  process.stdout.write(util.format('========================================') + "\n");
+  process.stdout.write(util.format('E2E 测试：真实 Worker 联调版（小说 → 分析 → 结构生成）') + "\n");
+  process.stdout.write(util.format('========================================\n') + "\n");
 
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ['error', 'warn'], // 减少日志输出
@@ -478,7 +469,7 @@ async function main() {
       userId
     );
 
-    console.log(`[E2E] 等待 3 秒让系统初始化...`);
+    process.stdout.write(util.format(`[E2E] 等待 3 秒让系统初始化...`) + "\n");
     await sleep(3000);
 
     // 步骤 4: 触发 Orchestrator 调度
@@ -490,15 +481,15 @@ async function main() {
     // 步骤 6: 验证结构
     await verifyStructure(prisma, projectId);
 
-    console.log('\n========================================');
-    console.log('✅ E2E 测试通过（真实 Worker 联调版）！');
-    console.log('========================================');
+    process.stdout.write(util.format('\n========================================') + "\n");
+    process.stdout.write(util.format('✅ E2E 测试通过（真实 Worker 联调版）！') + "\n");
+    process.stdout.write(util.format('========================================') + "\n");
   } catch (error: any) {
-    console.error('\n========================================');
-    console.error('❌ E2E 测试失败（真实 Worker 联调版）');
-    console.error('========================================');
-    console.error('错误:', error.message);
-    console.error(error.stack);
+    process.stderr.write(util.format('\n========================================') + "\n");
+    process.stderr.write(util.format('❌ E2E 测试失败（真实 Worker 联调版）') + "\n");
+    process.stderr.write(util.format('========================================') + "\n");
+    process.stderr.write(util.format('错误:', error.message) + "\n");
+    process.stderr.write(util.format(error.stack) + "\n");
     process.exit(1);
   } finally {
     await app.close();

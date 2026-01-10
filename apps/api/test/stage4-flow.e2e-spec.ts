@@ -5,6 +5,7 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import cookieParser from 'cookie-parser';
+import * as util from "util";
 
 describe('Stage 4 Flow (E2E)', () => {
   let app: INestApplication;
@@ -153,13 +154,13 @@ describe('Stage 4 Flow (E2E)', () => {
       // Optional: db teardown
       await prisma.user
         .delete({ where: { id: userId } })
-        .catch((e) => console.warn('Failed to cleanup user', e));
+        .catch((e) => process.stdout.write(util.format('Failed to cleanup user', e) + "\n"));
       // Deleting user usually cascades to org/memberships if cascade delete is set up,
       // but manual cleanup of org might be safer if not.
       if (org) {
         await prisma.organization
           .delete({ where: { id: org.id } })
-          .catch((e) => console.warn('Failed to cleanup org', org.id));
+          .catch((e) => process.stdout.write(util.format('Failed to cleanup org', org.id) + "\n"));
       }
     }
     await app.close();
@@ -226,7 +227,7 @@ describe('Stage 4 Flow (E2E)', () => {
 
       // 4. Trigger Semantic Enhancement (The Step that failed before)
       // Using the simplified route we configured
-      console.log('Triggering Semantic Enhancement (this may take time due to LLM)...');
+      process.stdout.write(util.format('Triggering Semantic Enhancement (this may take time due to LLM)...') + "\n");
       const semanticRes = await request(app.getHttpServer())
         .post(`/api/stage4/projects/${projectId}/scenes/${sceneId}/semantic-enhancement`)
         .set('Authorization', `Bearer ${authToken}`)
@@ -240,13 +241,13 @@ describe('Stage 4 Flow (E2E)', () => {
       expect(semanticRes.body.data.summary).toBeDefined();
       expect(semanticRes.body.data.keywords).toBeInstanceOf(Array);
 
-      console.log('✅ Stage 4 E2E Test Passed!');
+      process.stdout.write(util.format('✅ Stage 4 E2E Test Passed!') + "\n");
     } finally {
       // Cleanup Project - Always delete the project to avoid pollution
       if (projectId) {
         await prisma.project
           .delete({ where: { id: projectId } })
-          .catch((e) => console.error('Cleanup failed', e));
+          .catch((e) => process.stderr.write(util.format('Cleanup failed', e) + "\n"));
       }
     }
   }, 60000); // Increased timeout to 60s for LLM interactions

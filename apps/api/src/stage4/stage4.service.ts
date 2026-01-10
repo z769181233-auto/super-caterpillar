@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EngineInvokerHubService } from '../engine-hub/engine-invoker-hub.service';
 import {
@@ -14,12 +14,14 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
 export class Stage4Service {
+  private readonly logger = new Logger(Stage4Service.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly engineInvoker: EngineInvokerHubService,
     private readonly projectService: ProjectService,
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   async ensureSceneInProject(projectId: string, sceneId: string) {
     const scene = await this.prisma.scene.findUnique({
@@ -53,11 +55,11 @@ export class Stage4Service {
 
   async runSemanticEnhancement(projectId: string, sceneId: string, userId: string) {
     try {
-      console.log(`[Stage4] Running SE for project=${projectId} scene=${sceneId} user=${userId}`);
+      this.logger.log(`Running SE for project=${projectId} scene=${sceneId} user=${userId}`);
       await this.projectService.checkOwnership(projectId, userId);
       const scene = await this.ensureSceneInProject(projectId, sceneId);
       const text = scene.summary || scene.title || '';
-      console.log(`[Stage4] Scene found, invoking engine...`);
+      this.logger.log(`Scene found, invoking engine...`);
       const prisma = this.prisma as any; // Prisma 类型在当前环境未更新 Stage4 模型，使用 any 保证编译
       const result = await this.engineInvoker.invoke<
         SemanticEnhancementEngineInput,
@@ -71,13 +73,13 @@ export class Stage4Service {
           context: { projectId, sceneId },
         },
       });
-      console.log(`[Stage4] Engine result: ${JSON.stringify(result)}`);
+      this.logger.log(`Engine result: ${JSON.stringify(result)}`);
 
       if (!result.success || !result.output) {
         throw new Error(result.error?.message || 'Semantic enhancement failed');
       }
 
-      console.log(`[Stage4] Writing to DB...`);
+      this.logger.log(`[Stage4] Writing to DB...`);
       await prisma.semanticEnhancement.upsert({
         where: { nodeType_nodeId: { nodeType: 'scene', nodeId: sceneId } },
         update: {
@@ -97,7 +99,7 @@ export class Stage4Service {
       });
       return result.output;
     } catch (e: any) {
-      console.error(`[Stage4] Error: ${e.message}`, e.stack);
+      this.logger.error(`Error: ${e.message}`, e.stack);
       throw e;
     }
   }

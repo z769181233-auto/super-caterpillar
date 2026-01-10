@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectService } from '../project/project.service';
@@ -30,11 +31,12 @@ interface OutlineResult {
 
 @Injectable()
 export class NovelImportService {
+  private readonly logger = new Logger(NovelImportService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly analysisProcessor: NovelAnalysisProcessorService
-  ) {}
+  ) { }
 
   /**
    * 分析单个章节
@@ -82,14 +84,14 @@ export class NovelImportService {
     // 遍历章节（1 章 = 1 Episode，直接关联 Project，移除 Season 层）
     for (let chIdx = 0; chIdx < chaptersToProcess.length; chIdx++) {
       const chapter = chaptersToProcess[chIdx];
-      console.log(`Creating episode ${chIdx + 1} (Chapter: ${chapter.title})...`);
+      this.logger.log(`Creating episode ${chIdx + 1} (Chapter: ${chapter.title})...`);
 
       // 创建 Episode（关联到 NovelChapter，直接关联 Project）
       const episode = await this.projectService.createEpisode(projectId, {
         index: chIdx + 1,
         name: chapter.title,
       });
-      console.log(`Episode ${chIdx + 1} created: ${episode.id}`);
+      this.logger.log(`Episode ${chIdx + 1} created: ${episode.id}`);
 
       // 更新 Episode 关联到 NovelChapter
       await this.prisma.episode.update({
@@ -108,7 +110,7 @@ export class NovelImportService {
           status: 'DRAFT',
         },
       });
-      console.log(`SceneDraft created: ${sceneDraft.id}`);
+      this.logger.log(`SceneDraft created: ${sceneDraft.id}`);
 
       // 创建 Scene（关联到 SceneDraft）
       const scene = await this.projectService.createScene(episode.id, {
@@ -116,7 +118,7 @@ export class NovelImportService {
         summary: sceneDraft.summary || undefined,
         title: sceneDraft.title || undefined,
       });
-      console.log(`Scene created: ${scene.id}`);
+      this.logger.log(`Scene created: ${scene.id}`);
 
       // 更新 Scene 关联到 SceneDraft
       await this.prisma.scene.update({

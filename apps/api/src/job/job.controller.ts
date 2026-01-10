@@ -13,6 +13,7 @@ import {
   ForbiddenException,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { JobService } from './job.service';
 import { JobReportFacade } from './job-report.facade';
@@ -39,13 +40,15 @@ import { randomUUID } from 'crypto';
 @Controller()
 @UseGuards(JwtOrHmacGuard)
 export class JobController {
+  private readonly logger = new Logger(JobController.name);
+
   constructor(
     private readonly jobService: JobService,
     private readonly jobReportFacade: JobReportFacade,
     private readonly permissionService: PermissionService,
     private readonly auditLogService: AuditLogService,
     private readonly capacityGateService: CapacityGateService
-  ) {}
+  ) { }
 
   @Get('debug-key/:key')
   @Public()
@@ -162,12 +165,12 @@ export class JobController {
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() organizationId: string
   ): Promise<any> {
-    console.log(
-      `[DEBUG] Controller getJob: id=${id}, userId=${user?.userId}, orgId=${organizationId}`
+    this.logger.debug(
+      `Controller getJob: id=${id}, userId=${user?.userId}, orgId=${organizationId}`
     );
     const job = await this.jobService.findJobById(id, user.userId, organizationId);
-    console.log(
-      `[DEBUG] Controller job result: id=${job.id}, status=${job.status}, workerId=${job.workerId}`
+    this.logger.debug(
+      `Controller job result: id=${job.id}, status=${job.status}, workerId=${job.workerId}`
     );
     return {
       success: true,

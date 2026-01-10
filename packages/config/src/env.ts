@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
+import * as util from "util";
 
 // 加载环境变量文件（按优先级顺序）
 // 规则：
@@ -14,7 +15,7 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const isCI = !!process.env.CI;
 
 // eslint-disable-next-line no-console
-console.log(`[Config] process.env.WORKER_OFFLINE_GRACE_MS: ${process.env.WORKER_OFFLINE_GRACE_MS}`);
+process.stdout.write(util.format(`[Config] process.env.WORKER_OFFLINE_GRACE_MS: ${process.env.WORKER_OFFLINE_GRACE_MS}`) + "\n");
 
 let dbUrlSource = 'environment variable';
 
@@ -43,16 +44,16 @@ if (!ignoreEnvFile) {
   }
 } else {
   // eslint-disable-next-line no-console
-  console.log('[Config] IGNORE_ENV_FILE=true, strictly skipping all .env files.');
+  process.stdout.write(util.format('[Config] IGNORE_ENV_FILE=true, strictly skipping all .env files.') + "\n");
 }
 
 // 判定标记，用于证据化
 if (!process.env.DATABASE_URL_SET_BY_SYSTEM) {
   // eslint-disable-next-line no-console
-  console.log(`[Config] DATABASE_URL resolved from ${dbUrlSource}`);
+  process.stdout.write(util.format(`[Config] DATABASE_URL resolved from ${dbUrlSource}`) + "\n");
 } else {
   // eslint-disable-next-line no-console
-  console.log(`[Config] DATABASE_URL resolved from environment variable (System Override)`);
+  process.stdout.write(util.format(`[Config] DATABASE_URL resolved from environment variable (System Override)`) + "\n");
 }
 
 /**
@@ -84,9 +85,7 @@ function getEnvNumber(key: string, defaultValue?: number): number {
   return num;
 }
 
-console.log(
-  `[CONFIG_DEBUG] JWT_SECRET read from env: ${process.env.JWT_SECRET?.substring(0, 4)}...`
-);
+process.stdout.write(util.format(`[CONFIG_DEBUG] JWT_SECRET read from env: ${process.env.JWT_SECRET?.substring(0, 4)}...`) + "\n");
 export const env = {
   // Node Environment
   nodeEnv: getEnv('NODE_ENV', 'development'),

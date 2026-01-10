@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import * as util from "util";
 
 /**
  * P2-3 CE DAG Gate Script
@@ -27,9 +28,9 @@ async function main() {
     traceId,
   };
 
-  console.log(`Triggering CE DAG E2E...`);
-  console.log(`RUN_ID=${runId}`);
-  console.log(`TRACE_ID=${traceId}`);
+  process.stdout.write(util.format(`Triggering CE DAG E2E...`) + "\n");
+  process.stdout.write(util.format(`RUN_ID=${runId}`) + "\n");
+  process.stdout.write(util.format(`TRACE_ID=${traceId}`) + "\n");
 
   const response = await fetch(`${API_BASE}/api/ce-dag/run`, {
     method: 'POST',
@@ -46,19 +47,19 @@ async function main() {
 
   const result = await response.json();
 
-  console.log(`CE06_JOB_ID=${result.ce06JobId}`);
-  console.log(`CE03_JOB_ID=${result.ce03JobId}`);
-  console.log(`CE04_JOB_ID=${result.ce04JobId}`);
-  console.log(`CE03_SCORE=${result.ce03Score}`);
-  console.log(`CE04_SCORE=${result.ce04Score}`);
-  console.log(`SHOT_RENDER_JOB_IDS=${(result.shotRenderJobIds || []).join(',')}`);
-  console.log(`VIDEO_JOB_ID=${result.videoJobId || ''}`);
-  console.log(`VIDEO_KEY=${result.videoKey || ''}`);
+  process.stdout.write(util.format(`CE06_JOB_ID=${result.ce06JobId}`) + "\n");
+  process.stdout.write(util.format(`CE03_JOB_ID=${result.ce03JobId}`) + "\n");
+  process.stdout.write(util.format(`CE04_JOB_ID=${result.ce04JobId}`) + "\n");
+  process.stdout.write(util.format(`CE03_SCORE=${result.ce03Score}`) + "\n");
+  process.stdout.write(util.format(`CE04_SCORE=${result.ce04Score}`) + "\n");
+  process.stdout.write(util.format(`SHOT_RENDER_JOB_IDS=${(result.shotRenderJobIds || []).join(',')}`) + "\n");
+  process.stdout.write(util.format(`VIDEO_JOB_ID=${result.videoJobId || ''}`) + "\n");
+  process.stdout.write(util.format(`VIDEO_KEY=${result.videoKey || ''}`) + "\n");
 
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error(err.message);
+  process.stderr.write(util.format(err.message) + "\n");
   process.exit(1);
 });

@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PermissionCache } from './permission.cache';
 import {
@@ -10,12 +10,14 @@ import {
 
 @Injectable()
 export class PermissionService {
+    private readonly logger = new Logger(PermissionService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: PermissionCache
   ) {
     // 临时日志：确认构造成功
-    console.log('[PermissionService] 构造成功，PrismaService 已注入');
+    this.logger.log('[PermissionService] 构造成功，PrismaService 已注入');
   }
 
   // 获取系统级权限
@@ -108,10 +110,8 @@ export class PermissionService {
       const dbgMem = await this.prisma.organizationMember.findMany({
         where: { userId, ...(orgId ? { organizationId: orgId } : {}) },
       });
-      console.log(`[PERM_DIAG] User=${userId} ContextOrg=${orgId || 'N/A'}`);
-      console.log(
-        `[PERM_DIAG] Memberships=${dbgMem.length} (${dbgMem.map((m) => m.organizationId + ':' + m.role).join(',')})`
-      );
+      this.logger.log(`[PERM_DIAG] User=${userId} ContextOrg=${orgId || 'N/A'}`);
+      this.logger.log(`[PERM_DIAG] Memberships=${dbgMem.length} (${dbgMem.map((m) => m.organizationId + ':' + m.role).join(',')})`);
     }
     // DIAGNOSIS END
 
@@ -123,14 +123,12 @@ export class PermissionService {
 
     // DIAGNOSIS START
     if (process.env.DEBUG_PERM === '1' || process.env.NODE_ENV !== 'production') {
-      console.log(
-        `[PERM_DIAG] SysPerms=${sysPerms.length} ProjPerms=${projPerms.length} Total=${allPerms.size}`
-      );
+      this.logger.log(`[PERM_DIAG] SysPerms=${sysPerms.length} ProjPerms=${projPerms.length} Total=${allPerms.size}`);
       if (allPerms.size === 0) {
-        console.warn(`[PERM_DIAG] ZERO PERMISSIONS! checking reasons...`);
+        this.logger.warn(`[PERM_DIAG] ZERO PERMISSIONS! checking reasons...`);
         // Check if roles exist
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
-        console.log(`[PERM_DIAG] UserRole=${user?.role} UserType=${user?.userType}`);
+        this.logger.log(`[PERM_DIAG] UserRole=${user?.role} UserType=${user?.userType}`);
       }
     }
     // DIAGNOSIS END
@@ -139,9 +137,7 @@ export class PermissionService {
     const isGranted = required.every((p) => allPerms.has(p));
 
     if (!isGranted) {
-      console.warn(
-        `[PERM_DENIED] userId=${userId} context=${projectId || orgId || 'NONE'} missing=[${required.filter((p) => !allPerms.has(p)).join(',')}]`
-      );
+      this.logger.warn(`[PERM_DENIED] userId=${userId} context=${projectId || orgId || 'NONE'} missing=[${required.filter((p) => !allPerms.has(p)).join(',')}]`);
     }
 
     return isGranted;

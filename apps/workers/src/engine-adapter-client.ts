@@ -27,6 +27,7 @@ import { VisualEnrichmentLocalAdapterWorker } from './adapters/visual-enrichment
 import { CE06EngineSelector } from '@scu/engines-ce06';
 import { CE06Input } from '@scu/engines-ce06';
 import { createHash } from 'crypto';
+import * as util from "util";
 
 /**
  * 计算输入/输出的哈希值（用于审计）
@@ -46,11 +47,11 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
   };
   const logMessage = JSON.stringify(logEntry);
   if (level === 'error') {
-    console.error(logMessage);
+    process.stderr.write(util.format(logMessage) + "\n");
   } else if (level === 'warn') {
-    console.warn(logMessage);
+    process.stdout.write(util.format(logMessage) + "\n");
   } else {
-    console.log(logMessage);
+    process.stdout.write(util.format(logMessage) + "\n");
   }
 }
 
@@ -63,7 +64,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
   public readonly name = 'default_novel_analysis';
   private readonly selector = new CE06EngineSelector();
 
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: PrismaClient) { }
 
   /**
    * 检查是否支持指定的引擎标识
@@ -252,9 +253,9 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
         input.jobType === 'CE06_NOVEL_PARSING' || input.engineKey === 'ce06_novel_parsing'
           ? selectedOutput || {}
           : {
-              analyzed: writtenStructure,
-              stats: structure.stats,
-            };
+            analyzed: writtenStructure,
+            stats: structure.stats,
+          };
 
       return {
         status: 'SUCCESS' as EngineInvokeStatus,
@@ -310,7 +311,7 @@ export class HttpEngineAdapterWorker implements EngineAdapter {
     public readonly name: string,
     private readonly baseUrl: string,
     private readonly path: string = '/story/parse'
-  ) {}
+  ) { }
 
   supports(engineKey: string): boolean {
     return engineKey === this.name;
@@ -365,7 +366,7 @@ export class EngineAdapterClient {
     // Stage-3-Final: 强制使用 Local Adapter，因为它 internally 支持 Real (Stub) 和 Replay
     // 将来 P1 如果部署独立 HTTP 引擎再切回 HttpAdapter
     this.adapters.set('ce06_novel_parsing', novelAdapter);
-    console.log('[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (Stage-3-Final)');
+    process.stdout.write(util.format('[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (Stage-3-Final)') + "\n");
 
     // Old Logic (Commented out but ce06BaseUrl is needed for CE07)
     const ce06BaseUrl =
@@ -373,7 +374,6 @@ export class EngineAdapterClient {
     /* 
     if (process.env.STAGE3_ENGINE_MODE === 'REPLAY') {
       this.adapters.set('ce06_novel_parsing', novelAdapter);
-      console.log('[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (REPLAY mode)');
     } else {
       const ce06Adapter = new HttpEngineAdapterWorker('ce06_novel_parsing', ce06BaseUrl, '/story/parse');
       this.adapters.set(ce06Adapter.name, ce06Adapter);

@@ -3,6 +3,7 @@ import { renderWithProvider, RenderResult } from '../providers';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import * as util from "util";
 
 /**
  * P0-R0: ShotRender SDXL Adapter (真实渲染)
@@ -52,7 +53,7 @@ export async function runShotRenderSDXL(
     const existingBuf = fs.readFileSync(filePath);
     const sha256 = crypto.createHash('sha256').update(existingBuf).digest('hex');
 
-    console.log(`[ShotRender] Reusing existing asset: ${filePath}`);
+    process.stdout.write(util.format(`[ShotRender] Reusing existing asset: ${filePath}`) + "\n");
 
     return {
       asset: {
@@ -88,7 +89,7 @@ export async function runShotRenderSDXL(
   }
 
   // 4. 调用真实 Provider
-  console.log(`[ShotRender] Calling real provider for: ${input.shotId}`);
+  process.stdout.write(util.format(`[ShotRender] Calling real provider for: ${input.shotId}`) + "\n");
 
   const providerKey = (process.env.SHOT_RENDER_PROVIDER || 'local_mps').trim();
   let renderResult: RenderResult;
@@ -133,9 +134,7 @@ export async function runShotRenderSDXL(
     )
   );
 
-  console.log(
-    `[ShotRender] ✅ Generated real image: ${filePath} (${renderResult.bytes.length} bytes)`
-  );
+  process.stdout.write(util.format(`[ShotRender] ✅ Generated real image: ${filePath} (${renderResult.bytes.length} bytes)`) + "\n");
 
   return {
     asset: {

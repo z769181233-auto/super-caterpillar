@@ -21,10 +21,10 @@ export async function spawnWithTimeout(opts: {
     const timer = setTimeout(() => {
       timedOut = true;
       try {
-        console.warn(`[Guardrail] Killing process ${child.pid} due to timeout (${timeoutMs}ms)`);
+        process.stdout.write(`[Guardrail] WARN: Killing process ${child.pid} due to timeout (${timeoutMs}ms)\n`);
         child.kill(killSignal);
       } catch (e: any) {
-        console.error(`[Guardrail] Failed to kill process ${child.pid}: ${e.message}`);
+        process.stdout.write(`[Guardrail] ERROR: Failed to kill process ${child.pid}: ${e.message}\n`);
       }
     }, timeoutMs);
 

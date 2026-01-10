@@ -1,0 +1,182 @@
+[
+  {
+    "file": "tools/smoke/ce-core-commercialization-smoke.ts",
+    "line": 461,
+    "name": "results",
+    "type": ""
+  },
+  {
+    "file": "tools/verify/run_sql_verify.ts",
+    "line": 45,
+    "name": "runSqlVerify",
+    "type": ""
+  },
+  {
+    "file": "packages/router/model-router-v2.ts",
+    "line": 1,
+    "name": "RouterModel",
+    "type": ""
+  },
+  {
+    "file": "packages/router/model-router-v2.ts",
+    "line": 3,
+    "name": "RouterV2Request",
+    "type": ""
+  },
+  {
+    "file": "packages/router/model-router-v2.ts",
+    "line": 12,
+    "name": "RouterV2Result",
+    "type": ""
+  },
+  {
+    "file": "tools/smoke/helpers/crud_min_path.ts",
+    "line": 11,
+    "name": "CrudMinPathResult",
+    "type": ""
+  },
+  {
+    "file": "tools/smoke/helpers/engine_binding_flow.ts",
+    "line": 8,
+    "name": "EngineBindingFlowResult",
+    "type": ""
+  },
+  {
+    "file": "tools/smoke/helpers/health_check.ts",
+    "line": 8,
+    "name": "HealthCheckResult",
+    "type": ""
+  },
+  {
+    "file": "tools/smoke/helpers/hmac_request.ts",
+    "line": 15,
+    "name": "HmacRequestOptions",
+    "type": ""
+  },
+  {
+    "file": "tools/smoke/helpers/hmac_request.ts",
+    "line": 26,
+    "name": "HmacRequestResult",
+    "type": ""
+  },
+  {
+    "file": "tools/smoke/helpers/worker_min_flow.ts",
+    "line": 11,
+    "name": "WorkerMinFlowResult",
+    "type": ""
+  },
+  {
+    "file": "apps/workers/src/api-client.ts",
+    "line": 10,
+    "name": "ApiResponse",
+    "type": ""
+  },
+  {
+    "file": "apps/workers/src/ce-core-processor.ts",
+    "line": 843,
+    "name": "processCE07Job",
+    "type": ""
+  },
+  {
+    "file": "apps/workers/src/engine-adapter-client.ts",
+    "line": 62,
+    "name": "NovelAnalysisLocalAdapterWorker",
+    "type": ""
+  },
+  {
+    "file": "apps/workers/src/engine-adapter-client.ts",
+    "line": 308,
+    "name": "HttpEngineAdapterWorker",
+    "type": ""
+  },
+  {
+    "file": "apps/workers/src/novel-analysis-processor.ts",
+    "line": 38,
+    "name": "basicTextSegmentation",
+    "type": ""
+  },
+  {
+    "file": "apps/workers/src/novel-analysis-processor.ts",
+    "line": 293,
+    "name": "validateAnalyzedStructure",
+    "type": ""
+  },
+  {
+    "file": "packages/config/dist/index.d.ts",
+    "line": 1,
+    "name": "env",
+    "type": ""
+  },
+  {
+    "file": "packages/config/dist/index.d.ts",
+    "line": 3,
+    "name": "RuntimeConfig",
+    "type": ""
+  },
+  {
+    "file": "packages/config/src/index.ts",
+    "line": 1,
+    "name": "env",
+    "type": ""
+  },
+  {
+    "file": "packages/config/src/index.ts",
+    "line": 3,
+    "name": "RuntimeConfig",
+    "type": ""
+  },
+  {
+    "file": "packages/engines/_template/selector.ts",
+    "line": 14,
+    "name": "Stage3EngineMode",
+    "type": ""
+  },
+  {
+    "file": "packages/observability/dist/index.d.ts",
+    "line": 21,
+    "name": "registry",
+    "type": ""
+  },
+  {
+    "file": "packages/observability/src/index.ts",
+    "line": 22,
+    "name": "registry",
+    "type": ""
+  },
+  {
+    "file": "apps/api/src/audit-insight/audit-insight.dto.ts",
+    "line": 11,
+    "name": "VisualMetricArtifact",
+    "type": ""
+  },
+  {
+    "file": "apps/api/src/audit-insight/audit-insight.dto.ts",
+    "line": 68,
+    "name": "VideoAssetDto",
+    "type": ""
+  },
+  {
+    "file": "apps/api/src/auth/jwt.strategy.ts",
+    "line": 8,
+    "name": "JwtPayload",
+    "type": ""
+  },
+  {
+    "file": "apps/api/src/capacity/capacity-gate.service.ts",
+    "line": 9,
+    "name": "CapacityCheckResult",
+    "type": ""
+  },
+  {
+    "file": "apps/api/src/ce-engine/ce-engine.controller.ts",
+    "line": 23,
+    "name": "CEEngineController",
+    "type": ""
+  },
+  {
+    "file": "apps/api/src/config/engine.config.ts",
+    "line": 17,
+    "name": "HttpAuthMode",
+    "type": ""
+  }
+]

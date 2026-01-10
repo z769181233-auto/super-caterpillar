@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface AuditLogInput {
@@ -17,7 +17,8 @@ interface AuditLogInput {
 
 @Injectable()
 export class AuditService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AuditService.name);
+  constructor(private readonly prisma: PrismaService) { }
 
   async log(input: AuditLogInput) {
     try {
@@ -35,8 +36,8 @@ export class AuditService {
         },
       });
     } catch (err) {
-      // 审计写入失败不影响主流程，按规范可选记录日志
-      // console.error('Audit log failed', err);
+      // 审计写入失败不影响主流程，按规范记录日志
+      this.logger.error(`Audit log failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 }

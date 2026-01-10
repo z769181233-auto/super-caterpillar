@@ -11,6 +11,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { ApiKeyService } from '../auth/hmac/api-key.service';
 import { PrismaService } from '../prisma/prisma.service';
+import * as util from "util";
 
 const WORKER_API_KEY = process.env.WORKER_API_KEY || 'ak_worker_dev_0000000000000000';
 const WORKER_API_SECRET =
@@ -18,9 +19,9 @@ const WORKER_API_SECRET =
   'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
 
 async function main() {
-  console.log('========================================');
-  console.log('初始化 Worker API Key');
-  console.log('========================================\n');
+  process.stdout.write(util.format('========================================') + "\n");
+  process.stdout.write(util.format('初始化 Worker API Key') + "\n");
+  process.stdout.write(util.format('========================================\n') + "\n");
 
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ['error', 'warn'],
@@ -33,8 +34,8 @@ async function main() {
     // 检查是否已存在
     const existing = await apiKeyService.findByKey(WORKER_API_KEY);
     if (existing) {
-      console.log(`✅ API Key 已存在: ${WORKER_API_KEY}`);
-      console.log('   如需重新创建，请先删除数据库中的记录。\n');
+      process.stdout.write(util.format(`✅ API Key 已存在: ${WORKER_API_KEY}`) + "\n");
+      process.stdout.write(util.format('   如需重新创建，请先删除数据库中的记录。\n') + "\n");
       await app.close();
       return;
     }
@@ -51,16 +52,16 @@ async function main() {
       },
     });
 
-    console.log('✅ Worker API Key 创建成功！');
-    console.log(`   Key: ${apiKey.key}`);
-    console.log(`   Secret: ${WORKER_API_SECRET}`);
-    console.log('\n请将以下配置添加到 .env 文件：');
-    console.log(`WORKER_API_KEY=${WORKER_API_KEY}`);
-    console.log(`WORKER_API_SECRET=${WORKER_API_SECRET}`);
-    console.log('========================================\n');
+    process.stdout.write(util.format('✅ Worker API Key 创建成功！') + "\n");
+    process.stdout.write(util.format(`   Key: ${apiKey.key}`) + "\n");
+    process.stdout.write(util.format(`   Secret: ${WORKER_API_SECRET}`) + "\n");
+    process.stdout.write(util.format('\n请将以下配置添加到 .env 文件：') + "\n");
+    process.stdout.write(util.format(`WORKER_API_KEY=${WORKER_API_KEY}`) + "\n");
+    process.stdout.write(util.format(`WORKER_API_SECRET=${WORKER_API_SECRET}`) + "\n");
+    process.stdout.write(util.format('========================================\n') + "\n");
   } catch (error: any) {
-    console.error('❌ 创建 API Key 失败:', error.message);
-    console.error(error.stack);
+    process.stderr.write(util.format('❌ 创建 API Key 失败:', error.message) + "\n");
+    process.stderr.write(util.format(error.stack) + "\n");
     process.exit(1);
   } finally {
     await app.close();

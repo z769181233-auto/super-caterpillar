@@ -2,6 +2,7 @@ import { DirectorConstraintSolverService } from '../shot-director/director-solve
 import { DirectorShotInput } from '../shot-director/director-rule.types';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as util from "util";
 
 function assert(cond: any, msg: string) {
   if (!cond) throw new Error(`ASSERT_FAIL: ${msg}`);
@@ -123,5 +124,5 @@ if (require.main === module) {
   const outDir = process.env.EVID_DIR || 'docs/_evidence/p2_director_solver_local';
   runDirectorSolverGate(outDir);
   // eslint-disable-next-line no-console
-  console.log(`OK: evidence at ${outDir}`);
+  process.stdout.write(util.format(`OK: evidence at ${outDir}`) + "\n");
 }

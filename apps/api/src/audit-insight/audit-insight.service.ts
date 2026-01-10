@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   NovelInsightResponse,
@@ -16,10 +16,12 @@ import { SignedUrlService } from '../storage/signed-url.service';
 
 @Injectable()
 export class AuditInsightService {
+  private readonly logger = new Logger(AuditInsightService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly signedUrlService: SignedUrlService
-  ) {}
+  ) { }
 
   async getNovelInsight(novelSourceId: string): Promise<NovelInsightResponse> {
     // 1. Find Project by NovelSource
@@ -217,12 +219,12 @@ export class AuditInsightService {
     const mapJob = (j: any): AuditJobSummaryDto | null =>
       j
         ? {
-            jobId: j.id,
-            traceId: j.traceId || '',
-            status: j.status,
-            createdAtIso: j.createdAt.toISOString(),
-            workerId: j.workerId || 'UNKNOWN',
-          }
+          jobId: j.id,
+          traceId: j.traceId || '',
+          status: j.status,
+          createdAtIso: j.createdAt.toISOString(),
+          workerId: j.workerId || 'UNKNOWN',
+        }
         : null;
 
     // 3. Fetch Metrics (Precise Binding)
@@ -253,14 +255,14 @@ export class AuditInsightService {
       orderBy: { index: 'asc' }, // ✅ Using index since createdAt is missing
     });
 
-    // [DEBUG] Director Audit
+    // Director Audit Logging (Production Hardened)
     if (shots.length === 0) {
-      console.warn(
-        `[DIRECTOR_AUDIT] WARN: No shots found for NovelSource ${novelSourceId}. Check Episode->Season->Project relation.`
+      this.logger.warn(
+        `No shots found for NovelSource ${novelSourceId}. Check Episode->Season->Project relation.`
       );
     } else {
-      console.log(
-        `[DIRECTOR_AUDIT] Found ${shots.length} shots. First params type: ${typeof shots[0].params}`
+      this.logger.log(
+        `Found ${shots.length} shots. First params type: ${typeof shots[0].params}`
       );
     }
 
@@ -361,12 +363,12 @@ export class AuditInsightService {
     let videoAsset:
       | undefined
       | {
-          status: string;
-          secureUrl?: string;
-          jobId?: string;
-          assetId?: string;
-          storageKey?: string;
-        };
+        status: string;
+        secureUrl?: string;
+        jobId?: string;
+        assetId?: string;
+        storageKey?: string;
+      };
 
     // Step 6A: Resolve shotId (must be derived from reliable context)
     // Prefer explicit shotId from VIDEO_RENDER job payload if present, else from CE04 payload, else latest shot in this project.
@@ -422,7 +424,7 @@ export class AuditInsightService {
           jobId: videoFromAsset.createdByJobId || undefined,
         };
       } catch (e) {
-        console.error('[AuditInsight] Failed to sign video URL from Asset SSOT', e);
+        this.logger.error('[AuditInsight] Failed to sign video URL from Asset SSOT', (e as Error).message);
         videoAsset = {
           status: 'ERROR_SIGNING',
           assetId: videoFromAsset.id,
@@ -432,8 +434,8 @@ export class AuditInsightService {
       }
     } else if (videoJ) {
       // DEPRECATED Fallback (job payload result.videoKey)
-      console.warn(
-        `[AuditInsight] WARN_DEPRECATED_JOB_VIDEO_KEY_PATH_USED=1 projectId=${projectId}`
+      this.logger.warn(
+        `WARN_DEPRECATED_JOB_VIDEO_KEY_PATH_USED=1 projectId=${projectId}`
       );
 
       const payload = (videoJ.payload as any) || {};
@@ -450,7 +452,7 @@ export class AuditInsightService {
           });
           videoAsset = { status: 'READY', secureUrl: url, jobId: videoJ.id, storageKey: legacyKey };
         } catch (e) {
-          console.error('[AuditInsight] Failed to sign video URL from legacy job payload', e);
+          this.logger.error('[AuditInsight] Failed to sign video URL from legacy job payload', (e as Error).message);
           videoAsset = { status: 'ERROR_SIGNING', jobId: videoJ.id, storageKey: legacyKey };
         }
       } else {

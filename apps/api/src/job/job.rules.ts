@@ -5,8 +5,10 @@
  * 参考《平台任务系统与异步执行机制说明书_TaskSystemAsyncExecutionSpec_V1.0》
  */
 
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { JobStatus } from 'database';
+
+const logger = new Logger('JobRules');
 
 /**
  * 允许的状态转换表
@@ -55,9 +57,8 @@ export function assertTransition(
     const errorCode = ctx.errorCode || 'INVALID_STATUS_TRANSITION';
 
     // 记录错误日志（结构化格式）
-    console.error(
-      JSON.stringify({
-        event: 'JOB_STATUS_TRANSITION_REJECTED',
+    logger.error(
+      `JOB_STATUS_TRANSITION_REJECTED: ${JSON.stringify({
         jobId: ctx.jobId,
         jobType: ctx.jobType || null,
         workerId: ctx.workerId || null,
@@ -65,8 +66,7 @@ export function assertTransition(
         to,
         allowedTransitions: allowed,
         errorCode,
-        timestamp: new Date().toISOString(),
-      })
+      })}`
     );
 
     // Stage2-A: 使用 BadRequestException，错误码 JOB_STATE_VIOLATION
@@ -168,15 +168,13 @@ export function transitionJobStatusAdmin(
 
   // 允许从任何非终态转换到 FAILED（管理性操作）
   // 记录日志但不抛出异常
-  console.log(
-    JSON.stringify({
-      event: 'JOB_ADMINISTRATIVE_TRANSITION',
+  logger.log(
+    `JOB_ADMINISTRATIVE_TRANSITION: ${JSON.stringify({
       jobId: ctx.jobId,
       jobType: ctx.jobType || null,
       workerId: ctx.workerId || null,
       from,
       to,
-      timestamp: new Date().toISOString(),
-    })
+    })}`
   );
 }

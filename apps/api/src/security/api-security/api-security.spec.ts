@@ -19,16 +19,17 @@ describe('ApiSecurityService', () => {
   const mockApiKey = 'ak_test_123';
   const mockSecret = 'test_secret_key';
   const mockNonce = 'nonce_123456';
-  const mockTimestamp = Math.floor(Date.now() / 1000).toString();
+  let mockTimestamp: string;
 
   beforeEach(async () => {
+    mockTimestamp = Math.floor(Date.now() / 1000).toString();
     // 设置测试用的主密钥
     process.env.API_KEY_MASTER_KEY_B64 = testMasterKey;
 
     const mockPrismaService = {
       apiKey: {
         findUnique: jest.fn(),
-        update: jest.fn(),
+        update: jest.fn().mockResolvedValue({}),
       },
     };
 
@@ -38,7 +39,7 @@ describe('ApiSecurityService', () => {
     };
 
     const mockAuditLogService = {
-      record: jest.fn(),
+      record: jest.fn().mockResolvedValue({}),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -209,10 +210,16 @@ describe('ApiSecurityService', () => {
         mockSecret
       );
 
+      // 加密 secret
+      const encrypted = secretEncryptionService.encryptSecret(mockSecret);
+
       prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
         id: 'key_id_123',
         key: mockApiKey,
-        secretHash: mockSecret,
+        secretEnc: encrypted.enc,
+        secretEncIv: encrypted.iv,
+        secretEncTag: encrypted.tag,
+        secretVersion: 1,
         status: 'ACTIVE',
         expiresAt: null,
       });
@@ -238,6 +245,9 @@ describe('ApiSecurityService', () => {
       const pathWithQuery = '/api/test';
       const body = JSON.stringify({ test: 'data' });
       const contentSha256 = service.sha256Hex(body);
+      // 加密 secret
+      const encrypted = secretEncryptionService.encryptSecret(mockSecret);
+
       const signature = computeTestSignatureV2(
         method,
         pathWithQuery,
@@ -251,7 +261,10 @@ describe('ApiSecurityService', () => {
       prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
         id: 'key_id_123',
         key: mockApiKey,
-        secretHash: mockSecret,
+        secretEnc: encrypted.enc,
+        secretEncIv: encrypted.iv,
+        secretEncTag: encrypted.tag,
+        secretVersion: 1,
         status: 'ACTIVE',
         expiresAt: null,
       });

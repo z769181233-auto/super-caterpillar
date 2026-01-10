@@ -8,6 +8,7 @@ import {
 } from 'database';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import * as util from "util";
 
 // Load env from monorepo root
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
@@ -169,18 +170,18 @@ async function main() {
     },
   });
 
-  console.log('[create-test-novel-job] created job:', {
-    id: job.id,
-    status: job.status,
-    type: job.type,
-    projectId: job.projectId,
-    shotId: job.shotId,
-  });
+  process.stdout.write(util.format('[create-test-novel-job] created job:', {
+        id: job.id,
+        status: job.status,
+        type: job.type,
+        projectId: job.projectId,
+        shotId: job.shotId,
+      }) + "\n");
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    process.stderr.write(util.format(e) + "\n");
     process.exit(1);
   })
   .finally(async () => {

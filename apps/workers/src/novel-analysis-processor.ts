@@ -11,6 +11,7 @@ import {
 import { CE06EngineSelector } from '@scu/engines-ce06';
 import { CE06Input, CE06Output } from '@scu/engines-ce06';
 import { ApiClient } from './api-client';
+import * as util from "util";
 
 /**
  * 结构化日志输出函数
@@ -23,11 +24,11 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
   };
   const logMessage = JSON.stringify(logEntry);
   if (level === 'error') {
-    console.error(logMessage);
+    process.stderr.write(util.format(logMessage) + "\n");
   } else if (level === 'warn') {
-    console.warn(logMessage);
+    process.stdout.write(util.format(logMessage) + "\n");
   } else {
-    console.log(logMessage);
+    process.stdout.write(util.format(logMessage) + "\n");
   }
 }
 
@@ -1191,13 +1192,11 @@ export async function processNovelAnalysisJob(
           billingUsage,
         });
       } else {
-        console.warn(
-          `[BILLING] ⚠️  Job ${jobId} missing billing_usage, skipping cost record (non-fatal)`
-        );
+        process.stdout.write(util.format(`[BILLING] ⚠️  Job ${jobId} missing billing_usage, skipping cost record (non-fatal)`) + "\n");
       }
     } catch (billingError: any) {
       // 计费失败不阻塞主流程
-      console.error(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message);
+      process.stderr.write(util.format(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message) + "\n");
     }
 
     // 返回统计信息，将写入 Job.output

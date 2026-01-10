@@ -3,7 +3,7 @@
  * Stage13: 提供 Worker 上报审计日志的 API 端点
  */
 
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Logger } from '@nestjs/common';
 import { AuditLogService } from './audit-log.service';
 import { HmacAuthGuard } from '../auth/hmac/hmac-auth.guard';
 
@@ -25,7 +25,8 @@ interface CEAuditLogPayload {
 @Controller('audit')
 @UseGuards(HmacAuthGuard) // 使用 HMAC 认证，确保只有 Worker 可以调用
 export class AuditLogController {
-  constructor(private readonly auditLogService: AuditLogService) {}
+  private readonly logger = new Logger(AuditLogController.name);
+  constructor(private readonly auditLogService: AuditLogService) { }
 
   /**
    * Worker 上报审计日志
@@ -60,7 +61,7 @@ export class AuditLogController {
       return { success: true };
     } catch (error) {
       // 审计写入失败不影响主流程
-      console.error('Failed to create audit log:', error);
+      this.logger.error(`Failed to create audit log: ${error instanceof Error ? error.message : String(error)}`);
       return { success: false };
     }
   }

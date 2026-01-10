@@ -40,7 +40,7 @@ export class EngineRegistry {
     }
     try {
       // eslint-disable-next-line no-console
-      console.log(message);
+      this.logger.log(message);
     } catch {
       // ignore
     }

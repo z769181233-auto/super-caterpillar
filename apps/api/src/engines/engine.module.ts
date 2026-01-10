@@ -6,7 +6,7 @@
  * 参考《毛毛虫宇宙_模型宇宙说明书_ModelUniverseSpec_V1.0》中与引擎注册相关的部分
  */
 
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Module, OnModuleInit, Logger } from '@nestjs/common';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter.NEW';
 import { VideoMergeLocalAdapter } from './adapters/video-merge.local.adapter';
@@ -43,16 +43,17 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
   ], // S4-B: 导出策略服务 + HTTP 适配器与配置服务
 })
 export class EngineModule implements OnModuleInit {
+  private readonly logger = new Logger(EngineModule.name);
   constructor(
     private readonly registry: EngineRegistry,
     private readonly novelAdapter: NovelAnalysisLocalAdapter,
     private readonly videoMergeAdapter: VideoMergeLocalAdapter,
     private readonly httpAdapter: HttpEngineAdapter
-  ) {}
+  ) { }
 
   onModuleInit() {
     if (!this.registry) {
-      console.warn(
+      this.logger.warn(
         '[EngineModule] EngineRegistry is undefined during onModuleInit, skipping early registration. Dependants will need to register manually or via ModuleRef.'
       );
       return;

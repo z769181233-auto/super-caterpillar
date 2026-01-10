@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, no-useless-escape, no-empty-character-class */
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as mammoth from 'mammoth';
@@ -28,6 +28,7 @@ export interface ParsedNovel {
 
 @Injectable()
 export class FileParserService {
+  private readonly logger = new Logger(FileParserService.name);
   /**
    * 从文本中解析章节（简单规则：按 "第X章" 分割）
    * @param text 原始文本
@@ -155,16 +156,16 @@ export class FileParserService {
    * 自动识别编码，统一转换为 UTF-8
    */
   private async parseTxt(filePath: string, fileName?: string): Promise<ParsedNovel> {
-    console.log(`[FileParser] Parsing TXT file: ${filePath}`);
+    this.logger.log(`Parsing TXT file: ${filePath}`);
 
     // 读取文件为 Buffer（必须用 Buffer，不能直接用 utf-8）
     const buffer = await fs.readFile(filePath);
-    console.log(`[FileParser] File size: ${buffer.length} bytes`);
+    this.logger.log(`File size: ${buffer.length} bytes`);
 
     // 使用 chardet 检测编码
     const detectedEncoding = chardet.detect(buffer);
     let encoding = detectedEncoding || 'utf-8';
-    console.log(`[FileParser] Detected encoding: ${detectedEncoding}, using: ${encoding}`);
+    this.logger.log(`Detected encoding: ${detectedEncoding}, using: ${encoding}`);
 
     // 统一处理常见中文编码
     const encodingLower = encoding.toLowerCase();
@@ -175,7 +176,7 @@ export class FileParserService {
       encodingLower.includes('gb18030')
     ) {
       encoding = 'gbk'; // iconv-lite 使用 gbk 可以处理 gb2312/gb18030
-      console.log(`[FileParser] Normalized to GBK for Chinese encoding`);
+      this.logger.log(`Normalized to GBK for Chinese encoding`);
     }
 
     // 使用 iconv-lite 按检测到的编码解码，统一转换为 UTF-8
@@ -183,37 +184,37 @@ export class FileParserService {
     try {
       if (encodingLower === 'utf-8' || encodingLower === 'utf8') {
         content = buffer.toString('utf-8');
-        console.log(`[FileParser] Decoded as UTF-8`);
+        this.logger.log(`Decoded as UTF-8`);
       } else {
         // 从其他编码转换为 UTF-8
         content = iconv.decode(buffer, encoding);
-        console.log(
-          `[FileParser] Decoded from ${encoding} to UTF-8, content length: ${content.length}`
+        this.logger.log(
+          `Decoded from ${encoding} to UTF-8, content length: ${content.length}`
         );
 
         // 验证解码结果是否包含乱码（简单检查：如果全是问号或特殊字符，可能解码失败）
         const suspiciousChars = content.match(/[]/g);
         if (suspiciousChars && suspiciousChars.length > content.length * 0.1) {
-          console.warn(
-            `[FileParser] Warning: Detected ${suspiciousChars.length} suspicious characters, may need different encoding`
+          this.logger.warn(
+            `Detected ${suspiciousChars.length} suspicious characters, may need different encoding`
           );
         }
       }
     } catch (error) {
-      console.error(`[FileParser] Failed to decode with ${encoding}:`, error);
+      this.logger.error(`Failed to decode with ${encoding}:`, (error as Error).message);
       // 如果解码失败，尝试使用 UTF-8
       try {
         content = buffer.toString('utf-8');
-        console.log(`[FileParser] Fallback to UTF-8`);
+        this.logger.log(`Fallback to UTF-8`);
       } catch (utf8Error) {
         // 如果 UTF-8 也失败，尝试 GBK（中文常见）
         try {
           content = iconv.decode(buffer, 'gbk');
-          console.log(`[FileParser] Fallback to GBK`);
+          this.logger.log(`Fallback to GBK`);
         } catch (gbkError) {
           // 最后尝试 latin1（最宽松的编码）
           content = buffer.toString('latin1');
-          console.warn(`[FileParser] Using latin1 as last resort`);
+          this.logger.warn(`Using latin1 as last resort`);
         }
       }
     }
@@ -223,9 +224,9 @@ export class FileParserService {
     try {
       const testBuffer = Buffer.from(content, 'utf-8');
       content = testBuffer.toString('utf-8');
-      console.log(`[FileParser] UTF-8 validation passed, final content length: ${content.length}`);
+      this.logger.log(`UTF-8 validation passed, final content length: ${content.length}`);
     } catch (error) {
-      console.error(`[FileParser] UTF-8 validation failed, keeping original content`);
+      this.logger.error(`[FileParser] UTF-8 validation failed, keeping original content`);
     }
 
     // 提取元数据（传入文件名）

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -32,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    // console.log('[DEBUG] JwtStrategy Validating:', JSON.stringify(payload));
+    // JWT validation trace
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -43,15 +44,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         tier: true,
       },
     });
-    // console.log('[DEBUG] User lookup result:', user ? 'Found' : 'Not Found', payload.sub);
+    // User lookup trace
 
     if (!user) {
       this.prisma.user
         .findMany()
         .then((all) => JSON.stringify(all.map((u) => u.id)))
         .then((ids) => {
-          // eslint-disable-next-line no-console
-          console.error(
+          this.logger.error(
             `[DEBUG] User NOT found. Payload sub: ${payload.sub}. Available IDs: ${ids}`
           );
         });

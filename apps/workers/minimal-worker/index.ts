@@ -12,6 +12,7 @@
  */
 
 import { createHmac, randomBytes, createHash } from 'crypto';
+import * as util from "util";
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 const API_KEY = process.env.API_KEY || '';
@@ -91,9 +92,9 @@ async function sendHeartbeat(): Promise<void> {
       status: 'idle',
       tasksRunning: 0,
     });
-    console.log(`[${new Date().toISOString()}] ✅ Heartbeat sent:`, result);
+    process.stdout.write(util.format(`[${new Date().toISOString()}] ✅ Heartbeat sent:`, result) + "\n");
   } catch (error: any) {
-    console.error(`[${new Date().toISOString()}] ❌ Heartbeat failed:`, error.message);
+    process.stderr.write(util.format(`[${new Date().toISOString()}] ❌ Heartbeat failed:`, error.message) + "\n");
   }
 }
 
@@ -110,7 +111,7 @@ async function fetchNextJob(): Promise<any | null> {
 
     return null;
   } catch (error: any) {
-    console.error(`[${new Date().toISOString()}] ❌ Fetch job failed:`, error.message);
+    process.stderr.write(util.format(`[${new Date().toISOString()}] ❌ Fetch job failed:`, error.message) + "\n");
     return null;
   }
 }
@@ -123,9 +124,9 @@ async function reportJobRunning(jobId: string): Promise<void> {
     const result = await httpRequest('POST', `/api/jobs/${jobId}/start`, {
       workerId: WORKER_ID,
     });
-    console.log(`[${new Date().toISOString()}] ✅ Job ${jobId} marked as RUNNING:`, result);
+    process.stdout.write(util.format(`[${new Date().toISOString()}] ✅ Job ${jobId} marked as RUNNING:`, result) + "\n");
   } catch (error: any) {
-    console.error(`[${new Date().toISOString()}] ❌ Report RUNNING failed:`, error.message);
+    process.stderr.write(util.format(`[${new Date().toISOString()}] ❌ Report RUNNING failed:`, error.message) + "\n");
     throw error;
   }
 }
@@ -139,9 +140,9 @@ async function reportJobSucceeded(jobId: string, output: any): Promise<void> {
       status: 'SUCCEEDED',
       output,
     });
-    console.log(`[${new Date().toISOString()}] ✅ Job ${jobId} reported as SUCCEEDED:`, result);
+    process.stdout.write(util.format(`[${new Date().toISOString()}] ✅ Job ${jobId} reported as SUCCEEDED:`, result) + "\n");
   } catch (error: any) {
-    console.error(`[${new Date().toISOString()}] ❌ Report SUCCEEDED failed:`, error.message);
+    process.stderr.write(util.format(`[${new Date().toISOString()}] ❌ Report SUCCEEDED failed:`, error.message) + "\n");
     throw error;
   }
 }
@@ -153,7 +154,7 @@ async function processJob(job: any): Promise<void> {
   const jobId = job.id;
   const jobType = job.type;
 
-  console.log(`[${new Date().toISOString()}] 📦 Processing job ${jobId} (${jobType})`);
+  process.stdout.write(util.format(`[${new Date().toISOString()}] 📦 Processing job ${jobId} (${jobType})`) + "\n");
 
   try {
     // 1. 上报 RUNNING
@@ -161,9 +162,7 @@ async function processJob(job: any): Promise<void> {
 
     // 2. 模拟执行（sleep 2~5 秒）
     const durationMs = 2000 + Math.random() * 3000;
-    console.log(
-      `[${new Date().toISOString()}] ⏳ Executing job ${jobId} (${Math.round(durationMs)}ms)...`
-    );
+    process.stdout.write(util.format(`[${new Date().toISOString()}] ⏳ Executing job ${jobId} (${Math.round(durationMs)}ms)...`) + "\n");
     await new Promise((resolve) => setTimeout(resolve, durationMs));
 
     // 3. 上报 SUCCEEDED
@@ -173,12 +172,9 @@ async function processJob(job: any): Promise<void> {
       completedAt: new Date().toISOString(),
     });
 
-    console.log(`[${new Date().toISOString()}] ✅ Job ${jobId} completed successfully`);
+    process.stdout.write(util.format(`[${new Date().toISOString()}] ✅ Job ${jobId} completed successfully`) + "\n");
   } catch (error: any) {
-    console.error(
-      `[${new Date().toISOString()}] ❌ Job ${jobId} processing failed:`,
-      error.message
-    );
+    process.stderr.write(util.format(`[${new Date().toISOString()}] ❌ Job ${jobId} processing failed:`, error.message) + "\n");
   }
 }
 
@@ -186,11 +182,11 @@ async function processJob(job: any): Promise<void> {
  * 主循环
  */
 async function main() {
-  console.log('=== Stage2-B Minimal Worker ===');
-  console.log(`Worker ID: ${WORKER_ID}`);
-  console.log(`API Base URL: ${API_BASE_URL}`);
-  console.log(`API Key: ${API_KEY.substring(0, 10)}...`);
-  console.log('');
+  process.stdout.write(util.format('=== Stage2-B Minimal Worker ===') + "\n");
+  process.stdout.write(util.format(`Worker ID: ${WORKER_ID}`) + "\n");
+  process.stdout.write(util.format(`API Base URL: ${API_BASE_URL}`) + "\n");
+  process.stdout.write(util.format(`API Key: ${API_KEY.substring(0, 10)}...`) + "\n");
+  process.stdout.write(util.format('') + "\n");
 
   // 立即发送一次心跳
   await sendHeartbeat();
@@ -213,14 +209,12 @@ async function main() {
       } else {
         consecutiveEmptyPolls++;
         if (consecutiveEmptyPolls % 10 === 0) {
-          console.log(
-            `[${new Date().toISOString()}] 💤 No job available (poll ${consecutiveEmptyPolls})`
-          );
+          process.stdout.write(util.format(`[${new Date().toISOString()}] 💤 No job available (poll ${consecutiveEmptyPolls})`) + "\n");
         }
         await new Promise((resolve) => setTimeout(resolve, 3000)); // sleep 3s
       }
     } catch (error: any) {
-      console.error(`[${new Date().toISOString()}] ❌ Main loop error:`, error.message);
+      process.stderr.write(util.format(`[${new Date().toISOString()}] ❌ Main loop error:`, error.message) + "\n");
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
   }
@@ -231,6 +225,6 @@ async function main() {
 
 // 启动 Worker
 main().catch((error) => {
-  console.error('Fatal error:', error);
+  process.stderr.write(util.format('Fatal error:', error) + "\n");
   process.exit(1);
 });

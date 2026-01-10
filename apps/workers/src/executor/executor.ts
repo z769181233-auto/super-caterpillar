@@ -16,6 +16,7 @@ import {
   jobPersistDuration,
   jobE2EDuration,
 } from '@scu/observability';
+import * as util from "util";
 
 export interface ExecutionResult {
   success: boolean;
@@ -36,12 +37,10 @@ export class JobExecutor {
    */
   private logSpan(phase: 'queue' | 'prepare' | 'exec' | 'persist' | 'e2e', data: any) {
     if (env.isDevelopment || process.env.GATE_MODE === '1') {
-      console.log(
-        JSON.stringify({
-          span: `job.${phase === 'exec' ? 'engine.exec' : phase}`,
-          ...data,
-        })
-      );
+      process.stdout.write(util.format(JSON.stringify({
+                  span: `job.${phase === 'exec' ? 'engine.exec' : phase}`,
+                  ...data,
+                })) + "\n");
     }
   }
 
@@ -130,9 +129,7 @@ export class JobExecutor {
             // 3. 检查是否重试
             if (RetryPolicy.shouldRetry(attempt)) {
               const delay = RetryPolicy.getDelay(attempt);
-              console.warn(
-                `[Executor] Job ${jobId} failed (attempt ${attempt}). Retrying in ${delay}ms... Error: ${error.message}`
-              );
+              process.stdout.write(util.format(`[Executor] Job ${jobId} failed (attempt ${attempt}). Retrying in ${delay}ms... Error: ${error.message}`) + "\n");
               await new Promise((resolve) => setTimeout(resolve, delay));
               attempt++;
             } else {

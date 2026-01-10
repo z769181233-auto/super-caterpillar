@@ -1,3 +1,5 @@
+import * as util from "util";
+
 /**
  * Worker Bootstrap 入口
  * P1-1: 重构为纯路由，使用动态 import 避免静态依赖链触发 @scu/engines 解析
@@ -15,13 +17,13 @@ async function boot() {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('GATE_MODE_REFUSED_IN_PRODUCTION');
     }
-    console.log('[Bootstrap] GATE_MODE detected, loading Gate Worker...');
+    process.stdout.write(util.format('[Bootstrap] GATE_MODE detected, loading Gate Worker...') + "\n");
     const mod = await import('./gate/gate-worker-app');
     await mod.startGateWorkerApp();
     return;
   }
 
-  console.log('[Bootstrap] Normal mode, loading full Worker...');
+  process.stdout.write(util.format('[Bootstrap] Normal mode, loading full Worker...') + "\n");
 
   const mod = await import('./worker-app');
   await mod.startWorkerApp();
@@ -29,6 +31,6 @@ async function boot() {
 
 boot().catch((err) => {
   // eslint-disable-next-line no-console
-  console.error('[Bootstrap] Fatal error:', err);
+  process.stderr.write(util.format('[Bootstrap] Fatal error:', err) + "\n");
   process.exit(1);
 });

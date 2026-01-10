@@ -1,5 +1,6 @@
 // apps/api/src/scripts/p1_2_billing_seed.ts
 import { PrismaClient } from 'database';
+import * as util from "util";
 
 const prisma = new PrismaClient();
 
@@ -67,16 +68,16 @@ async function main() {
     } as any,
   });
 
-  console.log(`PROJECT_ID=${project.id}`);
-  console.log(`ORG_ID=${org.id}`);
-  console.log(`TEST_JOB_ID=${job.id}`);
-  console.log(`PERIOD_START=${iso(periodStart)}`);
-  console.log(`PERIOD_END=${iso(periodEnd)}`);
+  process.stdout.write(util.format(`PROJECT_ID=${project.id}`) + "\n");
+  process.stdout.write(util.format(`ORG_ID=${org.id}`) + "\n");
+  process.stdout.write(util.format(`TEST_JOB_ID=${job.id}`) + "\n");
+  process.stdout.write(util.format(`PERIOD_START=${iso(periodStart)}`) + "\n");
+  process.stdout.write(util.format(`PERIOD_END=${iso(periodEnd)}`) + "\n");
 }
 
 main()
   .catch((e) => {
-    console.error(String(e?.stack ?? e));
+    process.stderr.write(util.format(String(e?.stack ?? e)) + "\n");
     process.exit(1);
   })
   .finally(async () => {

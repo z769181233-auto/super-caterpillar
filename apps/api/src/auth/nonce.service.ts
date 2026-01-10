@@ -21,7 +21,7 @@ export class NonceService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly redisService?: RedisService
-  ) {}
+  ) { }
 
   /**
    * 检查并写入 nonce，若已存在则抛出异常
@@ -38,14 +38,13 @@ export class NonceService {
   ) {
     // 开发/测试环境：记录写入前信息
     if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
-      console.log('[NonceService] 准备写入 nonce:', {
+      this.logger.log(`准备写入 nonce: ${JSON.stringify({
         apiKey: apiKey.substring(0, 8) + '...',
         nonce: nonce.substring(0, 16) + '...',
         timestamp,
         path: requestInfo?.path,
         method: requestInfo?.method,
-      });
+      })}`);
     }
 
     try {
@@ -67,8 +66,7 @@ export class NonceService {
 
         // 开发/测试环境：记录 fallback 使用
         if (process.env.NODE_ENV !== 'production') {
-          // eslint-disable-next-line no-console
-          console.warn('[NonceService] ⚠️  使用 $queryRaw fallback（prisma.nonceStore 不可用）');
+          this.logger.warn('⚠️  使用 $queryRaw fallback（prisma.nonceStore 不可用）');
         }
 
         // 后备方案：使用 $queryRaw 直接执行 SQL
@@ -97,23 +95,21 @@ export class NonceService {
 
       // 开发/测试环境：确认写入成功
       if (process.env.NODE_ENV !== 'production') {
-        // eslint-disable-next-line no-console
-        console.log('[NonceService] ✅ nonce stored ok (使用 prisma.nonceStore):', {
+        this.logger.log(`✅ nonce stored ok (使用 prisma.nonceStore): ${JSON.stringify({
           nonce: nonce.substring(0, 16) + '...',
           apiKey: apiKey.substring(0, 8) + '...',
-        });
+        })}`);
       }
     } catch (err: any) {
       // 开发/测试环境：记录错误详情
       if (process.env.NODE_ENV !== 'production') {
-        // eslint-disable-next-line no-console
-        console.error('[NonceService] nonce 写入失败:', {
+        this.logger.error(`nonce 写入失败: ${JSON.stringify({
           error: err.message,
           code: err.code,
           meta: err.meta,
           nonce: nonce.substring(0, 16) + '...',
           apiKey: apiKey.substring(0, 8) + '...',
-        });
+        })}`);
       }
 
       // 唯一索引冲突视为重放（P2002: Unique constraint failed）
@@ -152,8 +148,7 @@ export class NonceService {
         // 其他错误（如数据库连接失败、表不存在等）
         // 开发/测试环境：记录详细错误（结构化信息）
         if (process.env.NODE_ENV !== 'production') {
-          // eslint-disable-next-line no-console
-          console.error('[NonceService] 非唯一约束错误 - 详细诊断信息:', {
+          this.logger.error(`非唯一约束错误 - 详细诊断信息: ${JSON.stringify({
             errorName: err?.name,
             errorMessage: err?.message,
             errorCode: err?.code,
@@ -166,7 +161,7 @@ export class NonceService {
             hasNonceStore: 'nonceStore' in (this.prisma || {}),
             hasNonceStoreCapital: 'NonceStore' in (this.prisma || {}),
             databaseUrl: this.getDatabaseUrlSafe(),
-          });
+          })}`);
         }
         // 对于非重放错误，抛出通用错误（不应返回 4004）
         throw buildHmacError('4003', 'Nonce storage failed', {

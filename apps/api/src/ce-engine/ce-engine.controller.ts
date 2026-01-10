@@ -25,7 +25,7 @@ import { Req } from '@nestjs/common';
 export class CEEngineController {
   private readonly logger = new Logger(CEEngineController.name);
 
-  constructor(private readonly ceEngineService: CEEngineService) {}
+  constructor(private readonly ceEngineService: CEEngineService) { }
 
   /**
    * POST /story/parse
@@ -39,6 +39,8 @@ export class CEEngineController {
     @CurrentOrganization() organizationId: string,
     @Req() req: Request
   ) {
+    const apiKeyId = (req as any).apiKeyId;
+
     this.logger.log(
       `CE06 parseStory request: projectId=${dto.projectId}, textLength=${dto.rawText.length}`
     );
@@ -50,7 +52,8 @@ export class CEEngineController {
         options: dto.options,
       },
       userId,
-      organizationId
+      organizationId,
+      apiKeyId
     );
 
     return result;
@@ -68,6 +71,8 @@ export class CEEngineController {
     @CurrentOrganization() organizationId: string,
     @Req() req: Request
   ) {
+    const apiKeyId = (req as any).apiKeyId;
+
     this.logger.log(
       `CE03 analyzeVisualDensity request: projectId=${dto.projectId}, textLength=${dto.text.length}`
     );
@@ -79,7 +84,8 @@ export class CEEngineController {
         options: dto.options,
       },
       userId,
-      organizationId
+      organizationId,
+      apiKeyId
     );
 
     return result;

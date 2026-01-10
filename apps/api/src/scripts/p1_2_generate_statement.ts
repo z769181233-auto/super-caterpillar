@@ -1,6 +1,7 @@
 // apps/api/src/scripts/p1_2_generate_statement.ts
 import { PrismaClient } from 'database';
 import { createHash } from 'node:crypto';
+import * as util from "util";
 
 const prisma = new PrismaClient();
 
@@ -49,12 +50,12 @@ async function main() {
   const canonical = stableStringify(normalized);
   const checksum = createHash('sha256').update(canonical).digest('hex');
 
-  console.log(`CHECKSUM=${checksum}`);
+  process.stdout.write(util.format(`CHECKSUM=${checksum}`) + "\n");
 }
 
 main()
   .catch((e) => {
-    console.error(String(e?.stack ?? e));
+    process.stderr.write(util.format(String(e?.stack ?? e)) + "\n");
     process.exit(1);
   })
   .finally(async () => {

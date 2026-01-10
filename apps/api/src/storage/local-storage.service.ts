@@ -22,12 +22,12 @@ export class LocalStorageService {
       // Fallback: API runs from apps/api, go up two levels to project root
       const repoRoot = path.resolve(process.cwd(), '../..');
       storageRoot = path.join(repoRoot, '.data/storage');
-      console.warn('[LocalStorageService] Using cwd fallback. STORAGE_ROOT not found.');
+      this.logger.warn('Using cwd fallback. STORAGE_ROOT not found.');
     }
 
     // Dev-only: Print final storage root for debugging
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[Storage] root=${path.resolve(storageRoot)}`);
+      this.logger.log(`root=${path.resolve(storageRoot)}`);
     }
 
     this.logger.log(`Initializing Storage Adapter at: ${storageRoot}`);

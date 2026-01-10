@@ -39,7 +39,7 @@ export class HmacAuthService {
   }) {
     if (process.env.HMAC_TRACE !== '1') return;
     const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
-    console.error('[HMAC_TRACE] api_v2_inputs', {
+    this.logger.error(`[HMAC_TRACE] api_v2_inputs: ${JSON.stringify({
       method: { val: parts.method, len: parts.method.length, hash: sha256(parts.method) },
       path: { val: parts.path, len: parts.path.length, hash: sha256(parts.path) },
       timestamp: {
@@ -61,14 +61,14 @@ export class HmacAuthService {
         ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) }
         : 'N/A',
       message: { len: parts.message.length, hash: sha256(parts.message) },
-    });
+    })}`);
   }
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   /**
    * 验证 HMAC 签名
@@ -183,12 +183,12 @@ export class HmacAuthService {
         message: messageV2WithWorkerId,
       });
       if (process.env.HMAC_TRACE === '1') {
-        console.error('[HMAC_TRACE] api_v2_expected', {
+        this.logger.error(`[HMAC_TRACE] api_v2_expected: ${JSON.stringify({
           expectedSigHash: createHash('sha256')
             .update(expectedSignatureV2WithWorkerId)
             .digest('hex'),
           expectedSigLen: expectedSignatureV2WithWorkerId.length,
-        });
+        })}`);
       }
     }
 
@@ -201,15 +201,14 @@ export class HmacAuthService {
     if (!signatureMatches) {
       // DEBUG: Log mismatch if in dev
       if (process.env.NODE_ENV !== 'production') {
-        // eslint-disable-next-line no-console
-        console.log('[HMAC Mismatch]', {
+        this.logger.log(`[HMAC Mismatch]: ${JSON.stringify({
           expectedV1: expectedSignatureV1,
           expectedV2Old: expectedSignatureV2Old,
           expectedV2WorkerId: expectedSignatureV2WithWorkerId,
           actual: signature,
           workerId,
           secretPart: secret?.substring(0, 5),
-        });
+        })}`);
       }
 
       await this.writeAudit(

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { JobService } from '../job/job.service';
 import { AuthenticatedUser } from '@scu/shared-types';
+import * as util from "util";
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
@@ -14,7 +15,7 @@ async function bootstrap() {
   const payloadJson = process.env.JOB_PAYLOAD || '{}';
 
   if (!type) {
-    console.error('JOB_TYPE env var required');
+    process.stderr.write(util.format('JOB_TYPE env var required') + "\n");
     process.exit(1);
   }
 
@@ -27,11 +28,11 @@ async function bootstrap() {
       userId,
       orgId
     );
-    console.log(`JOB_ID=${job.id}`);
-    console.log(`TRACE_ID=${traceId}`);
+    process.stdout.write(util.format(`JOB_ID=${job.id}`) + "\n");
+    process.stdout.write(util.format(`TRACE_ID=${traceId}`) + "\n");
     process.exit(0);
   } catch (e) {
-    console.error(e);
+    process.stderr.write(util.format(e) + "\n");
     process.exit(1);
   }
 }

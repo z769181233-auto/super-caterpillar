@@ -12,8 +12,7 @@ import {
   NotFoundException,
   ConflictException,
   Req,
-  Inject,
-} from '@nestjs/common';
+  Inject, Logger } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -57,6 +56,7 @@ import { UnprocessableEntityException } from '@nestjs/common';
 @Controller('projects/:projectId/novel')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class NovelImportController {
+    private readonly logger = new Logger(NovelImportController.name);
   private readonly uploadDir = path.join(process.cwd(), 'uploads', 'novels');
 
   constructor(
@@ -264,7 +264,7 @@ export class NovelImportController {
         });
       } catch (auditError) {
         // 审计日志写入失败不影响主流程
-        console.error('Failed to record audit log for NOVEL_IMPORT_FILE:', auditError);
+        this.logger.error('Failed to record audit log for NOVEL_IMPORT_FILE:', auditError);
       }
 
       // 创建分析任务（通过 Job 系统异步处理，符合 Stage1 规则）
@@ -365,7 +365,7 @@ export class NovelImportController {
       try {
         await fs.unlink(filePath);
       } catch (unlinkError) {
-        console.error('Failed to delete uploaded file:', unlinkError);
+        this.logger.error('Failed to delete uploaded file:', unlinkError);
       }
 
       // 如果已经是封装好的 UnprocessableEntityException，直接抛出
@@ -558,7 +558,7 @@ export class NovelImportController {
       });
     } catch (auditError) {
       // 审计日志写入失败不影响主流程
-      console.error('Failed to record audit log for NOVEL_IMPORT:', auditError);
+      this.logger.error('Failed to record audit log for NOVEL_IMPORT:', auditError);
     }
 
     return {
@@ -703,7 +703,7 @@ export class NovelImportController {
           });
         } catch (auditError) {
           // 审计日志写入失败不影响主流程
-          console.error('Failed to record audit log for NOVEL_ANALYZE:', auditError);
+          this.logger.error('Failed to record audit log for NOVEL_ANALYZE:', auditError);
         }
       } catch (error: any) {
         await this.prisma.novelAnalysisJob.update({
@@ -764,7 +764,7 @@ export class NovelImportController {
           },
         });
 
-        console.log(`[NovelImport] Created NOVEL_ANALYSIS Job: ${job.id}, Task: ${task.id}`);
+        this.logger.log(`[NovelImport] Created NOVEL_ANALYSIS Job: ${job.id}, Task: ${task.id}`);
 
         // 记录审计日志：NOVEL_ANALYZE
         const requestInfo = AuditLogService.extractRequestInfo(request);
@@ -787,7 +787,7 @@ export class NovelImportController {
           });
         } catch (auditError) {
           // 审计日志写入失败不影响主流程
-          console.error('Failed to record audit log for NOVEL_ANALYZE:', auditError);
+          this.logger.error('Failed to record audit log for NOVEL_ANALYZE:', auditError);
         }
       } catch (error: any) {
         await this.prisma.novelAnalysisJob.update({

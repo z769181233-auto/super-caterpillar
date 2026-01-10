@@ -6,6 +6,7 @@ import { JobService } from '../job/job.service';
 import { CEDagRunRequest } from '../ce-pipeline/ce-dag.types';
 import { Logger } from '@nestjs/common';
 import { JobType } from 'database';
+import * as util from "util";
 
 // Mock Input
 const TEST_PROJECT_ID = `test-project-p0r2-${Date.now()}`;
@@ -14,9 +15,9 @@ const TEST_SHOT_ID = `test-shot-p0r2-${Date.now()}`;
 const TEST_SCENE_ID = `test-scene-p0r2-${Date.now()}`;
 
 async function main() {
-  console.log('--- DRIVER: Creating App Context ---');
+  process.stdout.write(util.format('--- DRIVER: Creating App Context ---') + "\n");
   const app = await NestFactory.createApplicationContext(AppModule);
-  console.log('--- DRIVER: App Context Created ---');
+  process.stdout.write(util.format('--- DRIVER: App Context Created ---') + "\n");
   // Disable logging for cleaner output
   // app.useLogger(false);
 
@@ -25,10 +26,10 @@ async function main() {
   const logger = new Logger('GateP0R2Driver');
 
   // --- 0. Data Seeding ---
-  console.log('--- DRIVER: Starting Seeding ---');
+  process.stdout.write(util.format('--- DRIVER: Starting Seeding ---') + "\n");
 
   // Clean up Project (cascades to Season, Episode, Scene, Shot, ShotJob, Asset)
-  console.log('--- DRIVER: CLEANUP Project ---');
+  process.stdout.write(util.format('--- DRIVER: CLEANUP Project ---') + "\n");
   try {
     await prisma.project.delete({ where: { id: TEST_PROJECT_ID } });
   } catch (e) {
@@ -36,7 +37,7 @@ async function main() {
   }
 
   // Ensure User exists for Org Owner
-  console.log('--- DRIVER: UPSERT user ---');
+  process.stdout.write(util.format('--- DRIVER: UPSERT user ---') + "\n");
   const user = await prisma.user.upsert({
     where: { id: 'gate_user' },
     update: {},
@@ -59,7 +60,7 @@ async function main() {
   });
 
   // Ensure Project Hierarchy
-  console.log('--- DRIVER: UPSERT org ---');
+  process.stdout.write(util.format('--- DRIVER: UPSERT org ---') + "\n");
   const org = await prisma.organization.upsert({
     where: { id: 'org_gate_p0r2' },
     update: { credits: 1000 },
@@ -71,7 +72,7 @@ async function main() {
     },
   });
 
-  console.log('--- DRIVER: CREATE project ---');
+  process.stdout.write(util.format('--- DRIVER: CREATE project ---') + "\n");
   const project = await prisma.project.upsert({
     where: { id: TEST_PROJECT_ID },
     update: {},
@@ -84,7 +85,7 @@ async function main() {
   });
 
   // Engines (Required for Job Engine Binding)
-  console.log('--- DRIVER: UPSERT engines ---');
+  process.stdout.write(util.format('--- DRIVER: UPSERT engines ---') + "\n");
   const engines = [
     { key: 'ce06_novel_parsing', type: 'CE06_NOVEL_PARSING' },
     { key: 'ce03_visual_density', type: 'CE03_VISUAL_DENSITY' },
@@ -112,7 +113,7 @@ async function main() {
   }
 
   // Novel Source (required for CE06)
-  console.log('--- DRIVER: UPSERT novelSource ---');
+  process.stdout.write(util.format('--- DRIVER: UPSERT novelSource ---') + "\n");
   await prisma.novelSource.upsert({
     where: { id: TEST_NOVEL_SOURCE_ID },
     update: {},
@@ -127,7 +128,7 @@ async function main() {
   });
 
   // Scene & Shot
-  console.log('--- DRIVER: Creating Hierarchy (Season/Ep/Scene/Shot) ---');
+  process.stdout.write(util.format('--- DRIVER: Creating Hierarchy (Season/Ep/Scene/Shot) ---') + "\n");
   // Need to handle potential existing hierarchy to avoid unique constraints if run multiple times?
   // Since we don't clear generic hierarchy, we might fail if unique index exists?
   // Upsert is safer. But create is fine if we use random IDs or delete first.
@@ -152,7 +153,7 @@ async function main() {
     },
   });
 
-  console.log('--- DRIVER: CREATE shot ---');
+  process.stdout.write(util.format('--- DRIVER: CREATE shot ---') + "\n");
   const shot = await prisma.shot.create({
     data: {
       id: TEST_SHOT_ID,
@@ -168,7 +169,7 @@ async function main() {
   });
 
   // --- 1. Run CE DAG ---
-  console.log('--- DRIVER: Seeding Complete, Triggering CE DAG ---');
+  process.stdout.write(util.format('--- DRIVER: Seeding Complete, Triggering CE DAG ---') + "\n");
 
   const req: CEDagRunRequest = {
     projectId: TEST_PROJECT_ID,
@@ -178,21 +179,17 @@ async function main() {
     traceId: 'trace-gate-p0r2-' + Date.now(),
   };
 
-  console.log(
-    '--- DRIVER: Calling dagService.runCEDag with req:',
-    JSON.stringify(req, null, 2),
-    '---'
-  );
+  process.stdout.write(util.format('--- DRIVER: Calling dagService.runCEDag with req:', JSON.stringify(req, null, 2), '---') + "\n");
 
   try {
     const result = await dagService.runCEDag(req);
-    console.log('--- DRIVER: runCEDag returned ---');
+    process.stdout.write(util.format('--- DRIVER: runCEDag returned ---') + "\n");
 
-    console.log('__RESULT_START__');
-    console.log(JSON.stringify(result, null, 2));
-    console.log('__RESULT_END__');
+    process.stdout.write(util.format('__RESULT_START__') + "\n");
+    process.stdout.write(util.format(JSON.stringify(result, null, 2)) + "\n");
+    process.stdout.write(util.format('__RESULT_END__') + "\n");
   } catch (e) {
-    console.error('DAG Execution Failed:', e);
+    process.stderr.write(util.format('DAG Execution Failed:', e) + "\n");
     process.exit(1);
   }
 

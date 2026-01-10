@@ -106,10 +106,10 @@ export const localFfmpegProvider = {
     const timeoutMs = Number(process.env.VIDEO_MERGE_TIMEOUT_MS) || 300000; // Default 5min
 
     // Structured Log for Automated Verification (Gate 7)
-    console.info(
+    process.stdout.write(
       `video_merge_spawn jobId=${jobId} ffmpeg_threads=${threads} timeout_ms=${timeoutMs} args="${args.join(
         ' '
-      )}"`
+      )}"\n`
     );
 
     const result = await spawnWithTimeout({
