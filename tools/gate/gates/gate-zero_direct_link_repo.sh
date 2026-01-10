@@ -37,12 +37,17 @@ echo "  - apps/workers/src/billing/cost-ledger.service.ts (类型引用)" | tee 
 echo "----" | tee -a "${OUT}"
 
 HIT=0
+SCANNED_DIRS=()
+SKIPPED_DIRS=()
+
 for d in "${SCAN_DIRS[@]}"; do
   if [[ ! -d "$d" ]]; then
-    echo "[WARN] missing dir: $d" | tee -a "${OUT}"
+    echo "[SKIP] Missing dir (not scanned): $d" | tee -a "${OUT}"
+    SKIPPED_DIRS+=("$d")
     continue
   fi
 
+  SCANNED_DIRS+=("$d")
   # 找到 deny 命中后，先过滤白名单关键字，再排除已知技术债文件
   if rg -n "${DENY_PATTERN}" "$d" \
       --glob '!**/.runtime/**' --glob '!**/dist/**' --glob '!**/node_modules/**' \
@@ -58,6 +63,11 @@ for d in "${SCAN_DIRS[@]}"; do
 done
 
 echo "----" | tee -a "${OUT}"
+echo "Summary:" | tee -a "${OUT}"
+echo "  Scanned: ${SCANNED_DIRS[*]}" | tee -a "${OUT}"
+echo "  Skipped: ${SKIPPED_DIRS[*]}" | tee -a "${OUT}"
+echo "----" | tee -a "${OUT}"
+
 if [[ "${HIT}" -eq 1 ]]; then
   echo "[FAIL] Repo-wide zero-direct-link violated. See: ${OUT}" | tee -a "${OUT}"
   exit 1
