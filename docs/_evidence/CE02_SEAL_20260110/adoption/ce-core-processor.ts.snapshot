@@ -11,8 +11,10 @@ import {
   CE07MemoryUpdateInput,
   CE07MemoryUpdateOutput,
   WorkerJobBase,
-  EngineInvocationRequest
 } from '@scu/shared-types';
+import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import { LocalStorageAdapter } from '@scu/storage';
 import { createHash } from 'crypto';
 import {
   mapCE06OutputToProjectStructure,
@@ -20,6 +22,7 @@ import {
 } from './novel-analysis-processor';
 import { CostLedgerService } from './billing/cost-ledger.service';
 import { ModelRouterV2 } from '@scu/router';
+import { EngineInvocationRequest } from '@scu/shared-types';
 
 /**
  * 结构化日志输出函数
@@ -525,8 +528,8 @@ export async function processCE04Job(
         traceId,
         enrichmentQuality: result.enrichment_quality,
         metadata: {
-          enrichedPrompt: (result as any).enriched_prompt,
-          promptParts: (result as any).prompt_parts,
+          enrichedPrompt: result.enriched_prompt,
+          promptParts: result.prompt_parts,
           billingUsage: engineResult.metrics?.usage,
         } as any,
       },

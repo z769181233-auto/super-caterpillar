@@ -28,18 +28,13 @@ export class HmacAuthGuard implements CanActivate {
     private readonly hmacAuthService: HmacAuthService,
     private readonly auditLogService: AuditLogService,
     private readonly nonceService: NonceService
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
-    // P1-1: 门禁模式旁路（仅限测试环境）
-    if (process.env.GATE_MODE === '1') {
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error('SECURITY_MISCONFIG: GATE_MODE must never be enabled in production');
-      }
-      return true;
-    }
+    // P1-1: 门禁模式旁路已移除（封板收口）
+    // 强制回到 Spec：所有请求必须通过 HMAC 签名验证
 
     const method = request.method;
     // 商业级规范：验签path必须来自实际请求行（originalUrl优先）

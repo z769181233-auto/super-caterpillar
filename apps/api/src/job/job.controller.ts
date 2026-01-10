@@ -28,7 +28,9 @@ import { Public } from '../auth/decorators/public.decorator';
 import { CreateJobDto } from './dto/create-job.dto';
 import { ReportJobDto } from './dto/report-job.dto';
 import { ListJobsDto } from './dto/list-jobs.dto';
+import { InstantiateCE01Dto } from './dto/instantiate-ce01.dto';
 import { RetryJobDto, ForceFailJobDto, BatchJobOperationDto } from './dto/job-operations.dto';
+import { AuditActions } from '../audit/audit.constants';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { CapacityGateService } from '../capacity/capacity-gate.service';
 import { Request, Response } from 'express';
@@ -43,7 +45,7 @@ export class JobController {
     private readonly permissionService: PermissionService,
     private readonly auditLogService: AuditLogService,
     private readonly capacityGateService: CapacityGateService
-  ) {}
+  ) { }
 
   @Get('debug-key/:key')
   @Public()
@@ -136,6 +138,24 @@ export class JobController {
     };
   }
 
+  /**
+   * 获取容量使用情况
+   * GET /api/jobs/capacity
+   */
+  @Get('jobs/capacity')
+  async getCapacityUsage(
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string
+  ): Promise<any> {
+    const usage = await this.capacityGateService.getCapacityUsage(organizationId);
+    return {
+      success: true,
+      data: usage,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Get('jobs/:id')
   async getJob(
     @Param('id') id: string,
@@ -197,23 +217,6 @@ export class JobController {
     };
   }
 
-  /**
-   * 获取容量使用情况
-   * GET /api/jobs/capacity
-   */
-  @Get('jobs/capacity')
-  async getCapacityUsage(
-    @CurrentUser() user: AuthenticatedUser,
-    @CurrentOrganization() organizationId: string
-  ): Promise<any> {
-    const usage = await this.capacityGateService.getCapacityUsage(organizationId);
-    return {
-      success: true,
-      data: usage,
-      requestId: randomUUID(),
-      timestamp: new Date().toISOString(),
-    };
-  }
 
   @Post('jobs/:id/retry')
   async retryJob(
@@ -417,6 +420,53 @@ export class JobController {
       ok: true,
       jobId: result.id,
       status: result.status,
+    };
+  }
+
+  /**
+   * 实例化角色基准图 (CE01)
+   * POST /jobs/ce01/instantiate
+   */
+  @Post('jobs/ce01/instantiate')
+  async instantiateCE01(
+    @Body() body: InstantiateCE01Dto,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string,
+    @Req() request: Request
+  ): Promise<any> {
+    const { characterId, projectId, posePreset, styleSeed, traceId } = body;
+
+    // 1. 调用 Service 执行实例化
+    const result = await this.jobService.createCharacterReferenceSheetJob({
+      characterId,
+      projectId,
+      organizationId,
+      posePreset,
+      styleSeed,
+      userId: user.userId,
+      traceId,
+    });
+
+    // 2. 记录审计
+    const requestInfo = AuditLogService.extractRequestInfo(request);
+    await this.auditLogService.record({
+      userId: user.userId,
+      action: AuditActions.JOB_CREATED,
+      resourceType: 'job',
+      resourceId: result.referenceSheetId,
+      ip: requestInfo.ip,
+      userAgent: requestInfo.userAgent,
+      details: {
+        type: 'CE01_REFERENCE_SHEET',
+        characterId,
+        projectId,
+        fingerprint: result.fingerprint,
+      },
+    });
+
+    return {
+      ok: true,
+      data: result,
     };
   }
 }

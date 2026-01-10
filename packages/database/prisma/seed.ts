@@ -85,6 +85,20 @@ async function main() {
       config: {},
       enabled: true,
     },
+    {
+      code: 'character_visual',
+      name: 'Character Visual (Mother Engine)',
+      type: 'local',
+      isActive: true,
+      engineKey: 'character_visual',
+      adapterName: 'default_novel_analysis',
+      adapterType: 'local',
+      config: {
+        template: 'reference_sheet_v1',
+        capabilities: ['parameterized_instantiation', 'artifact_binding'],
+      },
+      enabled: true,
+    },
   ];
 
   for (const e of engines) {
@@ -115,6 +129,29 @@ async function main() {
         data: e,
       });
       console.log(`✅ Created engine: ${engine.engineKey} -> code: ${e.code} (${e.name})`);
+    }
+
+    // PHASE 2B Supplement: Ensure at least one EngineVersion exists for character_visual
+    if (e.engineKey === 'character_visual') {
+      await prisma.engineVersion.upsert({
+        where: {
+          engineId_versionName: {
+            engineId: engine.id,
+            versionName: 'default',
+          },
+        },
+        update: {
+          enabled: true,
+          config: e.config,
+        },
+        create: {
+          engineId: engine.id,
+          versionName: 'default',
+          config: e.config,
+          enabled: true,
+        },
+      });
+      console.log(`✅ Seeded default version for character_visual`);
     }
   }
 

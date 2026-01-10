@@ -64,14 +64,31 @@ export interface EngineInvocationResult<TOutput = unknown> {
   };
 
   /**
+   * 最终选择的引擎标识（用于审计）
+   */
+  selectedEngineKey?: string;
+
+  /**
+   * 最终选择的引擎版本（用于审计）
+   */
+  selectedEngineVersion?: string;
+
+  /**
+   * 回退原因（如果有发生 fallback）
+   */
+  fallbackReason?: string;
+
+  /**
    * 指标信息（可选，用于监控）
    */
   metrics?: {
     latencyMs?: number;
-    tokensIn?: number;
-    tokensOut?: number;
-    tokens?: number;
-    costUsd?: number;
+    usage?: {
+      inputTokens?: number;
+      outputTokens?: number;
+      totalTokens?: number;
+      costUsd?: number;
+    };
     [key: string]: unknown;
   };
 }

@@ -88,7 +88,9 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Nonce', 'X-Timestamp', 'X-Signature'],
   });
 
-  await app.listen(env.apiPort);
+  // 🔧 PORT 必须从环境变量读取，禁止硬编码
+  const port = Number(process.env.PORT) || 3000;
+  await app.listen(port);
 
   // P0 Self-Verification: Check if StorageController is registered
   try {
@@ -116,7 +118,7 @@ async function bootstrap() {
   }
 
   const logger = app.get(Logger);
-  logger.log(`🚀 API Server is running on: http://localhost:${env.apiPort}`);
+  logger.log(`🚀 API Server is running on: http://localhost:${port}`);
 }
 
 bootstrap();

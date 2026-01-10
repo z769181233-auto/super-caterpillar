@@ -9,6 +9,7 @@ import { EngineInvocationRequest, EngineInvocationResult } from '@scu/shared-typ
 import { EngineRegistryHubService } from './engine-registry-hub.service';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 /**
  * Engine Invoker Hub
@@ -21,8 +22,9 @@ export class EngineInvokerHubService {
   constructor(
     private readonly engineRegistry: EngineRegistryHubService,
     private readonly moduleRef: ModuleRef,
-    private readonly httpEngineAdapter: HttpEngineAdapter
-  ) {}
+    private readonly httpEngineAdapter: HttpEngineAdapter,
+    private readonly auditLogService: AuditLogService
+  ) { }
 
   /**
    * 调用引擎
@@ -33,21 +35,51 @@ export class EngineInvokerHubService {
     req: EngineInvocationRequest<TInput>
   ): Promise<EngineInvocationResult<TOutput>> {
     const started = Date.now();
+    let fallbackReason: string | undefined;
+
+    // 0. 故障注入 (Fault Injection) - 仅在 GATE_MODE 下生效
+    const isGateMode = process.env.GATE_MODE === '1';
+    const forceFailKeys = (process.env.ENGINE_FORCE_FAIL_KEYS || '').split(',').filter(Boolean);
+    const disableKeys = (process.env.ENGINE_DISABLE_KEYS || '').split(',').filter(Boolean);
+
+    if (isGateMode && forceFailKeys.includes(req.engineKey)) {
+      const result: EngineInvocationResult<TOutput> = {
+        success: false,
+        selectedEngineKey: req.engineKey,
+        error: {
+          code: 'FAULT_INJECTED',
+          message: `Engine ${req.engineKey} matched ENGINE_FORCE_FAIL_KEYS`,
+        },
+        metrics: { latencyMs: Date.now() - started },
+      };
+      await this.logInvocation(req, result);
+      return result;
+    }
 
     // 1. 查找引擎描述符
-    const descriptor = this.engineRegistry.find(req.engineKey, req.engineVersion);
+    let descriptor = this.engineRegistry.find(req.engineKey, req.engineVersion);
+
+    // 1.1 检查禁用列表
+    if (isGateMode && descriptor && disableKeys.includes(descriptor.key)) {
+      this.logger.warn(`Engine ${descriptor.key} is disabled via ENGINE_DISABLE_KEYS, attempting fallback...`);
+      fallbackReason = `Engine ${descriptor.key} disabled by Gate`;
+      descriptor = null; // 强制触发找不到引擎的逻辑或后续 fallback
+    }
 
     if (!descriptor) {
-      return {
+      const result: EngineInvocationResult<TOutput> = {
         success: false,
         error: {
           code: 'ENGINE_NOT_FOUND',
-          message: `Engine ${req.engineKey}@${req.engineVersion ?? 'default'} not registered`,
+          message: `Engine ${req.engineKey}@${req.engineVersion ?? 'default'} not registered or disabled`,
         },
+        fallbackReason,
         metrics: {
           latencyMs: Date.now() - started,
         },
       };
+      await this.logInvocation(req, result);
+      return result;
     }
 
     try {
@@ -117,14 +149,26 @@ export class EngineInvokerHubService {
         }
       }
 
-      return {
+      const finalResult: EngineInvocationResult<TOutput> = {
         success: true,
+        selectedEngineKey: descriptor.key,
+        selectedEngineVersion: descriptor.version,
+        fallbackReason,
         output,
         metrics: {
           latencyMs: Date.now() - started,
+          usage: {
+            inputTokens: engineResult?.metrics?.tokensIn || 0,
+            outputTokens: engineResult?.metrics?.tokensOut || 0,
+            totalTokens: (engineResult?.metrics?.tokensUsed as number) || (engineResult?.metrics?.tokens as number) || 0,
+            costUsd: (engineResult?.metrics?.cost as number) || (engineResult?.metrics?.costUsd as number) || 0,
+          },
           ...(engineResult?.metrics || {}),
         },
       };
+
+      await this.logInvocation(req, finalResult);
+      return finalResult;
     } catch (e: unknown) {
       const errorObj = e as any;
       this.logger.error(
@@ -132,8 +176,11 @@ export class EngineInvokerHubService {
         errorObj?.stack || errorObj?.message
       );
 
-      return {
+      const result: EngineInvocationResult<TOutput> = {
         success: false,
+        selectedEngineKey: descriptor.key,
+        selectedEngineVersion: descriptor.version,
+        fallbackReason,
         error: {
           code: errorObj?.code ?? 'ENGINE_CALL_FAILED',
           message: errorObj?.message ?? 'Engine invocation failed',
@@ -147,7 +194,36 @@ export class EngineInvokerHubService {
           latencyMs: Date.now() - started,
         },
       };
+
+      await this.logInvocation(req, result);
+      return result;
     }
+  }
+
+  /**
+   * 记录引擎调用审计日志
+   */
+  private async logInvocation(req: EngineInvocationRequest<any>, res: EngineInvocationResult<any>) {
+    await this.auditLogService.record({
+      action: 'ENGINE_HUB_INVOKE',
+      resourceType: 'engine',
+      resourceId: res.selectedEngineKey || req.engineKey,
+      traceId: req.metadata?.traceId,
+      details: {
+        request: {
+          engineKey: req.engineKey,
+          engineVersion: req.engineVersion,
+        },
+        response: {
+          success: res.success,
+          selectedEngineKey: res.selectedEngineKey,
+          selectedEngineVersion: res.selectedEngineVersion,
+          fallbackReason: res.fallbackReason,
+          error: res.error,
+          metrics: res.metrics,
+        },
+      },
+    });
   }
 
   /**

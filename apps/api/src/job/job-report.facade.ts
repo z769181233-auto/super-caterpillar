@@ -23,7 +23,7 @@ export class JobReportFacade {
     private readonly qualityMetricsWriter: QualityMetricsWriter,
     private readonly prisma: PrismaService,
     private readonly directorSolver: DirectorConstraintSolverService
-  ) {}
+  ) { }
 
   /**
    * 处理 Job 回报（Facade 层）
@@ -154,7 +154,60 @@ export class JobReportFacade {
       }
     }
 
-    // 3. Stage 8: Trigger Video Render & Create Asset (Structure -> Video Loop)
+    // 3. CE01: Reference Sheet Asset Binding
+    if (
+      updatedJob &&
+      updatedJob.type === JobTypeEnum.CE01_REFERENCE_SHEET &&
+      updatedJob.status === JobStatusEnum.SUCCEEDED
+    ) {
+      try {
+        // 1) 提取生成的资产 keys
+        const assetKeys = params.result?.assets || params.result?.assetKeys || [];
+        const characterId = (updatedJob.payload as any)?.characterId;
+        const fingerprint = (updatedJob.payload as any)?.fingerprint;
+
+        if (assetKeys.length > 0) {
+          // 2) SECURITY: 精确定位 binding（禁止 updateMany），并使用 merge 语义更新 metadata
+          const binding = await this.prisma.jobEngineBinding.findFirst({
+            where: {
+              jobId: updatedJob.id,
+              engineKey: 'character_visual',
+            },
+          });
+
+          if (!binding) {
+            this.logger.warn(`[CE01] No binding found for job ${updatedJob.id}, skipping asset binding`);
+          } else {
+            // 3) Merge metadata（保留已有字段，防止覆盖）
+            const oldMetadata = (binding.metadata as any) || {};
+            const nextMetadata = {
+              ...oldMetadata,
+              characterId,
+              fingerprint,
+              artifacts: assetKeys,
+              completedAt: new Date().toISOString(),
+            };
+
+            // 4) 精确更新（by binding.id）
+            await this.prisma.jobEngineBinding.update({
+              where: { id: binding.id },
+              data: { metadata: nextMetadata as any },
+            });
+
+            this.logger.log(
+              `[CE01] Merged metadata for binding ${binding.id}, artifacts: ${assetKeys.length}`
+            );
+          }
+        }
+      } catch (e: any) {
+        this.logger.error(
+          `[CE01] Failed to update JobEngineBinding metadata: ${e.message}`,
+          e.stack
+        );
+      }
+    }
+
+    // 4. Stage 8: Trigger Video Render & Create Asset (Structure -> Video Loop)
     if (updatedJob && updatedJob.status === JobStatusEnum.SUCCEEDED) {
       try {
         // Case A: SHOT_RENDER finished -> Trigger VIDEO_RENDER

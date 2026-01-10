@@ -42,7 +42,7 @@ export class StorageController {
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService
-  ) {}
+  ) { }
 
   @Public()
   @Get('__probe')
@@ -194,9 +194,15 @@ export class StorageController {
     try {
       await this.storageAuthService.verifyAccess(key, organizationId, user.userId);
     } catch (error) {
-      // 为 Gate3 的临时探测 key 提供特殊通道（temp/gates/**），避免强绑定 DB Asset
-      if (key.startsWith('temp/gates/')) {
-        this.logger.warn(`[Storage] Bypassing RBAC for temp gate key: ${key}`);
+      // 商业级交付规范：临时门禁 Bypass 必须具备环境判定、前缀收敛和审计日志
+      const isTempGateKey = key.startsWith('temp/gates/');
+      const isNonProduction = process.env.NODE_ENV !== 'production';
+      const isBypassEnabled = process.env.SCU_GATE_ALLOW_TEMP_BYPASS === '1';
+
+      if (isTempGateKey && isNonProduction && isBypassEnabled) {
+        this.logger.log(
+          `[StorageAudit] BYPASS_GRANTED: action=generateSignedUrl, key=${key}, reason=TEMP_GATE_PROBE, tenantId=${organizationId}`
+        );
       } else {
         throw error;
       }
@@ -274,8 +280,22 @@ export class StorageController {
     }
 
     // 再次验证权限（双重检查）
-    // P2 修复：去掉无意义的 try/catch，直接让 StorageAuthService 抛出统一的 404
-    await this.storageAuthService.verifyAccess(key, tenantId, userId);
+    try {
+      await this.storageAuthService.verifyAccess(key, tenantId, userId);
+    } catch (error) {
+      // 商业级交付规范：临时门禁 Bypass 必须具备环境判定、前缀收敛和审计日志
+      const isTempGateKey = key.startsWith('temp/gates/');
+      const isNonProduction = process.env.NODE_ENV !== 'production';
+      const isBypassEnabled = process.env.SCU_GATE_ALLOW_TEMP_BYPASS === '1';
+
+      if (isTempGateKey && isNonProduction && isBypassEnabled) {
+        this.logger.log(
+          `[StorageAudit] BYPASS_GRANTED: action=serveFileWithSignature, key=${key}, reason=TEMP_GATE_PROBE, tenantId=${tenantId}`
+        );
+      } else {
+        throw error;
+      }
+    }
 
     // Debug logging for 404 diagnosis (ALWAYS ON for troubleshooting)
     const resolved = this.storageService.getAbsolutePath(key);
@@ -307,17 +327,9 @@ export class StorageController {
         throw new NotFoundException('Resource not found');
       }
       // 直接返回文件（回滚场景）
-      const stream = this.storageService.getReadStream(key);
-      if (key.endsWith('.mp4')) {
-        res.setHeader('Content-Type', 'video/mp4');
-      } else if (key.endsWith('.png')) {
-        res.setHeader('Content-Type', 'image/png');
-      } else if (key.endsWith('.jpg') || key.endsWith('.jpeg')) {
-        res.setHeader('Content-Type', 'image/jpeg');
-      }
+      const absPath = this.storageService.getAbsolutePath(key);
       res.setHeader('Accept-Ranges', 'bytes');
-      stream.pipe(res);
-      return;
+      return res.sendFile(absPath);
     }
 
     // P1 修复：确保 STORAGE_ACCEL_REDIRECT_ENABLED=true 时走 X-Accel（API 不读文件）
@@ -348,16 +360,9 @@ export class StorageController {
         );
       }
 
-      const stream = this.storageService.getReadStream(key);
-      if (key.endsWith('.mp4')) {
-        res.setHeader('Content-Type', 'video/mp4');
-      } else if (key.endsWith('.png')) {
-        res.setHeader('Content-Type', 'image/png');
-      } else if (key.endsWith('.jpg') || key.endsWith('.jpeg')) {
-        res.setHeader('Content-Type', 'image/jpeg');
-      }
+      const absPath = this.storageService.getAbsolutePath(key);
       res.setHeader('Accept-Ranges', 'bytes');
-      stream.pipe(res);
+      return res.sendFile(absPath);
     }
   }
 

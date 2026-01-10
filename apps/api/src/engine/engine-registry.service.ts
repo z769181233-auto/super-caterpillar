@@ -221,6 +221,7 @@ export class EngineRegistry {
       CE04_VISUAL_ENRICHMENT: 'ce04_visual_enrichment',
       CE06_NOVEL_PARSING: 'ce06_novel_parsing',
       CE07_MEMORY_UPDATE: 'ce07_memory_update',
+      CE01_REFERENCE_SHEET: 'character_visual',
 
       // TEST_HTTP_ENGINE_CALL: 'mock_http_engine', // 仅用于测试，不接入现有业务流程
     };
