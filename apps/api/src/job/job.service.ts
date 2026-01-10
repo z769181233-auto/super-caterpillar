@@ -97,7 +97,7 @@ export class JobService {
     @Inject(BudgetService) private readonly budgetService: BudgetService,
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService
-  ) {}
+  ) { }
 
   async create(
     shotId: string,
@@ -218,6 +218,12 @@ export class JobService {
           `Insufficient credits to start job. Required: ${requiredCredits} credits.`
         );
       }
+    }
+
+    // E4: SHOT_RENDER 强制契约 - 必须携带有效 referenceSheetId
+    if (createJobDto.type === JobTypeEnum.SHOT_RENDER) {
+      const referenceSheetId = createJobDto.payload?.referenceSheetId;
+      await this.validateReferenceSheetId(referenceSheetId, organizationId, project.id);
     }
 
     const finalTaskId =
@@ -488,25 +494,29 @@ export class JobService {
   async createCECoreJob(params: {
     projectId: string;
     organizationId: string;
-    taskId: string;
+    taskId?: string;
     jobType: JobTypeType;
     payload: any;
+    traceId?: string;
   }): Promise<any> {
     const { projectId, organizationId, taskId, jobType, payload } = params;
+    let traceId = params.traceId;
 
-    // Stage13-Final: 从 Task 获取 Pipeline 级 traceId
-    const task = await this.prisma.task.findUnique({
-      where: { id: taskId },
-      select: { traceId: true },
-    });
+    if (!traceId && taskId) {
+      // Stage13-Final: 从 Task 获取 Pipeline 级 traceId
+      const task = await this.prisma.task.findUnique({
+        where: { id: taskId },
+        select: { traceId: true },
+      });
 
-    if (!task) {
-      throw new NotFoundException('Resource not found');
+      if (task) {
+        traceId = task.traceId ?? undefined;
+      }
     }
 
-    const traceId = task.traceId;
     if (!traceId) {
-      throw new BadRequestException(`Task ${taskId} does not have traceId`);
+      // 如果没有传入 traceId 且无法从 Task 获取，生成一个新的
+      traceId = `tr_ce01_${randomUUID()}`;
     }
 
     // CE Job 需要占位的 episode/scene/shot（因为 ShotJob 要求这些字段必填）
@@ -610,6 +620,154 @@ export class JobService {
     });
 
     return job;
+  }
+
+  /**
+   * 创建 CE01 Character Reference Sheet Job（协议化实例化）
+   * PHASE 2A.2: 实现零新增表状态下的协议闭环
+   */
+  async createCharacterReferenceSheetJob(params: {
+    characterId: string;
+    organizationId: string;
+    projectId: string;
+    posePreset?: string;
+    styleSeed?: string;
+    userId: string;
+    traceId?: string;
+  }): Promise<{ referenceSheetId: string; engineKey: string; engineVersion: string; fingerprint: string }> {
+    const { characterId, organizationId, projectId, posePreset = 'front', styleSeed = 'default', userId, traceId } = params;
+    const engineKey = 'character_visual';
+    const jobType = JobTypeEnum.CE01_REFERENCE_SHEET;
+
+    // 1. 获取母引擎版本（最新激活版）
+    const engineConfig = await this.engineConfigStore.resolveEngineConfig(engineKey, 'default');
+    const engineVersion = engineConfig?.version || 'default';
+
+    // 2. 计算协议级指纹 (Stable Fingerprint)
+    const fingerprint = `fp_ce01_${characterId}_${posePreset}_${styleSeed}_${engineVersion}`;
+
+    // 3. 幂等检查：在现有 JobEngineBinding 中寻找已完成的实例
+    // SECURITY: 必须限定 organizationId 和 projectId 作用域，防止跨租户串用
+    const existingBinding = await this.prisma.jobEngineBinding.findFirst({
+      where: {
+        engineKey,
+        status: { in: [JobEngineBindingStatus.BOUND, JobEngineBindingStatus.EXECUTING, JobEngineBindingStatus.COMPLETED] },
+        metadata: {
+          path: ['fingerprint'],
+          equals: fingerprint,
+        },
+        job: {
+          organizationId,
+          projectId,
+        },
+      },
+      include: { engineVersion: true },
+    });
+
+    if (existingBinding) {
+      this.logger.log(`[CE01] Idempotency hit: found existing binding ${existingBinding.id} for fingerprint ${fingerprint}`);
+      return {
+        referenceSheetId: existingBinding.id,
+        engineKey: existingBinding.engineKey,
+        engineVersion: existingBinding.engineVersion?.versionName || 'default',
+        fingerprint,
+      };
+    }
+
+    // 4. 创建 CE01 Job（复用 ceCoreJob 占位逻辑）
+    const job = await this.createCECoreJob({
+      projectId,
+      organizationId,
+      jobType,
+      traceId,
+      payload: {
+        characterId,
+        posePreset,
+        styleSeed,
+        fingerprint,
+        traceId,
+      },
+    });
+
+    // 5. 绑定 Engine 并注入 Fingerprint 到 Metadata
+    const binding = await this.prisma.$transaction(async (tx) => {
+      let b = await tx.jobEngineBinding.findUnique({ where: { jobId: job.id } });
+      if (!b) {
+        const engine = await tx.engine.findUnique({ where: { engineKey } });
+        if (!engine) throw new BadRequestException(`Mother engine ${engineKey} missing`);
+
+        b = await tx.jobEngineBinding.create({
+          data: {
+            jobId: job.id,
+            engineId: engine.id,
+            engineKey,
+            status: JobEngineBindingStatus.BOUND,
+            metadata: {
+              characterId,
+              fingerprint,
+              posePreset,
+              styleSeed,
+            },
+          },
+        });
+      } else {
+        b = await tx.jobEngineBinding.update({
+          where: { id: b.id },
+          data: {
+            metadata: {
+              ...(b.metadata as any || {}),
+              characterId,
+              fingerprint,
+              posePreset,
+              styleSeed,
+            },
+          },
+        });
+      }
+      return b;
+    });
+
+    return {
+      referenceSheetId: binding.id,
+      engineKey: binding.engineKey,
+      engineVersion,
+      fingerprint,
+    };
+  }
+
+  /**
+   * E4: 下游拦截 - 验证 referenceSheetId 存在且属于当前租户/项目
+   * SECURITY: 防止跨租户引用 referenceSheetId 或缺失 referenceSheetId
+   */
+  private async validateReferenceSheetId(
+    referenceSheetId: string | undefined,
+    organizationId: string,
+    projectId: string
+  ): Promise<void> {
+    if (!referenceSheetId) {
+      throw new BadRequestException({
+        code: 'REFERENCE_SHEET_REQUIRED',
+        message: 'referenceSheetId is required for SHOT_RENDER jobs',
+      });
+    }
+
+    // 验证 referenceSheetId 存在且属于当前 org/project
+    const binding = await this.prisma.jobEngineBinding.findFirst({
+      where: {
+        id: referenceSheetId,
+        job: {
+          organizationId,
+          projectId,
+        },
+      },
+    });
+
+    if (!binding) {
+      throw new BadRequestException({
+        code: 'REFERENCE_SHEET_FORBIDDEN',
+        message: 'referenceSheetId does not exist or does not belong to current organization/project',
+      });
+    }
   }
 
   /**
@@ -801,15 +959,13 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${
-          filterTypes.length > 0
-            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-            : Prisma.empty
+        ${filterTypes.length > 0
+          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+          : Prisma.empty
         }
-        ${
-          supportedEngines.length > 0
-            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-            : Prisma.empty
+        ${supportedEngines.length > 0
+          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+          : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10

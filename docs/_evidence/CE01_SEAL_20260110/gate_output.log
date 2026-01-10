@@ -1,0 +1,75 @@
+==================================================
+Gate: CE01 Protocol Instantiation (HMAC V1)
+==================================================
+API: http://localhost:3001
+Project: 2561a1d4-c375-441e-b4f2-24d1ddbfd1d7
+Character: 04058bf0-a622-499e-8188-1fe2c7e0c4e4
+
+[STEP 0] HMAC PING 自检
+HTTP/1.1 200 OK
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Origin-Agent-Cluster: ?1
+Referrer-Policy: no-referrer
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 0
+Vary: Origin
+Access-Control-Allow-Credentials: true
+x-trace-id: 15fddf98-7ba0-4f8d-b8e5-d9fec6ffa422
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 99
+X-RateLimit-Reset: 60
+Content-Type: application/json; charset=utf-8
+Content-Length: 73
+ETag: W/"49-qTQPqendiLGZXEyuC+4I5Ol03Mo"
+Date: Sat, 10 Jan 2026 03:37:07 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"ok":true,"ts":1768016227752,"message":"HMAC authentication successful"}
+✅ HMAC PING SUCCESSFUL
+
+[STEP 1] 调用 CE01 实例化接口 (第一次)
+Response: {"ok":true,"data":{"referenceSheetId":"b18aaf32-6081-4db5-9279-c3f2a4859dc1","engineKey":"character_visual","engineVersion":"default","fingerprint":"fp_ce01_04058bf0-a622-499e-8188-1fe2c7e0c4e4_front_default_default"}}
+✅ STEP 1 PASSED: referenceSheetId=b18aaf32-6081-4db5-9279-c3f2a4859dc1
+   Fingerprint: fp_ce01_04058bf0-a622-499e-8188-1fe2c7e0c4e4_front_default_default
+   EngineKey: character_visual
+
+[STEP 2] 验证 JobEngineBinding 记录存在
+✅ STEP 2 PASSED: JobEngineBinding exists
+
+[STEP 3] 验证 JobEngineBinding.metadata 包含 fingerprint
+✅ STEP 3 PASSED: Metadata contains fingerprint
+
+[STEP 4] 调用 CE01 实例化接口 (第二次，验证幂等)
+Response: {"ok":true,"data":{"referenceSheetId":"b18aaf32-6081-4db5-9279-c3f2a4859dc1","engineKey":"character_visual","engineVersion":"default","fingerprint":"fp_ce01_04058bf0-a622-499e-8188-1fe2c7e0c4e4_front_default_default"}}
+✅ STEP 4 PASSED: Idempotency verified (same ID returned)
+
+[STEP 5] 调用 CE01 实例化接口 (不同参数，应产生新 ID)
+✅ STEP 5 PASSED: Different parameters => different ID
+   Original: b18aaf32-6081-4db5-9279-c3f2a4859dc1
+   New:      e1171555-0287-41d5-8f9a-a141bbb5f85b
+
+[STEP 6] E4: 验证缺 referenceSheetId 的 SHOT_RENDER 被拒绝
+✅ STEP 6 PASSED: Missing referenceSheetId correctly rejected (HTTP 400, code=REFERENCE_SHEET_REQUIRED)
+
+==================================================
+✅ CE01 PROTOCOL INSTANTIATION GATE PASSED
+==================================================
+验证项：
+  ✓ HMAC Ping 自检通过
+  ✓ 实例化调用成功
+  ✓ referenceSheetId 生成
+  ✓ JobEngineBinding 记录存在
+  ✓ Metadata 包含 fingerprint
+  ✓ 幂等性验证通过
+  ✓ 新参数产生新实例
+  ✓ E4 下游拦截：缺 referenceSheetId 被拒绝
+
+Sealed: 2026-01-10T03:37:08Z
+==================================================
