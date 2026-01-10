@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "scanRanges": ["apps/api/src", "apps/workers/src"],
+  "callSites": [],
+  "engineSurface": [],
+  "securityAuditSurface": {
+    "hmacProtected": ["/_internal/engine/invoke"],
+    "auditActions": ["ENGINE_HUB_INVOKE"],
+    "metricsUsageProducers": []
+  },
+  "technicalDebt": {
+    "allowlist": [
+      "apps/workers/src/engine-adapter-client.ts",
+      "apps/workers/src/novel-analysis-processor.ts",
+      "apps/workers/src/adapters/visual-density.adapter.ts",
+      "apps/workers/src/adapters/visual-enrichment.adapter.ts",
+      "apps/workers/src/billing/cost-ledger.service.ts"
+    ],
+    "constraint": "MUST_NOT_EXPAND",
+    "notes": "Legacy adapters and billing files. Expansion is prohibited."
+  }
+}
