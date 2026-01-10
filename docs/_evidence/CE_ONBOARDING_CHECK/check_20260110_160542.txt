@@ -1,0 +1,233 @@
+==================================================
+[CE ONBOARDING CHECK] START
+==================================================
+Mode: CHECK (default)
+Repo: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+Tmp:  /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.BU0ha194vS
+Time: 2026-01-10T16:05:42+0700
+
+==================================================
+[RUN] [1/5] SSOT Generator (CHECK, temp output only)
+==================================================
+[OK] SSOT generated: ../../../../../../var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.BU0ha194vS/engine_invocation_surface_ssot.json
+[OK] SSOT doc generated: ../../../../../../var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.BU0ha194vS/ENGINE_INVOCATION_SURFACE_SSOT.md
+[OK] [1/5] SSOT Generator (CHECK, temp output only)
+
+==================================================
+[RUN] [2/5] Zero Direct Link Gate
+==================================================
+==================================================
+[GATE] Repo-wide Zero Direct Link (Worker Domain)
+Purpose: 禁止 Worker 业务层直连 Provider/Selector/Adapter，结构性防退化
+==================================================
+[1/3] Static scan (deny patterns) ...
+Scan dirs: apps/workers/src apps/workers/tools apps/workers/test
+Deny pattern: CE03.*Selector|CE04.*Selector|ShotRender.*Selector|EngineSelector|@scu/engines-|/providers/|LocalAdapter|adapterToken:
+Allow pattern: EngineHubClient|EngineInvokerHubService|/_internal/engine/invoke|EngineRegistryHubService|engine-hub
+
+Technical Debt Files (Known Legacy, Tolerated):
+  - apps/workers/src/engine-adapter-client.ts (未被引用，待清理)
+  - apps/workers/src/novel-analysis-processor.ts (CE06 内部逻辑)
+  - apps/workers/src/adapters/*.adapter.ts (遗留本地适配器)
+  - apps/workers/src/billing/cost-ledger.service.ts (类型引用)
+----
+[SKIP] Missing dir (not scanned): apps/workers/tools
+[SKIP] Missing dir (not scanned): apps/workers/test
+----
+Summary:
+  Scanned: apps/workers/src
+  Skipped: apps/workers/tools apps/workers/test
+----
+[2/3] PASS. Business layer zero-direct-link satisfied.
+[3/3] Technical debt acknowledged (legacy adapters excluded from gate).
+Evidence: docs/_evidence/CE02_SEAL_20260110/zero_direct_link/zero_direct_link_repo_scan_20260110_160544.txt
+[OK] [2/5] Zero Direct Link Gate
+
+==================================================
+[RUN] [3/5] SSOT Gate (CE-ARCH-GUARD-02)
+==================================================
+--- [GATE] CE-ARCH-GUARD-02_ENGINE_INVOCATION_SURFACE_SSOT START ---
+[SCAN] Generating SSOT to temp: /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.F9t1EI4PVb
+[ALLOWLIST] Technical Debt allowlist unchanged ✓
+[DIFF] SSOT synchronized ✓
+[EVIDENCE] docs/_evidence/CE02_SEAL_20260110/engine_invocation_surface_ssot/gate_ce_arch_guard_02_20260110_160545.txt
+--- [GATE] CE-ARCH-GUARD-02_ENGINE_INVOCATION_SURFACE_SSOT END ---
+[OK] [3/5] SSOT Gate (CE-ARCH-GUARD-02)
+
+==================================================
+[RUN] [4/5] Lint
+==================================================
+
+> super-caterpillar-universe@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> turbo run lint "--" "--concurrency=1"
+
+turbo 2.6.3
+
+• Packages in scope: @scu/billing, @scu/config, @scu/engines-ce03, @scu/engines-ce04, @scu/engines-ce06, @scu/engines-shot-render, @scu/engines-video-merge, @scu/observability, @scu/router, @scu/shared-types, @scu/storage, @scu/worker, api, database, web
+• Running lint in 15 packages
+• Remote caching disabled
+@scu/observability:build: cache miss, executing 53db75c974e771a1
+database:build: cache miss, executing 6c1365032fa60cd7
+@scu/engines-video-merge:build: cache miss, executing 2a4037f93ad772cc
+@scu/storage:build: cache miss, executing d90134f2d8887204
+@scu/config:build: cache miss, executing 3a40a02225d7f8b2
+@scu/shared-types:build: cache miss, executing 5cf8b2c6caf598c0
+@scu/engines-ce04:build: cache miss, executing afe3b919b63475b6
+@scu/engines-shot-render:build: cache miss, executing fed32a9fa1d7dfaa
+@scu/engines-ce06:build: cache miss, executing 85812aa4876424d3
+@scu/billing:build: cache miss, executing c86b7f5407d0b196
+@scu/observability:build: 
+@scu/observability:build: > @scu/observability@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/observability
+@scu/observability:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/observability:build: 
+@scu/storage:build: 
+@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > tsc
+@scu/storage:build: 
+@scu/engines-video-merge:build: 
+@scu/engines-video-merge:build: > @scu/engines-video-merge@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/video_merge
+@scu/engines-video-merge:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-video-merge:build: 
+database:build: 
+database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
+database:build: 
+@scu/config:build: 
+@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+@scu/config:build: > tsc
+@scu/config:build: 
+@scu/engines-shot-render:build: 
+@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render
+@scu/engines-shot-render:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-shot-render:build: 
+@scu/engines-ce06:build: 
+@scu/engines-ce06:build: > @scu/engines-ce06@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce06
+@scu/engines-ce06:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce06:build: 
+@scu/shared-types:build: 
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > tsc -p tsconfig.build.json
+@scu/shared-types:build: 
+@scu/engines-ce04:build: 
+@scu/engines-ce04:build: > @scu/engines-ce04@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce04
+@scu/engines-ce04:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce04:build: 
+@scu/billing:build: 
+@scu/billing:build: > @scu/billing@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/billing
+@scu/billing:build: > tsup index.ts model-price-table.ts --format cjs --dts --clean
+@scu/billing:build: 
+@scu/engines-ce06:build: CLI Building entry: src/index.ts
+@scu/engines-ce06:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-ce06:build: CLI tsup v8.5.1
+@scu/engines-ce06:build: CLI Target: es2020
+@scu/engines-ce06:build: CLI Cleaning output folder
+@scu/engines-ce06:build: CJS Build start
+@scu/engines-ce06:build: CJS dist/index.js 5.06 KB
+@scu/engines-ce06:build: CJS ⚡️ Build success in 89ms
+@scu/observability:build: CLI Building entry: src/index.ts
+@scu/observability:build: CLI Using tsconfig: tsconfig.json
+@scu/observability:build: CLI tsup v8.5.1
+@scu/observability:build: CLI Target: es2020
+@scu/observability:build: CLI Cleaning output folder
+@scu/observability:build: CJS Build start
+@scu/observability:build: CJS dist/index.js 6.88 KB
+@scu/observability:build: CJS ⚡️ Build success in 91ms
+@scu/engines-video-merge:build: CLI Building entry: src/index.ts
+@scu/engines-video-merge:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-video-merge:build: CLI tsup v8.5.1
+@scu/engines-video-merge:build: CLI Target: es2020
+@scu/engines-video-merge:build: CLI Cleaning output folder
+@scu/engines-video-merge:build: CJS Build start
+@scu/engines-video-merge:build: CJS dist/index.js 8.12 KB
+@scu/engines-video-merge:build: CJS ⚡️ Build success in 24ms
+@scu/engines-shot-render:build: CLI Building entry: src/index.ts
+@scu/engines-shot-render:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-shot-render:build: CLI tsup v8.5.1
+@scu/engines-shot-render:build: CLI Target: es2020
+@scu/engines-shot-render:build: CLI Cleaning output folder
+@scu/engines-shot-render:build: CJS Build start
+@scu/engines-shot-render:build: CJS dist/index.js 14.60 KB
+@scu/engines-shot-render:build: CJS ⚡️ Build success in 44ms
+@scu/engines-ce04:build: CLI Building entry: src/index.ts
+@scu/billing:build: CLI Building entry: index.ts, model-price-table.ts
+@scu/engines-ce04:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-ce04:build: CLI tsup v8.5.1
+@scu/engines-ce04:build: CLI Target: es2020
+@scu/engines-ce04:build: CLI Cleaning output folder
+@scu/billing:build: CLI Using tsconfig: tsconfig.json
+@scu/billing:build: CLI tsup v8.5.1
+@scu/billing:build: CLI Target: es2020
+@scu/billing:build: CLI Cleaning output folder
+@scu/billing:build: CJS Build start
+@scu/engines-ce04:build: CJS Build start
+@scu/engines-ce04:build: CJS dist/index.js 3.29 KB
+@scu/engines-ce04:build: CJS ⚡️ Build success in 60ms
+@scu/engines-ce06:build: DTS Build start
+@scu/billing:build: 
+@scu/billing:build:  WARN  [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mCannot find base config file "../../tsconfig.base.json"[0m [tsconfig.json]
+@scu/billing:build: 
+@scu/billing:build:     tsconfig.json:2:13:
+@scu/billing:build: [37m      2 │   "extends": [32m"../../tsconfig.base.json"[37m,
+@scu/billing:build:         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: 
+@scu/billing:build: CJS dist/index.js             2.15 KB
+@scu/billing:build: CJS dist/model-price-table.js 2.17 KB
+@scu/billing:build: CJS ⚡️ Build success in 274ms
+@scu/observability:build: DTS Build start
+@scu/engines-video-merge:build: DTS Build start
+@scu/engines-ce03:build: cache miss, executing 027d8710d85ea8f1
+@scu/engines-shot-render:build: DTS Build start
+@scu/engines-ce04:build: DTS Build start
+@scu/billing:build: DTS Build start
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/engines-ce03:build: 
+@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce03
+@scu/engines-ce03:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/engines-ce03:build: 
+web:lint: cache miss, executing 0346a2f731619d65
+@scu/engines-ce03:build: CLI Building entry: src/index.ts
+@scu/engines-ce03:build: CLI Using tsconfig: tsconfig.json
+@scu/engines-ce03:build: CLI tsup v8.5.1
+@scu/engines-ce03:build: CLI Target: es2020
+@scu/engines-ce03:build: CLI Cleaning output folder
+@scu/engines-ce03:build: CJS Build start
+@scu/engines-ce03:build: CJS dist/index.js 3.16 KB
+@scu/engines-ce03:build: CJS ⚡️ Build success in 32ms
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+@scu/engines-ce06:build: DTS ⚡️ Build success in 1915ms
+@scu/engines-ce06:build: DTS dist/index.d.ts 1.73 KB
+@scu/observability:build: DTS ⚡️ Build success in 1874ms
+@scu/observability:build: DTS dist/index.d.ts 1.48 KB
+api:lint: cache miss, executing 67c1f6c2dea68e87
+@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: 
+web:lint: 
+web:lint: > web@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web
+web:lint: > next lint "--concurrency=1"
+web:lint: 
+@scu/engines-ce03:build: DTS Build start
+@scu/billing:build: DTS ⚡️ Build success in 1631ms
+@scu/billing:build: DTS dist/model-price-table.d.ts 1000.00 B
+@scu/billing:build: DTS dist/index.d.ts             112.00 B
+@scu/engines-ce04:build: DTS ⚡️ Build success in 1691ms
+@scu/engines-ce04:build: DTS dist/index.d.ts 1.28 KB
+@scu/engines-video-merge:build: DTS ⚡️ Build success in 1944ms
+@scu/engines-video-merge:build: DTS dist/index.d.ts 1.35 KB
+web:lint: error: unknown option '--concurrency=1'
+web:lint:  ELIFECYCLE  Command failed with exit code 1.
+@scu/engines-shot-render:build: DTS ⚡️ Build success in 1846ms
+@scu/engines-shot-render:build: DTS dist/index.d.ts 1.56 KB
+web:lint: ERROR: command finished with error: command (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web) /Users/adam/Library/pnpm/.tools/pnpm/9.1.0/bin/pnpm run lint --concurrency=1 exited (1)
+web#lint: command (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web) /Users/adam/Library/pnpm/.tools/pnpm/9.1.0/bin/pnpm run lint --concurrency=1 exited (1)
+
+ Tasks:    9 successful, 13 total
+Cached:    0 cached, 13 total
+  Time:    4.46s 
+Failed:    web#lint
+
+ ERROR  run failed: command  exited (1)
+ ELIFECYCLE  Command failed with exit code 1.
