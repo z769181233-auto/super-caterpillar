@@ -120,7 +120,7 @@ let tasksRunning = 0;
 const engineAdapterClient = new EngineAdapterClient(prisma);
 
 // 创建 EngineHubClient 实例（Stage2: 使用新的统一接口）
-const engineHubClient = new EngineHubClient(prisma);
+const engineHubClient = new EngineHubClient(apiClient);
 
 /**
  * 注册 Worker 节点
