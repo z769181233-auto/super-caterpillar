@@ -24,22 +24,22 @@ export class EngineRegistryHubService {
    */
   private engines: EngineDescriptor[] = [
     {
-      key: 'novel_analysis',
+      engineKey: 'novel_analysis',
       version: 'default',
       mode: 'local',
       adapterToken: NovelAnalysisLocalAdapter,
     },
     // Stage4: Semantic Enhancement (local stub)
     {
-      key: 'semantic_enhancement',
+      engineKey: 'semantic_enhancement',
       version: 'default',
       mode: 'local',
       adapterToken: SemanticEnhancementLocalAdapter,
     },
     // SHOT RENDER (Real Engine)
     {
-      key: 'shot_render',
-      version: 'default',
+      engineKey: 'shot_render',
+      version: 'local',
       mode: 'gpu',
       adapterToken: 'ShotRenderLocalAdapter',
     },
@@ -48,11 +48,11 @@ export class EngineRegistryHubService {
     // This is a workflow integration example ONLY.
     // DO NOT use in prod. Keep disabled in real runs via ENGINE_DISABLE_KEYS=ce05_example.
     {
-      key: 'ce05_example',
+      engineKey: 'ce05_example',
       version: 'example',
       mode: 'http',
       httpConfig: {
-        baseUrl: '${CE05_EXAMPLE_BASE_URL}',
+        baseUrl: process.env.CE05_EXAMPLE_BASE_URL || 'http://127.0.0.1:8999',
         path: '/ce05/example',
         timeoutMs: 30000,
       },
@@ -60,21 +60,21 @@ export class EngineRegistryHubService {
     },
     // Stage4: Shot Planning (local stub)
     {
-      key: 'shot_planning',
+      engineKey: 'shot_planning',
       version: 'default',
       mode: 'local',
       adapterToken: ShotPlanningLocalAdapter,
     },
     // Stage4: Structure Quality Assessment (local stub)
     {
-      key: 'structure_qa',
+      engineKey: 'structure_qa',
       version: 'default',
       mode: 'local',
       adapterToken: StructureQALocalAdapter,
     },
     // Stage13: CE Core Layer (HTTP)
     {
-      key: 'ce06_novel_parsing',
+      engineKey: 'ce06_novel_parsing',
       version: 'default',
       mode: 'http',
       httpConfig: {
@@ -83,7 +83,7 @@ export class EngineRegistryHubService {
       },
     },
     {
-      key: 'ce03_visual_density',
+      engineKey: 'ce03_visual_density',
       version: 'default',
       mode: 'http',
       httpConfig: {
@@ -92,7 +92,7 @@ export class EngineRegistryHubService {
       },
     },
     {
-      key: 'ce04_visual_enrichment',
+      engineKey: 'ce04_visual_enrichment',
       version: 'default',
       mode: 'http',
       httpConfig: {
@@ -101,7 +101,7 @@ export class EngineRegistryHubService {
       },
     },
     {
-      key: 'shot_render',
+      engineKey: 'shot_render',
       version: 'default',
       mode: 'http',
       httpConfig: {
@@ -122,14 +122,14 @@ export class EngineRegistryHubService {
     const targetVersion = version || 'default';
 
     // 优先匹配精确版本
-    const exactMatch = this.engines.find((e) => e.key === engineKey && e.version === targetVersion);
+    const exactMatch = this.engines.find((e) => e.engineKey === engineKey && e.version === targetVersion);
 
     if (exactMatch) {
       return exactMatch;
     }
 
     // 如果没有精确匹配，fallback 到默认版本
-    const defaultMatch = this.engines.find((e) => e.key === engineKey && e.version === 'default');
+    const defaultMatch = this.engines.find((e) => e.engineKey === engineKey && e.version === 'default');
 
     if (defaultMatch) {
       this.logger.debug(`Engine ${engineKey}@${targetVersion} not found, using default version`);
@@ -145,12 +145,12 @@ export class EngineRegistryHubService {
    */
   register(descriptor: EngineDescriptor): void {
     const existing = this.engines.find(
-      (e) => e.key === descriptor.key && e.version === descriptor.version
+      (e) => e.engineKey === descriptor.engineKey && e.version === descriptor.version
     );
 
     if (existing) {
       this.logger.warn(
-        `Engine ${descriptor.key}@${descriptor.version} already registered, overwriting`
+        `Engine ${descriptor.engineKey}@${descriptor.version} already registered, overwriting`
       );
       const index = this.engines.indexOf(existing);
       this.engines[index] = descriptor;
@@ -159,7 +159,7 @@ export class EngineRegistryHubService {
     }
 
     this.logger.log(
-      `Registered engine: ${descriptor.key}@${descriptor.version} (mode: ${descriptor.mode})`
+      `Registered engine: ${descriptor.engineKey}@${descriptor.version} (mode: ${descriptor.mode})`
     );
   }
 

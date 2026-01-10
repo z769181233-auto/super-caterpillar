@@ -10,7 +10,7 @@ export interface EngineDescriptor {
   /**
    * 引擎标识（如 "novel_analysis"）
    */
-  key: string;
+  engineKey: string;
 
   /**
    * 引擎版本（如 "default" | "v1"）
