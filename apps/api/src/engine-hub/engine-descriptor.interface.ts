@@ -20,7 +20,12 @@ export interface EngineDescriptor {
   /**
    * 调用模式（本地或 HTTP）
    */
-  mode: 'local' | 'http';
+  mode: 'local' | 'http' | 'gpu';
+
+  /**
+   * 备注信息（用于审计 SSOT）
+   */
+  notes?: string;
 
   /**
    * Nest 注入 Token（用于本地 adapter）

@@ -36,6 +36,28 @@ export class EngineRegistryHubService {
       mode: 'local',
       adapterToken: SemanticEnhancementLocalAdapter,
     },
+    // SHOT RENDER (Real Engine)
+    {
+      key: 'shot_render',
+      version: 'default',
+      mode: 'gpu',
+      adapterToken: 'ShotRenderLocalAdapter',
+    },
+
+    // CE05 EXAMPLE (NON-PROD)
+    // This is a workflow integration example ONLY.
+    // DO NOT use in prod. Keep disabled in real runs via ENGINE_DISABLE_KEYS=ce05_example.
+    {
+      key: 'ce05_example',
+      version: 'example',
+      mode: 'http',
+      httpConfig: {
+        baseUrl: '${CE05_EXAMPLE_BASE_URL}',
+        path: '/ce05/example',
+        timeoutMs: 30000,
+      },
+      notes: 'EXAMPLE_ONLY_DO_NOT_USE_IN_PROD',
+    },
     // Stage4: Shot Planning (local stub)
     {
       key: 'shot_planning',
