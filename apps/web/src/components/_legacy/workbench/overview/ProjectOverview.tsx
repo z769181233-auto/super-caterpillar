@@ -10,7 +10,7 @@ import { FlowProgress } from './FlowProgress';
 import { NextActionCard } from '@/components/workbench/overview/NextActionCard';
 import { StructureStatsCard } from '@/components/workbench/overview/StructureStatsCard';
 import { JobMonitor } from '@/components/workbench/overview/JobMonitor';
-import * as util from "util";
+import * as util from 'util';
 
 interface ProjectOverviewProps {
   project: ProjectSceneGraph;
@@ -24,10 +24,10 @@ export function ProjectOverview({ project, analysisStatus }: ProjectOverviewProp
   const refresh = useCallback(async () => {
     try {
       const overview = await projectApi.getProjectOverview(project.projectId);
-      process.stdout.write(util.format('Overview fetched:', overview) + "\n");
+      process.stdout.write(util.format('Overview fetched:', overview) + '\n');
       setData(overview);
     } catch (e) {
-      process.stderr.write(util.format('Failed to fetch overview:', e) + "\n");
+      process.stderr.write(util.format('Failed to fetch overview:', e) + '\n');
     }
   }, [project.projectId]);
 
@@ -38,7 +38,7 @@ export function ProjectOverview({ project, analysisStatus }: ProjectOverviewProp
   }, [refresh]);
 
   const handleAction = async (key: string, href?: string) => {
-    process.stdout.write(util.format('Action triggered:', key, href) + "\n");
+    process.stdout.write(util.format('Action triggered:', key, href) + '\n');
 
     if (href) {
       if (href.startsWith('navigate:')) {
@@ -67,7 +67,7 @@ export function ProjectOverview({ project, analysisStatus }: ProjectOverviewProp
           await novelImportApi.analyzeNovel(project.projectId);
           refresh(); // Immediate refresh
         } catch (e) {
-          process.stderr.write(util.format(e) + "\n");
+          process.stderr.write(util.format(e) + '\n');
           alert('Failed to start analysis');
         }
       }

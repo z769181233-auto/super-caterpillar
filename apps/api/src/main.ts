@@ -6,11 +6,15 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { env } from '@scu/config';
-import * as util from "util";
+import * as util from 'util';
 
 async function bootstrap() {
   // 诊断环境变量加载情况
-  process.stdout.write(util.format(`[GATE_DIAGNOSTIC] GATE_MODE=${process.env.GATE_MODE}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}`) + "\n");
+  process.stdout.write(
+    util.format(
+      `[GATE_DIAGNOSTIC] GATE_MODE=${process.env.GATE_MODE}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}`
+    ) + '\n'
+  );
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
@@ -110,15 +114,22 @@ async function bootstrap() {
         totalControllers++;
         if (ctrl.metatype === StorageController) {
           hasStorageController = true;
-          process.stdout.write(util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) + "\n");
+          process.stdout.write(
+            util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
+              '\n'
+          );
         }
       }
     }
 
-    process.stdout.write(util.format(`[P0_EVIDENCE] StorageController registered = ${hasStorageController}`) + "\n");
-    process.stdout.write(util.format(`[P0_EVIDENCE] Total controllers registered = ${totalControllers}`) + "\n");
+    process.stdout.write(
+      util.format(`[P0_EVIDENCE] StorageController registered = ${hasStorageController}`) + '\n'
+    );
+    process.stdout.write(
+      util.format(`[P0_EVIDENCE] Total controllers registered = ${totalControllers}`) + '\n'
+    );
   } catch (e) {
-    process.stderr.write(util.format('[P0_EVIDENCE] Failed to check modules:', e) + "\n");
+    process.stderr.write(util.format('[P0_EVIDENCE] Failed to check modules:', e) + '\n');
   }
 
   const logger = app.get(Logger);

@@ -689,6 +689,7 @@ model NovelChapter {
   episode        Episode?     @relation("ChapterEpisode")
   novelSource    NovelSource  @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
   sceneDrafts    SceneDraft[] @relation("ChapterSceneDrafts")
+  novelScenes    NovelScene[] @relation("ChapterNovelScenes")
 
   @@unique([novelSourceId, orderIndex])
   @@index([novelSourceId])
@@ -856,16 +857,17 @@ model NovelVolume {
 }
 
 model NovelScene {
-  id                 String   @id @default(uuid())
-  chapterId          String   @map("chapter_id")
+  id                 String       @id @default(uuid())
+  chapterId          String       @map("chapter_id")
+  chapter            NovelChapter @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
   index              Int
-  rawText            String?  @map("raw_text")
-  enrichedText       String?  @map("enriched_text")
-  visualDensityScore Float?   @map("visual_density_score")
-  characterIds       Json?    @map("character_ids")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-  chunkIndex         Int      @default(0) @map("chunk_index")
+  rawText            String?      @map("raw_text")
+  enrichedText       String?      @map("enriched_text")
+  visualDensityScore Float?       @map("visual_density_score")
+  characterIds       Json?        @map("character_ids")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  chunkIndex         Int          @default(0) @map("chunk_index")
 
   @@index([chapterId, index])
   @@index([chunkIndex])

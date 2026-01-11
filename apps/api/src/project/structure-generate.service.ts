@@ -17,7 +17,7 @@ export class StructureGenerateService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly sceneGraphService: SceneGraphService
-  ) { }
+  ) {}
 
   /**
    * 生成剧集结构
@@ -68,9 +68,7 @@ export class StructureGenerateService {
     }
 
     const chapters = novelSource.chapters || [];
-    this.logger.log(
-      `Found ${chapters.length} chapters in novel source: ${novelSource.id}`
-    );
+    this.logger.log(`Found ${chapters.length} chapters in novel source: ${novelSource.id}`);
 
     // 检查是否已有结构（幂等性检查）
     const existingEpisodes = project.episodes || [];
@@ -79,9 +77,7 @@ export class StructureGenerateService {
       existingEpisodes.some((e: any) => e.scenes && e.scenes.length > 0);
 
     if (hasExistingStructure) {
-      this.logger.log(
-        `Existing structure found, returning current structure (idempotent)`
-      );
+      this.logger.log(`Existing structure found, returning current structure (idempotent)`);
       // 如果已有结构，直接返回当前结构（幂等）
       return this.projectService.findTreeById(projectId, organizationId);
     }
@@ -126,7 +122,9 @@ export class StructureGenerateService {
       });
 
       if (existingScenes.length > 0) {
-        this.logger.log(`Episode ${episode.id} already has ${existingScenes.length} scenes, skipping`);
+        this.logger.log(
+          `Episode ${episode.id} already has ${existingScenes.length} scenes, skipping`
+        );
         continue;
       }
 

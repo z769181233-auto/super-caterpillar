@@ -12,7 +12,7 @@ import { LocalStorageAdapter } from '@scu/storage';
  * Uses @scu/storage for robust file handling
  */
 import { ChildProcess } from 'child_process';
-import * as util from "util";
+import * as util from 'util';
 
 // P1 修复：记录当前所有活动中的渲染进程，防止孤儿进程
 const activeProcesses = new Set<ChildProcess>();
@@ -21,7 +21,10 @@ const activeProcesses = new Set<ChildProcess>();
  * 紧急清理所有活动子进程
  */
 export function cleanupVideoRenderProcesses() {
-  process.stdout.write(util.format(`[VideoRender] Cleaning up ${activeProcesses.size} active FFmpeg processes...`) + "\n");
+  process.stdout.write(
+    util.format(`[VideoRender] Cleaning up ${activeProcesses.size} active FFmpeg processes...`) +
+      '\n'
+  );
   for (const cp of activeProcesses) {
     try {
       cp.kill('SIGKILL');
@@ -86,12 +89,16 @@ export async function processVideoRenderJob(
   const frameKeys = payload.frameKeys as string[];
   const fps = payload.fps || 24;
 
-  process.stdout.write(util.format(JSON.stringify({
-          event: 'VIDEO_RENDER_START',
-          jobId,
-          traceId,
-          framesCount: frameKeys?.length,
-        })) + "\n");
+  process.stdout.write(
+    util.format(
+      JSON.stringify({
+        event: 'VIDEO_RENDER_START',
+        jobId,
+        traceId,
+        framesCount: frameKeys?.length,
+      })
+    ) + '\n'
+  );
 
   if (!frameKeys || frameKeys.length === 0) {
     throw new Error('No frame keys provided');
@@ -134,7 +141,10 @@ export async function processVideoRenderJob(
         tempOutput,
       ];
 
-      process.stdout.write(util.format({ event: 'VIDEO_RENDER_SINGLE_IMAGE', jobId, cmd: [cmd, ...args].join(' ') }) + "\n");
+      process.stdout.write(
+        util.format({ event: 'VIDEO_RENDER_SINGLE_IMAGE', jobId, cmd: [cmd, ...args].join(' ') }) +
+          '\n'
+      );
 
       await new Promise<void>((resolve, reject) => {
         const proc = spawn(cmd, args, { cwd: workspaceDir });
@@ -179,9 +189,16 @@ export async function processVideoRenderJob(
           latencyMs: Date.now() - jobStartTime,
           auditTrail: { frameCount: 1, duration: seconds },
         })
-        .catch((e) => process.stdout.write(util.format('Audit failed', e) + "\n"));
+        .catch((e) => process.stdout.write(util.format('Audit failed', e) + '\n'));
 
-      process.stdout.write(util.format({ event: 'VIDEO_RENDER_SUCCESS_SINGLE', jobId, outputKey, durationSec: seconds }) + "\n");
+      process.stdout.write(
+        util.format({
+          event: 'VIDEO_RENDER_SUCCESS_SINGLE',
+          jobId,
+          outputKey,
+          durationSec: seconds,
+        }) + '\n'
+      );
       return { outputKey, durationSec: seconds };
     }
 
@@ -190,9 +207,13 @@ export async function processVideoRenderJob(
     const listFilePath = path.join(workspaceDir, 'input.txt');
     let listContent = frameKeys.map((key) => {
       if (!storage.exists(key)) {
-        process.stderr.write(util.format(`[Start-Video-Render] Frame missing: ${key}`) + "\n");
-        process.stderr.write(util.format(`[Start-Video-Render] StorageRoot: ${storageRoot}`) + "\n");
-        process.stderr.write(util.format(`[Start-Video-Render] AbsolutePath: ${storage.getAbsolutePath(key)}`) + "\n");
+        process.stderr.write(util.format(`[Start-Video-Render] Frame missing: ${key}`) + '\n');
+        process.stderr.write(
+          util.format(`[Start-Video-Render] StorageRoot: ${storageRoot}`) + '\n'
+        );
+        process.stderr.write(
+          util.format(`[Start-Video-Render] AbsolutePath: ${storage.getAbsolutePath(key)}`) + '\n'
+        );
         throw new Error(`Frame missing: ${key} (Root: ${storageRoot})`);
       }
       // FFmpeg needs absolute path - FORCE DURATION for test stability
@@ -208,7 +229,9 @@ export async function processVideoRenderJob(
       joinedListContent = listContent.join('\n');
     }
 
-    process.stdout.write(util.format(`[VIDEO_RENDER_DEBUG] input.txt content:\n${joinedListContent}`) + "\n");
+    process.stdout.write(
+      util.format(`[VIDEO_RENDER_DEBUG] input.txt content:\n${joinedListContent}`) + '\n'
+    );
     fs.writeFileSync(listFilePath, joinedListContent);
 
     // 2. Output Path (Temp)
@@ -234,7 +257,9 @@ export async function processVideoRenderJob(
         '-y',
         tempOutput,
       ];
-      process.stdout.write(util.format(`[VIDEO_RENDER] Using testsrc mode (VIDEO_RENDER_TESTSRC=1)`) + "\n");
+      process.stdout.write(
+        util.format(`[VIDEO_RENDER] Using testsrc mode (VIDEO_RENDER_TESTSRC=1)`) + '\n'
+      );
     } else {
       // 正常模式: 使用真实 frames concat
       args = [
@@ -253,14 +278,22 @@ export async function processVideoRenderJob(
         '-y',
         tempOutput,
       ];
-      process.stdout.write(util.format(`[VIDEO_RENDER] Using real frames concat mode (frameKeys: ${frameKeys.length})`) + "\n");
+      process.stdout.write(
+        util.format(
+          `[VIDEO_RENDER] Using real frames concat mode (frameKeys: ${frameKeys.length})`
+        ) + '\n'
+      );
     }
 
-    process.stdout.write(util.format(JSON.stringify({
-              event: 'VIDEO_RENDER_FFMPEG_CMD',
-              jobId,
-              cmd: `${cmd} ${args.join(' ')}`,
-            })) + "\n");
+    process.stdout.write(
+      util.format(
+        JSON.stringify({
+          event: 'VIDEO_RENDER_FFMPEG_CMD',
+          jobId,
+          cmd: `${cmd} ${args.join(' ')}`,
+        })
+      ) + '\n'
+    );
 
     await new Promise<void>((resolve, reject) => {
       const ff = spawn(cmd, args);
@@ -315,22 +348,30 @@ export async function processVideoRenderJob(
     const videoKey = `videos/${asset.id}.mp4`;
 
     // 5. Upload to Storage with assetId-based key
-    process.stdout.write(util.format(JSON.stringify({
-              event: 'VIDEO_STORAGE_PUT_START',
-              jobId,
-              assetId: asset.id,
-              videoKey,
-              bufferSize: sizeBytes,
-              storageRoot,
-            })) + "\n");
+    process.stdout.write(
+      util.format(
+        JSON.stringify({
+          event: 'VIDEO_STORAGE_PUT_START',
+          jobId,
+          assetId: asset.id,
+          videoKey,
+          bufferSize: sizeBytes,
+          storageRoot,
+        })
+      ) + '\n'
+    );
     await storage.put(videoKey, videoBuffer);
-    process.stdout.write(util.format(JSON.stringify({
-              event: 'VIDEO_STORAGE_PUT_DONE',
-              jobId,
-              assetId: asset.id,
-              videoKey,
-              absolutePath: storage.getAbsolutePath(videoKey),
-            })) + "\n");
+    process.stdout.write(
+      util.format(
+        JSON.stringify({
+          event: 'VIDEO_STORAGE_PUT_DONE',
+          jobId,
+          assetId: asset.id,
+          videoKey,
+          absolutePath: storage.getAbsolutePath(videoKey),
+        })
+      ) + '\n'
+    );
 
     // 6. Update Asset with final storageKey
     await prisma.asset.update({
@@ -338,24 +379,32 @@ export async function processVideoRenderJob(
       data: { storageKey: videoKey },
     });
 
-    process.stdout.write(util.format(JSON.stringify({
-              event: 'VIDEO_ASSET_REGISTERED',
-              jobId,
-              assetId: asset.id,
-              videoKey,
-              projectId: (job as any).projectId,
-            })) + "\n");
+    process.stdout.write(
+      util.format(
+        JSON.stringify({
+          event: 'VIDEO_ASSET_REGISTERED',
+          jobId,
+          assetId: asset.id,
+          videoKey,
+          projectId: (job as any).projectId,
+        })
+      ) + '\n'
+    );
 
     const duration = Date.now() - jobStartTime;
 
-    process.stdout.write(util.format(JSON.stringify({
-              event: 'VIDEO_RENDER_DONE',
-              jobId,
-              traceId,
-              videoKey,
-              elapsedMs: duration,
-              sizeBytes,
-            })) + "\n");
+    process.stdout.write(
+      util.format(
+        JSON.stringify({
+          event: 'VIDEO_RENDER_DONE',
+          jobId,
+          traceId,
+          videoKey,
+          elapsedMs: duration,
+          sizeBytes,
+        })
+      ) + '\n'
+    );
 
     // P0-2: 成本事件上报（不阻断主流程）
     const project = await prisma.project
@@ -383,13 +432,21 @@ export async function processVideoRenderJob(
             framesCount: frameKeys.length,
           },
         });
-        process.stdout.write(util.format(`[COST_EVENT] OK jobId=${jobId} costId=${costResult.id} deduplicated=${costResult.deduplicated}`) + "\n");
+        process.stdout.write(
+          util.format(
+            `[COST_EVENT] OK jobId=${jobId} costId=${costResult.id} deduplicated=${costResult.deduplicated}`
+          ) + '\n'
+        );
       } catch (e: any) {
         // 不阻断主流程，仅记录日志
-        process.stderr.write(util.format(`[COST_EVENT] FAILED jobId=${jobId}`, e.message || e) + "\n");
+        process.stderr.write(
+          util.format(`[COST_EVENT] FAILED jobId=${jobId}`, e.message || e) + '\n'
+        );
       }
     } else {
-      process.stdout.write(util.format(`[COST_EVENT] SKIP jobId=${jobId} (no project owner found)`) + "\n");
+      process.stdout.write(
+        util.format(`[COST_EVENT] SKIP jobId=${jobId} (no project owner found)`) + '\n'
+      );
     }
 
     return {
@@ -400,12 +457,16 @@ export async function processVideoRenderJob(
       status: 'SUCCESS',
     };
   } catch (error: any) {
-    process.stderr.write(util.format(JSON.stringify({
-              event: 'VIDEO_RENDER_FAIL',
-              jobId,
-              traceId,
-              reason: error.message,
-            })) + "\n");
+    process.stderr.write(
+      util.format(
+        JSON.stringify({
+          event: 'VIDEO_RENDER_FAIL',
+          jobId,
+          traceId,
+          reason: error.message,
+        })
+      ) + '\n'
+    );
     throw error;
   } finally {
     fs.rmSync(workspaceDir, { recursive: true, force: true });

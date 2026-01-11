@@ -1,5 +1,5 @@
 import { PrismaClient } from 'database';
-import * as util from "util";
+import * as util from 'util';
 
 /**
  * 调试脚本：打印最近 20 条 NOVEL_ANALYSIS Job
@@ -14,14 +14,18 @@ async function main() {
     take: 20,
   });
 
-  process.stdout.write(util.format(jobs.map((j) => ({
-          id: j.id,
-          type: j.type,
-          status: j.status,
-          workerId: j.workerId,
-          createdAt: j.createdAt,
-          updatedAt: j.updatedAt,
-        }))) + "\n");
+  process.stdout.write(
+    util.format(
+      jobs.map((j) => ({
+        id: j.id,
+        type: j.type,
+        status: j.status,
+        workerId: j.workerId,
+        createdAt: j.createdAt,
+        updatedAt: j.updatedAt,
+      }))
+    ) + '\n'
+  );
 
   await prisma.$disconnect();
   // ✅ 成功路径显式退出
@@ -31,6 +35,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  process.stderr.write(util.format(e) + "\n");
+  process.stderr.write(util.format(e) + '\n');
   process.exit(1);
 });

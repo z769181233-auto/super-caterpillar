@@ -1,6 +1,6 @@
 import { PrismaClient } from 'database';
 import { randomUUID } from 'crypto';
-import * as util from "util";
+import * as util from 'util';
 
 async function main() {
   const count = parseInt(
@@ -9,7 +9,7 @@ async function main() {
   );
   const prisma = new PrismaClient();
 
-  process.stdout.write(util.format(`[StressTrigger] Injecting ${count} PENDING jobs...`) + "\n");
+  process.stdout.write(util.format(`[StressTrigger] Injecting ${count} PENDING jobs...`) + '\n');
 
   // 1. 简化的层级创建逻辑
   let org = await prisma.organization.findFirst();
@@ -72,7 +72,9 @@ async function main() {
     });
   }
 
-  process.stdout.write(util.format(`[StressTrigger] ✅ Successfully injected ${count} jobs.`) + "\n");
+  process.stdout.write(
+    util.format(`[StressTrigger] ✅ Successfully injected ${count} jobs.`) + '\n'
+  );
   await prisma.$disconnect();
 }
 

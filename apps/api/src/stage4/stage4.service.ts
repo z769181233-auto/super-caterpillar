@@ -21,7 +21,7 @@ export class Stage4Service {
     private readonly engineInvoker: EngineInvokerHubService,
     private readonly projectService: ProjectService,
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   async ensureSceneInProject(projectId: string, sceneId: string) {
     const scene = await this.prisma.scene.findUnique({

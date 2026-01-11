@@ -3,38 +3,67 @@ import { CE03Input, CE03Output } from './types';
 export async function ce03RealEngine(input: CE03Input): Promise<CE03Output> {
   const text = input.structured_text || '';
 
-  // Minimal Heuristic for "Real" Density
-  const length = text.length;
-  const adjectives = (text.match(/adj/gi) || []).length; // Dummy check without NLP
-  // Check for some cinematic keywords
-  const lighting = (text.match(/light|shadow|dark|bright|dim/gi) || []).length;
-  const camera = (text.match(/shot|pan|zoom|close-up|wide/gi) || []).length;
+  const words = text.split(/\s+/);
+  // Visual words vocabulary (bilingual support)
+  const visualWords = [
+    '看见',
+    '光',
+    '暗',
+    '红',
+    '黑',
+    '白',
+    '蓝',
+    '绿',
+    '脸',
+    '眼睛',
+    '天空',
+    '道路',
+    '房间',
+    '窗',
+    '门',
+    '手',
+    '血',
+    'light',
+    'shadow',
+    'dark',
+    'bright',
+    'dim',
+    'red',
+    'blue',
+    'green',
+    'face',
+    'eye',
+    'sky',
+    'room',
+    'window',
+  ];
 
-  let score = 0.1; // Baseline
-  if (length > 50) score += 0.2;
-  if (lighting > 0) score += 0.3;
-  if (camera > 0) score += 0.3;
+  let visualCount = 0;
+  for (const w of words) {
+    if (visualWords.some((vw) => w.includes(vw))) {
+      visualCount++;
+    }
+  }
 
-  // Cap at 1.0
-  score = Math.min(score, 1.0);
+  const density = words.length > 0 ? Math.min(1.0, (visualCount * 5) / words.length) : 0; // *5 to normalize to 0-1 range for sparse visual words
 
   return {
-    visual_density_score: score,
+    visual_density_score: density,
     quality_indicators: {
-      text_length: length,
-      adjective_count: adjectives,
-      lighting_keywords: lighting,
-      camera_keywords: camera,
+      text_length: text.length,
+      adjective_count: 0, // Fallback to comply with type
+      lighting_keywords: visualCount, // Map visual count to lighting/visual keywords roughly
+      camera_keywords: 0,
     },
     audit_trail: {
-      engine_version: 'real-v1-heuristic',
+      engine_version: 'real-v1-algo',
       timestamp: new Date().toISOString(),
     },
     billing_usage: {
-      promptTokens: Math.ceil(length / 4),
-      completionTokens: 10, // Fixed overhead
-      totalTokens: Math.ceil(length / 4) + 10,
-      model: 'ce03-heuristic-v1',
+      promptTokens: text.length,
+      completionTokens: 1,
+      totalTokens: text.length + 1,
+      model: 'ce03-algo-v1',
     },
   };
 }

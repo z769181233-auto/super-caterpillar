@@ -79,14 +79,18 @@ const workerIdFromCli = readArg('workerId');
 const workerIdFromEnv = process.env.WORKER_ID || process.env.WORKER_NAME;
 const workerId = workerIdFromCli || workerIdFromEnv || env.workerId;
 
-process.stdout.write(util.format(`[WorkerConfig] workerId=${workerId} (source=${workerIdFromCli ? 'cli' : workerIdFromEnv ? 'env(WORKER_ID/NAME)' : 'config/default'})`) + "\n");
+process.stdout.write(
+  util.format(
+    `[WorkerConfig] workerId=${workerId} (source=${workerIdFromCli ? 'cli' : workerIdFromEnv ? 'env(WORKER_ID/NAME)' : 'config/default'})`
+  ) + '\n'
+);
 
 // Write PID file for HA gate / failover testing
 import { writeWorkerPidFile } from './utils/pidfile';
-import * as util from "util";
+import * as util from 'util';
 
 const pidMeta = writeWorkerPidFile(workerId);
-process.stdout.write(util.format(`[Worker] PID file written: ${pidMeta.file}`) + "\n");
+process.stdout.write(util.format(`[Worker] PID file written: ${pidMeta.file}`) + '\n');
 
 const apiUrlFromCli = readArg('apiUrl');
 const apiKeyFromCli = readArg('apiKey');
@@ -100,7 +104,11 @@ const apiBaseUrl = apiUrlFromCli || env.apiUrl || 'http://localhost:3000';
 const workerApiKey = apiKeyFromCli || env.workerApiKey;
 const workerApiSecret = apiSecretFromCli || env.workerApiSecret;
 
-process.stdout.write(util.format(`[WorkerConfig] apiBaseUrl=${apiBaseUrl} (source=${apiUrlFromCli ? 'cli' : 'config/env'})`) + "\n");
+process.stdout.write(
+  util.format(
+    `[WorkerConfig] apiBaseUrl=${apiBaseUrl} (source=${apiUrlFromCli ? 'cli' : 'config/env'})`
+  ) + '\n'
+);
 
 if (!apiBaseUrl) {
   throw new Error('[Worker] 启动失败：apiBaseUrl 为空，请检查 --apiUrl / env.apiUrl');
@@ -126,28 +134,48 @@ const engineHubClient = new EngineHubClient(apiClient);
  * 注册 Worker 节点
  */
 async function registerWorker(): Promise<void> {
-  process.stdout.write(util.format('[Worker] 正在注册 Worker 节点...') + "\n");
-  process.stdout.write(util.format(`[Worker] Worker ID: ${workerId}`) + "\n");
-  process.stdout.write(util.format(`[Worker] Worker Name: ${env.workerName}`) + "\n");
-  process.stdout.write(util.format(`[Worker] API URL: ${apiBaseUrl}`) + "\n");
-  process.stdout.write(util.format(`[Worker] Database URL: ${env.databaseUrl ? env.databaseUrl.substring(0, 30) + '...' : '未配置'}`) + "\n");
-  process.stdout.write(util.format(`[Worker] JOB_WORKER_ENABLED: ${env.jobWorkerEnabled}`) + "\n");
+  process.stdout.write(util.format('[Worker] 正在注册 Worker 节点...') + '\n');
+  process.stdout.write(util.format(`[Worker] Worker ID: ${workerId}`) + '\n');
+  process.stdout.write(util.format(`[Worker] Worker Name: ${env.workerName}`) + '\n');
+  process.stdout.write(util.format(`[Worker] API URL: ${apiBaseUrl}`) + '\n');
+  process.stdout.write(
+    util.format(
+      `[Worker] Database URL: ${env.databaseUrl ? env.databaseUrl.substring(0, 30) + '...' : '未配置'}`
+    ) + '\n'
+  );
+  process.stdout.write(util.format(`[Worker] JOB_WORKER_ENABLED: ${env.jobWorkerEnabled}`) + '\n');
   if (!env.workerApiKey || !env.workerApiSecret) {
-    process.stdout.write(util.format('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!') + "\n");
-    process.stdout.write(util.format('[Worker] ⚠️  Worker will not be able to authenticate with API server.') + "\n");
-    process.stdout.write(util.format('[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.') + "\n");
+    process.stdout.write(
+      util.format('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!') +
+        '\n'
+    );
+    process.stdout.write(
+      util.format('[Worker] ⚠️  Worker will not be able to authenticate with API server.') + '\n'
+    );
+    process.stdout.write(
+      util.format(
+        '[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.'
+      ) + '\n'
+    );
   } else {
-    process.stdout.write(util.format(`[Worker] API Key: ${env.workerApiKey.substring(0, 10)}... (configured)`) + "\n");
-    process.stdout.write(util.format(`[Worker] API Secret: ${env.workerApiSecret ? 'SET' : 'NOT SET'}`) + "\n");
-    process.stdout.write(util.format(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`) + "\n");
+    process.stdout.write(
+      util.format(`[Worker] API Key: ${env.workerApiKey.substring(0, 10)}... (configured)`) + '\n'
+    );
+    process.stdout.write(
+      util.format(`[Worker] API Secret: ${env.workerApiSecret ? 'SET' : 'NOT SET'}`) + '\n'
+    );
+    process.stdout.write(
+      util.format(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`) +
+        '\n'
+    );
 
     // Test DB Connection
     try {
-      process.stdout.write(util.format('[Worker] Testing DB Connection...') + "\n");
+      process.stdout.write(util.format('[Worker] Testing DB Connection...') + '\n');
       await prisma.$queryRaw`SELECT 1`;
-      process.stdout.write(util.format('[Worker] DB Connection Verified') + "\n");
+      process.stdout.write(util.format('[Worker] DB Connection Verified') + '\n');
     } catch (error: any) {
-      process.stderr.write(util.format(`[Worker] DB Connection Failed:`, error.message) + "\n");
+      process.stderr.write(util.format(`[Worker] DB Connection Failed:`, error.message) + '\n');
       process.exit(1);
     }
   }
@@ -163,7 +191,9 @@ async function registerWorker(): Promise<void> {
     const supportedEnginesFinal =
       supportedEngines.length > 0 ? supportedEngines : ['default_novel_analysis'];
 
-    process.stdout.write(util.format(`[Worker] supportedEngines=${JSON.stringify(supportedEnginesFinal)}`) + "\n");
+    process.stdout.write(
+      util.format(`[Worker] supportedEngines=${JSON.stringify(supportedEnginesFinal)}`) + '\n'
+    );
 
     // 通过 API 注册 Worker
     await apiClient.registerWorker({
@@ -189,9 +219,9 @@ async function registerWorker(): Promise<void> {
       },
     });
 
-    process.stdout.write(util.format('[Worker] ✅ Worker 注册成功') + "\n");
+    process.stdout.write(util.format('[Worker] ✅ Worker 注册成功') + '\n');
   } catch (error: any) {
-    process.stderr.write(util.format('[Worker] ❌ Worker 注册失败:', error.message) + "\n");
+    process.stderr.write(util.format('[Worker] ❌ Worker 注册失败:', error.message) + '\n');
     throw error;
   }
 }
@@ -219,9 +249,9 @@ async function sendHeartbeat(): Promise<void> {
             .map((s) => s.trim())
             .filter(Boolean).length > 0
             ? (process.env.WORKER_SUPPORTED_ENGINES || '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
             : ['default_novel_analysis'],
       },
     });
@@ -229,7 +259,7 @@ async function sendHeartbeat(): Promise<void> {
       // 静默心跳，避免日志过多
     }
   } catch (error: any) {
-    process.stderr.write(util.format('[Worker] ❌ 心跳发送失败:', error.message) + "\n");
+    process.stderr.write(util.format('[Worker] ❌ 心跳发送失败:', error.message) + '\n');
   }
 }
 
@@ -248,11 +278,11 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
   };
   const logMessage = JSON.stringify(logEntry);
   if (level === 'error') {
-    process.stderr.write(util.format(logMessage) + "\n");
+    process.stderr.write(util.format(logMessage) + '\n');
   } else if (level === 'warn') {
-    process.stdout.write(util.format(logMessage) + "\n");
+    process.stdout.write(util.format(logMessage) + '\n');
   } else {
-    process.stdout.write(util.format(logMessage) + "\n");
+    process.stdout.write(util.format(logMessage) + '\n');
   }
 }
 
@@ -450,7 +480,7 @@ async function pollAndProcessJobs(): Promise<void> {
   }
   // 强制输出一次用于 Gate 捕获
   if (tasksRunning === 0) {
-    process.stdout.write(util.format(`[WorkerRuntime] ${JSON.stringify(runtimeConfig)}`) + "\n");
+    process.stdout.write(util.format(`[WorkerRuntime] ${JSON.stringify(runtimeConfig)}`) + '\n');
   }
 
   if (tasksRunning >= (runtimeConfig as any).jobMaxInFlight) {
@@ -476,14 +506,16 @@ async function pollAndProcessJobs(): Promise<void> {
       if (job) {
         // 异步处理 Job，不阻塞轮询 (Stage P1-1: 切换到 Executor)
         processJobWithExecutor(job).catch((error) => {
-          process.stderr.write(util.format(`[Worker] ❌ processJobWithExecutor 异常:`, error) + "\n");
+          process.stderr.write(
+            util.format(`[Worker] ❌ processJobWithExecutor 异常:`, error) + '\n'
+          );
         });
       } else {
         // 本波次没领到，提前终止
         break;
       }
     } catch (error: any) {
-      process.stderr.write(util.format(`[Worker] ❌ 轮询 Job 失败:`, error.message) + "\n");
+      process.stderr.write(util.format(`[Worker] ❌ 轮询 Job 失败:`, error.message) + '\n');
       break;
     }
   }
@@ -493,31 +525,35 @@ async function pollAndProcessJobs(): Promise<void> {
  * 主函数 - 完整 Worker 启动逻辑
  */
 export async function startWorkerApp() {
-  process.stdout.write(util.format('========================================') + "\n");
-  process.stdout.write(util.format('Super Caterpillar Worker') + "\n");
-  process.stdout.write(util.format('========================================\n') + "\n");
+  process.stdout.write(util.format('========================================') + '\n');
+  process.stdout.write(util.format('Super Caterpillar Worker') + '\n');
+  process.stdout.write(util.format('========================================\n') + '\n');
 
   // 检查环境变量
   jobExecutor = new JobExecutor(apiClient);
   if (!env.databaseUrl) {
-    process.stderr.write(util.format('[Worker] ❌ DATABASE_URL 未配置') + "\n");
+    process.stderr.write(util.format('[Worker] ❌ DATABASE_URL 未配置') + '\n');
     process.exit(1);
   }
 
   if (!env.workerApiKey || !env.workerApiSecret) {
-    process.stdout.write(util.format('[Worker] ⚠️  API Key/Secret 未配置，Worker 可能无法通过 HMAC 认证') + "\n");
+    process.stdout.write(
+      util.format('[Worker] ⚠️  API Key/Secret 未配置，Worker 可能无法通过 HMAC 认证') + '\n'
+    );
   }
 
   // 检查 jobWorkerEnabled
   if (!env.jobWorkerEnabled) {
-    process.stdout.write(util.format('[Worker] ⚠️  JOB_WORKER_ENABLED=false，Worker 将不会处理 Job') + "\n");
+    process.stdout.write(
+      util.format('[Worker] ⚠️  JOB_WORKER_ENABLED=false，Worker 将不会处理 Job') + '\n'
+    );
   }
 
   try {
     // 连接数据库
-    process.stdout.write(util.format('[Worker] 正在连接数据库...') + "\n");
+    process.stdout.write(util.format('[Worker] 正在连接数据库...') + '\n');
     await prisma.$connect();
-    process.stdout.write(util.format('[Worker] ✅ 数据库连接成功') + "\n");
+    process.stdout.write(util.format('[Worker] ✅ 数据库连接成功') + '\n');
 
     // 注册 Worker
     await registerWorker();
@@ -533,7 +569,7 @@ export async function startWorkerApp() {
 
     // 启动 Job 轮询循环
     setInterval(() => {
-      process.stdout.write(util.format(`[Probe] R=${isRunning} E=${env.jobWorkerEnabled}`) + "\n");
+      process.stdout.write(util.format(`[Probe] R=${isRunning} E=${env.jobWorkerEnabled}`) + '\n');
       if (isRunning && env.jobWorkerEnabled) {
         pollAndProcessJobs();
       }
@@ -547,24 +583,27 @@ export async function startWorkerApp() {
       await pollAndProcessJobs();
     }
 
-    process.stdout.write(util.format('\n[Worker] ✅ Worker 启动成功') + "\n");
-    process.stdout.write(util.format(`[Worker] 心跳间隔: 5 秒`) + "\n");
-    process.stdout.write(util.format(`[Worker] Job 轮询间隔: ${env.workerPollInterval}ms`) + "\n");
-    process.stdout.write(util.format(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`) + "\n");
+    process.stdout.write(util.format('\n[Worker] ✅ Worker 启动成功') + '\n');
+    process.stdout.write(util.format(`[Worker] 心跳间隔: 5 秒`) + '\n');
+    process.stdout.write(util.format(`[Worker] Job 轮询间隔: ${env.workerPollInterval}ms`) + '\n');
+    process.stdout.write(
+      util.format(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`) +
+        '\n'
+    );
 
     // 优雅退出处理
     process.on('SIGINT', () => {
-      process.stdout.write(util.format('\n[Worker] 收到 SIGINT，正在关闭...') + "\n");
+      process.stdout.write(util.format('\n[Worker] 收到 SIGINT，正在关闭...') + '\n');
       shutdown();
     });
 
     process.on('SIGTERM', () => {
-      process.stdout.write(util.format('\n[Worker] 收到 SIGTERM，正在关闭...') + "\n");
+      process.stdout.write(util.format('\n[Worker] 收到 SIGTERM，正在关闭...') + '\n');
       shutdown();
     });
   } catch (error: any) {
-    process.stderr.write(util.format('[Worker] ❌ Worker 启动失败:', error.message) + "\n");
-    process.stderr.write(util.format(error.stack) + "\n");
+    process.stderr.write(util.format('[Worker] ❌ Worker 启动失败:', error.message) + '\n');
+    process.stderr.write(util.format(error.stack) + '\n');
     process.exit(1);
   }
 }
@@ -574,8 +613,8 @@ export async function startWorkerApp() {
  */
 async function shutdown() {
   isRunning = false;
-  process.stdout.write(util.format('[Worker] 正在断开数据库连接...') + "\n");
+  process.stdout.write(util.format('[Worker] 正在断开数据库连接...') + '\n');
   await prisma.$disconnect();
-  process.stdout.write(util.format('[Worker] ✅ Worker 已关闭') + "\n");
+  process.stdout.write(util.format('[Worker] ✅ Worker 已关闭') + '\n');
   process.exit(0);
 }

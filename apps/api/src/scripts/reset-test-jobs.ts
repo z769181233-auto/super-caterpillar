@@ -1,5 +1,5 @@
 import { PrismaClient } from 'database';
-import * as util from "util";
+import * as util from 'util';
 
 /**
  * 将所有 NOVEL_ANALYSIS Job 重置为 PENDING 并清空 workerId
@@ -18,7 +18,7 @@ async function main() {
     },
   });
 
-  process.stdout.write(util.format('reset count:', result.count) + "\n");
+  process.stdout.write(util.format('reset count:', result.count) + '\n');
   await prisma.$disconnect();
   // ✅ 成功路径显式退出
   if (!process.exitCode) {
@@ -27,6 +27,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  process.stderr.write(util.format(e) + "\n");
+  process.stderr.write(util.format(e) + '\n');
   process.exit(1);
 });

@@ -1,10 +1,10 @@
 import { PrismaClient } from '../src/generated/prisma';
-import * as util from "util";
+import * as util from 'util';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  process.stdout.write(util.format('🌱 Seeding Engine data...') + "\n");
+  process.stdout.write(util.format('🌱 Seeding Engine data...') + '\n');
 
   const engines = [
     {
@@ -123,13 +123,17 @@ async function main() {
           enabled: e.enabled,
         },
       });
-      process.stdout.write(util.format(`✅ Updated engine: ${engine.engineKey} -> code: ${e.code} (${e.name})`) + "\n");
+      process.stdout.write(
+        util.format(`✅ Updated engine: ${engine.engineKey} -> code: ${e.code} (${e.name})`) + '\n'
+      );
     } else {
       // 如果不存在，创建新记录
       engine = await prisma.engine.create({
         data: e,
       });
-      process.stdout.write(util.format(`✅ Created engine: ${engine.engineKey} -> code: ${e.code} (${e.name})`) + "\n");
+      process.stdout.write(
+        util.format(`✅ Created engine: ${engine.engineKey} -> code: ${e.code} (${e.name})`) + '\n'
+      );
     }
 
     // PHASE 2B Supplement: Ensure at least one EngineVersion exists for character_visual
@@ -152,14 +156,14 @@ async function main() {
           enabled: true,
         },
       });
-      process.stdout.write(util.format(`✅ Seeded default version for character_visual`) + "\n");
+      process.stdout.write(util.format(`✅ Seeded default version for character_visual`) + '\n');
     }
   }
 
-  process.stdout.write(util.format('✅ Engine seeding completed!') + "\n");
+  process.stdout.write(util.format('✅ Engine seeding completed!') + '\n');
 
   // ========== RBAC Seed: Roles, Permissions, RolePermissions ==========
-  process.stdout.write(util.format('🌱 Seeding RBAC data...') + "\n");
+  process.stdout.write(util.format('🌱 Seeding RBAC data...') + '\n');
 
   // 1. 创建 Roles (只保留标准全大写角色)
   const roles = [
@@ -177,7 +181,7 @@ async function main() {
       name: { notIn: standardRoleNames },
     },
   });
-  process.stdout.write(util.format('🧹 Cleaned non-standard roles') + "\n");
+  process.stdout.write(util.format('🧹 Cleaned non-standard roles') + '\n');
 
   for (const roleData of roles) {
     await prisma.role.upsert({
@@ -186,7 +190,9 @@ async function main() {
       create: roleData,
     });
   }
-  process.stdout.write(util.format('✅ Created/Updated roles:', roles.map((r) => r.name).join(', ')) + "\n");
+  process.stdout.write(
+    util.format('✅ Created/Updated roles:', roles.map((r) => r.name).join(', ')) + '\n'
+  );
 
   // 2. 创建 Permissions (system scope)
   const permissions = [
@@ -217,7 +223,9 @@ async function main() {
       create: permData,
     });
   }
-  process.stdout.write(util.format('✅ Created/Updated permissions:', permissions.map((p) => p.key).join(', ')) + "\n");
+  process.stdout.write(
+    util.format('✅ Created/Updated permissions:', permissions.map((p) => p.key).join(', ')) + '\n'
+  );
 
   // 3. 创建 RolePermissions (关联 Role 和 Permission)
   const rolePermissions = [
@@ -309,14 +317,16 @@ async function main() {
   for (const { roleName, permKeys } of rolePermissions) {
     const role = await prisma.role.findUnique({ where: { name: roleName } });
     if (!role) {
-      process.stdout.write(util.format(`⚠️  Role ${roleName} not found, skipping permissions`) + "\n");
+      process.stdout.write(
+        util.format(`⚠️  Role ${roleName} not found, skipping permissions`) + '\n'
+      );
       continue;
     }
 
     for (const permKey of permKeys) {
       const permission = await prisma.permission.findUnique({ where: { key: permKey } });
       if (!permission) {
-        process.stdout.write(util.format(`⚠️  Permission ${permKey} not found, skipping`) + "\n");
+        process.stdout.write(util.format(`⚠️  Permission ${permKey} not found, skipping`) + '\n');
         continue;
       }
 
@@ -334,13 +344,15 @@ async function main() {
         },
       });
     }
-    process.stdout.write(util.format(`✅ Assigned ${permKeys.length} permissions to role: ${roleName}`) + "\n");
+    process.stdout.write(
+      util.format(`✅ Assigned ${permKeys.length} permissions to role: ${roleName}`) + '\n'
+    );
   }
 
-  process.stdout.write(util.format('✅ RBAC seeding completed!') + "\n");
+  process.stdout.write(util.format('✅ RBAC seeding completed!') + '\n');
 
   // ========== API Keys Seed: Worker Key ==========
-  process.stdout.write(util.format('🌱 Seeding API Keys...') + "\n");
+  process.stdout.write(util.format('🌱 Seeding API Keys...') + '\n');
   const workerApiKey = 'ak_worker_dev_0000000000000000';
   const workerApiSecret =
     'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
@@ -358,10 +370,10 @@ async function main() {
       status: 'ACTIVE',
     },
   });
-  process.stdout.write(util.format('✅ API Key seeding completed!') + "\n");
+  process.stdout.write(util.format('✅ API Key seeding completed!') + '\n');
 
   // ========== System User Seed ==========
-  process.stdout.write(util.format('🌱 Seeding System User...') + "\n");
+  process.stdout.write(util.format('🌱 Seeding System User...') + '\n');
   await prisma.user.upsert({
     where: { id: 'system' },
     update: {},
@@ -372,7 +384,7 @@ async function main() {
       role: 'admin',
     },
   });
-  process.stdout.write(util.format('✅ System User seeding completed!') + "\n");
+  process.stdout.write(util.format('✅ System User seeding completed!') + '\n');
 }
 
 main()
@@ -380,7 +392,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    process.stderr.write(util.format('❌ Seeding failed:', e) + "\n");
+    process.stderr.write(util.format('❌ Seeding failed:', e) + '\n');
     await prisma.$disconnect();
     process.exit(1);
   });

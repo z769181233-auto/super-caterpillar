@@ -10,7 +10,7 @@ import {
 
 @Injectable()
 export class PermissionService {
-    private readonly logger = new Logger(PermissionService.name);
+  private readonly logger = new Logger(PermissionService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -111,7 +111,9 @@ export class PermissionService {
         where: { userId, ...(orgId ? { organizationId: orgId } : {}) },
       });
       this.logger.log(`[PERM_DIAG] User=${userId} ContextOrg=${orgId || 'N/A'}`);
-      this.logger.log(`[PERM_DIAG] Memberships=${dbgMem.length} (${dbgMem.map((m) => m.organizationId + ':' + m.role).join(',')})`);
+      this.logger.log(
+        `[PERM_DIAG] Memberships=${dbgMem.length} (${dbgMem.map((m) => m.organizationId + ':' + m.role).join(',')})`
+      );
     }
     // DIAGNOSIS END
 
@@ -123,7 +125,9 @@ export class PermissionService {
 
     // DIAGNOSIS START
     if (process.env.DEBUG_PERM === '1' || process.env.NODE_ENV !== 'production') {
-      this.logger.log(`[PERM_DIAG] SysPerms=${sysPerms.length} ProjPerms=${projPerms.length} Total=${allPerms.size}`);
+      this.logger.log(
+        `[PERM_DIAG] SysPerms=${sysPerms.length} ProjPerms=${projPerms.length} Total=${allPerms.size}`
+      );
       if (allPerms.size === 0) {
         this.logger.warn(`[PERM_DIAG] ZERO PERMISSIONS! checking reasons...`);
         // Check if roles exist
@@ -137,7 +141,9 @@ export class PermissionService {
     const isGranted = required.every((p) => allPerms.has(p));
 
     if (!isGranted) {
-      this.logger.warn(`[PERM_DENIED] userId=${userId} context=${projectId || orgId || 'NONE'} missing=[${required.filter((p) => !allPerms.has(p)).join(',')}]`);
+      this.logger.warn(
+        `[PERM_DENIED] userId=${userId} context=${projectId || orgId || 'NONE'} missing=[${required.filter((p) => !allPerms.has(p)).join(',')}]`
+      );
     }
 
     return isGranted;

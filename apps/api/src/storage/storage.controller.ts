@@ -42,7 +42,7 @@ export class StorageController {
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService
-  ) { }
+  ) {}
 
   @Public()
   @Get('__probe')

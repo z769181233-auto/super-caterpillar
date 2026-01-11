@@ -12,7 +12,9 @@ import {
   NotFoundException,
   ConflictException,
   Req,
-  Inject, Logger } from '@nestjs/common';
+  Inject,
+  Logger,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -56,7 +58,7 @@ import { UnprocessableEntityException } from '@nestjs/common';
 @Controller('projects/:projectId/novel')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class NovelImportController {
-    private readonly logger = new Logger(NovelImportController.name);
+  private readonly logger = new Logger(NovelImportController.name);
   private readonly uploadDir = path.join(process.cwd(), 'uploads', 'novels');
 
   constructor(

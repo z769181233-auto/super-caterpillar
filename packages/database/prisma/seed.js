@@ -1,6 +1,6 @@
-import * as util from "util";
+import * as util from 'util';
 
-'use strict';
+('use strict');
 var __awaiter =
   (this && this.__awaiter) ||
   function (thisArg, _arguments, P, generator) {
@@ -143,7 +143,7 @@ function main() {
     return __generator(this, function (_a) {
       switch (_a.label) {
         case 0:
-          process.stdout.write(util.format('🌱 Seeding Engine data...') + "\n");
+          process.stdout.write(util.format('🌱 Seeding Engine data...') + '\n');
           engines = [
             {
               code: 'default_novel_analysis',
@@ -224,10 +224,14 @@ function main() {
         case 3:
           // 如果存在，更新字段（包括新增的 code, name, type, isActive）
           engine = _a.sent();
-          process.stdout.write(util.format('\u2705 Updated engine: '
-                            .concat(engine.engineKey, ' -> code: ')
-                            .concat(e.code, ' (')
-                            .concat(e.name, ')')) + "\n");
+          process.stdout.write(
+            util.format(
+              '\u2705 Updated engine: '
+                .concat(engine.engineKey, ' -> code: ')
+                .concat(e.code, ' (')
+                .concat(e.name, ')')
+            ) + '\n'
+          );
           return [3 /*break*/, 6];
         case 4:
           return [
@@ -239,16 +243,20 @@ function main() {
         case 5:
           // 如果不存在，创建新记录
           engine = _a.sent();
-          process.stdout.write(util.format('\u2705 Created engine: '
-                            .concat(engine.engineKey, ' -> code: ')
-                            .concat(e.code, ' (')
-                            .concat(e.name, ')')) + "\n");
+          process.stdout.write(
+            util.format(
+              '\u2705 Created engine: '
+                .concat(engine.engineKey, ' -> code: ')
+                .concat(e.code, ' (')
+                .concat(e.name, ')')
+            ) + '\n'
+          );
           _a.label = 6;
         case 6:
           _i++;
           return [3 /*break*/, 1];
         case 7:
-          process.stdout.write(util.format('✅ Engine seeding completed!') + "\n");
+          process.stdout.write(util.format('✅ Engine seeding completed!') + '\n');
           return [2 /*return*/];
       }
     });
@@ -273,7 +281,7 @@ main()
       return __generator(this, function (_a) {
         switch (_a.label) {
           case 0:
-            process.stderr.write(util.format('❌ Seeding failed:', e) + "\n");
+            process.stderr.write(util.format('❌ Seeding failed:', e) + '\n');
             return [4 /*yield*/, prisma.$disconnect()];
           case 1:
             _a.sent();

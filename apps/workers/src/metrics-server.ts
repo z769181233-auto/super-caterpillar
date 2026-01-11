@@ -1,6 +1,6 @@
 import http from 'http';
 import { metricsText } from '@scu/observability';
-import * as util from "util";
+import * as util from 'util';
 
 export function startMetricsServer(port: number) {
   const server = http.createServer(async (req, res) => {
@@ -20,7 +20,9 @@ export function startMetricsServer(port: number) {
   });
 
   server.listen(port, () => {
-    process.stdout.write(util.format(`[Metrics] Server running at http://localhost:${port}/metrics`) + "\n");
+    process.stdout.write(
+      util.format(`[Metrics] Server running at http://localhost:${port}/metrics`) + '\n'
+    );
   });
 
   return server;

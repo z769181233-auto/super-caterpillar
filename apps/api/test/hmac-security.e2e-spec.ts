@@ -14,7 +14,7 @@
 
 import * as crypto from 'crypto';
 import * as http from 'http';
-import * as util from "util";
+import * as util from 'util';
 
 const BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 const API_KEY = process.env.HMAC_API_KEY || '';
@@ -90,7 +90,7 @@ async function runTests() {
   const results: Array<{ name: string; passed: boolean; error?: string }> = [];
 
   // 测试 1: 白名单免签接口
-  process.stdout.write(util.format('测试 1: 白名单免签接口 (/api/health)') + "\n");
+  process.stdout.write(util.format('测试 1: 白名单免签接口 (/api/health)') + '\n');
   try {
     const response = await sendRequest(`${BASE_URL}/api/health`, 'GET', {});
     const passed = response.statusCode === 200;
@@ -99,14 +99,16 @@ async function runTests() {
       passed,
       error: passed ? undefined : `期望 200，实际 ${response.statusCode}`,
     });
-    process.stdout.write(util.format(passed ? '✅ 通过' : `❌ 失败: ${response.statusCode}`) + "\n");
+    process.stdout.write(
+      util.format(passed ? '✅ 通过' : `❌ 失败: ${response.statusCode}`) + '\n'
+    );
   } catch (error: any) {
     results.push({
       name: '白名单免签接口返回 200',
       passed: false,
       error: error.message,
     });
-    process.stdout.write(util.format(`❌ 失败: ${error.message}`) + "\n");
+    process.stdout.write(util.format(`❌ 失败: ${error.message}`) + '\n');
   }
 
   // 测试 2: 必签接口缺少签名头应返回 4003

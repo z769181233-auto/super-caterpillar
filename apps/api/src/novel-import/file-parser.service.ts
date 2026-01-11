@@ -188,9 +188,7 @@ export class FileParserService {
       } else {
         // 从其他编码转换为 UTF-8
         content = iconv.decode(buffer, encoding);
-        this.logger.log(
-          `Decoded from ${encoding} to UTF-8, content length: ${content.length}`
-        );
+        this.logger.log(`Decoded from ${encoding} to UTF-8, content length: ${content.length}`);
 
         // 验证解码结果是否包含乱码（简单检查：如果全是问号或特殊字符，可能解码失败）
         const suspiciousChars = content.match(/[]/g);

@@ -1,10 +1,9 @@
-
 import fs from 'fs';
 
 const args = process.argv.slice(2);
 const getArg = (key) => {
-    const idx = args.indexOf(key);
-    return idx >= 0 ? args[idx + 1] : null;
+  const idx = args.indexOf(key);
+  return idx >= 0 ? args[idx + 1] : null;
 };
 
 const inFile = getArg('--in');
@@ -12,8 +11,10 @@ const outFile = getArg('--out');
 const limit = parseInt(getArg('--limit') || '30', 10);
 
 if (!inFile || !outFile) {
-    console.error("Usage: node select_manifest_batch.mjs --in <manifest.json> --out <batch.json> [--limit 30]");
-    process.exit(1);
+  console.error(
+    'Usage: node select_manifest_batch.mjs --in <manifest.json> --out <batch.json> [--limit 30]'
+  );
+  process.exit(1);
 }
 
 const all = JSON.parse(fs.readFileSync(inFile, 'utf8'));

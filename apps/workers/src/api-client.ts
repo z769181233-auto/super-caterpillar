@@ -6,7 +6,7 @@
 
 import { createHmac, randomBytes, createHash } from 'crypto';
 import { env } from '@scu/config';
-import * as util from "util";
+import * as util from 'util';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -50,29 +50,37 @@ function fingerprintParts(parts: {
 }) {
   if (process.env.HMAC_TRACE !== '1') return;
   const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
-  process.stderr.write(util.format('[HMAC_TRACE] worker_v2_inputs', {
-        method: { val: parts.method, len: parts.method.length, hash: sha256(parts.method) },
-        path: { val: parts.path, len: parts.path.length, hash: sha256(parts.path) },
-        timestamp: { val: parts.timestamp, len: parts.timestamp.length, hash: sha256(parts.timestamp) },
-        nonce: {
-          val: parts.nonce.substring(0, 8) + '...',
-          len: parts.nonce.length,
-          hash: sha256(parts.nonce),
-        },
-        bodyHash: {
-          val: parts.bodyHash.substring(0, 16) + '...',
-          len: parts.bodyHash.length,
-          hash: sha256(parts.bodyHash),
-        },
-        workerId: parts.workerId
-          ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) }
-          : 'N/A',
-        message: { len: parts.message.length, hash: sha256(parts.message) },
-      }) + "\n");
-  process.stderr.write(util.format('[HMAC_TRACE] worker_signature', {
-        sigHash: sha256(parts.signature),
-        sigLen: parts.signature.length,
-      }) + "\n");
+  process.stderr.write(
+    util.format('[HMAC_TRACE] worker_v2_inputs', {
+      method: { val: parts.method, len: parts.method.length, hash: sha256(parts.method) },
+      path: { val: parts.path, len: parts.path.length, hash: sha256(parts.path) },
+      timestamp: {
+        val: parts.timestamp,
+        len: parts.timestamp.length,
+        hash: sha256(parts.timestamp),
+      },
+      nonce: {
+        val: parts.nonce.substring(0, 8) + '...',
+        len: parts.nonce.length,
+        hash: sha256(parts.nonce),
+      },
+      bodyHash: {
+        val: parts.bodyHash.substring(0, 16) + '...',
+        len: parts.bodyHash.length,
+        hash: sha256(parts.bodyHash),
+      },
+      workerId: parts.workerId
+        ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) }
+        : 'N/A',
+      message: { len: parts.message.length, hash: sha256(parts.message) },
+    }) + '\n'
+  );
+  process.stderr.write(
+    util.format('[HMAC_TRACE] worker_signature', {
+      sigHash: sha256(parts.signature),
+      sigLen: parts.signature.length,
+    }) + '\n'
+  );
 }
 
 /**
@@ -131,7 +139,7 @@ export class ApiClient {
     body?: any,
     extraHeaders?: Record<string, string>
   ): Promise<ApiResponse<T>> {
-    process.stdout.write(util.format(`[Worker DEBUG] ApiClient request: ${method} ${path}`) + "\n");
+    process.stdout.write(util.format(`[Worker DEBUG] ApiClient request: ${method} ${path}`) + '\n');
     const url = `${this.baseURL}${path}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -180,10 +188,24 @@ export class ApiClient {
       headers['X-Hmac-Version'] = '2';
 
       // 调试日志（不打印密钥）
-      process.stdout.write(util.format(`[Worker HMAC v2] ${method} ${path}`, `nonce=${nonce.substring(0, 8)}...`, `timestamp=${timestamp}`, `workerId=${workerId}`, `bodyString=${bodyString}`) + "\n");
+      process.stdout.write(
+        util.format(
+          `[Worker HMAC v2] ${method} ${path}`,
+          `nonce=${nonce.substring(0, 8)}...`,
+          `timestamp=${timestamp}`,
+          `workerId=${workerId}`,
+          `bodyString=${bodyString}`
+        ) + '\n'
+      );
     } else {
-      process.stdout.write(util.format('[Worker] ⚠️  No API Key/Secret configured, requests may fail with 401') + "\n");
-      process.stdout.write(util.format('[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.') + "\n");
+      process.stdout.write(
+        util.format('[Worker] ⚠️  No API Key/Secret configured, requests may fail with 401') + '\n'
+      );
+      process.stdout.write(
+        util.format(
+          '[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.'
+        ) + '\n'
+      );
     }
 
     // 商业级审计：添加extraHeaders（v2时workerId已参与签名）
@@ -204,14 +226,24 @@ export class ApiClient {
       const data = (await response.json()) as any;
 
       if (!response.ok) {
-        process.stderr.write(util.format('[Worker HTTP Error]', method, url, response.status, data?.message || data?.error?.message || `HTTP ${response.status}`) + "\n");
+        process.stderr.write(
+          util.format(
+            '[Worker HTTP Error]',
+            method,
+            url,
+            response.status,
+            data?.message || data?.error?.message || `HTTP ${response.status}`
+          ) + '\n'
+        );
         // 打印请求头（不打印密钥）
-        process.stderr.write(util.format('[Worker HTTP Error] Headers sent:', {
-                    'X-Api-Key': headers['X-Api-Key']?.substring(0, 10) + '...',
-                    'X-Nonce': headers['X-Nonce']?.substring(0, 8) + '...',
-                    'X-Timestamp': headers['X-Timestamp'],
-                    'X-Signature': headers['X-Signature']?.substring(0, 16) + '...',
-                  }) + "\n");
+        process.stderr.write(
+          util.format('[Worker HTTP Error] Headers sent:', {
+            'X-Api-Key': headers['X-Api-Key']?.substring(0, 10) + '...',
+            'X-Nonce': headers['X-Nonce']?.substring(0, 8) + '...',
+            'X-Timestamp': headers['X-Timestamp'],
+            'X-Signature': headers['X-Signature']?.substring(0, 16) + '...',
+          }) + '\n'
+        );
         throw new Error(data?.message || data?.error?.message || `HTTP ${response.status}`);
       }
 
@@ -219,7 +251,9 @@ export class ApiClient {
     } catch (error: any) {
       // 如果是网络错误，也打印 URL
       if (error.name === 'TypeError' || error.message.includes('fetch')) {
-        process.stderr.write(util.format('[Worker HTTP Error]', method, url, 'Network Error', error.message) + "\n");
+        process.stderr.write(
+          util.format('[Worker HTTP Error]', method, url, 'Network Error', error.message) + '\n'
+        );
       }
       throw new Error(`API request failed: ${error.message}`);
     }
@@ -261,8 +295,10 @@ export class ApiClient {
     temperature?: number;
   }): Promise<{ workerId: string; status: string; lastHeartbeat: string }> {
     const { workerId, ...body } = params;
-    process.stdout.write(util.format('DEBUG: heartbeat params (FIXED):', JSON.stringify(params)) + "\n");
-    process.stdout.write(util.format('DEBUG: heartbeat body ACTUAL:', JSON.stringify(body)) + "\n");
+    process.stdout.write(
+      util.format('DEBUG: heartbeat params (FIXED):', JSON.stringify(params)) + '\n'
+    );
+    process.stdout.write(util.format('DEBUG: heartbeat body ACTUAL:', JSON.stringify(body)) + '\n');
     const response = await this.request<{
       workerId: string;
       status: string;
@@ -300,12 +336,16 @@ export class ApiClient {
     }
 
     // 增强日志：GET_NEXT_JOB_RES
-    process.stdout.write(util.format(JSON.stringify({
-              event: 'GET_NEXT_JOB_RES',
-              status: (response as any).status || 200, // Assuming 200 if not present in successful response
-              jobId: (response.data as any)?.id || null,
-              timestamp: new Date().toISOString(),
-            })) + "\n");
+    process.stdout.write(
+      util.format(
+        JSON.stringify({
+          event: 'GET_NEXT_JOB_RES',
+          status: (response as any).status || 200, // Assuming 200 if not present in successful response
+          jobId: (response.data as any)?.id || null,
+          timestamp: new Date().toISOString(),
+        })
+      ) + '\n'
+    );
 
     return response.data || null;
   }

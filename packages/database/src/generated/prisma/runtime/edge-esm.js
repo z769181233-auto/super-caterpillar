@@ -1,5 +1,3 @@
-import * as util from "util";
-
 var sa = Object.create;
 var Kr = Object.defineProperty;
 var aa = Object.getOwnPropertyDescriptor;
@@ -229,7 +227,9 @@ var Ei = Le((Ye) => {
   !T.TYPED_ARRAY_SUPPORT &&
     typeof console < 'u' &&
     typeof console.error == 'function' &&
-    process.stderr.write(util.format('This browser lacks typed array (Uint8Array) support which is required by `buffer` v5.x. Use `buffer` v4.x if you require old browser support.') + "\n");
+    console.error(
+      'This browser lacks typed array (Uint8Array) support which is required by `buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
+    );
   function fa() {
     try {
       let e = new Uint8Array(1),
@@ -1919,19 +1919,19 @@ var At = {
   },
   Hi = { warn: () => !y.env.PRISMA_DISABLE_WARNINGS };
 function Za(...e) {
-  process.stdout.write(util.format(...e) + "\n");
+  console.log(...e);
 }
 function ln(e, ...t) {
-  Hi.warn() && process.stdout.write(util.format(`${At.warn} ${e}`, ...t) + "\n");
+  Hi.warn() && console.warn(`${At.warn} ${e}`, ...t);
 }
 function Xa(e, ...t) {
   console.info(`${At.info} ${e}`, ...t);
 }
 function el(e, ...t) {
-  process.stderr.write(util.format(`${At.error} ${e}`, ...t) + "\n");
+  console.error(`${At.error} ${e}`, ...t);
 }
 function tl(e, ...t) {
-  process.stdout.write(util.format(`${At.query} ${e}`, ...t) + "\n");
+  console.log(`${At.query} ${e}`, ...t);
 }
 f();
 c();
@@ -6670,7 +6670,7 @@ function ys({ postinstall: e, ciName: t, clientVersion: r }) {
     let n = `Prisma has detected that this project was built on ${t}, which caches dependencies. This leads to an outdated Prisma Client because Prisma's auto-generation isn't triggered. To fix this, make sure to run the \`prisma generate\` command during the build process.
 
 Learn how: https://pris.ly/d/${hs[t]}-build`;
-    throw (process.stderr.write(util.format(n) + "\n"), new G(n, r));
+    throw (console.error(n), new G(n, r));
   }
 }
 f();
@@ -7322,7 +7322,7 @@ async function Dc(e, t) {
     try {
       S = JSON.parse(v);
     } catch (A) {
-      throw (process.stderr.write(util.format('JSON.parse error: body fetched from unpkg.com: ', v) + "\n"), A);
+      throw (console.error('JSON.parse error: body fetched from unpkg.com: ', v), A);
     }
     return S.version;
   }

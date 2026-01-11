@@ -1,5 +1,5 @@
 import express from 'express';
-import * as util from "util";
+import * as util from 'util';
 
 const app = express();
 app.use(express.json());
@@ -60,5 +60,7 @@ app.post('/invoke', (req, res) => {
 const port = 19000;
 app.listen(port, () => {
   // eslint-disable-next-line no-console
-  process.stdout.write(util.format(`[MockHttpEngine] listening on http://localhost:${port}`) + "\n");
+  process.stdout.write(
+    util.format(`[MockHttpEngine] listening on http://localhost:${port}`) + '\n'
+  );
 });

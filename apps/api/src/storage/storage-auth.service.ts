@@ -69,7 +69,9 @@ export class StorageAuthService {
       throw new NotFoundException('Resource not found');
     }
 
-    this.logger.log(`asset-found: assetId=${asset.id}, projectId=${asset.projectId}, orgId=${asset.project?.organizationId}`);
+    this.logger.log(
+      `asset-found: assetId=${asset.id}, projectId=${asset.projectId}, orgId=${asset.project?.organizationId}`
+    );
 
     // 3. Validate tenant (projectId or organizationId)
     const organizationId = asset.project?.organizationId;

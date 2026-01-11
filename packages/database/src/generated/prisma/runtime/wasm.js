@@ -1,5 +1,3 @@
-import * as util from "util";
-
 'use strict';
 var Uo = Object.create;
 var kt = Object.defineProperty;
@@ -1930,19 +1928,19 @@ var lt = {
   },
   Un = { warn: () => !h.env.PRISMA_DISABLE_WARNINGS };
 function fs(...e) {
-  process.stdout.write(util.format(...e) + "\n");
+  console.log(...e);
 }
 function Rr(e, ...t) {
-  Un.warn() && process.stdout.write(util.format(`${lt.warn} ${e}`, ...t) + "\n");
+  Un.warn() && console.warn(`${lt.warn} ${e}`, ...t);
 }
 function gs(e, ...t) {
   console.info(`${lt.info} ${e}`, ...t);
 }
 function hs(e, ...t) {
-  process.stderr.write(util.format(`${lt.error} ${e}`, ...t) + "\n");
+  console.error(`${lt.error} ${e}`, ...t);
 }
 function ys(e, ...t) {
-  process.stdout.write(util.format(`${lt.query} ${e}`, ...t) + "\n");
+  console.log(`${lt.query} ${e}`, ...t);
 }
 c();
 m();
@@ -4865,7 +4863,7 @@ function zi({ postinstall: e, ciName: t, clientVersion: r }) {
     let n = `Prisma has detected that this project was built on ${t}, which caches dependencies. This leads to an outdated Prisma Client because Prisma's auto-generation isn't triggered. To fix this, make sure to run the \`prisma generate\` command during the build process.
 
 Learn how: https://pris.ly/d/${Hi[t]}-build`;
-    throw (process.stderr.write(util.format(n) + "\n"), new L(n, r));
+    throw (console.error(n), new L(n, r));
   }
 }
 c();

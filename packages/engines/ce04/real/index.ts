@@ -12,7 +12,9 @@ export async function ce04RealEngine(input: CE04Input, ctx: any = {}): Promise<C
   try {
     return await runCE04Gemini(input, ctx);
   } catch (e: any) {
-    process.stdout.write(`[CE04] ERROR: Gemini Adapter failed, falling back to Stub: ${e.message}\n`);
+    process.stdout.write(
+      `[CE04] ERROR: Gemini Adapter failed, falling back to Stub: ${e.message}\n`
+    );
     return await realStub(input);
   }
 }

@@ -31,13 +31,17 @@ apps/web/.next/types/app/[locale]/dev/autofill/page.ts
 apps/web/.next/types/app/[locale]/login/page.ts
 apps/web/.next/types/package.json
 apps/web/.next/trace
+apps/web/.next/cache/webpack/client-production/5.pack
 apps/web/.next/cache/webpack/client-production/4.pack
 apps/web/.next/cache/webpack/client-production/index.pack
+apps/web/.next/cache/webpack/client-production/8.pack
 apps/web/.next/cache/webpack/client-production/3.pack
 apps/web/.next/cache/webpack/client-production/2.pack
 apps/web/.next/cache/webpack/client-production/1.pack
 apps/web/.next/cache/webpack/client-production/index.pack.old
 apps/web/.next/cache/webpack/client-production/0.pack
+apps/web/.next/cache/webpack/client-production/7.pack
+apps/web/.next/cache/webpack/client-production/6.pack
 apps/web/.next/cache/webpack/client-development/index.pack.gz
 apps/web/.next/cache/webpack/client-development/3.pack.gz
 apps/web/.next/cache/webpack/client-development/2.pack.gz
@@ -314,8 +318,8 @@ apps/web/.next/server/src/middleware.js.map
 apps/web/.next/server/src/middleware.js
 apps/web/.next/package.json
 apps/web/.next/export-marker.json
-apps/web/.next/static/znFtGDwW99vx4QlRXDFi8/_ssgManifest.js
-apps/web/.next/static/znFtGDwW99vx4QlRXDFi8/_buildManifest.js
+apps/web/.next/static/LXWgn-C5kWHq7RK0MlhtB/_ssgManifest.js
+apps/web/.next/static/LXWgn-C5kWHq7RK0MlhtB/_buildManifest.js
 apps/web/.next/static/css/699a967c2d12150d.css
 apps/web/.next/static/css/1740fb47d0e0b1f3.css
 apps/web/.next/static/chunks/581-063647a8eac4a2a5.js
@@ -334,7 +338,7 @@ apps/web/.next/static/chunks/app/[locale]/projects/[projectId]/import-novel/page
 apps/web/.next/static/chunks/app/[locale]/projects/[projectId]/pipeline/page-dda5a995e93989ed.js
 apps/web/.next/static/chunks/app/[locale]/projects/[projectId]/video/page-c27763b1b1d6dffe.js
 apps/web/.next/static/chunks/app/[locale]/projects/[projectId]/quality/review-queue/page-addd61aeeaae0493.js
-apps/web/.next/static/chunks/app/[locale]/projects/[projectId]/page-46e1e8ad3a9cc2bb.js
+apps/web/.next/static/chunks/app/[locale]/projects/[projectId]/page-ba1f774588268d2c.js
 apps/web/.next/static/chunks/app/[locale]/projects/[projectId]/import/page-fa6f0754d1183a00.js
 apps/web/.next/static/chunks/app/[locale]/projects/[projectId]/structure/page-c44776b8179a95b1.js
 apps/web/.next/static/chunks/app/[locale]/projects/page-463570c0ef47bcf3.js
@@ -345,7 +349,7 @@ apps/web/.next/static/chunks/app/[locale]/solutions/studio/page-48a000a62402d7cc
 apps/web/.next/static/chunks/app/[locale]/solutions/enterprise/page-db8ad8f964c974f2.js
 apps/web/.next/static/chunks/app/[locale]/layout-f4ed626da1e71bbc.js
 apps/web/.next/static/chunks/app/[locale]/register/page-d93db3bdd37fe618.js
-apps/web/.next/static/chunks/app/[locale]/dev/autofill/page-c67f99670bfcb07e.js
+apps/web/.next/static/chunks/app/[locale]/dev/autofill/page-dca417141f68d1b1.js
 apps/web/.next/static/chunks/app/[locale]/page-a4d32bf9d4c293ac.js
 apps/web/.next/static/chunks/app/[locale]/login/page-3b43ea88572eb621.js
 apps/web/.next/static/chunks/app/_not-found/page-a7c4552d20563caf.js
@@ -358,6 +362,7 @@ apps/web/.next/static/chunks/241-f0373bf15dbcbc5f.js
 apps/web/.next/static/chunks/webpack-7523f6e378a315ff.js
 apps/web/.next/static/chunks/836-00ec4f16bb0008a7.js
 apps/web/.next/static/chunks/292-323e00e06c0b9fdd.js
+apps/web/.next/static/chunks/783-de1d861c4387ad46.js
 apps/web/.next/static/chunks/pages/_app-a6dc346fc308ffe0.js
 apps/web/.next/static/chunks/pages/_error-abf3d04f6280e761.js
 apps/web/.next/static/chunks/406-ed9846f84c4ab95d.js
@@ -1081,6 +1086,7 @@ apps/workers/minimal-worker/package.json
 apps/workers/minimal-worker/tsconfig.json
 apps/workers/minimal-worker/index.ts
 apps/workers/package.json
+apps/workers/scripts/verify_chain.ts
 apps/workers/tsconfig.json
 apps/workers/public-storage/render-e1e2e813-9e99-439c-911e-217853644581.mp4
 apps/workers/public-storage/render-0a658576-3bbe-4c4a-a92a-f415e95d5715.mp4
@@ -1116,10 +1122,7 @@ apps/workers/src/worker/workerLoop.ts
 apps/workers/src/client/httpClient.ts
 apps/workers/src/billing/cost-ledger.service.ts
 packages/database/tools/smoke-enums.cjs
-packages/database/prisma/migrations/20260109110000_add_shotjob_result/migration.sql
-packages/database/prisma/migrations/20260109100000_p1_c_billing_events_refactor/migration.sql
-packages/database/prisma/migrations/20260109090000_p1_c_billing_settlement/migration.sql
-packages/database/prisma/migrations/20260109080000_p1_b_fix_cost_ledger/migration.sql
+packages/database/prisma/migrations/0_init_stage3_sealed/migration.sql
 packages/database/prisma/migrations__old_stage12/migration_lock.toml
 packages/database/prisma/migrations__old_stage12/20251230080936_stage6_12_hardening/migration.sql
 packages/database/prisma/migrations__old_stage12/20251230074611_add_governance_indexes/migration.sql
@@ -1409,6 +1412,7 @@ tools/health/run_console_batch3.sh
 tools/health/purge_deadcode_batch.ts
 tools/health/codemods/replace_console_log.ts
 tools/gate_minimal_seed.ts
+tools/verify_stage3_chain_logic.ts
 tools/admin/launch.sh
 tools/admin/clean_db.js
 tools/admin/reset.sh

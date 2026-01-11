@@ -1,24 +1,24 @@
 import { PrismaClient } from 'database';
 import { randomUUID } from 'crypto';
-import * as util from "util";
+import * as util from 'util';
 
 const prisma = new PrismaClient();
 
 async function main() {
   try {
-    process.stdout.write(util.format('Finding organization...') + "\n");
+    process.stdout.write(util.format('Finding organization...') + '\n');
     let org = await prisma.organization.findFirst();
     if (!org) {
       throw new Error('No organization found in database. Please seed or create one first.');
     }
 
-    process.stdout.write(util.format('Finding user...') + "\n");
+    process.stdout.write(util.format('Finding user...') + '\n');
     const user = await prisma.user.findFirst();
     if (!user) {
       throw new Error('No user found in database.');
     }
 
-    process.stdout.write(util.format('Creating/Finding test project for CE06...') + "\n");
+    process.stdout.write(util.format('Creating/Finding test project for CE06...') + '\n');
     let project = await prisma.project.findFirst({ where: { name: 'CE06 Gate Test' } });
     if (!project) {
       project = await prisma.project.create({
@@ -31,7 +31,7 @@ async function main() {
       });
     }
 
-    process.stdout.write(util.format('Preparing novel source...') + "\n");
+    process.stdout.write(util.format('Preparing novel source...') + '\n');
     const novelSource = await prisma.novelSource.create({
       data: {
         id: randomUUID(),
@@ -40,7 +40,7 @@ async function main() {
       },
     });
 
-    process.stdout.write(util.format('Finding anchor shot for foreign keys...') + "\n");
+    process.stdout.write(util.format('Finding anchor shot for foreign keys...') + '\n');
     const anchorShot = await prisma.shot.findFirst({
       include: { scene: { include: { episode: true } } },
     });
@@ -51,7 +51,7 @@ async function main() {
     const jobId = randomUUID();
     const traceId = `trace-ce06-gate-${Date.now()}`;
 
-    process.stdout.write(util.format(`Triggering NOVEL_ANALYSIS Job: ${jobId}`) + "\n");
+    process.stdout.write(util.format(`Triggering NOVEL_ANALYSIS Job: ${jobId}`) + '\n');
 
     const job = await prisma.shotJob.create({
       // ... (keep existing data)
@@ -76,7 +76,7 @@ async function main() {
       },
     });
 
-    process.stdout.write(util.format('Creating job engine binding...') + "\n");
+    process.stdout.write(util.format('Creating job engine binding...') + '\n');
     await prisma.jobEngineBinding.create({
       data: {
         id: randomUUID(),
@@ -87,10 +87,10 @@ async function main() {
       },
     } as any);
 
-    process.stdout.write(util.format(`JOB_ID=${job.id}`) + "\n");
-    process.stdout.write(util.format(`PROJECT_ID=${project.id}`) + "\n");
+    process.stdout.write(util.format(`JOB_ID=${job.id}`) + '\n');
+    process.stdout.write(util.format(`PROJECT_ID=${project.id}`) + '\n');
   } catch (e) {
-    process.stderr.write(util.format(e) + "\n");
+    process.stderr.write(util.format(e) + '\n');
     process.exit(1);
   } finally {
     await prisma.$disconnect();

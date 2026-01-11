@@ -37,7 +37,7 @@ export class ProjectService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   async create(createProjectDto: CreateProjectDto, ownerId: string, organizationId: string) {
     this.logger.log('PROJECT SERVICE CREATE CALLED');
@@ -67,13 +67,9 @@ export class ProjectService {
           where: { name: 'OWNER' },
         });
         if (finalOwnerRole) {
-          this.logger.log(
-            `SUCCESS: Found OWNER role after retry: ${finalOwnerRole.id}`
-          );
+          this.logger.log(`SUCCESS: Found OWNER role after retry: ${finalOwnerRole.id}`);
         } else {
-          this.logger.error(
-            `FATAL: OWNER role still not found after creation failure`
-          );
+          this.logger.error(`FATAL: OWNER role still not found after creation failure`);
         }
       }
     } else {
@@ -125,9 +121,7 @@ export class ProjectService {
       } catch (error: any) {
         // 软失败：记录 audit_logs 并继续（符合 SafetySpec，Character 非阻断性）
         // 注意：事务中无法直接调用 auditLogService (外部服务)，记录日志即可
-        this.logger.warn(
-          `CE01 placeholder failed in transaction: ${error?.message}`
-        );
+        this.logger.warn(`CE01 placeholder failed in transaction: ${error?.message}`);
       }
 
       return p;
@@ -590,7 +584,9 @@ export class ProjectService {
   }
 
   async checkOwnership(projectId: string, userId: string) {
-    this.logger.log(`checkOwnership: projectId=${projectId}, userId=${userId}, hasPrisma=${!!this.prisma}`);
+    this.logger.log(
+      `checkOwnership: projectId=${projectId}, userId=${userId}, hasPrisma=${!!this.prisma}`
+    );
     if (!this.prisma) {
       this.logger.error('CRITICAL: this.prisma is undefined in checkOwnership!');
       // Emergency fix attempt? No, just throw so we see log
@@ -725,11 +721,11 @@ export class ProjectService {
     // 清理缓存（需要获取 projectId）
     const projectId = isSeasonId
       ? (
-        await this.prisma.season.findUnique({
-          where: { id: projectIdOrSeasonId },
-          select: { projectId: true },
-        })
-      )?.projectId
+          await this.prisma.season.findUnique({
+            where: { id: projectIdOrSeasonId },
+            select: { projectId: true },
+          })
+        )?.projectId
       : projectIdOrSeasonId;
     if (projectId) {
       await this.sceneGraphService.invalidateProjectSceneGraph(projectId);

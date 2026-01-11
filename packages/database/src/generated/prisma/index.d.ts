@@ -7193,12 +7193,14 @@ export namespace Prisma {
 
   export type NovelChapterCountOutputType = {
     sceneDrafts: number;
+    novelScenes: number;
   };
 
   export type NovelChapterCountOutputTypeSelect<
     ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
   > = {
     sceneDrafts?: boolean | NovelChapterCountOutputTypeCountSceneDraftsArgs;
+    novelScenes?: boolean | NovelChapterCountOutputTypeCountNovelScenesArgs;
   };
 
   // Custom InputTypes
@@ -7221,6 +7223,15 @@ export namespace Prisma {
     ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
   > = {
     where?: SceneDraftWhereInput;
+  };
+
+  /**
+   * NovelChapterCountOutputType without action
+   */
+  export type NovelChapterCountOutputTypeCountNovelScenesArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    where?: NovelSceneWhereInput;
   };
 
   /**
@@ -48793,6 +48804,7 @@ export namespace Prisma {
       episode?: boolean | NovelChapter$episodeArgs<ExtArgs>;
       novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>;
       sceneDrafts?: boolean | NovelChapter$sceneDraftsArgs<ExtArgs>;
+      novelScenes?: boolean | NovelChapter$novelScenesArgs<ExtArgs>;
       _count?: boolean | NovelChapterCountOutputTypeDefaultArgs<ExtArgs>;
     },
     ExtArgs['result']['novelChapter']
@@ -48838,6 +48850,7 @@ export namespace Prisma {
     episode?: boolean | NovelChapter$episodeArgs<ExtArgs>;
     novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>;
     sceneDrafts?: boolean | NovelChapter$sceneDraftsArgs<ExtArgs>;
+    novelScenes?: boolean | NovelChapter$novelScenesArgs<ExtArgs>;
     _count?: boolean | NovelChapterCountOutputTypeDefaultArgs<ExtArgs>;
   };
   export type NovelChapterIncludeCreateManyAndReturn<
@@ -48854,6 +48867,7 @@ export namespace Prisma {
       episode: Prisma.$EpisodePayload<ExtArgs> | null;
       novelSource: Prisma.$NovelSourcePayload<ExtArgs>;
       sceneDrafts: Prisma.$SceneDraftPayload<ExtArgs>[];
+      novelScenes: Prisma.$NovelScenePayload<ExtArgs>[];
     };
     scalars: $Extensions.GetPayloadResult<
       {
@@ -49320,6 +49334,11 @@ export namespace Prisma {
     ): Prisma.PrismaPromise<
       $Result.GetResult<Prisma.$SceneDraftPayload<ExtArgs>, T, 'findMany'> | Null
     >;
+    novelScenes<T extends NovelChapter$novelScenesArgs<ExtArgs> = {}>(
+      args?: Subset<T, NovelChapter$novelScenesArgs<ExtArgs>>
+    ): Prisma.PrismaPromise<
+      $Result.GetResult<Prisma.$NovelScenePayload<ExtArgs>, T, 'findMany'> | Null
+    >;
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -49741,6 +49760,28 @@ export namespace Prisma {
     take?: number;
     skip?: number;
     distinct?: SceneDraftScalarFieldEnum | SceneDraftScalarFieldEnum[];
+  };
+
+  /**
+   * NovelChapter.novelScenes
+   */
+  export type NovelChapter$novelScenesArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the NovelScene
+     */
+    select?: NovelSceneSelect<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
+    where?: NovelSceneWhereInput;
+    orderBy?: NovelSceneOrderByWithRelationInput | NovelSceneOrderByWithRelationInput[];
+    cursor?: NovelSceneWhereUniqueInput;
+    take?: number;
+    skip?: number;
+    distinct?: NovelSceneScalarFieldEnum | NovelSceneScalarFieldEnum[];
   };
 
   /**
@@ -59933,6 +59974,7 @@ export namespace Prisma {
         createdAt?: boolean;
         updatedAt?: boolean;
         chunkIndex?: boolean;
+        chapter?: boolean | NovelChapterDefaultArgs<ExtArgs>;
       },
       ExtArgs['result']['novelScene']
     >;
@@ -59951,6 +59993,7 @@ export namespace Prisma {
       createdAt?: boolean;
       updatedAt?: boolean;
       chunkIndex?: boolean;
+      chapter?: boolean | NovelChapterDefaultArgs<ExtArgs>;
     },
     ExtArgs['result']['novelScene']
   >;
@@ -59968,11 +60011,24 @@ export namespace Prisma {
     chunkIndex?: boolean;
   };
 
+  export type NovelSceneInclude<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    chapter?: boolean | NovelChapterDefaultArgs<ExtArgs>;
+  };
+  export type NovelSceneIncludeCreateManyAndReturn<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    chapter?: boolean | NovelChapterDefaultArgs<ExtArgs>;
+  };
+
   export type $NovelScenePayload<
     ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
   > = {
     name: 'NovelScene';
-    objects: {};
+    objects: {
+      chapter: Prisma.$NovelChapterPayload<ExtArgs>;
+    };
     scalars: $Extensions.GetPayloadResult<
       {
         id: string;
@@ -60416,6 +60472,13 @@ export namespace Prisma {
     ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
   > extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: 'PrismaPromise';
+    chapter<T extends NovelChapterDefaultArgs<ExtArgs> = {}>(
+      args?: Subset<T, NovelChapterDefaultArgs<ExtArgs>>
+    ): Prisma__NovelChapterClient<
+      $Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, 'findUniqueOrThrow'> | Null,
+      Null,
+      ExtArgs
+    >;
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -60471,6 +60534,10 @@ export namespace Prisma {
      */
     select?: NovelSceneSelect<ExtArgs> | null;
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
+    /**
      * Filter, which NovelScene to fetch.
      */
     where: NovelSceneWhereUniqueInput;
@@ -60487,6 +60554,10 @@ export namespace Prisma {
      */
     select?: NovelSceneSelect<ExtArgs> | null;
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
+    /**
      * Filter, which NovelScene to fetch.
      */
     where: NovelSceneWhereUniqueInput;
@@ -60502,6 +60573,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the NovelScene
      */
     select?: NovelSceneSelect<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
     /**
      * Filter, which NovelScene to fetch.
      */
@@ -60549,6 +60624,10 @@ export namespace Prisma {
      */
     select?: NovelSceneSelect<ExtArgs> | null;
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
+    /**
      * Filter, which NovelScene to fetch.
      */
     where?: NovelSceneWhereInput;
@@ -60595,6 +60674,10 @@ export namespace Prisma {
      */
     select?: NovelSceneSelect<ExtArgs> | null;
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
+    /**
      * Filter, which NovelScenes to fetch.
      */
     where?: NovelSceneWhereInput;
@@ -60636,6 +60719,10 @@ export namespace Prisma {
      */
     select?: NovelSceneSelect<ExtArgs> | null;
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
+    /**
      * The data needed to create a NovelScene.
      */
     data: XOR<NovelSceneCreateInput, NovelSceneUncheckedCreateInput>;
@@ -60669,6 +60756,10 @@ export namespace Prisma {
      */
     data: NovelSceneCreateManyInput | NovelSceneCreateManyInput[];
     skipDuplicates?: boolean;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneIncludeCreateManyAndReturn<ExtArgs> | null;
   };
 
   /**
@@ -60681,6 +60772,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the NovelScene
      */
     select?: NovelSceneSelect<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
     /**
      * The data needed to update a NovelScene.
      */
@@ -60718,6 +60813,10 @@ export namespace Prisma {
      */
     select?: NovelSceneSelect<ExtArgs> | null;
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
+    /**
      * The filter to search for the NovelScene to update in case it exists.
      */
     where: NovelSceneWhereUniqueInput;
@@ -60741,6 +60840,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the NovelScene
      */
     select?: NovelSceneSelect<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
     /**
      * Filter which NovelScene to delete.
      */
@@ -60769,6 +60872,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the NovelScene
      */
     select?: NovelSceneSelect<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null;
   };
 
   /**
@@ -77576,6 +77683,7 @@ export namespace Prisma {
     episode?: XOR<EpisodeNullableRelationFilter, EpisodeWhereInput> | null;
     novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>;
     sceneDrafts?: SceneDraftListRelationFilter;
+    novelScenes?: NovelSceneListRelationFilter;
   };
 
   export type NovelChapterOrderByWithRelationInput = {
@@ -77593,6 +77701,7 @@ export namespace Prisma {
     episode?: EpisodeOrderByWithRelationInput;
     novelSource?: NovelSourceOrderByWithRelationInput;
     sceneDrafts?: SceneDraftOrderByRelationAggregateInput;
+    novelScenes?: NovelSceneOrderByRelationAggregateInput;
   };
 
   export type NovelChapterWhereUniqueInput = Prisma.AtLeast<
@@ -77615,6 +77724,7 @@ export namespace Prisma {
       episode?: XOR<EpisodeNullableRelationFilter, EpisodeWhereInput> | null;
       novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>;
       sceneDrafts?: SceneDraftListRelationFilter;
+      novelScenes?: NovelSceneListRelationFilter;
     },
     'id' | 'novelSourceId_orderIndex'
   >;
@@ -78425,6 +78535,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<'NovelScene'> | Date | string;
     updatedAt?: DateTimeFilter<'NovelScene'> | Date | string;
     chunkIndex?: IntFilter<'NovelScene'> | number;
+    chapter?: XOR<NovelChapterRelationFilter, NovelChapterWhereInput>;
   };
 
   export type NovelSceneOrderByWithRelationInput = {
@@ -78438,6 +78549,7 @@ export namespace Prisma {
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
     chunkIndex?: SortOrder;
+    chapter?: NovelChapterOrderByWithRelationInput;
   };
 
   export type NovelSceneWhereUniqueInput = Prisma.AtLeast<
@@ -78455,6 +78567,7 @@ export namespace Prisma {
       createdAt?: DateTimeFilter<'NovelScene'> | Date | string;
       updatedAt?: DateTimeFilter<'NovelScene'> | Date | string;
       chunkIndex?: IntFilter<'NovelScene'> | number;
+      chapter?: XOR<NovelChapterRelationFilter, NovelChapterWhereInput>;
     },
     'id'
   >;
@@ -82725,6 +82838,7 @@ export namespace Prisma {
     episode?: EpisodeCreateNestedOneWithoutChapterInput;
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput;
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput;
+    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput;
   };
 
   export type NovelChapterUncheckedCreateInput = {
@@ -82741,6 +82855,7 @@ export namespace Prisma {
     summary?: string | null;
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput;
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput;
+    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput;
   };
 
   export type NovelChapterUpdateInput = {
@@ -82757,6 +82872,7 @@ export namespace Prisma {
     episode?: EpisodeUpdateOneWithoutChapterNestedInput;
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput;
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput;
+    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput;
   };
 
   export type NovelChapterUncheckedUpdateInput = {
@@ -82773,6 +82889,7 @@ export namespace Prisma {
     summary?: NullableStringFieldUpdateOperationsInput | string | null;
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput;
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput;
+    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput;
   };
 
   export type NovelChapterCreateManyInput = {
@@ -83616,7 +83733,6 @@ export namespace Prisma {
 
   export type NovelSceneCreateInput = {
     id?: string;
-    chapterId: string;
     index: number;
     rawText?: string | null;
     enrichedText?: string | null;
@@ -83625,6 +83741,7 @@ export namespace Prisma {
     createdAt?: Date | string;
     updatedAt?: Date | string;
     chunkIndex?: number;
+    chapter: NovelChapterCreateNestedOneWithoutNovelScenesInput;
   };
 
   export type NovelSceneUncheckedCreateInput = {
@@ -83642,7 +83759,6 @@ export namespace Prisma {
 
   export type NovelSceneUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string;
-    chapterId?: StringFieldUpdateOperationsInput | string;
     index?: IntFieldUpdateOperationsInput | number;
     rawText?: NullableStringFieldUpdateOperationsInput | string | null;
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null;
@@ -83651,6 +83767,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     chunkIndex?: IntFieldUpdateOperationsInput | number;
+    chapter?: NovelChapterUpdateOneRequiredWithoutNovelScenesNestedInput;
   };
 
   export type NovelSceneUncheckedUpdateInput = {
@@ -83681,7 +83798,6 @@ export namespace Prisma {
 
   export type NovelSceneUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string;
-    chapterId?: StringFieldUpdateOperationsInput | string;
     index?: IntFieldUpdateOperationsInput | number;
     rawText?: NullableStringFieldUpdateOperationsInput | string | null;
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null;
@@ -87462,7 +87578,17 @@ export namespace Prisma {
     none?: SceneDraftWhereInput;
   };
 
+  export type NovelSceneListRelationFilter = {
+    every?: NovelSceneWhereInput;
+    some?: NovelSceneWhereInput;
+    none?: NovelSceneWhereInput;
+  };
+
   export type SceneDraftOrderByRelationAggregateInput = {
+    _count?: SortOrder;
+  };
+
+  export type NovelSceneOrderByRelationAggregateInput = {
     _count?: SortOrder;
   };
 
@@ -94645,6 +94771,18 @@ export namespace Prisma {
     connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[];
   };
 
+  export type NovelSceneCreateNestedManyWithoutChapterInput = {
+    create?:
+      | XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>
+      | NovelSceneCreateWithoutChapterInput[]
+      | NovelSceneUncheckedCreateWithoutChapterInput[];
+    connectOrCreate?:
+      | NovelSceneCreateOrConnectWithoutChapterInput
+      | NovelSceneCreateOrConnectWithoutChapterInput[];
+    createMany?: NovelSceneCreateManyChapterInputEnvelope;
+    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
+  };
+
   export type EpisodeUncheckedCreateNestedOneWithoutChapterInput = {
     create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>;
     connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput;
@@ -94661,6 +94799,18 @@ export namespace Prisma {
       | SceneDraftCreateOrConnectWithoutChapterInput[];
     createMany?: SceneDraftCreateManyChapterInputEnvelope;
     connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[];
+  };
+
+  export type NovelSceneUncheckedCreateNestedManyWithoutChapterInput = {
+    create?:
+      | XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>
+      | NovelSceneCreateWithoutChapterInput[]
+      | NovelSceneUncheckedCreateWithoutChapterInput[];
+    connectOrCreate?:
+      | NovelSceneCreateOrConnectWithoutChapterInput
+      | NovelSceneCreateOrConnectWithoutChapterInput[];
+    createMany?: NovelSceneCreateManyChapterInputEnvelope;
+    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
   };
 
   export type EpisodeUpdateOneWithoutChapterNestedInput = {
@@ -94718,6 +94868,31 @@ export namespace Prisma {
     deleteMany?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[];
   };
 
+  export type NovelSceneUpdateManyWithoutChapterNestedInput = {
+    create?:
+      | XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>
+      | NovelSceneCreateWithoutChapterInput[]
+      | NovelSceneUncheckedCreateWithoutChapterInput[];
+    connectOrCreate?:
+      | NovelSceneCreateOrConnectWithoutChapterInput
+      | NovelSceneCreateOrConnectWithoutChapterInput[];
+    upsert?:
+      | NovelSceneUpsertWithWhereUniqueWithoutChapterInput
+      | NovelSceneUpsertWithWhereUniqueWithoutChapterInput[];
+    createMany?: NovelSceneCreateManyChapterInputEnvelope;
+    set?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
+    disconnect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
+    delete?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
+    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
+    update?:
+      | NovelSceneUpdateWithWhereUniqueWithoutChapterInput
+      | NovelSceneUpdateWithWhereUniqueWithoutChapterInput[];
+    updateMany?:
+      | NovelSceneUpdateManyWithWhereWithoutChapterInput
+      | NovelSceneUpdateManyWithWhereWithoutChapterInput[];
+    deleteMany?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[];
+  };
+
   export type EpisodeUncheckedUpdateOneWithoutChapterNestedInput = {
     create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>;
     connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput;
@@ -94754,6 +94929,31 @@ export namespace Prisma {
       | SceneDraftUpdateManyWithWhereWithoutChapterInput
       | SceneDraftUpdateManyWithWhereWithoutChapterInput[];
     deleteMany?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[];
+  };
+
+  export type NovelSceneUncheckedUpdateManyWithoutChapterNestedInput = {
+    create?:
+      | XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>
+      | NovelSceneCreateWithoutChapterInput[]
+      | NovelSceneUncheckedCreateWithoutChapterInput[];
+    connectOrCreate?:
+      | NovelSceneCreateOrConnectWithoutChapterInput
+      | NovelSceneCreateOrConnectWithoutChapterInput[];
+    upsert?:
+      | NovelSceneUpsertWithWhereUniqueWithoutChapterInput
+      | NovelSceneUpsertWithWhereUniqueWithoutChapterInput[];
+    createMany?: NovelSceneCreateManyChapterInputEnvelope;
+    set?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
+    disconnect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
+    delete?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
+    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[];
+    update?:
+      | NovelSceneUpdateWithWhereUniqueWithoutChapterInput
+      | NovelSceneUpdateWithWhereUniqueWithoutChapterInput[];
+    updateMany?:
+      | NovelSceneUpdateManyWithWhereWithoutChapterInput
+      | NovelSceneUpdateManyWithWhereWithoutChapterInput[];
+    deleteMany?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[];
   };
 
   export type NovelChapterCreateNestedOneWithoutSceneDraftsInput = {
@@ -95074,6 +95274,32 @@ export namespace Prisma {
     update?: XOR<
       XOR<UserUpdateToOneWithWhereWithoutAuditLogsInput, UserUpdateWithoutAuditLogsInput>,
       UserUncheckedUpdateWithoutAuditLogsInput
+    >;
+  };
+
+  export type NovelChapterCreateNestedOneWithoutNovelScenesInput = {
+    create?: XOR<
+      NovelChapterCreateWithoutNovelScenesInput,
+      NovelChapterUncheckedCreateWithoutNovelScenesInput
+    >;
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelScenesInput;
+    connect?: NovelChapterWhereUniqueInput;
+  };
+
+  export type NovelChapterUpdateOneRequiredWithoutNovelScenesNestedInput = {
+    create?: XOR<
+      NovelChapterCreateWithoutNovelScenesInput,
+      NovelChapterUncheckedCreateWithoutNovelScenesInput
+    >;
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelScenesInput;
+    upsert?: NovelChapterUpsertWithoutNovelScenesInput;
+    connect?: NovelChapterWhereUniqueInput;
+    update?: XOR<
+      XOR<
+        NovelChapterUpdateToOneWithWhereWithoutNovelScenesInput,
+        NovelChapterUpdateWithoutNovelScenesInput
+      >,
+      NovelChapterUncheckedUpdateWithoutNovelScenesInput
     >;
   };
 
@@ -99564,6 +99790,7 @@ export namespace Prisma {
     summary?: string | null;
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput;
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput;
+    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput;
   };
 
   export type NovelChapterUncheckedCreateWithoutEpisodeInput = {
@@ -99579,6 +99806,7 @@ export namespace Prisma {
     updatedAt?: Date | string;
     summary?: string | null;
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput;
+    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput;
   };
 
   export type NovelChapterCreateOrConnectWithoutEpisodeInput = {
@@ -99845,6 +100073,7 @@ export namespace Prisma {
     summary?: NullableStringFieldUpdateOperationsInput | string | null;
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput;
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput;
+    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput;
   };
 
   export type NovelChapterUncheckedUpdateWithoutEpisodeInput = {
@@ -99860,6 +100089,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     summary?: NullableStringFieldUpdateOperationsInput | string | null;
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput;
+    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput;
   };
 
   export type ProjectUpsertWithoutEpisodesInput = {
@@ -105687,6 +105917,7 @@ export namespace Prisma {
     summary?: string | null;
     episode?: EpisodeCreateNestedOneWithoutChapterInput;
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput;
+    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput;
   };
 
   export type NovelChapterUncheckedCreateWithoutNovelSourceInput = {
@@ -105702,6 +105933,7 @@ export namespace Prisma {
     summary?: string | null;
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput;
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput;
+    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput;
   };
 
   export type NovelChapterCreateOrConnectWithoutNovelSourceInput = {
@@ -106037,6 +106269,40 @@ export namespace Prisma {
     skipDuplicates?: boolean;
   };
 
+  export type NovelSceneCreateWithoutChapterInput = {
+    id?: string;
+    index: number;
+    rawText?: string | null;
+    enrichedText?: string | null;
+    visualDensityScore?: number | null;
+    characterIds?: NullableJsonNullValueInput | InputJsonValue;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    chunkIndex?: number;
+  };
+
+  export type NovelSceneUncheckedCreateWithoutChapterInput = {
+    id?: string;
+    index: number;
+    rawText?: string | null;
+    enrichedText?: string | null;
+    visualDensityScore?: number | null;
+    characterIds?: NullableJsonNullValueInput | InputJsonValue;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    chunkIndex?: number;
+  };
+
+  export type NovelSceneCreateOrConnectWithoutChapterInput = {
+    where: NovelSceneWhereUniqueInput;
+    create: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>;
+  };
+
+  export type NovelSceneCreateManyChapterInputEnvelope = {
+    data: NovelSceneCreateManyChapterInput | NovelSceneCreateManyChapterInput[];
+    skipDuplicates?: boolean;
+  };
+
   export type EpisodeUpsertWithoutChapterInput = {
     update: XOR<EpisodeUpdateWithoutChapterInput, EpisodeUncheckedUpdateWithoutChapterInput>;
     create: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>;
@@ -106163,6 +106429,38 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<'SceneDraft'> | Date | string;
   };
 
+  export type NovelSceneUpsertWithWhereUniqueWithoutChapterInput = {
+    where: NovelSceneWhereUniqueInput;
+    update: XOR<NovelSceneUpdateWithoutChapterInput, NovelSceneUncheckedUpdateWithoutChapterInput>;
+    create: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>;
+  };
+
+  export type NovelSceneUpdateWithWhereUniqueWithoutChapterInput = {
+    where: NovelSceneWhereUniqueInput;
+    data: XOR<NovelSceneUpdateWithoutChapterInput, NovelSceneUncheckedUpdateWithoutChapterInput>;
+  };
+
+  export type NovelSceneUpdateManyWithWhereWithoutChapterInput = {
+    where: NovelSceneScalarWhereInput;
+    data: XOR<NovelSceneUpdateManyMutationInput, NovelSceneUncheckedUpdateManyWithoutChapterInput>;
+  };
+
+  export type NovelSceneScalarWhereInput = {
+    AND?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[];
+    OR?: NovelSceneScalarWhereInput[];
+    NOT?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[];
+    id?: StringFilter<'NovelScene'> | string;
+    chapterId?: StringFilter<'NovelScene'> | string;
+    index?: IntFilter<'NovelScene'> | number;
+    rawText?: StringNullableFilter<'NovelScene'> | string | null;
+    enrichedText?: StringNullableFilter<'NovelScene'> | string | null;
+    visualDensityScore?: FloatNullableFilter<'NovelScene'> | number | null;
+    characterIds?: JsonNullableFilter<'NovelScene'>;
+    createdAt?: DateTimeFilter<'NovelScene'> | Date | string;
+    updatedAt?: DateTimeFilter<'NovelScene'> | Date | string;
+    chunkIndex?: IntFilter<'NovelScene'> | number;
+  };
+
   export type NovelChapterCreateWithoutSceneDraftsInput = {
     id?: string;
     orderIndex: number;
@@ -106176,6 +106474,7 @@ export namespace Prisma {
     summary?: string | null;
     episode?: EpisodeCreateNestedOneWithoutChapterInput;
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput;
+    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput;
   };
 
   export type NovelChapterUncheckedCreateWithoutSceneDraftsInput = {
@@ -106191,6 +106490,7 @@ export namespace Prisma {
     updatedAt?: Date | string;
     summary?: string | null;
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput;
+    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput;
   };
 
   export type NovelChapterCreateOrConnectWithoutSceneDraftsInput = {
@@ -106269,6 +106569,7 @@ export namespace Prisma {
     summary?: NullableStringFieldUpdateOperationsInput | string | null;
     episode?: EpisodeUpdateOneWithoutChapterNestedInput;
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput;
+    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput;
   };
 
   export type NovelChapterUncheckedUpdateWithoutSceneDraftsInput = {
@@ -106284,6 +106585,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     summary?: NullableStringFieldUpdateOperationsInput | string | null;
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput;
+    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput;
   };
 
   export type SceneUpsertWithoutSceneDraftInput = {
@@ -107145,6 +107447,98 @@ export namespace Prisma {
     ownedProjects?: ProjectUncheckedUpdateManyWithoutOwnerNestedInput;
     reviewLogs?: PublishingReviewUncheckedUpdateManyWithoutReviewerNestedInput;
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutUserNestedInput;
+  };
+
+  export type NovelChapterCreateWithoutNovelScenesInput = {
+    id?: string;
+    orderIndex: number;
+    title: string;
+    rawText: string;
+    startParagraph?: number | null;
+    endParagraph?: number | null;
+    characterCount?: number | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    summary?: string | null;
+    episode?: EpisodeCreateNestedOneWithoutChapterInput;
+    novelSource: NovelSourceCreateNestedOneWithoutChaptersInput;
+    sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput;
+  };
+
+  export type NovelChapterUncheckedCreateWithoutNovelScenesInput = {
+    id?: string;
+    novelSourceId: string;
+    orderIndex: number;
+    title: string;
+    rawText: string;
+    startParagraph?: number | null;
+    endParagraph?: number | null;
+    characterCount?: number | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    summary?: string | null;
+    episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput;
+    sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput;
+  };
+
+  export type NovelChapterCreateOrConnectWithoutNovelScenesInput = {
+    where: NovelChapterWhereUniqueInput;
+    create: XOR<
+      NovelChapterCreateWithoutNovelScenesInput,
+      NovelChapterUncheckedCreateWithoutNovelScenesInput
+    >;
+  };
+
+  export type NovelChapterUpsertWithoutNovelScenesInput = {
+    update: XOR<
+      NovelChapterUpdateWithoutNovelScenesInput,
+      NovelChapterUncheckedUpdateWithoutNovelScenesInput
+    >;
+    create: XOR<
+      NovelChapterCreateWithoutNovelScenesInput,
+      NovelChapterUncheckedCreateWithoutNovelScenesInput
+    >;
+    where?: NovelChapterWhereInput;
+  };
+
+  export type NovelChapterUpdateToOneWithWhereWithoutNovelScenesInput = {
+    where?: NovelChapterWhereInput;
+    data: XOR<
+      NovelChapterUpdateWithoutNovelScenesInput,
+      NovelChapterUncheckedUpdateWithoutNovelScenesInput
+    >;
+  };
+
+  export type NovelChapterUpdateWithoutNovelScenesInput = {
+    id?: StringFieldUpdateOperationsInput | string;
+    orderIndex?: IntFieldUpdateOperationsInput | number;
+    title?: StringFieldUpdateOperationsInput | string;
+    rawText?: StringFieldUpdateOperationsInput | string;
+    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null;
+    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null;
+    characterCount?: NullableIntFieldUpdateOperationsInput | number | null;
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    summary?: NullableStringFieldUpdateOperationsInput | string | null;
+    episode?: EpisodeUpdateOneWithoutChapterNestedInput;
+    novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput;
+    sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput;
+  };
+
+  export type NovelChapterUncheckedUpdateWithoutNovelScenesInput = {
+    id?: StringFieldUpdateOperationsInput | string;
+    novelSourceId?: StringFieldUpdateOperationsInput | string;
+    orderIndex?: IntFieldUpdateOperationsInput | number;
+    title?: StringFieldUpdateOperationsInput | string;
+    rawText?: StringFieldUpdateOperationsInput | string;
+    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null;
+    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null;
+    characterCount?: NullableIntFieldUpdateOperationsInput | number | null;
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    summary?: NullableStringFieldUpdateOperationsInput | string | null;
+    episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput;
+    sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput;
   };
 
   export type ProjectCreateWithoutNovelParseResultsInput = {
@@ -111560,6 +111954,7 @@ export namespace Prisma {
     summary?: NullableStringFieldUpdateOperationsInput | string | null;
     episode?: EpisodeUpdateOneWithoutChapterNestedInput;
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput;
+    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput;
   };
 
   export type NovelChapterUncheckedUpdateWithoutNovelSourceInput = {
@@ -111575,6 +111970,7 @@ export namespace Prisma {
     summary?: NullableStringFieldUpdateOperationsInput | string | null;
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput;
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput;
+    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput;
   };
 
   export type NovelChapterUncheckedUpdateManyWithoutNovelSourceInput = {
@@ -111603,6 +111999,18 @@ export namespace Prisma {
     analysisResult?: NullableJsonNullValueInput | InputJsonValue;
     createdAt?: Date | string;
     updatedAt?: Date | string;
+  };
+
+  export type NovelSceneCreateManyChapterInput = {
+    id?: string;
+    index: number;
+    rawText?: string | null;
+    enrichedText?: string | null;
+    visualDensityScore?: number | null;
+    characterIds?: NullableJsonNullValueInput | InputJsonValue;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    chunkIndex?: number;
   };
 
   export type SceneDraftUpdateWithoutChapterInput = {
@@ -111650,6 +112058,42 @@ export namespace Prisma {
     analysisResult?: NullableJsonNullValueInput | InputJsonValue;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+  };
+
+  export type NovelSceneUpdateWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string;
+    index?: IntFieldUpdateOperationsInput | number;
+    rawText?: NullableStringFieldUpdateOperationsInput | string | null;
+    enrichedText?: NullableStringFieldUpdateOperationsInput | string | null;
+    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null;
+    characterIds?: NullableJsonNullValueInput | InputJsonValue;
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    chunkIndex?: IntFieldUpdateOperationsInput | number;
+  };
+
+  export type NovelSceneUncheckedUpdateWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string;
+    index?: IntFieldUpdateOperationsInput | number;
+    rawText?: NullableStringFieldUpdateOperationsInput | string | null;
+    enrichedText?: NullableStringFieldUpdateOperationsInput | string | null;
+    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null;
+    characterIds?: NullableJsonNullValueInput | InputJsonValue;
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    chunkIndex?: IntFieldUpdateOperationsInput | number;
+  };
+
+  export type NovelSceneUncheckedUpdateManyWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string;
+    index?: IntFieldUpdateOperationsInput | number;
+    rawText?: NullableStringFieldUpdateOperationsInput | string | null;
+    enrichedText?: NullableStringFieldUpdateOperationsInput | string | null;
+    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null;
+    characterIds?: NullableJsonNullValueInput | InputJsonValue;
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    chunkIndex?: IntFieldUpdateOperationsInput | number;
   };
 
   export type AuditLogCreateManyApiKeyInput = {

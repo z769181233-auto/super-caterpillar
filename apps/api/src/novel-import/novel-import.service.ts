@@ -36,7 +36,7 @@ export class NovelImportService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly analysisProcessor: NovelAnalysisProcessorService
-  ) { }
+  ) {}
 
   /**
    * 分析单个章节

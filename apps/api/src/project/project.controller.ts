@@ -61,7 +61,7 @@ export class ProjectController {
     private readonly taskService: TaskService,
     private readonly permissionService: PermissionService,
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   @Get()
   async getProjects(
@@ -726,7 +726,9 @@ export class ProjectController {
 
         successfulJobs.push(job);
       } catch (err) {
-        this.logger.error(`Failed to create task/job for shot ${shotId}: ${err instanceof Error ? err.message : String(err)}`);
+        this.logger.error(
+          `Failed to create task/job for shot ${shotId}: ${err instanceof Error ? err.message : String(err)}`
+        );
         // 如果 Job 创建失败，尝试更新 Task 状态为失败
         // 注意：这里可能 Task 已经创建但 Job 创建失败，需要回滚 Task
         // 为了简化，这里只记录错误，Task 状态由后续的重试机制处理

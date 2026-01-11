@@ -20,7 +20,7 @@ function coerceGateStatus(v: any): GateStatus | undefined {
 @Injectable()
 export class PipelineService {
   private readonly logger = new Logger(PipelineService.name);
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Pipeline 视图：以“项目结构树”为主（稳定来源），jobs 作为补充信息（弱依赖）。
@@ -121,12 +121,12 @@ export class PipelineService {
             blockingReason: sc.blockingReason ?? null,
             lastJob: j
               ? {
-                id: j.id,
-                status: j.status,
-                type: j.type,
-                engineKey: j.engineKey,
-                createdAt: j.createdAt?.toISOString?.() ?? String(j.createdAt),
-              }
+                  id: j.id,
+                  status: j.status,
+                  type: j.type,
+                  engineKey: j.engineKey,
+                  createdAt: j.createdAt?.toISOString?.() ?? String(j.createdAt),
+                }
               : null,
             children: [],
           };
@@ -146,12 +146,12 @@ export class PipelineService {
               blockingReason: sh.blockingReason ?? null,
               lastJob: jj
                 ? {
-                  id: jj.id,
-                  status: jj.status,
-                  type: jj.type,
-                  engineKey: jj.engineKey,
-                  createdAt: jj.createdAt?.toISOString?.() ?? String(jj.createdAt),
-                }
+                    id: jj.id,
+                    status: jj.status,
+                    type: jj.type,
+                    engineKey: jj.engineKey,
+                    createdAt: jj.createdAt?.toISOString?.() ?? String(jj.createdAt),
+                  }
                 : null,
             };
             return shotNode;

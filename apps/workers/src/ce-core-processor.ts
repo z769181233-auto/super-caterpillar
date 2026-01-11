@@ -20,7 +20,7 @@ import {
 } from './novel-analysis-processor';
 import { CostLedgerService } from './billing/cost-ledger.service';
 import { ModelRouterV2 } from '@scu/router';
-import * as util from "util";
+import * as util from 'util';
 
 /**
  * 结构化日志输出函数
@@ -33,11 +33,11 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
   };
   const logMessage = JSON.stringify(logEntry);
   if (level === 'error') {
-    process.stderr.write(util.format(logMessage) + "\n");
+    process.stderr.write(util.format(logMessage) + '\n');
   } else if (level === 'warn') {
-    process.stdout.write(util.format(logMessage) + "\n");
+    process.stdout.write(util.format(logMessage) + '\n');
   } else {
-    process.stdout.write(util.format(logMessage) + "\n");
+    process.stdout.write(util.format(logMessage) + '\n');
   }
 }
 
@@ -126,24 +126,145 @@ export async function processCE06Job(
       },
     });
 
+    // [Stage 3 Fix] Fetch Context Early for Orchestration
+    const shotJob = await prisma.shotJob.findUnique({
+      where: { id: jobId },
+      select: { organizationId: true },
+    });
+    const orgId = shotJob?.organizationId;
+
     // 3.1 映射到层级结构并落库 (Season/Episode/Scene/Shot)
     // 这是 P1 能力闭环的关键：让物理引擎的产物进入业务主表
     const structure = mapCE06OutputToProjectStructure(job.projectId, result);
     await applyAnalyzedStructureToDatabase(prisma, structure);
 
+    // [ORCHESTRATION] Stage 3: CE06 Success -> Trigger CE03 for all scenes
+    try {
+      // 2-step lookup to avoid relation naming guess
+      const chapters = await prisma.novelChapter.findMany({
+        where: { novelSource: { projectId: job.projectId } },
+        select: { id: true },
+      });
+
+      // [P0 FIX] Deterministic ID Binding: Map NovelScene -> CinemaScene via indices
+      // 1. Fetch all NovelScenes (select chapterId manually to avoid Relation issues)
+      const allNovelScenes = await prisma.novelScene.findMany({
+        where: {
+          chapterId: { in: chapters.map((c) => c.id) },
+        },
+        select: {
+          id: true,
+          index: true,
+          chapterId: true, // Fetch FK directly
+        },
+      });
+
+      // 1b. Fetch related NovelChapters to get orderIndex (Manual Join)
+      const relatedChapters = await prisma.novelChapter.findMany({
+        where: { id: { in: allNovelScenes.map((ns) => ns.chapterId) } },
+        select: { id: true, orderIndex: true },
+      });
+      const chapterOrderMap = new Map<string, number>();
+      for (const rc of relatedChapters) chapterOrderMap.set(rc.id, rc.orderIndex);
+
+      // 2. Fetch all Cinema Structure (Scenes + Shots) for mapping
+      const cinemaStructure = await prisma.scene.findMany({
+        where: { episode: { projectId: job.projectId } },
+        select: {
+          id: true,
+          index: true,
+          episodeId: true,
+          episode: { select: { index: true } },
+          shots: { select: { id: true }, orderBy: { index: 'asc' }, take: 1 },
+        },
+      });
+
+      // 3. Build Lookup Map
+      const cinemaMap = new Map<string, (typeof cinemaStructure)[0]>();
+      for (const cs of cinemaStructure) {
+        const key = `${cs.episode.index}_${cs.index}`;
+        cinemaMap.set(key, cs);
+      }
+
+      if (allNovelScenes.length > 0) {
+        logStructured('info', {
+          action: 'ORCHESTRATION_TRIGGER_CE03',
+          projectId: job.projectId,
+          sceneCount: allNovelScenes.length,
+        });
+
+        const ce03Jobs = allNovelScenes
+          .map((ns) => {
+            const orderIndex = chapterOrderMap.get(ns.chapterId);
+            // If orderIndex is missing (impossible due to FK), fallback
+            const mapKey = orderIndex !== undefined ? `${orderIndex}_${ns.index}` : `fail_${ns.id}`;
+            const targetScene = cinemaMap.get(mapKey);
+
+            if (!targetScene || targetScene.shots.length === 0) {
+              const defaultShot = cinemaStructure.find((s) => s.shots.length > 0);
+              if (defaultShot) {
+                logStructured('warn', {
+                  action: 'CE03_BINDING_FALLBACK',
+                  reason: targetScene ? 'No Shots' : 'Scene Not Found',
+                  novelSceneId: ns.id,
+                  mapKey,
+                });
+                return {
+                  projectId: job.projectId,
+                  type: 'CE03_VISUAL_DENSITY',
+                  status: 'PENDING',
+                  payload: { novelSceneId: ns.id },
+                  organizationId: orgId,
+                  traceId: traceId,
+                  episodeId: defaultShot.episodeId,
+                  sceneId: defaultShot.id,
+                  shotId: defaultShot.shots[0].id,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                };
+              }
+              logStructured('error', { action: 'CE03_SKIP_NO_CINEMA_STRUCTURE', sceneId: ns.id });
+              return null;
+            }
+
+            return {
+              projectId: job.projectId,
+              type: 'CE03_VISUAL_DENSITY',
+              status: 'PENDING',
+              payload: { novelSceneId: ns.id },
+              organizationId: orgId,
+              traceId: traceId,
+              episodeId: targetScene.episodeId,
+              sceneId: targetScene.id,
+              shotId: targetScene.shots[0].id,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+          })
+          .filter((item) => item !== null);
+
+        if (ce03Jobs.length > 0) {
+          await prisma.shotJob.createMany({
+            data: ce03Jobs as any,
+          });
+        }
+      }
+    } catch (orchError: any) {
+      // Fallback: If novelChapter relation fails, try raw query or log
+      logStructured('error', {
+        action: 'ORCHESTRATION_FAIL_CE06_TO_CE03',
+        error: orchError.message,
+      });
+    }
+
     // 3.2 记录计费 (Stage-3-B)
     try {
       const costLedgerService = new CostLedgerService(apiClient);
-      const shotJob = await prisma.shotJob.findUnique({
-        where: { id: jobId },
-        select: { organizationId: true },
-      });
       const project = await prisma.project.findUnique({
         where: { id: job.projectId },
         select: { ownerId: true },
       });
       const userId = project?.ownerId || 'system';
-      const orgId = shotJob?.organizationId;
 
       if (orgId && (result as any).billing_usage) {
         await costLedgerService.recordCE06Billing({
@@ -270,20 +391,30 @@ export async function processCE03Job(
   });
 
   try {
-    // 1. 获取输入数据(优先使用job payload,否则从CE06结果或fallback)
+    // 1. 获取输入数据
     let structuredText: string;
+    let novelSceneId: string | undefined;
 
-    if (job.payload && typeof job.payload === 'object' && (job.payload as any).structured_text) {
+    if (job.payload && typeof job.payload === 'object' && (job.payload as any).novelSceneId) {
+      // [Stage 3] Granular Scene Mode
+      novelSceneId = (job.payload as any).novelSceneId;
+      const ns = await prisma.novelScene.findUnique({ where: { id: novelSceneId } });
+      structuredText = ns?.rawText || ns?.enrichedText || '';
+    } else if (
+      job.payload &&
+      typeof job.payload === 'object' &&
+      (job.payload as any).structured_text
+    ) {
       // Direct payload input (gate/test scenarios)
       structuredText = (job.payload as any).structured_text;
     } else {
-      // Production: from CE06 result
+      // Production Fallback: all scenes (legacy/bulk mode)
       const parseResult = await prisma.novelParseResult.findUnique({
         where: { projectId: job.projectId },
       });
       structuredText = parseResult?.scenes
         ? JSON.stringify(parseResult.scenes)
-        : '["Test scene fallback"]'; // Fallback for independent gate verification
+        : '["Test scene fallback"]';
     }
 
     // 2. 调用 CE03 Engine
@@ -338,19 +469,59 @@ export async function processCE03Job(
       },
     });
 
+    // Write back to NovelScene if applicable
+    if (novelSceneId) {
+      // Use update if schema supports it, otherwise rely on QualityMetrics link
+      // Assuming visualDensityScore exists in schema or we skip it for now to avoid break
+      // We will trigger CE04 anyway
+    }
+
+    // [Stage 3 Fix] Fetch Context Early for CE03
+    const shotJob = await prisma.shotJob.findUnique({
+      where: { id: jobId },
+      select: { organizationId: true },
+    });
+    const orgId = shotJob?.organizationId;
+
+    // [ORCHESTRATION] Stage 3: CE03 Success -> Trigger CE04 for this scene
+    if (novelSceneId) {
+      try {
+        await prisma.shotJob.create({
+          data: {
+            projectId: job.projectId,
+            type: 'CE04_VISUAL_ENRICHMENT',
+            status: 'PENDING',
+            payload: { novelSceneId },
+            organizationId: orgId,
+            traceId,
+            // Propagate Schema IDs from CE03 Job
+            episodeId: job.episodeId,
+            sceneId: job.sceneId,
+            shotId: job.shotId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as any,
+        });
+        logStructured('info', {
+          action: 'ORCHESTRATION_TRIGGER_CE04',
+          jobId,
+          novelSceneId,
+        });
+      } catch (e: any) {
+        logStructured('error', { action: 'ORCHESTRATION_FAIL_CE03_TO_CE04', error: e.message });
+      }
+    }
+
     // 3.2 记录计费 (Stage-3-C)
     try {
       const costLedgerService = new CostLedgerService(apiClient);
-      const shotJob = await prisma.shotJob.findUnique({
-        where: { id: jobId },
-        select: { organizationId: true },
-      });
+
+      // Removed redundant shotJob fetch, already fetched above
       const project = await prisma.project.findUnique({
         where: { id: job.projectId },
         select: { ownerId: true },
       });
       const userId = project?.ownerId || 'system';
-      const orgId = shotJob?.organizationId;
 
       if (orgId && (result as any).billing_usage) {
         await costLedgerService.recordCE03Billing({
@@ -476,8 +647,14 @@ export async function processCE04Job(
   try {
     // 1. 获取输入 (Payload, CE06, CE03, Failback)
     let structuredText: string = '["Fallback scene"]';
+    let novelSceneId: string | undefined;
 
-    if (job.payload && (job.payload as any).structured_text) {
+    if (job.payload && (job.payload as any).novelSceneId) {
+      // [Stage 3] Granular Mode
+      novelSceneId = (job.payload as any).novelSceneId;
+      const ns = await prisma.novelScene.findUnique({ where: { id: novelSceneId } });
+      structuredText = ns?.rawText || '';
+    } else if (job.payload && (job.payload as any).structured_text) {
       structuredText = (job.payload as any).structured_text;
     } else {
       const parseResult = await prisma.novelParseResult.findUnique({
@@ -536,6 +713,23 @@ export async function processCE04Job(
       },
     });
 
+    // [Stage 3] Write back Enriched Text to NovelScene
+    if (novelSceneId) {
+      try {
+        await prisma.novelScene.update({
+          where: { id: novelSceneId },
+          data: { enrichedText: result.enriched_prompt },
+        });
+        logStructured('info', {
+          action: 'NOVEL_SCENE_ENRICHED_UPDATE',
+          jobId,
+          novelSceneId,
+        });
+      } catch (e: any) {
+        logStructured('warn', { action: 'NOVEL_SCENE_UPDATE_FAIL', error: e.message });
+      }
+    }
+
     // 4. [AUTOMATED BILLING] 计费闭流
     const usage = engineResult.metrics?.usage;
     if (usage) {
@@ -581,7 +775,7 @@ export async function processCE04Job(
         latencyMs: duration,
         auditTrail: result.audit_trail,
       })
-      .catch(() => { });
+      .catch(() => {});
 
     return result;
   } catch (error: any) {
@@ -748,7 +942,7 @@ export async function processShotRenderJob(
         resourceId: asset.id,
         resourceType: 'asset',
       })
-      .catch(() => { });
+      .catch(() => {});
 
     return {
       assetId: asset.id,
@@ -799,7 +993,11 @@ export async function processCE01Job(
     // API的getAndMarkNextPendingJob在标记RUNNING时已将attempts递增(0→1)
     // 商业级容错：使用<=1而非==1，对未来API时序调整有容错
     if (attemptsFromDb <= 1) {
-      process.stdout.write(util.format(`[Worker] ${failOnceEnv} is set, failing job ${jobId} (attemptsFromDb=${attemptsFromDb})`) + "\n");
+      process.stdout.write(
+        util.format(
+          `[Worker] ${failOnceEnv} is set, failing job ${jobId} (attemptsFromDb=${attemptsFromDb})`
+        ) + '\n'
+      );
       throw new Error(`Simulated failure for ${failOnceEnv}`);
     }
   }
@@ -818,7 +1016,7 @@ export async function processCE01Job(
       latencyMs: duration,
       auditTrail: { message: 'Reference sheet generated (mock)' },
     })
-    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + "\n"));
+    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
 
   logStructured('info', {
     action: 'CE01_JOB_SUCCESS',
@@ -913,9 +1111,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-        summary: previousMemory.summary || '',
-        character_states: (previousMemory.characterStates as any) || {},
-      }
+          summary: previousMemory.summary || '',
+          character_states: (previousMemory.characterStates as any) || {},
+        }
       : undefined,
     context: {
       projectId,
@@ -985,7 +1183,7 @@ export async function processCE07Job(
         factsCount: result.key_facts?.length || 0,
       },
     })
-    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + "\n"));
+    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
 
   logStructured('info', {
     action: 'CE07_MEMORY_UPDATE_SUCCESS',
@@ -1081,7 +1279,7 @@ export async function processGenericCEJob(
       latencyMs: duration,
       auditTrail: { message: `${(job as any).type} processed (generic mock)` },
     })
-    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + "\n"));
+    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
 
   logStructured('info', {
     action: 'GENERIC_CE_JOB_SUCCESS',

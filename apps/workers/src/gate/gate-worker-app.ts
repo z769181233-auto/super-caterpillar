@@ -10,7 +10,7 @@ import {
 import { ApiClient } from '../api-client';
 import { PrismaClient } from 'database';
 import { env } from '@scu/config';
-import * as util from "util";
+import * as util from 'util';
 
 function assertNonProd() {
   if (process.env.NODE_ENV === 'production') {
@@ -24,17 +24,17 @@ export async function startGateWorkerApp() {
     throw new Error('GATE_WORKER_REQUIRES_GATE_MODE=1');
   }
 
-  process.stdout.write(util.format('========================================') + "\n");
-  process.stdout.write(util.format('Gate Worker (Minimal P1-1)') + "\n");
-  process.stdout.write(util.format('========================================\n') + "\n");
+  process.stdout.write(util.format('========================================') + '\n');
+  process.stdout.write(util.format('Gate Worker (Minimal P1-1)') + '\n');
+  process.stdout.write(util.format('========================================\n') + '\n');
 
   const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
   const apiBaseUrl = env.apiUrl || 'http://localhost:3001';
   const workerApiKey = env.workerApiKey;
   const workerApiSecret = env.workerApiSecret;
 
-  process.stdout.write(util.format(`[GateWorker] Worker ID: ${workerId}`) + "\n");
-  process.stdout.write(util.format(`[GateWorker] API URL: ${apiBaseUrl}`) + "\n");
+  process.stdout.write(util.format(`[GateWorker] Worker ID: ${workerId}`) + '\n');
+  process.stdout.write(util.format(`[GateWorker] API URL: ${apiBaseUrl}`) + '\n');
 
   const apiClient = new ApiClient(
     apiBaseUrl.replace(/\/api\/?$/, ''),
@@ -53,12 +53,12 @@ export async function startGateWorkerApp() {
   });
 
   // 连接数据库
-  process.stdout.write(util.format('[GateWorker] 正在连接数据库...') + "\n");
+  process.stdout.write(util.format('[GateWorker] 正在连接数据库...') + '\n');
   await prisma.$connect();
-  process.stdout.write(util.format('[GateWorker] ✅ 数据库连接成功') + "\n");
+  process.stdout.write(util.format('[GateWorker] ✅ 数据库连接成功') + '\n');
 
   // 注册 Worker
-  process.stdout.write(util.format('[GateWorker] 正在注册 Worker 节点...') + "\n");
+  process.stdout.write(util.format('[GateWorker] 正在注册 Worker 节点...') + '\n');
   await apiClient.registerWorker({
     workerId: workerId,
     name: workerId,
@@ -69,7 +69,7 @@ export async function startGateWorkerApp() {
       maxBatchSize: 1,
     },
   });
-  process.stdout.write(util.format('[GateWorker] ✅ Worker 注册成功') + "\n");
+  process.stdout.write(util.format('[GateWorker] ✅ Worker 注册成功') + '\n');
 
   const pollMs = Number(process.env.WORKER_POLL_INTERVAL ?? 1000);
   let isRunning = true;
@@ -91,7 +91,7 @@ export async function startGateWorkerApp() {
         },
       });
     } catch (error: any) {
-      process.stderr.write(util.format('[GateWorker] ❌ 心跳发送失败:', error.message) + "\n");
+      process.stderr.write(util.format('[GateWorker] ❌ 心跳发送失败:', error.message) + '\n');
     }
   }, 5000);
 
@@ -108,7 +108,7 @@ export async function startGateWorkerApp() {
     },
   });
 
-  process.stdout.write(util.format('[GateWorker] ✅ Worker 启动成功，开始轮询...\n') + "\n");
+  process.stdout.write(util.format('[GateWorker] ✅ Worker 启动成功，开始轮询...\n') + '\n');
 
   // 最小轮询逻辑
   async function pollJobs() {
@@ -123,12 +123,12 @@ export async function startGateWorkerApp() {
       // Gate 只处理 stress job
       if (!shouldUseGateNoop(job)) {
         // 跳过非 Gate job（理论上不应出现，但保险起见）
-        process.stdout.write(util.format(`[GateWorker] 跳过非 Gate job: ${job.id}`) + "\n");
+        process.stdout.write(util.format(`[GateWorker] 跳过非 Gate job: ${job.id}`) + '\n');
         return;
       }
 
       tasksRunning++;
-      process.stdout.write(util.format(`[GateWorker] 认领 job: ${job.id}`) + "\n");
+      process.stdout.write(util.format(`[GateWorker] 认领 job: ${job.id}`) + '\n');
 
       try {
         // ✅ Noop执行
@@ -141,9 +141,13 @@ export async function startGateWorkerApp() {
           result,
         });
 
-        process.stdout.write(util.format(`[GateWorker] ✅ job ${job.id} 成功完成 (耗时: ${result.sleptMs}ms)`) + "\n");
+        process.stdout.write(
+          util.format(`[GateWorker] ✅ job ${job.id} 成功完成 (耗时: ${result.sleptMs}ms)`) + '\n'
+        );
       } catch (error: any) {
-        process.stderr.write(util.format(`[GateWorker] ❌ job ${job.id} 执行失败:`, error.message) + "\n");
+        process.stderr.write(
+          util.format(`[GateWorker] ❌ job ${job.id} 执行失败:`, error.message) + '\n'
+        );
         await apiClient.reportJobResult({
           jobId: job.id,
           status: 'FAILED',
@@ -157,7 +161,7 @@ export async function startGateWorkerApp() {
       if (error.message?.includes('No jobs available')) {
         // 正常情况，静默处理
       } else {
-        process.stderr.write(util.format(`[GateWorker] ❌ 轮询失败:`, error.message) + "\n");
+        process.stderr.write(util.format(`[GateWorker] ❌ 轮询失败:`, error.message) + '\n');
       }
     }
   }
@@ -174,22 +178,22 @@ export async function startGateWorkerApp() {
 
   // 优雅退出
   process.on('SIGINT', async () => {
-    process.stdout.write(util.format('\n[GateWorker] 收到 SIGINT，正在关闭...') + "\n");
+    process.stdout.write(util.format('\n[GateWorker] 收到 SIGINT，正在关闭...') + '\n');
     isRunning = false;
     clearInterval(heartbeatInterval);
     clearInterval(pollInterval);
     await prisma.$disconnect();
-    process.stdout.write(util.format('[GateWorker] ✅ Worker 已关闭') + "\n");
+    process.stdout.write(util.format('[GateWorker] ✅ Worker 已关闭') + '\n');
     process.exit(0);
   });
 
   process.on('SIGTERM', async () => {
-    process.stdout.write(util.format('\n[GateWorker] 收到 SIGTERM，正在关闭...') + "\n");
+    process.stdout.write(util.format('\n[GateWorker] 收到 SIGTERM，正在关闭...') + '\n');
     isRunning = false;
     clearInterval(heartbeatInterval);
     clearInterval(pollInterval);
     await prisma.$disconnect();
-    process.stdout.write(util.format('[GateWorker] ✅ Worker 已关闭') + "\n");
+    process.stdout.write(util.format('[GateWorker] ✅ Worker 已关闭') + '\n');
     process.exit(0);
   });
 }

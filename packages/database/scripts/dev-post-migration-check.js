@@ -1,4 +1,4 @@
-import * as util from "util";
+import * as util from 'util';
 
 const { PrismaClient, Prisma } = require('../node_modules/@prisma/client');
 const prisma = new PrismaClient();
@@ -38,20 +38,24 @@ async function main() {
       AND tablename IN ('scenes','shots','tasks','worker_nodes','audit_logs');
   `;
 
-  process.stdout.write(util.format(JSON.stringify(
-          {
-            tablesPresent: tableRows,
-            auditColumns: auditCols,
-            keyIndexes: scenesShotsIdx,
-          },
-          null,
-          2
-        )) + "\n");
+  process.stdout.write(
+    util.format(
+      JSON.stringify(
+        {
+          tablesPresent: tableRows,
+          auditColumns: auditCols,
+          keyIndexes: scenesShotsIdx,
+        },
+        null,
+        2
+      )
+    ) + '\n'
+  );
 }
 
 main()
   .catch((err) => {
-    process.stderr.write(util.format(err) + "\n");
+    process.stderr.write(util.format(err) + '\n');
     process.exit(1);
   })
   .finally(async () => {

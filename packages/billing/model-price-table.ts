@@ -30,7 +30,9 @@ export const MODEL_PRICE_TABLE: Record<string, number> = {
 export function getModelPrice(modelName: string): number {
   const price = MODEL_PRICE_TABLE[modelName];
   if (!price) {
-    process.stdout.write(`[ModelPriceTable] WARN: Unknown model: ${modelName}, using default price\n`);
+    process.stdout.write(
+      `[ModelPriceTable] WARN: Unknown model: ${modelName}, using default price\n`
+    );
     return MODEL_PRICE_TABLE['default'];
   }
   return price;

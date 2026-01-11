@@ -35,7 +35,7 @@ type ProjectWithTree = Project & {
 };
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as util from "util";
+import * as util from 'util';
 
 const TEST_USER_EMAIL = 'e2e-test@example.com';
 const TEST_USER_PASSWORD = 'test123456';
@@ -58,7 +58,7 @@ async function createOrGetTestUser(
   prisma: PrismaService,
   authService: AuthService
 ): Promise<{ userId: string; organizationId: string }> {
-  process.stdout.write(util.format('[E2E] 步骤 1: 创建或获取测试用户和组织...') + "\n");
+  process.stdout.write(util.format('[E2E] 步骤 1: 创建或获取测试用户和组织...') + '\n');
 
   // 查找或创建用户
   let user = await prisma.user.findUnique({
@@ -66,7 +66,7 @@ async function createOrGetTestUser(
   });
 
   if (!user) {
-    process.stdout.write(util.format('[E2E] 创建新测试用户...') + "\n");
+    process.stdout.write(util.format('[E2E] 创建新测试用户...') + '\n');
     await authService.register({
       email: TEST_USER_EMAIL,
       password: TEST_USER_PASSWORD,
@@ -87,7 +87,7 @@ async function createOrGetTestUser(
   });
 
   if (!organization) {
-    process.stdout.write(util.format('[E2E] 创建新测试组织...') + "\n");
+    process.stdout.write(util.format('[E2E] 创建新测试组织...') + '\n');
     organization = await prisma.organization.create({
       data: {
         name: 'E2E Test Organization',
@@ -116,7 +116,9 @@ async function createOrGetTestUser(
     });
   }
 
-  process.stdout.write(util.format(`[E2E] ✅ 用户 ID: ${user.id}, 组织 ID: ${organization.id}`) + "\n");
+  process.stdout.write(
+    util.format(`[E2E] ✅ 用户 ID: ${user.id}, 组织 ID: ${organization.id}`) + '\n'
+  );
   return { userId: user.id, organizationId: organization.id };
 }
 
@@ -126,7 +128,7 @@ async function createOrGetTestProject(
   userId: string,
   organizationId: string
 ): Promise<string> {
-  process.stdout.write(util.format('[E2E] 步骤 2: 创建或获取测试项目...') + "\n");
+  process.stdout.write(util.format('[E2E] 步骤 2: 创建或获取测试项目...') + '\n');
 
   // 查找现有项目
   let project = await prisma.project.findFirst({
@@ -138,7 +140,7 @@ async function createOrGetTestProject(
   });
 
   if (!project) {
-    process.stdout.write(util.format('[E2E] 创建新测试项目...') + "\n");
+    process.stdout.write(util.format('[E2E] 创建新测试项目...') + '\n');
     project = await projectService.create(
       {
         name: TEST_PROJECT_NAME,
@@ -149,7 +151,7 @@ async function createOrGetTestProject(
     );
   }
 
-  process.stdout.write(util.format(`[E2E] ✅ 项目 ID: ${project.id}`) + "\n");
+  process.stdout.write(util.format(`[E2E] ✅ 项目 ID: ${project.id}`) + '\n');
   return project.id;
 }
 
@@ -160,7 +162,7 @@ async function importNovel(
   organizationId: string,
   userId: string
 ): Promise<{ novelSourceId: string; taskId: string; jobIds: string[] }> {
-  process.stdout.write(util.format('[E2E] 步骤 3: 导入测试小说...') + "\n");
+  process.stdout.write(util.format('[E2E] 步骤 3: 导入测试小说...') + '\n');
 
   // 读取测试小说文件
   const novelText = await fs.readFile(TEST_NOVEL_FILE, 'utf-8');
@@ -176,7 +178,7 @@ async function importNovel(
     },
   });
 
-  process.stdout.write(util.format(`[E2E] ✅ NovelSource ID: ${novelSource.id}`) + "\n");
+  process.stdout.write(util.format(`[E2E] ✅ NovelSource ID: ${novelSource.id}`) + '\n');
 
   // 解析章节
   const chapterPattern =
@@ -199,7 +201,7 @@ async function importNovel(
     });
   }
 
-  process.stdout.write(util.format(`[E2E] 解析到 ${chapters.length} 个章节`) + "\n");
+  process.stdout.write(util.format(`[E2E] 解析到 ${chapters.length} 个章节`) + '\n');
 
   // 保存章节
   const savedChapters = [];
@@ -275,7 +277,7 @@ async function importNovel(
     organizationId,
   });
 
-  process.stdout.write(util.format(`[E2E] ✅ Task ID: ${task.id}`) + "\n");
+  process.stdout.write(util.format(`[E2E] ✅ Task ID: ${task.id}`) + '\n');
 
   // 创建 Jobs
   const jobService = app.get(JobService);
@@ -300,7 +302,7 @@ async function importNovel(
     jobIds.push(job.id);
   }
 
-  process.stdout.write(util.format(`[E2E] ✅ 创建了 ${jobIds.length} 个 Job`) + "\n");
+  process.stdout.write(util.format(`[E2E] ✅ 创建了 ${jobIds.length} 个 Job`) + '\n');
   return { novelSourceId: novelSource.id, taskId: task.id, jobIds };
 }
 
@@ -309,7 +311,7 @@ async function waitForJobs(
   jobIds: string[],
   timeout: number = 60000
 ): Promise<void> {
-  process.stdout.write(util.format('[E2E] 步骤 4: 等待 Job 完成...') + "\n");
+  process.stdout.write(util.format('[E2E] 步骤 4: 等待 Job 完成...') + '\n');
 
   const startTime = Date.now();
   const checkInterval = 2000; // 每 2 秒检查一次
@@ -332,7 +334,11 @@ async function waitForJobs(
       statusCounts[job.status as keyof typeof statusCounts]++;
     });
 
-    process.stdout.write(util.format(`[E2E] Job 状态: PENDING=${statusCounts.PENDING}, RUNNING=${statusCounts.RUNNING}, SUCCEEDED=${statusCounts.SUCCEEDED}, FAILED=${statusCounts.FAILED}, RETRYING=${statusCounts.RETRYING}`) + "\n");
+    process.stdout.write(
+      util.format(
+        `[E2E] Job 状态: PENDING=${statusCounts.PENDING}, RUNNING=${statusCounts.RUNNING}, SUCCEEDED=${statusCounts.SUCCEEDED}, FAILED=${statusCounts.FAILED}, RETRYING=${statusCounts.RETRYING}`
+      ) + '\n'
+    );
 
     // 检查是否所有 Job 都已完成
     const allCompleted = jobs.every(
@@ -342,12 +348,14 @@ async function waitForJobs(
     if (allCompleted) {
       const failedJobs = jobs.filter((job) => job.status === JobStatus.FAILED);
       if (failedJobs.length > 0) {
-        process.stdout.write(util.format(`[E2E] ⚠️  有 ${failedJobs.length} 个 Job 失败:`) + "\n");
+        process.stdout.write(util.format(`[E2E] ⚠️  有 ${failedJobs.length} 个 Job 失败:`) + '\n');
         failedJobs.forEach((job) => {
-          process.stdout.write(util.format(`[E2E]   - Job ${job.id}: ${job.lastError || 'Unknown error'}`) + "\n");
+          process.stdout.write(
+            util.format(`[E2E]   - Job ${job.id}: ${job.lastError || 'Unknown error'}`) + '\n'
+          );
         });
       }
-      process.stdout.write(util.format('[E2E] ✅ 所有 Job 已完成') + "\n");
+      process.stdout.write(util.format('[E2E] ✅ 所有 Job 已完成') + '\n');
       return;
     }
 
@@ -358,16 +366,20 @@ async function waitForJobs(
 }
 
 async function triggerOrchestrator(app: any): Promise<void> {
-  process.stdout.write(util.format('[E2E] 步骤 5: 触发 Orchestrator 调度...') + "\n");
+  process.stdout.write(util.format('[E2E] 步骤 5: 触发 Orchestrator 调度...') + '\n');
 
   const orchestratorService = app.get(OrchestratorService);
 
   const result = await orchestratorService.dispatch();
-  process.stdout.write(util.format(`[E2E] ✅ Orchestrator 调度完成: dispatched=${result.dispatched}, skipped=${result.skipped}, errors=${result.errors}`) + "\n");
+  process.stdout.write(
+    util.format(
+      `[E2E] ✅ Orchestrator 调度完成: dispatched=${result.dispatched}, skipped=${result.skipped}, errors=${result.errors}`
+    ) + '\n'
+  );
 
   // 如果调度成功，等待一下让 Worker 有机会拉取
   if (result.dispatched > 0) {
-    process.stdout.write(util.format(`[E2E] 等待 2 秒让 Worker 拉取 Job...`) + "\n");
+    process.stdout.write(util.format(`[E2E] 等待 2 秒让 Worker 拉取 Job...`) + '\n');
     await sleep(2000);
   }
 }
@@ -377,7 +389,7 @@ async function processJobsWithMockWorker(
   jobService: JobService,
   jobIds: string[]
 ): Promise<void> {
-  process.stdout.write(util.format('[E2E] 步骤 6: 使用模拟 Worker 将 Job 标记为成功...') + "\n");
+  process.stdout.write(util.format('[E2E] 步骤 6: 使用模拟 Worker 将 Job 标记为成功...') + '\n');
 
   const jobs = await prisma.shotJob.findMany({
     where: { id: { in: jobIds } },
@@ -396,7 +408,7 @@ async function processJobsWithMockWorker(
 }
 
 async function verifyStructure(prisma: PrismaService, projectId: string): Promise<void> {
-  process.stdout.write(util.format('[E2E] 步骤 6: 验证生成的结构...') + "\n");
+  process.stdout.write(util.format('[E2E] 步骤 6: 验证生成的结构...') + '\n');
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -417,8 +429,8 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
 
   const tree = project as ProjectWithTree;
 
-  process.stdout.write(util.format(`[E2E] 项目: ${tree.name}`) + "\n");
-  process.stdout.write(util.format(`[E2E] Episode 数量: ${tree.episodes.length}`) + "\n");
+  process.stdout.write(util.format(`[E2E] 项目: ${tree.name}`) + '\n');
+  process.stdout.write(util.format(`[E2E] Episode 数量: ${tree.episodes.length}`) + '\n');
 
   if (tree.episodes.length === 0) {
     throw new Error('❌ 没有生成任何 Episode');
@@ -426,7 +438,11 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
 
   // 检查第一个 Episode
   const firstEpisode = tree.episodes[0];
-  process.stdout.write(util.format(`[E2E] 第一集: ${firstEpisode.name || '未命名'} (${firstEpisode.scenes.length} 个 Scene)`) + "\n");
+  process.stdout.write(
+    util.format(
+      `[E2E] 第一集: ${firstEpisode.name || '未命名'} (${firstEpisode.scenes.length} 个 Scene)`
+    ) + '\n'
+  );
 
   if (firstEpisode.scenes.length === 0) {
     throw new Error('❌ 第一集没有生成任何 Scene');
@@ -434,7 +450,11 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
 
   // 检查第一个 Scene
   const firstScene = firstEpisode.scenes[0];
-  process.stdout.write(util.format(`[E2E] 第一个 Scene: ${firstScene.title || '未命名'} (${firstScene.shots.length} 个 Shot)`) + "\n");
+  process.stdout.write(
+    util.format(
+      `[E2E] 第一个 Scene: ${firstScene.title || '未命名'} (${firstScene.shots.length} 个 Shot)`
+    ) + '\n'
+  );
 
   if (firstScene.shots.length === 0) {
     throw new Error('❌ 第一个 Scene 没有生成任何 Shot');
@@ -442,10 +462,15 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
 
   // 打印 Shot 信息
   firstScene.shots.slice(0, 5).forEach((shot, index) => {
-    process.stdout.write(util.format(`[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`) + "\n");
+    process.stdout.write(
+      util.format(`[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`) +
+        '\n'
+    );
   });
   if (firstScene.shots.length > 5) {
-    process.stdout.write(util.format(`[E2E]   ... 还有 ${firstScene.shots.length - 5} 个 Shot`) + "\n");
+    process.stdout.write(
+      util.format(`[E2E]   ... 还有 ${firstScene.shots.length - 5} 个 Shot`) + '\n'
+    );
   }
 
   // 汇总统计
@@ -455,14 +480,18 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
     0
   );
 
-  process.stdout.write(util.format(`[E2E] 汇总: ${tree.episodes.length} 个 Episode, ${totalScenes} 个 Scene, ${totalShots} 个 Shot`) + "\n");
-  process.stdout.write(util.format('[E2E] ✅ 结构验证通过') + "\n");
+  process.stdout.write(
+    util.format(
+      `[E2E] 汇总: ${tree.episodes.length} 个 Episode, ${totalScenes} 个 Scene, ${totalShots} 个 Shot`
+    ) + '\n'
+  );
+  process.stdout.write(util.format('[E2E] ✅ 结构验证通过') + '\n');
 }
 
 async function main() {
-  process.stdout.write(util.format('========================================') + "\n");
-  process.stdout.write(util.format('E2E 测试：小说导入 → 分析 → 结构生成') + "\n");
-  process.stdout.write(util.format('========================================\n') + "\n");
+  process.stdout.write(util.format('========================================') + '\n');
+  process.stdout.write(util.format('E2E 测试：小说导入 → 分析 → 结构生成') + '\n');
+  process.stdout.write(util.format('========================================\n') + '\n');
 
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ['error', 'warn'], // 减少日志输出
@@ -488,7 +517,7 @@ async function main() {
       userId
     );
 
-    process.stdout.write(util.format(`[E2E] 等待 3 秒让系统初始化...`) + "\n");
+    process.stdout.write(util.format(`[E2E] 等待 3 秒让系统初始化...`) + '\n');
     await sleep(3000);
 
     // 步骤 4: 触发 Orchestrator 调度
@@ -501,16 +530,16 @@ async function main() {
     // 步骤 6: 验证结构
     await verifyStructure(prisma, projectId);
 
-    process.stdout.write(util.format('\n========================================') + "\n");
-    process.stdout.write(util.format('✅ E2E 测试通过！') + "\n");
-    process.stdout.write(util.format('========================================') + "\n");
+    process.stdout.write(util.format('\n========================================') + '\n');
+    process.stdout.write(util.format('✅ E2E 测试通过！') + '\n');
+    process.stdout.write(util.format('========================================') + '\n');
   } catch (error: unknown) {
     const err = error as { message?: string; stack?: string };
-    process.stderr.write(util.format('\n========================================') + "\n");
-    process.stderr.write(util.format('❌ E2E 测试失败') + "\n");
-    process.stderr.write(util.format('========================================') + "\n");
-    process.stderr.write(util.format('错误:', err?.message ?? String(error)) + "\n");
-    if (err?.stack) process.stderr.write(util.format(err.stack) + "\n");
+    process.stderr.write(util.format('\n========================================') + '\n');
+    process.stderr.write(util.format('❌ E2E 测试失败') + '\n');
+    process.stderr.write(util.format('========================================') + '\n');
+    process.stderr.write(util.format('错误:', err?.message ?? String(error)) + '\n');
+    if (err?.stack) process.stderr.write(util.format(err.stack) + '\n');
     process.exit(1);
   } finally {
     await app.close();

@@ -1,5 +1,5 @@
 import { PrismaClient, JobStatus, JobType, ProjectStatus, UserType } from 'database';
-import * as util from "util";
+import * as util from 'util';
 
 /**
  * 开发用脚本：创建一个最小的 NOVEL_ANALYSIS Job，供 Worker 拉取处理
@@ -160,12 +160,12 @@ async function main() {
     },
   });
 
-  process.stdout.write(util.format('Created job:', job.id, job.type, job.status) + "\n");
+  process.stdout.write(util.format('Created job:', job.id, job.type, job.status) + '\n');
 
   await prisma.$disconnect();
 }
 
 main().catch((e) => {
-  process.stderr.write(util.format(e) + "\n");
+  process.stderr.write(util.format(e) + '\n');
   process.exit(1);
 });
