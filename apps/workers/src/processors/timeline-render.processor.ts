@@ -103,14 +103,14 @@ export async function processTimelineRenderJob({ prisma, job, apiClient }: Timel
 
     // FFmpeg Command Stage 1
     const args = [
+      '-r',
+      fps.toString(),
       '-f',
       'concat',
       '-safe',
       '0',
       '-i',
       framesTxt,
-      '-r',
-      fps.toString(),
       '-s',
       `${width}x${height}`,
       '-c:v',
@@ -127,31 +127,96 @@ export async function processTimelineRenderJob({ prisma, job, apiClient }: Timel
     shotMp4Paths.push(shotOutputPath);
   }
 
-  // Stage 2: Scene Concat (Copy only)
-  console.log(`[TimelineRender] Stage 2: Concatenating ${shotMp4Paths.length} shots`);
+  // Stage 2: Scene Composition
+  console.log(`[TimelineRender] Stage 2: Composing ${shotMp4Paths.length} shots`);
   const finalOutputRelative = `renders/${projectId}/scenes/${timeline.sceneId}/output.mp4`;
   const finalOutputPath = path.resolve(process.cwd(), '.runtime', finalOutputRelative);
   const finalOutputDir = path.dirname(finalOutputPath);
   if (!fs.existsSync(finalOutputDir)) fs.mkdirSync(finalOutputDir, { recursive: true });
 
-  const concatListPath = path.join(tempMp4Dir, 'scene_concat.txt');
-  const concatContent = shotMp4Paths.map((p) => `file '${p}'`).join('\n');
-  fs.writeFileSync(concatListPath, concatContent);
+  const hasTransitions = timeline.shots.some((s) => s.transition && s.transition !== 'none');
+  const hasAudio = timeline.audio && timeline.audio.mode !== 'none' && timeline.audio.bgmStorageKey;
 
-  const concatArgs = [
-    '-f',
-    'concat',
-    '-safe',
-    '0',
-    '-i',
-    concatListPath,
-    '-c',
-    'copy',
-    '-y',
-    finalOutputPath,
-  ];
+  if (!hasTransitions && !hasAudio) {
+    // Path A: Simple Concat (Fast, no re-encoding)
+    console.log(`[TimelineRender] [Path A] Simple Concat (Demuxer/Copy)`);
+    const concatListPath = path.join(tempMp4Dir, 'scene_concat.txt');
+    const concatContent = shotMp4Paths.map((p) => `file '${p}'`).join('\n');
+    fs.writeFileSync(concatListPath, concatContent);
 
-  await runFfmpeg(concatArgs, `Stage2_SceneConcat`);
+    const concatArgs = [
+      '-f', 'concat', '-safe', '0', '-i', concatListPath,
+      '-c', 'copy', '-y', finalOutputPath,
+    ];
+    await runFfmpeg(concatArgs, `Stage2_SimpleConcat`);
+  } else {
+    // Path B: Advanced Composition (FilterComplex, Re-encoding required)
+    console.log(`[TimelineRender] [Path B] Advanced Composition (FilterComplex)`);
+    const complexArgs: string[] = [];
+
+    // Inputs: All shot MP4s
+    shotMp4Paths.forEach((p) => {
+      complexArgs.push('-i', p);
+    });
+
+    // Input: BGM (if exists)
+    let bgmIndex = -1;
+    if (hasAudio) {
+      const bgmPath = path.resolve(process.cwd(), '.runtime', timeline.audio!.bgmStorageKey!);
+      if (fs.existsSync(bgmPath)) {
+        bgmIndex = shotMp4Paths.length;
+        if (timeline.audio!.mode === 'loop') {
+          complexArgs.push('-stream_loop', '-1');
+        }
+        complexArgs.push('-i', bgmPath);
+      }
+    }
+
+    // Filter Complex: Building Video Chain
+    let filterString = '';
+    let lastStream = '[0:v]';
+    let currentTimelineDuration = timeline.shots[0].durationFrames / fps;
+
+    for (let i = 1; i < timeline.shots.length; i++) {
+      const shot = timeline.shots[i];
+      if (shot.transition === 'xfade') {
+        const transDur = shot.transitionFrames / fps;
+        const offset = currentTimelineDuration - transDur;
+        const outStream = `[v${i}]`;
+        filterString += `${lastStream}[${i}:v]xfade=transition=fade:duration=${transDur.toFixed(3)}:offset=${offset.toFixed(3)}${outStream};`;
+        lastStream = outStream;
+        currentTimelineDuration = currentTimelineDuration + (shot.durationFrames / fps) - transDur;
+      } else {
+        // No transition: use concat filter for this segment
+        const outStream = `[v${i}]`;
+        filterString += `${lastStream}[${i}:v]concat=n=2:v=1:a=0${outStream};`;
+        lastStream = outStream;
+        currentTimelineDuration += (shot.durationFrames / fps);
+      }
+    }
+
+    complexArgs.push('-filter_complex', filterString || `[0:v]copy[vfinal]`);
+    // Note: If no transitions but has audio, we still need complex for audio mapping or just simple map.
+    // If filterString is empty, it means only 1 shot or all none-transitions (but we checked hasTransitions).
+
+    const finalVideoStream = filterString ? lastStream.replace(/\[/g, '').replace(/\]/g, '') : '0:v';
+    complexArgs.push('-map', `[${finalVideoStream}]`);
+
+    if (bgmIndex !== -1) {
+      complexArgs.push('-map', `${bgmIndex}:a`);
+      complexArgs.push('-c:a', 'aac', '-b:a', '128k');
+    }
+
+    complexArgs.push('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', fps.toString(), '-y', '-shortest', finalOutputPath);
+
+    // Adjust command if filterString was set
+    if (filterString) {
+      // Replace the last stream label in complexArgs to a standard [vfinal] if needed? 
+      // Or just use the lastStream label as is.
+    }
+
+    await runFfmpeg(complexArgs, `Stage2_AdvancedCompose`);
+  }
 
   // Stage 3: Persistence (Asset linked to firstShotId)
   const firstShotId = timeline.shots[0].shotId;
@@ -197,6 +262,7 @@ export async function processTimelineRenderJob({ prisma, job, apiClient }: Timel
         pipelineRunId,
         traceId,
         shotId: firstShotId,
+        projectId: timeline.projectId,
       },
     },
   });

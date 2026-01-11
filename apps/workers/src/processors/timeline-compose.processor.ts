@@ -7,8 +7,11 @@ export interface TimelineShot {
   shotId: string;
   index: number;
   durationFrames: number;
+  startFrames: number; // For auditing & offset calculation
+  endFrames: number;   // For auditing
   framesTxtStorageKey: string;
-  transition: 'none';
+  transition: 'none' | 'xfade';
+  transitionFrames: number; // Overlap length
 }
 
 export interface TimelineData {
@@ -20,6 +23,10 @@ export interface TimelineData {
   width: number;
   height: number;
   shots: TimelineShot[];
+  audio?: {
+    bgmStorageKey?: string;
+    mode: 'none' | 'loop' | 'truncate';
+  };
 }
 
 export interface TimelineComposeParams {
@@ -86,27 +93,40 @@ export async function processTimelineComposeJob({ prisma, job, apiClient }: Time
   const width = 1280;
   const height = 720;
 
-  const timelineShots: TimelineShot[] = scene.shots.map((shot: any) => {
+  let currentFrame = 0;
+  const timelineShots: TimelineShot[] = scene.shots.map((shot: any, idx: number) => {
     const params = (shot.params as any) || {};
+    const durationFrames = (shot.durationSeconds || 1) * fps;
 
-    // 补齐 framesTxtStorageKey：S4-6 逻辑要求每个 shot 都有自己的帧列表
-    // 这里的 framesTxt 为之前渲染准备阶段生成的帧列表文件路径（约定路径）
-    const framesTxtPath = path.join(process.cwd(), '.runtime', 'frames', shot.id, 'frames.txt');
+    // S4-8: 增强转场检测
+    const transition = params.transition === 'xfade' ? 'xfade' : 'none';
+    const transitionFrames = transition === 'xfade' ? Math.floor((params.transitionSec || 0.5) * fps) : 0;
 
-    // 硬约束：transition 必须为 none
-    if (params.transition && params.transition !== 'none') {
-      throw new Error(
-        `[TimelineCompose] Fail-fast: Transition '${params.transition}' not supported in S4-7. Only 'none' allowed.`
-      );
+    // 安全校验：转场长度不能超过镜头时长一半
+    if (transition === 'xfade' && transitionFrames >= durationFrames / 2) {
+      throw new Error(`[TimelineCompose] Transition frames (${transitionFrames}) too long for shot ${shot.id} duration (${durationFrames})`);
     }
 
-    return {
+    // 计算 Start/End (Auditing)
+    // 第一个镜头没有“进入”转场
+    const actualStart = idx === 0 ? 0 : currentFrame - transitionFrames;
+    const actualEnd = actualStart + durationFrames;
+
+    const s: TimelineShot = {
       shotId: shot.id,
       index: shot.index,
-      durationFrames: (shot.durationSeconds || 1) * fps, // 确定性持续时间（帧）
-      framesTxtStorageKey: framesTxtPath,
-      transition: 'none',
+      durationFrames,
+      startFrames: actualStart,
+      endFrames: actualEnd,
+      framesTxtStorageKey: path.join(process.cwd(), '.runtime', 'frames', shot.id, 'frames.txt'),
+      transition,
+      transitionFrames,
     };
+
+    // 更新游标：下一个镜头的基准开始时间是当前镜头的结束点
+    currentFrame = actualEnd;
+
+    return s;
   });
 
   const timelineData: TimelineData = {
@@ -118,6 +138,9 @@ export async function processTimelineComposeJob({ prisma, job, apiClient }: Time
     width,
     height,
     shots: timelineShots,
+    audio: {
+      mode: 'none', // S4-8 默认无 BGM，待后续接入
+    },
   };
 
   // 3. 产物持久化

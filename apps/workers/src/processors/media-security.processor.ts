@@ -15,10 +15,19 @@ import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
-export async function processMediaSecurityJob(job: any) {
+export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
   // job: Job -> job: any
-  const { videoAssetStorageKey, pipelineRunId, traceId, shotId, projectId } = job.data;
-  const organizationId = job.data.organizationId; // Should be passed or derived
+  const { videoAssetStorageKey, pipelineRunId, traceId, shotId, projectId } = job.payload;
+  let organizationId = job.organizationId;
+
+  // Robustly fetch organizationId if missing (e.g. not provided in WorkerJob DTO)
+  if (!organizationId && shotId) {
+    const shot = await prisma.shot.findUnique({
+      where: { id: shotId },
+      include: { scene: { include: { episode: { include: { project: true } } } } }
+    });
+    organizationId = shot?.scene?.episode?.project?.organizationId;
+  }
 
   console.log(`[MediaSecurity] Processing job ${job.id} for shot ${shotId}`);
 

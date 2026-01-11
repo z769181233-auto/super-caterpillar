@@ -1,0 +1,14 @@
+🚀 Starting S4-8 Verification (Transitions, BGM & Timecode)...
+✅ Data Fixtures Created (Shot 2 & 3 set to xfade, duration=2s)
+Generating Mock BGM...
+✅ Frames & Mock BGM Generated
+Submitted Compose Job 7215c90f-286d-453f-8e8e-410529fc5381. Waiting...
+✅ Timeline Composed & BGM Injected
+Submitted Render Job 3713c010-0b4d-42d1-a485-55a8e79ccb3d. Waiting...
+✅ TIMELINE_RENDER Succeeded. StorageKey: renders/proj-s48-1768142451708/scenes/5b07e3ba-9d80-44a6-9844-fd84b49e8465/output.mp4
+Video Duration: 5s
+✅ Final Video (Advanced Path) verified: Duration, H264, AAC
+Checking Asset for shot: 52965de4-1dd4-4826-9cd5-3af3f9fc91e8, Key: renders/proj-s48-1768142451708/scenes/5b07e3ba-9d80-44a6-9844-fd84b49e8465/output.mp4
+Found 1 assets for this shot: [
+  'secure/proj-s48-1768142451708/52965de4-1dd4-4826-9cd5-3af3f9fc91e8/run-s48-1768142451708/output_secure.mp4'
+]

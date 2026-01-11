@@ -1,16 +1,13 @@
-# Stage 4 Evidence Index (Multi-Shot Pipeline)
+# Stage 4 Evidence Index
 
-本计划旨在建立 Stage 4 交付物及其验证证据的单一事实来源。
+| Milestone | Tag | Evidence File | Core Accomplishment | Conclusion |
+|-----------|-----|---------------|----------------------|------------|
+| S4-4 | seal/s4-4_video_synthesis_20260111 | S4_4_SYNTHESIS_VERIFY_EVIDENCE_20260111.txt | Image Sequence -> MP4 (Local FFmpeg Provider) | SUCCESS |
+| S4-5 | seal/s4-5_media_security_20260111 | S4_5_MEDIA_SECURITY_VERIFY_EVIDENCE_20260111.txt | CE09 Trigger, Watermarking, Asset Secure Link | SUCCESS |
+| S4-6 | seal/s4-6_real_video_integration_20260111 | S4_6_REAL_VIDEO_VERIFY_EVIDENCE_20260111.txt | FFmpeg Provider E2E, Asset Binding, Gate Audit | SUCCESS |
+| S4-7 | seal/s4-7_timeline_render_20260111 | S4_7_TIMELINE_RENDER_VERIFY_EVIDENCE_20260111.txt | Multi-shot Timeline, HMAC/Nonce Regression | SUCCESS |
+| S4-8 | seal/s4-8_transitions_bgm_20260111 | S4_8_TRANSITION_VERIFY_EVIDENCE_20260111.txt | xfade, BGM, Timecode Alignment, CE09 Security | SUCCESS |
 
-| 任务 ID | 任务名称 | 封板 Tag | 证据文件 | 验收命令概览 | 关键结论 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **S4-6** | 单镜头 FFmpeg 渲染集成 | `seal/s4-6_ffmpeg_render_20260111` | [S4_6_FFMPEG_VERIFY_EVIDENCE_20260111.txt](file://./S4_6_FFMPEG_VERIFY_EVIDENCE_20260111.txt) | `tsx tools/verify_s4_6.ts` | 成功替代 Mock 引擎，实现 libx264/yuv420p 真实渲染。 |
-| **S4-7** | 多镜头时间线管线与安全加固 | `seal/s4-7_timeline_render_20260111` | [S4_7_TIMELINE_VERIFY_EVIDENCE_20260111.txt](file://./S4_7_TIMELINE_VERIFY_EVIDENCE_20260111.txt) | `node apps/*/dist/main.js` + `verify_s4_7.ts` | 实现 CE10 编排、两段式渲染、Asset 绑定及 CE09 自动触发。解决了生产模式 DI/HMAC P0 隐患。 |
-
-## 安全回归状态 (Security Status)
-- ✅ **HMAC 验签**: API/Worker 双向对齐（100% 稳定）
-- ✅ **Nonce 重放**: 经 `curl` 测试，API 成功拦截二次请求（4004 报错）
-- ✅ **DI 完整性**: 确认在 `dist` 运行模式下 `emitDecoratorMetadata` 生效，核心依赖注入正常。
-
----
-*Last Updated: 2026-01-11*
+## Security Regression Status
+- CE10 (HMAC/Nonce): PASS (Verified in S4-7 & S4-8)
+- CE09 (Media Security): PASS (Verified in S4-5, S4-7, S4-8)
