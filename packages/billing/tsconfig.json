@@ -11,7 +11,5 @@
     "composite": false,
     "incremental": false
   },
-  "include": [
-    "*.ts"
-  ]
+  "include": ["*.ts"]
 }

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobStatus, JobType } from 'database';
@@ -16,7 +16,7 @@ export class JobWatchdogService {
   private readonly jobTimeoutMs: number;
   private readonly workerHeartbeatTimeoutMs: number;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
     // P2 修复：统一使用 packages/config 的配置
     this.jobTimeoutMs = (env as any).jobWatchdogTimeoutMs ?? 3600000;
     this.workerHeartbeatTimeoutMs = env.workerHeartbeatTimeoutMs || 30000;

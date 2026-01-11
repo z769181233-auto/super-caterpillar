@@ -21,7 +21,7 @@ export class AuditInsightService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly signedUrlService: SignedUrlService
-  ) { }
+  ) {}
 
   async getNovelInsight(novelSourceId: string): Promise<NovelInsightResponse> {
     // 1. Find Project by NovelSource
@@ -219,12 +219,12 @@ export class AuditInsightService {
     const mapJob = (j: any): AuditJobSummaryDto | null =>
       j
         ? {
-          jobId: j.id,
-          traceId: j.traceId || '',
-          status: j.status,
-          createdAtIso: j.createdAt.toISOString(),
-          workerId: j.workerId || 'UNKNOWN',
-        }
+            jobId: j.id,
+            traceId: j.traceId || '',
+            status: j.status,
+            createdAtIso: j.createdAt.toISOString(),
+            workerId: j.workerId || 'UNKNOWN',
+          }
         : null;
 
     // 3. Fetch Metrics (Precise Binding)
@@ -261,9 +261,7 @@ export class AuditInsightService {
         `No shots found for NovelSource ${novelSourceId}. Check Episode->Season->Project relation.`
       );
     } else {
-      this.logger.log(
-        `Found ${shots.length} shots. First params type: ${typeof shots[0].params}`
-      );
+      this.logger.log(`Found ${shots.length} shots. First params type: ${typeof shots[0].params}`);
     }
 
     const solver = new DirectorConstraintSolverService();
@@ -363,12 +361,12 @@ export class AuditInsightService {
     let videoAsset:
       | undefined
       | {
-        status: string;
-        secureUrl?: string;
-        jobId?: string;
-        assetId?: string;
-        storageKey?: string;
-      };
+          status: string;
+          secureUrl?: string;
+          jobId?: string;
+          assetId?: string;
+          storageKey?: string;
+        };
 
     // Step 6A: Resolve shotId (must be derived from reliable context)
     // Prefer explicit shotId from VIDEO_RENDER job payload if present, else from CE04 payload, else latest shot in this project.
@@ -424,7 +422,10 @@ export class AuditInsightService {
           jobId: videoFromAsset.createdByJobId || undefined,
         };
       } catch (e) {
-        this.logger.error('[AuditInsight] Failed to sign video URL from Asset SSOT', (e as Error).message);
+        this.logger.error(
+          '[AuditInsight] Failed to sign video URL from Asset SSOT',
+          (e as Error).message
+        );
         videoAsset = {
           status: 'ERROR_SIGNING',
           assetId: videoFromAsset.id,
@@ -434,9 +435,7 @@ export class AuditInsightService {
       }
     } else if (videoJ) {
       // DEPRECATED Fallback (job payload result.videoKey)
-      this.logger.warn(
-        `WARN_DEPRECATED_JOB_VIDEO_KEY_PATH_USED=1 projectId=${projectId}`
-      );
+      this.logger.warn(`WARN_DEPRECATED_JOB_VIDEO_KEY_PATH_USED=1 projectId=${projectId}`);
 
       const payload = (videoJ.payload as any) || {};
       const res = payload.result || {};
@@ -452,7 +451,10 @@ export class AuditInsightService {
           });
           videoAsset = { status: 'READY', secureUrl: url, jobId: videoJ.id, storageKey: legacyKey };
         } catch (e) {
-          this.logger.error('[AuditInsight] Failed to sign video URL from legacy job payload', (e as Error).message);
+          this.logger.error(
+            '[AuditInsight] Failed to sign video URL from legacy job payload',
+            (e as Error).message
+          );
           videoAsset = { status: 'ERROR_SIGNING', jobId: videoJ.id, storageKey: legacyKey };
         }
       } else {

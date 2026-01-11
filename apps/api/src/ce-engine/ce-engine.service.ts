@@ -24,7 +24,7 @@ export class CEEngineService {
     private readonly taskService: TaskService,
     private readonly textSafetyService: TextSafetyService,
     private readonly prisma: PrismaService
-  ) { }
+  ) {}
 
   /**
    * CE06: 解析小说
@@ -84,7 +84,9 @@ export class CEEngineService {
       },
     });
 
-    this.logger.log(`CE06 Job created: ${job.id} for project ${dto.projectId} (apiKeyId: ${apiKeyId || 'none'})`);
+    this.logger.log(
+      `CE06 Job created: ${job.id} for project ${dto.projectId} (apiKeyId: ${apiKeyId || 'none'})`
+    );
 
     return {
       jobId: job.id,
@@ -151,7 +153,9 @@ export class CEEngineService {
       },
     });
 
-    this.logger.log(`CE03 Job created: ${job.id} for project ${dto.projectId} (apiKeyId: ${apiKeyId || 'none'})`);
+    this.logger.log(
+      `CE03 Job created: ${job.id} for project ${dto.projectId} (apiKeyId: ${apiKeyId || 'none'})`
+    );
 
     return {
       jobId: job.id,

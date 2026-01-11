@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException, Inject, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  Inject,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -17,7 +23,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     @Inject(JwtService)
     private readonly jwtService: JwtService
-  ) { }
+  ) {}
 
   async register(registerDto: RegisterDto) {
     const { email, password, userType = 'individual' as any } = registerDto;

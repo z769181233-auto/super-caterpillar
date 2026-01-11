@@ -26,7 +26,7 @@ interface CEAuditLogPayload {
 @UseGuards(HmacAuthGuard) // 使用 HMAC 认证，确保只有 Worker 可以调用
 export class AuditLogController {
   private readonly logger = new Logger(AuditLogController.name);
-  constructor(private readonly auditLogService: AuditLogService) { }
+  constructor(private readonly auditLogService: AuditLogService) {}
 
   /**
    * Worker 上报审计日志
@@ -61,7 +61,9 @@ export class AuditLogController {
       return { success: true };
     } catch (error) {
       // 审计写入失败不影响主流程
-      this.logger.error(`Failed to create audit log: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Failed to create audit log: ${error instanceof Error ? error.message : String(error)}`
+      );
       return { success: false };
     }
   }

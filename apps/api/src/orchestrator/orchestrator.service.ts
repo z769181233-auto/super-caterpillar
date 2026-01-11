@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkerService } from '../worker/worker.service';
@@ -25,6 +25,7 @@ export class OrchestratorService {
 
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => WorkerService))
     private readonly workerService: WorkerService,
     private readonly auditLogService: AuditLogService,
     private readonly taskService: TaskService,

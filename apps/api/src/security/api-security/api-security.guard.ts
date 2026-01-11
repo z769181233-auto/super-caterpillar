@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, HttpException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, HttpException, Inject } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { ApiSecurityService } from './api-security.service';
@@ -22,6 +22,7 @@ import { RequestWithApiSecurity } from './api-security.types';
 @Injectable()
 export class ApiSecurityGuard implements CanActivate {
   constructor(
+    @Inject(Reflector)
     private readonly reflector: Reflector,
     private readonly apiSecurityService: ApiSecurityService
   ) {}

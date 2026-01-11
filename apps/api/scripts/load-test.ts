@@ -1,5 +1,5 @@
 import * as http from 'http';
-import * as util from "util";
+import * as util from 'util';
 
 interface TestResult {
   success: boolean;
@@ -167,7 +167,7 @@ async function main() {
   };
 
   for (const test of tests) {
-    process.stdout.write(util.format(`Running load test: ${test.name}...`) + "\n");
+    process.stdout.write(util.format(`Running load test: ${test.name}...`) + '\n');
     const result = await runLoadTest(test.config);
     report.tests.push({
       name: test.name,
@@ -222,7 +222,7 @@ ${report.tests
 `;
 
   fs.writeFileSync(reportPath, markdown);
-  process.stdout.write(util.format(`Report written to: ${reportPath}`) + "\n");
+  process.stdout.write(util.format(`Report written to: ${reportPath}`) + '\n');
 }
 
 main().catch(console.error);

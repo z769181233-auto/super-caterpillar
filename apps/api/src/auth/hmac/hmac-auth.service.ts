@@ -4,6 +4,8 @@ import {
   UnauthorizedException,
   BadRequestException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -39,36 +41,41 @@ export class HmacAuthService {
   }) {
     if (process.env.HMAC_TRACE !== '1') return;
     const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
-    this.logger.error(`[HMAC_TRACE] api_v2_inputs: ${JSON.stringify({
-      method: { val: parts.method, len: parts.method.length, hash: sha256(parts.method) },
-      path: { val: parts.path, len: parts.path.length, hash: sha256(parts.path) },
-      timestamp: {
-        val: parts.timestamp,
-        len: parts.timestamp.length,
-        hash: sha256(parts.timestamp),
-      },
-      nonce: {
-        val: parts.nonce.substring(0, 8) + '...',
-        len: parts.nonce.length,
-        hash: sha256(parts.nonce),
-      },
-      bodyHash: {
-        val: parts.bodyHash.substring(0, 16) + '...',
-        len: parts.bodyHash.length,
-        hash: sha256(parts.bodyHash),
-      },
-      workerId: parts.workerId
-        ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) }
-        : 'N/A',
-      message: { len: parts.message.length, hash: sha256(parts.message) },
-    })}`);
+    this.logger.error(
+      `[HMAC_TRACE] api_v2_inputs: ${JSON.stringify({
+        method: { val: parts.method, len: parts.method.length, hash: sha256(parts.method) },
+        path: { val: parts.path, len: parts.path.length, hash: sha256(parts.path) },
+        timestamp: {
+          val: parts.timestamp,
+          len: parts.timestamp.length,
+          hash: sha256(parts.timestamp),
+        },
+        nonce: {
+          val: parts.nonce.substring(0, 8) + '...',
+          len: parts.nonce.length,
+          hash: sha256(parts.nonce),
+        },
+        bodyHash: {
+          val: parts.bodyHash.substring(0, 16) + '...',
+          len: parts.bodyHash.length,
+          hash: sha256(parts.bodyHash),
+        },
+        workerId: parts.workerId
+          ? { val: parts.workerId, len: parts.workerId.length, hash: sha256(parts.workerId) }
+          : 'N/A',
+        message: { len: parts.message.length, hash: sha256(parts.message) },
+      })} `
+    );
   }
 
   constructor(
+    @Inject(PrismaService)
     private readonly prisma: PrismaService,
+    @Inject(RedisService)
     private readonly redis: RedisService,
+    @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   /**
    * 验证 HMAC 签名
@@ -128,7 +135,7 @@ export class HmacAuthService {
     const maxTimeDiff = env.HMAC_TIMESTAMP_WINDOW || 300000; // 默认 5 分钟（毫秒）
 
     if (timeDiff > maxTimeDiff) {
-      throw this.buildHmacError('4003', `时间戳超出允许范围（±${maxTimeDiff / 1000}秒）`, {
+      throw this.buildHmacError('4003', `时间戳超出允许范围（±${maxTimeDiff / 1000} 秒）`, {
         path,
         method,
       });
@@ -161,7 +168,7 @@ export class HmacAuthService {
     const expectedSignatureV1 = this.computeSignature(secret, messageV1);
 
     const bodyHash = HmacAuthService.computeBodyHash(body);
-    const messageV2Old = `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${bodyHash}\n`;
+    const messageV2Old = `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${bodyHash}`;
     const expectedSignatureV2Old = this.computeSignature(secret, messageV2Old);
 
     // v2-with-workerId: 新增支持，从request取x-worker-id
@@ -183,12 +190,14 @@ export class HmacAuthService {
         message: messageV2WithWorkerId,
       });
       if (process.env.HMAC_TRACE === '1') {
-        this.logger.error(`[HMAC_TRACE] api_v2_expected: ${JSON.stringify({
-          expectedSigHash: createHash('sha256')
-            .update(expectedSignatureV2WithWorkerId)
-            .digest('hex'),
-          expectedSigLen: expectedSignatureV2WithWorkerId.length,
-        })}`);
+        this.logger.error(
+          `[HMAC_TRACE] api_v2_expected: ${JSON.stringify({
+            expectedSigHash: createHash('sha256')
+              .update(expectedSignatureV2WithWorkerId)
+              .digest('hex'),
+            expectedSigLen: expectedSignatureV2WithWorkerId.length,
+          })} `
+        );
       }
     }
 
@@ -201,14 +210,16 @@ export class HmacAuthService {
     if (!signatureMatches) {
       // DEBUG: Log mismatch if in dev
       if (process.env.NODE_ENV !== 'production') {
-        this.logger.log(`[HMAC Mismatch]: ${JSON.stringify({
-          expectedV1: expectedSignatureV1,
-          expectedV2Old: expectedSignatureV2Old,
-          expectedV2WorkerId: expectedSignatureV2WithWorkerId,
-          actual: signature,
-          workerId,
-          secretPart: secret?.substring(0, 5),
-        })}`);
+        this.logger.log(
+          `[HMAC Mismatch]: ${JSON.stringify({
+            expectedV1: expectedSignatureV1,
+            expectedV2Old: expectedSignatureV2Old,
+            expectedV2WorkerId: expectedSignatureV2WithWorkerId,
+            actual: signature,
+            workerId,
+            secretPart: secret?.substring(0, 5),
+          })} `
+        );
       }
 
       await this.writeAudit(

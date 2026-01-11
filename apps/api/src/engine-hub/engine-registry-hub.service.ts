@@ -122,14 +122,18 @@ export class EngineRegistryHubService {
     const targetVersion = version || 'default';
 
     // 优先匹配精确版本
-    const exactMatch = this.engines.find((e) => e.engineKey === engineKey && e.version === targetVersion);
+    const exactMatch = this.engines.find(
+      (e) => e.engineKey === engineKey && e.version === targetVersion
+    );
 
     if (exactMatch) {
       return exactMatch;
     }
 
     // 如果没有精确匹配，fallback 到默认版本
-    const defaultMatch = this.engines.find((e) => e.engineKey === engineKey && e.version === 'default');
+    const defaultMatch = this.engines.find(
+      (e) => e.engineKey === engineKey && e.version === 'default'
+    );
 
     if (defaultMatch) {
       this.logger.debug(`Engine ${engineKey}@${targetVersion} not found, using default version`);

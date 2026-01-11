@@ -381,6 +381,8 @@ export namespace $Enums {
     SHOT_RENDER: 'SHOT_RENDER';
     CE_CORE_PIPELINE: 'CE_CORE_PIPELINE';
     VIDEO_RENDER: 'VIDEO_RENDER';
+    PIPELINE_TIMELINE_COMPOSE: 'PIPELINE_TIMELINE_COMPOSE';
+    TIMELINE_RENDER: 'TIMELINE_RENDER';
   };
 
   export type TaskType = (typeof TaskType)[keyof typeof TaskType];
@@ -438,6 +440,9 @@ export namespace $Enums {
     CE08_STORY_KG: 'CE08_STORY_KG';
     CE09_MEDIA_SECURITY: 'CE09_MEDIA_SECURITY';
     VIDEO_RENDER: 'VIDEO_RENDER';
+    PIPELINE_E2E_VIDEO: 'PIPELINE_E2E_VIDEO';
+    PIPELINE_TIMELINE_COMPOSE: 'PIPELINE_TIMELINE_COMPOSE';
+    TIMELINE_RENDER: 'TIMELINE_RENDER';
   };
 
   export type JobType = (typeof JobType)[keyof typeof JobType];

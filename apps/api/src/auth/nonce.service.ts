@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AuditActions } from '../audit/audit.constants';
@@ -18,10 +18,13 @@ export class NonceService {
   private readonly isDev = process.env.NODE_ENV !== 'production';
 
   constructor(
+    @Inject(PrismaService)
     private readonly prisma: PrismaService,
+    @Inject(AuditService)
     private readonly auditService: AuditService,
+    @Inject(RedisService)
     private readonly redisService?: RedisService
-  ) { }
+  ) {}
 
   /**
    * 检查并写入 nonce，若已存在则抛出异常
@@ -36,15 +39,24 @@ export class NonceService {
     timestamp: number,
     requestInfo?: { path?: string; method?: string; ip?: string; ua?: string }
   ) {
-    // 开发/测试环境：记录写入前信息
-    if (process.env.NODE_ENV !== 'production') {
-      this.logger.log(`准备写入 nonce: ${JSON.stringify({
-        apiKey: apiKey.substring(0, 8) + '...',
-        nonce: nonce.substring(0, 16) + '...',
-        timestamp,
+    // P0: 强制参数校验
+    if (!timestamp || isNaN(timestamp) || timestamp <= 0) {
+      throw buildHmacError('4003', 'Invalid timestamp provided', {
         path: requestInfo?.path,
         method: requestInfo?.method,
-      })}`);
+      });
+    }
+    // 开发/测试环境：记录写入前信息
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.log(
+        `准备写入 nonce: ${JSON.stringify({
+          apiKey: apiKey.substring(0, 8) + '...',
+          nonce: nonce.substring(0, 16) + '...',
+          timestamp,
+          path: requestInfo?.path,
+          method: requestInfo?.method,
+        })}`
+      );
     }
 
     try {
@@ -95,21 +107,25 @@ export class NonceService {
 
       // 开发/测试环境：确认写入成功
       if (process.env.NODE_ENV !== 'production') {
-        this.logger.log(`✅ nonce stored ok (使用 prisma.nonceStore): ${JSON.stringify({
-          nonce: nonce.substring(0, 16) + '...',
-          apiKey: apiKey.substring(0, 8) + '...',
-        })}`);
+        this.logger.log(
+          `✅ nonce stored ok (使用 prisma.nonceStore): ${JSON.stringify({
+            nonce: nonce.substring(0, 16) + '...',
+            apiKey: apiKey.substring(0, 8) + '...',
+          })}`
+        );
       }
     } catch (err: any) {
       // 开发/测试环境：记录错误详情
       if (process.env.NODE_ENV !== 'production') {
-        this.logger.error(`nonce 写入失败: ${JSON.stringify({
-          error: err.message,
-          code: err.code,
-          meta: err.meta,
-          nonce: nonce.substring(0, 16) + '...',
-          apiKey: apiKey.substring(0, 8) + '...',
-        })}`);
+        this.logger.error(
+          `nonce 写入失败: ${JSON.stringify({
+            error: err.message,
+            code: err.code,
+            meta: err.meta,
+            nonce: nonce.substring(0, 16) + '...',
+            apiKey: apiKey.substring(0, 8) + '...',
+          })}`
+        );
       }
 
       // 唯一索引冲突视为重放（P2002: Unique constraint failed）
@@ -148,20 +164,22 @@ export class NonceService {
         // 其他错误（如数据库连接失败、表不存在等）
         // 开发/测试环境：记录详细错误（结构化信息）
         if (process.env.NODE_ENV !== 'production') {
-          this.logger.error(`非唯一约束错误 - 详细诊断信息: ${JSON.stringify({
-            errorName: err?.name,
-            errorMessage: err?.message,
-            errorCode: err?.code,
-            errorMeta: err?.meta,
-            isPrismaClientKnownRequestError:
-              err?.constructor?.name === 'PrismaClientKnownRequestError' ||
-              err?.name === 'PrismaClientKnownRequestError',
-            prismaServiceConstructor: this.prisma?.constructor?.name,
-            prismaServiceKeys: Object.keys(this.prisma || {}).slice(0, 50),
-            hasNonceStore: 'nonceStore' in (this.prisma || {}),
-            hasNonceStoreCapital: 'NonceStore' in (this.prisma || {}),
-            databaseUrl: this.getDatabaseUrlSafe(),
-          })}`);
+          this.logger.error(
+            `非唯一约束错误 - 详细诊断信息: ${JSON.stringify({
+              errorName: err?.name,
+              errorMessage: err?.message,
+              errorCode: err?.code,
+              errorMeta: err?.meta,
+              isPrismaClientKnownRequestError:
+                err?.constructor?.name === 'PrismaClientKnownRequestError' ||
+                err?.name === 'PrismaClientKnownRequestError',
+              prismaServiceConstructor: this.prisma?.constructor?.name,
+              prismaServiceKeys: Object.keys(this.prisma || {}).slice(0, 50),
+              hasNonceStore: 'nonceStore' in (this.prisma || {}),
+              hasNonceStoreCapital: 'NonceStore' in (this.prisma || {}),
+              databaseUrl: this.getDatabaseUrlSafe(),
+            })}`
+          );
         }
         // 对于非重放错误，抛出通用错误（不应返回 4004）
         throw buildHmacError('4003', 'Nonce storage failed', {

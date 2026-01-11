@@ -49,7 +49,7 @@ export class EngineModule implements OnModuleInit {
     private readonly novelAdapter: NovelAnalysisLocalAdapter,
     private readonly videoMergeAdapter: VideoMergeLocalAdapter,
     private readonly httpAdapter: HttpEngineAdapter
-  ) { }
+  ) {}
 
   onModuleInit() {
     if (!this.registry) {

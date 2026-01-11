@@ -9,7 +9,8 @@
  */
 
 /// <reference path="./types/config.d.ts" />
-import { PrismaClient, Prisma } from 'database';
+import * as util from 'util';
+import { PrismaClient, Prisma, JobType } from 'database';
 import { env, config as appConfig } from '@scu/config';
 
 /**
@@ -51,6 +52,7 @@ import {
   processNovelAnalysisJob,
 } from './novel-analysis-processor';
 import { processVideoRenderJob as processVideoRenderJobImpl } from './video-render.processor';
+import { processE2EVideoPipelineJob } from './processors/e2e-video-pipeline.processor';
 
 const prisma = new PrismaClient({
   datasources: {
@@ -87,7 +89,6 @@ process.stdout.write(
 
 // Write PID file for HA gate / failover testing
 import { writeWorkerPidFile } from './utils/pidfile';
-import * as util from 'util';
 
 const pidMeta = writeWorkerPidFile(workerId);
 process.stdout.write(util.format(`[Worker] PID file written: ${pidMeta.file}`) + '\n');
@@ -201,17 +202,19 @@ async function registerWorker(): Promise<void> {
       name: workerId, // 兜底使用 workerId，确保不为空
       capabilities: {
         supportedJobTypes: [
-          'NOVEL_ANALYSIS',
-          'VIDEO_RENDER',
-          'CE01_REFERENCE_SHEET',
-          'CE02_IDENTITY_LOCK',
-          'CE03_VISUAL_DENSITY',
-          'CE04_VISUAL_ENRICHMENT',
-          'CE05_DIRECTOR_CONTROL',
-          'CE06_NOVEL_PARSING',
-          'CE07_MEMORY_UPDATE',
-          'SHOT_RENDER',
-          'VIDEO_RENDER',
+          JobType.NOVEL_ANALYSIS,
+          JobType.VIDEO_RENDER,
+          JobType.CE01_REFERENCE_SHEET,
+          JobType.CE02_IDENTITY_LOCK,
+          JobType.CE03_VISUAL_DENSITY,
+          JobType.CE04_VISUAL_ENRICHMENT,
+          JobType.CE05_DIRECTOR_CONTROL,
+          JobType.CE06_NOVEL_PARSING,
+          JobType.CE07_MEMORY_UPDATE,
+          JobType.SHOT_RENDER,
+          'VIDEO_RENDER', // Keep as fallback/duplicate check? No, remove duplicate.
+          // Note: VIDEO_RENDER appeared twice in original.
+          JobType.PIPELINE_E2E_VIDEO,
         ],
         supportedModels: [],
         supportedEngines: supportedEnginesFinal,
@@ -402,6 +405,12 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
           { ...job, projectId: job.projectId || '' },
           apiClient
         );
+      } else if (job.type === 'PIPELINE_E2E_VIDEO') {
+        return processE2EVideoPipelineJob({
+          prisma,
+          job: job as any,
+          apiClient,
+        });
       } else if (job.type.startsWith('CE')) {
         return processGenericCEJob(prisma, job as any, engineHubClient, apiClient);
       } else if (

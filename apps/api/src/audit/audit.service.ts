@@ -18,7 +18,7 @@ interface AuditLogInput {
 @Injectable()
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async log(input: AuditLogInput) {
     try {

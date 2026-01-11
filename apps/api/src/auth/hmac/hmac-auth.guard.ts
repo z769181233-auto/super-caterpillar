@@ -1,4 +1,12 @@
-import { Injectable, CanActivate, ExecutionContext, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  BadRequestException,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { HmacAuthService } from './hmac-auth.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
@@ -26,10 +34,13 @@ import { buildHmacError } from '../../common/utils/hmac-error.utils';
 export class HmacAuthGuard implements CanActivate {
   private readonly logger = new Logger(HmacAuthGuard.name);
   constructor(
+    @Inject(forwardRef(() => HmacAuthService))
     private readonly hmacAuthService: HmacAuthService,
+    @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
+    @Inject(forwardRef(() => NonceService))
     private readonly nonceService: NonceService
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -44,14 +55,16 @@ export class HmacAuthGuard implements CanActivate {
 
     // DEBUG: 输出所有path相关字段以定位问题
     if (process.env.HMAC_TRACE === '1') {
-      this.logger.error(`[HMAC_TRACE] path_debug: ${JSON.stringify({
-        originalUrl: request.originalUrl,
-        url: request.url,
-        path: request.path,
-        baseUrl: request.baseUrl,
-        route_path: (request as any).route?.path,
-        computed_path: path,
-      })}`);
+      this.logger.error(
+        `[HMAC_TRACE] path_debug: ${JSON.stringify({
+          originalUrl: request.originalUrl,
+          url: request.url,
+          path: request.path,
+          baseUrl: request.baseUrl,
+          route_path: (request as any).route?.path,
+          computed_path: path,
+        })}`
+      );
     }
 
     // 1. 提取 HTTP 头
@@ -63,10 +76,17 @@ export class HmacAuthGuard implements CanActivate {
       request.headers['x-api-timestamp']) as string;
     const signature = (request.headers['x-signature'] ||
       request.headers['x-api-signature']) as string;
+    const hmacVersion = request.headers['x-hmac-version'] as string;
 
     // 2. 检查必需的头字段 (apiKey 和 signature 是绝对必需的)
     if (!apiKey || !signature) {
       throw buildHmacError('4003', '缺少必需的认证头：X-Api-Key, X-Signature', { path, method });
+    }
+
+    // 2.2 时间戳校验 (P0)
+    const tsNum = Number(timestamp);
+    if (!timestamp || isNaN(tsNum)) {
+      throw buildHmacError('4003', 'Invalid or missing X-Timestamp', { path, method });
     }
 
     // 2.5 防重放校验 (P0) - 兼容启用
@@ -102,29 +122,33 @@ export class HmacAuthGuard implements CanActivate {
 
     // HMAC_TRACE: Guard入口必达日志
     if (process.env.HMAC_TRACE === '1') {
-      this.logger.error(`[HMAC_TRACE] guard_enter: ${JSON.stringify({
-        path: request.originalUrl ?? request.url,
-        method: request.method,
-        hasSig: !!request.headers['x-signature'],
-        hasV: !!request.headers['x-hmac-version'],
-        hasWorker: !!request.headers['x-worker-id'],
-      })}`);
+      this.logger.error(
+        `[HMAC_TRACE] guard_enter: ${JSON.stringify({
+          path: request.originalUrl ?? request.url,
+          method: request.method,
+          hasSig: !!request.headers['x-signature'],
+          hasV: !!request.headers['x-hmac-version'],
+          hasWorker: !!request.headers['x-worker-id'],
+        })}`
+      );
     }
 
     // 4. 可选调试日志（仅非生产环境）
     if (process.env.NODE_ENV !== 'production') {
       /* eslint-disable no-console */
-      this.logger.log(`[HMAC DEBUG]: ${JSON.stringify({
-        method,
-        path,
-        headers: {
-          'x-api-key': apiKey,
-          'x-nonce': nonce,
-          'x-timestamp': timestamp,
-          'x-signature': signature,
-        },
-        bodyString,
-      })}`);
+      this.logger.log(
+        `[HMAC DEBUG]: ${JSON.stringify({
+          method,
+          path,
+          headers: {
+            'x-api-key': apiKey,
+            'x-nonce': nonce,
+            'x-timestamp': timestamp,
+            'x-signature': signature,
+          },
+          bodyString,
+        })}`
+      );
       /* eslint-enable no-console */
     }
 
@@ -172,12 +196,14 @@ export class HmacAuthGuard implements CanActivate {
       }
 
       if (process.env.NODE_ENV !== 'production') {
-        this.logger.log(`[SMOKE_KEY_RESOLVE]: ${JSON.stringify({
-          apiKeyKey: keyRecord.key,
-          apiKeyId: keyRecord.id,
-          ownerUserId: keyRecord.ownerUserId,
-          ownerOrgId: keyRecord.ownerOrgId,
-        })}`);
+        this.logger.log(
+          `[SMOKE_KEY_RESOLVE]: ${JSON.stringify({
+            apiKeyKey: keyRecord.key,
+            apiKeyId: keyRecord.id,
+            ownerUserId: keyRecord.ownerUserId,
+            ownerOrgId: keyRecord.ownerOrgId,
+          })}`
+        );
       }
 
       return true;

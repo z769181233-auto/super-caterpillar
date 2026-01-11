@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   UnauthorizedException,
   Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -22,8 +23,8 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 @Injectable()
 export class JwtOrHmacGuard implements CanActivate {
   constructor(
-    @Inject(JwtAuthGuard) private readonly jwtAuthGuard: JwtAuthGuard,
-    @Inject(HmacAuthGuard) private readonly hmacAuthGuard: HmacAuthGuard,
+    @Inject(forwardRef(() => JwtAuthGuard)) private readonly jwtAuthGuard: JwtAuthGuard,
+    @Inject(forwardRef(() => HmacAuthGuard)) private readonly hmacAuthGuard: HmacAuthGuard,
     @Inject(Reflector) private readonly reflector: Reflector
   ) {}
 

@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { JobService } from '../job/job.service'; // S3-C.3: 导入 JobService 以使用统一的引擎信息提取方法
@@ -14,9 +21,12 @@ export class WorkerService {
   private readonly logger = new Logger(WorkerService.name);
 
   constructor(
+    @Inject(PrismaService)
     private readonly prisma: PrismaService,
+    @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
-    private readonly jobService: JobService // S3-C.3: 注入 JobService 以使用统一的引擎信息提取方法
+    @Inject(forwardRef(() => JobService))
+    private readonly jobService: JobService
   ) {}
 
   /**

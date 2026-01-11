@@ -7,10 +7,21 @@ import {
   shouldUseGateNoop,
   gateNoopShotRender,
 } from '../processors/gate/noop-shot-render.processor';
+import { processE2EVideoPipelineJob } from '../processors/e2e-video-pipeline.processor';
+import { processCE06NovelParsingJob } from '../processors/ce06-novel-parsing.processor';
+import { processCE03VisualDensityJob } from '../processors/ce03-visual-density.processor';
+import { processCE04VisualEnrichmentJob } from '../processors/ce04-visual-enrichment.processor';
+import { processShotRenderJob } from '../processors/shot-render.processor';
+import { processVideoRenderJob } from '../processors/video-render.processor';
+import { processMediaSecurityJob } from '../processors/media-security.processor';
+import { processTimelineComposeJob } from '../processors/timeline-compose.processor';
+import { processTimelineRenderJob } from '../processors/timeline-render.processor';
+import { JobType } from 'database';
 import { ApiClient } from '../api-client';
 import { PrismaClient } from 'database';
 import { env } from '@scu/config';
 import * as util from 'util';
+import * as fs from 'fs';
 
 function assertNonProd() {
   if (process.env.NODE_ENV === 'production') {
@@ -63,9 +74,19 @@ export async function startGateWorkerApp() {
     workerId: workerId,
     name: workerId,
     capabilities: {
-      supportedJobTypes: ['SHOT_RENDER'],
+      supportedJobTypes: [
+        'SHOT_RENDER',
+        'PIPELINE_E2E_VIDEO',
+        'CE06_NOVEL_PARSING',
+        'CE03_VISUAL_DENSITY',
+        'CE04_VISUAL_ENRICHMENT',
+        'VIDEO_RENDER', // S4-4
+        'CE09_MEDIA_SECURITY', // S4-5
+        'PIPELINE_TIMELINE_COMPOSE', // S4-7
+        'TIMELINE_RENDER', // S4-7
+      ],
       supportedModels: [],
-      supportedEngines: ['gate_noop'],
+      supportedEngines: ['gate_noop', 'pipeline_orchestrator'], // Added orchestrator engine
       maxBatchSize: 1,
     },
   });
@@ -81,34 +102,13 @@ export async function startGateWorkerApp() {
     try {
       await apiClient.heartbeat({
         workerId,
-        status: tasksRunning > 0 ? 'busy' : 'idle',
+        status: 'online',
         tasksRunning,
-        // @ts-expect-error - P1-1 extension
-        capabilities: {
-          concurrency_managed: true,
-          lease_supported: true,
-          supportedEngines: ['gate_noop'],
-        },
       });
     } catch (error: any) {
       process.stderr.write(util.format('[GateWorker] ❌ 心跳发送失败:', error.message) + '\n');
     }
-  }, 5000);
-
-  // 立即发送一次心跳
-  await apiClient.heartbeat({
-    workerId,
-    status: 'idle',
-    tasksRunning: 0,
-    // @ts-expect-error - P1-1 extension
-    capabilities: {
-      concurrency_managed: true,
-      lease_supported: true,
-      supportedEngines: ['gate_noop'],
-    },
-  });
-
-  process.stdout.write(util.format('[GateWorker] ✅ Worker 启动成功，开始轮询...\n') + '\n');
+  }, 10000);
 
   // 最小轮询逻辑
   async function pollJobs() {
@@ -120,19 +120,118 @@ export async function startGateWorkerApp() {
         return;
       }
 
-      // Gate 只处理 stress job
-      if (!shouldUseGateNoop(job)) {
-        // 跳过非 Gate job（理论上不应出现，但保险起见）
-        process.stdout.write(util.format(`[GateWorker] 跳过非 Gate job: ${job.id}`) + '\n');
-        return;
-      }
-
       tasksRunning++;
-      process.stdout.write(util.format(`[GateWorker] 认领 job: ${job.id}`) + '\n');
+      process.stdout.write(util.format(`[GateWorker] 认领 job: ${job.id} type=${job.type}`) + '\n');
 
       try {
-        // ✅ Noop执行
-        const result = await gateNoopShotRender(job);
+        let result: any;
+
+        if (job.type === 'PIPELINE_E2E_VIDEO') {
+          // Real Processor for E2E Pipeline
+          process.stdout.write(util.format(`[GateWorker] 执行 E2E Pipeline Job...`) + '\n');
+          result = await processE2EVideoPipelineJob({
+            prisma,
+            job: job as any, // Cast to WorkerJobBase
+            apiClient,
+          });
+        } else if (job.type === 'CE06_NOVEL_PARSING') {
+          process.stdout.write(util.format(`[GateWorker] 执行 CE06 Novel Parsing...`) + '\n');
+          result = await processCE06NovelParsingJob({
+            prisma,
+            job: job as any,
+            apiClient,
+          });
+        } else if (job.type === 'CE03_VISUAL_DENSITY') {
+          process.stdout.write(util.format(`[GateWorker] 执行 CE03 Visual Density...`) + '\n');
+          result = await processCE03VisualDensityJob({
+            prisma,
+            job: job as any,
+            apiClient,
+          });
+        } else if (job.type === 'CE04_VISUAL_ENRICHMENT') {
+          process.stdout.write(util.format(`[GateWorker] 执行 CE04 Visual Enrichment...`) + '\n');
+          result = await processCE04VisualEnrichmentJob({
+            prisma,
+            job: job as any,
+            apiClient,
+          });
+        } else if (job.type === 'VIDEO_RENDER') {
+          // S4-4: Conditional Routing
+          const debugMsg = `[Debug] VIDEO_RENDER Job: Payload=${JSON.stringify(job.payload)} Env=${process.env.RENDER_ENGINE}\n`;
+          process.stdout.write(debugMsg);
+          fs.appendFileSync('worker-debug.log', debugMsg);
+
+          if (
+            job.payload?.pipelineRunId &&
+            (process.env.RENDER_ENGINE === 'mock' || process.env.RENDER_ENGINE === 'ffmpeg')
+          ) {
+            if (process.env.DEBUG_WORKER_LOG === '1') {
+              const msg = `[GateWorker] 执行 S4-6 Real/Mock Video Syn (Engine=${process.env.RENDER_ENGINE})...\n`;
+              process.stdout.write(msg);
+              fs.appendFileSync('worker-debug.log', msg);
+            }
+            result = await processVideoRenderJob({
+              prisma,
+              job: job as any,
+              apiClient,
+            });
+          } else {
+            const msg = `[GateWorker] Fallback Noop for VIDEO_RENDER. pipelineRunId=${job.payload?.pipelineRunId} Env=${process.env.RENDER_ENGINE}\n`;
+            process.stdout.write(msg);
+            fs.appendFileSync('worker-debug.log', msg);
+            if (!shouldUseGateNoop(job)) {
+              process.stdout.write(util.format(`[GateWorker] 跳过非 Gate job: ${job.id}`) + '\n');
+              return;
+            }
+            result = await gateNoopShotRender(job);
+          }
+        } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE') {
+          process.stdout.write(util.format(`[GateWorker] 执行 CE10 Timeline Compose...`) + '\n');
+          result = await processTimelineComposeJob({
+            prisma,
+            job: job as any,
+            apiClient,
+          });
+        } else if (job.type === 'TIMELINE_RENDER') {
+          process.stdout.write(
+            util.format(`[GateWorker] 执行 Timeline Render (Two-Stage)...`) + '\n'
+          );
+          result = await processTimelineRenderJob({
+            prisma,
+            job: job as any,
+            apiClient,
+          });
+        } else if (job.type === 'CE09_MEDIA_SECURITY') {
+          process.stdout.write(util.format(`[GateWorker] 执行 CE09 Media Security...`) + '\n');
+          result = await processMediaSecurityJob({
+            prisma,
+            job: job as any,
+            apiClient,
+          });
+        } else if (job.type === 'SHOT_RENDER') {
+          // S4-3: Conditional Routing
+          if (job.payload?.pipelineRunId && process.env.RENDER_ENGINE === 'mock') {
+            process.stdout.write(util.format(`[GateWorker] 执行 S4-3 Mock Shot Render...`) + '\n');
+            result = await processShotRenderJob({
+              prisma,
+              job: job as any,
+              apiClient,
+            });
+          } else {
+            // Gate Default (Noop)
+            if (!shouldUseGateNoop(job)) {
+              process.stdout.write(util.format(`[GateWorker] 跳过非 Gate job: ${job.id}`) + '\n');
+              return;
+            }
+            result = await gateNoopShotRender(job);
+          }
+        } else {
+          // Fallback for other types if any
+          process.stdout.write(
+            util.format(`[GateWorker] ⚠️ Unknown Job Type: ${job.type} - Skipping`) + '\n'
+          );
+          return;
+        }
 
         // ✅ 回写成功
         await apiClient.reportJobResult({
@@ -141,9 +240,7 @@ export async function startGateWorkerApp() {
           result,
         });
 
-        process.stdout.write(
-          util.format(`[GateWorker] ✅ job ${job.id} 成功完成 (耗时: ${result.sleptMs}ms)`) + '\n'
-        );
+        process.stdout.write(util.format(`[GateWorker] ✅ job ${job.id} 成功完成`) + '\n');
       } catch (error: any) {
         process.stderr.write(
           util.format(`[GateWorker] ❌ job ${job.id} 执行失败:`, error.message) + '\n'
