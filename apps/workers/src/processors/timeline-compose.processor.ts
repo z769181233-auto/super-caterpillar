@@ -99,12 +99,11 @@ export async function processTimelineComposeJob({ prisma, job, apiClient }: Time
 
   console.log(`[TimelineCompose] [${traceId}] Found ${scene.shots.length} shots for scene ${sceneId}: ${scene.shots.map(s => s.id).join(', ')}`);
 
-  // Bypass the 2-shot guard for verification pass
-  // if (scene.shots.length < 2) {
-  //   throw new Error(
-  //     `[TimelineCompose] Fail-fast: Scene must have at least 2 shots for timeline compose. Found: ${scene.shots.length}`
-  //   );
-  // }
+  if (scene.shots.length < 2) {
+    throw new Error(
+      `[TimelineCompose] Fail-fast: Scene must have at least 2 shots for timeline compose. Found: ${scene.shots.length}`
+    );
+  }
 
   // 2. 编排确定性 Timeline 数据 (Hard Constraints)
   // 锁死参数：S4-7 统一 24fps, 1280x720

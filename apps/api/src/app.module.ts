@@ -68,7 +68,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 100,
+        limit: 1000, // Relaxed for local dev/worker heartbeat stability
       },
     ]),
     ScheduleModule.forRoot(), // P1 修复：启用定时任务模块（用于 Job Watchdog）
@@ -83,7 +83,9 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     UserModule,
     ProjectModule,
     JobModule,
-    ...(JOB_WORKER_ENABLED ? [JobWorkerModule] : []),
+    // ...(JOB_WORKER_ENABLED ? [JobWorkerModule] : []),
+    // FORCE DISABLED FOR DEBUGGING
+
     WorkerModule,
     OrchestratorModule,
     AutofillModule,

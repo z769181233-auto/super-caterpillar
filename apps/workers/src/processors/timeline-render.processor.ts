@@ -37,11 +37,9 @@ export async function processTimelineRenderJob({ prisma, job, apiClient }: Timel
   }
   const timeline: TimelineData = JSON.parse(fs.readFileSync(timelineStorageKey, 'utf-8'));
 
-  // Validation
-  // Bypass the 2-shot guard for verification pass
-  // if (timeline.shots.length < 2) {
-  //   throw new Error(`[TimelineRender] Fail-fast: Timeline must contain at least 2 shots.`);
-  // }
+  if (timeline.shots.length < 2) {
+    throw new Error(`[TimelineRender] Fail-fast: Timeline must contain at least 2 shots.`);
+  }
 
   const fps = timeline.fps || 24;
   const width = timeline.width || 1280;
@@ -96,16 +94,19 @@ export async function processTimelineRenderJob({ prisma, job, apiClient }: Timel
 
     // Render if not skipped
     const framesTxt = shot.framesTxtStorageKey;
-    // Bypass frames.txt check and FFmpeg for verification
-    // if (!fs.existsSync(framesTxt)) {
-    //   throw new Error(
-    //     `[TimelineRender] Fail-fast: frames.txt not found for shotId=${shot.shotId} at ${framesTxt}`
-    //   );
-    // }
+    if (!fs.existsSync(framesTxt)) {
+      throw new Error(
+        `[TimelineRender] Fail-fast: frames.txt not found for shotId=${shot.shotId} at ${framesTxt}`
+      );
+    }
 
-    // Mock output for verification
-    fs.writeFileSync(shotOutputPath, 'mock mp4 content');
-    // await runFfmpeg(args, `Stage1_Shot_${shot.shotId}`);
+    // Real rendering for Stage 1: Shot Frames to MP4
+    const args = [
+      '-f', 'concat', '-safe', '0', '-i', framesTxt,
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', fps.toString(),
+      '-y', shotOutputPath
+    ];
+    await runFfmpeg(args, `Stage1_Shot_${shot.shotId}`);
     shotMp4Paths.push(shotOutputPath);
   }
 
@@ -143,9 +144,9 @@ export async function processTimelineRenderJob({ prisma, job, apiClient }: Timel
       }
     }
 
-    // Mock final output for verification
-    fs.writeFileSync(finalOutputPath, 'mock scene content');
-    // await runFfmpeg(concatArgs, `Stage2_SimpleConcat`);
+    // Real rendering for Path A: Simple Concat
+    concatArgs.push('-y', finalOutputPath);
+    await runFfmpeg(concatArgs, `Stage2_SimpleConcat`);
   } else {
     // Path B: Advanced Composition (FilterComplex, Re-encoding required)
     console.log(`[TimelineRender] [Path B] Advanced Composition (Mixing & Ducking)`);
@@ -261,10 +262,26 @@ export async function processTimelineRenderJob({ prisma, job, apiClient }: Timel
 
     complexArgs.push('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', fps.toString(), '-y', '-shortest', finalOutputPath);
 
-    // Mock final output for verification
-    fs.writeFileSync(finalOutputPath, 'mock mixed scene content');
-    // await runFfmpeg(complexArgs, `Stage2_AdvancedCompose`);
+    // Real rendering for Path B: Advanced Compose
+    await runFfmpeg(complexArgs, `Stage2_AdvancedCompose`);
   }
+
+  // Add-on: Generate HLS (m3u8 + ts) along with MP4 for Production Readiness
+  const hlsOutputDir = path.join(finalOutputDir, 'hls');
+  if (!fs.existsSync(hlsOutputDir)) fs.mkdirSync(hlsOutputDir, { recursive: true });
+  const hlsMasterPath = path.join(hlsOutputDir, 'master.m3u8');
+
+  console.log(`[TimelineRender] Generating HLS package at: ${hlsMasterPath}`);
+  const hlsArgs = [
+    '-i', finalOutputPath,
+    '-codec:', 'copy',
+    '-start_number', '0',
+    '-hls_time', '10',
+    '-hls_list_size', '0',
+    '-f', 'hls',
+    hlsMasterPath
+  ];
+  await runFfmpeg(hlsArgs, 'Stage3_HLS_Package');
 
   // Stage 3: Persistence (Asset linked to firstShotId)
   const firstShotId = timeline.shots[0].shotId;

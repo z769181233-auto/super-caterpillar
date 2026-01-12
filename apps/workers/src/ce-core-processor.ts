@@ -21,6 +21,9 @@ import {
 import { CostLedgerService } from './billing/cost-ledger.service';
 import { ModelRouterV2 } from '@scu/router';
 import * as util from 'util';
+import * as fs from 'fs';
+import * as path from 'path';
+import sharp from 'sharp';
 
 /**
  * 结构化日志输出函数
@@ -57,6 +60,8 @@ export async function processCE06Job(
   engineClient: EngineHubClient,
   apiClient: ApiClient
 ): Promise<CE06NovelParsingOutput> {
+  console.log('[S3-B Debug] processCE06Job START');
+  require('fs').appendFileSync('debug_ce06.txt', '[S3-B Debug] processCE06Job START ' + new Date().toISOString() + '\n');
   const jobStartTime = Date.now();
   const jobId = job.id;
   // Stage13-Final: 使用 Job.traceId（Pipeline 级 traceId）
@@ -736,6 +741,52 @@ export async function processCE04Job(
         });
       } catch (e: any) {
         logStructured('warn', { action: 'NOVEL_SCENE_UPDATE_FAIL', error: e.message });
+      }
+    }
+
+    // [Stub] CE04 -> Generate Physical Assets for TimelineRender (Mocking ShotRender)
+    // [Stage 3 Fix] Hydrate job from DB to ensure sceneId/episodeId are present (Worker payload might be partial)
+    const freshJob = await prisma.shotJob.findUnique({ where: { id: jobId } });
+
+    if (freshJob?.sceneId) {
+      try {
+        const sceneId = freshJob.sceneId;
+        const shots = await prisma.shot.findMany({
+          where: { sceneId },
+        });
+
+        const assetsDir = path.join(process.cwd(), '.runtime', 'assets');
+        if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
+        const dummyImagePath = path.join(assetsDir, 'dummy_shot.png');
+
+        // Create dummy image if not exists
+        if (!fs.existsSync(dummyImagePath)) {
+          await sharp({
+            create: {
+              width: 1280,
+              height: 720,
+              channels: 4,
+              background: { r: 0, g: 0, b: 255, alpha: 1 }, // Blue background
+            }
+          })
+            .png()
+            .toFile(dummyImagePath);
+        }
+
+        for (const shot of shots) {
+          const framesDir = path.join(process.cwd(), '.runtime', 'frames', shot.id);
+          if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir, { recursive: true });
+          const framesTxtPath = path.join(framesDir, 'frames.txt');
+
+          // Generate frames.txt pointing to dummy image
+          // Duration default 4s
+          const duration = shot.durationSeconds || 4;
+          const content = `file '${dummyImagePath}'\nduration ${duration}\nfile '${dummyImagePath}'`; // Repeat purely for concat logic
+          fs.writeFileSync(framesTxtPath, content);
+          console.log(`[CE04] Generated stub frames.txt for shot ${shot.id}`);
+        }
+      } catch (stubError: any) {
+        logStructured('warn', { action: 'CE04_STUB_FAILED', error: stubError.message });
       }
     }
 

@@ -487,6 +487,10 @@ export async function applyAnalyzedStructureToDatabase(
       },
       orderBy: { index: 'asc' },
     });
+    console.log(`[S3-B Debug] Found ${existingSeasons.length} existing seasons for project ${projectId} (Index search)`);
+    if (existingSeasons.length > 0) {
+      console.log(`[S3-B Debug] Season 0 ID: ${existingSeasons[0].id}, Index: ${existingSeasons[0].index}`);
+    }
 
     // S3-B Fine-Tune: 记录结构对比日志
     logStructured('info', {
@@ -952,66 +956,127 @@ export function mapCE06OutputToProjectStructure(
   projectId: string,
   output: CE06NovelParsingOutput | CE06Output
 ): AnalyzedProjectStructure {
+  console.log('[S3-B Debug] mapCE06 Output Keys:', Object.keys(output || {}));
+  if ((output as any).seasons) console.log('[S3-B Debug] Seasons length:', (output as any).seasons.length);
+  if ((output as any).volumes) console.log('[S3-B Debug] Volumes length:', (output as any).volumes.length);
+
   const seasons: AnalyzedSeason[] = [];
   let sIndex = 1;
 
-  // 兼容性处理：CE06NovelParsingOutput 使用 content，CE06Output 使用 summary
-  const volumes = (output as any).volumes || [];
+  // S3-B Fix: Priority 1 - 'seasons' (V1.1 Structure from MockEngine/CE06)
+  if ((output as any).seasons && Array.isArray((output as any).seasons) && (output as any).seasons.length > 0) {
+    for (const s of (output as any).seasons) {
+      const season: AnalyzedSeason = {
+        index: s.index,
+        title: s.title || `第 ${s.index} 季`,
+        summary: s.summary || '',
+        episodes: []
+      };
+      for (const e of (s.episodes || [])) {
+        const episode: AnalyzedEpisode = {
+          index: e.index,
+          title: e.title || `第 ${e.index} 集`,
+          summary: e.summary || '',
+          scenes: []
+        };
+        for (const sc of (e.scenes || [])) {
+          const scene: AnalyzedScene = {
+            index: sc.index,
+            title: sc.title || `场景 ${sc.index}`,
+            summary: sc.summary || '',
+            shots: []
+          };
+          if (sc.shots && Array.isArray(sc.shots)) {
+            for (const sh of sc.shots) {
+              scene.shots.push({
+                index: sh.index,
+                title: sh.title || `镜头 ${sh.index}`,
+                summary: sh.summary || sh.text || '',
+                text: sh.text || sh.summary || ''
+              });
+            }
+          }
+          if (scene.shots.length > 0) episode.scenes.push(scene);
+        }
+        if (episode.scenes.length > 0) season.episodes.push(episode);
+      }
+      if (season.episodes.length > 0) seasons.push(season);
+    }
+  }
 
-  for (const vol of volumes) {
-    const season: AnalyzedSeason = {
-      index: sIndex++,
-      title: vol.title || `第 ${sIndex - 1} 卷`,
-      summary: '',
-      episodes: [],
-    };
+  // S3-B Fix: Priority 2 - 'volumes' (Legacy Structure) - Fallback ONLY if seasons is empty
+  if (seasons.length === 0) {
+    // 兼容性处理：CE06NovelParsingOutput 使用 content，CE06Output 使用 summary
+    const volumes = (output as any).volumes || [];
 
-    let eIndex = 1;
-    for (const chap of vol.chapters || []) {
-      const episode: AnalyzedEpisode = {
-        index: eIndex++,
-        title: chap.title || `第 ${eIndex - 1} 章`,
-        summary: chap.summary || '',
-        scenes: [],
+    for (const vol of volumes) {
+      const season: AnalyzedSeason = {
+        index: sIndex++,
+        title: vol.title || `第 ${sIndex - 1} 卷`,
+        summary: '',
+        episodes: [],
       };
 
-      let scIndex = 1;
-      for (const sc of chap.scenes || []) {
-        const scene: AnalyzedScene = {
-          index: scIndex++,
-          title: sc.title || `场景 ${scIndex - 1}`,
-          summary: sc.summary || sc.content || '',
-          shots: [],
+      let eIndex = 1;
+      for (const chap of vol.chapters || []) {
+        const episode: AnalyzedEpisode = {
+          index: eIndex++,
+          title: chap.title || `第 ${eIndex - 1} 章`,
+          summary: chap.summary || '',
+          scenes: [],
         };
 
-        // 对于 Scene Content，我们暂时使用标点分句逻辑来生成 Shots
-        const rawContent = sc.summary || sc.content || '';
-        const sentences = rawContent.split(/(?<=[。！？!?])/);
-        let shIndex = 1;
-        for (const sentence of sentences) {
-          const text = sentence.trim();
-          if (!text) continue;
+        let scIndex = 1;
+        for (const sc of chap.scenes || []) {
+          const scene: AnalyzedScene = {
+            index: scIndex++,
+            title: sc.title || `场景 ${scIndex - 1}`,
+            summary: sc.summary || sc.content || '',
+            shots: [],
+          };
 
-          scene.shots.push({
-            index: shIndex++,
-            title: `镜头 ${shIndex - 1}`,
-            summary: text.slice(0, 50),
-            text,
-          });
+          // S3-B Fix: Even in legacy volumes check for shots if present (rare but possible)
+          if ((sc as any).shots && Array.isArray((sc as any).shots) && (sc as any).shots.length > 0) {
+            let shIndex = 1;
+            for (const shot of (sc as any).shots) {
+              scene.shots.push({
+                index: shIndex++,
+                title: shot.title || `镜头 ${shIndex - 1}`,
+                summary: shot.summary || shot.text || '',
+                text: shot.text || shot.summary || '',
+              });
+            }
+          } else {
+            // 对于 Scene Content，我们暂时使用标点分句逻辑来生成 Shots
+            const rawContent = sc.summary || sc.content || '';
+            const sentences = rawContent.split(/(?<=[。！？!?])/);
+            let shIndex = 1;
+            for (const sentence of sentences) {
+              const text = sentence.trim();
+              if (!text) continue;
+
+              scene.shots.push({
+                index: shIndex++,
+                title: `镜头 ${shIndex - 1}`,
+                summary: text.slice(0, 50),
+                text,
+              });
+            }
+          }
+
+          if (scene.shots.length > 0) {
+            episode.scenes.push(scene);
+          }
         }
 
-        if (scene.shots.length > 0) {
-          episode.scenes.push(scene);
+        if (episode.scenes.length > 0) {
+          season.episodes.push(episode);
         }
       }
 
-      if (episode.scenes.length > 0) {
-        season.episodes.push(episode);
+      if (season.episodes.length > 0) {
+        seasons.push(season);
       }
-    }
-
-    if (season.episodes.length > 0) {
-      seasons.push(season);
     }
   }
 
@@ -1041,6 +1106,7 @@ export function mapCE06OutputToProjectStructure(
     },
   };
 }
+
 
 /**
  * Worker 侧处理 NOVEL_ANALYSIS Job 的主入口。

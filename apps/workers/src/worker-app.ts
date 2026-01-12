@@ -405,6 +405,7 @@ async function handleEngineResultAndReport(
  * 使用 JobExecutor 执行任务
  */
 async function processJobWithExecutor(job: JobFromApi): Promise<void> {
+  console.log(`[S3-B Debug] Processing JOB ${job.id} TYPE: ${job.type}`);
   const engineKey = (job as any).engineKey || 'default';
   tasksRunning++;
 

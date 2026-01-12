@@ -48,7 +48,20 @@ const handler = (req: any, res: any) => {
                   {
                     index: 1,
                     title: 'Scene 1',
-                    content: 'Season path sentence one. Season path sentence two.',
+                    summary: 'The first scene of the episode.',
+                    shots: [
+                      { index: 1, title: 'Shot 1-1', text: 'Visual content for first shot.' },
+                      { index: 2, title: 'Shot 1-2', text: 'Visual content for second shot.' },
+                    ]
+                  },
+                  {
+                    index: 2,
+                    title: 'Scene 2',
+                    summary: 'The second scene of the episode.',
+                    shots: [
+                      { index: 1, title: 'Shot 2-1', text: 'Visual content for first shot in second scene.' },
+                      { index: 2, title: 'Shot 2-2', text: 'Visual content for second shot in second scene.' },
+                    ]
                   }
                 ]
               }

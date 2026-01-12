@@ -15,6 +15,7 @@ import { TaskService } from '../task/task.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditActions } from '../audit/audit.constants';
 import { SceneGraphService } from '../project/scene-graph.service';
+import { StructureGenerateService } from '../project/structure-generate.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { QualityScoreService } from '../quality/quality-score.service';
@@ -96,7 +97,9 @@ export class JobService {
     @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService,
     @Inject(BudgetService) private readonly budgetService: BudgetService,
     @Inject(forwardRef(() => SceneGraphService))
-    private readonly sceneGraphService?: SceneGraphService
+    private readonly sceneGraphService?: SceneGraphService,
+    @Inject(forwardRef(() => StructureGenerateService))
+    private readonly structureGenerateService?: StructureGenerateService
   ) { }
 
   async create(
@@ -2750,6 +2753,27 @@ export class JobService {
     const pipeline = payload.pipeline || [];
 
     if (job.type === JobTypeEnum.CE06_NOVEL_PARSING) {
+      // Stage-3: CE06 真实层级落库 (Phase 1)
+      if (result && (result as any).data && this.structureGenerateService) {
+        this.logger.log(`[Stage-3] CE06 SUCCEEDED, applying structure to DB for project ${job.projectId}`);
+        try {
+          const seasons = (result as any).data.seasons || (result as any).data.volumes || [];
+          await this.structureGenerateService.applyAnalyzedStructureToDatabase({
+            projectId: job.projectId!,
+            seasons,
+            stats: {
+              seasonsCount: seasons.length,
+              episodesCount: seasons.reduce((acc: number, s: any) => acc + (s.episodes?.length || 0), 0),
+              scenesCount: seasons.reduce((acc: number, s: any) => acc + (s.episodes?.reduce((a: number, e: any) => a + (e.scenes?.length || 0), 0) || 0), 0),
+              shotsCount: seasons.reduce((acc: number, s: any) => acc + (s.episodes?.reduce((a: number, e: any) => a + (e.scenes?.reduce((sh: number, sc: any) => sh + (sc.shots?.length || 0), 0) || 0), 0) || 0), 0),
+            },
+          });
+        } catch (e: any) {
+          this.logger.error(`[Stage-3] Failed to apply structure to DB: ${e.message}`);
+          // 落库失败不应完全阻断 DAG，但会造成下游任务因找不到结构而 Fail-fast 或 fallback
+        }
+      }
+
       // CE06 完成，触发 CE03
       if (pipeline.includes('CE03_VISUAL_DENSITY')) {
         await this.createCECoreJob({

@@ -12,6 +12,7 @@ import {
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { spawn } from 'child_process';
 
 const prisma = new PrismaClient();
 
@@ -80,42 +81,61 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
     fs.mkdirSync(secureAbsDir, { recursive: true });
   }
 
-  const outputFilename = `secure_${path.basename(sourceStorageKey)}`;
+  const outputFilename = `secure_${path.basename(sourceStorageKey, path.extname(sourceStorageKey))}.mp4`;
   const outputAbsPath = path.join(secureAbsDir, outputFilename);
   const outputRelativeKey = path.join(secureRelativeDir, outputFilename).replace(/\\/g, '/');
 
-  // Copy file (Mocking the watermark process)
-  fs.copyFileSync(sourcePath, outputAbsPath);
+  const hlsSecureDir = path.join(secureAbsDir, 'hls');
+  if (!fs.existsSync(hlsSecureDir)) fs.mkdirSync(hlsSecureDir, { recursive: true });
+  const hlsPlaylistFilename = 'master.m3u8';
+  const hlsPlaylistAbsPath = path.join(hlsSecureDir, hlsPlaylistFilename);
+  const hlsPlaylistRelativeKey = path.join(secureRelativeDir, 'hls', hlsPlaylistFilename).replace(/\\/g, '/');
 
-  // Generate Fingerprint (SHA256)
+  // 4. Real Security Operation: Watermark + HLS Packaging
+  console.log(`[MediaSecurity] Applying visible watermark and packaging HLS for ${sourceStorageKey}`);
+
+  // FFmpeg: Visible Watermark + MP4 Output
+  const watermarkText = 'SUPER_CATERPILLAR_UNIVERSE';
+  const secureMp4Args = [
+    '-i', sourcePath,
+    '-vf', `drawtext=text='${watermarkText}':x=10:y=H-th-10:fontsize=24:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2`,
+    '-codec:v', 'libx264', '-pix_fmt', 'yuv420p',
+    '-codec:a', 'copy',
+    '-y', outputAbsPath
+  ];
+
+  await runFfmpeg(secureMp4Args, 'CE09_Watermark_MP4');
+
+  // FFmpeg: HLS Packaging from Secure MP4
+  const hlsArgs = [
+    '-i', outputAbsPath,
+    '-codec:', 'copy',
+    '-start_number', '0',
+    '-hls_time', '10',
+    '-hls_list_size', '0',
+    '-f', 'hls',
+    hlsPlaylistAbsPath
+  ];
+  await runFfmpeg(hlsArgs, 'CE09_HLS_Secure');
+
+  // Generate Fingerprint (SHA256) of the SECURE MP4
   const fileBuffer = fs.readFileSync(outputAbsPath);
   const hashSum = crypto.createHash('sha256');
   hashSum.update(fileBuffer);
   const fingerprint = hashSum.digest('hex');
 
-  // 4. Update Asset (Security Link)
-  // We update the EXISTING asset to point to the secure version (or add metadata)
-  // User Rule: "Video must enter safety link" implies the final consumable is the secure one.
-  const secureMetadata = {
-    watermark: 'SCU',
-    fingerprint: fingerprint,
-    originalStorageKey: sourceStorageKey,
-    pipelineRunId,
-    traceId,
-    securedAt: new Date().toISOString()
-  };
-
+  // 5. Update Asset (Security Link - Dedicated Columns DBSpec V1.1)
   await prisma.asset.update({
     where: { id: targetAssetId },
     data: {
       storageKey: outputRelativeKey,
       checksum: fingerprint,
       status: 'PUBLISHED',
-      // V1.1 Security Fields (Real Values / Commercial Grade Stub)
-      hlsPlaylistUrl: `https://cdn.scu.com/hls/${pipelineRunId}/master.m3u8`, // Generated HLS link
-      signedUrl: `https://cdn.scu.com/secure/${outputRelativeKey}?sig=${crypto.randomBytes(8).toString('hex')}`, // Generated Signed URL
-      watermarkMode: 'SCU_INVISIBLE_V1',
-      fingerprintId: fingerprint, // Storing fingerprint hash as ID for now, to be replaced by Vector ID in V2
+      // V1.1 Security Fields (Real Values)
+      hlsPlaylistUrl: hlsPlaylistRelativeKey,
+      signedUrl: `/api/assets/signed-url?key=${outputRelativeKey}&t=${Date.now()}`,
+      watermarkMode: 'SCU_VISIBLE_V1_BOTTOM_LEFT',
+      fingerprintId: fingerprint,
     },
   });
 
@@ -169,4 +189,24 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
       });
     }
   }
+}
+
+async function runFfmpeg(args: string[], label: string) {
+  console.log(`[FFmpeg ${label}] Executing: ffmpeg ${args.join(' ')}`);
+  return new Promise<void>((resolve, reject) => {
+    const child = spawn('ffmpeg', args);
+    let output = '';
+    child.stderr.on('data', (data) => {
+      output += data.toString();
+    });
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else
+        reject(
+          new Error(
+            `[FFmpeg ${label}] Exited with code ${code}. Output: ${output.substring(output.length - 500)}`
+          )
+        );
+    });
+  });
 }

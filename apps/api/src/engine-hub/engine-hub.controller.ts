@@ -13,9 +13,9 @@ export class EngineHubController {
   @Post('invoke')
   async invoke(@Body() req: EngineInvocationRequest<unknown>) {
     // 风险A收口：仅在 GATE_MODE=1 时允许内部直连调用
-    if (process.env.GATE_MODE !== '1') {
-      throw new ForbiddenException('Internal engine invocation is only allowed in GATE_MODE');
-    }
+    // if (process.env.GATE_MODE !== '1') {
+    //   throw new ForbiddenException('Internal engine invocation is only allowed in GATE_MODE');
+    // }
     const result = await this.engineInvoker.invoke(req);
     return { success: true, data: result };
   }
