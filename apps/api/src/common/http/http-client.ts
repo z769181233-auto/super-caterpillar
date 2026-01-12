@@ -47,6 +47,7 @@ export class HttpClient {
         headers: response.headers as Record<string, string>,
       };
     } catch (error) {
+      console.error('[HttpClient] Raw Error:', error);
       // 将 AxiosError 转换为更友好的错误格式
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;

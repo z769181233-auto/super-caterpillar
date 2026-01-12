@@ -14,7 +14,7 @@ import { ApiClient } from './api-client';
  * 提供统一的引擎调用接口，使用 EngineInvocationRequest/Result
  */
 export class EngineHubClient {
-  constructor(private readonly apiClient: ApiClient) {}
+  constructor(private readonly apiClient: ApiClient) { }
 
   /**
    * 调用引擎
@@ -52,7 +52,7 @@ export class EngineHubClient {
 
       const response = await (this.apiClient as any).request(
         'POST',
-        '/_internal/engine/invoke',
+        '/api/_internal/engine/invoke',
         payload
       );
 

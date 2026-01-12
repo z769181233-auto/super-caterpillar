@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { JobService } from './job.service';
 import { QualityMetricsWriter } from '../quality/quality-metrics.writer';
 import { PrismaService } from '../prisma/prisma.service';
@@ -19,11 +19,15 @@ export class JobReportFacade {
   private readonly logger = new Logger(JobReportFacade.name);
 
   constructor(
+    @Inject(JobService)
     private readonly jobService: JobService,
+    @Inject(QualityMetricsWriter)
     private readonly qualityMetricsWriter: QualityMetricsWriter,
+    @Inject(PrismaService)
     private readonly prisma: PrismaService,
+    @Inject(DirectorConstraintSolverService)
     private readonly directorSolver: DirectorConstraintSolverService
-  ) {}
+  ) { }
 
   /**
    * 处理 Job 回报（Facade 层）

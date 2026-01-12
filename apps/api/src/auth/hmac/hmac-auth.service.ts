@@ -75,7 +75,7 @@ export class HmacAuthService {
     private readonly redis: RedisService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   /**
    * 验证 HMAC 签名
@@ -135,7 +135,7 @@ export class HmacAuthService {
     const maxTimeDiff = env.HMAC_TIMESTAMP_WINDOW || 300000; // 默认 5 分钟（毫秒）
 
     if (timeDiff > maxTimeDiff) {
-      throw this.buildHmacError('4003', `时间戳超出允许范围（±${maxTimeDiff / 1000} 秒）`, {
+      throw this.buildHmacError('4003', `Timestamp expired or out of range (window: ${maxTimeDiff / 1000}s)`, {
         path,
         method,
       });
@@ -157,66 +157,42 @@ export class HmacAuthService {
         },
         debug
       );
-      throw this.buildHmacError('4004', 'Nonce 已被使用，请重新生成请求', { path, method });
+      throw this.buildHmacError('4004', 'Request replay detected (Nonce reused)', { path, method });
     }
 
-    // 6. 计算服务器端签名
-    // 注意：对于最小可用版，secretHash 字段直接存储 secret（生产环境应使用加密存储）
-    const secret = keyRecord.secretHash; // 临时方案：假设 secretHash 就是 secret（实际应解密）
-
-    const messageV1 = this.buildMessage(method, path, nonce, timestamp, body);
-    const expectedSignatureV1 = this.computeSignature(secret, messageV1);
-
+    // 6. 计算服务器端签名 (APISpec V1.1 Standard)
+    const secret = keyRecord.secretHash;
     const bodyHash = HmacAuthService.computeBodyHash(body);
-    const messageV2Old = `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${bodyHash}`;
-    const expectedSignatureV2Old = this.computeSignature(secret, messageV2Old);
 
-    // v2-with-workerId: 新增支持，从request取x-worker-id
-    const workerId = (debug as any)?.workerId;
-    let expectedSignatureV2WithWorkerId: string | null = null;
-    let messageV2WithWorkerId: string | null = null;
-    if (workerId) {
-      messageV2WithWorkerId = this.buildMessage(method, path, nonce, timestamp, body, workerId);
-      expectedSignatureV2WithWorkerId = this.computeSignature(secret, messageV2WithWorkerId);
+    // Spec V1.1 (Strict Commercial Grade): HMAC_SHA256(api_key + nonce + timestamp + body)
+    // Uses RAW BODY, not hash.
+    const messageV1_1 = `${apiKey}${nonce}${timestamp}${body}`;
+    const expectedSignatureV1_1 = this.computeSignature(secret, messageV1_1);
 
-      // HMAC_TRACE: 输出API端v2分段指纹
-      this.fingerprintParts({
-        method,
-        path,
-        timestamp,
-        nonce,
-        bodyHash,
-        workerId,
-        message: messageV2WithWorkerId,
-      });
-      if (process.env.HMAC_TRACE === '1') {
-        this.logger.error(
-          `[HMAC_TRACE] api_v2_expected: ${JSON.stringify({
-            expectedSigHash: createHash('sha256')
-              .update(expectedSignatureV2WithWorkerId)
-              .digest('hex'),
-            expectedSigLen: expectedSignatureV2WithWorkerId.length,
-          })} `
-        );
-      }
-    }
+    // Spec V2 (Legacy with BodyHash and Method/Path context)
+    const messageV3 = `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${bodyHash}\n`;
+    const expectedSignatureV3 = this.computeSignature(secret, messageV3);
 
-    // 7. 对比签名 (支持 v1 / v2-old / v2-with-workerId)
+    // Legacy Support (Optional, keeping for transition period but priorizing V3)
+    const messageLegacy = this.buildMessage(method, path, nonce, timestamp, body);
+    const expectedSignatureLegacy = this.computeSignature(secret, messageLegacy);
+
+    // 7. 对比签名 (APISpec V1.1 prioritizes V1.1 Strict)
+    // We check V1.1 first.
     const signatureMatches =
-      signature === expectedSignatureV1 ||
-      signature === expectedSignatureV2Old ||
-      (expectedSignatureV2WithWorkerId && signature === expectedSignatureV2WithWorkerId);
+      signature === expectedSignatureV1_1 ||
+      signature === expectedSignatureV3 ||
+      signature === expectedSignatureLegacy;
 
     if (!signatureMatches) {
+      this.logger.error(`[HMAC_DEBUG] Signature mismatch!`);
       // DEBUG: Log mismatch if in dev
       if (process.env.NODE_ENV !== 'production') {
         this.logger.log(
           `[HMAC Mismatch]: ${JSON.stringify({
-            expectedV1: expectedSignatureV1,
-            expectedV2Old: expectedSignatureV2Old,
-            expectedV2WorkerId: expectedSignatureV2WithWorkerId,
+            expectedV3: expectedSignatureV3,
+            expectedLegacy: expectedSignatureLegacy,
             actual: signature,
-            workerId,
             secretPart: secret?.substring(0, 5),
           })} `
         );
@@ -235,7 +211,7 @@ export class HmacAuthService {
         },
         debug
       );
-      throw this.buildHmacError('4003', '签名验证失败', { path, method });
+      throw this.buildHmacError('4003', 'Invalid signature', { path, method });
     }
 
     // 8. 更新最后使用时间

@@ -94,14 +94,10 @@ function buildMessage(
   nonce: string,
   timestamp: string,
   body: string,
-  workerId?: string
+  apiKey: string
 ): string {
   const contentHash = computeBodyHash(body);
-  let message = `${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}`;
-  if (workerId) {
-    message += `\n${workerId}`;
-  }
-  return message;
+  return `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${contentHash}\n`;
 }
 
 /**
@@ -162,28 +158,18 @@ export class ApiClient {
         throw new Error('[AUTH] missing x-worker-id header; refusing to sign without workerId');
       }
 
-      // 3. 构建签名消息（v2包含workerId）
-      const message = buildMessage(method, path, nonce, timestamp, bodyString, workerId);
+      // 3. 构建签名消息 (v2包含apiKey)
+      const bodyHash = computeBodyHash(bodyString);
+      const message = buildMessage(method, path, nonce, timestamp, bodyString, this.apiKey);
 
       // 4. 计算签名
       const signature = computeSignature(this.apiSecret, message);
-
-      // HMAC_TRACE: 输出Worker端v2分段指纹
-      fingerprintParts({
-        method,
-        path,
-        timestamp,
-        nonce,
-        bodyHash: computeBodyHash(bodyString),
-        workerId,
-        message,
-        signature,
-      });
 
       // 5. 设置 HMAC 认证头
       headers['X-Api-Key'] = this.apiKey;
       headers['X-Nonce'] = nonce;
       headers['X-Timestamp'] = timestamp;
+      headers['X-Content-SHA256'] = bodyHash;
       headers['X-Signature'] = signature;
       headers['X-Hmac-Version'] = '2';
 
@@ -356,7 +342,7 @@ export class ApiClient {
     result?: any;
     errorMessage?: string; // Correct parameter name
     error?: any; // internal input
-    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number; [key: string]: any };
+    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number;[key: string]: any };
     retryable?: boolean;
   }): Promise<any> {
     const requestBody: any = {

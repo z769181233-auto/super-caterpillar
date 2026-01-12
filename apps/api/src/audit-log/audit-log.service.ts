@@ -15,7 +15,7 @@ import { createHmac, randomBytes, createHash } from 'crypto';
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) { }
 
   /**
    * 记录审计日志
@@ -33,7 +33,10 @@ export class AuditLogService {
     userAgent?: string;
     details?: any;
     traceId?: string;
-    // nonce, signature, timestamp are now server-generated
+    // nonce, signature, timestamp can be passed from request (V1.1 columns)
+    nonce?: string;
+    signature?: string;
+    timestamp?: Date;
   }): Promise<void> {
     try {
       // SSOT: Server-generated evidence (Mandatory for Commercial Grade)
@@ -94,9 +97,9 @@ export class AuditLogService {
           ip: options.ip,
           userAgent: options.userAgent,
           details: details as any,
-          nonce,
-          signature,
-          timestamp,
+          nonce: options.nonce || nonce,
+          signature: options.signature || signature,
+          timestamp: options.timestamp || timestamp,
           payload: payload as any,
         },
       });

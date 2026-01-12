@@ -1,0 +1,17 @@
+{
+  "id": "79a8160d-0622-4506-a9fa-6fa83e70ba23",
+  "projectId": "20a8baf4-5cd2-4b25-9b1a-ac2a1496fc85",
+  "createdAt": "2026-01-12T05:27:51.972Z",
+  "checksum": "aad0fac7a1a8ec23a437476565743e5fca5af5a2cd2ef21436e37584a57f029a",
+  "createdByJobId": "7beacc3b-9323-4a99-8810-7f973419e1a8",
+  "ownerId": "d505ec80-cd4c-413c-8840-af8625769996",
+  "ownerType": "SHOT",
+  "status": "PUBLISHED",
+  "storageKey": "secure/20a8baf4-5cd2-4b25-9b1a-ac2a1496fc85/50c42db7-e3ed-4629-ae30-d4b89e8264b5/secure_output.mp4",
+  "type": "VIDEO",
+  "shotId": null,
+  "hlsPlaylistUrl": "https://cdn.scu.com/hls/50c42db7-e3ed-4629-ae30-d4b89e8264b5/master.m3u8",
+  "signedUrl": "https://cdn.scu.com/secure/secure/20a8baf4-5cd2-4b25-9b1a-ac2a1496fc85/50c42db7-e3ed-4629-ae30-d4b89e8264b5/secure_output.mp4?sig=8ac965c0ca772773",
+  "watermarkMode": "SCU_INVISIBLE_V1",
+  "fingerprintId": "aad0fac7a1a8ec23a437476565743e5fca5af5a2cd2ef21436e37584a57f029a"
+}

@@ -1,0 +1,6 @@
+{"ts":"2026-01-12T06:07:45.125Z","type":"verify_start","startTime":"2026-01-12T06:07:45.125Z"}
+{"ts":"2026-01-12T06:07:45.147Z","type":"data_setup_complete","projectId":"915b0078-cad9-4019-9226-f6e5ef4fdd98","apiKey":"ak_test_9336baae-7c81-48a2-ad3a-59e94f24bbf9"}
+{"ts":"2026-01-12T06:07:45.221Z","type":"pipeline_triggered","jobId":"131d1b37-7aca-4e52-ad60-ea398a79f9c3","traceId":"ce_pipeline_a699b80a-d4bc-4e9f-a93c-2f56cdd202d2"}
+{"ts":"2026-01-12T06:07:51.258Z","type":"audit_logs_collected","count":1,"traceId":"ce_pipeline_a699b80a-d4bc-4e9f-a93c-2f56cdd202d2"}
+{"ts":"2026-01-12T06:07:51.273Z","type":"verify_pass","traceId":"ce_pipeline_a699b80a-d4bc-4e9f-a93c-2f56cdd202d2"}
+{"ts":"2026-01-12T06:07:51.273Z","type":"verify_end","status":"PASS","endTime":"2026-01-12T06:07:51.273Z"}

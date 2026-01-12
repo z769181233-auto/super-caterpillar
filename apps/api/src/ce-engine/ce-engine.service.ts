@@ -24,7 +24,7 @@ export class CEEngineService {
     private readonly taskService: TaskService,
     private readonly textSafetyService: TextSafetyService,
     private readonly prisma: PrismaService
-  ) {}
+  ) { }
 
   /**
    * CE06: 解析小说
@@ -63,7 +63,14 @@ export class CEEngineService {
       projectId: dto.projectId,
       type: TaskTypeEnum.CE_CORE_PIPELINE,
       payload: {
-        pipeline: ['CE06_NOVEL_PARSING'],
+        // Strict Sequence: CE06 -> CE03 -> CE04 -> TIMELINE_RENDER -> CE09
+        pipeline: [
+          'CE06_NOVEL_PARSING',
+          'CE03_VISUAL_DENSITY',
+          'CE04_VISUAL_ENRICHMENT',
+          'TIMELINE_RENDER',
+          'CE09_MEDIA_SECURITY',
+        ],
         traceId,
       },
       traceId,

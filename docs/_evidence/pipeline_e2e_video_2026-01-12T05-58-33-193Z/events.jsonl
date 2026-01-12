@@ -1,0 +1,4 @@
+{"ts":"2026-01-12T05:58:33.195Z","type":"verify_start","startTime":"2026-01-12T05:58:33.195Z"}
+{"ts":"2026-01-12T05:58:33.328Z","type":"data_setup_complete","projectId":"e17550f5-e188-4606-80eb-fa37598faeea","apiKey":"ak_test_58d8f2bf-f547-4ca3-9781-59a5f5850821"}
+{"ts":"2026-01-12T05:58:33.353Z","type":"summary","label":"❌ Negative Test Failed Details"}
+{"ts":"2026-01-12T05:58:33.354Z","type":"verify_error","message":"❌ Negative Test Failed: Expected 4003, got undefined"}

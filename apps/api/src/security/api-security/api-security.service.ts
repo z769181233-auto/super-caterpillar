@@ -37,7 +37,7 @@ export class ApiSecurityService {
     private readonly redis: RedisService,
     private readonly auditLogService: AuditLogService,
     private readonly secretEncryptionService: SecretEncryptionService
-  ) {}
+  ) { }
 
   /**
    * 验证 HMAC 签名（v2 规范）
@@ -134,7 +134,7 @@ export class ApiSecurityService {
       }
 
       // 4. 验证时间戳（秒级，允许 ±300 秒）
-      const timestampNum = parseInt(timestamp, 10);
+      let timestampNum = parseInt(timestamp, 10);
       if (isNaN(timestampNum)) {
         await this.writeAuditLog(
           {
@@ -156,6 +156,30 @@ export class ApiSecurityService {
           errorMessage: '时间戳格式错误',
         };
       }
+
+      // APISpec V1.1: Timestamp must be in seconds
+      if (timestampNum > 10000000000) { // If > 10 digits, likely MS
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'INVALID_TIMESTAMP_UNIT_MS',
+            errorCode: '4003',
+          },
+          ip,
+          userAgent
+        );
+        return {
+          success: false,
+          errorCode: '4003',
+          errorMessage: 'Timestamp must be in seconds (Unix Epoch)',
+        };
+      }
+
 
       const nowSec = Math.floor(Date.now() / 1000);
       const timeDiff = Math.abs(nowSec - timestampNum);
@@ -221,7 +245,7 @@ export class ApiSecurityService {
         apiKey,
         timestamp,
         nonce,
-        contentSha256
+        context.body || '' // Spec V1.1: Use raw body
       );
       const expectedSignature = this.computeSignature(secret, canonicalString);
 
@@ -326,18 +350,28 @@ export class ApiSecurityService {
    * - PATH_WITH_QUERY: 包含 query string（从 req.url 获取）
    * - CONTENT_SHA256: JSON 请求为 sha256(rawBodyBytes)，multipart 为 "UNSIGNED"
    */
+  /**
+   * 构建规范字符串 v2 (Strict APISpec V1.1)
+   *
+   * 格式：
+   * {API_KEY}{NONCE}{TIMESTAMP}{BODY}
+   *
+   * 规则：
+   * - 严格遵循 APISpec V1.1 文本定义
+   * - 移除 method/path 依赖，防止网关/代理导致的路径不一致问题
+   * - Body 为原始 JSON string 或 "UNSIGNED" (multipart)
+   */
   buildCanonicalStringV2(
     method: string,
     pathWithQuery: string,
     apiKey: string,
     timestamp: string,
     nonce: string,
-    contentSha256: string
+    body: string
   ): string {
-    // 采用“所见即所得”原则：拦截器传进来的就是原始 URL，直接使用，不进行前置正则清洗
-    // 这样确保客户端（计算签名时用的 URL）与服务端（拦截器拿到的 URL）强一致
-    const normalizedPath = pathWithQuery;
-    return `v2\n${method}\n${normalizedPath}\n${apiKey}\n${timestamp}\n${nonce}\n${contentSha256}\n`;
+    // APISpec V1.1: X-Signature = HMAC_SHA256(api_key + nonce + timestamp + rawBody)
+    const result = `${apiKey}${nonce}${timestamp}${body}`;
+    return result;
   }
 
   /**
@@ -443,7 +477,7 @@ export class ApiSecurityService {
 
         throw new InternalServerErrorException(
           `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-            `Production environment requires encrypted storage.`
+          `Production environment requires encrypted storage.`
         );
       } else {
         // dev/test 环境或主密钥未配置：允许 fallback
@@ -503,6 +537,10 @@ export class ApiSecurityService {
         resourceId: details.apiKey || undefined,
         ip,
         userAgent,
+        // Mandated by DBSpec V1.1 columns
+        nonce: details.nonce,
+        signature: details.signature,
+        timestamp: details.timestamp ? new Date(parseInt(details.timestamp, 10) * 1000) : undefined,
         details: {
           reason: details.reason,
           path: details.path,

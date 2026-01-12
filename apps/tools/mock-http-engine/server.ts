@@ -4,17 +4,58 @@ import * as util from 'util';
 const app = express();
 app.use(express.json());
 
-app.post('/invoke', (req, res) => {
+const handler = (req: any, res: any) => {
   const body = req.body || {};
   const mode = body?.payload?.mode || 'SUCCESS';
+
+  console.log(`[MockHttpEngine] Received ${req.method} ${req.path}`);
 
   if (mode === 'SUCCESS') {
     return res.json({
       success: true,
       data: {
-        seasons: [],
-        episodes: [],
-        debugEcho: body, // 回显请求体，方便调试
+        // Redundant structure to satisfy various mapping versions
+        volumes: [
+          {
+            index: 1,
+            title: 'Volume 1',
+            chapters: [
+              {
+                index: 1,
+                title: 'Chapter 1',
+                summary: 'Chapter summary sentence one. Chapter summary sentence two.',
+                scenes: [
+                  {
+                    index: 1,
+                    title: 'Scene 1',
+                    summary: 'Scene summary sentence one. Scene summary sentence two.',
+                    content: 'Scene content sentence one. Scene content sentence two.',
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        seasons: [
+          {
+            index: 1,
+            title: 'Season 1',
+            episodes: [
+              {
+                index: 1,
+                title: 'Episode 1',
+                scenes: [
+                  {
+                    index: 1,
+                    title: 'Scene 1',
+                    content: 'Season path sentence one. Season path sentence two.',
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        debugEcho: body,
       },
       metrics: {
         durationMs: 123,
@@ -35,18 +76,6 @@ app.post('/invoke', (req, res) => {
     });
   }
 
-  if (mode === 'RETRYABLE') {
-    return res.status(500).json({
-      success: false,
-      error: {
-        message: 'Temporary server error',
-        code: 'MOCK_5XX',
-        details: { mode },
-      },
-    });
-  }
-
-  // 未知模式，当成 FAILED 处理
   return res.json({
     success: false,
     error: {
@@ -55,7 +84,15 @@ app.post('/invoke', (req, res) => {
       details: { mode },
     },
   });
-});
+};
+
+app.post('/invoke', handler);
+app.post('/story/parse', handler);
+app.post('/text/visual-density', handler);
+app.post('/text/enrich', handler);
+app.post('/render/shot', handler);
+// Catch-all
+app.post('*', handler);
 
 const port = 19000;
 app.listen(port, () => {

@@ -461,9 +461,10 @@ model ShotJob {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   traceId        String?
-  result         Json?
-  generatedAsset Asset[]           @relation("JobGeneratedAsset")
-  engineBinding  JobEngineBinding? @relation("JobEngineBinding")
+  result            Json?
+  securityProcessed Boolean           @default(false)
+  generatedAsset    Asset[]           @relation("JobGeneratedAsset")
+  engineBinding     JobEngineBinding? @relation("JobEngineBinding")
   episode        Episode           @relation("EpisodeShotJobs", fields: [episodeId], references: [id], onDelete: Cascade)
   organization   Organization      @relation("OrganizationShotJobs", fields: [organizationId], references: [id])
   project        Project           @relation("ProjectShotJobs", fields: [projectId], references: [id], onDelete: Cascade)
@@ -822,7 +823,7 @@ model VideoJob {
   shotId            String?
   status            String?
   payload           Json?
-  securityProcessed Boolean  @default(false)
+  securityProcessed Boolean  @default(false) @map("security_processed")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -1003,13 +1004,21 @@ model Asset {
   status         AssetStatus    @default(GENERATED)
   storageKey     String
   type           AssetType
-  shot           Shot           @relation("ShotAssets", fields: [ownerId], references: [id], onDelete: Cascade, map: "Asset_Shot_fkey")
+  shotId         String?
+  shot           Shot?          @relation("ShotAssets", fields: [shotId], references: [id], onDelete: Cascade)
   job            ShotJob?       @relation("JobGeneratedAsset", fields: [createdByJobId], references: [id])
   project        Project        @relation("ProjectAssets", fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Security Fields (DBSpec V1.1)
+  hlsPlaylistUrl String?        @map("hls_playlist_url")
+  signedUrl      String?        @map("signed_url")
+  watermarkMode  String?        @map("watermark_mode")
+  fingerprintId  String?        @map("fingerprint_id")
 
   @@unique([ownerType, ownerId, type])
   @@index([projectId])
   @@index([ownerType, ownerId])
+  @@index([shotId])
   @@map("assets")
 }
 
@@ -1180,6 +1189,7 @@ enum JobType {
   PIPELINE_E2E_VIDEO
   PIPELINE_TIMELINE_COMPOSE
   TIMELINE_RENDER
+  TIMELINE_PREVIEW
 }
 
 enum JobEngineBindingStatus {
@@ -1219,6 +1229,7 @@ enum TaskType {
   VIDEO_RENDER
   PIPELINE_TIMELINE_COMPOSE
   TIMELINE_RENDER
+  PIPELINE_E2E_VIDEO
 }
 
 enum TaskStatus {

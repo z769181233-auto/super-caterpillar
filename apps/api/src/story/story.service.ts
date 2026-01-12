@@ -24,7 +24,7 @@ export class StoryService {
     private readonly jobService: JobService,
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   /**
    * 解析小说（CE06）
@@ -79,11 +79,17 @@ export class StoryService {
       data: {
         projectId,
         organizationId,
-        type: TaskTypeEnum.CE_CORE_PIPELINE,
+        type: TaskTypeEnum.PIPELINE_E2E_VIDEO,
         status: 'PENDING',
         traceId, // Task 的 traceId 字段
         payload: {
-          pipeline: ['CE06_NOVEL_PARSING', 'CE03_VISUAL_DENSITY', 'CE04_VISUAL_ENRICHMENT'],
+          pipeline: [
+            'CE06_NOVEL_PARSING',
+            'CE03_VISUAL_DENSITY',
+            'CE04_VISUAL_ENRICHMENT',
+            'VIDEO_EXPORT',
+            'CE09_MEDIA_SECURITY',
+          ],
           input: {
             rawText: dto.rawText,
             novelTitle: dto.novelTitle,
@@ -102,7 +108,7 @@ export class StoryService {
       payload: {
         projectId,
         engineKey: 'ce06_novel_parsing',
-        rawText: dto.rawText,
+        sourceText: dto.rawText,
         novelTitle: dto.novelTitle,
         novelAuthor: dto.novelAuthor,
         traceId,

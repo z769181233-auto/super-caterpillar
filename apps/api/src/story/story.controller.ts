@@ -21,7 +21,7 @@ import { Request } from 'express';
 @Controller('story')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class StoryController {
-  constructor(private readonly storyService: StoryService) {}
+  constructor(private readonly storyService: StoryService) { }
 
   /**
    * POST /story/parse
@@ -36,13 +36,14 @@ export class StoryController {
   async parseStory(
     @Body() dto: ParseStoryDto,
     @CurrentUser() user: any,
-    @CurrentOrganization() org: any,
+    @CurrentOrganization() orgId: string,
     @Req() req: Request
   ) {
+    console.log(`[STORY_CTRL] orgId=${orgId}, userId=${user?.id}`);
     return this.storyService.parseStory(
       dto,
       user?.id,
-      org?.id,
+      orgId,
       req.ip || (req.headers['x-forwarded-for'] as string) || undefined,
       req.headers['user-agent'] || undefined
     );

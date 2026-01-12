@@ -40,7 +40,7 @@ export class HmacAuthGuard implements CanActivate {
     private readonly auditLogService: AuditLogService,
     @Inject(forwardRef(() => NonceService))
     private readonly nonceService: NonceService
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -169,6 +169,7 @@ export class HmacAuthGuard implements CanActivate {
         }
       );
 
+      this.logger.log(`[HMAC_AUTH] ApiKey ownerOrgId: ${keyRecord.ownerOrgId}, ownerUserId: ${keyRecord.ownerUserId}`);
       // 7. 将 ApiKey 信息附加到请求对象，供后续使用
       (request as any).apiKey = keyRecord;
       (request as any).apiKeyId = keyRecord.id;
@@ -189,6 +190,7 @@ export class HmacAuthGuard implements CanActivate {
           tier: keyRecord.ownerUser.tier || 'FREE', // Fallback
           organizationId: keyRecord.ownerOrgId, // Implicit context
         };
+        this.logger.log(`[HMAC_AUTH] Resolved user: ${keyRecord.ownerUser.id}, org: ${keyRecord.ownerOrgId}`);
       } else {
         // Explicitly mark as having no user bound
         (request as any).user = null;

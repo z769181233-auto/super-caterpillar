@@ -1,0 +1,33 @@
+[
+  {
+    "id": "0a12f5ca-9350-4cc0-8fa0-1b484353098a",
+    "organizationId": "d2c0bdbf-21ed-4417-89a1-93462ff39226",
+    "projectId": "1caa4d16-4468-42d8-a25c-e9d37dc67ab0",
+    "episodeId": "15067e57-a7e3-4c47-b60e-ac1a77b3b14a",
+    "sceneId": "d0cdc620-e901-44aa-acd4-50e97cedd5b9",
+    "shotId": "a195be3b-b18d-4b58-80f0-36138978ccd3",
+    "taskId": "237704d8-1b31-43f7-ba53-7d67bb5f091c",
+    "workerId": null,
+    "status": "FAILED",
+    "type": "CE06_NOVEL_PARSING",
+    "priority": 0,
+    "maxRetry": 3,
+    "retryCount": 3,
+    "attempts": 3,
+    "leaseUntil": null,
+    "lockedBy": null,
+    "payload": {
+      "traceId": "ce_pipeline_6cb3513b-fb63-4b6a-8384-7bfc3f0a2055",
+      "engineKey": "ce06_novel_parsing",
+      "projectId": "1caa4d16-4468-42d8-a25c-e9d37dc67ab0",
+      "sourceText": "Commercial Grade Test Story content."
+    },
+    "engineConfig": {},
+    "lastError": "Cannot read properties of undefined (reading 'metrics')",
+    "createdAt": "2026-01-12T04:37:01.518Z",
+    "updatedAt": "2026-01-12T04:37:40.225Z",
+    "traceId": "ce_pipeline_6cb3513b-fb63-4b6a-8384-7bfc3f0a2055",
+    "result": null,
+    "securityProcessed": false
+  }
+]

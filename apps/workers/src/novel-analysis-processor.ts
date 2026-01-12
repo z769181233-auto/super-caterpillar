@@ -934,8 +934,8 @@ export async function applyAnalyzedStructureToDatabase(
   const result =
     prisma instanceof PrismaClient
       ? await (prisma as any).$transaction(executeInTransaction, {
-          timeout: 5 * 60 * 1000, // 5 minutes
-        })
+        timeout: 5 * 60 * 1000, // 5 minutes
+      })
       : await executeInTransaction(prisma);
 
   return result;
@@ -1202,7 +1202,7 @@ export async function processNovelAnalysisJob(
       // 计费失败不阻塞主流程
       process.stderr.write(
         util.format(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message) +
-          '\n'
+        '\n'
       );
     }
 

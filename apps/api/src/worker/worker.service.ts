@@ -25,9 +25,9 @@ export class WorkerService {
     private readonly prisma: PrismaService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
-    @Inject(forwardRef(() => JobService))
+    @Inject(JobService)
     private readonly jobService: JobService
-  ) {}
+  ) { }
 
   /**
    * 注册或更新 Worker

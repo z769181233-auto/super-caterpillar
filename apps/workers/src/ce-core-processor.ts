@@ -74,21 +74,30 @@ export async function processCE06Job(
 
   try {
     // 1. 获取输入数据
-    const novelSource = await prisma.novelSource.findFirst({
-      where: { projectId: job.projectId },
-      orderBy: { createdAt: 'desc' },
-    });
+    let rawText = (job as any).payload?.sourceText || (job as any).payload?.text;
+    let novelSourceId: string | undefined = (job as any).payload?.novelSourceId;
 
-    if (!novelSource?.rawText) {
+    if (!rawText) {
+      const novelSource = await prisma.novelSource.findFirst({
+        where: { projectId: job.projectId },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (novelSource) {
+        rawText = novelSource.rawText;
+        novelSourceId = novelSource.id;
+      }
+    }
+
+    if (!rawText) {
       throw new Error('Novel source not found or rawText is empty');
     }
 
     // 2. 调用 CE06 Engine
     const input: CE06NovelParsingInput = {
-      structured_text: novelSource.rawText,
+      structured_text: rawText,
       context: {
         projectId: job.projectId,
-        novelSourceId: novelSource.id,
+        novelSourceId,
       },
     };
 
@@ -775,7 +784,7 @@ export async function processCE04Job(
         latencyMs: duration,
         auditTrail: result.audit_trail,
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return result;
   } catch (error: any) {
@@ -942,7 +951,7 @@ export async function processShotRenderJob(
         resourceId: asset.id,
         resourceType: 'asset',
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return {
       assetId: asset.id,
@@ -1111,9 +1120,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-          summary: previousMemory.summary || '',
-          character_states: (previousMemory.characterStates as any) || {},
-        }
+        summary: previousMemory.summary || '',
+        character_states: (previousMemory.characterStates as any) || {},
+      }
       : undefined,
     context: {
       projectId,

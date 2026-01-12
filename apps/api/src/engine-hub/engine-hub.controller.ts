@@ -8,7 +8,7 @@ import { EngineInvokerHubService } from './engine-invoker-hub.service';
 export class EngineHubController {
   private readonly logger = new Logger(EngineHubController.name);
 
-  constructor(private readonly engineInvoker: EngineInvokerHubService) {}
+  constructor(private readonly engineInvoker: EngineInvokerHubService) { }
 
   @Post('invoke')
   async invoke(@Body() req: EngineInvocationRequest<unknown>) {
@@ -16,7 +16,7 @@ export class EngineHubController {
     if (process.env.GATE_MODE !== '1') {
       throw new ForbiddenException('Internal engine invocation is only allowed in GATE_MODE');
     }
-    this.logger.log(`Internal engine invocation request: ${req.engineKey}`);
-    return await this.engineInvoker.invoke(req);
+    const result = await this.engineInvoker.invoke(req);
+    return { success: true, data: result };
   }
 }

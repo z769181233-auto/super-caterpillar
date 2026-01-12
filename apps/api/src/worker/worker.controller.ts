@@ -24,11 +24,13 @@ import { OrchestratorService } from '../orchestrator/orchestrator.service';
 @UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
 export class WorkerController {
   constructor(
+    @Inject(forwardRef(() => WorkerService))
     private readonly workerService: WorkerService,
     @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestratorService: OrchestratorService,
+    @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   /**
    * Worker 注册

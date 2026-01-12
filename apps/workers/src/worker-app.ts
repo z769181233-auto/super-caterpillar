@@ -53,6 +53,10 @@ import {
 } from './novel-analysis-processor';
 import { processVideoRenderJob as processVideoRenderJobImpl } from './video-render.processor';
 import { processE2EVideoPipelineJob } from './processors/e2e-video-pipeline.processor';
+import { processTimelineComposeJob } from './processors/timeline-compose.processor';
+import { processTimelineRenderJob } from './processors/timeline-render.processor';
+import { processTimelinePreviewJob } from './processors/timeline-preview.processor';
+import { processMediaSecurityJob } from './processors/media-security.processor';
 
 const prisma = new PrismaClient({
   datasources: {
@@ -148,7 +152,7 @@ async function registerWorker(): Promise<void> {
   if (!env.workerApiKey || !env.workerApiSecret) {
     process.stdout.write(
       util.format('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!') +
-        '\n'
+      '\n'
     );
     process.stdout.write(
       util.format('[Worker] ⚠️  Worker will not be able to authenticate with API server.') + '\n'
@@ -167,7 +171,7 @@ async function registerWorker(): Promise<void> {
     );
     process.stdout.write(
       util.format(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`) +
-        '\n'
+      '\n'
     );
 
     // Test DB Connection
@@ -190,37 +194,53 @@ async function registerWorker(): Promise<void> {
 
     // 稳定兜底:至少要把本次P1-2验证用到的引擎带上
     const supportedEnginesFinal =
-      supportedEngines.length > 0 ? supportedEngines : ['default_novel_analysis'];
+      supportedEngines.length > 0 ? supportedEngines : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline'];
 
     process.stdout.write(
       util.format(`[Worker] supportedEngines=${JSON.stringify(supportedEnginesFinal)}`) + '\n'
     );
 
-    // 通过 API 注册 Worker
-    await apiClient.registerWorker({
-      workerId: workerId,
-      name: workerId, // 兜底使用 workerId，确保不为空
-      capabilities: {
-        supportedJobTypes: [
-          JobType.NOVEL_ANALYSIS,
-          JobType.VIDEO_RENDER,
-          JobType.CE01_REFERENCE_SHEET,
-          JobType.CE02_IDENTITY_LOCK,
-          JobType.CE03_VISUAL_DENSITY,
-          JobType.CE04_VISUAL_ENRICHMENT,
-          JobType.CE05_DIRECTOR_CONTROL,
-          JobType.CE06_NOVEL_PARSING,
-          JobType.CE07_MEMORY_UPDATE,
-          JobType.SHOT_RENDER,
-          'VIDEO_RENDER', // Keep as fallback/duplicate check? No, remove duplicate.
-          // Note: VIDEO_RENDER appeared twice in original.
-          JobType.PIPELINE_E2E_VIDEO,
-        ],
-        supportedModels: [],
-        supportedEngines: supportedEnginesFinal,
-        maxBatchSize: 1,
-      },
-    });
+    const supportedJobTypes = [
+      JobType.NOVEL_ANALYSIS,
+      JobType.VIDEO_RENDER,
+      JobType.CE01_REFERENCE_SHEET,
+      JobType.CE02_IDENTITY_LOCK,
+      JobType.CE03_VISUAL_DENSITY,
+      JobType.CE04_VISUAL_ENRICHMENT,
+      JobType.CE05_DIRECTOR_CONTROL,
+      JobType.CE06_NOVEL_PARSING,
+      JobType.CE07_MEMORY_UPDATE,
+      JobType.CE09_MEDIA_SECURITY,
+      JobType.SHOT_RENDER,
+      JobType.PIPELINE_E2E_VIDEO,
+      'PIPELINE_TIMELINE_COMPOSE',
+      'TIMELINE_RENDER',
+      'TIMELINE_PREVIEW'
+    ];
+
+    // Registration Retry Loop
+    let registered = false;
+    while (!registered) {
+      try {
+        console.log(`[Worker] Attempting to register worker...`);
+        // 通过 API 注册 Worker
+        await apiClient.registerWorker({
+          workerId: workerId,
+          name: workerId, // 兜底使用 workerId，确保不为空
+          capabilities: {
+            supportedJobTypes,
+            supportedModels: [],
+            supportedEngines: supportedEnginesFinal,
+            maxBatchSize: 1,
+          },
+        });
+        registered = true;
+        console.log('[Worker] Worker registered successfully.');
+      } catch (error: any) {
+        console.error(`[Worker] Registration failed: ${error.message}. Retrying in 5 seconds...`);
+        await new Promise(r => setTimeout(r, 5000));
+      }
+    }
 
     process.stdout.write(util.format('[Worker] ✅ Worker 注册成功') + '\n');
   } catch (error: any) {
@@ -236,6 +256,35 @@ async function sendHeartbeat(): Promise<void> {
   try {
     // WorkerStatus 枚举值：online, idle, busy, offline
     const status = tasksRunning > 0 ? 'busy' : 'idle';
+    // P1-3: Heartbeat must include supportedEngines and supportedJobTypes otherwise API might clear it
+    const supportedEngines =
+      (process.env.WORKER_SUPPORTED_ENGINES || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean).length > 0
+        ? (process.env.WORKER_SUPPORTED_ENGINES || '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+        : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline'];
+
+    const supportedJobTypes = [
+      JobType.NOVEL_ANALYSIS,
+      JobType.VIDEO_RENDER,
+      JobType.CE01_REFERENCE_SHEET,
+      JobType.CE02_IDENTITY_LOCK,
+      JobType.CE03_VISUAL_DENSITY,
+      JobType.CE04_VISUAL_ENRICHMENT,
+      JobType.CE05_DIRECTOR_CONTROL,
+      JobType.CE06_NOVEL_PARSING,
+      JobType.CE07_MEMORY_UPDATE,
+      JobType.SHOT_RENDER,
+      JobType.PIPELINE_E2E_VIDEO,
+      'PIPELINE_TIMELINE_COMPOSE',
+      'TIMELINE_RENDER',
+      'TIMELINE_PREVIEW'
+    ];
+
     await apiClient.heartbeat({
       workerId: workerId,
       status,
@@ -245,17 +294,8 @@ async function sendHeartbeat(): Promise<void> {
       capabilities: {
         concurrency_managed: true,
         lease_supported: true,
-        // P1-3: Heartbeat must include supportedEngines otherwise API might clear it
-        supportedEngines:
-          (process.env.WORKER_SUPPORTED_ENGINES || '')
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean).length > 0
-            ? (process.env.WORKER_SUPPORTED_ENGINES || '')
-                .split(',')
-                .map((s) => s.trim())
-                .filter(Boolean)
-            : ['default_novel_analysis'],
+        supportedEngines,
+        supportedJobTypes,
       },
     });
     if (tasksRunning === 0) {
@@ -411,6 +451,14 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
           job: job as any,
           apiClient,
         });
+      } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE') {
+        return processTimelineComposeJob({ prisma, job: job as any, apiClient });
+      } else if (job.type === 'TIMELINE_RENDER') {
+        return processTimelineRenderJob({ prisma, job: job as any, apiClient });
+      } else if (job.type === 'TIMELINE_PREVIEW') {
+        return processTimelinePreviewJob({ prisma, job: job as any, apiClient });
+      } else if (job.type === 'CE09_MEDIA_SECURITY') {
+        return processMediaSecurityJob({ prisma, job: job as any, apiClient });
       } else if (job.type.startsWith('CE')) {
         return processGenericCEJob(prisma, job as any, engineHubClient, apiClient);
       } else if (
@@ -597,7 +645,7 @@ export async function startWorkerApp() {
     process.stdout.write(util.format(`[Worker] Job 轮询间隔: ${env.workerPollInterval}ms`) + '\n');
     process.stdout.write(
       util.format(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`) +
-        '\n'
+      '\n'
     );
 
     // 优雅退出处理

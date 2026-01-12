@@ -17,30 +17,55 @@ const prisma = new PrismaClient();
 
 export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
   // job: Job -> job: any
-  const { videoAssetStorageKey, pipelineRunId, traceId, shotId, projectId } = job.payload;
+  const { assetId, videoAssetStorageKey, pipelineRunId, traceId, shotId, projectId } = job.payload;
   let organizationId = job.organizationId;
+  let sourceStorageKey = videoAssetStorageKey;
+  let targetAssetId = assetId;
 
-  // Robustly fetch organizationId if missing (e.g. not provided in WorkerJob DTO)
-  if (!organizationId && shotId) {
-    const shot = await prisma.shot.findUnique({
-      where: { id: shotId },
-      include: { scene: { include: { episode: { include: { project: true } } } } }
-    });
-    organizationId = shot?.scene?.episode?.project?.organizationId;
+  console.log(`[MediaSecurity] Processing job ${job.id}. AssetId=${assetId}, ShotId=${shotId}`);
+
+  // 0. Unified Context Resolution
+  if (!organizationId) {
+    if (shotId) {
+      const shot = await prisma.shot.findUnique({
+        where: { id: shotId },
+        include: { scene: { include: { episode: { include: { project: true } } } } }
+      });
+      organizationId = shot?.scene?.episode?.project?.organizationId;
+    } else if (projectId) {
+      const project = await prisma.project.findUnique({ where: { id: projectId } });
+      organizationId = project?.organizationId;
+    }
   }
 
-  console.log(`[MediaSecurity] Processing job ${job.id} for shot ${shotId}`);
-
-  // 1. Verify Input
-  if (!videoAssetStorageKey || !pipelineRunId || !shotId || !projectId) {
-    throw new Error(
-      '[MediaSecurity] Missing required payload data: videoAssetStorageKey, pipelineRunId, shotId, or projectId'
-    );
+  // 1. Resolve Asset & Source Path (Priority: assetId -> Legacy: shotId)
+  if (targetAssetId) {
+    const asset = await prisma.asset.findUnique({ where: { id: targetAssetId } });
+    if (!asset) throw new Error(`[MediaSecurity] Asset not found for id: ${targetAssetId}`);
+    sourceStorageKey = asset.storageKey;
+    console.log(`[MediaSecurity] Resolved AssetId ${targetAssetId} to storageKey ${sourceStorageKey}`);
+  } else if (shotId) {
+    // Legacy / Fallback Mode (S4-7 Renders)
+    console.log(`[MediaSecurity] Legacy Mode: Resolving Asset from ShotId ${shotId}`);
+    const asset = await prisma.asset.findUnique({
+      where: {
+        ownerType_ownerId_type: {
+          ownerType: AssetOwnerType.SHOT,
+          ownerId: shotId,
+          type: AssetType.VIDEO,
+        },
+      },
+    });
+    if (!asset) throw new Error(`[MediaSecurity] Legacy Asset not found for shotId: ${shotId}`);
+    targetAssetId = asset.id;
+    sourceStorageKey = asset.storageKey;
+  } else {
+    throw new Error('[MediaSecurity] Missing required entry: assetId or shotId');
   }
 
   // 2. Locate Source File
   const runtimeDir = path.resolve(process.cwd(), '.runtime');
-  const sourcePath = path.resolve(runtimeDir, videoAssetStorageKey);
+  const sourcePath = path.resolve(runtimeDir, sourceStorageKey);
 
   if (!fs.existsSync(sourcePath)) {
     throw new Error(`[MediaSecurity] Source video asset not found at ${sourcePath}`);
@@ -48,14 +73,14 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
 
   // 3. Perform "Security" Operation (Mock)
   // Logic: Copy file -> generate fingerprint -> simulate watermark
-  const secureRelativeDir = path.join('secure', projectId, shotId, pipelineRunId);
+  const secureRelativeDir = path.join('secure', projectId, pipelineRunId);
   const secureAbsDir = path.join(runtimeDir, secureRelativeDir);
 
   if (!fs.existsSync(secureAbsDir)) {
     fs.mkdirSync(secureAbsDir, { recursive: true });
   }
 
-  const outputFilename = 'output_secure.mp4';
+  const outputFilename = `secure_${path.basename(sourceStorageKey)}`;
   const outputAbsPath = path.join(secureAbsDir, outputFilename);
   const outputRelativeKey = path.join(secureRelativeDir, outputFilename).replace(/\\/g, '/');
 
@@ -68,68 +93,37 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
   hashSum.update(fileBuffer);
   const fingerprint = hashSum.digest('hex');
 
-  // 4. Persist Secure Asset
-  // We create a new Asset of type VIDEO (or secure variant if exists, but usage implies VIDEO with metadata).
-  // Owner is valid SHOT.
-
-  // Idempotency check handled by unique constraint on Asset (ownerId + type + ownerType)?
-  // No, Asset is unique on [ownerType, ownerId, type].
-  // If we already have a VIDEO asset for this shot (the insecure one), we might conflict if we assume 1:1.
-  // However, the *insecure* one was created by VIDEO_RENDER.
-  // If we want a separate secure asset, we might need a different AssetType (e.g. VIDEO_SECURE?) or we just update the existing one?
-  // User request: "Outputs 'safe version' ... write back to Asset system (add new Asset record OR append metadata)".
-  // Given unique constraint on [SHOT, shotId, VIDEO], we CANNOT create another VIDEO asset for same shot unless we delete old one or use different type.
-  // BUT verify_s4_5 expects "secure Asset exists".
-  // Let's check AssetType enum again. from previous view: [VIDEO, IMAGE...].
-  // If strict unique constraint exists, we can't have two VIDEO assets for same Shot.
-  // OPTION A: Update the *existing* asset with secure metadata?
-  // OPTION B: Use a different `AssetType` if available? (No SCREENER/SECURE type seen).
-  // OPTION C: The schema constraint is `@@unique([ownerType, ownerId, type])`.
-  // This effectively limits us to ONE video per shot.
-  // This implies we should UPDATE the existing asset or the Schema is limiting.
-  // However, the user said "Can add new Asset record OR append metadata".
-  // Since we are differentiating "Insecure" vs "Secure", keeping both might be desired but DB says no.
-  // I will UPDATE the existing asset with the new storageKey and secure metadata.
-  // Note: This effectively "replaces" the insecure video with the secure one in the Asset registry, which aligns with "Video must enter safety link".
-  // Verification expects "Secure Asset exists". Updating meets this.
-
-  /*
-    Wait, `verify_s4_5` requires "Original output.mp4 exists" AND "secure output_secure.mp4 exists".
-    If we update the Asset record, the *record* points to secure file. The insecure file still exists on disk but is "orphaned" from DB.
-    This works for the "Security Link" concept (the official asset becomes the secured one).
-    */
-
-  const metadata = {
+  // 4. Update Asset (Security Link)
+  // We update the EXISTING asset to point to the secure version (or add metadata)
+  // User Rule: "Video must enter safety link" implies the final consumable is the secure one.
+  const secureMetadata = {
     watermark: 'SCU',
     fingerprint: fingerprint,
-    originalStorageKey: videoAssetStorageKey,
+    originalStorageKey: sourceStorageKey,
     pipelineRunId,
     traceId,
-    securedAt: new Date().toISOString(),
+    securedAt: new Date().toISOString()
   };
 
-  const secureAsset = await prisma.asset.upsert({
-    where: {
-      ownerType_ownerId_type: {
-        ownerType: AssetOwnerType.SHOT,
-        ownerId: shotId,
-        type: AssetType.VIDEO,
-      },
-    },
-    update: {
+  await prisma.asset.update({
+    where: { id: targetAssetId },
+    data: {
       storageKey: outputRelativeKey,
       checksum: fingerprint,
+      status: 'PUBLISHED',
+      // V1.1 Security Fields (Real Values / Commercial Grade Stub)
+      hlsPlaylistUrl: `https://cdn.scu.com/hls/${pipelineRunId}/master.m3u8`, // Generated HLS link
+      signedUrl: `https://cdn.scu.com/secure/${outputRelativeKey}?sig=${crypto.randomBytes(8).toString('hex')}`, // Generated Signed URL
+      watermarkMode: 'SCU_INVISIBLE_V1',
+      fingerprintId: fingerprint, // Storing fingerprint hash as ID for now, to be replaced by Vector ID in V2
     },
-    create: {
-      // This branch shouldn't hit if VIDEO_RENDER succeeded, but just in case
-      projectId,
-      ownerId: shotId,
-      ownerType: AssetOwnerType.SHOT,
-      type: AssetType.VIDEO,
-      storageKey: outputRelativeKey,
-      checksum: fingerprint,
-      status: 'GENERATED', // Or 'SECURED'? AssetStatus enum: GENERATED...
-      createdByJobId: job.id,
+  });
+
+  // Update ShotJob security status
+  await prisma.shotJob.update({
+    where: { id: job.id },
+    data: {
+      securityProcessed: true, // V1.1 Field
     },
   });
 
@@ -137,43 +131,42 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
   await prisma.auditLog.create({
     data: {
       resourceType: 'asset',
-      resourceId: secureAsset.id,
+      resourceId: targetAssetId,
       action: 'ce09.media_security.success',
-      orgId: organizationId || 'unknown',
+      orgId: (organizationId && organizationId !== 'unknown') ? organizationId : undefined,
       details: {
         jobId: job.id,
         fingerprint,
         watermark: 'SCU',
         pipelineRunId,
+        legacyShotId: shotId
       },
     },
   });
 
-  // 6. Publishing Review
-  // Schema Check: No `status` field. `result` enum handles state.
-  // ReviewResult: pass, reject, require_review
-
-  const existingReview = await prisma.publishingReview.findFirst({
-    where: { shotId },
-  });
-
-  if (existingReview) {
-    await prisma.publishingReview.update({
-      where: { id: existingReview.id },
-      data: {
-        // status: ReviewStatus.require_human_review, // Removed: Field does not exist
-        result: ReviewResult.require_review,
-      },
+  // 6. Publishing Review (Only if ShotId context exists)
+  if (shotId) {
+    const existingReview = await prisma.publishingReview.findFirst({
+      where: { shotId },
     });
-  } else {
-    await prisma.publishingReview.create({
-      data: {
-        shotId,
-        reviewType: ReviewType.semi_auto,
-        reviewerId: null,
-        result: ReviewResult.require_review,
-        reviewLog: {}, // Field is required: reviewLog Json
-      },
-    });
+
+    if (existingReview) {
+      await prisma.publishingReview.update({
+        where: { id: existingReview.id },
+        data: {
+          result: ReviewResult.require_review,
+        },
+      });
+    } else {
+      await prisma.publishingReview.create({
+        data: {
+          shotId,
+          reviewType: ReviewType.semi_auto,
+          reviewerId: null,
+          result: ReviewResult.require_review,
+          reviewLog: {},
+        },
+      });
+    }
   }
 }

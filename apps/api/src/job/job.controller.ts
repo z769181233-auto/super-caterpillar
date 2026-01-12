@@ -14,6 +14,7 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { JobService } from './job.service';
 import { JobReportFacade } from './job-report.facade';
@@ -43,12 +44,17 @@ export class JobController {
   private readonly logger = new Logger(JobController.name);
 
   constructor(
+    @Inject(JobService)
     private readonly jobService: JobService,
+    @Inject(JobReportFacade)
     private readonly jobReportFacade: JobReportFacade,
+    @Inject(PermissionService)
     private readonly permissionService: PermissionService,
+    @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
+    @Inject(CapacityGateService)
     private readonly capacityGateService: CapacityGateService
-  ) {}
+  ) { }
 
   @Get('debug-key/:key')
   @Public()

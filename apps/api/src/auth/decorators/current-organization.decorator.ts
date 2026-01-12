@@ -8,6 +8,6 @@ export const CurrentOrganization = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): string | null => {
     const request = ctx.switchToHttp().getRequest();
     // 从 JWT payload 中获取（在 JwtStrategy 中设置）
-    return request.user?.organizationId || null;
+    return request.user?.organizationId || request.apiKeyOwnerOrgId || null;
   }
 );

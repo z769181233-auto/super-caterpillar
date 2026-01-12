@@ -24,14 +24,19 @@ export class OrchestratorService {
   private readonly logger = new Logger(OrchestratorService.name);
 
   constructor(
+    @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => WorkerService))
     private readonly workerService: WorkerService,
+    @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
+    @Inject(TaskService)
     private readonly taskService: TaskService,
+    @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
+    @Inject(EngineRegistry)
     private readonly engineRegistry: EngineRegistry
-  ) {}
+  ) { }
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker

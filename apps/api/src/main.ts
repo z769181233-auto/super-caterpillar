@@ -16,7 +16,7 @@ async function bootstrap() {
     ) + '\n'
   );
 
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   app.useLogger(app.get(Logger));
 
   // Global exception filter (Registered in AppModule via APP_FILTER)
@@ -116,7 +116,7 @@ async function bootstrap() {
           hasStorageController = true;
           process.stdout.write(
             util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
-              '\n'
+            '\n'
           );
         }
       }
