@@ -559,9 +559,9 @@ export async function applyAnalyzedStructureToDatabase(
           where: { id: nVolume.id },
           data: { title: season.title },
         });
-      } else {
+      } else if (nSource) {
         await tx.novelVolume.create({
-          data: { projectId, index: season.index, title: season.title },
+          data: { projectId, index: season.index, title: season.title, novelSourceId: nSource.id },
         });
       }
 
@@ -654,6 +654,7 @@ export async function applyAnalyzedStructureToDatabase(
             // S3-B Fine-Tune: 创建新 Scene
             createdScene = await tx.scene.create({
               data: {
+                projectId,
                 episodeId: createdEpisode.id,
                 index: scene.index,
                 title: scene.title,

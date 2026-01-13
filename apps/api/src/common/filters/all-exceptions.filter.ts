@@ -17,7 +17,7 @@ import { maskSensitiveData, maskSensitiveString } from '../utils/sensitive-data-
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  constructor(@Inject(AuditLogService) private readonly auditLogService: AuditLogService) {}
+  constructor(@Inject(AuditLogService) private readonly auditLogService: AuditLogService) { }
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -28,7 +28,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const status = isHttp ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const payload = isHttp ? exception.getResponse() : { message: 'Internal server error' };
-
+    this.logger.error(`[FILTER_DEBUG] Status: ${status}, Payload: ${JSON.stringify(payload)}`);
     const err = exception as any;
     const errorBody = typeof payload === 'object' ? payload : { message: payload };
     const errorCode = (errorBody as any)?.error?.code;

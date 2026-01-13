@@ -2,6 +2,7 @@ import { PrismaClient } from 'database';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ApiClient } from '../api-client';
+import { EngineHubClient } from '../engine-hub-client';
 
 export interface TimelineShot {
   shotId: string;
@@ -58,13 +59,14 @@ export interface TimelineComposeParams {
     traceId?: string;
   };
   apiClient: ApiClient;
+  engineHubClient?: EngineHubClient;
 }
 
 /**
  * CE10: Timeline Composition Processor
  * 职责：DB 溯源查询 Scene -> Shots，编排确定的 timeline.json，确立全链路渲染参数。
  */
-export async function processTimelineComposeJob({ prisma, job, apiClient }: TimelineComposeParams) {
+export async function processTimelineComposeJob({ prisma, job, apiClient, engineHubClient }: TimelineComposeParams) {
   const { sceneId, pipelineRunId } = job.payload;
   const traceId = job.traceId || `trace-${Date.now()}`;
 
@@ -99,10 +101,71 @@ export async function processTimelineComposeJob({ prisma, job, apiClient }: Time
 
   console.log(`[TimelineCompose] [${traceId}] Found ${scene.shots.length} shots for scene ${sceneId}: ${scene.shots.map(s => s.id).join(', ')}`);
 
-  if (scene.shots.length < 2) {
+  if (scene.shots.length < 1) {
     throw new Error(
-      `[TimelineCompose] Fail-fast: Scene must have at least 2 shots for timeline compose. Found: ${scene.shots.length}`
+      `[TimelineCompose] Fail-fast: Scene must have at least 1 shot for timeline compose. Found: ${scene.shots.length}`
     );
+  }
+
+  // 1.5 Real Content: TTS Generation (Inject Audio)
+  const pendingAudioUpdates: { shotId: string; storageKey: string }[] = [];
+
+  // Use a local map to track latest params including newly generated ones
+  const shotParamsMap = new Map<string, any>();
+
+  for (const shot of scene.shots) {
+    let params = (shot.params as any) || {};
+
+    // Check if we have dialogue but no audio
+    const dialogue = params.dialogue || params.text || params.voiceText;
+
+    if (dialogue && !params.voiceAssetStorageKey && engineHubClient) {
+      console.log(`[TimelineCompose] [${traceId}] Generating TTS for shot ${shot.id} (${dialogue.substring(0, 10)}...)`);
+
+      try {
+        const ttsRes = await engineHubClient.invoke<any, any>({
+          engineKey: 'tts_standard',
+          payload: {
+            text: dialogue,
+            voiceId: 'default', // TODO: Make configurable
+            speed: 1.0
+          },
+          metadata: {
+            jobId: job.id,
+            traceId,
+            projectId,
+            sceneId
+          }
+        });
+
+        if (ttsRes.success && ttsRes.output?.assetPath) {
+          const newKey = ttsRes.output.assetPath;
+          console.log(`[TimelineCompose] [${traceId}] TTS Generated: ${newKey}`);
+
+          params = { ...params, voiceAssetStorageKey: newKey };
+          pendingAudioUpdates.push({ shotId: shot.id, storageKey: newKey });
+        } else {
+          console.warn(`[TimelineCompose] [${traceId}] TTS Generation failed or empty output`);
+        }
+      } catch (err: any) {
+        console.error(`[TimelineCompose] [${traceId}] TTS Engine Error: ${err.message}`);
+      }
+    }
+
+    shotParamsMap.set(shot.id, params);
+  }
+
+  // Persist updates to DB (Best Effort)
+  if (pendingAudioUpdates.length > 0) {
+    console.log(`[TimelineCompose] [${traceId}] Persisting ${pendingAudioUpdates.length} audio keys to DB...`);
+    await Promise.allSettled(pendingAudioUpdates.map(u =>
+      prisma.shot.update({
+        where: { id: u.shotId },
+        data: {
+          params: shotParamsMap.get(u.shotId)
+        }
+      })
+    ));
   }
 
   // 2. 编排确定性 Timeline 数据 (Hard Constraints)
@@ -113,7 +176,7 @@ export async function processTimelineComposeJob({ prisma, job, apiClient }: Time
 
   let currentFrame = 0;
   const timelineShots: TimelineShot[] = scene.shots.map((shot: any, idx: number) => {
-    const params = (shot.params as any) || {};
+    const params = shotParamsMap.get(shot.id) || (shot.params as any) || {};
     const durationFrames = (shot.durationSeconds || 1) * fps;
 
     // S4-8: 增强转场检测
@@ -165,13 +228,23 @@ export async function processTimelineComposeJob({ prisma, job, apiClient }: Time
           gain: (job.payload as any).bgmGain || 0.5,
           loop: (job.payload as any).bgmMode === 'loop',
           ducking: { target: 'dialogue', gain: 0.2 },
+          truncate: 'shortest' as const,
         }] : []),
-        ...scene.shots.filter(s => (s.params as any)?.voiceAssetStorageKey).map(s => ({
-          id: `voice-${s.id}`,
-          type: 'dialogue' as const,
-          storageKey: (s.params as any).voiceAssetStorageKey,
-          gain: 1.0,
-        })),
+        ...scene.shots
+          .map(s => {
+            const params = shotParamsMap.get(s.id) || (s.params as any) || {};
+            if (params.voiceAssetStorageKey) {
+              const track: AudioTrack = {
+                id: `voice-${s.id}`,
+                type: 'dialogue',
+                storageKey: params.voiceAssetStorageKey,
+                gain: 1.0,
+              };
+              return track;
+            }
+            return null;
+          })
+          .filter((t): t is AudioTrack => t !== null),
       ],
       masterPriority: 'dialogue',
     },

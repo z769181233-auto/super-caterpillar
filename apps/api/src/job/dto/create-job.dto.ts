@@ -12,7 +12,8 @@ type JobType =
   | 'CE03_VISUAL_DENSITY'
   | 'CE04_VISUAL_ENRICHMENT'
   | 'CE06_NOVEL_PARSING'
-  | 'CE07_MEMORY_UPDATE';
+  | 'CE07_MEMORY_UPDATE'
+  | 'TIMELINE_PREVIEW';
 
 export class CreateJobDto {
   @IsEnum([
@@ -28,6 +29,7 @@ export class CreateJobDto {
     'CE04_VISUAL_ENRICHMENT',
     'CE06_NOVEL_PARSING',
     'CE07_MEMORY_UPDATE',
+    'TIMELINE_PREVIEW',
   ] as const)
   type: JobType;
 

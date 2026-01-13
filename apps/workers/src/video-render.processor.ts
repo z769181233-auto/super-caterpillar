@@ -1,4 +1,6 @@
-import { PrismaClient } from 'database';
+import { PrismaClient, ShotReviewStatus } from 'database';
+// import { PRODUCTION_MODE } from '@scu/config';
+const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 import { WorkerJobBase } from '@scu/shared-types';
 import { ApiClient } from './api-client';
 import { spawn } from 'child_process';
@@ -23,7 +25,7 @@ const activeProcesses = new Set<ChildProcess>();
 export function cleanupVideoRenderProcesses() {
   process.stdout.write(
     util.format(`[VideoRender] Cleaning up ${activeProcesses.size} active FFmpeg processes...`) +
-      '\n'
+    '\n'
   );
   for (const cp of activeProcesses) {
     try {
@@ -86,6 +88,17 @@ export async function processVideoRenderJob(
     );
   }
 
+  // PHASE-E: Worker-side Enforcement (Zero Bypass)
+  if (PRODUCTION_MODE) {
+    const shot = await prisma.shot.findUnique({
+      where: { id: shotId },
+      select: { reviewStatus: true },
+    });
+    if (!shot || (shot.reviewStatus !== ShotReviewStatus.APPROVED && shot.reviewStatus !== ShotReviewStatus.FINALIZED)) {
+      throw new Error(`PRODUCTION_MODE_FORBIDS_UNAPPROVED_VIDEO_RENDER: Shot ${shotId} is ${shot?.reviewStatus || 'MISSING'}`);
+    }
+  }
+
   const frameKeys = payload.frameKeys as string[];
   const fps = payload.fps || 24;
 
@@ -143,7 +156,7 @@ export async function processVideoRenderJob(
 
       process.stdout.write(
         util.format({ event: 'VIDEO_RENDER_SINGLE_IMAGE', jobId, cmd: [cmd, ...args].join(' ') }) +
-          '\n'
+        '\n'
       );
 
       await new Promise<void>((resolve, reject) => {
@@ -239,7 +252,7 @@ export async function processVideoRenderJob(
 
     // 3. Exec FFmpeg
     // FIX 5: testsrc 只在环境变量开启时启用,否则使用真实 frameKeys concat
-    const useTestsrc = process.env.VIDEO_RENDER_TESTSRC === '1';
+    const useTestsrc = !PRODUCTION_MODE && process.env.VIDEO_RENDER_TESTSRC === '1';
     const cmd = 'ffmpeg';
     let args: string[];
 

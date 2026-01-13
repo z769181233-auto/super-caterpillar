@@ -1,7 +1,7 @@
 # ENGINE_MATRIX_SSOT.md - 引擎矩阵单一真源
 
-> **版本**: 1.0.0  
-> **更新时间**: 2026-01-09  
+> **版本**: 1.1.0  
+> **更新时间**: 2026-01-13  
 > **状态**: ACTIVE
 
 ---
@@ -21,6 +21,7 @@
 | `ce04`         | CE04_VISUAL_ENRICHMENT | REAL (Template)      | tokens @ 1.0/1k    | `engine.ce04`        | `gate-stage3-d_ce04_enrichment_closure.sh` | `stage3d_ce04_enrichment_closure`          |
 | `shot_render`  | SHOT_RENDER            | REAL                 | gpuSeconds @ 50/1k | `engine.shot_render` | `gate-p0-r0_shot_render_real.sh`           | `shot_render_local_mps_sealed_20260109`    |
 | `video_merge`  | VIDEO_MERGE            | REAL                 | cpuSeconds @ TBD   | `engine.video_merge` | `gate-p0-r1_video_merge_real.sh`           | `video_merge_local_ffmpeg_sealed_20260109` |
+| `ce11`         | TIMELINE_PREVIEW      | REAL                 | cpuSeconds @ TBD   | `engine.ce11`        | `gate-ce11_timeline_preview.sh`            | `seal/ce11_final_closure_20260113_080125` |
 | `E2E_Pipeline` | CE06->SHOT->VIDEO      | REAL                 | Multi-Step         | `pipeline.e2e_video` | `gate-p0-r2_e2e_video_pipeline.sh`         | `p0_r2_e2e_video_pipeline_sealed_20260109` |
 
 ---
@@ -90,6 +91,7 @@
 | 2026-01-09 | 添加 shot_render P0-R0 | Gemini |
 | 2026-01-09 | 封印 P0-R2 E2E 管线    | Gemini |
 | 2026-01-09 | P1-3 基础可观测性建设  | Gemini |
+| 2026-01-13 | 封印 CE11 Timeline Preview | Antigravity |
 
 ---
 

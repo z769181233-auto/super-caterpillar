@@ -198,6 +198,7 @@ exports.Prisma.SceneScalarFieldEnum = {
   title: 'title',
   summary: 'summary',
   sceneDraftId: 'sceneDraftId',
+  reviewStatus: 'reviewStatus',
   characters: 'characters',
   enrichedText: 'enrichedText',
   projectId: 'projectId',
@@ -210,6 +211,7 @@ exports.Prisma.ShotScalarFieldEnum = {
   index: 'index',
   title: 'title',
   description: 'description',
+  reviewStatus: 'reviewStatus',
   type: 'type',
   params: 'params',
   qualityScore: 'qualityScore',
@@ -271,6 +273,7 @@ exports.Prisma.EngineScalarFieldEnum = {
   engineKey: 'engineKey',
   adapterName: 'adapterName',
   adapterType: 'adapterType',
+  mode: 'mode',
   config: 'config',
   enabled: 'enabled',
   version: 'version',
@@ -567,7 +570,8 @@ exports.Prisma.NovelChapterScalarFieldEnum = {
   characterCount: 'characterCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  summary: 'summary'
+  summary: 'summary',
+  novelVolumeId: 'novelVolumeId'
 };
 
 exports.Prisma.SceneDraftScalarFieldEnum = {
@@ -678,6 +682,7 @@ exports.Prisma.CharacterScalarFieldEnum = {
 exports.Prisma.NovelVolumeScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
+  novelSourceId: 'novelSourceId',
   index: 'index',
   title: 'title',
   createdAt: 'createdAt',
@@ -913,6 +918,14 @@ exports.MembershipRole = exports.$Enums.MembershipRole = {
 exports.ProjectStatus = exports.$Enums.ProjectStatus = {
   in_progress: 'in_progress',
   completed: 'completed'
+};
+
+exports.ShotReviewStatus = exports.$Enums.ShotReviewStatus = {
+  DRAFT: 'DRAFT',
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  FINALIZED: 'FINALIZED'
 };
 
 exports.EngineTaskType = exports.$Enums.EngineTaskType = {

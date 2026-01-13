@@ -1,0 +1,6 @@
+{"ts":"2026-01-12T09:53:01.861Z","type":"verify_start","startTime":"2026-01-12T09:53:01.861Z"}
+{"ts":"2026-01-12T09:53:01.888Z","type":"data_setup_complete","projectId":"550c6225-3ea1-4f23-a80e-9bdd538c802e","apiKey":"ak_test_b586b534-f597-4299-b12d-b710d76d619c"}
+{"ts":"2026-01-12T09:53:01.952Z","type":"pipeline_triggered","jobId":"517aaed7-a07f-4793-8ca5-65cc2c2acdd3","traceId":"ce_pipeline_6ade8e2d-cc5d-4d6d-85ce-3be302875c73"}
+{"ts":"2026-01-12T09:53:11.976Z","type":"CE04_VISUAL_ENRICHMENT","error":"Engine ce04_sdxl@default not registered or disabled"}
+{"ts":"2026-01-12T09:53:11.977Z","type":"verify_error","message":"Pipeline logic failure at CE04_VISUAL_ENRICHMENT","status":"FAIL_LOGIC"}
+{"ts":"2026-01-12T09:53:11.977Z","type":"verify_end","status":"FAIL_LOGIC","endTime":"2026-01-12T09:53:11.977Z"}

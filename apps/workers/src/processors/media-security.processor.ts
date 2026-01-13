@@ -9,6 +9,8 @@ import {
   ReviewType,
   PrismaClient,
 } from 'database';
+// import { PRODUCTION_MODE } from '@scu/config';
+const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -46,6 +48,9 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
     sourceStorageKey = asset.storageKey;
     console.log(`[MediaSecurity] Resolved AssetId ${targetAssetId} to storageKey ${sourceStorageKey}`);
   } else if (shotId) {
+    if (PRODUCTION_MODE) {
+      throw new Error(`PRODUCTION_MODE_FORBIDS_LEGACY_SHOT_ACCESS: Media Security requires explicit assetId in production.`);
+    }
     // Legacy / Fallback Mode (S4-7 Renders)
     console.log(`[MediaSecurity] Legacy Mode: Resolving Asset from ShotId ${shotId}`);
     const asset = await prisma.asset.findUnique({

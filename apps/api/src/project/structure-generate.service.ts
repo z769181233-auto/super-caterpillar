@@ -17,7 +17,7 @@ export class StructureGenerateService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly sceneGraphService: SceneGraphService
-  ) {}
+  ) { }
 
   /**
    * 生成剧集结构
@@ -251,6 +251,7 @@ export class StructureGenerateService {
             const scene = await tx.scene.create({
               data: {
                 episodeId: episode.id,
+                projectId,
                 index: sceneData.index,
                 title: sceneData.title,
                 summary: sceneData.summary || undefined,

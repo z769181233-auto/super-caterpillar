@@ -148,7 +148,8 @@ export class ApiClient {
     // 如果配置了 API Key 和 Secret，使用 HMAC 认证
     if (this.apiKey && this.apiSecret) {
       // 1. 准备签名参数
-      const timestamp = Date.now().toString();
+      // APISpec V1.1: X-Timestamp MUST BE IN SECONDS
+      const timestamp = Math.floor(Date.now() / 1000).toString();
       const nonce = generateNonce();
 
       // 2. 强制要求x-worker-id（商业级：避免回退到v1签名）
@@ -169,7 +170,7 @@ export class ApiClient {
       headers['X-Api-Key'] = this.apiKey;
       headers['X-Nonce'] = nonce;
       headers['X-Timestamp'] = timestamp;
-      headers['X-Content-SHA256'] = bodyHash;
+      headers['X-Content-Sha256'] = bodyHash;
       headers['X-Signature'] = signature;
       headers['X-Hmac-Version'] = '2';
 
@@ -305,6 +306,9 @@ export class ApiClient {
     taskId: string;
     shotId?: string;
     projectId?: string;
+    episodeId?: string;
+    sceneId?: string;
+    organizationId?: string;
     createdAt: string; // P1-4: For queue time metric
   } | null> {
     const response = await this.request<{
@@ -313,7 +317,10 @@ export class ApiClient {
       payload: any;
       taskId: string;
       shotId?: string;
-      projectId?: string; // Add this
+      projectId?: string;
+      episodeId?: string;
+      sceneId?: string;
+      organizationId?: string;
       createdAt: string; // P1-4
     } | null>('POST', `/api/workers/${workerId}/jobs/next`, {}, { 'x-worker-id': workerId });
 
@@ -428,7 +435,7 @@ export class ApiClient {
   }): Promise<{ ok: boolean; id: string; deduplicated: boolean }> {
     const response = await this.request<{ ok: boolean; id: string; deduplicated: boolean }>(
       'POST',
-      '/internal/events/cost-ledger',
+      '/api/internal/events/cost-ledger',
       payload
     );
 

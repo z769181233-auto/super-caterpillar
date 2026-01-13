@@ -1,0 +1,6 @@
+{"ts":"2026-01-12T10:00:10.175Z","type":"verify_start","startTime":"2026-01-12T10:00:10.175Z"}
+{"ts":"2026-01-12T10:00:10.207Z","type":"data_setup_complete","projectId":"7b382187-756b-47ef-a08c-4eabc168389c","apiKey":"ak_test_232535fc-f2e0-4609-a81e-0717aab819e5"}
+{"ts":"2026-01-12T10:00:10.254Z","type":"pipeline_triggered","jobId":"faa410a2-cccb-44ba-a696-ec552855058d","traceId":"ce_pipeline_03a4a597-7d44-454d-a807-dbc72cc0278d"}
+{"ts":"2026-01-12T10:00:32.296Z","type":"TIMELINE_RENDER","error":"[TimelineRender] Fail-fast: Timeline must contain at least 2 shots."}
+{"ts":"2026-01-12T10:00:32.297Z","type":"verify_error","message":"Pipeline logic failure at TIMELINE_RENDER","status":"FAIL_LOGIC"}
+{"ts":"2026-01-12T10:00:32.297Z","type":"verify_end","status":"FAIL_LOGIC","endTime":"2026-01-12T10:00:32.297Z"}

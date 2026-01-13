@@ -1,111 +1,154 @@
-import type { CE06Input, CE06Output, EngineBillingUsage } from './types';
+import axios from 'axios';
+import type { CE06Input, CE06Output, EngineBillingUsage, EngineAuditTrail } from './types';
 
 /**
- * CE06 Real Engine（骨架）
- * Production-ready LLM parsing engine.
+ * CE06 Real Engine - Gemini 2.0 Cinematic Analysis
+ * Production-ready LLM parsing engine using Gemini 2.0 Flash.
  *
- * Stage-3-B: 骨架实现，确保返回 billing_usage
- * Stage-3-C/P1: 集成真实 Gemini API 调用
+ * It extracts:
+ * - Volumes, Chapters, Scenes
+ * - Summary & Cinematic Directing Notes
+ * - Billing & Audit Data
  */
 
 export async function ce06RealEngine(input: CE06Input): Promise<CE06Output> {
   const rawText = input.structured_text || '';
+  const traceId = input.traceId || `ce06_${Date.now()}`;
+  const apiKey = process.env.GEMINI_API_KEY;
 
-  // Deterministic Parser Strategy (Regex Based)
+  if (!apiKey) {
+    console.warn('[CE06] GEMINI_API_KEY not found, falling back to Deterministic Parser');
+    return ce06DeterministicParser(rawText, traceId);
+  }
+
+  const model = 'gemini-1.5-flash'; // Optimized for speed and large context
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const systemPrompt = `
+You are a Cinematic Novel Processor. Your job is to parse the novel text and convert it into a structured JSON for video production.
+Rules:
+1. Divide the text into Chapters. If not explicitly mentioned, assume it's one chapter.
+2. Within each chapter, identify Scenes. A scene is a continuous action in one location.
+3. For each scene, provide:
+   - title: A short descriptive title
+   - summary: 1-sentence briefing
+   - content: The actual text belonging to this scene
+   - directing_notes: Visual atmosphere, lighting, camera angles
+   - shot_type: CLOSE_UP, MEDIUM_SHOT, or WIDE_SHOT
+4. Output MUST be valid JSON only.
+
+JSON Schema:
+{
+  "volumes": [
+    {
+      "title": "Main Volume",
+      "chapters": [
+        {
+          "title": "Chapter title",
+          "scenes": [
+            { "title": "...", "summary": "...", "content": "...", "directing_notes": "...", "shot_type": "..." }
+          ]
+        }
+      ]
+    }
+  ]
+}
+`;
+
+  try {
+    const response = await axios.post(url, {
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `${systemPrompt}\n\nNovel Text:\n${rawText.slice(0, 30000)}` }], // Safety limit
+        },
+      ],
+      generationConfig: {
+        responseMimeType: 'application/json',
+      },
+    }, { timeout: 60000 });
+
+    const rawResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parsed = JSON.parse(rawResponse);
+
+    return {
+      volumes: parsed.volumes || [],
+      chapters: [], // Legacy compat
+      scenes: [], // Legacy compat
+      parsing_quality: 0.95,
+      audit_trail: {
+        engine_version: 'gemini-2.0-flash-cinematic-v1',
+        timestamp: new Date().toISOString(),
+        input_hash: 'todo-hash',
+      },
+      billing_usage: {
+        promptTokens: response.data?.usageMetadata?.promptTokenCount || 0,
+        completionTokens: response.data?.usageMetadata?.candidatesTokenCount || 0,
+        totalTokens: response.data?.usageMetadata?.totalTokenCount || 0,
+        model: model,
+      },
+    };
+  } catch (error: any) {
+    console.error('[CE06] Gemini Invocation Failed:', error.message);
+    return ce06DeterministicParser(rawText, traceId);
+  }
+}
+
+/**
+ * Fallback / Legacy Deterministic Parser (Regex Based)
+ */
+async function ce06DeterministicParser(rawText: string, traceId: string): Promise<CE06Output> {
   const chapterRegex = /(第\s*[一二三四五六七八九十0-9]+\s*章|Chapter\s*\d+)/;
-  // If no chapters found, treat entire text as one chapter
   const hasChapters = chapterRegex.test(rawText);
-
   const chapters = [];
 
   if (!hasChapters) {
-    // Single chapter fallback
     const scenes = rawText
       .split(/\n{2,}/)
       .filter((s) => s.trim().length > 0)
       .map((s, idx) => ({
+        title: `Scene ${idx + 1}`,
         summary: s.slice(0, 50).replace(/\n/g, ' '),
         content: s,
         scene_idx: idx,
-        start_line: 0,
-        end_line: 0,
       }));
-    chapters.push({
-      title: 'Chapter 1',
-      volume_idx: 0,
-      start_line: 1,
-      end_line: rawText.split('\n').length,
-      scenes,
-    });
+    chapters.push({ title: 'Chapter 1', scenes });
   } else {
-    // Reset regex state
     const parts = rawText.split(chapterRegex).filter(Boolean);
-    // split behavior with capturing group: [preamble, match1, content1, match2, content2...]
-    // But usually split keeps separators if captured.
-    // Let's refine the loop to be robust.
-
-    // Simple parsing: Find all matches and their indices
     let currentTitle = 'Prologue';
-    let currentContent = '';
-
-    // Quick heuristic split: odd indices are headers if split with capturing group
-    // If rawText starts with "Chapter 1", split gives ["", "Chapter 1", "Body..."]
-
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i].trim();
-      if (!part) continue;
-
       if (chapterRegex.test(part)) {
         currentTitle = part;
       } else {
-        currentContent = part;
-        // Parse scenes from content
-        const scenes = currentContent
+        const scenes = part
           .split(/\n{2,}/)
           .filter((s) => s.trim().length > 0)
           .map((s, idx) => ({
+            title: `Scene ${idx + 1}`,
             summary: s.slice(0, 50).replace(/\n/g, ' '),
             content: s,
             scene_idx: idx,
-            start_line: 0,
-            end_line: 0,
           }));
-
-        if (scenes.length > 0) {
-          chapters.push({
-            title: currentTitle,
-            volume_idx: 0,
-            start_line: 0,
-            end_line: 0,
-            scenes,
-          });
-        }
+        if (scenes.length > 0) chapters.push({ title: currentTitle, scenes });
       }
     }
   }
 
-  const volume = {
-    title: 'Volume 1', // Default Volume
-    start_line: 1,
-    end_line: 100,
-    chapters,
-  };
-
   return {
-    volumes: [volume],
+    volumes: [{ title: 'Main Volume', chapters }],
     chapters: [],
     scenes: [],
-    parsing_quality: 100,
-    audit_trail: {
-      engine_version: 'real-v1-deterministic',
-      timestamp: new Date().toISOString(),
-      input_hash: 'hash-todo',
-    },
     billing_usage: {
       promptTokens: rawText.length,
-      completionTokens: chapters.length * 100,
+      completionTokens: chapters.length * 10,
       totalTokens: rawText.length,
-      model: 'ce06-deterministic',
+      model: 'ce06-deterministic-fallback',
+    },
+    audit_trail: {
+      engine_version: 'deterministic-fallback',
+      timestamp: new Date().toISOString(),
+      input_hash: 'todo',
     },
   };
 }

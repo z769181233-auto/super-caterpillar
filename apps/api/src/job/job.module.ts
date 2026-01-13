@@ -22,6 +22,7 @@ import { CapacityGateModule } from '../capacity/capacity-gate.module';
 import { JobWatchdogService } from './job-watchdog.service';
 import { TextSafetyModule } from '../text-safety/text-safety.module';
 import { ShotDirectorModule } from '../shot-director/shot-director.module';
+import { CostModule } from '../cost/cost.module';
 import { env } from '@scu/config';
 
 // P1 修复：统一使用 packages/config，避免 split-brain
@@ -45,6 +46,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     CapacityGateModule, // 容量门禁模块
     TextSafetyModule,
     ShotDirectorModule, // P0-3: 提供 DirectorConstraintSolverService
+    CostModule,
   ],
   controllers: [JobController],
   providers: [
@@ -57,6 +59,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
   ],
   exports: [JobService, JobReportFacade],
 })
-export class JobModule {}
+export class JobModule { }
 
 // 注意：JobController 中需要注入 AuditLogService，但 AuditLogModule 已经导入，应该可以正常工作

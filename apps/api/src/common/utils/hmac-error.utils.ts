@@ -13,6 +13,7 @@ export function buildHmacError(
 ): HttpException {
   const body = {
     success: false,
+    code, // Top-level code for APISpec V1.1 alignment
     error: { code, message },
     requestId: randomUUID(),
     timestamp: new Date().toISOString(),

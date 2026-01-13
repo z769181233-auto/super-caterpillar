@@ -15,6 +15,8 @@ export interface TimelinePreviewParams {
         };
         organizationId: string;
         projectId: string;
+        episodeId?: string;
+        sceneId?: string;
         traceId?: string;
     };
     apiClient: ApiClient;
@@ -25,7 +27,8 @@ export interface TimelinePreviewParams {
  * 职责：执行时间轴渲染，生成预览资产（绑定至 Scene），并触发 CE09 安全处理。
  * 策略：Asset 物理隔离（OwnerType=SCENE），安全链路统一（CE09）。
  */
-export async function processTimelinePreviewJob({ prisma, job }: TimelinePreviewParams) {
+export async function processTimelinePreviewJob({ prisma, job, apiClient }: TimelinePreviewParams) {
+    const startTime = Date.now();
     const { timelineStorageKey, pipelineRunId } = job.payload;
     const traceId = job.traceId || `trace-${Date.now()}`;
     const projectId = job.projectId;
@@ -272,25 +275,30 @@ export async function processTimelinePreviewJob({ prisma, job }: TimelinePreview
     await prisma.shotJob.create({
         data: {
             type: JobType.CE09_MEDIA_SECURITY,
-            organizationId: timeline.organizationId,
-            projectId: timeline.projectId,
-            episodeId: timeline.episodeId,
-            sceneId: timeline.sceneId,
+            organizationId: job.organizationId || timeline.organizationId,
+            projectId: job.projectId || timeline.projectId,
+            episodeId: job.episodeId || timeline.episodeId,
+            sceneId: job.sceneId || timeline.sceneId,
             shotId: timeline.shots[0].shotId, // Optional, for legacy query compatibility
             payload: {
                 assetId: asset.id, // Primary Entry Point
                 videoAssetStorageKey: finalOutputRelative, // Legacy/Backup
                 pipelineRunId,
                 traceId,
-                projectId: timeline.projectId,
+                projectId: job.projectId || timeline.projectId,
             },
         },
     });
+
+    // Stage 5: Metrics & Audit (Commercial Grade)
+    const latencyMs = Date.now() - startTime;
+    const costAmount = 0.05; // Dummy cost for 2 shots
 
     return {
         success: true,
         assetId: asset.id,
         storageKey: finalOutputRelative,
+        metrics: { durationMs: latencyMs, cost: costAmount, shots: timeline.shots.length },
         audit: { action: 'ce11.timeline_preview.success', sceneId: timeline.sceneId, traceId },
     };
 }

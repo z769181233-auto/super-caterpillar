@@ -351,6 +351,17 @@ export const ProjectStatus: {
 export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus]
 
 
+export const ShotReviewStatus: {
+  DRAFT: 'DRAFT',
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  FINALIZED: 'FINALIZED'
+};
+
+export type ShotReviewStatus = (typeof ShotReviewStatus)[keyof typeof ShotReviewStatus]
+
+
 export const EngineTaskType: {
   scene_parse: 'scene_parse',
   shot_plan: 'shot_plan',
@@ -654,6 +665,10 @@ export const MembershipRole: typeof $Enums.MembershipRole
 export type ProjectStatus = $Enums.ProjectStatus
 
 export const ProjectStatus: typeof $Enums.ProjectStatus
+
+export type ShotReviewStatus = $Enums.ShotReviewStatus
+
+export const ShotReviewStatus: typeof $Enums.ShotReviewStatus
 
 export type EngineTaskType = $Enums.EngineTaskType
 
@@ -6946,11 +6961,13 @@ export namespace Prisma {
   export type NovelSourceCountOutputType = {
     analysisJobs: number
     chapters: number
+    volumes: number
   }
 
   export type NovelSourceCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     analysisJobs?: boolean | NovelSourceCountOutputTypeCountAnalysisJobsArgs
     chapters?: boolean | NovelSourceCountOutputTypeCountChaptersArgs
+    volumes?: boolean | NovelSourceCountOutputTypeCountVolumesArgs
   }
 
   // Custom InputTypes
@@ -6976,6 +6993,13 @@ export namespace Prisma {
    */
   export type NovelSourceCountOutputTypeCountChaptersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: NovelChapterWhereInput
+  }
+
+  /**
+   * NovelSourceCountOutputType without action
+   */
+  export type NovelSourceCountOutputTypeCountVolumesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: NovelVolumeWhereInput
   }
 
 
@@ -7047,6 +7071,68 @@ export namespace Prisma {
    */
   export type ApiKeyCountOutputTypeCountAuditLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: AuditLogWhereInput
+  }
+
+
+  /**
+   * Count Type SecurityFingerprintCountOutputType
+   */
+
+  export type SecurityFingerprintCountOutputType = {
+    assets: number
+  }
+
+  export type SecurityFingerprintCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    assets?: boolean | SecurityFingerprintCountOutputTypeCountAssetsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * SecurityFingerprintCountOutputType without action
+   */
+  export type SecurityFingerprintCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityFingerprintCountOutputType
+     */
+    select?: SecurityFingerprintCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * SecurityFingerprintCountOutputType without action
+   */
+  export type SecurityFingerprintCountOutputTypeCountAssetsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AssetWhereInput
+  }
+
+
+  /**
+   * Count Type NovelVolumeCountOutputType
+   */
+
+  export type NovelVolumeCountOutputType = {
+    chapters: number
+  }
+
+  export type NovelVolumeCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    chapters?: boolean | NovelVolumeCountOutputTypeCountChaptersArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * NovelVolumeCountOutputType without action
+   */
+  export type NovelVolumeCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelVolumeCountOutputType
+     */
+    select?: NovelVolumeCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * NovelVolumeCountOutputType without action
+   */
+  export type NovelVolumeCountOutputTypeCountChaptersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: NovelChapterWhereInput
   }
 
 
@@ -13994,6 +14080,7 @@ export namespace Prisma {
     title: string | null
     summary: string | null
     sceneDraftId: string | null
+    reviewStatus: $Enums.ShotReviewStatus | null
     enrichedText: string | null
     projectId: string | null
     visualDensityScore: number | null
@@ -14006,6 +14093,7 @@ export namespace Prisma {
     title: string | null
     summary: string | null
     sceneDraftId: string | null
+    reviewStatus: $Enums.ShotReviewStatus | null
     enrichedText: string | null
     projectId: string | null
     visualDensityScore: number | null
@@ -14018,6 +14106,7 @@ export namespace Prisma {
     title: number
     summary: number
     sceneDraftId: number
+    reviewStatus: number
     characters: number
     enrichedText: number
     projectId: number
@@ -14043,6 +14132,7 @@ export namespace Prisma {
     title?: true
     summary?: true
     sceneDraftId?: true
+    reviewStatus?: true
     enrichedText?: true
     projectId?: true
     visualDensityScore?: true
@@ -14055,6 +14145,7 @@ export namespace Prisma {
     title?: true
     summary?: true
     sceneDraftId?: true
+    reviewStatus?: true
     enrichedText?: true
     projectId?: true
     visualDensityScore?: true
@@ -14067,6 +14158,7 @@ export namespace Prisma {
     title?: true
     summary?: true
     sceneDraftId?: true
+    reviewStatus?: true
     characters?: true
     enrichedText?: true
     projectId?: true
@@ -14167,9 +14259,10 @@ export namespace Prisma {
     title: string
     summary: string | null
     sceneDraftId: string | null
+    reviewStatus: $Enums.ShotReviewStatus
     characters: JsonValue | null
     enrichedText: string | null
-    projectId: string | null
+    projectId: string
     visualDensityScore: number | null
     _count: SceneCountAggregateOutputType | null
     _avg: SceneAvgAggregateOutputType | null
@@ -14199,6 +14292,7 @@ export namespace Prisma {
     title?: boolean
     summary?: boolean
     sceneDraftId?: boolean
+    reviewStatus?: boolean
     characters?: boolean
     enrichedText?: boolean
     projectId?: boolean
@@ -14218,6 +14312,7 @@ export namespace Prisma {
     title?: boolean
     summary?: boolean
     sceneDraftId?: boolean
+    reviewStatus?: boolean
     characters?: boolean
     enrichedText?: boolean
     projectId?: boolean
@@ -14233,6 +14328,7 @@ export namespace Prisma {
     title?: boolean
     summary?: boolean
     sceneDraftId?: boolean
+    reviewStatus?: boolean
     characters?: boolean
     enrichedText?: boolean
     projectId?: boolean
@@ -14268,9 +14364,10 @@ export namespace Prisma {
       title: string
       summary: string | null
       sceneDraftId: string | null
+      reviewStatus: $Enums.ShotReviewStatus
       characters: Prisma.JsonValue | null
       enrichedText: string | null
-      projectId: string | null
+      projectId: string
       visualDensityScore: number | null
     }, ExtArgs["result"]["scene"]>
     composites: {}
@@ -14676,6 +14773,7 @@ export namespace Prisma {
     readonly title: FieldRef<"Scene", 'String'>
     readonly summary: FieldRef<"Scene", 'String'>
     readonly sceneDraftId: FieldRef<"Scene", 'String'>
+    readonly reviewStatus: FieldRef<"Scene", 'ShotReviewStatus'>
     readonly characters: FieldRef<"Scene", 'Json'>
     readonly enrichedText: FieldRef<"Scene", 'String'>
     readonly projectId: FieldRef<"Scene", 'String'>
@@ -15115,6 +15213,7 @@ export namespace Prisma {
     index: number | null
     title: string | null
     description: string | null
+    reviewStatus: $Enums.ShotReviewStatus | null
     type: string | null
     reviewedAt: Date | null
     durationSeconds: number | null
@@ -15128,6 +15227,7 @@ export namespace Prisma {
     index: number | null
     title: string | null
     description: string | null
+    reviewStatus: $Enums.ShotReviewStatus | null
     type: string | null
     reviewedAt: Date | null
     durationSeconds: number | null
@@ -15141,6 +15241,7 @@ export namespace Prisma {
     index: number
     title: number
     description: number
+    reviewStatus: number
     type: number
     params: number
     qualityScore: number
@@ -15168,6 +15269,7 @@ export namespace Prisma {
     index?: true
     title?: true
     description?: true
+    reviewStatus?: true
     type?: true
     reviewedAt?: true
     durationSeconds?: true
@@ -15181,6 +15283,7 @@ export namespace Prisma {
     index?: true
     title?: true
     description?: true
+    reviewStatus?: true
     type?: true
     reviewedAt?: true
     durationSeconds?: true
@@ -15194,6 +15297,7 @@ export namespace Prisma {
     index?: true
     title?: true
     description?: true
+    reviewStatus?: true
     type?: true
     params?: true
     qualityScore?: true
@@ -15296,6 +15400,7 @@ export namespace Prisma {
     index: number
     title: string | null
     description: string | null
+    reviewStatus: $Enums.ShotReviewStatus
     type: string
     params: JsonValue
     qualityScore: JsonValue
@@ -15330,6 +15435,7 @@ export namespace Prisma {
     index?: boolean
     title?: boolean
     description?: boolean
+    reviewStatus?: boolean
     type?: boolean
     params?: boolean
     qualityScore?: boolean
@@ -15355,6 +15461,7 @@ export namespace Prisma {
     index?: boolean
     title?: boolean
     description?: boolean
+    reviewStatus?: boolean
     type?: boolean
     params?: boolean
     qualityScore?: boolean
@@ -15372,6 +15479,7 @@ export namespace Prisma {
     index?: boolean
     title?: boolean
     description?: boolean
+    reviewStatus?: boolean
     type?: boolean
     params?: boolean
     qualityScore?: boolean
@@ -15417,6 +15525,7 @@ export namespace Prisma {
       index: number
       title: string | null
       description: string | null
+      reviewStatus: $Enums.ShotReviewStatus
       type: string
       params: Prisma.JsonValue
       qualityScore: Prisma.JsonValue
@@ -15831,6 +15940,7 @@ export namespace Prisma {
     readonly index: FieldRef<"Shot", 'Int'>
     readonly title: FieldRef<"Shot", 'String'>
     readonly description: FieldRef<"Shot", 'String'>
+    readonly reviewStatus: FieldRef<"Shot", 'ShotReviewStatus'>
     readonly type: FieldRef<"Shot", 'String'>
     readonly params: FieldRef<"Shot", 'Json'>
     readonly qualityScore: FieldRef<"Shot", 'Json'>
@@ -20282,6 +20392,7 @@ export namespace Prisma {
     engineKey: string | null
     adapterName: string | null
     adapterType: string | null
+    mode: string | null
     enabled: boolean | null
     version: string | null
     defaultVersion: string | null
@@ -20298,6 +20409,7 @@ export namespace Prisma {
     engineKey: string | null
     adapterName: string | null
     adapterType: string | null
+    mode: string | null
     enabled: boolean | null
     version: string | null
     defaultVersion: string | null
@@ -20314,6 +20426,7 @@ export namespace Prisma {
     engineKey: number
     adapterName: number
     adapterType: number
+    mode: number
     config: number
     enabled: number
     version: number
@@ -20333,6 +20446,7 @@ export namespace Prisma {
     engineKey?: true
     adapterName?: true
     adapterType?: true
+    mode?: true
     enabled?: true
     version?: true
     defaultVersion?: true
@@ -20349,6 +20463,7 @@ export namespace Prisma {
     engineKey?: true
     adapterName?: true
     adapterType?: true
+    mode?: true
     enabled?: true
     version?: true
     defaultVersion?: true
@@ -20365,6 +20480,7 @@ export namespace Prisma {
     engineKey?: true
     adapterName?: true
     adapterType?: true
+    mode?: true
     config?: true
     enabled?: true
     version?: true
@@ -20455,6 +20571,7 @@ export namespace Prisma {
     engineKey: string
     adapterName: string
     adapterType: string
+    mode: string
     config: JsonValue
     enabled: boolean
     version: string | null
@@ -20489,6 +20606,7 @@ export namespace Prisma {
     engineKey?: boolean
     adapterName?: boolean
     adapterType?: boolean
+    mode?: boolean
     config?: boolean
     enabled?: boolean
     version?: boolean
@@ -20509,6 +20627,7 @@ export namespace Prisma {
     engineKey?: boolean
     adapterName?: boolean
     adapterType?: boolean
+    mode?: boolean
     config?: boolean
     enabled?: boolean
     version?: boolean
@@ -20526,6 +20645,7 @@ export namespace Prisma {
     engineKey?: boolean
     adapterName?: boolean
     adapterType?: boolean
+    mode?: boolean
     config?: boolean
     enabled?: boolean
     version?: boolean
@@ -20556,6 +20676,7 @@ export namespace Prisma {
       engineKey: string
       adapterName: string
       adapterType: string
+      mode: string
       config: Prisma.JsonValue
       enabled: boolean
       version: string | null
@@ -20965,6 +21086,7 @@ export namespace Prisma {
     readonly engineKey: FieldRef<"Engine", 'String'>
     readonly adapterName: FieldRef<"Engine", 'String'>
     readonly adapterType: FieldRef<"Engine", 'String'>
+    readonly mode: FieldRef<"Engine", 'String'>
     readonly config: FieldRef<"Engine", 'Json'>
     readonly enabled: FieldRef<"Engine", 'Boolean'>
     readonly version: FieldRef<"Engine", 'String'>
@@ -42930,6 +43052,7 @@ export namespace Prisma {
     updatedAt?: boolean
     analysisJobs?: boolean | NovelSource$analysisJobsArgs<ExtArgs>
     chapters?: boolean | NovelSource$chaptersArgs<ExtArgs>
+    volumes?: boolean | NovelSource$volumesArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
     _count?: boolean | NovelSourceCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["novelSource"]>
@@ -42972,6 +43095,7 @@ export namespace Prisma {
   export type NovelSourceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     analysisJobs?: boolean | NovelSource$analysisJobsArgs<ExtArgs>
     chapters?: boolean | NovelSource$chaptersArgs<ExtArgs>
+    volumes?: boolean | NovelSource$volumesArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
     _count?: boolean | NovelSourceCountOutputTypeDefaultArgs<ExtArgs>
   }
@@ -42984,6 +43108,7 @@ export namespace Prisma {
     objects: {
       analysisJobs: Prisma.$NovelAnalysisJobPayload<ExtArgs>[]
       chapters: Prisma.$NovelChapterPayload<ExtArgs>[]
+      volumes: Prisma.$NovelVolumePayload<ExtArgs>[]
       project: Prisma.$ProjectPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -43367,6 +43492,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     analysisJobs<T extends NovelSource$analysisJobsArgs<ExtArgs> = {}>(args?: Subset<T, NovelSource$analysisJobsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelAnalysisJobPayload<ExtArgs>, T, "findMany"> | Null>
     chapters<T extends NovelSource$chaptersArgs<ExtArgs> = {}>(args?: Subset<T, NovelSource$chaptersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findMany"> | Null>
+    volumes<T extends NovelSource$volumesArgs<ExtArgs> = {}>(args?: Subset<T, NovelSource$volumesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelVolumePayload<ExtArgs>, T, "findMany"> | Null>
     project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -43769,6 +43895,26 @@ export namespace Prisma {
   }
 
   /**
+   * NovelSource.volumes
+   */
+  export type NovelSource$volumesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelVolume
+     */
+    select?: NovelVolumeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    where?: NovelVolumeWhereInput
+    orderBy?: NovelVolumeOrderByWithRelationInput | NovelVolumeOrderByWithRelationInput[]
+    cursor?: NovelVolumeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: NovelVolumeScalarFieldEnum | NovelVolumeScalarFieldEnum[]
+  }
+
+  /**
    * NovelSource without action
    */
   export type NovelSourceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -43821,6 +43967,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     summary: string | null
+    novelVolumeId: string | null
   }
 
   export type NovelChapterMaxAggregateOutputType = {
@@ -43835,6 +43982,7 @@ export namespace Prisma {
     createdAt: Date | null
     updatedAt: Date | null
     summary: string | null
+    novelVolumeId: string | null
   }
 
   export type NovelChapterCountAggregateOutputType = {
@@ -43849,6 +43997,7 @@ export namespace Prisma {
     createdAt: number
     updatedAt: number
     summary: number
+    novelVolumeId: number
     _all: number
   }
 
@@ -43879,6 +44028,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     summary?: true
+    novelVolumeId?: true
   }
 
   export type NovelChapterMaxAggregateInputType = {
@@ -43893,6 +44043,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     summary?: true
+    novelVolumeId?: true
   }
 
   export type NovelChapterCountAggregateInputType = {
@@ -43907,6 +44058,7 @@ export namespace Prisma {
     createdAt?: true
     updatedAt?: true
     summary?: true
+    novelVolumeId?: true
     _all?: true
   }
 
@@ -44008,6 +44160,7 @@ export namespace Prisma {
     createdAt: Date
     updatedAt: Date
     summary: string | null
+    novelVolumeId: string | null
     _count: NovelChapterCountAggregateOutputType | null
     _avg: NovelChapterAvgAggregateOutputType | null
     _sum: NovelChapterSumAggregateOutputType | null
@@ -44041,8 +44194,10 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     summary?: boolean
+    novelVolumeId?: boolean
     episode?: boolean | NovelChapter$episodeArgs<ExtArgs>
     novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+    novelVolume?: boolean | NovelChapter$novelVolumeArgs<ExtArgs>
     sceneDrafts?: boolean | NovelChapter$sceneDraftsArgs<ExtArgs>
     novelScenes?: boolean | NovelChapter$novelScenesArgs<ExtArgs>
     _count?: boolean | NovelChapterCountOutputTypeDefaultArgs<ExtArgs>
@@ -44060,7 +44215,9 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     summary?: boolean
+    novelVolumeId?: boolean
     novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+    novelVolume?: boolean | NovelChapter$novelVolumeArgs<ExtArgs>
   }, ExtArgs["result"]["novelChapter"]>
 
   export type NovelChapterSelectScalar = {
@@ -44075,17 +44232,20 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     summary?: boolean
+    novelVolumeId?: boolean
   }
 
   export type NovelChapterInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     episode?: boolean | NovelChapter$episodeArgs<ExtArgs>
     novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+    novelVolume?: boolean | NovelChapter$novelVolumeArgs<ExtArgs>
     sceneDrafts?: boolean | NovelChapter$sceneDraftsArgs<ExtArgs>
     novelScenes?: boolean | NovelChapter$novelScenesArgs<ExtArgs>
     _count?: boolean | NovelChapterCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type NovelChapterIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+    novelVolume?: boolean | NovelChapter$novelVolumeArgs<ExtArgs>
   }
 
   export type $NovelChapterPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -44093,6 +44253,7 @@ export namespace Prisma {
     objects: {
       episode: Prisma.$EpisodePayload<ExtArgs> | null
       novelSource: Prisma.$NovelSourcePayload<ExtArgs>
+      novelVolume: Prisma.$NovelVolumePayload<ExtArgs> | null
       sceneDrafts: Prisma.$SceneDraftPayload<ExtArgs>[]
       novelScenes: Prisma.$NovelScenePayload<ExtArgs>[]
     }
@@ -44108,6 +44269,7 @@ export namespace Prisma {
       createdAt: Date
       updatedAt: Date
       summary: string | null
+      novelVolumeId: string | null
     }, ExtArgs["result"]["novelChapter"]>
     composites: {}
   }
@@ -44474,6 +44636,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     episode<T extends NovelChapter$episodeArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$episodeArgs<ExtArgs>>): Prisma__EpisodeClient<$Result.GetResult<Prisma.$EpisodePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     novelSource<T extends NovelSourceDefaultArgs<ExtArgs> = {}>(args?: Subset<T, NovelSourceDefaultArgs<ExtArgs>>): Prisma__NovelSourceClient<$Result.GetResult<Prisma.$NovelSourcePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    novelVolume<T extends NovelChapter$novelVolumeArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$novelVolumeArgs<ExtArgs>>): Prisma__NovelVolumeClient<$Result.GetResult<Prisma.$NovelVolumePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     sceneDrafts<T extends NovelChapter$sceneDraftsArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$sceneDraftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SceneDraftPayload<ExtArgs>, T, "findMany"> | Null>
     novelScenes<T extends NovelChapter$novelScenesArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$novelScenesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelScenePayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -44516,6 +44679,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"NovelChapter", 'DateTime'>
     readonly updatedAt: FieldRef<"NovelChapter", 'DateTime'>
     readonly summary: FieldRef<"NovelChapter", 'String'>
+    readonly novelVolumeId: FieldRef<"NovelChapter", 'String'>
   }
     
 
@@ -44846,6 +45010,21 @@ export namespace Prisma {
      */
     include?: EpisodeInclude<ExtArgs> | null
     where?: EpisodeWhereInput
+  }
+
+  /**
+   * NovelChapter.novelVolume
+   */
+  export type NovelChapter$novelVolumeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelVolume
+     */
+    select?: NovelVolumeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    where?: NovelVolumeWhereInput
   }
 
   /**
@@ -49382,6 +49561,8 @@ export namespace Prisma {
     assetId?: boolean
     fpVector?: boolean
     createdAt?: boolean
+    assets?: boolean | SecurityFingerprint$assetsArgs<ExtArgs>
+    _count?: boolean | SecurityFingerprintCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["securityFingerprint"]>
 
   export type SecurityFingerprintSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -49398,10 +49579,17 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
+  export type SecurityFingerprintInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    assets?: boolean | SecurityFingerprint$assetsArgs<ExtArgs>
+    _count?: boolean | SecurityFingerprintCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type SecurityFingerprintIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
 
   export type $SecurityFingerprintPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SecurityFingerprint"
-    objects: {}
+    objects: {
+      assets: Prisma.$AssetPayload<ExtArgs>[]
+    }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       assetId: string | null
@@ -49771,6 +49959,7 @@ export namespace Prisma {
    */
   export interface Prisma__SecurityFingerprintClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    assets<T extends SecurityFingerprint$assetsArgs<ExtArgs> = {}>(args?: Subset<T, SecurityFingerprint$assetsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AssetPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -49817,6 +50006,10 @@ export namespace Prisma {
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
+    /**
      * Filter, which SecurityFingerprint to fetch.
      */
     where: SecurityFingerprintWhereUniqueInput
@@ -49831,6 +50024,10 @@ export namespace Prisma {
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
+    /**
      * Filter, which SecurityFingerprint to fetch.
      */
     where: SecurityFingerprintWhereUniqueInput
@@ -49844,6 +50041,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the SecurityFingerprint
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
     /**
      * Filter, which SecurityFingerprint to fetch.
      */
@@ -49889,6 +50090,10 @@ export namespace Prisma {
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
+    /**
      * Filter, which SecurityFingerprint to fetch.
      */
     where?: SecurityFingerprintWhereInput
@@ -49933,6 +50138,10 @@ export namespace Prisma {
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
+    /**
      * Filter, which SecurityFingerprints to fetch.
      */
     where?: SecurityFingerprintWhereInput
@@ -49971,6 +50180,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the SecurityFingerprint
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
     /**
      * The data needed to create a SecurityFingerprint.
      */
@@ -50012,6 +50225,10 @@ export namespace Prisma {
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
+    /**
      * The data needed to update a SecurityFingerprint.
      */
     data: XOR<SecurityFingerprintUpdateInput, SecurityFingerprintUncheckedUpdateInput>
@@ -50044,6 +50261,10 @@ export namespace Prisma {
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
+    /**
      * The filter to search for the SecurityFingerprint to update in case it exists.
      */
     where: SecurityFingerprintWhereUniqueInput
@@ -50066,6 +50287,10 @@ export namespace Prisma {
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
+    /**
      * Filter which SecurityFingerprint to delete.
      */
     where: SecurityFingerprintWhereUniqueInput
@@ -50082,6 +50307,26 @@ export namespace Prisma {
   }
 
   /**
+   * SecurityFingerprint.assets
+   */
+  export type SecurityFingerprint$assetsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Asset
+     */
+    select?: AssetSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssetInclude<ExtArgs> | null
+    where?: AssetWhereInput
+    orderBy?: AssetOrderByWithRelationInput | AssetOrderByWithRelationInput[]
+    cursor?: AssetWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: AssetScalarFieldEnum | AssetScalarFieldEnum[]
+  }
+
+  /**
    * SecurityFingerprint without action
    */
   export type SecurityFingerprintDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -50089,6 +50334,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the SecurityFingerprint
      */
     select?: SecurityFingerprintSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
   }
 
 
@@ -52879,6 +53128,7 @@ export namespace Prisma {
   export type NovelVolumeMinAggregateOutputType = {
     id: string | null
     projectId: string | null
+    novelSourceId: string | null
     index: number | null
     title: string | null
     createdAt: Date | null
@@ -52888,6 +53138,7 @@ export namespace Prisma {
   export type NovelVolumeMaxAggregateOutputType = {
     id: string | null
     projectId: string | null
+    novelSourceId: string | null
     index: number | null
     title: string | null
     createdAt: Date | null
@@ -52897,6 +53148,7 @@ export namespace Prisma {
   export type NovelVolumeCountAggregateOutputType = {
     id: number
     projectId: number
+    novelSourceId: number
     index: number
     title: number
     createdAt: number
@@ -52916,6 +53168,7 @@ export namespace Prisma {
   export type NovelVolumeMinAggregateInputType = {
     id?: true
     projectId?: true
+    novelSourceId?: true
     index?: true
     title?: true
     createdAt?: true
@@ -52925,6 +53178,7 @@ export namespace Prisma {
   export type NovelVolumeMaxAggregateInputType = {
     id?: true
     projectId?: true
+    novelSourceId?: true
     index?: true
     title?: true
     createdAt?: true
@@ -52934,6 +53188,7 @@ export namespace Prisma {
   export type NovelVolumeCountAggregateInputType = {
     id?: true
     projectId?: true
+    novelSourceId?: true
     index?: true
     title?: true
     createdAt?: true
@@ -53030,6 +53285,7 @@ export namespace Prisma {
   export type NovelVolumeGroupByOutputType = {
     id: string
     projectId: string | null
+    novelSourceId: string
     index: number
     title: string
     createdAt: Date
@@ -53058,37 +53314,56 @@ export namespace Prisma {
   export type NovelVolumeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     projectId?: boolean
+    novelSourceId?: boolean
     index?: boolean
     title?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+    chapters?: boolean | NovelVolume$chaptersArgs<ExtArgs>
+    _count?: boolean | NovelVolumeCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["novelVolume"]>
 
   export type NovelVolumeSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     projectId?: boolean
+    novelSourceId?: boolean
     index?: boolean
     title?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["novelVolume"]>
 
   export type NovelVolumeSelectScalar = {
     id?: boolean
     projectId?: boolean
+    novelSourceId?: boolean
     index?: boolean
     title?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
+  export type NovelVolumeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+    chapters?: boolean | NovelVolume$chaptersArgs<ExtArgs>
+    _count?: boolean | NovelVolumeCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type NovelVolumeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+  }
 
   export type $NovelVolumePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "NovelVolume"
-    objects: {}
+    objects: {
+      novelSource: Prisma.$NovelSourcePayload<ExtArgs>
+      chapters: Prisma.$NovelChapterPayload<ExtArgs>[]
+    }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       projectId: string | null
+      novelSourceId: string
       index: number
       title: string
       createdAt: Date
@@ -53457,6 +53732,8 @@ export namespace Prisma {
    */
   export interface Prisma__NovelVolumeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    novelSource<T extends NovelSourceDefaultArgs<ExtArgs> = {}>(args?: Subset<T, NovelSourceDefaultArgs<ExtArgs>>): Prisma__NovelSourceClient<$Result.GetResult<Prisma.$NovelSourcePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    chapters<T extends NovelVolume$chaptersArgs<ExtArgs> = {}>(args?: Subset<T, NovelVolume$chaptersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -53488,6 +53765,7 @@ export namespace Prisma {
   interface NovelVolumeFieldRefs {
     readonly id: FieldRef<"NovelVolume", 'String'>
     readonly projectId: FieldRef<"NovelVolume", 'String'>
+    readonly novelSourceId: FieldRef<"NovelVolume", 'String'>
     readonly index: FieldRef<"NovelVolume", 'Int'>
     readonly title: FieldRef<"NovelVolume", 'String'>
     readonly createdAt: FieldRef<"NovelVolume", 'DateTime'>
@@ -53505,6 +53783,10 @@ export namespace Prisma {
      */
     select?: NovelVolumeSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    /**
      * Filter, which NovelVolume to fetch.
      */
     where: NovelVolumeWhereUniqueInput
@@ -53519,6 +53801,10 @@ export namespace Prisma {
      */
     select?: NovelVolumeSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    /**
      * Filter, which NovelVolume to fetch.
      */
     where: NovelVolumeWhereUniqueInput
@@ -53532,6 +53818,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the NovelVolume
      */
     select?: NovelVolumeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
     /**
      * Filter, which NovelVolume to fetch.
      */
@@ -53577,6 +53867,10 @@ export namespace Prisma {
      */
     select?: NovelVolumeSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    /**
      * Filter, which NovelVolume to fetch.
      */
     where?: NovelVolumeWhereInput
@@ -53621,6 +53915,10 @@ export namespace Prisma {
      */
     select?: NovelVolumeSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    /**
      * Filter, which NovelVolumes to fetch.
      */
     where?: NovelVolumeWhereInput
@@ -53660,6 +53958,10 @@ export namespace Prisma {
      */
     select?: NovelVolumeSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    /**
      * The data needed to create a NovelVolume.
      */
     data: XOR<NovelVolumeCreateInput, NovelVolumeUncheckedCreateInput>
@@ -53689,6 +53991,10 @@ export namespace Prisma {
      */
     data: NovelVolumeCreateManyInput | NovelVolumeCreateManyInput[]
     skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -53699,6 +54005,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the NovelVolume
      */
     select?: NovelVolumeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
     /**
      * The data needed to update a NovelVolume.
      */
@@ -53732,6 +54042,10 @@ export namespace Prisma {
      */
     select?: NovelVolumeSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    /**
      * The filter to search for the NovelVolume to update in case it exists.
      */
     where: NovelVolumeWhereUniqueInput
@@ -53754,6 +54068,10 @@ export namespace Prisma {
      */
     select?: NovelVolumeSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    /**
      * Filter which NovelVolume to delete.
      */
     where: NovelVolumeWhereUniqueInput
@@ -53770,6 +54088,26 @@ export namespace Prisma {
   }
 
   /**
+   * NovelVolume.chapters
+   */
+  export type NovelVolume$chaptersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    where?: NovelChapterWhereInput
+    orderBy?: NovelChapterOrderByWithRelationInput | NovelChapterOrderByWithRelationInput[]
+    cursor?: NovelChapterWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: NovelChapterScalarFieldEnum | NovelChapterScalarFieldEnum[]
+  }
+
+  /**
    * NovelVolume without action
    */
   export type NovelVolumeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -53777,6 +54115,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the NovelVolume
      */
     select?: NovelVolumeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
   }
 
 
@@ -62700,6 +63042,7 @@ export namespace Prisma {
     shot?: boolean | Asset$shotArgs<ExtArgs>
     job?: boolean | Asset$jobArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    fingerprint?: boolean | Asset$fingerprintArgs<ExtArgs>
   }, ExtArgs["result"]["asset"]>
 
   export type AssetSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -62721,6 +63064,7 @@ export namespace Prisma {
     shot?: boolean | Asset$shotArgs<ExtArgs>
     job?: boolean | Asset$jobArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    fingerprint?: boolean | Asset$fingerprintArgs<ExtArgs>
   }, ExtArgs["result"]["asset"]>
 
   export type AssetSelectScalar = {
@@ -62745,11 +63089,13 @@ export namespace Prisma {
     shot?: boolean | Asset$shotArgs<ExtArgs>
     job?: boolean | Asset$jobArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    fingerprint?: boolean | Asset$fingerprintArgs<ExtArgs>
   }
   export type AssetIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     shot?: boolean | Asset$shotArgs<ExtArgs>
     job?: boolean | Asset$jobArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    fingerprint?: boolean | Asset$fingerprintArgs<ExtArgs>
   }
 
   export type $AssetPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -62758,6 +63104,7 @@ export namespace Prisma {
       shot: Prisma.$ShotPayload<ExtArgs> | null
       job: Prisma.$ShotJobPayload<ExtArgs> | null
       project: Prisma.$ProjectPayload<ExtArgs>
+      fingerprint: Prisma.$SecurityFingerprintPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -63142,6 +63489,7 @@ export namespace Prisma {
     shot<T extends Asset$shotArgs<ExtArgs> = {}>(args?: Subset<T, Asset$shotArgs<ExtArgs>>): Prisma__ShotClient<$Result.GetResult<Prisma.$ShotPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     job<T extends Asset$jobArgs<ExtArgs> = {}>(args?: Subset<T, Asset$jobArgs<ExtArgs>>): Prisma__ShotJobClient<$Result.GetResult<Prisma.$ShotJobPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    fingerprint<T extends Asset$fingerprintArgs<ExtArgs> = {}>(args?: Subset<T, Asset$fingerprintArgs<ExtArgs>>): Prisma__SecurityFingerprintClient<$Result.GetResult<Prisma.$SecurityFingerprintPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -63531,6 +63879,21 @@ export namespace Prisma {
      */
     include?: ShotJobInclude<ExtArgs> | null
     where?: ShotJobWhereInput
+  }
+
+  /**
+   * Asset.fingerprint
+   */
+  export type Asset$fingerprintArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityFingerprint
+     */
+    select?: SecurityFingerprintSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SecurityFingerprintInclude<ExtArgs> | null
+    where?: SecurityFingerprintWhereInput
   }
 
   /**
@@ -65865,6 +66228,7 @@ export namespace Prisma {
     title: 'title',
     summary: 'summary',
     sceneDraftId: 'sceneDraftId',
+    reviewStatus: 'reviewStatus',
     characters: 'characters',
     enrichedText: 'enrichedText',
     projectId: 'projectId',
@@ -65880,6 +66244,7 @@ export namespace Prisma {
     index: 'index',
     title: 'title',
     description: 'description',
+    reviewStatus: 'reviewStatus',
     type: 'type',
     params: 'params',
     qualityScore: 'qualityScore',
@@ -65956,6 +66321,7 @@ export namespace Prisma {
     engineKey: 'engineKey',
     adapterName: 'adapterName',
     adapterType: 'adapterType',
+    mode: 'mode',
     config: 'config',
     enabled: 'enabled',
     version: 'version',
@@ -66321,7 +66687,8 @@ export namespace Prisma {
     characterCount: 'characterCount',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
-    summary: 'summary'
+    summary: 'summary',
+    novelVolumeId: 'novelVolumeId'
   };
 
   export type NovelChapterScalarFieldEnum = (typeof NovelChapterScalarFieldEnum)[keyof typeof NovelChapterScalarFieldEnum]
@@ -66459,6 +66826,7 @@ export namespace Prisma {
   export const NovelVolumeScalarFieldEnum: {
     id: 'id',
     projectId: 'projectId',
+    novelSourceId: 'novelSourceId',
     index: 'index',
     title: 'title',
     createdAt: 'createdAt',
@@ -66856,6 +67224,20 @@ export namespace Prisma {
    * Reference to a field of type 'Int[]'
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'ShotReviewStatus'
+   */
+  export type EnumShotReviewStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ShotReviewStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'ShotReviewStatus[]'
+   */
+  export type ListEnumShotReviewStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ShotReviewStatus[]'>
     
 
 
@@ -67841,9 +68223,10 @@ export namespace Prisma {
     title?: StringFilter<"Scene"> | string
     summary?: StringNullableFilter<"Scene"> | string | null
     sceneDraftId?: StringNullableFilter<"Scene"> | string | null
+    reviewStatus?: EnumShotReviewStatusFilter<"Scene"> | $Enums.ShotReviewStatus
     characters?: JsonNullableFilter<"Scene">
     enrichedText?: StringNullableFilter<"Scene"> | string | null
-    projectId?: StringNullableFilter<"Scene"> | string | null
+    projectId?: StringFilter<"Scene"> | string
     visualDensityScore?: FloatNullableFilter<"Scene"> | number | null
     engineTasks?: EngineTaskListRelationFilter
     episode?: XOR<EpisodeRelationFilter, EpisodeWhereInput>
@@ -67859,9 +68242,10 @@ export namespace Prisma {
     title?: SortOrder
     summary?: SortOrderInput | SortOrder
     sceneDraftId?: SortOrderInput | SortOrder
+    reviewStatus?: SortOrder
     characters?: SortOrderInput | SortOrder
     enrichedText?: SortOrderInput | SortOrder
-    projectId?: SortOrderInput | SortOrder
+    projectId?: SortOrder
     visualDensityScore?: SortOrderInput | SortOrder
     engineTasks?: EngineTaskOrderByRelationAggregateInput
     episode?: EpisodeOrderByWithRelationInput
@@ -67880,9 +68264,10 @@ export namespace Prisma {
     index?: IntFilter<"Scene"> | number
     title?: StringFilter<"Scene"> | string
     summary?: StringNullableFilter<"Scene"> | string | null
+    reviewStatus?: EnumShotReviewStatusFilter<"Scene"> | $Enums.ShotReviewStatus
     characters?: JsonNullableFilter<"Scene">
     enrichedText?: StringNullableFilter<"Scene"> | string | null
-    projectId?: StringNullableFilter<"Scene"> | string | null
+    projectId?: StringFilter<"Scene"> | string
     visualDensityScore?: FloatNullableFilter<"Scene"> | number | null
     engineTasks?: EngineTaskListRelationFilter
     episode?: XOR<EpisodeRelationFilter, EpisodeWhereInput>
@@ -67898,9 +68283,10 @@ export namespace Prisma {
     title?: SortOrder
     summary?: SortOrderInput | SortOrder
     sceneDraftId?: SortOrderInput | SortOrder
+    reviewStatus?: SortOrder
     characters?: SortOrderInput | SortOrder
     enrichedText?: SortOrderInput | SortOrder
-    projectId?: SortOrderInput | SortOrder
+    projectId?: SortOrder
     visualDensityScore?: SortOrderInput | SortOrder
     _count?: SceneCountOrderByAggregateInput
     _avg?: SceneAvgOrderByAggregateInput
@@ -67919,9 +68305,10 @@ export namespace Prisma {
     title?: StringWithAggregatesFilter<"Scene"> | string
     summary?: StringNullableWithAggregatesFilter<"Scene"> | string | null
     sceneDraftId?: StringNullableWithAggregatesFilter<"Scene"> | string | null
+    reviewStatus?: EnumShotReviewStatusWithAggregatesFilter<"Scene"> | $Enums.ShotReviewStatus
     characters?: JsonNullableWithAggregatesFilter<"Scene">
     enrichedText?: StringNullableWithAggregatesFilter<"Scene"> | string | null
-    projectId?: StringNullableWithAggregatesFilter<"Scene"> | string | null
+    projectId?: StringWithAggregatesFilter<"Scene"> | string
     visualDensityScore?: FloatNullableWithAggregatesFilter<"Scene"> | number | null
   }
 
@@ -67934,6 +68321,7 @@ export namespace Prisma {
     index?: IntFilter<"Shot"> | number
     title?: StringNullableFilter<"Shot"> | string | null
     description?: StringNullableFilter<"Shot"> | string | null
+    reviewStatus?: EnumShotReviewStatusFilter<"Shot"> | $Enums.ShotReviewStatus
     type?: StringFilter<"Shot"> | string
     params?: JsonFilter<"Shot">
     qualityScore?: JsonFilter<"Shot">
@@ -67958,6 +68346,7 @@ export namespace Prisma {
     index?: SortOrder
     title?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
+    reviewStatus?: SortOrder
     type?: SortOrder
     params?: SortOrder
     qualityScore?: SortOrder
@@ -67985,6 +68374,7 @@ export namespace Prisma {
     index?: IntFilter<"Shot"> | number
     title?: StringNullableFilter<"Shot"> | string | null
     description?: StringNullableFilter<"Shot"> | string | null
+    reviewStatus?: EnumShotReviewStatusFilter<"Shot"> | $Enums.ShotReviewStatus
     type?: StringFilter<"Shot"> | string
     params?: JsonFilter<"Shot">
     qualityScore?: JsonFilter<"Shot">
@@ -68009,6 +68399,7 @@ export namespace Prisma {
     index?: SortOrder
     title?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
+    reviewStatus?: SortOrder
     type?: SortOrder
     params?: SortOrder
     qualityScore?: SortOrder
@@ -68032,6 +68423,7 @@ export namespace Prisma {
     index?: IntWithAggregatesFilter<"Shot"> | number
     title?: StringNullableWithAggregatesFilter<"Shot"> | string | null
     description?: StringNullableWithAggregatesFilter<"Shot"> | string | null
+    reviewStatus?: EnumShotReviewStatusWithAggregatesFilter<"Shot"> | $Enums.ShotReviewStatus
     type?: StringWithAggregatesFilter<"Shot"> | string
     params?: JsonWithAggregatesFilter<"Shot">
     qualityScore?: JsonWithAggregatesFilter<"Shot">
@@ -68352,6 +68744,7 @@ export namespace Prisma {
     engineKey?: StringFilter<"Engine"> | string
     adapterName?: StringFilter<"Engine"> | string
     adapterType?: StringFilter<"Engine"> | string
+    mode?: StringFilter<"Engine"> | string
     config?: JsonFilter<"Engine">
     enabled?: BoolFilter<"Engine"> | boolean
     version?: StringNullableFilter<"Engine"> | string | null
@@ -68371,6 +68764,7 @@ export namespace Prisma {
     engineKey?: SortOrder
     adapterName?: SortOrder
     adapterType?: SortOrder
+    mode?: SortOrder
     config?: SortOrder
     enabled?: SortOrder
     version?: SortOrderInput | SortOrder
@@ -68394,6 +68788,7 @@ export namespace Prisma {
     NOT?: EngineWhereInput | EngineWhereInput[]
     adapterName?: StringFilter<"Engine"> | string
     adapterType?: StringFilter<"Engine"> | string
+    mode?: StringFilter<"Engine"> | string
     config?: JsonFilter<"Engine">
     enabled?: BoolFilter<"Engine"> | boolean
     version?: StringNullableFilter<"Engine"> | string | null
@@ -68412,6 +68807,7 @@ export namespace Prisma {
     engineKey?: SortOrder
     adapterName?: SortOrder
     adapterType?: SortOrder
+    mode?: SortOrder
     config?: SortOrder
     enabled?: SortOrder
     version?: SortOrderInput | SortOrder
@@ -68435,6 +68831,7 @@ export namespace Prisma {
     engineKey?: StringWithAggregatesFilter<"Engine"> | string
     adapterName?: StringWithAggregatesFilter<"Engine"> | string
     adapterType?: StringWithAggregatesFilter<"Engine"> | string
+    mode?: StringWithAggregatesFilter<"Engine"> | string
     config?: JsonWithAggregatesFilter<"Engine">
     enabled?: BoolWithAggregatesFilter<"Engine"> | boolean
     version?: StringNullableWithAggregatesFilter<"Engine"> | string | null
@@ -70156,6 +70553,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"NovelSource"> | Date | string
     analysisJobs?: NovelAnalysisJobListRelationFilter
     chapters?: NovelChapterListRelationFilter
+    volumes?: NovelVolumeListRelationFilter
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
   }
 
@@ -70176,6 +70574,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     analysisJobs?: NovelAnalysisJobOrderByRelationAggregateInput
     chapters?: NovelChapterOrderByRelationAggregateInput
+    volumes?: NovelVolumeOrderByRelationAggregateInput
     project?: ProjectOrderByWithRelationInput
   }
 
@@ -70199,6 +70598,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"NovelSource"> | Date | string
     analysisJobs?: NovelAnalysisJobListRelationFilter
     chapters?: NovelChapterListRelationFilter
+    volumes?: NovelVolumeListRelationFilter
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
   }, "id">
 
@@ -70259,8 +70659,10 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"NovelChapter"> | Date | string
     updatedAt?: DateTimeFilter<"NovelChapter"> | Date | string
     summary?: StringNullableFilter<"NovelChapter"> | string | null
+    novelVolumeId?: StringNullableFilter<"NovelChapter"> | string | null
     episode?: XOR<EpisodeNullableRelationFilter, EpisodeWhereInput> | null
     novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
+    novelVolume?: XOR<NovelVolumeNullableRelationFilter, NovelVolumeWhereInput> | null
     sceneDrafts?: SceneDraftListRelationFilter
     novelScenes?: NovelSceneListRelationFilter
   }
@@ -70277,8 +70679,10 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     summary?: SortOrderInput | SortOrder
+    novelVolumeId?: SortOrderInput | SortOrder
     episode?: EpisodeOrderByWithRelationInput
     novelSource?: NovelSourceOrderByWithRelationInput
+    novelVolume?: NovelVolumeOrderByWithRelationInput
     sceneDrafts?: SceneDraftOrderByRelationAggregateInput
     novelScenes?: NovelSceneOrderByRelationAggregateInput
   }
@@ -70299,8 +70703,10 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"NovelChapter"> | Date | string
     updatedAt?: DateTimeFilter<"NovelChapter"> | Date | string
     summary?: StringNullableFilter<"NovelChapter"> | string | null
+    novelVolumeId?: StringNullableFilter<"NovelChapter"> | string | null
     episode?: XOR<EpisodeNullableRelationFilter, EpisodeWhereInput> | null
     novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
+    novelVolume?: XOR<NovelVolumeNullableRelationFilter, NovelVolumeWhereInput> | null
     sceneDrafts?: SceneDraftListRelationFilter
     novelScenes?: NovelSceneListRelationFilter
   }, "id" | "novelSourceId_orderIndex">
@@ -70317,6 +70723,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     summary?: SortOrderInput | SortOrder
+    novelVolumeId?: SortOrderInput | SortOrder
     _count?: NovelChapterCountOrderByAggregateInput
     _avg?: NovelChapterAvgOrderByAggregateInput
     _max?: NovelChapterMaxOrderByAggregateInput
@@ -70339,6 +70746,7 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"NovelChapter"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"NovelChapter"> | Date | string
     summary?: StringNullableWithAggregatesFilter<"NovelChapter"> | string | null
+    novelVolumeId?: StringNullableWithAggregatesFilter<"NovelChapter"> | string | null
   }
 
   export type SceneDraftWhereInput = {
@@ -70757,6 +71165,7 @@ export namespace Prisma {
     assetId?: StringNullableFilter<"SecurityFingerprint"> | string | null
     fpVector?: JsonNullableFilter<"SecurityFingerprint">
     createdAt?: DateTimeFilter<"SecurityFingerprint"> | Date | string
+    assets?: AssetListRelationFilter
   }
 
   export type SecurityFingerprintOrderByWithRelationInput = {
@@ -70764,6 +71173,7 @@ export namespace Prisma {
     assetId?: SortOrderInput | SortOrder
     fpVector?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    assets?: AssetOrderByRelationAggregateInput
   }
 
   export type SecurityFingerprintWhereUniqueInput = Prisma.AtLeast<{
@@ -70774,6 +71184,7 @@ export namespace Prisma {
     assetId?: StringNullableFilter<"SecurityFingerprint"> | string | null
     fpVector?: JsonNullableFilter<"SecurityFingerprint">
     createdAt?: DateTimeFilter<"SecurityFingerprint"> | Date | string
+    assets?: AssetListRelationFilter
   }, "id">
 
   export type SecurityFingerprintOrderByWithAggregationInput = {
@@ -71005,19 +71416,25 @@ export namespace Prisma {
     NOT?: NovelVolumeWhereInput | NovelVolumeWhereInput[]
     id?: StringFilter<"NovelVolume"> | string
     projectId?: StringNullableFilter<"NovelVolume"> | string | null
+    novelSourceId?: StringFilter<"NovelVolume"> | string
     index?: IntFilter<"NovelVolume"> | number
     title?: StringFilter<"NovelVolume"> | string
     createdAt?: DateTimeFilter<"NovelVolume"> | Date | string
     updatedAt?: DateTimeFilter<"NovelVolume"> | Date | string
+    novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
+    chapters?: NovelChapterListRelationFilter
   }
 
   export type NovelVolumeOrderByWithRelationInput = {
     id?: SortOrder
     projectId?: SortOrderInput | SortOrder
+    novelSourceId?: SortOrder
     index?: SortOrder
     title?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    novelSource?: NovelSourceOrderByWithRelationInput
+    chapters?: NovelChapterOrderByRelationAggregateInput
   }
 
   export type NovelVolumeWhereUniqueInput = Prisma.AtLeast<{
@@ -71026,15 +71443,19 @@ export namespace Prisma {
     OR?: NovelVolumeWhereInput[]
     NOT?: NovelVolumeWhereInput | NovelVolumeWhereInput[]
     projectId?: StringNullableFilter<"NovelVolume"> | string | null
+    novelSourceId?: StringFilter<"NovelVolume"> | string
     index?: IntFilter<"NovelVolume"> | number
     title?: StringFilter<"NovelVolume"> | string
     createdAt?: DateTimeFilter<"NovelVolume"> | Date | string
     updatedAt?: DateTimeFilter<"NovelVolume"> | Date | string
+    novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
+    chapters?: NovelChapterListRelationFilter
   }, "id">
 
   export type NovelVolumeOrderByWithAggregationInput = {
     id?: SortOrder
     projectId?: SortOrderInput | SortOrder
+    novelSourceId?: SortOrder
     index?: SortOrder
     title?: SortOrder
     createdAt?: SortOrder
@@ -71052,6 +71473,7 @@ export namespace Prisma {
     NOT?: NovelVolumeScalarWhereWithAggregatesInput | NovelVolumeScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"NovelVolume"> | string
     projectId?: StringNullableWithAggregatesFilter<"NovelVolume"> | string | null
+    novelSourceId?: StringWithAggregatesFilter<"NovelVolume"> | string
     index?: IntWithAggregatesFilter<"NovelVolume"> | number
     title?: StringWithAggregatesFilter<"NovelVolume"> | string
     createdAt?: DateTimeWithAggregatesFilter<"NovelVolume"> | Date | string
@@ -71753,6 +72175,7 @@ export namespace Prisma {
     shot?: XOR<ShotNullableRelationFilter, ShotWhereInput> | null
     job?: XOR<ShotJobNullableRelationFilter, ShotJobWhereInput> | null
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+    fingerprint?: XOR<SecurityFingerprintNullableRelationFilter, SecurityFingerprintWhereInput> | null
   }
 
   export type AssetOrderByWithRelationInput = {
@@ -71774,6 +72197,7 @@ export namespace Prisma {
     shot?: ShotOrderByWithRelationInput
     job?: ShotJobOrderByWithRelationInput
     project?: ProjectOrderByWithRelationInput
+    fingerprint?: SecurityFingerprintOrderByWithRelationInput
   }
 
   export type AssetWhereUniqueInput = Prisma.AtLeast<{
@@ -71799,6 +72223,7 @@ export namespace Prisma {
     shot?: XOR<ShotNullableRelationFilter, ShotWhereInput> | null
     job?: XOR<ShotJobNullableRelationFilter, ShotJobWhereInput> | null
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+    fingerprint?: XOR<SecurityFingerprintNullableRelationFilter, SecurityFingerprintWhereInput> | null
   }, "id" | "ownerType_ownerId_type">
 
   export type AssetOrderByWithAggregationInput = {
@@ -72724,9 +73149,10 @@ export namespace Prisma {
     index: number
     title: string
     summary?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskCreateNestedManyWithoutSceneInput
     episode: EpisodeCreateNestedOneWithoutScenesInput
@@ -72742,9 +73168,10 @@ export namespace Prisma {
     title: string
     summary?: string | null
     sceneDraftId?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskUncheckedCreateNestedManyWithoutSceneInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutSceneInput
@@ -72756,9 +73183,10 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUpdateManyWithoutSceneNestedInput
     episode?: EpisodeUpdateOneRequiredWithoutScenesNestedInput
@@ -72774,9 +73202,10 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     sceneDraftId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUncheckedUpdateManyWithoutSceneNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutSceneNestedInput
@@ -72790,9 +73219,10 @@ export namespace Prisma {
     title: string
     summary?: string | null
     sceneDraftId?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
   }
 
@@ -72801,9 +73231,10 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
   }
 
@@ -72814,9 +73245,10 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     sceneDraftId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
   }
 
@@ -72825,6 +73257,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -72848,6 +73281,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -72869,6 +73303,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -72892,6 +73327,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -72914,6 +73350,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -72928,6 +73365,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -72942,6 +73380,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -73280,6 +73719,7 @@ export namespace Prisma {
     engineKey: string
     adapterName: string
     adapterType: string
+    mode?: string
     config: JsonNullValueInput | InputJsonValue
     enabled?: boolean
     version?: string | null
@@ -73299,6 +73739,7 @@ export namespace Prisma {
     engineKey: string
     adapterName: string
     adapterType: string
+    mode?: string
     config: JsonNullValueInput | InputJsonValue
     enabled?: boolean
     version?: string | null
@@ -73318,6 +73759,7 @@ export namespace Prisma {
     engineKey?: StringFieldUpdateOperationsInput | string
     adapterName?: StringFieldUpdateOperationsInput | string
     adapterType?: StringFieldUpdateOperationsInput | string
+    mode?: StringFieldUpdateOperationsInput | string
     config?: JsonNullValueInput | InputJsonValue
     enabled?: BoolFieldUpdateOperationsInput | boolean
     version?: NullableStringFieldUpdateOperationsInput | string | null
@@ -73337,6 +73779,7 @@ export namespace Prisma {
     engineKey?: StringFieldUpdateOperationsInput | string
     adapterName?: StringFieldUpdateOperationsInput | string
     adapterType?: StringFieldUpdateOperationsInput | string
+    mode?: StringFieldUpdateOperationsInput | string
     config?: JsonNullValueInput | InputJsonValue
     enabled?: BoolFieldUpdateOperationsInput | boolean
     version?: NullableStringFieldUpdateOperationsInput | string | null
@@ -73356,6 +73799,7 @@ export namespace Prisma {
     engineKey: string
     adapterName: string
     adapterType: string
+    mode?: string
     config: JsonNullValueInput | InputJsonValue
     enabled?: boolean
     version?: string | null
@@ -73373,6 +73817,7 @@ export namespace Prisma {
     engineKey?: StringFieldUpdateOperationsInput | string
     adapterName?: StringFieldUpdateOperationsInput | string
     adapterType?: StringFieldUpdateOperationsInput | string
+    mode?: StringFieldUpdateOperationsInput | string
     config?: JsonNullValueInput | InputJsonValue
     enabled?: BoolFieldUpdateOperationsInput | boolean
     version?: NullableStringFieldUpdateOperationsInput | string | null
@@ -73390,6 +73835,7 @@ export namespace Prisma {
     engineKey?: StringFieldUpdateOperationsInput | string
     adapterName?: StringFieldUpdateOperationsInput | string
     adapterType?: StringFieldUpdateOperationsInput | string
+    mode?: StringFieldUpdateOperationsInput | string
     config?: JsonNullValueInput | InputJsonValue
     enabled?: BoolFieldUpdateOperationsInput | boolean
     version?: NullableStringFieldUpdateOperationsInput | string | null
@@ -75217,6 +75663,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     analysisJobs?: NovelAnalysisJobCreateNestedManyWithoutNovelSourceInput
     chapters?: NovelChapterCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeCreateNestedManyWithoutNovelSourceInput
     project: ProjectCreateNestedOneWithoutNovelSourcesInput
   }
 
@@ -75237,6 +75684,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     analysisJobs?: NovelAnalysisJobUncheckedCreateNestedManyWithoutNovelSourceInput
     chapters?: NovelChapterUncheckedCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeUncheckedCreateNestedManyWithoutNovelSourceInput
   }
 
   export type NovelSourceUpdateInput = {
@@ -75255,6 +75703,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     analysisJobs?: NovelAnalysisJobUpdateManyWithoutNovelSourceNestedInput
     chapters?: NovelChapterUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUpdateManyWithoutNovelSourceNestedInput
     project?: ProjectUpdateOneRequiredWithoutNovelSourcesNestedInput
   }
 
@@ -75275,6 +75724,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     analysisJobs?: NovelAnalysisJobUncheckedUpdateManyWithoutNovelSourceNestedInput
     chapters?: NovelChapterUncheckedUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUncheckedUpdateManyWithoutNovelSourceNestedInput
   }
 
   export type NovelSourceCreateManyInput = {
@@ -75340,6 +75790,7 @@ export namespace Prisma {
     summary?: string | null
     episode?: EpisodeCreateNestedOneWithoutChapterInput
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
+    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
     novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
   }
@@ -75356,6 +75807,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     summary?: string | null
+    novelVolumeId?: string | null
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
     novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
@@ -75374,6 +75826,7 @@ export namespace Prisma {
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     episode?: EpisodeUpdateOneWithoutChapterNestedInput
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
+    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
     novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
   }
@@ -75390,6 +75843,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
     novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
@@ -75407,6 +75861,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     summary?: string | null
+    novelVolumeId?: string | null
   }
 
   export type NovelChapterUpdateManyMutationInput = {
@@ -75434,6 +75889,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SceneDraftCreateInput = {
@@ -75896,6 +76352,7 @@ export namespace Prisma {
     assetId?: string | null
     fpVector?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
+    assets?: AssetCreateNestedManyWithoutFingerprintInput
   }
 
   export type SecurityFingerprintUncheckedCreateInput = {
@@ -75903,6 +76360,7 @@ export namespace Prisma {
     assetId?: string | null
     fpVector?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
+    assets?: AssetUncheckedCreateNestedManyWithoutFingerprintInput
   }
 
   export type SecurityFingerprintUpdateInput = {
@@ -75910,6 +76368,7 @@ export namespace Prisma {
     assetId?: NullableStringFieldUpdateOperationsInput | string | null
     fpVector?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    assets?: AssetUpdateManyWithoutFingerprintNestedInput
   }
 
   export type SecurityFingerprintUncheckedUpdateInput = {
@@ -75917,6 +76376,7 @@ export namespace Prisma {
     assetId?: NullableStringFieldUpdateOperationsInput | string | null
     fpVector?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    assets?: AssetUncheckedUpdateManyWithoutFingerprintNestedInput
   }
 
   export type SecurityFingerprintCreateManyInput = {
@@ -76178,15 +76638,19 @@ export namespace Prisma {
     title: string
     createdAt?: Date | string
     updatedAt?: Date | string
+    novelSource: NovelSourceCreateNestedOneWithoutVolumesInput
+    chapters?: NovelChapterCreateNestedManyWithoutNovelVolumeInput
   }
 
   export type NovelVolumeUncheckedCreateInput = {
     id?: string
     projectId?: string | null
+    novelSourceId: string
     index: number
     title: string
     createdAt?: Date | string
     updatedAt?: Date | string
+    chapters?: NovelChapterUncheckedCreateNestedManyWithoutNovelVolumeInput
   }
 
   export type NovelVolumeUpdateInput = {
@@ -76196,20 +76660,25 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    novelSource?: NovelSourceUpdateOneRequiredWithoutVolumesNestedInput
+    chapters?: NovelChapterUpdateManyWithoutNovelVolumeNestedInput
   }
 
   export type NovelVolumeUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    novelSourceId?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    chapters?: NovelChapterUncheckedUpdateManyWithoutNovelVolumeNestedInput
   }
 
   export type NovelVolumeCreateManyInput = {
     id?: string
     projectId?: string | null
+    novelSourceId: string
     index: number
     title: string
     createdAt?: Date | string
@@ -76228,6 +76697,7 @@ export namespace Prisma {
   export type NovelVolumeUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    novelSourceId?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -77006,10 +77476,10 @@ export namespace Prisma {
     hlsPlaylistUrl?: string | null
     signedUrl?: string | null
     watermarkMode?: string | null
-    fingerprintId?: string | null
     shot?: ShotCreateNestedOneWithoutAssetsInput
     job?: ShotJobCreateNestedOneWithoutGeneratedAssetInput
     project: ProjectCreateNestedOneWithoutAssetsInput
+    fingerprint?: SecurityFingerprintCreateNestedOneWithoutAssetsInput
   }
 
   export type AssetUncheckedCreateInput = {
@@ -77042,10 +77512,10 @@ export namespace Prisma {
     hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
-    fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
     shot?: ShotUpdateOneWithoutAssetsNestedInput
     job?: ShotJobUpdateOneWithoutGeneratedAssetNestedInput
     project?: ProjectUpdateOneRequiredWithoutAssetsNestedInput
+    fingerprint?: SecurityFingerprintUpdateOneWithoutAssetsNestedInput
   }
 
   export type AssetUncheckedUpdateInput = {
@@ -77096,7 +77566,6 @@ export namespace Prisma {
     hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
-    fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AssetUncheckedUpdateManyInput = {
@@ -78201,6 +78670,13 @@ export namespace Prisma {
     index?: SortOrder
   }
 
+  export type EnumShotReviewStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.ShotReviewStatus | EnumShotReviewStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ShotReviewStatus[] | ListEnumShotReviewStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ShotReviewStatus[] | ListEnumShotReviewStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumShotReviewStatusFilter<$PrismaModel> | $Enums.ShotReviewStatus
+  }
+
   export type FloatNullableFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
@@ -78229,6 +78705,7 @@ export namespace Prisma {
     title?: SortOrder
     summary?: SortOrder
     sceneDraftId?: SortOrder
+    reviewStatus?: SortOrder
     characters?: SortOrder
     enrichedText?: SortOrder
     projectId?: SortOrder
@@ -78247,6 +78724,7 @@ export namespace Prisma {
     title?: SortOrder
     summary?: SortOrder
     sceneDraftId?: SortOrder
+    reviewStatus?: SortOrder
     enrichedText?: SortOrder
     projectId?: SortOrder
     visualDensityScore?: SortOrder
@@ -78259,6 +78737,7 @@ export namespace Prisma {
     title?: SortOrder
     summary?: SortOrder
     sceneDraftId?: SortOrder
+    reviewStatus?: SortOrder
     enrichedText?: SortOrder
     projectId?: SortOrder
     visualDensityScore?: SortOrder
@@ -78267,6 +78746,16 @@ export namespace Prisma {
   export type SceneSumOrderByAggregateInput = {
     index?: SortOrder
     visualDensityScore?: SortOrder
+  }
+
+  export type EnumShotReviewStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ShotReviewStatus | EnumShotReviewStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ShotReviewStatus[] | ListEnumShotReviewStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ShotReviewStatus[] | ListEnumShotReviewStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumShotReviewStatusWithAggregatesFilter<$PrismaModel> | $Enums.ShotReviewStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumShotReviewStatusFilter<$PrismaModel>
+    _max?: NestedEnumShotReviewStatusFilter<$PrismaModel>
   }
 
   export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -78370,6 +78859,7 @@ export namespace Prisma {
     index?: SortOrder
     title?: SortOrder
     description?: SortOrder
+    reviewStatus?: SortOrder
     type?: SortOrder
     params?: SortOrder
     qualityScore?: SortOrder
@@ -78390,6 +78880,7 @@ export namespace Prisma {
     index?: SortOrder
     title?: SortOrder
     description?: SortOrder
+    reviewStatus?: SortOrder
     type?: SortOrder
     reviewedAt?: SortOrder
     durationSeconds?: SortOrder
@@ -78403,6 +78894,7 @@ export namespace Prisma {
     index?: SortOrder
     title?: SortOrder
     description?: SortOrder
+    reviewStatus?: SortOrder
     type?: SortOrder
     reviewedAt?: SortOrder
     durationSeconds?: SortOrder
@@ -78701,6 +79193,7 @@ export namespace Prisma {
     engineKey?: SortOrder
     adapterName?: SortOrder
     adapterType?: SortOrder
+    mode?: SortOrder
     config?: SortOrder
     enabled?: SortOrder
     version?: SortOrder
@@ -78718,6 +79211,7 @@ export namespace Prisma {
     engineKey?: SortOrder
     adapterName?: SortOrder
     adapterType?: SortOrder
+    mode?: SortOrder
     enabled?: SortOrder
     version?: SortOrder
     defaultVersion?: SortOrder
@@ -78734,6 +79228,7 @@ export namespace Prisma {
     engineKey?: SortOrder
     adapterName?: SortOrder
     adapterType?: SortOrder
+    mode?: SortOrder
     enabled?: SortOrder
     version?: SortOrder
     defaultVersion?: SortOrder
@@ -80019,7 +80514,17 @@ export namespace Prisma {
     none?: NovelChapterWhereInput
   }
 
+  export type NovelVolumeListRelationFilter = {
+    every?: NovelVolumeWhereInput
+    some?: NovelVolumeWhereInput
+    none?: NovelVolumeWhereInput
+  }
+
   export type NovelChapterOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type NovelVolumeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -80089,6 +80594,11 @@ export namespace Prisma {
     isNot?: NovelSourceWhereInput
   }
 
+  export type NovelVolumeNullableRelationFilter = {
+    is?: NovelVolumeWhereInput | null
+    isNot?: NovelVolumeWhereInput | null
+  }
+
   export type SceneDraftListRelationFilter = {
     every?: SceneDraftWhereInput
     some?: SceneDraftWhereInput
@@ -80126,6 +80636,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     summary?: SortOrder
+    novelVolumeId?: SortOrder
   }
 
   export type NovelChapterAvgOrderByAggregateInput = {
@@ -80147,6 +80658,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     summary?: SortOrder
+    novelVolumeId?: SortOrder
   }
 
   export type NovelChapterMinOrderByAggregateInput = {
@@ -80161,6 +80673,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     summary?: SortOrder
+    novelVolumeId?: SortOrder
   }
 
   export type NovelChapterSumOrderByAggregateInput = {
@@ -80578,6 +81091,7 @@ export namespace Prisma {
   export type NovelVolumeCountOrderByAggregateInput = {
     id?: SortOrder
     projectId?: SortOrder
+    novelSourceId?: SortOrder
     index?: SortOrder
     title?: SortOrder
     createdAt?: SortOrder
@@ -80591,6 +81105,7 @@ export namespace Prisma {
   export type NovelVolumeMaxOrderByAggregateInput = {
     id?: SortOrder
     projectId?: SortOrder
+    novelSourceId?: SortOrder
     index?: SortOrder
     title?: SortOrder
     createdAt?: SortOrder
@@ -80600,6 +81115,7 @@ export namespace Prisma {
   export type NovelVolumeMinOrderByAggregateInput = {
     id?: SortOrder
     projectId?: SortOrder
+    novelSourceId?: SortOrder
     index?: SortOrder
     title?: SortOrder
     createdAt?: SortOrder
@@ -81002,6 +81518,11 @@ export namespace Prisma {
   export type ShotJobNullableRelationFilter = {
     is?: ShotJobWhereInput | null
     isNot?: ShotJobWhereInput | null
+  }
+
+  export type SecurityFingerprintNullableRelationFilter = {
+    is?: SecurityFingerprintWhereInput | null
+    isNot?: SecurityFingerprintWhereInput | null
   }
 
   export type AssetOwnerTypeOwnerIdTypeCompoundUniqueInput = {
@@ -83128,6 +83649,10 @@ export namespace Prisma {
     connect?: ShotWhereUniqueInput | ShotWhereUniqueInput[]
   }
 
+  export type EnumShotReviewStatusFieldUpdateOperationsInput = {
+    set?: $Enums.ShotReviewStatus
+  }
+
   export type NullableFloatFieldUpdateOperationsInput = {
     set?: number | null
     increment?: number
@@ -84716,6 +85241,13 @@ export namespace Prisma {
     connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
   }
 
+  export type NovelVolumeCreateNestedManyWithoutNovelSourceInput = {
+    create?: XOR<NovelVolumeCreateWithoutNovelSourceInput, NovelVolumeUncheckedCreateWithoutNovelSourceInput> | NovelVolumeCreateWithoutNovelSourceInput[] | NovelVolumeUncheckedCreateWithoutNovelSourceInput[]
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutNovelSourceInput | NovelVolumeCreateOrConnectWithoutNovelSourceInput[]
+    createMany?: NovelVolumeCreateManyNovelSourceInputEnvelope
+    connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+  }
+
   export type ProjectCreateNestedOneWithoutNovelSourcesInput = {
     create?: XOR<ProjectCreateWithoutNovelSourcesInput, ProjectUncheckedCreateWithoutNovelSourcesInput>
     connectOrCreate?: ProjectCreateOrConnectWithoutNovelSourcesInput
@@ -84734,6 +85266,13 @@ export namespace Prisma {
     connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelSourceInput | NovelChapterCreateOrConnectWithoutNovelSourceInput[]
     createMany?: NovelChapterCreateManyNovelSourceInputEnvelope
     connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+  }
+
+  export type NovelVolumeUncheckedCreateNestedManyWithoutNovelSourceInput = {
+    create?: XOR<NovelVolumeCreateWithoutNovelSourceInput, NovelVolumeUncheckedCreateWithoutNovelSourceInput> | NovelVolumeCreateWithoutNovelSourceInput[] | NovelVolumeUncheckedCreateWithoutNovelSourceInput[]
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutNovelSourceInput | NovelVolumeCreateOrConnectWithoutNovelSourceInput[]
+    createMany?: NovelVolumeCreateManyNovelSourceInputEnvelope
+    connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
   }
 
   export type NovelAnalysisJobUpdateManyWithoutNovelSourceNestedInput = {
@@ -84762,6 +85301,20 @@ export namespace Prisma {
     update?: NovelChapterUpdateWithWhereUniqueWithoutNovelSourceInput | NovelChapterUpdateWithWhereUniqueWithoutNovelSourceInput[]
     updateMany?: NovelChapterUpdateManyWithWhereWithoutNovelSourceInput | NovelChapterUpdateManyWithWhereWithoutNovelSourceInput[]
     deleteMany?: NovelChapterScalarWhereInput | NovelChapterScalarWhereInput[]
+  }
+
+  export type NovelVolumeUpdateManyWithoutNovelSourceNestedInput = {
+    create?: XOR<NovelVolumeCreateWithoutNovelSourceInput, NovelVolumeUncheckedCreateWithoutNovelSourceInput> | NovelVolumeCreateWithoutNovelSourceInput[] | NovelVolumeUncheckedCreateWithoutNovelSourceInput[]
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutNovelSourceInput | NovelVolumeCreateOrConnectWithoutNovelSourceInput[]
+    upsert?: NovelVolumeUpsertWithWhereUniqueWithoutNovelSourceInput | NovelVolumeUpsertWithWhereUniqueWithoutNovelSourceInput[]
+    createMany?: NovelVolumeCreateManyNovelSourceInputEnvelope
+    set?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    disconnect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    delete?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    update?: NovelVolumeUpdateWithWhereUniqueWithoutNovelSourceInput | NovelVolumeUpdateWithWhereUniqueWithoutNovelSourceInput[]
+    updateMany?: NovelVolumeUpdateManyWithWhereWithoutNovelSourceInput | NovelVolumeUpdateManyWithWhereWithoutNovelSourceInput[]
+    deleteMany?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
   }
 
   export type ProjectUpdateOneRequiredWithoutNovelSourcesNestedInput = {
@@ -84800,6 +85353,20 @@ export namespace Prisma {
     deleteMany?: NovelChapterScalarWhereInput | NovelChapterScalarWhereInput[]
   }
 
+  export type NovelVolumeUncheckedUpdateManyWithoutNovelSourceNestedInput = {
+    create?: XOR<NovelVolumeCreateWithoutNovelSourceInput, NovelVolumeUncheckedCreateWithoutNovelSourceInput> | NovelVolumeCreateWithoutNovelSourceInput[] | NovelVolumeUncheckedCreateWithoutNovelSourceInput[]
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutNovelSourceInput | NovelVolumeCreateOrConnectWithoutNovelSourceInput[]
+    upsert?: NovelVolumeUpsertWithWhereUniqueWithoutNovelSourceInput | NovelVolumeUpsertWithWhereUniqueWithoutNovelSourceInput[]
+    createMany?: NovelVolumeCreateManyNovelSourceInputEnvelope
+    set?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    disconnect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    delete?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    update?: NovelVolumeUpdateWithWhereUniqueWithoutNovelSourceInput | NovelVolumeUpdateWithWhereUniqueWithoutNovelSourceInput[]
+    updateMany?: NovelVolumeUpdateManyWithWhereWithoutNovelSourceInput | NovelVolumeUpdateManyWithWhereWithoutNovelSourceInput[]
+    deleteMany?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
+  }
+
   export type EpisodeCreateNestedOneWithoutChapterInput = {
     create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
     connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput
@@ -84810,6 +85377,12 @@ export namespace Prisma {
     create?: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
     connectOrCreate?: NovelSourceCreateOrConnectWithoutChaptersInput
     connect?: NovelSourceWhereUniqueInput
+  }
+
+  export type NovelVolumeCreateNestedOneWithoutChaptersInput = {
+    create?: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutChaptersInput
+    connect?: NovelVolumeWhereUniqueInput
   }
 
   export type SceneDraftCreateNestedManyWithoutChapterInput = {
@@ -84862,6 +85435,16 @@ export namespace Prisma {
     upsert?: NovelSourceUpsertWithoutChaptersInput
     connect?: NovelSourceWhereUniqueInput
     update?: XOR<XOR<NovelSourceUpdateToOneWithWhereWithoutChaptersInput, NovelSourceUpdateWithoutChaptersInput>, NovelSourceUncheckedUpdateWithoutChaptersInput>
+  }
+
+  export type NovelVolumeUpdateOneWithoutChaptersNestedInput = {
+    create?: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutChaptersInput
+    upsert?: NovelVolumeUpsertWithoutChaptersInput
+    disconnect?: NovelVolumeWhereInput | boolean
+    delete?: NovelVolumeWhereInput | boolean
+    connect?: NovelVolumeWhereUniqueInput
+    update?: XOR<XOR<NovelVolumeUpdateToOneWithWhereWithoutChaptersInput, NovelVolumeUpdateWithoutChaptersInput>, NovelVolumeUncheckedUpdateWithoutChaptersInput>
   }
 
   export type SceneDraftUpdateManyWithoutChapterNestedInput = {
@@ -85144,6 +85727,104 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAuditLogsInput, UserUpdateWithoutAuditLogsInput>, UserUncheckedUpdateWithoutAuditLogsInput>
   }
 
+  export type AssetCreateNestedManyWithoutFingerprintInput = {
+    create?: XOR<AssetCreateWithoutFingerprintInput, AssetUncheckedCreateWithoutFingerprintInput> | AssetCreateWithoutFingerprintInput[] | AssetUncheckedCreateWithoutFingerprintInput[]
+    connectOrCreate?: AssetCreateOrConnectWithoutFingerprintInput | AssetCreateOrConnectWithoutFingerprintInput[]
+    createMany?: AssetCreateManyFingerprintInputEnvelope
+    connect?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+  }
+
+  export type AssetUncheckedCreateNestedManyWithoutFingerprintInput = {
+    create?: XOR<AssetCreateWithoutFingerprintInput, AssetUncheckedCreateWithoutFingerprintInput> | AssetCreateWithoutFingerprintInput[] | AssetUncheckedCreateWithoutFingerprintInput[]
+    connectOrCreate?: AssetCreateOrConnectWithoutFingerprintInput | AssetCreateOrConnectWithoutFingerprintInput[]
+    createMany?: AssetCreateManyFingerprintInputEnvelope
+    connect?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+  }
+
+  export type AssetUpdateManyWithoutFingerprintNestedInput = {
+    create?: XOR<AssetCreateWithoutFingerprintInput, AssetUncheckedCreateWithoutFingerprintInput> | AssetCreateWithoutFingerprintInput[] | AssetUncheckedCreateWithoutFingerprintInput[]
+    connectOrCreate?: AssetCreateOrConnectWithoutFingerprintInput | AssetCreateOrConnectWithoutFingerprintInput[]
+    upsert?: AssetUpsertWithWhereUniqueWithoutFingerprintInput | AssetUpsertWithWhereUniqueWithoutFingerprintInput[]
+    createMany?: AssetCreateManyFingerprintInputEnvelope
+    set?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+    disconnect?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+    delete?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+    connect?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+    update?: AssetUpdateWithWhereUniqueWithoutFingerprintInput | AssetUpdateWithWhereUniqueWithoutFingerprintInput[]
+    updateMany?: AssetUpdateManyWithWhereWithoutFingerprintInput | AssetUpdateManyWithWhereWithoutFingerprintInput[]
+    deleteMany?: AssetScalarWhereInput | AssetScalarWhereInput[]
+  }
+
+  export type AssetUncheckedUpdateManyWithoutFingerprintNestedInput = {
+    create?: XOR<AssetCreateWithoutFingerprintInput, AssetUncheckedCreateWithoutFingerprintInput> | AssetCreateWithoutFingerprintInput[] | AssetUncheckedCreateWithoutFingerprintInput[]
+    connectOrCreate?: AssetCreateOrConnectWithoutFingerprintInput | AssetCreateOrConnectWithoutFingerprintInput[]
+    upsert?: AssetUpsertWithWhereUniqueWithoutFingerprintInput | AssetUpsertWithWhereUniqueWithoutFingerprintInput[]
+    createMany?: AssetCreateManyFingerprintInputEnvelope
+    set?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+    disconnect?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+    delete?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+    connect?: AssetWhereUniqueInput | AssetWhereUniqueInput[]
+    update?: AssetUpdateWithWhereUniqueWithoutFingerprintInput | AssetUpdateWithWhereUniqueWithoutFingerprintInput[]
+    updateMany?: AssetUpdateManyWithWhereWithoutFingerprintInput | AssetUpdateManyWithWhereWithoutFingerprintInput[]
+    deleteMany?: AssetScalarWhereInput | AssetScalarWhereInput[]
+  }
+
+  export type NovelSourceCreateNestedOneWithoutVolumesInput = {
+    create?: XOR<NovelSourceCreateWithoutVolumesInput, NovelSourceUncheckedCreateWithoutVolumesInput>
+    connectOrCreate?: NovelSourceCreateOrConnectWithoutVolumesInput
+    connect?: NovelSourceWhereUniqueInput
+  }
+
+  export type NovelChapterCreateNestedManyWithoutNovelVolumeInput = {
+    create?: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput> | NovelChapterCreateWithoutNovelVolumeInput[] | NovelChapterUncheckedCreateWithoutNovelVolumeInput[]
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelVolumeInput | NovelChapterCreateOrConnectWithoutNovelVolumeInput[]
+    createMany?: NovelChapterCreateManyNovelVolumeInputEnvelope
+    connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+  }
+
+  export type NovelChapterUncheckedCreateNestedManyWithoutNovelVolumeInput = {
+    create?: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput> | NovelChapterCreateWithoutNovelVolumeInput[] | NovelChapterUncheckedCreateWithoutNovelVolumeInput[]
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelVolumeInput | NovelChapterCreateOrConnectWithoutNovelVolumeInput[]
+    createMany?: NovelChapterCreateManyNovelVolumeInputEnvelope
+    connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+  }
+
+  export type NovelSourceUpdateOneRequiredWithoutVolumesNestedInput = {
+    create?: XOR<NovelSourceCreateWithoutVolumesInput, NovelSourceUncheckedCreateWithoutVolumesInput>
+    connectOrCreate?: NovelSourceCreateOrConnectWithoutVolumesInput
+    upsert?: NovelSourceUpsertWithoutVolumesInput
+    connect?: NovelSourceWhereUniqueInput
+    update?: XOR<XOR<NovelSourceUpdateToOneWithWhereWithoutVolumesInput, NovelSourceUpdateWithoutVolumesInput>, NovelSourceUncheckedUpdateWithoutVolumesInput>
+  }
+
+  export type NovelChapterUpdateManyWithoutNovelVolumeNestedInput = {
+    create?: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput> | NovelChapterCreateWithoutNovelVolumeInput[] | NovelChapterUncheckedCreateWithoutNovelVolumeInput[]
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelVolumeInput | NovelChapterCreateOrConnectWithoutNovelVolumeInput[]
+    upsert?: NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput | NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput[]
+    createMany?: NovelChapterCreateManyNovelVolumeInputEnvelope
+    set?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+    disconnect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+    delete?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+    connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+    update?: NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput | NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput[]
+    updateMany?: NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput | NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput[]
+    deleteMany?: NovelChapterScalarWhereInput | NovelChapterScalarWhereInput[]
+  }
+
+  export type NovelChapterUncheckedUpdateManyWithoutNovelVolumeNestedInput = {
+    create?: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput> | NovelChapterCreateWithoutNovelVolumeInput[] | NovelChapterUncheckedCreateWithoutNovelVolumeInput[]
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelVolumeInput | NovelChapterCreateOrConnectWithoutNovelVolumeInput[]
+    upsert?: NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput | NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput[]
+    createMany?: NovelChapterCreateManyNovelVolumeInputEnvelope
+    set?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+    disconnect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+    delete?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+    connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+    update?: NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput | NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput[]
+    updateMany?: NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput | NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput[]
+    deleteMany?: NovelChapterScalarWhereInput | NovelChapterScalarWhereInput[]
+  }
+
   export type NovelChapterCreateNestedOneWithoutNovelScenesInput = {
     create?: XOR<NovelChapterCreateWithoutNovelScenesInput, NovelChapterUncheckedCreateWithoutNovelScenesInput>
     connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelScenesInput
@@ -85204,6 +85885,12 @@ export namespace Prisma {
     connect?: ProjectWhereUniqueInput
   }
 
+  export type SecurityFingerprintCreateNestedOneWithoutAssetsInput = {
+    create?: XOR<SecurityFingerprintCreateWithoutAssetsInput, SecurityFingerprintUncheckedCreateWithoutAssetsInput>
+    connectOrCreate?: SecurityFingerprintCreateOrConnectWithoutAssetsInput
+    connect?: SecurityFingerprintWhereUniqueInput
+  }
+
   export type EnumAssetOwnerTypeFieldUpdateOperationsInput = {
     set?: $Enums.AssetOwnerType
   }
@@ -85242,6 +85929,16 @@ export namespace Prisma {
     upsert?: ProjectUpsertWithoutAssetsInput
     connect?: ProjectWhereUniqueInput
     update?: XOR<XOR<ProjectUpdateToOneWithWhereWithoutAssetsInput, ProjectUpdateWithoutAssetsInput>, ProjectUncheckedUpdateWithoutAssetsInput>
+  }
+
+  export type SecurityFingerprintUpdateOneWithoutAssetsNestedInput = {
+    create?: XOR<SecurityFingerprintCreateWithoutAssetsInput, SecurityFingerprintUncheckedCreateWithoutAssetsInput>
+    connectOrCreate?: SecurityFingerprintCreateOrConnectWithoutAssetsInput
+    upsert?: SecurityFingerprintUpsertWithoutAssetsInput
+    disconnect?: SecurityFingerprintWhereInput | boolean
+    delete?: SecurityFingerprintWhereInput | boolean
+    connect?: SecurityFingerprintWhereUniqueInput
+    update?: XOR<XOR<SecurityFingerprintUpdateToOneWithWhereWithoutAssetsInput, SecurityFingerprintUpdateWithoutAssetsInput>, SecurityFingerprintUncheckedUpdateWithoutAssetsInput>
   }
 
   export type EnumTextSafetyDecisionFieldUpdateOperationsInput = {
@@ -85573,6 +86270,13 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
+  export type NestedEnumShotReviewStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.ShotReviewStatus | EnumShotReviewStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ShotReviewStatus[] | ListEnumShotReviewStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ShotReviewStatus[] | ListEnumShotReviewStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumShotReviewStatusFilter<$PrismaModel> | $Enums.ShotReviewStatus
+  }
+
   export type NestedFloatNullableFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
@@ -85582,6 +86286,16 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedEnumShotReviewStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ShotReviewStatus | EnumShotReviewStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.ShotReviewStatus[] | ListEnumShotReviewStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.ShotReviewStatus[] | ListEnumShotReviewStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumShotReviewStatusWithAggregatesFilter<$PrismaModel> | $Enums.ShotReviewStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumShotReviewStatusFilter<$PrismaModel>
+    _max?: NestedEnumShotReviewStatusFilter<$PrismaModel>
   }
 
   export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -87360,6 +88074,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -87382,6 +88097,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -87731,6 +88447,7 @@ export namespace Prisma {
     index?: IntFilter<"Shot"> | number
     title?: StringNullableFilter<"Shot"> | string | null
     description?: StringNullableFilter<"Shot"> | string | null
+    reviewStatus?: EnumShotReviewStatusFilter<"Shot"> | $Enums.ShotReviewStatus
     type?: StringFilter<"Shot"> | string
     params?: JsonFilter<"Shot">
     qualityScore?: JsonFilter<"Shot">
@@ -88022,9 +88739,9 @@ export namespace Prisma {
     hlsPlaylistUrl?: string | null
     signedUrl?: string | null
     watermarkMode?: string | null
-    fingerprintId?: string | null
     shot?: ShotCreateNestedOneWithoutAssetsInput
     job?: ShotJobCreateNestedOneWithoutGeneratedAssetInput
+    fingerprint?: SecurityFingerprintCreateNestedOneWithoutAssetsInput
   }
 
   export type AssetUncheckedCreateWithoutProjectInput = {
@@ -88301,6 +89018,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     analysisJobs?: NovelAnalysisJobCreateNestedManyWithoutNovelSourceInput
     chapters?: NovelChapterCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeCreateNestedManyWithoutNovelSourceInput
   }
 
   export type NovelSourceUncheckedCreateWithoutProjectInput = {
@@ -88319,6 +89037,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     analysisJobs?: NovelAnalysisJobUncheckedCreateNestedManyWithoutNovelSourceInput
     chapters?: NovelChapterUncheckedCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeUncheckedCreateNestedManyWithoutNovelSourceInput
   }
 
   export type NovelSourceCreateOrConnectWithoutProjectInput = {
@@ -89286,6 +90005,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     summary?: string | null
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
+    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
     novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
   }
@@ -89302,6 +90022,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     summary?: string | null
+    novelVolumeId?: string | null
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
     novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
   }
@@ -89432,9 +90153,10 @@ export namespace Prisma {
     index: number
     title: string
     summary?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskCreateNestedManyWithoutSceneInput
     sceneDraft?: SceneDraftCreateNestedOneWithoutSceneInput
@@ -89448,9 +90170,10 @@ export namespace Prisma {
     title: string
     summary?: string | null
     sceneDraftId?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskUncheckedCreateNestedManyWithoutSceneInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutSceneInput
@@ -89556,6 +90279,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
+    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
     novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
   }
@@ -89572,6 +90296,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
     novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
   }
@@ -89714,9 +90439,10 @@ export namespace Prisma {
     title?: StringFilter<"Scene"> | string
     summary?: StringNullableFilter<"Scene"> | string | null
     sceneDraftId?: StringNullableFilter<"Scene"> | string | null
+    reviewStatus?: EnumShotReviewStatusFilter<"Scene"> | $Enums.ShotReviewStatus
     characters?: JsonNullableFilter<"Scene">
     enrichedText?: StringNullableFilter<"Scene"> | string | null
-    projectId?: StringNullableFilter<"Scene"> | string | null
+    projectId?: StringFilter<"Scene"> | string
     visualDensityScore?: FloatNullableFilter<"Scene"> | number | null
   }
 
@@ -89909,6 +90635,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -89930,6 +90657,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -90094,9 +90822,9 @@ export namespace Prisma {
     hlsPlaylistUrl?: string | null
     signedUrl?: string | null
     watermarkMode?: string | null
-    fingerprintId?: string | null
     job?: ShotJobCreateNestedOneWithoutGeneratedAssetInput
     project: ProjectCreateNestedOneWithoutAssetsInput
+    fingerprint?: SecurityFingerprintCreateNestedOneWithoutAssetsInput
   }
 
   export type AssetUncheckedCreateWithoutShotInput = {
@@ -90401,9 +91129,10 @@ export namespace Prisma {
     index: number
     title: string
     summary?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskCreateNestedManyWithoutSceneInput
     episode: EpisodeCreateNestedOneWithoutScenesInput
@@ -90418,9 +91147,10 @@ export namespace Prisma {
     title: string
     summary?: string | null
     sceneDraftId?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskUncheckedCreateNestedManyWithoutSceneInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutSceneInput
@@ -90657,9 +91387,10 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUpdateManyWithoutSceneNestedInput
     episode?: EpisodeUpdateOneRequiredWithoutScenesNestedInput
@@ -90674,9 +91405,10 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     sceneDraftId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUncheckedUpdateManyWithoutSceneNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutSceneNestedInput
@@ -90687,6 +91419,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -90709,6 +91442,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -90745,6 +91479,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -90767,6 +91502,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -90964,9 +91700,10 @@ export namespace Prisma {
     index: number
     title: string
     summary?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     episode: EpisodeCreateNestedOneWithoutScenesInput
     sceneDraft?: SceneDraftCreateNestedOneWithoutSceneInput
@@ -90981,9 +91718,10 @@ export namespace Prisma {
     title: string
     summary?: string | null
     sceneDraftId?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutSceneInput
     shots?: ShotUncheckedCreateNestedManyWithoutSceneInput
@@ -90999,6 +91737,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -91021,6 +91760,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -91120,9 +91860,10 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     episode?: EpisodeUpdateOneRequiredWithoutScenesNestedInput
     sceneDraft?: SceneDraftUpdateOneWithoutSceneNestedInput
@@ -91137,9 +91878,10 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     sceneDraftId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     shotJobs?: ShotJobUncheckedUpdateManyWithoutSceneNestedInput
     shots?: ShotUncheckedUpdateManyWithoutSceneNestedInput
@@ -91161,6 +91903,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -91183,6 +91926,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -91340,6 +92084,7 @@ export namespace Prisma {
     engineKey: string
     adapterName: string
     adapterType: string
+    mode?: string
     config: JsonNullValueInput | InputJsonValue
     enabled?: boolean
     version?: string | null
@@ -91358,6 +92103,7 @@ export namespace Prisma {
     engineKey: string
     adapterName: string
     adapterType: string
+    mode?: string
     config: JsonNullValueInput | InputJsonValue
     enabled?: boolean
     version?: string | null
@@ -91432,6 +92178,7 @@ export namespace Prisma {
     engineKey?: StringFieldUpdateOperationsInput | string
     adapterName?: StringFieldUpdateOperationsInput | string
     adapterType?: StringFieldUpdateOperationsInput | string
+    mode?: StringFieldUpdateOperationsInput | string
     config?: JsonNullValueInput | InputJsonValue
     enabled?: BoolFieldUpdateOperationsInput | boolean
     version?: NullableStringFieldUpdateOperationsInput | string | null
@@ -91450,6 +92197,7 @@ export namespace Prisma {
     engineKey?: StringFieldUpdateOperationsInput | string
     adapterName?: StringFieldUpdateOperationsInput | string
     adapterType?: StringFieldUpdateOperationsInput | string
+    mode?: StringFieldUpdateOperationsInput | string
     config?: JsonNullValueInput | InputJsonValue
     enabled?: BoolFieldUpdateOperationsInput | boolean
     version?: NullableStringFieldUpdateOperationsInput | string | null
@@ -91484,6 +92232,7 @@ export namespace Prisma {
     engineKey: string
     adapterName: string
     adapterType: string
+    mode?: string
     config: JsonNullValueInput | InputJsonValue
     enabled?: boolean
     version?: string | null
@@ -91502,6 +92251,7 @@ export namespace Prisma {
     engineKey: string
     adapterName: string
     adapterType: string
+    mode?: string
     config: JsonNullValueInput | InputJsonValue
     enabled?: boolean
     version?: string | null
@@ -91624,6 +92374,7 @@ export namespace Prisma {
     engineKey?: StringFieldUpdateOperationsInput | string
     adapterName?: StringFieldUpdateOperationsInput | string
     adapterType?: StringFieldUpdateOperationsInput | string
+    mode?: StringFieldUpdateOperationsInput | string
     config?: JsonNullValueInput | InputJsonValue
     enabled?: BoolFieldUpdateOperationsInput | boolean
     version?: NullableStringFieldUpdateOperationsInput | string | null
@@ -91642,6 +92393,7 @@ export namespace Prisma {
     engineKey?: StringFieldUpdateOperationsInput | string
     adapterName?: StringFieldUpdateOperationsInput | string
     adapterType?: StringFieldUpdateOperationsInput | string
+    mode?: StringFieldUpdateOperationsInput | string
     config?: JsonNullValueInput | InputJsonValue
     enabled?: BoolFieldUpdateOperationsInput | boolean
     version?: NullableStringFieldUpdateOperationsInput | string | null
@@ -92645,9 +93397,9 @@ export namespace Prisma {
     hlsPlaylistUrl?: string | null
     signedUrl?: string | null
     watermarkMode?: string | null
-    fingerprintId?: string | null
     shot?: ShotCreateNestedOneWithoutAssetsInput
     project: ProjectCreateNestedOneWithoutAssetsInput
+    fingerprint?: SecurityFingerprintCreateNestedOneWithoutAssetsInput
   }
 
   export type AssetUncheckedCreateWithoutJobInput = {
@@ -92850,9 +93602,10 @@ export namespace Prisma {
     index: number
     title: string
     summary?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskCreateNestedManyWithoutSceneInput
     episode: EpisodeCreateNestedOneWithoutScenesInput
@@ -92867,9 +93620,10 @@ export namespace Prisma {
     title: string
     summary?: string | null
     sceneDraftId?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskUncheckedCreateNestedManyWithoutSceneInput
     shots?: ShotUncheckedCreateNestedManyWithoutSceneInput
@@ -92885,6 +93639,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -92907,6 +93662,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93233,9 +93989,10 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUpdateManyWithoutSceneNestedInput
     episode?: EpisodeUpdateOneRequiredWithoutScenesNestedInput
@@ -93250,9 +94007,10 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     sceneDraftId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUncheckedUpdateManyWithoutSceneNestedInput
     shots?: ShotUncheckedUpdateManyWithoutSceneNestedInput
@@ -93274,6 +94032,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93296,6 +94055,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93626,6 +94386,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93648,6 +94409,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93684,6 +94446,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93706,6 +94469,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93726,6 +94490,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93748,6 +94513,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93784,6 +94550,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -93806,6 +94573,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -94674,6 +95442,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -94696,6 +95465,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -94824,6 +95594,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -94846,6 +95617,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -95115,6 +95887,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     summary?: string | null
     episode?: EpisodeCreateNestedOneWithoutChapterInput
+    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
     novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
   }
@@ -95130,6 +95903,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     summary?: string | null
+    novelVolumeId?: string | null
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
     novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
@@ -95142,6 +95916,36 @@ export namespace Prisma {
 
   export type NovelChapterCreateManyNovelSourceInputEnvelope = {
     data: NovelChapterCreateManyNovelSourceInput | NovelChapterCreateManyNovelSourceInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type NovelVolumeCreateWithoutNovelSourceInput = {
+    id?: string
+    projectId?: string | null
+    index: number
+    title: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    chapters?: NovelChapterCreateNestedManyWithoutNovelVolumeInput
+  }
+
+  export type NovelVolumeUncheckedCreateWithoutNovelSourceInput = {
+    id?: string
+    projectId?: string | null
+    index: number
+    title: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    chapters?: NovelChapterUncheckedCreateNestedManyWithoutNovelVolumeInput
+  }
+
+  export type NovelVolumeCreateOrConnectWithoutNovelSourceInput = {
+    where: NovelVolumeWhereUniqueInput
+    create: XOR<NovelVolumeCreateWithoutNovelSourceInput, NovelVolumeUncheckedCreateWithoutNovelSourceInput>
+  }
+
+  export type NovelVolumeCreateManyNovelSourceInputEnvelope = {
+    data: NovelVolumeCreateManyNovelSourceInput | NovelVolumeCreateManyNovelSourceInput[]
     skipDuplicates?: boolean
   }
 
@@ -95249,6 +96053,36 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"NovelChapter"> | Date | string
     updatedAt?: DateTimeFilter<"NovelChapter"> | Date | string
     summary?: StringNullableFilter<"NovelChapter"> | string | null
+    novelVolumeId?: StringNullableFilter<"NovelChapter"> | string | null
+  }
+
+  export type NovelVolumeUpsertWithWhereUniqueWithoutNovelSourceInput = {
+    where: NovelVolumeWhereUniqueInput
+    update: XOR<NovelVolumeUpdateWithoutNovelSourceInput, NovelVolumeUncheckedUpdateWithoutNovelSourceInput>
+    create: XOR<NovelVolumeCreateWithoutNovelSourceInput, NovelVolumeUncheckedCreateWithoutNovelSourceInput>
+  }
+
+  export type NovelVolumeUpdateWithWhereUniqueWithoutNovelSourceInput = {
+    where: NovelVolumeWhereUniqueInput
+    data: XOR<NovelVolumeUpdateWithoutNovelSourceInput, NovelVolumeUncheckedUpdateWithoutNovelSourceInput>
+  }
+
+  export type NovelVolumeUpdateManyWithWhereWithoutNovelSourceInput = {
+    where: NovelVolumeScalarWhereInput
+    data: XOR<NovelVolumeUpdateManyMutationInput, NovelVolumeUncheckedUpdateManyWithoutNovelSourceInput>
+  }
+
+  export type NovelVolumeScalarWhereInput = {
+    AND?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
+    OR?: NovelVolumeScalarWhereInput[]
+    NOT?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
+    id?: StringFilter<"NovelVolume"> | string
+    projectId?: StringNullableFilter<"NovelVolume"> | string | null
+    novelSourceId?: StringFilter<"NovelVolume"> | string
+    index?: IntFilter<"NovelVolume"> | number
+    title?: StringFilter<"NovelVolume"> | string
+    createdAt?: DateTimeFilter<"NovelVolume"> | Date | string
+    updatedAt?: DateTimeFilter<"NovelVolume"> | Date | string
   }
 
   export type ProjectUpsertWithoutNovelSourcesInput = {
@@ -95358,6 +96192,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     analysisJobs?: NovelAnalysisJobCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeCreateNestedManyWithoutNovelSourceInput
     project: ProjectCreateNestedOneWithoutNovelSourcesInput
   }
 
@@ -95377,11 +96212,37 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     analysisJobs?: NovelAnalysisJobUncheckedCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeUncheckedCreateNestedManyWithoutNovelSourceInput
   }
 
   export type NovelSourceCreateOrConnectWithoutChaptersInput = {
     where: NovelSourceWhereUniqueInput
     create: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
+  }
+
+  export type NovelVolumeCreateWithoutChaptersInput = {
+    id?: string
+    projectId?: string | null
+    index: number
+    title: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    novelSource: NovelSourceCreateNestedOneWithoutVolumesInput
+  }
+
+  export type NovelVolumeUncheckedCreateWithoutChaptersInput = {
+    id?: string
+    projectId?: string | null
+    novelSourceId: string
+    index: number
+    title: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type NovelVolumeCreateOrConnectWithoutChaptersInput = {
+    where: NovelVolumeWhereUniqueInput
+    create: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
   }
 
   export type SceneDraftCreateWithoutChapterInput = {
@@ -95521,6 +96382,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     analysisJobs?: NovelAnalysisJobUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUpdateManyWithoutNovelSourceNestedInput
     project?: ProjectUpdateOneRequiredWithoutNovelSourcesNestedInput
   }
 
@@ -95540,6 +96402,38 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     analysisJobs?: NovelAnalysisJobUncheckedUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUncheckedUpdateManyWithoutNovelSourceNestedInput
+  }
+
+  export type NovelVolumeUpsertWithoutChaptersInput = {
+    update: XOR<NovelVolumeUpdateWithoutChaptersInput, NovelVolumeUncheckedUpdateWithoutChaptersInput>
+    create: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
+    where?: NovelVolumeWhereInput
+  }
+
+  export type NovelVolumeUpdateToOneWithWhereWithoutChaptersInput = {
+    where?: NovelVolumeWhereInput
+    data: XOR<NovelVolumeUpdateWithoutChaptersInput, NovelVolumeUncheckedUpdateWithoutChaptersInput>
+  }
+
+  export type NovelVolumeUpdateWithoutChaptersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    novelSource?: NovelSourceUpdateOneRequiredWithoutVolumesNestedInput
+  }
+
+  export type NovelVolumeUncheckedUpdateWithoutChaptersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    novelSourceId?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SceneDraftUpsertWithWhereUniqueWithoutChapterInput = {
@@ -95622,6 +96516,7 @@ export namespace Prisma {
     summary?: string | null
     episode?: EpisodeCreateNestedOneWithoutChapterInput
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
+    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
     novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
   }
 
@@ -95637,6 +96532,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     summary?: string | null
+    novelVolumeId?: string | null
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
     novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
   }
@@ -95651,9 +96547,10 @@ export namespace Prisma {
     index: number
     title: string
     summary?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskCreateNestedManyWithoutSceneInput
     episode: EpisodeCreateNestedOneWithoutScenesInput
@@ -95667,9 +96564,10 @@ export namespace Prisma {
     index: number
     title: string
     summary?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
     engineTasks?: EngineTaskUncheckedCreateNestedManyWithoutSceneInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutSceneInput
@@ -95705,6 +96603,7 @@ export namespace Prisma {
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     episode?: EpisodeUpdateOneWithoutChapterNestedInput
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
+    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
     novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
   }
 
@@ -95720,6 +96619,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
     novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
   }
@@ -95740,9 +96640,10 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUpdateManyWithoutSceneNestedInput
     episode?: EpisodeUpdateOneRequiredWithoutScenesNestedInput
@@ -95756,9 +96657,10 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUncheckedUpdateManyWithoutSceneNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutSceneNestedInput
@@ -95780,6 +96682,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     chapters?: NovelChapterCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeCreateNestedManyWithoutNovelSourceInput
     project: ProjectCreateNestedOneWithoutNovelSourcesInput
   }
 
@@ -95799,6 +96702,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     chapters?: NovelChapterUncheckedCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeUncheckedCreateNestedManyWithoutNovelSourceInput
   }
 
   export type NovelSourceCreateOrConnectWithoutAnalysisJobsInput = {
@@ -95889,6 +96793,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chapters?: NovelChapterUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUpdateManyWithoutNovelSourceNestedInput
     project?: ProjectUpdateOneRequiredWithoutNovelSourcesNestedInput
   }
 
@@ -95908,6 +96813,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chapters?: NovelChapterUncheckedUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUncheckedUpdateManyWithoutNovelSourceNestedInput
   }
 
   export type ProjectUpsertWithoutNovelAnalysisJobsInput = {
@@ -96537,6 +97443,218 @@ export namespace Prisma {
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutUserNestedInput
   }
 
+  export type AssetCreateWithoutFingerprintInput = {
+    id?: string
+    createdAt?: Date | string
+    checksum?: string | null
+    ownerId: string
+    ownerType: $Enums.AssetOwnerType
+    status?: $Enums.AssetStatus
+    storageKey: string
+    type: $Enums.AssetType
+    hlsPlaylistUrl?: string | null
+    signedUrl?: string | null
+    watermarkMode?: string | null
+    shot?: ShotCreateNestedOneWithoutAssetsInput
+    job?: ShotJobCreateNestedOneWithoutGeneratedAssetInput
+    project: ProjectCreateNestedOneWithoutAssetsInput
+  }
+
+  export type AssetUncheckedCreateWithoutFingerprintInput = {
+    id?: string
+    projectId: string
+    createdAt?: Date | string
+    checksum?: string | null
+    createdByJobId?: string | null
+    ownerId: string
+    ownerType: $Enums.AssetOwnerType
+    status?: $Enums.AssetStatus
+    storageKey: string
+    type: $Enums.AssetType
+    shotId?: string | null
+    hlsPlaylistUrl?: string | null
+    signedUrl?: string | null
+    watermarkMode?: string | null
+  }
+
+  export type AssetCreateOrConnectWithoutFingerprintInput = {
+    where: AssetWhereUniqueInput
+    create: XOR<AssetCreateWithoutFingerprintInput, AssetUncheckedCreateWithoutFingerprintInput>
+  }
+
+  export type AssetCreateManyFingerprintInputEnvelope = {
+    data: AssetCreateManyFingerprintInput | AssetCreateManyFingerprintInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type AssetUpsertWithWhereUniqueWithoutFingerprintInput = {
+    where: AssetWhereUniqueInput
+    update: XOR<AssetUpdateWithoutFingerprintInput, AssetUncheckedUpdateWithoutFingerprintInput>
+    create: XOR<AssetCreateWithoutFingerprintInput, AssetUncheckedCreateWithoutFingerprintInput>
+  }
+
+  export type AssetUpdateWithWhereUniqueWithoutFingerprintInput = {
+    where: AssetWhereUniqueInput
+    data: XOR<AssetUpdateWithoutFingerprintInput, AssetUncheckedUpdateWithoutFingerprintInput>
+  }
+
+  export type AssetUpdateManyWithWhereWithoutFingerprintInput = {
+    where: AssetScalarWhereInput
+    data: XOR<AssetUpdateManyMutationInput, AssetUncheckedUpdateManyWithoutFingerprintInput>
+  }
+
+  export type NovelSourceCreateWithoutVolumesInput = {
+    id?: string
+    novelTitle?: string | null
+    novelAuthor?: string | null
+    rawText: string
+    filePath?: string | null
+    fileName?: string | null
+    fileSize?: number | null
+    fileType?: string | null
+    characterCount?: number | null
+    chapterCount?: number | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    analysisJobs?: NovelAnalysisJobCreateNestedManyWithoutNovelSourceInput
+    chapters?: NovelChapterCreateNestedManyWithoutNovelSourceInput
+    project: ProjectCreateNestedOneWithoutNovelSourcesInput
+  }
+
+  export type NovelSourceUncheckedCreateWithoutVolumesInput = {
+    id?: string
+    projectId: string
+    novelTitle?: string | null
+    novelAuthor?: string | null
+    rawText: string
+    filePath?: string | null
+    fileName?: string | null
+    fileSize?: number | null
+    fileType?: string | null
+    characterCount?: number | null
+    chapterCount?: number | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    analysisJobs?: NovelAnalysisJobUncheckedCreateNestedManyWithoutNovelSourceInput
+    chapters?: NovelChapterUncheckedCreateNestedManyWithoutNovelSourceInput
+  }
+
+  export type NovelSourceCreateOrConnectWithoutVolumesInput = {
+    where: NovelSourceWhereUniqueInput
+    create: XOR<NovelSourceCreateWithoutVolumesInput, NovelSourceUncheckedCreateWithoutVolumesInput>
+  }
+
+  export type NovelChapterCreateWithoutNovelVolumeInput = {
+    id?: string
+    orderIndex: number
+    title: string
+    rawText: string
+    startParagraph?: number | null
+    endParagraph?: number | null
+    characterCount?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    summary?: string | null
+    episode?: EpisodeCreateNestedOneWithoutChapterInput
+    novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
+    sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
+    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
+  }
+
+  export type NovelChapterUncheckedCreateWithoutNovelVolumeInput = {
+    id?: string
+    novelSourceId: string
+    orderIndex: number
+    title: string
+    rawText: string
+    startParagraph?: number | null
+    endParagraph?: number | null
+    characterCount?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    summary?: string | null
+    episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
+    sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
+    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
+  }
+
+  export type NovelChapterCreateOrConnectWithoutNovelVolumeInput = {
+    where: NovelChapterWhereUniqueInput
+    create: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput>
+  }
+
+  export type NovelChapterCreateManyNovelVolumeInputEnvelope = {
+    data: NovelChapterCreateManyNovelVolumeInput | NovelChapterCreateManyNovelVolumeInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type NovelSourceUpsertWithoutVolumesInput = {
+    update: XOR<NovelSourceUpdateWithoutVolumesInput, NovelSourceUncheckedUpdateWithoutVolumesInput>
+    create: XOR<NovelSourceCreateWithoutVolumesInput, NovelSourceUncheckedCreateWithoutVolumesInput>
+    where?: NovelSourceWhereInput
+  }
+
+  export type NovelSourceUpdateToOneWithWhereWithoutVolumesInput = {
+    where?: NovelSourceWhereInput
+    data: XOR<NovelSourceUpdateWithoutVolumesInput, NovelSourceUncheckedUpdateWithoutVolumesInput>
+  }
+
+  export type NovelSourceUpdateWithoutVolumesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    novelTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    novelAuthor?: NullableStringFieldUpdateOperationsInput | string | null
+    rawText?: StringFieldUpdateOperationsInput | string
+    filePath?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    fileSize?: NullableIntFieldUpdateOperationsInput | number | null
+    fileType?: NullableStringFieldUpdateOperationsInput | string | null
+    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    chapterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    analysisJobs?: NovelAnalysisJobUpdateManyWithoutNovelSourceNestedInput
+    chapters?: NovelChapterUpdateManyWithoutNovelSourceNestedInput
+    project?: ProjectUpdateOneRequiredWithoutNovelSourcesNestedInput
+  }
+
+  export type NovelSourceUncheckedUpdateWithoutVolumesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    novelTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    novelAuthor?: NullableStringFieldUpdateOperationsInput | string | null
+    rawText?: StringFieldUpdateOperationsInput | string
+    filePath?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    fileSize?: NullableIntFieldUpdateOperationsInput | number | null
+    fileType?: NullableStringFieldUpdateOperationsInput | string | null
+    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    chapterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    analysisJobs?: NovelAnalysisJobUncheckedUpdateManyWithoutNovelSourceNestedInput
+    chapters?: NovelChapterUncheckedUpdateManyWithoutNovelSourceNestedInput
+  }
+
+  export type NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput = {
+    where: NovelChapterWhereUniqueInput
+    update: XOR<NovelChapterUpdateWithoutNovelVolumeInput, NovelChapterUncheckedUpdateWithoutNovelVolumeInput>
+    create: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput>
+  }
+
+  export type NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput = {
+    where: NovelChapterWhereUniqueInput
+    data: XOR<NovelChapterUpdateWithoutNovelVolumeInput, NovelChapterUncheckedUpdateWithoutNovelVolumeInput>
+  }
+
+  export type NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput = {
+    where: NovelChapterScalarWhereInput
+    data: XOR<NovelChapterUpdateManyMutationInput, NovelChapterUncheckedUpdateManyWithoutNovelVolumeInput>
+  }
+
   export type NovelChapterCreateWithoutNovelScenesInput = {
     id?: string
     orderIndex: number
@@ -96550,6 +97668,7 @@ export namespace Prisma {
     summary?: string | null
     episode?: EpisodeCreateNestedOneWithoutChapterInput
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
+    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
   }
 
@@ -96565,6 +97684,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     summary?: string | null
+    novelVolumeId?: string | null
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
   }
@@ -96598,6 +97718,7 @@ export namespace Prisma {
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     episode?: EpisodeUpdateOneWithoutChapterNestedInput
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
+    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
   }
 
@@ -96613,6 +97734,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
   }
@@ -96862,6 +97984,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -96884,6 +98007,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -97022,6 +98146,25 @@ export namespace Prisma {
     create: XOR<ProjectCreateWithoutAssetsInput, ProjectUncheckedCreateWithoutAssetsInput>
   }
 
+  export type SecurityFingerprintCreateWithoutAssetsInput = {
+    id?: string
+    assetId?: string | null
+    fpVector?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type SecurityFingerprintUncheckedCreateWithoutAssetsInput = {
+    id?: string
+    assetId?: string | null
+    fpVector?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type SecurityFingerprintCreateOrConnectWithoutAssetsInput = {
+    where: SecurityFingerprintWhereUniqueInput
+    create: XOR<SecurityFingerprintCreateWithoutAssetsInput, SecurityFingerprintUncheckedCreateWithoutAssetsInput>
+  }
+
   export type ShotUpsertWithoutAssetsInput = {
     update: XOR<ShotUpdateWithoutAssetsInput, ShotUncheckedUpdateWithoutAssetsInput>
     create: XOR<ShotCreateWithoutAssetsInput, ShotUncheckedCreateWithoutAssetsInput>
@@ -97038,6 +98181,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -97060,6 +98204,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -97203,6 +98348,31 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+  }
+
+  export type SecurityFingerprintUpsertWithoutAssetsInput = {
+    update: XOR<SecurityFingerprintUpdateWithoutAssetsInput, SecurityFingerprintUncheckedUpdateWithoutAssetsInput>
+    create: XOR<SecurityFingerprintCreateWithoutAssetsInput, SecurityFingerprintUncheckedCreateWithoutAssetsInput>
+    where?: SecurityFingerprintWhereInput
+  }
+
+  export type SecurityFingerprintUpdateToOneWithWhereWithoutAssetsInput = {
+    where?: SecurityFingerprintWhereInput
+    data: XOR<SecurityFingerprintUpdateWithoutAssetsInput, SecurityFingerprintUncheckedUpdateWithoutAssetsInput>
+  }
+
+  export type SecurityFingerprintUpdateWithoutAssetsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    assetId?: NullableStringFieldUpdateOperationsInput | string | null
+    fpVector?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SecurityFingerprintUncheckedUpdateWithoutAssetsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    assetId?: NullableStringFieldUpdateOperationsInput | string | null
+    fpVector?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BillingEventCreateWithoutCostLedgerInput = {
@@ -98228,6 +99398,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -98670,6 +99841,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -98692,6 +99864,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -98713,6 +99886,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -99003,9 +100177,9 @@ export namespace Prisma {
     hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
-    fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
     shot?: ShotUpdateOneWithoutAssetsNestedInput
     job?: ShotJobUpdateOneWithoutGeneratedAssetNestedInput
+    fingerprint?: SecurityFingerprintUpdateOneWithoutAssetsNestedInput
   }
 
   export type AssetUncheckedUpdateWithoutProjectInput = {
@@ -99288,6 +100462,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     analysisJobs?: NovelAnalysisJobUpdateManyWithoutNovelSourceNestedInput
     chapters?: NovelChapterUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUpdateManyWithoutNovelSourceNestedInput
   }
 
   export type NovelSourceUncheckedUpdateWithoutProjectInput = {
@@ -99306,6 +100481,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     analysisJobs?: NovelAnalysisJobUncheckedUpdateManyWithoutNovelSourceNestedInput
     chapters?: NovelChapterUncheckedUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUncheckedUpdateManyWithoutNovelSourceNestedInput
   }
 
   export type NovelSourceUncheckedUpdateManyWithoutProjectInput = {
@@ -99560,9 +100736,10 @@ export namespace Prisma {
     title: string
     summary?: string | null
     sceneDraftId?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: string | null
-    projectId?: string | null
+    projectId: string
     visualDensityScore?: number | null
   }
 
@@ -99630,9 +100807,10 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUpdateManyWithoutSceneNestedInput
     sceneDraft?: SceneDraftUpdateOneWithoutSceneNestedInput
@@ -99646,9 +100824,10 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     sceneDraftId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
     engineTasks?: EngineTaskUncheckedUpdateManyWithoutSceneNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutSceneNestedInput
@@ -99661,9 +100840,10 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     sceneDraftId?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     characters?: NullableJsonNullValueInput | InputJsonValue
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
   }
 
@@ -99793,6 +100973,7 @@ export namespace Prisma {
     index: number
     title?: string | null
     description?: string | null
+    reviewStatus?: $Enums.ShotReviewStatus
     type: string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -99928,6 +101109,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -99949,6 +101131,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -99970,6 +101153,7 @@ export namespace Prisma {
     index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    reviewStatus?: EnumShotReviewStatusFieldUpdateOperationsInput | $Enums.ShotReviewStatus
     type?: StringFieldUpdateOperationsInput | string
     params?: JsonNullValueInput | InputJsonValue
     qualityScore?: JsonNullValueInput | InputJsonValue
@@ -100080,9 +101264,9 @@ export namespace Prisma {
     hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
-    fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
     job?: ShotJobUpdateOneWithoutGeneratedAssetNestedInput
     project?: ProjectUpdateOneRequiredWithoutAssetsNestedInput
+    fingerprint?: SecurityFingerprintUpdateOneWithoutAssetsNestedInput
   }
 
   export type AssetUncheckedUpdateWithoutShotInput = {
@@ -100718,9 +101902,9 @@ export namespace Prisma {
     hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
-    fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
     shot?: ShotUpdateOneWithoutAssetsNestedInput
     project?: ProjectUpdateOneRequiredWithoutAssetsNestedInput
+    fingerprint?: SecurityFingerprintUpdateOneWithoutAssetsNestedInput
   }
 
   export type AssetUncheckedUpdateWithoutJobInput = {
@@ -101014,6 +102198,16 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     summary?: string | null
+    novelVolumeId?: string | null
+  }
+
+  export type NovelVolumeCreateManyNovelSourceInput = {
+    id?: string
+    projectId?: string | null
+    index: number
+    title: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type NovelAnalysisJobUpdateWithoutNovelSourceInput = {
@@ -101064,6 +102258,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     episode?: EpisodeUpdateOneWithoutChapterNestedInput
+    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
     novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
   }
@@ -101079,6 +102274,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
     novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
@@ -101095,6 +102291,36 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type NovelVolumeUpdateWithoutNovelSourceInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    chapters?: NovelChapterUpdateManyWithoutNovelVolumeNestedInput
+  }
+
+  export type NovelVolumeUncheckedUpdateWithoutNovelSourceInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    chapters?: NovelChapterUncheckedUpdateManyWithoutNovelVolumeNestedInput
+  }
+
+  export type NovelVolumeUncheckedUpdateManyWithoutNovelSourceInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SceneDraftCreateManyChapterInput = {
@@ -101275,6 +102501,136 @@ export namespace Prisma {
     orgId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type AssetCreateManyFingerprintInput = {
+    id?: string
+    projectId: string
+    createdAt?: Date | string
+    checksum?: string | null
+    createdByJobId?: string | null
+    ownerId: string
+    ownerType: $Enums.AssetOwnerType
+    status?: $Enums.AssetStatus
+    storageKey: string
+    type: $Enums.AssetType
+    shotId?: string | null
+    hlsPlaylistUrl?: string | null
+    signedUrl?: string | null
+    watermarkMode?: string | null
+  }
+
+  export type AssetUpdateWithoutFingerprintInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerId?: StringFieldUpdateOperationsInput | string
+    ownerType?: EnumAssetOwnerTypeFieldUpdateOperationsInput | $Enums.AssetOwnerType
+    status?: EnumAssetStatusFieldUpdateOperationsInput | $Enums.AssetStatus
+    storageKey?: StringFieldUpdateOperationsInput | string
+    type?: EnumAssetTypeFieldUpdateOperationsInput | $Enums.AssetType
+    hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
+    shot?: ShotUpdateOneWithoutAssetsNestedInput
+    job?: ShotJobUpdateOneWithoutGeneratedAssetNestedInput
+    project?: ProjectUpdateOneRequiredWithoutAssetsNestedInput
+  }
+
+  export type AssetUncheckedUpdateWithoutFingerprintInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByJobId?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerId?: StringFieldUpdateOperationsInput | string
+    ownerType?: EnumAssetOwnerTypeFieldUpdateOperationsInput | $Enums.AssetOwnerType
+    status?: EnumAssetStatusFieldUpdateOperationsInput | $Enums.AssetStatus
+    storageKey?: StringFieldUpdateOperationsInput | string
+    type?: EnumAssetTypeFieldUpdateOperationsInput | $Enums.AssetType
+    shotId?: NullableStringFieldUpdateOperationsInput | string | null
+    hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type AssetUncheckedUpdateManyWithoutFingerprintInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByJobId?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerId?: StringFieldUpdateOperationsInput | string
+    ownerType?: EnumAssetOwnerTypeFieldUpdateOperationsInput | $Enums.AssetOwnerType
+    status?: EnumAssetStatusFieldUpdateOperationsInput | $Enums.AssetStatus
+    storageKey?: StringFieldUpdateOperationsInput | string
+    type?: EnumAssetTypeFieldUpdateOperationsInput | $Enums.AssetType
+    shotId?: NullableStringFieldUpdateOperationsInput | string | null
+    hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type NovelChapterCreateManyNovelVolumeInput = {
+    id?: string
+    novelSourceId: string
+    orderIndex: number
+    title: string
+    rawText: string
+    startParagraph?: number | null
+    endParagraph?: number | null
+    characterCount?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    summary?: string | null
+  }
+
+  export type NovelChapterUpdateWithoutNovelVolumeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderIndex?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    rawText?: StringFieldUpdateOperationsInput | string
+    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
+    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
+    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    episode?: EpisodeUpdateOneWithoutChapterNestedInput
+    novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
+    sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
+    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
+  }
+
+  export type NovelChapterUncheckedUpdateWithoutNovelVolumeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    novelSourceId?: StringFieldUpdateOperationsInput | string
+    orderIndex?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    rawText?: StringFieldUpdateOperationsInput | string
+    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
+    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
+    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
+    sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
+    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
+  }
+
+  export type NovelChapterUncheckedUpdateManyWithoutNovelVolumeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    novelSourceId?: StringFieldUpdateOperationsInput | string
+    orderIndex?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    rawText?: StringFieldUpdateOperationsInput | string
+    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
+    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
+    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
 
 
   /**
@@ -101348,6 +102704,14 @@ export namespace Prisma {
      * @deprecated Use ApiKeyCountOutputTypeDefaultArgs instead
      */
     export type ApiKeyCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ApiKeyCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use SecurityFingerprintCountOutputTypeDefaultArgs instead
+     */
+    export type SecurityFingerprintCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SecurityFingerprintCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use NovelVolumeCountOutputTypeDefaultArgs instead
+     */
+    export type NovelVolumeCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NovelVolumeCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use UserDefaultArgs instead
      */

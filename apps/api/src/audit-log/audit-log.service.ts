@@ -37,12 +37,24 @@ export class AuditLogService {
     nonce?: string;
     signature?: string;
     timestamp?: Date;
+    req?: any; // Phase-C: Supporting request object for auto-header extraction
   }): Promise<void> {
     try {
-      // SSOT: Server-generated evidence (Mandatory for Commercial Grade)
-      const timestamp = new Date();
-      const nonce = randomBytes(16).toString('hex');
+      const { req } = options;
+
+      // PHASE-C: Capture Request-level Evidence (Spec V1.1)
+      const reqNonce = options.nonce || req?.headers['x-nonce'] || req?.headers['x-hmac-nonce'] || req?.hmacNonce;
+      const reqSignature = options.signature || req?.headers['x-signature'] || req?.headers['x-hmac-signature'] || req?.hmacSignature;
+      const reqTimestampStr = req?.headers['x-timestamp'] || req?.headers['x-hmac-timestamp'] || req?.hmacTimestamp;
+      const reqTimestamp = options.timestamp || (reqTimestampStr ? new Date(reqTimestampStr) : undefined);
+
+      const ip = options.ip || req?.ip || req?.headers['x-forwarded-for'];
+      const userAgent = options.userAgent || req?.headers['user-agent'];
       const traceId = options.traceId || `trace-${randomBytes(8).toString('hex')}`;
+
+      // Server-level Integrity Evidence (Prevent log tampering)
+      const serverTimestamp = new Date();
+      const serverNonce = randomBytes(16).toString('hex');
 
       // Inject traceId into details for persistence without dedicated column
       const details = options.details ? { ...options.details } : {};
@@ -55,10 +67,10 @@ export class AuditLogService {
         options.action,
         options.resourceType,
         options.resourceId || '',
-        timestamp.toISOString(),
-        nonce,
+        serverTimestamp.toISOString(),
+        serverNonce,
         detailsDigest,
-        traceId, // Keep in signature payload
+        traceId,
       ].join('|');
 
       const secret = process.env.AUDIT_SIGNING_SECRET;
@@ -67,7 +79,7 @@ export class AuditLogService {
           '[AuditLog] CRITICAL: AUDIT_SIGNING_SECRET is missing! Falling back to emergency warning.'
         );
       }
-      const signature = createHmac('sha256', secret || 'EMERGENCY_UNSECURE_FALLBACK')
+      const recordSignature = createHmac('sha256', secret || 'EMERGENCY_UNSECURE_FALLBACK')
         .update(signBase)
         .digest('hex');
 
@@ -76,11 +88,11 @@ export class AuditLogService {
         resourceType: options.resourceType,
         resourceId: options.resourceId ?? null,
         orgId: options.orgId ?? null,
-        ip: options.ip ?? null,
-        userAgent: options.userAgent ?? null,
-        nonce,
-        signature,
-        timestamp: timestamp.toISOString(),
+        ip: ip ?? null,
+        userAgent: userAgent ?? null,
+        nonce: reqNonce || serverNonce,
+        signature: reqSignature || recordSignature,
+        timestamp: (reqTimestamp || serverTimestamp).toISOString(),
         details,
         traceId,
         auditKeyVersion: 'v1',
@@ -94,12 +106,12 @@ export class AuditLogService {
           action: options.action,
           resourceType: options.resourceType,
           resourceId: options.resourceId,
-          ip: options.ip,
-          userAgent: options.userAgent,
+          ip: ip as any,
+          userAgent: userAgent as any,
           details: details as any,
-          nonce: options.nonce || nonce,
-          signature: options.signature || signature,
-          timestamp: options.timestamp || timestamp,
+          nonce: reqNonce || serverNonce,
+          signature: reqSignature || recordSignature,
+          timestamp: reqTimestamp || serverTimestamp,
           payload: payload as any,
         },
       });

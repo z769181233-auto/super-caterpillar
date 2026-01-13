@@ -13,6 +13,15 @@ export interface EngineBillingUsage {
   model: string; // 用于价格表查价（如 'ce06-replay-mock' / 'gemini-2.0-flash'）
 }
 
+export interface EngineAuditTrail {
+  engineKey?: string;
+  engineVersion: string;
+  timestamp: string;
+  input_hash?: string;
+  traceId?: string;
+  [k: string]: any;
+}
+
 /** 结构化输入（按现有字段命名保守兼容） */
 export interface CE06NovelParsingInput {
   // NOTE：这里用"最小必需字段 + 扩展兼容字段"策略，避免破坏现有调用方

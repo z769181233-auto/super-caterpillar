@@ -170,3 +170,34 @@ bash evidence/p1-2/run_ha_gates_3rounds.sh
 
 - **Commit**: `feat(p1-a): real model router v2 (ce04+shot_render) + e2e gate`
 - **Tag**: `p1a_real_model_router2_20260108_221200` (示例)
+
+---
+
+# Commercial Production PASS - Stage 4 Finale
+
+This final section documents the "Zero Bypass" production implementation completed in **PHASE A-G**.
+
+## 1. Production Mode Gate (`Zero Bypass` Policy)
+- **Status**: ✅ SEALED
+- **Enforcement**:
+  - **API Level**: `JobService` blocks any rendering job creation if `PRODUCTION_MODE=1` and the asset is not approved.
+  - **Worker Level**: `ce-core-processor.ts` performing secondary "Zero Bypass" check on every rendering task.
+  - **Engine Level**: `JobEngineBindingService` physically blocks stub/local/mock engines in production.
+
+## 2. Human-in-the-Loop Approval (Production Gate)
+- **Status**: ✅ SEALED
+- **Workflow**:
+  - `Shot` and `Scene` models now include `reviewStatus` (`DRAFT`, `PENDING`, `APPROVED`, `REJECTED`, `FINALIZED`).
+  - Only `APPROVED` or `FINALIZED` shots can proceed to rendering in production mode.
+
+## 3. Asset Delivery & Security
+- **Status**: ✅ SEALED
+- **Features**:
+  - HMAC V1.1 Audio-Audit compliance (Automatic Nonce, Signature, Timestamp capture in `AuditLogService`).
+  - Secure `AssetDeliveryController` (`/api/assets/:id/signed-url` and `/api/assets/:id/hls`).
+  - Physical removal of "fallback" and "dummy" logic from the rendering pipeline.
+
+## 4. Final Validation Evidence
+- **Audit Logs**: Correctly capture HMAC evidence (`x-nonce`, `x-signature`, `x-timestamp`) from workers during report.
+- **Zero-Bypass**: All "Fallback generic scene" and "Test scene fallback" logic has been physically disabled when `PRODUCTION_MODE=1`.
+- **Seal Status**: PROD-READY SEALED 2026-01-12

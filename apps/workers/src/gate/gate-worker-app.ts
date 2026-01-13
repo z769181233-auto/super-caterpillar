@@ -21,6 +21,9 @@ import { ApiClient } from '../api-client';
 import { PrismaClient } from 'database';
 import { env } from '@scu/config';
 import * as util from 'util';
+
+// 生产模式门禁：强制从环境变量读取
+const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 import * as fs from 'fs';
 
 function assertNonProd() {
@@ -70,6 +73,11 @@ export async function startGateWorkerApp() {
 
   // 注册 Worker
   process.stdout.write(util.format('[GateWorker] 正在注册 Worker 节点...') + '\n');
+  const supportedEnginesList = ['gate_noop', 'pipeline_orchestrator'];
+  const filteredEngines = PRODUCTION_MODE
+    ? supportedEnginesList.filter((e) => e !== 'gate_noop')
+    : supportedEnginesList;
+
   await apiClient.registerWorker({
     workerId: workerId,
     name: workerId,
@@ -86,7 +94,7 @@ export async function startGateWorkerApp() {
         'TIMELINE_RENDER', // S4-7
       ],
       supportedModels: [],
-      supportedEngines: ['gate_noop', 'pipeline_orchestrator'], // Added orchestrator engine
+      supportedEngines: filteredEngines,
       maxBatchSize: 1,
     },
   });

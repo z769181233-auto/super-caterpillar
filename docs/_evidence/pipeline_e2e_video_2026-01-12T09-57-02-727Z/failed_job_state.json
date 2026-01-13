@@ -1,0 +1,29 @@
+[
+  {
+    "id": "00ec7609-be22-4092-8e57-91b9eab678e8",
+    "type": "CE06_NOVEL_PARSING",
+    "status": "SUCCEEDED",
+    "createdAt": "2026-01-12T09:57:02.824Z",
+    "updatedAt": "2026-01-12T09:57:03.033Z",
+    "lastError": null,
+    "securityProcessed": false
+  },
+  {
+    "id": "cedba45e-90a4-4c09-a54d-95e49665992a",
+    "type": "CE03_VISUAL_DENSITY",
+    "status": "SUCCEEDED",
+    "createdAt": "2026-01-12T09:57:03.045Z",
+    "updatedAt": "2026-01-12T09:57:03.936Z",
+    "lastError": null,
+    "securityProcessed": false
+  },
+  {
+    "id": "98154e74-97c1-4739-8b09-15a8e5832ae4",
+    "type": "CE04_VISUAL_ENRICHMENT",
+    "status": "FAILED",
+    "createdAt": "2026-01-12T09:57:03.947Z",
+    "updatedAt": "2026-01-12T09:57:15.916Z",
+    "lastError": "Error",
+    "securityProcessed": false
+  }
+]

@@ -11,6 +11,7 @@ import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
 import { EngineRegistry } from '../engine/engine-registry.service';
+import { PRODUCTION_MODE } from '@scu/config';
 import { JobType, JobEngineBindingStatus } from 'database';
 
 @Injectable()
@@ -21,7 +22,7 @@ export class JobEngineBindingService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(EngineConfigStoreService) private readonly engineConfigStore: EngineConfigStoreService,
     @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry
-  ) {}
+  ) { }
 
   /**
    * 根据 JobType 选择 Engine
@@ -51,6 +52,28 @@ export class JobEngineBindingService {
       this.logger.warn(`No active engine found for engineKey: ${engineKey}, jobType: ${jobType}`);
       return null;
     }
+
+    // PHASE-C: Zero-Bypass Gate (Stub physical block)
+    // 生产模式下只允许 http 模式的真实引擎，禁止 local/mock/default_*
+    if (PRODUCTION_MODE) {
+      const isStub = !engine.mode || engine.mode !== 'http';
+      const isDefault = engine.code.startsWith('default_') || engineKey.startsWith('default_');
+
+      if (isStub || isDefault) {
+        this.logger.error(`[ZeroBypass] PRODUCTION_MODE blocked engine binding. Key: ${engineKey}, Mode: ${engine.mode}, Code: ${engine.code}`);
+        // Audit block
+        await this.prisma.auditLog.create({
+          data: {
+            action: 'PRODUCTION_BLOCK_ENGINE_BINDING',
+            resourceType: 'engine',
+            resourceId: engine.id,
+            details: { engineKey, mode: engine.mode, code: engine.code }
+          }
+        }).catch(() => { });
+        throw new Error(`PRODUCTION_MODE_FORBIDS_NON_PROD_ENGINE: ${engineKey} (Mode=${engine.mode}, Code=${engine.code})`);
+      }
+    }
+
 
     // 可选：选择特定版本（如果有默认版本）
     let engineVersionId: string | undefined;

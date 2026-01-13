@@ -9,6 +9,9 @@ import { SemanticEnhancementLocalAdapter } from './adapters/semantic-enhancement
 import { ShotPlanningLocalAdapter } from './adapters/shot-planning.local-adapter';
 import { StructureQALocalAdapter } from './adapters/structure-qa.local-adapter';
 import { NovelAnalysisLocalAdapter } from '../engines/adapters/novel-analysis.local.adapter.NEW';
+import { CE06LocalAdapter } from '../engines/adapters/ce06.local.adapter';
+import { CE03LocalAdapter } from '../engines/adapters/ce03.local.adapter';
+import { CE04LocalAdapter } from '../engines/adapters/ce04.local.adapter';
 
 /**
  * Engine Registry Hub
@@ -72,33 +75,24 @@ export class EngineRegistryHubService {
       mode: 'local',
       adapterToken: StructureQALocalAdapter,
     },
-    // Stage13: CE Core Layer (HTTP)
+    // Stage13: CE Core Layer (Now Local via Gemini/Algo)
     {
       engineKey: 'ce06_novel_parsing',
       version: 'default',
-      mode: 'http',
-      httpConfig: {
-        baseUrl: process.env.CE06_BASE_URL || 'http://localhost:8000',
-        path: '/story/parse',
-      },
+      mode: 'local',
+      adapterToken: CE06LocalAdapter,
     },
     {
       engineKey: 'ce03_visual_density',
       version: 'default',
-      mode: 'http',
-      httpConfig: {
-        baseUrl: process.env.CE03_BASE_URL || 'http://localhost:8001',
-        path: '/text/visual-density',
-      },
+      mode: 'local', // Combined with CE03LocalAdapter
+      adapterToken: CE03LocalAdapter,
     },
     {
       engineKey: 'ce04_visual_enrichment',
       version: 'default',
-      mode: 'http',
-      httpConfig: {
-        baseUrl: process.env.CE04_BASE_URL || 'http://localhost:8002',
-        path: '/text/enrich',
-      },
+      mode: 'local', // Combined with CE04LocalAdapter
+      adapterToken: CE04LocalAdapter,
     },
     {
       engineKey: 'shot_render',
@@ -107,6 +101,24 @@ export class EngineRegistryHubService {
       httpConfig: {
         baseUrl: process.env.SHOT_RENDER_BASE_URL || 'http://localhost:8003',
         path: '/render/shot',
+      },
+    },
+    {
+      engineKey: 'ce04_sdxl',
+      version: 'default',
+      mode: 'http',
+      httpConfig: {
+        baseUrl: process.env.CE04_SDXL_BASE_URL || 'http://localhost:8004',
+        path: '/generate/image',
+      },
+    },
+    {
+      engineKey: 'tts_standard',
+      version: 'default',
+      mode: 'http',
+      httpConfig: {
+        baseUrl: process.env.TTS_BASE_URL || 'http://localhost:8005',
+        path: '/generate/voice',
       },
     },
     // 其它引擎占位以后再加

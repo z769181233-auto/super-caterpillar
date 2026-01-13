@@ -4,6 +4,7 @@ import { QualityMetricsWriter } from '../quality/quality-metrics.writer';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobType as JobTypeEnum, JobStatus as JobStatusEnum } from 'database';
 import { DirectorConstraintSolverService } from '../shot-director/director-solver.service';
+import { CostLedgerService } from '../cost/cost-ledger.service';
 
 /**
  * Job Report Facade
@@ -26,7 +27,9 @@ export class JobReportFacade {
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(DirectorConstraintSolverService)
-    private readonly directorSolver: DirectorConstraintSolverService
+    private readonly directorSolver: DirectorConstraintSolverService,
+    @Inject(CostLedgerService)
+    private readonly costLedger: CostLedgerService
   ) { }
 
   /**
@@ -278,6 +281,36 @@ export class JobReportFacade {
           `[JobReportFacade] Failed to handle Job Success Side-effects: ${e.message}`,
           e.stack
         );
+      }
+    }
+
+    // 5. Case C: TIMELINE_PREVIEW finished -> Record Billing (Commercial Grade)
+    if (
+      updatedJob &&
+      updatedJob.type === JobTypeEnum.TIMELINE_PREVIEW &&
+      updatedJob.status === JobStatusEnum.SUCCEEDED
+    ) {
+      try {
+        const metrics = params.result?.metrics || {};
+        const costAmount = metrics.cost || 0.05;
+        const project = await this.prisma.project.findUnique({
+          where: { id: updatedJob.projectId },
+          select: { ownerId: true },
+        });
+
+        await this.costLedger.recordFromEvent({
+          userId: project?.ownerId || params.userId || 'system',
+          projectId: updatedJob.projectId,
+          jobId: updatedJob.id,
+          jobType: updatedJob.type,
+          engineKey: 'ce11',
+          costAmount,
+          billingUnit: 'job',
+          quantity: 1,
+          metadata: metrics,
+        });
+      } catch (e: any) {
+        this.logger.error(`[Billing] Failed to record CE11 cost for job ${updatedJob.id}: ${e.message}`);
       }
     }
 

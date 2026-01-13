@@ -57,7 +57,12 @@ export class ModelRouterV2 {
       return { selectedModel: 'sdxl', reason: 'Standard production quality via SDXL' };
     }
 
-    // 3. 兜底逻辑
+    // 3. CE06 (Novel Parsing) 路由规则
+    if (jobType === 'CE06_NOVEL_PARSING' || jobType === 'ce06_novel_parsing') {
+      return { selectedModel: 'gemini', reason: 'Cinematic analysis requires Gemini' };
+    }
+
+    // 4. 兜底逻辑
     return { selectedModel: 'replay-stub', reason: 'No specific rule found, safety fallback' };
   }
 }

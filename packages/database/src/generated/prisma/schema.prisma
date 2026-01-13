@@ -142,15 +142,17 @@ model Episode {
 }
 
 model Scene {
-  id                 String       @id @default(uuid())
-  episodeId          String
-  index              Int
-  title              String
-  summary            String?
-  sceneDraftId       String?      @unique
-  characters         Json?
+  id           String           @id @default(uuid())
+  episodeId    String
+  index        Int
+  title        String
+  summary      String?
+  sceneDraftId String?          @unique
+  reviewStatus ShotReviewStatus @default(DRAFT)
+  characters   Json?
+
   enrichedText       String?
-  projectId          String?
+  projectId          String
   visualDensityScore Float?
   engineTasks        EngineTask[] @relation("SceneEngineTask")
   episode            Episode      @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
@@ -163,12 +165,14 @@ model Scene {
 }
 
 model Shot {
-  id                String             @id @default(uuid())
-  sceneId           String
-  index             Int
-  title             String?
-  description       String?
-  type              String
+  id           String           @id @default(uuid())
+  sceneId      String
+  index        Int
+  title        String?
+  description  String?
+  reviewStatus ShotReviewStatus @default(DRAFT)
+  type         String
+
   params            Json               @default("{}")
   qualityScore      Json               @default("{}")
   reviewedAt        DateTime?
@@ -252,11 +256,13 @@ model EngineTask {
 }
 
 model Engine {
-  id             String             @id @default(uuid())
-  engineKey      String             @unique
-  adapterName    String
-  adapterType    String
-  config         Json
+  id          String @id @default(uuid())
+  engineKey   String @unique
+  adapterName String
+  adapterType String
+  mode        String @default("local") // local, http, mock
+  config      Json
+
   enabled        Boolean            @default(true)
   version        String?
   defaultVersion String?
@@ -669,6 +675,7 @@ model NovelSource {
   updatedAt      DateTime           @updatedAt
   analysisJobs   NovelAnalysisJob[] @relation("NovelSourceAnalysisJobs")
   chapters       NovelChapter[]     @relation("NovelSourceChapters")
+  volumes        NovelVolume[]      @relation("NovelSourceVolumes")
   project        Project            @relation("ProjectNovelSources", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
@@ -689,6 +696,8 @@ model NovelChapter {
   summary        String?
   episode        Episode?     @relation("ChapterEpisode")
   novelSource    NovelSource  @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  novelVolumeId  String?      @map("novel_volume_id")
+  novelVolume    NovelVolume? @relation("VolumeChapters", fields: [novelVolumeId], references: [id], onDelete: Cascade)
   sceneDrafts    SceneDraft[] @relation("ChapterSceneDrafts")
   novelScenes    NovelScene[] @relation("ChapterNovelScenes")
 
@@ -802,6 +811,7 @@ model SecurityFingerprint {
   assetId   String?
   fpVector  Json?
   createdAt DateTime @default(now())
+  assets    Asset[]  @relation("AssetFingerprint")
 
   @@map("security_fingerprints")
 }
@@ -847,12 +857,15 @@ model Character {
 }
 
 model NovelVolume {
-  id        String   @id @default(uuid())
-  projectId String?
-  index     Int
-  title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String         @id @default(uuid())
+  projectId     String?
+  novelSourceId String         @map("novel_source_id")
+  index         Int
+  title         String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  novelSource   NovelSource    @relation("NovelSourceVolumes", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  chapters      NovelChapter[] @relation("VolumeChapters")
 
   @@map("novel_volumes")
 }
@@ -1015,6 +1028,12 @@ model Asset {
   watermarkMode  String? @map("watermark_mode")
   fingerprintId  String? @map("fingerprint_id")
 
+  // Commercial Delivery Fields (Phase-B Alias for clarity if needed, but we keep existing mappings)
+  // The user requested: signed_url, hls_playlist_url, watermark_mode, fingerprint_id
+  // These are already mapped to the @map fields above.
+
+  fingerprint SecurityFingerprint? @relation("AssetFingerprint", fields: [fingerprintId], references: [id])
+
   @@unique([ownerType, ownerId, type])
   @@index([projectId])
   @@index([ownerType, ownerId])
@@ -1146,11 +1165,11 @@ enum ShotStatus {
 }
 
 enum ShotReviewStatus {
+  DRAFT
   PENDING
   APPROVED
   REJECTED
-
-  @@map("shot_review_status")
+  FINALIZED
 }
 
 enum SubscriptionStatus {

@@ -1,0 +1,5 @@
+{"ts":"2026-01-12T08:30:32.977Z","type":"verify_start","startTime":"2026-01-12T08:30:32.977Z"}
+{"ts":"2026-01-12T08:30:33.027Z","type":"data_setup_complete","projectId":"eb61bf1c-5124-4651-a463-d66613356bfd","apiKey":"ak_test_20180e77-9a79-428b-bfd4-dab81870011a"}
+{"ts":"2026-01-12T08:30:33.049Z","type":"api_unreachable","code":"ECONNREFUSED","test":"Negative_1"}
+{"ts":"2026-01-12T08:30:33.049Z","type":"verify_error","message":"❌ API Unreachable during Negative Test","status":"FAIL_ENV"}
+{"ts":"2026-01-12T08:30:33.049Z","type":"verify_end","status":"FAIL_ENV","endTime":"2026-01-12T08:30:33.049Z"}

@@ -202,9 +202,12 @@ export class WorkerController {
         payload: job.payload,
         taskId: job.taskId,
         shotId: job.shotId,
-        projectId: job.projectId, // Add projectId
+        projectId: job.projectId,
+        episodeId: job.episodeId, // Added
+        sceneId: job.sceneId, // Added
+        organizationId: job.organizationId, // Added
         traceId: job.traceId,
-        createdAt: job.createdAt, // P1-4: For queue time metric
+        createdAt: job.createdAt,
       },
     };
   }

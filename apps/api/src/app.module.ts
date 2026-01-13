@@ -27,6 +27,7 @@ import { AuditInsightModule } from './audit-insight/audit-insight.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { InternalModule } from './internal/internal.module';
 import { ApiSecurityModule } from './security/api-security/api-security.module';
+import { TimelineModule } from './timeline/timeline.module';
 import { StoryModule } from './story/story.module';
 import { TextModule } from './text/text.module';
 import { QualityModule } from './quality/quality.module';
@@ -107,6 +108,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     MemoryModule, // CE07/CE08: Story Memory API
     ShotDirectorModule, // CE05: Director Control API
     CEPipelineModule, // P2-3: CE DAG Pipeline (CE06→CE03→CE04)
+    TimelineModule, // CE11: Timeline Preview API
     QualityModule, // 质量指标写入模块（QualityMetricsWriter）
     HealthModule, // 健康检查端点（/health, /ping, /metrics）
     StorageModule, // Stage 8: Local Storage Module

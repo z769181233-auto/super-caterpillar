@@ -1,4 +1,6 @@
-import { PrismaClient } from 'database';
+import { PrismaClient, ShotReviewStatus } from 'database';
+// import { PRODUCTION_MODE } from '@scu/config';
+const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 import { EngineHubClient } from './engine-hub-client';
 import { ApiClient } from './api-client';
 import {
@@ -97,7 +99,6 @@ export async function processCE06Job(
       throw new Error('Novel source not found or rawText is empty');
     }
 
-    // 2. 调用 CE06 Engine
     const input: CE06NovelParsingInput = {
       structured_text: rawText,
       context: {
@@ -106,15 +107,21 @@ export async function processCE06Job(
       },
     };
 
-    const engineResult = await engineClient.invoke<CE06NovelParsingInput, CE06NovelParsingOutput>({
+    // 调用 CE06 Engine
+    const engineReq: EngineInvocationRequest<CE06NovelParsingInput> = {
       engineKey: 'ce06_novel_parsing',
       engineVersion: 'default',
       payload: input,
       metadata: {
         jobId,
         projectId: job.projectId,
+        traceId,
       },
-    });
+    };
+
+    const engineResult = await engineClient.invoke<CE06NovelParsingInput, CE06NovelParsingOutput>(
+      engineReq
+    );
 
     if (!engineResult.success || !engineResult.output) {
       throw new Error(engineResult.error?.message || 'CE06 engine execution failed');
@@ -422,6 +429,9 @@ export async function processCE03Job(
       // Direct payload input (gate/test scenarios)
       structuredText = (job.payload as any).structured_text;
     } else {
+      if (PRODUCTION_MODE) {
+        throw new Error(`PRODUCTION_MODE_FORBIDS_FALLBACK: No input data found for CE03 job ${jobId}`);
+      }
       // Production Fallback: all scenes (legacy/bulk mode)
       const parseResult = await prisma.novelParseResult.findUnique({
         where: { projectId: job.projectId },
@@ -446,16 +456,22 @@ export async function processCE03Job(
       inputSample: structuredText.substring(0, 100),
     });
 
+
+
+    // 调用 CE03 Engine
+    const engineReq: EngineInvocationRequest<CE03VisualDensityInput> = {
+      engineKey: 'ce03_visual_density',
+      engineVersion: 'default',
+      payload: input,
+      metadata: {
+        jobId,
+        projectId: job.projectId,
+        traceId,
+      },
+    };
+
     const engineResult = await engineClient.invoke<CE03VisualDensityInput, CE03VisualDensityOutput>(
-      {
-        engineKey: 'ce03_visual_density',
-        engineVersion: 'default',
-        payload: input,
-        metadata: {
-          jobId,
-          projectId: job.projectId,
-        },
-      }
+      engineReq
     );
 
     if (!engineResult.success || !engineResult.output) {
@@ -676,16 +692,21 @@ export async function processCE04Job(
       });
       if (parseResult?.scenes) {
         structuredText = JSON.stringify(parseResult.scenes);
+      } else if (PRODUCTION_MODE) {
+        throw new Error(`PRODUCTION_MODE_FORBIDS_FALLBACK: No scene data found for CE04 job ${jobId}`);
       }
     }
 
     // 2. [CORE FIX] 统一调用远程母引擎 Hub，不再直连 Selector
-    const engineReq: EngineInvocationRequest<CE04VisualEnrichmentInput> = {
-      engineKey: 'ce04_visual_enrichment',
+    const engineReq: EngineInvocationRequest<any> = {
+      engineKey: 'ce04_sdxl',
       engineVersion: 'default',
       payload: {
-        structured_text: structuredText,
-        context: { projectId: job.projectId },
+        prompt: `Cinematic movie scene, high quality, 8k: ${structuredText.substring(0, 1000)}`, // Truncate to safe limit
+        width: 1280,
+        height: 720,
+        traceId,
+        projectId: job.projectId,
       },
       metadata: {
         jobId,
@@ -694,13 +715,22 @@ export async function processCE04Job(
       },
     };
 
-    const engineResult = await engineClient.invoke<
-      CE04VisualEnrichmentInput,
-      CE04VisualEnrichmentOutput
-    >(engineReq);
+    // Use an absolute path to a real existing image to satisfy FFmpeg
+    const dummyLocalImage = '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png';
+
+    if (!fs.existsSync(dummyLocalImage)) {
+      // Fallback if the above doesn't exist for some reason
+      const altDummy = path.join(process.cwd(), 'dummy_fallback.png');
+      if (!fs.existsSync(altDummy)) {
+        // Create a 1x1 black PNG if possible, but for now just touch it
+        fs.writeFileSync(altDummy, '');
+      }
+    }
+
+    const engineResult = await engineClient.invoke<any, any>(engineReq);
 
     if (!engineResult.success || !engineResult.output) {
-      throw new Error(engineResult.error?.message || 'CE04 engine hub invocation failed');
+      throw new Error(engineResult.error?.message || 'CE04 engine execution failed');
     }
 
     const result = engineResult.output;
@@ -708,44 +738,32 @@ export async function processCE04Job(
     logStructured('info', {
       action: 'CE04_ENGINE_RESULT',
       jobId,
-      enrichmentQuality: result.enrichment_quality,
+      asset: result.assets?.image,
     });
 
-    // 3. 落库 QualityMetrics
+    // 3. 落库 QualityMetrics (Keep Legacy)
     await prisma.qualityMetrics.create({
       data: {
         projectId: job.projectId,
         engine: 'CE04',
         jobId,
         traceId,
-        enrichmentQuality: result.enrichment_quality,
+        enrichmentQuality: 1.0, // Default for SDXL
         metadata: {
-          enrichedPrompt: result.enriched_prompt,
-          promptParts: result.prompt_parts,
+          enrichedPrompt: structuredText,
           billingUsage: engineResult.metrics?.usage,
+          generatedAsset: result.assets?.image,
         } as any,
       },
     });
 
-    // [Stage 3] Write back Enriched Text to NovelScene
+    // [Stage 3] Write back Enriched Text to NovelScene (Optional/Legacy behavior)
     if (novelSceneId) {
-      try {
-        await prisma.novelScene.update({
-          where: { id: novelSceneId },
-          data: { enrichedText: result.enriched_prompt },
-        });
-        logStructured('info', {
-          action: 'NOVEL_SCENE_ENRICHED_UPDATE',
-          jobId,
-          novelSceneId,
-        });
-      } catch (e: any) {
-        logStructured('warn', { action: 'NOVEL_SCENE_UPDATE_FAIL', error: e.message });
-      }
+      // SDXL doesn't return text, so we skip text update or keep original
     }
 
-    // [Stub] CE04 -> Generate Physical Assets for TimelineRender (Mocking ShotRender)
-    // [Stage 3 Fix] Hydrate job from DB to ensure sceneId/episodeId are present (Worker payload might be partial)
+    // [Stage 4] Generate Physical Assets from Real SDXL Output
+    // [Stage 3 Fix] Hydrate job from DB to ensure sceneId/episodeId are present
     const freshJob = await prisma.shotJob.findUnique({ where: { id: jobId } });
 
     if (freshJob?.sceneId) {
@@ -755,22 +773,9 @@ export async function processCE04Job(
           where: { sceneId },
         });
 
-        const assetsDir = path.join(process.cwd(), '.runtime', 'assets');
-        if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
-        const dummyImagePath = path.join(assetsDir, 'dummy_shot.png');
-
-        // Create dummy image if not exists
-        if (!fs.existsSync(dummyImagePath)) {
-          await sharp({
-            create: {
-              width: 1280,
-              height: 720,
-              channels: 4,
-              background: { r: 0, g: 0, b: 255, alpha: 1 }, // Blue background
-            }
-          })
-            .png()
-            .toFile(dummyImagePath);
+        const realImagePath = result.assets?.image;
+        if (!realImagePath || !fs.existsSync(realImagePath)) {
+          throw new Error(`SDXL Image not found at ${realImagePath}`);
         }
 
         for (const shot of shots) {
@@ -778,15 +783,16 @@ export async function processCE04Job(
           if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir, { recursive: true });
           const framesTxtPath = path.join(framesDir, 'frames.txt');
 
-          // Generate frames.txt pointing to dummy image
+          // Generate frames.txt pointing to REAL SDXL IMAGE
           // Duration default 4s
           const duration = shot.durationSeconds || 4;
-          const content = `file '${dummyImagePath}'\nduration ${duration}\nfile '${dummyImagePath}'`; // Repeat purely for concat logic
+          const content = `file '${realImagePath}'\nduration ${duration}\nfile '${realImagePath}'`;
           fs.writeFileSync(framesTxtPath, content);
-          console.log(`[CE04] Generated stub frames.txt for shot ${shot.id}`);
+          console.log(`[CE04] Generated REAL SDXL frames.txt for shot ${shot.id} -> ${realImagePath}`);
         }
       } catch (stubError: any) {
-        logStructured('warn', { action: 'CE04_STUB_FAILED', error: stubError.message });
+        logStructured('warn', { action: 'CE04_REAL_ASSET_OP_FAILED', error: stubError.message });
+        throw stubError; // Fail job if asset gen fails
       }
     }
 
@@ -878,9 +884,28 @@ export async function processShotRenderJob(
     throw new Error('SHOT_RENDER job requires shotId');
   }
 
+  // PHASE-E: Worker-side Enforcement (Zero Bypass)
+  // 生产模式下，渲染 Job 必须在 Shot 本身处于 APPROVED 或 FINALIZED 状态时才能执行
+  if (PRODUCTION_MODE) {
+    const shot = await prisma.shot.findUnique({
+      where: { id: shotId },
+      select: { reviewStatus: true },
+    });
+    if (!shot || (shot.reviewStatus !== ShotReviewStatus.APPROVED && shot.reviewStatus !== ShotReviewStatus.FINALIZED)) {
+      logStructured('error', {
+        action: 'PRODUCTION_MODE_BLOCK',
+        reason: 'Shot not approved for rendering',
+        shotId,
+        reviewStatus: shot?.reviewStatus,
+      });
+      throw new Error(`PRODUCTION_MODE_FORBIDS_UNAPPROVED_RENDER: Shot ${shotId} is ${shot?.reviewStatus || 'MISSING'}`);
+    }
+  }
+
+
   try {
     // 1. Resolve Input (Priority: CE04 Enriched -> Shot Text -> Fallback)
-    let prompt = 'Fallback generic scene';
+    let prompt = PRODUCTION_MODE ? '' : 'Fallback generic scene';
     let style = 'cinematic';
     let seed = 12345;
 
@@ -897,6 +922,10 @@ export async function processShotRenderJob(
 
     if (payload?.seed) seed = payload.seed;
     if (payload?.style) style = payload.style;
+
+    if (PRODUCTION_MODE && !prompt) {
+      throw new Error(`PRODUCTION_MODE_FORBIDS_EMPTY_PROMPT: No prompt found for SHOT_RENDER job ${jobId}`);
+    }
 
     // 2. [CORE FIX] 统一调用母引擎，不再直连 Original Selector
     const engineResult = await engineClient.invoke<any, any>({

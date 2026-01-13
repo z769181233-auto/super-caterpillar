@@ -37,7 +37,7 @@ export class ProjectService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   async create(createProjectDto: CreateProjectDto, ownerId: string, organizationId: string) {
     this.logger.log('PROJECT SERVICE CREATE CALLED');
@@ -721,11 +721,11 @@ export class ProjectService {
     // 清理缓存（需要获取 projectId）
     const projectId = isSeasonId
       ? (
-          await this.prisma.season.findUnique({
-            where: { id: projectIdOrSeasonId },
-            select: { projectId: true },
-          })
-        )?.projectId
+        await this.prisma.season.findUnique({
+          where: { id: projectIdOrSeasonId },
+          select: { projectId: true },
+        })
+      )?.projectId
       : projectIdOrSeasonId;
     if (projectId) {
       await this.sceneGraphService.invalidateProjectSceneGraph(projectId);
@@ -819,6 +819,7 @@ export class ProjectService {
       return tx.scene.create({
         data: {
           episodeId,
+          projectId: episode.projectId || episode.project?.id || episode.season?.projectId || '',
           index: createSceneDto.index,
           title: createSceneDto.title || `Scene ${createSceneDto.index}`,
           summary: createSceneDto.summary,

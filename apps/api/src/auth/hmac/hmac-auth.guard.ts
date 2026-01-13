@@ -83,10 +83,16 @@ export class HmacAuthGuard implements CanActivate {
       throw buildHmacError('4003', '缺少必需的认证头：X-Api-Key, X-Signature', { path, method });
     }
 
-    // 2.2 时间戳校验 (P0)
+    // 2.2 时间戳校验 (P0 - APISpec V1.1 Strict Seconds)
     const tsNum = Number(timestamp);
+    this.logger.warn(`[HMAC_GUARD_WARN] Incoming timestamp: ${timestamp} (type: ${typeof timestamp}), parsed: ${tsNum}`);
+
     if (!timestamp || isNaN(tsNum)) {
       throw buildHmacError('4003', 'Invalid or missing X-Timestamp', { path, method });
+    }
+    if (tsNum > 10000000000) {
+      this.logger.error(`[HMAC_GUARD_REJECT] REJECTING MS TIMESTAMP: ${tsNum} > 10000000000`);
+      throw buildHmacError('4003', 'timestamp_must_be_seconds', { path, method });
     }
 
     // 2.5 防重放校验 (P0) - 兼容启用
@@ -178,6 +184,12 @@ export class HmacAuthGuard implements CanActivate {
       (request as any).hmacNonce = nonce;
       (request as any).hmacTimestamp = timestamp;
       (request as any).hmacSignature = signature;
+      (request as any).hmac = {
+        apiKey,
+        nonce,
+        timestamp,
+        signature,
+      };
       (request as any).authType = 'hmac'; // Identity marker for audit/logic
 
       if (keyRecord.ownerUser) {

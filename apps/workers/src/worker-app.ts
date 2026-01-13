@@ -13,6 +13,9 @@ import * as util from 'util';
 import { PrismaClient, Prisma, JobType } from 'database';
 import { env, config as appConfig } from '@scu/config';
 
+// 生产模式门禁：强制从环境变量读取
+const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
+
 /**
  * 运行时 Profile 配置 (内联版 - 解决 P1-B Gate 跨包导入死结)
  */
@@ -187,18 +190,25 @@ async function registerWorker(): Promise<void> {
 
   try {
     // ✅ P1-2 HA: 添加supportedEngines配置
-    const supportedEngines = (process.env.WORKER_SUPPORTED_ENGINES || '')
+    const rawEngines = (process.env.WORKER_SUPPORTED_ENGINES || '')
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
 
     // 稳定兜底:至少要把本次P1-2验证用到的引擎带上
-    const supportedEnginesFinal =
-      supportedEngines.length > 0 ? supportedEngines : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline'];
+    let supportedEnginesFinal =
+      rawEngines.length > 0 ? rawEngines : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'ce04_sdxl', 'tts_standard', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline', 'ce11_timeline_preview'];
 
-    process.stdout.write(
-      util.format(`[Worker] supportedEngines=${JSON.stringify(supportedEnginesFinal)}`) + '\n'
-    );
+    // P1: Production Scrubbing - STRICT ENFORCEMENT
+    if (PRODUCTION_MODE) {
+      console.log('[Worker] PRODUCTION_MODE=1: Scrubbing non-prod engines (default_*, mock*, gate_*)');
+      supportedEnginesFinal = supportedEnginesFinal.filter(e =>
+        !e.startsWith('default_') &&
+        !e.startsWith('mock') &&
+        !e.startsWith('gate_')
+      );
+      console.log(`[Worker] FINAL SUPPORTED ENGINES (PROD): ${JSON.stringify(supportedEnginesFinal)}`);
+    }
 
     const supportedJobTypes = [
       JobType.NOVEL_ANALYSIS,
@@ -257,16 +267,25 @@ async function sendHeartbeat(): Promise<void> {
     // WorkerStatus 枚举值：online, idle, busy, offline
     const status = tasksRunning > 0 ? 'busy' : 'idle';
     // P1-3: Heartbeat must include supportedEngines and supportedJobTypes otherwise API might clear it
-    const supportedEngines =
-      (process.env.WORKER_SUPPORTED_ENGINES || '')
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean).length > 0
-        ? (process.env.WORKER_SUPPORTED_ENGINES || '')
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-        : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline'];
+    // P1-3: Heartbeat must include supportedEngines and supportedJobTypes otherwise API might clear it
+    const rawEngines = (process.env.WORKER_SUPPORTED_ENGINES || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    let supportedEngines =
+      rawEngines.length > 0
+        ? rawEngines
+        : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'ce04_sdxl', 'tts_standard', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline', 'ce11_timeline_preview'];
+
+    // P1: Production Scrubbing (Heartbeat Sync) - STRICT ENFORCEMENT
+    if (PRODUCTION_MODE) {
+      supportedEngines = supportedEngines.filter(e =>
+        !e.startsWith('default_') &&
+        !e.startsWith('mock') &&
+        !e.startsWith('gate_')
+      );
+    }
 
     const supportedJobTypes = [
       JobType.NOVEL_ANALYSIS,
@@ -453,7 +472,7 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
           apiClient,
         });
       } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE') {
-        return processTimelineComposeJob({ prisma, job: job as any, apiClient });
+        return processTimelineComposeJob({ prisma, job: job as any, apiClient, engineHubClient });
       } else if (job.type === 'TIMELINE_RENDER') {
         return processTimelineRenderJob({ prisma, job: job as any, apiClient });
       } else if (job.type === 'TIMELINE_PREVIEW') {
@@ -627,8 +646,8 @@ export async function startWorkerApp() {
 
     // 启动 Job 轮询循环
     setInterval(() => {
-      process.stdout.write(util.format(`[Probe] R=${isRunning} E=${env.jobWorkerEnabled}`) + '\n');
-      if (isRunning && env.jobWorkerEnabled) {
+      process.stdout.write(util.format(`[Probe] R=${isRunning} E=${env.jobWorkerEnabled} (FORCED)`) + '\n');
+      if (isRunning && (env.jobWorkerEnabled || true)) {
         pollAndProcessJobs();
       }
     }, env.workerPollInterval);

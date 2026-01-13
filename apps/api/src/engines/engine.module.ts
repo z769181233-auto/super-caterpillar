@@ -9,6 +9,9 @@
 import { Module, OnModuleInit, Logger } from '@nestjs/common';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter.NEW';
+import { CE06LocalAdapter } from './adapters/ce06.local.adapter';
+import { CE03LocalAdapter } from './adapters/ce03.local.adapter';
+import { CE04LocalAdapter } from './adapters/ce04.local.adapter';
 import { VideoMergeLocalAdapter } from './adapters/video-merge.local.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { EngineConfigService } from '../config/engine.config';
@@ -31,6 +34,9 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     EngineStrategyService, // S4-B: 策略路由层
     EngineInvokerService,
     NovelAnalysisLocalAdapter,
+    CE06LocalAdapter,
+    CE03LocalAdapter,
+    CE04LocalAdapter,
     VideoMergeLocalAdapter,
     HttpEngineAdapter,
   ],
@@ -47,9 +53,12 @@ export class EngineModule implements OnModuleInit {
   constructor(
     private readonly registry: EngineRegistry,
     private readonly novelAdapter: NovelAnalysisLocalAdapter,
+    private readonly ce06Adapter: CE06LocalAdapter,
+    private readonly ce03Adapter: CE03LocalAdapter,
+    private readonly ce04Adapter: CE04LocalAdapter,
     private readonly videoMergeAdapter: VideoMergeLocalAdapter,
     private readonly httpAdapter: HttpEngineAdapter
-  ) {}
+  ) { }
 
   onModuleInit() {
     if (!this.registry) {
@@ -67,9 +76,13 @@ export class EngineModule implements OnModuleInit {
 
     // [P1-B Fix] Register Aliases for CE components to ensure dynamic resolution works with seeded data
     // Use novelAdapter (Local) instead of HttpAdapter to ensure valid output (mock scores) when Http config is empty
-    this.registry.registerAlias('ce06_novel_parsing', this.novelAdapter);
-    this.registry.registerAlias('ce03_visual_density', this.novelAdapter);
-    this.registry.registerAlias('ce04_visual_enrichment', this.novelAdapter);
+    this.registry.register(this.ce06Adapter); // Real CE06 Integration
+    this.registry.register(this.ce03Adapter);
+    this.registry.register(this.ce04Adapter);
+
+    this.registry.registerAlias('ce06_novel_parsing', this.ce06Adapter);
+    this.registry.registerAlias('ce03_visual_density', this.ce03Adapter);
+    this.registry.registerAlias('ce04_visual_enrichment', this.ce04Adapter);
     this.registry.registerAlias('default_shot_render', this.novelAdapter); // Safety fallback
 
     // P0-R2: Register Video Merge Adapter

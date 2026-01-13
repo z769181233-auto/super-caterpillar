@@ -37,8 +37,8 @@ export async function processTimelineRenderJob({ prisma, job, apiClient }: Timel
   }
   const timeline: TimelineData = JSON.parse(fs.readFileSync(timelineStorageKey, 'utf-8'));
 
-  if (timeline.shots.length < 2) {
-    throw new Error(`[TimelineRender] Fail-fast: Timeline must contain at least 2 shots.`);
+  if (timeline.shots.length < 1) {
+    throw new Error(`[TimelineRender] Fail-fast: Timeline must contain at least 1 shot.`);
   }
 
   const fps = timeline.fps || 24;

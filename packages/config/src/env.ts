@@ -98,7 +98,13 @@ process.stdout.write(
     `[CONFIG_DEBUG] JWT_SECRET read from env: ${process.env.JWT_SECRET?.substring(0, 4)}...`
   ) + '\n'
 );
+
+export const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
+
 export const env = {
+  // Production Mode Flag
+  productionMode: PRODUCTION_MODE,
+
   // Node Environment
   nodeEnv: getEnv('NODE_ENV', 'development'),
   isDevelopment: process.env.NODE_ENV === 'development',

@@ -29,7 +29,8 @@ import { CapacityExceededException, CapacityErrorCode } from '../common/errors/c
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { UnprocessableEntityException } from '@nestjs/common';
-import { Prisma, JobStatus, JobType, TaskStatus, TaskType, JobEngineBindingStatus } from 'database';
+import { PRODUCTION_MODE } from '@scu/config';
+import { Prisma, JobStatus, JobType, TaskStatus, TaskType, JobEngineBindingStatus, ShotReviewStatus } from 'database';
 import {
   assertTransition,
   isClaimableStatus,
@@ -182,6 +183,17 @@ export class JobService {
         'Cannot create job: Scene analysis incomplete (missing summary). Please complete Stage 2 first.'
       );
     }
+
+    // PRODUCTION_MODE Gate: 未审核不允许渲染
+    if (PRODUCTION_MODE && createJobDto.type === JobTypeEnum.SHOT_RENDER) {
+      if (shot.reviewStatus !== ShotReviewStatus.APPROVED && shot.reviewStatus !== ShotReviewStatus.FINALIZED) {
+        throw new ForbiddenException({
+          code: 'SHOT_NOT_APPROVED',
+          message: 'Production mode requires human approval (APPROVED/FINALIZED) before rendering.',
+        });
+      }
+    }
+
 
     // API-Side Stable Error Code for Fail Fast
     if (createJobDto.type === JobTypeEnum.NOVEL_ANALYSIS) {
@@ -379,6 +391,7 @@ export class JobService {
       const scene = await this.prisma.scene.create({
         data: {
           episodeId: episode.id,
+          projectId, // Fix: Added missing projectId
           index: 9999, // Use system index to prevent sync deletion
           title: `Job Placeholder Scene`,
           summary: 'Auto generated for novel analysis',
@@ -567,6 +580,7 @@ export class JobService {
       scene = await this.prisma.scene.create({
         data: {
           episodeId: episode.id,
+          projectId, // Fix: Added missing projectId
           index: 1,
           title: 'Scene 1',
           summary: 'Auto generated for CE Core Layer',

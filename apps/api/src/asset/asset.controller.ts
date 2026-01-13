@@ -19,31 +19,29 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('assets')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class AssetController {
-  constructor(private readonly assetService: AssetService) {}
+  constructor(private readonly assetService: AssetService) { }
 
   /**
    * GET /assets/:assetId/secure-url
    * CE09: 获取安全签名 URL
    */
+  /*
   @Get(':assetId/secure-url')
-  @RequireSignature() // CE10: 高成本接口，强制签名验证
+  @RequireSignature()
   @AuditAction(AuditActions.ASSET_ACCESS)
   @HttpCode(HttpStatus.OK)
   async getSecureUrl(@Param('assetId') assetId: string, @CurrentUser() user: any) {
     return this.assetService.getSecureUrl(assetId, user?.id);
   }
 
-  /**
-   * GET /assets/:assetId/hls
-   * CE09: 获取 HLS 播放列表
-   */
   @Get(':assetId/hls')
-  @RequireSignature() // CE10: 高成本接口，强制签名验证
+  @RequireSignature()
   @AuditAction(AuditActions.ASSET_ACCESS)
   @HttpCode(HttpStatus.OK)
   async getHls(@Param('assetId') assetId: string, @CurrentUser() user: any) {
     return this.assetService.getHls(assetId, user?.id);
   }
+  */
 
   /**
    * POST /assets/:assetId/watermark

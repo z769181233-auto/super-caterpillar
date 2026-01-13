@@ -5,13 +5,14 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { createHmac, createHash } from 'crypto';
+import { createHmac, createHash, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
 import { AuditActions } from '../../audit/audit.constants';
 import { Prisma } from 'database';
 import { SecretEncryptionService } from './secret-encryption.service';
+import { buildHmacError } from '../../common/utils/hmac-error.utils';
 import {
   SignatureVerificationResult,
   SignatureVerificationContext,
@@ -56,6 +57,30 @@ export class ApiSecurityService {
       context;
 
     try {
+      // 0. Pre-validation: APISpec V1.1 Timestamp must be in seconds [Strict Regex]
+      if (!/^\d{10}$/.test(timestamp)) {
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'TIMESTAMP_FORMAT_ERROR',
+            errorCode: '4003',
+          },
+          ip,
+          userAgent
+        );
+        return {
+          success: false,
+          errorCode: '4003',
+          errorMessage: 'timestamp_must_be_seconds',
+        };
+      }
+      const timestampNum = parseInt(timestamp, 10);
+
       // 1. 查找 API Key 记录
       const keyRecord = await this.prisma.apiKey.findUnique({
         where: { key: apiKey },
@@ -133,52 +158,7 @@ export class ApiSecurityService {
         };
       }
 
-      // 4. 验证时间戳（秒级，允许 ±300 秒）
-      let timestampNum = parseInt(timestamp, 10);
-      if (isNaN(timestampNum)) {
-        await this.writeAuditLog(
-          {
-            nonce,
-            signature,
-            timestamp,
-            path,
-            method,
-            apiKey: this.maskApiKey(apiKey),
-            reason: 'INVALID_TIMESTAMP_FORMAT',
-            errorCode: '4003',
-          },
-          ip,
-          userAgent
-        );
-        return {
-          success: false,
-          errorCode: '4003',
-          errorMessage: '时间戳格式错误',
-        };
-      }
-
-      // APISpec V1.1: Timestamp must be in seconds
-      if (timestampNum > 10000000000) { // If > 10 digits, likely MS
-        await this.writeAuditLog(
-          {
-            nonce,
-            signature,
-            timestamp,
-            path,
-            method,
-            apiKey: this.maskApiKey(apiKey),
-            reason: 'INVALID_TIMESTAMP_UNIT_MS',
-            errorCode: '4003',
-          },
-          ip,
-          userAgent
-        );
-        return {
-          success: false,
-          errorCode: '4003',
-          errorMessage: 'Timestamp must be in seconds (Unix Epoch)',
-        };
-      }
+      // 4. 验证时间戳（允许 ±300 秒）
 
 
       const nowSec = Math.floor(Date.now() / 1000);
@@ -245,12 +225,48 @@ export class ApiSecurityService {
         apiKey,
         timestamp,
         nonce,
-        context.body || '' // Spec V1.1: Use raw body
+        (context.body === '{}') ? '' : (context.body || '') // Fix: Normalize '{}' to empty string for GET requests
       );
       const expectedSignature = this.computeSignature(secret, canonicalString);
 
-      // 8. 对比签名
-      if (signature !== expectedSignature) {
+      // 8. 对比签名 (Counter Timing Attack)
+      // 8. 对比签名 (Counter Timing Attack) - Hex Buffer hardening
+      // signature / expectedSignature are hex strings (sha256 HMAC hex)
+      const isHex = (s: string) => typeof s === 'string' && /^[0-9a-fA-F]+$/.test(s) && s.length % 2 === 0;
+
+      // Fast reject invalid hex to avoid Buffer.from throwing and to keep behavior deterministic
+      if (!isHex(signature) || !isHex(expectedSignature)) {
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'SIGNATURE_FORMAT_ERROR',
+            errorCode: '4003',
+          },
+          ip,
+          userAgent
+        );
+        return {
+          success: false,
+          errorCode: '4003',
+          errorMessage: 'invalid_signature',
+        };
+      }
+
+      const signatureBuffer = Buffer.from(signature, 'hex');
+      const expectedSignatureBuffer = Buffer.from(expectedSignature, 'hex');
+
+      // timingSafeEqual requires same length; SHA256 HMAC should be 32 bytes
+      const valid =
+        signatureBuffer.length === expectedSignatureBuffer.length &&
+        signatureBuffer.length === 32 &&
+        timingSafeEqual(signatureBuffer, expectedSignatureBuffer);
+
+      if (!valid) {
         this.logger.error(
           `[HMAC_DEBUG] Signature Mismatch! Method: ${method}, Path: ${path}, apiKey: ${this.maskApiKey(apiKey)}`
         );
@@ -271,7 +287,7 @@ export class ApiSecurityService {
         return {
           success: false,
           errorCode: '4003',
-          errorMessage: '签名验证失败',
+          errorMessage: 'invalid_signature',
         };
       }
 
@@ -540,7 +556,10 @@ export class ApiSecurityService {
         // Mandated by DBSpec V1.1 columns
         nonce: details.nonce,
         signature: details.signature,
-        timestamp: details.timestamp ? new Date(parseInt(details.timestamp, 10) * 1000) : undefined,
+        // Fix: Only write valid timestamps to DB, otherwise use incomingTimestamp in details
+        timestamp: /^\d{10}$/.test(details.timestamp)
+          ? new Date(parseInt(details.timestamp, 10) * 1000)
+          : undefined,
         details: {
           reason: details.reason,
           path: details.path,

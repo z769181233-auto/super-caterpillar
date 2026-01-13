@@ -20,7 +20,7 @@ export class TimestampNonceGuard implements CanActivate {
   constructor(
     private readonly nonceService: NonceService,
     private reflector: Reflector
-  ) {}
+  ) { }
 
   private getPath(req: any): string {
     const raw = (req.originalUrl || req.url || '') as string;
@@ -48,7 +48,12 @@ export class TimestampNonceGuard implements CanActivate {
     }
 
     // 注意：@Public() 只跳过 JWT，不跳过 HMAC/Timestamp/Nonce 校验
-    const hmac = request.hmac || {};
+    // 注意：@Public() 只跳过 JWT，不跳过 HMAC/Timestamp/Nonce 校验
+    const hmac = request.hmac || {
+      apiKey: (request.headers['x-api-key'] || request.headers['x-api-signature']) as string,
+      nonce: (request.headers['x-nonce'] || request.headers['x-api-nonce']) as string,
+      timestamp: (request.headers['x-timestamp'] || request.headers['x-api-timestamp']) as string,
+    };
     const timestampStr = hmac.timestamp;
     const nonce = hmac.nonce;
     const apiKey = hmac.apiKey;
