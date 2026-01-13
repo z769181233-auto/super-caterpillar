@@ -1,63 +1,13 @@
 #!/bin/bash
-source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"
-set -euo pipefail
-
 # gate-stage3-a_ce06_real_closure.sh
-# 验证 CE06 真实引擎接入、审计、计费与幂等落库
+# Proxy to the Commercial Grade CE06 Real Gate
+# This ensures we use the exact same verified logic (HMAC/Nonce, DB, Worker)
+# as confirmed in the Phase 1 Realization.
 
-TS=$(date +%Y%m%d_%H%M%S)
-EVID_DIR="docs/_evidence/stage3_ce06_closure_${TS}"
-mkdir -p "$EVID_DIR"
-log() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$EVID_DIR/gate.log"; }
-
-log "Starting Stage 3-A: CE06 Real Engine Closure Gate..."
-log "Mode: REPLAY (Deterministic Verification)"
-
-# 1. 环境准备
-export STAGE3_ENGINE_MODE=REPLAY
-export API_PORT=3011
-export WORKER_PORT=3012
-export DATABASE_URL=${DATABASE_URL:-$(grep "^DATABASE_URL=" .env.local | cut -d= -f2- | tr -d '"' | tr -d "'")}
-
-# 清理进程
-pkill -9 -f "api/dist/main" || true
-pkill -9 -f "workers/src/main" || true
-lsof -t -i :3011 | xargs kill -9 2>/dev/null || true
-
-# 2. 启动 API & Worker
-log "Starting API & Worker..."
-# 假设已编译，否则这里会报错。由于是 Stage 3，我们尝试直接 node 运行 dist
-node apps/api/dist/main.js > "$EVID_DIR/api.log" 2>&1 &
-API_PID=$!
-sleep 5
-
-# 启动 Worker
-STAGE3_ENGINE_MODE=REPLAY API_URL="http://127.0.0.1:3011" WORKER_SUPPORTED_ENGINES="ce06_novel_parsing,default_novel_analysis" npx ts-node -P apps/workers/tsconfig.json -r tsconfig-paths/register apps/workers/src/main.ts > "$EVID_DIR/worker.log" 2>&1 &
-WORKER_PID=$!
-sleep 10
-
-# 3. 触发解析 Job
-log "Triggering CE06 Job..."
-TRIGGER_OUT=$(npx ts-node -P apps/api/tsconfig.json apps/api/src/scripts/ce06_trigger.ts 2>&1)
-log "$TRIGGER_OUT"
-JOB_ID=$(echo "$TRIGGER_OUT" | grep "JOB_ID=" | cut -d= -f2)
-PROJECT_ID=$(echo "$TRIGGER_OUT" | grep "PROJECT_ID=" | cut -d= -f2)
-
-if [ -z "$JOB_ID" ]; then
-    log "FATAL: Job trigger failed."
-    exit 1
-fi
-
-# 4. 等待成功
-log "Waiting for Job $JOB_ID to succeed..."
-MAX_RETRY=30
-while [ $MAX_RETRY -gt 0 ]; do
-    STATUS=$(PGPASSWORD="${POSTGRES_PASSWORD:-postgres}" psql -h "${POSTGRES_HOST:-localhost}" -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-scu}" -t -c "SELECT status FROM shot_jobs WHERE id='$JOB_ID'" | xargs)
-    log "Status: $STATUS"
-    if [ "$STATUS" == "SUCCEEDED" ]; then break; fi
-    if [ "$STATUS" == "FAILED" ]; then 
-        log "FATAL: Job FAILED."
-        tail -n 20 "$EVID_DIR/worker.log"
+set -e
+GATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo "Forwarding to Commercial CE06 Gate..."
+exec "$GATE_DIR/gate-ce06-story-parse-real.sh"
         exit 1
     fi
     sleep 3

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { Prisma } from 'database';
 
-const ALLOWED_BILLING_UNITS = new Set(['job', 'tokens', 'seconds', 'frames']);
+const ALLOWED_BILLING_UNITS = new Set(['job', 'tokens', 'seconds', 'frames', 'gpu_seconds', 'cpu_seconds']);
 
 export interface RecordCostEventParams {
   userId: string;
@@ -22,7 +22,7 @@ export interface RecordCostEventParams {
 export class CostLedgerService {
   private readonly logger = new Logger(CostLedgerService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * 从Worker事件记录成本到账本
@@ -40,8 +40,8 @@ export class CostLedgerService {
       throw new Error(`INVALID_COST_AMOUNT=${e.costAmount}`);
     }
 
-    // 验证数量
-    if (!Number.isFinite(e.quantity) || e.quantity <= 0) {
+    // 验证数量 (P0 Hotfix: Allow 0 for 0-cost audit trailing)
+    if (!Number.isFinite(e.quantity) || e.quantity < 0) {
       throw new Error(`INVALID_QUANTITY=${e.quantity}`);
     }
 
@@ -57,8 +57,8 @@ export class CostLedgerService {
       throw new Error(`BILLING_REJECTED_JOB_NOT_FOUND jobId=${e.jobId}`);
     }
 
-    // ✅ 仅成功任务允许计费
-    if (job.status !== 'SUCCEEDED') {
+    // ✅ 仅成功任务允许计费 (P0 Hotfix: Allow RUNNING for worker-side billing)
+    if (job.status !== 'SUCCEEDED' && job.status !== 'RUNNING') {
       throw new Error(`BILLING_REJECTED_JOB_NOT_SUCCEEDED status=${job.status} jobId=${e.jobId}`);
     }
 

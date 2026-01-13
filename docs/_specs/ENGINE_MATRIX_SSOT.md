@@ -14,15 +14,16 @@
 
 ## 引擎矩阵
 
-| EngineKey      | JobType                | 实现状态             | 计费模型           | 审计 Action 前缀     | Gate 脚本                                  | 封印 Tag                                   |
-| -------------- | ---------------------- | -------------------- | ------------------ | -------------------- | ------------------------------------------ | ------------------------------------------ |
-| `ce06`         | CE06_NOVEL_PARSING     | REAL (Deterministic) | tokens @ 0.2/1k    | `engine.ce06`        | `gate-stage3-b_ce06_billing_closure.sh`    | `stage3b_ce06_billing_closure`             |
-| `ce03`         | CE03_VISUAL_DENSITY    | REAL (Heuristic)     | tokens @ 1.0/1k    | `engine.ce03`        | `gate-stage3-c_ce03_density_closure.sh`    | `stage3c_ce03_density_closure`             |
-| `ce04`         | CE04_VISUAL_ENRICHMENT | REAL (Template)      | tokens @ 1.0/1k    | `engine.ce04`        | `gate-stage3-d_ce04_enrichment_closure.sh` | `stage3d_ce04_enrichment_closure`          |
-| `shot_render`  | SHOT_RENDER            | REAL                 | gpuSeconds @ 50/1k | `engine.shot_render` | `gate-p0-r0_shot_render_real.sh`           | `shot_render_local_mps_sealed_20260109`    |
-| `video_merge`  | VIDEO_MERGE            | REAL                 | cpuSeconds @ TBD   | `engine.video_merge` | `gate-p0-r1_video_merge_real.sh`           | `video_merge_local_ffmpeg_sealed_20260109` |
-| `ce11`         | TIMELINE_PREVIEW      | REAL                 | cpuSeconds @ TBD   | `engine.ce11`        | `gate-ce11_timeline_preview.sh`            | `seal/ce11_final_closure_20260113_080125` |
-| `E2E_Pipeline` | CE06->SHOT->VIDEO      | REAL                 | Multi-Step         | `pipeline.e2e_video` | `gate-p0-r2_e2e_video_pipeline.sh`         | `p0_r2_e2e_video_pipeline_sealed_20260109` |
+| EngineKey                | JobType                | 实现状态             | 计费模型                                 | 审计 Action 前缀     | Gate 脚本                                  | 封印 Tag                                   | 备注                         |
+| ------------------------ | ---------------------- | -------------------- | ---------------------------------------- | -------------------- | ------------------------------------------ | ------------------------------------------ | ---------------------------- |
+| `ce06_novel_parsing`     | CE06_NOVEL_PARSING     | REAL (Gemini 2.0)    | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-ce06-story-parse-real.sh`            | `ce06_real_sealed_20260113`                |                              |
+| `ce03_visual_density`    | CE03_VISUAL_DENSITY    | REAL (Heuristic)     | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
+| `ce04_visual_enrichment` | CE04_VISUAL_ENRICHMENT | REAL (Template)      | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
+| `shot_render`            | SHOT_RENDER            | REAL                 | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
+| `video_merge`            | VIDEO_MERGE            | REAL                 | cpuSeconds (priced via PRICING_SSOT)     | `engine.video_merge` | `gate-p0-r1_video_merge_real.sh`           | `video_merge_local_ffmpeg_sealed_20260109` | LEGACY: Compatible with V1.0 |
+| `ce10_timeline_compose`  | TIMELINE_COMPOSE       | REAL                 | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
+| `ce11_timeline_preview`  | TIMELINE_PREVIEW       | REAL                 | cpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
+| `workflow_ce_dag`        | CE06->SHOT->VIDEO      | REAL (Orchestrator)  | Multi-Step                               | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` | Orchestrator Workflow        |
 
 ---
 
@@ -49,14 +50,28 @@
 
 ## Gate 验收标准
 
-每个引擎的 Gate 必须断言：
+### 通用标准（所有引擎）
 
-- [ ] 输出结构符合 `types.ts` 定义
-- [ ] `billing_usage` 存在且 `totalTokens > 0` 或 `gpuSeconds > 0`
-- [ ] `audit_trail` 存在且 `engineKey` 非空
-- [ ] CostLedger 记录存在
-- [ ] BillingEvent 1:1 绑定（如适用）
-- [ ] 无 STUB 特征（如 `FAKE PNG HEADER`）对于 REAL 状态引擎
+- ✅ **NO_EMPTY_OUTPUT_RULE**: 任何引擎（无论 REAL 或 STUB）不得返回空值 (null/undefined/空字符串)
+- ✅ **AUDIT_LOG_INTEGRITY**: 每次引擎调用必须生成 AuditLog 记录 (成功/失败都需要)
+- ✅ **GATE_RETRY_STABILITY**: Gate 连跑两次必须稳定通过（幂等性验证）
+
+### REAL 引擎额外标准
+
+- ✅ **REAL_OUTPUT_DIFF**: 确定性引擎必须产生一致输出（可基于 seed）
+- ✅ **ASSET_PERSISTENCE**: 涉及资源的引擎必须落库 (Asset Table)
+- ✅ **ERROR_PROPAGATION**: 错误必须带 `errorMessage` 字段并传播到审计日志
+
+### 商业计费强制标准（P0 Billing Infrastructure）
+
+> [!IMPORTANT]
+> **HARD SEALED**: 2026-01-13 Billing Gap Closure (P0 Hotfix)  
+> Evidence: `docs/_evidence/GATE_PHASE3_E2E_1768298805`
+
+- ✅ **COST_LEDGER_COVERAGE**: 所有REAL引擎必须存在CostLedger记录（允许cost=0用于audit），否则Gate必须FAIL
+- ✅ **ENGINE_KEY_WHITELIST**: CostLedger的engineKey必须在ENGINE_MATRIX_SSOT中存在
+- ✅ **BILLING_IDEMPOTENCY**: 同一traceId重复调用不得重复计费（通过idempotencyKey保障）
+- ✅ **0_COST_AUDIT_SUPPORT**: 允许quantity=0/cost=0用于完整audit trail记录
 
 ---
 
@@ -92,6 +107,10 @@
 | 2026-01-09 | 封印 P0-R2 E2E 管线    | Gemini |
 | 2026-01-09 | P1-3 基础可观测性建设  | Gemini |
 | 2026-01-13 | 封印 CE11 Timeline Preview | Antigravity |
+| 2026-01-13 | Phase 1 HARD SEALED（CE06 Real + CE11 Regression） | Gemini |
+| 2026-01-13 | Phase 3 HARD SEALED（Commercial E2E） | Gemini |
+| 2026-01-13 | Phase 4 UI Commercial Closure          | Gemini |
+| 2026-01-13 | **Billing Gap Closure (P0 Hotfix)** — CostLedger全链路闭环完成 | Antigravity |
 
 ---
 

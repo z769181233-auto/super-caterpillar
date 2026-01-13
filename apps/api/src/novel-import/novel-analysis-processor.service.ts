@@ -7,17 +7,21 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class NovelAnalysisProcessorService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * 分析章节并生成 SceneDraft
    * 当前使用简单规则，未来替换为 LLM 调用
    */
   async analyzeChapter(chapterId: string): Promise<void> {
-    const chapter = await this.prisma.novelChapter.findUnique({
+    const chapter: any = await this.prisma.novelChapter.findUnique({
       where: { id: chapterId },
       include: {
         novelSource: true,
+        scenes: {
+          take: 1,
+          orderBy: { index: 'asc' },
+        },
       },
     });
 
@@ -26,7 +30,7 @@ export class NovelAnalysisProcessorService {
     }
 
     // 读取章节原文
-    const rawText = chapter.rawText;
+    const rawText = chapter.scenes?.[0]?.rawText || '';
 
     // 简单规则：按段落切分场景
     // 未来替换为 LLM 调用
@@ -55,7 +59,7 @@ export class NovelAnalysisProcessorService {
       await this.prisma.sceneDraft.create({
         data: {
           chapterId,
-          orderIndex: scIdx + 1,
+          index: scIdx + 1,
           title: `${chapter.title} - 场景 ${scIdx + 1}`,
           summary,
           characters: characters.length > 0 ? characters : undefined,

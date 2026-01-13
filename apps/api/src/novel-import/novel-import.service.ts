@@ -36,7 +36,7 @@ export class NovelImportService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly analysisProcessor: NovelAnalysisProcessorService
-  ) {}
+  ) { }
 
   /**
    * 分析单个章节
@@ -57,7 +57,7 @@ export class NovelImportService {
     userId: string,
     organizationId: string,
     chapters?: Array<{ title: string; content: string }>,
-    savedChapters?: Array<{ id: string; orderIndex: number; title: string; rawText: string }>
+    savedChapters?: Array<{ id: string; index: number; title: string; rawText: string }>
   ): Promise<void> {
     // 获取小说源
     const novelSource = await this.prisma.novelSource.findUnique({
@@ -71,10 +71,18 @@ export class NovelImportService {
     // 如果没有提供 savedChapters，从数据库读取
     let chaptersToProcess = savedChapters;
     if (!chaptersToProcess) {
-      chaptersToProcess = await this.prisma.novelChapter.findMany({
+      const dbChapters = await this.prisma.novelChapter.findMany({
         where: { novelSourceId },
-        orderBy: { orderIndex: 'asc' },
+        orderBy: { index: 'asc' },
+        include: { scenes: true },
       });
+
+      chaptersToProcess = dbChapters.map(c => ({
+        id: c.id,
+        index: c.index,
+        title: c.title || `Chapter ${c.index}`,
+        rawText: c.scenes?.[0]?.rawText || '',
+      }));
     }
 
     if (!chaptersToProcess || chaptersToProcess.length === 0) {
@@ -104,7 +112,7 @@ export class NovelImportService {
       const sceneDraft = await this.prisma.sceneDraft.create({
         data: {
           chapterId: chapter.id,
-          orderIndex: 1,
+          index: 1,
           title: `${chapter.title} - 场景 1`,
           summary: chapter.rawText.substring(0, 100) || '场景摘要', // 前100字作为摘要
           status: 'DRAFT',

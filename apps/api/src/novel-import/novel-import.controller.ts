@@ -225,6 +225,16 @@ export class NovelImportController {
         },
       });
 
+      // Create default volume
+      const volume = await this.prisma.novelVolume.create({
+        data: {
+          projectId,
+          novelSourceId: novelSource.id,
+          index: 1,
+          title: '默认卷',
+        },
+      });
+
       // 保存章节原文到 NovelChapter
       const savedChapters = [];
       for (let i = 0; i < parsed.chapters.length; i++) {
@@ -232,10 +242,18 @@ export class NovelImportController {
         const savedChapter = await this.prisma.novelChapter.create({
           data: {
             novelSourceId: novelSource.id,
-            orderIndex: i + 1,
+            volumeId: volume.id,
+            index: i + 1,
             title: chapter.title,
-            rawText: chapter.content, // 章节原始文本（UTF-8）
-            characterCount: chapter.content.length,
+          },
+        });
+        // Create Scene with rawText
+        await this.prisma.novelScene.create({
+          data: {
+            chapterId: savedChapter.id,
+            index: 1, // Default scene index
+            title: `Scene 1`,
+            rawText: chapter.content,
           },
         });
         savedChapters.push(savedChapter);
@@ -482,11 +500,20 @@ export class NovelImportController {
     // 2. 检查现存章节（幂等性处理）
     let savedChapters = await this.prisma.novelChapter.findMany({
       where: { novelSourceId: novelSource.id },
-      orderBy: { orderIndex: 'asc' },
+      orderBy: { index: 'asc' },
     });
 
     if (savedChapters.length === 0) {
-      // 没有任何章节（可能是新创建的 Source，或数据不完整），执行解析与保存
+      // Create default volume
+      const volume = await this.prisma.novelVolume.create({
+        data: {
+          projectId,
+          novelSourceId: novelSource.id,
+          index: 1,
+          title: '默认卷',
+        },
+      });
+
       const chapters = this.fileParserService.parseChaptersFromText(rawText);
       savedChapters = [];
       for (let i = 0; i < chapters.length; i++) {
@@ -494,10 +521,18 @@ export class NovelImportController {
         const savedChapter = await this.prisma.novelChapter.create({
           data: {
             novelSourceId: novelSource.id,
-            orderIndex: i + 1,
+            volumeId: volume.id,
+            index: i + 1,
             title: chapter.title,
+          },
+        });
+        // Create Scene with rawText
+        await this.prisma.novelScene.create({
+          data: {
+            chapterId: savedChapter.id,
+            index: 1, // Default scene index
+            title: `Scene 1`,
             rawText: chapter.content,
-            characterCount: chapter.content.length,
           },
         });
         savedChapters.push(savedChapter);

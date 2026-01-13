@@ -34,4 +34,7 @@ export interface CE04Output {
     input_hash?: string;
   };
   billing_usage?: EngineBillingUsage;
+  assets?: {
+    image?: string;
+  };
 }

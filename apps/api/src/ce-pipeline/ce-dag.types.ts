@@ -7,8 +7,10 @@ export interface CEDagRunRequest {
   projectId: string;
   novelSourceId: string;
   shotId: string; // ✅ 必需：ShotJob 挂载维度
+  rawText?: string; // Optional: direct story input
   runId?: string; // auto-generated if not provided
   traceId?: string; // auto-generated if not provided
+  referenceSheetId?: string; // Optional: Character reference for rendering
 }
 
 import { IsString, IsOptional } from 'class-validator';
@@ -28,11 +30,19 @@ export class CEDagRunRequestDto {
 
   @IsOptional()
   @IsString()
+  rawText?: string;
+
+  @IsOptional()
+  @IsString()
   runId?: string;
 
   @IsOptional()
   @IsString()
   traceId?: string;
+
+  @IsOptional()
+  @IsString()
+  referenceSheetId?: string;
 }
 
 export interface CEDagRunResult {
@@ -42,8 +52,11 @@ export interface CEDagRunResult {
   ce03JobId: string;
   ce04JobId: string;
   shotRenderJobIds: string[];
-  videoJobId?: string;
+  videoJobId?: string; // Legacy
+  timelineComposeJobId?: string;
+  timelinePreviewJobId?: string;
   videoKey?: string;
+  previewUrl?: string; // Final output
   ce03Score: number; // visualDensityScore
   ce04Score: number; // enrichmentQuality
   warningsCount: number;
@@ -67,5 +80,7 @@ export interface CEDagJobIds {
   ce03JobId?: string;
   ce04JobId?: string;
   shotRenderJobIds?: string[];
-  videoJobId?: string;
+  videoJobId?: string; // Legacy
+  timelineComposeJobId?: string;
+  timelinePreviewJobId?: string;
 }

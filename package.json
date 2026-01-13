@@ -45,7 +45,8 @@
     "prepare": "husky",
     "gate:audit": "bash tools/audit/run_full_audit_v3.sh",
     "gate:risk": "bash tools/audit/run_risk_pack_v1.sh",
-    "gate:health": "bash tools/health/run_health_pack.sh"
+    "gate:health": "bash tools/health/run_health_pack.sh",
+    "gate:commercial": "bash tools/gate/run_commercial_seal.sh"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

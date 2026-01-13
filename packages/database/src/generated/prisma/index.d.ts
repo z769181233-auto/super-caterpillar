@@ -189,11 +189,6 @@ export type OrganizationMember = $Result.DefaultSelection<Prisma.$OrganizationMe
  */
 export type NovelSource = $Result.DefaultSelection<Prisma.$NovelSourcePayload>
 /**
- * Model NovelChapter
- * 
- */
-export type NovelChapter = $Result.DefaultSelection<Prisma.$NovelChapterPayload>
-/**
  * Model SceneDraft
  * 
  */
@@ -238,6 +233,11 @@ export type Character = $Result.DefaultSelection<Prisma.$CharacterPayload>
  * 
  */
 export type NovelVolume = $Result.DefaultSelection<Prisma.$NovelVolumePayload>
+/**
+ * Model NovelChapter
+ * 
+ */
+export type NovelChapter = $Result.DefaultSelection<Prisma.$NovelChapterPayload>
 /**
  * Model NovelScene
  * 
@@ -1252,16 +1252,6 @@ export class PrismaClient<
   get novelSource(): Prisma.NovelSourceDelegate<ExtArgs>;
 
   /**
-   * `prisma.novelChapter`: Exposes CRUD operations for the **NovelChapter** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more NovelChapters
-    * const novelChapters = await prisma.novelChapter.findMany()
-    * ```
-    */
-  get novelChapter(): Prisma.NovelChapterDelegate<ExtArgs>;
-
-  /**
    * `prisma.sceneDraft`: Exposes CRUD operations for the **SceneDraft** model.
     * Example usage:
     * ```ts
@@ -1350,6 +1340,16 @@ export class PrismaClient<
     * ```
     */
   get novelVolume(): Prisma.NovelVolumeDelegate<ExtArgs>;
+
+  /**
+   * `prisma.novelChapter`: Exposes CRUD operations for the **NovelChapter** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more NovelChapters
+    * const novelChapters = await prisma.novelChapter.findMany()
+    * ```
+    */
+  get novelChapter(): Prisma.NovelChapterDelegate<ExtArgs>;
 
   /**
    * `prisma.novelScene`: Exposes CRUD operations for the **NovelScene** model.
@@ -1946,7 +1946,6 @@ export namespace Prisma {
     PublishingReview: 'PublishingReview',
     OrganizationMember: 'OrganizationMember',
     NovelSource: 'NovelSource',
-    NovelChapter: 'NovelChapter',
     SceneDraft: 'SceneDraft',
     NovelAnalysisJob: 'NovelAnalysisJob',
     ApiKey: 'ApiKey',
@@ -1956,6 +1955,7 @@ export namespace Prisma {
     VideoJob: 'VideoJob',
     Character: 'Character',
     NovelVolume: 'NovelVolume',
+    NovelChapter: 'NovelChapter',
     NovelScene: 'NovelScene',
     MemoryShortTerm: 'MemoryShortTerm',
     MemoryLongTerm: 'MemoryLongTerm',
@@ -1983,7 +1983,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "organization" | "membership" | "project" | "season" | "episode" | "scene" | "shot" | "semanticEnhancement" | "shotPlanning" | "structureQualityReport" | "engineTask" | "engine" | "engineVersion" | "jobEngineBinding" | "nonceStore" | "role" | "permission" | "rolePermission" | "projectMember" | "task" | "workerJob" | "shotJob" | "workerNode" | "workerHeartbeat" | "modelRegistry" | "templatePreset" | "qualityScore" | "safetyResult" | "billingEvent" | "costCenter" | "subscription" | "publishingReview" | "organizationMember" | "novelSource" | "novelChapter" | "sceneDraft" | "novelAnalysisJob" | "apiKey" | "auditLog" | "securityFingerprint" | "shotVariant" | "videoJob" | "character" | "novelVolume" | "novelScene" | "memoryShortTerm" | "memoryLongTerm" | "novelParseResult" | "qualityMetrics" | "systemSetting" | "billingPlan" | "billingRecord" | "model" | "asset" | "textSafetyResult" | "costLedger"
+      modelProps: "user" | "organization" | "membership" | "project" | "season" | "episode" | "scene" | "shot" | "semanticEnhancement" | "shotPlanning" | "structureQualityReport" | "engineTask" | "engine" | "engineVersion" | "jobEngineBinding" | "nonceStore" | "role" | "permission" | "rolePermission" | "projectMember" | "task" | "workerJob" | "shotJob" | "workerNode" | "workerHeartbeat" | "modelRegistry" | "templatePreset" | "qualityScore" | "safetyResult" | "billingEvent" | "costCenter" | "subscription" | "publishingReview" | "organizationMember" | "novelSource" | "sceneDraft" | "novelAnalysisJob" | "apiKey" | "auditLog" | "securityFingerprint" | "shotVariant" | "videoJob" | "character" | "novelVolume" | "novelChapter" | "novelScene" | "memoryShortTerm" | "memoryLongTerm" | "novelParseResult" | "qualityMetrics" | "systemSetting" | "billingPlan" | "billingRecord" | "model" | "asset" | "textSafetyResult" | "costLedger"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4437,76 +4437,6 @@ export namespace Prisma {
           }
         }
       }
-      NovelChapter: {
-        payload: Prisma.$NovelChapterPayload<ExtArgs>
-        fields: Prisma.NovelChapterFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.NovelChapterFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.NovelChapterFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
-          }
-          findFirst: {
-            args: Prisma.NovelChapterFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.NovelChapterFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
-          }
-          findMany: {
-            args: Prisma.NovelChapterFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>[]
-          }
-          create: {
-            args: Prisma.NovelChapterCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
-          }
-          createMany: {
-            args: Prisma.NovelChapterCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.NovelChapterCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>[]
-          }
-          delete: {
-            args: Prisma.NovelChapterDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
-          }
-          update: {
-            args: Prisma.NovelChapterUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
-          }
-          deleteMany: {
-            args: Prisma.NovelChapterDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.NovelChapterUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.NovelChapterUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
-          }
-          aggregate: {
-            args: Prisma.NovelChapterAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateNovelChapter>
-          }
-          groupBy: {
-            args: Prisma.NovelChapterGroupByArgs<ExtArgs>
-            result: $Utils.Optional<NovelChapterGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.NovelChapterCountArgs<ExtArgs>
-            result: $Utils.Optional<NovelChapterCountAggregateOutputType> | number
-          }
-        }
-      }
       SceneDraft: {
         payload: Prisma.$SceneDraftPayload<ExtArgs>
         fields: Prisma.SceneDraftFieldRefs
@@ -5134,6 +5064,76 @@ export namespace Prisma {
           count: {
             args: Prisma.NovelVolumeCountArgs<ExtArgs>
             result: $Utils.Optional<NovelVolumeCountAggregateOutputType> | number
+          }
+        }
+      }
+      NovelChapter: {
+        payload: Prisma.$NovelChapterPayload<ExtArgs>
+        fields: Prisma.NovelChapterFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.NovelChapterFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.NovelChapterFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
+          }
+          findFirst: {
+            args: Prisma.NovelChapterFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.NovelChapterFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
+          }
+          findMany: {
+            args: Prisma.NovelChapterFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>[]
+          }
+          create: {
+            args: Prisma.NovelChapterCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
+          }
+          createMany: {
+            args: Prisma.NovelChapterCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.NovelChapterCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>[]
+          }
+          delete: {
+            args: Prisma.NovelChapterDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
+          }
+          update: {
+            args: Prisma.NovelChapterUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
+          }
+          deleteMany: {
+            args: Prisma.NovelChapterDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.NovelChapterUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.NovelChapterUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NovelChapterPayload>
+          }
+          aggregate: {
+            args: Prisma.NovelChapterAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateNovelChapter>
+          }
+          groupBy: {
+            args: Prisma.NovelChapterGroupByArgs<ExtArgs>
+            result: $Utils.Optional<NovelChapterGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.NovelChapterCountArgs<ExtArgs>
+            result: $Utils.Optional<NovelChapterCountAggregateOutputType> | number
           }
         }
       }
@@ -6261,6 +6261,7 @@ export namespace Prisma {
     shotJobs: number
     shots: number
     subscriptions: number
+    novelParseResults: number
   }
 
   export type OrganizationCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6275,6 +6276,7 @@ export namespace Prisma {
     shotJobs?: boolean | OrganizationCountOutputTypeCountShotJobsArgs
     shots?: boolean | OrganizationCountOutputTypeCountShotsArgs
     subscriptions?: boolean | OrganizationCountOutputTypeCountSubscriptionsArgs
+    novelParseResults?: boolean | OrganizationCountOutputTypeCountNovelParseResultsArgs
   }
 
   // Custom InputTypes
@@ -6365,6 +6367,13 @@ export namespace Prisma {
     where?: SubscriptionWhereInput
   }
 
+  /**
+   * OrganizationCountOutputType without action
+   */
+  export type OrganizationCountOutputTypeCountNovelParseResultsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: NovelParseResultWhereInput
+  }
+
 
   /**
    * Count Type ProjectCountOutputType
@@ -6383,6 +6392,7 @@ export namespace Prisma {
     qualityMetrics: number
     seasons: number
     shotJobs: number
+    novelVolumes: number
   }
 
   export type ProjectCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6398,6 +6408,7 @@ export namespace Prisma {
     qualityMetrics?: boolean | ProjectCountOutputTypeCountQualityMetricsArgs
     seasons?: boolean | ProjectCountOutputTypeCountSeasonsArgs
     shotJobs?: boolean | ProjectCountOutputTypeCountShotJobsArgs
+    novelVolumes?: boolean | ProjectCountOutputTypeCountNovelVolumesArgs
   }
 
   // Custom InputTypes
@@ -6493,6 +6504,13 @@ export namespace Prisma {
    */
   export type ProjectCountOutputTypeCountShotJobsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ShotJobWhereInput
+  }
+
+  /**
+   * ProjectCountOutputType without action
+   */
+  export type ProjectCountOutputTypeCountNovelVolumesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: NovelVolumeWhereInput
   }
 
 
@@ -7004,46 +7022,6 @@ export namespace Prisma {
 
 
   /**
-   * Count Type NovelChapterCountOutputType
-   */
-
-  export type NovelChapterCountOutputType = {
-    sceneDrafts: number
-    novelScenes: number
-  }
-
-  export type NovelChapterCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    sceneDrafts?: boolean | NovelChapterCountOutputTypeCountSceneDraftsArgs
-    novelScenes?: boolean | NovelChapterCountOutputTypeCountNovelScenesArgs
-  }
-
-  // Custom InputTypes
-  /**
-   * NovelChapterCountOutputType without action
-   */
-  export type NovelChapterCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapterCountOutputType
-     */
-    select?: NovelChapterCountOutputTypeSelect<ExtArgs> | null
-  }
-
-  /**
-   * NovelChapterCountOutputType without action
-   */
-  export type NovelChapterCountOutputTypeCountSceneDraftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: SceneDraftWhereInput
-  }
-
-  /**
-   * NovelChapterCountOutputType without action
-   */
-  export type NovelChapterCountOutputTypeCountNovelScenesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: NovelSceneWhereInput
-  }
-
-
-  /**
    * Count Type ApiKeyCountOutputType
    */
 
@@ -7133,6 +7111,46 @@ export namespace Prisma {
    */
   export type NovelVolumeCountOutputTypeCountChaptersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: NovelChapterWhereInput
+  }
+
+
+  /**
+   * Count Type NovelChapterCountOutputType
+   */
+
+  export type NovelChapterCountOutputType = {
+    scenes: number
+    sceneDrafts: number
+  }
+
+  export type NovelChapterCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    scenes?: boolean | NovelChapterCountOutputTypeCountScenesArgs
+    sceneDrafts?: boolean | NovelChapterCountOutputTypeCountSceneDraftsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * NovelChapterCountOutputType without action
+   */
+  export type NovelChapterCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapterCountOutputType
+     */
+    select?: NovelChapterCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * NovelChapterCountOutputType without action
+   */
+  export type NovelChapterCountOutputTypeCountScenesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: NovelSceneWhereInput
+  }
+
+  /**
+   * NovelChapterCountOutputType without action
+   */
+  export type NovelChapterCountOutputTypeCountSceneDraftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SceneDraftWhereInput
   }
 
 
@@ -8606,6 +8624,7 @@ export namespace Prisma {
     shotJobs?: boolean | Organization$shotJobsArgs<ExtArgs>
     shots?: boolean | Organization$shotsArgs<ExtArgs>
     subscriptions?: boolean | Organization$subscriptionsArgs<ExtArgs>
+    novelParseResults?: boolean | Organization$novelParseResultsArgs<ExtArgs>
     _count?: boolean | OrganizationCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["organization"]>
 
@@ -8645,6 +8664,7 @@ export namespace Prisma {
     shotJobs?: boolean | Organization$shotJobsArgs<ExtArgs>
     shots?: boolean | Organization$shotsArgs<ExtArgs>
     subscriptions?: boolean | Organization$subscriptionsArgs<ExtArgs>
+    novelParseResults?: boolean | Organization$novelParseResultsArgs<ExtArgs>
     _count?: boolean | OrganizationCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type OrganizationIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8666,6 +8686,7 @@ export namespace Prisma {
       shotJobs: Prisma.$ShotJobPayload<ExtArgs>[]
       shots: Prisma.$ShotPayload<ExtArgs>[]
       subscriptions: Prisma.$SubscriptionPayload<ExtArgs>[]
+      novelParseResults: Prisma.$NovelParseResultPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -9052,6 +9073,7 @@ export namespace Prisma {
     shotJobs<T extends Organization$shotJobsArgs<ExtArgs> = {}>(args?: Subset<T, Organization$shotJobsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShotJobPayload<ExtArgs>, T, "findMany"> | Null>
     shots<T extends Organization$shotsArgs<ExtArgs> = {}>(args?: Subset<T, Organization$shotsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShotPayload<ExtArgs>, T, "findMany"> | Null>
     subscriptions<T extends Organization$subscriptionsArgs<ExtArgs> = {}>(args?: Subset<T, Organization$subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findMany"> | Null>
+    novelParseResults<T extends Organization$novelParseResultsArgs<ExtArgs> = {}>(args?: Subset<T, Organization$novelParseResultsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelParseResultPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -9624,6 +9646,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: SubscriptionScalarFieldEnum | SubscriptionScalarFieldEnum[]
+  }
+
+  /**
+   * Organization.novelParseResults
+   */
+  export type Organization$novelParseResultsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelParseResult
+     */
+    select?: NovelParseResultSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelParseResultInclude<ExtArgs> | null
+    where?: NovelParseResultWhereInput
+    orderBy?: NovelParseResultOrderByWithRelationInput | NovelParseResultOrderByWithRelationInput[]
+    cursor?: NovelParseResultWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: NovelParseResultScalarFieldEnum | NovelParseResultScalarFieldEnum[]
   }
 
   /**
@@ -10812,6 +10854,7 @@ export namespace Prisma {
     seasons?: boolean | Project$seasonsArgs<ExtArgs>
     shotJobs?: boolean | Project$shotJobsArgs<ExtArgs>
     structureQualityReport?: boolean | Project$structureQualityReportArgs<ExtArgs>
+    novelVolumes?: boolean | Project$novelVolumesArgs<ExtArgs>
     _count?: boolean | ProjectCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["project"]>
 
@@ -10860,6 +10903,7 @@ export namespace Prisma {
     seasons?: boolean | Project$seasonsArgs<ExtArgs>
     shotJobs?: boolean | Project$shotJobsArgs<ExtArgs>
     structureQualityReport?: boolean | Project$structureQualityReportArgs<ExtArgs>
+    novelVolumes?: boolean | Project$novelVolumesArgs<ExtArgs>
     _count?: boolean | ProjectCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type ProjectIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -10886,6 +10930,7 @@ export namespace Prisma {
       seasons: Prisma.$SeasonPayload<ExtArgs>[]
       shotJobs: Prisma.$ShotJobPayload<ExtArgs>[]
       structureQualityReport: Prisma.$StructureQualityReportPayload<ExtArgs> | null
+      novelVolumes: Prisma.$NovelVolumePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -11278,6 +11323,7 @@ export namespace Prisma {
     seasons<T extends Project$seasonsArgs<ExtArgs> = {}>(args?: Subset<T, Project$seasonsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SeasonPayload<ExtArgs>, T, "findMany"> | Null>
     shotJobs<T extends Project$shotJobsArgs<ExtArgs> = {}>(args?: Subset<T, Project$shotJobsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShotJobPayload<ExtArgs>, T, "findMany"> | Null>
     structureQualityReport<T extends Project$structureQualityReportArgs<ExtArgs> = {}>(args?: Subset<T, Project$structureQualityReportArgs<ExtArgs>>): Prisma__StructureQualityReportClient<$Result.GetResult<Prisma.$StructureQualityReportPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    novelVolumes<T extends Project$novelVolumesArgs<ExtArgs> = {}>(args?: Subset<T, Project$novelVolumesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelVolumePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -11902,6 +11948,26 @@ export namespace Prisma {
      */
     include?: StructureQualityReportInclude<ExtArgs> | null
     where?: StructureQualityReportWhereInput
+  }
+
+  /**
+   * Project.novelVolumes
+   */
+  export type Project$novelVolumesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelVolume
+     */
+    select?: NovelVolumeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelVolumeInclude<ExtArgs> | null
+    where?: NovelVolumeWhereInput
+    orderBy?: NovelVolumeOrderByWithRelationInput | NovelVolumeOrderByWithRelationInput[]
+    cursor?: NovelVolumeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: NovelVolumeScalarFieldEnum | NovelVolumeScalarFieldEnum[]
   }
 
   /**
@@ -43930,1159 +43996,6 @@ export namespace Prisma {
 
 
   /**
-   * Model NovelChapter
-   */
-
-  export type AggregateNovelChapter = {
-    _count: NovelChapterCountAggregateOutputType | null
-    _avg: NovelChapterAvgAggregateOutputType | null
-    _sum: NovelChapterSumAggregateOutputType | null
-    _min: NovelChapterMinAggregateOutputType | null
-    _max: NovelChapterMaxAggregateOutputType | null
-  }
-
-  export type NovelChapterAvgAggregateOutputType = {
-    orderIndex: number | null
-    startParagraph: number | null
-    endParagraph: number | null
-    characterCount: number | null
-  }
-
-  export type NovelChapterSumAggregateOutputType = {
-    orderIndex: number | null
-    startParagraph: number | null
-    endParagraph: number | null
-    characterCount: number | null
-  }
-
-  export type NovelChapterMinAggregateOutputType = {
-    id: string | null
-    novelSourceId: string | null
-    orderIndex: number | null
-    title: string | null
-    rawText: string | null
-    startParagraph: number | null
-    endParagraph: number | null
-    characterCount: number | null
-    createdAt: Date | null
-    updatedAt: Date | null
-    summary: string | null
-    novelVolumeId: string | null
-  }
-
-  export type NovelChapterMaxAggregateOutputType = {
-    id: string | null
-    novelSourceId: string | null
-    orderIndex: number | null
-    title: string | null
-    rawText: string | null
-    startParagraph: number | null
-    endParagraph: number | null
-    characterCount: number | null
-    createdAt: Date | null
-    updatedAt: Date | null
-    summary: string | null
-    novelVolumeId: string | null
-  }
-
-  export type NovelChapterCountAggregateOutputType = {
-    id: number
-    novelSourceId: number
-    orderIndex: number
-    title: number
-    rawText: number
-    startParagraph: number
-    endParagraph: number
-    characterCount: number
-    createdAt: number
-    updatedAt: number
-    summary: number
-    novelVolumeId: number
-    _all: number
-  }
-
-
-  export type NovelChapterAvgAggregateInputType = {
-    orderIndex?: true
-    startParagraph?: true
-    endParagraph?: true
-    characterCount?: true
-  }
-
-  export type NovelChapterSumAggregateInputType = {
-    orderIndex?: true
-    startParagraph?: true
-    endParagraph?: true
-    characterCount?: true
-  }
-
-  export type NovelChapterMinAggregateInputType = {
-    id?: true
-    novelSourceId?: true
-    orderIndex?: true
-    title?: true
-    rawText?: true
-    startParagraph?: true
-    endParagraph?: true
-    characterCount?: true
-    createdAt?: true
-    updatedAt?: true
-    summary?: true
-    novelVolumeId?: true
-  }
-
-  export type NovelChapterMaxAggregateInputType = {
-    id?: true
-    novelSourceId?: true
-    orderIndex?: true
-    title?: true
-    rawText?: true
-    startParagraph?: true
-    endParagraph?: true
-    characterCount?: true
-    createdAt?: true
-    updatedAt?: true
-    summary?: true
-    novelVolumeId?: true
-  }
-
-  export type NovelChapterCountAggregateInputType = {
-    id?: true
-    novelSourceId?: true
-    orderIndex?: true
-    title?: true
-    rawText?: true
-    startParagraph?: true
-    endParagraph?: true
-    characterCount?: true
-    createdAt?: true
-    updatedAt?: true
-    summary?: true
-    novelVolumeId?: true
-    _all?: true
-  }
-
-  export type NovelChapterAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which NovelChapter to aggregate.
-     */
-    where?: NovelChapterWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of NovelChapters to fetch.
-     */
-    orderBy?: NovelChapterOrderByWithRelationInput | NovelChapterOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: NovelChapterWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` NovelChapters from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` NovelChapters.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned NovelChapters
-    **/
-    _count?: true | NovelChapterCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: NovelChapterAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: NovelChapterSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: NovelChapterMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: NovelChapterMaxAggregateInputType
-  }
-
-  export type GetNovelChapterAggregateType<T extends NovelChapterAggregateArgs> = {
-        [P in keyof T & keyof AggregateNovelChapter]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateNovelChapter[P]>
-      : GetScalarType<T[P], AggregateNovelChapter[P]>
-  }
-
-
-
-
-  export type NovelChapterGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: NovelChapterWhereInput
-    orderBy?: NovelChapterOrderByWithAggregationInput | NovelChapterOrderByWithAggregationInput[]
-    by: NovelChapterScalarFieldEnum[] | NovelChapterScalarFieldEnum
-    having?: NovelChapterScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: NovelChapterCountAggregateInputType | true
-    _avg?: NovelChapterAvgAggregateInputType
-    _sum?: NovelChapterSumAggregateInputType
-    _min?: NovelChapterMinAggregateInputType
-    _max?: NovelChapterMaxAggregateInputType
-  }
-
-  export type NovelChapterGroupByOutputType = {
-    id: string
-    novelSourceId: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph: number | null
-    endParagraph: number | null
-    characterCount: number | null
-    createdAt: Date
-    updatedAt: Date
-    summary: string | null
-    novelVolumeId: string | null
-    _count: NovelChapterCountAggregateOutputType | null
-    _avg: NovelChapterAvgAggregateOutputType | null
-    _sum: NovelChapterSumAggregateOutputType | null
-    _min: NovelChapterMinAggregateOutputType | null
-    _max: NovelChapterMaxAggregateOutputType | null
-  }
-
-  type GetNovelChapterGroupByPayload<T extends NovelChapterGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<NovelChapterGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof NovelChapterGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], NovelChapterGroupByOutputType[P]>
-            : GetScalarType<T[P], NovelChapterGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type NovelChapterSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    novelSourceId?: boolean
-    orderIndex?: boolean
-    title?: boolean
-    rawText?: boolean
-    startParagraph?: boolean
-    endParagraph?: boolean
-    characterCount?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    summary?: boolean
-    novelVolumeId?: boolean
-    episode?: boolean | NovelChapter$episodeArgs<ExtArgs>
-    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
-    novelVolume?: boolean | NovelChapter$novelVolumeArgs<ExtArgs>
-    sceneDrafts?: boolean | NovelChapter$sceneDraftsArgs<ExtArgs>
-    novelScenes?: boolean | NovelChapter$novelScenesArgs<ExtArgs>
-    _count?: boolean | NovelChapterCountOutputTypeDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["novelChapter"]>
-
-  export type NovelChapterSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    novelSourceId?: boolean
-    orderIndex?: boolean
-    title?: boolean
-    rawText?: boolean
-    startParagraph?: boolean
-    endParagraph?: boolean
-    characterCount?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    summary?: boolean
-    novelVolumeId?: boolean
-    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
-    novelVolume?: boolean | NovelChapter$novelVolumeArgs<ExtArgs>
-  }, ExtArgs["result"]["novelChapter"]>
-
-  export type NovelChapterSelectScalar = {
-    id?: boolean
-    novelSourceId?: boolean
-    orderIndex?: boolean
-    title?: boolean
-    rawText?: boolean
-    startParagraph?: boolean
-    endParagraph?: boolean
-    characterCount?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    summary?: boolean
-    novelVolumeId?: boolean
-  }
-
-  export type NovelChapterInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    episode?: boolean | NovelChapter$episodeArgs<ExtArgs>
-    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
-    novelVolume?: boolean | NovelChapter$novelVolumeArgs<ExtArgs>
-    sceneDrafts?: boolean | NovelChapter$sceneDraftsArgs<ExtArgs>
-    novelScenes?: boolean | NovelChapter$novelScenesArgs<ExtArgs>
-    _count?: boolean | NovelChapterCountOutputTypeDefaultArgs<ExtArgs>
-  }
-  export type NovelChapterIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
-    novelVolume?: boolean | NovelChapter$novelVolumeArgs<ExtArgs>
-  }
-
-  export type $NovelChapterPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "NovelChapter"
-    objects: {
-      episode: Prisma.$EpisodePayload<ExtArgs> | null
-      novelSource: Prisma.$NovelSourcePayload<ExtArgs>
-      novelVolume: Prisma.$NovelVolumePayload<ExtArgs> | null
-      sceneDrafts: Prisma.$SceneDraftPayload<ExtArgs>[]
-      novelScenes: Prisma.$NovelScenePayload<ExtArgs>[]
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: string
-      novelSourceId: string
-      orderIndex: number
-      title: string
-      rawText: string
-      startParagraph: number | null
-      endParagraph: number | null
-      characterCount: number | null
-      createdAt: Date
-      updatedAt: Date
-      summary: string | null
-      novelVolumeId: string | null
-    }, ExtArgs["result"]["novelChapter"]>
-    composites: {}
-  }
-
-  type NovelChapterGetPayload<S extends boolean | null | undefined | NovelChapterDefaultArgs> = $Result.GetResult<Prisma.$NovelChapterPayload, S>
-
-  type NovelChapterCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<NovelChapterFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: NovelChapterCountAggregateInputType | true
-    }
-
-  export interface NovelChapterDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['NovelChapter'], meta: { name: 'NovelChapter' } }
-    /**
-     * Find zero or one NovelChapter that matches the filter.
-     * @param {NovelChapterFindUniqueArgs} args - Arguments to find a NovelChapter
-     * @example
-     * // Get one NovelChapter
-     * const novelChapter = await prisma.novelChapter.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends NovelChapterFindUniqueArgs>(args: SelectSubset<T, NovelChapterFindUniqueArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one NovelChapter that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {NovelChapterFindUniqueOrThrowArgs} args - Arguments to find a NovelChapter
-     * @example
-     * // Get one NovelChapter
-     * const novelChapter = await prisma.novelChapter.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends NovelChapterFindUniqueOrThrowArgs>(args: SelectSubset<T, NovelChapterFindUniqueOrThrowArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first NovelChapter that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {NovelChapterFindFirstArgs} args - Arguments to find a NovelChapter
-     * @example
-     * // Get one NovelChapter
-     * const novelChapter = await prisma.novelChapter.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends NovelChapterFindFirstArgs>(args?: SelectSubset<T, NovelChapterFindFirstArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first NovelChapter that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {NovelChapterFindFirstOrThrowArgs} args - Arguments to find a NovelChapter
-     * @example
-     * // Get one NovelChapter
-     * const novelChapter = await prisma.novelChapter.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends NovelChapterFindFirstOrThrowArgs>(args?: SelectSubset<T, NovelChapterFindFirstOrThrowArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more NovelChapters that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {NovelChapterFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all NovelChapters
-     * const novelChapters = await prisma.novelChapter.findMany()
-     * 
-     * // Get first 10 NovelChapters
-     * const novelChapters = await prisma.novelChapter.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const novelChapterWithIdOnly = await prisma.novelChapter.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends NovelChapterFindManyArgs>(args?: SelectSubset<T, NovelChapterFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a NovelChapter.
-     * @param {NovelChapterCreateArgs} args - Arguments to create a NovelChapter.
-     * @example
-     * // Create one NovelChapter
-     * const NovelChapter = await prisma.novelChapter.create({
-     *   data: {
-     *     // ... data to create a NovelChapter
-     *   }
-     * })
-     * 
-     */
-    create<T extends NovelChapterCreateArgs>(args: SelectSubset<T, NovelChapterCreateArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many NovelChapters.
-     * @param {NovelChapterCreateManyArgs} args - Arguments to create many NovelChapters.
-     * @example
-     * // Create many NovelChapters
-     * const novelChapter = await prisma.novelChapter.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends NovelChapterCreateManyArgs>(args?: SelectSubset<T, NovelChapterCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many NovelChapters and returns the data saved in the database.
-     * @param {NovelChapterCreateManyAndReturnArgs} args - Arguments to create many NovelChapters.
-     * @example
-     * // Create many NovelChapters
-     * const novelChapter = await prisma.novelChapter.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many NovelChapters and only return the `id`
-     * const novelChapterWithIdOnly = await prisma.novelChapter.createManyAndReturn({ 
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends NovelChapterCreateManyAndReturnArgs>(args?: SelectSubset<T, NovelChapterCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "createManyAndReturn">>
-
-    /**
-     * Delete a NovelChapter.
-     * @param {NovelChapterDeleteArgs} args - Arguments to delete one NovelChapter.
-     * @example
-     * // Delete one NovelChapter
-     * const NovelChapter = await prisma.novelChapter.delete({
-     *   where: {
-     *     // ... filter to delete one NovelChapter
-     *   }
-     * })
-     * 
-     */
-    delete<T extends NovelChapterDeleteArgs>(args: SelectSubset<T, NovelChapterDeleteArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one NovelChapter.
-     * @param {NovelChapterUpdateArgs} args - Arguments to update one NovelChapter.
-     * @example
-     * // Update one NovelChapter
-     * const novelChapter = await prisma.novelChapter.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends NovelChapterUpdateArgs>(args: SelectSubset<T, NovelChapterUpdateArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more NovelChapters.
-     * @param {NovelChapterDeleteManyArgs} args - Arguments to filter NovelChapters to delete.
-     * @example
-     * // Delete a few NovelChapters
-     * const { count } = await prisma.novelChapter.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends NovelChapterDeleteManyArgs>(args?: SelectSubset<T, NovelChapterDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more NovelChapters.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {NovelChapterUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many NovelChapters
-     * const novelChapter = await prisma.novelChapter.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends NovelChapterUpdateManyArgs>(args: SelectSubset<T, NovelChapterUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one NovelChapter.
-     * @param {NovelChapterUpsertArgs} args - Arguments to update or create a NovelChapter.
-     * @example
-     * // Update or create a NovelChapter
-     * const novelChapter = await prisma.novelChapter.upsert({
-     *   create: {
-     *     // ... data to create a NovelChapter
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the NovelChapter we want to update
-     *   }
-     * })
-     */
-    upsert<T extends NovelChapterUpsertArgs>(args: SelectSubset<T, NovelChapterUpsertArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-
-    /**
-     * Count the number of NovelChapters.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {NovelChapterCountArgs} args - Arguments to filter NovelChapters to count.
-     * @example
-     * // Count the number of NovelChapters
-     * const count = await prisma.novelChapter.count({
-     *   where: {
-     *     // ... the filter for the NovelChapters we want to count
-     *   }
-     * })
-    **/
-    count<T extends NovelChapterCountArgs>(
-      args?: Subset<T, NovelChapterCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], NovelChapterCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a NovelChapter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {NovelChapterAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends NovelChapterAggregateArgs>(args: Subset<T, NovelChapterAggregateArgs>): Prisma.PrismaPromise<GetNovelChapterAggregateType<T>>
-
-    /**
-     * Group by NovelChapter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {NovelChapterGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends NovelChapterGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: NovelChapterGroupByArgs['orderBy'] }
-        : { orderBy?: NovelChapterGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, NovelChapterGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetNovelChapterGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the NovelChapter model
-   */
-  readonly fields: NovelChapterFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for NovelChapter.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__NovelChapterClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    episode<T extends NovelChapter$episodeArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$episodeArgs<ExtArgs>>): Prisma__EpisodeClient<$Result.GetResult<Prisma.$EpisodePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
-    novelSource<T extends NovelSourceDefaultArgs<ExtArgs> = {}>(args?: Subset<T, NovelSourceDefaultArgs<ExtArgs>>): Prisma__NovelSourceClient<$Result.GetResult<Prisma.$NovelSourcePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    novelVolume<T extends NovelChapter$novelVolumeArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$novelVolumeArgs<ExtArgs>>): Prisma__NovelVolumeClient<$Result.GetResult<Prisma.$NovelVolumePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
-    sceneDrafts<T extends NovelChapter$sceneDraftsArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$sceneDraftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SceneDraftPayload<ExtArgs>, T, "findMany"> | Null>
-    novelScenes<T extends NovelChapter$novelScenesArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$novelScenesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelScenePayload<ExtArgs>, T, "findMany"> | Null>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the NovelChapter model
-   */ 
-  interface NovelChapterFieldRefs {
-    readonly id: FieldRef<"NovelChapter", 'String'>
-    readonly novelSourceId: FieldRef<"NovelChapter", 'String'>
-    readonly orderIndex: FieldRef<"NovelChapter", 'Int'>
-    readonly title: FieldRef<"NovelChapter", 'String'>
-    readonly rawText: FieldRef<"NovelChapter", 'String'>
-    readonly startParagraph: FieldRef<"NovelChapter", 'Int'>
-    readonly endParagraph: FieldRef<"NovelChapter", 'Int'>
-    readonly characterCount: FieldRef<"NovelChapter", 'Int'>
-    readonly createdAt: FieldRef<"NovelChapter", 'DateTime'>
-    readonly updatedAt: FieldRef<"NovelChapter", 'DateTime'>
-    readonly summary: FieldRef<"NovelChapter", 'String'>
-    readonly novelVolumeId: FieldRef<"NovelChapter", 'String'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * NovelChapter findUnique
-   */
-  export type NovelChapterFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-    /**
-     * Filter, which NovelChapter to fetch.
-     */
-    where: NovelChapterWhereUniqueInput
-  }
-
-  /**
-   * NovelChapter findUniqueOrThrow
-   */
-  export type NovelChapterFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-    /**
-     * Filter, which NovelChapter to fetch.
-     */
-    where: NovelChapterWhereUniqueInput
-  }
-
-  /**
-   * NovelChapter findFirst
-   */
-  export type NovelChapterFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-    /**
-     * Filter, which NovelChapter to fetch.
-     */
-    where?: NovelChapterWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of NovelChapters to fetch.
-     */
-    orderBy?: NovelChapterOrderByWithRelationInput | NovelChapterOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for NovelChapters.
-     */
-    cursor?: NovelChapterWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` NovelChapters from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` NovelChapters.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of NovelChapters.
-     */
-    distinct?: NovelChapterScalarFieldEnum | NovelChapterScalarFieldEnum[]
-  }
-
-  /**
-   * NovelChapter findFirstOrThrow
-   */
-  export type NovelChapterFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-    /**
-     * Filter, which NovelChapter to fetch.
-     */
-    where?: NovelChapterWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of NovelChapters to fetch.
-     */
-    orderBy?: NovelChapterOrderByWithRelationInput | NovelChapterOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for NovelChapters.
-     */
-    cursor?: NovelChapterWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` NovelChapters from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` NovelChapters.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of NovelChapters.
-     */
-    distinct?: NovelChapterScalarFieldEnum | NovelChapterScalarFieldEnum[]
-  }
-
-  /**
-   * NovelChapter findMany
-   */
-  export type NovelChapterFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-    /**
-     * Filter, which NovelChapters to fetch.
-     */
-    where?: NovelChapterWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of NovelChapters to fetch.
-     */
-    orderBy?: NovelChapterOrderByWithRelationInput | NovelChapterOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing NovelChapters.
-     */
-    cursor?: NovelChapterWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` NovelChapters from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` NovelChapters.
-     */
-    skip?: number
-    distinct?: NovelChapterScalarFieldEnum | NovelChapterScalarFieldEnum[]
-  }
-
-  /**
-   * NovelChapter create
-   */
-  export type NovelChapterCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-    /**
-     * The data needed to create a NovelChapter.
-     */
-    data: XOR<NovelChapterCreateInput, NovelChapterUncheckedCreateInput>
-  }
-
-  /**
-   * NovelChapter createMany
-   */
-  export type NovelChapterCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many NovelChapters.
-     */
-    data: NovelChapterCreateManyInput | NovelChapterCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * NovelChapter createManyAndReturn
-   */
-  export type NovelChapterCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * The data used to create many NovelChapters.
-     */
-    data: NovelChapterCreateManyInput | NovelChapterCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterIncludeCreateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * NovelChapter update
-   */
-  export type NovelChapterUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-    /**
-     * The data needed to update a NovelChapter.
-     */
-    data: XOR<NovelChapterUpdateInput, NovelChapterUncheckedUpdateInput>
-    /**
-     * Choose, which NovelChapter to update.
-     */
-    where: NovelChapterWhereUniqueInput
-  }
-
-  /**
-   * NovelChapter updateMany
-   */
-  export type NovelChapterUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update NovelChapters.
-     */
-    data: XOR<NovelChapterUpdateManyMutationInput, NovelChapterUncheckedUpdateManyInput>
-    /**
-     * Filter which NovelChapters to update
-     */
-    where?: NovelChapterWhereInput
-  }
-
-  /**
-   * NovelChapter upsert
-   */
-  export type NovelChapterUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-    /**
-     * The filter to search for the NovelChapter to update in case it exists.
-     */
-    where: NovelChapterWhereUniqueInput
-    /**
-     * In case the NovelChapter found by the `where` argument doesn't exist, create a new NovelChapter with this data.
-     */
-    create: XOR<NovelChapterCreateInput, NovelChapterUncheckedCreateInput>
-    /**
-     * In case the NovelChapter was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<NovelChapterUpdateInput, NovelChapterUncheckedUpdateInput>
-  }
-
-  /**
-   * NovelChapter delete
-   */
-  export type NovelChapterDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-    /**
-     * Filter which NovelChapter to delete.
-     */
-    where: NovelChapterWhereUniqueInput
-  }
-
-  /**
-   * NovelChapter deleteMany
-   */
-  export type NovelChapterDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which NovelChapters to delete
-     */
-    where?: NovelChapterWhereInput
-  }
-
-  /**
-   * NovelChapter.episode
-   */
-  export type NovelChapter$episodeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Episode
-     */
-    select?: EpisodeSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: EpisodeInclude<ExtArgs> | null
-    where?: EpisodeWhereInput
-  }
-
-  /**
-   * NovelChapter.novelVolume
-   */
-  export type NovelChapter$novelVolumeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelVolume
-     */
-    select?: NovelVolumeSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelVolumeInclude<ExtArgs> | null
-    where?: NovelVolumeWhereInput
-  }
-
-  /**
-   * NovelChapter.sceneDrafts
-   */
-  export type NovelChapter$sceneDraftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SceneDraft
-     */
-    select?: SceneDraftSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: SceneDraftInclude<ExtArgs> | null
-    where?: SceneDraftWhereInput
-    orderBy?: SceneDraftOrderByWithRelationInput | SceneDraftOrderByWithRelationInput[]
-    cursor?: SceneDraftWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: SceneDraftScalarFieldEnum | SceneDraftScalarFieldEnum[]
-  }
-
-  /**
-   * NovelChapter.novelScenes
-   */
-  export type NovelChapter$novelScenesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelScene
-     */
-    select?: NovelSceneSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelSceneInclude<ExtArgs> | null
-    where?: NovelSceneWhereInput
-    orderBy?: NovelSceneOrderByWithRelationInput | NovelSceneOrderByWithRelationInput[]
-    cursor?: NovelSceneWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: NovelSceneScalarFieldEnum | NovelSceneScalarFieldEnum[]
-  }
-
-  /**
-   * NovelChapter without action
-   */
-  export type NovelChapterDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the NovelChapter
-     */
-    select?: NovelChapterSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: NovelChapterInclude<ExtArgs> | null
-  }
-
-
-  /**
    * Model SceneDraft
    */
 
@@ -45095,17 +44008,17 @@ export namespace Prisma {
   }
 
   export type SceneDraftAvgAggregateOutputType = {
-    orderIndex: number | null
+    index: number | null
   }
 
   export type SceneDraftSumAggregateOutputType = {
-    orderIndex: number | null
+    index: number | null
   }
 
   export type SceneDraftMinAggregateOutputType = {
     id: string | null
     chapterId: string | null
-    orderIndex: number | null
+    index: number | null
     title: string | null
     summary: string | null
     location: string | null
@@ -45117,7 +44030,7 @@ export namespace Prisma {
   export type SceneDraftMaxAggregateOutputType = {
     id: string | null
     chapterId: string | null
-    orderIndex: number | null
+    index: number | null
     title: string | null
     summary: string | null
     location: string | null
@@ -45129,7 +44042,7 @@ export namespace Prisma {
   export type SceneDraftCountAggregateOutputType = {
     id: number
     chapterId: number
-    orderIndex: number
+    index: number
     title: number
     summary: number
     characters: number
@@ -45145,17 +44058,17 @@ export namespace Prisma {
 
 
   export type SceneDraftAvgAggregateInputType = {
-    orderIndex?: true
+    index?: true
   }
 
   export type SceneDraftSumAggregateInputType = {
-    orderIndex?: true
+    index?: true
   }
 
   export type SceneDraftMinAggregateInputType = {
     id?: true
     chapterId?: true
-    orderIndex?: true
+    index?: true
     title?: true
     summary?: true
     location?: true
@@ -45167,7 +44080,7 @@ export namespace Prisma {
   export type SceneDraftMaxAggregateInputType = {
     id?: true
     chapterId?: true
-    orderIndex?: true
+    index?: true
     title?: true
     summary?: true
     location?: true
@@ -45179,7 +44092,7 @@ export namespace Prisma {
   export type SceneDraftCountAggregateInputType = {
     id?: true
     chapterId?: true
-    orderIndex?: true
+    index?: true
     title?: true
     summary?: true
     characters?: true
@@ -45282,7 +44195,7 @@ export namespace Prisma {
   export type SceneDraftGroupByOutputType = {
     id: string
     chapterId: string
-    orderIndex: number
+    index: number
     title: string | null
     summary: string | null
     characters: JsonValue | null
@@ -45317,7 +44230,7 @@ export namespace Prisma {
   export type SceneDraftSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     chapterId?: boolean
-    orderIndex?: boolean
+    index?: boolean
     title?: boolean
     summary?: boolean
     characters?: boolean
@@ -45335,7 +44248,7 @@ export namespace Prisma {
   export type SceneDraftSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     chapterId?: boolean
-    orderIndex?: boolean
+    index?: boolean
     title?: boolean
     summary?: boolean
     characters?: boolean
@@ -45352,7 +44265,7 @@ export namespace Prisma {
   export type SceneDraftSelectScalar = {
     id?: boolean
     chapterId?: boolean
-    orderIndex?: boolean
+    index?: boolean
     title?: boolean
     summary?: boolean
     characters?: boolean
@@ -45382,7 +44295,7 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       chapterId: string
-      orderIndex: number
+      index: number
       title: string | null
       summary: string | null
       characters: Prisma.JsonValue | null
@@ -45790,7 +44703,7 @@ export namespace Prisma {
   interface SceneDraftFieldRefs {
     readonly id: FieldRef<"SceneDraft", 'String'>
     readonly chapterId: FieldRef<"SceneDraft", 'String'>
-    readonly orderIndex: FieldRef<"SceneDraft", 'Int'>
+    readonly index: FieldRef<"SceneDraft", 'Int'>
     readonly title: FieldRef<"SceneDraft", 'String'>
     readonly summary: FieldRef<"SceneDraft", 'String'>
     readonly characters: FieldRef<"SceneDraft", 'Json'>
@@ -53284,10 +52197,10 @@ export namespace Prisma {
 
   export type NovelVolumeGroupByOutputType = {
     id: string
-    projectId: string | null
+    projectId: string
     novelSourceId: string
     index: number
-    title: string
+    title: string | null
     createdAt: Date
     updatedAt: Date
     _count: NovelVolumeCountAggregateOutputType | null
@@ -53319,6 +52232,7 @@ export namespace Prisma {
     title?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
     novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
     chapters?: boolean | NovelVolume$chaptersArgs<ExtArgs>
     _count?: boolean | NovelVolumeCountOutputTypeDefaultArgs<ExtArgs>
@@ -53332,6 +52246,7 @@ export namespace Prisma {
     title?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
     novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["novelVolume"]>
 
@@ -53346,26 +52261,29 @@ export namespace Prisma {
   }
 
   export type NovelVolumeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
     novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
     chapters?: boolean | NovelVolume$chaptersArgs<ExtArgs>
     _count?: boolean | NovelVolumeCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type NovelVolumeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
     novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
   }
 
   export type $NovelVolumePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "NovelVolume"
     objects: {
+      project: Prisma.$ProjectPayload<ExtArgs>
       novelSource: Prisma.$NovelSourcePayload<ExtArgs>
       chapters: Prisma.$NovelChapterPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      projectId: string | null
+      projectId: string
       novelSourceId: string
       index: number
-      title: string
+      title: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["novelVolume"]>
@@ -53732,6 +52650,7 @@ export namespace Prisma {
    */
   export interface Prisma__NovelVolumeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     novelSource<T extends NovelSourceDefaultArgs<ExtArgs> = {}>(args?: Subset<T, NovelSourceDefaultArgs<ExtArgs>>): Prisma__NovelSourceClient<$Result.GetResult<Prisma.$NovelSourcePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     chapters<T extends NovelVolume$chaptersArgs<ExtArgs> = {}>(args?: Subset<T, NovelVolume$chaptersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -54123,6 +53042,1096 @@ export namespace Prisma {
 
 
   /**
+   * Model NovelChapter
+   */
+
+  export type AggregateNovelChapter = {
+    _count: NovelChapterCountAggregateOutputType | null
+    _avg: NovelChapterAvgAggregateOutputType | null
+    _sum: NovelChapterSumAggregateOutputType | null
+    _min: NovelChapterMinAggregateOutputType | null
+    _max: NovelChapterMaxAggregateOutputType | null
+  }
+
+  export type NovelChapterAvgAggregateOutputType = {
+    index: number | null
+  }
+
+  export type NovelChapterSumAggregateOutputType = {
+    index: number | null
+  }
+
+  export type NovelChapterMinAggregateOutputType = {
+    id: string | null
+    volumeId: string | null
+    novelSourceId: string | null
+    index: number | null
+    title: string | null
+    summary: string | null
+    isSystemControlled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type NovelChapterMaxAggregateOutputType = {
+    id: string | null
+    volumeId: string | null
+    novelSourceId: string | null
+    index: number | null
+    title: string | null
+    summary: string | null
+    isSystemControlled: boolean | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type NovelChapterCountAggregateOutputType = {
+    id: number
+    volumeId: number
+    novelSourceId: number
+    index: number
+    title: number
+    summary: number
+    isSystemControlled: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type NovelChapterAvgAggregateInputType = {
+    index?: true
+  }
+
+  export type NovelChapterSumAggregateInputType = {
+    index?: true
+  }
+
+  export type NovelChapterMinAggregateInputType = {
+    id?: true
+    volumeId?: true
+    novelSourceId?: true
+    index?: true
+    title?: true
+    summary?: true
+    isSystemControlled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type NovelChapterMaxAggregateInputType = {
+    id?: true
+    volumeId?: true
+    novelSourceId?: true
+    index?: true
+    title?: true
+    summary?: true
+    isSystemControlled?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type NovelChapterCountAggregateInputType = {
+    id?: true
+    volumeId?: true
+    novelSourceId?: true
+    index?: true
+    title?: true
+    summary?: true
+    isSystemControlled?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type NovelChapterAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which NovelChapter to aggregate.
+     */
+    where?: NovelChapterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of NovelChapters to fetch.
+     */
+    orderBy?: NovelChapterOrderByWithRelationInput | NovelChapterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: NovelChapterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` NovelChapters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` NovelChapters.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned NovelChapters
+    **/
+    _count?: true | NovelChapterCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: NovelChapterAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: NovelChapterSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: NovelChapterMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: NovelChapterMaxAggregateInputType
+  }
+
+  export type GetNovelChapterAggregateType<T extends NovelChapterAggregateArgs> = {
+        [P in keyof T & keyof AggregateNovelChapter]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateNovelChapter[P]>
+      : GetScalarType<T[P], AggregateNovelChapter[P]>
+  }
+
+
+
+
+  export type NovelChapterGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: NovelChapterWhereInput
+    orderBy?: NovelChapterOrderByWithAggregationInput | NovelChapterOrderByWithAggregationInput[]
+    by: NovelChapterScalarFieldEnum[] | NovelChapterScalarFieldEnum
+    having?: NovelChapterScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: NovelChapterCountAggregateInputType | true
+    _avg?: NovelChapterAvgAggregateInputType
+    _sum?: NovelChapterSumAggregateInputType
+    _min?: NovelChapterMinAggregateInputType
+    _max?: NovelChapterMaxAggregateInputType
+  }
+
+  export type NovelChapterGroupByOutputType = {
+    id: string
+    volumeId: string
+    novelSourceId: string
+    index: number
+    title: string | null
+    summary: string | null
+    isSystemControlled: boolean
+    createdAt: Date
+    updatedAt: Date
+    _count: NovelChapterCountAggregateOutputType | null
+    _avg: NovelChapterAvgAggregateOutputType | null
+    _sum: NovelChapterSumAggregateOutputType | null
+    _min: NovelChapterMinAggregateOutputType | null
+    _max: NovelChapterMaxAggregateOutputType | null
+  }
+
+  type GetNovelChapterGroupByPayload<T extends NovelChapterGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<NovelChapterGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof NovelChapterGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], NovelChapterGroupByOutputType[P]>
+            : GetScalarType<T[P], NovelChapterGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type NovelChapterSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    volumeId?: boolean
+    novelSourceId?: boolean
+    index?: boolean
+    title?: boolean
+    summary?: boolean
+    isSystemControlled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    volume?: boolean | NovelVolumeDefaultArgs<ExtArgs>
+    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+    scenes?: boolean | NovelChapter$scenesArgs<ExtArgs>
+    episode?: boolean | NovelChapter$episodeArgs<ExtArgs>
+    sceneDrafts?: boolean | NovelChapter$sceneDraftsArgs<ExtArgs>
+    _count?: boolean | NovelChapterCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["novelChapter"]>
+
+  export type NovelChapterSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    volumeId?: boolean
+    novelSourceId?: boolean
+    index?: boolean
+    title?: boolean
+    summary?: boolean
+    isSystemControlled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    volume?: boolean | NovelVolumeDefaultArgs<ExtArgs>
+    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["novelChapter"]>
+
+  export type NovelChapterSelectScalar = {
+    id?: boolean
+    volumeId?: boolean
+    novelSourceId?: boolean
+    index?: boolean
+    title?: boolean
+    summary?: boolean
+    isSystemControlled?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type NovelChapterInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    volume?: boolean | NovelVolumeDefaultArgs<ExtArgs>
+    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+    scenes?: boolean | NovelChapter$scenesArgs<ExtArgs>
+    episode?: boolean | NovelChapter$episodeArgs<ExtArgs>
+    sceneDrafts?: boolean | NovelChapter$sceneDraftsArgs<ExtArgs>
+    _count?: boolean | NovelChapterCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type NovelChapterIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    volume?: boolean | NovelVolumeDefaultArgs<ExtArgs>
+    novelSource?: boolean | NovelSourceDefaultArgs<ExtArgs>
+  }
+
+  export type $NovelChapterPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "NovelChapter"
+    objects: {
+      volume: Prisma.$NovelVolumePayload<ExtArgs>
+      novelSource: Prisma.$NovelSourcePayload<ExtArgs>
+      scenes: Prisma.$NovelScenePayload<ExtArgs>[]
+      episode: Prisma.$EpisodePayload<ExtArgs> | null
+      sceneDrafts: Prisma.$SceneDraftPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      volumeId: string
+      novelSourceId: string
+      index: number
+      title: string | null
+      summary: string | null
+      isSystemControlled: boolean
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["novelChapter"]>
+    composites: {}
+  }
+
+  type NovelChapterGetPayload<S extends boolean | null | undefined | NovelChapterDefaultArgs> = $Result.GetResult<Prisma.$NovelChapterPayload, S>
+
+  type NovelChapterCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<NovelChapterFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: NovelChapterCountAggregateInputType | true
+    }
+
+  export interface NovelChapterDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['NovelChapter'], meta: { name: 'NovelChapter' } }
+    /**
+     * Find zero or one NovelChapter that matches the filter.
+     * @param {NovelChapterFindUniqueArgs} args - Arguments to find a NovelChapter
+     * @example
+     * // Get one NovelChapter
+     * const novelChapter = await prisma.novelChapter.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends NovelChapterFindUniqueArgs>(args: SelectSubset<T, NovelChapterFindUniqueArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one NovelChapter that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {NovelChapterFindUniqueOrThrowArgs} args - Arguments to find a NovelChapter
+     * @example
+     * // Get one NovelChapter
+     * const novelChapter = await prisma.novelChapter.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends NovelChapterFindUniqueOrThrowArgs>(args: SelectSubset<T, NovelChapterFindUniqueOrThrowArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first NovelChapter that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NovelChapterFindFirstArgs} args - Arguments to find a NovelChapter
+     * @example
+     * // Get one NovelChapter
+     * const novelChapter = await prisma.novelChapter.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends NovelChapterFindFirstArgs>(args?: SelectSubset<T, NovelChapterFindFirstArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first NovelChapter that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NovelChapterFindFirstOrThrowArgs} args - Arguments to find a NovelChapter
+     * @example
+     * // Get one NovelChapter
+     * const novelChapter = await prisma.novelChapter.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends NovelChapterFindFirstOrThrowArgs>(args?: SelectSubset<T, NovelChapterFindFirstOrThrowArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more NovelChapters that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NovelChapterFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all NovelChapters
+     * const novelChapters = await prisma.novelChapter.findMany()
+     * 
+     * // Get first 10 NovelChapters
+     * const novelChapters = await prisma.novelChapter.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const novelChapterWithIdOnly = await prisma.novelChapter.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends NovelChapterFindManyArgs>(args?: SelectSubset<T, NovelChapterFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a NovelChapter.
+     * @param {NovelChapterCreateArgs} args - Arguments to create a NovelChapter.
+     * @example
+     * // Create one NovelChapter
+     * const NovelChapter = await prisma.novelChapter.create({
+     *   data: {
+     *     // ... data to create a NovelChapter
+     *   }
+     * })
+     * 
+     */
+    create<T extends NovelChapterCreateArgs>(args: SelectSubset<T, NovelChapterCreateArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many NovelChapters.
+     * @param {NovelChapterCreateManyArgs} args - Arguments to create many NovelChapters.
+     * @example
+     * // Create many NovelChapters
+     * const novelChapter = await prisma.novelChapter.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends NovelChapterCreateManyArgs>(args?: SelectSubset<T, NovelChapterCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many NovelChapters and returns the data saved in the database.
+     * @param {NovelChapterCreateManyAndReturnArgs} args - Arguments to create many NovelChapters.
+     * @example
+     * // Create many NovelChapters
+     * const novelChapter = await prisma.novelChapter.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many NovelChapters and only return the `id`
+     * const novelChapterWithIdOnly = await prisma.novelChapter.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends NovelChapterCreateManyAndReturnArgs>(args?: SelectSubset<T, NovelChapterCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a NovelChapter.
+     * @param {NovelChapterDeleteArgs} args - Arguments to delete one NovelChapter.
+     * @example
+     * // Delete one NovelChapter
+     * const NovelChapter = await prisma.novelChapter.delete({
+     *   where: {
+     *     // ... filter to delete one NovelChapter
+     *   }
+     * })
+     * 
+     */
+    delete<T extends NovelChapterDeleteArgs>(args: SelectSubset<T, NovelChapterDeleteArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one NovelChapter.
+     * @param {NovelChapterUpdateArgs} args - Arguments to update one NovelChapter.
+     * @example
+     * // Update one NovelChapter
+     * const novelChapter = await prisma.novelChapter.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends NovelChapterUpdateArgs>(args: SelectSubset<T, NovelChapterUpdateArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more NovelChapters.
+     * @param {NovelChapterDeleteManyArgs} args - Arguments to filter NovelChapters to delete.
+     * @example
+     * // Delete a few NovelChapters
+     * const { count } = await prisma.novelChapter.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends NovelChapterDeleteManyArgs>(args?: SelectSubset<T, NovelChapterDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more NovelChapters.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NovelChapterUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many NovelChapters
+     * const novelChapter = await prisma.novelChapter.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends NovelChapterUpdateManyArgs>(args: SelectSubset<T, NovelChapterUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one NovelChapter.
+     * @param {NovelChapterUpsertArgs} args - Arguments to update or create a NovelChapter.
+     * @example
+     * // Update or create a NovelChapter
+     * const novelChapter = await prisma.novelChapter.upsert({
+     *   create: {
+     *     // ... data to create a NovelChapter
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the NovelChapter we want to update
+     *   }
+     * })
+     */
+    upsert<T extends NovelChapterUpsertArgs>(args: SelectSubset<T, NovelChapterUpsertArgs<ExtArgs>>): Prisma__NovelChapterClient<$Result.GetResult<Prisma.$NovelChapterPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of NovelChapters.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NovelChapterCountArgs} args - Arguments to filter NovelChapters to count.
+     * @example
+     * // Count the number of NovelChapters
+     * const count = await prisma.novelChapter.count({
+     *   where: {
+     *     // ... the filter for the NovelChapters we want to count
+     *   }
+     * })
+    **/
+    count<T extends NovelChapterCountArgs>(
+      args?: Subset<T, NovelChapterCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], NovelChapterCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a NovelChapter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NovelChapterAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends NovelChapterAggregateArgs>(args: Subset<T, NovelChapterAggregateArgs>): Prisma.PrismaPromise<GetNovelChapterAggregateType<T>>
+
+    /**
+     * Group by NovelChapter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NovelChapterGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends NovelChapterGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: NovelChapterGroupByArgs['orderBy'] }
+        : { orderBy?: NovelChapterGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, NovelChapterGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetNovelChapterGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the NovelChapter model
+   */
+  readonly fields: NovelChapterFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for NovelChapter.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__NovelChapterClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    volume<T extends NovelVolumeDefaultArgs<ExtArgs> = {}>(args?: Subset<T, NovelVolumeDefaultArgs<ExtArgs>>): Prisma__NovelVolumeClient<$Result.GetResult<Prisma.$NovelVolumePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    novelSource<T extends NovelSourceDefaultArgs<ExtArgs> = {}>(args?: Subset<T, NovelSourceDefaultArgs<ExtArgs>>): Prisma__NovelSourceClient<$Result.GetResult<Prisma.$NovelSourcePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    scenes<T extends NovelChapter$scenesArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$scenesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelScenePayload<ExtArgs>, T, "findMany"> | Null>
+    episode<T extends NovelChapter$episodeArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$episodeArgs<ExtArgs>>): Prisma__EpisodeClient<$Result.GetResult<Prisma.$EpisodePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    sceneDrafts<T extends NovelChapter$sceneDraftsArgs<ExtArgs> = {}>(args?: Subset<T, NovelChapter$sceneDraftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SceneDraftPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the NovelChapter model
+   */ 
+  interface NovelChapterFieldRefs {
+    readonly id: FieldRef<"NovelChapter", 'String'>
+    readonly volumeId: FieldRef<"NovelChapter", 'String'>
+    readonly novelSourceId: FieldRef<"NovelChapter", 'String'>
+    readonly index: FieldRef<"NovelChapter", 'Int'>
+    readonly title: FieldRef<"NovelChapter", 'String'>
+    readonly summary: FieldRef<"NovelChapter", 'String'>
+    readonly isSystemControlled: FieldRef<"NovelChapter", 'Boolean'>
+    readonly createdAt: FieldRef<"NovelChapter", 'DateTime'>
+    readonly updatedAt: FieldRef<"NovelChapter", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * NovelChapter findUnique
+   */
+  export type NovelChapterFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    /**
+     * Filter, which NovelChapter to fetch.
+     */
+    where: NovelChapterWhereUniqueInput
+  }
+
+  /**
+   * NovelChapter findUniqueOrThrow
+   */
+  export type NovelChapterFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    /**
+     * Filter, which NovelChapter to fetch.
+     */
+    where: NovelChapterWhereUniqueInput
+  }
+
+  /**
+   * NovelChapter findFirst
+   */
+  export type NovelChapterFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    /**
+     * Filter, which NovelChapter to fetch.
+     */
+    where?: NovelChapterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of NovelChapters to fetch.
+     */
+    orderBy?: NovelChapterOrderByWithRelationInput | NovelChapterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for NovelChapters.
+     */
+    cursor?: NovelChapterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` NovelChapters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` NovelChapters.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of NovelChapters.
+     */
+    distinct?: NovelChapterScalarFieldEnum | NovelChapterScalarFieldEnum[]
+  }
+
+  /**
+   * NovelChapter findFirstOrThrow
+   */
+  export type NovelChapterFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    /**
+     * Filter, which NovelChapter to fetch.
+     */
+    where?: NovelChapterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of NovelChapters to fetch.
+     */
+    orderBy?: NovelChapterOrderByWithRelationInput | NovelChapterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for NovelChapters.
+     */
+    cursor?: NovelChapterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` NovelChapters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` NovelChapters.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of NovelChapters.
+     */
+    distinct?: NovelChapterScalarFieldEnum | NovelChapterScalarFieldEnum[]
+  }
+
+  /**
+   * NovelChapter findMany
+   */
+  export type NovelChapterFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    /**
+     * Filter, which NovelChapters to fetch.
+     */
+    where?: NovelChapterWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of NovelChapters to fetch.
+     */
+    orderBy?: NovelChapterOrderByWithRelationInput | NovelChapterOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing NovelChapters.
+     */
+    cursor?: NovelChapterWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` NovelChapters from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` NovelChapters.
+     */
+    skip?: number
+    distinct?: NovelChapterScalarFieldEnum | NovelChapterScalarFieldEnum[]
+  }
+
+  /**
+   * NovelChapter create
+   */
+  export type NovelChapterCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    /**
+     * The data needed to create a NovelChapter.
+     */
+    data: XOR<NovelChapterCreateInput, NovelChapterUncheckedCreateInput>
+  }
+
+  /**
+   * NovelChapter createMany
+   */
+  export type NovelChapterCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many NovelChapters.
+     */
+    data: NovelChapterCreateManyInput | NovelChapterCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * NovelChapter createManyAndReturn
+   */
+  export type NovelChapterCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many NovelChapters.
+     */
+    data: NovelChapterCreateManyInput | NovelChapterCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * NovelChapter update
+   */
+  export type NovelChapterUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    /**
+     * The data needed to update a NovelChapter.
+     */
+    data: XOR<NovelChapterUpdateInput, NovelChapterUncheckedUpdateInput>
+    /**
+     * Choose, which NovelChapter to update.
+     */
+    where: NovelChapterWhereUniqueInput
+  }
+
+  /**
+   * NovelChapter updateMany
+   */
+  export type NovelChapterUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update NovelChapters.
+     */
+    data: XOR<NovelChapterUpdateManyMutationInput, NovelChapterUncheckedUpdateManyInput>
+    /**
+     * Filter which NovelChapters to update
+     */
+    where?: NovelChapterWhereInput
+  }
+
+  /**
+   * NovelChapter upsert
+   */
+  export type NovelChapterUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    /**
+     * The filter to search for the NovelChapter to update in case it exists.
+     */
+    where: NovelChapterWhereUniqueInput
+    /**
+     * In case the NovelChapter found by the `where` argument doesn't exist, create a new NovelChapter with this data.
+     */
+    create: XOR<NovelChapterCreateInput, NovelChapterUncheckedCreateInput>
+    /**
+     * In case the NovelChapter was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<NovelChapterUpdateInput, NovelChapterUncheckedUpdateInput>
+  }
+
+  /**
+   * NovelChapter delete
+   */
+  export type NovelChapterDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+    /**
+     * Filter which NovelChapter to delete.
+     */
+    where: NovelChapterWhereUniqueInput
+  }
+
+  /**
+   * NovelChapter deleteMany
+   */
+  export type NovelChapterDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which NovelChapters to delete
+     */
+    where?: NovelChapterWhereInput
+  }
+
+  /**
+   * NovelChapter.scenes
+   */
+  export type NovelChapter$scenesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelScene
+     */
+    select?: NovelSceneSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelSceneInclude<ExtArgs> | null
+    where?: NovelSceneWhereInput
+    orderBy?: NovelSceneOrderByWithRelationInput | NovelSceneOrderByWithRelationInput[]
+    cursor?: NovelSceneWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: NovelSceneScalarFieldEnum | NovelSceneScalarFieldEnum[]
+  }
+
+  /**
+   * NovelChapter.episode
+   */
+  export type NovelChapter$episodeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Episode
+     */
+    select?: EpisodeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EpisodeInclude<ExtArgs> | null
+    where?: EpisodeWhereInput
+  }
+
+  /**
+   * NovelChapter.sceneDrafts
+   */
+  export type NovelChapter$sceneDraftsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SceneDraft
+     */
+    select?: SceneDraftSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SceneDraftInclude<ExtArgs> | null
+    where?: SceneDraftWhereInput
+    orderBy?: SceneDraftOrderByWithRelationInput | SceneDraftOrderByWithRelationInput[]
+    cursor?: SceneDraftWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SceneDraftScalarFieldEnum | SceneDraftScalarFieldEnum[]
+  }
+
+  /**
+   * NovelChapter without action
+   */
+  export type NovelChapterDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NovelChapter
+     */
+    select?: NovelChapterSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NovelChapterInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model NovelScene
    */
 
@@ -54136,102 +54145,98 @@ export namespace Prisma {
 
   export type NovelSceneAvgAggregateOutputType = {
     index: number | null
-    visualDensityScore: number | null
-    chunkIndex: number | null
   }
 
   export type NovelSceneSumAggregateOutputType = {
     index: number | null
-    visualDensityScore: number | null
-    chunkIndex: number | null
   }
 
   export type NovelSceneMinAggregateOutputType = {
     id: string | null
     chapterId: string | null
     index: number | null
+    title: string | null
     rawText: string | null
     enrichedText: string | null
-    visualDensityScore: number | null
+    directingNotes: string | null
+    shotType: string | null
     createdAt: Date | null
     updatedAt: Date | null
-    chunkIndex: number | null
   }
 
   export type NovelSceneMaxAggregateOutputType = {
     id: string | null
     chapterId: string | null
     index: number | null
+    title: string | null
     rawText: string | null
     enrichedText: string | null
-    visualDensityScore: number | null
+    directingNotes: string | null
+    shotType: string | null
     createdAt: Date | null
     updatedAt: Date | null
-    chunkIndex: number | null
   }
 
   export type NovelSceneCountAggregateOutputType = {
     id: number
     chapterId: number
     index: number
+    title: number
     rawText: number
     enrichedText: number
-    visualDensityScore: number
-    characterIds: number
+    directingNotes: number
+    shotType: number
     createdAt: number
     updatedAt: number
-    chunkIndex: number
     _all: number
   }
 
 
   export type NovelSceneAvgAggregateInputType = {
     index?: true
-    visualDensityScore?: true
-    chunkIndex?: true
   }
 
   export type NovelSceneSumAggregateInputType = {
     index?: true
-    visualDensityScore?: true
-    chunkIndex?: true
   }
 
   export type NovelSceneMinAggregateInputType = {
     id?: true
     chapterId?: true
     index?: true
+    title?: true
     rawText?: true
     enrichedText?: true
-    visualDensityScore?: true
+    directingNotes?: true
+    shotType?: true
     createdAt?: true
     updatedAt?: true
-    chunkIndex?: true
   }
 
   export type NovelSceneMaxAggregateInputType = {
     id?: true
     chapterId?: true
     index?: true
+    title?: true
     rawText?: true
     enrichedText?: true
-    visualDensityScore?: true
+    directingNotes?: true
+    shotType?: true
     createdAt?: true
     updatedAt?: true
-    chunkIndex?: true
   }
 
   export type NovelSceneCountAggregateInputType = {
     id?: true
     chapterId?: true
     index?: true
+    title?: true
     rawText?: true
     enrichedText?: true
-    visualDensityScore?: true
-    characterIds?: true
+    directingNotes?: true
+    shotType?: true
     createdAt?: true
     updatedAt?: true
-    chunkIndex?: true
     _all?: true
   }
 
@@ -54325,13 +54330,13 @@ export namespace Prisma {
     id: string
     chapterId: string
     index: number
+    title: string | null
     rawText: string | null
     enrichedText: string | null
-    visualDensityScore: number | null
-    characterIds: JsonValue | null
+    directingNotes: string | null
+    shotType: string | null
     createdAt: Date
     updatedAt: Date
-    chunkIndex: number
     _count: NovelSceneCountAggregateOutputType | null
     _avg: NovelSceneAvgAggregateOutputType | null
     _sum: NovelSceneSumAggregateOutputType | null
@@ -54357,13 +54362,13 @@ export namespace Prisma {
     id?: boolean
     chapterId?: boolean
     index?: boolean
+    title?: boolean
     rawText?: boolean
     enrichedText?: boolean
-    visualDensityScore?: boolean
-    characterIds?: boolean
+    directingNotes?: boolean
+    shotType?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    chunkIndex?: boolean
     chapter?: boolean | NovelChapterDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["novelScene"]>
 
@@ -54371,13 +54376,13 @@ export namespace Prisma {
     id?: boolean
     chapterId?: boolean
     index?: boolean
+    title?: boolean
     rawText?: boolean
     enrichedText?: boolean
-    visualDensityScore?: boolean
-    characterIds?: boolean
+    directingNotes?: boolean
+    shotType?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    chunkIndex?: boolean
     chapter?: boolean | NovelChapterDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["novelScene"]>
 
@@ -54385,13 +54390,13 @@ export namespace Prisma {
     id?: boolean
     chapterId?: boolean
     index?: boolean
+    title?: boolean
     rawText?: boolean
     enrichedText?: boolean
-    visualDensityScore?: boolean
-    characterIds?: boolean
+    directingNotes?: boolean
+    shotType?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    chunkIndex?: boolean
   }
 
   export type NovelSceneInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -54410,13 +54415,13 @@ export namespace Prisma {
       id: string
       chapterId: string
       index: number
+      title: string | null
       rawText: string | null
       enrichedText: string | null
-      visualDensityScore: number | null
-      characterIds: Prisma.JsonValue | null
+      directingNotes: string | null
+      shotType: string | null
       createdAt: Date
       updatedAt: Date
-      chunkIndex: number
     }, ExtArgs["result"]["novelScene"]>
     composites: {}
   }
@@ -54814,13 +54819,13 @@ export namespace Prisma {
     readonly id: FieldRef<"NovelScene", 'String'>
     readonly chapterId: FieldRef<"NovelScene", 'String'>
     readonly index: FieldRef<"NovelScene", 'Int'>
+    readonly title: FieldRef<"NovelScene", 'String'>
     readonly rawText: FieldRef<"NovelScene", 'String'>
     readonly enrichedText: FieldRef<"NovelScene", 'String'>
-    readonly visualDensityScore: FieldRef<"NovelScene", 'Float'>
-    readonly characterIds: FieldRef<"NovelScene", 'Json'>
+    readonly directingNotes: FieldRef<"NovelScene", 'String'>
+    readonly shotType: FieldRef<"NovelScene", 'String'>
     readonly createdAt: FieldRef<"NovelScene", 'DateTime'>
     readonly updatedAt: FieldRef<"NovelScene", 'DateTime'>
-    readonly chunkIndex: FieldRef<"NovelScene", 'Int'>
   }
     
 
@@ -56972,7 +56977,11 @@ export namespace Prisma {
   export type NovelParseResultMinAggregateOutputType = {
     id: string | null
     projectId: string | null
+    organizationId: string | null
+    idempotencyKey: string | null
+    status: string | null
     parsingQuality: number | null
+    modelVersion: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -56980,7 +56989,11 @@ export namespace Prisma {
   export type NovelParseResultMaxAggregateOutputType = {
     id: string | null
     projectId: string | null
+    organizationId: string | null
+    idempotencyKey: string | null
+    status: string | null
     parsingQuality: number | null
+    modelVersion: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -56988,10 +57001,12 @@ export namespace Prisma {
   export type NovelParseResultCountAggregateOutputType = {
     id: number
     projectId: number
-    volumes: number
-    chapters: number
-    scenes: number
+    organizationId: number
+    idempotencyKey: number
+    status: number
     parsingQuality: number
+    modelVersion: number
+    rawOutput: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -57009,7 +57024,11 @@ export namespace Prisma {
   export type NovelParseResultMinAggregateInputType = {
     id?: true
     projectId?: true
+    organizationId?: true
+    idempotencyKey?: true
+    status?: true
     parsingQuality?: true
+    modelVersion?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -57017,7 +57036,11 @@ export namespace Prisma {
   export type NovelParseResultMaxAggregateInputType = {
     id?: true
     projectId?: true
+    organizationId?: true
+    idempotencyKey?: true
+    status?: true
     parsingQuality?: true
+    modelVersion?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -57025,10 +57048,12 @@ export namespace Prisma {
   export type NovelParseResultCountAggregateInputType = {
     id?: true
     projectId?: true
-    volumes?: true
-    chapters?: true
-    scenes?: true
+    organizationId?: true
+    idempotencyKey?: true
+    status?: true
     parsingQuality?: true
+    modelVersion?: true
+    rawOutput?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -57123,10 +57148,12 @@ export namespace Prisma {
   export type NovelParseResultGroupByOutputType = {
     id: string
     projectId: string
-    volumes: JsonValue | null
-    chapters: JsonValue | null
-    scenes: JsonValue | null
+    organizationId: string
+    idempotencyKey: string
+    status: string
     parsingQuality: number | null
+    modelVersion: string | null
+    rawOutput: JsonValue | null
     createdAt: Date
     updatedAt: Date
     _count: NovelParseResultCountAggregateOutputType | null
@@ -57153,57 +57180,70 @@ export namespace Prisma {
   export type NovelParseResultSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     projectId?: boolean
-    volumes?: boolean
-    chapters?: boolean
-    scenes?: boolean
+    organizationId?: boolean
+    idempotencyKey?: boolean
+    status?: boolean
     parsingQuality?: boolean
+    modelVersion?: boolean
+    rawOutput?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    organization?: boolean | OrganizationDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["novelParseResult"]>
 
   export type NovelParseResultSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     projectId?: boolean
-    volumes?: boolean
-    chapters?: boolean
-    scenes?: boolean
+    organizationId?: boolean
+    idempotencyKey?: boolean
+    status?: boolean
     parsingQuality?: boolean
+    modelVersion?: boolean
+    rawOutput?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    organization?: boolean | OrganizationDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["novelParseResult"]>
 
   export type NovelParseResultSelectScalar = {
     id?: boolean
     projectId?: boolean
-    volumes?: boolean
-    chapters?: boolean
-    scenes?: boolean
+    organizationId?: boolean
+    idempotencyKey?: boolean
+    status?: boolean
     parsingQuality?: boolean
+    modelVersion?: boolean
+    rawOutput?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
   export type NovelParseResultInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    organization?: boolean | OrganizationDefaultArgs<ExtArgs>
   }
   export type NovelParseResultIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     project?: boolean | ProjectDefaultArgs<ExtArgs>
+    organization?: boolean | OrganizationDefaultArgs<ExtArgs>
   }
 
   export type $NovelParseResultPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "NovelParseResult"
     objects: {
       project: Prisma.$ProjectPayload<ExtArgs>
+      organization: Prisma.$OrganizationPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       projectId: string
-      volumes: Prisma.JsonValue | null
-      chapters: Prisma.JsonValue | null
-      scenes: Prisma.JsonValue | null
+      organizationId: string
+      idempotencyKey: string
+      status: string
       parsingQuality: number | null
+      modelVersion: string | null
+      rawOutput: Prisma.JsonValue | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["novelParseResult"]>
@@ -57571,6 +57611,7 @@ export namespace Prisma {
   export interface Prisma__NovelParseResultClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    organization<T extends OrganizationDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OrganizationDefaultArgs<ExtArgs>>): Prisma__OrganizationClient<$Result.GetResult<Prisma.$OrganizationPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -57602,10 +57643,12 @@ export namespace Prisma {
   interface NovelParseResultFieldRefs {
     readonly id: FieldRef<"NovelParseResult", 'String'>
     readonly projectId: FieldRef<"NovelParseResult", 'String'>
-    readonly volumes: FieldRef<"NovelParseResult", 'Json'>
-    readonly chapters: FieldRef<"NovelParseResult", 'Json'>
-    readonly scenes: FieldRef<"NovelParseResult", 'Json'>
+    readonly organizationId: FieldRef<"NovelParseResult", 'String'>
+    readonly idempotencyKey: FieldRef<"NovelParseResult", 'String'>
+    readonly status: FieldRef<"NovelParseResult", 'String'>
     readonly parsingQuality: FieldRef<"NovelParseResult", 'Float'>
+    readonly modelVersion: FieldRef<"NovelParseResult", 'String'>
+    readonly rawOutput: FieldRef<"NovelParseResult", 'Json'>
     readonly createdAt: FieldRef<"NovelParseResult", 'DateTime'>
     readonly updatedAt: FieldRef<"NovelParseResult", 'DateTime'>
   }
@@ -66676,28 +66719,10 @@ export namespace Prisma {
   export type NovelSourceScalarFieldEnum = (typeof NovelSourceScalarFieldEnum)[keyof typeof NovelSourceScalarFieldEnum]
 
 
-  export const NovelChapterScalarFieldEnum: {
-    id: 'id',
-    novelSourceId: 'novelSourceId',
-    orderIndex: 'orderIndex',
-    title: 'title',
-    rawText: 'rawText',
-    startParagraph: 'startParagraph',
-    endParagraph: 'endParagraph',
-    characterCount: 'characterCount',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
-    summary: 'summary',
-    novelVolumeId: 'novelVolumeId'
-  };
-
-  export type NovelChapterScalarFieldEnum = (typeof NovelChapterScalarFieldEnum)[keyof typeof NovelChapterScalarFieldEnum]
-
-
   export const SceneDraftScalarFieldEnum: {
     id: 'id',
     chapterId: 'chapterId',
-    orderIndex: 'orderIndex',
+    index: 'index',
     title: 'title',
     summary: 'summary',
     characters: 'characters',
@@ -66836,17 +66861,32 @@ export namespace Prisma {
   export type NovelVolumeScalarFieldEnum = (typeof NovelVolumeScalarFieldEnum)[keyof typeof NovelVolumeScalarFieldEnum]
 
 
+  export const NovelChapterScalarFieldEnum: {
+    id: 'id',
+    volumeId: 'volumeId',
+    novelSourceId: 'novelSourceId',
+    index: 'index',
+    title: 'title',
+    summary: 'summary',
+    isSystemControlled: 'isSystemControlled',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type NovelChapterScalarFieldEnum = (typeof NovelChapterScalarFieldEnum)[keyof typeof NovelChapterScalarFieldEnum]
+
+
   export const NovelSceneScalarFieldEnum: {
     id: 'id',
     chapterId: 'chapterId',
     index: 'index',
+    title: 'title',
     rawText: 'rawText',
     enrichedText: 'enrichedText',
-    visualDensityScore: 'visualDensityScore',
-    characterIds: 'characterIds',
+    directingNotes: 'directingNotes',
+    shotType: 'shotType',
     createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
-    chunkIndex: 'chunkIndex'
+    updatedAt: 'updatedAt'
   };
 
   export type NovelSceneScalarFieldEnum = (typeof NovelSceneScalarFieldEnum)[keyof typeof NovelSceneScalarFieldEnum]
@@ -66881,10 +66921,12 @@ export namespace Prisma {
   export const NovelParseResultScalarFieldEnum: {
     id: 'id',
     projectId: 'projectId',
-    volumes: 'volumes',
-    chapters: 'chapters',
-    scenes: 'scenes',
+    organizationId: 'organizationId',
+    idempotencyKey: 'idempotencyKey',
+    status: 'status',
     parsingQuality: 'parsingQuality',
+    modelVersion: 'modelVersion',
+    rawOutput: 'rawOutput',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -67779,6 +67821,7 @@ export namespace Prisma {
     shotJobs?: ShotJobListRelationFilter
     shots?: ShotListRelationFilter
     subscriptions?: SubscriptionListRelationFilter
+    novelParseResults?: NovelParseResultListRelationFilter
   }
 
   export type OrganizationOrderByWithRelationInput = {
@@ -67802,6 +67845,7 @@ export namespace Prisma {
     shotJobs?: ShotJobOrderByRelationAggregateInput
     shots?: ShotOrderByRelationAggregateInput
     subscriptions?: SubscriptionOrderByRelationAggregateInput
+    novelParseResults?: NovelParseResultOrderByRelationAggregateInput
   }
 
   export type OrganizationWhereUniqueInput = Prisma.AtLeast<{
@@ -67829,6 +67873,7 @@ export namespace Prisma {
     shotJobs?: ShotJobListRelationFilter
     shots?: ShotListRelationFilter
     subscriptions?: SubscriptionListRelationFilter
+    novelParseResults?: NovelParseResultListRelationFilter
   }, "id" | "slug" | "ownerId_type">
 
   export type OrganizationOrderByWithAggregationInput = {
@@ -67960,6 +68005,7 @@ export namespace Prisma {
     seasons?: SeasonListRelationFilter
     shotJobs?: ShotJobListRelationFilter
     structureQualityReport?: XOR<StructureQualityReportNullableRelationFilter, StructureQualityReportWhereInput> | null
+    novelVolumes?: NovelVolumeListRelationFilter
   }
 
   export type ProjectOrderByWithRelationInput = {
@@ -67989,6 +68035,7 @@ export namespace Prisma {
     seasons?: SeasonOrderByRelationAggregateInput
     shotJobs?: ShotJobOrderByRelationAggregateInput
     structureQualityReport?: StructureQualityReportOrderByWithRelationInput
+    novelVolumes?: NovelVolumeOrderByRelationAggregateInput
   }
 
   export type ProjectWhereUniqueInput = Prisma.AtLeast<{
@@ -68021,6 +68068,7 @@ export namespace Prisma {
     seasons?: SeasonListRelationFilter
     shotJobs?: ShotJobListRelationFilter
     structureQualityReport?: XOR<StructureQualityReportNullableRelationFilter, StructureQualityReportWhereInput> | null
+    novelVolumes?: NovelVolumeListRelationFilter
   }, "id">
 
   export type ProjectOrderByWithAggregationInput = {
@@ -70644,118 +70692,13 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"NovelSource"> | Date | string
   }
 
-  export type NovelChapterWhereInput = {
-    AND?: NovelChapterWhereInput | NovelChapterWhereInput[]
-    OR?: NovelChapterWhereInput[]
-    NOT?: NovelChapterWhereInput | NovelChapterWhereInput[]
-    id?: StringFilter<"NovelChapter"> | string
-    novelSourceId?: StringFilter<"NovelChapter"> | string
-    orderIndex?: IntFilter<"NovelChapter"> | number
-    title?: StringFilter<"NovelChapter"> | string
-    rawText?: StringFilter<"NovelChapter"> | string
-    startParagraph?: IntNullableFilter<"NovelChapter"> | number | null
-    endParagraph?: IntNullableFilter<"NovelChapter"> | number | null
-    characterCount?: IntNullableFilter<"NovelChapter"> | number | null
-    createdAt?: DateTimeFilter<"NovelChapter"> | Date | string
-    updatedAt?: DateTimeFilter<"NovelChapter"> | Date | string
-    summary?: StringNullableFilter<"NovelChapter"> | string | null
-    novelVolumeId?: StringNullableFilter<"NovelChapter"> | string | null
-    episode?: XOR<EpisodeNullableRelationFilter, EpisodeWhereInput> | null
-    novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
-    novelVolume?: XOR<NovelVolumeNullableRelationFilter, NovelVolumeWhereInput> | null
-    sceneDrafts?: SceneDraftListRelationFilter
-    novelScenes?: NovelSceneListRelationFilter
-  }
-
-  export type NovelChapterOrderByWithRelationInput = {
-    id?: SortOrder
-    novelSourceId?: SortOrder
-    orderIndex?: SortOrder
-    title?: SortOrder
-    rawText?: SortOrder
-    startParagraph?: SortOrderInput | SortOrder
-    endParagraph?: SortOrderInput | SortOrder
-    characterCount?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    summary?: SortOrderInput | SortOrder
-    novelVolumeId?: SortOrderInput | SortOrder
-    episode?: EpisodeOrderByWithRelationInput
-    novelSource?: NovelSourceOrderByWithRelationInput
-    novelVolume?: NovelVolumeOrderByWithRelationInput
-    sceneDrafts?: SceneDraftOrderByRelationAggregateInput
-    novelScenes?: NovelSceneOrderByRelationAggregateInput
-  }
-
-  export type NovelChapterWhereUniqueInput = Prisma.AtLeast<{
-    id?: string
-    novelSourceId_orderIndex?: NovelChapterNovelSourceIdOrderIndexCompoundUniqueInput
-    AND?: NovelChapterWhereInput | NovelChapterWhereInput[]
-    OR?: NovelChapterWhereInput[]
-    NOT?: NovelChapterWhereInput | NovelChapterWhereInput[]
-    novelSourceId?: StringFilter<"NovelChapter"> | string
-    orderIndex?: IntFilter<"NovelChapter"> | number
-    title?: StringFilter<"NovelChapter"> | string
-    rawText?: StringFilter<"NovelChapter"> | string
-    startParagraph?: IntNullableFilter<"NovelChapter"> | number | null
-    endParagraph?: IntNullableFilter<"NovelChapter"> | number | null
-    characterCount?: IntNullableFilter<"NovelChapter"> | number | null
-    createdAt?: DateTimeFilter<"NovelChapter"> | Date | string
-    updatedAt?: DateTimeFilter<"NovelChapter"> | Date | string
-    summary?: StringNullableFilter<"NovelChapter"> | string | null
-    novelVolumeId?: StringNullableFilter<"NovelChapter"> | string | null
-    episode?: XOR<EpisodeNullableRelationFilter, EpisodeWhereInput> | null
-    novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
-    novelVolume?: XOR<NovelVolumeNullableRelationFilter, NovelVolumeWhereInput> | null
-    sceneDrafts?: SceneDraftListRelationFilter
-    novelScenes?: NovelSceneListRelationFilter
-  }, "id" | "novelSourceId_orderIndex">
-
-  export type NovelChapterOrderByWithAggregationInput = {
-    id?: SortOrder
-    novelSourceId?: SortOrder
-    orderIndex?: SortOrder
-    title?: SortOrder
-    rawText?: SortOrder
-    startParagraph?: SortOrderInput | SortOrder
-    endParagraph?: SortOrderInput | SortOrder
-    characterCount?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    summary?: SortOrderInput | SortOrder
-    novelVolumeId?: SortOrderInput | SortOrder
-    _count?: NovelChapterCountOrderByAggregateInput
-    _avg?: NovelChapterAvgOrderByAggregateInput
-    _max?: NovelChapterMaxOrderByAggregateInput
-    _min?: NovelChapterMinOrderByAggregateInput
-    _sum?: NovelChapterSumOrderByAggregateInput
-  }
-
-  export type NovelChapterScalarWhereWithAggregatesInput = {
-    AND?: NovelChapterScalarWhereWithAggregatesInput | NovelChapterScalarWhereWithAggregatesInput[]
-    OR?: NovelChapterScalarWhereWithAggregatesInput[]
-    NOT?: NovelChapterScalarWhereWithAggregatesInput | NovelChapterScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"NovelChapter"> | string
-    novelSourceId?: StringWithAggregatesFilter<"NovelChapter"> | string
-    orderIndex?: IntWithAggregatesFilter<"NovelChapter"> | number
-    title?: StringWithAggregatesFilter<"NovelChapter"> | string
-    rawText?: StringWithAggregatesFilter<"NovelChapter"> | string
-    startParagraph?: IntNullableWithAggregatesFilter<"NovelChapter"> | number | null
-    endParagraph?: IntNullableWithAggregatesFilter<"NovelChapter"> | number | null
-    characterCount?: IntNullableWithAggregatesFilter<"NovelChapter"> | number | null
-    createdAt?: DateTimeWithAggregatesFilter<"NovelChapter"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"NovelChapter"> | Date | string
-    summary?: StringNullableWithAggregatesFilter<"NovelChapter"> | string | null
-    novelVolumeId?: StringNullableWithAggregatesFilter<"NovelChapter"> | string | null
-  }
-
   export type SceneDraftWhereInput = {
     AND?: SceneDraftWhereInput | SceneDraftWhereInput[]
     OR?: SceneDraftWhereInput[]
     NOT?: SceneDraftWhereInput | SceneDraftWhereInput[]
     id?: StringFilter<"SceneDraft"> | string
     chapterId?: StringFilter<"SceneDraft"> | string
-    orderIndex?: IntFilter<"SceneDraft"> | number
+    index?: IntFilter<"SceneDraft"> | number
     title?: StringNullableFilter<"SceneDraft"> | string | null
     summary?: StringNullableFilter<"SceneDraft"> | string | null
     characters?: JsonNullableFilter<"SceneDraft">
@@ -70773,7 +70716,7 @@ export namespace Prisma {
   export type SceneDraftOrderByWithRelationInput = {
     id?: SortOrder
     chapterId?: SortOrder
-    orderIndex?: SortOrder
+    index?: SortOrder
     title?: SortOrderInput | SortOrder
     summary?: SortOrderInput | SortOrder
     characters?: SortOrderInput | SortOrder
@@ -70790,12 +70733,12 @@ export namespace Prisma {
 
   export type SceneDraftWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    chapterId_orderIndex?: SceneDraftChapterIdOrderIndexCompoundUniqueInput
+    chapterId_index?: SceneDraftChapterIdIndexCompoundUniqueInput
     AND?: SceneDraftWhereInput | SceneDraftWhereInput[]
     OR?: SceneDraftWhereInput[]
     NOT?: SceneDraftWhereInput | SceneDraftWhereInput[]
     chapterId?: StringFilter<"SceneDraft"> | string
-    orderIndex?: IntFilter<"SceneDraft"> | number
+    index?: IntFilter<"SceneDraft"> | number
     title?: StringNullableFilter<"SceneDraft"> | string | null
     summary?: StringNullableFilter<"SceneDraft"> | string | null
     characters?: JsonNullableFilter<"SceneDraft">
@@ -70808,12 +70751,12 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"SceneDraft"> | Date | string
     chapter?: XOR<NovelChapterRelationFilter, NovelChapterWhereInput>
     scene?: XOR<SceneNullableRelationFilter, SceneWhereInput> | null
-  }, "id" | "chapterId_orderIndex">
+  }, "id" | "chapterId_index">
 
   export type SceneDraftOrderByWithAggregationInput = {
     id?: SortOrder
     chapterId?: SortOrder
-    orderIndex?: SortOrder
+    index?: SortOrder
     title?: SortOrderInput | SortOrder
     summary?: SortOrderInput | SortOrder
     characters?: SortOrderInput | SortOrder
@@ -70837,7 +70780,7 @@ export namespace Prisma {
     NOT?: SceneDraftScalarWhereWithAggregatesInput | SceneDraftScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"SceneDraft"> | string
     chapterId?: StringWithAggregatesFilter<"SceneDraft"> | string
-    orderIndex?: IntWithAggregatesFilter<"SceneDraft"> | number
+    index?: IntWithAggregatesFilter<"SceneDraft"> | number
     title?: StringNullableWithAggregatesFilter<"SceneDraft"> | string | null
     summary?: StringNullableWithAggregatesFilter<"SceneDraft"> | string | null
     characters?: JsonNullableWithAggregatesFilter<"SceneDraft">
@@ -71415,49 +71358,53 @@ export namespace Prisma {
     OR?: NovelVolumeWhereInput[]
     NOT?: NovelVolumeWhereInput | NovelVolumeWhereInput[]
     id?: StringFilter<"NovelVolume"> | string
-    projectId?: StringNullableFilter<"NovelVolume"> | string | null
+    projectId?: StringFilter<"NovelVolume"> | string
     novelSourceId?: StringFilter<"NovelVolume"> | string
     index?: IntFilter<"NovelVolume"> | number
-    title?: StringFilter<"NovelVolume"> | string
+    title?: StringNullableFilter<"NovelVolume"> | string | null
     createdAt?: DateTimeFilter<"NovelVolume"> | Date | string
     updatedAt?: DateTimeFilter<"NovelVolume"> | Date | string
+    project?: XOR<ProjectRelationFilter, ProjectWhereInput>
     novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
     chapters?: NovelChapterListRelationFilter
   }
 
   export type NovelVolumeOrderByWithRelationInput = {
     id?: SortOrder
-    projectId?: SortOrderInput | SortOrder
+    projectId?: SortOrder
     novelSourceId?: SortOrder
     index?: SortOrder
-    title?: SortOrder
+    title?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    project?: ProjectOrderByWithRelationInput
     novelSource?: NovelSourceOrderByWithRelationInput
     chapters?: NovelChapterOrderByRelationAggregateInput
   }
 
   export type NovelVolumeWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    projectId_index?: NovelVolumeProjectIdIndexCompoundUniqueInput
     AND?: NovelVolumeWhereInput | NovelVolumeWhereInput[]
     OR?: NovelVolumeWhereInput[]
     NOT?: NovelVolumeWhereInput | NovelVolumeWhereInput[]
-    projectId?: StringNullableFilter<"NovelVolume"> | string | null
+    projectId?: StringFilter<"NovelVolume"> | string
     novelSourceId?: StringFilter<"NovelVolume"> | string
     index?: IntFilter<"NovelVolume"> | number
-    title?: StringFilter<"NovelVolume"> | string
+    title?: StringNullableFilter<"NovelVolume"> | string | null
     createdAt?: DateTimeFilter<"NovelVolume"> | Date | string
     updatedAt?: DateTimeFilter<"NovelVolume"> | Date | string
+    project?: XOR<ProjectRelationFilter, ProjectWhereInput>
     novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
     chapters?: NovelChapterListRelationFilter
-  }, "id">
+  }, "id" | "projectId_index">
 
   export type NovelVolumeOrderByWithAggregationInput = {
     id?: SortOrder
-    projectId?: SortOrderInput | SortOrder
+    projectId?: SortOrder
     novelSourceId?: SortOrder
     index?: SortOrder
-    title?: SortOrder
+    title?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: NovelVolumeCountOrderByAggregateInput
@@ -71472,12 +71419,102 @@ export namespace Prisma {
     OR?: NovelVolumeScalarWhereWithAggregatesInput[]
     NOT?: NovelVolumeScalarWhereWithAggregatesInput | NovelVolumeScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"NovelVolume"> | string
-    projectId?: StringNullableWithAggregatesFilter<"NovelVolume"> | string | null
+    projectId?: StringWithAggregatesFilter<"NovelVolume"> | string
     novelSourceId?: StringWithAggregatesFilter<"NovelVolume"> | string
     index?: IntWithAggregatesFilter<"NovelVolume"> | number
-    title?: StringWithAggregatesFilter<"NovelVolume"> | string
+    title?: StringNullableWithAggregatesFilter<"NovelVolume"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"NovelVolume"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"NovelVolume"> | Date | string
+  }
+
+  export type NovelChapterWhereInput = {
+    AND?: NovelChapterWhereInput | NovelChapterWhereInput[]
+    OR?: NovelChapterWhereInput[]
+    NOT?: NovelChapterWhereInput | NovelChapterWhereInput[]
+    id?: StringFilter<"NovelChapter"> | string
+    volumeId?: StringFilter<"NovelChapter"> | string
+    novelSourceId?: StringFilter<"NovelChapter"> | string
+    index?: IntFilter<"NovelChapter"> | number
+    title?: StringNullableFilter<"NovelChapter"> | string | null
+    summary?: StringNullableFilter<"NovelChapter"> | string | null
+    isSystemControlled?: BoolFilter<"NovelChapter"> | boolean
+    createdAt?: DateTimeFilter<"NovelChapter"> | Date | string
+    updatedAt?: DateTimeFilter<"NovelChapter"> | Date | string
+    volume?: XOR<NovelVolumeRelationFilter, NovelVolumeWhereInput>
+    novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
+    scenes?: NovelSceneListRelationFilter
+    episode?: XOR<EpisodeNullableRelationFilter, EpisodeWhereInput> | null
+    sceneDrafts?: SceneDraftListRelationFilter
+  }
+
+  export type NovelChapterOrderByWithRelationInput = {
+    id?: SortOrder
+    volumeId?: SortOrder
+    novelSourceId?: SortOrder
+    index?: SortOrder
+    title?: SortOrderInput | SortOrder
+    summary?: SortOrderInput | SortOrder
+    isSystemControlled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    volume?: NovelVolumeOrderByWithRelationInput
+    novelSource?: NovelSourceOrderByWithRelationInput
+    scenes?: NovelSceneOrderByRelationAggregateInput
+    episode?: EpisodeOrderByWithRelationInput
+    sceneDrafts?: SceneDraftOrderByRelationAggregateInput
+  }
+
+  export type NovelChapterWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    volumeId_index?: NovelChapterVolumeIdIndexCompoundUniqueInput
+    AND?: NovelChapterWhereInput | NovelChapterWhereInput[]
+    OR?: NovelChapterWhereInput[]
+    NOT?: NovelChapterWhereInput | NovelChapterWhereInput[]
+    volumeId?: StringFilter<"NovelChapter"> | string
+    novelSourceId?: StringFilter<"NovelChapter"> | string
+    index?: IntFilter<"NovelChapter"> | number
+    title?: StringNullableFilter<"NovelChapter"> | string | null
+    summary?: StringNullableFilter<"NovelChapter"> | string | null
+    isSystemControlled?: BoolFilter<"NovelChapter"> | boolean
+    createdAt?: DateTimeFilter<"NovelChapter"> | Date | string
+    updatedAt?: DateTimeFilter<"NovelChapter"> | Date | string
+    volume?: XOR<NovelVolumeRelationFilter, NovelVolumeWhereInput>
+    novelSource?: XOR<NovelSourceRelationFilter, NovelSourceWhereInput>
+    scenes?: NovelSceneListRelationFilter
+    episode?: XOR<EpisodeNullableRelationFilter, EpisodeWhereInput> | null
+    sceneDrafts?: SceneDraftListRelationFilter
+  }, "id" | "volumeId_index">
+
+  export type NovelChapterOrderByWithAggregationInput = {
+    id?: SortOrder
+    volumeId?: SortOrder
+    novelSourceId?: SortOrder
+    index?: SortOrder
+    title?: SortOrderInput | SortOrder
+    summary?: SortOrderInput | SortOrder
+    isSystemControlled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: NovelChapterCountOrderByAggregateInput
+    _avg?: NovelChapterAvgOrderByAggregateInput
+    _max?: NovelChapterMaxOrderByAggregateInput
+    _min?: NovelChapterMinOrderByAggregateInput
+    _sum?: NovelChapterSumOrderByAggregateInput
+  }
+
+  export type NovelChapterScalarWhereWithAggregatesInput = {
+    AND?: NovelChapterScalarWhereWithAggregatesInput | NovelChapterScalarWhereWithAggregatesInput[]
+    OR?: NovelChapterScalarWhereWithAggregatesInput[]
+    NOT?: NovelChapterScalarWhereWithAggregatesInput | NovelChapterScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"NovelChapter"> | string
+    volumeId?: StringWithAggregatesFilter<"NovelChapter"> | string
+    novelSourceId?: StringWithAggregatesFilter<"NovelChapter"> | string
+    index?: IntWithAggregatesFilter<"NovelChapter"> | number
+    title?: StringNullableWithAggregatesFilter<"NovelChapter"> | string | null
+    summary?: StringNullableWithAggregatesFilter<"NovelChapter"> | string | null
+    isSystemControlled?: BoolWithAggregatesFilter<"NovelChapter"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"NovelChapter"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"NovelChapter"> | Date | string
   }
 
   export type NovelSceneWhereInput = {
@@ -71487,13 +71524,13 @@ export namespace Prisma {
     id?: StringFilter<"NovelScene"> | string
     chapterId?: StringFilter<"NovelScene"> | string
     index?: IntFilter<"NovelScene"> | number
+    title?: StringNullableFilter<"NovelScene"> | string | null
     rawText?: StringNullableFilter<"NovelScene"> | string | null
     enrichedText?: StringNullableFilter<"NovelScene"> | string | null
-    visualDensityScore?: FloatNullableFilter<"NovelScene"> | number | null
-    characterIds?: JsonNullableFilter<"NovelScene">
+    directingNotes?: StringNullableFilter<"NovelScene"> | string | null
+    shotType?: StringNullableFilter<"NovelScene"> | string | null
     createdAt?: DateTimeFilter<"NovelScene"> | Date | string
     updatedAt?: DateTimeFilter<"NovelScene"> | Date | string
-    chunkIndex?: IntFilter<"NovelScene"> | number
     chapter?: XOR<NovelChapterRelationFilter, NovelChapterWhereInput>
   }
 
@@ -71501,44 +71538,45 @@ export namespace Prisma {
     id?: SortOrder
     chapterId?: SortOrder
     index?: SortOrder
+    title?: SortOrderInput | SortOrder
     rawText?: SortOrderInput | SortOrder
     enrichedText?: SortOrderInput | SortOrder
-    visualDensityScore?: SortOrderInput | SortOrder
-    characterIds?: SortOrderInput | SortOrder
+    directingNotes?: SortOrderInput | SortOrder
+    shotType?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    chunkIndex?: SortOrder
     chapter?: NovelChapterOrderByWithRelationInput
   }
 
   export type NovelSceneWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    chapterId_index?: NovelSceneChapterIdIndexCompoundUniqueInput
     AND?: NovelSceneWhereInput | NovelSceneWhereInput[]
     OR?: NovelSceneWhereInput[]
     NOT?: NovelSceneWhereInput | NovelSceneWhereInput[]
     chapterId?: StringFilter<"NovelScene"> | string
     index?: IntFilter<"NovelScene"> | number
+    title?: StringNullableFilter<"NovelScene"> | string | null
     rawText?: StringNullableFilter<"NovelScene"> | string | null
     enrichedText?: StringNullableFilter<"NovelScene"> | string | null
-    visualDensityScore?: FloatNullableFilter<"NovelScene"> | number | null
-    characterIds?: JsonNullableFilter<"NovelScene">
+    directingNotes?: StringNullableFilter<"NovelScene"> | string | null
+    shotType?: StringNullableFilter<"NovelScene"> | string | null
     createdAt?: DateTimeFilter<"NovelScene"> | Date | string
     updatedAt?: DateTimeFilter<"NovelScene"> | Date | string
-    chunkIndex?: IntFilter<"NovelScene"> | number
     chapter?: XOR<NovelChapterRelationFilter, NovelChapterWhereInput>
-  }, "id">
+  }, "id" | "chapterId_index">
 
   export type NovelSceneOrderByWithAggregationInput = {
     id?: SortOrder
     chapterId?: SortOrder
     index?: SortOrder
+    title?: SortOrderInput | SortOrder
     rawText?: SortOrderInput | SortOrder
     enrichedText?: SortOrderInput | SortOrder
-    visualDensityScore?: SortOrderInput | SortOrder
-    characterIds?: SortOrderInput | SortOrder
+    directingNotes?: SortOrderInput | SortOrder
+    shotType?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    chunkIndex?: SortOrder
     _count?: NovelSceneCountOrderByAggregateInput
     _avg?: NovelSceneAvgOrderByAggregateInput
     _max?: NovelSceneMaxOrderByAggregateInput
@@ -71553,13 +71591,13 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"NovelScene"> | string
     chapterId?: StringWithAggregatesFilter<"NovelScene"> | string
     index?: IntWithAggregatesFilter<"NovelScene"> | number
+    title?: StringNullableWithAggregatesFilter<"NovelScene"> | string | null
     rawText?: StringNullableWithAggregatesFilter<"NovelScene"> | string | null
     enrichedText?: StringNullableWithAggregatesFilter<"NovelScene"> | string | null
-    visualDensityScore?: FloatNullableWithAggregatesFilter<"NovelScene"> | number | null
-    characterIds?: JsonNullableWithAggregatesFilter<"NovelScene">
+    directingNotes?: StringNullableWithAggregatesFilter<"NovelScene"> | string | null
+    shotType?: StringNullableWithAggregatesFilter<"NovelScene"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"NovelScene"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"NovelScene"> | Date | string
-    chunkIndex?: IntWithAggregatesFilter<"NovelScene"> | number
   }
 
   export type MemoryShortTermWhereInput = {
@@ -71692,49 +71730,60 @@ export namespace Prisma {
     NOT?: NovelParseResultWhereInput | NovelParseResultWhereInput[]
     id?: StringFilter<"NovelParseResult"> | string
     projectId?: StringFilter<"NovelParseResult"> | string
-    volumes?: JsonNullableFilter<"NovelParseResult">
-    chapters?: JsonNullableFilter<"NovelParseResult">
-    scenes?: JsonNullableFilter<"NovelParseResult">
+    organizationId?: StringFilter<"NovelParseResult"> | string
+    idempotencyKey?: StringFilter<"NovelParseResult"> | string
+    status?: StringFilter<"NovelParseResult"> | string
     parsingQuality?: FloatNullableFilter<"NovelParseResult"> | number | null
+    modelVersion?: StringNullableFilter<"NovelParseResult"> | string | null
+    rawOutput?: JsonNullableFilter<"NovelParseResult">
     createdAt?: DateTimeFilter<"NovelParseResult"> | Date | string
     updatedAt?: DateTimeFilter<"NovelParseResult"> | Date | string
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+    organization?: XOR<OrganizationRelationFilter, OrganizationWhereInput>
   }
 
   export type NovelParseResultOrderByWithRelationInput = {
     id?: SortOrder
     projectId?: SortOrder
-    volumes?: SortOrderInput | SortOrder
-    chapters?: SortOrderInput | SortOrder
-    scenes?: SortOrderInput | SortOrder
+    organizationId?: SortOrder
+    idempotencyKey?: SortOrder
+    status?: SortOrder
     parsingQuality?: SortOrderInput | SortOrder
+    modelVersion?: SortOrderInput | SortOrder
+    rawOutput?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     project?: ProjectOrderByWithRelationInput
+    organization?: OrganizationOrderByWithRelationInput
   }
 
   export type NovelParseResultWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     projectId?: string
+    idempotencyKey?: string
     AND?: NovelParseResultWhereInput | NovelParseResultWhereInput[]
     OR?: NovelParseResultWhereInput[]
     NOT?: NovelParseResultWhereInput | NovelParseResultWhereInput[]
-    volumes?: JsonNullableFilter<"NovelParseResult">
-    chapters?: JsonNullableFilter<"NovelParseResult">
-    scenes?: JsonNullableFilter<"NovelParseResult">
+    organizationId?: StringFilter<"NovelParseResult"> | string
+    status?: StringFilter<"NovelParseResult"> | string
     parsingQuality?: FloatNullableFilter<"NovelParseResult"> | number | null
+    modelVersion?: StringNullableFilter<"NovelParseResult"> | string | null
+    rawOutput?: JsonNullableFilter<"NovelParseResult">
     createdAt?: DateTimeFilter<"NovelParseResult"> | Date | string
     updatedAt?: DateTimeFilter<"NovelParseResult"> | Date | string
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
-  }, "id" | "projectId">
+    organization?: XOR<OrganizationRelationFilter, OrganizationWhereInput>
+  }, "id" | "projectId" | "idempotencyKey">
 
   export type NovelParseResultOrderByWithAggregationInput = {
     id?: SortOrder
     projectId?: SortOrder
-    volumes?: SortOrderInput | SortOrder
-    chapters?: SortOrderInput | SortOrder
-    scenes?: SortOrderInput | SortOrder
+    organizationId?: SortOrder
+    idempotencyKey?: SortOrder
+    status?: SortOrder
     parsingQuality?: SortOrderInput | SortOrder
+    modelVersion?: SortOrderInput | SortOrder
+    rawOutput?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: NovelParseResultCountOrderByAggregateInput
@@ -71750,10 +71799,12 @@ export namespace Prisma {
     NOT?: NovelParseResultScalarWhereWithAggregatesInput | NovelParseResultScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"NovelParseResult"> | string
     projectId?: StringWithAggregatesFilter<"NovelParseResult"> | string
-    volumes?: JsonNullableWithAggregatesFilter<"NovelParseResult">
-    chapters?: JsonNullableWithAggregatesFilter<"NovelParseResult">
-    scenes?: JsonNullableWithAggregatesFilter<"NovelParseResult">
+    organizationId?: StringWithAggregatesFilter<"NovelParseResult"> | string
+    idempotencyKey?: StringWithAggregatesFilter<"NovelParseResult"> | string
+    status?: StringWithAggregatesFilter<"NovelParseResult"> | string
     parsingQuality?: FloatNullableWithAggregatesFilter<"NovelParseResult"> | number | null
+    modelVersion?: StringNullableWithAggregatesFilter<"NovelParseResult"> | string | null
+    rawOutput?: JsonNullableWithAggregatesFilter<"NovelParseResult">
     createdAt?: DateTimeWithAggregatesFilter<"NovelParseResult"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"NovelParseResult"> | Date | string
   }
@@ -72672,6 +72723,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateInput = {
@@ -72694,6 +72746,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUpdateInput = {
@@ -72716,6 +72769,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateInput = {
@@ -72738,6 +72792,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationCreateManyInput = {
@@ -72865,6 +72920,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateInput = {
@@ -72892,6 +72948,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUpdateInput = {
@@ -72919,6 +72976,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateInput = {
@@ -72946,6 +73004,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectCreateManyInput = {
@@ -75777,124 +75836,9 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type NovelChapterCreateInput = {
-    id?: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    summary?: string | null
-    episode?: EpisodeCreateNestedOneWithoutChapterInput
-    novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
-    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
-    sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
-    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
-  }
-
-  export type NovelChapterUncheckedCreateInput = {
-    id?: string
-    novelSourceId: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    summary?: string | null
-    novelVolumeId?: string | null
-    episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
-    sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
-    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
-  }
-
-  export type NovelChapterUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    episode?: EpisodeUpdateOneWithoutChapterNestedInput
-    novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
-    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
-    sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
-    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
-  }
-
-  export type NovelChapterUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    novelSourceId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
-    episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
-    sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
-    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
-  }
-
-  export type NovelChapterCreateManyInput = {
-    id?: string
-    novelSourceId: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    summary?: string | null
-    novelVolumeId?: string | null
-  }
-
-  export type NovelChapterUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-  }
-
-  export type NovelChapterUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    novelSourceId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
-  }
-
   export type SceneDraftCreateInput = {
     id?: string
-    orderIndex: number
+    index: number
     title?: string | null
     summary?: string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -75912,7 +75856,7 @@ export namespace Prisma {
   export type SceneDraftUncheckedCreateInput = {
     id?: string
     chapterId: string
-    orderIndex: number
+    index: number
     title?: string | null
     summary?: string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -75928,7 +75872,7 @@ export namespace Prisma {
 
   export type SceneDraftUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -75946,7 +75890,7 @@ export namespace Prisma {
   export type SceneDraftUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     chapterId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -75963,7 +75907,7 @@ export namespace Prisma {
   export type SceneDraftCreateManyInput = {
     id?: string
     chapterId: string
-    orderIndex: number
+    index: number
     title?: string | null
     summary?: string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -75978,7 +75922,7 @@ export namespace Prisma {
 
   export type SceneDraftUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -75994,7 +75938,7 @@ export namespace Prisma {
   export type SceneDraftUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     chapterId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -76633,73 +76577,166 @@ export namespace Prisma {
 
   export type NovelVolumeCreateInput = {
     id?: string
-    projectId?: string | null
     index: number
-    title: string
+    title?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    project: ProjectCreateNestedOneWithoutNovelVolumesInput
     novelSource: NovelSourceCreateNestedOneWithoutVolumesInput
-    chapters?: NovelChapterCreateNestedManyWithoutNovelVolumeInput
+    chapters?: NovelChapterCreateNestedManyWithoutVolumeInput
   }
 
   export type NovelVolumeUncheckedCreateInput = {
     id?: string
-    projectId?: string | null
+    projectId: string
     novelSourceId: string
     index: number
-    title: string
+    title?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    chapters?: NovelChapterUncheckedCreateNestedManyWithoutNovelVolumeInput
+    chapters?: NovelChapterUncheckedCreateNestedManyWithoutVolumeInput
   }
 
   export type NovelVolumeUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    project?: ProjectUpdateOneRequiredWithoutNovelVolumesNestedInput
     novelSource?: NovelSourceUpdateOneRequiredWithoutVolumesNestedInput
-    chapters?: NovelChapterUpdateManyWithoutNovelVolumeNestedInput
+    chapters?: NovelChapterUpdateManyWithoutVolumeNestedInput
   }
 
   export type NovelVolumeUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     novelSourceId?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chapters?: NovelChapterUncheckedUpdateManyWithoutNovelVolumeNestedInput
+    chapters?: NovelChapterUncheckedUpdateManyWithoutVolumeNestedInput
   }
 
   export type NovelVolumeCreateManyInput = {
     id?: string
-    projectId?: string | null
+    projectId: string
     novelSourceId: string
     index: number
-    title: string
+    title?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
   export type NovelVolumeUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type NovelVolumeUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     novelSourceId?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type NovelChapterCreateInput = {
+    id?: string
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    volume: NovelVolumeCreateNestedOneWithoutChaptersInput
+    novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
+    scenes?: NovelSceneCreateNestedManyWithoutChapterInput
+    episode?: EpisodeCreateNestedOneWithoutChapterInput
+    sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
+  }
+
+  export type NovelChapterUncheckedCreateInput = {
+    id?: string
+    volumeId: string
+    novelSourceId: string
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    scenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
+    episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
+    sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
+  }
+
+  export type NovelChapterUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    volume?: NovelVolumeUpdateOneRequiredWithoutChaptersNestedInput
+    novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
+    scenes?: NovelSceneUpdateManyWithoutChapterNestedInput
+    episode?: EpisodeUpdateOneWithoutChapterNestedInput
+    sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
+  }
+
+  export type NovelChapterUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    volumeId?: StringFieldUpdateOperationsInput | string
+    novelSourceId?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
+    episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
+    sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
+  }
+
+  export type NovelChapterCreateManyInput = {
+    id?: string
+    volumeId: string
+    novelSourceId: string
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type NovelChapterUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type NovelChapterUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    volumeId?: StringFieldUpdateOperationsInput | string
+    novelSourceId?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -76707,91 +76744,91 @@ export namespace Prisma {
   export type NovelSceneCreateInput = {
     id?: string
     index: number
+    title?: string | null
     rawText?: string | null
     enrichedText?: string | null
-    visualDensityScore?: number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
+    directingNotes?: string | null
+    shotType?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    chunkIndex?: number
-    chapter: NovelChapterCreateNestedOneWithoutNovelScenesInput
+    chapter: NovelChapterCreateNestedOneWithoutScenesInput
   }
 
   export type NovelSceneUncheckedCreateInput = {
     id?: string
     chapterId: string
     index: number
+    title?: string | null
     rawText?: string | null
     enrichedText?: string | null
-    visualDensityScore?: number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
+    directingNotes?: string | null
+    shotType?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    chunkIndex?: number
   }
 
   export type NovelSceneUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     rawText?: NullableStringFieldUpdateOperationsInput | string | null
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
+    directingNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    shotType?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chunkIndex?: IntFieldUpdateOperationsInput | number
-    chapter?: NovelChapterUpdateOneRequiredWithoutNovelScenesNestedInput
+    chapter?: NovelChapterUpdateOneRequiredWithoutScenesNestedInput
   }
 
   export type NovelSceneUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     chapterId?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     rawText?: NullableStringFieldUpdateOperationsInput | string | null
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
+    directingNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    shotType?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chunkIndex?: IntFieldUpdateOperationsInput | number
   }
 
   export type NovelSceneCreateManyInput = {
     id?: string
     chapterId: string
     index: number
+    title?: string | null
     rawText?: string | null
     enrichedText?: string | null
-    visualDensityScore?: number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
+    directingNotes?: string | null
+    shotType?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    chunkIndex?: number
   }
 
   export type NovelSceneUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     rawText?: NullableStringFieldUpdateOperationsInput | string | null
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
+    directingNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    shotType?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chunkIndex?: IntFieldUpdateOperationsInput | number
   }
 
   export type NovelSceneUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     chapterId?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     rawText?: NullableStringFieldUpdateOperationsInput | string | null
     enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
+    directingNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    shotType?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chunkIndex?: IntFieldUpdateOperationsInput | number
   }
 
   export type MemoryShortTermCreateInput = {
@@ -76936,44 +76973,52 @@ export namespace Prisma {
 
   export type NovelParseResultCreateInput = {
     id?: string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    idempotencyKey: string
+    status?: string
     parsingQuality?: number | null
+    modelVersion?: string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
     project: ProjectCreateNestedOneWithoutNovelParseResultsInput
+    organization: OrganizationCreateNestedOneWithoutNovelParseResultsInput
   }
 
   export type NovelParseResultUncheckedCreateInput = {
     id?: string
     projectId: string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    organizationId: string
+    idempotencyKey: string
+    status?: string
     parsingQuality?: number | null
+    modelVersion?: string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
   export type NovelParseResultUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     project?: ProjectUpdateOneRequiredWithoutNovelParseResultsNestedInput
+    organization?: OrganizationUpdateOneRequiredWithoutNovelParseResultsNestedInput
   }
 
   export type NovelParseResultUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     projectId?: StringFieldUpdateOperationsInput | string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    organizationId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -76981,20 +77026,23 @@ export namespace Prisma {
   export type NovelParseResultCreateManyInput = {
     id?: string
     projectId: string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    organizationId: string
+    idempotencyKey: string
+    status?: string
     parsingQuality?: number | null
+    modelVersion?: string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
   export type NovelParseResultUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -77002,10 +77050,12 @@ export namespace Prisma {
   export type NovelParseResultUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     projectId?: StringFieldUpdateOperationsInput | string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    organizationId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -78256,6 +78306,12 @@ export namespace Prisma {
     none?: ShotWhereInput
   }
 
+  export type NovelParseResultListRelationFilter = {
+    every?: NovelParseResultWhereInput
+    some?: NovelParseResultWhereInput
+    none?: NovelParseResultWhereInput
+  }
+
   export type TaskOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -78269,6 +78325,10 @@ export namespace Prisma {
   }
 
   export type ShotOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type NovelParseResultOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -78454,6 +78514,12 @@ export namespace Prisma {
     isNot?: StructureQualityReportWhereInput | null
   }
 
+  export type NovelVolumeListRelationFilter = {
+    every?: NovelVolumeWhereInput
+    some?: NovelVolumeWhereInput
+    none?: NovelVolumeWhereInput
+  }
+
   export type AssetOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -78483,6 +78549,10 @@ export namespace Prisma {
   }
 
   export type SeasonOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type NovelVolumeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -80514,17 +80584,7 @@ export namespace Prisma {
     none?: NovelChapterWhereInput
   }
 
-  export type NovelVolumeListRelationFilter = {
-    every?: NovelVolumeWhereInput
-    some?: NovelVolumeWhereInput
-    none?: NovelVolumeWhereInput
-  }
-
   export type NovelChapterOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type NovelVolumeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -80589,100 +80649,6 @@ export namespace Prisma {
     chapterCount?: SortOrder
   }
 
-  export type NovelSourceRelationFilter = {
-    is?: NovelSourceWhereInput
-    isNot?: NovelSourceWhereInput
-  }
-
-  export type NovelVolumeNullableRelationFilter = {
-    is?: NovelVolumeWhereInput | null
-    isNot?: NovelVolumeWhereInput | null
-  }
-
-  export type SceneDraftListRelationFilter = {
-    every?: SceneDraftWhereInput
-    some?: SceneDraftWhereInput
-    none?: SceneDraftWhereInput
-  }
-
-  export type NovelSceneListRelationFilter = {
-    every?: NovelSceneWhereInput
-    some?: NovelSceneWhereInput
-    none?: NovelSceneWhereInput
-  }
-
-  export type SceneDraftOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type NovelSceneOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type NovelChapterNovelSourceIdOrderIndexCompoundUniqueInput = {
-    novelSourceId: string
-    orderIndex: number
-  }
-
-  export type NovelChapterCountOrderByAggregateInput = {
-    id?: SortOrder
-    novelSourceId?: SortOrder
-    orderIndex?: SortOrder
-    title?: SortOrder
-    rawText?: SortOrder
-    startParagraph?: SortOrder
-    endParagraph?: SortOrder
-    characterCount?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    summary?: SortOrder
-    novelVolumeId?: SortOrder
-  }
-
-  export type NovelChapterAvgOrderByAggregateInput = {
-    orderIndex?: SortOrder
-    startParagraph?: SortOrder
-    endParagraph?: SortOrder
-    characterCount?: SortOrder
-  }
-
-  export type NovelChapterMaxOrderByAggregateInput = {
-    id?: SortOrder
-    novelSourceId?: SortOrder
-    orderIndex?: SortOrder
-    title?: SortOrder
-    rawText?: SortOrder
-    startParagraph?: SortOrder
-    endParagraph?: SortOrder
-    characterCount?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    summary?: SortOrder
-    novelVolumeId?: SortOrder
-  }
-
-  export type NovelChapterMinOrderByAggregateInput = {
-    id?: SortOrder
-    novelSourceId?: SortOrder
-    orderIndex?: SortOrder
-    title?: SortOrder
-    rawText?: SortOrder
-    startParagraph?: SortOrder
-    endParagraph?: SortOrder
-    characterCount?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    summary?: SortOrder
-    novelVolumeId?: SortOrder
-  }
-
-  export type NovelChapterSumOrderByAggregateInput = {
-    orderIndex?: SortOrder
-    startParagraph?: SortOrder
-    endParagraph?: SortOrder
-    characterCount?: SortOrder
-  }
-
   export type EnumSceneDraftStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.SceneDraftStatus | EnumSceneDraftStatusFieldRefInput<$PrismaModel>
     in?: $Enums.SceneDraftStatus[] | ListEnumSceneDraftStatusFieldRefInput<$PrismaModel>
@@ -80695,15 +80661,15 @@ export namespace Prisma {
     isNot?: NovelChapterWhereInput
   }
 
-  export type SceneDraftChapterIdOrderIndexCompoundUniqueInput = {
+  export type SceneDraftChapterIdIndexCompoundUniqueInput = {
     chapterId: string
-    orderIndex: number
+    index: number
   }
 
   export type SceneDraftCountOrderByAggregateInput = {
     id?: SortOrder
     chapterId?: SortOrder
-    orderIndex?: SortOrder
+    index?: SortOrder
     title?: SortOrder
     summary?: SortOrder
     characters?: SortOrder
@@ -80717,13 +80683,13 @@ export namespace Prisma {
   }
 
   export type SceneDraftAvgOrderByAggregateInput = {
-    orderIndex?: SortOrder
+    index?: SortOrder
   }
 
   export type SceneDraftMaxOrderByAggregateInput = {
     id?: SortOrder
     chapterId?: SortOrder
-    orderIndex?: SortOrder
+    index?: SortOrder
     title?: SortOrder
     summary?: SortOrder
     location?: SortOrder
@@ -80735,7 +80701,7 @@ export namespace Prisma {
   export type SceneDraftMinOrderByAggregateInput = {
     id?: SortOrder
     chapterId?: SortOrder
-    orderIndex?: SortOrder
+    index?: SortOrder
     title?: SortOrder
     summary?: SortOrder
     location?: SortOrder
@@ -80745,7 +80711,7 @@ export namespace Prisma {
   }
 
   export type SceneDraftSumOrderByAggregateInput = {
-    orderIndex?: SortOrder
+    index?: SortOrder
   }
 
   export type EnumSceneDraftStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -81088,6 +81054,16 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
+  export type NovelSourceRelationFilter = {
+    is?: NovelSourceWhereInput
+    isNot?: NovelSourceWhereInput
+  }
+
+  export type NovelVolumeProjectIdIndexCompoundUniqueInput = {
+    projectId: string
+    index: number
+  }
+
   export type NovelVolumeCountOrderByAggregateInput = {
     id?: SortOrder
     projectId?: SortOrder
@@ -81126,53 +81102,130 @@ export namespace Prisma {
     index?: SortOrder
   }
 
+  export type NovelVolumeRelationFilter = {
+    is?: NovelVolumeWhereInput
+    isNot?: NovelVolumeWhereInput
+  }
+
+  export type NovelSceneListRelationFilter = {
+    every?: NovelSceneWhereInput
+    some?: NovelSceneWhereInput
+    none?: NovelSceneWhereInput
+  }
+
+  export type SceneDraftListRelationFilter = {
+    every?: SceneDraftWhereInput
+    some?: SceneDraftWhereInput
+    none?: SceneDraftWhereInput
+  }
+
+  export type NovelSceneOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SceneDraftOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type NovelChapterVolumeIdIndexCompoundUniqueInput = {
+    volumeId: string
+    index: number
+  }
+
+  export type NovelChapterCountOrderByAggregateInput = {
+    id?: SortOrder
+    volumeId?: SortOrder
+    novelSourceId?: SortOrder
+    index?: SortOrder
+    title?: SortOrder
+    summary?: SortOrder
+    isSystemControlled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type NovelChapterAvgOrderByAggregateInput = {
+    index?: SortOrder
+  }
+
+  export type NovelChapterMaxOrderByAggregateInput = {
+    id?: SortOrder
+    volumeId?: SortOrder
+    novelSourceId?: SortOrder
+    index?: SortOrder
+    title?: SortOrder
+    summary?: SortOrder
+    isSystemControlled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type NovelChapterMinOrderByAggregateInput = {
+    id?: SortOrder
+    volumeId?: SortOrder
+    novelSourceId?: SortOrder
+    index?: SortOrder
+    title?: SortOrder
+    summary?: SortOrder
+    isSystemControlled?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type NovelChapterSumOrderByAggregateInput = {
+    index?: SortOrder
+  }
+
+  export type NovelSceneChapterIdIndexCompoundUniqueInput = {
+    chapterId: string
+    index: number
+  }
+
   export type NovelSceneCountOrderByAggregateInput = {
     id?: SortOrder
     chapterId?: SortOrder
     index?: SortOrder
+    title?: SortOrder
     rawText?: SortOrder
     enrichedText?: SortOrder
-    visualDensityScore?: SortOrder
-    characterIds?: SortOrder
+    directingNotes?: SortOrder
+    shotType?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    chunkIndex?: SortOrder
   }
 
   export type NovelSceneAvgOrderByAggregateInput = {
     index?: SortOrder
-    visualDensityScore?: SortOrder
-    chunkIndex?: SortOrder
   }
 
   export type NovelSceneMaxOrderByAggregateInput = {
     id?: SortOrder
     chapterId?: SortOrder
     index?: SortOrder
+    title?: SortOrder
     rawText?: SortOrder
     enrichedText?: SortOrder
-    visualDensityScore?: SortOrder
+    directingNotes?: SortOrder
+    shotType?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    chunkIndex?: SortOrder
   }
 
   export type NovelSceneMinOrderByAggregateInput = {
     id?: SortOrder
     chapterId?: SortOrder
     index?: SortOrder
+    title?: SortOrder
     rawText?: SortOrder
     enrichedText?: SortOrder
-    visualDensityScore?: SortOrder
+    directingNotes?: SortOrder
+    shotType?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    chunkIndex?: SortOrder
   }
 
   export type NovelSceneSumOrderByAggregateInput = {
     index?: SortOrder
-    visualDensityScore?: SortOrder
-    chunkIndex?: SortOrder
   }
 
   export type MemoryShortTermCountOrderByAggregateInput = {
@@ -81234,10 +81287,12 @@ export namespace Prisma {
   export type NovelParseResultCountOrderByAggregateInput = {
     id?: SortOrder
     projectId?: SortOrder
-    volumes?: SortOrder
-    chapters?: SortOrder
-    scenes?: SortOrder
+    organizationId?: SortOrder
+    idempotencyKey?: SortOrder
+    status?: SortOrder
     parsingQuality?: SortOrder
+    modelVersion?: SortOrder
+    rawOutput?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -81249,7 +81304,11 @@ export namespace Prisma {
   export type NovelParseResultMaxOrderByAggregateInput = {
     id?: SortOrder
     projectId?: SortOrder
+    organizationId?: SortOrder
+    idempotencyKey?: SortOrder
+    status?: SortOrder
     parsingQuality?: SortOrder
+    modelVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -81257,7 +81316,11 @@ export namespace Prisma {
   export type NovelParseResultMinOrderByAggregateInput = {
     id?: SortOrder
     projectId?: SortOrder
+    organizationId?: SortOrder
+    idempotencyKey?: SortOrder
+    status?: SortOrder
     parsingQuality?: SortOrder
+    modelVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -82326,6 +82389,13 @@ export namespace Prisma {
     connect?: SubscriptionWhereUniqueInput | SubscriptionWhereUniqueInput[]
   }
 
+  export type NovelParseResultCreateNestedManyWithoutOrganizationInput = {
+    create?: XOR<NovelParseResultCreateWithoutOrganizationInput, NovelParseResultUncheckedCreateWithoutOrganizationInput> | NovelParseResultCreateWithoutOrganizationInput[] | NovelParseResultUncheckedCreateWithoutOrganizationInput[]
+    connectOrCreate?: NovelParseResultCreateOrConnectWithoutOrganizationInput | NovelParseResultCreateOrConnectWithoutOrganizationInput[]
+    createMany?: NovelParseResultCreateManyOrganizationInputEnvelope
+    connect?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
+  }
+
   export type TaskUncheckedCreateNestedManyWithoutOrganizationInput = {
     create?: XOR<TaskCreateWithoutOrganizationInput, TaskUncheckedCreateWithoutOrganizationInput> | TaskCreateWithoutOrganizationInput[] | TaskUncheckedCreateWithoutOrganizationInput[]
     connectOrCreate?: TaskCreateOrConnectWithoutOrganizationInput | TaskCreateOrConnectWithoutOrganizationInput[]
@@ -82401,6 +82471,13 @@ export namespace Prisma {
     connectOrCreate?: SubscriptionCreateOrConnectWithoutOrganizationInput | SubscriptionCreateOrConnectWithoutOrganizationInput[]
     createMany?: SubscriptionCreateManyOrganizationInputEnvelope
     connect?: SubscriptionWhereUniqueInput | SubscriptionWhereUniqueInput[]
+  }
+
+  export type NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput = {
+    create?: XOR<NovelParseResultCreateWithoutOrganizationInput, NovelParseResultUncheckedCreateWithoutOrganizationInput> | NovelParseResultCreateWithoutOrganizationInput[] | NovelParseResultUncheckedCreateWithoutOrganizationInput[]
+    connectOrCreate?: NovelParseResultCreateOrConnectWithoutOrganizationInput | NovelParseResultCreateOrConnectWithoutOrganizationInput[]
+    createMany?: NovelParseResultCreateManyOrganizationInputEnvelope
+    connect?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
   }
 
   export type FloatFieldUpdateOperationsInput = {
@@ -82573,6 +82650,20 @@ export namespace Prisma {
     deleteMany?: SubscriptionScalarWhereInput | SubscriptionScalarWhereInput[]
   }
 
+  export type NovelParseResultUpdateManyWithoutOrganizationNestedInput = {
+    create?: XOR<NovelParseResultCreateWithoutOrganizationInput, NovelParseResultUncheckedCreateWithoutOrganizationInput> | NovelParseResultCreateWithoutOrganizationInput[] | NovelParseResultUncheckedCreateWithoutOrganizationInput[]
+    connectOrCreate?: NovelParseResultCreateOrConnectWithoutOrganizationInput | NovelParseResultCreateOrConnectWithoutOrganizationInput[]
+    upsert?: NovelParseResultUpsertWithWhereUniqueWithoutOrganizationInput | NovelParseResultUpsertWithWhereUniqueWithoutOrganizationInput[]
+    createMany?: NovelParseResultCreateManyOrganizationInputEnvelope
+    set?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
+    disconnect?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
+    delete?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
+    connect?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
+    update?: NovelParseResultUpdateWithWhereUniqueWithoutOrganizationInput | NovelParseResultUpdateWithWhereUniqueWithoutOrganizationInput[]
+    updateMany?: NovelParseResultUpdateManyWithWhereWithoutOrganizationInput | NovelParseResultUpdateManyWithWhereWithoutOrganizationInput[]
+    deleteMany?: NovelParseResultScalarWhereInput | NovelParseResultScalarWhereInput[]
+  }
+
   export type TaskUncheckedUpdateManyWithoutOrganizationNestedInput = {
     create?: XOR<TaskCreateWithoutOrganizationInput, TaskUncheckedCreateWithoutOrganizationInput> | TaskCreateWithoutOrganizationInput[] | TaskUncheckedCreateWithoutOrganizationInput[]
     connectOrCreate?: TaskCreateOrConnectWithoutOrganizationInput | TaskCreateOrConnectWithoutOrganizationInput[]
@@ -82727,6 +82818,20 @@ export namespace Prisma {
     deleteMany?: SubscriptionScalarWhereInput | SubscriptionScalarWhereInput[]
   }
 
+  export type NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput = {
+    create?: XOR<NovelParseResultCreateWithoutOrganizationInput, NovelParseResultUncheckedCreateWithoutOrganizationInput> | NovelParseResultCreateWithoutOrganizationInput[] | NovelParseResultUncheckedCreateWithoutOrganizationInput[]
+    connectOrCreate?: NovelParseResultCreateOrConnectWithoutOrganizationInput | NovelParseResultCreateOrConnectWithoutOrganizationInput[]
+    upsert?: NovelParseResultUpsertWithWhereUniqueWithoutOrganizationInput | NovelParseResultUpsertWithWhereUniqueWithoutOrganizationInput[]
+    createMany?: NovelParseResultCreateManyOrganizationInputEnvelope
+    set?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
+    disconnect?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
+    delete?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
+    connect?: NovelParseResultWhereUniqueInput | NovelParseResultWhereUniqueInput[]
+    update?: NovelParseResultUpdateWithWhereUniqueWithoutOrganizationInput | NovelParseResultUpdateWithWhereUniqueWithoutOrganizationInput[]
+    updateMany?: NovelParseResultUpdateManyWithWhereWithoutOrganizationInput | NovelParseResultUpdateManyWithWhereWithoutOrganizationInput[]
+    deleteMany?: NovelParseResultScalarWhereInput | NovelParseResultScalarWhereInput[]
+  }
+
   export type OrganizationCreateNestedOneWithoutMembershipsInput = {
     create?: XOR<OrganizationCreateWithoutMembershipsInput, OrganizationUncheckedCreateWithoutMembershipsInput>
     connectOrCreate?: OrganizationCreateOrConnectWithoutMembershipsInput
@@ -82867,6 +82972,13 @@ export namespace Prisma {
     connect?: StructureQualityReportWhereUniqueInput
   }
 
+  export type NovelVolumeCreateNestedManyWithoutProjectInput = {
+    create?: XOR<NovelVolumeCreateWithoutProjectInput, NovelVolumeUncheckedCreateWithoutProjectInput> | NovelVolumeCreateWithoutProjectInput[] | NovelVolumeUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutProjectInput | NovelVolumeCreateOrConnectWithoutProjectInput[]
+    createMany?: NovelVolumeCreateManyProjectInputEnvelope
+    connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+  }
+
   export type TaskUncheckedCreateNestedManyWithoutProjectInput = {
     create?: XOR<TaskCreateWithoutProjectInput, TaskUncheckedCreateWithoutProjectInput> | TaskCreateWithoutProjectInput[] | TaskUncheckedCreateWithoutProjectInput[]
     connectOrCreate?: TaskCreateOrConnectWithoutProjectInput | TaskCreateOrConnectWithoutProjectInput[]
@@ -82961,6 +83073,13 @@ export namespace Prisma {
     create?: XOR<StructureQualityReportCreateWithoutProjectInput, StructureQualityReportUncheckedCreateWithoutProjectInput>
     connectOrCreate?: StructureQualityReportCreateOrConnectWithoutProjectInput
     connect?: StructureQualityReportWhereUniqueInput
+  }
+
+  export type NovelVolumeUncheckedCreateNestedManyWithoutProjectInput = {
+    create?: XOR<NovelVolumeCreateWithoutProjectInput, NovelVolumeUncheckedCreateWithoutProjectInput> | NovelVolumeCreateWithoutProjectInput[] | NovelVolumeUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutProjectInput | NovelVolumeCreateOrConnectWithoutProjectInput[]
+    createMany?: NovelVolumeCreateManyProjectInputEnvelope
+    connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
   }
 
   export type EnumProjectStatusFieldUpdateOperationsInput = {
@@ -83171,6 +83290,20 @@ export namespace Prisma {
     update?: XOR<XOR<StructureQualityReportUpdateToOneWithWhereWithoutProjectInput, StructureQualityReportUpdateWithoutProjectInput>, StructureQualityReportUncheckedUpdateWithoutProjectInput>
   }
 
+  export type NovelVolumeUpdateManyWithoutProjectNestedInput = {
+    create?: XOR<NovelVolumeCreateWithoutProjectInput, NovelVolumeUncheckedCreateWithoutProjectInput> | NovelVolumeCreateWithoutProjectInput[] | NovelVolumeUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutProjectInput | NovelVolumeCreateOrConnectWithoutProjectInput[]
+    upsert?: NovelVolumeUpsertWithWhereUniqueWithoutProjectInput | NovelVolumeUpsertWithWhereUniqueWithoutProjectInput[]
+    createMany?: NovelVolumeCreateManyProjectInputEnvelope
+    set?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    disconnect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    delete?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    update?: NovelVolumeUpdateWithWhereUniqueWithoutProjectInput | NovelVolumeUpdateWithWhereUniqueWithoutProjectInput[]
+    updateMany?: NovelVolumeUpdateManyWithWhereWithoutProjectInput | NovelVolumeUpdateManyWithWhereWithoutProjectInput[]
+    deleteMany?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
+  }
+
   export type TaskUncheckedUpdateManyWithoutProjectNestedInput = {
     create?: XOR<TaskCreateWithoutProjectInput, TaskUncheckedCreateWithoutProjectInput> | TaskCreateWithoutProjectInput[] | TaskUncheckedCreateWithoutProjectInput[]
     connectOrCreate?: TaskCreateOrConnectWithoutProjectInput | TaskCreateOrConnectWithoutProjectInput[]
@@ -83357,6 +83490,20 @@ export namespace Prisma {
     delete?: StructureQualityReportWhereInput | boolean
     connect?: StructureQualityReportWhereUniqueInput
     update?: XOR<XOR<StructureQualityReportUpdateToOneWithWhereWithoutProjectInput, StructureQualityReportUpdateWithoutProjectInput>, StructureQualityReportUncheckedUpdateWithoutProjectInput>
+  }
+
+  export type NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput = {
+    create?: XOR<NovelVolumeCreateWithoutProjectInput, NovelVolumeUncheckedCreateWithoutProjectInput> | NovelVolumeCreateWithoutProjectInput[] | NovelVolumeUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutProjectInput | NovelVolumeCreateOrConnectWithoutProjectInput[]
+    upsert?: NovelVolumeUpsertWithWhereUniqueWithoutProjectInput | NovelVolumeUpsertWithWhereUniqueWithoutProjectInput[]
+    createMany?: NovelVolumeCreateManyProjectInputEnvelope
+    set?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    disconnect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    delete?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+    update?: NovelVolumeUpdateWithWhereUniqueWithoutProjectInput | NovelVolumeUpdateWithWhereUniqueWithoutProjectInput[]
+    updateMany?: NovelVolumeUpdateManyWithWhereWithoutProjectInput | NovelVolumeUpdateManyWithWhereWithoutProjectInput[]
+    deleteMany?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
   }
 
   export type EpisodeCreateNestedManyWithoutSeasonInput = {
@@ -85367,152 +85514,6 @@ export namespace Prisma {
     deleteMany?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
   }
 
-  export type EpisodeCreateNestedOneWithoutChapterInput = {
-    create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
-    connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput
-    connect?: EpisodeWhereUniqueInput
-  }
-
-  export type NovelSourceCreateNestedOneWithoutChaptersInput = {
-    create?: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
-    connectOrCreate?: NovelSourceCreateOrConnectWithoutChaptersInput
-    connect?: NovelSourceWhereUniqueInput
-  }
-
-  export type NovelVolumeCreateNestedOneWithoutChaptersInput = {
-    create?: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
-    connectOrCreate?: NovelVolumeCreateOrConnectWithoutChaptersInput
-    connect?: NovelVolumeWhereUniqueInput
-  }
-
-  export type SceneDraftCreateNestedManyWithoutChapterInput = {
-    create?: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput> | SceneDraftCreateWithoutChapterInput[] | SceneDraftUncheckedCreateWithoutChapterInput[]
-    connectOrCreate?: SceneDraftCreateOrConnectWithoutChapterInput | SceneDraftCreateOrConnectWithoutChapterInput[]
-    createMany?: SceneDraftCreateManyChapterInputEnvelope
-    connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-  }
-
-  export type NovelSceneCreateNestedManyWithoutChapterInput = {
-    create?: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput> | NovelSceneCreateWithoutChapterInput[] | NovelSceneUncheckedCreateWithoutChapterInput[]
-    connectOrCreate?: NovelSceneCreateOrConnectWithoutChapterInput | NovelSceneCreateOrConnectWithoutChapterInput[]
-    createMany?: NovelSceneCreateManyChapterInputEnvelope
-    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-  }
-
-  export type EpisodeUncheckedCreateNestedOneWithoutChapterInput = {
-    create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
-    connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput
-    connect?: EpisodeWhereUniqueInput
-  }
-
-  export type SceneDraftUncheckedCreateNestedManyWithoutChapterInput = {
-    create?: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput> | SceneDraftCreateWithoutChapterInput[] | SceneDraftUncheckedCreateWithoutChapterInput[]
-    connectOrCreate?: SceneDraftCreateOrConnectWithoutChapterInput | SceneDraftCreateOrConnectWithoutChapterInput[]
-    createMany?: SceneDraftCreateManyChapterInputEnvelope
-    connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-  }
-
-  export type NovelSceneUncheckedCreateNestedManyWithoutChapterInput = {
-    create?: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput> | NovelSceneCreateWithoutChapterInput[] | NovelSceneUncheckedCreateWithoutChapterInput[]
-    connectOrCreate?: NovelSceneCreateOrConnectWithoutChapterInput | NovelSceneCreateOrConnectWithoutChapterInput[]
-    createMany?: NovelSceneCreateManyChapterInputEnvelope
-    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-  }
-
-  export type EpisodeUpdateOneWithoutChapterNestedInput = {
-    create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
-    connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput
-    upsert?: EpisodeUpsertWithoutChapterInput
-    disconnect?: EpisodeWhereInput | boolean
-    delete?: EpisodeWhereInput | boolean
-    connect?: EpisodeWhereUniqueInput
-    update?: XOR<XOR<EpisodeUpdateToOneWithWhereWithoutChapterInput, EpisodeUpdateWithoutChapterInput>, EpisodeUncheckedUpdateWithoutChapterInput>
-  }
-
-  export type NovelSourceUpdateOneRequiredWithoutChaptersNestedInput = {
-    create?: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
-    connectOrCreate?: NovelSourceCreateOrConnectWithoutChaptersInput
-    upsert?: NovelSourceUpsertWithoutChaptersInput
-    connect?: NovelSourceWhereUniqueInput
-    update?: XOR<XOR<NovelSourceUpdateToOneWithWhereWithoutChaptersInput, NovelSourceUpdateWithoutChaptersInput>, NovelSourceUncheckedUpdateWithoutChaptersInput>
-  }
-
-  export type NovelVolumeUpdateOneWithoutChaptersNestedInput = {
-    create?: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
-    connectOrCreate?: NovelVolumeCreateOrConnectWithoutChaptersInput
-    upsert?: NovelVolumeUpsertWithoutChaptersInput
-    disconnect?: NovelVolumeWhereInput | boolean
-    delete?: NovelVolumeWhereInput | boolean
-    connect?: NovelVolumeWhereUniqueInput
-    update?: XOR<XOR<NovelVolumeUpdateToOneWithWhereWithoutChaptersInput, NovelVolumeUpdateWithoutChaptersInput>, NovelVolumeUncheckedUpdateWithoutChaptersInput>
-  }
-
-  export type SceneDraftUpdateManyWithoutChapterNestedInput = {
-    create?: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput> | SceneDraftCreateWithoutChapterInput[] | SceneDraftUncheckedCreateWithoutChapterInput[]
-    connectOrCreate?: SceneDraftCreateOrConnectWithoutChapterInput | SceneDraftCreateOrConnectWithoutChapterInput[]
-    upsert?: SceneDraftUpsertWithWhereUniqueWithoutChapterInput | SceneDraftUpsertWithWhereUniqueWithoutChapterInput[]
-    createMany?: SceneDraftCreateManyChapterInputEnvelope
-    set?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-    disconnect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-    delete?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-    connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-    update?: SceneDraftUpdateWithWhereUniqueWithoutChapterInput | SceneDraftUpdateWithWhereUniqueWithoutChapterInput[]
-    updateMany?: SceneDraftUpdateManyWithWhereWithoutChapterInput | SceneDraftUpdateManyWithWhereWithoutChapterInput[]
-    deleteMany?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[]
-  }
-
-  export type NovelSceneUpdateManyWithoutChapterNestedInput = {
-    create?: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput> | NovelSceneCreateWithoutChapterInput[] | NovelSceneUncheckedCreateWithoutChapterInput[]
-    connectOrCreate?: NovelSceneCreateOrConnectWithoutChapterInput | NovelSceneCreateOrConnectWithoutChapterInput[]
-    upsert?: NovelSceneUpsertWithWhereUniqueWithoutChapterInput | NovelSceneUpsertWithWhereUniqueWithoutChapterInput[]
-    createMany?: NovelSceneCreateManyChapterInputEnvelope
-    set?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-    disconnect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-    delete?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-    update?: NovelSceneUpdateWithWhereUniqueWithoutChapterInput | NovelSceneUpdateWithWhereUniqueWithoutChapterInput[]
-    updateMany?: NovelSceneUpdateManyWithWhereWithoutChapterInput | NovelSceneUpdateManyWithWhereWithoutChapterInput[]
-    deleteMany?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[]
-  }
-
-  export type EpisodeUncheckedUpdateOneWithoutChapterNestedInput = {
-    create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
-    connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput
-    upsert?: EpisodeUpsertWithoutChapterInput
-    disconnect?: EpisodeWhereInput | boolean
-    delete?: EpisodeWhereInput | boolean
-    connect?: EpisodeWhereUniqueInput
-    update?: XOR<XOR<EpisodeUpdateToOneWithWhereWithoutChapterInput, EpisodeUpdateWithoutChapterInput>, EpisodeUncheckedUpdateWithoutChapterInput>
-  }
-
-  export type SceneDraftUncheckedUpdateManyWithoutChapterNestedInput = {
-    create?: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput> | SceneDraftCreateWithoutChapterInput[] | SceneDraftUncheckedCreateWithoutChapterInput[]
-    connectOrCreate?: SceneDraftCreateOrConnectWithoutChapterInput | SceneDraftCreateOrConnectWithoutChapterInput[]
-    upsert?: SceneDraftUpsertWithWhereUniqueWithoutChapterInput | SceneDraftUpsertWithWhereUniqueWithoutChapterInput[]
-    createMany?: SceneDraftCreateManyChapterInputEnvelope
-    set?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-    disconnect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-    delete?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-    connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
-    update?: SceneDraftUpdateWithWhereUniqueWithoutChapterInput | SceneDraftUpdateWithWhereUniqueWithoutChapterInput[]
-    updateMany?: SceneDraftUpdateManyWithWhereWithoutChapterInput | SceneDraftUpdateManyWithWhereWithoutChapterInput[]
-    deleteMany?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[]
-  }
-
-  export type NovelSceneUncheckedUpdateManyWithoutChapterNestedInput = {
-    create?: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput> | NovelSceneCreateWithoutChapterInput[] | NovelSceneUncheckedCreateWithoutChapterInput[]
-    connectOrCreate?: NovelSceneCreateOrConnectWithoutChapterInput | NovelSceneCreateOrConnectWithoutChapterInput[]
-    upsert?: NovelSceneUpsertWithWhereUniqueWithoutChapterInput | NovelSceneUpsertWithWhereUniqueWithoutChapterInput[]
-    createMany?: NovelSceneCreateManyChapterInputEnvelope
-    set?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-    disconnect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-    delete?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
-    update?: NovelSceneUpdateWithWhereUniqueWithoutChapterInput | NovelSceneUpdateWithWhereUniqueWithoutChapterInput[]
-    updateMany?: NovelSceneUpdateManyWithWhereWithoutChapterInput | NovelSceneUpdateManyWithWhereWithoutChapterInput[]
-    deleteMany?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[]
-  }
-
   export type NovelChapterCreateNestedOneWithoutSceneDraftsInput = {
     create?: XOR<NovelChapterCreateWithoutSceneDraftsInput, NovelChapterUncheckedCreateWithoutSceneDraftsInput>
     connectOrCreate?: NovelChapterCreateOrConnectWithoutSceneDraftsInput
@@ -85769,24 +85770,38 @@ export namespace Prisma {
     deleteMany?: AssetScalarWhereInput | AssetScalarWhereInput[]
   }
 
+  export type ProjectCreateNestedOneWithoutNovelVolumesInput = {
+    create?: XOR<ProjectCreateWithoutNovelVolumesInput, ProjectUncheckedCreateWithoutNovelVolumesInput>
+    connectOrCreate?: ProjectCreateOrConnectWithoutNovelVolumesInput
+    connect?: ProjectWhereUniqueInput
+  }
+
   export type NovelSourceCreateNestedOneWithoutVolumesInput = {
     create?: XOR<NovelSourceCreateWithoutVolumesInput, NovelSourceUncheckedCreateWithoutVolumesInput>
     connectOrCreate?: NovelSourceCreateOrConnectWithoutVolumesInput
     connect?: NovelSourceWhereUniqueInput
   }
 
-  export type NovelChapterCreateNestedManyWithoutNovelVolumeInput = {
-    create?: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput> | NovelChapterCreateWithoutNovelVolumeInput[] | NovelChapterUncheckedCreateWithoutNovelVolumeInput[]
-    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelVolumeInput | NovelChapterCreateOrConnectWithoutNovelVolumeInput[]
-    createMany?: NovelChapterCreateManyNovelVolumeInputEnvelope
+  export type NovelChapterCreateNestedManyWithoutVolumeInput = {
+    create?: XOR<NovelChapterCreateWithoutVolumeInput, NovelChapterUncheckedCreateWithoutVolumeInput> | NovelChapterCreateWithoutVolumeInput[] | NovelChapterUncheckedCreateWithoutVolumeInput[]
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutVolumeInput | NovelChapterCreateOrConnectWithoutVolumeInput[]
+    createMany?: NovelChapterCreateManyVolumeInputEnvelope
     connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
   }
 
-  export type NovelChapterUncheckedCreateNestedManyWithoutNovelVolumeInput = {
-    create?: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput> | NovelChapterCreateWithoutNovelVolumeInput[] | NovelChapterUncheckedCreateWithoutNovelVolumeInput[]
-    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelVolumeInput | NovelChapterCreateOrConnectWithoutNovelVolumeInput[]
-    createMany?: NovelChapterCreateManyNovelVolumeInputEnvelope
+  export type NovelChapterUncheckedCreateNestedManyWithoutVolumeInput = {
+    create?: XOR<NovelChapterCreateWithoutVolumeInput, NovelChapterUncheckedCreateWithoutVolumeInput> | NovelChapterCreateWithoutVolumeInput[] | NovelChapterUncheckedCreateWithoutVolumeInput[]
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutVolumeInput | NovelChapterCreateOrConnectWithoutVolumeInput[]
+    createMany?: NovelChapterCreateManyVolumeInputEnvelope
     connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
+  }
+
+  export type ProjectUpdateOneRequiredWithoutNovelVolumesNestedInput = {
+    create?: XOR<ProjectCreateWithoutNovelVolumesInput, ProjectUncheckedCreateWithoutNovelVolumesInput>
+    connectOrCreate?: ProjectCreateOrConnectWithoutNovelVolumesInput
+    upsert?: ProjectUpsertWithoutNovelVolumesInput
+    connect?: ProjectWhereUniqueInput
+    update?: XOR<XOR<ProjectUpdateToOneWithWhereWithoutNovelVolumesInput, ProjectUpdateWithoutNovelVolumesInput>, ProjectUncheckedUpdateWithoutNovelVolumesInput>
   }
 
   export type NovelSourceUpdateOneRequiredWithoutVolumesNestedInput = {
@@ -85797,46 +85812,190 @@ export namespace Prisma {
     update?: XOR<XOR<NovelSourceUpdateToOneWithWhereWithoutVolumesInput, NovelSourceUpdateWithoutVolumesInput>, NovelSourceUncheckedUpdateWithoutVolumesInput>
   }
 
-  export type NovelChapterUpdateManyWithoutNovelVolumeNestedInput = {
-    create?: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput> | NovelChapterCreateWithoutNovelVolumeInput[] | NovelChapterUncheckedCreateWithoutNovelVolumeInput[]
-    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelVolumeInput | NovelChapterCreateOrConnectWithoutNovelVolumeInput[]
-    upsert?: NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput | NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput[]
-    createMany?: NovelChapterCreateManyNovelVolumeInputEnvelope
+  export type NovelChapterUpdateManyWithoutVolumeNestedInput = {
+    create?: XOR<NovelChapterCreateWithoutVolumeInput, NovelChapterUncheckedCreateWithoutVolumeInput> | NovelChapterCreateWithoutVolumeInput[] | NovelChapterUncheckedCreateWithoutVolumeInput[]
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutVolumeInput | NovelChapterCreateOrConnectWithoutVolumeInput[]
+    upsert?: NovelChapterUpsertWithWhereUniqueWithoutVolumeInput | NovelChapterUpsertWithWhereUniqueWithoutVolumeInput[]
+    createMany?: NovelChapterCreateManyVolumeInputEnvelope
     set?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
     disconnect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
     delete?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
     connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
-    update?: NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput | NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput[]
-    updateMany?: NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput | NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput[]
+    update?: NovelChapterUpdateWithWhereUniqueWithoutVolumeInput | NovelChapterUpdateWithWhereUniqueWithoutVolumeInput[]
+    updateMany?: NovelChapterUpdateManyWithWhereWithoutVolumeInput | NovelChapterUpdateManyWithWhereWithoutVolumeInput[]
     deleteMany?: NovelChapterScalarWhereInput | NovelChapterScalarWhereInput[]
   }
 
-  export type NovelChapterUncheckedUpdateManyWithoutNovelVolumeNestedInput = {
-    create?: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput> | NovelChapterCreateWithoutNovelVolumeInput[] | NovelChapterUncheckedCreateWithoutNovelVolumeInput[]
-    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelVolumeInput | NovelChapterCreateOrConnectWithoutNovelVolumeInput[]
-    upsert?: NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput | NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput[]
-    createMany?: NovelChapterCreateManyNovelVolumeInputEnvelope
+  export type NovelChapterUncheckedUpdateManyWithoutVolumeNestedInput = {
+    create?: XOR<NovelChapterCreateWithoutVolumeInput, NovelChapterUncheckedCreateWithoutVolumeInput> | NovelChapterCreateWithoutVolumeInput[] | NovelChapterUncheckedCreateWithoutVolumeInput[]
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutVolumeInput | NovelChapterCreateOrConnectWithoutVolumeInput[]
+    upsert?: NovelChapterUpsertWithWhereUniqueWithoutVolumeInput | NovelChapterUpsertWithWhereUniqueWithoutVolumeInput[]
+    createMany?: NovelChapterCreateManyVolumeInputEnvelope
     set?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
     disconnect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
     delete?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
     connect?: NovelChapterWhereUniqueInput | NovelChapterWhereUniqueInput[]
-    update?: NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput | NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput[]
-    updateMany?: NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput | NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput[]
+    update?: NovelChapterUpdateWithWhereUniqueWithoutVolumeInput | NovelChapterUpdateWithWhereUniqueWithoutVolumeInput[]
+    updateMany?: NovelChapterUpdateManyWithWhereWithoutVolumeInput | NovelChapterUpdateManyWithWhereWithoutVolumeInput[]
     deleteMany?: NovelChapterScalarWhereInput | NovelChapterScalarWhereInput[]
   }
 
-  export type NovelChapterCreateNestedOneWithoutNovelScenesInput = {
-    create?: XOR<NovelChapterCreateWithoutNovelScenesInput, NovelChapterUncheckedCreateWithoutNovelScenesInput>
-    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelScenesInput
+  export type NovelVolumeCreateNestedOneWithoutChaptersInput = {
+    create?: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutChaptersInput
+    connect?: NovelVolumeWhereUniqueInput
+  }
+
+  export type NovelSourceCreateNestedOneWithoutChaptersInput = {
+    create?: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
+    connectOrCreate?: NovelSourceCreateOrConnectWithoutChaptersInput
+    connect?: NovelSourceWhereUniqueInput
+  }
+
+  export type NovelSceneCreateNestedManyWithoutChapterInput = {
+    create?: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput> | NovelSceneCreateWithoutChapterInput[] | NovelSceneUncheckedCreateWithoutChapterInput[]
+    connectOrCreate?: NovelSceneCreateOrConnectWithoutChapterInput | NovelSceneCreateOrConnectWithoutChapterInput[]
+    createMany?: NovelSceneCreateManyChapterInputEnvelope
+    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+  }
+
+  export type EpisodeCreateNestedOneWithoutChapterInput = {
+    create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
+    connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput
+    connect?: EpisodeWhereUniqueInput
+  }
+
+  export type SceneDraftCreateNestedManyWithoutChapterInput = {
+    create?: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput> | SceneDraftCreateWithoutChapterInput[] | SceneDraftUncheckedCreateWithoutChapterInput[]
+    connectOrCreate?: SceneDraftCreateOrConnectWithoutChapterInput | SceneDraftCreateOrConnectWithoutChapterInput[]
+    createMany?: SceneDraftCreateManyChapterInputEnvelope
+    connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+  }
+
+  export type NovelSceneUncheckedCreateNestedManyWithoutChapterInput = {
+    create?: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput> | NovelSceneCreateWithoutChapterInput[] | NovelSceneUncheckedCreateWithoutChapterInput[]
+    connectOrCreate?: NovelSceneCreateOrConnectWithoutChapterInput | NovelSceneCreateOrConnectWithoutChapterInput[]
+    createMany?: NovelSceneCreateManyChapterInputEnvelope
+    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+  }
+
+  export type EpisodeUncheckedCreateNestedOneWithoutChapterInput = {
+    create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
+    connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput
+    connect?: EpisodeWhereUniqueInput
+  }
+
+  export type SceneDraftUncheckedCreateNestedManyWithoutChapterInput = {
+    create?: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput> | SceneDraftCreateWithoutChapterInput[] | SceneDraftUncheckedCreateWithoutChapterInput[]
+    connectOrCreate?: SceneDraftCreateOrConnectWithoutChapterInput | SceneDraftCreateOrConnectWithoutChapterInput[]
+    createMany?: SceneDraftCreateManyChapterInputEnvelope
+    connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+  }
+
+  export type NovelVolumeUpdateOneRequiredWithoutChaptersNestedInput = {
+    create?: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
+    connectOrCreate?: NovelVolumeCreateOrConnectWithoutChaptersInput
+    upsert?: NovelVolumeUpsertWithoutChaptersInput
+    connect?: NovelVolumeWhereUniqueInput
+    update?: XOR<XOR<NovelVolumeUpdateToOneWithWhereWithoutChaptersInput, NovelVolumeUpdateWithoutChaptersInput>, NovelVolumeUncheckedUpdateWithoutChaptersInput>
+  }
+
+  export type NovelSourceUpdateOneRequiredWithoutChaptersNestedInput = {
+    create?: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
+    connectOrCreate?: NovelSourceCreateOrConnectWithoutChaptersInput
+    upsert?: NovelSourceUpsertWithoutChaptersInput
+    connect?: NovelSourceWhereUniqueInput
+    update?: XOR<XOR<NovelSourceUpdateToOneWithWhereWithoutChaptersInput, NovelSourceUpdateWithoutChaptersInput>, NovelSourceUncheckedUpdateWithoutChaptersInput>
+  }
+
+  export type NovelSceneUpdateManyWithoutChapterNestedInput = {
+    create?: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput> | NovelSceneCreateWithoutChapterInput[] | NovelSceneUncheckedCreateWithoutChapterInput[]
+    connectOrCreate?: NovelSceneCreateOrConnectWithoutChapterInput | NovelSceneCreateOrConnectWithoutChapterInput[]
+    upsert?: NovelSceneUpsertWithWhereUniqueWithoutChapterInput | NovelSceneUpsertWithWhereUniqueWithoutChapterInput[]
+    createMany?: NovelSceneCreateManyChapterInputEnvelope
+    set?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+    disconnect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+    delete?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+    update?: NovelSceneUpdateWithWhereUniqueWithoutChapterInput | NovelSceneUpdateWithWhereUniqueWithoutChapterInput[]
+    updateMany?: NovelSceneUpdateManyWithWhereWithoutChapterInput | NovelSceneUpdateManyWithWhereWithoutChapterInput[]
+    deleteMany?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[]
+  }
+
+  export type EpisodeUpdateOneWithoutChapterNestedInput = {
+    create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
+    connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput
+    upsert?: EpisodeUpsertWithoutChapterInput
+    disconnect?: EpisodeWhereInput | boolean
+    delete?: EpisodeWhereInput | boolean
+    connect?: EpisodeWhereUniqueInput
+    update?: XOR<XOR<EpisodeUpdateToOneWithWhereWithoutChapterInput, EpisodeUpdateWithoutChapterInput>, EpisodeUncheckedUpdateWithoutChapterInput>
+  }
+
+  export type SceneDraftUpdateManyWithoutChapterNestedInput = {
+    create?: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput> | SceneDraftCreateWithoutChapterInput[] | SceneDraftUncheckedCreateWithoutChapterInput[]
+    connectOrCreate?: SceneDraftCreateOrConnectWithoutChapterInput | SceneDraftCreateOrConnectWithoutChapterInput[]
+    upsert?: SceneDraftUpsertWithWhereUniqueWithoutChapterInput | SceneDraftUpsertWithWhereUniqueWithoutChapterInput[]
+    createMany?: SceneDraftCreateManyChapterInputEnvelope
+    set?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+    disconnect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+    delete?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+    connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+    update?: SceneDraftUpdateWithWhereUniqueWithoutChapterInput | SceneDraftUpdateWithWhereUniqueWithoutChapterInput[]
+    updateMany?: SceneDraftUpdateManyWithWhereWithoutChapterInput | SceneDraftUpdateManyWithWhereWithoutChapterInput[]
+    deleteMany?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[]
+  }
+
+  export type NovelSceneUncheckedUpdateManyWithoutChapterNestedInput = {
+    create?: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput> | NovelSceneCreateWithoutChapterInput[] | NovelSceneUncheckedCreateWithoutChapterInput[]
+    connectOrCreate?: NovelSceneCreateOrConnectWithoutChapterInput | NovelSceneCreateOrConnectWithoutChapterInput[]
+    upsert?: NovelSceneUpsertWithWhereUniqueWithoutChapterInput | NovelSceneUpsertWithWhereUniqueWithoutChapterInput[]
+    createMany?: NovelSceneCreateManyChapterInputEnvelope
+    set?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+    disconnect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+    delete?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+    connect?: NovelSceneWhereUniqueInput | NovelSceneWhereUniqueInput[]
+    update?: NovelSceneUpdateWithWhereUniqueWithoutChapterInput | NovelSceneUpdateWithWhereUniqueWithoutChapterInput[]
+    updateMany?: NovelSceneUpdateManyWithWhereWithoutChapterInput | NovelSceneUpdateManyWithWhereWithoutChapterInput[]
+    deleteMany?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[]
+  }
+
+  export type EpisodeUncheckedUpdateOneWithoutChapterNestedInput = {
+    create?: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
+    connectOrCreate?: EpisodeCreateOrConnectWithoutChapterInput
+    upsert?: EpisodeUpsertWithoutChapterInput
+    disconnect?: EpisodeWhereInput | boolean
+    delete?: EpisodeWhereInput | boolean
+    connect?: EpisodeWhereUniqueInput
+    update?: XOR<XOR<EpisodeUpdateToOneWithWhereWithoutChapterInput, EpisodeUpdateWithoutChapterInput>, EpisodeUncheckedUpdateWithoutChapterInput>
+  }
+
+  export type SceneDraftUncheckedUpdateManyWithoutChapterNestedInput = {
+    create?: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput> | SceneDraftCreateWithoutChapterInput[] | SceneDraftUncheckedCreateWithoutChapterInput[]
+    connectOrCreate?: SceneDraftCreateOrConnectWithoutChapterInput | SceneDraftCreateOrConnectWithoutChapterInput[]
+    upsert?: SceneDraftUpsertWithWhereUniqueWithoutChapterInput | SceneDraftUpsertWithWhereUniqueWithoutChapterInput[]
+    createMany?: SceneDraftCreateManyChapterInputEnvelope
+    set?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+    disconnect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+    delete?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+    connect?: SceneDraftWhereUniqueInput | SceneDraftWhereUniqueInput[]
+    update?: SceneDraftUpdateWithWhereUniqueWithoutChapterInput | SceneDraftUpdateWithWhereUniqueWithoutChapterInput[]
+    updateMany?: SceneDraftUpdateManyWithWhereWithoutChapterInput | SceneDraftUpdateManyWithWhereWithoutChapterInput[]
+    deleteMany?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[]
+  }
+
+  export type NovelChapterCreateNestedOneWithoutScenesInput = {
+    create?: XOR<NovelChapterCreateWithoutScenesInput, NovelChapterUncheckedCreateWithoutScenesInput>
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutScenesInput
     connect?: NovelChapterWhereUniqueInput
   }
 
-  export type NovelChapterUpdateOneRequiredWithoutNovelScenesNestedInput = {
-    create?: XOR<NovelChapterCreateWithoutNovelScenesInput, NovelChapterUncheckedCreateWithoutNovelScenesInput>
-    connectOrCreate?: NovelChapterCreateOrConnectWithoutNovelScenesInput
-    upsert?: NovelChapterUpsertWithoutNovelScenesInput
+  export type NovelChapterUpdateOneRequiredWithoutScenesNestedInput = {
+    create?: XOR<NovelChapterCreateWithoutScenesInput, NovelChapterUncheckedCreateWithoutScenesInput>
+    connectOrCreate?: NovelChapterCreateOrConnectWithoutScenesInput
+    upsert?: NovelChapterUpsertWithoutScenesInput
     connect?: NovelChapterWhereUniqueInput
-    update?: XOR<XOR<NovelChapterUpdateToOneWithWhereWithoutNovelScenesInput, NovelChapterUpdateWithoutNovelScenesInput>, NovelChapterUncheckedUpdateWithoutNovelScenesInput>
+    update?: XOR<XOR<NovelChapterUpdateToOneWithWhereWithoutScenesInput, NovelChapterUpdateWithoutScenesInput>, NovelChapterUncheckedUpdateWithoutScenesInput>
   }
 
   export type ProjectCreateNestedOneWithoutNovelParseResultsInput = {
@@ -85845,12 +86004,26 @@ export namespace Prisma {
     connect?: ProjectWhereUniqueInput
   }
 
+  export type OrganizationCreateNestedOneWithoutNovelParseResultsInput = {
+    create?: XOR<OrganizationCreateWithoutNovelParseResultsInput, OrganizationUncheckedCreateWithoutNovelParseResultsInput>
+    connectOrCreate?: OrganizationCreateOrConnectWithoutNovelParseResultsInput
+    connect?: OrganizationWhereUniqueInput
+  }
+
   export type ProjectUpdateOneRequiredWithoutNovelParseResultsNestedInput = {
     create?: XOR<ProjectCreateWithoutNovelParseResultsInput, ProjectUncheckedCreateWithoutNovelParseResultsInput>
     connectOrCreate?: ProjectCreateOrConnectWithoutNovelParseResultsInput
     upsert?: ProjectUpsertWithoutNovelParseResultsInput
     connect?: ProjectWhereUniqueInput
     update?: XOR<XOR<ProjectUpdateToOneWithWhereWithoutNovelParseResultsInput, ProjectUpdateWithoutNovelParseResultsInput>, ProjectUncheckedUpdateWithoutNovelParseResultsInput>
+  }
+
+  export type OrganizationUpdateOneRequiredWithoutNovelParseResultsNestedInput = {
+    create?: XOR<OrganizationCreateWithoutNovelParseResultsInput, OrganizationUncheckedCreateWithoutNovelParseResultsInput>
+    connectOrCreate?: OrganizationCreateOrConnectWithoutNovelParseResultsInput
+    upsert?: OrganizationUpsertWithoutNovelParseResultsInput
+    connect?: OrganizationWhereUniqueInput
+    update?: XOR<XOR<OrganizationUpdateToOneWithWhereWithoutNovelParseResultsInput, OrganizationUpdateWithoutNovelParseResultsInput>, OrganizationUncheckedUpdateWithoutNovelParseResultsInput>
   }
 
   export type ProjectCreateNestedOneWithoutQualityMetricsInput = {
@@ -87141,6 +87314,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutOwnerInput = {
@@ -87162,6 +87336,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutOwnerInput = {
@@ -87198,6 +87373,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutOwnerInput = {
@@ -87224,6 +87400,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutOwnerInput = {
@@ -87965,6 +88142,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutOrganizationInput = {
@@ -87991,6 +88169,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutOrganizationInput = {
@@ -88154,6 +88333,40 @@ export namespace Prisma {
 
   export type SubscriptionCreateManyOrganizationInputEnvelope = {
     data: SubscriptionCreateManyOrganizationInput | SubscriptionCreateManyOrganizationInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type NovelParseResultCreateWithoutOrganizationInput = {
+    id?: string
+    idempotencyKey: string
+    status?: string
+    parsingQuality?: number | null
+    modelVersion?: string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    project: ProjectCreateNestedOneWithoutNovelParseResultsInput
+  }
+
+  export type NovelParseResultUncheckedCreateWithoutOrganizationInput = {
+    id?: string
+    projectId: string
+    idempotencyKey: string
+    status?: string
+    parsingQuality?: number | null
+    modelVersion?: string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type NovelParseResultCreateOrConnectWithoutOrganizationInput = {
+    where: NovelParseResultWhereUniqueInput
+    create: XOR<NovelParseResultCreateWithoutOrganizationInput, NovelParseResultUncheckedCreateWithoutOrganizationInput>
+  }
+
+  export type NovelParseResultCreateManyOrganizationInputEnvelope = {
+    data: NovelParseResultCreateManyOrganizationInput | NovelParseResultCreateManyOrganizationInput[]
     skipDuplicates?: boolean
   }
 
@@ -88473,6 +88686,38 @@ export namespace Prisma {
     data: XOR<SubscriptionUpdateManyMutationInput, SubscriptionUncheckedUpdateManyWithoutOrganizationInput>
   }
 
+  export type NovelParseResultUpsertWithWhereUniqueWithoutOrganizationInput = {
+    where: NovelParseResultWhereUniqueInput
+    update: XOR<NovelParseResultUpdateWithoutOrganizationInput, NovelParseResultUncheckedUpdateWithoutOrganizationInput>
+    create: XOR<NovelParseResultCreateWithoutOrganizationInput, NovelParseResultUncheckedCreateWithoutOrganizationInput>
+  }
+
+  export type NovelParseResultUpdateWithWhereUniqueWithoutOrganizationInput = {
+    where: NovelParseResultWhereUniqueInput
+    data: XOR<NovelParseResultUpdateWithoutOrganizationInput, NovelParseResultUncheckedUpdateWithoutOrganizationInput>
+  }
+
+  export type NovelParseResultUpdateManyWithWhereWithoutOrganizationInput = {
+    where: NovelParseResultScalarWhereInput
+    data: XOR<NovelParseResultUpdateManyMutationInput, NovelParseResultUncheckedUpdateManyWithoutOrganizationInput>
+  }
+
+  export type NovelParseResultScalarWhereInput = {
+    AND?: NovelParseResultScalarWhereInput | NovelParseResultScalarWhereInput[]
+    OR?: NovelParseResultScalarWhereInput[]
+    NOT?: NovelParseResultScalarWhereInput | NovelParseResultScalarWhereInput[]
+    id?: StringFilter<"NovelParseResult"> | string
+    projectId?: StringFilter<"NovelParseResult"> | string
+    organizationId?: StringFilter<"NovelParseResult"> | string
+    idempotencyKey?: StringFilter<"NovelParseResult"> | string
+    status?: StringFilter<"NovelParseResult"> | string
+    parsingQuality?: FloatNullableFilter<"NovelParseResult"> | number | null
+    modelVersion?: StringNullableFilter<"NovelParseResult"> | string | null
+    rawOutput?: JsonNullableFilter<"NovelParseResult">
+    createdAt?: DateTimeFilter<"NovelParseResult"> | Date | string
+    updatedAt?: DateTimeFilter<"NovelParseResult"> | Date | string
+  }
+
   export type OrganizationCreateWithoutMembershipsInput = {
     id?: string
     name: string
@@ -88492,6 +88737,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutMembershipsInput = {
@@ -88513,6 +88759,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutMembershipsInput = {
@@ -88601,6 +88848,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutMembershipsInput = {
@@ -88622,6 +88870,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type UserUpsertWithoutMembershipsInput = {
@@ -88979,20 +89228,24 @@ export namespace Prisma {
 
   export type NovelParseResultCreateWithoutProjectInput = {
     id?: string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    idempotencyKey: string
+    status?: string
     parsingQuality?: number | null
+    modelVersion?: string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
+    organization: OrganizationCreateNestedOneWithoutNovelParseResultsInput
   }
 
   export type NovelParseResultUncheckedCreateWithoutProjectInput = {
     id?: string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    organizationId: string
+    idempotencyKey: string
+    status?: string
     parsingQuality?: number | null
+    modelVersion?: string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -89095,6 +89348,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutProjectsInput = {
@@ -89116,6 +89370,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutProjectsInput = {
@@ -89331,6 +89586,36 @@ export namespace Prisma {
     create: XOR<StructureQualityReportCreateWithoutProjectInput, StructureQualityReportUncheckedCreateWithoutProjectInput>
   }
 
+  export type NovelVolumeCreateWithoutProjectInput = {
+    id?: string
+    index: number
+    title?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    novelSource: NovelSourceCreateNestedOneWithoutVolumesInput
+    chapters?: NovelChapterCreateNestedManyWithoutVolumeInput
+  }
+
+  export type NovelVolumeUncheckedCreateWithoutProjectInput = {
+    id?: string
+    novelSourceId: string
+    index: number
+    title?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    chapters?: NovelChapterUncheckedCreateNestedManyWithoutVolumeInput
+  }
+
+  export type NovelVolumeCreateOrConnectWithoutProjectInput = {
+    where: NovelVolumeWhereUniqueInput
+    create: XOR<NovelVolumeCreateWithoutProjectInput, NovelVolumeUncheckedCreateWithoutProjectInput>
+  }
+
+  export type NovelVolumeCreateManyProjectInputEnvelope = {
+    data: NovelVolumeCreateManyProjectInput | NovelVolumeCreateManyProjectInput[]
+    skipDuplicates?: boolean
+  }
+
   export type TaskUpsertWithWhereUniqueWithoutProjectInput = {
     where: TaskWhereUniqueInput
     update: XOR<TaskUpdateWithoutProjectInput, TaskUncheckedUpdateWithoutProjectInput>
@@ -89523,20 +89808,24 @@ export namespace Prisma {
 
   export type NovelParseResultUpdateWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    organization?: OrganizationUpdateOneRequiredWithoutNovelParseResultsNestedInput
   }
 
   export type NovelParseResultUncheckedUpdateWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
-    volumes?: NullableJsonNullValueInput | InputJsonValue
-    chapters?: NullableJsonNullValueInput | InputJsonValue
-    scenes?: NullableJsonNullValueInput | InputJsonValue
+    organizationId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
     parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -89635,6 +89924,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutProjectsInput = {
@@ -89656,6 +89946,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type UserUpsertWithoutOwnedProjectsInput = {
@@ -89823,6 +90114,35 @@ export namespace Prisma {
     engineVersion?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type NovelVolumeUpsertWithWhereUniqueWithoutProjectInput = {
+    where: NovelVolumeWhereUniqueInput
+    update: XOR<NovelVolumeUpdateWithoutProjectInput, NovelVolumeUncheckedUpdateWithoutProjectInput>
+    create: XOR<NovelVolumeCreateWithoutProjectInput, NovelVolumeUncheckedCreateWithoutProjectInput>
+  }
+
+  export type NovelVolumeUpdateWithWhereUniqueWithoutProjectInput = {
+    where: NovelVolumeWhereUniqueInput
+    data: XOR<NovelVolumeUpdateWithoutProjectInput, NovelVolumeUncheckedUpdateWithoutProjectInput>
+  }
+
+  export type NovelVolumeUpdateManyWithWhereWithoutProjectInput = {
+    where: NovelVolumeScalarWhereInput
+    data: XOR<NovelVolumeUpdateManyMutationInput, NovelVolumeUncheckedUpdateManyWithoutProjectInput>
+  }
+
+  export type NovelVolumeScalarWhereInput = {
+    AND?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
+    OR?: NovelVolumeScalarWhereInput[]
+    NOT?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
+    id?: StringFilter<"NovelVolume"> | string
+    projectId?: StringFilter<"NovelVolume"> | string
+    novelSourceId?: StringFilter<"NovelVolume"> | string
+    index?: IntFilter<"NovelVolume"> | number
+    title?: StringNullableFilter<"NovelVolume"> | string | null
+    createdAt?: DateTimeFilter<"NovelVolume"> | Date | string
+    updatedAt?: DateTimeFilter<"NovelVolume"> | Date | string
+  }
+
   export type EpisodeCreateWithoutSeasonInput = {
     id?: string
     index: number
@@ -89881,6 +90201,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutSeasonsInput = {
@@ -89907,6 +90228,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutSeasonsInput = {
@@ -89965,6 +90287,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutSeasonsInput = {
@@ -89991,40 +90314,35 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type NovelChapterCreateWithoutEpisodeInput = {
     id?: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
+    volume: NovelVolumeCreateNestedOneWithoutChaptersInput
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
-    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
+    scenes?: NovelSceneCreateNestedManyWithoutChapterInput
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
-    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
   }
 
   export type NovelChapterUncheckedCreateWithoutEpisodeInput = {
     id?: string
+    volumeId: string
     novelSourceId: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
-    novelVolumeId?: string | null
+    scenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
-    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
   }
 
   export type NovelChapterCreateOrConnectWithoutEpisodeInput = {
@@ -90056,6 +90374,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutEpisodesInput = {
@@ -90082,6 +90401,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutEpisodesInput = {
@@ -90269,36 +90589,30 @@ export namespace Prisma {
 
   export type NovelChapterUpdateWithoutEpisodeInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    volume?: NovelVolumeUpdateOneRequiredWithoutChaptersNestedInput
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
-    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
+    scenes?: NovelSceneUpdateManyWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
-    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
   }
 
   export type NovelChapterUncheckedUpdateWithoutEpisodeInput = {
     id?: StringFieldUpdateOperationsInput | string
+    volumeId?: StringFieldUpdateOperationsInput | string
     novelSourceId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
+    scenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
-    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
   }
 
   export type ProjectUpsertWithoutEpisodesInput = {
@@ -90336,6 +90650,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutEpisodesInput = {
@@ -90362,6 +90677,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SeasonUpsertWithoutEpisodesInput = {
@@ -90529,7 +90845,7 @@ export namespace Prisma {
 
   export type SceneDraftCreateWithoutSceneInput = {
     id?: string
-    orderIndex: number
+    index: number
     title?: string | null
     summary?: string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -90546,7 +90862,7 @@ export namespace Prisma {
   export type SceneDraftUncheckedCreateWithoutSceneInput = {
     id?: string
     chapterId: string
-    orderIndex: number
+    index: number
     title?: string | null
     summary?: string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -90748,7 +91064,7 @@ export namespace Prisma {
 
   export type SceneDraftUpdateWithoutSceneInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -90765,7 +91081,7 @@ export namespace Prisma {
   export type SceneDraftUncheckedUpdateWithoutSceneInput = {
     id?: StringFieldUpdateOperationsInput | string
     chapterId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
+    index?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     characters?: NullableJsonNullValueInput | InputJsonValue
@@ -91096,6 +91412,7 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutOrganizationInput
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutShotsInput = {
@@ -91117,6 +91434,7 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutOrganizationInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutShotsInput = {
@@ -91348,6 +91666,7 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutOrganizationNestedInput
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutShotsInput = {
@@ -91369,6 +91688,7 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutOrganizationNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type SceneUpsertWithoutShotsInput = {
@@ -91542,6 +91862,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutStructureQualityReportInput = {
@@ -91568,6 +91889,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutStructureQualityReportInput = {
@@ -91610,6 +91932,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutStructureQualityReportInput = {
@@ -91636,6 +91959,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectCreateWithoutEngineTasksInput = {
@@ -91662,6 +91986,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutEngineTasksInput = {
@@ -91688,6 +92013,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutEngineTasksInput = {
@@ -91816,6 +92142,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutEngineTasksInput = {
@@ -91842,6 +92169,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SceneUpsertWithoutEngineTasksInput = {
@@ -92759,6 +93087,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutProjectMembersInput = {
@@ -92785,6 +93114,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutProjectMembersInput = {
@@ -92850,6 +93180,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutProjectMembersInput = {
@@ -92876,6 +93207,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type RoleUpsertWithoutMembersInput = {
@@ -92926,6 +93258,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutTasksInput = {
@@ -92947,6 +93280,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutTasksInput = {
@@ -92978,6 +93312,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutTasksInput = {
@@ -93004,6 +93339,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutTasksInput = {
@@ -93148,6 +93484,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutTasksInput = {
@@ -93169,6 +93506,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type ProjectUpsertWithoutTasksInput = {
@@ -93206,6 +93544,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutTasksInput = {
@@ -93232,6 +93571,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type WorkerNodeUpsertWithoutTasksInput = {
@@ -93512,6 +93852,7 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutShotJobsInput = {
@@ -93533,6 +93874,7 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutShotJobsInput = {
@@ -93564,6 +93906,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutShotJobsInput = {
@@ -93590,6 +93933,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutShotJobsInput = {
@@ -93887,6 +94231,7 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutShotJobsInput = {
@@ -93908,6 +94253,7 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type ProjectUpsertWithoutShotJobsInput = {
@@ -93945,6 +94291,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutShotJobsInput = {
@@ -93971,6 +94318,7 @@ export namespace Prisma {
     qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SceneUpsertWithoutShotJobsInput = {
@@ -94671,6 +95019,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutBillingEventsInput = {
@@ -94692,6 +95041,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutBillingEventsInput = {
@@ -94723,6 +95073,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutBillingEventsInput = {
@@ -94749,6 +95100,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutBillingEventsInput = {
@@ -94906,6 +95258,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutBillingEventsInput = {
@@ -94927,6 +95280,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type ProjectUpsertWithoutBillingEventsInput = {
@@ -94964,6 +95318,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutBillingEventsInput = {
@@ -94990,6 +95345,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type UserUpsertWithoutBillingEventsInput = {
@@ -95068,6 +95424,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutCostCentersInput = {
@@ -95089,6 +95446,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutCostCentersInput = {
@@ -95126,6 +95484,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutCostCentersInput = {
@@ -95147,6 +95506,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationCreateWithoutSubscriptionsInput = {
@@ -95168,6 +95528,7 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutOrganizationInput
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutSubscriptionsInput = {
@@ -95189,6 +95550,7 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutOrganizationInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutSubscriptionsInput = {
@@ -95277,6 +95639,7 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutOrganizationNestedInput
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutSubscriptionsInput = {
@@ -95298,6 +95661,7 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutOrganizationNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type UserUpsertWithoutSubscriptionsInput = {
@@ -95652,6 +96016,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutMembersInput = {
@@ -95673,6 +96038,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutMembersInput = {
@@ -95761,6 +96127,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutMembersInput = {
@@ -95782,6 +96149,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type UserUpsertWithoutOrganizationMembersInput = {
@@ -95877,36 +96245,30 @@ export namespace Prisma {
 
   export type NovelChapterCreateWithoutNovelSourceInput = {
     id?: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
+    volume: NovelVolumeCreateNestedOneWithoutChaptersInput
+    scenes?: NovelSceneCreateNestedManyWithoutChapterInput
     episode?: EpisodeCreateNestedOneWithoutChapterInput
-    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
-    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
   }
 
   export type NovelChapterUncheckedCreateWithoutNovelSourceInput = {
     id?: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    volumeId: string
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
-    novelVolumeId?: string | null
+    scenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
-    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
   }
 
   export type NovelChapterCreateOrConnectWithoutNovelSourceInput = {
@@ -95921,22 +96283,22 @@ export namespace Prisma {
 
   export type NovelVolumeCreateWithoutNovelSourceInput = {
     id?: string
-    projectId?: string | null
     index: number
-    title: string
+    title?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    chapters?: NovelChapterCreateNestedManyWithoutNovelVolumeInput
+    project: ProjectCreateNestedOneWithoutNovelVolumesInput
+    chapters?: NovelChapterCreateNestedManyWithoutVolumeInput
   }
 
   export type NovelVolumeUncheckedCreateWithoutNovelSourceInput = {
     id?: string
-    projectId?: string | null
+    projectId: string
     index: number
-    title: string
+    title?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    chapters?: NovelChapterUncheckedCreateNestedManyWithoutNovelVolumeInput
+    chapters?: NovelChapterUncheckedCreateNestedManyWithoutVolumeInput
   }
 
   export type NovelVolumeCreateOrConnectWithoutNovelSourceInput = {
@@ -95973,6 +96335,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelSourcesInput = {
@@ -95999,6 +96362,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelSourcesInput = {
@@ -96043,17 +96407,14 @@ export namespace Prisma {
     OR?: NovelChapterScalarWhereInput[]
     NOT?: NovelChapterScalarWhereInput | NovelChapterScalarWhereInput[]
     id?: StringFilter<"NovelChapter"> | string
+    volumeId?: StringFilter<"NovelChapter"> | string
     novelSourceId?: StringFilter<"NovelChapter"> | string
-    orderIndex?: IntFilter<"NovelChapter"> | number
-    title?: StringFilter<"NovelChapter"> | string
-    rawText?: StringFilter<"NovelChapter"> | string
-    startParagraph?: IntNullableFilter<"NovelChapter"> | number | null
-    endParagraph?: IntNullableFilter<"NovelChapter"> | number | null
-    characterCount?: IntNullableFilter<"NovelChapter"> | number | null
+    index?: IntFilter<"NovelChapter"> | number
+    title?: StringNullableFilter<"NovelChapter"> | string | null
+    summary?: StringNullableFilter<"NovelChapter"> | string | null
+    isSystemControlled?: BoolFilter<"NovelChapter"> | boolean
     createdAt?: DateTimeFilter<"NovelChapter"> | Date | string
     updatedAt?: DateTimeFilter<"NovelChapter"> | Date | string
-    summary?: StringNullableFilter<"NovelChapter"> | string | null
-    novelVolumeId?: StringNullableFilter<"NovelChapter"> | string | null
   }
 
   export type NovelVolumeUpsertWithWhereUniqueWithoutNovelSourceInput = {
@@ -96070,19 +96431,6 @@ export namespace Prisma {
   export type NovelVolumeUpdateManyWithWhereWithoutNovelSourceInput = {
     where: NovelVolumeScalarWhereInput
     data: XOR<NovelVolumeUpdateManyMutationInput, NovelVolumeUncheckedUpdateManyWithoutNovelSourceInput>
-  }
-
-  export type NovelVolumeScalarWhereInput = {
-    AND?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
-    OR?: NovelVolumeScalarWhereInput[]
-    NOT?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
-    id?: StringFilter<"NovelVolume"> | string
-    projectId?: StringNullableFilter<"NovelVolume"> | string | null
-    novelSourceId?: StringFilter<"NovelVolume"> | string
-    index?: IntFilter<"NovelVolume"> | number
-    title?: StringFilter<"NovelVolume"> | string
-    createdAt?: DateTimeFilter<"NovelVolume"> | Date | string
-    updatedAt?: DateTimeFilter<"NovelVolume"> | Date | string
   }
 
   export type ProjectUpsertWithoutNovelSourcesInput = {
@@ -96120,6 +96468,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelSourcesInput = {
@@ -96146,395 +96495,35 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
-  }
-
-  export type EpisodeCreateWithoutChapterInput = {
-    id?: string
-    index: number
-    name: string
-    summary?: string | null
-    project?: ProjectCreateNestedOneWithoutEpisodesInput
-    season: SeasonCreateNestedOneWithoutEpisodesInput
-    publishingReviews?: PublishingReviewCreateNestedManyWithoutEpisodeInput
-    scenes?: SceneCreateNestedManyWithoutEpisodeInput
-    shotJobs?: ShotJobCreateNestedManyWithoutEpisodeInput
-  }
-
-  export type EpisodeUncheckedCreateWithoutChapterInput = {
-    id?: string
-    seasonId: string
-    projectId?: string | null
-    index: number
-    name: string
-    summary?: string | null
-    publishingReviews?: PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput
-    scenes?: SceneUncheckedCreateNestedManyWithoutEpisodeInput
-    shotJobs?: ShotJobUncheckedCreateNestedManyWithoutEpisodeInput
-  }
-
-  export type EpisodeCreateOrConnectWithoutChapterInput = {
-    where: EpisodeWhereUniqueInput
-    create: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
-  }
-
-  export type NovelSourceCreateWithoutChaptersInput = {
-    id?: string
-    novelTitle?: string | null
-    novelAuthor?: string | null
-    rawText: string
-    filePath?: string | null
-    fileName?: string | null
-    fileSize?: number | null
-    fileType?: string | null
-    characterCount?: number | null
-    chapterCount?: number | null
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    analysisJobs?: NovelAnalysisJobCreateNestedManyWithoutNovelSourceInput
-    volumes?: NovelVolumeCreateNestedManyWithoutNovelSourceInput
-    project: ProjectCreateNestedOneWithoutNovelSourcesInput
-  }
-
-  export type NovelSourceUncheckedCreateWithoutChaptersInput = {
-    id?: string
-    projectId: string
-    novelTitle?: string | null
-    novelAuthor?: string | null
-    rawText: string
-    filePath?: string | null
-    fileName?: string | null
-    fileSize?: number | null
-    fileType?: string | null
-    characterCount?: number | null
-    chapterCount?: number | null
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    analysisJobs?: NovelAnalysisJobUncheckedCreateNestedManyWithoutNovelSourceInput
-    volumes?: NovelVolumeUncheckedCreateNestedManyWithoutNovelSourceInput
-  }
-
-  export type NovelSourceCreateOrConnectWithoutChaptersInput = {
-    where: NovelSourceWhereUniqueInput
-    create: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
-  }
-
-  export type NovelVolumeCreateWithoutChaptersInput = {
-    id?: string
-    projectId?: string | null
-    index: number
-    title: string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    novelSource: NovelSourceCreateNestedOneWithoutVolumesInput
-  }
-
-  export type NovelVolumeUncheckedCreateWithoutChaptersInput = {
-    id?: string
-    projectId?: string | null
-    novelSourceId: string
-    index: number
-    title: string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type NovelVolumeCreateOrConnectWithoutChaptersInput = {
-    where: NovelVolumeWhereUniqueInput
-    create: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
-  }
-
-  export type SceneDraftCreateWithoutChapterInput = {
-    id?: string
-    orderIndex: number
-    title?: string | null
-    summary?: string | null
-    characters?: NullableJsonNullValueInput | InputJsonValue
-    location?: string | null
-    emotions?: NullableJsonNullValueInput | InputJsonValue
-    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
-    status?: $Enums.SceneDraftStatus
-    analysisResult?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    scene?: SceneCreateNestedOneWithoutSceneDraftInput
-  }
-
-  export type SceneDraftUncheckedCreateWithoutChapterInput = {
-    id?: string
-    orderIndex: number
-    title?: string | null
-    summary?: string | null
-    characters?: NullableJsonNullValueInput | InputJsonValue
-    location?: string | null
-    emotions?: NullableJsonNullValueInput | InputJsonValue
-    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
-    status?: $Enums.SceneDraftStatus
-    analysisResult?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    scene?: SceneUncheckedCreateNestedOneWithoutSceneDraftInput
-  }
-
-  export type SceneDraftCreateOrConnectWithoutChapterInput = {
-    where: SceneDraftWhereUniqueInput
-    create: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput>
-  }
-
-  export type SceneDraftCreateManyChapterInputEnvelope = {
-    data: SceneDraftCreateManyChapterInput | SceneDraftCreateManyChapterInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type NovelSceneCreateWithoutChapterInput = {
-    id?: string
-    index: number
-    rawText?: string | null
-    enrichedText?: string | null
-    visualDensityScore?: number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    chunkIndex?: number
-  }
-
-  export type NovelSceneUncheckedCreateWithoutChapterInput = {
-    id?: string
-    index: number
-    rawText?: string | null
-    enrichedText?: string | null
-    visualDensityScore?: number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    chunkIndex?: number
-  }
-
-  export type NovelSceneCreateOrConnectWithoutChapterInput = {
-    where: NovelSceneWhereUniqueInput
-    create: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>
-  }
-
-  export type NovelSceneCreateManyChapterInputEnvelope = {
-    data: NovelSceneCreateManyChapterInput | NovelSceneCreateManyChapterInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type EpisodeUpsertWithoutChapterInput = {
-    update: XOR<EpisodeUpdateWithoutChapterInput, EpisodeUncheckedUpdateWithoutChapterInput>
-    create: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
-    where?: EpisodeWhereInput
-  }
-
-  export type EpisodeUpdateToOneWithWhereWithoutChapterInput = {
-    where?: EpisodeWhereInput
-    data: XOR<EpisodeUpdateWithoutChapterInput, EpisodeUncheckedUpdateWithoutChapterInput>
-  }
-
-  export type EpisodeUpdateWithoutChapterInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    index?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    project?: ProjectUpdateOneWithoutEpisodesNestedInput
-    season?: SeasonUpdateOneRequiredWithoutEpisodesNestedInput
-    publishingReviews?: PublishingReviewUpdateManyWithoutEpisodeNestedInput
-    scenes?: SceneUpdateManyWithoutEpisodeNestedInput
-    shotJobs?: ShotJobUpdateManyWithoutEpisodeNestedInput
-  }
-
-  export type EpisodeUncheckedUpdateWithoutChapterInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    seasonId?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    index?: IntFieldUpdateOperationsInput | number
-    name?: StringFieldUpdateOperationsInput | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    publishingReviews?: PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput
-    scenes?: SceneUncheckedUpdateManyWithoutEpisodeNestedInput
-    shotJobs?: ShotJobUncheckedUpdateManyWithoutEpisodeNestedInput
-  }
-
-  export type NovelSourceUpsertWithoutChaptersInput = {
-    update: XOR<NovelSourceUpdateWithoutChaptersInput, NovelSourceUncheckedUpdateWithoutChaptersInput>
-    create: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
-    where?: NovelSourceWhereInput
-  }
-
-  export type NovelSourceUpdateToOneWithWhereWithoutChaptersInput = {
-    where?: NovelSourceWhereInput
-    data: XOR<NovelSourceUpdateWithoutChaptersInput, NovelSourceUncheckedUpdateWithoutChaptersInput>
-  }
-
-  export type NovelSourceUpdateWithoutChaptersInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    novelTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    novelAuthor?: NullableStringFieldUpdateOperationsInput | string | null
-    rawText?: StringFieldUpdateOperationsInput | string
-    filePath?: NullableStringFieldUpdateOperationsInput | string | null
-    fileName?: NullableStringFieldUpdateOperationsInput | string | null
-    fileSize?: NullableIntFieldUpdateOperationsInput | number | null
-    fileType?: NullableStringFieldUpdateOperationsInput | string | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
-    chapterCount?: NullableIntFieldUpdateOperationsInput | number | null
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    analysisJobs?: NovelAnalysisJobUpdateManyWithoutNovelSourceNestedInput
-    volumes?: NovelVolumeUpdateManyWithoutNovelSourceNestedInput
-    project?: ProjectUpdateOneRequiredWithoutNovelSourcesNestedInput
-  }
-
-  export type NovelSourceUncheckedUpdateWithoutChaptersInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    projectId?: StringFieldUpdateOperationsInput | string
-    novelTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    novelAuthor?: NullableStringFieldUpdateOperationsInput | string | null
-    rawText?: StringFieldUpdateOperationsInput | string
-    filePath?: NullableStringFieldUpdateOperationsInput | string | null
-    fileName?: NullableStringFieldUpdateOperationsInput | string | null
-    fileSize?: NullableIntFieldUpdateOperationsInput | number | null
-    fileType?: NullableStringFieldUpdateOperationsInput | string | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
-    chapterCount?: NullableIntFieldUpdateOperationsInput | number | null
-    metadata?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    analysisJobs?: NovelAnalysisJobUncheckedUpdateManyWithoutNovelSourceNestedInput
-    volumes?: NovelVolumeUncheckedUpdateManyWithoutNovelSourceNestedInput
-  }
-
-  export type NovelVolumeUpsertWithoutChaptersInput = {
-    update: XOR<NovelVolumeUpdateWithoutChaptersInput, NovelVolumeUncheckedUpdateWithoutChaptersInput>
-    create: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
-    where?: NovelVolumeWhereInput
-  }
-
-  export type NovelVolumeUpdateToOneWithWhereWithoutChaptersInput = {
-    where?: NovelVolumeWhereInput
-    data: XOR<NovelVolumeUpdateWithoutChaptersInput, NovelVolumeUncheckedUpdateWithoutChaptersInput>
-  }
-
-  export type NovelVolumeUpdateWithoutChaptersInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    index?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    novelSource?: NovelSourceUpdateOneRequiredWithoutVolumesNestedInput
-  }
-
-  export type NovelVolumeUncheckedUpdateWithoutChaptersInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
-    novelSourceId?: StringFieldUpdateOperationsInput | string
-    index?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type SceneDraftUpsertWithWhereUniqueWithoutChapterInput = {
-    where: SceneDraftWhereUniqueInput
-    update: XOR<SceneDraftUpdateWithoutChapterInput, SceneDraftUncheckedUpdateWithoutChapterInput>
-    create: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput>
-  }
-
-  export type SceneDraftUpdateWithWhereUniqueWithoutChapterInput = {
-    where: SceneDraftWhereUniqueInput
-    data: XOR<SceneDraftUpdateWithoutChapterInput, SceneDraftUncheckedUpdateWithoutChapterInput>
-  }
-
-  export type SceneDraftUpdateManyWithWhereWithoutChapterInput = {
-    where: SceneDraftScalarWhereInput
-    data: XOR<SceneDraftUpdateManyMutationInput, SceneDraftUncheckedUpdateManyWithoutChapterInput>
-  }
-
-  export type SceneDraftScalarWhereInput = {
-    AND?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[]
-    OR?: SceneDraftScalarWhereInput[]
-    NOT?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[]
-    id?: StringFilter<"SceneDraft"> | string
-    chapterId?: StringFilter<"SceneDraft"> | string
-    orderIndex?: IntFilter<"SceneDraft"> | number
-    title?: StringNullableFilter<"SceneDraft"> | string | null
-    summary?: StringNullableFilter<"SceneDraft"> | string | null
-    characters?: JsonNullableFilter<"SceneDraft">
-    location?: StringNullableFilter<"SceneDraft"> | string | null
-    emotions?: JsonNullableFilter<"SceneDraft">
-    rawTextRange?: JsonNullableFilter<"SceneDraft">
-    status?: EnumSceneDraftStatusFilter<"SceneDraft"> | $Enums.SceneDraftStatus
-    analysisResult?: JsonNullableFilter<"SceneDraft">
-    createdAt?: DateTimeFilter<"SceneDraft"> | Date | string
-    updatedAt?: DateTimeFilter<"SceneDraft"> | Date | string
-  }
-
-  export type NovelSceneUpsertWithWhereUniqueWithoutChapterInput = {
-    where: NovelSceneWhereUniqueInput
-    update: XOR<NovelSceneUpdateWithoutChapterInput, NovelSceneUncheckedUpdateWithoutChapterInput>
-    create: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>
-  }
-
-  export type NovelSceneUpdateWithWhereUniqueWithoutChapterInput = {
-    where: NovelSceneWhereUniqueInput
-    data: XOR<NovelSceneUpdateWithoutChapterInput, NovelSceneUncheckedUpdateWithoutChapterInput>
-  }
-
-  export type NovelSceneUpdateManyWithWhereWithoutChapterInput = {
-    where: NovelSceneScalarWhereInput
-    data: XOR<NovelSceneUpdateManyMutationInput, NovelSceneUncheckedUpdateManyWithoutChapterInput>
-  }
-
-  export type NovelSceneScalarWhereInput = {
-    AND?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[]
-    OR?: NovelSceneScalarWhereInput[]
-    NOT?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[]
-    id?: StringFilter<"NovelScene"> | string
-    chapterId?: StringFilter<"NovelScene"> | string
-    index?: IntFilter<"NovelScene"> | number
-    rawText?: StringNullableFilter<"NovelScene"> | string | null
-    enrichedText?: StringNullableFilter<"NovelScene"> | string | null
-    visualDensityScore?: FloatNullableFilter<"NovelScene"> | number | null
-    characterIds?: JsonNullableFilter<"NovelScene">
-    createdAt?: DateTimeFilter<"NovelScene"> | Date | string
-    updatedAt?: DateTimeFilter<"NovelScene"> | Date | string
-    chunkIndex?: IntFilter<"NovelScene"> | number
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type NovelChapterCreateWithoutSceneDraftsInput = {
     id?: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
-    episode?: EpisodeCreateNestedOneWithoutChapterInput
+    volume: NovelVolumeCreateNestedOneWithoutChaptersInput
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
-    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
-    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
+    scenes?: NovelSceneCreateNestedManyWithoutChapterInput
+    episode?: EpisodeCreateNestedOneWithoutChapterInput
   }
 
   export type NovelChapterUncheckedCreateWithoutSceneDraftsInput = {
     id?: string
+    volumeId: string
     novelSourceId: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
-    novelVolumeId?: string | null
+    scenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
-    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
   }
 
   export type NovelChapterCreateOrConnectWithoutSceneDraftsInput = {
@@ -96592,36 +96581,30 @@ export namespace Prisma {
 
   export type NovelChapterUpdateWithoutSceneDraftsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    episode?: EpisodeUpdateOneWithoutChapterNestedInput
+    volume?: NovelVolumeUpdateOneRequiredWithoutChaptersNestedInput
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
-    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
-    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
+    scenes?: NovelSceneUpdateManyWithoutChapterNestedInput
+    episode?: EpisodeUpdateOneWithoutChapterNestedInput
   }
 
   export type NovelChapterUncheckedUpdateWithoutSceneDraftsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    volumeId?: StringFieldUpdateOperationsInput | string
     novelSourceId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
+    scenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
-    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
   }
 
   export type SceneUpsertWithoutSceneDraftInput = {
@@ -96734,6 +96717,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelAnalysisJobsInput = {
@@ -96760,6 +96744,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelAnalysisJobsInput = {
@@ -96851,6 +96836,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelAnalysisJobsInput = {
@@ -96877,6 +96863,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type OrganizationCreateWithoutApiKeysInput = {
@@ -96898,6 +96885,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutApiKeysInput = {
@@ -96919,6 +96907,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutApiKeysInput = {
@@ -97051,6 +97040,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutApiKeysInput = {
@@ -97072,6 +97062,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type UserUpsertWithoutApiKeysInput = {
@@ -97207,6 +97198,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
     shots?: ShotCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationUncheckedCreateWithoutAuditLogsInput = {
@@ -97228,6 +97220,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
     shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
     subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedManyWithoutOrganizationInput
   }
 
   export type OrganizationCreateOrConnectWithoutAuditLogsInput = {
@@ -97363,6 +97356,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutAuditLogsInput = {
@@ -97384,6 +97378,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type UserUpsertWithoutAuditLogsInput = {
@@ -97503,6 +97498,65 @@ export namespace Prisma {
     data: XOR<AssetUpdateManyMutationInput, AssetUncheckedUpdateManyWithoutFingerprintInput>
   }
 
+  export type ProjectCreateWithoutNovelVolumesInput = {
+    id?: string
+    name: string
+    description?: string | null
+    status?: $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    tasks?: TaskCreateNestedManyWithoutProjectInput
+    assets?: AssetCreateNestedManyWithoutProjectInput
+    billingEvents?: BillingEventCreateNestedManyWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
+    engineTasks?: EngineTaskCreateNestedManyWithoutProjectInput
+    episodes?: EpisodeCreateNestedManyWithoutProjectInput
+    novelAnalysisJobs?: NovelAnalysisJobCreateNestedManyWithoutProjectInput
+    novelParseResults?: NovelParseResultCreateNestedOneWithoutProjectInput
+    novelSources?: NovelSourceCreateNestedManyWithoutProjectInput
+    projectMembers?: ProjectMemberCreateNestedManyWithoutProjectInput
+    organization: OrganizationCreateNestedOneWithoutProjectsInput
+    owner: UserCreateNestedOneWithoutOwnedProjectsInput
+    qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
+    seasons?: SeasonCreateNestedManyWithoutProjectInput
+    shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
+    structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+  }
+
+  export type ProjectUncheckedCreateWithoutNovelVolumesInput = {
+    id?: string
+    name: string
+    description?: string | null
+    ownerId: string
+    organizationId: string
+    status?: $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    tasks?: TaskUncheckedCreateNestedManyWithoutProjectInput
+    assets?: AssetUncheckedCreateNestedManyWithoutProjectInput
+    billingEvents?: BillingEventUncheckedCreateNestedManyWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
+    engineTasks?: EngineTaskUncheckedCreateNestedManyWithoutProjectInput
+    episodes?: EpisodeUncheckedCreateNestedManyWithoutProjectInput
+    novelAnalysisJobs?: NovelAnalysisJobUncheckedCreateNestedManyWithoutProjectInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedOneWithoutProjectInput
+    novelSources?: NovelSourceUncheckedCreateNestedManyWithoutProjectInput
+    projectMembers?: ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
+    qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
+    seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
+    shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
+    structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+  }
+
+  export type ProjectCreateOrConnectWithoutNovelVolumesInput = {
+    where: ProjectWhereUniqueInput
+    create: XOR<ProjectCreateWithoutNovelVolumesInput, ProjectUncheckedCreateWithoutNovelVolumesInput>
+  }
+
   export type NovelSourceCreateWithoutVolumesInput = {
     id?: string
     novelTitle?: string | null
@@ -97546,48 +97600,107 @@ export namespace Prisma {
     create: XOR<NovelSourceCreateWithoutVolumesInput, NovelSourceUncheckedCreateWithoutVolumesInput>
   }
 
-  export type NovelChapterCreateWithoutNovelVolumeInput = {
+  export type NovelChapterCreateWithoutVolumeInput = {
     id?: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
-    episode?: EpisodeCreateNestedOneWithoutChapterInput
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
+    scenes?: NovelSceneCreateNestedManyWithoutChapterInput
+    episode?: EpisodeCreateNestedOneWithoutChapterInput
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
-    novelScenes?: NovelSceneCreateNestedManyWithoutChapterInput
   }
 
-  export type NovelChapterUncheckedCreateWithoutNovelVolumeInput = {
+  export type NovelChapterUncheckedCreateWithoutVolumeInput = {
     id?: string
     novelSourceId: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
+    scenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
-    novelScenes?: NovelSceneUncheckedCreateNestedManyWithoutChapterInput
   }
 
-  export type NovelChapterCreateOrConnectWithoutNovelVolumeInput = {
+  export type NovelChapterCreateOrConnectWithoutVolumeInput = {
     where: NovelChapterWhereUniqueInput
-    create: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput>
+    create: XOR<NovelChapterCreateWithoutVolumeInput, NovelChapterUncheckedCreateWithoutVolumeInput>
   }
 
-  export type NovelChapterCreateManyNovelVolumeInputEnvelope = {
-    data: NovelChapterCreateManyNovelVolumeInput | NovelChapterCreateManyNovelVolumeInput[]
+  export type NovelChapterCreateManyVolumeInputEnvelope = {
+    data: NovelChapterCreateManyVolumeInput | NovelChapterCreateManyVolumeInput[]
     skipDuplicates?: boolean
+  }
+
+  export type ProjectUpsertWithoutNovelVolumesInput = {
+    update: XOR<ProjectUpdateWithoutNovelVolumesInput, ProjectUncheckedUpdateWithoutNovelVolumesInput>
+    create: XOR<ProjectCreateWithoutNovelVolumesInput, ProjectUncheckedCreateWithoutNovelVolumesInput>
+    where?: ProjectWhereInput
+  }
+
+  export type ProjectUpdateToOneWithWhereWithoutNovelVolumesInput = {
+    where?: ProjectWhereInput
+    data: XOR<ProjectUpdateWithoutNovelVolumesInput, ProjectUncheckedUpdateWithoutNovelVolumesInput>
+  }
+
+  export type ProjectUpdateWithoutNovelVolumesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    tasks?: TaskUpdateManyWithoutProjectNestedInput
+    assets?: AssetUpdateManyWithoutProjectNestedInput
+    billingEvents?: BillingEventUpdateManyWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
+    engineTasks?: EngineTaskUpdateManyWithoutProjectNestedInput
+    episodes?: EpisodeUpdateManyWithoutProjectNestedInput
+    novelAnalysisJobs?: NovelAnalysisJobUpdateManyWithoutProjectNestedInput
+    novelParseResults?: NovelParseResultUpdateOneWithoutProjectNestedInput
+    novelSources?: NovelSourceUpdateManyWithoutProjectNestedInput
+    projectMembers?: ProjectMemberUpdateManyWithoutProjectNestedInput
+    organization?: OrganizationUpdateOneRequiredWithoutProjectsNestedInput
+    owner?: UserUpdateOneRequiredWithoutOwnedProjectsNestedInput
+    qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
+    seasons?: SeasonUpdateManyWithoutProjectNestedInput
+    shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
+    structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+  }
+
+  export type ProjectUncheckedUpdateWithoutNovelVolumesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerId?: StringFieldUpdateOperationsInput | string
+    organizationId?: StringFieldUpdateOperationsInput | string
+    status?: EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    tasks?: TaskUncheckedUpdateManyWithoutProjectNestedInput
+    assets?: AssetUncheckedUpdateManyWithoutProjectNestedInput
+    billingEvents?: BillingEventUncheckedUpdateManyWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
+    engineTasks?: EngineTaskUncheckedUpdateManyWithoutProjectNestedInput
+    episodes?: EpisodeUncheckedUpdateManyWithoutProjectNestedInput
+    novelAnalysisJobs?: NovelAnalysisJobUncheckedUpdateManyWithoutProjectNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateOneWithoutProjectNestedInput
+    novelSources?: NovelSourceUncheckedUpdateManyWithoutProjectNestedInput
+    projectMembers?: ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
+    qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
+    seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
+    shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
+    structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
   }
 
   export type NovelSourceUpsertWithoutVolumesInput = {
@@ -97639,102 +97752,445 @@ export namespace Prisma {
     chapters?: NovelChapterUncheckedUpdateManyWithoutNovelSourceNestedInput
   }
 
-  export type NovelChapterUpsertWithWhereUniqueWithoutNovelVolumeInput = {
+  export type NovelChapterUpsertWithWhereUniqueWithoutVolumeInput = {
     where: NovelChapterWhereUniqueInput
-    update: XOR<NovelChapterUpdateWithoutNovelVolumeInput, NovelChapterUncheckedUpdateWithoutNovelVolumeInput>
-    create: XOR<NovelChapterCreateWithoutNovelVolumeInput, NovelChapterUncheckedCreateWithoutNovelVolumeInput>
+    update: XOR<NovelChapterUpdateWithoutVolumeInput, NovelChapterUncheckedUpdateWithoutVolumeInput>
+    create: XOR<NovelChapterCreateWithoutVolumeInput, NovelChapterUncheckedCreateWithoutVolumeInput>
   }
 
-  export type NovelChapterUpdateWithWhereUniqueWithoutNovelVolumeInput = {
+  export type NovelChapterUpdateWithWhereUniqueWithoutVolumeInput = {
     where: NovelChapterWhereUniqueInput
-    data: XOR<NovelChapterUpdateWithoutNovelVolumeInput, NovelChapterUncheckedUpdateWithoutNovelVolumeInput>
+    data: XOR<NovelChapterUpdateWithoutVolumeInput, NovelChapterUncheckedUpdateWithoutVolumeInput>
   }
 
-  export type NovelChapterUpdateManyWithWhereWithoutNovelVolumeInput = {
+  export type NovelChapterUpdateManyWithWhereWithoutVolumeInput = {
     where: NovelChapterScalarWhereInput
-    data: XOR<NovelChapterUpdateManyMutationInput, NovelChapterUncheckedUpdateManyWithoutNovelVolumeInput>
+    data: XOR<NovelChapterUpdateManyMutationInput, NovelChapterUncheckedUpdateManyWithoutVolumeInput>
   }
 
-  export type NovelChapterCreateWithoutNovelScenesInput = {
+  export type NovelVolumeCreateWithoutChaptersInput = {
     id?: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    project: ProjectCreateNestedOneWithoutNovelVolumesInput
+    novelSource: NovelSourceCreateNestedOneWithoutVolumesInput
+  }
+
+  export type NovelVolumeUncheckedCreateWithoutChaptersInput = {
+    id?: string
+    projectId: string
+    novelSourceId: string
+    index: number
+    title?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type NovelVolumeCreateOrConnectWithoutChaptersInput = {
+    where: NovelVolumeWhereUniqueInput
+    create: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
+  }
+
+  export type NovelSourceCreateWithoutChaptersInput = {
+    id?: string
+    novelTitle?: string | null
+    novelAuthor?: string | null
+    rawText: string
+    filePath?: string | null
+    fileName?: string | null
+    fileSize?: number | null
+    fileType?: string | null
+    characterCount?: number | null
+    chapterCount?: number | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    analysisJobs?: NovelAnalysisJobCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeCreateNestedManyWithoutNovelSourceInput
+    project: ProjectCreateNestedOneWithoutNovelSourcesInput
+  }
+
+  export type NovelSourceUncheckedCreateWithoutChaptersInput = {
+    id?: string
+    projectId: string
+    novelTitle?: string | null
+    novelAuthor?: string | null
+    rawText: string
+    filePath?: string | null
+    fileName?: string | null
+    fileSize?: number | null
+    fileType?: string | null
+    characterCount?: number | null
+    chapterCount?: number | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    analysisJobs?: NovelAnalysisJobUncheckedCreateNestedManyWithoutNovelSourceInput
+    volumes?: NovelVolumeUncheckedCreateNestedManyWithoutNovelSourceInput
+  }
+
+  export type NovelSourceCreateOrConnectWithoutChaptersInput = {
+    where: NovelSourceWhereUniqueInput
+    create: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
+  }
+
+  export type NovelSceneCreateWithoutChapterInput = {
+    id?: string
+    index: number
+    title?: string | null
+    rawText?: string | null
+    enrichedText?: string | null
+    directingNotes?: string | null
+    shotType?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type NovelSceneUncheckedCreateWithoutChapterInput = {
+    id?: string
+    index: number
+    title?: string | null
+    rawText?: string | null
+    enrichedText?: string | null
+    directingNotes?: string | null
+    shotType?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type NovelSceneCreateOrConnectWithoutChapterInput = {
+    where: NovelSceneWhereUniqueInput
+    create: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>
+  }
+
+  export type NovelSceneCreateManyChapterInputEnvelope = {
+    data: NovelSceneCreateManyChapterInput | NovelSceneCreateManyChapterInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type EpisodeCreateWithoutChapterInput = {
+    id?: string
+    index: number
+    name: string
     summary?: string | null
-    episode?: EpisodeCreateNestedOneWithoutChapterInput
+    project?: ProjectCreateNestedOneWithoutEpisodesInput
+    season: SeasonCreateNestedOneWithoutEpisodesInput
+    publishingReviews?: PublishingReviewCreateNestedManyWithoutEpisodeInput
+    scenes?: SceneCreateNestedManyWithoutEpisodeInput
+    shotJobs?: ShotJobCreateNestedManyWithoutEpisodeInput
+  }
+
+  export type EpisodeUncheckedCreateWithoutChapterInput = {
+    id?: string
+    seasonId: string
+    projectId?: string | null
+    index: number
+    name: string
+    summary?: string | null
+    publishingReviews?: PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput
+    scenes?: SceneUncheckedCreateNestedManyWithoutEpisodeInput
+    shotJobs?: ShotJobUncheckedCreateNestedManyWithoutEpisodeInput
+  }
+
+  export type EpisodeCreateOrConnectWithoutChapterInput = {
+    where: EpisodeWhereUniqueInput
+    create: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
+  }
+
+  export type SceneDraftCreateWithoutChapterInput = {
+    id?: string
+    index: number
+    title?: string | null
+    summary?: string | null
+    characters?: NullableJsonNullValueInput | InputJsonValue
+    location?: string | null
+    emotions?: NullableJsonNullValueInput | InputJsonValue
+    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
+    status?: $Enums.SceneDraftStatus
+    analysisResult?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    scene?: SceneCreateNestedOneWithoutSceneDraftInput
+  }
+
+  export type SceneDraftUncheckedCreateWithoutChapterInput = {
+    id?: string
+    index: number
+    title?: string | null
+    summary?: string | null
+    characters?: NullableJsonNullValueInput | InputJsonValue
+    location?: string | null
+    emotions?: NullableJsonNullValueInput | InputJsonValue
+    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
+    status?: $Enums.SceneDraftStatus
+    analysisResult?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    scene?: SceneUncheckedCreateNestedOneWithoutSceneDraftInput
+  }
+
+  export type SceneDraftCreateOrConnectWithoutChapterInput = {
+    where: SceneDraftWhereUniqueInput
+    create: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput>
+  }
+
+  export type SceneDraftCreateManyChapterInputEnvelope = {
+    data: SceneDraftCreateManyChapterInput | SceneDraftCreateManyChapterInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type NovelVolumeUpsertWithoutChaptersInput = {
+    update: XOR<NovelVolumeUpdateWithoutChaptersInput, NovelVolumeUncheckedUpdateWithoutChaptersInput>
+    create: XOR<NovelVolumeCreateWithoutChaptersInput, NovelVolumeUncheckedCreateWithoutChaptersInput>
+    where?: NovelVolumeWhereInput
+  }
+
+  export type NovelVolumeUpdateToOneWithWhereWithoutChaptersInput = {
+    where?: NovelVolumeWhereInput
+    data: XOR<NovelVolumeUpdateWithoutChaptersInput, NovelVolumeUncheckedUpdateWithoutChaptersInput>
+  }
+
+  export type NovelVolumeUpdateWithoutChaptersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    project?: ProjectUpdateOneRequiredWithoutNovelVolumesNestedInput
+    novelSource?: NovelSourceUpdateOneRequiredWithoutVolumesNestedInput
+  }
+
+  export type NovelVolumeUncheckedUpdateWithoutChaptersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    novelSourceId?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type NovelSourceUpsertWithoutChaptersInput = {
+    update: XOR<NovelSourceUpdateWithoutChaptersInput, NovelSourceUncheckedUpdateWithoutChaptersInput>
+    create: XOR<NovelSourceCreateWithoutChaptersInput, NovelSourceUncheckedCreateWithoutChaptersInput>
+    where?: NovelSourceWhereInput
+  }
+
+  export type NovelSourceUpdateToOneWithWhereWithoutChaptersInput = {
+    where?: NovelSourceWhereInput
+    data: XOR<NovelSourceUpdateWithoutChaptersInput, NovelSourceUncheckedUpdateWithoutChaptersInput>
+  }
+
+  export type NovelSourceUpdateWithoutChaptersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    novelTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    novelAuthor?: NullableStringFieldUpdateOperationsInput | string | null
+    rawText?: StringFieldUpdateOperationsInput | string
+    filePath?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    fileSize?: NullableIntFieldUpdateOperationsInput | number | null
+    fileType?: NullableStringFieldUpdateOperationsInput | string | null
+    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    chapterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    analysisJobs?: NovelAnalysisJobUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUpdateManyWithoutNovelSourceNestedInput
+    project?: ProjectUpdateOneRequiredWithoutNovelSourcesNestedInput
+  }
+
+  export type NovelSourceUncheckedUpdateWithoutChaptersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    novelTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    novelAuthor?: NullableStringFieldUpdateOperationsInput | string | null
+    rawText?: StringFieldUpdateOperationsInput | string
+    filePath?: NullableStringFieldUpdateOperationsInput | string | null
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    fileSize?: NullableIntFieldUpdateOperationsInput | number | null
+    fileType?: NullableStringFieldUpdateOperationsInput | string | null
+    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    chapterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    analysisJobs?: NovelAnalysisJobUncheckedUpdateManyWithoutNovelSourceNestedInput
+    volumes?: NovelVolumeUncheckedUpdateManyWithoutNovelSourceNestedInput
+  }
+
+  export type NovelSceneUpsertWithWhereUniqueWithoutChapterInput = {
+    where: NovelSceneWhereUniqueInput
+    update: XOR<NovelSceneUpdateWithoutChapterInput, NovelSceneUncheckedUpdateWithoutChapterInput>
+    create: XOR<NovelSceneCreateWithoutChapterInput, NovelSceneUncheckedCreateWithoutChapterInput>
+  }
+
+  export type NovelSceneUpdateWithWhereUniqueWithoutChapterInput = {
+    where: NovelSceneWhereUniqueInput
+    data: XOR<NovelSceneUpdateWithoutChapterInput, NovelSceneUncheckedUpdateWithoutChapterInput>
+  }
+
+  export type NovelSceneUpdateManyWithWhereWithoutChapterInput = {
+    where: NovelSceneScalarWhereInput
+    data: XOR<NovelSceneUpdateManyMutationInput, NovelSceneUncheckedUpdateManyWithoutChapterInput>
+  }
+
+  export type NovelSceneScalarWhereInput = {
+    AND?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[]
+    OR?: NovelSceneScalarWhereInput[]
+    NOT?: NovelSceneScalarWhereInput | NovelSceneScalarWhereInput[]
+    id?: StringFilter<"NovelScene"> | string
+    chapterId?: StringFilter<"NovelScene"> | string
+    index?: IntFilter<"NovelScene"> | number
+    title?: StringNullableFilter<"NovelScene"> | string | null
+    rawText?: StringNullableFilter<"NovelScene"> | string | null
+    enrichedText?: StringNullableFilter<"NovelScene"> | string | null
+    directingNotes?: StringNullableFilter<"NovelScene"> | string | null
+    shotType?: StringNullableFilter<"NovelScene"> | string | null
+    createdAt?: DateTimeFilter<"NovelScene"> | Date | string
+    updatedAt?: DateTimeFilter<"NovelScene"> | Date | string
+  }
+
+  export type EpisodeUpsertWithoutChapterInput = {
+    update: XOR<EpisodeUpdateWithoutChapterInput, EpisodeUncheckedUpdateWithoutChapterInput>
+    create: XOR<EpisodeCreateWithoutChapterInput, EpisodeUncheckedCreateWithoutChapterInput>
+    where?: EpisodeWhereInput
+  }
+
+  export type EpisodeUpdateToOneWithWhereWithoutChapterInput = {
+    where?: EpisodeWhereInput
+    data: XOR<EpisodeUpdateWithoutChapterInput, EpisodeUncheckedUpdateWithoutChapterInput>
+  }
+
+  export type EpisodeUpdateWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    project?: ProjectUpdateOneWithoutEpisodesNestedInput
+    season?: SeasonUpdateOneRequiredWithoutEpisodesNestedInput
+    publishingReviews?: PublishingReviewUpdateManyWithoutEpisodeNestedInput
+    scenes?: SceneUpdateManyWithoutEpisodeNestedInput
+    shotJobs?: ShotJobUpdateManyWithoutEpisodeNestedInput
+  }
+
+  export type EpisodeUncheckedUpdateWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seasonId?: StringFieldUpdateOperationsInput | string
+    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    publishingReviews?: PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput
+    scenes?: SceneUncheckedUpdateManyWithoutEpisodeNestedInput
+    shotJobs?: ShotJobUncheckedUpdateManyWithoutEpisodeNestedInput
+  }
+
+  export type SceneDraftUpsertWithWhereUniqueWithoutChapterInput = {
+    where: SceneDraftWhereUniqueInput
+    update: XOR<SceneDraftUpdateWithoutChapterInput, SceneDraftUncheckedUpdateWithoutChapterInput>
+    create: XOR<SceneDraftCreateWithoutChapterInput, SceneDraftUncheckedCreateWithoutChapterInput>
+  }
+
+  export type SceneDraftUpdateWithWhereUniqueWithoutChapterInput = {
+    where: SceneDraftWhereUniqueInput
+    data: XOR<SceneDraftUpdateWithoutChapterInput, SceneDraftUncheckedUpdateWithoutChapterInput>
+  }
+
+  export type SceneDraftUpdateManyWithWhereWithoutChapterInput = {
+    where: SceneDraftScalarWhereInput
+    data: XOR<SceneDraftUpdateManyMutationInput, SceneDraftUncheckedUpdateManyWithoutChapterInput>
+  }
+
+  export type SceneDraftScalarWhereInput = {
+    AND?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[]
+    OR?: SceneDraftScalarWhereInput[]
+    NOT?: SceneDraftScalarWhereInput | SceneDraftScalarWhereInput[]
+    id?: StringFilter<"SceneDraft"> | string
+    chapterId?: StringFilter<"SceneDraft"> | string
+    index?: IntFilter<"SceneDraft"> | number
+    title?: StringNullableFilter<"SceneDraft"> | string | null
+    summary?: StringNullableFilter<"SceneDraft"> | string | null
+    characters?: JsonNullableFilter<"SceneDraft">
+    location?: StringNullableFilter<"SceneDraft"> | string | null
+    emotions?: JsonNullableFilter<"SceneDraft">
+    rawTextRange?: JsonNullableFilter<"SceneDraft">
+    status?: EnumSceneDraftStatusFilter<"SceneDraft"> | $Enums.SceneDraftStatus
+    analysisResult?: JsonNullableFilter<"SceneDraft">
+    createdAt?: DateTimeFilter<"SceneDraft"> | Date | string
+    updatedAt?: DateTimeFilter<"SceneDraft"> | Date | string
+  }
+
+  export type NovelChapterCreateWithoutScenesInput = {
+    id?: string
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    volume: NovelVolumeCreateNestedOneWithoutChaptersInput
     novelSource: NovelSourceCreateNestedOneWithoutChaptersInput
-    novelVolume?: NovelVolumeCreateNestedOneWithoutChaptersInput
+    episode?: EpisodeCreateNestedOneWithoutChapterInput
     sceneDrafts?: SceneDraftCreateNestedManyWithoutChapterInput
   }
 
-  export type NovelChapterUncheckedCreateWithoutNovelScenesInput = {
+  export type NovelChapterUncheckedCreateWithoutScenesInput = {
     id?: string
+    volumeId: string
     novelSourceId: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
-    novelVolumeId?: string | null
     episode?: EpisodeUncheckedCreateNestedOneWithoutChapterInput
     sceneDrafts?: SceneDraftUncheckedCreateNestedManyWithoutChapterInput
   }
 
-  export type NovelChapterCreateOrConnectWithoutNovelScenesInput = {
+  export type NovelChapterCreateOrConnectWithoutScenesInput = {
     where: NovelChapterWhereUniqueInput
-    create: XOR<NovelChapterCreateWithoutNovelScenesInput, NovelChapterUncheckedCreateWithoutNovelScenesInput>
+    create: XOR<NovelChapterCreateWithoutScenesInput, NovelChapterUncheckedCreateWithoutScenesInput>
   }
 
-  export type NovelChapterUpsertWithoutNovelScenesInput = {
-    update: XOR<NovelChapterUpdateWithoutNovelScenesInput, NovelChapterUncheckedUpdateWithoutNovelScenesInput>
-    create: XOR<NovelChapterCreateWithoutNovelScenesInput, NovelChapterUncheckedCreateWithoutNovelScenesInput>
+  export type NovelChapterUpsertWithoutScenesInput = {
+    update: XOR<NovelChapterUpdateWithoutScenesInput, NovelChapterUncheckedUpdateWithoutScenesInput>
+    create: XOR<NovelChapterCreateWithoutScenesInput, NovelChapterUncheckedCreateWithoutScenesInput>
     where?: NovelChapterWhereInput
   }
 
-  export type NovelChapterUpdateToOneWithWhereWithoutNovelScenesInput = {
+  export type NovelChapterUpdateToOneWithWhereWithoutScenesInput = {
     where?: NovelChapterWhereInput
-    data: XOR<NovelChapterUpdateWithoutNovelScenesInput, NovelChapterUncheckedUpdateWithoutNovelScenesInput>
+    data: XOR<NovelChapterUpdateWithoutScenesInput, NovelChapterUncheckedUpdateWithoutScenesInput>
   }
 
-  export type NovelChapterUpdateWithoutNovelScenesInput = {
+  export type NovelChapterUpdateWithoutScenesInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    episode?: EpisodeUpdateOneWithoutChapterNestedInput
+    volume?: NovelVolumeUpdateOneRequiredWithoutChaptersNestedInput
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
-    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
+    episode?: EpisodeUpdateOneWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
   }
 
-  export type NovelChapterUncheckedUpdateWithoutNovelScenesInput = {
+  export type NovelChapterUncheckedUpdateWithoutScenesInput = {
     id?: StringFieldUpdateOperationsInput | string
+    volumeId?: StringFieldUpdateOperationsInput | string
     novelSourceId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
   }
@@ -97763,6 +98219,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelParseResultsInput = {
@@ -97789,11 +98246,61 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelParseResultsInput = {
     where: ProjectWhereUniqueInput
     create: XOR<ProjectCreateWithoutNovelParseResultsInput, ProjectUncheckedCreateWithoutNovelParseResultsInput>
+  }
+
+  export type OrganizationCreateWithoutNovelParseResultsInput = {
+    id?: string
+    name: string
+    slug?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    credits?: number
+    type?: string | null
+    tasks?: TaskCreateNestedManyWithoutOrganizationInput
+    apiKeys?: ApiKeyCreateNestedManyWithoutOwnerOrgInput
+    auditLogs?: AuditLogCreateNestedManyWithoutOrganizationInput
+    billingEvents?: BillingEventCreateNestedManyWithoutOrganizationInput
+    costCenters?: CostCenterCreateNestedManyWithoutOrganizationInput
+    memberships?: MembershipCreateNestedManyWithoutOrganizationInput
+    members?: OrganizationMemberCreateNestedManyWithoutOrganizationInput
+    owner: UserCreateNestedOneWithoutOwnedOrganizationsInput
+    projects?: ProjectCreateNestedManyWithoutOrganizationInput
+    shotJobs?: ShotJobCreateNestedManyWithoutOrganizationInput
+    shots?: ShotCreateNestedManyWithoutOrganizationInput
+    subscriptions?: SubscriptionCreateNestedManyWithoutOrganizationInput
+  }
+
+  export type OrganizationUncheckedCreateWithoutNovelParseResultsInput = {
+    id?: string
+    name: string
+    ownerId: string
+    slug?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    credits?: number
+    type?: string | null
+    tasks?: TaskUncheckedCreateNestedManyWithoutOrganizationInput
+    apiKeys?: ApiKeyUncheckedCreateNestedManyWithoutOwnerOrgInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutOrganizationInput
+    billingEvents?: BillingEventUncheckedCreateNestedManyWithoutOrganizationInput
+    costCenters?: CostCenterUncheckedCreateNestedManyWithoutOrganizationInput
+    memberships?: MembershipUncheckedCreateNestedManyWithoutOrganizationInput
+    members?: OrganizationMemberUncheckedCreateNestedManyWithoutOrganizationInput
+    projects?: ProjectUncheckedCreateNestedManyWithoutOrganizationInput
+    shotJobs?: ShotJobUncheckedCreateNestedManyWithoutOrganizationInput
+    shots?: ShotUncheckedCreateNestedManyWithoutOrganizationInput
+    subscriptions?: SubscriptionUncheckedCreateNestedManyWithoutOrganizationInput
+  }
+
+  export type OrganizationCreateOrConnectWithoutNovelParseResultsInput = {
+    where: OrganizationWhereUniqueInput
+    create: XOR<OrganizationCreateWithoutNovelParseResultsInput, OrganizationUncheckedCreateWithoutNovelParseResultsInput>
   }
 
   export type ProjectUpsertWithoutNovelParseResultsInput = {
@@ -97831,6 +98338,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelParseResultsInput = {
@@ -97857,6 +98365,62 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+  }
+
+  export type OrganizationUpsertWithoutNovelParseResultsInput = {
+    update: XOR<OrganizationUpdateWithoutNovelParseResultsInput, OrganizationUncheckedUpdateWithoutNovelParseResultsInput>
+    create: XOR<OrganizationCreateWithoutNovelParseResultsInput, OrganizationUncheckedCreateWithoutNovelParseResultsInput>
+    where?: OrganizationWhereInput
+  }
+
+  export type OrganizationUpdateToOneWithWhereWithoutNovelParseResultsInput = {
+    where?: OrganizationWhereInput
+    data: XOR<OrganizationUpdateWithoutNovelParseResultsInput, OrganizationUncheckedUpdateWithoutNovelParseResultsInput>
+  }
+
+  export type OrganizationUpdateWithoutNovelParseResultsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    credits?: FloatFieldUpdateOperationsInput | number
+    type?: NullableStringFieldUpdateOperationsInput | string | null
+    tasks?: TaskUpdateManyWithoutOrganizationNestedInput
+    apiKeys?: ApiKeyUpdateManyWithoutOwnerOrgNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutOrganizationNestedInput
+    billingEvents?: BillingEventUpdateManyWithoutOrganizationNestedInput
+    costCenters?: CostCenterUpdateManyWithoutOrganizationNestedInput
+    memberships?: MembershipUpdateManyWithoutOrganizationNestedInput
+    members?: OrganizationMemberUpdateManyWithoutOrganizationNestedInput
+    owner?: UserUpdateOneRequiredWithoutOwnedOrganizationsNestedInput
+    projects?: ProjectUpdateManyWithoutOrganizationNestedInput
+    shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
+    shots?: ShotUpdateManyWithoutOrganizationNestedInput
+    subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+  }
+
+  export type OrganizationUncheckedUpdateWithoutNovelParseResultsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    ownerId?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    credits?: FloatFieldUpdateOperationsInput | number
+    type?: NullableStringFieldUpdateOperationsInput | string | null
+    tasks?: TaskUncheckedUpdateManyWithoutOrganizationNestedInput
+    apiKeys?: ApiKeyUncheckedUpdateManyWithoutOwnerOrgNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutOrganizationNestedInput
+    billingEvents?: BillingEventUncheckedUpdateManyWithoutOrganizationNestedInput
+    costCenters?: CostCenterUncheckedUpdateManyWithoutOrganizationNestedInput
+    memberships?: MembershipUncheckedUpdateManyWithoutOrganizationNestedInput
+    members?: OrganizationMemberUncheckedUpdateManyWithoutOrganizationNestedInput
+    projects?: ProjectUncheckedUpdateManyWithoutOrganizationNestedInput
+    shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
+    shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
+    subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type ProjectCreateWithoutQualityMetricsInput = {
@@ -97883,6 +98447,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutQualityMetricsInput = {
@@ -97909,6 +98474,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutQualityMetricsInput = {
@@ -97951,6 +98517,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutQualityMetricsInput = {
@@ -97977,6 +98544,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ShotCreateWithoutAssetsInput = {
@@ -98113,6 +98681,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutAssetsInput = {
@@ -98139,6 +98708,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutAssetsInput = {
@@ -98322,6 +98892,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutAssetsInput = {
@@ -98348,6 +98919,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SecurityFingerprintUpsertWithoutAssetsInput = {
@@ -98428,6 +99000,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutCostLedgersInput = {
@@ -98454,6 +99027,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutCostLedgersInput = {
@@ -98582,6 +99156,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutCostLedgersInput = {
@@ -98608,6 +99183,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type UserUpsertWithoutCostLedgersInput = {
@@ -99099,6 +99675,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateWithoutOwnerInput = {
@@ -99120,6 +99697,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutOrganizationNestedInput
     shots?: ShotUncheckedUpdateManyWithoutOrganizationNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutOrganizationNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateManyWithoutOrganizationNestedInput
   }
 
   export type OrganizationUncheckedUpdateManyWithoutOwnerInput = {
@@ -99156,6 +99734,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutOwnerInput = {
@@ -99182,6 +99761,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateManyWithoutOwnerInput = {
@@ -99415,6 +99995,18 @@ export namespace Prisma {
     currentPeriodStart: Date | string
     currentPeriodEnd: Date | string
     cancelAtPeriodEnd?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type NovelParseResultCreateManyOrganizationInput = {
+    id?: string
+    projectId: string
+    idempotencyKey: string
+    status?: string
+    parsingQuality?: number | null
+    modelVersion?: string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -99714,6 +100306,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutOrganizationInput = {
@@ -99740,6 +100333,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateManyWithoutOrganizationInput = {
@@ -99931,6 +100525,42 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type NovelParseResultUpdateWithoutOrganizationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    project?: ProjectUpdateOneRequiredWithoutNovelParseResultsNestedInput
+  }
+
+  export type NovelParseResultUncheckedUpdateWithoutOrganizationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type NovelParseResultUncheckedUpdateManyWithoutOrganizationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    idempotencyKey?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    parsingQuality?: NullableFloatFieldUpdateOperationsInput | number | null
+    modelVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    rawOutput?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type TaskCreateManyProjectInput = {
     id?: string
     organizationId: string
@@ -100110,6 +100740,15 @@ export namespace Prisma {
     traceId?: string | null
     result?: NullableJsonNullValueInput | InputJsonValue
     securityProcessed?: boolean
+  }
+
+  export type NovelVolumeCreateManyProjectInput = {
+    id?: string
+    novelSourceId: string
+    index: number
+    title?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type TaskUpdateWithoutProjectInput = {
@@ -100675,6 +101314,35 @@ export namespace Prisma {
     traceId?: NullableStringFieldUpdateOperationsInput | string | null
     result?: NullableJsonNullValueInput | InputJsonValue
     securityProcessed?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type NovelVolumeUpdateWithoutProjectInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    novelSource?: NovelSourceUpdateOneRequiredWithoutVolumesNestedInput
+    chapters?: NovelChapterUpdateManyWithoutVolumeNestedInput
+  }
+
+  export type NovelVolumeUncheckedUpdateWithoutProjectInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    novelSourceId?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    chapters?: NovelChapterUncheckedUpdateManyWithoutVolumeNestedInput
+  }
+
+  export type NovelVolumeUncheckedUpdateManyWithoutProjectInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    novelSourceId?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type EpisodeCreateManySeasonInput = {
@@ -102189,23 +102857,20 @@ export namespace Prisma {
 
   export type NovelChapterCreateManyNovelSourceInput = {
     id?: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    volumeId: string
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
-    novelVolumeId?: string | null
   }
 
   export type NovelVolumeCreateManyNovelSourceInput = {
     id?: string
-    projectId?: string | null
+    projectId: string
     index: number
-    title: string
+    title?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -102248,189 +102913,70 @@ export namespace Prisma {
 
   export type NovelChapterUpdateWithoutNovelSourceInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    volume?: NovelVolumeUpdateOneRequiredWithoutChaptersNestedInput
+    scenes?: NovelSceneUpdateManyWithoutChapterNestedInput
     episode?: EpisodeUpdateOneWithoutChapterNestedInput
-    novelVolume?: NovelVolumeUpdateOneWithoutChaptersNestedInput
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
-    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
   }
 
   export type NovelChapterUncheckedUpdateWithoutNovelSourceInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    volumeId?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
+    scenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
-    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
   }
 
   export type NovelChapterUncheckedUpdateManyWithoutNovelSourceInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    volumeId?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    novelVolumeId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type NovelVolumeUpdateWithoutNovelSourceInput = {
     id?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
     index?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chapters?: NovelChapterUpdateManyWithoutNovelVolumeNestedInput
+    project?: ProjectUpdateOneRequiredWithoutNovelVolumesNestedInput
+    chapters?: NovelChapterUpdateManyWithoutVolumeNestedInput
   }
 
   export type NovelVolumeUncheckedUpdateWithoutNovelSourceInput = {
     id?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chapters?: NovelChapterUncheckedUpdateManyWithoutNovelVolumeNestedInput
+    chapters?: NovelChapterUncheckedUpdateManyWithoutVolumeNestedInput
   }
 
   export type NovelVolumeUncheckedUpdateManyWithoutNovelSourceInput = {
     id?: StringFieldUpdateOperationsInput | string
-    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    projectId?: StringFieldUpdateOperationsInput | string
     index?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type SceneDraftCreateManyChapterInput = {
-    id?: string
-    orderIndex: number
-    title?: string | null
-    summary?: string | null
-    characters?: NullableJsonNullValueInput | InputJsonValue
-    location?: string | null
-    emotions?: NullableJsonNullValueInput | InputJsonValue
-    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
-    status?: $Enums.SceneDraftStatus
-    analysisResult?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type NovelSceneCreateManyChapterInput = {
-    id?: string
-    index: number
-    rawText?: string | null
-    enrichedText?: string | null
-    visualDensityScore?: number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    chunkIndex?: number
-  }
-
-  export type SceneDraftUpdateWithoutChapterInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
     title?: NullableStringFieldUpdateOperationsInput | string | null
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    characters?: NullableJsonNullValueInput | InputJsonValue
-    location?: NullableStringFieldUpdateOperationsInput | string | null
-    emotions?: NullableJsonNullValueInput | InputJsonValue
-    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
-    status?: EnumSceneDraftStatusFieldUpdateOperationsInput | $Enums.SceneDraftStatus
-    analysisResult?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    scene?: SceneUpdateOneWithoutSceneDraftNestedInput
-  }
-
-  export type SceneDraftUncheckedUpdateWithoutChapterInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: NullableStringFieldUpdateOperationsInput | string | null
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    characters?: NullableJsonNullValueInput | InputJsonValue
-    location?: NullableStringFieldUpdateOperationsInput | string | null
-    emotions?: NullableJsonNullValueInput | InputJsonValue
-    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
-    status?: EnumSceneDraftStatusFieldUpdateOperationsInput | $Enums.SceneDraftStatus
-    analysisResult?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    scene?: SceneUncheckedUpdateOneWithoutSceneDraftNestedInput
-  }
-
-  export type SceneDraftUncheckedUpdateManyWithoutChapterInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: NullableStringFieldUpdateOperationsInput | string | null
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    characters?: NullableJsonNullValueInput | InputJsonValue
-    location?: NullableStringFieldUpdateOperationsInput | string | null
-    emotions?: NullableJsonNullValueInput | InputJsonValue
-    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
-    status?: EnumSceneDraftStatusFieldUpdateOperationsInput | $Enums.SceneDraftStatus
-    analysisResult?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type NovelSceneUpdateWithoutChapterInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    index?: IntFieldUpdateOperationsInput | number
-    rawText?: NullableStringFieldUpdateOperationsInput | string | null
-    enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chunkIndex?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type NovelSceneUncheckedUpdateWithoutChapterInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    index?: IntFieldUpdateOperationsInput | number
-    rawText?: NullableStringFieldUpdateOperationsInput | string | null
-    enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chunkIndex?: IntFieldUpdateOperationsInput | number
-  }
-
-  export type NovelSceneUncheckedUpdateManyWithoutChapterInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    index?: IntFieldUpdateOperationsInput | number
-    rawText?: NullableStringFieldUpdateOperationsInput | string | null
-    enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
-    visualDensityScore?: NullableFloatFieldUpdateOperationsInput | number | null
-    characterIds?: NullableJsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    chunkIndex?: IntFieldUpdateOperationsInput | number
   }
 
   export type AuditLogCreateManyApiKeyInput = {
@@ -102569,66 +103115,164 @@ export namespace Prisma {
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
-  export type NovelChapterCreateManyNovelVolumeInput = {
+  export type NovelChapterCreateManyVolumeInput = {
     id?: string
     novelSourceId: string
-    orderIndex: number
-    title: string
-    rawText: string
-    startParagraph?: number | null
-    endParagraph?: number | null
-    characterCount?: number | null
+    index: number
+    title?: string | null
+    summary?: string | null
+    isSystemControlled?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    summary?: string | null
   }
 
-  export type NovelChapterUpdateWithoutNovelVolumeInput = {
+  export type NovelChapterUpdateWithoutVolumeInput = {
     id?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
-    episode?: EpisodeUpdateOneWithoutChapterNestedInput
     novelSource?: NovelSourceUpdateOneRequiredWithoutChaptersNestedInput
+    scenes?: NovelSceneUpdateManyWithoutChapterNestedInput
+    episode?: EpisodeUpdateOneWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUpdateManyWithoutChapterNestedInput
-    novelScenes?: NovelSceneUpdateManyWithoutChapterNestedInput
   }
 
-  export type NovelChapterUncheckedUpdateWithoutNovelVolumeInput = {
+  export type NovelChapterUncheckedUpdateWithoutVolumeInput = {
     id?: StringFieldUpdateOperationsInput | string
     novelSourceId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    scenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
     episode?: EpisodeUncheckedUpdateOneWithoutChapterNestedInput
     sceneDrafts?: SceneDraftUncheckedUpdateManyWithoutChapterNestedInput
-    novelScenes?: NovelSceneUncheckedUpdateManyWithoutChapterNestedInput
   }
 
-  export type NovelChapterUncheckedUpdateManyWithoutNovelVolumeInput = {
+  export type NovelChapterUncheckedUpdateManyWithoutVolumeInput = {
     id?: StringFieldUpdateOperationsInput | string
     novelSourceId?: StringFieldUpdateOperationsInput | string
-    orderIndex?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    rawText?: StringFieldUpdateOperationsInput | string
-    startParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    endParagraph?: NullableIntFieldUpdateOperationsInput | number | null
-    characterCount?: NullableIntFieldUpdateOperationsInput | number | null
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    isSystemControlled?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type NovelSceneCreateManyChapterInput = {
+    id?: string
+    index: number
+    title?: string | null
+    rawText?: string | null
+    enrichedText?: string | null
+    directingNotes?: string | null
+    shotType?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SceneDraftCreateManyChapterInput = {
+    id?: string
+    index: number
+    title?: string | null
+    summary?: string | null
+    characters?: NullableJsonNullValueInput | InputJsonValue
+    location?: string | null
+    emotions?: NullableJsonNullValueInput | InputJsonValue
+    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
+    status?: $Enums.SceneDraftStatus
+    analysisResult?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type NovelSceneUpdateWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    rawText?: NullableStringFieldUpdateOperationsInput | string | null
+    enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
+    directingNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    shotType?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type NovelSceneUncheckedUpdateWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    rawText?: NullableStringFieldUpdateOperationsInput | string | null
+    enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
+    directingNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    shotType?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type NovelSceneUncheckedUpdateManyWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    rawText?: NullableStringFieldUpdateOperationsInput | string | null
+    enrichedText?: NullableStringFieldUpdateOperationsInput | string | null
+    directingNotes?: NullableStringFieldUpdateOperationsInput | string | null
+    shotType?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SceneDraftUpdateWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
     summary?: NullableStringFieldUpdateOperationsInput | string | null
+    characters?: NullableJsonNullValueInput | InputJsonValue
+    location?: NullableStringFieldUpdateOperationsInput | string | null
+    emotions?: NullableJsonNullValueInput | InputJsonValue
+    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
+    status?: EnumSceneDraftStatusFieldUpdateOperationsInput | $Enums.SceneDraftStatus
+    analysisResult?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scene?: SceneUpdateOneWithoutSceneDraftNestedInput
+  }
+
+  export type SceneDraftUncheckedUpdateWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    characters?: NullableJsonNullValueInput | InputJsonValue
+    location?: NullableStringFieldUpdateOperationsInput | string | null
+    emotions?: NullableJsonNullValueInput | InputJsonValue
+    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
+    status?: EnumSceneDraftStatusFieldUpdateOperationsInput | $Enums.SceneDraftStatus
+    analysisResult?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scene?: SceneUncheckedUpdateOneWithoutSceneDraftNestedInput
+  }
+
+  export type SceneDraftUncheckedUpdateManyWithoutChapterInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    characters?: NullableJsonNullValueInput | InputJsonValue
+    location?: NullableStringFieldUpdateOperationsInput | string | null
+    emotions?: NullableJsonNullValueInput | InputJsonValue
+    rawTextRange?: NullableJsonNullValueInput | InputJsonValue
+    status?: EnumSceneDraftStatusFieldUpdateOperationsInput | $Enums.SceneDraftStatus
+    analysisResult?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 
@@ -102697,10 +103341,6 @@ export namespace Prisma {
      */
     export type NovelSourceCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NovelSourceCountOutputTypeDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use NovelChapterCountOutputTypeDefaultArgs instead
-     */
-    export type NovelChapterCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NovelChapterCountOutputTypeDefaultArgs<ExtArgs>
-    /**
      * @deprecated Use ApiKeyCountOutputTypeDefaultArgs instead
      */
     export type ApiKeyCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ApiKeyCountOutputTypeDefaultArgs<ExtArgs>
@@ -102712,6 +103352,10 @@ export namespace Prisma {
      * @deprecated Use NovelVolumeCountOutputTypeDefaultArgs instead
      */
     export type NovelVolumeCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NovelVolumeCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use NovelChapterCountOutputTypeDefaultArgs instead
+     */
+    export type NovelChapterCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NovelChapterCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use UserDefaultArgs instead
      */
@@ -102853,10 +103497,6 @@ export namespace Prisma {
      */
     export type NovelSourceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NovelSourceDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use NovelChapterDefaultArgs instead
-     */
-    export type NovelChapterArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NovelChapterDefaultArgs<ExtArgs>
-    /**
      * @deprecated Use SceneDraftDefaultArgs instead
      */
     export type SceneDraftArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SceneDraftDefaultArgs<ExtArgs>
@@ -102892,6 +103532,10 @@ export namespace Prisma {
      * @deprecated Use NovelVolumeDefaultArgs instead
      */
     export type NovelVolumeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NovelVolumeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use NovelChapterDefaultArgs instead
+     */
+    export type NovelChapterArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NovelChapterDefaultArgs<ExtArgs>
     /**
      * @deprecated Use NovelSceneDefaultArgs instead
      */

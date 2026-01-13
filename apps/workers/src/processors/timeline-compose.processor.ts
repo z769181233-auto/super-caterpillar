@@ -262,7 +262,9 @@ export async function processTimelineComposeJob({ prisma, job, apiClient, engine
 
   return {
     success: true,
-    timelineStorageKey: timelinePath,
+    output: {
+      timelineStorageKey: timelinePath,
+    },
     message: 'Timeline composed successfully',
     audit: {
       action: 'ce10.timeline_compose.success',

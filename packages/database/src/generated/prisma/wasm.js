@@ -559,25 +559,10 @@ exports.Prisma.NovelSourceScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.NovelChapterScalarFieldEnum = {
-  id: 'id',
-  novelSourceId: 'novelSourceId',
-  orderIndex: 'orderIndex',
-  title: 'title',
-  rawText: 'rawText',
-  startParagraph: 'startParagraph',
-  endParagraph: 'endParagraph',
-  characterCount: 'characterCount',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  summary: 'summary',
-  novelVolumeId: 'novelVolumeId'
-};
-
 exports.Prisma.SceneDraftScalarFieldEnum = {
   id: 'id',
   chapterId: 'chapterId',
-  orderIndex: 'orderIndex',
+  index: 'index',
   title: 'title',
   summary: 'summary',
   characters: 'characters',
@@ -689,17 +674,29 @@ exports.Prisma.NovelVolumeScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.NovelChapterScalarFieldEnum = {
+  id: 'id',
+  volumeId: 'volumeId',
+  novelSourceId: 'novelSourceId',
+  index: 'index',
+  title: 'title',
+  summary: 'summary',
+  isSystemControlled: 'isSystemControlled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.NovelSceneScalarFieldEnum = {
   id: 'id',
   chapterId: 'chapterId',
   index: 'index',
+  title: 'title',
   rawText: 'rawText',
   enrichedText: 'enrichedText',
-  visualDensityScore: 'visualDensityScore',
-  characterIds: 'characterIds',
+  directingNotes: 'directingNotes',
+  shotType: 'shotType',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  chunkIndex: 'chunkIndex'
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.MemoryShortTermScalarFieldEnum = {
@@ -725,10 +722,12 @@ exports.Prisma.MemoryLongTermScalarFieldEnum = {
 exports.Prisma.NovelParseResultScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
-  volumes: 'volumes',
-  chapters: 'chapters',
-  scenes: 'scenes',
+  organizationId: 'organizationId',
+  idempotencyKey: 'idempotencyKey',
+  status: 'status',
   parsingQuality: 'parsingQuality',
+  modelVersion: 'modelVersion',
+  rawOutput: 'rawOutput',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1166,7 +1165,6 @@ exports.Prisma.ModelName = {
   PublishingReview: 'PublishingReview',
   OrganizationMember: 'OrganizationMember',
   NovelSource: 'NovelSource',
-  NovelChapter: 'NovelChapter',
   SceneDraft: 'SceneDraft',
   NovelAnalysisJob: 'NovelAnalysisJob',
   ApiKey: 'ApiKey',
@@ -1176,6 +1174,7 @@ exports.Prisma.ModelName = {
   VideoJob: 'VideoJob',
   Character: 'Character',
   NovelVolume: 'NovelVolume',
+  NovelChapter: 'NovelChapter',
   NovelScene: 'NovelScene',
   MemoryShortTerm: 'MemoryShortTerm',
   MemoryLongTerm: 'MemoryLongTerm',

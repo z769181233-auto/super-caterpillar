@@ -1,6 +1,7 @@
 import { JobType } from 'database';
 import { PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
+import { CostLedgerService } from '../billing/cost-ledger.service';
 // @ts-ignore
 import { WorkerJob } from '../types';
 
@@ -92,6 +93,42 @@ export async function processCE03VisualDensityJob(context: CE03Context): Promise
       },
     });
 
+    // 4.5 Persist QualityMetrics (S3-C Standard)
+    await prisma.qualityMetrics.create({
+      data: {
+        projectId,
+        engine: 'CE03',
+        jobId: job.id,
+        traceId,
+        visualDensityScore: densityScore,
+        metadata: {
+          densityScore,
+          pipelineRunId,
+        },
+      },
+    });
+
+    // 4.6 Billing (P0 Hotfix: 0-cost Audit Record)
+    // Even if cost is 0, we must record it for commercial audit trails.
+    const costService = new CostLedgerService(apiClient);
+    await costService.recordEngineBilling({
+      jobId: job.id,
+      jobType: 'CE03_VISUAL_DENSITY',
+      traceId: traceId || job.id,
+      projectId,
+      userId: 'system', // or derived from job
+      orgId: jobOrgId,
+      engineKey: 'ce03_visual_density',
+      runId: pipelineRunId as string,
+      billingUsage: {
+        totalTokens: 0,
+        completionTokens: 0,
+        promptTokens: 0,
+        model: 'heuristic-v1'
+      },
+      cost: 0 // Explicit 0 cost for pure router-based heuristic
+    });
+
     // 5. Orchestration (Trigger CE04)
     // S4-2 Requirement: CE03 -> CE04
     if (job.shotId && projectId && jobOrgId) {
@@ -137,6 +174,8 @@ export async function processCE03VisualDensityJob(context: CE03Context): Promise
       status: 'SUCCEEDED',
       output: {
         densityScore,
+        metrics: { score: densityScore },
+        billing_usage: { totalTokens: 0, model: 'heuristic-v1', cost: 0 } // Standardize Output
       },
     };
   } catch (error: any) {

@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import { env } from '@scu/config';
+import { env, PRODUCTION_MODE } from '@scu/config';
 import { EngineConfigStoreService } from './engine-config-store.service';
 import { EngineRoutingService } from './engine-routing.service';
 import { EngineStrategyService } from './engine-strategy.service';
@@ -209,7 +209,7 @@ export class EngineRegistry {
       // 现有 JobType（保持不变，禁止修改）
       NOVEL_ANALYSIS: 'default_novel_analysis', // 本地 Adapter
       NOVEL_ANALYZE_CHAPTER: 'default_novel_analysis', // Same engine for chapter analysis
-      SHOT_RENDER: 'default_shot_render',
+      SHOT_RENDER: PRODUCTION_MODE ? 'real_shot_render' : 'default_shot_render',
 
       // HTTP 版本指向真实引擎
       NOVEL_ANALYSIS_HTTP: 'http_real_novel_analysis',

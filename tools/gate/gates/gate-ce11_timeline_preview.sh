@@ -27,10 +27,15 @@ log() {
 log "Starting Gate: CE11 Timeline Preview (Commercial Grade)"
 
 # --- Cleanup Trap ---
+# --- Cleanup Trap ---
 cleanup() {
     if [ -n "${API_PID:-}" ]; then
         log "Cleaning up API process $API_PID..."
         kill "$API_PID" || true
+    fi
+    if [ -n "${WORKER_PID:-}" ]; then
+        log "Cleaning up Worker process $WORKER_PID..."
+        kill "$WORKER_PID" || true
     fi
 }
 trap cleanup EXIT
@@ -51,6 +56,7 @@ fi
 
 # --- A. API Self-Start ---
 API_PID=""
+WORKER_PID=""
 if ! curl -s "$API_URL/health" > /dev/null; then
   log "API not running at $API_URL. Starting API in background..."
   LOG_FILE_API="$EVIDENCE_DIR/api.log"
@@ -94,13 +100,25 @@ if command -v ffmpeg &> /dev/null; then
     fi
 fi
 
-# 2. Get Valid API Key
-VALID_API_KEY_ID=$(psql "$DATABASE_URL" -t -c "SELECT key FROM \"api_keys\" WHERE status = 'ACTIVE' LIMIT 1" | tr -d '[:space:]')
-if [ -z "$VALID_API_KEY_ID" ]; then
-    log "Error: No active API Key found for test. Please seed DB."
-    exit 1
-fi
-log "Using API Key: ${VALID_API_KEY_ID:0:4}..."
+# 2. Shared Auth & Seeding
+# Sources: VALID_API_KEY_ID, API_SECRET, ORG_ID, PROJ_ID, SHOT_ID_1 etc.
+source tools/gate/lib/gate_auth_seed.sh
+PROJECT_ID="$PROJ_ID"
+
+# 3. Start Worker (With Valid Auth)
+log "Starting Worker..."
+LOG_FILE_WORKER="$EVIDENCE_DIR/worker.log"
+export API_URL="$API_URL"
+# Ensure 'ce11_timeline_preview' is supported
+export WORKER_SUPPORTED_ENGINES="pipeline_timeline_compose,timeline_render,pipeline_orchestrator,ce11,ce11_timeline_preview"
+export STAGE3_ENGINE_MODE=REPLAY
+export WORKER_API_KEY="$VALID_API_KEY_ID"
+export WORKER_API_SECRET="${API_SECRET_KEY:-$API_SECRET}"
+
+npx ts-node -P apps/workers/tsconfig.json -r tsconfig-paths/register apps/workers/src/main.ts > "$LOG_FILE_WORKER" 2>&1 &
+WORKER_PID=$!
+log "Worker started with PID: $WORKER_PID."
+sleep 5
 
 # --- B. HMAC Helper (Supports Overrides) ---
 generate_hmac_headers_lines() {
@@ -134,45 +152,15 @@ generate_hmac_headers_lines() {
   " 2> "$EVIDENCE_DIR/hmac_meta.tmp"
 }
 
-# --- D. Unique DB Seeds ---
+# 4. Engine Registration & Asset Prep (Specific to this test)
 GATE_UID="$(date +%s)_$RANDOM"
-PROJECT_ID="proj_gate_ce11_${GATE_UID}"
-SHOT_ID="shot_gate_ce11_${GATE_UID}"
-SCENE_ID="scene_gate_ce11_${GATE_UID}"
-DUMMY_ASSET_ID="asset_gate_ce11_${GATE_UID}"
-
-# Log IDs
-printf "GATE_UID=%s\nPROJECT_ID=%s\nSCENE_ID=%s\nSHOT_ID=%s\nDUMMY_ASSET_ID=%s\n" \
-  "$GATE_UID" "$PROJECT_ID" "$SCENE_ID" "$SHOT_ID" "$DUMMY_ASSET_ID" \
-  | tee "$EVIDENCE_DIR/ids.txt"
-
-log "Seeding Dummy Data..."
-ORG_ID=$(psql "$DATABASE_URL" -t -c "SELECT id FROM organizations LIMIT 1" | tr -d "[:space:]")
-USER_ID=$(psql "$DATABASE_URL" -t -c "SELECT id FROM users LIMIT 1" | tr -d "[:space:]")
-
-SEASON_ID="season_gate_${GATE_UID}"
-EPISODE_ID="episode_gate_${GATE_UID}"
-SHOT_ID_1="$SHOT_ID"
-SHOT_ID_2="shot_gate_ce11_2_${GATE_UID}"
-
-# 0. Register Engine (TIMELINE_PREVIEW)
-# Mode 'http' is required to pass Zero-Bypass check in PRODUCTION_MODE
-# Code must match the engineKey for JobEngineBindingService to find it
+# Register Engine (TIMELINE_PREVIEW)
 psql "$DATABASE_URL" -c "INSERT INTO \"engines\" (id, \"engineKey\", \"adapterName\", \"adapterType\", mode, config, enabled, code, \"isActive\", name, type, \"createdAt\", \"updatedAt\") VALUES ('eng_preview_${GATE_UID}', 'ce11_timeline_preview', 'preview', 'real', 'http', '{}', true, 'ce11_timeline_preview', true, 'Timeline Preview Gate', 'TIMELINE_PREVIEW', NOW(), NOW()) ON CONFLICT (\"engineKey\") DO UPDATE SET code = EXCLUDED.code, mode = EXCLUDED.mode, enabled = true, \"isActive\" = true;" > /dev/null
 
-# 1. Project
-psql "$DATABASE_URL" -c "INSERT INTO \"projects\" (id, name, \"ownerId\", \"organizationId\", \"updatedAt\") VALUES ('$PROJECT_ID', 'Gate Project $GATE_UID', '$USER_ID', '$ORG_ID', NOW());" > /dev/null
-# 2. Season (Uses 'title' and requires 'index')
-psql "$DATABASE_URL" -c "INSERT INTO \"seasons\" (id, \"projectId\", index, title, \"updatedAt\") VALUES ('$SEASON_ID', '$PROJECT_ID', 1, 'Gate Season', NOW());" > /dev/null
-# 3. Episode (Uses 'name', requires 'index', NO updatedAt)
-psql "$DATABASE_URL" -c "INSERT INTO \"episodes\" (id, \"seasonId\", \"projectId\", index, name) VALUES ('$EPISODE_ID', '$SEASON_ID', '$PROJECT_ID', 1, 'Gate Episode');" > /dev/null
-# 4. Scene (Uses 'title', requires 'index' and 'summary', NO updatedAt)
-psql "$DATABASE_URL" -c "INSERT INTO \"scenes\" (id, \"episodeId\", \"projectId\", index, title, summary) VALUES ('$SCENE_ID', '$EPISODE_ID', '$PROJECT_ID', 1, 'Gate Scene', 'Gate Scene Summary');" > /dev/null
-# 5. Shots (Uses 'title', requires 'index' and 'type', NO updatedAt)
-psql "$DATABASE_URL" -c "INSERT INTO \"shots\" (id, \"sceneId\", index, type, title) VALUES ('$SHOT_ID_1', '$SCENE_ID', 1, 'VIDEO', 'Shot 1');" > /dev/null
-psql "$DATABASE_URL" -c "INSERT INTO \"shots\" (id, \"sceneId\", index, type, title) VALUES ('$SHOT_ID_2', '$SCENE_ID', 2, 'VIDEO', 'Shot 2');" > /dev/null
+log "Seeding Assets and Timeline JSON..."
 
 # 6. Source Assets (SHOT level)
+DUMMY_ASSET_ID="asset_gate_ce11_${GATE_UID}"
 STORAGE_KEY_DUMMY="test_ce11/dummy_source.mp4"
 DUMMY_ASSET_ID_1="$DUMMY_ASSET_ID"
 DUMMY_ASSET_ID_2="asset_gate_ce11_2_${GATE_UID}"
@@ -287,44 +275,66 @@ else
     log "PASS: Audit log found (Target Signature $SIG_1 confirmed)."
 fi
 
-# 8. Wait for Job (API Polling)
-log "Waiting for Job completion (API Polling: GET /api/jobs/:id)..."
-JOB_STATUS="PENDING"
-for i in {1..30}; do
-    GET_PATH="/api/jobs/$JOB_ID"
-    HEADERS_GET_RAW=$(generate_hmac_headers_lines "GET" "$GET_PATH" "")
-    CURL_HEADERS_GET=()
-    while IFS= read -r line; do
-      CURL_HEADERS_GET+=(-H "$line")
-    done <<< "$HEADERS_GET_RAW"
+# 8. Poll for Completion (Strict Fail-Fast)
+log "Waiting for Job completion (Strict Fail-Fast)..."
+JOB_STATUS_URL="/api/jobs/$JOB_ID"
+MAX_RETRIES=60 # 2s * 60 = 120s timeout
 
-    JOB_RESP="$EVIDENCE_DIR/job_status_$i.json"
-    HTTP_CODE_GET="$(curl -s -o "$JOB_RESP" -w "%{http_code}" \
-      -X GET "$API_URL$GET_PATH" \
-      "${CURL_HEADERS_GET[@]}")"
-    
-    if [ "$HTTP_CODE_GET" == "200" ]; then
-        JOB_STATUS="$(node -e "try{const j=require('fs').readFileSync('$JOB_RESP','utf8');console.log(JSON.parse(j).data.status);}catch(e){console.log('ERROR');}")"
+for ((i=1; i<=MAX_RETRIES; i++)); do
+    # Generate HMAC Headers for GET request
+    # Note: GET request has empty body, so body hash is empty string
+    POLL_HEADERS_RAW=$(generate_hmac_headers_lines "GET" "$JOB_STATUS_URL" "")
+    CURL_HEADERS_POLL=()
+    while IFS= read -r line; do
+        CURL_HEADERS_POLL+=(-H "$line")
+    done <<< "$POLL_HEADERS_RAW"
+
+    RESP_POLL="$EVIDENCE_DIR/poll_${i}.json"
+    HTTP_CODE_POLL="$(curl -s -o "$RESP_POLL" -w "%{http_code}" \
+      -X GET "$API_URL$JOB_STATUS_URL" \
+      "${CURL_HEADERS_POLL[@]}")"
+
+    if [ "$HTTP_CODE_POLL" != "200" ]; then
+        log "WARN: Poll $i failed with $HTTP_CODE_POLL"
+        cat "$RESP_POLL" >> "$EVIDENCE_DIR/gate.log"
     else
-        log "API Polling Error: $HTTP_CODE_GET"
+        # Extract Status
+        JOB_STATUS=$(node -e "try{const o=JSON.parse(require('fs').readFileSync('$RESP_POLL','utf8'));console.log(o.status||'');}catch(e){}")
+        log "Poll $i: $JOB_STATUS"
+
+        if [ "$JOB_STATUS" == "SUCCEEDED" ]; then
+            log "Job SUCCEEDED."
+            # Extract Result Asset
+            cat "$RESP_POLL" | tee "$EVIDENCE_DIR/final_job.json"
+            break
+        elif [ "$JOB_STATUS" == "FAILED" ]; then
+            log "FAILURE: Job Failed."
+            cat "$RESP_POLL" | tee -a "$EVIDENCE_DIR/gate.log"
+            # Dump Worker Log
+            log "--- WORKER LOG TAIL ---"
+            tail -n 50 "$LOG_FILE_WORKER" | tee -a "$EVIDENCE_DIR/gate.log"
+            exit 42
+        fi
     fi
-    
-    log "Job Status: $JOB_STATUS"
-    if [ "$JOB_STATUS" == "SUCCEEDED" ]; then break; fi
-    if [ "$JOB_STATUS" == "FAILED" ]; then log "Job Failed!"; exit 1; fi
     sleep 2
 done
 
-if [ "$JOB_STATUS" != "SUCCEEDED" ]; then log "Timeout waiting for job."; exit 1; fi
+if [ "$JOB_STATUS" != "SUCCEEDED" ]; then
+    log "FAILURE: Timeout waiting for Job SUCCEEDED."
+    log "--- WORKER LOG TAIL ---"
+    tail -n 100 "$LOG_FILE_WORKER" | tee -a "$EVIDENCE_DIR/gate.log"
+    exit 42
+fi
 
-# 9. Verify Asset (Result Asset is SCENE level)
-log "Verifying generated Asset (ownerType=SCENE, ownerId=$SCENE_ID)..."
+# 9. Verify Asset (Result Asset via API or DB)
+log "Verifying generated Asset..."
+# Use DB for absolute truth check (Hard Seal)
 ASSET_KEY=$(psql "$DATABASE_URL" -t -c "SELECT \"storageKey\" FROM assets WHERE \"ownerId\"='$SCENE_ID' AND \"ownerType\"='SCENE' ORDER BY \"createdAt\" DESC LIMIT 1" | tr -d '[:space:]')
 
 if [ -z "$ASSET_KEY" ]; then
-    log "FAILURE: No Result Asset found for Scene $SCENE_ID"
-    exit 1
+    log "FAILURE: No Result Asset found for Scene $SCENE_ID in DB."
+    exit 42
 fi
 
 log "Asset Generated: $ASSET_KEY"
-log "SUCCESS: CE11 Timeline Preview Commercial Closure Passed."
+log "SUCCESS: CE11 Timeline Preview Commercial Closure Passed (HARD)."

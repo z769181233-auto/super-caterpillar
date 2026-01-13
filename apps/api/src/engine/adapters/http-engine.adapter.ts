@@ -49,7 +49,7 @@ export class HttpEngineAdapter implements EngineAdapter {
   public readonly name = 'http';
   private readonly logger = new Logger(HttpEngineAdapter.name);
 
-  constructor(private readonly engineConfigService: EngineConfigService) {}
+  constructor(private readonly engineConfigService: EngineConfigService) { }
 
   /**
    * 检查是否支持指定的引擎标识
@@ -306,7 +306,7 @@ export class HttpEngineAdapter implements EngineAdapter {
         );
 
         return {
-          status: EngineInvokeStatus.SUCCESS,
+          status: 'SUCCESS' as any,
           output,
           metrics,
         };
@@ -330,7 +330,7 @@ export class HttpEngineAdapter implements EngineAdapter {
       );
 
       return {
-        status: EngineInvokeStatus.FAILED,
+        status: 'FAILED' as any,
         error: {
           message: errorMessage,
           code: errorCode,
@@ -362,7 +362,7 @@ export class HttpEngineAdapter implements EngineAdapter {
       );
 
       return {
-        status: EngineInvokeStatus.RETRYABLE,
+        status: 'RETRYABLE' as any,
         error: {
           message: `HTTP 429 Too Many Requests${retryAfter ? `, Retry-After: ${retryAfter}` : ''}`,
           code: 'HTTP_RATE_LIMIT',
@@ -389,7 +389,7 @@ export class HttpEngineAdapter implements EngineAdapter {
       );
 
       return {
-        status: EngineInvokeStatus.RETRYABLE,
+        status: 'RETRYABLE' as any,
         error: {
           message: `HTTP ${response.status} Server Error`,
           code: 'HTTP_SERVER_ERROR',
@@ -415,7 +415,7 @@ export class HttpEngineAdapter implements EngineAdapter {
     );
 
     return {
-      status: EngineInvokeStatus.FAILED,
+      status: 'FAILED' as any,
       error: {
         message: `HTTP ${response.status} Client Error`,
         code: 'HTTP_CLIENT_ERROR',
@@ -496,7 +496,7 @@ export class HttpEngineAdapter implements EngineAdapter {
       );
 
       return {
-        status: EngineInvokeStatus.RETRYABLE,
+        status: 'RETRYABLE' as any,
         error: {
           message: error.message || 'Network or timeout error',
           code: errorCode,
@@ -525,7 +525,7 @@ export class HttpEngineAdapter implements EngineAdapter {
         );
 
         return {
-          status: EngineInvokeStatus.RETRYABLE,
+          status: 'RETRYABLE' as any,
           error: {
             message: `HTTP 429 Too Many Requests`,
             code: 'HTTP_RATE_LIMIT',
@@ -552,7 +552,7 @@ export class HttpEngineAdapter implements EngineAdapter {
         );
 
         return {
-          status: EngineInvokeStatus.RETRYABLE,
+          status: 'RETRYABLE' as any,
           error: {
             message: error.message || `HTTP ${error.status} Server Error`,
             code: 'HTTP_SERVER_ERROR',
@@ -578,7 +578,7 @@ export class HttpEngineAdapter implements EngineAdapter {
       );
 
       return {
-        status: EngineInvokeStatus.FAILED,
+        status: 'FAILED' as any,
         error: {
           message: error.message || `HTTP ${error.status} Client Error`,
           code: 'HTTP_CLIENT_ERROR',
@@ -604,7 +604,7 @@ export class HttpEngineAdapter implements EngineAdapter {
     );
 
     return {
-      status: EngineInvokeStatus.FAILED,
+      status: 'FAILED' as any,
       error: {
         message: error.message || 'HTTP request failed',
         code: 'UNKNOWN_ERROR',

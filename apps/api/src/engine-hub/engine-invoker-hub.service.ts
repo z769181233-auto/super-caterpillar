@@ -8,6 +8,7 @@ import { ModuleRef } from '@nestjs/core';
 import { EngineInvocationRequest, EngineInvocationResult } from '@scu/shared-types';
 import { EngineRegistryHubService } from './engine-registry-hub.service';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
+import { EngineRegistry } from '../engine/engine-registry.service';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
@@ -21,10 +22,11 @@ export class EngineInvokerHubService {
 
   constructor(
     private readonly engineRegistry: EngineRegistryHubService,
+    private readonly memoryRegistry: EngineRegistry,
     private readonly moduleRef: ModuleRef,
     private readonly httpEngineAdapter: HttpEngineAdapter,
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   /**
    * 调用引擎
@@ -56,7 +58,36 @@ export class EngineInvokerHubService {
       return result;
     }
 
-    // 1. 查找引擎描述符
+    // 0.5. 优先检查内存注册表 (In-Memory Override)
+    // 用于 "Gateway" 模式：DB声明为 HTTP (通过Binding检查)，但实际执行由本地 Adapter 拦截
+    const memoryAdapter = this.memoryRegistry.findAdapter(req.engineKey);
+    if (memoryAdapter) {
+      const engineInput: EngineInvokeInput = {
+        engineKey: req.engineKey,
+        jobType: this.inferJobTypeFromEngineKey(req.engineKey),
+        payload: { ...req.payload, engineVersion: req.engineVersion },
+        context: { ...req.metadata },
+      };
+      const engineResult = await memoryAdapter.invoke(engineInput);
+      let output: TOutput | undefined;
+
+      if (engineResult.status === 'SUCCESS') {
+        output = engineResult.output as TOutput;
+      } else {
+        throw new Error(engineResult.error?.message || 'Memory Adapter execution failed');
+      }
+
+      const result: EngineInvocationResult<TOutput> = {
+        success: true,
+        selectedEngineKey: req.engineKey,
+        output,
+        metrics: { latencyMs: Date.now() - started },
+      };
+      await this.logInvocation(req, result);
+      return result;
+    }
+
+    // 1. 查找引擎描述符 (DB)
     let descriptor = this.engineRegistry.find(req.engineKey, req.engineVersion);
 
     // 1.1 检查禁用列表

@@ -38,7 +38,7 @@ export class StructureGenerateService {
         novelSources: {
           include: {
             chapters: {
-              orderBy: { orderIndex: 'asc' },
+              orderBy: { index: 'asc' },
             },
           },
           orderBy: { createdAt: 'desc' },
@@ -61,7 +61,7 @@ export class StructureGenerateService {
       `Found project: ${project.name}, novelSources count: ${project.novelSources?.length || 0}`
     );
 
-    const novelSource = project.novelSources?.[0];
+    const novelSource = (project as any).novelSources?.[0];
     if (!novelSource) {
       this.logger.error(`No novel source found for project: ${projectId}`);
       throw new NotFoundException('No novel source found for this project');
@@ -71,7 +71,7 @@ export class StructureGenerateService {
     this.logger.log(`Found ${chapters.length} chapters in novel source: ${novelSource.id}`);
 
     // 检查是否已有结构（幂等性检查）
-    const existingEpisodes = project.episodes || [];
+    const existingEpisodes = (project as any).episodes || [];
     const hasExistingStructure =
       existingEpisodes.length > 0 &&
       existingEpisodes.some((e: any) => e.scenes && e.scenes.length > 0);
@@ -146,10 +146,10 @@ export class StructureGenerateService {
         const location = this.extractLocation(sceneText);
 
         // 创建 SceneDraft（草稿状态）
-        const sceneDraft = await this.prisma.sceneDraft.create({
+        const sceneDraft = await (this.prisma.sceneDraft as any).create({
           data: {
             chapterId: chapter.id,
-            orderIndex: scIdx + 1,
+            index: scIdx + 1,
             title,
             summary,
             location,

@@ -89,15 +89,13 @@ function fingerprintParts(parts: {
  * v2: ${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}\n${workerId}
  */
 function buildMessage(
-  method: string,
-  path: string,
+  apiKey: string,
   nonce: string,
   timestamp: string,
-  body: string,
-  apiKey: string
+  body: string
 ): string {
-  const contentHash = computeBodyHash(body);
-  return `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${contentHash}\n`;
+  // Spec V1.1 Strict: apiKey + nonce + timestamp + body
+  return apiKey + nonce + timestamp + body;
 }
 
 /**
@@ -159,20 +157,17 @@ export class ApiClient {
         throw new Error('[AUTH] missing x-worker-id header; refusing to sign without workerId');
       }
 
-      // 3. 构建签名消息 (v2包含apiKey)
-      const bodyHash = computeBodyHash(bodyString);
-      const message = buildMessage(method, path, nonce, timestamp, bodyString, this.apiKey);
+      const message = buildMessage(this.apiKey, nonce, timestamp, bodyString);
+      const signature = createHmac('sha256', this.apiSecret).update(message).digest('hex');
+      const bodyHash = createHash('sha256').update(bodyString).digest('hex');
 
-      // 4. 计算签名
-      const signature = computeSignature(this.apiSecret, message);
-
-      // 5. 设置 HMAC 认证头
-      headers['X-Api-Key'] = this.apiKey;
-      headers['X-Nonce'] = nonce;
+      // 4. 设置 HMAC 认证头
       headers['X-Timestamp'] = timestamp;
-      headers['X-Content-Sha256'] = bodyHash;
+      headers['X-Nonce'] = nonce;
       headers['X-Signature'] = signature;
-      headers['X-Hmac-Version'] = '2';
+      headers['X-Api-Key'] = this.apiKey;
+      headers['X-Content-SHA256'] = bodyHash;
+      headers['X-Hmac-Version'] = '1.1';
 
       // 调试日志（不打印密钥）
       process.stdout.write(

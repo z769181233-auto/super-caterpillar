@@ -289,10 +289,12 @@ async function main() {
     if (check.ownerUserId !== user.id || check.ownerOrgId !== organization.id) {
       throw new Error(
         `[smoke] apiKey binding mismatch. expected user=${user.id} org=${organization.id} but got user=${check.ownerUserId} org=${check.ownerOrgId}. ` +
-          `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
+        `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
       );
     }
     console.log(`✅ Verified apiKey binding: ${apiKey} -> user=${user.id} org=${organization.id}`);
+    console.log(`API_KEY=${apiKey}`);
+    console.log(`API_SECRET=${apiSecret}`);
   } catch (error: any) {
     console.error(`❌ Failed to initialize API Key: ${error.message}`);
     if (error.message?.includes('secretEnc')) {

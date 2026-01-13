@@ -13,6 +13,7 @@ import { CE06LocalAdapter } from './adapters/ce06.local.adapter';
 import { CE03LocalAdapter } from './adapters/ce03.local.adapter';
 import { CE04LocalAdapter } from './adapters/ce04.local.adapter';
 import { VideoMergeLocalAdapter } from './adapters/video-merge.local.adapter';
+import { ShotRenderLocalAdapter } from './adapters/shot-render.local.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -38,6 +39,7 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     CE03LocalAdapter,
     CE04LocalAdapter,
     VideoMergeLocalAdapter,
+    ShotRenderLocalAdapter,
     HttpEngineAdapter,
   ],
   exports: [
@@ -57,6 +59,7 @@ export class EngineModule implements OnModuleInit {
     private readonly ce03Adapter: CE03LocalAdapter,
     private readonly ce04Adapter: CE04LocalAdapter,
     private readonly videoMergeAdapter: VideoMergeLocalAdapter,
+    private readonly shotRenderAdapter: ShotRenderLocalAdapter,
     private readonly httpAdapter: HttpEngineAdapter
   ) { }
 
@@ -83,7 +86,12 @@ export class EngineModule implements OnModuleInit {
     this.registry.registerAlias('ce06_novel_parsing', this.ce06Adapter);
     this.registry.registerAlias('ce03_visual_density', this.ce03Adapter);
     this.registry.registerAlias('ce04_visual_enrichment', this.ce04Adapter);
-    this.registry.registerAlias('default_shot_render', this.novelAdapter); // Safety fallback
+
+    // Shot Render Registration
+    this.registry.register(this.shotRenderAdapter);
+    this.registry.registerAlias('shot_render', this.shotRenderAdapter);
+    this.registry.registerAlias('real_shot_render', this.shotRenderAdapter);
+    this.registry.registerAlias('default_shot_render', this.shotRenderAdapter);
 
     // P0-R2: Register Video Merge Adapter
     this.registry.register(this.videoMergeAdapter);

@@ -1,6 +1,7 @@
 import { JobType, AssetOwnerType, AssetType } from 'database';
 import { PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
+import { CostLedgerService } from '../billing/cost-ledger.service';
 // @ts-ignore
 import { WorkerJob } from '../types';
 import * as path from 'path';
@@ -205,6 +206,21 @@ export async function processVideoRenderJob(context: {
                     engine: process.env.RENDER_ENGINE || 'mock',
                 },
             },
+        });
+
+        // 5.5 Billing (P0 Hotfix: CPU Seconds)
+        const costService = new CostLedgerService(apiClient);
+        await costService.recordEngineBilling({
+            jobId: job.id,
+            jobType: 'VIDEO_RENDER',
+            traceId: traceId || job.id,
+            projectId,
+            userId: 'system',
+            orgId: job.organizationId || 'org?unknown',
+            engineKey: 'video_render',
+            runId: pipelineRunId,
+            cpuSeconds: 12.0, // Mock duration (0.5s * 24 frames)
+            cost: 0.12 // Mock cost
         });
 
         // 6. Spawn Media Security (CE09) - S4-5

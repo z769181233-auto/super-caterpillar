@@ -1,0 +1,8 @@
+        jobType         | costAmount | billingUnit |         engine         
+------------------------+------------+-------------+------------------------
+ CE06_NOVEL_PARSING     |      0.012 | tokens      | generic
+ CE03_VISUAL_DENSITY    |          0 | cpu_seconds | ce03_visual_density
+ CE04_VISUAL_ENRICHMENT |          0 | cpu_seconds | ce04_visual_enrichment
+ SHOT_RENDER            |       0.05 | gpu_seconds | shot_render
+(4 rows)
+

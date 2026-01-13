@@ -43,8 +43,8 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
     const timeline: TimelineData = JSON.parse(fs.readFileSync(timelineAbsPath, 'utf-8'));
 
     // Validation
-    if (timeline.shots.length < 2) {
-        throw new Error(`[TimelinePreview] Fail-fast: Timeline must contain at least 2 shots.`);
+    if (timeline.shots.length < 1) {
+        throw new Error(`[TimelinePreview] Fail-fast: Timeline must contain at least 1 shot.`);
     }
 
     const fps = timeline.fps || 24;
@@ -296,9 +296,11 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
 
     return {
         success: true,
-        assetId: asset.id,
-        storageKey: finalOutputRelative,
-        metrics: { durationMs: latencyMs, cost: costAmount, shots: timeline.shots.length },
+        output: {
+            assetId: asset.id,
+            storageKey: finalOutputRelative,
+            metrics: { durationMs: latencyMs, cost: costAmount, shots: timeline.shots.length },
+        },
         audit: { action: 'ce11.timeline_preview.success', sceneId: timeline.sceneId, traceId },
     };
 }

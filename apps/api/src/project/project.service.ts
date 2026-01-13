@@ -130,7 +130,7 @@ export class ProjectService {
     // 清理缓存（新项目无需清理，但为了统一性也调用）
     await this.sceneGraphService.invalidateProjectSceneGraph(project.id);
 
-    return project;
+    return project as any;
   }
 
   async findByIdWithHierarchy(id: string, organizationId: string) {
@@ -159,7 +159,7 @@ export class ProjectService {
       throw new NotFoundException('Project not found');
     }
 
-    return project;
+    return project as any;
   }
 
   async findTreeById(id: string, organizationId: string) {
@@ -196,18 +196,18 @@ export class ProjectService {
                   select: {
                     id: true,
                     title: true,
-                    orderIndex: true,
+                    index: true,
                     sceneDrafts: {
                       select: {
                         id: true,
-                        orderIndex: true,
+                        index: true,
                         title: true,
                         summary: true,
                         characters: true,
                         location: true,
                         status: true,
                       },
-                      orderBy: { orderIndex: 'asc' },
+                      orderBy: { index: 'asc' },
                     },
                   },
                 },
@@ -265,18 +265,18 @@ export class ProjectService {
               select: {
                 id: true,
                 title: true,
-                orderIndex: true,
+                index: true,
                 sceneDrafts: {
                   select: {
                     id: true,
-                    orderIndex: true,
+                    index: true,
                     title: true,
                     summary: true,
                     characters: true,
                     location: true,
                     status: true,
                   },
-                  orderBy: { orderIndex: 'asc' },
+                  orderBy: { index: 'asc' },
                 },
               },
             },
@@ -452,7 +452,7 @@ export class ProjectService {
     // 2. Determine structureStatus
     // If seasons array is not empty -> 'READY'
     let structureStatus: 'EMPTY' | 'READY' = 'EMPTY';
-    if (project.seasons && project.seasons.length > 0) {
+    if ((project as any).seasons && (project as any).seasons.length > 0) {
       structureStatus = 'READY';
     }
 
@@ -543,7 +543,7 @@ export class ProjectService {
       throw new NotFoundException('Project not found');
     }
 
-    return project;
+    return project as any;
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto) {
@@ -560,7 +560,7 @@ export class ProjectService {
     // 清理缓存
     await this.sceneGraphService.invalidateProjectSceneGraph(id);
 
-    return project;
+    return project as any;
   }
 
   async delete(id: string) {
@@ -580,7 +580,7 @@ export class ProjectService {
     // 清理缓存
     await this.sceneGraphService.invalidateProjectSceneGraph(id);
 
-    return project;
+    return project as any;
   }
 
   async checkOwnership(projectId: string, userId: string) {
@@ -595,7 +595,7 @@ export class ProjectService {
     if (project.ownerId !== userId) {
       throw new ForbiddenException('You do not have permission to access this project');
     }
-    return project;
+    return project as any;
   }
 
   /**

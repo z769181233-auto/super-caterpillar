@@ -603,10 +603,10 @@ export async function applyAnalyzedStructureToDatabase(
         }
 
         // S3-A: 同步写入 NovelChapter
-        if (nSource) {
+        if (nVolume && nSource) {
           const existingNChapter = await tx.novelChapter.findUnique({
             where: {
-              novelSourceId_orderIndex: { novelSourceId: nSource.id, orderIndex: episode.index },
+              volumeId_index: { volumeId: nVolume.id, index: episode.index },
             },
           });
           if (existingNChapter) {
@@ -617,11 +617,12 @@ export async function applyAnalyzedStructureToDatabase(
           } else {
             await tx.novelChapter.create({
               data: {
+                volumeId: nVolume.id,
                 novelSourceId: nSource.id,
-                orderIndex: episode.index,
+                index: episode.index,
                 title: episode.title,
                 summary: episode.summary || '',
-                rawText: '',
+                isSystemControlled: true,
               },
             });
           }
@@ -665,11 +666,12 @@ export async function applyAnalyzedStructureToDatabase(
           }
 
           // S3-A: 同步写入 NovelScene
-          if (nSource) {
-            // 首先通过 nSourceId 和 orderIndex 找到对应的 nChapterId
+          // S3-A: 同步写入 NovelScene
+          if (nSource && nVolume) {
+            // 首先通过 VolumeId 和 index 找到对应的 nChapterId
             const nChapter = await tx.novelChapter.findUnique({
               where: {
-                novelSourceId_orderIndex: { novelSourceId: nSource.id, orderIndex: episode.index },
+                volumeId_index: { volumeId: nVolume.id, index: episode.index },
               },
             });
 
@@ -1146,10 +1148,12 @@ export async function processNovelAnalysisJob(
         });
         if (novelSource) sourceText = novelSource.rawText;
       } else if (payload.chapterId) {
-        const chapter = await prisma.novelChapter.findUnique({
-          where: { id: payload.chapterId },
+        const scenes = await prisma.novelScene.findMany({
+          where: { chapterId: payload.chapterId },
+          orderBy: { index: 'asc' },
+          select: { rawText: true },
         });
-        if (chapter) sourceText = chapter.rawText;
+        if (scenes.length > 0) sourceText = scenes.map((s) => s.rawText).join('\n');
       } else {
         // 没指定则取该项目最新的一条
         novelSource = await prisma.novelSource.findFirst({

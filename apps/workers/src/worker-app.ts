@@ -197,7 +197,7 @@ async function registerWorker(): Promise<void> {
 
     // 稳定兜底:至少要把本次P1-2验证用到的引擎带上
     let supportedEnginesFinal =
-      rawEngines.length > 0 ? rawEngines : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'ce04_sdxl', 'tts_standard', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline', 'ce11_timeline_preview'];
+      rawEngines.length > 0 ? rawEngines : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'ce04_sdxl', 'tts_standard', 'video_render', 'shot_render', 'real_shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline', 'ce11_timeline_preview'];
 
     // P1: Production Scrubbing - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {

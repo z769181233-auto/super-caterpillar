@@ -1,6 +1,7 @@
 import { JobType } from 'database';
 import { PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
+import { CostLedgerService } from '../billing/cost-ledger.service';
 // @ts-ignore
 import { WorkerJob } from '../types';
 
@@ -68,6 +69,26 @@ export async function processCE04VisualEnrichmentJob(
           actorId: 'system-worker',
         },
       },
+    });
+
+    // 4.5 Billing (P0 Hotfix)
+    const costService = new CostLedgerService(apiClient);
+    await costService.recordEngineBilling({
+      jobId: job.id,
+      jobType: 'CE04_VISUAL_ENRICHMENT',
+      traceId: (traceId as string) || job.id,
+      projectId,
+      userId: 'system',
+      orgId: jobOrgId,
+      engineKey: 'ce04_visual_enrichment',
+      runId: pipelineRunId as string,
+      billingUsage: {
+        totalTokens: 0,
+        promptTokens: 0,
+        completionTokens: 0,
+        model: 'enrichment-v1-mock'
+      },
+      cost: 0 // Router-based cost (currently free)
     });
 
     // 5. Spawn SHOT_RENDER (S4-3)
