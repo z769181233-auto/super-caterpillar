@@ -1,3 +1,35 @@
+### Phase 0-R2: CE02 Mother -> CE03 Real (Visual Density) Seal
+
+- **封板日期**: 2026-01-14
+- **Tag**: `seal/p0_r2_ce02_ce03_real_20260114`
+- **Gate 脚本**: `tools/gate/gates/gate-p0-r2_ce02_ce03_real.sh`
+- **证据目录**: docs/_evidence/p0_r2_ce02_ce03_real_20260114_231917/
+- **母引擎定义**: Mother Engine = **CE02**（该封板验证入口 `POST /api/_internal/engine/invoke` 属于 CE02 统一入口）
+- **核心不变量**:
+  - 母引擎入口：通过 CE02 统一接口调用 `ce03_visual_density`
+  - 产物真实性：返回计算后的视觉密度评分 (visual_density_score)
+  - 账本隔离：`isVerification=true` 且 `cost_ledgers` 零写入
+  - 审计轨迹：`audit_trail`完整记录了底层引擎版本
+- **结论**: P0-R2 TOTAL PASS；视觉密度分析真实链路封板。
+
+---
+
+### Phase 0-R3: CE02 Mother -> CE04 Real (Visual Enrichment) Seal
+
+- **封板日期**: 2026-01-14
+- **Tag**: `seal/p0_r3_ce02_ce04_real_20260114`
+- **Gate 脚本**: `tools/gate/gates/gate-p0-r3_ce02_ce04_real.sh`
+- **证据目录**: docs/_evidence/p0_r3_ce02_ce04_real_20260114_231953/
+- **母引擎定义**: Mother Engine = **CE02**（该封板验证入口 `POST /api/_internal/engine/invoke` 属于 CE02 统一入口）
+- **核心不变量**:
+  - 母引擎入口：通过 CE02 统一接口调用 `ce04_visual_enrichment`
+  - 产物真实性：返回扩写后的视觉提示词 (enriched_prompt)
+  - 账本隔离：`isVerification=true` 且 `cost_ledgers` 零写入
+  - 审计轨迹：`audit_trail` 完整记录了底层引擎版本
+- **结论**: P0-R3 TOTAL PASS；视觉扩写增强真实链路封板。
+
+---
+
 ### Phase 0-R1: CE02 Mother -> CE06 Real (Novel Parsing) Seal
 
 - **封板日期**: 2026-01-14
