@@ -1,0 +1,52 @@
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "selectedEngineKey": "shot_render",
+    "output": {
+      "asset": {
+        "uri": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets/undefined_42_fc78bd3c6a35.png",
+        "mimeType": "image/png",
+        "sizeBytes": 6145,
+        "sha256": "42f522b99cd36da72db4c4568968b26c2e9c3d10c373834b6728753febfc756d",
+        "width": 512,
+        "height": 512
+      },
+      "render_meta": {
+        "model": "sdxl-turbo-pil-shim",
+        "steps": 4,
+        "sampler": "euler_ancestral",
+        "cfg_scale": 1.5,
+        "seed": 42
+      },
+      "audit_trail": {
+        "engineKey": "shot_render_real",
+        "engineVersion": "1.0.0-real",
+        "timestamp": "2026-01-14T15:50:34.796Z",
+        "paramsHash": "24927f3dcc7ec4339fcb275d9d3978a1cafe35777e081387edab569f306599fb",
+        "traceId": "gate-p0r0-1768405833",
+        "providerSelected": "local_mps",
+        "selectionReason": "Explicit SHOT_RENDER_PROVIDER=local_mps",
+        "routedBy": "shot_render_router",
+        "prompt_hash": "fc78bd3c6a3502e45e15f9f8fa822d083cb1df4d56b07c191c14d5e1d0c1f9a9",
+        "pricing_key": "LOCAL_FREE"
+      },
+      "billing_usage": {
+        "promptTokens": 60,
+        "completionTokens": 200,
+        "totalTokens": 260,
+        "model": "sdxl-turbo-pil-shim",
+        "gpuSeconds": 1.37
+      }
+    },
+    "metrics": {
+      "latencyMs": 1452,
+      "usage": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "costUsd": 0
+      }
+    }
+  }
+}

@@ -422,6 +422,8 @@ model Task {
   output         Json?
   traceId        String?
   workerId       String?
+  isVerification Boolean      @default(false) @map("is_verification")
+  dedupeKey      String?      @unique @map("dedupe_key")
   organization   Organization @relation("OrganizationTasks", fields: [organizationId], references: [id])
   project        Project      @relation("ProjectTasks", fields: [projectId], references: [id], onDelete: Cascade)
   worker         WorkerNode?  @relation("TaskWorker", fields: [workerId], references: [id])
@@ -471,6 +473,8 @@ model ShotJob {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   traceId           String?
+  isVerification    Boolean           @default(false) @map("is_verification")
+  dedupeKey         String?           @unique @map("dedupe_key")
   result            Json?
   securityProcessed Boolean           @default(false)
   generatedAsset    Asset[]           @relation("JobGeneratedAsset")

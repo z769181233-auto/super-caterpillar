@@ -369,7 +369,9 @@ exports.Prisma.TaskScalarFieldEnum = {
   updatedAt: 'updatedAt',
   output: 'output',
   traceId: 'traceId',
-  workerId: 'workerId'
+  workerId: 'workerId',
+  isVerification: 'isVerification',
+  dedupeKey: 'dedupeKey'
 };
 
 exports.Prisma.WorkerJobScalarFieldEnum = {
@@ -410,6 +412,8 @@ exports.Prisma.ShotJobScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   traceId: 'traceId',
+  isVerification: 'isVerification',
+  dedupeKey: 'dedupeKey',
   result: 'result',
   securityProcessed: 'securityProcessed'
 };
