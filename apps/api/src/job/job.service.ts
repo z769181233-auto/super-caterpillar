@@ -28,9 +28,10 @@ import { BudgetService } from '../billing/budget.service';
 import { CapacityExceededException, CapacityErrorCode } from '../common/errors/capacity-errors';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
+import { PublishedVideoService } from '../publish/published-video.service';
 import { UnprocessableEntityException } from '@nestjs/common';
 import { PRODUCTION_MODE } from '@scu/config';
-import { Prisma, JobStatus, JobType, TaskStatus, TaskType, JobEngineBindingStatus, ShotReviewStatus } from 'database';
+import { Prisma, JobStatus, JobType, TaskStatus, TaskType, JobEngineBindingStatus, ShotReviewStatus, ShotJob } from 'database';
 import {
   assertTransition,
   isClaimableStatus,
@@ -97,6 +98,7 @@ export class JobService {
     @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService,
     @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService,
     @Inject(BudgetService) private readonly budgetService: BudgetService,
+    @Inject(PublishedVideoService) private readonly publishedVideoService: PublishedVideoService,
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService,
     @Inject(forwardRef(() => StructureGenerateService))
@@ -895,6 +897,7 @@ export class JobService {
           payload: {
             shotId, // Explicitly include shotId in payload for Processor
             frameKeys,
+            pipelineRunId: traceId, // EXECUTE-3 Fix: Ensure pipelineRunId is present
             fps: 24, // Default FPS
           },
           traceId,
@@ -1442,9 +1445,16 @@ export class JobService {
         await this.handleCECoreJobCompletion(job, result);
       }
 
+      // Stage-1: VIDEO_RENDER 完成后自动记录发布 (Internal Verification)
+      if (job.type === JobTypeEnum.VIDEO_RENDER) {
+        await this.handleStage1VideoCompletion(updatedJob, result);
+      }
+
       // CE09: SHOT_RENDER 完成后进入安全链路（HLS/水印/指纹）
       if (job.type === JobTypeEnum.SHOT_RENDER) {
         await this.handleShotRenderSecurityPipeline(updatedJob, result);
+        // Stage-1 Fix: 检查是否需要触发自动合成
+        await this.handleStage1ShotCompletion(updatedJob);
       }
 
       // 如果是 NOVEL_ANALYSIS Job，更新对应的 NovelAnalysisJob 状态
@@ -2891,6 +2901,9 @@ export class JobService {
         });
         this.logger.log(`PIPELINE_TIMELINE_COMPOSE completed, triggered TIMELINE_RENDER for project ${job.projectId}`);
       }
+    } else if (job.type === JobTypeEnum.SHOT_RENDER) {
+      // Stage-1: 检查是否所有 SHOT_RENDER 都已完成
+      await this.handleStage1ShotCompletion(job);
     } else if (job.type === JobTypeEnum.TIMELINE_RENDER) {
       // 导出完成，触发 CE09 安全加固
       if (pipeline.includes('CE09_MEDIA_SECURITY')) {
@@ -3136,5 +3149,148 @@ export class JobService {
       running,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Stage-1: 处理镜头渲染成功后的流水线推进
+   * 规则：如果发现所有相关 SHOT_RENDER 均已成功，则自动触发合成
+   */
+  private async handleStage1ShotCompletion(job: ShotJob): Promise<void> {
+    const payload = (job.payload as any) || {};
+    const pipelineRunId = payload.pipelineRunId;
+
+    if (!pipelineRunId) return;
+
+    // 检查是否存在对应的 Stage-1 Pipeline Job
+    const pipelineJob = await this.prisma.shotJob.findFirst({
+      where: {
+        type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
+        traceId: pipelineRunId,
+      },
+    });
+
+    if (!pipelineJob) return;
+
+    // 统计该流水线跑批中尚未成功的 SHOT_RENDER 数量
+    const remainingCount = await this.prisma.shotJob.count({
+      where: {
+        type: JobTypeEnum.SHOT_RENDER,
+        status: { notIn: [JobStatusEnum.SUCCEEDED, JobStatusEnum.FAILED] },
+        payload: {
+          path: ['pipelineRunId'],
+          equals: pipelineRunId,
+        },
+      },
+    });
+
+    if (remainingCount === 0) {
+      this.logger.log(`[Stage-1] All shots completed for run ${pipelineRunId}. Triggering Assemble...`);
+      await this.triggerStage1PipelineAssemble(pipelineRunId, job.projectId, job.organizationId);
+    }
+  }
+
+  /**
+   * Stage-1: 执行最后的合成动作
+   */
+  private async triggerStage1PipelineAssemble(
+    pipelineRunId: string,
+    projectId: string,
+    organizationId: string
+  ): Promise<void> {
+    const succeededShots = await this.prisma.shotJob.findMany({
+      where: {
+        status: JobStatusEnum.SUCCEEDED,
+        payload: {
+          path: ['pipelineRunId'],
+          equals: pipelineRunId,
+        },
+      },
+      include: { shot: true },
+      orderBy: { shot: { index: 'asc' } },
+    });
+
+    if (succeededShots.length === 0) {
+      this.logger.warn(`[Stage-1] No succeeded shots found for run ${pipelineRunId} to assemble.`);
+      return;
+    }
+    this.logger.log(`[Stage-1] Found ${succeededShots.length} succeeded shots for run ${pipelineRunId}`);
+
+    // 收集所有已成功的帧存储路径
+    const frames = succeededShots
+      .map((sj: any) => sj.payload?.result?.output?.storageKey || sj.payload?.result?.storageKey)
+      .filter(Boolean);
+
+    if (frames.length === 0) {
+      this.logger.warn(`[Stage-1] No frames found for assembly in run ${pipelineRunId}`);
+      return;
+    }
+
+    // 关联到 Pipeline 的占位镜头（如果有），否则关联到第一个镜头
+    const placeholderShot = await this.prisma.shot.findFirst({
+      where: {
+        type: 'pipeline_stage1',
+        scene: { episode: { projectId } },
+      },
+    });
+
+    const targetShotId = placeholderShot?.id || succeededShots[0].shotId;
+
+    await this.ensureVideoRenderJob(
+      targetShotId,
+      frames,
+      pipelineRunId,
+      'system',
+      organizationId
+    );
+  }
+
+  /**
+   * Stage-1: 处理视频合成任务成功后的发布记录逻辑
+   */
+  private async handleStage1VideoCompletion(job: ShotJob, result: any): Promise<void> {
+    const payload = (job.payload as any) || {};
+    const pipelineRunId = payload.pipelineRunId;
+    if (!pipelineRunId) return;
+
+    // 检查是否存在对应的 Stage-1 Pipeline Job
+    const pipelineJob = await this.prisma.shotJob.findFirst({
+      where: {
+        type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
+        traceId: pipelineRunId,
+      },
+    });
+
+    if (!pipelineJob) return;
+
+    this.logger.log(
+      `[Stage-1] VIDEO_RENDER completed for run ${pipelineRunId}. Recording Internal Publication...`
+    );
+
+    // 提取 Asset 信息
+    const assetId = result?.output?.assetId || result?.assetId;
+    const storageKey = result?.output?.storageKey || result?.storageKey;
+
+    if (!assetId || !storageKey) {
+      this.logger.warn(
+        `[Stage-1] VIDEO_RENDER result missing assetId or storageKey for run ${pipelineRunId}`
+      );
+      return;
+    }
+
+    // 获取校验和
+    const asset = await this.prisma.asset.findUnique({ where: { id: assetId } });
+    const checksum = asset?.checksum || 'unknown';
+
+    await this.publishedVideoService.recordPublishedVideo({
+      projectId: job.projectId!,
+      episodeId: job.episodeId!,
+      assetId,
+      storageKey,
+      checksum,
+      pipelineRunId,
+    });
+    this.logger.log(
+      `[Stage-1] Internal Publication recorded for run ${pipelineRunId} (Asset: ${assetId})`
+    );
   }
 }

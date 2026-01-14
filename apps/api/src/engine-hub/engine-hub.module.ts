@@ -15,8 +15,10 @@ import { AuditLogModule } from '../audit-log/audit-log.module';
 import { AuthModule } from '../auth/auth.module';
 import { HmacAuthModule } from '../auth/hmac/hmac-auth.module';
 
+import { CostModule } from '../cost/cost.module';
+
 @Module({
-  imports: [EngineModule, AuditLogModule, AuthModule, HmacAuthModule], // 导入相关模块以支持认证 Guard
+  imports: [EngineModule, AuditLogModule, AuthModule, HmacAuthModule, CostModule], // 导入相关模块以支持认证 Guard 与成本管控
   controllers: [EngineHubController],
   providers: [
     EngineRegistryHubService,
@@ -27,4 +29,4 @@ import { HmacAuthModule } from '../auth/hmac/hmac-auth.module';
   ],
   exports: [EngineRegistryHubService, EngineInvokerHubService],
 })
-export class EngineHubModule {}
+export class EngineHubModule { }

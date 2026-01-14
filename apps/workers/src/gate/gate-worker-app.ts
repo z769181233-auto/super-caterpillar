@@ -16,6 +16,7 @@ import { processVideoRenderJob } from '../processors/video-render.processor';
 import { processMediaSecurityJob } from '../processors/media-security.processor';
 import { processTimelineComposeJob } from '../processors/timeline-compose.processor';
 import { processTimelineRenderJob } from '../processors/timeline-render.processor';
+import { processStage1OrchestratorJob } from '../processors/stage1-orchestrator.processor';
 import { JobType } from 'database';
 import { ApiClient } from '../api-client';
 import { PrismaClient } from 'database';
@@ -92,9 +93,10 @@ export async function startGateWorkerApp() {
         'CE09_MEDIA_SECURITY', // S4-5
         'PIPELINE_TIMELINE_COMPOSE', // S4-7
         'TIMELINE_RENDER', // S4-7
+        'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
       ],
       supportedModels: [],
-      supportedEngines: filteredEngines,
+      supportedEngines: ['gate_noop', 'pipeline_orchestrator', 'stage1_orchestrator', 'video_merge', 'default_shot_render'],
       maxBatchSize: 1,
     },
   });
@@ -218,7 +220,8 @@ export async function startGateWorkerApp() {
           });
         } else if (job.type === 'SHOT_RENDER') {
           // S4-3: Conditional Routing
-          if (job.payload?.pipelineRunId && process.env.RENDER_ENGINE === 'mock') {
+          // P0 Fix: Pipeline jobs should always produce mock frames to trigger real FFmpeg video render
+          if (job.payload?.pipelineRunId) {
             process.stdout.write(util.format(`[GateWorker] 执行 S4-3 Mock Shot Render...`) + '\n');
             result = await processShotRenderJob({
               prisma,
@@ -233,6 +236,13 @@ export async function startGateWorkerApp() {
             }
             result = await gateNoopShotRender(job);
           }
+        } else if (job.type === 'PIPELINE_STAGE1_NOVEL_TO_VIDEO') {
+          process.stdout.write(util.format(`[GateWorker] 执行 Stage 1 Orchestrator...`) + '\n');
+          result = await processStage1OrchestratorJob({
+            prisma,
+            job: job as any,
+            apiClient,
+          });
         } else {
           // Fallback for other types if any
           process.stdout.write(

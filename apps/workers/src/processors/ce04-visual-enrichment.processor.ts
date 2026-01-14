@@ -61,7 +61,7 @@ export async function processCE04VisualEnrichmentJob(
         resourceType: 'shot',
         resourceId: job.shotId || 'unknown',
         action: 'ce04.visual_enrichment.success',
-        orgId: jobOrgId,
+        orgId: jobOrgId || 'default-org',
         details: {
           jobId: job.id,
           traceId,
@@ -79,7 +79,7 @@ export async function processCE04VisualEnrichmentJob(
       traceId: (traceId as string) || job.id,
       projectId,
       userId: 'system',
-      orgId: jobOrgId,
+      orgId: jobOrgId || 'default-org',
       engineKey: 'ce04_visual_enrichment',
       runId: pipelineRunId as string,
       billingUsage: {
@@ -113,7 +113,7 @@ export async function processCE04VisualEnrichmentJob(
             resourceType: 'job',
             resourceId: existingRender.id,
             action: 'ce04.spawn.shot_render.skipped',
-            orgId: jobOrgId,
+            orgId: jobOrgId || 'default-org',
             details: {
               reason: 'idempotency_hit',
               existingJobId: existingRender.id,
@@ -147,7 +147,7 @@ export async function processCE04VisualEnrichmentJob(
             resourceType: 'job',
             resourceId: renderJob.id,
             action: 'ce04.spawn.shot_render',
-            orgId: jobOrgId,
+            orgId: jobOrgId || 'default-org',
             details: {
               renderJobId: renderJob.id,
               ce04JobId: job.id,

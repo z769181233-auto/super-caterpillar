@@ -104,6 +104,7 @@ model Project {
   shotJobs               ShotJob[]               @relation("ProjectShotJobs")
   structureQualityReport StructureQualityReport? @relation("ProjectQualityReport")
   novelVolumes           NovelVolume[]           @relation("ProjectNovelVolumes")
+  publishedVideos        PublishedVideo[]        @relation("ProjectPublishedVideos")
 
   @@map("projects")
 }
@@ -139,6 +140,7 @@ model Episode {
   publishingReviews PublishingReview[] @relation("EpisodePublishingReview")
   scenes            Scene[]            @relation("EpisodeScenes")
   shotJobs          ShotJob[]          @relation("EpisodeShotJobs")
+  publishedVideos   PublishedVideo[]   @relation("EpisodePublishedVideos")
 
   @@map("episodes")
 }
@@ -1041,7 +1043,8 @@ model Asset {
   // The user requested: signed_url, hls_playlist_url, watermark_mode, fingerprint_id
   // These are already mapped to the @map fields above.
 
-  fingerprint SecurityFingerprint? @relation("AssetFingerprint", fields: [fingerprintId], references: [id])
+  fingerprint    SecurityFingerprint? @relation("AssetFingerprint", fields: [fingerprintId], references: [id])
+  publishedVideo PublishedVideo?      @relation("AssetPublishedVideo")
 
   @@unique([ownerType, ownerId, type])
   @@index([projectId])
@@ -1215,6 +1218,7 @@ enum JobType {
   CE09_MEDIA_SECURITY
   VIDEO_RENDER
   PIPELINE_E2E_VIDEO
+  PIPELINE_STAGE1_NOVEL_TO_VIDEO
   PIPELINE_TIMELINE_COMPOSE
   TIMELINE_RENDER
   TIMELINE_PREVIEW
@@ -1413,4 +1417,23 @@ enum AssetStatus {
 enum AssetOwnerType {
   SCENE
   SHOT
+}
+
+model PublishedVideo {
+  id         String   @id @default(uuid())
+  projectId  String
+  episodeId  String
+  assetId    String   @unique
+  storageKey String
+  checksum   String
+  status     String   @default("PUBLISHED") // PUBLISHED, ARCHIVED
+  metadata   Json?    @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  project Project @relation("ProjectPublishedVideos", fields: [projectId], references: [id], onDelete: Cascade)
+  episode Episode @relation("EpisodePublishedVideos", fields: [episodeId], references: [id], onDelete: Cascade)
+  asset   Asset   @relation("AssetPublishedVideo", fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("published_videos")
 }

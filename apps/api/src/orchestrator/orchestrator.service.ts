@@ -1,5 +1,9 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { ApiSecurityModule } from '../security/api-security/api-security.module';
+import { ProjectModule } from '../project/project.module';
+import { NovelImportModule } from '../novel-import/novel-import.module';
+import { PublishedVideoService } from '../publish/published-video.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkerService } from '../worker/worker.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -24,18 +28,15 @@ export class OrchestratorService {
   private readonly logger = new Logger(OrchestratorService.name);
 
   constructor(
-    @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => WorkerService))
     private readonly workerService: WorkerService,
-    @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
-    @Inject(TaskService)
     private readonly taskService: TaskService,
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
-    @Inject(EngineRegistry)
-    private readonly engineRegistry: EngineRegistry
+    private readonly engineRegistry: EngineRegistry,
+    private readonly publishedVideoService: PublishedVideoService
   ) { }
 
   /**
@@ -633,6 +634,153 @@ export class OrchestratorService {
     return {
       taskId: task.id,
       jobIds: [ce06Job.id],
+    };
+  }
+
+  /**
+   * Stage 1: Novel -> Production Video 一键流水线启动
+   * 1. 自动创建 Project/Season/Episode
+   * 2. 保存小说文本到 NovelSource/NovelChapter
+   * 3. 投递 PIPELINE_STAGE1_NOVEL_TO_VIDEO Job
+   */
+  async startStage1Pipeline(params: { novelText: string; projectId?: string }) {
+    const { novelText, projectId: existingProjectId } = params;
+    const { randomUUID } = await import('crypto');
+    const traceId = `stage1_${randomUUID()}`;
+
+    // 1. Resolve Project (Create if missing)
+    let projectId = existingProjectId;
+    // Fix: Dynamic Org Lookup (Avoid invalid foreign key)
+    const defaultOrg = await this.prisma.organization.findFirst();
+    let organizationId = defaultOrg?.id || 'default-org';
+
+    // Fix: Dynamic User Lookup
+    const defaultUser = await this.prisma.user.findFirst();
+    const ownerId = defaultUser?.id || 'system';
+
+    if (!projectId) {
+      const project = await this.prisma.project.create({
+        data: {
+          name: `Stage1_${new Date().toISOString().slice(0, 10)}`,
+          organizationId,
+          status: 'in_progress',
+          ownerId,
+        } as any,
+      });
+      projectId = project.id;
+    } else {
+      const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+      if (!project) throw new Error(`Project ${projectId} not found`);
+      organizationId = project.organizationId;
+    }
+
+    // 2. Create Novel Source & Volume & Chapter
+    const novelSource = await this.prisma.novelSource.create({
+      data: {
+        projectId,
+        novelAuthor: 'System',
+        rawText: novelText,
+      } as any,
+    });
+
+    const volume = await this.prisma.novelVolume.create({
+      data: {
+        projectId,
+        novelSourceId: novelSource.id,
+        index: 1,
+        title: 'Volume 1',
+      },
+    });
+
+    const chapter = await this.prisma.novelChapter.create({
+      data: {
+        novelSourceId: novelSource.id,
+        volumeId: volume.id,
+        index: 1,
+        title: 'Chapter 1',
+      } as any,
+    });
+
+    // Save actual text to NovelScene (Minimal context)
+    await this.prisma.novelScene.create({
+      data: {
+        chapterId: chapter.id,
+        index: 1,
+        rawText: novelText,
+      },
+    });
+
+    // 3. Create Season & Episode for orchestration
+    const season = await this.prisma.season.create({
+      data: {
+        projectId,
+        index: 1,
+        title: 'Season 1',
+      } as any,
+    });
+
+    const episode = await this.prisma.episode.create({
+      data: {
+        projectId,
+        seasonId: season.id,
+        index: 1,
+        name: 'Chapter 1',
+        chapterId: chapter.id,
+      } as any,
+    });
+
+    // 3.5 Create placeholder Scene & Shot for Pipeline Job (Required by Schema & JobService)
+    const scene = await this.prisma.scene.create({
+      data: {
+        episodeId: episode.id,
+        projectId,
+        index: 9999, // Pipeline placeholder
+        title: 'Stage 1 Pipeline Scene',
+        summary: 'Auto-generated for pipeline orchestration',
+      },
+    });
+
+    const shot = await this.prisma.shot.create({
+      data: {
+        sceneId: scene.id,
+        index: 9999,
+        title: 'Stage 1 Pipeline Shot',
+        description: 'Auto-generated for pipeline orchestration',
+        type: 'pipeline_stage1',
+        params: {},
+        organizationId,
+      } as any,
+    });
+
+    // 4. Dispatch the Pipeline Job
+    // EXECUTE-0 Fix: Correct argument order (shotId, dto, userId, orgId)
+    const job = await this.jobService.create(
+      shot.id,
+      {
+        type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
+        traceId,
+        payload: {
+          novelText,
+          novelSourceId: novelSource.id,
+          chapterId: chapter.id,
+          episodeId: episode.id,
+          pipelineRunId: traceId,
+          projectId,
+          organizationId,
+        },
+      } as any,
+      ownerId,
+      organizationId
+    );
+
+    this.logger.log(`Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`);
+
+    return {
+      success: true,
+      pipelineRunId: traceId,
+      jobId: job.id,
+      projectId,
+      episodeId: episode.id,
     };
   }
 }

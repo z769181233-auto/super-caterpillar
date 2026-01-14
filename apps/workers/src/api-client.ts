@@ -440,4 +440,18 @@ export class ApiClient {
 
     return response.data || { ok: true, id: 'unknown', deduplicated: false };
   }
+
+  /**
+   * 创建新 Job (通过 API 以确保计费和引擎绑定生效)
+   * POST /shots/:shotId/jobs
+   */
+  async createJob(shotId: string, dto: { type: string; payload?: any; traceId?: string }, headers?: Record<string, string>): Promise<any> {
+    const response = await this.request<any>('POST', `/api/shots/${shotId}/jobs`, dto, headers);
+
+    if (!response.success && !(response as any).data) {
+      throw new Error(`Failed to create job: ${response.error?.message || response.message}`);
+    }
+
+    return response.data;
+  }
 }

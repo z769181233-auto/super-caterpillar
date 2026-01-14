@@ -38,25 +38,27 @@ export class ShotRenderRouterAdapter implements EngineAdapter {
 
     async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
         // 1. Explicit provider selection
-        const provider = this.selectProvider();
+        const { provider, reason } = this.selectProvider();
         const adapter = this.getAdapter(provider);
 
-        this.logger.log(`[ShotRenderRouter] Selected provider: ${provider.provider} (reason: ${provider.reason})`);
+        this.logger.log(`[ShotRenderRouter] Selected provider: ${provider} (reason: ${reason})`);
 
         // 2. Invoke selected adapter
         const result = await adapter.invoke(input);
 
         // 3. Enhance audit_trail with selection metadata
         if (result.status === 'SUCCESS' && result.output) {
-            const enhancedAuditTrail = {
-                ...(result.output as any).audit_trail,
-                providerSelected: provider.provider,
-                selectionReason: provider.reason,
-                routedBy: this.name,
-                prompt_hash: createHash('sha256').update(input.payload.enrichedPrompt || input.payload.prompt || '').digest('hex'),
-            };
+            const output = result.output as any;
+            const prompt = input.payload.enrichedPrompt || input.payload.prompt || '';
 
-            (result.output as any).audit_trail = enhancedAuditTrail;
+            output.audit_trail = {
+                ...output.audit_trail,
+                providerSelected: provider,
+                selectionReason: reason,
+                routedBy: this.name,
+                prompt_hash: createHash('sha256').update(prompt).digest('hex'),
+                pricing_key: provider === 'replicate' ? 'REPLICATE_SDXL' : 'LOCAL_FREE',
+            };
         }
 
         return result;
@@ -69,35 +71,23 @@ export class ShotRenderRouterAdapter implements EngineAdapter {
      * 1. SHOT_RENDER_PROVIDER env var
      * 2. Default: replicate
      * 
-     * No silent fallback to mock://
+     * NO SILENT FALLBACK: If replicate selected but token missing, THROW.
      */
     private selectProvider(): { provider: 'replicate' | 'local'; reason: string } {
-        const envProvider = process.env.SHOT_RENDER_PROVIDER?.toLowerCase();
+        const envProvider = (process.env.SHOT_RENDER_PROVIDER || 'replicate').toLowerCase();
 
-        // Explicit env override
-        if (envProvider === 'replicate' || envProvider === 'local') {
-            return {
-                provider: envProvider as 'replicate' | 'local',
-                reason: 'SHOT_RENDER_PROVIDER env var'
-            };
+        if (envProvider === 'local') {
+            return { provider: 'local', reason: 'Explicit SHOT_RENDER_PROVIDER=local' };
         }
 
-        // Check if Replicate token exists
-        const hasReplicateToken = !!process.env.REPLICATE_API_TOKEN?.trim();
-
-        if (hasReplicateToken) {
-            return {
-                provider: 'replicate',
-                reason: 'default (REPLICATE_API_TOKEN configured)'
-            };
+        if (envProvider === 'replicate') {
+            if (!process.env.REPLICATE_API_TOKEN?.trim()) {
+                throw new Error('JOB_CONFIG_INVALID: REPLICATE_API_TOKEN missing while SHOT_RENDER_PROVIDER=replicate. Production forbids silent fallback to mock/demo.');
+            }
+            return { provider: 'replicate', reason: 'Default/Explicit SHOT_RENDER_PROVIDER=replicate' };
         }
 
-        // Fallback to local ONLY if token missing
-        this.logger.warn('[ShotRenderRouter] REPLICATE_API_TOKEN missing, falling back to local adapter');
-        return {
-            provider: 'local',
-            reason: 'fallback (TOKEN_MISSING)'
-        };
+        throw new Error(`JOB_CONFIG_INVALID: Unknown SHOT_RENDER_PROVIDER="${envProvider}". Valid: replicate, local`);
     }
 
     private getAdapter(provider: 'replicate' | 'local'): EngineAdapter {

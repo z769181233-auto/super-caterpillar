@@ -857,6 +857,19 @@ exports.Prisma.CostLedgerScalarFieldEnum = {
   billingError: 'billingError'
 };
 
+exports.Prisma.PublishedVideoScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  episodeId: 'episodeId',
+  assetId: 'assetId',
+  storageKey: 'storageKey',
+  checksum: 'checksum',
+  status: 'status',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1007,6 +1020,7 @@ exports.JobType = exports.$Enums.JobType = {
   CE09_MEDIA_SECURITY: 'CE09_MEDIA_SECURITY',
   VIDEO_RENDER: 'VIDEO_RENDER',
   PIPELINE_E2E_VIDEO: 'PIPELINE_E2E_VIDEO',
+  PIPELINE_STAGE1_NOVEL_TO_VIDEO: 'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
   PIPELINE_TIMELINE_COMPOSE: 'PIPELINE_TIMELINE_COMPOSE',
   TIMELINE_RENDER: 'TIMELINE_RENDER',
   TIMELINE_PREVIEW: 'TIMELINE_PREVIEW'
@@ -1186,7 +1200,8 @@ exports.Prisma.ModelName = {
   Model: 'Model',
   Asset: 'Asset',
   TextSafetyResult: 'TextSafetyResult',
-  CostLedger: 'CostLedger'
+  CostLedger: 'CostLedger',
+  PublishedVideo: 'PublishedVideo'
 };
 
 /**

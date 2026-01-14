@@ -81,7 +81,7 @@ export async function processCE03VisualDensityJob(context: CE03Context): Promise
         resourceType: 'shot',
         resourceId: job.shotId || 'unknown',
         action: 'ce03.visual_density.success',
-        orgId: jobOrgId,
+        orgId: jobOrgId || 'default-org',
         // actorId, traceId in details
         details: {
           jobId: job.id,
@@ -117,7 +117,7 @@ export async function processCE03VisualDensityJob(context: CE03Context): Promise
       traceId: traceId || job.id,
       projectId,
       userId: 'system', // or derived from job
-      orgId: jobOrgId,
+      orgId: jobOrgId || 'default-org',
       engineKey: 'ce03_visual_density',
       runId: pipelineRunId as string,
       billingUsage: {

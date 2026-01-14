@@ -1,5 +1,4 @@
-import { JobType, AssetOwnerType, AssetType } from 'database';
-import { PrismaClient } from 'database';
+import { PrismaClient, AssetType, AssetOwnerType, JobStatus, JobType } from 'database';
 import { ApiClient } from '../api-client';
 import { CostLedgerService } from '../billing/cost-ledger.service';
 // @ts-ignore
@@ -7,6 +6,8 @@ import { WorkerJob } from '../types';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as util from 'util';
+import * as crypto from 'crypto';
+import * as cp from 'child_process';
 import { exec, spawn } from 'child_process';
 
 export interface VideoRenderProcessorResult {
@@ -26,13 +27,14 @@ export async function processVideoRenderJob(context: {
 
     // 1. Validate Payload
     const payload = job.payload || {};
-    const { pipelineRunId, traceId, frames } = payload;
+    const { pipelineRunId, traceId } = payload;
     const episodeId = job.episodeId || payload.episodeId;
     const projectId = job.projectId || payload.projectId;
 
     if (!pipelineRunId) throw new Error('[VideoRender] Missing pipelineRunId');
     // Note: episodeId might be missing in job context, we will robustly fetch it later for CE09
     if (!projectId) throw new Error('[VideoRender] Missing projectId');
+    const frames = job.payload?.frames || job.payload?.frameKeys;
     if (!frames || !Array.isArray(frames) || frames.length === 0) {
         throw new Error('[VideoRender] Missing frames list');
     }
@@ -155,6 +157,19 @@ export async function processVideoRenderJob(context: {
             logger.log(`[VideoRender] Mock MOCK synthesized to ${outputPath}`);
         }
 
+        // 3.5 Evidence: Compute SHA256 & Generate ffprobe.json
+        const fileBuffer = fs.readFileSync(outputPath);
+        const checksum = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+        try {
+            const ffprobeCmd = `ffprobe -v quiet -print_format json -show_format -show_streams "${outputPath}"`;
+            const ffprobeJSON = cp.execSync(ffprobeCmd).toString();
+            fs.writeFileSync(`${outputPath}.ffprobe.json`, ffprobeJSON);
+            logger.log(`[VideoRender] ffprobe evidence generated: ${outputPath}.ffprobe.json`);
+        } catch (e: any) {
+            logger.warn(`[VideoRender] ffprobe failed: ${e.message}`);
+        }
+
         // 4. Persistence (Asset)
         let targetOwnerId = job.shotId || (payload.shotId as string);
 
@@ -180,6 +195,7 @@ export async function processVideoRenderJob(context: {
             },
             update: {
                 storageKey: outputRelativeKey,
+                checksum: checksum,
             },
             create: {
                 projectId: projectId,
@@ -187,6 +203,7 @@ export async function processVideoRenderJob(context: {
                 ownerType: AssetOwnerType.SHOT,
                 type: AssetType.VIDEO,
                 storageKey: outputRelativeKey,
+                checksum: checksum,
                 status: 'GENERATED',
                 createdByJobId: job.id,
             },
@@ -313,6 +330,49 @@ export async function processVideoRenderJob(context: {
             const msg = `[VideoRender] CE09_MEDIA_SECURITY already exists for run ${pipelineRunId}, skipping spawn.\n`;
             console.log(msg);
             fs.appendFileSync('processor-debug-v2.log', msg);
+        }
+
+        // 5.7 NEW: Seal Stage 1 Real Baseline - Create PublishedVideo if requested
+        if (payload.publish === true) {
+            logger.log(`[VideoRender] Sealing Stage-1: Creating PublishedVideo for asset ${asset.id}`);
+
+            // Validation: episodeId and projectId are required for creation
+            if (typeof episodeId !== 'string' || typeof projectId !== 'string') {
+                logger.warn(`[VideoRender] Cannot create PublishedVideo: IDs are not strings (projectId: ${typeof projectId}, episodeId: ${typeof episodeId})`);
+            } else {
+                const finalProjectId = projectId;
+                const finalEpisodeId = episodeId;
+
+                const upsertData: any = {
+                    where: {
+                        assetId: asset.id
+                    },
+                    update: {
+                        storageKey: asset.storageKey,
+                        checksum: asset.checksum,
+                        status: 'PUBLISHED',
+                        metadata: {
+                            ...(payload.metadata || {}),
+                            pipelineRunId,
+                            ffprobeKey: `${asset.storageKey}.ffprobe.json`
+                        }
+                    },
+                    create: {
+                        projectId: finalProjectId,
+                        episodeId: finalEpisodeId,
+                        assetId: asset.id,
+                        storageKey: asset.storageKey,
+                        checksum: asset.checksum,
+                        status: 'PUBLISHED',
+                        metadata: {
+                            pipelineRunId,
+                            ffprobeKey: `${asset.storageKey}.ffprobe.json`
+                        }
+                    }
+                };
+                await (prisma.publishedVideo as any).upsert(upsertData);
+                logger.log(`[VideoRender] PublishedVideo created/updated for Episode ${episodeId}`);
+            }
         }
 
         return {

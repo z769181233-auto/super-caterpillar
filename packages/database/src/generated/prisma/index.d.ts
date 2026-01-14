@@ -298,6 +298,11 @@ export type TextSafetyResult = $Result.DefaultSelection<Prisma.$TextSafetyResult
  * 
  */
 export type CostLedger = $Result.DefaultSelection<Prisma.$CostLedgerPayload>
+/**
+ * Model PublishedVideo
+ * 
+ */
+export type PublishedVideo = $Result.DefaultSelection<Prisma.$PublishedVideoPayload>
 
 /**
  * Enums
@@ -466,6 +471,7 @@ export const JobType: {
   CE09_MEDIA_SECURITY: 'CE09_MEDIA_SECURITY',
   VIDEO_RENDER: 'VIDEO_RENDER',
   PIPELINE_E2E_VIDEO: 'PIPELINE_E2E_VIDEO',
+  PIPELINE_STAGE1_NOVEL_TO_VIDEO: 'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
   PIPELINE_TIMELINE_COMPOSE: 'PIPELINE_TIMELINE_COMPOSE',
   TIMELINE_RENDER: 'TIMELINE_RENDER',
   TIMELINE_PREVIEW: 'TIMELINE_PREVIEW'
@@ -1470,6 +1476,16 @@ export class PrismaClient<
     * ```
     */
   get costLedger(): Prisma.CostLedgerDelegate<ExtArgs>;
+
+  /**
+   * `prisma.publishedVideo`: Exposes CRUD operations for the **PublishedVideo** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PublishedVideos
+    * const publishedVideos = await prisma.publishedVideo.findMany()
+    * ```
+    */
+  get publishedVideo(): Prisma.PublishedVideoDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1967,7 +1983,8 @@ export namespace Prisma {
     Model: 'Model',
     Asset: 'Asset',
     TextSafetyResult: 'TextSafetyResult',
-    CostLedger: 'CostLedger'
+    CostLedger: 'CostLedger',
+    PublishedVideo: 'PublishedVideo'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1983,7 +2000,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "organization" | "membership" | "project" | "season" | "episode" | "scene" | "shot" | "semanticEnhancement" | "shotPlanning" | "structureQualityReport" | "engineTask" | "engine" | "engineVersion" | "jobEngineBinding" | "nonceStore" | "role" | "permission" | "rolePermission" | "projectMember" | "task" | "workerJob" | "shotJob" | "workerNode" | "workerHeartbeat" | "modelRegistry" | "templatePreset" | "qualityScore" | "safetyResult" | "billingEvent" | "costCenter" | "subscription" | "publishingReview" | "organizationMember" | "novelSource" | "sceneDraft" | "novelAnalysisJob" | "apiKey" | "auditLog" | "securityFingerprint" | "shotVariant" | "videoJob" | "character" | "novelVolume" | "novelChapter" | "novelScene" | "memoryShortTerm" | "memoryLongTerm" | "novelParseResult" | "qualityMetrics" | "systemSetting" | "billingPlan" | "billingRecord" | "model" | "asset" | "textSafetyResult" | "costLedger"
+      modelProps: "user" | "organization" | "membership" | "project" | "season" | "episode" | "scene" | "shot" | "semanticEnhancement" | "shotPlanning" | "structureQualityReport" | "engineTask" | "engine" | "engineVersion" | "jobEngineBinding" | "nonceStore" | "role" | "permission" | "rolePermission" | "projectMember" | "task" | "workerJob" | "shotJob" | "workerNode" | "workerHeartbeat" | "modelRegistry" | "templatePreset" | "qualityScore" | "safetyResult" | "billingEvent" | "costCenter" | "subscription" | "publishingReview" | "organizationMember" | "novelSource" | "sceneDraft" | "novelAnalysisJob" | "apiKey" | "auditLog" | "securityFingerprint" | "shotVariant" | "videoJob" | "character" | "novelVolume" | "novelChapter" | "novelScene" | "memoryShortTerm" | "memoryLongTerm" | "novelParseResult" | "qualityMetrics" | "systemSetting" | "billingPlan" | "billingRecord" | "model" | "asset" | "textSafetyResult" | "costLedger" | "publishedVideo"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -5977,6 +5994,76 @@ export namespace Prisma {
           }
         }
       }
+      PublishedVideo: {
+        payload: Prisma.$PublishedVideoPayload<ExtArgs>
+        fields: Prisma.PublishedVideoFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PublishedVideoFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PublishedVideoFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload>
+          }
+          findFirst: {
+            args: Prisma.PublishedVideoFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PublishedVideoFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload>
+          }
+          findMany: {
+            args: Prisma.PublishedVideoFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload>[]
+          }
+          create: {
+            args: Prisma.PublishedVideoCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload>
+          }
+          createMany: {
+            args: Prisma.PublishedVideoCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PublishedVideoCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload>[]
+          }
+          delete: {
+            args: Prisma.PublishedVideoDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload>
+          }
+          update: {
+            args: Prisma.PublishedVideoUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload>
+          }
+          deleteMany: {
+            args: Prisma.PublishedVideoDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PublishedVideoUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PublishedVideoUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PublishedVideoPayload>
+          }
+          aggregate: {
+            args: Prisma.PublishedVideoAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePublishedVideo>
+          }
+          groupBy: {
+            args: Prisma.PublishedVideoGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PublishedVideoGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PublishedVideoCountArgs<ExtArgs>
+            result: $Utils.Optional<PublishedVideoCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -6393,6 +6480,7 @@ export namespace Prisma {
     seasons: number
     shotJobs: number
     novelVolumes: number
+    publishedVideos: number
   }
 
   export type ProjectCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6409,6 +6497,7 @@ export namespace Prisma {
     seasons?: boolean | ProjectCountOutputTypeCountSeasonsArgs
     shotJobs?: boolean | ProjectCountOutputTypeCountShotJobsArgs
     novelVolumes?: boolean | ProjectCountOutputTypeCountNovelVolumesArgs
+    publishedVideos?: boolean | ProjectCountOutputTypeCountPublishedVideosArgs
   }
 
   // Custom InputTypes
@@ -6513,6 +6602,13 @@ export namespace Prisma {
     where?: NovelVolumeWhereInput
   }
 
+  /**
+   * ProjectCountOutputType without action
+   */
+  export type ProjectCountOutputTypeCountPublishedVideosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PublishedVideoWhereInput
+  }
+
 
   /**
    * Count Type SeasonCountOutputType
@@ -6553,12 +6649,14 @@ export namespace Prisma {
     publishingReviews: number
     scenes: number
     shotJobs: number
+    publishedVideos: number
   }
 
   export type EpisodeCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     publishingReviews?: boolean | EpisodeCountOutputTypeCountPublishingReviewsArgs
     scenes?: boolean | EpisodeCountOutputTypeCountScenesArgs
     shotJobs?: boolean | EpisodeCountOutputTypeCountShotJobsArgs
+    publishedVideos?: boolean | EpisodeCountOutputTypeCountPublishedVideosArgs
   }
 
   // Custom InputTypes
@@ -6591,6 +6689,13 @@ export namespace Prisma {
    */
   export type EpisodeCountOutputTypeCountShotJobsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ShotJobWhereInput
+  }
+
+  /**
+   * EpisodeCountOutputType without action
+   */
+  export type EpisodeCountOutputTypeCountPublishedVideosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PublishedVideoWhereInput
   }
 
 
@@ -10855,6 +10960,7 @@ export namespace Prisma {
     shotJobs?: boolean | Project$shotJobsArgs<ExtArgs>
     structureQualityReport?: boolean | Project$structureQualityReportArgs<ExtArgs>
     novelVolumes?: boolean | Project$novelVolumesArgs<ExtArgs>
+    publishedVideos?: boolean | Project$publishedVideosArgs<ExtArgs>
     _count?: boolean | ProjectCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["project"]>
 
@@ -10904,6 +11010,7 @@ export namespace Prisma {
     shotJobs?: boolean | Project$shotJobsArgs<ExtArgs>
     structureQualityReport?: boolean | Project$structureQualityReportArgs<ExtArgs>
     novelVolumes?: boolean | Project$novelVolumesArgs<ExtArgs>
+    publishedVideos?: boolean | Project$publishedVideosArgs<ExtArgs>
     _count?: boolean | ProjectCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type ProjectIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -10931,6 +11038,7 @@ export namespace Prisma {
       shotJobs: Prisma.$ShotJobPayload<ExtArgs>[]
       structureQualityReport: Prisma.$StructureQualityReportPayload<ExtArgs> | null
       novelVolumes: Prisma.$NovelVolumePayload<ExtArgs>[]
+      publishedVideos: Prisma.$PublishedVideoPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -11324,6 +11432,7 @@ export namespace Prisma {
     shotJobs<T extends Project$shotJobsArgs<ExtArgs> = {}>(args?: Subset<T, Project$shotJobsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShotJobPayload<ExtArgs>, T, "findMany"> | Null>
     structureQualityReport<T extends Project$structureQualityReportArgs<ExtArgs> = {}>(args?: Subset<T, Project$structureQualityReportArgs<ExtArgs>>): Prisma__StructureQualityReportClient<$Result.GetResult<Prisma.$StructureQualityReportPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     novelVolumes<T extends Project$novelVolumesArgs<ExtArgs> = {}>(args?: Subset<T, Project$novelVolumesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NovelVolumePayload<ExtArgs>, T, "findMany"> | Null>
+    publishedVideos<T extends Project$publishedVideosArgs<ExtArgs> = {}>(args?: Subset<T, Project$publishedVideosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -11968,6 +12077,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: NovelVolumeScalarFieldEnum | NovelVolumeScalarFieldEnum[]
+  }
+
+  /**
+   * Project.publishedVideos
+   */
+  export type Project$publishedVideosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    where?: PublishedVideoWhereInput
+    orderBy?: PublishedVideoOrderByWithRelationInput | PublishedVideoOrderByWithRelationInput[]
+    cursor?: PublishedVideoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PublishedVideoScalarFieldEnum | PublishedVideoScalarFieldEnum[]
   }
 
   /**
@@ -13230,6 +13359,7 @@ export namespace Prisma {
     publishingReviews?: boolean | Episode$publishingReviewsArgs<ExtArgs>
     scenes?: boolean | Episode$scenesArgs<ExtArgs>
     shotJobs?: boolean | Episode$shotJobsArgs<ExtArgs>
+    publishedVideos?: boolean | Episode$publishedVideosArgs<ExtArgs>
     _count?: boolean | EpisodeCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["episode"]>
 
@@ -13263,6 +13393,7 @@ export namespace Prisma {
     publishingReviews?: boolean | Episode$publishingReviewsArgs<ExtArgs>
     scenes?: boolean | Episode$scenesArgs<ExtArgs>
     shotJobs?: boolean | Episode$shotJobsArgs<ExtArgs>
+    publishedVideos?: boolean | Episode$publishedVideosArgs<ExtArgs>
     _count?: boolean | EpisodeCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type EpisodeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -13280,6 +13411,7 @@ export namespace Prisma {
       publishingReviews: Prisma.$PublishingReviewPayload<ExtArgs>[]
       scenes: Prisma.$ScenePayload<ExtArgs>[]
       shotJobs: Prisma.$ShotJobPayload<ExtArgs>[]
+      publishedVideos: Prisma.$PublishedVideoPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -13659,6 +13791,7 @@ export namespace Prisma {
     publishingReviews<T extends Episode$publishingReviewsArgs<ExtArgs> = {}>(args?: Subset<T, Episode$publishingReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PublishingReviewPayload<ExtArgs>, T, "findMany"> | Null>
     scenes<T extends Episode$scenesArgs<ExtArgs> = {}>(args?: Subset<T, Episode$scenesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ScenePayload<ExtArgs>, T, "findMany"> | Null>
     shotJobs<T extends Episode$shotJobsArgs<ExtArgs> = {}>(args?: Subset<T, Episode$shotJobsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShotJobPayload<ExtArgs>, T, "findMany"> | Null>
+    publishedVideos<T extends Episode$publishedVideosArgs<ExtArgs> = {}>(args?: Subset<T, Episode$publishedVideosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -14100,6 +14233,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ShotJobScalarFieldEnum | ShotJobScalarFieldEnum[]
+  }
+
+  /**
+   * Episode.publishedVideos
+   */
+  export type Episode$publishedVideosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    where?: PublishedVideoWhereInput
+    orderBy?: PublishedVideoOrderByWithRelationInput | PublishedVideoOrderByWithRelationInput[]
+    cursor?: PublishedVideoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PublishedVideoScalarFieldEnum | PublishedVideoScalarFieldEnum[]
   }
 
   /**
@@ -63086,6 +63239,7 @@ export namespace Prisma {
     job?: boolean | Asset$jobArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
     fingerprint?: boolean | Asset$fingerprintArgs<ExtArgs>
+    publishedVideo?: boolean | Asset$publishedVideoArgs<ExtArgs>
   }, ExtArgs["result"]["asset"]>
 
   export type AssetSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -63133,6 +63287,7 @@ export namespace Prisma {
     job?: boolean | Asset$jobArgs<ExtArgs>
     project?: boolean | ProjectDefaultArgs<ExtArgs>
     fingerprint?: boolean | Asset$fingerprintArgs<ExtArgs>
+    publishedVideo?: boolean | Asset$publishedVideoArgs<ExtArgs>
   }
   export type AssetIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     shot?: boolean | Asset$shotArgs<ExtArgs>
@@ -63148,6 +63303,7 @@ export namespace Prisma {
       job: Prisma.$ShotJobPayload<ExtArgs> | null
       project: Prisma.$ProjectPayload<ExtArgs>
       fingerprint: Prisma.$SecurityFingerprintPayload<ExtArgs> | null
+      publishedVideo: Prisma.$PublishedVideoPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -63533,6 +63689,7 @@ export namespace Prisma {
     job<T extends Asset$jobArgs<ExtArgs> = {}>(args?: Subset<T, Asset$jobArgs<ExtArgs>>): Prisma__ShotJobClient<$Result.GetResult<Prisma.$ShotJobPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     fingerprint<T extends Asset$fingerprintArgs<ExtArgs> = {}>(args?: Subset<T, Asset$fingerprintArgs<ExtArgs>>): Prisma__SecurityFingerprintClient<$Result.GetResult<Prisma.$SecurityFingerprintPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    publishedVideo<T extends Asset$publishedVideoArgs<ExtArgs> = {}>(args?: Subset<T, Asset$publishedVideoArgs<ExtArgs>>): Prisma__PublishedVideoClient<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -63937,6 +64094,21 @@ export namespace Prisma {
      */
     include?: SecurityFingerprintInclude<ExtArgs> | null
     where?: SecurityFingerprintWhereInput
+  }
+
+  /**
+   * Asset.publishedVideo
+   */
+  export type Asset$publishedVideoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    where?: PublishedVideoWhereInput
   }
 
   /**
@@ -66164,6 +66336,1007 @@ export namespace Prisma {
 
 
   /**
+   * Model PublishedVideo
+   */
+
+  export type AggregatePublishedVideo = {
+    _count: PublishedVideoCountAggregateOutputType | null
+    _min: PublishedVideoMinAggregateOutputType | null
+    _max: PublishedVideoMaxAggregateOutputType | null
+  }
+
+  export type PublishedVideoMinAggregateOutputType = {
+    id: string | null
+    projectId: string | null
+    episodeId: string | null
+    assetId: string | null
+    storageKey: string | null
+    checksum: string | null
+    status: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PublishedVideoMaxAggregateOutputType = {
+    id: string | null
+    projectId: string | null
+    episodeId: string | null
+    assetId: string | null
+    storageKey: string | null
+    checksum: string | null
+    status: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PublishedVideoCountAggregateOutputType = {
+    id: number
+    projectId: number
+    episodeId: number
+    assetId: number
+    storageKey: number
+    checksum: number
+    status: number
+    metadata: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PublishedVideoMinAggregateInputType = {
+    id?: true
+    projectId?: true
+    episodeId?: true
+    assetId?: true
+    storageKey?: true
+    checksum?: true
+    status?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PublishedVideoMaxAggregateInputType = {
+    id?: true
+    projectId?: true
+    episodeId?: true
+    assetId?: true
+    storageKey?: true
+    checksum?: true
+    status?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PublishedVideoCountAggregateInputType = {
+    id?: true
+    projectId?: true
+    episodeId?: true
+    assetId?: true
+    storageKey?: true
+    checksum?: true
+    status?: true
+    metadata?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PublishedVideoAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PublishedVideo to aggregate.
+     */
+    where?: PublishedVideoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PublishedVideos to fetch.
+     */
+    orderBy?: PublishedVideoOrderByWithRelationInput | PublishedVideoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PublishedVideoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PublishedVideos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PublishedVideos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PublishedVideos
+    **/
+    _count?: true | PublishedVideoCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PublishedVideoMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PublishedVideoMaxAggregateInputType
+  }
+
+  export type GetPublishedVideoAggregateType<T extends PublishedVideoAggregateArgs> = {
+        [P in keyof T & keyof AggregatePublishedVideo]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePublishedVideo[P]>
+      : GetScalarType<T[P], AggregatePublishedVideo[P]>
+  }
+
+
+
+
+  export type PublishedVideoGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PublishedVideoWhereInput
+    orderBy?: PublishedVideoOrderByWithAggregationInput | PublishedVideoOrderByWithAggregationInput[]
+    by: PublishedVideoScalarFieldEnum[] | PublishedVideoScalarFieldEnum
+    having?: PublishedVideoScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PublishedVideoCountAggregateInputType | true
+    _min?: PublishedVideoMinAggregateInputType
+    _max?: PublishedVideoMaxAggregateInputType
+  }
+
+  export type PublishedVideoGroupByOutputType = {
+    id: string
+    projectId: string
+    episodeId: string
+    assetId: string
+    storageKey: string
+    checksum: string
+    status: string
+    metadata: JsonValue | null
+    createdAt: Date
+    updatedAt: Date
+    _count: PublishedVideoCountAggregateOutputType | null
+    _min: PublishedVideoMinAggregateOutputType | null
+    _max: PublishedVideoMaxAggregateOutputType | null
+  }
+
+  type GetPublishedVideoGroupByPayload<T extends PublishedVideoGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PublishedVideoGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PublishedVideoGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PublishedVideoGroupByOutputType[P]>
+            : GetScalarType<T[P], PublishedVideoGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PublishedVideoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    projectId?: boolean
+    episodeId?: boolean
+    assetId?: boolean
+    storageKey?: boolean
+    checksum?: boolean
+    status?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+    episode?: boolean | EpisodeDefaultArgs<ExtArgs>
+    asset?: boolean | AssetDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["publishedVideo"]>
+
+  export type PublishedVideoSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    projectId?: boolean
+    episodeId?: boolean
+    assetId?: boolean
+    storageKey?: boolean
+    checksum?: boolean
+    status?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+    episode?: boolean | EpisodeDefaultArgs<ExtArgs>
+    asset?: boolean | AssetDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["publishedVideo"]>
+
+  export type PublishedVideoSelectScalar = {
+    id?: boolean
+    projectId?: boolean
+    episodeId?: boolean
+    assetId?: boolean
+    storageKey?: boolean
+    checksum?: boolean
+    status?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PublishedVideoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+    episode?: boolean | EpisodeDefaultArgs<ExtArgs>
+    asset?: boolean | AssetDefaultArgs<ExtArgs>
+  }
+  export type PublishedVideoIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    project?: boolean | ProjectDefaultArgs<ExtArgs>
+    episode?: boolean | EpisodeDefaultArgs<ExtArgs>
+    asset?: boolean | AssetDefaultArgs<ExtArgs>
+  }
+
+  export type $PublishedVideoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PublishedVideo"
+    objects: {
+      project: Prisma.$ProjectPayload<ExtArgs>
+      episode: Prisma.$EpisodePayload<ExtArgs>
+      asset: Prisma.$AssetPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      projectId: string
+      episodeId: string
+      assetId: string
+      storageKey: string
+      checksum: string
+      status: string
+      metadata: Prisma.JsonValue | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["publishedVideo"]>
+    composites: {}
+  }
+
+  type PublishedVideoGetPayload<S extends boolean | null | undefined | PublishedVideoDefaultArgs> = $Result.GetResult<Prisma.$PublishedVideoPayload, S>
+
+  type PublishedVideoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<PublishedVideoFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: PublishedVideoCountAggregateInputType | true
+    }
+
+  export interface PublishedVideoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PublishedVideo'], meta: { name: 'PublishedVideo' } }
+    /**
+     * Find zero or one PublishedVideo that matches the filter.
+     * @param {PublishedVideoFindUniqueArgs} args - Arguments to find a PublishedVideo
+     * @example
+     * // Get one PublishedVideo
+     * const publishedVideo = await prisma.publishedVideo.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PublishedVideoFindUniqueArgs>(args: SelectSubset<T, PublishedVideoFindUniqueArgs<ExtArgs>>): Prisma__PublishedVideoClient<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one PublishedVideo that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {PublishedVideoFindUniqueOrThrowArgs} args - Arguments to find a PublishedVideo
+     * @example
+     * // Get one PublishedVideo
+     * const publishedVideo = await prisma.publishedVideo.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PublishedVideoFindUniqueOrThrowArgs>(args: SelectSubset<T, PublishedVideoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PublishedVideoClient<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first PublishedVideo that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PublishedVideoFindFirstArgs} args - Arguments to find a PublishedVideo
+     * @example
+     * // Get one PublishedVideo
+     * const publishedVideo = await prisma.publishedVideo.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PublishedVideoFindFirstArgs>(args?: SelectSubset<T, PublishedVideoFindFirstArgs<ExtArgs>>): Prisma__PublishedVideoClient<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first PublishedVideo that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PublishedVideoFindFirstOrThrowArgs} args - Arguments to find a PublishedVideo
+     * @example
+     * // Get one PublishedVideo
+     * const publishedVideo = await prisma.publishedVideo.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PublishedVideoFindFirstOrThrowArgs>(args?: SelectSubset<T, PublishedVideoFindFirstOrThrowArgs<ExtArgs>>): Prisma__PublishedVideoClient<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more PublishedVideos that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PublishedVideoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PublishedVideos
+     * const publishedVideos = await prisma.publishedVideo.findMany()
+     * 
+     * // Get first 10 PublishedVideos
+     * const publishedVideos = await prisma.publishedVideo.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const publishedVideoWithIdOnly = await prisma.publishedVideo.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PublishedVideoFindManyArgs>(args?: SelectSubset<T, PublishedVideoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a PublishedVideo.
+     * @param {PublishedVideoCreateArgs} args - Arguments to create a PublishedVideo.
+     * @example
+     * // Create one PublishedVideo
+     * const PublishedVideo = await prisma.publishedVideo.create({
+     *   data: {
+     *     // ... data to create a PublishedVideo
+     *   }
+     * })
+     * 
+     */
+    create<T extends PublishedVideoCreateArgs>(args: SelectSubset<T, PublishedVideoCreateArgs<ExtArgs>>): Prisma__PublishedVideoClient<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many PublishedVideos.
+     * @param {PublishedVideoCreateManyArgs} args - Arguments to create many PublishedVideos.
+     * @example
+     * // Create many PublishedVideos
+     * const publishedVideo = await prisma.publishedVideo.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PublishedVideoCreateManyArgs>(args?: SelectSubset<T, PublishedVideoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PublishedVideos and returns the data saved in the database.
+     * @param {PublishedVideoCreateManyAndReturnArgs} args - Arguments to create many PublishedVideos.
+     * @example
+     * // Create many PublishedVideos
+     * const publishedVideo = await prisma.publishedVideo.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PublishedVideos and only return the `id`
+     * const publishedVideoWithIdOnly = await prisma.publishedVideo.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PublishedVideoCreateManyAndReturnArgs>(args?: SelectSubset<T, PublishedVideoCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a PublishedVideo.
+     * @param {PublishedVideoDeleteArgs} args - Arguments to delete one PublishedVideo.
+     * @example
+     * // Delete one PublishedVideo
+     * const PublishedVideo = await prisma.publishedVideo.delete({
+     *   where: {
+     *     // ... filter to delete one PublishedVideo
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PublishedVideoDeleteArgs>(args: SelectSubset<T, PublishedVideoDeleteArgs<ExtArgs>>): Prisma__PublishedVideoClient<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one PublishedVideo.
+     * @param {PublishedVideoUpdateArgs} args - Arguments to update one PublishedVideo.
+     * @example
+     * // Update one PublishedVideo
+     * const publishedVideo = await prisma.publishedVideo.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PublishedVideoUpdateArgs>(args: SelectSubset<T, PublishedVideoUpdateArgs<ExtArgs>>): Prisma__PublishedVideoClient<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more PublishedVideos.
+     * @param {PublishedVideoDeleteManyArgs} args - Arguments to filter PublishedVideos to delete.
+     * @example
+     * // Delete a few PublishedVideos
+     * const { count } = await prisma.publishedVideo.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PublishedVideoDeleteManyArgs>(args?: SelectSubset<T, PublishedVideoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PublishedVideos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PublishedVideoUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PublishedVideos
+     * const publishedVideo = await prisma.publishedVideo.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PublishedVideoUpdateManyArgs>(args: SelectSubset<T, PublishedVideoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PublishedVideo.
+     * @param {PublishedVideoUpsertArgs} args - Arguments to update or create a PublishedVideo.
+     * @example
+     * // Update or create a PublishedVideo
+     * const publishedVideo = await prisma.publishedVideo.upsert({
+     *   create: {
+     *     // ... data to create a PublishedVideo
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PublishedVideo we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PublishedVideoUpsertArgs>(args: SelectSubset<T, PublishedVideoUpsertArgs<ExtArgs>>): Prisma__PublishedVideoClient<$Result.GetResult<Prisma.$PublishedVideoPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of PublishedVideos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PublishedVideoCountArgs} args - Arguments to filter PublishedVideos to count.
+     * @example
+     * // Count the number of PublishedVideos
+     * const count = await prisma.publishedVideo.count({
+     *   where: {
+     *     // ... the filter for the PublishedVideos we want to count
+     *   }
+     * })
+    **/
+    count<T extends PublishedVideoCountArgs>(
+      args?: Subset<T, PublishedVideoCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PublishedVideoCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PublishedVideo.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PublishedVideoAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PublishedVideoAggregateArgs>(args: Subset<T, PublishedVideoAggregateArgs>): Prisma.PrismaPromise<GetPublishedVideoAggregateType<T>>
+
+    /**
+     * Group by PublishedVideo.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PublishedVideoGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PublishedVideoGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PublishedVideoGroupByArgs['orderBy'] }
+        : { orderBy?: PublishedVideoGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PublishedVideoGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPublishedVideoGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PublishedVideo model
+   */
+  readonly fields: PublishedVideoFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PublishedVideo.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PublishedVideoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    project<T extends ProjectDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProjectDefaultArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    episode<T extends EpisodeDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EpisodeDefaultArgs<ExtArgs>>): Prisma__EpisodeClient<$Result.GetResult<Prisma.$EpisodePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    asset<T extends AssetDefaultArgs<ExtArgs> = {}>(args?: Subset<T, AssetDefaultArgs<ExtArgs>>): Prisma__AssetClient<$Result.GetResult<Prisma.$AssetPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PublishedVideo model
+   */ 
+  interface PublishedVideoFieldRefs {
+    readonly id: FieldRef<"PublishedVideo", 'String'>
+    readonly projectId: FieldRef<"PublishedVideo", 'String'>
+    readonly episodeId: FieldRef<"PublishedVideo", 'String'>
+    readonly assetId: FieldRef<"PublishedVideo", 'String'>
+    readonly storageKey: FieldRef<"PublishedVideo", 'String'>
+    readonly checksum: FieldRef<"PublishedVideo", 'String'>
+    readonly status: FieldRef<"PublishedVideo", 'String'>
+    readonly metadata: FieldRef<"PublishedVideo", 'Json'>
+    readonly createdAt: FieldRef<"PublishedVideo", 'DateTime'>
+    readonly updatedAt: FieldRef<"PublishedVideo", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PublishedVideo findUnique
+   */
+  export type PublishedVideoFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    /**
+     * Filter, which PublishedVideo to fetch.
+     */
+    where: PublishedVideoWhereUniqueInput
+  }
+
+  /**
+   * PublishedVideo findUniqueOrThrow
+   */
+  export type PublishedVideoFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    /**
+     * Filter, which PublishedVideo to fetch.
+     */
+    where: PublishedVideoWhereUniqueInput
+  }
+
+  /**
+   * PublishedVideo findFirst
+   */
+  export type PublishedVideoFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    /**
+     * Filter, which PublishedVideo to fetch.
+     */
+    where?: PublishedVideoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PublishedVideos to fetch.
+     */
+    orderBy?: PublishedVideoOrderByWithRelationInput | PublishedVideoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PublishedVideos.
+     */
+    cursor?: PublishedVideoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PublishedVideos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PublishedVideos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PublishedVideos.
+     */
+    distinct?: PublishedVideoScalarFieldEnum | PublishedVideoScalarFieldEnum[]
+  }
+
+  /**
+   * PublishedVideo findFirstOrThrow
+   */
+  export type PublishedVideoFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    /**
+     * Filter, which PublishedVideo to fetch.
+     */
+    where?: PublishedVideoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PublishedVideos to fetch.
+     */
+    orderBy?: PublishedVideoOrderByWithRelationInput | PublishedVideoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PublishedVideos.
+     */
+    cursor?: PublishedVideoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PublishedVideos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PublishedVideos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PublishedVideos.
+     */
+    distinct?: PublishedVideoScalarFieldEnum | PublishedVideoScalarFieldEnum[]
+  }
+
+  /**
+   * PublishedVideo findMany
+   */
+  export type PublishedVideoFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    /**
+     * Filter, which PublishedVideos to fetch.
+     */
+    where?: PublishedVideoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PublishedVideos to fetch.
+     */
+    orderBy?: PublishedVideoOrderByWithRelationInput | PublishedVideoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PublishedVideos.
+     */
+    cursor?: PublishedVideoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PublishedVideos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PublishedVideos.
+     */
+    skip?: number
+    distinct?: PublishedVideoScalarFieldEnum | PublishedVideoScalarFieldEnum[]
+  }
+
+  /**
+   * PublishedVideo create
+   */
+  export type PublishedVideoCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PublishedVideo.
+     */
+    data: XOR<PublishedVideoCreateInput, PublishedVideoUncheckedCreateInput>
+  }
+
+  /**
+   * PublishedVideo createMany
+   */
+  export type PublishedVideoCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PublishedVideos.
+     */
+    data: PublishedVideoCreateManyInput | PublishedVideoCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PublishedVideo createManyAndReturn
+   */
+  export type PublishedVideoCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many PublishedVideos.
+     */
+    data: PublishedVideoCreateManyInput | PublishedVideoCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PublishedVideo update
+   */
+  export type PublishedVideoUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PublishedVideo.
+     */
+    data: XOR<PublishedVideoUpdateInput, PublishedVideoUncheckedUpdateInput>
+    /**
+     * Choose, which PublishedVideo to update.
+     */
+    where: PublishedVideoWhereUniqueInput
+  }
+
+  /**
+   * PublishedVideo updateMany
+   */
+  export type PublishedVideoUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PublishedVideos.
+     */
+    data: XOR<PublishedVideoUpdateManyMutationInput, PublishedVideoUncheckedUpdateManyInput>
+    /**
+     * Filter which PublishedVideos to update
+     */
+    where?: PublishedVideoWhereInput
+  }
+
+  /**
+   * PublishedVideo upsert
+   */
+  export type PublishedVideoUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PublishedVideo to update in case it exists.
+     */
+    where: PublishedVideoWhereUniqueInput
+    /**
+     * In case the PublishedVideo found by the `where` argument doesn't exist, create a new PublishedVideo with this data.
+     */
+    create: XOR<PublishedVideoCreateInput, PublishedVideoUncheckedCreateInput>
+    /**
+     * In case the PublishedVideo was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PublishedVideoUpdateInput, PublishedVideoUncheckedUpdateInput>
+  }
+
+  /**
+   * PublishedVideo delete
+   */
+  export type PublishedVideoDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+    /**
+     * Filter which PublishedVideo to delete.
+     */
+    where: PublishedVideoWhereUniqueInput
+  }
+
+  /**
+   * PublishedVideo deleteMany
+   */
+  export type PublishedVideoDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PublishedVideos to delete
+     */
+    where?: PublishedVideoWhereInput
+  }
+
+  /**
+   * PublishedVideo without action
+   */
+  export type PublishedVideoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PublishedVideo
+     */
+    select?: PublishedVideoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PublishedVideoInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -67081,6 +68254,22 @@ export namespace Prisma {
   };
 
   export type CostLedgerScalarFieldEnum = (typeof CostLedgerScalarFieldEnum)[keyof typeof CostLedgerScalarFieldEnum]
+
+
+  export const PublishedVideoScalarFieldEnum: {
+    id: 'id',
+    projectId: 'projectId',
+    episodeId: 'episodeId',
+    assetId: 'assetId',
+    storageKey: 'storageKey',
+    checksum: 'checksum',
+    status: 'status',
+    metadata: 'metadata',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PublishedVideoScalarFieldEnum = (typeof PublishedVideoScalarFieldEnum)[keyof typeof PublishedVideoScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -68006,6 +69195,7 @@ export namespace Prisma {
     shotJobs?: ShotJobListRelationFilter
     structureQualityReport?: XOR<StructureQualityReportNullableRelationFilter, StructureQualityReportWhereInput> | null
     novelVolumes?: NovelVolumeListRelationFilter
+    publishedVideos?: PublishedVideoListRelationFilter
   }
 
   export type ProjectOrderByWithRelationInput = {
@@ -68036,6 +69226,7 @@ export namespace Prisma {
     shotJobs?: ShotJobOrderByRelationAggregateInput
     structureQualityReport?: StructureQualityReportOrderByWithRelationInput
     novelVolumes?: NovelVolumeOrderByRelationAggregateInput
+    publishedVideos?: PublishedVideoOrderByRelationAggregateInput
   }
 
   export type ProjectWhereUniqueInput = Prisma.AtLeast<{
@@ -68069,6 +69260,7 @@ export namespace Prisma {
     shotJobs?: ShotJobListRelationFilter
     structureQualityReport?: XOR<StructureQualityReportNullableRelationFilter, StructureQualityReportWhereInput> | null
     novelVolumes?: NovelVolumeListRelationFilter
+    publishedVideos?: PublishedVideoListRelationFilter
   }, "id">
 
   export type ProjectOrderByWithAggregationInput = {
@@ -68196,6 +69388,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewListRelationFilter
     scenes?: SceneListRelationFilter
     shotJobs?: ShotJobListRelationFilter
+    publishedVideos?: PublishedVideoListRelationFilter
   }
 
   export type EpisodeOrderByWithRelationInput = {
@@ -68212,6 +69405,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewOrderByRelationAggregateInput
     scenes?: SceneOrderByRelationAggregateInput
     shotJobs?: ShotJobOrderByRelationAggregateInput
+    publishedVideos?: PublishedVideoOrderByRelationAggregateInput
   }
 
   export type EpisodeWhereUniqueInput = Prisma.AtLeast<{
@@ -68231,6 +69425,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewListRelationFilter
     scenes?: SceneListRelationFilter
     shotJobs?: ShotJobListRelationFilter
+    publishedVideos?: PublishedVideoListRelationFilter
   }, "id" | "chapterId">
 
   export type EpisodeOrderByWithAggregationInput = {
@@ -72227,6 +73422,7 @@ export namespace Prisma {
     job?: XOR<ShotJobNullableRelationFilter, ShotJobWhereInput> | null
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
     fingerprint?: XOR<SecurityFingerprintNullableRelationFilter, SecurityFingerprintWhereInput> | null
+    publishedVideo?: XOR<PublishedVideoNullableRelationFilter, PublishedVideoWhereInput> | null
   }
 
   export type AssetOrderByWithRelationInput = {
@@ -72249,6 +73445,7 @@ export namespace Prisma {
     job?: ShotJobOrderByWithRelationInput
     project?: ProjectOrderByWithRelationInput
     fingerprint?: SecurityFingerprintOrderByWithRelationInput
+    publishedVideo?: PublishedVideoOrderByWithRelationInput
   }
 
   export type AssetWhereUniqueInput = Prisma.AtLeast<{
@@ -72275,6 +73472,7 @@ export namespace Prisma {
     job?: XOR<ShotJobNullableRelationFilter, ShotJobWhereInput> | null
     project?: XOR<ProjectRelationFilter, ProjectWhereInput>
     fingerprint?: XOR<SecurityFingerprintNullableRelationFilter, SecurityFingerprintWhereInput> | null
+    publishedVideo?: XOR<PublishedVideoNullableRelationFilter, PublishedVideoWhereInput> | null
   }, "id" | "ownerType_ownerId_type">
 
   export type AssetOrderByWithAggregationInput = {
@@ -72563,6 +73761,92 @@ export namespace Prisma {
     billingEventId?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
     billedAt?: DateTimeNullableWithAggregatesFilter<"CostLedger"> | Date | string | null
     billingError?: StringNullableWithAggregatesFilter<"CostLedger"> | string | null
+  }
+
+  export type PublishedVideoWhereInput = {
+    AND?: PublishedVideoWhereInput | PublishedVideoWhereInput[]
+    OR?: PublishedVideoWhereInput[]
+    NOT?: PublishedVideoWhereInput | PublishedVideoWhereInput[]
+    id?: StringFilter<"PublishedVideo"> | string
+    projectId?: StringFilter<"PublishedVideo"> | string
+    episodeId?: StringFilter<"PublishedVideo"> | string
+    assetId?: StringFilter<"PublishedVideo"> | string
+    storageKey?: StringFilter<"PublishedVideo"> | string
+    checksum?: StringFilter<"PublishedVideo"> | string
+    status?: StringFilter<"PublishedVideo"> | string
+    metadata?: JsonNullableFilter<"PublishedVideo">
+    createdAt?: DateTimeFilter<"PublishedVideo"> | Date | string
+    updatedAt?: DateTimeFilter<"PublishedVideo"> | Date | string
+    project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+    episode?: XOR<EpisodeRelationFilter, EpisodeWhereInput>
+    asset?: XOR<AssetRelationFilter, AssetWhereInput>
+  }
+
+  export type PublishedVideoOrderByWithRelationInput = {
+    id?: SortOrder
+    projectId?: SortOrder
+    episodeId?: SortOrder
+    assetId?: SortOrder
+    storageKey?: SortOrder
+    checksum?: SortOrder
+    status?: SortOrder
+    metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    project?: ProjectOrderByWithRelationInput
+    episode?: EpisodeOrderByWithRelationInput
+    asset?: AssetOrderByWithRelationInput
+  }
+
+  export type PublishedVideoWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    assetId?: string
+    AND?: PublishedVideoWhereInput | PublishedVideoWhereInput[]
+    OR?: PublishedVideoWhereInput[]
+    NOT?: PublishedVideoWhereInput | PublishedVideoWhereInput[]
+    projectId?: StringFilter<"PublishedVideo"> | string
+    episodeId?: StringFilter<"PublishedVideo"> | string
+    storageKey?: StringFilter<"PublishedVideo"> | string
+    checksum?: StringFilter<"PublishedVideo"> | string
+    status?: StringFilter<"PublishedVideo"> | string
+    metadata?: JsonNullableFilter<"PublishedVideo">
+    createdAt?: DateTimeFilter<"PublishedVideo"> | Date | string
+    updatedAt?: DateTimeFilter<"PublishedVideo"> | Date | string
+    project?: XOR<ProjectRelationFilter, ProjectWhereInput>
+    episode?: XOR<EpisodeRelationFilter, EpisodeWhereInput>
+    asset?: XOR<AssetRelationFilter, AssetWhereInput>
+  }, "id" | "assetId">
+
+  export type PublishedVideoOrderByWithAggregationInput = {
+    id?: SortOrder
+    projectId?: SortOrder
+    episodeId?: SortOrder
+    assetId?: SortOrder
+    storageKey?: SortOrder
+    checksum?: SortOrder
+    status?: SortOrder
+    metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: PublishedVideoCountOrderByAggregateInput
+    _max?: PublishedVideoMaxOrderByAggregateInput
+    _min?: PublishedVideoMinOrderByAggregateInput
+  }
+
+  export type PublishedVideoScalarWhereWithAggregatesInput = {
+    AND?: PublishedVideoScalarWhereWithAggregatesInput | PublishedVideoScalarWhereWithAggregatesInput[]
+    OR?: PublishedVideoScalarWhereWithAggregatesInput[]
+    NOT?: PublishedVideoScalarWhereWithAggregatesInput | PublishedVideoScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PublishedVideo"> | string
+    projectId?: StringWithAggregatesFilter<"PublishedVideo"> | string
+    episodeId?: StringWithAggregatesFilter<"PublishedVideo"> | string
+    assetId?: StringWithAggregatesFilter<"PublishedVideo"> | string
+    storageKey?: StringWithAggregatesFilter<"PublishedVideo"> | string
+    checksum?: StringWithAggregatesFilter<"PublishedVideo"> | string
+    status?: StringWithAggregatesFilter<"PublishedVideo"> | string
+    metadata?: JsonNullableWithAggregatesFilter<"PublishedVideo">
+    createdAt?: DateTimeWithAggregatesFilter<"PublishedVideo"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"PublishedVideo"> | Date | string
   }
 
   export type UserCreateInput = {
@@ -72921,6 +74205,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateInput = {
@@ -72949,6 +74234,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUpdateInput = {
@@ -72977,6 +74263,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateInput = {
@@ -73005,6 +74292,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectCreateManyInput = {
@@ -73135,6 +74423,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewCreateNestedManyWithoutEpisodeInput
     scenes?: SceneCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeUncheckedCreateInput = {
@@ -73148,6 +74437,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput
     scenes?: SceneUncheckedCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeUpdateInput = {
@@ -73161,6 +74451,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeUncheckedUpdateInput = {
@@ -73174,6 +74465,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUncheckedUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeCreateManyInput = {
@@ -77530,6 +78822,7 @@ export namespace Prisma {
     job?: ShotJobCreateNestedOneWithoutGeneratedAssetInput
     project: ProjectCreateNestedOneWithoutAssetsInput
     fingerprint?: SecurityFingerprintCreateNestedOneWithoutAssetsInput
+    publishedVideo?: PublishedVideoCreateNestedOneWithoutAssetInput
   }
 
   export type AssetUncheckedCreateInput = {
@@ -77548,6 +78841,7 @@ export namespace Prisma {
     signedUrl?: string | null
     watermarkMode?: string | null
     fingerprintId?: string | null
+    publishedVideo?: PublishedVideoUncheckedCreateNestedOneWithoutAssetInput
   }
 
   export type AssetUpdateInput = {
@@ -77566,6 +78860,7 @@ export namespace Prisma {
     job?: ShotJobUpdateOneWithoutGeneratedAssetNestedInput
     project?: ProjectUpdateOneRequiredWithoutAssetsNestedInput
     fingerprint?: SecurityFingerprintUpdateOneWithoutAssetsNestedInput
+    publishedVideo?: PublishedVideoUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetUncheckedUpdateInput = {
@@ -77584,6 +78879,7 @@ export namespace Prisma {
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
     fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedVideo?: PublishedVideoUncheckedUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetCreateManyInput = {
@@ -77930,6 +79226,94 @@ export namespace Prisma {
     billingEventId?: NullableStringFieldUpdateOperationsInput | string | null
     billedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     billingError?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type PublishedVideoCreateInput = {
+    id?: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    project: ProjectCreateNestedOneWithoutPublishedVideosInput
+    episode: EpisodeCreateNestedOneWithoutPublishedVideosInput
+    asset: AssetCreateNestedOneWithoutPublishedVideoInput
+  }
+
+  export type PublishedVideoUncheckedCreateInput = {
+    id?: string
+    projectId: string
+    episodeId: string
+    assetId: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PublishedVideoUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    project?: ProjectUpdateOneRequiredWithoutPublishedVideosNestedInput
+    episode?: EpisodeUpdateOneRequiredWithoutPublishedVideosNestedInput
+    asset?: AssetUpdateOneRequiredWithoutPublishedVideoNestedInput
+  }
+
+  export type PublishedVideoUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    episodeId?: StringFieldUpdateOperationsInput | string
+    assetId?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PublishedVideoCreateManyInput = {
+    id?: string
+    projectId: string
+    episodeId: string
+    assetId: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PublishedVideoUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PublishedVideoUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    episodeId?: StringFieldUpdateOperationsInput | string
+    assetId?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -78520,6 +79904,12 @@ export namespace Prisma {
     none?: NovelVolumeWhereInput
   }
 
+  export type PublishedVideoListRelationFilter = {
+    every?: PublishedVideoWhereInput
+    some?: PublishedVideoWhereInput
+    none?: PublishedVideoWhereInput
+  }
+
   export type AssetOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -78553,6 +79943,10 @@ export namespace Prisma {
   }
 
   export type NovelVolumeOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PublishedVideoOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -81588,6 +82982,11 @@ export namespace Prisma {
     isNot?: SecurityFingerprintWhereInput | null
   }
 
+  export type PublishedVideoNullableRelationFilter = {
+    is?: PublishedVideoWhereInput | null
+    isNot?: PublishedVideoWhereInput | null
+  }
+
   export type AssetOwnerTypeOwnerIdTypeCompoundUniqueInput = {
     ownerType: $Enums.AssetOwnerType
     ownerId: string
@@ -81860,6 +83259,48 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumBillingStatusFilter<$PrismaModel>
     _max?: NestedEnumBillingStatusFilter<$PrismaModel>
+  }
+
+  export type AssetRelationFilter = {
+    is?: AssetWhereInput
+    isNot?: AssetWhereInput
+  }
+
+  export type PublishedVideoCountOrderByAggregateInput = {
+    id?: SortOrder
+    projectId?: SortOrder
+    episodeId?: SortOrder
+    assetId?: SortOrder
+    storageKey?: SortOrder
+    checksum?: SortOrder
+    status?: SortOrder
+    metadata?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PublishedVideoMaxOrderByAggregateInput = {
+    id?: SortOrder
+    projectId?: SortOrder
+    episodeId?: SortOrder
+    assetId?: SortOrder
+    storageKey?: SortOrder
+    checksum?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PublishedVideoMinOrderByAggregateInput = {
+    id?: SortOrder
+    projectId?: SortOrder
+    episodeId?: SortOrder
+    assetId?: SortOrder
+    storageKey?: SortOrder
+    checksum?: SortOrder
+    status?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type ApiKeyCreateNestedManyWithoutOwnerUserInput = {
@@ -82979,6 +84420,13 @@ export namespace Prisma {
     connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
   }
 
+  export type PublishedVideoCreateNestedManyWithoutProjectInput = {
+    create?: XOR<PublishedVideoCreateWithoutProjectInput, PublishedVideoUncheckedCreateWithoutProjectInput> | PublishedVideoCreateWithoutProjectInput[] | PublishedVideoUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutProjectInput | PublishedVideoCreateOrConnectWithoutProjectInput[]
+    createMany?: PublishedVideoCreateManyProjectInputEnvelope
+    connect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+  }
+
   export type TaskUncheckedCreateNestedManyWithoutProjectInput = {
     create?: XOR<TaskCreateWithoutProjectInput, TaskUncheckedCreateWithoutProjectInput> | TaskCreateWithoutProjectInput[] | TaskUncheckedCreateWithoutProjectInput[]
     connectOrCreate?: TaskCreateOrConnectWithoutProjectInput | TaskCreateOrConnectWithoutProjectInput[]
@@ -83080,6 +84528,13 @@ export namespace Prisma {
     connectOrCreate?: NovelVolumeCreateOrConnectWithoutProjectInput | NovelVolumeCreateOrConnectWithoutProjectInput[]
     createMany?: NovelVolumeCreateManyProjectInputEnvelope
     connect?: NovelVolumeWhereUniqueInput | NovelVolumeWhereUniqueInput[]
+  }
+
+  export type PublishedVideoUncheckedCreateNestedManyWithoutProjectInput = {
+    create?: XOR<PublishedVideoCreateWithoutProjectInput, PublishedVideoUncheckedCreateWithoutProjectInput> | PublishedVideoCreateWithoutProjectInput[] | PublishedVideoUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutProjectInput | PublishedVideoCreateOrConnectWithoutProjectInput[]
+    createMany?: PublishedVideoCreateManyProjectInputEnvelope
+    connect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
   }
 
   export type EnumProjectStatusFieldUpdateOperationsInput = {
@@ -83304,6 +84759,20 @@ export namespace Prisma {
     deleteMany?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
   }
 
+  export type PublishedVideoUpdateManyWithoutProjectNestedInput = {
+    create?: XOR<PublishedVideoCreateWithoutProjectInput, PublishedVideoUncheckedCreateWithoutProjectInput> | PublishedVideoCreateWithoutProjectInput[] | PublishedVideoUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutProjectInput | PublishedVideoCreateOrConnectWithoutProjectInput[]
+    upsert?: PublishedVideoUpsertWithWhereUniqueWithoutProjectInput | PublishedVideoUpsertWithWhereUniqueWithoutProjectInput[]
+    createMany?: PublishedVideoCreateManyProjectInputEnvelope
+    set?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    disconnect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    delete?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    connect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    update?: PublishedVideoUpdateWithWhereUniqueWithoutProjectInput | PublishedVideoUpdateWithWhereUniqueWithoutProjectInput[]
+    updateMany?: PublishedVideoUpdateManyWithWhereWithoutProjectInput | PublishedVideoUpdateManyWithWhereWithoutProjectInput[]
+    deleteMany?: PublishedVideoScalarWhereInput | PublishedVideoScalarWhereInput[]
+  }
+
   export type TaskUncheckedUpdateManyWithoutProjectNestedInput = {
     create?: XOR<TaskCreateWithoutProjectInput, TaskUncheckedCreateWithoutProjectInput> | TaskCreateWithoutProjectInput[] | TaskUncheckedCreateWithoutProjectInput[]
     connectOrCreate?: TaskCreateOrConnectWithoutProjectInput | TaskCreateOrConnectWithoutProjectInput[]
@@ -83506,6 +84975,20 @@ export namespace Prisma {
     deleteMany?: NovelVolumeScalarWhereInput | NovelVolumeScalarWhereInput[]
   }
 
+  export type PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput = {
+    create?: XOR<PublishedVideoCreateWithoutProjectInput, PublishedVideoUncheckedCreateWithoutProjectInput> | PublishedVideoCreateWithoutProjectInput[] | PublishedVideoUncheckedCreateWithoutProjectInput[]
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutProjectInput | PublishedVideoCreateOrConnectWithoutProjectInput[]
+    upsert?: PublishedVideoUpsertWithWhereUniqueWithoutProjectInput | PublishedVideoUpsertWithWhereUniqueWithoutProjectInput[]
+    createMany?: PublishedVideoCreateManyProjectInputEnvelope
+    set?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    disconnect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    delete?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    connect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    update?: PublishedVideoUpdateWithWhereUniqueWithoutProjectInput | PublishedVideoUpdateWithWhereUniqueWithoutProjectInput[]
+    updateMany?: PublishedVideoUpdateManyWithWhereWithoutProjectInput | PublishedVideoUpdateManyWithWhereWithoutProjectInput[]
+    deleteMany?: PublishedVideoScalarWhereInput | PublishedVideoScalarWhereInput[]
+  }
+
   export type EpisodeCreateNestedManyWithoutSeasonInput = {
     create?: XOR<EpisodeCreateWithoutSeasonInput, EpisodeUncheckedCreateWithoutSeasonInput> | EpisodeCreateWithoutSeasonInput[] | EpisodeUncheckedCreateWithoutSeasonInput[]
     connectOrCreate?: EpisodeCreateOrConnectWithoutSeasonInput | EpisodeCreateOrConnectWithoutSeasonInput[]
@@ -83609,6 +85092,13 @@ export namespace Prisma {
     connect?: ShotJobWhereUniqueInput | ShotJobWhereUniqueInput[]
   }
 
+  export type PublishedVideoCreateNestedManyWithoutEpisodeInput = {
+    create?: XOR<PublishedVideoCreateWithoutEpisodeInput, PublishedVideoUncheckedCreateWithoutEpisodeInput> | PublishedVideoCreateWithoutEpisodeInput[] | PublishedVideoUncheckedCreateWithoutEpisodeInput[]
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutEpisodeInput | PublishedVideoCreateOrConnectWithoutEpisodeInput[]
+    createMany?: PublishedVideoCreateManyEpisodeInputEnvelope
+    connect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+  }
+
   export type PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput = {
     create?: XOR<PublishingReviewCreateWithoutEpisodeInput, PublishingReviewUncheckedCreateWithoutEpisodeInput> | PublishingReviewCreateWithoutEpisodeInput[] | PublishingReviewUncheckedCreateWithoutEpisodeInput[]
     connectOrCreate?: PublishingReviewCreateOrConnectWithoutEpisodeInput | PublishingReviewCreateOrConnectWithoutEpisodeInput[]
@@ -83628,6 +85118,13 @@ export namespace Prisma {
     connectOrCreate?: ShotJobCreateOrConnectWithoutEpisodeInput | ShotJobCreateOrConnectWithoutEpisodeInput[]
     createMany?: ShotJobCreateManyEpisodeInputEnvelope
     connect?: ShotJobWhereUniqueInput | ShotJobWhereUniqueInput[]
+  }
+
+  export type PublishedVideoUncheckedCreateNestedManyWithoutEpisodeInput = {
+    create?: XOR<PublishedVideoCreateWithoutEpisodeInput, PublishedVideoUncheckedCreateWithoutEpisodeInput> | PublishedVideoCreateWithoutEpisodeInput[] | PublishedVideoUncheckedCreateWithoutEpisodeInput[]
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutEpisodeInput | PublishedVideoCreateOrConnectWithoutEpisodeInput[]
+    createMany?: PublishedVideoCreateManyEpisodeInputEnvelope
+    connect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
   }
 
   export type NovelChapterUpdateOneWithoutEpisodeNestedInput = {
@@ -83700,6 +85197,20 @@ export namespace Prisma {
     deleteMany?: ShotJobScalarWhereInput | ShotJobScalarWhereInput[]
   }
 
+  export type PublishedVideoUpdateManyWithoutEpisodeNestedInput = {
+    create?: XOR<PublishedVideoCreateWithoutEpisodeInput, PublishedVideoUncheckedCreateWithoutEpisodeInput> | PublishedVideoCreateWithoutEpisodeInput[] | PublishedVideoUncheckedCreateWithoutEpisodeInput[]
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutEpisodeInput | PublishedVideoCreateOrConnectWithoutEpisodeInput[]
+    upsert?: PublishedVideoUpsertWithWhereUniqueWithoutEpisodeInput | PublishedVideoUpsertWithWhereUniqueWithoutEpisodeInput[]
+    createMany?: PublishedVideoCreateManyEpisodeInputEnvelope
+    set?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    disconnect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    delete?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    connect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    update?: PublishedVideoUpdateWithWhereUniqueWithoutEpisodeInput | PublishedVideoUpdateWithWhereUniqueWithoutEpisodeInput[]
+    updateMany?: PublishedVideoUpdateManyWithWhereWithoutEpisodeInput | PublishedVideoUpdateManyWithWhereWithoutEpisodeInput[]
+    deleteMany?: PublishedVideoScalarWhereInput | PublishedVideoScalarWhereInput[]
+  }
+
   export type PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput = {
     create?: XOR<PublishingReviewCreateWithoutEpisodeInput, PublishingReviewUncheckedCreateWithoutEpisodeInput> | PublishingReviewCreateWithoutEpisodeInput[] | PublishingReviewUncheckedCreateWithoutEpisodeInput[]
     connectOrCreate?: PublishingReviewCreateOrConnectWithoutEpisodeInput | PublishingReviewCreateOrConnectWithoutEpisodeInput[]
@@ -83740,6 +85251,20 @@ export namespace Prisma {
     update?: ShotJobUpdateWithWhereUniqueWithoutEpisodeInput | ShotJobUpdateWithWhereUniqueWithoutEpisodeInput[]
     updateMany?: ShotJobUpdateManyWithWhereWithoutEpisodeInput | ShotJobUpdateManyWithWhereWithoutEpisodeInput[]
     deleteMany?: ShotJobScalarWhereInput | ShotJobScalarWhereInput[]
+  }
+
+  export type PublishedVideoUncheckedUpdateManyWithoutEpisodeNestedInput = {
+    create?: XOR<PublishedVideoCreateWithoutEpisodeInput, PublishedVideoUncheckedCreateWithoutEpisodeInput> | PublishedVideoCreateWithoutEpisodeInput[] | PublishedVideoUncheckedCreateWithoutEpisodeInput[]
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutEpisodeInput | PublishedVideoCreateOrConnectWithoutEpisodeInput[]
+    upsert?: PublishedVideoUpsertWithWhereUniqueWithoutEpisodeInput | PublishedVideoUpsertWithWhereUniqueWithoutEpisodeInput[]
+    createMany?: PublishedVideoCreateManyEpisodeInputEnvelope
+    set?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    disconnect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    delete?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    connect?: PublishedVideoWhereUniqueInput | PublishedVideoWhereUniqueInput[]
+    update?: PublishedVideoUpdateWithWhereUniqueWithoutEpisodeInput | PublishedVideoUpdateWithWhereUniqueWithoutEpisodeInput[]
+    updateMany?: PublishedVideoUpdateManyWithWhereWithoutEpisodeInput | PublishedVideoUpdateManyWithWhereWithoutEpisodeInput[]
+    deleteMany?: PublishedVideoScalarWhereInput | PublishedVideoScalarWhereInput[]
   }
 
   export type EngineTaskCreateNestedManyWithoutSceneInput = {
@@ -86064,6 +87589,18 @@ export namespace Prisma {
     connect?: SecurityFingerprintWhereUniqueInput
   }
 
+  export type PublishedVideoCreateNestedOneWithoutAssetInput = {
+    create?: XOR<PublishedVideoCreateWithoutAssetInput, PublishedVideoUncheckedCreateWithoutAssetInput>
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutAssetInput
+    connect?: PublishedVideoWhereUniqueInput
+  }
+
+  export type PublishedVideoUncheckedCreateNestedOneWithoutAssetInput = {
+    create?: XOR<PublishedVideoCreateWithoutAssetInput, PublishedVideoUncheckedCreateWithoutAssetInput>
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutAssetInput
+    connect?: PublishedVideoWhereUniqueInput
+  }
+
   export type EnumAssetOwnerTypeFieldUpdateOperationsInput = {
     set?: $Enums.AssetOwnerType
   }
@@ -86112,6 +87649,26 @@ export namespace Prisma {
     delete?: SecurityFingerprintWhereInput | boolean
     connect?: SecurityFingerprintWhereUniqueInput
     update?: XOR<XOR<SecurityFingerprintUpdateToOneWithWhereWithoutAssetsInput, SecurityFingerprintUpdateWithoutAssetsInput>, SecurityFingerprintUncheckedUpdateWithoutAssetsInput>
+  }
+
+  export type PublishedVideoUpdateOneWithoutAssetNestedInput = {
+    create?: XOR<PublishedVideoCreateWithoutAssetInput, PublishedVideoUncheckedCreateWithoutAssetInput>
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutAssetInput
+    upsert?: PublishedVideoUpsertWithoutAssetInput
+    disconnect?: PublishedVideoWhereInput | boolean
+    delete?: PublishedVideoWhereInput | boolean
+    connect?: PublishedVideoWhereUniqueInput
+    update?: XOR<XOR<PublishedVideoUpdateToOneWithWhereWithoutAssetInput, PublishedVideoUpdateWithoutAssetInput>, PublishedVideoUncheckedUpdateWithoutAssetInput>
+  }
+
+  export type PublishedVideoUncheckedUpdateOneWithoutAssetNestedInput = {
+    create?: XOR<PublishedVideoCreateWithoutAssetInput, PublishedVideoUncheckedCreateWithoutAssetInput>
+    connectOrCreate?: PublishedVideoCreateOrConnectWithoutAssetInput
+    upsert?: PublishedVideoUpsertWithoutAssetInput
+    disconnect?: PublishedVideoWhereInput | boolean
+    delete?: PublishedVideoWhereInput | boolean
+    connect?: PublishedVideoWhereUniqueInput
+    update?: XOR<XOR<PublishedVideoUpdateToOneWithWhereWithoutAssetInput, PublishedVideoUpdateWithoutAssetInput>, PublishedVideoUncheckedUpdateWithoutAssetInput>
   }
 
   export type EnumTextSafetyDecisionFieldUpdateOperationsInput = {
@@ -86182,6 +87739,48 @@ export namespace Prisma {
     delete?: BillingEventWhereInput | boolean
     connect?: BillingEventWhereUniqueInput
     update?: XOR<XOR<BillingEventUpdateToOneWithWhereWithoutCostLedgerInput, BillingEventUpdateWithoutCostLedgerInput>, BillingEventUncheckedUpdateWithoutCostLedgerInput>
+  }
+
+  export type ProjectCreateNestedOneWithoutPublishedVideosInput = {
+    create?: XOR<ProjectCreateWithoutPublishedVideosInput, ProjectUncheckedCreateWithoutPublishedVideosInput>
+    connectOrCreate?: ProjectCreateOrConnectWithoutPublishedVideosInput
+    connect?: ProjectWhereUniqueInput
+  }
+
+  export type EpisodeCreateNestedOneWithoutPublishedVideosInput = {
+    create?: XOR<EpisodeCreateWithoutPublishedVideosInput, EpisodeUncheckedCreateWithoutPublishedVideosInput>
+    connectOrCreate?: EpisodeCreateOrConnectWithoutPublishedVideosInput
+    connect?: EpisodeWhereUniqueInput
+  }
+
+  export type AssetCreateNestedOneWithoutPublishedVideoInput = {
+    create?: XOR<AssetCreateWithoutPublishedVideoInput, AssetUncheckedCreateWithoutPublishedVideoInput>
+    connectOrCreate?: AssetCreateOrConnectWithoutPublishedVideoInput
+    connect?: AssetWhereUniqueInput
+  }
+
+  export type ProjectUpdateOneRequiredWithoutPublishedVideosNestedInput = {
+    create?: XOR<ProjectCreateWithoutPublishedVideosInput, ProjectUncheckedCreateWithoutPublishedVideosInput>
+    connectOrCreate?: ProjectCreateOrConnectWithoutPublishedVideosInput
+    upsert?: ProjectUpsertWithoutPublishedVideosInput
+    connect?: ProjectWhereUniqueInput
+    update?: XOR<XOR<ProjectUpdateToOneWithWhereWithoutPublishedVideosInput, ProjectUpdateWithoutPublishedVideosInput>, ProjectUncheckedUpdateWithoutPublishedVideosInput>
+  }
+
+  export type EpisodeUpdateOneRequiredWithoutPublishedVideosNestedInput = {
+    create?: XOR<EpisodeCreateWithoutPublishedVideosInput, EpisodeUncheckedCreateWithoutPublishedVideosInput>
+    connectOrCreate?: EpisodeCreateOrConnectWithoutPublishedVideosInput
+    upsert?: EpisodeUpsertWithoutPublishedVideosInput
+    connect?: EpisodeWhereUniqueInput
+    update?: XOR<XOR<EpisodeUpdateToOneWithWhereWithoutPublishedVideosInput, EpisodeUpdateWithoutPublishedVideosInput>, EpisodeUncheckedUpdateWithoutPublishedVideosInput>
+  }
+
+  export type AssetUpdateOneRequiredWithoutPublishedVideoNestedInput = {
+    create?: XOR<AssetCreateWithoutPublishedVideoInput, AssetUncheckedCreateWithoutPublishedVideoInput>
+    connectOrCreate?: AssetCreateOrConnectWithoutPublishedVideoInput
+    upsert?: AssetUpsertWithoutPublishedVideoInput
+    connect?: AssetWhereUniqueInput
+    update?: XOR<XOR<AssetUpdateToOneWithWhereWithoutPublishedVideoInput, AssetUpdateWithoutPublishedVideoInput>, AssetUncheckedUpdateWithoutPublishedVideoInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -87374,6 +88973,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutOwnerInput = {
@@ -87401,6 +89001,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutOwnerInput = {
@@ -88143,6 +89744,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutOrganizationInput = {
@@ -88170,6 +89772,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutOrganizationInput = {
@@ -88991,6 +90594,7 @@ export namespace Prisma {
     shot?: ShotCreateNestedOneWithoutAssetsInput
     job?: ShotJobCreateNestedOneWithoutGeneratedAssetInput
     fingerprint?: SecurityFingerprintCreateNestedOneWithoutAssetsInput
+    publishedVideo?: PublishedVideoCreateNestedOneWithoutAssetInput
   }
 
   export type AssetUncheckedCreateWithoutProjectInput = {
@@ -89008,6 +90612,7 @@ export namespace Prisma {
     signedUrl?: string | null
     watermarkMode?: string | null
     fingerprintId?: string | null
+    publishedVideo?: PublishedVideoUncheckedCreateNestedOneWithoutAssetInput
   }
 
   export type AssetCreateOrConnectWithoutProjectInput = {
@@ -89168,6 +90773,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewCreateNestedManyWithoutEpisodeInput
     scenes?: SceneCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeUncheckedCreateWithoutProjectInput = {
@@ -89180,6 +90786,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput
     scenes?: SceneUncheckedCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeCreateOrConnectWithoutProjectInput = {
@@ -89613,6 +91220,40 @@ export namespace Prisma {
 
   export type NovelVolumeCreateManyProjectInputEnvelope = {
     data: NovelVolumeCreateManyProjectInput | NovelVolumeCreateManyProjectInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PublishedVideoCreateWithoutProjectInput = {
+    id?: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    episode: EpisodeCreateNestedOneWithoutPublishedVideosInput
+    asset: AssetCreateNestedOneWithoutPublishedVideoInput
+  }
+
+  export type PublishedVideoUncheckedCreateWithoutProjectInput = {
+    id?: string
+    episodeId: string
+    assetId: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PublishedVideoCreateOrConnectWithoutProjectInput = {
+    where: PublishedVideoWhereUniqueInput
+    create: XOR<PublishedVideoCreateWithoutProjectInput, PublishedVideoUncheckedCreateWithoutProjectInput>
+  }
+
+  export type PublishedVideoCreateManyProjectInputEnvelope = {
+    data: PublishedVideoCreateManyProjectInput | PublishedVideoCreateManyProjectInput[]
     skipDuplicates?: boolean
   }
 
@@ -90143,6 +91784,38 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"NovelVolume"> | Date | string
   }
 
+  export type PublishedVideoUpsertWithWhereUniqueWithoutProjectInput = {
+    where: PublishedVideoWhereUniqueInput
+    update: XOR<PublishedVideoUpdateWithoutProjectInput, PublishedVideoUncheckedUpdateWithoutProjectInput>
+    create: XOR<PublishedVideoCreateWithoutProjectInput, PublishedVideoUncheckedCreateWithoutProjectInput>
+  }
+
+  export type PublishedVideoUpdateWithWhereUniqueWithoutProjectInput = {
+    where: PublishedVideoWhereUniqueInput
+    data: XOR<PublishedVideoUpdateWithoutProjectInput, PublishedVideoUncheckedUpdateWithoutProjectInput>
+  }
+
+  export type PublishedVideoUpdateManyWithWhereWithoutProjectInput = {
+    where: PublishedVideoScalarWhereInput
+    data: XOR<PublishedVideoUpdateManyMutationInput, PublishedVideoUncheckedUpdateManyWithoutProjectInput>
+  }
+
+  export type PublishedVideoScalarWhereInput = {
+    AND?: PublishedVideoScalarWhereInput | PublishedVideoScalarWhereInput[]
+    OR?: PublishedVideoScalarWhereInput[]
+    NOT?: PublishedVideoScalarWhereInput | PublishedVideoScalarWhereInput[]
+    id?: StringFilter<"PublishedVideo"> | string
+    projectId?: StringFilter<"PublishedVideo"> | string
+    episodeId?: StringFilter<"PublishedVideo"> | string
+    assetId?: StringFilter<"PublishedVideo"> | string
+    storageKey?: StringFilter<"PublishedVideo"> | string
+    checksum?: StringFilter<"PublishedVideo"> | string
+    status?: StringFilter<"PublishedVideo"> | string
+    metadata?: JsonNullableFilter<"PublishedVideo">
+    createdAt?: DateTimeFilter<"PublishedVideo"> | Date | string
+    updatedAt?: DateTimeFilter<"PublishedVideo"> | Date | string
+  }
+
   export type EpisodeCreateWithoutSeasonInput = {
     id?: string
     index: number
@@ -90153,6 +91826,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewCreateNestedManyWithoutEpisodeInput
     scenes?: SceneCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeUncheckedCreateWithoutSeasonInput = {
@@ -90165,6 +91839,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput
     scenes?: SceneUncheckedCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeCreateOrConnectWithoutSeasonInput = {
@@ -90202,6 +91877,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutSeasonsInput = {
@@ -90229,6 +91905,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutSeasonsInput = {
@@ -90288,6 +91965,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutSeasonsInput = {
@@ -90315,6 +91993,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type NovelChapterCreateWithoutEpisodeInput = {
@@ -90375,6 +92054,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutEpisodesInput = {
@@ -90402,6 +92082,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutEpisodesInput = {
@@ -90576,6 +92257,40 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PublishedVideoCreateWithoutEpisodeInput = {
+    id?: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    project: ProjectCreateNestedOneWithoutPublishedVideosInput
+    asset: AssetCreateNestedOneWithoutPublishedVideoInput
+  }
+
+  export type PublishedVideoUncheckedCreateWithoutEpisodeInput = {
+    id?: string
+    projectId: string
+    assetId: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PublishedVideoCreateOrConnectWithoutEpisodeInput = {
+    where: PublishedVideoWhereUniqueInput
+    create: XOR<PublishedVideoCreateWithoutEpisodeInput, PublishedVideoUncheckedCreateWithoutEpisodeInput>
+  }
+
+  export type PublishedVideoCreateManyEpisodeInputEnvelope = {
+    data: PublishedVideoCreateManyEpisodeInput | PublishedVideoCreateManyEpisodeInput[]
+    skipDuplicates?: boolean
+  }
+
   export type NovelChapterUpsertWithoutEpisodeInput = {
     update: XOR<NovelChapterUpdateWithoutEpisodeInput, NovelChapterUncheckedUpdateWithoutEpisodeInput>
     create: XOR<NovelChapterCreateWithoutEpisodeInput, NovelChapterUncheckedCreateWithoutEpisodeInput>
@@ -90651,6 +92366,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutEpisodesInput = {
@@ -90678,6 +92394,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SeasonUpsertWithoutEpisodesInput = {
@@ -90778,6 +92495,22 @@ export namespace Prisma {
     data: XOR<ShotJobUpdateManyMutationInput, ShotJobUncheckedUpdateManyWithoutEpisodeInput>
   }
 
+  export type PublishedVideoUpsertWithWhereUniqueWithoutEpisodeInput = {
+    where: PublishedVideoWhereUniqueInput
+    update: XOR<PublishedVideoUpdateWithoutEpisodeInput, PublishedVideoUncheckedUpdateWithoutEpisodeInput>
+    create: XOR<PublishedVideoCreateWithoutEpisodeInput, PublishedVideoUncheckedCreateWithoutEpisodeInput>
+  }
+
+  export type PublishedVideoUpdateWithWhereUniqueWithoutEpisodeInput = {
+    where: PublishedVideoWhereUniqueInput
+    data: XOR<PublishedVideoUpdateWithoutEpisodeInput, PublishedVideoUncheckedUpdateWithoutEpisodeInput>
+  }
+
+  export type PublishedVideoUpdateManyWithWhereWithoutEpisodeInput = {
+    where: PublishedVideoScalarWhereInput
+    data: XOR<PublishedVideoUpdateManyMutationInput, PublishedVideoUncheckedUpdateManyWithoutEpisodeInput>
+  }
+
   export type EngineTaskCreateWithoutSceneInput = {
     id?: string
     type: $Enums.EngineTaskType
@@ -90824,6 +92557,7 @@ export namespace Prisma {
     season: SeasonCreateNestedOneWithoutEpisodesInput
     publishingReviews?: PublishingReviewCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeUncheckedCreateWithoutScenesInput = {
@@ -90836,6 +92570,7 @@ export namespace Prisma {
     chapterId?: string | null
     publishingReviews?: PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeCreateOrConnectWithoutScenesInput = {
@@ -91037,6 +92772,7 @@ export namespace Prisma {
     season?: SeasonUpdateOneRequiredWithoutEpisodesNestedInput
     publishingReviews?: PublishingReviewUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeUncheckedUpdateWithoutScenesInput = {
@@ -91049,6 +92785,7 @@ export namespace Prisma {
     chapterId?: NullableStringFieldUpdateOperationsInput | string | null
     publishingReviews?: PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutEpisodeNestedInput
   }
 
   export type SceneDraftUpsertWithoutSceneInput = {
@@ -91141,6 +92878,7 @@ export namespace Prisma {
     job?: ShotJobCreateNestedOneWithoutGeneratedAssetInput
     project: ProjectCreateNestedOneWithoutAssetsInput
     fingerprint?: SecurityFingerprintCreateNestedOneWithoutAssetsInput
+    publishedVideo?: PublishedVideoCreateNestedOneWithoutAssetInput
   }
 
   export type AssetUncheckedCreateWithoutShotInput = {
@@ -91158,6 +92896,7 @@ export namespace Prisma {
     signedUrl?: string | null
     watermarkMode?: string | null
     fingerprintId?: string | null
+    publishedVideo?: PublishedVideoUncheckedCreateNestedOneWithoutAssetInput
   }
 
   export type AssetCreateOrConnectWithoutShotInput = {
@@ -91863,6 +93602,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutStructureQualityReportInput = {
@@ -91890,6 +93630,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutStructureQualityReportInput = {
@@ -91933,6 +93674,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutStructureQualityReportInput = {
@@ -91960,6 +93702,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectCreateWithoutEngineTasksInput = {
@@ -91987,6 +93730,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutEngineTasksInput = {
@@ -92014,6 +93758,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutEngineTasksInput = {
@@ -92143,6 +93888,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutEngineTasksInput = {
@@ -92170,6 +93916,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SceneUpsertWithoutEngineTasksInput = {
@@ -93088,6 +94835,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutProjectMembersInput = {
@@ -93115,6 +94863,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutProjectMembersInput = {
@@ -93181,6 +94930,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutProjectMembersInput = {
@@ -93208,6 +94958,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type RoleUpsertWithoutMembersInput = {
@@ -93313,6 +95064,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutTasksInput = {
@@ -93340,6 +95092,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutTasksInput = {
@@ -93545,6 +95298,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutTasksInput = {
@@ -93572,6 +95326,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type WorkerNodeUpsertWithoutTasksInput = {
@@ -93740,6 +95495,7 @@ export namespace Prisma {
     shot?: ShotCreateNestedOneWithoutAssetsInput
     project: ProjectCreateNestedOneWithoutAssetsInput
     fingerprint?: SecurityFingerprintCreateNestedOneWithoutAssetsInput
+    publishedVideo?: PublishedVideoCreateNestedOneWithoutAssetInput
   }
 
   export type AssetUncheckedCreateWithoutJobInput = {
@@ -93757,6 +95513,7 @@ export namespace Prisma {
     signedUrl?: string | null
     watermarkMode?: string | null
     fingerprintId?: string | null
+    publishedVideo?: PublishedVideoUncheckedCreateNestedOneWithoutAssetInput
   }
 
   export type AssetCreateOrConnectWithoutJobInput = {
@@ -93814,6 +95571,7 @@ export namespace Prisma {
     season: SeasonCreateNestedOneWithoutEpisodesInput
     publishingReviews?: PublishingReviewCreateNestedManyWithoutEpisodeInput
     scenes?: SceneCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeUncheckedCreateWithoutShotJobsInput = {
@@ -93826,6 +95584,7 @@ export namespace Prisma {
     chapterId?: string | null
     publishingReviews?: PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput
     scenes?: SceneUncheckedCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeCreateOrConnectWithoutShotJobsInput = {
@@ -93907,6 +95666,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutShotJobsInput = {
@@ -93934,6 +95694,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutShotJobsInput = {
@@ -94187,6 +95948,7 @@ export namespace Prisma {
     season?: SeasonUpdateOneRequiredWithoutEpisodesNestedInput
     publishingReviews?: PublishingReviewUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeUncheckedUpdateWithoutShotJobsInput = {
@@ -94199,6 +95961,7 @@ export namespace Prisma {
     chapterId?: NullableStringFieldUpdateOperationsInput | string | null
     publishingReviews?: PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUncheckedUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutEpisodeNestedInput
   }
 
   export type OrganizationUpsertWithoutShotJobsInput = {
@@ -94292,6 +96055,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutShotJobsInput = {
@@ -94319,6 +96083,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SceneUpsertWithoutShotJobsInput = {
@@ -95074,6 +96839,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutBillingEventsInput = {
@@ -95101,6 +96867,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutBillingEventsInput = {
@@ -95319,6 +97086,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutBillingEventsInput = {
@@ -95346,6 +97114,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type UserUpsertWithoutBillingEventsInput = {
@@ -95731,6 +97500,7 @@ export namespace Prisma {
     season: SeasonCreateNestedOneWithoutEpisodesInput
     scenes?: SceneCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeUncheckedCreateWithoutPublishingReviewsInput = {
@@ -95743,6 +97513,7 @@ export namespace Prisma {
     chapterId?: string | null
     scenes?: SceneUncheckedCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeCreateOrConnectWithoutPublishingReviewsInput = {
@@ -95871,6 +97642,7 @@ export namespace Prisma {
     season?: SeasonUpdateOneRequiredWithoutEpisodesNestedInput
     scenes?: SceneUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeUncheckedUpdateWithoutPublishingReviewsInput = {
@@ -95883,6 +97655,7 @@ export namespace Prisma {
     chapterId?: NullableStringFieldUpdateOperationsInput | string | null
     scenes?: SceneUncheckedUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutEpisodeNestedInput
   }
 
   export type UserUpsertWithoutReviewLogsInput = {
@@ -96336,6 +98109,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelSourcesInput = {
@@ -96363,6 +98137,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelSourcesInput = {
@@ -96469,6 +98244,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelSourcesInput = {
@@ -96496,6 +98272,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type NovelChapterCreateWithoutSceneDraftsInput = {
@@ -96718,6 +98495,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelAnalysisJobsInput = {
@@ -96745,6 +98523,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelAnalysisJobsInput = {
@@ -96837,6 +98616,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelAnalysisJobsInput = {
@@ -96864,6 +98644,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type OrganizationCreateWithoutApiKeysInput = {
@@ -97453,6 +99234,7 @@ export namespace Prisma {
     shot?: ShotCreateNestedOneWithoutAssetsInput
     job?: ShotJobCreateNestedOneWithoutGeneratedAssetInput
     project: ProjectCreateNestedOneWithoutAssetsInput
+    publishedVideo?: PublishedVideoCreateNestedOneWithoutAssetInput
   }
 
   export type AssetUncheckedCreateWithoutFingerprintInput = {
@@ -97470,6 +99252,7 @@ export namespace Prisma {
     hlsPlaylistUrl?: string | null
     signedUrl?: string | null
     watermarkMode?: string | null
+    publishedVideo?: PublishedVideoUncheckedCreateNestedOneWithoutAssetInput
   }
 
   export type AssetCreateOrConnectWithoutFingerprintInput = {
@@ -97523,6 +99306,7 @@ export namespace Prisma {
     seasons?: SeasonCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelVolumesInput = {
@@ -97550,6 +99334,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelVolumesInput = {
@@ -97674,6 +99459,7 @@ export namespace Prisma {
     seasons?: SeasonUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelVolumesInput = {
@@ -97701,6 +99487,7 @@ export namespace Prisma {
     seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type NovelSourceUpsertWithoutVolumesInput = {
@@ -97880,6 +99667,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewCreateNestedManyWithoutEpisodeInput
     scenes?: SceneCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeUncheckedCreateWithoutChapterInput = {
@@ -97892,6 +99680,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput
     scenes?: SceneUncheckedCreateNestedManyWithoutEpisodeInput
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutEpisodeInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutEpisodeInput
   }
 
   export type EpisodeCreateOrConnectWithoutChapterInput = {
@@ -98074,6 +99863,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeUncheckedUpdateWithoutChapterInput = {
@@ -98086,6 +99876,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUncheckedUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutEpisodeNestedInput
   }
 
   export type SceneDraftUpsertWithWhereUniqueWithoutChapterInput = {
@@ -98220,6 +100011,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutNovelParseResultsInput = {
@@ -98247,6 +100039,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutNovelParseResultsInput = {
@@ -98339,6 +100132,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutNovelParseResultsInput = {
@@ -98366,6 +100160,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type OrganizationUpsertWithoutNovelParseResultsInput = {
@@ -98448,6 +100243,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutQualityMetricsInput = {
@@ -98475,6 +100271,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutQualityMetricsInput = {
@@ -98518,6 +100315,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutQualityMetricsInput = {
@@ -98545,6 +100343,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ShotCreateWithoutAssetsInput = {
@@ -98682,6 +100481,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutAssetsInput = {
@@ -98709,6 +100509,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutAssetsInput = {
@@ -98733,6 +100534,35 @@ export namespace Prisma {
   export type SecurityFingerprintCreateOrConnectWithoutAssetsInput = {
     where: SecurityFingerprintWhereUniqueInput
     create: XOR<SecurityFingerprintCreateWithoutAssetsInput, SecurityFingerprintUncheckedCreateWithoutAssetsInput>
+  }
+
+  export type PublishedVideoCreateWithoutAssetInput = {
+    id?: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    project: ProjectCreateNestedOneWithoutPublishedVideosInput
+    episode: EpisodeCreateNestedOneWithoutPublishedVideosInput
+  }
+
+  export type PublishedVideoUncheckedCreateWithoutAssetInput = {
+    id?: string
+    projectId: string
+    episodeId: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PublishedVideoCreateOrConnectWithoutAssetInput = {
+    where: PublishedVideoWhereUniqueInput
+    create: XOR<PublishedVideoCreateWithoutAssetInput, PublishedVideoUncheckedCreateWithoutAssetInput>
   }
 
   export type ShotUpsertWithoutAssetsInput = {
@@ -98893,6 +100723,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutAssetsInput = {
@@ -98920,6 +100751,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type SecurityFingerprintUpsertWithoutAssetsInput = {
@@ -98945,6 +100777,41 @@ export namespace Prisma {
     assetId?: NullableStringFieldUpdateOperationsInput | string | null
     fpVector?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PublishedVideoUpsertWithoutAssetInput = {
+    update: XOR<PublishedVideoUpdateWithoutAssetInput, PublishedVideoUncheckedUpdateWithoutAssetInput>
+    create: XOR<PublishedVideoCreateWithoutAssetInput, PublishedVideoUncheckedCreateWithoutAssetInput>
+    where?: PublishedVideoWhereInput
+  }
+
+  export type PublishedVideoUpdateToOneWithWhereWithoutAssetInput = {
+    where?: PublishedVideoWhereInput
+    data: XOR<PublishedVideoUpdateWithoutAssetInput, PublishedVideoUncheckedUpdateWithoutAssetInput>
+  }
+
+  export type PublishedVideoUpdateWithoutAssetInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    project?: ProjectUpdateOneRequiredWithoutPublishedVideosNestedInput
+    episode?: EpisodeUpdateOneRequiredWithoutPublishedVideosNestedInput
+  }
+
+  export type PublishedVideoUncheckedUpdateWithoutAssetInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    episodeId?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BillingEventCreateWithoutCostLedgerInput = {
@@ -99001,6 +100868,7 @@ export namespace Prisma {
     shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUncheckedCreateWithoutCostLedgersInput = {
@@ -99028,6 +100896,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
     structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
     novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+    publishedVideos?: PublishedVideoUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectCreateOrConnectWithoutCostLedgersInput = {
@@ -99157,6 +101026,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutCostLedgersInput = {
@@ -99184,6 +101054,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type UserUpsertWithoutCostLedgersInput = {
@@ -99241,6 +101112,290 @@ export namespace Prisma {
     ownedProjects?: ProjectUncheckedUpdateManyWithoutOwnerNestedInput
     reviewLogs?: PublishingReviewUncheckedUpdateManyWithoutReviewerNestedInput
     subscriptions?: SubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type ProjectCreateWithoutPublishedVideosInput = {
+    id?: string
+    name: string
+    description?: string | null
+    status?: $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    tasks?: TaskCreateNestedManyWithoutProjectInput
+    assets?: AssetCreateNestedManyWithoutProjectInput
+    billingEvents?: BillingEventCreateNestedManyWithoutProjectInput
+    costLedgers?: CostLedgerCreateNestedManyWithoutProjectInput
+    engineTasks?: EngineTaskCreateNestedManyWithoutProjectInput
+    episodes?: EpisodeCreateNestedManyWithoutProjectInput
+    novelAnalysisJobs?: NovelAnalysisJobCreateNestedManyWithoutProjectInput
+    novelParseResults?: NovelParseResultCreateNestedOneWithoutProjectInput
+    novelSources?: NovelSourceCreateNestedManyWithoutProjectInput
+    projectMembers?: ProjectMemberCreateNestedManyWithoutProjectInput
+    organization: OrganizationCreateNestedOneWithoutProjectsInput
+    owner: UserCreateNestedOneWithoutOwnedProjectsInput
+    qualityMetrics?: QualityMetricsCreateNestedManyWithoutProjectInput
+    seasons?: SeasonCreateNestedManyWithoutProjectInput
+    shotJobs?: ShotJobCreateNestedManyWithoutProjectInput
+    structureQualityReport?: StructureQualityReportCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeCreateNestedManyWithoutProjectInput
+  }
+
+  export type ProjectUncheckedCreateWithoutPublishedVideosInput = {
+    id?: string
+    name: string
+    description?: string | null
+    ownerId: string
+    organizationId: string
+    status?: $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    tasks?: TaskUncheckedCreateNestedManyWithoutProjectInput
+    assets?: AssetUncheckedCreateNestedManyWithoutProjectInput
+    billingEvents?: BillingEventUncheckedCreateNestedManyWithoutProjectInput
+    costLedgers?: CostLedgerUncheckedCreateNestedManyWithoutProjectInput
+    engineTasks?: EngineTaskUncheckedCreateNestedManyWithoutProjectInput
+    episodes?: EpisodeUncheckedCreateNestedManyWithoutProjectInput
+    novelAnalysisJobs?: NovelAnalysisJobUncheckedCreateNestedManyWithoutProjectInput
+    novelParseResults?: NovelParseResultUncheckedCreateNestedOneWithoutProjectInput
+    novelSources?: NovelSourceUncheckedCreateNestedManyWithoutProjectInput
+    projectMembers?: ProjectMemberUncheckedCreateNestedManyWithoutProjectInput
+    qualityMetrics?: QualityMetricsUncheckedCreateNestedManyWithoutProjectInput
+    seasons?: SeasonUncheckedCreateNestedManyWithoutProjectInput
+    shotJobs?: ShotJobUncheckedCreateNestedManyWithoutProjectInput
+    structureQualityReport?: StructureQualityReportUncheckedCreateNestedOneWithoutProjectInput
+    novelVolumes?: NovelVolumeUncheckedCreateNestedManyWithoutProjectInput
+  }
+
+  export type ProjectCreateOrConnectWithoutPublishedVideosInput = {
+    where: ProjectWhereUniqueInput
+    create: XOR<ProjectCreateWithoutPublishedVideosInput, ProjectUncheckedCreateWithoutPublishedVideosInput>
+  }
+
+  export type EpisodeCreateWithoutPublishedVideosInput = {
+    id?: string
+    index: number
+    name: string
+    summary?: string | null
+    chapter?: NovelChapterCreateNestedOneWithoutEpisodeInput
+    project?: ProjectCreateNestedOneWithoutEpisodesInput
+    season: SeasonCreateNestedOneWithoutEpisodesInput
+    publishingReviews?: PublishingReviewCreateNestedManyWithoutEpisodeInput
+    scenes?: SceneCreateNestedManyWithoutEpisodeInput
+    shotJobs?: ShotJobCreateNestedManyWithoutEpisodeInput
+  }
+
+  export type EpisodeUncheckedCreateWithoutPublishedVideosInput = {
+    id?: string
+    seasonId: string
+    projectId?: string | null
+    index: number
+    name: string
+    summary?: string | null
+    chapterId?: string | null
+    publishingReviews?: PublishingReviewUncheckedCreateNestedManyWithoutEpisodeInput
+    scenes?: SceneUncheckedCreateNestedManyWithoutEpisodeInput
+    shotJobs?: ShotJobUncheckedCreateNestedManyWithoutEpisodeInput
+  }
+
+  export type EpisodeCreateOrConnectWithoutPublishedVideosInput = {
+    where: EpisodeWhereUniqueInput
+    create: XOR<EpisodeCreateWithoutPublishedVideosInput, EpisodeUncheckedCreateWithoutPublishedVideosInput>
+  }
+
+  export type AssetCreateWithoutPublishedVideoInput = {
+    id?: string
+    createdAt?: Date | string
+    checksum?: string | null
+    ownerId: string
+    ownerType: $Enums.AssetOwnerType
+    status?: $Enums.AssetStatus
+    storageKey: string
+    type: $Enums.AssetType
+    hlsPlaylistUrl?: string | null
+    signedUrl?: string | null
+    watermarkMode?: string | null
+    shot?: ShotCreateNestedOneWithoutAssetsInput
+    job?: ShotJobCreateNestedOneWithoutGeneratedAssetInput
+    project: ProjectCreateNestedOneWithoutAssetsInput
+    fingerprint?: SecurityFingerprintCreateNestedOneWithoutAssetsInput
+  }
+
+  export type AssetUncheckedCreateWithoutPublishedVideoInput = {
+    id?: string
+    projectId: string
+    createdAt?: Date | string
+    checksum?: string | null
+    createdByJobId?: string | null
+    ownerId: string
+    ownerType: $Enums.AssetOwnerType
+    status?: $Enums.AssetStatus
+    storageKey: string
+    type: $Enums.AssetType
+    shotId?: string | null
+    hlsPlaylistUrl?: string | null
+    signedUrl?: string | null
+    watermarkMode?: string | null
+    fingerprintId?: string | null
+  }
+
+  export type AssetCreateOrConnectWithoutPublishedVideoInput = {
+    where: AssetWhereUniqueInput
+    create: XOR<AssetCreateWithoutPublishedVideoInput, AssetUncheckedCreateWithoutPublishedVideoInput>
+  }
+
+  export type ProjectUpsertWithoutPublishedVideosInput = {
+    update: XOR<ProjectUpdateWithoutPublishedVideosInput, ProjectUncheckedUpdateWithoutPublishedVideosInput>
+    create: XOR<ProjectCreateWithoutPublishedVideosInput, ProjectUncheckedCreateWithoutPublishedVideosInput>
+    where?: ProjectWhereInput
+  }
+
+  export type ProjectUpdateToOneWithWhereWithoutPublishedVideosInput = {
+    where?: ProjectWhereInput
+    data: XOR<ProjectUpdateWithoutPublishedVideosInput, ProjectUncheckedUpdateWithoutPublishedVideosInput>
+  }
+
+  export type ProjectUpdateWithoutPublishedVideosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    tasks?: TaskUpdateManyWithoutProjectNestedInput
+    assets?: AssetUpdateManyWithoutProjectNestedInput
+    billingEvents?: BillingEventUpdateManyWithoutProjectNestedInput
+    costLedgers?: CostLedgerUpdateManyWithoutProjectNestedInput
+    engineTasks?: EngineTaskUpdateManyWithoutProjectNestedInput
+    episodes?: EpisodeUpdateManyWithoutProjectNestedInput
+    novelAnalysisJobs?: NovelAnalysisJobUpdateManyWithoutProjectNestedInput
+    novelParseResults?: NovelParseResultUpdateOneWithoutProjectNestedInput
+    novelSources?: NovelSourceUpdateManyWithoutProjectNestedInput
+    projectMembers?: ProjectMemberUpdateManyWithoutProjectNestedInput
+    organization?: OrganizationUpdateOneRequiredWithoutProjectsNestedInput
+    owner?: UserUpdateOneRequiredWithoutOwnedProjectsNestedInput
+    qualityMetrics?: QualityMetricsUpdateManyWithoutProjectNestedInput
+    seasons?: SeasonUpdateManyWithoutProjectNestedInput
+    shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
+    structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+  }
+
+  export type ProjectUncheckedUpdateWithoutPublishedVideosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerId?: StringFieldUpdateOperationsInput | string
+    organizationId?: StringFieldUpdateOperationsInput | string
+    status?: EnumProjectStatusFieldUpdateOperationsInput | $Enums.ProjectStatus
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settingsJson?: NullableJsonNullValueInput | InputJsonValue
+    tasks?: TaskUncheckedUpdateManyWithoutProjectNestedInput
+    assets?: AssetUncheckedUpdateManyWithoutProjectNestedInput
+    billingEvents?: BillingEventUncheckedUpdateManyWithoutProjectNestedInput
+    costLedgers?: CostLedgerUncheckedUpdateManyWithoutProjectNestedInput
+    engineTasks?: EngineTaskUncheckedUpdateManyWithoutProjectNestedInput
+    episodes?: EpisodeUncheckedUpdateManyWithoutProjectNestedInput
+    novelAnalysisJobs?: NovelAnalysisJobUncheckedUpdateManyWithoutProjectNestedInput
+    novelParseResults?: NovelParseResultUncheckedUpdateOneWithoutProjectNestedInput
+    novelSources?: NovelSourceUncheckedUpdateManyWithoutProjectNestedInput
+    projectMembers?: ProjectMemberUncheckedUpdateManyWithoutProjectNestedInput
+    qualityMetrics?: QualityMetricsUncheckedUpdateManyWithoutProjectNestedInput
+    seasons?: SeasonUncheckedUpdateManyWithoutProjectNestedInput
+    shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
+    structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
+    novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+  }
+
+  export type EpisodeUpsertWithoutPublishedVideosInput = {
+    update: XOR<EpisodeUpdateWithoutPublishedVideosInput, EpisodeUncheckedUpdateWithoutPublishedVideosInput>
+    create: XOR<EpisodeCreateWithoutPublishedVideosInput, EpisodeUncheckedCreateWithoutPublishedVideosInput>
+    where?: EpisodeWhereInput
+  }
+
+  export type EpisodeUpdateToOneWithWhereWithoutPublishedVideosInput = {
+    where?: EpisodeWhereInput
+    data: XOR<EpisodeUpdateWithoutPublishedVideosInput, EpisodeUncheckedUpdateWithoutPublishedVideosInput>
+  }
+
+  export type EpisodeUpdateWithoutPublishedVideosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    index?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    chapter?: NovelChapterUpdateOneWithoutEpisodeNestedInput
+    project?: ProjectUpdateOneWithoutEpisodesNestedInput
+    season?: SeasonUpdateOneRequiredWithoutEpisodesNestedInput
+    publishingReviews?: PublishingReviewUpdateManyWithoutEpisodeNestedInput
+    scenes?: SceneUpdateManyWithoutEpisodeNestedInput
+    shotJobs?: ShotJobUpdateManyWithoutEpisodeNestedInput
+  }
+
+  export type EpisodeUncheckedUpdateWithoutPublishedVideosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seasonId?: StringFieldUpdateOperationsInput | string
+    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    index?: IntFieldUpdateOperationsInput | number
+    name?: StringFieldUpdateOperationsInput | string
+    summary?: NullableStringFieldUpdateOperationsInput | string | null
+    chapterId?: NullableStringFieldUpdateOperationsInput | string | null
+    publishingReviews?: PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput
+    scenes?: SceneUncheckedUpdateManyWithoutEpisodeNestedInput
+    shotJobs?: ShotJobUncheckedUpdateManyWithoutEpisodeNestedInput
+  }
+
+  export type AssetUpsertWithoutPublishedVideoInput = {
+    update: XOR<AssetUpdateWithoutPublishedVideoInput, AssetUncheckedUpdateWithoutPublishedVideoInput>
+    create: XOR<AssetCreateWithoutPublishedVideoInput, AssetUncheckedCreateWithoutPublishedVideoInput>
+    where?: AssetWhereInput
+  }
+
+  export type AssetUpdateToOneWithWhereWithoutPublishedVideoInput = {
+    where?: AssetWhereInput
+    data: XOR<AssetUpdateWithoutPublishedVideoInput, AssetUncheckedUpdateWithoutPublishedVideoInput>
+  }
+
+  export type AssetUpdateWithoutPublishedVideoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerId?: StringFieldUpdateOperationsInput | string
+    ownerType?: EnumAssetOwnerTypeFieldUpdateOperationsInput | $Enums.AssetOwnerType
+    status?: EnumAssetStatusFieldUpdateOperationsInput | $Enums.AssetStatus
+    storageKey?: StringFieldUpdateOperationsInput | string
+    type?: EnumAssetTypeFieldUpdateOperationsInput | $Enums.AssetType
+    hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
+    shot?: ShotUpdateOneWithoutAssetsNestedInput
+    job?: ShotJobUpdateOneWithoutGeneratedAssetNestedInput
+    project?: ProjectUpdateOneRequiredWithoutAssetsNestedInput
+    fingerprint?: SecurityFingerprintUpdateOneWithoutAssetsNestedInput
+  }
+
+  export type AssetUncheckedUpdateWithoutPublishedVideoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    checksum?: NullableStringFieldUpdateOperationsInput | string | null
+    createdByJobId?: NullableStringFieldUpdateOperationsInput | string | null
+    ownerId?: StringFieldUpdateOperationsInput | string
+    ownerType?: EnumAssetOwnerTypeFieldUpdateOperationsInput | $Enums.AssetOwnerType
+    status?: EnumAssetStatusFieldUpdateOperationsInput | $Enums.AssetStatus
+    storageKey?: StringFieldUpdateOperationsInput | string
+    type?: EnumAssetTypeFieldUpdateOperationsInput | $Enums.AssetType
+    shotId?: NullableStringFieldUpdateOperationsInput | string | null
+    hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
+    fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ApiKeyCreateManyOwnerUserInput = {
@@ -99735,6 +101890,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutOwnerInput = {
@@ -99762,6 +101918,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateManyWithoutOwnerInput = {
@@ -100307,6 +102464,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutOrganizationInput = {
@@ -100334,6 +102492,7 @@ export namespace Prisma {
     shotJobs?: ShotJobUncheckedUpdateManyWithoutProjectNestedInput
     structureQualityReport?: StructureQualityReportUncheckedUpdateOneWithoutProjectNestedInput
     novelVolumes?: NovelVolumeUncheckedUpdateManyWithoutProjectNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateManyWithoutOrganizationInput = {
@@ -100751,6 +102910,18 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type PublishedVideoCreateManyProjectInput = {
+    id?: string
+    episodeId: string
+    assetId: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type TaskUpdateWithoutProjectInput = {
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumTaskTypeFieldUpdateOperationsInput | $Enums.TaskType
@@ -100819,6 +102990,7 @@ export namespace Prisma {
     shot?: ShotUpdateOneWithoutAssetsNestedInput
     job?: ShotJobUpdateOneWithoutGeneratedAssetNestedInput
     fingerprint?: SecurityFingerprintUpdateOneWithoutAssetsNestedInput
+    publishedVideo?: PublishedVideoUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetUncheckedUpdateWithoutProjectInput = {
@@ -100836,6 +103008,7 @@ export namespace Prisma {
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
     fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedVideo?: PublishedVideoUncheckedUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetUncheckedUpdateManyWithoutProjectInput = {
@@ -101026,6 +103199,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeUncheckedUpdateWithoutProjectInput = {
@@ -101038,6 +103212,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUncheckedUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeUncheckedUpdateManyWithoutProjectInput = {
@@ -101345,6 +103520,42 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PublishedVideoUpdateWithoutProjectInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    episode?: EpisodeUpdateOneRequiredWithoutPublishedVideosNestedInput
+    asset?: AssetUpdateOneRequiredWithoutPublishedVideoNestedInput
+  }
+
+  export type PublishedVideoUncheckedUpdateWithoutProjectInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    episodeId?: StringFieldUpdateOperationsInput | string
+    assetId?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PublishedVideoUncheckedUpdateManyWithoutProjectInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    episodeId?: StringFieldUpdateOperationsInput | string
+    assetId?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type EpisodeCreateManySeasonInput = {
     id?: string
     projectId?: string | null
@@ -101364,6 +103575,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeUncheckedUpdateWithoutSeasonInput = {
@@ -101376,6 +103588,7 @@ export namespace Prisma {
     publishingReviews?: PublishingReviewUncheckedUpdateManyWithoutEpisodeNestedInput
     scenes?: SceneUncheckedUpdateManyWithoutEpisodeNestedInput
     shotJobs?: ShotJobUncheckedUpdateManyWithoutEpisodeNestedInput
+    publishedVideos?: PublishedVideoUncheckedUpdateManyWithoutEpisodeNestedInput
   }
 
   export type EpisodeUncheckedUpdateManyWithoutSeasonInput = {
@@ -101435,6 +103648,18 @@ export namespace Prisma {
     traceId?: string | null
     result?: NullableJsonNullValueInput | InputJsonValue
     securityProcessed?: boolean
+  }
+
+  export type PublishedVideoCreateManyEpisodeInput = {
+    id?: string
+    projectId: string
+    assetId: string
+    storageKey: string
+    checksum: string
+    status?: string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type PublishingReviewUpdateWithoutEpisodeInput = {
@@ -101595,6 +103820,42 @@ export namespace Prisma {
     traceId?: NullableStringFieldUpdateOperationsInput | string | null
     result?: NullableJsonNullValueInput | InputJsonValue
     securityProcessed?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type PublishedVideoUpdateWithoutEpisodeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    project?: ProjectUpdateOneRequiredWithoutPublishedVideosNestedInput
+    asset?: AssetUpdateOneRequiredWithoutPublishedVideoNestedInput
+  }
+
+  export type PublishedVideoUncheckedUpdateWithoutEpisodeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    assetId?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PublishedVideoUncheckedUpdateManyWithoutEpisodeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    assetId?: StringFieldUpdateOperationsInput | string
+    storageKey?: StringFieldUpdateOperationsInput | string
+    checksum?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type EngineTaskCreateManySceneInput = {
@@ -101935,6 +104196,7 @@ export namespace Prisma {
     job?: ShotJobUpdateOneWithoutGeneratedAssetNestedInput
     project?: ProjectUpdateOneRequiredWithoutAssetsNestedInput
     fingerprint?: SecurityFingerprintUpdateOneWithoutAssetsNestedInput
+    publishedVideo?: PublishedVideoUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetUncheckedUpdateWithoutShotInput = {
@@ -101952,6 +104214,7 @@ export namespace Prisma {
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
     fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedVideo?: PublishedVideoUncheckedUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetUncheckedUpdateManyWithoutShotInput = {
@@ -102573,6 +104836,7 @@ export namespace Prisma {
     shot?: ShotUpdateOneWithoutAssetsNestedInput
     project?: ProjectUpdateOneRequiredWithoutAssetsNestedInput
     fingerprint?: SecurityFingerprintUpdateOneWithoutAssetsNestedInput
+    publishedVideo?: PublishedVideoUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetUncheckedUpdateWithoutJobInput = {
@@ -102590,6 +104854,7 @@ export namespace Prisma {
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
     fingerprintId?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedVideo?: PublishedVideoUncheckedUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetUncheckedUpdateManyWithoutJobInput = {
@@ -103079,6 +105344,7 @@ export namespace Prisma {
     shot?: ShotUpdateOneWithoutAssetsNestedInput
     job?: ShotJobUpdateOneWithoutGeneratedAssetNestedInput
     project?: ProjectUpdateOneRequiredWithoutAssetsNestedInput
+    publishedVideo?: PublishedVideoUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetUncheckedUpdateWithoutFingerprintInput = {
@@ -103096,6 +105362,7 @@ export namespace Prisma {
     hlsPlaylistUrl?: NullableStringFieldUpdateOperationsInput | string | null
     signedUrl?: NullableStringFieldUpdateOperationsInput | string | null
     watermarkMode?: NullableStringFieldUpdateOperationsInput | string | null
+    publishedVideo?: PublishedVideoUncheckedUpdateOneWithoutAssetNestedInput
   }
 
   export type AssetUncheckedUpdateManyWithoutFingerprintInput = {
@@ -103584,6 +105851,10 @@ export namespace Prisma {
      * @deprecated Use CostLedgerDefaultArgs instead
      */
     export type CostLedgerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CostLedgerDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use PublishedVideoDefaultArgs instead
+     */
+    export type PublishedVideoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PublishedVideoDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

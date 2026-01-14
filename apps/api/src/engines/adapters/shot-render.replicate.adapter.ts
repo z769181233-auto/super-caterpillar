@@ -6,10 +6,9 @@ import {
 } from '@scu/shared-types';
 import Replicate from 'replicate';
 import axios from 'axios';
-import { createWriteStream, mkdirSync, existsSync } from 'fs';
+import * as fs from 'fs';
 import { createHash } from 'crypto';
 import { pipeline } from 'stream/promises';
-import { createReadStream } from 'fs';
 import * as path from 'path';
 
 /**
@@ -29,16 +28,21 @@ export class ShotRenderReplicateAdapter implements EngineAdapter {
     private readonly ASSETS_DIR = path.join(process.cwd(), 'apps/workers/.runtime/assets');
 
     constructor() {
+        // Ensure assets directory exists
+        if (!fs.existsSync(this.ASSETS_DIR)) {
+            fs.mkdirSync(this.ASSETS_DIR, { recursive: true });
+        }
+    }
+
+    private getReplicate(): Replicate {
+        if (this.replicate) return this.replicate;
+
         const token = process.env.REPLICATE_API_TOKEN;
         if (!token) {
             throw new Error('REPLICATE_API_TOKEN not configured in environment');
         }
         this.replicate = new Replicate({ auth: token });
-
-        // Ensure assets directory exists
-        if (!existsSync(this.ASSETS_DIR)) {
-            mkdirSync(this.ASSETS_DIR, { recursive: true });
-        }
+        return this.replicate;
     }
 
     supports(engineKey: string): boolean {
@@ -64,7 +68,7 @@ export class ShotRenderReplicateAdapter implements EngineAdapter {
             this.logger.log(`[ShotRenderReplicate] Generating image for prompt: ${prompt.substring(0, 50)}...`);
 
             // 1. Call Replicate SDXL
-            const output = await this.replicate.run(
+            const output = await this.getReplicate().run(
                 "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
                 {
                     input: {
@@ -95,7 +99,6 @@ export class ShotRenderReplicateAdapter implements EngineAdapter {
             const sha256 = await this.calculateSHA256(localPath);
 
             // 4. Get file size
-            const fs = require('fs');
             const stats = fs.statSync(localPath);
             const fileSize = stats.size;
 
@@ -148,15 +151,15 @@ export class ShotRenderReplicateAdapter implements EngineAdapter {
 
     private async downloadImage(url: string, localPath: string): Promise<void> {
         const response = await axios.get(url, { responseType: 'stream' });
-        await pipeline(response.data, createWriteStream(localPath));
+        await pipeline(response.data, fs.createWriteStream(localPath));
     }
 
     private async calculateSHA256(filePath: string): Promise<string> {
         const hash = createHash('sha256');
-        const stream = createReadStream(filePath);
+        const stream = fs.createReadStream(filePath);
 
         return new Promise((resolve, reject) => {
-            stream.on('data', (chunk) => hash.update(chunk));
+            stream.on('data', (chunk) => hash.update(chunk as any));
             stream.on('end', () => resolve(hash.digest('hex')));
             stream.on('error', reject);
         });

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
 import { TextSafetyModule } from '../text-safety/text-safety.module';
@@ -27,7 +27,7 @@ import { OrchestratorModule } from '../orchestrator/orchestrator.module';
     AuditLogModule,
     AuditModule,
     PermissionModule,
-    OrchestratorModule,
+    forwardRef(() => OrchestratorModule),
     ApiSecurityModule,
     AuthModule,
     TextSafetyModule,
@@ -48,4 +48,4 @@ import { OrchestratorModule } from '../orchestrator/orchestrator.module';
     NovelAnalysisEngineService,
   ],
 })
-export class NovelImportModule {}
+export class NovelImportModule { }

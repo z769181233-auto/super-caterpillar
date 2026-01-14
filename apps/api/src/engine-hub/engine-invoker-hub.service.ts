@@ -11,6 +11,9 @@ import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { CostLimitService } from '../cost/cost-limit.service';
+import { getEngineCost } from '../cost/pricing';
+import { createHash } from 'crypto';
 
 /**
  * Engine Invoker Hub
@@ -25,7 +28,8 @@ export class EngineInvokerHubService {
     private readonly memoryRegistry: EngineRegistry,
     private readonly moduleRef: ModuleRef,
     private readonly httpEngineAdapter: HttpEngineAdapter,
-    private readonly auditLogService: AuditLogService
+    private readonly auditLogService: AuditLogService,
+    private readonly costLimit: CostLimitService
   ) { }
 
   /**
@@ -58,134 +62,121 @@ export class EngineInvokerHubService {
       return result;
     }
 
-    // 0.5. 优先检查内存注册表 (In-Memory Override)
-    // 用于 "Gateway" 模式：DB声明为 HTTP (通过Binding检查)，但实际执行由本地 Adapter 拦截
-    const memoryAdapter = this.memoryRegistry.findAdapter(req.engineKey);
-    if (memoryAdapter) {
-      const engineInput: EngineInvokeInput = {
+    const jobId = req.metadata?.jobId || `manual_${started}`;
+    const projectId = req.metadata?.projectId || 'default_project';
+    const attempt = (req.metadata?.attempt as number) || 0;
+
+    // 0.1 成本上限 Pre-Check (Budget Guard) & 重试上限 (Retry Guard)
+    // 根据《项目成本控制说明书》：重试次数必须 <= 3
+    if (attempt > 3) {
+      const error = `RETRY_LIMIT_EXCEEDED: Job ${jobId} attempt ${attempt} exceeds max allowed (3)`;
+      this.logger.error(error);
+      throw new Error(error);
+    }
+
+    if (req.engineKey.includes('shot_render')) {
+      await this.costLimit.preCheckOrThrow({
+        jobId,
         engineKey: req.engineKey,
-        jobType: this.inferJobTypeFromEngineKey(req.engineKey),
-        payload: { ...req.payload, engineVersion: req.engineVersion },
-        context: { ...req.metadata },
-      };
-      const engineResult = await memoryAdapter.invoke(engineInput);
-      let output: TOutput | undefined;
-
-      if (engineResult.status === 'SUCCESS') {
-        output = engineResult.output as TOutput;
-      } else {
-        throw new Error(engineResult.error?.message || 'Memory Adapter execution failed');
-      }
-
-      const result: EngineInvocationResult<TOutput> = {
-        success: true,
-        selectedEngineKey: req.engineKey,
-        output,
-        metrics: { latencyMs: Date.now() - started },
-      };
-      await this.logInvocation(req, result);
-      return result;
-    }
-
-    // 1. 查找引擎描述符 (DB)
-    let descriptor = this.engineRegistry.find(req.engineKey, req.engineVersion);
-
-    // 1.1 检查禁用列表
-    if (isGateMode && descriptor && disableKeys.includes(descriptor.engineKey)) {
-      this.logger.warn(
-        `Engine ${descriptor.engineKey} is disabled via ENGINE_DISABLE_KEYS, attempting fallback...`
-      );
-      fallbackReason = `Engine ${descriptor.engineKey} disabled by Gate`;
-      descriptor = null; // 强制触发找不到引擎的逻辑或后续 fallback
-    }
-
-    if (!descriptor) {
-      const result: EngineInvocationResult<TOutput> = {
-        success: false,
-        error: {
-          code: 'ENGINE_NOT_FOUND',
-          message: `Engine ${req.engineKey}@${req.engineVersion ?? 'default'} not registered or disabled`,
-        },
-        fallbackReason,
-        metrics: {
-          latencyMs: Date.now() - started,
-        },
-      };
-      await this.logInvocation(req, result);
-      return result;
+        plannedOutputs: 1,
+        estimatedCostUsd: 0.02,
+      });
     }
 
     try {
       let output: TOutput;
       let engineResult: EngineInvokeResult | undefined;
 
-      if (descriptor.mode === 'local') {
-        // 2. 本地 adapter 调用
-        if (!descriptor.adapterToken) {
-          throw new Error(`Local adapter token not specified for ${descriptor.engineKey}`);
-        }
-
-        const adapter = this.moduleRef.get<EngineAdapter>(descriptor.adapterToken, {
-          strict: false,
-        });
-
-        if (!adapter) {
-          throw new Error(`Adapter ${descriptor.adapterToken} not found in module`);
-        }
-
-        // 转换 EngineInvocationRequest 为 EngineInvokeInput
+      // 0.5. 优先检查内存注册表 (In-Memory Override)
+      const memoryAdapter = this.memoryRegistry.findAdapter(req.engineKey);
+      if (memoryAdapter) {
         const engineInput: EngineInvokeInput = {
           engineKey: req.engineKey,
           jobType: this.inferJobTypeFromEngineKey(req.engineKey),
-          payload: {
-            ...req.payload,
-            engineVersion: req.engineVersion,
-          },
-          context: {
-            ...req.metadata,
-          },
+          payload: { ...req.payload, engineVersion: req.engineVersion },
+          context: { ...req.metadata },
         };
+        engineResult = await memoryAdapter.invoke(engineInput);
 
-        engineResult = await adapter.invoke(engineInput);
-
-        // 转换 EngineInvokeResult 为 EngineInvocationResult
         if (engineResult.status === 'SUCCESS') {
           output = engineResult.output as TOutput;
         } else {
-          throw new Error(engineResult.error?.message || 'Engine execution failed');
+          throw new Error(engineResult.error?.message || 'Memory Adapter execution failed');
         }
       } else {
-        // 3. HTTP adapter 调用
-        if (!descriptor.httpConfig) {
-          throw new Error(`HTTP config not specified for ${descriptor.engineKey}`);
+        // 1. 查找引擎描述符 (DB)
+        let descriptor = this.engineRegistry.find(req.engineKey, req.engineVersion);
+
+        // 1.1 检查禁用列表
+        if (isGateMode && descriptor && disableKeys.includes(descriptor.engineKey)) {
+          this.logger.warn(`Engine ${descriptor.engineKey} disabled by Gate`);
+          fallbackReason = `Engine ${descriptor.engineKey} disabled by Gate`;
+          descriptor = null;
         }
 
-        // 使用现有的 HttpEngineAdapter
-        const engineInput: EngineInvokeInput = {
-          engineKey: req.engineKey,
-          jobType: this.inferJobTypeFromEngineKey(req.engineKey),
-          payload: {
-            ...req.payload,
-            engineVersion: req.engineVersion,
-          },
-          context: {
-            ...req.metadata,
-          },
-        };
+        if (!descriptor) {
+          throw new Error(`Engine ${req.engineKey}@${req.engineVersion ?? 'default'} not registered or disabled`);
+        }
 
-        engineResult = await this.httpEngineAdapter.invoke(engineInput);
+        if (descriptor.mode === 'local') {
+          const adapter = this.moduleRef.get<EngineAdapter>(descriptor.adapterToken, { strict: false });
+          if (!adapter) throw new Error(`Adapter ${descriptor.adapterToken} not found`);
 
-        if (engineResult.status === 'SUCCESS') {
-          output = engineResult.output as TOutput;
+          const engineInput: EngineInvokeInput = {
+            engineKey: req.engineKey,
+            jobType: this.inferJobTypeFromEngineKey(req.engineKey),
+            payload: { ...req.payload, engineVersion: req.engineVersion },
+            context: { ...req.metadata },
+          };
+          engineResult = await adapter.invoke(engineInput);
+
+          if (engineResult.status === 'SUCCESS') {
+            output = engineResult.output as TOutput;
+          } else {
+            throw new Error(engineResult.error?.message || 'Engine execution failed');
+          }
         } else {
-          throw new Error(engineResult.error?.message || 'Engine execution failed');
+          // HTTP adapter
+          const engineInput: EngineInvokeInput = {
+            engineKey: req.engineKey,
+            jobType: this.inferJobTypeFromEngineKey(req.engineKey),
+            payload: { ...req.payload, engineVersion: req.engineVersion },
+            context: { ...req.metadata },
+          };
+          engineResult = await this.httpEngineAdapter.invoke(engineInput);
+
+          if (engineResult.status === 'SUCCESS') {
+            output = engineResult.output as TOutput;
+          } else {
+            throw new Error(engineResult.error?.message || 'Engine execution failed');
+          }
         }
+      }
+
+      // 0.9 成本上限 Post-Apply (Billing & Guard)
+      if (req.engineKey.includes('shot_render') && engineResult?.status === 'SUCCESS') {
+        const audit = (engineResult.output as any)?.audit_trail;
+        const provider = audit?.providerSelected || 'unknown';
+        const costUsd = getEngineCost(req.engineKey, provider, { imageCount: 1 });
+        const attempt = (req.metadata?.attempt as number) || 0;
+        const idempotencyKey = `${jobId}:${req.engineKey}:${attempt}`;
+
+        await this.costLimit.postApplyUsage({
+          jobId,
+          projectId,
+          engineKey: req.engineKey,
+          pricingKey: audit?.pricing_key || 'UNKNOWN',
+          actualOutputs: 1,
+          gpuSeconds: engineResult.metrics?.gpuSeconds || 0,
+          costUsd,
+          attempt,
+          metadata: { traceId: req.metadata?.traceId, provider },
+        });
       }
 
       const finalResult: EngineInvocationResult<TOutput> = {
         success: true,
-        selectedEngineKey: descriptor.engineKey,
-        selectedEngineVersion: descriptor.version,
+        selectedEngineKey: req.engineKey,
         fallbackReason,
         output,
         metrics: {
@@ -193,14 +184,8 @@ export class EngineInvokerHubService {
           usage: {
             inputTokens: engineResult?.metrics?.tokensIn || 0,
             outputTokens: engineResult?.metrics?.tokensOut || 0,
-            totalTokens:
-              (engineResult?.metrics?.tokensUsed as number) ||
-              (engineResult?.metrics?.tokens as number) ||
-              0,
-            costUsd:
-              (engineResult?.metrics?.cost as number) ||
-              (engineResult?.metrics?.costUsd as number) ||
-              0,
+            totalTokens: (engineResult?.metrics?.tokensUsed as number) || 0,
+            costUsd: (engineResult?.metrics?.costUsd as number) || 0,
           },
           ...(engineResult?.metrics || {}),
         },
@@ -210,28 +195,16 @@ export class EngineInvokerHubService {
       return finalResult;
     } catch (e: unknown) {
       const errorObj = e as any;
-      this.logger.error(
-        `Engine invocation failed: ${req.engineKey}@${req.engineVersion ?? 'default'}`,
-        errorObj?.stack || errorObj?.message
-      );
-
       const result: EngineInvocationResult<TOutput> = {
         success: false,
-        selectedEngineKey: descriptor.engineKey,
-        selectedEngineVersion: descriptor.version,
+        selectedEngineKey: req.engineKey,
         fallbackReason,
         error: {
           code: errorObj?.code ?? 'ENGINE_CALL_FAILED',
           message: errorObj?.message ?? 'Engine invocation failed',
-          details: {
-            engineKey: req.engineKey,
-            engineVersion: req.engineVersion,
-            ...(errorObj?.details || {}),
-          },
+          details: { ...req.metadata, ...(errorObj?.details || {}) },
         },
-        metrics: {
-          latencyMs: Date.now() - started,
-        },
+        metrics: { latencyMs: Date.now() - started },
       };
 
       await this.logInvocation(req, result);

@@ -10,6 +10,10 @@ import { AuthModule } from '../auth/auth.module';
 import { JobModule } from '../job/job.module';
 import { EngineModule } from '../engines/engine.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
+import { ProjectModule } from '../project/project.module';
+import { NovelImportModule } from '../novel-import/novel-import.module';
+import { PublishModule } from '../publish/publish.module';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   imports: [
@@ -21,9 +25,12 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
     JobModule,
     EngineModule, // S3-C.1: 导入 EngineModule 以使用 EngineRegistry
     ApiSecurityModule, // 提供 ApiSecurityGuard 给 JwtOrHmacGuard
+    ProjectModule,
+    NovelImportModule,
+    PublishModule,
   ],
   controllers: [OrchestratorController, OrchestratorMonitorController],
   providers: [OrchestratorService],
   exports: [OrchestratorService],
 })
-export class OrchestratorModule {}
+export class OrchestratorModule { }

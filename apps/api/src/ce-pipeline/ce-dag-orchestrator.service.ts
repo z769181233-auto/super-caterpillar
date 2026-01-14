@@ -59,7 +59,7 @@ export class CEDagOrchestratorService {
     const orgId = project.organizationId;
 
     const jobIds: CEDagJobIds = { shotRenderJobIds: [] };
-    let warningsCount = 0;
+    const warningsCount = 0;
 
     this.logger.log(`[CE_DAG] Starting Full Pipeline runId=${runId}, traceId=${traceId}, project=${req.projectId}, shot=${req.shotId}`);
 

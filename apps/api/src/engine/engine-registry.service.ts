@@ -223,6 +223,7 @@ export class EngineRegistry {
       CE07_MEMORY_UPDATE: 'ce07_memory_update',
       CE01_REFERENCE_SHEET: 'character_visual',
       TIMELINE_PREVIEW: 'ce11_timeline_preview',
+      PIPELINE_STAGE1_NOVEL_TO_VIDEO: 'stage1_orchestrator',
 
       // TEST_HTTP_ENGINE_CALL: 'mock_http_engine', // 仅用于测试，不接入现有业务流程
     };

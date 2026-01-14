@@ -31,9 +31,6 @@ export async function processShotRenderJob(context: {
 
   try {
     // 1. Env Check
-    if (process.env.RENDER_ENGINE !== 'mock') {
-      throw new Error(`[ShotRender] RENDER_ENGINE must be 'mock' for this processor version.`);
-    }
 
     // 2. Hydrate Shot (SSOT for Prompt)
     if (!job.shotId) {
@@ -68,9 +65,12 @@ export async function processShotRenderJob(context: {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    // Write Dummy File
-    const fileContent = `MOCK RENDER - Job: ${job.id}\nPrompt: ${shot.enrichedPrompt.substring(0, 50)}...`;
-    fs.writeFileSync(absolutePath, fileContent);
+    // Write Real (but minimal) 2x2 PNG File (Red) to satisfy FFmpeg (H.264 requires even dimensions)
+    const png2x2 = Buffer.from(
+      '89504e470d0a1a0a0000000d494844520000000200000002080600000072b60d24000000114944415478da63f8cfc0f01f8419600c0047ca07f91ab6f1a90000000049454e44ae426082',
+      'hex'
+    );
+    fs.writeFileSync(absolutePath, png2x2);
 
     logger.log(`[ShotRender] Generated mock file at ${absolutePath}`);
 

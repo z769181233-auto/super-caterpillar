@@ -134,27 +134,48 @@ export class NovelImportService {
         data: { sceneDraftId: sceneDraft.id },
       });
 
-      // 暂时不生成 Shots，等后续镜头引擎上线
-      // 可以预留 3 个占位 Shot
-      for (let shIdx = 0; shIdx < 3; shIdx++) {
-        await this.projectService.createShot(
+      // 按段落切分生成 Shots（Stage-1 规则）
+      const paragraphs = chapter.rawText.split(/\n\n+/).filter(p => p.trim().length > 10);
+      this.logger.log(`Segmenting chapter into ${paragraphs.length} paragraphs/shots...`);
+
+      const shotsData = [];
+      // MVP: 限制每章最多 10 个镜头，防止过长
+      const maxShots = Math.min(paragraphs.length, 10);
+
+      for (let shIdx = 0; shIdx < maxShots; shIdx++) {
+        const paragraph = paragraphs[shIdx].trim();
+        const shotParams = {
+          prompt: paragraph.substring(0, 800), // 控制提示词长度
+          aspect_ratio: '16:9',
+          seed: Math.floor(Math.random() * 1000000),
+          engine_params: {
+            steps: 20,
+            guidance_scale: 7.0,
+            scheduler: 'DPMSolverMultistepScheduler'
+          }
+        };
+
+        const shot = await this.projectService.createShot(
           scene.id,
           {
             index: shIdx + 1,
-            type: 'close_up',
-            params: {
-              shotType: 'close_up',
-              style: 'anime',
-              cameraPreset: 'default',
-              posePreset: 'default',
-              densityScore: 0.5,
-            },
-            title: `镜头 ${shIdx + 1}`,
-            description: '待生成',
+            type: this.inferShotType(paragraph),
+            params: shotParams,
+            title: `Shot ${shIdx + 1}`,
+            description: paragraph.substring(0, 200),
           } as any,
           organizationId
         );
+
+        shotsData.push({
+          shotId: shot.id,
+          index: shIdx + 1,
+          ...shotParams
+        });
       }
+
+      // 记录段落切分证据 (Snapshot)
+      this.logger.log(`[Stage-1 Evidence] Generated structure for Episode ${episode.id} with ${shotsData.length} shots.`);
     }
   }
 

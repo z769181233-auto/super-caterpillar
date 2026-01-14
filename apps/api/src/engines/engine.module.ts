@@ -52,6 +52,7 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     EngineStrategyService,
     EngineConfigService,
     HttpEngineAdapter,
+    ShotRenderRouterAdapter,
   ], // S4-B: 导出策略服务 + HTTP 适配器与配置服务
 })
 export class EngineModule implements OnModuleInit {
@@ -65,6 +66,7 @@ export class EngineModule implements OnModuleInit {
     private readonly videoMergeAdapter: VideoMergeLocalAdapter,
     private readonly shotRenderAdapter: ShotRenderLocalAdapter,
     private readonly shotRenderReplicateAdapter: ShotRenderReplicateAdapter,
+    private readonly shotRenderRouterAdapter: ShotRenderRouterAdapter,
     private readonly httpAdapter: HttpEngineAdapter
   ) { }
 
@@ -76,15 +78,13 @@ export class EngineModule implements OnModuleInit {
       return;
     }
     // 注册默认的 NovelAnalysisLocalAdapter
-    // 注册默认的 NovelAnalysisLocalAdapter
     this.registry.register(this.novelAdapter);
 
-    // 注册 HttpEngineAdapter（支持 mock_http_engine 和通用 http 引擎）
+    // 注册 HttpEngineAdapter
     this.registry.register(this.httpAdapter);
 
-    // [P1-B Fix] Register Aliases for CE components to ensure dynamic resolution works with seeded data
-    // Use novelAdapter (Local) instead of HttpAdapter to ensure valid output (mock scores) when Http config is empty
-    this.registry.register(this.ce06Adapter); // Real CE06 Integration
+    // [P1-B Fix] Register Aliases for CE components
+    this.registry.register(this.ce06Adapter);
     this.registry.register(this.ce03Adapter);
     this.registry.register(this.ce04Adapter);
 
@@ -92,13 +92,15 @@ export class EngineModule implements OnModuleInit {
     this.registry.registerAlias('ce03_visual_density', this.ce03Adapter);
     this.registry.registerAlias('ce04_visual_enrichment', this.ce04Adapter);
 
-    // Shot Render Registration - Replicate SDXL (REAL - Production)
-    this.registry.register(this.shotRenderReplicateAdapter);
-    this.registry.registerAlias('shot_render', this.shotRenderReplicateAdapter);
-    this.registry.registerAlias('real_shot_render', this.shotRenderReplicateAdapter);
-    this.registry.registerAlias('default_shot_render', this.shotRenderReplicateAdapter);
+    // Shot Render Registration
+    // Phase 0-R: Use Router as primary entry for shot_render
+    this.registry.register(this.shotRenderRouterAdapter);
+    this.registry.registerAlias('shot_render', this.shotRenderRouterAdapter);
+    this.registry.registerAlias('real_shot_render', this.shotRenderRouterAdapter);
+    this.registry.registerAlias('default_shot_render', this.shotRenderRouterAdapter);
 
-    // Keep Local Adapter as fallback
+    // Keep individual adapters registered but not as primary alias
+    this.registry.register(this.shotRenderReplicateAdapter);
     this.registry.register(this.shotRenderAdapter);
 
     // P0-R2: Register Video Merge Adapter

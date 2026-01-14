@@ -1,11 +1,12 @@
-import { Controller, Post, Get, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, UseGuards, Body } from '@nestjs/common';
 import { OrchestratorService } from './orchestrator.service';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { Stage1PipelinePayload } from '@scu/shared-types';
 
 @Controller('orchestrator')
 @UseGuards(JwtOrHmacGuard)
 export class OrchestratorController {
-  constructor(private readonly orchestratorService: OrchestratorService) {}
+  constructor(private readonly orchestratorService: OrchestratorService) { }
 
   /**
    * 手动触发调度
@@ -35,6 +36,19 @@ export class OrchestratorController {
       data: stats,
       requestId: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
       timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * 启动 Stage 1 流水线：从小说到视频
+   * POST /api/orchestrator/pipeline/stage1
+   */
+  @Post('pipeline/stage1')
+  async startStage1Pipeline(@Body() body: Stage1PipelinePayload): Promise<any> {
+    const result = await this.orchestratorService.startStage1Pipeline(body);
+    return {
+      success: true,
+      data: result,
     };
   }
 }

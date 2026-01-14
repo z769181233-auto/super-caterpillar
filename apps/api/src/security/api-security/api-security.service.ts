@@ -227,6 +227,7 @@ export class ApiSecurityService {
         nonce,
         (context.body === '{}') ? '' : (context.body || '') // Fix: Normalize '{}' to empty string for GET requests
       );
+      this.logger.warn(`[HMAC_DEBUG] Canonical String: [${canonicalString}]`);
       const expectedSignature = this.computeSignature(secret, canonicalString);
 
       // 8. 对比签名 (Counter Timing Attack)

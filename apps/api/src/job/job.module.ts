@@ -8,6 +8,7 @@ import { JobEngineBindingService } from './job-engine-binding.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 import { ProjectModule } from '../project/project.module';
+import { PublishModule } from '../publish/publish.module';
 import { PermissionModule } from '../permission/permission.module';
 import { TaskModule } from '../task/task.module';
 import { AuthModule } from '../auth/auth.module';
@@ -47,6 +48,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     TextSafetyModule,
     ShotDirectorModule, // P0-3: 提供 DirectorConstraintSolverService
     CostModule,
+    PublishModule,
   ],
   controllers: [JobController],
   providers: [

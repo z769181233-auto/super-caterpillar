@@ -69,6 +69,78 @@ export class CostLimitService {
     }
 
     /**
+     * Pre-invocation check (Budget Guard)
+     */
+    async preCheckOrThrow(params: {
+        jobId: string;
+        engineKey: string;
+        plannedOutputs?: number;
+        plannedGpuSeconds?: number;
+        estimatedCostUsd?: number;
+    }): Promise<void> {
+        const { jobId, plannedOutputs = 0, plannedGpuSeconds = 0, estimatedCostUsd = 0 } = params;
+
+        this.logger.debug(`[CostLimit] Pre-check for Job ${jobId}: outputs=${plannedOutputs}, cost=${estimatedCostUsd}`);
+
+        await this.checkLimitOrThrow(jobId, {
+            imageCount: plannedOutputs,
+            gpuSeconds: plannedGpuSeconds,
+            costUsd: estimatedCostUsd,
+        });
+    }
+
+    /**
+     * Post-invocation accounting (Billing Guard)
+     */
+    async postApplyUsage(params: {
+        jobId: string;
+        projectId: string; // Required by schema
+        engineKey: string;
+        pricingKey: string;
+        actualOutputs: number;
+        gpuSeconds: number;
+        costUsd: number;
+        attempt?: number; // Used for idempotency [jobId, attempt]
+        metadata?: any;
+    }): Promise<void> {
+        const { jobId, projectId, costUsd, actualOutputs, gpuSeconds, attempt = 0 } = params;
+
+        // 1. Double check before persistence
+        await this.checkLimitOrThrow(jobId, {
+            imageCount: actualOutputs,
+            gpuSeconds: gpuSeconds,
+            costUsd: costUsd,
+        });
+
+        // 2. Persist to costLedger using [jobId, attempt] for idempotency
+        try {
+            await this.prisma.costLedger.create({
+                data: {
+                    jobId,
+                    projectId,
+                    jobType: 'SHOT_RENDER', // Fixed for this phase
+                    engineKey: params.engineKey,
+                    costAmount: costUsd,
+                    billingUnit: 'images',
+                    quantity: actualOutputs,
+                    attempt: attempt,
+                    metadata: {
+                        ...params.metadata,
+                        pricingKey: params.pricingKey,
+                        gpuSeconds,
+                    },
+                },
+            });
+        } catch (error: any) {
+            if (error.code === 'P2002') {
+                this.logger.warn(`[CostLimit] Skipping duplicate ledger entry (idempotency): ${jobId}:${attempt}`);
+                return;
+            }
+            throw error;
+        }
+    }
+
+    /**
      * Calculate current job usage from cost_ledgers
      */
     private async calculateJobUsage(jobId: string): Promise<{
@@ -93,7 +165,7 @@ export class CostLimitService {
                 ledger.billingUnit === 'images' ||
                 (ledger.metadata as any)?.engineKey === 'shot_render'
             ) {
-                imageCount += ledger.quantityUsed || 0;
+                imageCount += ledger.quantity || 0;
             }
 
             // Sum GPU seconds

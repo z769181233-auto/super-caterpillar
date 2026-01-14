@@ -127,7 +127,7 @@ export class HmacAuthService {
     }
 
     // 4. 校验时间戳（允许 ±300 秒的误差）
-    let timestampNum = tsCheck; // Already validated format above
+    const timestampNum = tsCheck; // Already validated format above
 
     // internal math remains based on ms for legacy compatibility but input MUST be seconds
     const timestampMs = timestampNum * 1000;

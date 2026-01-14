@@ -60,6 +60,7 @@ import { processTimelineComposeJob } from './processors/timeline-compose.process
 import { processTimelineRenderJob } from './processors/timeline-render.processor';
 import { processTimelinePreviewJob } from './processors/timeline-preview.processor';
 import { processMediaSecurityJob } from './processors/media-security.processor';
+import { processStage1OrchestratorJob } from './processors/stage1-orchestrator.processor';
 
 const prisma = new PrismaClient({
   datasources: {
@@ -467,6 +468,12 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
         );
       } else if (job.type === 'PIPELINE_E2E_VIDEO') {
         return processE2EVideoPipelineJob({
+          prisma,
+          job: job as any,
+          apiClient,
+        });
+      } else if (job.type === 'PIPELINE_STAGE1_NOVEL_TO_VIDEO') {
+        return processStage1OrchestratorJob({
           prisma,
           job: job as any,
           apiClient,
