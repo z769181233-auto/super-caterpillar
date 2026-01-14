@@ -26,7 +26,21 @@ export class JwtOrHmacGuard implements CanActivate {
     @Inject(forwardRef(() => JwtAuthGuard)) private readonly jwtAuthGuard: JwtAuthGuard,
     @Inject(forwardRef(() => HmacAuthGuard)) private readonly hmacAuthGuard: HmacAuthGuard,
     @Inject(Reflector) private readonly reflector: Reflector
-  ) {}
+  ) { }
+
+  /**
+   * P0-SEC: 大小写不敏感的 Header 读取
+   * Express Request.get() 自动处理大小写，优先使用
+   */
+  private getHeader(req: any, name: string): string | undefined {
+    const v1 = typeof req?.get === 'function' ? req.get(name) : undefined;
+    if (typeof v1 === 'string' && v1.length > 0) return v1;
+
+    const h = req?.headers || {};
+    const key = name.toLowerCase();
+    const v2 = h[key];
+    return typeof v2 === 'string' && v2.length > 0 ? v2 : undefined;
+  }
 
   private hasJwt(req: any): boolean {
     const authHeader = req?.headers?.['authorization'];
@@ -38,13 +52,14 @@ export class JwtOrHmacGuard implements CanActivate {
   }
 
   private hasHmac(req: any): boolean {
-    const h = req?.headers || {};
-    return (
-      typeof h['x-api-key'] === 'string' &&
-      typeof h['x-signature'] === 'string' &&
-      typeof h['x-timestamp'] === 'string' &&
-      typeof h['x-nonce'] === 'string'
-    );
+    // P0-SEC: 只要请求"看起来像" HMAC（存在任一 HMAC 头），就必须交给 HmacAuthGuard 抛 4003/4004
+    // APISpec V1.1: HMAC 失败响应必须为 4003，不能降级为 401
+    const apiKey = this.getHeader(req, 'X-Api-Key');
+    const sig = this.getHeader(req, 'X-Signature');
+    const nonce = this.getHeader(req, 'X-Nonce');
+    const ts = this.getHeader(req, 'X-Timestamp');
+
+    return !!(apiKey || sig || nonce || ts);
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

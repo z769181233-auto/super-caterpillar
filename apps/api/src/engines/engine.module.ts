@@ -14,6 +14,8 @@ import { CE03LocalAdapter } from './adapters/ce03.local.adapter';
 import { CE04LocalAdapter } from './adapters/ce04.local.adapter';
 import { VideoMergeLocalAdapter } from './adapters/video-merge.local.adapter';
 import { ShotRenderLocalAdapter } from './adapters/shot-render.local.adapter';
+import { ShotRenderReplicateAdapter } from './adapters/shot-render.replicate.adapter';
+import { ShotRenderRouterAdapter } from './adapters/shot-render.router.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -40,6 +42,8 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     CE04LocalAdapter,
     VideoMergeLocalAdapter,
     ShotRenderLocalAdapter,
+    ShotRenderReplicateAdapter,
+    ShotRenderRouterAdapter,
     HttpEngineAdapter,
   ],
   exports: [
@@ -60,6 +64,7 @@ export class EngineModule implements OnModuleInit {
     private readonly ce04Adapter: CE04LocalAdapter,
     private readonly videoMergeAdapter: VideoMergeLocalAdapter,
     private readonly shotRenderAdapter: ShotRenderLocalAdapter,
+    private readonly shotRenderReplicateAdapter: ShotRenderReplicateAdapter,
     private readonly httpAdapter: HttpEngineAdapter
   ) { }
 
@@ -87,11 +92,14 @@ export class EngineModule implements OnModuleInit {
     this.registry.registerAlias('ce03_visual_density', this.ce03Adapter);
     this.registry.registerAlias('ce04_visual_enrichment', this.ce04Adapter);
 
-    // Shot Render Registration
+    // Shot Render Registration - Replicate SDXL (REAL - Production)
+    this.registry.register(this.shotRenderReplicateAdapter);
+    this.registry.registerAlias('shot_render', this.shotRenderReplicateAdapter);
+    this.registry.registerAlias('real_shot_render', this.shotRenderReplicateAdapter);
+    this.registry.registerAlias('default_shot_render', this.shotRenderReplicateAdapter);
+
+    // Keep Local Adapter as fallback
     this.registry.register(this.shotRenderAdapter);
-    this.registry.registerAlias('shot_render', this.shotRenderAdapter);
-    this.registry.registerAlias('real_shot_render', this.shotRenderAdapter);
-    this.registry.registerAlias('default_shot_render', this.shotRenderAdapter);
 
     // P0-R2: Register Video Merge Adapter
     this.registry.register(this.videoMergeAdapter);
