@@ -39,10 +39,23 @@ export const localMpsProvider = {
     const outPath = path.join(outDir, `shot_render_local_${Date.now()}_${seed}.png`);
     const pythonBin = process.env.PYTHON_BIN || 'python3';
 
+    // P0 Fix: Robust script path detection by walking up
+    let currentDir = __dirname;
+    let scriptPath = '';
+    while (currentDir !== path.dirname(currentDir)) {
+      const target = path.join(currentDir, 'tools/local_render/sd15_mps.py');
+      if (fs.existsSync(target)) {
+        scriptPath = target;
+        break;
+      }
+      currentDir = path.dirname(currentDir);
+    }
+    if (!scriptPath) scriptPath = 'tools/local_render/sd15_mps.py'; // Fallback
+
     const py = spawnSync(
       pythonBin,
       [
-        'tools/local_render/sd15_mps.py',
+        scriptPath,
         '--out',
         outPath,
         '--prompt',

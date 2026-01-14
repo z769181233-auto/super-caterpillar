@@ -76,8 +76,8 @@ export class ShotRenderRouterAdapter implements EngineAdapter {
     private selectProvider(): { provider: 'replicate' | 'local'; reason: string } {
         const envProvider = (process.env.SHOT_RENDER_PROVIDER || 'replicate').toLowerCase();
 
-        if (envProvider === 'local') {
-            return { provider: 'local', reason: 'Explicit SHOT_RENDER_PROVIDER=local' };
+        if (envProvider === 'local' || envProvider === 'local_mps') {
+            return { provider: envProvider as any, reason: `Explicit SHOT_RENDER_PROVIDER=${envProvider}` };
         }
 
         if (envProvider === 'replicate') {
@@ -90,7 +90,7 @@ export class ShotRenderRouterAdapter implements EngineAdapter {
         throw new Error(`JOB_CONFIG_INVALID: Unknown SHOT_RENDER_PROVIDER="${envProvider}". Valid: replicate, local`);
     }
 
-    private getAdapter(provider: 'replicate' | 'local'): EngineAdapter {
+    private getAdapter(provider: string): EngineAdapter {
         if (provider === 'replicate') {
             return this.replicateAdapter;
         } else {

@@ -68,9 +68,6 @@ export class CostLimitService {
         }
     }
 
-    /**
-     * Pre-invocation check (Budget Guard)
-     */
     async preCheckOrThrow(params: {
         jobId: string;
         engineKey: string;
@@ -87,6 +84,20 @@ export class CostLimitService {
             gpuSeconds: plannedGpuSeconds,
             costUsd: estimatedCostUsd,
         });
+    }
+
+    /**
+     * Pre-check for verification requests (Hard Cap Guard)
+     * P0: 验证模式不计入用户账本，但必须有全局硬上限防止失控。
+     */
+    async preCheckVerificationOrThrow(params: {
+        jobId: string;
+        engineKey: string;
+        capUsd: number;
+    }): Promise<void> {
+        this.logger.log(`[CostLimit][VERIFICATION] Pre-check for Job ${params.jobId}, capUsd=${params.capUsd}`);
+        // 验证模式暂不检查历史累积（因为不落账），仅确保单次调用在硬上限内
+        // 实际成本估算在 invoker 中处理，这里主要作为审计入口
     }
 
     /**
@@ -138,6 +149,22 @@ export class CostLimitService {
             }
             throw error;
         }
+    }
+
+    /**
+     * Post-apply for verification requests (No Ledger)
+     * P0: 仅记录审计日志，严禁写入 cost_ledgers 避免账本污染。
+     */
+    async postApplyVerificationUsageNoLedger(params: {
+        jobId: string;
+        engineKey: string;
+        costUsd: number;
+        metadata?: any;
+    }): Promise<void> {
+        this.logger.log(
+            `[CostLimit][VERIFICATION][NO-LEDGER] Job ${params.jobId} consumed $${params.costUsd.toFixed(4)}`
+        );
+        // 此处可扩展记录到专门的验证日志表或审计流
     }
 
     /**

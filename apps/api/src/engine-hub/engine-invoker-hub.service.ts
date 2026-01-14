@@ -3,7 +3,7 @@
  * Stage2: 统一的引擎调用服务，接收 EngineInvocationRequest，返回 EngineInvocationResult
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { EngineInvocationRequest, EngineInvocationResult } from '@scu/shared-types';
 import { EngineRegistryHubService } from './engine-registry-hub.service';
@@ -74,13 +74,31 @@ export class EngineInvokerHubService {
       throw new Error(error);
     }
 
+    const isVerification = !!req.metadata?.isVerification;
+
+    // 0.1 入口约束: 验证只能在 Gate 模式内部调用
+    if (isVerification && process.env.GATE_MODE !== '1') {
+      const error = 'SECURITY_VIOLATION: isVerification=true is only allowed when GATE_MODE=1';
+      this.logger.error(error);
+      throw new BadRequestException(error);
+    }
+
     if (req.engineKey.includes('shot_render')) {
-      await this.costLimit.preCheckOrThrow({
-        jobId,
-        engineKey: req.engineKey,
-        plannedOutputs: 1,
-        estimatedCostUsd: 0.02,
-      });
+      if (!isVerification) {
+        await this.costLimit.preCheckOrThrow({
+          jobId,
+          engineKey: req.engineKey,
+          plannedOutputs: 1,
+          estimatedCostUsd: 0.02,
+        });
+      } else {
+        const verificationCostCapUsd = Number(process.env.VERIFICATION_COST_CAP_USD ?? '1');
+        await this.costLimit.preCheckVerificationOrThrow({
+          jobId,
+          engineKey: req.engineKey,
+          capUsd: verificationCostCapUsd,
+        });
+      }
     }
 
     try {
@@ -161,17 +179,26 @@ export class EngineInvokerHubService {
         const attempt = (req.metadata?.attempt as number) || 0;
         const idempotencyKey = `${jobId}:${req.engineKey}:${attempt}`;
 
-        await this.costLimit.postApplyUsage({
-          jobId,
-          projectId,
-          engineKey: req.engineKey,
-          pricingKey: audit?.pricing_key || 'UNKNOWN',
-          actualOutputs: 1,
-          gpuSeconds: engineResult.metrics?.gpuSeconds || 0,
-          costUsd,
-          attempt,
-          metadata: { traceId: req.metadata?.traceId, provider },
-        });
+        if (!isVerification) {
+          await this.costLimit.postApplyUsage({
+            jobId,
+            projectId,
+            engineKey: req.engineKey,
+            pricingKey: audit?.pricing_key || 'UNKNOWN',
+            actualOutputs: 1,
+            gpuSeconds: engineResult.metrics?.gpuSeconds || 0,
+            costUsd,
+            attempt,
+            metadata: { traceId: req.metadata?.traceId, provider },
+          });
+        } else {
+          await this.costLimit.postApplyVerificationUsageNoLedger({
+            jobId,
+            engineKey: req.engineKey,
+            costUsd,
+            metadata: { traceId: req.metadata?.traceId, provider, isVerification: true },
+          });
+        }
       }
 
       const finalResult: EngineInvocationResult<TOutput> = {

@@ -41,6 +41,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "5.22.0",
     "@scu/config": "workspace:*",
+    "@scu/engines-shot-render": "workspace:*",
     "@scu/observability": "workspace:*",
     "@scu/storage": "workspace:^",
     "@types/helmet": "^4.0.0",
