@@ -1,0 +1,17 @@
+pipelineRunId: stage1_2378878e-ffd3-4191-a14b-56bef6df5265
+
+验证时间: 2026-01-14 20:38:17 +0700
+验证目标: Stage 1 isVerification 传播与账本零污染
+
+关键作业:
+- PIPELINE_STAGE1_NOVEL_TO_VIDEO: cbbcde5f-0e11-4b83-aadd-82c92a861df6
+- SHOT_RENDER (验证作业 x3): 
+  - d881456f-3676-44b6-8e8f-8b1d4688aaa4
+  - d7837c8e-7727-4cc4-a7bb-c98044772356
+  - 273533f2-c694-4d5d-8e91-7120f16d89da
+- VIDEO_RENDER (验证作业): daaf4c70-ac09-4126-9b86-4cf9c4c5c55e
+
+验证结果:
+✅ VIDEO_RENDER.is_verification = true
+✅ SHOT_RENDER (x3).is_verification = true
+✅ cost_ledgers 验证作业关联记录 = 0
