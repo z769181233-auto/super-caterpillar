@@ -1,0 +1,8 @@
+[whoami] adam
+[pwd] /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+[API_URL] http://127.0.0.1:3000
+[API_PID] 60479
+---- lsof :3000 LISTEN ----
+---- ps API_PID ----
+  PID  PPID ELAPSED COMMAND
+60479 60211   00:00 node dist/main

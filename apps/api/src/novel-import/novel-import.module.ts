@@ -21,9 +21,9 @@ import { OrchestratorModule } from '../orchestrator/orchestrator.module';
 @Module({
   imports: [
     PrismaModule,
-    ProjectModule,
-    TaskModule,
-    JobModule,
+    forwardRef(() => ProjectModule), // Circular dependency chain
+    forwardRef(() => TaskModule), // Circular dependency chain
+    forwardRef(() => JobModule), // Circular dependency chain
     AuditLogModule,
     AuditModule,
     PermissionModule,

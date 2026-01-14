@@ -432,6 +432,49 @@ export class JobController {
   }
 
   /**
+   * Stage 2: Worker Acknowledge Job (DISPATCHED -> RUNNING)
+   * POST /jobs/:id/ack
+   */
+  @Post('jobs/:id/ack')
+  async ackJob(
+    @Param('id') jobId: string,
+    @Req() request: Request
+  ): Promise<any> {
+    const workerId = (request.body as any)?.workerId || (request.headers['x-worker-id'] as string);
+    if (!workerId) {
+      throw new BadRequestException('Worker ID is required');
+    }
+
+    const result = await this.jobService.ackJob(jobId, workerId);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  /**
+   * Stage 2: Worker Complete Job (RUNNING -> SUCCEEDED | FAILED)
+   * POST /jobs/:id/complete
+   */
+  @Post('jobs/:id/complete')
+  async completeJob(
+    @Param('id') jobId: string,
+    @Body() body: { status: 'SUCCEEDED' | 'FAILED'; result?: any; errorMessage?: string },
+    @Req() request: Request
+  ): Promise<any> {
+    const workerId = (request.body as any)?.workerId || (request.headers['x-worker-id'] as string);
+    if (!workerId) {
+      throw new BadRequestException('Worker ID is required');
+    }
+
+    const result = await this.jobService.completeJob(jobId, workerId, body);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  /**
    * 实例化角色基准图 (CE01)
    * POST /jobs/ce01/instantiate
    */

@@ -138,6 +138,11 @@ export async function processStage1OrchestratorJob(ctx: {
     }
 
 
+    // 2.5 Blocking Aggregation Removed (Stage 3)
+    // Orchestrator no longer waits. It exits after dispatching shots.
+    // Video Render triggering is now Event-Driven (handled by API).
+    console.log(`[Stage1] Dispatch complete. ${renderJobs.length} shots spawned. Exiting. (Event Driven DAG enabled)`);
+
     // 3. Evidence Archiving
     console.log(`[Stage-1 Evidence] Orchestration complete. pipelineRunId: ${pipelineRunId}, shots spawned: ${renderJobs.length}`);
 

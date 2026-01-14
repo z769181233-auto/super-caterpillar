@@ -5,16 +5,19 @@
 **Status**: ✅ PASS (All Gates)
 **Audit Level**: Commercial Grade A+ / Financial Grade
 
-### 1. High Availability (HA)
+### 1. Atomic Dispatch & Worker Lifecycle
 
-- **Scope**: Worker Failover & Job Recovery
-- **Proof**: 3-Round / 9-Failover Stress Test (2-Node + Healing)
-- **Metrics**: 100% Reclamation, 0 Lease Leaks, 0 Duplicate Jobs
+- **Problem**: Race conditions in job claiming and zombie jobs from worker crashes.
+- **Solution**:
+  - Implemented Postgres row-level locking (`SELECT ... FOR UPDATE SKIP LOCKED`) via Prisma Transactions.
+  - Added `workerId` binding to `ShotJob` table.
+  - Enforced `ACK` protocol: `PENDING` -> `DISPATCHED` (Orchestrator) -> `RUNNING` (Worker Ack) -> `SUCCEEDED`.
 
-### 2. Disaster Recovery (DR)
+### 2. Stage 1 Regression Fixes
 
-- **Scope**: Backup, Restore, Idempotency, Data Integrity
-- **Proof**: 4-Phase DR Gate (Snapshot -> Backup -> Destruction+Restore x2 -> Diff)
+- **Orchestrator Recovery**: Added logic to prioritize existing `DISPATCHED` jobs for workers (Recovery).
+- **Blocking Aggregation**: Orchestrator now polls for Shot completions before spawning `VIDEO_RENDER`, bridging the gap between Stage 1 and E2E validation.
+- **Real Pipeline Verification**: Validated `NOVEL_TO_VIDEO` flow using `ffmpeg` engine in a strictly isolated environment.on+Restore x2 -> Diff)
 - **Metrics**: 100% Consistency, 0 Orphan Records, Idempotency Verified
 
 ### 3. Billing Reconciliation
@@ -178,6 +181,7 @@ bash evidence/p1-2/run_ha_gates_3rounds.sh
 This final section documents the "Zero Bypass" production implementation completed in **PHASE A-G**.
 
 ## 1. Production Mode Gate (`Zero Bypass` Policy)
+
 - **Status**: ✅ SEALED
 - **Enforcement**:
   - **API Level**: `JobService` blocks any rendering job creation if `PRODUCTION_MODE=1` and the asset is not approved.
@@ -185,12 +189,14 @@ This final section documents the "Zero Bypass" production implementation complet
   - **Engine Level**: `JobEngineBindingService` physically blocks stub/local/mock engines in production.
 
 ## 2. Human-in-the-Loop Approval (Production Gate)
+
 - **Status**: ✅ SEALED
 - **Workflow**:
   - `Shot` and `Scene` models now include `reviewStatus` (`DRAFT`, `PENDING`, `APPROVED`, `REJECTED`, `FINALIZED`).
   - Only `APPROVED` or `FINALIZED` shots can proceed to rendering in production mode.
 
 ## 3. Asset Delivery & Security
+
 - **Status**: ✅ SEALED
 - **Features**:
   - HMAC V1.1 Audio-Audit compliance (Automatic Nonce, Signature, Timestamp capture in `AuditLogService`).
@@ -198,6 +204,7 @@ This final section documents the "Zero Bypass" production implementation complet
   - Physical removal of "fallback" and "dummy" logic from the rendering pipeline.
 
 ## 4. Final Validation Evidence
+
 - **Audit Logs**: Correctly capture HMAC evidence (`x-nonce`, `x-signature`, `x-timestamp`) from workers during report.
 - **Zero-Bypass**: All "Fallback generic scene" and "Test scene fallback" logic has been physically disabled when `PRODUCTION_MODE=1`.
 - **Seal Status**: PROD-READY SEALED 2026-01-12

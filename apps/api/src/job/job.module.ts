@@ -24,6 +24,7 @@ import { JobWatchdogService } from './job-watchdog.service';
 import { TextSafetyModule } from '../text-safety/text-safety.module';
 import { ShotDirectorModule } from '../shot-director/shot-director.module';
 import { CostModule } from '../cost/cost.module';
+import { OrchestratorModule } from '../orchestrator/orchestrator.module';
 import { env } from '@scu/config';
 
 // P1 修复：统一使用 packages/config，避免 split-brain
@@ -49,6 +50,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     ShotDirectorModule, // P0-3: 提供 DirectorConstraintSolverService
     CostModule,
     PublishModule,
+    forwardRef(() => OrchestratorModule), // Stage 3: Event-Driven DAG
   ],
   controllers: [JobController],
   providers: [

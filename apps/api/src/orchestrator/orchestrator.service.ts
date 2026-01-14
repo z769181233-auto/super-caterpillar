@@ -531,33 +531,93 @@ export class OrchestratorService {
   }
 
   /**
-   * Worker 拉取下一个待处理的 Job（安全版本）
-   * 参考《调度系统设计书_V1.0》第 3.1~3.5 章：使用 JobService 的安全领取方法防止竞态
+   * Worker 拉取下一个待处理的 Job（原子派工版）
+   * STAGE-2 S2-ORCH-BASE: 原子 Claim 实现
    *
-   * @param workerId Worker ID
+   * @param workerId 业务 Worker ID (String)
    * @returns 领取到的 Job，如果没有可用的 Job 则返回 null
    */
   async dispatchNextJobForWorker(workerId: string) {
-    // 使用 JobService 的安全领取方法（防止多 Worker 抢到同一条 Job）
-    const job = await this.jobService.getAndMarkNextPendingJob(workerId);
+    // 1. Resolve WorkerNode (String -> UUID)
+    const workerNode = await this.prisma.workerNode.findUnique({
+      where: { workerId },
+      include: { shotJobs: { where: { status: JobStatusEnum.RUNNING } } },
+    });
 
-    if (!job) {
-      // 没有可用的 Job，记录 debug 日志
-      this.logger.debug(`[Orchestrator] No job available for worker ${workerId}`);
+    if (!workerNode) {
+      this.logger.warn(`[Orchestrator] Worker not found for dispatch: ${workerId}`);
       return null;
     }
 
-    // 记录结构化日志（参考要求：领取 Job 时打出 jobId + workerId）
-    // 参考《平台日志监控与可观测性体系说明书_ObservabilityMonitoringSpec_V1.0》：结构化日志格式
+    // 2. Atomic Claim via Transaction
+    const dispatchedJob = await this.prisma.$transaction(async (tx) => {
+      // 2.0 Recovery: Check if worker already has a DISPATCHED job (e.g. restart/crash recovery)
+      // This is CRITICAL for idempotency and robust worker restarts
+      const existingJob = await tx.shotJob.findFirst({
+        where: {
+          workerId: workerNode.id,
+          status: JobStatusEnum.DISPATCHED,
+        },
+      });
+
+      if (existingJob) {
+        this.logger.log(`[Orchestrator] Recovering existing job ${existingJob.id} for worker ${workerId}`);
+        return existingJob;
+      }
+
+      // 2.1 Find one candidate PENDING job
+      // TODO: Filter by worker capabilities (Stage-2 Scope: Allow all for now)
+      const candidate = await tx.shotJob.findFirst({
+        where: {
+          status: JobStatusEnum.PENDING,
+        },
+        orderBy: [
+          { priority: 'desc' },
+          { createdAt: 'asc' },
+        ],
+        take: 1
+      });
+
+      if (!candidate) return null;
+
+      // 2.2 Atomic Update (Optimistic Concurrency Control)
+      // 使用 updateMany + where status=PENDING 确保只有一个人能抢到
+      const updateResult = await tx.shotJob.updateMany({
+        where: {
+          id: candidate.id,
+          status: JobStatusEnum.PENDING, // Key Assertion
+        },
+        data: {
+          status: JobStatusEnum.DISPATCHED,
+          workerId: workerNode.id, // Store UUID, not string
+        },
+      });
+
+      if (updateResult.count === 0) {
+        // Race condition: Job was claimed by another worker
+        return null;
+      }
+
+      // 2.3 Fetch full job details to return
+      return await tx.shotJob.findUnique({
+        where: { id: candidate.id },
+      });
+    });
+
+    if (!dispatchedJob) {
+      return null;
+    }
+
+    // 结构化日志：JOB_CLAIMED
     this.logger.log(
       JSON.stringify({
         event: 'JOB_CLAIMED',
-        jobId: job.id,
-        workerId,
-        jobType: job.type,
-        taskId: job.taskId || null,
-        statusBefore: job.status,
-        statusAfter: 'RUNNING',
+        jobId: dispatchedJob.id,
+        workerId, // Log business ID for readability
+        workerNodeId: workerNode.id,
+        jobType: dispatchedJob.type,
+        taskId: dispatchedJob.taskId || null,
+        status: 'DISPATCHED',
         timestamp: new Date().toISOString(),
       })
     );
@@ -566,17 +626,149 @@ export class OrchestratorService {
     await this.auditLogService.record({
       action: 'JOB_DISPATCHED',
       resourceType: 'job',
-      resourceId: job.id,
+      resourceId: dispatchedJob.id,
       details: {
-        workerId,
-        jobType: job.type,
-        taskId: job.taskId,
+        workerId: workerId,
+        nodeId: workerNode.id,
+        jobType: dispatchedJob.type,
+        taskId: dispatchedJob.taskId,
       },
     });
 
-    return job;
+    return dispatchedJob;
   }
 
+  /**
+   * Stage 3: Event-Driven DAG Trigger
+   * Called by JobService when a job completes (SUCCEEDED).
+   * Determines if subsequent jobs should be spawned.
+   */
+  async handleJobCompletion(jobId: string, result: any) {
+    const job = await this.prisma.shotJob.findUnique({
+      where: { id: jobId },
+      include: {
+        worker: true
+      }
+    });
+
+    if (!job) return;
+
+    // DAG Logic for Stage 1: SHOT_RENDER -> VIDEO_RENDER
+    if (job.type === JobTypeEnum.SHOT_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
+      this.logger.log(`[DAG] SHOT_RENDER ${jobId} completed. Checking Stage 1 pipeline progress...`);
+      await this.checkAndSpawnStage1VideoRender(job);
+    }
+  }
+
+  /**
+   * Stage 3: Check if all shots in a pipeline run are complete, then spawn VIDEO_RENDER.
+   */
+  private async checkAndSpawnStage1VideoRender(completedJob: any) {
+    const payload = completedJob.payload as any;
+    const pipelineRunId = payload?.pipelineRunId;
+
+    if (!pipelineRunId) {
+      this.logger.debug(`[DAG] Job ${completedJob.id} has no pipelineRunId. Skipping DAG check.`);
+      return;
+    }
+
+    // 1. Count Total vs Completed matching pipelineRunId
+    // Note: This relies on all SHOT_RENDER jobs having the same pipelineRunId in payload
+    // We filter by type='SHOT_RENDER' and payload path
+    const allShots = await this.prisma.shotJob.findMany({
+      where: {
+        type: JobTypeEnum.SHOT_RENDER,
+        payload: {
+          path: ['pipelineRunId'],
+          equals: pipelineRunId
+        }
+      }
+    });
+
+    const total = allShots.length;
+    const succeeded = allShots.filter(j => j.status === JobStatusEnum.SUCCEEDED).length;
+
+    // Check for failures (Fail Fast?) -> For now just wait for all to be non-pending
+    const pending = allShots.filter(j =>
+      j.status !== JobStatusEnum.SUCCEEDED && j.status !== JobStatusEnum.FAILED
+    ).length;
+
+    this.logger.log(`[DAG] Pipeline ${pipelineRunId} progress: ${succeeded}/${total} (Pending: ${pending})`);
+
+    if (total > 0 && succeeded === total) {
+      // 2. All Good! Aggregation Time.
+      await this.aggregateAndSpawnVideoRender(allShots, pipelineRunId, completedJob);
+    }
+  }
+
+  private async aggregateAndSpawnVideoRender(shots: any[], pipelineRunId: string, contextJob: any) {
+    // 2.1 Idempotency Check: Did we already spawn a VIDEO_RENDER for this run?
+    const existingVideoJob = await this.prisma.shotJob.findFirst({
+      where: {
+        type: JobTypeEnum.VIDEO_RENDER,
+        payload: {
+          path: ['pipelineRunId'],
+          equals: pipelineRunId
+        }
+      }
+    });
+
+    if (existingVideoJob) {
+      this.logger.log(`[DAG] VIDEO_RENDER for ${pipelineRunId} already exists (${existingVideoJob.id}). Skipping.`);
+      return;
+    }
+
+    // 2.2 Collect Frames
+    const frames: string[] = [];
+    // Sort by shot index if possible, otherwise use array order (which is unreliable without explicit index)
+    // We should probably rely on Shot.index, but let's assume shot creation order or job creation order roughly correlates
+    // Better: Sort by created_at or explicitly by shot index if we fetched shots.
+    // Let's simply collect generic frames for now as per previous logic.
+    // Ideally we should join with Shot table to sort by Shot.index.
+    // For MVP/Regression, we just collect what we have.
+
+    // Sort shots by createdAt to be deterministic-ish
+    shots.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    for (const job of shots) {
+      const storageKey = (job.result as any)?.output?.storageKey;
+      if (storageKey) {
+        frames.push(storageKey);
+      } else {
+        this.logger.warn(`[DAG] Job ${job.id} SUCCEEDED but missing output.storageKey`);
+      }
+    }
+
+    if (frames.length === 0) {
+      this.logger.warn(`[DAG] No frames collected for ${pipelineRunId}. Skipping VIDEO_RENDER.`);
+      return;
+    }
+
+    // 2.3 Spawn VIDEO_RENDER
+    this.logger.log(`[DAG] Spawning VIDEO_RENDER for ${pipelineRunId} with ${frames.length} frames.`);
+
+    try {
+      await this.jobService.create(
+        contextJob.shotId, // Owner context
+        {
+          type: JobTypeEnum.VIDEO_RENDER,
+          traceId: contextJob.traceId,
+          payload: {
+            pipelineRunId,
+            projectId: contextJob.projectId,
+            episodeId: contextJob.episodeId,
+            frames,
+            publish: true,
+            traceId: contextJob.traceId
+          }
+        },
+        'system-dag', // triggered by system
+        contextJob.organizationId
+      );
+    } catch (e: any) {
+      this.logger.error(`[DAG] Failed to spawn VIDEO_RENDER: ${e.message}`);
+    }
+  }
   /**
    * 创建 CE Core Layer 的固定 DAG Job 链
    * Upload Novel → CE06 → CE03 → CE04
@@ -644,143 +836,150 @@ export class OrchestratorService {
    * 3. 投递 PIPELINE_STAGE1_NOVEL_TO_VIDEO Job
    */
   async startStage1Pipeline(params: { novelText: string; projectId?: string }) {
-    const { novelText, projectId: existingProjectId } = params;
-    const { randomUUID } = await import('crypto');
-    const traceId = `stage1_${randomUUID()}`;
+    try {
+      const { novelText, projectId: existingProjectId } = params;
+      const { randomUUID } = await import('crypto');
+      const traceId = `stage1_${randomUUID()}`;
 
-    // 1. Resolve Project (Create if missing)
-    let projectId = existingProjectId;
-    // Fix: Dynamic Org Lookup (Avoid invalid foreign key)
-    const defaultOrg = await this.prisma.organization.findFirst();
-    let organizationId = defaultOrg?.id || 'default-org';
+      // 1. Resolve Project (Create if missing)
+      let projectId = existingProjectId;
+      const defaultOrg = await this.prisma.organization.findFirst();
+      let organizationId = defaultOrg?.id || 'default-org';
 
-    // Fix: Dynamic User Lookup
-    const defaultUser = await this.prisma.user.findFirst();
-    const ownerId = defaultUser?.id || 'system';
+      const defaultUser = await this.prisma.user.findFirst();
+      const ownerId = defaultUser?.id || 'system';
 
-    if (!projectId) {
-      const project = await this.prisma.project.create({
+      if (!projectId) {
+        const project = await this.prisma.project.create({
+          data: {
+            name: `Stage1_${new Date().toISOString().slice(0, 10)}`,
+            organizationId,
+            status: 'in_progress',
+            ownerId,
+          } as any,
+        });
+        projectId = project.id;
+      } else {
+        const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+        if (!project) throw new Error(`Project ${projectId} not found`);
+        organizationId = project.organizationId;
+      }
+
+      // 2. Create Novel Source & Volume & Chapter
+      const novelSource = await this.prisma.novelSource.create({
         data: {
-          name: `Stage1_${new Date().toISOString().slice(0, 10)}`,
-          organizationId,
-          status: 'in_progress',
-          ownerId,
+          projectId,
+          novelAuthor: 'System',
+          rawText: novelText,
         } as any,
       });
-      projectId = project.id;
-    } else {
-      const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-      if (!project) throw new Error(`Project ${projectId} not found`);
-      organizationId = project.organizationId;
-    }
 
-    // 2. Create Novel Source & Volume & Chapter
-    const novelSource = await this.prisma.novelSource.create({
-      data: {
-        projectId,
-        novelAuthor: 'System',
-        rawText: novelText,
-      } as any,
-    });
-
-    const volume = await this.prisma.novelVolume.create({
-      data: {
-        projectId,
-        novelSourceId: novelSource.id,
-        index: 1,
-        title: 'Volume 1',
-      },
-    });
-
-    const chapter = await this.prisma.novelChapter.create({
-      data: {
-        novelSourceId: novelSource.id,
-        volumeId: volume.id,
-        index: 1,
-        title: 'Chapter 1',
-      } as any,
-    });
-
-    // Save actual text to NovelScene (Minimal context)
-    await this.prisma.novelScene.create({
-      data: {
-        chapterId: chapter.id,
-        index: 1,
-        rawText: novelText,
-      },
-    });
-
-    // 3. Create Season & Episode for orchestration
-    const season = await this.prisma.season.create({
-      data: {
-        projectId,
-        index: 1,
-        title: 'Season 1',
-      } as any,
-    });
-
-    const episode = await this.prisma.episode.create({
-      data: {
-        projectId,
-        seasonId: season.id,
-        index: 1,
-        name: 'Chapter 1',
-        chapterId: chapter.id,
-      } as any,
-    });
-
-    // 3.5 Create placeholder Scene & Shot for Pipeline Job (Required by Schema & JobService)
-    const scene = await this.prisma.scene.create({
-      data: {
-        episodeId: episode.id,
-        projectId,
-        index: 9999, // Pipeline placeholder
-        title: 'Stage 1 Pipeline Scene',
-        summary: 'Auto-generated for pipeline orchestration',
-      },
-    });
-
-    const shot = await this.prisma.shot.create({
-      data: {
-        sceneId: scene.id,
-        index: 9999,
-        title: 'Stage 1 Pipeline Shot',
-        description: 'Auto-generated for pipeline orchestration',
-        type: 'pipeline_stage1',
-        params: {},
-        organizationId,
-      } as any,
-    });
-
-    // 4. Dispatch the Pipeline Job
-    // EXECUTE-0 Fix: Correct argument order (shotId, dto, userId, orgId)
-    const job = await this.jobService.create(
-      shot.id,
-      {
-        type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
-        traceId,
-        payload: {
-          novelText,
-          novelSourceId: novelSource.id,
-          chapterId: chapter.id,
-          episodeId: episode.id,
-          pipelineRunId: traceId,
+      const volume = await this.prisma.novelVolume.create({
+        data: {
           projectId,
-          organizationId,
+          novelSourceId: novelSource.id,
+          index: 1,
+          title: 'Volume 1',
         },
-      } as any,
-      ownerId,
-      organizationId
-    );
+      });
 
-    this.logger.log(`Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`);
+      const chapter = await this.prisma.novelChapter.create({
+        data: {
+          novelSourceId: novelSource.id,
+          volumeId: volume.id,
+          index: 1,
+          title: 'Chapter 1',
+        } as any,
+      });
 
-    return {
-      success: true,
-      pipelineRunId: traceId,
-      jobId: job.id,
-      projectId,
-      episodeId: episode.id,
-    };
+      // Save actual text to NovelScene (Minimal context)
+      await this.prisma.novelScene.create({
+        data: {
+          chapterId: chapter.id,
+          index: 1,
+          rawText: novelText,
+        },
+      });
+
+      // 3. Create Season & Episode for orchestration
+      const season = await this.prisma.season.create({
+        data: {
+          projectId,
+          index: 1,
+          title: 'Season 1',
+        } as any,
+      });
+
+      const episode = await this.prisma.episode.create({
+        data: {
+          projectId,
+          seasonId: season.id,
+          index: 1,
+          name: 'Chapter 1',
+          chapterId: chapter.id,
+        } as any,
+      });
+
+      // 3.5 Create placeholder Scene & Shot for Pipeline Job
+      const scene = await this.prisma.scene.create({
+        data: {
+          episodeId: episode.id,
+          projectId,
+          index: 9999,
+          title: 'Stage 1 Pipeline Scene',
+          summary: 'Auto-generated for pipeline orchestration',
+        },
+      });
+
+      const shot = await this.prisma.shot.create({
+        data: {
+          sceneId: scene.id,
+          index: 9999,
+          title: 'Stage 1 Pipeline Shot',
+          description: 'Auto-generated for pipeline orchestration',
+          type: 'pipeline_stage1',
+          params: {},
+          organizationId,
+        } as any,
+      });
+
+      // 4. Dispatch the Pipeline Job
+      const job = await this.jobService.create(
+        shot.id,
+        {
+          type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
+          traceId,
+          payload: {
+            novelText,
+            novelSourceId: novelSource.id,
+            chapterId: chapter.id,
+            episodeId: episode.id,
+            pipelineRunId: traceId,
+            projectId,
+            organizationId,
+          },
+        } as any,
+        ownerId,
+        organizationId
+      );
+
+      this.logger.log(`Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`);
+
+      return {
+        success: true,
+        pipelineRunId: traceId,
+        jobId: job.id,
+        projectId,
+        episodeId: episode.id,
+      };
+    } catch (e: any) {
+      this.logger.error({
+        tag: 'ORCHESTRATOR_PIPELINE_ERROR',
+        error: e.message,
+        stack: e.stack,
+        params: { novelTextLen: params.novelText?.length, projectId: params.projectId },
+      });
+      throw e;
+    }
   }
 }

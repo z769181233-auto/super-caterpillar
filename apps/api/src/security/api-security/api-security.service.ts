@@ -6,6 +6,30 @@ import {
   Logger,
 } from '@nestjs/common';
 import { createHmac, createHash, timingSafeEqual } from 'crypto';
+
+// HMAC Secret SSOT: Centralized secret resolution with debug fingerprint
+function pickHmacSecretSSOT() {
+  // SSOT: API_SECRET_KEY is the canonical secret env
+  const candidates: Array<[string, string | undefined]> = [
+    ["API_SECRET_KEY", process.env.API_SECRET_KEY],
+    // legacy / fallback (do NOT remove; used to align envs across stages)
+    ["API_SECRET", process.env.API_SECRET],
+    ["TEST_API_SECRET", process.env.TEST_API_SECRET],
+    ["DEV_WORKER_SECRET", process.env.DEV_WORKER_SECRET],
+  ];
+  for (const [k, v] of candidates) {
+    if (v && String(v).length > 0) {
+      return { envKey: k, secret: String(v) };
+    }
+  }
+  return { envKey: "NONE", secret: "" };
+}
+
+function secretFingerprint(secret: string) {
+  // do not leak secret; only fingerprint
+  const fp = createHash("sha256").update(secret).digest("hex").slice(0, 12);
+  return { len: secret.length, sha12: fp };
+}
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
@@ -56,9 +80,33 @@ export class ApiSecurityService {
     const { apiKey, nonce, timestamp, signature, method, path, contentSha256, ip, userAgent } =
       context;
 
+    // HMAC Branch Coverage Debug
+    const dbg = process.env.HMAC_DEBUG === '1';
+    const dlog = (obj: any) => {
+      if (!dbg) return;
+      try {
+        // Use stdout to ensure it lands in api.log, independent of logger config
+        // eslint-disable-next-line no-console
+        console.log(JSON.stringify({ tag: 'HMAC_DEBUG_STEP', ...obj }));
+      } catch { }
+    };
+
+    dlog({
+      step: 'enter',
+      path,
+      method,
+      ip,
+      xApiKey: apiKey ? apiKey.slice(0, 12) + '...' : undefined,
+      xTimestamp: timestamp,
+      xNonce: nonce ? nonce.slice(0, 20) + '...' : undefined,
+      xSigLen: signature ? signature.length : 0,
+      xSigPrefix: signature ? signature.slice(0, 12) : undefined,
+    });
+
     try {
       // 0. Pre-validation: APISpec V1.1 Timestamp must be in seconds [Strict Regex]
       if (!/^\d{10}$/.test(timestamp)) {
+        dlog({ step: 'reject', reason: 'timestamp_format_error', timestamp });
         await this.writeAuditLog(
           {
             nonce,
@@ -82,6 +130,7 @@ export class ApiSecurityService {
       const timestampNum = parseInt(timestamp, 10);
 
       // 1. 查找 API Key 记录
+      dlog({ step: 'db_lookup_api_key_start', apiKey: apiKey.slice(0, 12) + '...' });
       const keyRecord = await this.prisma.apiKey.findUnique({
         where: { key: apiKey },
         include: {
@@ -91,6 +140,7 @@ export class ApiSecurityService {
       });
 
       if (!keyRecord) {
+        dlog({ step: 'reject', reason: 'invalid_api_key', apiKey: apiKey.slice(0, 12) + '...' });
         await this.writeAuditLog(
           {
             nonce,
@@ -114,6 +164,7 @@ export class ApiSecurityService {
 
       // 2. 检查状态
       if (keyRecord.status !== 'ACTIVE') {
+        dlog({ step: 'reject', reason: 'api_key_disabled', status: keyRecord.status });
         await this.writeAuditLog(
           {
             nonce,
@@ -137,6 +188,7 @@ export class ApiSecurityService {
 
       // 3. 检查过期时间
       if (keyRecord.expiresAt && keyRecord.expiresAt < new Date()) {
+        dlog({ step: 'reject', reason: 'api_key_expired', expiresAt: keyRecord.expiresAt });
         await this.writeAuditLog(
           {
             nonce,
@@ -159,12 +211,13 @@ export class ApiSecurityService {
       }
 
       // 4. 验证时间戳（允许 ±300 秒）
-
+      dlog({ step: 'timestamp_check_start' });
 
       const nowSec = Math.floor(Date.now() / 1000);
       const timeDiff = Math.abs(nowSec - timestampNum);
 
       if (timeDiff > this.TIMESTAMP_WINDOW_SECONDS) {
+        dlog({ step: 'reject', reason: 'timestamp_out_of_window', timeDiff, window: this.TIMESTAMP_WINDOW_SECONDS });
         await this.writeAuditLog(
           {
             nonce,
@@ -185,11 +238,14 @@ export class ApiSecurityService {
           errorMessage: `时间戳超出允许范围（±${this.TIMESTAMP_WINDOW_SECONDS}秒）`,
         };
       }
+      dlog({ step: 'timestamp_check_pass', timeDiff });
 
       // 5. 验证 Nonce 防重放（Redis TTL 5 分钟）
+      dlog({ step: 'nonce_check_start' });
       const nonceKey = `api_security:nonce:${apiKey}:${nonce}`;
       const nonceExists = await this.redis.get(nonceKey);
       if (nonceExists) {
+        dlog({ step: 'reject', reason: 'nonce_replay' });
         await this.writeAuditLog(
           {
             nonce,
@@ -214,20 +270,65 @@ export class ApiSecurityService {
       // 保存 Nonce（TTL 5 分钟）
       await this.redis.set(nonceKey, timestamp, this.NONCE_TTL_SECONDS);
 
-      // 6. 解析 secret（优先使用加密存储，fallback 旧字段）
-      const secret = await this.resolveSecretForApiKey(keyRecord, apiKey, ip, userAgent);
+      // 6. Resolve per-key secret FIRST (DB encrypted -> decrypt)
+      // Default MUST be DB per-key; env secret is only a fallback for gate/dev alignment.
+      let secret = '';
+      let secretSource: string = 'none';
+
+      try {
+        secret = await this.resolveSecretForApiKey(keyRecord, apiKey, ip, userAgent);
+        secretSource = 'db_per_key';
+      } catch (e) {
+        // allow fallback to env; do not throw here
+        secret = '';
+      }
+
+      if (!secret || secret.length === 0) {
+        const picked = pickHmacSecretSSOT();
+        secret = picked.secret;
+        secretSource = `env:${picked.envKey}`;
+      }
+
+      if (dbg) {
+        const fp = secretFingerprint(secret || '');
+        dlog({
+          step: 'secret_pick',
+          source: secretSource,
+          secretLen: fp.len,
+          secretSha12: fp.sha12,
+        });
+      }
+
+      if (!secret || secret.length === 0) {
+        dlog({ step: 'reject', reason: 'secret_not_found' });
+        return { success: false, errorCode: '500', errorMessage: 'secret_not_found' };
+      }
 
       // 7. 计算服务器端签名（v2 规范）
       // 使用原始 path，但在 canonical string 中进行规范化
+      const bodyNorm = (context.body === '{}') ? '' : (context.body || '');
       const canonicalString = this.buildCanonicalStringV2(
         method,
         path,
         apiKey,
         timestamp,
         nonce,
-        (context.body === '{}') ? '' : (context.body || '') // Fix: Normalize '{}' to empty string for GET requests
+        bodyNorm // Fix: Normalize '{}' to empty string for GET requests
       );
-      this.logger.warn(`[HMAC_DEBUG] Canonical String: [${canonicalString}]`);
+
+      // Debug canonical WITHOUT leaking raw content: sha12 only
+      if (dbg) {
+        const cfp = secretFingerprint(canonicalString);
+        const bodyFp = secretFingerprint(bodyNorm);
+        dlog({
+          step: 'canonical',
+          canonicalLen: cfp.len,
+          canonicalSha12: cfp.sha12,
+          bodyLen: bodyFp.len,
+          bodySha12: bodyFp.sha12,
+        });
+      }
+
       const expectedSignature = this.computeSignature(secret, canonicalString);
 
       // 8. 对比签名 (Counter Timing Attack)
@@ -237,6 +338,7 @@ export class ApiSecurityService {
 
       // Fast reject invalid hex to avoid Buffer.from throwing and to keep behavior deterministic
       if (!isHex(signature) || !isHex(expectedSignature)) {
+        dlog({ step: 'reject', reason: 'signature_format_error', sigIsHex: isHex(signature), expectedIsHex: isHex(expectedSignature) });
         await this.writeAuditLog(
           {
             nonce,
@@ -267,7 +369,15 @@ export class ApiSecurityService {
         signatureBuffer.length === 32 &&
         timingSafeEqual(signatureBuffer, expectedSignatureBuffer);
 
+      dlog({
+        step: 'compare',
+        receivedPrefix: signature.slice(0, 12),
+        computedPrefix: expectedSignature.slice(0, 12),
+        match: valid,
+      });
+
       if (!valid) {
+        dlog({ step: 'reject', reason: 'signature_mismatch' });
         this.logger.error(
           `[HMAC_DEBUG] Signature Mismatch! Method: ${method}, Path: ${path}, apiKey: ${this.maskApiKey(apiKey)}`
         );
@@ -298,8 +408,8 @@ export class ApiSecurityService {
           where: { id: keyRecord.id },
           data: { lastUsedAt: new Date() },
         })
-        .catch(() => {
-          // 忽略更新失败，不影响认证流程
+        .catch((e) => {
+          if (dbg) dlog({ step: 'db_update_lastUsedAt_failed', error: e?.message });
         });
 
       // 10. 写入成功审计日志
@@ -318,10 +428,12 @@ export class ApiSecurityService {
         keyRecord.id
       );
 
+      if (dbg) dlog({ step: 'exit_success' });
       return {
         success: true,
         apiKeyId: keyRecord.id,
         apiKey: apiKey,
+        apiKeyRecord: keyRecord,
       };
     } catch (error: unknown) {
       const err = error as Error;

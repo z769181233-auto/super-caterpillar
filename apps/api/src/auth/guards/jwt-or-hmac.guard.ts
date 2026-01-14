@@ -72,15 +72,26 @@ export class JwtOrHmacGuard implements CanActivate {
     }
 
     const req = context.switchToHttp().getRequest();
+    const dbg = process.env.HMAC_DEBUG === '1';
+    const dlog = (obj: any) => {
+      if (!dbg) return;
+      try {
+        // eslint-disable-next-line no-console
+        console.log(JSON.stringify({ tag: 'HMAC_DEBUG_STEP', ...obj }));
+      } catch { }
+    };
 
     if (this.hasJwt(req)) {
+      dlog({ step: 'jwt_or_hmac_branch', branch: 'jwt' });
       return (await this.jwtAuthGuard.canActivate(context)) as boolean;
     }
 
     if (this.hasHmac(req)) {
+      dlog({ step: 'jwt_or_hmac_branch', branch: 'hmac' });
       return (await this.hmacAuthGuard.canActivate(context)) as boolean;
     }
 
+    dlog({ step: 'jwt_or_hmac_branch', branch: 'none' });
     throw new UnauthorizedException('Missing auth header (JWT or HMAC required)');
   }
 }

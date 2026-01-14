@@ -16,11 +16,11 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
     AuditLogModule,
     AuthModule,
     forwardRef(() => OrchestratorModule),
-    JobModule, // S3-C.3: 导入 JobModule 以使用 JobService 的统一方法
+    forwardRef(() => JobModule), // S3-C.3: Circular dependency
     ApiSecurityModule, // 提供 ApiSecurityGuard 给 JwtOrHmacGuard
   ],
   controllers: [WorkerController, WorkerMonitorController, WorkerAliasController],
   providers: [WorkerService],
   exports: [WorkerService],
 })
-export class WorkerModule {}
+export class WorkerModule { }

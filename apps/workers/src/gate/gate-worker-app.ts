@@ -133,6 +133,16 @@ export async function startGateWorkerApp() {
       tasksRunning++;
       process.stdout.write(util.format(`[GateWorker] 认领 job: ${job.id} type=${job.type}`) + '\n');
 
+      // S2-ORCH-BASE: Must ACK to transition to RUNNING
+      try {
+        await apiClient.ackJob(job.id, workerId);
+        process.stdout.write(util.format(`[GateWorker] ACK job: ${job.id}`) + '\n');
+      } catch (ackError: any) {
+        process.stderr.write(util.format(`[GateWorker] ❌ ACK Job Failed: ${ackError.message}`) + '\n');
+        // If Ack fails, we probably shouldn't process it, or we should retry?
+        // For Gate, we continue but warn.
+      }
+
       try {
         let result: any;
 

@@ -13,7 +13,6 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
 import { ProjectModule } from '../project/project.module';
 import { NovelImportModule } from '../novel-import/novel-import.module';
 import { PublishModule } from '../publish/publish.module';
-import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   imports: [
@@ -22,10 +21,10 @@ import { PrismaService } from '../prisma/prisma.service';
     AuditLogModule,
     TaskModule,
     AuthModule,
-    JobModule,
+    forwardRef(() => JobModule), // Stage 3: Circular dependency with JobModule
     EngineModule, // S3-C.1: 导入 EngineModule 以使用 EngineRegistry
     ApiSecurityModule, // 提供 ApiSecurityGuard 给 JwtOrHmacGuard
-    ProjectModule,
+    forwardRef(() => ProjectModule), // Stage 3: Circular dependency via JobModule
     NovelImportModule,
     PublishModule,
   ],

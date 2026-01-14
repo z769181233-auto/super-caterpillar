@@ -12,7 +12,7 @@ async function bootstrap() {
   // 诊断环境变量加载情况
   process.stdout.write(
     util.format(
-      `[GATE_DIAGNOSTIC] GATE_MODE=${process.env.GATE_MODE}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}`
+      `[GATE_DIAGNOSTIC] GATE_MODE=${process.env.GATE_MODE}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}, HMAC_DEBUG=${process.env.HMAC_DEBUG}`
     ) + '\n'
   );
 
@@ -93,12 +93,62 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Nonce', 'X-Timestamp', 'X-Signature'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Nonce', 'X-Timestamp', 'X-Signature', 'X-Api-Key'],
   });
+
+  // HMAC_DEBUG: Request Tap (only when debugging HMAC issues)
+  if (process.env.HMAC_DEBUG === '1') {
+    app.use((req: any, res: any, next: any) => {
+      try {
+        // Do not read body (avoid affecting rawBody), only log basic info + key headers
+        const h = req.headers || {};
+        // eslint-disable-next-line no-console
+        console.log(
+          JSON.stringify({
+            tag: 'REQ_TAP',
+            method: req.method,
+            url: req.originalUrl || req.url,
+            ip: req.ip,
+            ua: h['user-agent'],
+            xApiKey: h['x-api-key'],
+            xTimestamp: h['x-timestamp'],
+            xNonce: h['x-nonce'],
+            xSignaturePrefix: typeof h['x-signature'] === 'string' ? h['x-signature'].slice(0, 12) : undefined,
+          })
+        );
+      } catch { }
+      next();
+    });
+  }
 
   // 🔧 PORT 必须从环境变量读取，禁止硬编码
   const port = Number(process.env.PORT) || 3000;
-  await app.listen(port);
+
+  // LISTEN DIAGNOSTIC: hard evidence around binding
+  process.stdout.write(
+    util.format(
+      `[LISTEN_DIAG] before_listen host=127.0.0.1 port=${port} pid=${process.pid}`
+    ) + '\n'
+  );
+
+  try {
+    // 强制绑定到 127.0.0.1（Gate 本地验证最稳）
+    await app.listen(port, '127.0.0.1');
+
+    const addr: any = app.getHttpServer()?.address?.();
+    process.stdout.write(
+      util.format(
+        `[LISTEN_DIAG] after_listen address=${typeof addr === 'string' ? addr : JSON.stringify(addr)}`
+      ) + '\n'
+    );
+  } catch (e: any) {
+    process.stderr.write(
+      util.format(
+        `[LISTEN_DIAG] listen_failed name=${e?.name} code=${e?.code} errno=${e?.errno} syscall=${e?.syscall} address=${e?.address} port=${e?.port} message=${e?.message}`
+      ) + '\n'
+    );
+    process.exit(1);
+  }
 
   // P0 Self-Verification: Check if StorageController is registered
   try {

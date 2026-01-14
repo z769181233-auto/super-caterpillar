@@ -25,7 +25,7 @@ export class WorkerService {
     private readonly prisma: PrismaService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
-    @Inject(JobService)
+    @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService
   ) { }
 

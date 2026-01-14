@@ -224,6 +224,7 @@ async function registerWorker(): Promise<void> {
       JobType.CE09_MEDIA_SECURITY,
       JobType.SHOT_RENDER,
       JobType.PIPELINE_E2E_VIDEO,
+      JobType.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW'
@@ -300,6 +301,7 @@ async function sendHeartbeat(): Promise<void> {
       JobType.CE07_MEMORY_UPDATE,
       JobType.SHOT_RENDER,
       JobType.PIPELINE_E2E_VIDEO,
+      JobType.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW'
@@ -588,6 +590,15 @@ async function pollAndProcessJobs(): Promise<void> {
       const job = await apiClient.getNextJob(workerId);
 
       if (job) {
+        // S2-ORCH-BASE: Must ACK to transition to RUNNING
+        try {
+          await apiClient.ackJob(job.id, workerId);
+        } catch (ackError) {
+          process.stderr.write(util.format(`[Worker] ❌ ACK Job Failed:`, ackError) + '\n');
+          // Skip processing if Ack fails?
+          // If we claimed it, we should own it.
+        }
+
         // 异步处理 Job，不阻塞轮询 (Stage P1-1: 切换到 Executor)
         processJobWithExecutor(job).catch((error) => {
           process.stderr.write(

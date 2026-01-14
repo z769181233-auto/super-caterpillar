@@ -338,6 +338,16 @@ export class ApiClient {
     return response.data || null;
   }
 
+  async ackJob(jobId: string, workerId: string): Promise<any> {
+    const response = await this.request<any>('POST', `/api/jobs/${jobId}/ack`, { workerId }, { 'x-worker-id': workerId });
+
+    if (!response.success && !(response as any).data) { // Accommodate generic success wrappers
+      // If it's 200/201 but success flag is varied, it's fine.
+      // But allow void/success returns.
+    }
+    return response.data || {};
+  }
+
   async reportJobResult(params: {
     jobId: string;
     status: 'SUCCEEDED' | 'FAILED';

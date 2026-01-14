@@ -131,14 +131,21 @@ VIDEO_PATH="$STORAGE_ROOT/$STORAGE_KEY"
 FFPROBE_PATH="$STORAGE_ROOT/$STORAGE_KEY.ffprobe.json"
 
 if [ ! -f "$VIDEO_PATH" ]; then
-  # Fallback for local worker runtime path
+  # Fallback for local worker runtime path (apps/workers CWD)
   VIDEO_PATH_FALLBACK="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/$STORAGE_KEY"
+  # Fallback for Root CWD worker
+  VIDEO_PATH_ROOT_FALLBACK="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.runtime/$STORAGE_KEY"
+
   if [ -f "$VIDEO_PATH_FALLBACK" ]; then
     VIDEO_PATH="$VIDEO_PATH_FALLBACK"
     echo "⚠️  Found video in worker runtime: $VIDEO_PATH"
+  elif [ -f "$VIDEO_PATH_ROOT_FALLBACK" ]; then
+    VIDEO_PATH="$VIDEO_PATH_ROOT_FALLBACK"
+    echo "⚠️  Found video in ROOT runtime: $VIDEO_PATH"
   else
     echo "❌ missing video file: $VIDEO_PATH"
-    echo "❌ also missing in fallback: $VIDEO_PATH_FALLBACK"
+    echo "❌ also missing in fallback 1: $VIDEO_PATH_FALLBACK"
+    echo "❌ also missing in fallback 2: $VIDEO_PATH_ROOT_FALLBACK"
     exit 1
   fi
 fi
@@ -153,12 +160,18 @@ fi
 if [ ! -f "$FFPROBE_PATH" ]; then
   # Fallback for local worker runtime path
   FFPROBE_PATH_FALLBACK="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/$STORAGE_KEY.ffprobe.json"
+  FFPROBE_PATH_ROOT_FALLBACK="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.runtime/$STORAGE_KEY.ffprobe.json"
+
   if [ -f "$FFPROBE_PATH_FALLBACK" ]; then
     FFPROBE_PATH="$FFPROBE_PATH_FALLBACK"
     echo "⚠️  Found ffprobe evidence in worker runtime: $FFPROBE_PATH"
+  elif [ -f "$FFPROBE_PATH_ROOT_FALLBACK" ]; then
+    FFPROBE_PATH="$FFPROBE_PATH_ROOT_FALLBACK"
+    echo "⚠️  Found ffprobe evidence in ROOT runtime: $FFPROBE_PATH"
   else
     echo "❌ missing ffprobe evidence: $FFPROBE_PATH"
-    echo "❌ also missing in fallback: $FFPROBE_PATH_FALLBACK"
+    echo "❌ also missing in fallback 1: $FFPROBE_PATH_FALLBACK"
+    echo "❌ also missing in fallback 2: $FFPROBE_PATH_ROOT_FALLBACK"
     exit 1
   fi
 fi

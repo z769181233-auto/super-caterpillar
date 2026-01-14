@@ -13,6 +13,7 @@ export interface SignatureVerificationResult {
   success: boolean;
   apiKeyId?: string;
   apiKey?: string;
+  apiKeyRecord?: any; // 加入完整记录对象
   errorCode?: string;
   errorMessage?: string;
 }

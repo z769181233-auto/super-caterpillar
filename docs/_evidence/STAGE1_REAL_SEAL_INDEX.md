@@ -22,7 +22,7 @@
 ## Evidence Archive
 
 ### Primary Evidence
-- **Real Gate Run**: `docs/_evidence/STAGE1_REAL_GATE_YYYYMMDD_HHMMSS/`
+- **Real Gate Run**: `docs/_evidence/STAGE1_REAL_GATE_20260114_101222/`
 - **Baseline Evidence**: `docs/_evidence/STAGE1_REAL_BASELINE_20260114_085209/`
 
 ### 2. Seal Status
@@ -35,7 +35,8 @@
 The **Stage-1 Real Baseline** has been successfully verified. The system now produces real MP4 video files from novel text input using the complete pipeline:
 - **Novel Analysis**: Parses text into structured data.
 - **Shot Generation**: Creates shot list.
-- **Asset Generation**: Produces real 2x2 PNG frames (Baseline placeholder).
+- **Asset Generation**: Produces real 2x2 PNG frames.
+    - **Constraint**: Baseline placeholder frames MUST be even dimensions (2x2) to satisfy `libx264` encoding requirements.
 - **Video Render**: Uses `FFmpeg` to stitch frames into a valid MP4 video.
 - **Publication**: Registers `PublishedVideo` with checksum and metadata.
 

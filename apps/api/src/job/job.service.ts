@@ -29,6 +29,7 @@ import { CapacityExceededException, CapacityErrorCode } from '../common/errors/c
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { PublishedVideoService } from '../publish/published-video.service';
+import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { UnprocessableEntityException } from '@nestjs/common';
 import { PRODUCTION_MODE } from '@scu/config';
 import { Prisma, JobStatus, JobType, TaskStatus, TaskType, JobEngineBindingStatus, ShotReviewStatus, ShotJob } from 'database';
@@ -102,7 +103,9 @@ export class JobService {
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService,
     @Inject(forwardRef(() => StructureGenerateService))
-    private readonly structureGenerateService?: StructureGenerateService
+    private readonly structureGenerateService?: StructureGenerateService,
+    @Inject(forwardRef(() => OrchestratorService))
+    private readonly orchestratorService?: OrchestratorService
   ) { }
 
   async create(
@@ -1318,7 +1321,7 @@ export class JobService {
             attempts: job.attempts, // attempts 只在领取时递增，不在此处递增
             retryCount: job.retryCount,
             lastError: null,
-            workerId: null,
+            // workerId: null, // Keep workerId for history
             securityProcessed: job.type === JobTypeEnum.CE09_MEDIA_SECURITY ? true : job.securityProcessed,
           },
           include: {
@@ -1443,6 +1446,11 @@ export class JobService {
         job.type === JobTypeEnum.CE09_MEDIA_SECURITY
       ) {
         await this.handleCECoreJobCompletion(job, result);
+      }
+
+      // Stage 3: Event-Driven DAG Trigger (SHOT_RENDER -> VIDEO_RENDER)
+      if (this.orchestratorService) {
+        await this.orchestratorService.handleJobCompletion(updatedJob.id, result);
       }
 
       // Stage-1: VIDEO_RENDER 完成后自动记录发布 (Internal Verification)
@@ -1802,6 +1810,121 @@ export class JobService {
         workerId
       );
     }
+  }
+
+  /**
+   * Stage 2: Worker Acknowledge Job (DISPATCHED -> RUNNING)
+   * 幂等接口：重复调用返回成功，不改变状态
+   */
+  async ackJob(jobId: string, workerId: string) {
+    // 1. Resolve Worker UUID
+    const workerNode = await this.prisma.workerNode.findUnique({
+      where: { workerId },
+    });
+    if (!workerNode) {
+      throw new ForbiddenException(`Worker ${workerId} not found`);
+    }
+
+    const job = await this.prisma.shotJob.findUnique({
+      where: { id: jobId },
+    });
+
+    if (!job) {
+      throw new NotFoundException(`Job ${jobId} not found`);
+    }
+
+    // 2. Strict Ownership Check
+    if (job.workerId !== workerNode.id) {
+      this.logger.warn(`[JobService] Ack forbidden: Job ${jobId} owned by ${job.workerId}, but claimed by ${workerId} (${workerNode.id})`);
+      throw new ForbiddenException(`Job ownership mismatch`);
+    }
+
+    // 3. Idempotency & State Transition
+    if (job.status === JobStatusEnum.RUNNING) {
+      return { status: 'RUNNING', idempotent: true };
+    }
+
+    if (job.status !== JobStatusEnum.DISPATCHED) {
+      throw new BadRequestException(`Cannot ack job in status ${job.status} (expected DISPATCHED or RUNNING)`);
+    }
+
+    // 4. Atomic Transition
+    await this.prisma.shotJob.update({
+      where: { id: jobId },
+      data: {
+        status: JobStatusEnum.RUNNING,
+        // startedAt field not strictly in schema, rely on updatedAt or handle in payload if needed
+      },
+    });
+
+    this.logger.log(`[JobService] Job ${jobId} acked by ${workerId} -> RUNNING`);
+    return { status: 'RUNNING', idempotent: false };
+  }
+
+  /**
+   * Stage 2: Worker Complete Job (RUNNING -> SUCCEEDED | FAILED)
+   * 幂等接口：重复调用返回成功
+   */
+  async completeJob(
+    jobId: string,
+    workerId: string,
+    params: {
+      status: 'SUCCEEDED' | 'FAILED';
+      result?: any;
+      errorMessage?: string;
+    }
+  ) {
+    // 1. Resolve Worker UUID
+    const workerNode = await this.prisma.workerNode.findUnique({
+      where: { workerId },
+    });
+    if (!workerNode) {
+      throw new ForbiddenException(`Worker ${workerId} not found`);
+    }
+
+    const job = await this.prisma.shotJob.findUnique({
+      where: { id: jobId },
+    });
+
+    if (!job) {
+      throw new NotFoundException(`Job ${jobId} not found`);
+    }
+
+    // 2. Strict Ownership Check
+    if (job.workerId !== workerNode.id) {
+      this.logger.warn(`[JobService] Complete forbidden: Job ${jobId} owned by ${job.workerId}, but claimed by ${workerId} (${workerNode.id})`);
+      throw new ForbiddenException(`Job ownership mismatch`);
+    }
+
+    // 3. Idempotency
+    if (job.status === JobStatusEnum.SUCCEEDED || job.status === JobStatusEnum.FAILED) {
+      // Return existing terminal state
+      return { status: job.status, idempotent: true };
+    }
+
+    if (job.status !== JobStatusEnum.RUNNING) {
+      // Allow completing even if still DISPATCHED? No, strict flow: Next -> Ack -> Complete
+      // But if ack was skipped/lost, strictly we should fail. 
+      // For Stage 2, enforce RUNNING.
+      throw new BadRequestException(`Cannot complete job in status ${job.status} (expected RUNNING)`);
+    }
+
+    // 4. Reuse reportJobResult logic for consistency (Audits, Billing, DAG)
+    // Map string status to Enum
+    const targetStatus = params.status === 'SUCCEEDED'
+      ? JobStatusEnum.SUCCEEDED
+      : JobStatusEnum.FAILED;
+
+    const updatedJob = await this.reportJobResult(
+      jobId,
+      targetStatus,
+      params.result,
+      params.errorMessage,
+      undefined, // system derived
+      undefined // system derived
+    );
+
+    return { status: updatedJob?.status || targetStatus, idempotent: false };
   }
 
   /**
@@ -3129,6 +3252,8 @@ export class JobService {
       }
     }
   }
+
+
 
   /**
    * 获取队列快照，供背压限流使用
