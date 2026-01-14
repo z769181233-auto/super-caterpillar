@@ -1,11 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import * as fs from 'fs';
-import * as path from 'path';
+import { videoMergeRealEngine } from '@scu/engines/video_merge';
 
 /**
- * VideoMergeLocalAdapter (Mock for P0-R2 Gate)
- * Generates a dummy MP4 file to satisfy gate checks.
+ * CE02 -> VIDEO_RENDER (video_merge) Adapter
+ * 真实集成：调用 FFmpeg 引擎产生视频。
  */
 @Injectable()
 export class VideoMergeLocalAdapter implements EngineAdapter {
@@ -17,30 +16,38 @@ export class VideoMergeLocalAdapter implements EngineAdapter {
   }
 
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
-    this.logger.log(`VideoMergeLocalAdapter: Invoked with key=${input.engineKey}`);
+    this.logger.log(`Invoking VIDEO_RENDER Real Adapter for jobType=${input.jobType}`);
 
-    // Simulate generation
-    const ctx = input.context || {};
-    const runId = ctx.runId || 'unknown_run';
-    const outputDir = path.resolve(process.cwd(), 'tmp/videos');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
+    try {
+      // 转换通用输入为底层引擎输入
+      const engineInput = {
+        jobId: input.payload?.jobId || 'unknown',
+        traceId: input.context?.traceId || 'unknown',
+        framePaths: input.payload?.framePaths || [], // 如果没有，底层可能会 mock 或报错
+        fps: input.payload?.fps || 24,
+        width: input.payload?.width || 512,
+        height: input.payload?.height || 512,
+      };
+
+      const output = await videoMergeRealEngine(engineInput, input.context);
+
+      return {
+        status: 'SUCCESS',
+        output,
+        metrics: {
+          usage: output.billing_usage,
+        },
+      } as EngineInvokeResult;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`VIDEO_RENDER Local execution failed: ${message}`);
+      return {
+        status: 'FAILED',
+        error: {
+          message,
+          code: 'VIDEO_RENDER_LOCAL_ERR',
+        },
+      } as EngineInvokeResult;
     }
-
-    // Create dummy MP4 file
-    const filename = `video_${runId}.mp4`;
-    const outputPath = path.join(outputDir, filename);
-
-    // Just write empty file or some text
-    fs.writeFileSync(outputPath, 'DUMMY MP4 CONTENT FOR GATE VERIFICATION');
-    this.logger.log(`VideoMergeLocalAdapter: Created dummy output at ${outputPath}`);
-
-    return {
-      status: 'SUCCESS' as any,
-      output: {
-        videoKey: outputPath, // absolute path for local provider
-        videoJobId: input.payload.jobId,
-      },
-    };
   }
 }

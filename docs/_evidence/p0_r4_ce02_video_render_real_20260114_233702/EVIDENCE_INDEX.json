@@ -1,0 +1,50 @@
+{
+  "dir": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p0_r4_ce02_video_render_real_20260114_233702",
+  "files": [
+    {
+      "name": "REQ.json",
+      "bytes": 409,
+      "sha256": "b486c3c6968b7d49bd06d1a720e49c609f77f868eb8b82a7cb72fe6916ef81a8"
+    },
+    {
+      "name": "SQL_LEDGER.json",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "name": "SUMMARY.md",
+      "bytes": 396,
+      "sha256": "6e9583f78ace6ffc61594cb7dec479eb3c8f2e2ee621579bd8a7899ff80913ea"
+    },
+    {
+      "name": "RUN_ID.txt",
+      "bytes": 31,
+      "sha256": "4156f51bcba4af3d047189a18e31cbdb6a4f5d6f199ef83bf4719c3143b470d2"
+    },
+    {
+      "name": "RUN_IDEMPOTENT.json",
+      "bytes": 1243,
+      "sha256": "202b770f46e9ff1eb53be3693a74ccabd4296442a0c9d78fb653d79a2c54c224"
+    },
+    {
+      "name": "RUN.json",
+      "bytes": 1244,
+      "sha256": "cbebbfc5b0fad40da96cc4ca3d24db8c7123d7137136cf7732a615355d009814"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 652,
+      "sha256": "adba796afd4c15f8f048fce428ff64e7f7e8e74076209820df5820df88d0a4ea"
+    },
+    {
+      "name": "GATE_EXIT_CODE.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "name": "SQL_JOB.json",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  ]
+}

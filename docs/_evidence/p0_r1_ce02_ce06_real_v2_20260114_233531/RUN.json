@@ -1,0 +1,56 @@
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "selectedEngineKey": "ce06_novel_parsing",
+    "output": {
+      "volumes": [
+        {
+          "title": "Main Volume",
+          "chapters": [
+            {
+              "title": "第一章",
+              "scenes": [
+                {
+                  "title": "Scene 1",
+                  "summary": "剑起云涌",
+                  "content": "剑起云涌",
+                  "scene_idx": 0
+                },
+                {
+                  "title": "Scene 2",
+                  "summary": "那是一个风雪交加的夜晚，少年紧握残剑，目光如炬。",
+                  "content": "那是一个风雪交加的夜晚，少年紧握残剑，目光如炬。",
+                  "scene_idx": 1
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "chapters": [],
+      "scenes": [],
+      "billing_usage": {
+        "promptTokens": 34,
+        "completionTokens": 10,
+        "totalTokens": 34,
+        "model": "ce06-deterministic-fallback"
+      },
+      "audit_trail": {
+        "engine_version": "deterministic-fallback",
+        "timestamp": "2026-01-14T16:35:32.210Z",
+        "input_hash": "todo"
+      }
+    },
+    "metrics": {
+      "latencyMs": 0,
+      "usage": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "costUsd": 0
+      },
+      "tokens": 34
+    }
+  }
+}
