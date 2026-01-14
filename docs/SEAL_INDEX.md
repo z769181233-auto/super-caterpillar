@@ -4,59 +4,39 @@
 
 ---
 
-## 审计规格标准 (Audit Standards)
+## 审计规格标准 (Audit Standards - V2 Hardened)
 
-### Audit V2 (Hardened)
+### 1. 证据项分层 (Evidence Layers)
 
-- **Zero-Python**: 门禁脚本必须自解藕，仅依赖 Node.js/FFmpeg/psql，移除 Python pillow 等脆弱环境依赖。
-- **产物硬断言**: 视频类产物强制执行 `ffprobe` 校验 (duration > 0)，严禁 dummy fallback 逃逸。
-- **审计双路兼容**: 审计证据采集必须兼容 `details` 与 `payload` 路径，确保分布式追踪链条 100% 覆盖。
-- **幂等性强断言**: 强制比较多次调用产物的 URI 签名，失败则拒绝封板。
-- **账本隔离**: `isVerification=true` 时 `cost_ledgers` 必须为 0 写入。
+| 证据文件                | 类型         | 判定标准                                                             |
+| :---------------------- | :----------- | :------------------------------------------------------------------- |
+| **REQ.json**            | **REQUIRED** | 标准请求载荷                                                         |
+| **RUN.json**            | **REQUIRED** | 标准响应结果 (success=true)                                          |
+| **SQL_AUDIT.json**      | **REQUIRED** | 审计日志匹配 (details/payload 关联)                                  |
+| **SQL_LEDGER.json**     | **REQUIRED** | 账本隔离验证 (count=0)                                               |
+| **SHA256SUMS.txt**      | **REQUIRED** | 防篡改哈希清单                                                       |
+| **SUMMARY.md**          | **REQUIRED** | 机器+人工审阅摘要                                                    |
+| **SQL_JOB.json**        | _OPTIONAL_   | 当直接调用不涉及 `shot_jobs` 时，此项应为 `[]` 并于 SUMMARY 中说明。 |
+| **RUN_IDEMPOTENT.json** | _OPTIONAL_   | 仅用于 L2 等级封板，记录第二次调用结果。                             |
 
----
+### 2. 等级判定准则 (Seal Level Criteria)
 
-## Phase 0: Real Engine Sealing (工业级真实集成)
-
-### Phase 0-R1: CE02 Mother -> CE06 Real (Novel Parsing)
-
-- **封板日期**: 2026-01-14
-- **证据目录**: [p0_r1_ce02_ce06_real_v2h_20260114_235250](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r1_ce02_ce06_real_v2h_20260114_235250)
-- **规格**: Audit V2 Hardened
-- **核心结论**: 成功提取分卷/章节/场景结构，审计日志 dual-path 采集成功，账本隔离验证通过。
-
-### Phase 0-R2: CE02 Mother -> CE03 Real (Visual Density)
-
-- **封板日期**: 2026-01-14
-- **证据目录**: [p0_r2_ce02_ce03_real_v2h_20260114_235251](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r2_ce02_ce03_real_v2h_20260114_235251)
-- **规格**: Audit V2 Hardened
-- **核心结论**: 成功计算视觉密度评分，审计证据链完整，无账本污染。
-
-### Phase 0-R3: CE02 Mother -> CE04 Real (Visual Enrichment)
-
-- **封板日期**: 2026-01-14
-- **证据目录**: [p0_r3_ce02_ce04_real_v2h_20260114_235251](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r3_ce02_ce04_real_v2h_20260114_235251)
-- **规格**: Audit V2 Hardened
-- **核心结论**: Gemini 扩写提示词通过，审计及隔离特性符合 V2 Hardened 标准。
-
-### Phase 0-R4: CE02 Mother -> VIDEO_RENDER Real (Merge)
-
-- **封板日期**: 2026-01-14
-- **证据目录**: [p0_r4_ce02_video_render_real_v2h_20260114_235225](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r4_ce02_video_render_real_v2h_20260114_235225)
-- **规格**: Audit V2 Hardened
-- **核心断言**:
-  - `ffprobe` Duration > 0: ✅ (Verified 0.16s)
-  - Idempotency Match: ✅ (uri1 == uri2)
-  - Python-Free Index: ✅
-  - Business Realness: 已激活真实 FFmpeg 链路，产出合法 MP4 资产。
+- **Seal-L0 (Spec)**: 只要求 REQ.json 与门禁通过。
+- **Seal-L1 (Integrate)**: 要求 REQ/RUN/SQL_AUDIT 闭环。
+- **Seal-L2 (Real)**: **强制要求** 产物硬校验 (ffprobe) 与 幂等性强断言 (URI match)。
 
 ---
 
-### Phase 0-R0: Mother Engine -> SHOT_RENDER Real Engine
+## 封板历程记录 (Seal Journal)
 
-- **封板日期**: 2026-01-14
-- **证据目录**: `docs/_evidence/p0_r0_mother_shot_render_real_20260114_225032/`
-- **结论**: P0-R0 TOTAL PASS。核心不变量验证完成。
+### Phase 0: Real Engine Sealing (L2 等级)
+
+| 阶段      | 引擎节点                 | 状态      | 等级   | 证据目录 (SSOT)                                                                                                                                                |
+| :-------- | :----------------------- | :-------- | :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P0-R1** | [CE06] Novel Parsing     | ✅ SEALED | **L2** | [p0_r1_..._v2h_20260114_235250](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r1_ce02_ce06_real_v2h_20260114_235250)         |
+| **P0-R2** | [CE03] Visual Density    | ✅ SEALED | **L2** | [p0_r2_..._v2h_20260114_235251](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r2_ce02_ce03_real_v2h_20260114_235251)         |
+| **P0-R3** | [CE04] Visual Enrichment | ✅ SEALED | **L2** | [p0_r3_..._v2h_20260114_235251](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r3_ce02_ce04_real_v2h_20260114_235251)         |
+| **P0-R4** | [VIDEO_RENDER] Merge     | ✅ SEALED | **L2** | [p0_r4_..._v2h_20260114_235225](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r4_ce02_video_render_real_v2h_20260114_235225) |
 
 ---
 
