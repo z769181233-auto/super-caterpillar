@@ -744,31 +744,45 @@ export class OrchestratorService {
       return;
     }
 
-    // 2.3 Spawn VIDEO_RENDER
-    this.logger.log(`[DAG] Spawning VIDEO_RENDER for ${pipelineRunId} with ${frames.length} frames.`);
+    // 2.3 继承验证标记（关键：防止下游作业计费污染）
+    const isVerification = !!contextJob.isVerification;
+    const dedupeKey = isVerification ? `gate_video:${pipelineRunId}` : undefined;
+
+    if (isVerification) {
+      this.logger.log(`[DAG] VIDEO_RENDER will inherit isVerification=true from parent job ${contextJob.id}`);
+    }
+
+    // 2.4 Spawn VIDEO_RENDER
+    this.logger.log(`[DAG] Spawning VIDEO_RENDER for ${pipelineRunId} with ${frames.length} frames (isVerification=${isVerification}).`);
 
     try {
-      await this.jobService.create(
+      const videoJob = await this.jobService.create(
         contextJob.shotId, // Owner context
         {
           type: JobTypeEnum.VIDEO_RENDER,
           traceId: contextJob.traceId,
+          isVerification,
+          dedupeKey,
           payload: {
             pipelineRunId,
             projectId: contextJob.projectId,
             episodeId: contextJob.episodeId,
             frames,
             publish: true,
-            traceId: contextJob.traceId
+            traceId: contextJob.traceId,
+            isVerification, // 也在 payload 中携带，便于 Worker 识别
           }
-        },
+        } as any,
         'system-dag', // triggered by system
         contextJob.organizationId
       );
+
+      this.logger.log(`[DAG] VIDEO_RENDER created: jobId=${videoJob.id}, isVerification=${isVerification}`);
     } catch (e: any) {
       this.logger.error(`[DAG] Failed to spawn VIDEO_RENDER: ${e.message}`);
     }
   }
+
   /**
    * 创建 CE Core Layer 的固定 DAG Job 链
    * Upload Novel → CE06 → CE03 → CE04

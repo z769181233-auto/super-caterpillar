@@ -116,7 +116,9 @@ async function bootstrap() {
             xSignaturePrefix: typeof h['x-signature'] === 'string' ? h['x-signature'].slice(0, 12) : undefined,
           })
         );
-      } catch { }
+      } catch {
+        // Ignore JSON stringify errors in HMAC debug logging
+      }
       next();
     });
   }

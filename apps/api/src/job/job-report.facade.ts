@@ -228,10 +228,11 @@ export class JobReportFacade {
               frameKeys,
               updatedJob.traceId || `trace-${updatedJob.id}`,
               params.userId || 'system',
-              updatedJob.organizationId
+              updatedJob.organizationId,
+              updatedJob.isVerification || false // 继承 SHOT_RENDER 的验证标记
             );
             this.logger.log(
-              `[JobReportFacade] Triggered VIDEO_RENDER for Shot ${updatedJob.shotId}`
+              `[JobReportFacade] Triggered VIDEO_RENDER for Shot ${updatedJob.shotId}, isVerification=${updatedJob.isVerification}`
             );
           }
         }

@@ -68,3 +68,6 @@ docs/_evidence/**/gate.log
 api_gate_*.txt
 .envrc
 .venv/
+docs/_evidence/_trash/
+docs/_evidence/S3_SCALE_EVENT_DAG_*/
+docs/_evidence/RETRY_S3_SCALE_EVENT_DAG_*/

@@ -1,109 +1,93 @@
 import axios from 'axios';
-import { randomUUID } from 'crypto';
+import crypto from 'crypto';
 
-const API_URL = process.env.API_URL || 'http://localhost:3001';
-const TEST_TOKEN = process.env.TEST_TOKEN;
+/**
+ * Stage 3 Mock Worker R29 - BUSINESS HEADER ALIGNMENT
+ * Fixed: Added 'x-worker-id' required by API for claim audit.
+ */
+
+const API_URL = process.env.API_URL || 'http://127.0.0.1:3000';
+const API_KEY = process.env.API_KEY || 'dev-worker-key';
+const API_SECRET = process.env.API_SECRET || 'dev-worker-secret';
 const WORKER_SUFFIX = process.env.WORKER_SUFFIX || '0';
 
-if (!TEST_TOKEN) {
-    console.error('TEST_TOKEN is required');
-    process.exit(1);
-}
+function generateHmacHeaders(bodyObj: any, workerId?: string) {
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const nonce = `mock_v29_${WORKER_SUFFIX}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 
-const AUTHORIZATION = `Bearer ${TEST_TOKEN}`;
+    // Force non-empty body to align with API raw-body capture consistency
+    const finalBody = (bodyObj && Object.keys(bodyObj).length > 0) ? bodyObj : { _mt: 1 };
+    const bodyStr = JSON.stringify(finalBody);
+
+    const message = API_KEY + nonce + timestamp + bodyStr;
+    const signature = crypto.createHmac('sha256', API_SECRET).update(message).digest('hex');
+
+    const headers: any = {
+        'X-Api-Key': API_KEY,
+        'X-Nonce': nonce,
+        'X-Timestamp': timestamp,
+        'X-Signature': signature,
+        'Content-Type': 'application/json'
+    };
+
+    if (workerId) {
+        headers['x-worker-id'] = workerId;
+    }
+
+    return { headers, data: finalBody };
+}
 
 async function main() {
     const workerId = `mock-s3-${WORKER_SUFFIX}-${Date.now()}`;
-    console.log(`[MockWorker-${WORKER_SUFFIX}] Starting as ${workerId}`);
+    console.log(`[MockWorker-${WORKER_SUFFIX}] Starting as ${workerId} (R29 BUSINESS-READY)`);
 
     // 1. Register
     try {
-        await axios.post(
-            `${API_URL}/api/workers/register`,
-            {
-                workerId,
-                name: `Stage3 Mock Worker ${WORKER_SUFFIX}`,
-                capabilities: {
-                    supportedJobTypes: ['SHOT_RENDER'],
-                    supportedModels: ['mock-model-v1'],
-                    maxBatchSize: 1
-                },
-                gpuCount: 0,
-                gpuMemory: 0,
-                gpuType: 'mock_gpu',
-            },
-            { headers: { Authorization: AUTHORIZATION } }
-        );
-        console.log(`[MockWorker-${WORKER_SUFFIX}] Registered successfully`);
-    } catch (error: any) {
-        console.error(`[MockWorker-${WORKER_SUFFIX}] Registration failed: ${error.message}`);
+        const payload = {
+            workerId,
+            name: `Mock Worker ${WORKER_SUFFIX}`,
+            capabilities: { supportedJobTypes: ['SHOT_RENDER'], supportedModels: ['mock-model-v1'], maxBatchSize: 1 },
+            gpuCount: 0, gpuMemory: 0, gpuType: 'mock_gpu'
+        };
+        const hb = generateHmacHeaders(payload);
+        await axios.post(`${API_URL}/api/workers/register`, hb.data, { headers: hb.headers });
+        console.log(`[MockWorker-${WORKER_SUFFIX}] Registered.`);
+    } catch (e: any) {
+        console.error(`[MockWorker-${WORKER_SUFFIX}] Registration FAILED: ${e.response?.status} ${JSON.stringify(e.response?.data)}`);
         process.exit(1);
     }
 
-    // Loop
-    // Run loop to process jobs
-    const maxLoops = 100;
-
-    for (let i = 0; i < maxLoops; i++) {
+    // 2. Main Loop
+    for (let i = 0; i < 200; i++) {
         try {
             // Heartbeat
-            await axios.post(
-                `${API_URL}/api/workers/${workerId}/heartbeat`,
-                { status: 'idle', tasksRunning: 0, temperature: 0 },
-                { headers: { Authorization: AUTHORIZATION } }
-            );
+            const hPayload = { status: 'idle', tasksRunning: 0, temperature: 0 };
+            const hHb = generateHmacHeaders(hPayload, workerId);
+            await axios.post(`${API_URL}/api/workers/${workerId}/heartbeat`, hHb.data, { headers: hHb.headers });
 
-            // Get Next Job
-            const nextRes = await axios.post(
-                `${API_URL}/api/workers/${workerId}/jobs/next`,
-                {},
-                {
-                    headers: {
-                        Authorization: AUTHORIZATION,
-                        'x-worker-id': workerId
-                    }
-                }
-            );
+            // Next Job
+            const nHb = generateHmacHeaders({}, workerId);
+            const nRes = await axios.post(`${API_URL}/api/workers/${workerId}/jobs/next`, nHb.data, { headers: nHb.headers });
+            const job = nRes.data.data;
 
-            const job = nextRes.data.data;
             if (job) {
-                console.log(`[MockWorker-${WORKER_SUFFIX}] Claimed job ${job.id} (${job.type})`);
+                console.log(`[MockWorker-${WORKER_SUFFIX}] Job ${job.id}`);
+                const ackPayload = { workerId };
+                const aHb = generateHmacHeaders(ackPayload, workerId);
+                await axios.post(`${API_URL}/api/jobs/${job.id}/ack`, aHb.data, { headers: aHb.headers });
 
-                // Ack
-                await axios.post(
-                    `${API_URL}/api/jobs/${job.id}/ack`,
-                    { workerId },
-                    { headers: { Authorization: AUTHORIZATION, 'x-worker-id': workerId } }
-                );
+                await new Promise(r => setTimeout(r, 1000));
 
-                // Simulate work (random delay 1-3s)
-                const delay = Math.floor(Math.random() * 2000) + 1000;
-                await new Promise(r => setTimeout(r, delay));
-
-                // Complete with Storage Key for DAG
-                const storageKey = `mock-frame-${job.id}.png`;
-                await axios.post(
-                    `${API_URL}/api/jobs/${job.id}/complete`,
-                    {
-                        status: 'SUCCEEDED',
-                        result: {
-                            output: {
-                                storageKey,
-                                simulated: true
-                            }
-                        },
-                        workerId
-                    },
-                    { headers: { Authorization: AUTHORIZATION, 'x-worker-id': workerId } }
-                );
-                console.log(`[MockWorker-${WORKER_SUFFIX}] Completed job ${job.id} with key ${storageKey}`);
+                const compPayload = { status: 'SUCCEEDED', result: { output: { storageKey: `mock-${job.id}.png` } }, workerId };
+                const cHb = generateHmacHeaders(compPayload, workerId);
+                await axios.post(`${API_URL}/api/jobs/${job.id}/complete`, cHb.data, { headers: cHb.headers });
+                console.log(`[MockWorker-${WORKER_SUFFIX}] Completed ${job.id}`);
             } else {
-                // Exponential backoff or simple sleep
                 await new Promise(r => setTimeout(r, 1000));
             }
-
-        } catch (error: any) {
-            console.error(`[MockWorker-${WORKER_SUFFIX}] Error: ${error.message}`);
+        } catch (e: any) {
+            console.error(`[MockWorker-${WORKER_SUFFIX}] Error: ${e.response?.status} ${JSON.stringify(e.response?.data)}`);
+            await new Promise(r => setTimeout(r, 2000));
         }
     }
 }

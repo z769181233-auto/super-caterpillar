@@ -32,6 +32,7 @@ import { PublishedVideoService } from '../publish/published-video.service';
 import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { UnprocessableEntityException } from '@nestjs/common';
 import { PRODUCTION_MODE } from '@scu/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, JobStatus, JobType, TaskStatus, TaskType, JobEngineBindingStatus, ShotReviewStatus, ShotJob } from 'database';
 import {
   assertTransition,
@@ -100,6 +101,7 @@ export class JobService {
     @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService,
     @Inject(BudgetService) private readonly budgetService: BudgetService,
     @Inject(PublishedVideoService) private readonly publishedVideoService: PublishedVideoService,
+    private readonly eventEmitter: EventEmitter2,
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService,
     @Inject(forwardRef(() => StructureGenerateService))
@@ -115,6 +117,19 @@ export class JobService {
     organizationId: string,
     taskId?: string
   ) {
+    // 0. dedupeKey 幂等检查（商业级强幂等，防止重复创建）
+    if (createJobDto.dedupeKey) {
+      const existing = await this.prisma.shotJob.findUnique({
+        where: { dedupeKey: createJobDto.dedupeKey },
+      });
+      if (existing) {
+        this.logger.log(
+          `[Job] create: dedupeKey=${createJobDto.dedupeKey} already exists, returning jobId=${existing.id}`
+        );
+        return existing;
+      }
+    }
+
     // 文本安全审查
     if (this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_TRI_STATE')) {
       const payload = (createJobDto.payload || {}) as Record<string, any>;
@@ -243,7 +258,12 @@ export class JobService {
     // E4: SHOT_RENDER 强制契约 - 必须携带有效 referenceSheetId
     if (createJobDto.type === JobTypeEnum.SHOT_RENDER) {
       const referenceSheetId = createJobDto.payload?.referenceSheetId;
-      await this.validateReferenceSheetId(referenceSheetId, organizationId, project.id);
+      await this.validateReferenceSheetId(
+        referenceSheetId,
+        organizationId,
+        project.id,
+        createJobDto.isVerification
+      );
     }
 
     const finalTaskId =
@@ -260,56 +280,75 @@ export class JobService {
 
     // Stage3-A: 在事务中创建 Job 并绑定 Engine（确保原子性）
     // 绑定之前不要对外返回 job，绑定失败必须保证 job 不可领取
-    const job = await this.prisma.$transaction(async (tx) => {
-      // 1. 创建 Job
-      const createdJob = await tx.shotJob.create({
-        data: {
-          organizationId,
-          projectId: project.id,
-          episodeId: episode.id,
-          sceneId: scene.id,
-          shotId,
-          taskId: finalTaskId,
-          type: createJobDto.type as JobTypeType,
-          status: JobStatusEnum.PENDING,
-          priority: 0,
-          maxRetry: 3,
-          retryCount: 0,
-          attempts: 0,
-          payload: createJobDto.payload ?? {},
-          engineConfig: createJobDto.engineConfig ?? {},
-          traceId: createJobDto.traceId,
-        },
-      });
-
-      // 2. 绑定 Engine（在同一个事务中）
-      const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
-        createJobDto.type as JobType
-      );
-      if (!engineSelection) {
-        // 如果没有可用 Engine，事务会自动回滚 Job 创建
-        throw new BadRequestException(`No engine available for job type: ${createJobDto.type}`);
-      }
-
-      // 3. 创建 Engine Binding（在同一个事务中）
-      await tx.jobEngineBinding.create({
-        data: {
-          jobId: createdJob.id,
-          engineId: engineSelection.engineId,
-          engineKey: engineSelection.engineKey,
-          engineVersionId: engineSelection.engineVersionId,
-          status: JobEngineBindingStatus.BOUND,
-          metadata: {
-            strategy: 'default',
-            jobType: createJobDto.type,
+    let job;
+    try {
+      job = await this.prisma.$transaction(async (tx) => {
+        // 1. 创建 Job
+        const createdJob = await tx.shotJob.create({
+          data: {
+            organizationId,
+            projectId: project.id,
+            episodeId: episode.id,
+            sceneId: scene.id,
+            shotId,
+            taskId: finalTaskId,
+            type: createJobDto.type as JobTypeType,
+            status: JobStatusEnum.PENDING,
+            priority: 0,
+            maxRetry: 3,
+            retryCount: 0,
+            attempts: 0,
+            payload: createJobDto.payload ?? {},
+            engineConfig: createJobDto.engineConfig ?? {},
+            traceId: createJobDto.traceId,
+            isVerification: createJobDto.isVerification || false, // Handle isVerification
+            dedupeKey: createJobDto.dedupeKey, // Handle dedupeKey
           },
-        },
+        });
+
+        // 2. 绑定 Engine（在同一个事务中）
+        const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
+          createJobDto.type as JobType
+        );
+        if (!engineSelection) {
+          // 如果没有可用 Engine，事务会自动回滚 Job 创建
+          throw new BadRequestException(`No engine available for job type: ${createJobDto.type}`);
+        }
+
+        // 3. 创建 Engine Binding（在同一个事务中）
+        await tx.jobEngineBinding.create({
+          data: {
+            jobId: createdJob.id,
+            engineId: engineSelection.engineId,
+            engineKey: engineSelection.engineKey,
+            engineVersionId: engineSelection.engineVersionId,
+            status: JobEngineBindingStatus.BOUND,
+            metadata: {
+              selectedAt: new Date().toISOString(),
+              reason: 'Job creation binding',
+            },
+          },
+        });
+
+        return createdJob;
       });
+    } catch (error: any) {
+      // 并发冲突兜底：如果是 dedupeKey unique violation，再次查询返回已存在作业
+      if (createJobDto.dedupeKey && error.code === 'P2002' && error.meta?.target?.includes('dedupeKey')) {
+        const existing = await this.prisma.shotJob.findUnique({
+          where: { dedupeKey: createJobDto.dedupeKey },
+        });
+        if (existing) {
+          this.logger.log(
+            `[Job] create: Caught dedupeKey unique violation, returning existing jobId=${existing.id}`
+          );
+          return existing;
+        }
+      }
+      throw error;
+    }
 
-      this.logger.log(`Auto-bound engine ${engineSelection.engineKey} to job ${createdJob.id}`);
-      return createdJob;
-    });
-
+    this.logger.log(`Job created successfully: jobId=${job.id}, type=${job.type}, isVerification=${job.isVerification}`);
     return job;
   }
 
@@ -457,6 +496,8 @@ export class JobService {
           attempts: 0,
           payload: createJobDto.payload ?? {},
           engineConfig: createJobDto.engineConfig ?? {},
+          isVerification: createJobDto.isVerification || false,
+          dedupeKey: createJobDto.dedupeKey,
         },
       });
 
@@ -519,8 +560,10 @@ export class JobService {
     jobType: JobTypeType;
     payload: any;
     traceId?: string;
+    isVerification?: boolean;
+    dedupeKey?: string;
   }): Promise<any> {
-    const { projectId, organizationId, taskId, jobType, payload } = params;
+    const { projectId, organizationId, taskId, jobType, payload, isVerification, dedupeKey } = params;
     let traceId = params.traceId;
 
     if (!traceId && taskId) {
@@ -631,6 +674,8 @@ export class JobService {
         payload: payload ?? {},
         engineConfig: payload.engineConfig ?? {},
         traceId, // Stage13-Final: 使用 Pipeline 级 traceId
+        isVerification: isVerification || false,
+        dedupeKey: dedupeKey,
       },
     });
 
@@ -785,8 +830,14 @@ export class JobService {
   private async validateReferenceSheetId(
     referenceSheetId: string | undefined,
     organizationId: string,
-    projectId: string
+    projectId: string,
+    isVerification: boolean = false
   ): Promise<void> {
+    // Stage-3 Sealing Bypass: 如果是验证模式下的 Mock ID，直接放行
+    if (isVerification && referenceSheetId === 'gate-mock-ref-id') {
+      return;
+    }
+
     if (!referenceSheetId) {
       throw new BadRequestException({
         code: 'REFERENCE_SHEET_REQUIRED',
@@ -820,13 +871,17 @@ export class JobService {
    * @param shotId Shot ID
    * @param frameKeys List of frame storage keys
    * @param traceId Original traceId for lineage
+   * @param userId User ID
+   * @param organizationId Organization ID
+   * @param isVerification 是否为验证任务（默认 false）
    */
   async ensureVideoRenderJob(
     shotId: string,
     frameKeys: string[],
     traceId: string,
     userId: string,
-    organizationId: string
+    organizationId: string,
+    isVerification: boolean = false
   ): Promise<any> {
     const jobType = JobTypeEnum.VIDEO_RENDER;
 
@@ -862,8 +917,24 @@ export class JobService {
       });
 
       if (existing) {
+        // 商业级防御：避免复用旧的非验证 job，导致永久污染
+        if (isVerification && !existing.isVerification) {
+          throw new BadRequestException({
+            code: 'VIDEO_RENDER_VERIFICATION_MISMATCH',
+            message:
+              'Existing VIDEO_RENDER job is non-verification but current pipeline requires verification. Refuse to reuse to avoid billing contamination.',
+            details: {
+              shotId,
+              existingJobId: existing.id,
+              existingIsVerification: existing.isVerification,
+              requiredIsVerification: isVerification,
+              traceId,
+            },
+          });
+        }
+
         this.logger.log(
-          `[JobService] ensureVideoRenderJob: Job already exists (${existing.id}), skipping.`
+          `[JobService] ensureVideoRenderJob: Job already exists (${existing.id}), isVerification=${existing.isVerification}, skipping.`
         );
         return existing;
       }
@@ -882,7 +953,7 @@ export class JobService {
         projectId: shotHierarchy.scene.episode.projectId!, // Assuming episode has projectId or load further up
         type: TaskTypeEnum.VIDEO_RENDER,
         status: TaskStatusEnum.PENDING,
-        payload: { shotId, jobType },
+        payload: { shotId, jobType, isVerification },
         traceId, // Propagate traceId
       });
 
@@ -897,11 +968,13 @@ export class JobService {
           taskId: task.id,
           type: jobType,
           status: JobStatusEnum.PENDING,
+          isVerification: isVerification ?? false, // ✅ 关键修复：写入 isVerification
           payload: {
             shotId, // Explicitly include shotId in payload for Processor
             frameKeys,
             pipelineRunId: traceId, // EXECUTE-3 Fix: Ensure pipelineRunId is present
             fps: 24, // Default FPS
+            isVerification, // 便于 Worker 识别
           },
           traceId,
         },
@@ -927,12 +1000,13 @@ export class JobService {
             strategy: 'default',
             jobType: jobType,
             reason: 'ensureVideoRenderJob',
+            isVerification, // 记录验证标记
           },
         },
       });
 
       this.logger.log(
-        `[JobService] ensureVideoRenderJob: Created job ${job.id} and bound to ${engineSelection.engineKey}`
+        `[JobService] ensureVideoRenderJob: Created job ${job.id}, isVerification=${isVerification}, traceId=${traceId}, bound to ${engineSelection.engineKey}`
       );
       return job;
     });
@@ -1396,7 +1470,8 @@ export class JobService {
       }
 
       // Full Implementation: Integration with Billing System
-      if (userId && this.billingService) {
+      // P0: Billing & Credits - Only for non-verification jobs
+      if (userId && !job.isVerification) {
         try {
           const cost = 1.0;
           // TraceId for legacy path
@@ -1452,6 +1527,10 @@ export class JobService {
       if (this.orchestratorService) {
         await this.orchestratorService.handleJobCompletion(updatedJob.id, result);
       }
+
+      // Verification Hook Trigger: Emit event for decoupled validation logic
+      console.log(`[EVENT DEBUG] Emitting job.succeeded for job ${updatedJob.id} type ${updatedJob.type}`);
+      this.eventEmitter.emit('job.succeeded', updatedJob);
 
       // Stage-1: VIDEO_RENDER 完成后自动记录发布 (Internal Verification)
       if (job.type === JobTypeEnum.VIDEO_RENDER) {
@@ -1514,8 +1593,9 @@ export class JobService {
 
       // P0-2: Record cost to ledger for billable jobs (idempotent)
       if (
-        updatedJob.type === JobTypeEnum.VIDEO_RENDER ||
-        updatedJob.type === JobTypeEnum.SHOT_RENDER
+        !updatedJob.isVerification && // Skip billing for verification jobs
+        (updatedJob.type === JobTypeEnum.VIDEO_RENDER ||
+          updatedJob.type === JobTypeEnum.SHOT_RENDER)
       ) {
         try {
           const totalCost = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
@@ -3360,12 +3440,20 @@ export class JobService {
 
     const targetShotId = placeholderShot?.id || succeededShots[0].shotId;
 
+    // 继承验证标记：同一 pipelineRunId 下的所有 shot 应该具有相同的 isVerification
+    const isVerification = succeededShots[0]?.isVerification || false;
+
     await this.ensureVideoRenderJob(
       targetShotId,
       frames,
       pipelineRunId,
       'system',
-      organizationId
+      organizationId,
+      isVerification
+    );
+
+    this.logger.log(
+      `[Stage-1] Triggered VIDEO_RENDER for pipelineRunId=${pipelineRunId}, isVerification=${isVerification}`
     );
   }
 

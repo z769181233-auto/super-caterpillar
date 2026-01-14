@@ -88,7 +88,9 @@ export class ApiSecurityService {
         // Use stdout to ensure it lands in api.log, independent of logger config
         // eslint-disable-next-line no-console
         console.log(JSON.stringify({ tag: 'HMAC_DEBUG_STEP', ...obj }));
-      } catch { }
+      } catch {
+        // Ignore JSON stringify errors in debug logging
+      }
     };
 
     dlog({
@@ -305,21 +307,29 @@ export class ApiSecurityService {
       }
 
       // 7. 计算服务器端签名（v2 规范）
-      // 使用原始 path，但在 canonical string 中进行规范化
-      const bodyNorm = (context.body === '{}') ? '' : (context.body || '');
+      // APISpec V1.1: 签名输入必须按协议对齐。
+      // GET/DELETE: body 强制规范化为 "" (空字符串)
+      // POST/PUT/PATCH: 必须使用原始 rawBody，禁止将 "{}" 视为 ""。
+      let bodyToSign = context.body || '';
+      if (['GET', 'DELETE'].includes(method.toUpperCase())) {
+        if (bodyToSign === '{}') {
+          bodyToSign = '';
+        }
+      }
+
       const canonicalString = this.buildCanonicalStringV2(
         method,
         path,
         apiKey,
         timestamp,
         nonce,
-        bodyNorm // Fix: Normalize '{}' to empty string for GET requests
+        bodyToSign
       );
 
       // Debug canonical WITHOUT leaking raw content: sha12 only
       if (dbg) {
         const cfp = secretFingerprint(canonicalString);
-        const bodyFp = secretFingerprint(bodyNorm);
+        const bodyFp = secretFingerprint(bodyToSign);
         dlog({
           step: 'canonical',
           canonicalLen: cfp.len,

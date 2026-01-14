@@ -78,7 +78,9 @@ export class JwtOrHmacGuard implements CanActivate {
       try {
         // eslint-disable-next-line no-console
         console.log(JSON.stringify({ tag: 'HMAC_DEBUG_STEP', ...obj }));
-      } catch { }
+      } catch {
+        // Ignore JSON stringify errors in debug logging
+      }
     };
 
     if (this.hasJwt(req)) {

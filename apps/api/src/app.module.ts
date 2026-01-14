@@ -45,6 +45,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { StorageModule } from './storage/storage.module';
 import { SeasonsModule } from './seasons/seasons.module';
 import { FeatureFlagModule } from './feature-flag/feature-flag.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CostModule } from './cost/cost.module';
 import { env } from '@scu/config';
 import { StorageController } from './storage/storage.controller';
@@ -59,6 +60,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     FeatureFlagModule, // Stage 11: Feature Flags（全局模块，优先加载）
     BillingModule, // Scaffolding: Billing System
     CopyrightModule, // Scaffolding: Copyright System

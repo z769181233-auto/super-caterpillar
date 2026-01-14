@@ -14,6 +14,8 @@ import { ProjectModule } from '../project/project.module';
 import { NovelImportModule } from '../novel-import/novel-import.module';
 import { PublishModule } from '../publish/publish.module';
 
+import { Stage1VerificationHook } from './hooks/stage1-verification.hook';
+
 @Module({
   imports: [
     PrismaModule,
@@ -29,7 +31,7 @@ import { PublishModule } from '../publish/publish.module';
     PublishModule,
   ],
   controllers: [OrchestratorController, OrchestratorMonitorController],
-  providers: [OrchestratorService],
+  providers: [OrchestratorService, Stage1VerificationHook],
   exports: [OrchestratorService],
 })
 export class OrchestratorModule { }

@@ -48,4 +48,11 @@ export class CreateJobDto {
   @IsOptional()
   @IsString()
   traceId?: string; // 追踪 ID
+
+  @IsOptional()
+  isVerification?: boolean;
+
+  @IsOptional()
+  @IsString()
+  dedupeKey?: string;
 }
