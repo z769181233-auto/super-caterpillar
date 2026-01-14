@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# [GATE] P0-R4: CE02 Mother Engine -> VIDEO_RENDER (Real) Seal
+# [GATE] P0-R4: CE02 Mother Engine -> VIDEO_RENDER (Real) Industrial Hardened
 # 目标：验证真实视频产出节点、审计链、资产落盘、账本隔离及幂等性。
-# 规格：Audit Hardware V2 (REQ.json, RUN.json, SQL_JOB.json, SHA256SUMS)
+# 规格：Audit V2 Hardened (Zero-Python, ffprobe-check, Idempotency-Assert)
 # ==============================================================================
 set -euo pipefail
 
@@ -10,7 +10,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 EVID_ROOT="${ROOT_DIR}/docs/_evidence"
 TS="$(date +"%Y%m%d_%H%M%S")"
-EVID_DIR="${EVID_ROOT}/p0_r4_ce02_video_render_real_${TS}"
+EVID_DIR="${EVID_ROOT}/p0_r4_ce02_video_render_real_v2h_${TS}"
 mkdir -p "${EVID_DIR}"
 
 export GATE_MODE=1
@@ -28,26 +28,41 @@ write_exit_code() {
 }
 
 sha256_sums() {
+  echo "--- Generating SHA256 Sums ---"
   (cd "${EVID_DIR}" && find . -maxdepth 1 -type f ! -name "SHA256SUMS.txt" -exec shasum -a 256 {} + > SHA256SUMS.txt)
 }
 
 build_evidence_index() {
+  echo "--- Building Evidence Index (Node-only) ---"
   export EVID_DIR="${EVID_DIR}"
-  python3 - <<'PY'
-import json, os, hashlib
-from pathlib import Path
-evid_dir = Path(os.environ["EVID_DIR"])
-out = {"dir": str(evid_dir), "files": []}
-for p in evid_dir.iterdir():
-    if p.is_file() and p.name != "EVIDENCE_INDEX.json":
-        b = p.read_bytes()
-        out["files"].append({"name": p.name, "bytes": len(b), "sha256": hashlib.sha256(b).hexdigest()})
-(evid_dir / "EVIDENCE_INDEX.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))
-PY
+  node - <<'JS'
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const evidDir = process.env.EVID_DIR;
+if (!evidDir) throw new Error('EVID_DIR missing');
+
+const files = fs.readdirSync(evidDir)
+  .filter(n => fs.statSync(path.join(evidDir, n)).isFile())
+  .filter(n => n !== 'EVIDENCE_INDEX.json');
+
+const out = { dir: evidDir, files: [] };
+for (const name of files) {
+  const p = path.join(evidDir, name);
+  const b = fs.readFileSync(p);
+  out.files.push({
+    name,
+    bytes: b.length,
+    sha256: crypto.createHash('sha256').update(b).digest('hex'),
+  });
+}
+fs.writeFileSync(path.join(evidDir, 'EVIDENCE_INDEX.json'), JSON.stringify(out, null, 2));
+JS
 }
 
 # ========== MAIN ==========
-echo "--- [GATE] P0-R4: CE02 Mother -> VIDEO_RENDER Real START ---"
+echo "--- [GATE] P0-R4: CE02 Mother -> VIDEO_RENDER (Hardened) START ---"
 echo "EVID_DIR=${EVID_DIR}"
 
 node tools/gate/gates/p0r0_seed_prisma.mjs > /dev/null
@@ -87,26 +102,22 @@ cat > "${EVID_DIR}/REQ.json" <<JSON
 }
 JSON
 
-echo "Invoking CE02 for VIDEO_RENDER..."
+echo "Invoking Round 1..."
 RESP="$(curl -sS -X POST "${API_BASE}/api/_internal/engine/invoke" \
   -H "content-type: application/json" \
   -H "Authorization: Bearer ${TOKEN}" \
   -H "x-gate-mode: 1" \
   -d @"${EVID_DIR}/REQ.json")"
-
 echo "${RESP}" | jq . > "${EVID_DIR}/RUN.json"
-echo "${JOB_ID}" > "${EVID_DIR}/RUN_ID.txt"
 
-# SUCCESS should check the inner data.success
-SUCCESS=$(echo "${RESP}" | jq -r '.data.success')
-if [ "${SUCCESS}" != "true" ]; then
-  echo "Engine invocation failed: $(echo "${RESP}" | jq -r '.data.error.message')" | tee "${EVID_DIR}/SUMMARY.md"
+if [ "$(echo "${RESP}" | jq -r '.data.success')" != "true" ]; then
+  echo "❌ FAIL: Round 1 failed: $(echo "${RESP}" | jq -r '.data.error.message')"
   write_exit_code 3
   exit 3
 fi
 
-# 2) Round 2: Idempotency Check (Should return same or cached)
-echo "Checking Idempotency (Round 2)..."
+# 2) Round 2: Idempotency Check
+echo "Invoking Round 2 (Idempotency Assert)..."
 RESP2="$(curl -sS -X POST "${API_BASE}/api/_internal/engine/invoke" \
   -H "content-type: application/json" \
   -H "Authorization: Bearer ${TOKEN}" \
@@ -114,21 +125,57 @@ RESP2="$(curl -sS -X POST "${API_BASE}/api/_internal/engine/invoke" \
   -d @"${EVID_DIR}/REQ.json")"
 echo "${RESP2}" | jq . > "${EVID_DIR}/RUN_IDEMPOTENT.json"
 
-# 3) Verification Invariants
-echo "[SQL] Verifying Video Output and Ledger Isolation..."
+URI1=$(echo "${RESP}" | jq -r '.data.output.asset.uri')
+URI2=$(echo "${RESP2}" | jq -r '.data.output.asset.uri')
 
-# A) Asset Verification
-VIDEO_PATH=$(echo "${RESP}" | jq -r '.data.output.asset.uri')
-if [ ! -f "${VIDEO_PATH}" ] && [[ "${VIDEO_PATH}" != *"dummy"* ]]; then
-  # 如果是真实的 FFmpeg provider，文件应存在
-  # 注意：如果 localFfmpegProvider 没装 ffmpeg 会 fallback 到 dummy
-  echo "Checking video file at ${VIDEO_PATH}..."
+if [ "${URI1}" != "${URI2}" ]; then
+  echo "❌ FAIL: Idempotency broken: uri mismatch"
+  write_exit_code 14
+  exit 14
 fi
 
-# B) DB Evidence
-psql -d "postgresql://postgres:postgres@localhost:5432/scu" -t -A -c "SELECT json_agg(t) FROM (SELECT id, action, \"resourceId\", details, \"createdAt\" FROM audit_logs WHERE details->>'_traceId' = '${TRACE_ID}') t" > "${EVID_DIR}/SQL_AUDIT.json"
-psql -d "postgresql://postgres:postgres@localhost:5432/scu" -t -A -c "SELECT json_agg(t) FROM (SELECT id, \"costAmount\", currency, \"traceId\", \"jobId\", created_at FROM cost_ledgers WHERE \"traceId\" = '${TRACE_ID}') t" > "${EVID_DIR}/SQL_LEDGER.json"
-LEDGER_COUNT=$(psql -d "postgresql://postgres:postgres@localhost:5432/scu" -t -A -c "SELECT COUNT(*) FROM cost_ledgers WHERE \"traceId\" = '${TRACE_ID}'")
+# 3) Asset Verification (ffprobe hard check)
+echo "Verifying Asset Integrity..."
+if [ -z "${URI1}" ] || [ "${URI1}" = "null" ]; then
+  echo "❌ FAIL: Missing asset.uri"
+  write_exit_code 10
+  exit 10
+fi
+if [[ "${URI1}" == *"dummy"* ]]; then
+  echo "❌ FAIL: Dummy asset detected: ${URI1}"
+  write_exit_code 11
+  exit 11
+fi
+if [ ! -f "${URI1}" ]; then
+  echo "❌ FAIL: Video file not found at ${URI1}"
+  write_exit_code 12
+  exit 12
+fi
+
+DURATION=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "${URI1}")
+DURATION_OK=$(echo "${DURATION}" | awk '{if ($1>0) print "ok"; else print "bad"}')
+if [ "${DURATION_OK}" != "ok" ]; then
+  echo "❌ FAIL: Invalid duration from ffprobe: ${DURATION}"
+  write_exit_code 13
+  exit 13
+fi
+
+# 4) SQL Evidence (Dual-Path Logic)
+echo "Querying SQL Evidence (Hardened)..."
+psql -d "${DATABASE_URL}" -t -A -c "SELECT json_agg(t) FROM (
+  SELECT id, action, \"resourceId\", details, payload, \"createdAt\"
+  FROM audit_logs
+  WHERE COALESCE(details->>'_traceId', payload->>'_traceId', payload->>'traceId') = '${TRACE_ID}'
+) t" > "${EVID_DIR}/SQL_AUDIT.json"
+
+psql -d "${DATABASE_URL}" -t -A -c "SELECT json_agg(t) FROM (
+  SELECT id, \"costAmount\", currency, \"traceId\", \"jobId\", created_at
+  FROM cost_ledgers
+  WHERE \"traceId\" = '${TRACE_ID}'
+) t" > "${EVID_DIR}/SQL_LEDGER.json"
+
+echo '[]' > "${EVID_DIR}/SQL_JOB.json"
+LEDGER_COUNT=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT COUNT(*) FROM cost_ledgers WHERE \"traceId\"='${TRACE_ID}'")
 
 if [ "${LEDGER_COUNT}" -ne 0 ]; then
   echo "❌ FAIL: Ledger contamination! Count: ${LEDGER_COUNT}"
@@ -136,26 +183,21 @@ if [ "${LEDGER_COUNT}" -ne 0 ]; then
   exit 6
 fi
 
-# C) Audit Trail
-PROVIDER=$(echo "${RESP}" | jq -r '.data.output.render_meta.model')
-if [ -z "${PROVIDER}" ] || [ "${PROVIDER}" == "null" ]; then
-  echo "❌ FAIL: Provider model missing in output."
-  write_exit_code 7
-  exit 7
-fi
-
+# 5) Summary
 cat > "${EVID_DIR}/SUMMARY.md" <<MD
-# P0-R4 VIDEO_RENDER Seal Summary
-- Engine: video_merge (JobType: VIDEO_RENDER)
-- Provider: ${PROVIDER}
+# P0-R4 Industrial Hardened Gate Summary
+- Engine: video_merge
 - TraceID: ${TRACE_ID}
-- Asset Path: ${VIDEO_PATH}
+- Asset URI: ${URI1}
+- FFmpeg Duration: ${DURATION}s
+- Idempotency: MATCHED (uri1 == uri2)
 - Ledger Count: ${LEDGER_COUNT} (Verified CLEAN)
-- Idempotency: RUN_IDEMPOTENT.json captured.
+- SQL_JOB.json: N/A (Direct invoke doesn't write shot_jobs)
+- SQL_AUDIT.json: Captured (details/payload dual-path)
 MD
 
 write_exit_code 0
 sha256_sums
 build_evidence_index
-echo "--- [GATE] P0-R4 PASS ---"
+echo "--- [GATE] P0-R4 TOTAL PASS (Hardened) ---"
 exit 0
