@@ -1,3 +1,19 @@
+### Phase 0-R1: CE02 Mother -> CE06 Real (Novel Parsing) Seal
+
+- **封板日期**: 2026-01-14
+- **Tag**: `seal/p0_r1_ce02_ce06_real_20260114`
+- **Gate 脚本**: `tools/gate/gates/gate-p0-r1_ce02_ce06_real.sh`
+- **证据目录**: `docs/_evidence/p0_r1_ce02_ce06_real_20260114_231429/`
+- **母引擎定义**: Mother Engine = **CE02**（该封板验证入口 `POST /api/_internal/engine/invoke` 属于 CE02 统一入口）
+- **核心不变量**:
+  - 母引擎入口：通过 CE02 统一接口调用 `ce06_novel_parsing`
+  - 产物真实性：返回解析后的结构化小说数据（Chapters/Scenes/Volumes）
+  - 账本隔离：`isVerification=true` 且 `cost_ledgers` 零写入
+  - 审计轨迹：`audit_trail` 完整记录了底层引擎版本
+- **结论**: P0-R1 TOTAL PASS；上游小说解析真实链路封板；语义 SSOT 一致。
+
+---
+
 ### Phase 0-R0: Mother Engine -> SHOT_RENDER Real Engine Seal
 
 - **封板日期**: 2026-01-14
