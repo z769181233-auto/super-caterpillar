@@ -90,7 +90,7 @@ fi
 VOL_COUNT=$(echo "${RESP}" | jq '.data.output.volumes | length')
 AUDIT_ENGINE=$(echo "${RESP}" | jq -r '.data.output.audit_trail.engine_version')
 
-psql "${DATABASE_URL}" -t -A -c "SELECT json_agg(t) FROM (SELECT id, status, type, is_verification, \"traceId\", \"createdAt\" FROM shot_jobs WHERE id = '${JOB_ID}') t" > "${EVID_DIR}/SQL_JOB.json"
+psql "${DATABASE_URL}" -t -A -c "SELECT json_agg(t) FROM (SELECT id, action, \"resourceId\", details, \"createdAt\" FROM audit_logs WHERE details->>'_traceId' = '${TRACE_ID}') t" > "${EVID_DIR}/SQL_AUDIT.json"
 psql "${DATABASE_URL}" -t -A -c "SELECT json_agg(t) FROM (SELECT id, \"costAmount\", currency, \"traceId\", \"jobId\", created_at FROM cost_ledgers WHERE \"traceId\" = '${TRACE_ID}') t" > "${EVID_DIR}/SQL_LEDGER.json"
 LEDGER_COUNT=$(psql "${DATABASE_URL}" -t -A -c "SELECT COUNT(*) FROM cost_ledgers WHERE \"traceId\" = '${TRACE_ID}'")
 

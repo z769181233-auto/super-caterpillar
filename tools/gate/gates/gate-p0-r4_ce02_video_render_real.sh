@@ -126,7 +126,7 @@ if [ ! -f "${VIDEO_PATH}" ] && [[ "${VIDEO_PATH}" != *"dummy"* ]]; then
 fi
 
 # B) DB Evidence
-psql -d "postgresql://postgres:postgres@localhost:5432/scu" -t -A -c "SELECT json_agg(t) FROM (SELECT id, status, type, is_verification, \"traceId\", \"createdAt\" FROM shot_jobs WHERE id = '${JOB_ID}') t" > "${EVID_DIR}/SQL_JOB.json"
+psql -d "postgresql://postgres:postgres@localhost:5432/scu" -t -A -c "SELECT json_agg(t) FROM (SELECT id, action, \"resourceId\", details, \"createdAt\" FROM audit_logs WHERE details->>'_traceId' = '${TRACE_ID}') t" > "${EVID_DIR}/SQL_AUDIT.json"
 psql -d "postgresql://postgres:postgres@localhost:5432/scu" -t -A -c "SELECT json_agg(t) FROM (SELECT id, \"costAmount\", currency, \"traceId\", \"jobId\", created_at FROM cost_ledgers WHERE \"traceId\" = '${TRACE_ID}') t" > "${EVID_DIR}/SQL_LEDGER.json"
 LEDGER_COUNT=$(psql -d "postgresql://postgres:postgres@localhost:5432/scu" -t -A -c "SELECT COUNT(*) FROM cost_ledgers WHERE \"traceId\" = '${TRACE_ID}'")
 

@@ -128,9 +128,12 @@ if [ "${SCORE}" == "null" ]; then
   exit 4
 fi
 
-# B) DB Evidence (SQL_JOB.json)
-echo "Querying DB for job status..."
-psql "${DATABASE_URL}" -t -A -c "SELECT json_agg(t) FROM (SELECT id, status, type, is_verification, \"traceId\", \"createdAt\" FROM shot_jobs WHERE id = '${JOB_ID}') t" > "${EVID_DIR}/SQL_JOB.json"
+# B) DB Evidence (SQL_AUDIT.json)
+# Note: For direct invoke, we capture audit_logs which is the SSOT for mother engine calls.
+echo "Querying DB for audit logs..."
+psql "${DATABASE_URL}" -t -A -c "SELECT json_agg(t) FROM (SELECT id, action, \"resourceId\", details, \"createdAt\" FROM audit_logs WHERE details->>'_traceId' = '${TRACE_ID}') t" > "${EVID_DIR}/SQL_AUDIT.json"
+
+# C) Ledger Isolation (SQL_LEDGER.json)
 psql "${DATABASE_URL}" -t -A -c "SELECT json_agg(t) FROM (SELECT id, \"costAmount\", currency, \"traceId\", \"jobId\", created_at FROM cost_ledgers WHERE \"traceId\" = '${TRACE_ID}') t" > "${EVID_DIR}/SQL_LEDGER.json"
 LEDGER_COUNT=$(psql "${DATABASE_URL}" -t -A -c "SELECT COUNT(*) FROM cost_ledgers WHERE \"traceId\" = '${TRACE_ID}'")
 
