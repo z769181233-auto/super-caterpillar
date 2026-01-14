@@ -15,7 +15,7 @@
 
 ### Gate Script
 - **Path**: `tools/gate/gates/gate-stage1_novel_to_prod_video.sh`
-- **Commit SHA**: (To be filled by git commit)
+- **Commit SHA**: `55286c1d` (seal_stage1_s1-sec-patch_20260114)
 
 ---
 
