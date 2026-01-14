@@ -53,9 +53,12 @@ echo "EVID_DIR=${EVID_DIR}"
 node tools/gate/gates/p0r0_seed_prisma.mjs > /dev/null
 TOKEN=$(pnpm --prefix apps/api exec node -e "const jwt = require('jsonwebtoken'); console.log(jwt.sign({ sub: 'user-p0r0-gate', email: 'p0r0-gate@test.com', orgId: 'org-p0r0-gate', tier: 'PRO' }, process.env.JWT_SECRET, { expiresIn: '1h' }))")
 
-# 0) Create dummy images
-mkdir -p /tmp/scu_gate_assets
-python3 -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='black'); img.save('/tmp/scu_gate_assets/f1.png'); img.save('/tmp/scu_gate_assets/f2.png')"
+# 0) Create dummy images (FFmpeg-only, no Python dependency)
+FRAME_DIR="/tmp/scu_gate_assets"
+mkdir -p "${FRAME_DIR}"
+ffmpeg -hide_banner -loglevel error -y \
+  -f lavfi -i "color=c=black:s=100x100:r=24:d=0.2" \
+  -frames:v 4 "${FRAME_DIR}/frame_%04d.png"
 
 # 1) Round 1: Trigger Real Video Render
 TRACE_ID="gate-p0r4-video-${TS}"
@@ -67,7 +70,12 @@ cat > "${EVID_DIR}/REQ.json" <<JSON
   "engineKey": "video_merge",
   "payload": {
     "jobId": "${JOB_ID}",
-    "framePaths": ["/tmp/scu_gate_assets/f1.png", "/tmp/scu_gate_assets/f2.png"]
+    "framePaths": [
+      "${FRAME_DIR}/frame_0001.png",
+      "${FRAME_DIR}/frame_0002.png",
+      "${FRAME_DIR}/frame_0003.png",
+      "${FRAME_DIR}/frame_0004.png"
+    ]
   },
   "metadata": {
     "isVerification": true,
