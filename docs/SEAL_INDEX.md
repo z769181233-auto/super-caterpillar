@@ -1,6 +1,16 @@
-# Seal Index
+### Phase 0-R0: Mother Engine -> SHOT_RENDER Real Engine Seal
 
-本文档记录 Super Caterpillar / 毛毛虫宇宙 项目的阶段性封板信息。
+- **封板日期**: 2026-01-14
+- **Tag**: `seal/p0_r0_mother_shot_render_real_20260114`
+- **Gate 脚本**: `tools/gate/gates/gate-p0-r0_mother_shot_render_real.sh`
+- **证据目录**: `docs/_evidence/p0_r0_mother_shot_render_real_20260114_225032/`
+- **母引擎定义**: Mother Engine = **CE02**（该封板验证入口 `POST /api/_internal/engine/invoke` 属于 CE02 统一入口）
+- **核心不变量**:
+  - 母引擎入口：`POST /api/_internal/engine/invoke` 带 JWT 鉴权
+  - 真实集成：`ShotRenderLocalAdapter` 调用 `@scu/engines-shot-render` (sd15-mps-pil-shim)
+  - 隔离保护：`isVerification=true` 强制不入账 (`cost_ledgers`)
+  - 费用控制：验证作业受 `VERIFICATION_COST_CAP_USD` 硬限额保护
+- **结论**: P0-R0 TOTAL PASS；真实引擎接入完成；验证链路账本孤立化达成；证据固化且哈希校验一致。
 
 ---
 
