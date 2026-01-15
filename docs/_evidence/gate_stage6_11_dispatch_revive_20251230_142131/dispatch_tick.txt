@@ -1,5 +1,0 @@
-[36mapps/api[39m [96mdev[39m: [14:21:40.816] [32mINFO[39m (44407): [36mOrchestratorController {/api/orchestrator}:[39m
-[36mapps/api[39m [96mdev[39m: [14:21:40.816] [32mINFO[39m (44407): [36mMapped {/api/orchestrator/dispatch, POST} route[39m
-[36mapps/api[39m [96mdev[39m: [14:21:40.816] [32mINFO[39m (44407): [36mMapped {/api/orchestrator/stats, GET} route[39m
-[36mapps/api[39m [96mdev[39m: [14:21:40.816] [32mINFO[39m (44407): [36mOrchestratorMonitorController {/api/orchestrator/monitor}:[39m
-[36mapps/api[39m [96mdev[39m: [14:21:40.816] [32mINFO[39m (44407): [36mMapped {/api/orchestrator/monitor/stats, GET} route[39m

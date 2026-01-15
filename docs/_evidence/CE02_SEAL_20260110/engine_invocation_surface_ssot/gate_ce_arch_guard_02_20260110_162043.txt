@@ -1,5 +1,0 @@
---- [GATE] CE-ARCH-GUARD-02_ENGINE_INVOCATION_SURFACE_SSOT PASS ---
-timestamp: 2026-01-10T16:20:43+0700
-repo_json: docs/ssot/engine_invocation_surface_ssot.json
-scan_ranges: apps/api/src, apps/workers/src
-notes: volatile info is logged here only; SSOT JSON is deterministic.

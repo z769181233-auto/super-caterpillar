@@ -1,4 +1,0 @@
-ERROR:  column "project_id" does not exist
-LINE 1: SELECT * FROM novel_analysis_jobs WHERE project_id='PROJECT_...
-                                                ^
-HINT:  Perhaps you meant to reference the column "novel_analysis_jobs.projectId".

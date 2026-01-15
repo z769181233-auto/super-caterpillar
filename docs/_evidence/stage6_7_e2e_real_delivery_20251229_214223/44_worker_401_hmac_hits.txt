@@ -1,3 +1,0 @@
-27:[Worker HMAC] POST /api/workers/register nonce=211aa18e... timestamp=1767019355623 bodyString={"workerId":"local-worker","name":"local-worker","capabilities":{"tags":["CE06_PARSE","CE03_DENSITY","CE04_ENRICH"],"supportedModels":[],"maxBatchSize":1},"supportedJobTypes":["CE06_NOVEL_PARSING","CE03_VISUAL_DENSITY","CE04_VISUAL_ENRICHMENT","NOVEL_ANALYSIS"]}
-28:[Worker HTTP Error] POST http://localhost:3001/api/workers/register 401 无效的 API Key
-33:  'X-Signature': '0e4f097b4b36f369...'

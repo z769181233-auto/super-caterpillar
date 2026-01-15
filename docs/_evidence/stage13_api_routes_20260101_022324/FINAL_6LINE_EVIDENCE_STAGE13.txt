@@ -1,7 +1,0 @@
-=== Stage-13 CE01/CE02 API Routes Evidence ===
-EVID_DIR: docs/_evidence/stage13_api_routes_20260101_022324
-[PASS] Typecheck: 5/5 tasks successful
-[PASS] API Smoke Test: CE01/CE02 idempotency verified
-CONTROLLERS: ce01.controller.ts + ce02.controller.ts (fixed requestId + logic)
-DTOs: GenerateReferenceSheetDto, EnsureIdentityLockDto, InheritToShotDto
-ROUTES: /api/ce01/reference-sheet, /api/ce02/identity-lock

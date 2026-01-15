@@ -1,6 +1,0 @@
-1) service_exists: PASS
-2) rule_split_fallback_pass: PASS
-3) persisted_novel_tables_pass: PASS
-4) audit_log_written_pass: PASS
-5) typecheck_pass: PASS
-6) gate_core_01: PASSED

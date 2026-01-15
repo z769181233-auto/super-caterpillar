@@ -1,4 +1,0 @@
-[22:05:47] EVID_ROOT=docs/_evidence/full_audit_20251230_220547
-[22:05:47] API_PORT=3001 API_BASE=http://127.0.0.1:3001
-[22:05:47] === STEP 01_git_status (timeout=120s) ===
-[22:05:47] [FAIL] STEP 01_git_status rc=1

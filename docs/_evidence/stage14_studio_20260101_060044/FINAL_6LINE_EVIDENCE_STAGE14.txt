@@ -1,7 +1,0 @@
-=== Stage-14 Studio CE01/CE02 Integration Evidence ===
-EVID_DIR: docs/_evidence/stage14_studio_20260101_060044
-[PASS] Typecheck: All type checks successful
-[PASS] Web Build: apps/web compiled successfully
-[PASS] Studio Smoke Test: CE01/CE02 HTTP calls verified
-API Client: ce01Api + ce02Api added to apps/web/src/lib/apiClient.ts (with signed:true)
-UI: /studio/characters/[id] provides Reference Sheet + Identity Lock blocks

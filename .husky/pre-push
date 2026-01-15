@@ -1,8 +1,5 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
 
-set -e
-
-echo "[pre-push] Running duplicate implementation guard..."
-pnpm -w exec tsx tools/smoke/guard/no_duplicate_impls.ts
-echo "[pre-push] PASS"
+bash tools/gate/gates/gate-post_sealed_governance.sh

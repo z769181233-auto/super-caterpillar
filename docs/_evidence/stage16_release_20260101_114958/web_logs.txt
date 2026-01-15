@@ -1,7 +1,0 @@
-web-1  | ! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-9.1.0.tgz
-web-1  | Scope: 2 of 6 workspace projects
-web-1  | apps/web start$ next start -p 3000
-web-1  | apps/web start:   ▲ Next.js 14.2.33
-web-1  | apps/web start:   - Local:        http://localhost:3000
-web-1  | apps/web start:  ✓ Starting...
-web-1  | apps/web start:  ✓ Ready in 337ms

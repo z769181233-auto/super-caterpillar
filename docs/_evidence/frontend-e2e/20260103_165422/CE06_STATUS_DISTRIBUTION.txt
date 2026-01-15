@@ -1,5 +1,0 @@
-  status  | count 
-----------+-------
- RETRYING |     4
-(1 row)
-

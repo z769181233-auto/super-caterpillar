@@ -1,3 +1,0 @@
--[ RECORD 1 ]---+--
-n_shotjob_after | 0
-

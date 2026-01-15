@@ -1,6 +1,0 @@
-[gate] loading env...
-[load_env] scanning env files...
-[load_env] skip (missing): /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/.env.local
-[load_env] skip (missing): /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/.env
-[load_env] sourcing: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.env.local
-[load_env] skip (missing): /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.env

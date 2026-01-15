@@ -1,2 +1,0 @@
-[20251229_213325] EVID_DIR=docs/_evidence/stage6_7_e2e_real_delivery_20251229_213325
-[20251229_213325] RENDER_MODE=real

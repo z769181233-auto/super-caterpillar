@@ -1,1 +1,0 @@
--rw-r--r--@ 1 adam  staff  43966 12 29 15:06 packages/database/prisma/schema.prisma

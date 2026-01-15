@@ -1,7 +1,0 @@
-🚀 Starting S4-6 Verification (Real Video Rendering)...
-✅ FFmpeg available
-Fixtures: Project=test-s46-1768132370412 RunId=run-1768132370412
-✅ Generated 24 Real PNG frames
-Submitted VIDEO_RENDER job 2611b6e9-70d4-4d1e-acbd-706af0c3a64f. Waiting...
-VERIFICATION FAILED: Error: Timeout waiting for VIDEO_RENDER
-    at main (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/verify_s4_6.ts:249:29)

@@ -1,5 +1,0 @@
-GATE_STATUS: PASSED
-ASSET_PATH: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p0r0/shot-p0r0-gate_42_259ad5d11e99.png
-SHA256: 07e8df8ae413409dcb8f22176b116106400f921ef95ff2bcf78caac1225c7d63
-ENGINE_KEY: shot_render_real
-TS: 2026年 1月 9日 星期五 14时31分22秒 +07

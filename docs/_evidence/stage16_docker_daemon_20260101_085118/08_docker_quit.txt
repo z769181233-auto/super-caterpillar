@@ -1,2 +1,0 @@
-== quitting docker desktop ==
-== wait 8s ==

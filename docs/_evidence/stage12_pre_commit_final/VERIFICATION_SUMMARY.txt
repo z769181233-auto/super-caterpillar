@@ -1,8 +1,0 @@
-=== Stage-12 Pre-Commit Verification Summary ===
-
-✅ Typecheck: 5/5 tasks successful
-✅ Gate-120 (CE01 Reference Sheet): PASS
-✅ Gate-121 (CE02 Identity Lock): PASS  
-✅ Migrations: 2 found, Database schema is up to date
-
-Pending: Gate-111 verification

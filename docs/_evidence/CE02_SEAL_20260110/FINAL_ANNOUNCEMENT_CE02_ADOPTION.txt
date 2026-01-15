@@ -1,5 +1,0 @@
-CE02 Mother Engine: SEALED & ADOPTED (2026-01-10)
-- Scope: CE03 / CE04 / SHOT_RENDER
-- Change: Worker EngineHubClient remote proxy -> API /_internal/engine/invoke (HMAC); ce-core-processor removed direct selectors
-- Gate: gate-ce02_mother_engine.sh PASS; gate-ce03_ce04_mother_engine_adoption.sh PASS
-- Evidence: docs/_evidence/CE02_SEAL_20260110/ (see adoption/)

@@ -1,1 +1,0 @@
-{"success":false,"error":{"code":"4003","message":"Missing required security headers (X-Api-Key, X-Nonce, X-Timestamp, X-Content-SHA256, X-Signature)"},"requestId":"0803907f-0b76-4887-848d-06c6311f6746","timestamp":"2026-01-12T14:54:20.109Z","path":"/api/assets/asset_gate_1768229659/secure-url","method":"GET"}

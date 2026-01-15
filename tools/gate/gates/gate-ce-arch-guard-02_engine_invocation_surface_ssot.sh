@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
 
 GATE_NAME="CE-ARCH-GUARD-02_ENGINE_INVOCATION_SURFACE_SSOT"
 EVID_DIR="docs/_evidence/CE02_SEAL_20260110/engine_invocation_surface_ssot"
@@ -43,8 +44,7 @@ jq . "$REPO_JSON" >/dev/null
 jq . "$TMP_JSON" >/dev/null
 
 # 4.2 Forbidden fields check (must never appear in SSOT JSON)
-FORBIDDEN_RE='generatedAt|timestamp|scanTimestamp|createdAt|updatedAt|hostMachine|hostname|userName|statistics|totalCallSites|totalEngineKeys|duration|scanDuration'
-if grep -E "$FORBIDDEN_RE" "$REPO_JSON" >/dev/null; then
+FORBIDDEN_RE=if grep -E "$FORBIDDEN_RE" "$REPO_JSON" >/dev/null; then
   echo "[FAIL] SSOT contains non-deterministic fields (forbidden)."
   exit 21
 fi
@@ -54,9 +54,7 @@ if grep -E "$FORBIDDEN_RE" "$TMP_JSON" >/dev/null; then
 fi
 
 # 4.3 Technical debt allowlist hard cap (set equality; order irrelevant)
-REPO_ALLOWLIST="$(jq -r '.technicalDebt.allowlist | sort | @json' "$REPO_JSON")"
-TMP_ALLOWLIST="$(jq -r '.technicalDebt.allowlist | sort | @json' "$TMP_JSON")"
-if [[ "$REPO_ALLOWLIST" != "$TMP_ALLOWLIST" ]]; then
+REPO_ALLOWLIST="$(jq -r TMP_ALLOWLIST="$(jq -r if [[ "$REPO_ALLOWLIST" != "$TMP_ALLOWLIST" ]]; then
   echo "[FAIL] Technical debt allowlist changed (expansion prohibited)."
   echo "Repo: $REPO_ALLOWLIST"
   echo "Tmp : $TMP_ALLOWLIST"
@@ -70,8 +68,7 @@ if ! diff -u "$REPO_JSON" "$TMP_JSON" >/dev/null; then
   echo "       pnpm -w -s ts-node tools/ssot/gen_engine_invocation_surface_ssot.ts"
   echo
   echo "[DIFF] (first 200 lines)"
-  diff -u "$REPO_JSON" "$TMP_JSON" | sed -n '1,200p'
-  exit 41
+  diff -u "$REPO_JSON" "$TMP_JSON" | sed -n   exit 41
 fi
 
 echo "[DIFF] SSOT synchronized ✓"
@@ -81,8 +78,7 @@ TS="$(date +%Y%m%d_%H%M%S)"
 EVID_FILE="$EVID_DIR/gate_ce_arch_guard_02_${TS}.txt"
 {
   echo "--- [GATE] ${GATE_NAME} PASS ---"
-  echo "timestamp: $(date '+%Y-%m-%dT%H:%M:%S%z')"
-  echo "repo_json: ${REPO_JSON}"
+  echo "timestamp: $(date   echo "repo_json: ${REPO_JSON}"
   echo "scan_ranges: apps/api/src, apps/workers/src"
   echo "notes: volatile info is logged here only; SSOT JSON is deterministic."
 } > "$EVID_FILE"

@@ -1,8 +1,0 @@
-b41352a fix(job): clear lastError on SUCCESS + auto-retry RETRYING jobs
-371db1a fix(ce01): use findFirst+update pattern instead of non-existent projectId_name constraint
-e1dc850 fix(ce-registry): extract CE## pattern from jobType for dynamic processor loading
-a227232 Revert "fix(ce01): add CE01_REFERENCE_SHEET handler in worker main.ts"
-b25ac48 fix(ce01): add CE01_REFERENCE_SHEET handler in worker main.ts
-6bcd63d fix(worker): force advertise CE01_REFERENCE_SHEET in supportedJobTypes
-1ff6f77 fix(worker): advertise CE01_REFERENCE_SHEET in supportedJobTypes
-61b7a0e Revert "fix(worker): add CE01_REFERENCE_SHEET to supportedJobTypes for job claiming"

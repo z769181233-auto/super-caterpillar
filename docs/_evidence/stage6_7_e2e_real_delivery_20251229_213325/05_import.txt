@@ -1,3 +1,0 @@
-[20251229_213325] Triggering Import...
-Import Response: {"message":"No engine available for job type: NOVEL_ANALYSIS","error":"Bad Request","statusCode":400}
-FAIL: Import failed

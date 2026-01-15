@@ -1,4 +1,0 @@
-[gate] env check...
-[FAIL] DATABASE_URL is required but not set
-[WARN] JWT_SECRET is empty/undefined (may be required by config)
-[gate] Abort before starting API (missing required env).

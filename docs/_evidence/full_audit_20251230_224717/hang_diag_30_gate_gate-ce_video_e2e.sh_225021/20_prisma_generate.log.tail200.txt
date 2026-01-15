@@ -1,4 +1,0 @@
-
-> database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
-> tsc -p tsconfig.json && cp -r src/generated dist/
-

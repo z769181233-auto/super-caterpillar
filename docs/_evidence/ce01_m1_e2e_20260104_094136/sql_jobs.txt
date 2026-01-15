@@ -1,4 +1,0 @@
- id | type | status | createdAt | engineKey | binding_status 
-----+------+--------+-----------+-----------+----------------
-(0 rows)
-

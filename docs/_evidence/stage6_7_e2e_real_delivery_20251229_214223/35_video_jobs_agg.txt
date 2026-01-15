@@ -1,3 +1,0 @@
-ERROR:  column "project_id" does not exist
-LINE 1: ...ELECT status, COUNT(*) AS n FROM video_jobs WHERE project_id...
-                                                             ^

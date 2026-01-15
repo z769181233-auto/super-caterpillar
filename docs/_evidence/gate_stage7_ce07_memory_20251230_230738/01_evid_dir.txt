@@ -1,1 +1,0 @@
-[gate] EVID_DIR=docs/_evidence/gate_stage7_ce07_memory_20251230_230738

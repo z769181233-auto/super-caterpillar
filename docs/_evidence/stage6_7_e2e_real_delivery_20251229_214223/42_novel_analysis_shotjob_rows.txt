@@ -1,6 +1,0 @@
--[ RECORD 1 ]-----------------------------------
-id        | 4e1827a5-9e13-4c02-bd09-e99f5efd98a9
-type      | NOVEL_ANALYSIS
-status    | PENDING
-projectId | proj-s67
-

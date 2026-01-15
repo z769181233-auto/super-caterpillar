@@ -1,6 +1,0 @@
-{"ts":"2026-01-12T07:42:05.122Z","type":"verify_start","startTime":"2026-01-12T07:42:05.122Z"}
-{"ts":"2026-01-12T07:42:05.149Z","type":"data_setup_complete","projectId":"bc37411a-6797-4a79-baf2-1cf339b0663d","apiKey":"ak_test_e3a03ea2-45f4-4ec2-856e-bc09ebda58d4"}
-{"ts":"2026-01-12T07:42:05.219Z","type":"pipeline_triggered","jobId":"40525016-f6f3-4df5-8dff-d40398d1c1f8","traceId":"ce_pipeline_0e126b59-3a3d-46da-b7ce-e1c981f432a3"}
-{"ts":"2026-01-12T07:42:27.277Z","type":"TIMELINE_RENDER","error":"[TimelineRender] Fail-fast: frames.txt not found for shotId=c04c02b3-5eec-452a-aa25-68c6aac9c494 at /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.runtime/frames/c04c02b3-5eec-452a-aa25-68c6aac9c494/frames.txt"}
-{"ts":"2026-01-12T07:42:27.278Z","type":"verify_error","message":"Pipeline logic failure at TIMELINE_RENDER","status":"FAIL_LOGIC"}
-{"ts":"2026-01-12T07:42:27.278Z","type":"verify_end","status":"FAIL_LOGIC","endTime":"2026-01-12T07:42:27.278Z"}

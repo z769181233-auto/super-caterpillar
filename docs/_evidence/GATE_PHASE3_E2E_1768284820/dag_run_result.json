@@ -1,1 +1,0 @@
-{"message":"Missing auth header (JWT or HMAC required)","error":"Unauthorized","statusCode":401}

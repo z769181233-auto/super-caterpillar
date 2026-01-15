@@ -1,7 +1,0 @@
-CORE-02 PIPELINE VERIFICATION
-Date: 2026年 1月 2日 星期五 15时42分51秒 +07
-TraceID: trace_core02_1767343366
-JobID: 37ef02ce-573e-48d6-8d6b-78b5828f45e3
-Status: SUCCEEDED
-AuditLogs: 5
-Result: PASS

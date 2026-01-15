@@ -1,4 +1,0 @@
-598:[21:42:31.440] INFO (52756): [TaskCallback] Registered hook for jobType: CE03_VISUAL_DENSITY
-600:[21:42:31.440] INFO (52756): [TaskCallback] Registered hook for jobType: CE04_VISUAL_ENRICHMENT
-604:[21:42:31.440] INFO (52756): [TaskCallback] Registered hook for jobType: CE03_VISUAL_DENSITY
-606:[21:42:31.440] INFO (52756): [TaskCallback] Registered hook for jobType: CE04_VISUAL_ENRICHMENT

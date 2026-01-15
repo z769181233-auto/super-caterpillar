@@ -1,9 +1,0 @@
-
-> database@1.0.0 prisma /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
-> prisma "migrate" "resolve" "--applied" "stage12_baseline_20260101003755"
-
-Prisma schema loaded from prisma/schema.prisma
-Datasource "db": PostgreSQL database "scu", schema "public" at "localhost:5432"
-
-Migration stage12_baseline_20260101003755 marked as applied.
-

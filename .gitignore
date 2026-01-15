@@ -48,11 +48,10 @@ reports/stability/*.md
 .data/
 uploads/
 
-# Gate 自动化运行证据(保留在本地,不提交)
-docs/_evidence/*_hardpass_*/
-docs/_evidence/hmac_regression_*/
-docs/_evidence/ssot_regression_hardpass_*/
-docs/_evidence/p1_web_audit/
+# Gate 自动化运行证据(全面忽略，仅保留正式归档脚本产出的必要索引)
+docs/_evidence/*
+!docs/_evidence/.gitkeep
+!docs/_evidence/README.md
 
 # --- runtime artifacts (MUST NOT COMMIT) ---
 .runtime/

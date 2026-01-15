@@ -1,7 +1,0 @@
-Pager usage is off.
-                  id                  | status  | workerId |        updatedAt        
---------------------------------------+---------+----------+-------------------------
- a53aff4d-bbcd-437a-bfa7-2d239845a14b | PENDING |          | 2026-01-04 11:36:16.858
-(1 row)
-
-UPDATE 1
