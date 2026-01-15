@@ -6,7 +6,8 @@
  */
 
 import { replicateProvider, RenderResult } from './replicate.provider';
-export { localMpsProvider } from './local_mps.provider';
+import { localMpsProvider } from './local_mps.provider';
+export { localMpsProvider };
 
 export interface ShotRenderProvider {
   key: 'replicate' | 'hf' | 'local' | 'local_mps';
@@ -26,6 +27,7 @@ export { RenderResult };
 // Provider Registry
 const providers: Record<string, ShotRenderProvider> = {
   replicate: replicateProvider,
+  local_mps: localMpsProvider,
   // hf: hfProvider,  // 占位 - 未来实现
   // local: localProvider,  // 占位 - 未来实现
 };
@@ -61,3 +63,4 @@ export async function renderWithProvider(
   const provider = getProvider();
   return provider.render(prompt, options);
 }
+console.log('[DEBUG] SHOT_RENDER_PROVIDER env:', process.env.SHOT_RENDER_PROVIDER);

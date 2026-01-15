@@ -1,0 +1,200 @@
+apps/workers/src/worker-agent.ts:24:const API_KEY = env.workerApiKey; // HMAC 认证：API Key
+apps/workers/src/worker-agent.ts:25:const API_SECRET = env.workerApiSecret; // HMAC 认证：Secret
+apps/workers/src/worker-agent.ts:29:const apiClient = new ApiClient(API_BASE_URL.replace(/\/api\/?$/, ''), API_KEY, API_SECRET);
+apps/workers/src/worker-agent.ts:185:  console.log(`[Worker] API Key: ${API_KEY ? API_KEY.substring(0, 20) + '...' : 'NOT SET'}`);
+apps/workers/src/worker-agent.ts:186:  console.log(`[Worker] API Secret: ${API_SECRET ? 'SET' : 'NOT SET'}`);
+apps/workers/src/main.ts:48:if (!process.env.WORKER_API_KEY || !process.env.WORKER_API_SECRET) {
+apps/workers/src/main.ts:49:  console.error('[Worker] ❌ FATAL: Missing WORKER_API_KEY / SECRET. Aborting.');
+apps/workers/src/main.ts:123:    console.warn('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!');
+apps/workers/src/main.ts:125:    console.warn('[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.');
+apps/workers/src/main.ts:511:    console.warn('[Worker] ⚠️  API Key/Secret 未配置，Worker 可能无法通过 HMAC 认证');
+tools/debug/verify_billing_audit.ts:22:                // Based on BillingController code: timestamp: req.hmacTimestamp (Date)
+apps/workers/src/types/config.d.ts:29:    HMAC_TIMESTAMP_WINDOW: number;
+apps/workers/src/types/config.d.ts:30:    HMAC_SIGNATURE_ALGORITHM: string;
+apps/workers/src/api-client.ts:4: * 支持 HMAC 认证
+apps/workers/src/api-client.ts:22:function generateNonce(): string {
+apps/workers/src/api-client.ts:34: * 构建 HMAC 签名消息
+apps/workers/src/api-client.ts:49: * 计算 HMAC-SHA256 签名
+apps/workers/src/api-client.ts:91:    // 如果配置了 API Key 和 Secret，使用 HMAC 认证
+apps/workers/src/api-client.ts:95:      const nonce = generateNonce();
+apps/workers/src/api-client.ts:103:      // 4. 设置 HMAC 认证头
+apps/workers/src/api-client.ts:104:      headers['X-Api-Key'] = this.apiKey;
+apps/workers/src/api-client.ts:105:      headers['X-Nonce'] = nonce;
+apps/workers/src/api-client.ts:106:      headers['X-Timestamp'] = timestamp;
+apps/workers/src/api-client.ts:107:      headers['X-Signature'] = signature;
+apps/workers/src/api-client.ts:111:        `[Worker HMAC] ${method} ${path}`,
+apps/workers/src/api-client.ts:118:      console.warn('[Worker] ⚠️  Please set WORKER_API_KEY and WORKER_API_SECRET environment variables.');
+apps/workers/src/api-client.ts:140:          'X-Api-Key': headers['X-Api-Key']?.substring(0, 10) + '...',
+apps/workers/src/api-client.ts:141:          'X-Nonce': headers['X-Nonce']?.substring(0, 8) + '...',
+apps/workers/src/api-client.ts:142:          'X-Timestamp': headers['X-Timestamp'],
+apps/workers/src/api-client.ts:143:          'X-Signature': headers['X-Signature']?.substring(0, 16) + '...',
+apps/workers/src/api-client.ts:268:    // The `request` method handles HMAC signature using global generateNonce and computeSignature.
+tools/verify_hmac_dos.ts:41:        // 调用私有方法 saveNonce
+tools/verify_hmac_dos.ts:42:        await (service as any).saveNonce(`hmac:nonce:${nonce}`, timestamp);
+apps/workers/minimal-worker/index.ts:17:const API_KEY = process.env.API_KEY || '';
+apps/workers/minimal-worker/index.ts:18:const API_SECRET = process.env.API_SECRET || '';
+apps/workers/minimal-worker/index.ts:24:function generateNonce(): string {
+apps/workers/minimal-worker/index.ts:29: * 构建 HMAC 签名消息
+apps/workers/minimal-worker/index.ts:41: * 计算 HMAC-SHA256 签名
+apps/workers/minimal-worker/index.ts:50: * 生成 HMAC 认证头
+apps/workers/minimal-worker/index.ts:53:  const nonce = generateNonce();
+apps/workers/minimal-worker/index.ts:55:  const message = buildMessage(API_KEY, nonce, timestamp, body);
+apps/workers/minimal-worker/index.ts:56:  const signature = computeSignature(API_SECRET, message);
+apps/workers/minimal-worker/index.ts:59:    'X-Api-Key': API_KEY,
+apps/workers/minimal-worker/index.ts:60:    'X-Nonce': nonce,
+apps/workers/minimal-worker/index.ts:61:    'X-Timestamp': timestamp,
+apps/workers/minimal-worker/index.ts:63:    'X-Signature': signature,
+apps/workers/minimal-worker/index.ts:196:  console.log(`API Key: ${API_KEY.substring(0, 10)}...`);
+tools/stress/full_chain_stress.ts:8: *    - Auth: JWT (User Context) + HMAC V2 (Signature Integrity).
+tools/stress/full_chain_stress.ts:10: *    - Auth: HMAC V2 (Machine Context).
+tools/stress/full_chain_stress.ts:40:// --- HMAC Helpers (V2 Spec) ---
+tools/stress/full_chain_stress.ts:41:function generateNonce() { return randomBytes(16).toString('hex'); }
+tools/stress/full_chain_stress.ts:48:    const nonce = generateNonce();
+tools/stress/full_chain_stress.ts:59:        'X-Api-Key': apiKey,
+tools/stress/full_chain_stress.ts:60:        'X-Nonce': nonce,
+tools/stress/full_chain_stress.ts:61:        'X-Timestamp': timestamp,
+tools/stress/full_chain_stress.ts:63:        'X-Signature': signature
+tools/stress/full_chain_stress.ts:169:        // HMAC V2 Header Generation
+tools/stress/full_chain_stress.ts:210:        // Worker uses PURE HMAC (Machine Auth) - No JWT
+tools/stage4_smoke_test.sh:5:# Requirements: curl, jq, openssl (for HMAC if needed), psql (optional), docker (optional)
+tools/stage4_smoke_test.sh:10:#   WORKER_ID           # worker id for HMAC route
+tools/stage4_smoke_test.sh:11:#   HMAC_APIKEY         # api key id
+tools/stage4_smoke_test.sh:12:#   HMAC_SECRET         # api key secret
+tools/stage4_smoke_test.sh:28:require_env API_BASE_URL JWT_TOKEN LOW_JWT_TOKEN WORKER_ID PROJECT_ID SCENE_ID SHOT_ID HMAC_APIKEY HMAC_SECRET
+tools/stage4_smoke_test.sh:54:step "D) HMAC route (workers/:workerId/jobs/next)"
+tools/stage4_smoke_test.sh:59:sig1=$(printf "%s" "${sig_payload}" | openssl dgst -sha256 -hmac "${HMAC_SECRET}" -binary | base64)
+tools/stage4_smoke_test.sh:60:echo "[HMAC valid] POST /api/workers/${WORKER_ID}/jobs/next"
+tools/stage4_smoke_test.sh:62:  -H "X-SCU-APIKEY: ${HMAC_APIKEY}" \
+tools/stage4_smoke_test.sh:70:echo "[HMAC replay] reuse same nonce/timestamp/signature"
+tools/stage4_smoke_test.sh:72:  -H "X-SCU-APIKEY: ${HMAC_APIKEY}" \
+tools/regression/stage13_full_regression.sh:135:# 5.2 Nonce 重放测试
+tools/regression/stage13_full_regression.sh:136:echo "5.2 Nonce 重放测试..."
+tools/regression/stage13_full_regression.sh:248:### 5.1 签名验证单测（HMAC）
+tools/regression/stage13_full_regression.sh:267:### 5.2 Nonce 重放测试
+tools/regression/stage13_full_regression.sh:466:- [ ] 安全链路（HMAC/Nonce）通过，错误码符合规范
+tools/security/hmac-lib.js:3: * HMAC 签名工具库
+tools/security/hmac-lib.js:12:function generateNonce() {
+tools/security/hmac-lib.js:19:function getCurrentTimestamp() {
+tools/security/hmac-lib.js:39: * 计算 HMAC-SHA256 签名
+tools/security/hmac-lib.js:49: * 生成 HMAC 认证头
+tools/security/hmac-lib.js:55: * @returns {object} 包含 X-Api-Key, X-Nonce, X-Timestamp, X-Signature 的对象
+tools/security/hmac-lib.js:58:  const timestamp = String(getCurrentTimestamp()); // 秒级时间戳
+tools/security/hmac-lib.js:59:  const nonce = generateNonce();
+tools/security/hmac-lib.js:64:    'X-Api-Key': apiKey,
+tools/security/hmac-lib.js:65:    'X-Nonce': nonce,
+tools/security/hmac-lib.js:66:    'X-Timestamp': timestamp,
+tools/security/hmac-lib.js:67:    'X-Signature': signature,
+tools/security/hmac-lib.js:72:  generateNonce,
+tools/security/hmac-lib.js:73:  getCurrentTimestamp,
+tools/smoke/run-smoke.mjs:18:const API_KEY = process.env.API_KEY;
+tools/smoke/run-smoke.mjs:19:const API_SECRET = process.env.API_SECRET;
+tools/smoke/run-smoke.mjs:108:  // 3. HMAC 签名验证（4003 错误码）
+tools/smoke/run-smoke.mjs:109:  if (API_KEY && API_SECRET) {
+tools/smoke/run-smoke.mjs:110:    check('HMAC signature validation (4003)', () => {
+tools/smoke/run-smoke.mjs:130:        return { passed: false, details: `HMAC test failed: ${error.message}` };
+tools/smoke/run-smoke.mjs:134:    warning('HMAC signature validation', 'API_KEY/API_SECRET not set, skipping');
+tools/smoke/run-smoke.mjs:137:  // 4. Nonce 重放检测（4004 错误码）
+tools/smoke/run-smoke.mjs:138:  if (API_KEY && API_SECRET) {
+tools/smoke/run-smoke.mjs:139:    check('Nonce replay detection (4004)', () => {
+tools/smoke/run-smoke.mjs:140:      // This would require actual HMAC signing, which is complex
+tools/smoke/run-smoke.mjs:142:      warning('Nonce replay detection', 'Requires HMAC signing implementation, skipped');
+tools/smoke/run-smoke.mjs:146:    warning('Nonce replay detection', 'API_KEY/API_SECRET not set, skipping');
+tools/security/hmac-verify.js:3: * HMAC 安全验证脚本
+tools/security/hmac-verify.js:13:const API_KEY = process.env.API_KEY || 'test-api-key';
+tools/security/hmac-verify.js:14:const API_SECRET = process.env.API_SECRET || 'test-api-secret';
+tools/security/hmac-verify.js:104:  const hasApiKey = headers['X-Api-Key'] || headers['x-api-key'] ? 'present' : 'missing';
+tools/security/hmac-verify.js:105:  const hasNonce = headers['X-Nonce'] || headers['x-nonce'] ? 'present' : 'missing';
+tools/security/hmac-verify.js:106:  const hasTimestamp = headers['X-Timestamp'] || headers['x-timestamp'] ? 'present' : 'missing';
+tools/security/hmac-verify.js:107:  const hasSignature = headers['X-Signature'] || headers['x-signature'] ? 'present' : 'missing';
+tools/security/hmac-verify.js:109:  log(`Headers: X-Api-Key=${hasApiKey}, X-Nonce=${hasNonce}, X-Timestamp=${hasTimestamp}, X-Signature=${hasSignature}`);
+tools/security/hmac-verify.js:111:  if (hasNonce === 'present') {
+tools/security/hmac-verify.js:112:    log(`Nonce: ${headers['X-Nonce'] || headers['x-nonce']}`);
+tools/security/hmac-verify.js:114:  if (hasTimestamp === 'present') {
+tools/security/hmac-verify.js:115:    log(`Timestamp: ${headers['X-Timestamp'] || headers['x-timestamp']}`);
+tools/security/hmac-verify.js:156:  log('HMAC 安全验证测试');
+tools/security/hmac-verify.js:160:  log(`API Key: ${API_KEY.substring(0, 8)}...`);
+tools/security/hmac-verify.js:183:      '4003' // 期望 error.code=4003 "Missing HMAC headers"
+tools/security/hmac-verify.js:187:    const expiredTimestamp = String(hmacLib.getCurrentTimestamp() - 600); // 10分钟前
+tools/security/hmac-verify.js:188:    const nonce1 = hmacLib.generateNonce();
+tools/security/hmac-verify.js:189:    const message1 = hmacLib.buildMessage(endpoint.method, endpoint.path, expiredTimestamp, nonce1, endpoint.body);
+tools/security/hmac-verify.js:190:    const signature1 = hmacLib.computeSignature(API_SECRET, message1);
+tools/security/hmac-verify.js:198:        'X-Api-Key': API_KEY,
+tools/security/hmac-verify.js:199:        'X-Nonce': nonce1,
+tools/security/hmac-verify.js:200:        'X-Timestamp': expiredTimestamp,
+tools/security/hmac-verify.js:201:        'X-Signature': signature1,
+tools/security/hmac-verify.js:203:      '4003' // 期望 error.code=4003 "Timestamp out of window"
+tools/security/hmac-verify.js:207:    const validTimestamp = String(hmacLib.getCurrentTimestamp());
+tools/security/hmac-verify.js:208:    const nonce2 = hmacLib.generateNonce();
+tools/security/hmac-verify.js:209:    const message2 = hmacLib.buildMessage(endpoint.method, endpoint.path, validTimestamp, nonce2, endpoint.body);
+tools/security/hmac-verify.js:210:    const signature2 = hmacLib.computeSignature(API_SECRET, message2);
+tools/security/hmac-verify.js:212:    // 第一次请求（应该通过 HMAC 验证）
+tools/security/hmac-verify.js:219:        'X-Api-Key': API_KEY,
+tools/security/hmac-verify.js:220:        'X-Nonce': nonce2,
+tools/security/hmac-verify.js:221:        'X-Timestamp': validTimestamp,
+tools/security/hmac-verify.js:222:        'X-Signature': signature2,
+tools/security/hmac-verify.js:230:    const newTimestamp = String(hmacLib.getCurrentTimestamp());
+tools/security/hmac-verify.js:231:    const message3 = hmacLib.buildMessage(endpoint.method, endpoint.path, newTimestamp, nonce2, endpoint.body);
+tools/security/hmac-verify.js:232:    const signature3 = hmacLib.computeSignature(API_SECRET, message3);
+tools/security/hmac-verify.js:240:        'X-Api-Key': API_KEY,
+tools/security/hmac-verify.js:241:        'X-Nonce': nonce2, // 重复使用
+tools/security/hmac-verify.js:242:        'X-Timestamp': newTimestamp,
+tools/security/hmac-verify.js:243:        'X-Signature': signature3,
+tools/security/hmac-verify.js:245:      '4004' // 期望 error.code=4004 "Nonce already used"
+tools/security/hmac-verify.js:249:    const validTimestamp2 = String(hmacLib.getCurrentTimestamp());
+tools/security/hmac-verify.js:250:    const nonce4 = hmacLib.generateNonce();
+tools/security/hmac-verify.js:251:    const message4 = hmacLib.buildMessage(endpoint.method, endpoint.path, validTimestamp2, nonce4, endpoint.body);
+tools/security/hmac-verify.js:252:    const signature4 = hmacLib.computeSignature(API_SECRET, message4);
+tools/security/hmac-verify.js:260:        'X-Api-Key': API_KEY,
+tools/security/hmac-verify.js:261:        'X-Nonce': nonce4,
+tools/security/hmac-verify.js:262:        'X-Timestamp': validTimestamp2,
+tools/security/hmac-verify.js:263:        'X-Signature': signature4,
+tools/security/hmac-verify.js:289:  const expiredTimestamp = results.filter(r => r.name.includes('timestamp 过期'));
+tools/security/hmac-verify.js:290:  const duplicateNonce = results.filter(r => r.name.includes('重复 nonce'));
+tools/security/hmac-verify.js:295:  log(`  timestamp 过期: ${expiredTimestamp.filter(r => r.passed).length}/${expiredTimestamp.length} 通过`);
+tools/security/hmac-verify.js:296:  log(`  重复 nonce: ${duplicateNonce.filter(r => r.passed).length}/${duplicateNonce.length} 通过`);
+tools/security/hmac-verify.js:301:  if (missingHeader.every(r => r.passed) && expiredTimestamp.every(r => r.passed) && duplicateNonce.every(r => r.passed)) {
+tools/security/hmac-verify.js:302:    log('  ✅ HMAC missing / expired / replay 验证通过');
+tools/security/hmac-verify.js:304:    log('  ❌ HMAC missing / expired / replay 验证失败');
+tools/security/hmac-verify.js:307:    log('  ✅ HMAC 正常签名用例通过（error.code 不是 4003/4004）');
+tools/security/hmac-verify.js:309:    log('  ❌ HMAC 正常签名用例失败（仍出现 error.code=4003/4004）');
+tools/security/hmac-ping.js:3: * HMAC Ping 验证脚本
+tools/security/hmac-ping.js:49:const API_KEY = process.env.API_KEY || 'ak_worker_dev_0000000000000000';
+tools/security/hmac-ping.js:50:const API_SECRET = process.env.API_SECRET || 'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
+tools/security/hmac-ping.js:108:  console.log('HMAC Ping 验证');
+tools/security/hmac-ping.js:112:  console.log(`API Key: ${API_KEY.substring(0, 8)}...`);
+tools/security/hmac-ping.js:115:  // 生成 HMAC 头
+tools/security/hmac-ping.js:116:  const headers = hmacLib.generateHmacHeaders(API_KEY, API_SECRET, 'GET', PATH, null);
+tools/security/hmac-ping.js:119:  console.log(`  X-Api-Key: ${headers['X-Api-Key']}`);
+tools/security/hmac-ping.js:120:  console.log(`  X-Nonce: ${headers['X-Nonce']}`);
+tools/security/hmac-ping.js:121:  console.log(`  X-Timestamp: ${headers['X-Timestamp']}`);
+tools/security/hmac-ping.js:122:  console.log(`  X-Signature: ${headers['X-Signature']}`);
+tools/security/hmac-ping.js:152:      console.log('❌ HMAC 验证失败');
+tools/archive/stage1_stage2_smoke.ts:3: * 一键跑通：health → HMAC 强校验 → CRUD 最小路径 → 审计落库校验 → worker 最小路径 → SQL verify
+tools/archive/stage1_stage2_smoke.ts:7:import { makeHmacRequest, testNonceReplay } from './helpers/hmac_request.ts';
+tools/archive/stage1_stage2_smoke.ts:23:const API_KEY = process.env.API_KEY;
+tools/archive/stage1_stage2_smoke.ts:24:const API_SECRET = process.env.API_SECRET;
+tools/archive/stage1_stage2_smoke.ts:29:const bypass = process.env.BYPASS_HMAC;
+tools/archive/stage1_stage2_smoke.ts:35:  throw new Error(`Smoke must run with BYPASS_HMAC=false. Current: ${bypass}`);
+tools/archive/stage1_stage2_smoke.ts:38:console.log(`NODE_ENV=${nodeEnv}, BYPASS_HMAC=${bypass}`);
+tools/archive/stage1_stage2_smoke.ts:66:  console.log(`BYPASS_HMAC: ${process.env.BYPASS_HMAC}\n`);
+tools/archive/stage1_stage2_smoke.ts:95:  // 2. HMAC 强校验（强制要求）
+tools/archive/stage1_stage2_smoke.ts:96:  if (!API_KEY || !API_SECRET) {
+tools/archive/stage1_stage2_smoke.ts:97:    console.error('❌ API_KEY/API_SECRET not set, smoke test failed');
+tools/archive/stage1_stage2_smoke.ts:98:    appendReport('HMAC 测试', '❌ API_KEY/API_SECRET not set, smoke test failed');
+tools/archive/stage1_stage2_smoke.ts:101:    console.log('\n2. HMAC 强校验...');
+tools/archive/stage1_stage2_smoke.ts:103:      // 测试正常 HMAC 请求（使用需要 HMAC 的接口，不使用白名单）
+tools/archive/stage1_stage2_smoke.ts:106:        apiKey: API_KEY,
+tools/archive/stage1_stage2_smoke.ts:107:        apiSecret: API_SECRET,
+tools/archive/stage1_stage2_smoke.ts:109:        path: '/api/projects', // 使用需要 HMAC 的接口
+tools/archive/stage1_stage2_smoke.ts:112:      console.log('HMAC Request Result:', hmacOutput);
+tools/archive/stage1_stage2_smoke.ts:116:        console.log('✅ HMAC normal request: 200');
+tools/archive/stage1_stage2_smoke.ts:117:        appendReport('HMAC 正常请求验证', `✅ **正常请求返回 200**\n\`\`\`json\n${hmacOutput}\n\`\`\``);
+tools/archive/stage1_stage2_smoke.ts:119:        console.error(`❌ HMAC normal request failed: status ${hmacResult.status}`);
+tools/archive/stage1_stage2_smoke.ts:120:        appendReport('HMAC 正常请求验证', `❌ **正常请求失败**: status=${hmacResult.status}\n\`\`\`json\n${hmacOutput}\n\`\`\``);
+tools/archive/stage1_stage2_smoke.ts:124:      // 测试 Nonce 重放（必须验证）
+tools/archive/stage1_stage2_smoke.ts:125:      console.log('\n2.1. Nonce 重放检测...');
+tools/archive/stage1_stage2_smoke.ts:126:      const replayResult = await testNonceReplay({
+tools/archive/stage1_stage2_smoke.ts:128:        apiKey: API_KEY,
+tools/archive/stage1_stage2_smoke.ts:129:        apiSecret: API_SECRET,
+tools/archive/stage1_stage2_smoke.ts:131:        path: '/api/projects', // 使用需要 HMAC 的接口，不使用白名单接口
+tools/archive/stage1_stage2_smoke.ts:134:      console.log('Nonce Replay Result:', replayOutput);

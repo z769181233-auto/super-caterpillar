@@ -227,7 +227,8 @@ async function registerWorker(): Promise<void> {
       JobType.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
-      'TIMELINE_PREVIEW'
+      'TIMELINE_PREVIEW',
+      'PIPELINE_PROD_VIDEO_V1' // Exec 1: New Prod Pipeline
     ];
 
     // Registration Retry Loop
@@ -242,7 +243,10 @@ async function registerWorker(): Promise<void> {
           capabilities: {
             supportedJobTypes,
             supportedModels: [],
-            supportedEngines: supportedEnginesFinal,
+            supportedEngines: [
+              ...supportedEnginesFinal,
+              'ce09_real_watermark' // Exec 3: CE09 Real
+            ],
             maxBatchSize: 1,
           },
         });
@@ -278,7 +282,7 @@ async function sendHeartbeat(): Promise<void> {
     let supportedEngines =
       rawEngines.length > 0
         ? rawEngines
-        : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'ce04_sdxl', 'tts_standard', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline', 'ce11_timeline_preview'];
+        : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'ce04_sdxl', 'tts_standard', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline', 'ce11_timeline_preview', 'ce09_real_watermark'];
 
     // P1: Production Scrubbing (Heartbeat Sync) - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
@@ -304,7 +308,8 @@ async function sendHeartbeat(): Promise<void> {
       JobType.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
-      'TIMELINE_PREVIEW'
+      'TIMELINE_PREVIEW',
+      'PIPELINE_PROD_VIDEO_V1'
     ];
 
     await apiClient.heartbeat({
@@ -331,6 +336,8 @@ async function sendHeartbeat(): Promise<void> {
 /**
  * 处理单个 Job
  */
+// ... (omitted)
+
 /**
  * 结构化日志输出函数
  */
@@ -423,9 +430,6 @@ async function handleEngineResultAndReport(
   }
 }
 
-/**
- * 使用 JobExecutor 执行任务
- */
 async function processJobWithExecutor(job: JobFromApi): Promise<void> {
   console.log(`[S3-B Debug] Processing JOB ${job.id} TYPE: ${job.type}`);
   const engineKey = (job as any).engineKey || 'default';
@@ -476,6 +480,14 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
         });
       } else if (job.type === 'PIPELINE_STAGE1_NOVEL_TO_VIDEO') {
         return processStage1OrchestratorJob({
+          prisma,
+          job: job as any,
+          apiClient,
+        });
+      } else if (job.type === 'PIPELINE_PROD_VIDEO_V1') {
+        // EXECUTE: Production Slice V1 Logic
+        // Reusing E2E processor for now, but injecting the V1 context
+        return processE2EVideoPipelineJob({
           prisma,
           job: job as any,
           apiClient,

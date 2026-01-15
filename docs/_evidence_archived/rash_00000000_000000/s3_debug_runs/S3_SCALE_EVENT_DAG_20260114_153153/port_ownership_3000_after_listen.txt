@@ -1,0 +1,9 @@
+[API_PID] 78680
+---- lsof PID-bound :3000 LISTEN ----
+COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    78680 adam   26u  IPv4 0x697b133023a93903      0t0  TCP 127.0.0.1:3000 (LISTEN)
+---- lsof GLOBAL :3000 LISTEN ----
+COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    78680 adam   26u  IPv4 0x697b133023a93903      0t0  TCP 127.0.0.1:3000 (LISTEN)
+---- netstat :3000 (best effort) ----
+tcp4       0      0  127.0.0.1.3000         *.*                    LISTEN                 0            0  131072  131072  78680      0 00100 00000106 00000000001612da 00000001 00000900      1      0 000000

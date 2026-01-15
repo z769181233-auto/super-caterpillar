@@ -1,0 +1,29 @@
+=== CE01 Job TraceId 验证 ===
+
+1. shot_jobs 表检查：
+ table_name | count 
+------------+-------
+ shot_jobs  |     1
+(1 row)
+
+
+2. job_engine_bindings 表检查：
+ table_name | count 
+------------+-------
+ bindings   |     1
+(1 row)
+
+
+3. Job 详细信息：
+                  id                  |         type         | status  |      engineKey       |        createdAt        
+--------------------------------------+----------------------+---------+----------------------+-------------------------
+ a53aff4d-bbcd-437a-bfa7-2d239845a14b | CE01_REFERENCE_SHEET | PENDING | ce01_reference_sheet | 2026-01-04 03:45:06.573
+(1 row)
+
+
+4. Binding 详细信息：
+                  id                  |                jobId                 |      engineKey       | binding_status |        createdAt        
+--------------------------------------+--------------------------------------+----------------------+----------------+-------------------------
+ f6d4206d-61a9-4894-9d8b-a184028dce10 | a53aff4d-bbcd-437a-bfa7-2d239845a14b | ce01_reference_sheet | BOUND          | 2026-01-04 03:45:06.576
+(1 row)
+

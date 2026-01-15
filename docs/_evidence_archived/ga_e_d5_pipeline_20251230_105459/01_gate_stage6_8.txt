@@ -1,0 +1,26 @@
+=== 0. Starting Services ===
+=== Cleaning up processes ===
+Starting API...
+Starting Worker...
+[Gate] Cleaning up stale data for test...
+UPDATE 0
+UPDATE 0
+[Gate] Triggering internal import...
+[Gate] Triggered Job: 25d17abe-7a46-4d73-a32a-8df39d844786
+[Gate] Waiting 30s for pickup...
+[Gate] Running Reaper (Apply)...
+scanned=0
+reaped_failed=0
+requeued=0
+pending_after=0
+running_after=0
+ok=true
+[Gate] Verifying Reaper logic in source code...
+[PASS] Reaper logic present in source (       1 instances)
+[Gate] Stale NovelAnalysisJobs: 0
+[PASS] No Stale NovelAnalysisJobs (>30m)
+[Gate] Stale ShotJobs (>30m): 0
+[PASS] No Stale ShotJobs (>30m)
+[PASS] No Zombie ShotJobs (>2m)
+[SUCCESS] Stage 6.8 Reaper Gate Passed (Hung Tasks Governance Solidified)
+=== Cleaning up processes ===

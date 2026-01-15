@@ -1,0 +1,30 @@
+        createdAt        |   action    | resourceType |              resourceId              |                                                                             details                                                                             
+-------------------------+-------------+--------------+--------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 2026-01-13 01:01:28.159 | JOB_STARTED | job          | 21d83e98-cb22-43bb-a93e-4f02352407a2 | {"type": "CE09_MEDIA_SECURITY", "taskId": null, "_traceId": "trace-7cf2ecc4b537d5d8", "workerId": "worker_seal_seal_1768266071"}
+ 2026-01-13 01:01:26.179 | JOB_STARTED | job          | 6915026f-647a-493e-bef9-135165f8002d | {"type": "TIMELINE_PREVIEW", "taskId": "305f6a8a-339b-4760-973e-f181effa58a5", "_traceId": "trace-041e82735df4ec34", "workerId": "worker_seal_seal_1768266071"}
+ 2026-01-13 01:01:20.168 | JOB_STARTED | job          | 9beb891e-e524-4a2f-9d3a-e10c012b5d74 | {"type": "CE09_MEDIA_SECURITY", "taskId": null, "_traceId": "trace-ce2a936263bbcb4d", "workerId": "worker_seal_seal_1768266071"}
+ 2026-01-13 01:01:16.183 | JOB_STARTED | job          | 9beb891e-e524-4a2f-9d3a-e10c012b5d74 | {"type": "CE09_MEDIA_SECURITY", "taskId": null, "_traceId": "trace-7a3fede1fd97f27c", "workerId": "worker_seal_seal_1768266071"}
+ 2026-01-13 00:52:44.912 | JOB_STARTED | job          | 9beb891e-e524-4a2f-9d3a-e10c012b5d74 | {"type": "CE09_MEDIA_SECURITY", "taskId": null, "_traceId": "trace-202ec8a890e2df6b", "workerId": "worker_v12_run_1768265548"}
+ 2026-01-13 00:52:42.929 | JOB_STARTED | job          | 54c6bf75-397a-4e36-887f-f36a907e47b0 | {"type": "TIMELINE_PREVIEW", "taskId": "4d1e67c7-362f-4663-bc27-4bed6aeaf4cf", "_traceId": "trace-c851a6a986c8ae78", "workerId": "worker_v12_run_1768265548"}
+ 2026-01-13 00:51:30.655 | JOB_STARTED | job          | 56f00071-228b-423a-80b1-f7fd1a2d7d5c | {"type": "TIMELINE_PREVIEW", "taskId": "61567705-cc3a-40d8-819b-daaa750193c8", "_traceId": "trace-aaaca537d3668944", "workerId": "worker_v11_run_1768265465"}
+ 2026-01-13 00:51:26.637 | JOB_STARTED | job          | 56f00071-228b-423a-80b1-f7fd1a2d7d5c | {"type": "TIMELINE_PREVIEW", "taskId": "61567705-cc3a-40d8-819b-daaa750193c8", "_traceId": "trace-61891fa9b8996982", "workerId": "worker_v11_run_1768265465"}
+ 2026-01-13 00:51:20.625 | JOB_STARTED | job          | 56f00071-228b-423a-80b1-f7fd1a2d7d5c | {"type": "TIMELINE_PREVIEW", "taskId": "61567705-cc3a-40d8-819b-daaa750193c8", "_traceId": "trace-5c91d16c41f517a5", "workerId": "worker_v11_run_1768265465"}
+ 2026-01-13 00:50:10.816 | JOB_STARTED | job          | e4756df5-ad05-44e5-9b32-1d45335f11d1 | {"type": "TIMELINE_PREVIEW", "taskId": "51e7595f-fbcd-4f9b-9ca3-143f2dcc9216", "_traceId": "trace-4ed0de39713758c8", "workerId": "worker_v10_run_1768265383"}
+ 2026-01-13 00:50:06.822 | JOB_STARTED | job          | e4756df5-ad05-44e5-9b32-1d45335f11d1 | {"type": "TIMELINE_PREVIEW", "taskId": "51e7595f-fbcd-4f9b-9ca3-143f2dcc9216", "_traceId": "trace-079b5b464a42fc6c", "workerId": "worker_v10_run_1768265383"}
+ 2026-01-13 00:49:58.81  | JOB_STARTED | job          | e4756df5-ad05-44e5-9b32-1d45335f11d1 | {"type": "TIMELINE_PREVIEW", "taskId": "51e7595f-fbcd-4f9b-9ca3-143f2dcc9216", "_traceId": "trace-bb641fe9fa956fc9", "workerId": "worker_v10_run_1768265383"}
+ 2026-01-13 00:48:21.92  | JOB_STARTED | job          | be936bc3-eed2-41d3-8cf1-3001e486e64a | {"type": "TIMELINE_PREVIEW", "taskId": "2d8e6c66-7c1d-4063-b192-3dd59ee99835", "_traceId": "trace-43bb64e7ecd9d7bd", "workerId": "worker_run_1768265275"}
+ 2026-01-13 00:48:15.933 | JOB_STARTED | job          | be936bc3-eed2-41d3-8cf1-3001e486e64a | {"type": "TIMELINE_PREVIEW", "taskId": "2d8e6c66-7c1d-4063-b192-3dd59ee99835", "_traceId": "trace-83222fd78c50e7b7", "workerId": "worker_run_1768265275"}
+ 2026-01-13 00:48:13.934 | JOB_STARTED | job          | 75c43e9c-9be5-448c-b839-8c929f139a7c | {"type": "TIMELINE_PREVIEW", "taskId": "8a21325b-a9c2-49b5-95ae-81492bb51933", "_traceId": "trace-e35e0972c5741e3a", "workerId": "worker_run_1768265275"}
+ 2026-01-13 00:48:11.953 | JOB_STARTED | job          | 77aa3241-d673-445c-ab28-cec6ac40a8f8 | {"type": "TIMELINE_PREVIEW", "taskId": "abe2d0b8-10d4-496c-b075-b1691b14a72e", "_traceId": "trace-c44687f47e1c8644", "workerId": "worker_run_1768265275"}
+ 2026-01-13 00:48:11.945 | JOB_STARTED | job          | 8c9c4dd0-589e-4e26-9844-3971694060ac | {"type": "TIMELINE_PREVIEW", "taskId": "52fdeac9-9c9b-4ad3-8b3c-8c9410036646", "_traceId": "trace-e8ccf112fe4a15a7", "workerId": "worker_run_1768265275"}
+ 2026-01-13 00:48:11.935 | JOB_STARTED | job          | b9d3692c-3a50-49f9-a53d-ffb2d82d43ca | {"type": "TIMELINE_PREVIEW", "taskId": "6b72a20f-ef45-4043-ad63-ad6ee59d7fd7", "_traceId": "trace-b8c13ce18bd2c9c8", "workerId": "worker_run_1768265275"}
+ 2026-01-13 00:48:11.926 | JOB_STARTED | job          | a68b02cd-907e-45a2-9c08-c289938d563b | {"type": "TIMELINE_PREVIEW", "taskId": "63e4bb95-ca08-44a5-b326-04769d4c76bd", "_traceId": "trace-edcd4b8eb881e7bc", "workerId": "worker_run_1768265275"}
+ 2026-01-13 00:48:11.917 | JOB_STARTED | job          | 9e505349-c682-44ce-8351-f4535004aa1c | {"type": "TIMELINE_PREVIEW", "taskId": "cc6dc147-f125-49dd-a55d-bba9bdf54a0b", "_traceId": "trace-62b68b812daf7ace", "workerId": "worker_run_1768265275"}
+(20 rows)
+
+---
+                  id                  |  status   |       type       | traceId 
+--------------------------------------+-----------+------------------+---------
+ 6915026f-647a-493e-bef9-135165f8002d | SUCCEEDED | TIMELINE_PREVIEW | 
+(1 row)
+

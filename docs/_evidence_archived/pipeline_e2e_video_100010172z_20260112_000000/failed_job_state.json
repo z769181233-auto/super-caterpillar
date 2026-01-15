@@ -1,0 +1,47 @@
+[
+  {
+    "id": "faa410a2-cccb-44ba-a696-ec552855058d",
+    "type": "CE06_NOVEL_PARSING",
+    "status": "SUCCEEDED",
+    "createdAt": "2026-01-12T10:00:10.251Z",
+    "updatedAt": "2026-01-12T10:00:10.527Z",
+    "lastError": null,
+    "securityProcessed": false
+  },
+  {
+    "id": "24c3cd01-c391-4149-8a08-aec68dd09e93",
+    "type": "CE03_VISUAL_DENSITY",
+    "status": "SUCCEEDED",
+    "createdAt": "2026-01-12T10:00:10.536Z",
+    "updatedAt": "2026-01-12T10:00:10.993Z",
+    "lastError": null,
+    "securityProcessed": false
+  },
+  {
+    "id": "66b81c0c-bbfe-4e88-92b7-b5095e8b2564",
+    "type": "CE04_VISUAL_ENRICHMENT",
+    "status": "SUCCEEDED",
+    "createdAt": "2026-01-12T10:00:11.002Z",
+    "updatedAt": "2026-01-12T10:00:20.310Z",
+    "lastError": null,
+    "securityProcessed": false
+  },
+  {
+    "id": "71945a77-5d72-46c9-9009-f0b9a0543f73",
+    "type": "PIPELINE_TIMELINE_COMPOSE",
+    "status": "SUCCEEDED",
+    "createdAt": "2026-01-12T10:00:20.323Z",
+    "updatedAt": "2026-01-12T10:00:20.494Z",
+    "lastError": null,
+    "securityProcessed": false
+  },
+  {
+    "id": "d87df686-eec7-452c-97da-242104ded32e",
+    "type": "TIMELINE_RENDER",
+    "status": "FAILED",
+    "createdAt": "2026-01-12T10:00:20.506Z",
+    "updatedAt": "2026-01-12T10:00:30.302Z",
+    "lastError": "[TimelineRender] Fail-fast: Timeline must contain at least 2 shots.",
+    "securityProcessed": false
+  }
+]

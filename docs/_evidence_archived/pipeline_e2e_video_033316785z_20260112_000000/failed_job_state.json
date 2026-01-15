@@ -1,0 +1,33 @@
+[
+  {
+    "id": "9e20dd17-079c-4638-bf28-388a8341e482",
+    "organizationId": "0651b6bc-b386-43c1-9aca-96e65216bf9e",
+    "projectId": "c656df3f-d0ab-4431-b93e-f2212acfd633",
+    "episodeId": "a0a5ff93-927d-4377-a875-0acdafecc54b",
+    "sceneId": "62333f03-0db0-48ac-a233-9f2740e86d62",
+    "shotId": "cb87aaab-fb56-401f-a52a-4617a115f42d",
+    "taskId": "fa57ed74-0f4d-44eb-ae83-3fd54d66520d",
+    "workerId": null,
+    "status": "FAILED",
+    "type": "CE06_NOVEL_PARSING",
+    "priority": 0,
+    "maxRetry": 3,
+    "retryCount": 3,
+    "attempts": 3,
+    "leaseUntil": null,
+    "lockedBy": null,
+    "payload": {
+      "traceId": "ce_pipeline_cc103d5a-99ad-42cd-b64e-d8ae352e8d13",
+      "engineKey": "ce06_novel_parsing",
+      "projectId": "c656df3f-d0ab-4431-b93e-f2212acfd633",
+      "sourceText": "Commercial Grade Test Story content."
+    },
+    "engineConfig": {},
+    "lastError": "API request failed: Cannot POST /_internal/engine/invoke",
+    "createdAt": "2026-01-12T03:33:16.870Z",
+    "updatedAt": "2026-01-12T03:34:36.658Z",
+    "traceId": "ce_pipeline_cc103d5a-99ad-42cd-b64e-d8ae352e8d13",
+    "result": null,
+    "securityProcessed": false
+  }
+]

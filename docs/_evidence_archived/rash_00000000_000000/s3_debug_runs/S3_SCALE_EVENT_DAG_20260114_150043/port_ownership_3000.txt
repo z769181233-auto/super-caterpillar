@@ -1,0 +1,10 @@
+[whoami] adam
+[pwd] /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+[API_URL] http://127.0.0.1:3000
+[API_PID] 68693
+[HMAC_DEBUG] HMAC_DEBUG
+HMAC_DEBUG
+---- lsof :3000 LISTEN ----
+---- ps API_PID ----
+  PID  PPID ELAPSED COMMAND
+68693 68421   00:00 node dist/main

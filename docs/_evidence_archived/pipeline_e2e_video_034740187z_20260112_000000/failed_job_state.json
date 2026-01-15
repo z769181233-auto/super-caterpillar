@@ -1,0 +1,33 @@
+[
+  {
+    "id": "f297bcae-ebab-41b4-a9e7-2034db544b99",
+    "organizationId": "3dbbef71-b974-4547-9ce7-3bbc924bbfcd",
+    "projectId": "89bb9aa0-fea1-424a-aa72-e3fbf10aa8a5",
+    "episodeId": "e7d0ea5c-4688-40bc-8ede-e95c2cb6d396",
+    "sceneId": "f0dd9368-557f-489d-8dbd-49060d147280",
+    "shotId": "c8e25c29-03a5-47ed-9e35-9529afe23162",
+    "taskId": "717adc49-3525-408b-9d41-40cf67fc342e",
+    "workerId": null,
+    "status": "FAILED",
+    "type": "CE06_NOVEL_PARSING",
+    "priority": 0,
+    "maxRetry": 3,
+    "retryCount": 3,
+    "attempts": 3,
+    "leaseUntil": null,
+    "lockedBy": null,
+    "payload": {
+      "traceId": "ce_pipeline_c5e60721-e292-424b-89cd-e48e9c980cb2",
+      "engineKey": "ce06_novel_parsing",
+      "projectId": "89bb9aa0-fea1-424a-aa72-e3fbf10aa8a5",
+      "sourceText": "Commercial Grade Test Story content."
+    },
+    "engineConfig": {},
+    "lastError": "ENGINE_HUB_REMOTE_FAILED: {\"code\":\"ENGINE_CALL_FAILED\",\"message\":\"Error\",\"details\":{\"engineKey\":\"ce06_novel_parsing\",\"engineVersion\":\"default\"}}",
+    "createdAt": "2026-01-12T03:47:40.293Z",
+    "updatedAt": "2026-01-12T03:49:36.212Z",
+    "traceId": "ce_pipeline_c5e60721-e292-424b-89cd-e48e9c980cb2",
+    "result": null,
+    "securityProcessed": false
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "a7632515-2e29-4b7a-b755-89d6165f40df",
+    "type": "CE06_NOVEL_PARSING",
+    "status": "SUCCEEDED",
+    "createdAt": "2026-01-12T07:21:23.702Z",
+    "updatedAt": "2026-01-12T07:22:17.351Z",
+    "lastError": null,
+    "securityProcessed": false
+  },
+  {
+    "id": "c17a20da-a0bd-4e30-997c-47b8660ce16c",
+    "type": "CE03_VISUAL_DENSITY",
+    "status": "SUCCEEDED",
+    "createdAt": "2026-01-12T07:22:17.360Z",
+    "updatedAt": "2026-01-12T07:22:18.334Z",
+    "lastError": null,
+    "securityProcessed": false
+  },
+  {
+    "id": "8104c4f5-dd66-4d23-bd19-50dc13c777ef",
+    "type": "CE04_VISUAL_ENRICHMENT",
+    "status": "SUCCEEDED",
+    "createdAt": "2026-01-12T07:22:18.344Z",
+    "updatedAt": "2026-01-12T07:22:19.329Z",
+    "lastError": null,
+    "securityProcessed": false
+  },
+  {
+    "id": "19755365-d462-4c8c-9eee-c4cc55c24872",
+    "type": "PIPELINE_TIMELINE_COMPOSE",
+    "status": "FAILED",
+    "createdAt": "2026-01-12T07:22:19.338Z",
+    "updatedAt": "2026-01-12T07:22:30.363Z",
+    "lastError": "[TimelineCompose] Fail-fast: Scene must have at least 2 shots for timeline compose. Found: 1",
+    "securityProcessed": false
+  }
+]

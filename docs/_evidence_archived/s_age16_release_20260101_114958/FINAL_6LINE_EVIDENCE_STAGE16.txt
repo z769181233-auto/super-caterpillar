@@ -1,0 +1,8 @@
+=== Stage-16 Release Readiness Evidence ===
+EVID_DIR: docs/_evidence/stage16_release_20260101_114958
+ROLLBACK_SHA (Stage-15): acf5c3610e4f3b694c11b678328bfcc9a60e75f5
+[PASS] Docker Build: Non-standalone web.Dockerfile built successfully
+[PASS] Healthcheck: API (/api/health) and Web (/) responding
+[PASS] Key Routes: /en/login accessible (HTTP 307)
+Deployment Mode: next build + next start (standard Node.js server)
+Evidence Files: docker_ps.txt, api_logs.txt, web_logs.txt, probe_*.txt

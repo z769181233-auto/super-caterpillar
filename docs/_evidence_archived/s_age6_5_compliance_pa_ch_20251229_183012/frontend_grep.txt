@@ -1,0 +1,4 @@
+19:async function computeHmacSha256(secret: string, message: string): Promise<string> {
+98:    const signature = await computeHmacSha256(HMAC_SECRET, canonicalString);
+696:      signed: true, // CE10: 敏感接口，启用加签
+1006:      signed: true, // CE10: 敏感接口，启用加签

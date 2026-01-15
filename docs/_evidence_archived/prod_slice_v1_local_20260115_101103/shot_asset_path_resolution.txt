@@ -1,0 +1,8 @@
+SHOT_ASSET_URI=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
+SHOT_ASSET_KEY=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
+ROOT_DIR=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+RESOLVED_BY=C0
+CANDIDATES:
+ - /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png [OK]
+ - /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png [MISS]
+RESOLVED=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png

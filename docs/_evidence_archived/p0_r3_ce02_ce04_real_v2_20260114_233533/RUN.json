@@ -1,0 +1,42 @@
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "selectedEngineKey": "ce04_visual_enrichment",
+    "output": {
+      "enrichment_quality": 0.85,
+      "enriched_prompt": "Cinematic ultra detailed shot of 在风雪中的残破寺庙，少年跪在佛像前。, soft light, 35mm film, dramatic composition, 8k resolution",
+      "prompt_parts": {
+        "style": "Cinematic, 35mm film",
+        "lighting": "soft light",
+        "composition": "dramatic"
+      },
+      "metadata": {
+        "engine_version": "real-v1-template",
+        "latency_ms": 10
+      },
+      "audit_trail": {
+        "engine_version": "real-v1-template",
+        "timestamp": "2026-01-14T16:35:33.718Z"
+      },
+      "billing_usage": {
+        "promptTokens": 18,
+        "completionTokens": 111,
+        "totalTokens": 129,
+        "model": "ce04-template-v1"
+      },
+      "assets": {
+        "image": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png"
+      }
+    },
+    "metrics": {
+      "latencyMs": 0,
+      "usage": {
+        "promptTokens": 18,
+        "completionTokens": 111,
+        "totalTokens": 129,
+        "model": "ce04-template-v1"
+      }
+    }
+  }
+}

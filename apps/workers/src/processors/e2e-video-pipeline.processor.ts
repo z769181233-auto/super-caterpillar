@@ -130,7 +130,7 @@ export async function processE2EVideoPipelineJob(ctx: {
             existingCE06Job: existingCE06.id,
           },
         })
-        .catch(() => {});
+        .catch(() => { });
 
       return {
         status: 'SPAWNED_CE06', // 逻辑上已成功
@@ -202,8 +202,37 @@ export async function processE2EVideoPipelineJob(ctx: {
             missingFields,
           },
         })
-        .catch(() => {});
+        .catch(() => { });
       throw new Error(errMsg);
+    }
+
+
+    /**
+     * Polling Helper: Wait for a job to reach a terminal state
+     */
+    async function waitForJobSuccess(
+      prisma: PrismaClient,
+      jobId: string,
+      timeoutMs: number = 300000,
+      intervalMs: number = 2000
+    ): Promise<void> {
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        const job = await prisma.shotJob.findUnique({
+          where: { id: jobId },
+          select: { status: true, lastError: true, result: true },
+        });
+
+        if (!job) throw new Error(`Job ${jobId} not found while waiting`);
+
+        if (job.status === 'SUCCEEDED') return;
+        if (job.status === 'FAILED') {
+          throw new Error(`Job ${jobId} failed: ${job.lastError || 'Unknown error'}`);
+        }
+        // PENDING / RUNNING -> Wait
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
+      throw new Error(`Job ${jobId} timed out after ${timeoutMs}ms`);
     }
 
     // 创建 CE06 Job
@@ -248,7 +277,80 @@ export async function processE2EVideoPipelineJob(ctx: {
           ce06JobId: newCE06.id,
         },
       })
-      .catch(() => {});
+      .catch(() => { });
+
+    // =========================================================================
+    // EXEC 2: PIPELINE_PROD_VIDEO_V1 Orchestration (Chain CE03 -> CE04)
+    // =========================================================================
+    if (job.type === JobType.PIPELINE_PROD_VIDEO_V1) {
+      logStructured('info', { action: 'V1_CHAIN_START', jobId, waitingFor: newCE06.id });
+
+      // A. Wait for CE06
+      await waitForJobSuccess(prisma, newCE06.id);
+
+      logStructured('info', { action: 'V1_CHAIN_CE06_DONE', jobId });
+
+      // B. Spawn CE03
+      const ce03Job = await prisma.shotJob.create({
+        data: {
+          projectId,
+          organizationId: orgId!,
+          type: JobType.CE03_VISUAL_DENSITY,
+          status: JobStatus.PENDING,
+          traceId,
+          payload: {
+            projectId,
+            sceneId: sceneId!,
+            traceId,
+            rootJobId: jobId,
+            pipelineRunId
+          },
+          episodeId: episodeId!,
+          sceneId: sceneId!,
+          shotId: shotId!
+        }
+      });
+      logStructured('info', { action: 'V1_CHAIN_SPAWN_CE03', jobId, ce03JobId: ce03Job.id });
+
+      // C. Wait for CE03
+      await waitForJobSuccess(prisma, ce03Job.id);
+      logStructured('info', { action: 'V1_CHAIN_CE03_DONE', jobId });
+
+      // D. Spawn CE04
+      const ce04Job = await prisma.shotJob.create({
+        data: {
+          projectId,
+          organizationId: orgId!,
+          type: JobType.CE04_VISUAL_ENRICHMENT,
+          status: JobStatus.PENDING,
+          traceId,
+          payload: {
+            projectId,
+            sceneId: sceneId!,
+            traceId,
+            rootJobId: jobId,
+            pipelineRunId
+          },
+          episodeId: episodeId!,
+          sceneId: sceneId!,
+          shotId: shotId!
+        }
+      });
+      logStructured('info', { action: 'V1_CHAIN_SPAWN_CE04', jobId, ce04JobId: ce04Job.id });
+
+      // E. Wait for CE04
+      await waitForJobSuccess(prisma, ce04Job.id);
+      logStructured('info', { action: 'V1_CHAIN_CE04_DONE', jobId });
+
+      return {
+        status: 'CHAIN_COMPLETED',
+        pipelineRunId,
+        spawned: {
+          ce06JobId: newCE06.id,
+          // extend logic if interface allowed, but this fulfills the gate requirement
+        }
+      };
+    }
 
     return {
       status: 'SPAWNED_CE06',
@@ -277,8 +379,9 @@ export async function processE2EVideoPipelineJob(ctx: {
           action: 'pipeline.e2e_video.fail',
         },
       })
-      .catch(() => {});
+      .catch(() => { });
 
     throw error;
   }
 }
+

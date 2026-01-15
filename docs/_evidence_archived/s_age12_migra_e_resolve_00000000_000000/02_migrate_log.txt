@@ -1,0 +1,27 @@
+
+> database@1.0.0 prisma /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+> prisma "migrate" "resolve" "--applied" "20251230212007_add_shot_status"
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "scu", schema "public" at "localhost:5432"
+Error: P3008
+
+The migration `20251230212007_add_shot_status` is already recorded as applied in the database.
+
+ ELIFECYCLE  Command failed with exit code 1.
+
+> database@1.0.0 prisma /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+> prisma "migrate" "dev"
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "scu", schema "public" at "localhost:5432"
+
+Error: P3006
+
+Migration `20251230212007_add_shot_status` failed to apply cleanly to the shadow database. 
+Error:
+ERROR: syntax error at or near ">"
+   0: schema_core::state::DevDiagnostic
+             at schema-engine/core/src/state.rs:276
+
+ ELIFECYCLE  Command failed with exit code 1.

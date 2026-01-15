@@ -1,0 +1,2 @@
+=== Stage-7 Commercial Loop Verification Start ===
+[0] Seeded user 915e08bf-4616-40f2-9143-24bd86a63ebd and org 6eacdad1-7a8a-4040-b289-8247ba94c9e3

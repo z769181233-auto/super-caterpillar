@@ -1,0 +1,92 @@
+位于分支 stage4/s4-7_timeline_render
+尚未暂存以备提交的变更：
+  （使用 "git add <文件>..." 更新要提交的内容）
+  （使用 "git restore <文件>..." 丢弃工作区的改动）
+	修改：     api_v2.pid
+	修改：     apps/api/src/asset/asset.controller.ts
+	修改：     apps/api/src/asset/asset.module.ts
+	修改：     apps/api/src/audit-log/audit-log.service.ts
+	修改：     apps/api/src/auth/guards/timestamp-nonce.guard.ts
+	修改：     apps/api/src/auth/hmac/hmac-auth.guard.ts
+	修改：     apps/api/src/auth/hmac/hmac-auth.service.ts
+	修改：     apps/api/src/common/filters/all-exceptions.filter.ts
+	修改：     apps/api/src/engine-hub/engine-registry-hub.service.ts
+	修改：     apps/api/src/engines/engine.module.ts
+	修改：     apps/api/src/job/job-engine-binding.service.ts
+	修改：     apps/api/src/job/job.service.ts
+	修改：     apps/api/src/project/project.service.ts
+	修改：     apps/api/src/project/structure-generate.service.ts
+	修改：     apps/api/src/security/api-security/api-security.service.ts
+	修改：     apps/workers/src/api-client.ts
+	修改：     apps/workers/src/ce-core-processor.ts
+	修改：     apps/workers/src/gate/gate-worker-app.ts
+	修改：     apps/workers/src/novel-analysis-processor.ts
+	修改：     apps/workers/src/processors/media-security.processor.ts
+	修改：     apps/workers/src/processors/timeline-compose.processor.ts
+	修改：     apps/workers/src/processors/timeline-render.processor.ts
+	修改：     apps/workers/src/video-render.processor.ts
+	修改：     apps/workers/src/worker-app.ts
+	修改：     packages/config/src/env.ts
+	修改：     packages/config/src/index.ts
+	修改：     packages/database/prisma/schema.prisma
+	修改：     packages/database/src/generated/prisma/edge.js
+	修改：     packages/database/src/generated/prisma/index-browser.js
+	修改：     packages/database/src/generated/prisma/index.d.ts
+	修改：     packages/database/src/generated/prisma/index.js
+	修改：     packages/database/src/generated/prisma/package.json
+	修改：     packages/database/src/generated/prisma/schema.prisma
+	修改：     packages/database/src/generated/prisma/wasm.js
+	修改：     packages/engines/ce06/package.json
+	修改：     packages/engines/ce06/real.ts
+	修改：     packages/engines/ce06/types.ts
+	修改：     packages/router/model-router-v2.ts
+	修改：     walkthrough.md
+
+未跟踪的文件:
+  （使用 "git add <文件>..." 以包含要提交的内容）
+	ENGINE_MATRIX_SSOT.md
+	apps/api/src/asset/asset-delivery.controller.ts
+	apps/api/src/engines/adapters/ce03.local.adapter.ts
+	apps/api/src/engines/adapters/ce04.local.adapter.ts
+	apps/api/src/engines/adapters/ce06.local.adapter.ts
+	apps/workers/apps/
+	apps/workers/debug_ce06.txt
+	cost_profiles/
+	docs/_evidence/ce11_timeline_preview_20260112_223331/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-30-32-975Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-31-23-584Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-33-48-272Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-35-49-557Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-36-58-251Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-38-01-207Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-38-36-415Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-39-14-434Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-41-50-214Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-42-59-034Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-46-09-357Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-47-30-177Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T08-50-06-020Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T09-52-03-407Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T09-53-01-859Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T09-56-05-659Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T09-57-02-727Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T09-58-36-746Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T09-59-23-466Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T10-00-10-172Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T10-01-07-819Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T10-02-18-767Z/
+	docs/_evidence/pipeline_e2e_video_2026-01-12T10-03-16-244Z/
+	docs/_evidence/prod_contract_security_v1_1_20260112_212910/
+	docs/_evidence/prod_contract_security_v1_1_20260112_212956/
+	docs/_evidence/prod_contract_security_v1_1_20260112_213010/
+	docs/_evidence/prod_contract_security_v1_1_20260112_213129/
+	docs/_evidence/prod_contract_security_v1_1_20260112_215415/
+	docs/_evidence/prod_contract_security_v1_1_20260112_215454/
+	docs/_evidence/prod_contract_security_v1_1_20260112_215545/
+	docs/_evidence/prod_contract_security_v1_1_20260112_215615/
+	packages/engines/ce04_sdxl/
+	packages/engines/tts_standard/
+	tools/engine-onboarding/
+	tools/gate/gates/gate-prod_contract_and_security_v1_1.sh
+
+修改尚未加入提交（使用 "git add" 和/或 "git commit -a"）

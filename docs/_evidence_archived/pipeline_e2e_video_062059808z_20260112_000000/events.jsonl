@@ -1,0 +1,6 @@
+{"ts":"2026-01-12T06:20:59.811Z","type":"verify_start","startTime":"2026-01-12T06:20:59.811Z"}
+{"ts":"2026-01-12T06:20:59.854Z","type":"data_setup_complete","projectId":"7c18961a-619e-4379-bce9-7ae9dc9d6b86","apiKey":"ak_test_fef13a49-fa8a-4d73-b884-ff45506e4fd8"}
+{"ts":"2026-01-12T06:20:59.961Z","type":"pipeline_triggered","jobId":"1369bc68-ec06-450e-8c2a-f777fa4209d8","traceId":"ce_pipeline_c872e805-8165-4190-868f-d5884557e315"}
+{"ts":"2026-01-12T06:23:00.224Z","type":"poll_timeout","traceId":"ce_pipeline_c872e805-8165-4190-868f-d5884557e315","elapsed":120259}
+{"ts":"2026-01-12T06:23:00.227Z","type":"verify_error","message":"Timeout waiting for CE09 completion","status":"FAIL_LOGIC"}
+{"ts":"2026-01-12T06:23:00.227Z","type":"verify_end","status":"FAIL_LOGIC","endTime":"2026-01-12T06:23:00.227Z"}

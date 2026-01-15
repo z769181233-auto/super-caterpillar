@@ -1,0 +1,262 @@
+[
+  {
+    "shot": {
+      "id": "valid_1",
+      "type": "CLOSE_UP",
+      "params": {
+        "prompt": "A close-up of a face with soft light.",
+        "durationSec": 4,
+        "motion": "NONE",
+        "composition": "TIGHT"
+      }
+    },
+    "result": {
+      "isValid": true,
+      "violations": [],
+      "suggestions": [],
+      "metadata": {
+        "shotId": "valid_1",
+        "validatedAtIso": "2026-01-05T12:15:43.875Z",
+        "ruleCount": 6
+      }
+    }
+  },
+  {
+    "shot": {
+      "id": "valid_2",
+      "type": "WIDE_SHOT",
+      "params": {
+        "prompt": "A wide landscape with distant mountains.",
+        "durationSec": 8,
+        "motion": "NONE",
+        "composition": "WIDE"
+      }
+    },
+    "result": {
+      "isValid": true,
+      "violations": [],
+      "suggestions": [],
+      "metadata": {
+        "shotId": "valid_2",
+        "validatedAtIso": "2026-01-05T12:15:43.877Z",
+        "ruleCount": 6
+      }
+    }
+  },
+  {
+    "shot": {
+      "id": "valid_3",
+      "type": "MEDIUM_SHOT",
+      "params": {
+        "prompt": "A person walking through a corridor, calm mood.",
+        "durationSec": 6,
+        "motion": "PAN",
+        "composition": "NORMAL"
+      }
+    },
+    "result": {
+      "isValid": true,
+      "violations": [],
+      "suggestions": [],
+      "metadata": {
+        "shotId": "valid_3",
+        "validatedAtIso": "2026-01-05T12:15:43.877Z",
+        "ruleCount": 6
+      }
+    }
+  },
+  {
+    "shot": {
+      "id": "bad_1",
+      "type": "DEFAULT",
+      "params": {
+        "prompt": "",
+        "durationSec": 0,
+        "motion": "NONE",
+        "composition": "NORMAL"
+      }
+    },
+    "result": {
+      "isValid": false,
+      "violations": [
+        {
+          "ruleId": "DR_DUR_001",
+          "ruleType": "DURATION_RANGE",
+          "severity": "ERROR",
+          "field": "params.durationSec",
+          "currentValue": 0,
+          "message": "durationSec must be in range [1, 12]",
+          "suggestions": [
+            {
+              "action": "ADJUST",
+              "field": "params.durationSec",
+              "value": 1,
+              "reason": "Clamp durationSec to [1, 12]"
+            }
+          ]
+        },
+        {
+          "ruleId": "DR_REQ_001",
+          "ruleType": "REQUIRED_FIELDS",
+          "severity": "ERROR",
+          "field": "params.prompt",
+          "currentValue": "",
+          "message": "required field missing: missing params.prompt",
+          "suggestions": [
+            {
+              "action": "REPLACE",
+              "field": "params.prompt",
+              "value": "A clear shot description with subject, mood, and action.",
+              "reason": "Set a default prompt"
+            }
+          ]
+        },
+        {
+          "ruleId": "DR_PROMPT_001",
+          "ruleType": "PROMPT_REQUIRED",
+          "severity": "ERROR",
+          "field": "params.prompt",
+          "currentValue": "",
+          "message": "prompt must be non-empty and at least 10 chars",
+          "suggestions": [
+            {
+              "action": "APPEND",
+              "field": "params.prompt",
+              "value": "Describe the shot clearly.",
+              "reason": "Ensure prompt length >= 10"
+            }
+          ]
+        }
+      ],
+      "suggestions": [
+        {
+          "action": "ADJUST",
+          "field": "params.durationSec",
+          "value": 1,
+          "reason": "Clamp durationSec to [1, 12]"
+        },
+        {
+          "action": "REPLACE",
+          "field": "params.prompt",
+          "value": "A clear shot description with subject, mood, and action.",
+          "reason": "Set a default prompt"
+        },
+        {
+          "action": "APPEND",
+          "field": "params.prompt",
+          "value": "Describe the shot clearly.",
+          "reason": "Ensure prompt length >= 10"
+        }
+      ],
+      "metadata": {
+        "shotId": "bad_1",
+        "validatedAtIso": "2026-01-05T12:15:43.877Z",
+        "ruleCount": 6
+      }
+    }
+  },
+  {
+    "shot": {
+      "id": "bad_2",
+      "type": "MEDIUM_SHOT",
+      "params": {
+        "prompt": "Camera pans fast across the room with details.",
+        "durationSec": 12,
+        "motion": "PAN",
+        "composition": "NORMAL"
+      }
+    },
+    "result": {
+      "isValid": true,
+      "violations": [
+        {
+          "ruleId": "DR_MOTION_001",
+          "ruleType": "MOTION_DURATION_COUPLING",
+          "severity": "WARNING",
+          "field": "params.durationSec",
+          "currentValue": 12,
+          "message": "fast motion requires durationSec <= 8",
+          "suggestions": [
+            {
+              "action": "ADJUST",
+              "field": "params.durationSec",
+              "value": 8,
+              "reason": "Fast motion requires durationSec <= 8"
+            },
+            {
+              "action": "REPLACE",
+              "field": "params.motion",
+              "value": "NONE",
+              "reason": "Alternatively set motion=NONE to keep longer duration"
+            }
+          ]
+        }
+      ],
+      "suggestions": [
+        {
+          "action": "ADJUST",
+          "field": "params.durationSec",
+          "value": 8,
+          "reason": "Fast motion requires durationSec <= 8"
+        },
+        {
+          "action": "REPLACE",
+          "field": "params.motion",
+          "value": "NONE",
+          "reason": "Alternatively set motion=NONE to keep longer duration"
+        }
+      ],
+      "metadata": {
+        "shotId": "bad_2",
+        "validatedAtIso": "2026-01-05T12:15:43.877Z",
+        "ruleCount": 6
+      }
+    }
+  },
+  {
+    "shot": {
+      "id": "bad_3",
+      "type": "CLOSE_UP",
+      "params": {
+        "prompt": "Close-up shot but composition is wide.",
+        "durationSec": 5,
+        "motion": "NONE",
+        "composition": "WIDE"
+      }
+    },
+    "result": {
+      "isValid": false,
+      "violations": [
+        {
+          "ruleId": "DR_COMP_001",
+          "ruleType": "COMPOSITION_TYPE_COMPATIBILITY",
+          "severity": "ERROR",
+          "field": "params.composition",
+          "currentValue": "WIDE",
+          "message": "composition is not compatible with shot type",
+          "suggestions": [
+            {
+              "action": "REPLACE",
+              "field": "params.composition",
+              "value": "TIGHT",
+              "reason": "Composition must be one of: TIGHT, NORMAL"
+            }
+          ]
+        }
+      ],
+      "suggestions": [
+        {
+          "action": "REPLACE",
+          "field": "params.composition",
+          "value": "TIGHT",
+          "reason": "Composition must be one of: TIGHT, NORMAL"
+        }
+      ],
+      "metadata": {
+        "shotId": "bad_3",
+        "validatedAtIso": "2026-01-05T12:15:43.877Z",
+        "ruleCount": 6
+      }
+    }
+  }
+]

@@ -1,0 +1,99 @@
+# Stage 33 Evidence Normalization Patch
+
+## 变更摘要
+日期：2025-12-22T10:54:51+07:00  
+目的：Evidence links normalized + DEBUG_PERM condition doc-aligned
+
+## 变更清单
+
+### 1. 添加变更记录
+在 `FINAL_REPORT.md` 顶部添加：
+```markdown
+**变更记录**:
+- 2025-12-22: Evidence links normalized + DEBUG_PERM condition doc-aligned.
+```
+
+### 2. 修正示例代码（诊断日志条件）
+**修改前**:
+```typescript
+if (process.env.DEBUG_PERM === '1' || process.env.NODE_ENV !== 'production') {
+```
+
+**修改后**:
+```typescript
+if (process.env.DEBUG_PERM === '1') {
+```
+
+**保护机制描述**:
+- 修改前: `DEBUG_PERM=1` 或非生产环境
+- 修改后: 仅当 `DEBUG_PERM=1` 时输出
+
+### 3. 规范化证据文件路径
+将截图和录屏从本机绝对路径迁移到仓库相对路径：
+
+**创建目录**:
+```bash
+docs/_evidence/stage33/assets/
+```
+
+**迁移文件**:
+- `projects_list_loaded_1766375358533.png` → `assets/projects_list_loaded.png`
+- `overview_loaded_1766375379833.png` → `assets/overview_loaded.png`
+- `network_overview_200_1766375429018.png` → `assets/network_overview_200.png`
+- `stage33_verification_1766374401660.webp` → `assets/stage33_verification.webp`
+
+**路径引用修改**:
+```diff
+- ![项目列表加载成功](file:///Users/adam/.gemini/.../projects_list_loaded_1766375358533.png)
++ ![项目列表加载成功](./assets/projects_list_loaded.png)
+
+- ![Overview 页面正常渲染](file:///Users/adam/.gemini/.../overview_loaded_1766375379833.png)
++ ![Overview 页面正常渲染](./assets/overview_loaded.png)
+
+- ![Network 验证 200 OK](file:///Users/adam/.gemini/.../network_overview_200_1766375429018.png)
++ ![Network 验证 200 OK](./assets/network_overview_200.png)
+
+- [stage33_verification.webp](file:///Users/adam/.gemini/.../stage33_verification_1766374401660.webp)
++ [stage33_verification.webp](./assets/stage33_verification.webp)
+```
+
+### 4. 收紧"诊断日志已收紧"描述
+**修改前**:
+```markdown
+- ✅ 已将 `DEBUG_PERM` 条件从 `|| NODE_ENV !== 'production'` 改为仅 `=== '1'`
+```
+
+**修改后**:
+```markdown
+- ✅ 诊断日志条件设置为仅当 `DEBUG_PERM=1` 时输出
+```
+
+## 验证结果
+
+### 一致性检查
+```bash
+# 1. 检查绝对路径
+$ rg "file:///" docs/_evidence/stage33/FINAL_REPORT.md
+✅ No absolute file:// paths found
+
+# 2. 检查旧 NODE_ENV 逻辑
+$ rg "NODE_ENV !== 'production'" docs/_evidence/stage33/FINAL_REPORT.md
+✅ No old NODE_ENV logic found
+
+# 3. Git 状态
+$ git status --short docs/_evidence/stage33/
+?? docs/_evidence/stage33/
+```
+
+## 影响范围
+- ✅ 文档修正：`FINAL_REPORT.md` 示例代码与实际代码对齐
+- ✅ 证据规范化：所有截图/录屏使用相对路径，可在 Git 仓库内正常访问
+- ✅ 描述清理：移除对旧实现的提及，仅保留最终状态
+
+## 文件清单
+- `docs/_evidence/stage33/FINAL_REPORT.md` (修改)
+- `docs/_evidence/stage33/assets/projects_list_loaded.png` (新增)
+- `docs/_evidence/stage33/assets/overview_loaded.png` (新增)
+- `docs/_evidence/stage33/assets/network_overview_200.png` (新增)
+- `docs/_evidence/stage33/assets/stage33_verification.webp` (新增)
+- `docs/_evidence/stage33/RAW/final_report_fix.diff` (本文件)

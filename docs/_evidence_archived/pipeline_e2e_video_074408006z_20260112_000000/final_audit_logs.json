@@ -1,0 +1,50 @@
+[
+  {
+    "id": "06dbc2f0-3d1f-41ba-8876-99fd3eef0570",
+    "createdAt": "2026-01-12T07:44:13.678Z",
+    "action": "CE_CE04_VISUAL_ENRICHMENT_SUCCESS",
+    "resourceType": "job",
+    "resourceId": "0dbe1e9b-1890-4dd6-a4a3-a9060662b30c",
+    "nonce": "4a5015087cfcc01638800659893b32d5",
+    "signature": "2cb3f7b154637a91fc9503301a510dd362e40a4f0956b1342a675efe5ad81dc3",
+    "timestamp": "2026-01-12T07:44:13.678Z",
+    "ip": null,
+    "userAgent": null
+  },
+  {
+    "id": "5bb2cb54-172e-4e0b-8f42-92a577891583",
+    "createdAt": "2026-01-12T07:44:11.680Z",
+    "action": "CE_CE03_VISUAL_DENSITY_SUCCESS",
+    "resourceType": "job",
+    "resourceId": "a449e3f7-2a12-481d-8b8c-bc3328e16261",
+    "nonce": "2e801c548d3080ee054f61398f53415d",
+    "signature": "3da3c258ab2c342a23a6de538a3e90faed2405c3769b41c8b5cd35f63372c47f",
+    "timestamp": "2026-01-12T07:44:11.679Z",
+    "ip": null,
+    "userAgent": null
+  },
+  {
+    "id": "53eff150-f44a-4bad-9d67-fc7e76225699",
+    "createdAt": "2026-01-12T07:44:09.740Z",
+    "action": "CE_CE06_NOVEL_PARSING_SUCCESS",
+    "resourceType": "job",
+    "resourceId": "f4cbc94a-85c4-4e3d-932c-d839f0f97bfd",
+    "nonce": "f926ee92cd270055dca8bb36258a8922",
+    "signature": "5b17034136741cb588a0f3cbe0064f310d98279177c0188791b61f7fd917169c",
+    "timestamp": "2026-01-12T07:44:09.739Z",
+    "ip": null,
+    "userAgent": null
+  },
+  {
+    "id": "ac39c264-40b7-42c6-8ca3-c5525baa246a",
+    "createdAt": "2026-01-12T07:44:08.098Z",
+    "action": "JOB_CREATED",
+    "resourceType": "job",
+    "resourceId": "f4cbc94a-85c4-4e3d-932c-d839f0f97bfd",
+    "nonce": "ef05a7d686a4a8a4482789f3a478b39b",
+    "signature": "ffcefac3e321a50d6af50df8199ca48788e54da7b098b5a00048e9505ef76acc",
+    "timestamp": "2026-01-12T07:44:08.097Z",
+    "ip": "::1",
+    "userAgent": "axios/1.13.2"
+  }
+]

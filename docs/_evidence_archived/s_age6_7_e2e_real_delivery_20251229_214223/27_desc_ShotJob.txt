@@ -1,0 +1,37 @@
+                                     Table "public.ShotJob"
+     Column     |              Type              | Collation | Nullable |        Default         
+----------------+--------------------------------+-----------+----------+------------------------
+ id             | text                           |           | not null | 
+ organizationId | text                           |           | not null | 
+ projectId      | text                           |           | not null | 
+ episodeId      | text                           |           | not null | 
+ sceneId        | text                           |           | not null | 
+ shotId         | text                           |           | not null | 
+ taskId         | text                           |           |          | 
+ workerId       | text                           |           |          | 
+ status         | "JobStatus"                    |           | not null | 'PENDING'::"JobStatus"
+ type           | "JobType"                      |           | not null | 
+ priority       | integer                        |           | not null | 0
+ maxRetry       | integer                        |           | not null | 3
+ retryCount     | integer                        |           | not null | 0
+ attempts       | integer                        |           | not null | 0
+ payload        | jsonb                          |           |          | 
+ engineConfig   | jsonb                          |           |          | 
+ lastError      | text                           |           |          | 
+ createdAt      | timestamp(3) without time zone |           | not null | CURRENT_TIMESTAMP
+ updatedAt      | timestamp(3) without time zone |           | not null | 
+ traceId        | text                           |           |          | 
+Indexes:
+    "ShotJob_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "ShotJob_episodeId_fkey" FOREIGN KEY ("episodeId") REFERENCES episodes(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "ShotJob_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT
+    "ShotJob_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES projects(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "ShotJob_sceneId_fkey" FOREIGN KEY ("sceneId") REFERENCES scenes(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "ShotJob_shotId_fkey" FOREIGN KEY ("shotId") REFERENCES shots(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "ShotJob_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "ShotJob_workerId_fkey" FOREIGN KEY ("workerId") REFERENCES worker_nodes(id) ON UPDATE CASCADE ON DELETE SET NULL
+Referenced by:
+    TABLE "assets" CONSTRAINT "assets_createdByJobId_fkey" FOREIGN KEY ("createdByJobId") REFERENCES "ShotJob"(id) ON UPDATE CASCADE ON DELETE SET NULL
+    TABLE "job_engine_bindings" CONSTRAINT "job_engine_bindings_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "ShotJob"(id) ON UPDATE CASCADE ON DELETE CASCADE
+

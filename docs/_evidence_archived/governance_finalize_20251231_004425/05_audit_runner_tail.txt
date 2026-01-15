@@ -1,0 +1,80 @@
+    if rg -n "Waiting for API to listen|nc -z|curl -fsS" "$g" -S >/dev/null 2>&1; then
+      # 只是提示，后续人工看 tail
+      echo "$g"
+    fi
+  done < "$GATES_LIST"
+} > "$EVID_DIR/05_gate_quality.txt" 2>&1
+
+# 4) Gate 重复检测（归一化后 hash）：去注释/空白/时间戳变量，做近似重复
+log "Detecting duplicate gates (normalized hash)..."
+python3 - <<'PY' > "$EVID_DIR/06_gate_duplicates.txt"
+import hashlib, re, pathlib, sys
+root = pathlib.Path("tools/gate/gates")
+files = sorted(root.glob("*.sh"))
+def norm(s:str)->str:
+    s = re.sub(r'^\s*#.*$', '', s, flags=re.M)
+    s = re.sub(r'\s+', ' ', s)
+    s = re.sub(r'\$\{?EVID(_ENCE)?_DIR[^}]*\}?', 'EVID_DIR', s)
+    s = re.sub(r'date\s+\+\%Y\%m\%d[^\s]*', 'DATE', s)
+    s = s.strip()
+    return s
+m={}
+for f in files:
+    txt=f.read_text(errors="ignore")
+    h=hashlib.sha256(norm(txt).encode()).hexdigest()[:16]
+    m.setdefault(h, []).append(str(f))
+for h, arr in sorted(m.items(), key=lambda x:(-len(x[1]), x[0])):
+    if len(arr)>=2:
+        print(f"[DUP {len(arr)}] {h}")
+        for a in arr: print("  ", a)
+        print()
+PY
+
+# 5) 静态分析：依赖/死导出/循环依赖
+log "Static analysis..."
+{
+  echo "=== depcheck (unused deps) ==="
+  pnpm -w exec npx -y depcheck --json || true
+} > "$EVID_DIR/07_depcheck.json" 2>&1
+
+# knip（更强的未使用导出/文件）
+{
+  echo "=== knip (unused exports/files) ==="
+  pnpm -w exec npx -y knip --reporter json || true
+} > "$EVID_DIR/08_knip.json" 2>&1
+
+# madge（循环依赖）
+{
+  echo "=== madge (circular deps) ==="
+  pnpm -w exec npx -y madge --circular --extensions ts,tsx,js,jsx apps packages tools || true
+} > "$EVID_DIR/09_madge.txt" 2>&1
+
+# 6) 运行关键 checks（如果你们有统一 runner，优先跑；否则跑 typecheck/build）
+log "Running typecheck/build (with timeouts if available)..."
+if [ -f "tools/dev/run_with_timeout.sh" ]; then
+  bash tools/dev/run_with_timeout.sh 1800 pnpm -w run typecheck | tee "$EVID_DIR/10_typecheck.log"
+  # build: 用“无进展 watchdog”，即使 hang 也会记录证据并继续
+  ( run_with_progress_watchdog "turbo_build" 3600 1200 pnpm -w run build | tee "$EVID_DIR/11_build.log" ) || true
+else
+  pnpm -w run typecheck | tee "$EVID_DIR/10_typecheck.log"
+  ( run_with_progress_watchdog "turbo_build" 3600 1200 pnpm -w run build | tee "$EVID_DIR/11_build.log" ) || true
+fi
+
+# 7) 汇总（只做目录索引，不下结论，结论在人工/后续脚本二次判定）
+log "Writing summary index..."
+{
+  echo "EVID_DIR=$EVID_DIR"
+  echo
+  echo "1) Inventory: 02_inventory.txt"
+  echo "2) Gate refs: 03_gate_refs.txt"
+  echo "3) Unreferenced gates: 04_unreferenced_gates.txt"
+  echo "4) Gate quality: 05_gate_quality.txt"
+  echo "5) Gate duplicates: 06_gate_duplicates.txt"
+  echo "6) depcheck: 07_depcheck.json"
+  echo "7) knip: 08_knip.json"
+  echo "8) madge: 09_madge.txt"
+  echo "9) typecheck/build: 10_typecheck.log / 11_build.log"
+} > "$EVID_DIR/99_index.txt"
+
+log "DONE"
+log "INDEX: $EVID_DIR/99_index.txt"

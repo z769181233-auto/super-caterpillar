@@ -19,14 +19,48 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["src/*"],
-      "@scu/shared-types": ["../../packages/shared-types/src"],
-      "database": ["../../packages/database/src"],
-      "@scu/engines/*": ["../../packages/engines/*"],
-      "@scu/billing/*": ["../../packages/billing/*"],
-      "@scu/observability": ["../../packages/observability/src"]
+      "@/*": [
+        "src/*"
+      ],
+      "@scu/shared-types": [
+        "../../packages/shared-types/src"
+      ],
+      "database": [
+        "../../packages/database/src"
+      ],
+      "@scu/engines-shot-render": [
+        "../../packages/engines/shot_render/src"
+      ],
+      "@scu/engines-ce03": [
+        "../../packages/engines/ce03/src"
+      ],
+      "@scu/engines-ce04": [
+        "../../packages/engines/ce04/src"
+      ],
+      "@scu/engines-ce06": [
+        "../../packages/engines/ce06/src"
+      ],
+      "@scu/engines-video-merge": [
+        "../../packages/engines/video_merge/src"
+      ],
+      "@scu/engines/*": [
+        "../../packages/engines/*"
+      ],
+      "@scu/billing/*": [
+        "../../packages/billing/*"
+      ],
+      "@scu/observability": [
+        "../../packages/observability/src"
+      ]
     }
   },
-  "include": ["src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist", "src/scripts/**/*"]
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/scripts/**/*"
+  ]
 }

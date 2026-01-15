@@ -1,0 +1,3 @@
+[20251229_203449] Checking environment...
+Docker: SKIP
+RENDER_MODE=real

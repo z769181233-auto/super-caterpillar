@@ -1,0 +1,79 @@
+🚀 [Gate-S3] START: Event-Driven DAG + Multi-Worker Concurrency
+📂 Evidence Directory: docs/_evidence/S3_SCALE_EVENT_DAG_20260114_142825
+🧹 Cleaning up...
+🔌 Starting API...
+turbo 2.6.3
+
+• Packages in scope: api
+• Running build in 1 packages
+• Remote caching disabled
+database:build: cache bypass, force executing 1cdc6ab4e8a64bcf
+@scu/observability:build: cache bypass, force executing 06225cc31ecf511d
+@scu/config:build: cache bypass, force executing b0af65239f7cca4e
+@scu/storage:build: cache bypass, force executing 3e8367af8a262d17
+@scu/config:build: 
+@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+@scu/config:build: > tsc
+@scu/config:build: 
+@scu/storage:build: 
+@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > tsc
+@scu/storage:build: 
+@scu/observability:build: 
+@scu/observability:build: > @scu/observability@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/observability
+@scu/observability:build: > tsup src/index.ts --format cjs --dts --clean
+@scu/observability:build: 
+database:build: 
+database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
+database:build: 
+@scu/observability:build: CLI Building entry: src/index.ts
+@scu/observability:build: CLI Using tsconfig: tsconfig.json
+@scu/observability:build: CLI tsup v8.5.1
+@scu/observability:build: CLI Target: es2020
+@scu/observability:build: CLI Cleaning output folder
+@scu/observability:build: CJS Build start
+@scu/observability:build: CJS dist/index.js 6.88 KB
+@scu/observability:build: CJS ⚡️ Build success in 103ms
+@scu/observability:build: DTS Build start
+@scu/observability:build: DTS ⚡️ Build success in 497ms
+@scu/observability:build: DTS dist/index.d.ts 1.48 KB
+api:build: cache bypass, force executing 5b59e1b62f7e1460
+api:build: 
+api:build: > api@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+api:build: > nest build
+api:build: 
+api:build: webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 4336 ms
+
+ Tasks:    5 successful, 5 total
+Cached:    0 cached, 5 total
+  Time:    8.122s 
+
+🔎 Capturing port ownership evidence (3000)...
+[whoami] adam
+[pwd] /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+[API_URL] http://127.0.0.1:3000
+[API_PID] 60479
+---- lsof :3000 LISTEN ----
+---- ps API_PID ----
+  PID  PPID ELAPSED COMMAND
+60479 60211   00:00 node dist/main
+⏳ Waiting for API to LISTEN on 127.0.0.1:3000 (PID-bound)...
+.
+✅ API is LISTENING on 3000 (PID-bound)
+🔎 Capturing port ownership evidence after listen (3000)...
+[API_PID] 60479
+---- lsof PID-bound :3000 LISTEN ----
+COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    60479 adam   26u  IPv4 0x6ad90702663afbfd      0t0  TCP 127.0.0.1:3000 (LISTEN)
+---- lsof GLOBAL :3000 LISTEN ----
+COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    60479 adam   26u  IPv4 0x6ad90702663afbfd      0t0  TCP 127.0.0.1:3000 (LISTEN)
+---- netstat :3000 (best effort) ----
+tcp4       0      0  127.0.0.1.3000         *.*                    LISTEN                 0            0  131072  131072  60479      0 00100 00000106 000000000015aa7d 00000001 00000900      1      0 000000
+🧪 HMAC Probe...
+{"success":false,"error":{"code":"4003","message":"Invalid signature"},"requestId":"c9b03c6e-607f-4586-8dde-99b715328f85","timestamp":"2026-01-14T07:28:37.539Z","path":"/api/orchestrator/pipeline/stage1","method":"POST"}
+HTTP_CODE:400
+❌ FAIL: HMAC Probe failed with HTTP 400
+🧹 Cleaning up...
+tools/gate/gates/gate-s3-scale-event-dag.sh: line 27: 60479 Terminated: 15          HMAC_DEBUG="${HMAC_DEBUG:-0}" PORT=3000 node dist/main > "../../${EVIDENCE_DIR}/api.log" 2>&1  (wd: ~/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api)

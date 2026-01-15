@@ -1,0 +1,6 @@
+--- [GATE] CE-ARCH-GUARD-02_ENGINE_INVOCATION_SURFACE_SSOT START ---
+[SCAN] Generating SSOT to temp: /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.kSdNiXmtON
+[ALLOWLIST] Technical Debt allowlist unchanged ✓
+[DIFF] SSOT synchronized ✓
+[EVIDENCE] docs/_evidence/CE02_SEAL_20260110/engine_invocation_surface_ssot/gate_ce_arch_guard_02_20260110_142823.txt
+--- [GATE] CE-ARCH-GUARD-02_ENGINE_INVOCATION_SURFACE_SSOT END ---

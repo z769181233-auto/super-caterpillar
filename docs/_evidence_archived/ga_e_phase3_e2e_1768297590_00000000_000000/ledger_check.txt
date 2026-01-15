@@ -1,0 +1,5 @@
+      jobType       | costAmount | billingUnit | engine  
+--------------------+------------+-------------+---------
+ CE06_NOVEL_PARSING |      0.012 | tokens      | generic
+(1 row)
+

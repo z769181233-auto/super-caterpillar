@@ -79,6 +79,16 @@ export const localMpsProvider = {
       const meta = JSON.parse(py.stdout.trim());
       const bytes = fs.readFileSync(meta.asset_path);
 
+      // P1: Normalize asset_path to be relative for audit trail
+      let relativePath = meta.asset_path;
+      try {
+        // packages/engines/shot_render/providers/ -> ../../../..
+        const root = path.resolve(__dirname, '../../../../..');
+        relativePath = path.relative(root, meta.asset_path);
+        // Convert to POSIX
+        relativePath = relativePath.split(path.sep).join('/');
+      } catch (e) { }
+
       return {
         bytes,
         mime: 'image/png' as const,
@@ -87,7 +97,7 @@ export const localMpsProvider = {
         seed: meta.seed,
         model: meta.model,
         gpuSeconds: meta.gpuSeconds ?? 0,
-        asset_path: meta.asset_path,
+        asset_path: relativePath,
         sha256: sha256(bytes),
       };
     } catch (e: any) {

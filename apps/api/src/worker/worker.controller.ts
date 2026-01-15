@@ -137,6 +137,10 @@ export class WorkerController {
     @CurrentUser() user: { userId: string },
     @Req() request: Request
   ): Promise<any> {
+    const logger = new Logger(WorkerController.name);
+    // logger.log(`[WorkerController] getNextJob called. WorkerId=${workerId}`);
+    console.log(`[WorkerController] CONSOLE LOG: getNextJob called. WorkerId=${workerId}`);
+
     // 商业级审计：强制要求x-worker-id header
     const headerWorkerId = ((request.headers['x-worker-id'] as string) || '').trim();
     if (!headerWorkerId) {
@@ -152,7 +156,7 @@ export class WorkerController {
     const job = await this.orchestratorService.dispatchNextJobForWorker(workerId);
 
     // 结构化日志：WORKER_JOBS_NEXT_RESULT
-    const logger = new Logger(WorkerController.name);
+    // const logger = new Logger(WorkerController.name); // Removed redeclaration
     logger.log(
       JSON.stringify({
         event: 'WORKER_JOBS_NEXT_RESULT',

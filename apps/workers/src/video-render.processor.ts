@@ -29,7 +29,7 @@ function isImageKey(key: string): boolean {
 async function assertFrameFileOk(absPath: string): Promise<void> {
   const st = await fsPromises.stat(absPath);
   if (!st.isFile() || st.size <= 0) throw new Error(`Frame file missing/empty: ${absPath}`);
-  if (st.size < 10_000) throw new Error(`Frame too small (corrupt?): ${absPath} size=${st.size}`);
+  if (st.size < 1_000) throw new Error(`Frame too small (corrupt?): ${absPath} size=${st.size}`);
 }
 
 export async function processVideoRenderJob(

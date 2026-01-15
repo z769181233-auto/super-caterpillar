@@ -1,0 +1,14 @@
+{
+  "engineKey": "video_merge",
+  "payload": {
+    "jobId": "job-p0r4-video-20260114_233629",
+    "framePaths": ["/tmp/f1.png", "/tmp/f2.png"]
+  },
+  "metadata": {
+    "isVerification": true,
+    "traceId": "gate-p0r4-video-20260114_233629",
+    "jobId": "job-p0r4-video-20260114_233629",
+    "projectId": "proj-p0r0-gate",
+    "dedupeKey": "dedupe-p0r4-20260114_233629"
+  }
+}

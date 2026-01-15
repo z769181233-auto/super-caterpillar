@@ -1,0 +1,9 @@
+Pager usage is off.
+                  id                  |  status  |       jobType        | workerId | attempts |        updatedAt        |                                               error_snippet                                               
+--------------------------------------+----------+----------------------+----------+----------+-------------------------+-----------------------------------------------------------------------------------------------------------
+ a53aff4d-bbcd-437a-bfa7-2d239845a14b | RETRYING | CE01_REFERENCE_SHEET |          |        2 | 2026-01-04 04:36:18.637 | Unsupported job type: CE01_REFERENCE_SHEET                                                               +
+                                      |          |                      |          |          |                         | Error: Unsupported job type: CE01_REFERENCE_SHEET                                                        +
+                                      |          |                      |          |          |                         |     at processJob (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/main.ts:538:11)+
+                                      |          |                      |          |          |                         |     at
+(1 row)
+

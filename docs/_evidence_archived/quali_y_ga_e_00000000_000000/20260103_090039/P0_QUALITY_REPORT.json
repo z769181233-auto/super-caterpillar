@@ -1,0 +1,30 @@
+{
+  "projectId": "smoke-test-project-id-00000000",
+  "novelSourceId": "09ce7a8e-b3ce-486e-bde0-cef88df01b6a",
+  "timestamp": "2026-01-03T02:00:39.397Z",
+  "checks": [
+    {
+      "name": "CE06_OUTPUT",
+      "status": "PASS",
+      "metrics": {
+        "chapterCount": 2
+      }
+    },
+    {
+      "name": "CE03_OUTPUT",
+      "status": "FAIL",
+      "metrics": {
+        "charCount": 0
+      }
+    },
+    {
+      "name": "CE04_OUTPUT",
+      "status": "FAIL",
+      "metrics": {
+        "sceneCount": 7,
+        "totalShots": 7,
+        "promptNonEmptyRate": 0
+      }
+    }
+  ]
+}

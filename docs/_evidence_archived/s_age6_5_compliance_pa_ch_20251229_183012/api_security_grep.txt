@@ -1,0 +1,8 @@
+28:    @RequireSignature() // CE10: 敏感业务信息接口，强制签名验证
+29:    async getProgress(
+38:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+53:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+68:  @RequireSignature() // CE10: 高成本接口，强制签名验证
+136:  @RequireSignature() // CE10: 计费账本接口，强制签名验证
+139:  async getAssetLedger(
+150:    return this.billingService.getAssetLedger(assetId);

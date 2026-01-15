@@ -1,0 +1,11 @@
+[API_PID] 79371
+---- lsof PID-bound :3000 LISTEN ----
+COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    79371 adam   26u  IPv4 0xfbdfae6caa78b558      0t0  TCP 127.0.0.1:3000 (LISTEN)
+---- lsof GLOBAL :3000 LISTEN ----
+COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    79371 adam   26u  IPv4 0xfbdfae6caa78b558      0t0  TCP 127.0.0.1:3000 (LISTEN)
+---- netstat :3000 (best effort) ----
+tcp4       0      0  127.0.0.1.3000         *.*                    LISTEN                 0            0  131072  131072  79371      0 00100 00000106 0000000000161561 00000001 00000900      1      0 000000
+tcp4       0      0  127.0.0.1.52319        127.0.0.1.3000         TIME_WAIT           2172          359  407296  146988  78745      0 02131 00000008 00000000001612ed 00000081 04000900      0      0 000000
+tcp4       0      0  127.0.0.1.52323        127.0.0.1.3000         TIME_WAIT           2172          400  407296  146988  78796      0 02131 00000008 0000000000161358 00000081 04000900      0      0 000000

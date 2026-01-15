@@ -1,0 +1,6 @@
+{"ts":"2026-01-12T07:34:47.634Z","type":"verify_start","startTime":"2026-01-12T07:34:47.634Z"}
+{"ts":"2026-01-12T07:34:47.665Z","type":"data_setup_complete","projectId":"2115b973-c3a2-4525-a889-3dd6b4bc2a8f","apiKey":"ak_test_5f862cdf-c84a-4a04-9243-53c11328ebd4"}
+{"ts":"2026-01-12T07:34:47.723Z","type":"pipeline_triggered","jobId":"7ec440fa-da06-45df-b0e7-2735f53f679d","traceId":"ce_pipeline_309394e9-6dec-4262-bdbc-de648ca43ff3"}
+{"ts":"2026-01-12T07:35:01.760Z","type":"CE06_NOVEL_PARSING","error":"API request failed: Internal engine invocation is only allowed in GATE_MODE"}
+{"ts":"2026-01-12T07:35:01.760Z","type":"verify_error","message":"Pipeline logic failure at CE06_NOVEL_PARSING","status":"FAIL_LOGIC"}
+{"ts":"2026-01-12T07:35:01.760Z","type":"verify_end","status":"FAIL_LOGIC","endTime":"2026-01-12T07:35:01.760Z"}

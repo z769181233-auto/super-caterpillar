@@ -1,0 +1,6 @@
+       jobType       | costAmount | billingUnit | engine  
+---------------------+------------+-------------+---------
+ CE06_NOVEL_PARSING  |      0.012 | tokens      | generic
+ CE03_VISUAL_DENSITY |      0.032 | tokens      | generic
+(2 rows)
+

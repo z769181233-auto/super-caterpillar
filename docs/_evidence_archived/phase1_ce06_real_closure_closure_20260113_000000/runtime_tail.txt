@@ -1,0 +1,1210 @@
+total 12304
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 _tmp
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 _tools
+drwxr-xr-x@ 979 adam  staff    31K  1 13 10:01 .
+drwxr-xr-x@ 203 adam  staff   6.3K  1 12 13:13 ..
+-rw-r--r--@   1 adam  staff   6.0K  1 11 01:01 .DS_Store
+drwxr-xr-x@   3 adam  staff    96B  1 10 12:52 20260109_232952
+-rw-r--r--@   1 adam  staff   3.8K  1  8 08:03 amendment_deprecation_phaseA_whitelist_patch_20251219_092959.md
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 AUDIT_FULL_20260110_164653
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 AUDIT_FULL_20260110_165744
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 AUDIT_FULL_20260110_165827
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 AUDIT_FULL_20260110_165858
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 AUDIT_FULL_20260110_182914
+drwxr-xr-x@   6 adam  staff   192B  1 10 23:45 AUDIT_V3_20260110_190748
+drwxr-xr-x@   5 adam  staff   160B  1 10 23:45 AUDIT_V3_20260110_192213
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 AUDIT_V3_20260110_202400
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 AUDIT_V3_20260110_205244
+drwxr-xr-x@   4 adam  staff   128B  1 10 23:45 AUDIT_V3_20260110_205412
+drwxr-xr-x@   4 adam  staff   128B  1 10 23:45 AUDIT_V3_20260110_212415
+drwxr-xr-x@   3 adam  staff    96B  1 11 21:02 AUDIT_V3_LATEST
+drwxr-xr-x@  11 adam  staff   352B  1 11 09:43 AUDIT_V3_P0_FINAL_20260111
+-rw-r--r--@   1 adam  staff    14K  1  8 08:03 automation_verification_deprecation_phaseA_20251219_080136.md
+-rw-r--r--@   1 adam  staff   973B  1  8 08:03 automation_verification_deprecation_phaseB_20251219_094403.md
+-rw-r--r--@   1 adam  staff   2.7K  1  8 08:03 browser_e2e_checklist_20251220.md
+-rw-r--r--@   1 adam  staff   551B  1  8 08:03 capacity_api_20251219_141939.json
+-rw-r--r--@   1 adam  staff   585B  1  8 08:03 capacity_api_20251219_142009.json
+-rw-r--r--@   1 adam  staff   586B  1  8 08:03 capacity_api_20251219_142432.json
+-rw-r--r--@   1 adam  staff   585B  1  8 08:03 capacity_api_20251219_152944.json
+-rw-r--r--@   1 adam  staff   586B  1  9 23:09 capacity_api_20260109_230307.json
+-rw-r--r--@   1 adam  staff   585B  1  9 23:09 capacity_api_20260109_230544.json
+drwxr-xr-x@  40 adam  staff   1.3K  1 10 23:45 CE_ONBOARDING_CHECK
+drwxr-xr-x@  54 adam  staff   1.7K  1  8 08:03 ce01_m1_e2e_20260104_014023
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 ce01_m1_e2e_20260104_014828
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 ce01_m1_e2e_20260104_015901
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce01_m1_e2e_20260104_020247
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce01_m1_e2e_20260104_020633
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce01_m1_e2e_20260104_020854
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce01_m1_e2e_20260104_085753
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce01_m1_e2e_20260104_085955
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce01_m1_e2e_20260104_090149
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce01_m1_e2e_20260104_094136
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce01_m1_hardpass_20260107_132702
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce01_m1_hardpass_20260107_132831
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce01_m1_hardpass_20260107_133006
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce01_m1_hardpass_20260107_144221
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce01_m1_hardpass_20260107_144406
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce01_m1_hardpass_20260107_144732
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce01_m1_hardpass_20260107_144920
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce01_m1_hardpass_20260107_145108
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce01_m1_hardpass_20260107_145254
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_145418
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_145702
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_145940
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_150205
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_150609
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_150928
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_151140
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_151351
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_151638
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_151901
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce01_m1_hardpass_20260107_152903
+drwxr-xr-x@  11 adam  staff   352B  1 10 12:52 CE01_SEAL_20260110
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce02_m1_hardpass_20260104_155428
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce02_m1_hardpass_20260104_155809
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260104_175224
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260104_185653
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260104_192131
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260104_192824
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260104_194112
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260104_194411
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260104_195134
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce02_m1_hardpass_20260105_095039
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce02_m1_hardpass_20260105_101122
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce02_m1_hardpass_20260105_101519
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce02_m1_hardpass_20260105_101655
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce02_m1_hardpass_20260105_101811
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce02_m1_hardpass_20260105_110905
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce02_m1_hardpass_20260105_111054
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_111246
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_132943
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_133238
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_133435
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_133658
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_133953
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_134151
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_135008
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_140040
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260105_162609
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260107_150003
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260107_150226
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260107_150626
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260107_150947
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260107_151203
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260107_151412
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260107_151657
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260107_151921
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce02_m1_hardpass_20260107_152922
+drwxr-xr-x@  12 adam  staff   384B  1 10 14:30 CE02_SEAL_20260110
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce05_m1_hardpass_20260104_162455
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce05_m1_hardpass_20260104_162527
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 ce05_m1_hardpass_20260104_175240
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 ce05_m1_hardpass_20260104_185709
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 ce05_m1_hardpass_20260104_192146
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 ce05_m1_hardpass_20260104_192840
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 ce05_m1_hardpass_20260104_194128
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 ce05_m1_hardpass_20260104_194427
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 ce05_m1_hardpass_20260104_195149
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m1_hardpass_20260105_111300
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_113606
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_132959
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_133254
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_133452
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_133715
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_134008
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_134208
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_135024
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_140056
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260105_162626
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260107_150647
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260107_151008
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260107_151221
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260107_151432
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260107_151718
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260107_151936
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce05_m1_hardpass_20260107_152943
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce05_m2_shot_binding_20260104_163754
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce05_m2_shot_binding_20260104_163814
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce05_m2_shot_binding_20260104_163851
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_163929
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_164025
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_164201
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_164355
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_164530
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_164637
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_165853
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_175255
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_185723
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_192201
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_192854
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_194143
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_194441
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m2_shot_binding_20260104_195204
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce05_m2_shot_binding_20260105_133018
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce05_m3_shotplan_binding_20260104_171325
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m3_shotplan_binding_20260104_175315
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m3_shotplan_binding_20260104_185744
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m3_shotplan_binding_20260104_192221
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m3_shotplan_binding_20260104_192915
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m3_shotplan_binding_20260104_194203
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m3_shotplan_binding_20260104_194502
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m3_shotplan_binding_20260104_195224
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m4_version_consistency_20260104_175317
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m4_version_consistency_20260104_185745
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m4_version_consistency_20260104_192223
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m4_version_consistency_20260104_192916
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m4_version_consistency_20260104_194205
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m4_version_consistency_20260104_194503
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ce05_m4_version_consistency_20260104_195226
+drwxr-xr-x@   3 adam  staff    96B  1 13 08:50 ce06_story_parse_20260113_085013
+drwxr-xr-x@   3 adam  staff    96B  1 13 08:51 ce06_story_parse_20260113_085157
+drwxr-xr-x@   3 adam  staff    96B  1 13 09:07 ce06_story_parse_20260113_090700
+drwxr-xr-x@   3 adam  staff    96B  1 13 09:07 ce06_story_parse_20260113_090730
+drwxr-xr-x@   3 adam  staff    96B  1 13 09:08 ce06_story_parse_20260113_090835
+drwxr-xr-x@   3 adam  staff    96B  1 13 09:13 ce06_story_parse_20260113_091312
+drwxr-xr-x@   6 adam  staff   192B  1 13 09:17 ce06_story_parse_20260113_091701
+drwxr-xr-x@   6 adam  staff   192B  1 13 09:19 ce06_story_parse_20260113_091903
+drwxr-xr-x@   6 adam  staff   192B  1 13 09:20 ce06_story_parse_20260113_092032
+drwxr-xr-x@   6 adam  staff   192B  1 13 09:22 ce06_story_parse_20260113_092141
+drwxr-xr-x@   6 adam  staff   192B  1 13 09:23 ce06_story_parse_20260113_092334
+drwxr-xr-x@   6 adam  staff   192B  1 13 09:25 ce06_story_parse_20260113_092511
+drwxr-xr-x@   6 adam  staff   192B  1 13 09:29 ce06_story_parse_20260113_092912
+drwxr-xr-x@   4 adam  staff   128B  1 13 10:00 ce06_story_parse_20260113_100051
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260104_174344
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260104_174432
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260104_175318
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260104_185746
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260104_192224
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260104_192918
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260104_194206
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260104_194504
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260104_195227
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_113649
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_115654
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_123259
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_123600
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_124636
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_125422
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_125459
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_130026
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_130138
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_130612
+drwxr-xr-x@  32 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_130730
+drwxr-xr-x@  33 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_131359
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m1_hardpass_20260105_131614
+drwxr-xr-x@  33 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_131705
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m1_hardpass_20260105_131836
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m1_hardpass_20260105_133313
+drwxr-xr-x@  33 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260105_133510
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 ce07_m1_hardpass_20260105_133734
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 ce07_m1_hardpass_20260105_134026
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 ce07_m1_hardpass_20260105_134226
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 ce07_m1_hardpass_20260105_135043
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 ce07_m1_hardpass_20260105_140115
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m1_hardpass_20260105_154250
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m1_hardpass_20260105_155212
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m1_hardpass_20260105_155424
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m1_hardpass_20260105_155522
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 ce07_m1_hardpass_20260105_155653
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 ce07_m1_hardpass_20260105_162645
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m1_hardpass_20260107_150707
+drwxr-xr-x@  33 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260107_151026
+drwxr-xr-x@  33 adam  staff   1.0K  1  8 08:03 ce07_m1_hardpass_20260107_151242
+drwxr-xr-x@  35 adam  staff   1.1K  1  8 08:03 ce07_m1_hardpass_20260107_151451
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 ce07_m1_hardpass_20260107_151736
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 ce07_m1_hardpass_20260107_151956
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 ce07_m1_hardpass_20260107_153001
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 ce07_m2_memory_read_20260104_184721
+drwxr-xr-x@   9 adam  staff   288B  1  8 08:03 ce07_m2_memory_read_20260104_185802
+drwxr-xr-x@   9 adam  staff   288B  1  8 08:03 ce07_m2_memory_read_20260104_192239
+drwxr-xr-x@   9 adam  staff   288B  1  8 08:03 ce07_m2_memory_read_20260104_192933
+drwxr-xr-x@   9 adam  staff   288B  1  8 08:03 ce07_m2_memory_read_20260104_194221
+drwxr-xr-x@   9 adam  staff   288B  1  8 08:03 ce07_m2_memory_read_20260104_194520
+drwxr-xr-x@   9 adam  staff   288B  1  8 08:03 ce07_m2_memory_read_20260104_195242
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m2_memory_read_20260105_133750
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ce07_m2_memory_read_20260105_134043
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 ce07_m3_consumption_20260104_192248
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 ce07_m3_consumption_20260104_192941
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 ce07_m3_consumption_20260104_194230
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 ce07_m3_consumption_20260104_194528
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 ce07_m3_consumption_20260104_195251
+drwxr-xr-x@   4 adam  staff   128B  1 12 23:05 ce11_commercial_20260112_230508
+drwxr-xr-x@   4 adam  staff   128B  1 12 23:07 ce11_commercial_20260112_230729
+drwxr-xr-x@   4 adam  staff   128B  1 12 23:07 ce11_commercial_20260112_230737
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 ce11_commercial_20260112_230805
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 ce11_commercial_20260112_230816
+drwxr-xr-x@   5 adam  staff   160B  1 13 08:12 ce11_commercial_20260112_231023
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 ce11_commercial_20260112_231052
+drwxr-xr-x@   5 adam  staff   160B  1 13 08:12 ce11_commercial_20260112_231135
+drwxr-xr-x@   5 adam  staff   160B  1 13 08:12 ce11_commercial_20260112_231229
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 ce11_commercial_20260112_231307
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 ce11_commercial_20260112_231331
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 ce11_commercial_20260112_231423
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 ce11_commercial_20260112_231629
+drwxr-xr-x@  14 adam  staff   448B  1 13 08:12 ce11_commercial_20260112_231650
+drwxr-xr-x@  10 adam  staff   320B  1 13 08:12 ce11_commercial_20260112_231745
+drwxr-xr-x@  10 adam  staff   320B  1 13 08:12 ce11_commercial_20260112_231815
+drwxr-xr-x@  11 adam  staff   352B  1 13 08:12 ce11_commercial_20260112_231837
+drwxr-xr-x@  10 adam  staff   320B  1 13 08:12 ce11_commercial_20260112_231913
+drwxr-xr-x@  11 adam  staff   352B  1 13 08:12 ce11_commercial_20260112_231937
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 ce11_commercial_20260113_074803
+drwxr-xr-x@  14 adam  staff   448B  1 13 08:12 ce11_commercial_20260113_074809
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 ce11_commercial_20260113_074907
+drwxr-xr-x@  14 adam  staff   448B  1 13 08:12 ce11_commercial_20260113_074958
+drwxr-xr-x@  13 adam  staff   416B  1 13 08:12 ce11_commercial_20260113_075119
+drwxr-xr-x@   9 adam  staff   288B  1 13 08:12 ce11_commercial_20260113_075242
+-rw-r--r--@   1 adam  staff   1.3K  1 12 23:18 ce11_commercial_verification_final.log
+-rw-r--r--@   1 adam  staff   317B  1 12 23:05 ce11_commercial_verification.log
+drwxr-xr-x@  10 adam  staff   320B  1 13 08:12 ce11_final_closure_20260113_080125
+drwxr-xr-x@   8 adam  staff   256B  1 13 08:12 ce11_final_closure_20260113_080547
+drwxr-xr-x@   9 adam  staff   288B  1 13 08:12 ce11_final_closure_20260113_080708
+drwxr-xr-x@   4 adam  staff   128B  1 13 08:09 ce11_final_closure_20260113_080956
+drwxr-xr-x@   9 adam  staff   288B  1 13 08:12 ce11_final_closure_20260113_081202
+drwxr-xr-x@  38 adam  staff   1.2K  1 13 09:31 ce11_final_closure_20260113_093002
+drwxr-xr-x@  39 adam  staff   1.2K  1 13 09:33 ce11_final_closure_20260113_093158
+drwxr-xr-x@  39 adam  staff   1.2K  1 13 09:35 ce11_final_closure_20260113_093421
+drwxr-xr-x@  39 adam  staff   1.2K  1 13 09:38 ce11_final_closure_20260113_093727
+drwxr-xr-x@  11 adam  staff   352B  1 13 10:01 ce11_final_closure_20260113_100104
+-rw-r--r--@   1 adam  staff    65B  1 13 08:05 ce11_final_doc_alignment_check.log
+drwxr-xr-x@   2 adam  staff    64B  1 12 22:51 ce11_gate_hardening_20260112_225136
+drwxr-xr-x@   2 adam  staff    64B  1 12 22:51 ce11_gate_hardening_20260112_225148
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 ce11_timeline_preview_20260112_223331
+drwxr-xr-x@   3 adam  staff    96B  1 12 22:38 ce11_timeline_preview_20260112_223829
+drwxr-xr-x@   3 adam  staff    96B  1 12 22:38 ce11_timeline_preview_20260112_223845
+drwxr-xr-x@   5 adam  staff   160B  1 13 08:12 ce11_timeline_preview_20260112_223903
+drwxr-xr-x@   4 adam  staff   128B  1 13 08:12 ce11_timeline_preview_20260112_223913
+drwxr-xr-x@   4 adam  staff   128B  1 13 08:12 ce11_timeline_preview_20260112_223923
+drwxr-xr-x@   3 adam  staff    96B  1 12 22:52 ce11_timeline_preview_hardened_20260112_225208
+drwxr-xr-x@   3 adam  staff    96B  1 12 22:52 ce11_timeline_preview_hardened_20260112_225219
+drwxr-xr-x@   3 adam  staff    96B  1 12 22:52 ce11_timeline_preview_hardened_20260112_225251
+drwxr-xr-x@   5 adam  staff   160B  1 13 08:12 ce11_timeline_preview_hardened_20260112_225331
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 ce11_timeline_preview_hardened_20260112_225341
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 ce11_timeline_preview_hardened_20260112_225438
+drwxr-xr-x@   4 adam  staff   128B  1 12 22:54 ce11_timeline_preview_hardened_20260112_225458
+-rw-r--r--@   1 adam  staff   1.4K  1 12 23:19 ce11_verification_commercial_definitive.log
+-rw-r--r--@   1 adam  staff   1.3K  1 12 23:19 ce11_verification_commercial_final_pass.log
+-rw-r--r--@   1 adam  staff   339K  1 13 08:12 check_api.log
+-rw-r--r--@   1 adam  staff   303B  1 13 08:12 check_billing_audit.txt
+-rw-r--r--@   1 adam  staff   1.4K  1 13 08:12 check_gate.log
+-rw-r--r--@   1 adam  staff    21K  1 13 08:12 check_worker.log
+-rw-r--r--@   1 adam  staff   981B  1  8 08:03 close_record_deprecation_phaseA_20251219_094328.md
+drwxr-xr-x@   9 adam  staff   288B  1  8 08:03 core3_insight_snapshot
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 core4_insight_consumption
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 core5_insight_readiness
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 core7_alignment
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 core7_product_e2e
+drwxr-xr-x@   9 adam  staff   288B  1  8 08:03 d5_ce_pipeline_20251230_080428
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 d5_ce_pipeline_20251230_080542
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 d5_ce_pipeline_20251230_080657
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 d5_ce_pipeline_20251230_080759
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 d5_ce_pipeline_20251230_080940
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 d5_ce_pipeline_20251230_081108
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 d5_ce_pipeline_20251230_081443
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 d5_ce_pipeline_20251230_081750
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 d5_ce_pipeline_20251230_082115
+drwxr-xr-x@  14 adam  staff   448B  1  8 08:03 d5_ce_pipeline_20251230_082414
+drwxr-xr-x@  14 adam  staff   448B  1  8 08:03 d5_ce_pipeline_20251230_082940
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 d5_ce_pipeline_20251230_083256
+drwxr-xr-x@  14 adam  staff   448B  1  8 08:03 d5_ce_pipeline_20251230_083439
+drwxr-xr-x@  14 adam  staff   448B  1  8 08:03 d5_ce_pipeline_20251230_083726
+drwxr-xr-x@  14 adam  staff   448B  1  8 08:03 d5_ce_pipeline_20251230_084115
+-rw-r--r--@   1 adam  staff   1.5K  1  8 08:03 deprecation_close_index_20251219.md
+drwxr-xr-x@  50 adam  staff   1.6K  1  8 08:03 dispatch_audit
+-rw-r--r--@   1 adam  staff   1.7K  1  8 08:03 duplicate_rules_enforcement_audit_20251220_0820.md
+-rw-r--r--@   1 adam  staff   1.7K  1  8 08:03 feature_phase_gate_20251219.md
+-rw-r--r--@   1 adam  staff   175B  1  8 08:03 FINAL_6LINE_EVIDENCE_CORE_01.txt
+-rw-r--r--@   1 adam  staff   205B  1  8 08:03 FINAL_6LINE_EVIDENCE_CORE_02.txt
+-rw-r--r--@   1 adam  staff   204B  1  8 08:03 FINAL_6LINE_EVIDENCE_LAUNCH_02.txt
+-rw-r--r--@   1 adam  staff   217B  1  8 08:03 FINAL_6LINE_EVIDENCE_LAUNCH_03.txt
+-rw-r--r--@   1 adam  staff   206B  1  8 08:03 FINAL_6LINE_EVIDENCE_LAUNCH_04.txt
+drwxr-xr-x@ 109 adam  staff   3.4K  1  8 08:03 frontend-e2e
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_220547
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_220612
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_222725
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_223002
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_223246
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_223435
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_223842
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_224717
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_225115
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_225326
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_225538
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_225828
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_230031
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_230409
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 full_audit_20251230_230603
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_d5_pipeline_20251230_085518
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_d5_pipeline_20251230_085624
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_d5_pipeline_20251230_085858
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_d5_pipeline_20251230_090111
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 gate_d5_pipeline_20251230_090300
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_d5_pipeline_20251230_090533
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 gate_d5_pipeline_20251230_090741
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 gate_d5_pipeline_20251230_091014
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 gate_d5_pipeline_20251230_091443
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 gate_d5_pipeline_20251230_105459
+-rw-r--r--@   1 adam  staff   1.2K  1  9 14:31 gate_p0r0_render.log
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 gate_reaper_fullscope_2025-12-30T04-14-16
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_reaper_fullscope_20251230_111340
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 gate_reaper_research_20251230_110448
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_123310
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_123423
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_130525
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_130821
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_134618
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_134709
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_134841
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_135457
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_140200
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_140310
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_141102
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_141319
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_141530
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_141740
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_141925
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_142131
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_144657
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_144903
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_145106
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_145257
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_145503
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 gate_stage6_11_dispatch_revive_20251230_145703
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_8_reaper_20251230_095346
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_8_reaper_20251230_095550
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_8_reaper_20251230_095749
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_8_reaper_20251230_095939
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_8_reaper_20251230_100124
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage6_8_reaper_20251230_105535
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_153832
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_153931
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_154225
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_154258
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_154338
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_154425
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_154644
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_154727
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_154801
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_154919
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_154945
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_155131
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_155223
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_155323
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_155445
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_155710
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_155741
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_160031
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_161149
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_161349
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_161439
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_161526
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_161605
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_162032
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_162239
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_ce07_memory_20251230_162309
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_ce07_memory_20251230_162353
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_165431
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_182226
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_204811
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_ce07_memory_20251230_205757
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 gate_stage7_ce07_memory_20251230_211134
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 gate_stage7_ce07_memory_20251230_211148
+drwxr-xr-x@  12 adam  staff   384B  1  8 08:03 gate_stage7_ce07_memory_20251230_211222
+drwxr-xr-x@  12 adam  staff   384B  1  8 08:03 gate_stage7_ce07_memory_20251230_211244
+drwxr-xr-x@  13 adam  staff   416B  1  8 08:03 gate_stage7_ce07_memory_20251230_211833
+drwxr-xr-x@  13 adam  staff   416B  1  8 08:03 gate_stage7_ce07_memory_20251230_212040
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 gate_stage7_ce07_memory_20251230_212142
+drwxr-xr-x@  16 adam  staff   512B  1  8 08:03 gate_stage7_ce07_memory_20251230_212909
+drwxr-xr-x@  16 adam  staff   512B  1  8 08:03 gate_stage7_ce07_memory_20251230_213038
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_213818
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_213932
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_213946
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_215341
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_215415
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_215534
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_215648
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_220315
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_220620
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_222731
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_223008
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_223253
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_223440
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_223848
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_224724
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_225129
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_225332
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_225544
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_225835
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_230038
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_230416
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_230609
+drwxr-xr-x@  17 adam  staff   544B  1  8 08:03 gate_stage7_ce07_memory_20251230_230738
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_102055
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_102233
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_102312
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_102344
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_102430
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_102515
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_102643
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_102838
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103000
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103045
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103158
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103303
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103457
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103553
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103640
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103726
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103822
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_103910
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_104117
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_104303
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate_stage7_commercial_loop_20251230_104500
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_104607
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_104718
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_104838
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_105006
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_105211
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate_stage7_commercial_loop_20251230_105331
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 gate_stage7_commercial_loop_20251230_105430
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-80_20251231_082531
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 gate-80_20251231_082629
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-80_20251231_105239
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 gate-80_20251231_111901
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 gate-80_20251231_112547
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-80_20251231_131434
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-80_20251231_134444
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-81_20251231_082537
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-81_20251231_082554
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate-81_20251231_082619
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-81_20251231_105248
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-81_20251231_111907
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate-81_20251231_112514
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-90_costguard_20251231T033301Z
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-90_costguard_20251231T033436Z
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 gate-90_costguard_20251231T034139Z
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate-90_costguard_20251231T034223Z
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 gate-90_costguard_20251231T042533Z
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 gates
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 governance_finalize_20251231_004425
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 hang_diag_20251230_204453
+drwxr-xr-x@   5 adam  staff   160B  1 10 23:45 HEALTH_20260110_221341
+drwxr-xr-x@   5 adam  staff   160B  1 10 23:45 HEALTH_20260110_224827
+drwxr-xr-x@   5 adam  staff   160B  1 10 23:45 HEALTH_20260110_230352
+drwxr-xr-x@   5 adam  staff   160B  1 10 23:45 HEALTH_20260110_230428
+drwxr-xr-x@   5 adam  staff   160B  1 10 23:45 HEALTH_20260110_230440
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260110_231557
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260110_232103
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260110_232126
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:21 HEALTH_20260110_232144
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260110_232213
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260110_234010
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260110_234046
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260110_234427
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260110_234851
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260110_235825
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:59 HEALTH_20260110_235930
+drwxr-xr-x@   5 adam  staff   160B  1 11 00:00 HEALTH_20260111_000006
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_000054
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_000429
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_000604
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_001842
+drwxr-xr-x@   3 adam  staff    96B  1 11 00:21 HEALTH_20260111_002102
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_002659
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_002730
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_002936
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_003018
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_003234
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_003254
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_003421
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_003440
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_003539
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_004357
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_004757
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_20260111_004908
+drwxr-xr-x@   7 adam  staff   224B  1 11 09:43 HEALTH_20260111_011052
+drwxr-xr-x@   7 adam  staff   224B  1 11 09:43 HEALTH_20260111_013959
+drwxr-xr-x@   7 adam  staff   224B  1 11 09:43 HEALTH_20260111_094330
+drwxr-xr-x@   5 adam  staff   160B  1 11 09:57 HEALTH_20260111_095425
+drwxr-xr-x@   7 adam  staff   224B  1 11 21:02 HEALTH_20260111_100002
+drwxr-xr-x@   7 adam  staff   224B  1 11 21:02 HEALTH_20260111_101140
+drwxr-xr-x@   7 adam  staff   224B  1 11 21:02 HEALTH_20260111_125144
+drwxr-xr-x@   4 adam  staff   128B  1 11 00:44 HEALTH_20260111_PHASE_H_FINAL
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 HEALTH_PURGE_20260110_224648
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 HEALTH_PURGE_20260110_224705
+drwxr-xr-x@   3 adam  staff    96B  1 10 23:45 HEALTH_PURGE_20260110_225939
+drwxr-xr-x@   2 adam  staff    64B  1 10 23:12 HEALTH_PURGE_20260110_231246
+drwxr-xr-x@   2 adam  staff    64B  1 10 23:15 HEALTH_PURGE_20260110_231529
+drwxr-xr-x@   7 adam  staff   224B  1 11 00:49 HEALTH_PURGE_20260110_231546
+drwxr-xr-x@   8 adam  staff   256B  1 11 00:49 HEALTH_PURGE_20260110_232103
+drwxr-xr-x@   6 adam  staff   192B  1 11 00:49 HEALTH_PURGE_20260110_235057
+drwxr-xr-x@   8 adam  staff   256B  1 11 00:49 HEALTH_PURGE_20260110_235114
+lrwxr-xr-x@   1 adam  staff    28B  1 11 00:49 HEALTH_PURGE_LATEST -> HEALTH_PURGE_20260110_235114
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 hmac_regression_20260105_132839
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 hmac_regression_20260105_134244
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 hmac_regression_20260105_135101
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 hmac_regression_20260105_140133
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 hmac_regression_20260105_163017
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 hmac_regression_20260107_152017
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 hmac_regression_20260107_153021
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 huge_novel_20260101_160721
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 huge_novel_20260101_162612
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 huge_novel_20260101_162747
+-rw-r--r--@   1 adam  staff   1.1K  1 11 21:42 INDEX_STAGE4.md
+-rw-r--r--@   1 adam  staff   283B  1  8 08:03 INDEX.md
+drwxr-xr-x@   4 adam  staff   128B  1  9 23:09 LAUNCH_GATES_SEAL_20260109
+-rw-r--r--@   1 adam  staff    17K  1  8 08:03 manual_verification_deprecation_phaseA_20251219_080136.md
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 p0_ce_chain
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 p0_ce06_finalize
+-rw-r--r--@   1 adam  staff   908B  1  9 13:02 P0_R0_SHOT_RENDER_EVIDENCE.rerun.txt
+-rw-r--r--@   1 adam  staff   319B  1  9 14:33 P0_R0_SHOT_RENDER_EVIDENCE.txt
+-rw-r--r--@   1 adam  staff   939B  1  9 14:33 P0_R0_SHOT_RENDER_RESULT.json
+-rw-r--r--@   1 adam  staff   1.4K  1  9 13:12 P0_R1_VIDEO_MERGE_EVIDENCE.txt
+-rw-r--r--@   1 adam  staff    51B  1  9 22:04 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T220426.log
+-rw-r--r--@   1 adam  staff   433B  1  9 22:05 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T220502.log
+-rw-r--r--@   1 adam  staff   451B  1  9 22:19 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T221955.log
+-rw-r--r--@   1 adam  staff   451B  1  9 23:03 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T230307.log
+-rw-r--r--@   1 adam  staff   451B  1  9 23:05 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T230544.log
+-rw-r--r--@   1 adam  staff   451B  1  9 23:21 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T232101.log
+-rw-r--r--@   1 adam  staff   451B  1  9 23:23 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T232319.log
+-rw-r--r--@   1 adam  staff   451B  1  9 23:28 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T232835.log
+-rw-r--r--@   1 adam  staff   451B  1  9 23:29 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T232920.log
+-rw-r--r--@   1 adam  staff   451B  1  9 23:29 P0_R1_VIDEO_MERGE_HASH_STREAM_20260109T232940.log
+drwxr-xr-x@   3 adam  staff    96B  1  9 22:55 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T225523
+drwxr-xr-x@   3 adam  staff    96B  1  9 22:55 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T225541
+drwxr-xr-x@   3 adam  staff    96B  1  9 22:55 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T225551
+drwxr-xr-x@   3 adam  staff    96B  1  9 23:03 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T230308
+drwxr-xr-x@   3 adam  staff    96B  1  9 23:05 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T230544
+drwxr-xr-x@   3 adam  staff    96B  1  9 23:21 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T232102
+drwxr-xr-x@   3 adam  staff    96B  1  9 23:23 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T232319
+drwxr-xr-x@   3 adam  staff    96B  1  9 23:28 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T232836
+drwxr-xr-x@   3 adam  staff    96B  1  9 23:29 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T232920
+drwxr-xr-x@   3 adam  staff    96B  1  9 23:29 P0_R2_VIDEO_MERGE_GUARDRAILS_20260109T232941
+-rw-r--r--@   1 adam  staff   1.0K  1  9 23:29 P0_R2_VIDEO_MERGE_GUARDRAILS_EVIDENCE.txt
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 p1_1_concurrency_audit
+-rw-r--r--@   1 adam  staff   278B  1  8 08:03 p1_1_concurrency_audit.json
+drwxr-xr-x@   6 adam  staff   192B  1  9 18:50 p1_1_concurrency_capacity
+-rw-r--r--@   1 adam  staff   1.8K  1  9 18:50 P1_1_REGRESSION_AFTER_P1_2.txt
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:31 p1_2_billing_reconcile_20260108_083136
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:34 p1_2_billing_reconcile_20260108_083404
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:16 p1_2_dr_backup_restore_20260108_081619
+drwxr-xr-x@   3 adam  staff    96B  1  9 18:50 p1_2_engines_packaging
+drwxr-xr-x@  11 adam  staff   352B  1  9 16:21 p1_2_engines_packaging_20260109_162054
+drwxr-xr-x@  11 adam  staff   352B  1  9 16:23 p1_2_engines_packaging_20260109_162340
+drwxr-xr-x@  11 adam  staff   352B  1  9 18:31 p1_2_engines_packaging_20260109_183058
+drwxr-xr-x@  14 adam  staff   448B  1  9 18:32 p1_2_engines_packaging_20260109_183237
+-rw-r--r--@   1 adam  staff    30K  1  9 18:50 P1_2_GATE_RUN_FINAL.txt
+-rw-r--r--@   1 adam  staff    16K  1  9 18:50 P1_2_GATE_RUN.txt
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_183935
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_184525
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_185149
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_185632
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_190430
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_191206
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_192400
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_192848
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_193541
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_194837
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_195054
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_200834
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_201421
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_204933
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_205601
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_205939
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_211420
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_212955
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_214107
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_2_ha_worker_failover_20260107_214420
+-rw-r--r--@   1 adam  staff   136K  1  9 23:09 P1_3_GATE_RUN_20260109.txt
+drwxr-xr-x@   5 adam  staff   160B  1  9 18:56 p1_3_perf_obs
+-rw-r--r--@   1 adam  staff   1.0M  1  9 21:38 P1_4_API.log
+-rw-r--r--@   1 adam  staff    10K  1  9 19:47 P1_4_GATE_RUN.log
+-rw-r--r--@   1 adam  staff   2.5K  1  9 19:43 P1_4_WORKER.log
+drwxr-xr-x@   5 adam  staff   160B  1  9 20:04 p1_5_trace_perf
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_origin_foundation_20260107_074401
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p1_web_audit_20260107_153031
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p2_ce_dag_e2e_20260105_205436
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p2_ce_dag_e2e_20260105_210110
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 p2_director_solver_20260105_191542
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 p2_director_solver_20260105_210109
+-rw-r--r--@   1 adam  staff   600B  1  8 08:03 p2_FINAL_SUMMARY_20260105.txt
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 p2_visual_metrics_20260105_185543
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 p2_visual_metrics_20260105_210050
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260106_115718
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260106_123612
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_000641
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_001854
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_003204
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_003237
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_004500
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_004528
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_074242
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_074321
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_081729
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 p3_full_pipeline_e2e_20260107_081759
+drwxr-xr-x@   3 adam  staff    96B  1 13 09:54 phase1_ce06_real_closure_20260113_095416
+drwxr-xr-x@   9 adam  staff   288B  1 13 10:01 phase1_ce06_real_closure_20260113_Closure
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 phaseA
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 phaseB
+drwxr-xr-x@  11 adam  staff   352B  1  8 08:03 phaseC
+drwxr-xr-x@  12 adam  staff   384B  1  8 08:03 phaseD
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:41 pipeline_e2e_video_2026-01-12T02-41-15-719Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:41 pipeline_e2e_video_2026-01-12T02-41-31-824Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:41 pipeline_e2e_video_2026-01-12T02-41-53-840Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:42 pipeline_e2e_video_2026-01-12T02-42-54-381Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:43 pipeline_e2e_video_2026-01-12T02-43-28-068Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:43 pipeline_e2e_video_2026-01-12T02-43-48-601Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:44 pipeline_e2e_video_2026-01-12T02-44-33-093Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:45 pipeline_e2e_video_2026-01-12T02-45-17-260Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:46 pipeline_e2e_video_2026-01-12T02-46-15-782Z
+drwxr-xr-x@   3 adam  staff    96B  1 12 13:13 pipeline_e2e_video_2026-01-12T02-46-32-026Z
+drwxr-xr-x@   3 adam  staff    96B  1 12 13:13 pipeline_e2e_video_2026-01-12T02-47-02-685Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:48 pipeline_e2e_video_2026-01-12T02-48-36-187Z
+drwxr-xr-x@   3 adam  staff    96B  1 12 13:13 pipeline_e2e_video_2026-01-12T02-49-30-443Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:51 pipeline_e2e_video_2026-01-12T02-51-55-602Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 09:53 pipeline_e2e_video_2026-01-12T02-53-46-059Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 10:21 pipeline_e2e_video_2026-01-12T03-21-03-887Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 10:21 pipeline_e2e_video_2026-01-12T03-21-28-884Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 10:31 pipeline_e2e_video_2026-01-12T03-31-22-096Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-33-16-785Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-35-32-724Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-37-25-370Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-39-33-000Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-40-32-888Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-42-07-045Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-43-00-578Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 10:44 pipeline_e2e_video_2026-01-12T03-44-37-135Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-45-16-644Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 10:47 pipeline_e2e_video_2026-01-12T03-47-00-696Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-47-40-187Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-50-15-468Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T03-52-15-744Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T04-35-36-312Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T04-37-01-426Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T04-37-34-321Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T04-39-55-321Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 11:53 pipeline_e2e_video_2026-01-12T04-53-08-594Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T04-53-26-754Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T04-54-22-638Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T04-55-59-896Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 11:56 pipeline_e2e_video_2026-01-12T04-56-43-153Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 11:57 pipeline_e2e_video_2026-01-12T04-57-12-990Z
+drwxr-xr-x@   3 adam  staff    96B  1 12 13:13 pipeline_e2e_video_2026-01-12T04-58-31-715Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 12:00 pipeline_e2e_video_2026-01-12T05-00-49-665Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-01-28-759Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-02-02-328Z
+drwxr-xr-x@   3 adam  staff    96B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-02-33-308Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-17-57-925Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-18-35-187Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-19-23-318Z
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-20-04-981Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-27-47-122Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-27-59-719Z
+drwxr-xr-x@   3 adam  staff    96B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-58-28-425Z
+drwxr-xr-x@   3 adam  staff    96B  1 12 13:13 pipeline_e2e_video_2026-01-12T05-58-33-193Z
+drwxr-xr-x@   7 adam  staff   224B  1 12 13:13 pipeline_e2e_video_2026-01-12T06-07-45-123Z
+drwxr-xr-x@   5 adam  staff   160B  1 12 13:20 pipeline_e2e_video_2026-01-12T06-20-59-808Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 13:24 pipeline_e2e_video_2026-01-12T06-24-05-949Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 13:56 pipeline_e2e_video_2026-01-12T06-55-58-369Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 13:58 pipeline_e2e_video_2026-01-12T06-58-13-830Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:04 pipeline_e2e_video_2026-01-12T07-04-09-140Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:05 pipeline_e2e_video_2026-01-12T07-05-16-574Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:09 pipeline_e2e_video_2026-01-12T07-09-24-689Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:10 pipeline_e2e_video_2026-01-12T07-10-38-313Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:13 pipeline_e2e_video_2026-01-12T07-13-21-406Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:15 pipeline_e2e_video_2026-01-12T07-15-35-395Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:16 pipeline_e2e_video_2026-01-12T07-16-36-180Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:19 pipeline_e2e_video_2026-01-12T07-17-56-152Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:20 pipeline_e2e_video_2026-01-12T07-20-15-406Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:22 pipeline_e2e_video_2026-01-12T07-21-23-624Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:23 pipeline_e2e_video_2026-01-12T07-23-21-697Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:25 pipeline_e2e_video_2026-01-12T07-25-30-582Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:27 pipeline_e2e_video_2026-01-12T07-27-36-186Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:35 pipeline_e2e_video_2026-01-12T07-34-47-631Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:36 pipeline_e2e_video_2026-01-12T07-36-39-771Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:38 pipeline_e2e_video_2026-01-12T07-37-50-753Z
+drwxr-xr-x@   6 adam  staff   192B  1 12 14:42 pipeline_e2e_video_2026-01-12T07-42-05-119Z
+drwxr-xr-x@   7 adam  staff   224B  1 12 14:44 pipeline_e2e_video_2026-01-12T07-44-08-006Z
+drwxr-xr-x@   3 adam  staff    96B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-30-32-975Z
+drwxr-xr-x@   5 adam  staff   160B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-31-23-584Z
+drwxr-xr-x@   5 adam  staff   160B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-33-48-272Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-35-49-557Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-36-58-251Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-38-01-207Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-38-36-415Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-39-14-434Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-41-50-214Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-42-59-034Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-46-09-357Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-47-30-177Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T08-50-06-020Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T09-52-03-407Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T09-53-01-859Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T09-56-05-659Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T09-57-02-727Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T09-58-36-746Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T09-59-23-466Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T10-00-10-172Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T10-01-07-819Z
+drwxr-xr-x@   6 adam  staff   192B  1 13 08:12 pipeline_e2e_video_2026-01-12T10-02-18-767Z
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 pipeline_e2e_video_2026-01-12T10-03-16-244Z
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:00 prod_contract_security_v1_1_20260112_200020
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:04 prod_contract_security_v1_1_20260112_200401
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:04 prod_contract_security_v1_1_20260112_200420
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:05 prod_contract_security_v1_1_20260112_200508
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:05 prod_contract_security_v1_1_20260112_200527
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:05 prod_contract_security_v1_1_20260112_200557
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:08 prod_contract_security_v1_1_20260112_200829
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:09 prod_contract_security_v1_1_20260112_200953
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:10 prod_contract_security_v1_1_20260112_201028
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:11 prod_contract_security_v1_1_20260112_201157
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:13 prod_contract_security_v1_1_20260112_201315
+drwxr-xr-x@   2 adam  staff    64B  1 12 20:18 prod_contract_security_v1_1_20260112_201844
+drwxr-xr-x@   3 adam  staff    96B  1 12 20:25 prod_contract_security_v1_1_20260112_202546
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:26 prod_contract_security_v1_1_20260112_202651
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:28 prod_contract_security_v1_1_20260112_202813
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:31 prod_contract_security_v1_1_20260112_203122
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:33 prod_contract_security_v1_1_20260112_203342
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:35 prod_contract_security_v1_1_20260112_203515
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:36 prod_contract_security_v1_1_20260112_203656
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:38 prod_contract_security_v1_1_20260112_203821
+drwxr-xr-x@   3 adam  staff    96B  1 12 20:38 prod_contract_security_v1_1_20260112_203850
+drwxr-xr-x@   3 adam  staff    96B  1 12 20:40 prod_contract_security_v1_1_20260112_204049
+drwxr-xr-x@   3 adam  staff    96B  1 12 20:41 prod_contract_security_v1_1_20260112_204106
+drwxr-xr-x@   3 adam  staff    96B  1 12 20:41 prod_contract_security_v1_1_20260112_204138
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:42 prod_contract_security_v1_1_20260112_204214
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:46 prod_contract_security_v1_1_20260112_204621
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:47 prod_contract_security_v1_1_20260112_204704
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:48 prod_contract_security_v1_1_20260112_204836
+drwxr-xr-x@   4 adam  staff   128B  1 12 20:51 prod_contract_security_v1_1_20260112_205155
+drwxr-xr-x@   4 adam  staff   128B  1 12 21:11 prod_contract_security_v1_1_20260112_211150
+drwxr-xr-x@   4 adam  staff   128B  1 12 21:13 prod_contract_security_v1_1_20260112_211315
+drwxr-xr-x@   3 adam  staff    96B  1 12 21:14 prod_contract_security_v1_1_20260112_211410
+drwxr-xr-x@   3 adam  staff    96B  1 12 21:14 prod_contract_security_v1_1_20260112_211430
+drwxr-xr-x@   3 adam  staff    96B  1 12 21:15 prod_contract_security_v1_1_20260112_211508
+drwxr-xr-x@   3 adam  staff    96B  1 12 21:15 prod_contract_security_v1_1_20260112_211550
+drwxr-xr-x@   3 adam  staff    96B  1 12 21:16 prod_contract_security_v1_1_20260112_211609
+drwxr-xr-x@   3 adam  staff    96B  1 12 21:16 prod_contract_security_v1_1_20260112_211635
+drwxr-xr-x@   3 adam  staff    96B  1 12 21:17 prod_contract_security_v1_1_20260112_211706
+drwxr-xr-x@   4 adam  staff   128B  1 12 21:17 prod_contract_security_v1_1_20260112_211753
+drwxr-xr-x@   3 adam  staff    96B  1 12 21:20 prod_contract_security_v1_1_20260112_212021
+drwxr-xr-x@   4 adam  staff   128B  1 12 21:20 prod_contract_security_v1_1_20260112_212037
+drwxr-xr-x@   5 adam  staff   160B  1 12 21:21 prod_contract_security_v1_1_20260112_212108
+drwxr-xr-x@   4 adam  staff   128B  1 12 21:22 prod_contract_security_v1_1_20260112_212203
+drwxr-xr-x@   5 adam  staff   160B  1 12 21:22 prod_contract_security_v1_1_20260112_212221
+drwxr-xr-x@   4 adam  staff   128B  1 12 21:23 prod_contract_security_v1_1_20260112_212312
+drwxr-xr-x@   5 adam  staff   160B  1 12 21:24 prod_contract_security_v1_1_20260112_212402
+drwxr-xr-x@   4 adam  staff   128B  1 12 21:25 prod_contract_security_v1_1_20260112_212544
+drwxr-xr-x@   5 adam  staff   160B  1 12 21:26 prod_contract_security_v1_1_20260112_212605
+drwxr-xr-x@   5 adam  staff   160B  1 12 21:28 prod_contract_security_v1_1_20260112_212757
+drwxr-xr-x@   4 adam  staff   128B  1 12 21:28 prod_contract_security_v1_1_20260112_212836
+drwxr-xr-x@   8 adam  staff   256B  1 13 08:12 prod_contract_security_v1_1_20260112_212910
+drwxr-xr-x@   8 adam  staff   256B  1 13 08:12 prod_contract_security_v1_1_20260112_212956
+drwxr-xr-x@   8 adam  staff   256B  1 13 08:12 prod_contract_security_v1_1_20260112_213010
+drwxr-xr-x@   8 adam  staff   256B  1 13 08:12 prod_contract_security_v1_1_20260112_213129
+drwxr-xr-x@   2 adam  staff    64B  1 12 21:54 prod_contract_security_v1_1_20260112_215408
+drwxr-xr-x@   8 adam  staff   256B  1 13 08:12 prod_contract_security_v1_1_20260112_215415
+drwxr-xr-x@   5 adam  staff   160B  1 13 08:12 prod_contract_security_v1_1_20260112_215454
+drwxr-xr-x@   5 adam  staff   160B  1 13 08:12 prod_contract_security_v1_1_20260112_215545
+drwxr-xr-x@   8 adam  staff   256B  1 13 08:12 prod_contract_security_v1_1_20260112_215615
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 prod_contract_security_v1_1_20260112_224225
+drwxr-xr-x@   2 adam  staff    64B  1 12 22:52 prod_contract_security_v1_1_20260112_225208
+drwxr-xr-x@   7 adam  staff   224B  1 13 08:12 prod_contract_security_v1_1_20260112_225251
+drwxr-xr-x@  24 adam  staff   768B  1  8 08:03 quality_gate
+-rw-r--r--@   1 adam  staff   1.3K  1  8 08:03 README_CLOSE_DECISION.md
+drwxr-xr-x@  13 adam  staff   416B  1  8 08:03 repo_audit_20251230_232307
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 repo_audit_20251230_235519
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 repo_audit_20251231_002724
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 repo_audit_20251231_004316
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 repo_audit_20251231_080101
+drwxr-xr-x@  15 adam  staff   480B  1  8 08:03 repo_audit_20251231_082633
+drwxr-xr-x@  14 adam  staff   448B  1  8 08:03 repo_audit_20251231_104241
+drwxr-xr-x@  14 adam  staff   448B  1  8 08:03 repo_audit_20251231_110940
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 repo_audit_20251231_151300
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 repo_audit_20251231_151321
+drwxr-xr-x@  14 adam  staff   448B  1  8 08:03 repo_audit_20251231_151358
+drwxr-xr-x@   3 adam  staff    96B  1 11 09:43 RISK_LATEST
+-rw-r--r--@   1 adam  staff   2.6K  1  9 23:01 RUN_LAUNCH_GATES_FULL_20260109T230124.log
+-rw-r--r--@   1 adam  staff   4.3K  1  9 23:03 RUN_LAUNCH_GATES_FULL_20260109T230141.log
+-rw-r--r--@   1 adam  staff   2.7K  1  9 23:04 RUN_LAUNCH_GATES_FULL_20260109T230324.log
+-rw-r--r--@   1 adam  staff   2.7K  1  9 23:05 RUN_LAUNCH_GATES_FULL_20260109T230343.log
+-rw-r--r--@   1 adam  staff   4.3K  1  9 23:05 RUN_LAUNCH_GATES_FULL_20260109T230418.log
+-rw-r--r--@   1 adam  staff   415B  1 11 21:02 S4_6_FFMPEG_VERIFY_EVIDENCE_20260111.txt
+-rw-r--r--@   1 adam  staff   587B  1 11 21:02 S4_7_TIMELINE_VERIFY_EVIDENCE_20260111_DIST_DEV.txt
+-rw-r--r--@   1 adam  staff   205B  1 11 21:02 S4_7_TIMELINE_VERIFY_EVIDENCE_20260111_PROD_FINAL.txt
+-rw-r--r--@   1 adam  staff   205B  1 11 21:02 S4_7_TIMELINE_VERIFY_EVIDENCE_20260111_PROD_V3.txt
+-rw-r--r--@   1 adam  staff   205B  1 11 21:02 S4_7_TIMELINE_VERIFY_EVIDENCE_20260111_PROD.txt
+-rw-r--r--@   1 adam  staff   587B  1 11 21:02 S4_7_TIMELINE_VERIFY_EVIDENCE_20260111_SEALED.txt
+-rw-r--r--@   1 adam  staff   587B  1 11 21:02 S4_7_TIMELINE_VERIFY_EVIDENCE_20260111.txt
+-rw-r--r--@   1 adam  staff   872B  1 11 21:41 S4_8_TRANSITION_VERIFY_EVIDENCE_20260111.txt
+-rw-r--r--@   1 adam  staff   377K  1 13 08:01 seal_api.log
+-rw-r--r--@   1 adam  staff   1.4K  1 13 08:01 seal_gate.log
+-rw-r--r--@   1 adam  staff    24K  1 13 08:01 seal_worker.log
+-rw-r--r--@   1 adam  staff   704B  1  8 08:03 seasons_infra_verification_v13.md
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_132659
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_132828
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_133004
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_144212
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_144403
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_144725
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_144917
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_145105
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_145252
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_145415
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_145656
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_145937
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_150159
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_150607
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_150925
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_151137
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_151348
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_151636
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 ssot_regression_hardpass_20260107_151855
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 ssot_regression_hardpass_20260107_152857
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 stage11
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 stage12
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 stage12_ce01_ce02_services_20251231_174609
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 stage12_final_20260101_014546
+-rw-r--r--@   1 adam  staff   1.1K  1  8 08:03 STAGE12_FINAL_VERIFICATION.txt
+drwxr-xr-x@  12 adam  staff   384B  1  8 08:03 stage12_migrate_resolve
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage12_pre_commit_final
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage13_api_routes_20260101_021106
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage13_api_routes_20260101_021802
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage13_api_routes_20260101_022324
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage13_api_routes_20260101_024109
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage13_api_routes_20260101_024751
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_024024
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_033856
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_034721
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_035121
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_041710
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_042925
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_044440
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_044913
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_051546
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_052216
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_055052
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_055152
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_055249
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_055409
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_055509
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_055626
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage14_studio_20260101_055923
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 stage14_studio_20260101_060044
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage15_studio_20260101_065105
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage15_studio_20260101_065320
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage15_studio_20260101_065350
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage15_studio_20260101_065408
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 stage15_studio_20260101_065502
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 stage15_studio_20260101_065619
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage15_studio_20260101_065945
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage15_studio_20260101_070154
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage15_studio_20260101_070226
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 stage15_studio_20260101_071344
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage15_studio_20260101_072029
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage15_studio_20260101_072642
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 stage15_studio_20260101_072732
+drwxr-xr-x@  12 adam  staff   384B  1  8 08:03 stage16_docker_daemon_20260101_085118
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_094341
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_095815
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_100946
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_102541
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_102621
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_103747
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_104933
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_105221
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_105315
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_105520
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_105840
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage16_release_20260101_114427
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 stage16_release_20260101_114958
+drwxr-xr-x@   4 adam  staff   128B  1 12 13:13 stage3_prod_ready_pre_exec_Baseline
+drwxr-xr-x@   4 adam  staff   128B  1 11 09:42 STAGE3_REALIZATION_REVIEW_20260111
+drwxr-xr-x@   5 adam  staff   160B  1  8 08:03 stage33
+drwxr-xr-x@   7 adam  staff   224B  1  8 08:03 stage34
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 stage35
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 stage36
+drwxr-xr-x@   2 adam  staff    64B  1 12 15:19 stage4_onboarding_bootstrap_20260112T081909Z
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 stage5_discovery_20251229_103526
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 stage6_5_compliance_patch_20251229_182403
+drwxr-xr-x@   8 adam  staff   256B  1  8 08:03 stage6_5_compliance_patch_20251229_183012
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 stage6_5_review_20251229_165919
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 stage6_6_secure_refresh_20251229_183601
+drwxr-xr-x@   9 adam  staff   288B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_203449
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_204502
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_204708
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_205227
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_205549
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_210213
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_211459
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_213133
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_213231
+drwxr-xr-x@  10 adam  staff   320B  1  8 08:03 stage6_7_e2e_real_delivery_20251229_213325
+drwxr-xr-x@  63 adam  staff   2.0K  1  8 08:03 stage6_7_e2e_real_delivery_20251229_214223
+-rw-r--r--@   1 adam  staff   6.7K  1  8 08:03 structure_contract_verification_v1.md
+-rw-r--r--@   1 adam  staff   1.3K  1  8 08:03 structure_view_frontend_alignment_v1_20251220.md
+-rw-r--r--@   1 adam  staff   2.0K  1  8 08:03 temp_failure_log.txt
+-rw-r--r--@   1 adam  staff   580K  1 13 07:50 v10_api.log
+-rw-r--r--@   1 adam  staff   1.3K  1 13 07:50 v10_gate.log
+-rw-r--r--@   1 adam  staff    34K  1 13 07:50 v10_worker.log
+-rw-r--r--@   1 adam  staff   461K  1 13 07:51 v11_api.log
+-rw-r--r--@   1 adam  staff   1.3K  1 13 07:51 v11_gate.log
+-rw-r--r--@   1 adam  staff    33K  1 13 07:51 v11_worker.log
+-rw-r--r--@   1 adam  staff   281K  1 13 07:52 v12_api.log
+-rw-r--r--@   1 adam  staff   1.4K  1 13 07:52 v12_gate.log
+-rw-r--r--@   1 adam  staff    17K  1 13 07:52 v12_worker.log
+-rw-r--r--@   1 adam  staff   1.2K  1 13 07:47 v7_api.log
+-rw-r--r--@   1 adam  staff   591B  1 13 07:48 v7_gate.log
+-rw-r--r--@   1 adam  staff    14K  1 13 07:48 v7_worker.log
+-rw-r--r--@   1 adam  staff   1.3M  1 13 07:48 v8_api.log
+-rw-r--r--@   1 adam  staff   1.3K  1 13 07:48 v8_gate.log
+-rw-r--r--@   1 adam  staff    47K  1 13 07:48 v8_worker.log
+-rw-r--r--@   1 adam  staff   163K  1 13 07:49 v9_api.log
+-rw-r--r--@   1 adam  staff   601B  1 13 07:49 v9_gate.log
+-rw-r--r--@   1 adam  staff   8.9K  1 13 07:49 v9_worker.log
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 video-playback-signed-url_20260106_101545
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 video-playback-signed-url_20260106_101635
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 video-playback-signed-url_20260107_002810
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 video-playback-signed-url_20260107_002833
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 video-playback-signed-url_20260107_002922
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 video-playback-signed-url_20260107_003227
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 video-playback-signed-url_20260107_003301
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 video-playback-signed-url_20260107_004523
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 video-playback-signed-url_20260107_004552
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 video-playback-signed-url_20260107_074313
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 video-playback-signed-url_20260107_074346
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 video-playback-signed-url_20260107_081754
+drwxr-xr-x@   6 adam  staff   192B  1  8 08:03 video-playback-signed-url_20260107_081823
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 web_audit_20260105_161552_4628
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 web_audit_20260105_161650_2637
+drwxr-xr-x@   3 adam  staff    96B  1  8 08:03 web_audit_20260105_162154_30959
+drwxr-xr-x@   4 adam  staff   128B  1  8 08:03 web_audit_20260105_162249_27576
+----
+    }
+    context: "HmacAuthGuard"
+[10:00:44.169] ERROR (19801): [AuditLog] CRITICAL: AUDIT_SIGNING_SECRET is missing! Falling back to emergency warning.
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/workers/register",
+      "query": {},
+      "params": {
+        "0": "workers/register"
+      },
+      "headers": {
+        "host": "localhost:3000",
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "x-api-key": "dev-worker-key",
+        "x-nonce": "1a9eae32399dd492dc3074cd9498ae86-0-1768273244097",
+        "x-timestamp": "1768273244",
+        "x-content-sha256": "e2257c3840620d15d13121fb5f53bd9f8300a98f0dee2571275faa395a7844c3",
+        "x-signature": "0b5090c0d2b45889f800d9730d199e0393b52fb4371b725a7e04f490ce9df370",
+        "x-hmac-version": "2",
+        "x-worker-id": "worker_phase1_20260113_Closure",
+        "accept": "*/*",
+        "accept-language": "*",
+        "sec-fetch-mode": "cors",
+        "user-agent": "node",
+        "accept-encoding": "gzip, deflate",
+        "content-length": "393"
+      },
+      "remoteAddress": "::1",
+      "remotePort": 59785
+    }
+    context: "AuditLogService"
+[10:00:44.176] ERROR (19801): [FILTER_DEBUG] Status: 401, Payload: {"message":"无效的 API Key","error":"Unauthorized","statusCode":401}
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/workers/register",
+      "query": {},
+      "params": {
+        "0": "workers/register"
+      },
+      "headers": {
+        "host": "localhost:3000",
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "x-api-key": "dev-worker-key",
+        "x-nonce": "1a9eae32399dd492dc3074cd9498ae86-0-1768273244097",
+        "x-timestamp": "1768273244",
+        "x-content-sha256": "e2257c3840620d15d13121fb5f53bd9f8300a98f0dee2571275faa395a7844c3",
+        "x-signature": "0b5090c0d2b45889f800d9730d199e0393b52fb4371b725a7e04f490ce9df370",
+        "x-hmac-version": "2",
+        "x-worker-id": "worker_phase1_20260113_Closure",
+        "accept": "*/*",
+        "accept-language": "*",
+        "sec-fetch-mode": "cors",
+        "user-agent": "node",
+        "accept-encoding": "gzip, deflate",
+        "content-length": "393"
+      },
+      "remoteAddress": "::1",
+      "remotePort": 59785
+    }
+    context: "AllExceptionsFilter"
+[10:00:44.176] WARN (19801): {
+  "tag": "SECURITY_REJECTION",
+  "method": "POST",
+  "path": "/api/workers/register",
+  "status": 401,
+  "message": "无效的 API Key",
+  "nonce": "1a9eae32399dd492dc3074cd9498ae86-0-1768273244097",
+  "timestamp": "1768273244",
+  "ip": "::1",
+  "ua": "node"
+}
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/workers/register",
+      "query": {},
+      "params": {
+        "0": "workers/register"
+      },
+      "headers": {
+        "host": "localhost:3000",
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "x-api-key": "dev-worker-key",
+        "x-nonce": "1a9eae32399dd492dc3074cd9498ae86-0-1768273244097",
+        "x-timestamp": "1768273244",
+        "x-content-sha256": "e2257c3840620d15d13121fb5f53bd9f8300a98f0dee2571275faa395a7844c3",
+        "x-signature": "0b5090c0d2b45889f800d9730d199e0393b52fb4371b725a7e04f490ce9df370",
+        "x-hmac-version": "2",
+        "x-worker-id": "worker_phase1_20260113_Closure",
+        "accept": "*/*",
+        "accept-language": "*",
+        "sec-fetch-mode": "cors",
+        "user-agent": "node",
+        "accept-encoding": "gzip, deflate",
+        "content-length": "393"
+      },
+      "remoteAddress": "::1",
+      "remotePort": 59785
+    }
+    context: "AllExceptionsFilter"
+[10:00:44.176] ERROR (19801): [AuditLog] CRITICAL: AUDIT_SIGNING_SECRET is missing! Falling back to emergency warning.
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/workers/register",
+      "query": {},
+      "params": {
+        "0": "workers/register"
+      },
+      "headers": {
+        "host": "localhost:3000",
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "x-api-key": "dev-worker-key",
+        "x-nonce": "1a9eae32399dd492dc3074cd9498ae86-0-1768273244097",
+        "x-timestamp": "1768273244",
+        "x-content-sha256": "e2257c3840620d15d13121fb5f53bd9f8300a98f0dee2571275faa395a7844c3",
+        "x-signature": "0b5090c0d2b45889f800d9730d199e0393b52fb4371b725a7e04f490ce9df370",
+        "x-hmac-version": "2",
+        "x-worker-id": "worker_phase1_20260113_Closure",
+        "accept": "*/*",
+        "accept-language": "*",
+        "sec-fetch-mode": "cors",
+        "user-agent": "node",
+        "accept-encoding": "gzip, deflate",
+        "content-length": "393"
+      },
+      "remoteAddress": "::1",
+      "remotePort": 59785
+    }
+    context: "AuditLogService"
+[10:00:44.183] INFO (19801): request completed
+    req: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/workers/register",
+      "query": {},
+      "params": {
+        "0": "workers/register"
+      },
+      "headers": {
+        "host": "localhost:3000",
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "x-api-key": "dev-worker-key",
+        "x-nonce": "1a9eae32399dd492dc3074cd9498ae86-0-1768273244097",
+        "x-timestamp": "1768273244",
+        "x-content-sha256": "e2257c3840620d15d13121fb5f53bd9f8300a98f0dee2571275faa395a7844c3",
+        "x-signature": "0b5090c0d2b45889f800d9730d199e0393b52fb4371b725a7e04f490ce9df370",
+        "x-hmac-version": "2",
+        "x-worker-id": "worker_phase1_20260113_Closure",
+        "accept": "*/*",
+        "accept-language": "*",
+        "sec-fetch-mode": "cors",
+        "user-agent": "node",
+        "accept-encoding": "gzip, deflate",
+        "content-length": "393"
+      },
+      "remoteAddress": "::1",
+      "remotePort": 59785
+    }
+    res: {
+      "statusCode": 401,
+      "headers": {
+        "cross-origin-opener-policy": "same-origin",
+        "cross-origin-resource-policy": "same-origin",
+        "origin-agent-cluster": "?1",
+        "referrer-policy": "no-referrer",
+        "strict-transport-security": "max-age=31536000; includeSubDomains",
+        "x-content-type-options": "nosniff",
+        "x-dns-prefetch-control": "off",
+        "x-download-options": "noopen",
+        "x-frame-options": "SAMEORIGIN",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "0",
+        "vary": "Origin",
+        "access-control-allow-credentials": "true",
+        "x-trace-id": "23d90be7-57f2-4581-bacf-ec4462c28668",
+        "x-ratelimit-limit": "1000",
+        "x-ratelimit-remaining": "999",
+        "x-ratelimit-reset": "60",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "71",
+        "etag": "W/\"47-7kmPN/oGgjmbGoxgtVhn3sbTw0o\""
+      }
+    }
+    responseTime: 35
+[10:00:45.002] INFO (19801): Running automated recovery task... (Grace: 180000ms)
+    context: "OrchestratorService"
+[10:00:45.002] INFO (19801): [Recovery] Checking for dead workers... threshold: 2026-01-13T02:57:45.002Z, grace: 180000ms
+    context: "WorkerService"
+[10:00:50.003] INFO (19801): Running automated recovery task... (Grace: 180000ms)
+    context: "OrchestratorService"
+[10:00:50.004] INFO (19801): [Recovery] Checking for dead workers... threshold: 2026-01-13T02:57:50.004Z, grace: 180000ms
+    context: "WorkerService"
+---- CE11 REGRESIION LOG ----
+[2026-01-13 10:01:04] Starting Gate: CE11 Timeline Preview (Commercial Grade)
+[2026-01-13 10:01:04] API not running at http://localhost:3000. Starting API in background...
+[2026-01-13 10:01:04] Using built artifact: apps/api/dist/main.js
+[2026-01-13 10:01:04] API started with PID: 23121. Waiting for health check...
+[2026-01-13 10:01:06] API is UP.
+[2026-01-13 10:01:06] Using API Key: chec...
+[2026-01-13 10:01:06] Starting Worker...
+[2026-01-13 10:01:06] Worker started with PID: 23153.
+GATE_UID=1768273271_2454
+PROJECT_ID=proj_gate_ce11_1768273271_2454
+SCENE_ID=scene_gate_ce11_1768273271_2454
+SHOT_ID=shot_gate_ce11_1768273271_2454
+DUMMY_ASSET_ID=asset_gate_ce11_1768273271_2454
+[2026-01-13 10:01:11] Seeding Dummy Data...
+[2026-01-13 10:01:12] Sending API Request (First Attempt)...
+[2026-01-13 10:01:12] API Response: 201
+[2026-01-13 10:01:12] Created Preview Job: 2742260e-da24-4f83-940f-82bb89f13b81
+[2026-01-13 10:01:12] Verifying Nonce Replay Protection (Expect 401/4004)...
+[2026-01-13 10:01:12] Replay Response Code: 403
+[2026-01-13 10:01:12] PASS: Replay request rejected with code 4004 (Spec V1.1 compliant).
+[2026-01-13 10:01:12] Verifying Audit Log Entry...
+[2026-01-13 10:01:12] PASS: Audit log found (Target Signature f2b5e6f1e07a8ecff2dc0829d086869cb4bdf74386fb9969efa68e1afb35541a confirmed).
+[2026-01-13 10:01:12] Waiting for Job completion (API Polling: GET /api/jobs/:id)...
+[2026-01-13 10:01:12] Job Status: PENDING
+[2026-01-13 10:01:14] Job Status: PENDING
+[2026-01-13 10:01:16] Cleaning up API process 23121...
+[2026-01-13 10:01:16] Cleaning up Worker process 23153...
+tools/gate/gates/gate-ce11_timeline_preview.sh: line 38: kill: (23153) - No such process

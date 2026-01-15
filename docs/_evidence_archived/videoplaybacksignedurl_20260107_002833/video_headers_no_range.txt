@@ -1,0 +1,25 @@
+HTTP/1.1 404 Not Found
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Origin-Agent-Cluster: ?1
+Referrer-Policy: no-referrer
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: SAMEORIGIN
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 0
+Vary: Origin
+Access-Control-Allow-Credentials: true
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 99
+X-RateLimit-Reset: 60
+X-Accel-Buffering: no
+Content-Type: application/json; charset=utf-8
+Content-Length: 69
+ETag: W/"45-Ed7Nx+1hHahCkyQ2zi0gIjE51PE"
+Date: Tue, 06 Jan 2026 17:28:38 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-01-03T15:48:13.181Z",
+  "jobCount": 23,
+  "failures": [
+    {
+      "jobId": "a3a486f5-afe2-438d-bd1e-52b1997da090",
+      "type": "CE03_VISUAL_DENSITY",
+      "error": "Job a3a486f5-afe2-438d-bd1e-52b1997da090 (CE03_VISUAL_DENSITY) missing JobEngineBinding."
+    },
+    {
+      "jobId": "962e365b-f215-45dd-ab5b-3dd72d45da9b",
+      "type": "CE03_VISUAL_DENSITY",
+      "error": "Job 962e365b-f215-45dd-ab5b-3dd72d45da9b (CE03_VISUAL_DENSITY) missing JobEngineBinding."
+    },
+    {
+      "jobId": "4e1a5c9d-b9d9-48f8-9d41-a19377f1c94d",
+      "type": "CE03_VISUAL_DENSITY",
+      "error": "Job 4e1a5c9d-b9d9-48f8-9d41-a19377f1c94d (CE03_VISUAL_DENSITY) missing JobEngineBinding."
+    },
+    {
+      "jobId": "77b3e3d0-c8f4-4bca-b312-846ae1966807",
+      "type": "CE03_VISUAL_DENSITY",
+      "error": "Job 77b3e3d0-c8f4-4bca-b312-846ae1966807 (CE03_VISUAL_DENSITY) missing JobEngineBinding."
+    },
+    {
+      "jobId": "d6dc11d8-dfe2-4a41-b788-f4d8d52ba831",
+      "type": "CE03_VISUAL_DENSITY",
+      "error": "Job d6dc11d8-dfe2-4a41-b788-f4d8d52ba831 (CE03_VISUAL_DENSITY) missing JobEngineBinding."
+    }
+  ]
+}

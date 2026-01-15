@@ -4,31 +4,26 @@
 
 ## 1. 封板分级定义 (Seal Levels)
 
+> **CRITICAL**: 从 P0-R5 起，只有 **L2 (Real)** 真实生产引擎才允许进入本矩阵。
+> 任何 L0/L1 (Stub/Contract) 均 **禁止** 录入。
+
 | 等级   | 名称                 | 核心要求                                                                   |
 | :----- | :------------------- | :------------------------------------------------------------------------- |
-| **L0** | 规格封板 (Spec)      | 冻结 API 契约、审计规格、门禁骨架。引擎无需实现真实逻辑。                  |
-| **L1** | 集成封板 (Integrate) | 接入真实 Provider，全链路跑通。但产物硬断言或幂等性可能暂未闭环。          |
-| **L2** | 真实封板 (Real)      | **最高等级**。具备真实链路、产物硬断言、幂等性强断言、账本隔离及审计闭环。 |
+| **L2** | 真实封板 (Real)      | **唯一允许等级**。具备真实链路、产物硬断言、幂等性强断言、账本隔离及审计闭环。 |
 
-## 2. 已封板引擎 (Sealed)
+## 2. 真实生产引擎矩阵 (Real Production Engines)
 
-| 领域   | 引擎 Key                 | JobType                  | 封板阶段 | 封板等级 | Gate 脚本                               | 状态      |
-| :----- | :----------------------- | :----------------------- | :------- | :------- | :-------------------------------------- | :-------- |
-| Core   | `shot_render`            | `SHOT_RENDER`            | P0-R0    | **L2**   | `gate-p0-r0_mother_shot_render_real.sh` | ✅ SEALED |
-| Novel  | `ce06_novel_parsing`     | `CE06_NOVEL_PARSING`     | P0-R1    | **L2**   | `gate-p0-r1_ce02_ce06_real.sh`          | ✅ SEALED |
-| Score  | `ce03_visual_density`    | `CE03_VISUAL_DENSITY`    | P0-R2    | **L2**   | `gate-p0-r2_ce02_ce03_real.sh`          | ✅ SEALED |
-| Enrich | `ce04_visual_enrichment` | `CE04_VISUAL_ENRICHMENT` | P0-R3    | **L2**   | `gate-p0-r3_ce02_ce04_real.sh`          | ✅ SEALED |
-| Video  | `video_merge`            | `VIDEO_RENDER`           | P0-R4    | **L2**   | `gate-p0-r4_ce02_video_render_real.sh`  | ✅ SEALED |
+| 领域   | 引擎 Key                  | Gate 脚本                                 | 状态      | 说明 |
+| :----- | :------------------------ | :---------------------------------------- | :-------- | :--- |
+| Novel  | `ce06_novel_parsing`      | `gate-p0-r1_ce02_ce06_real.sh`            | ✅ SEALED | 真实解析 |
+| Score  | `ce03_visual_density`     | `gate-p0-r2_ce02_ce03_real.sh`            | ✅ SEALED | 真实评分 |
+| Enrich | `ce04_visual_enrichment`  | `gate-p0-r3_ce02_ce04_real.sh`            | ✅ SEALED | 真实扩写 |
+| Visual | `shot_render`             | `gate-p0-r0_mother_shot_render_real.sh`   | ✅ SEALED | 真实生图 (SD/Local) |
+| Video  | `video_merge`             | `gate-p0-r4_ce02_video_render_real.sh`    | ✅ SEALED | 真实合成 (FFmpeg) |
+| Secure | `ce09_media_security`     | `gate-prod_slice_v1_real.sh`              | 🔄 PLAN   | 真实水印 (Watermark) |
+| Pipe   | `pipeline_prod_video_v1`  | `gate-prod_slice_v1_real.sh`              | 🔄 PLAN   | 生产 V1 主管线 |
 
-## 3. 待封板引擎 (Backlog)
-
-| 领域     | 引擎 Key              | JobType           | 计划等级 | 计划阶段 | 关联模块             | 状态       |
-| :------- | :-------------------- | :---------------- | :------- | :------- | :------------------- | :--------- |
-| Prompt   | `ce01_prompt_gen`     | `CE01_PROMPT_GEN` | **L0**   | P0-R5    | `@scu/engines-ce01`  | ⏳ PENDING |
-| Audio    | `audio_gen`           | `AUDIO_GEN`       | **L1**   | P0-R6    | `@scu/engines-audio` | ⏳ PENDING |
-| Security | `ce09_security_check` | `CE09_SECURITY`   | **L0**   | P1-R1    | `@scu/engines-ce09`  | ⏳ PENDING |
-
-## 4. 封板准入不变量 (Audit V2 Standards)
+## 3. 封板准入不变量 (Audit V2 Standards)
 
 1. **Entry Integrity**: 必须通过 `CE02` Mother Engine (`/api/_internal/engine/invoke`) 调用。
 2. **Ledger Isolation**: `isVerification=true` 时，`cost_ledgers` 记录必须为 0。

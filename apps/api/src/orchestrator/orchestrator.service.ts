@@ -578,7 +578,11 @@ export class OrchestratorService {
         take: 1
       });
 
-      if (!candidate) return null;
+      if (!candidate) {
+        this.logger.warn(`[Orchestrator] No PENDING job found for dispatch.`);
+        return null;
+      }
+      this.logger.log(`[Orchestrator] Found candidate job: ${candidate.id}`);
 
       // 2.2 Atomic Update (Optimistic Concurrency Control)
       // 使用 updateMany + where status=PENDING 确保只有一个人能抢到
@@ -595,6 +599,7 @@ export class OrchestratorService {
 
       if (updateResult.count === 0) {
         // Race condition: Job was claimed by another worker
+        this.logger.warn(`[Orchestrator] Race condition: Job ${candidate.id} claimed by another worker`);
         return null;
       }
 
@@ -605,6 +610,7 @@ export class OrchestratorService {
     });
 
     if (!dispatchedJob) {
+      this.logger.warn(`[Orchestrator] Dispatch returned null. WorkerId=${workerId}`);
       return null;
     }
 

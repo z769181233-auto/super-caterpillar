@@ -1,0 +1,11 @@
+[
+  {
+    "id": "7ec440fa-da06-45df-b0e7-2735f53f679d",
+    "type": "CE06_NOVEL_PARSING",
+    "status": "FAILED",
+    "createdAt": "2026-01-12T07:34:47.717Z",
+    "updatedAt": "2026-01-12T07:35:01.295Z",
+    "lastError": "API request failed: Internal engine invocation is only allowed in GATE_MODE",
+    "securityProcessed": false
+  }
+]

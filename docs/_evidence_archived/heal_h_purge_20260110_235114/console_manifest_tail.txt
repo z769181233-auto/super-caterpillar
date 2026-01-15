@@ -1,0 +1,534 @@
+apps/workers/src/metrics-server.ts:22:    console.log(`[Metrics] Server running at http://localhost:${port}/metrics`);
+packages/config/src/env.ts:17:console.log(`[Config] process.env.WORKER_OFFLINE_GRACE_MS: ${process.env.WORKER_OFFLINE_GRACE_MS}`);
+packages/config/src/env.ts:46:  console.log('[Config] IGNORE_ENV_FILE=true, strictly skipping all .env files.');
+packages/config/src/env.ts:52:  console.log(`[Config] DATABASE_URL resolved from ${dbUrlSource}`);
+packages/config/src/env.ts:55:  console.log(`[Config] DATABASE_URL resolved from environment variable (System Override)`);
+packages/config/src/env.ts:87:console.log(
+packages/storage/src/index.ts:12:    console.log(`[LocalStorageAdapter] Initialized at: ${this.root}`);
+apps/workers/src/api-client.ts:133:    console.log(`[Worker DEBUG] ApiClient request: ${method} ${path}`);
+apps/workers/src/api-client.ts:182:      console.log(
+apps/workers/src/api-client.ts:277:    console.log('DEBUG: heartbeat params (FIXED):', JSON.stringify(params));
+apps/workers/src/api-client.ts:278:    console.log('DEBUG: heartbeat body ACTUAL:', JSON.stringify(body));
+apps/workers/src/api-client.ts:316:    console.log(
+apps/workers/minimal-worker/index.ts:94:    console.log(`[${new Date().toISOString()}] ✅ Heartbeat sent:`, result);
+apps/workers/minimal-worker/index.ts:126:    console.log(`[${new Date().toISOString()}] ✅ Job ${jobId} marked as RUNNING:`, result);
+apps/workers/minimal-worker/index.ts:142:    console.log(`[${new Date().toISOString()}] ✅ Job ${jobId} reported as SUCCEEDED:`, result);
+apps/workers/minimal-worker/index.ts:156:  console.log(`[${new Date().toISOString()}] 📦 Processing job ${jobId} (${jobType})`);
+apps/workers/minimal-worker/index.ts:164:    console.log(
+apps/workers/minimal-worker/index.ts:176:    console.log(`[${new Date().toISOString()}] ✅ Job ${jobId} completed successfully`);
+apps/workers/minimal-worker/index.ts:189:  console.log('=== Stage2-B Minimal Worker ===');
+apps/workers/minimal-worker/index.ts:190:  console.log(`Worker ID: ${WORKER_ID}`);
+apps/workers/minimal-worker/index.ts:191:  console.log(`API Base URL: ${API_BASE_URL}`);
+apps/workers/minimal-worker/index.ts:192:  console.log(`API Key: ${API_KEY.substring(0, 10)}...`);
+apps/workers/minimal-worker/index.ts:193:  console.log('');
+apps/workers/minimal-worker/index.ts:216:          console.log(
+apps/workers/src/billing/cost-ledger.service.ts:61:      console.log(
+apps/workers/src/main.ts.backup:61:console.log(`[WorkerConfig] workerId=${workerId} (source=${workerIdFromCli ? "cli" : workerIdFromEnv ? "env(WORKER_ID/NAME)" : "config/default"})`);
+apps/workers/src/main.ts.backup:95:  console.log('[Worker] 正在注册 Worker 节点...');
+apps/workers/src/main.ts.backup:96:  console.log(`[Worker] Worker ID: ${env.workerId}`);
+apps/workers/src/main.ts.backup:97:  console.log(`[Worker] Worker Name: ${env.workerName}`);
+apps/workers/src/main.ts.backup:98:  console.log(`[Worker] API URL: ${apiBaseUrl}`);
+apps/workers/src/main.ts.backup:99:  console.log(`[Worker] Database URL: ${env.databaseUrl ? env.databaseUrl.substring(0, 30) + '...' : '未配置'}`);
+apps/workers/src/main.ts.backup:100:  console.log(`[Worker] JOB_WORKER_ENABLED: ${env.jobWorkerEnabled}`);
+apps/workers/src/main.ts.backup:106:    console.log(`[Worker] API Key: ${env.workerApiKey.substring(0, 10)}... (configured)`);
+apps/workers/src/main.ts.backup:107:    console.log(`[Worker] API Secret: ${env.workerApiSecret ? 'SET' : 'NOT SET'}`);
+apps/workers/src/main.ts.backup:108:    console.log(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`);
+apps/workers/src/main.ts.backup:112:      console.log('[Worker] Testing DB Connection...');
+apps/workers/src/main.ts.backup:114:      console.log('[Worker] DB Connection Verified');
+apps/workers/src/main.ts.backup:145:    console.log('[Worker] ✅ Worker 注册成功');
+apps/workers/src/main.ts.backup:197:    console.log(logMessage);
+apps/workers/src/main.ts.backup:491:  console.log('========================================');
+apps/workers/src/main.ts.backup:492:  console.log('Super Caterpillar Worker');
+apps/workers/src/main.ts.backup:493:  console.log('========================================\n');
+apps/workers/src/main.ts.backup:512:    console.log('[Worker] 正在连接数据库...');
+apps/workers/src/main.ts.backup:514:    console.log('[Worker] ✅ 数据库连接成功');
+apps/workers/src/main.ts.backup:530:      console.log(`[Probe] R=${isRunning} E=${env.jobWorkerEnabled}`);
+apps/workers/src/main.ts.backup:544:    console.log('\n[Worker] ✅ Worker 启动成功');
+apps/workers/src/main.ts.backup:545:    console.log(`[Worker] 心跳间隔: 5 秒`);
+apps/workers/src/main.ts.backup:546:    console.log(`[Worker] Job 轮询间隔: ${env.workerPollInterval}ms`);
+apps/workers/src/main.ts.backup:547:    console.log(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`);
+apps/workers/src/main.ts.backup:551:      console.log('\n[Worker] 收到 SIGINT，正在关闭...');
+apps/workers/src/main.ts.backup:556:      console.log('\n[Worker] 收到 SIGTERM，正在关闭...');
+apps/workers/src/main.ts.backup:571:  console.log('[Worker] 正在断开数据库连接...');
+apps/workers/src/main.ts.backup:573:  console.log('[Worker] ✅ Worker 已关闭');
+apps/workers/src/executor/executor.ts:39:      console.log(
+apps/workers/src/main.ts:18:    console.log('[Bootstrap] GATE_MODE detected, loading Gate Worker...');
+apps/workers/src/main.ts:24:  console.log('[Bootstrap] Normal mode, loading full Worker...');
+apps/workers/src/gate/gate-worker-app.ts:26:  console.log('========================================');
+apps/workers/src/gate/gate-worker-app.ts:27:  console.log('Gate Worker (Minimal P1-1)');
+apps/workers/src/gate/gate-worker-app.ts:28:  console.log('========================================\n');
+apps/workers/src/gate/gate-worker-app.ts:35:  console.log(`[GateWorker] Worker ID: ${workerId}`);
+apps/workers/src/gate/gate-worker-app.ts:36:  console.log(`[GateWorker] API URL: ${apiBaseUrl}`);
+apps/workers/src/gate/gate-worker-app.ts:55:  console.log('[GateWorker] 正在连接数据库...');
+apps/workers/src/gate/gate-worker-app.ts:57:  console.log('[GateWorker] ✅ 数据库连接成功');
+apps/workers/src/gate/gate-worker-app.ts:60:  console.log('[GateWorker] 正在注册 Worker 节点...');
+apps/workers/src/gate/gate-worker-app.ts:71:  console.log('[GateWorker] ✅ Worker 注册成功');
+apps/workers/src/gate/gate-worker-app.ts:110:  console.log('[GateWorker] ✅ Worker 启动成功，开始轮询...\n');
+apps/workers/src/gate/gate-worker-app.ts:125:        console.log(`[GateWorker] 跳过非 Gate job: ${job.id}`);
+apps/workers/src/gate/gate-worker-app.ts:130:      console.log(`[GateWorker] 认领 job: ${job.id}`);
+apps/workers/src/gate/gate-worker-app.ts:143:        console.log(`[GateWorker] ✅ job ${job.id} 成功完成 (耗时: ${result.sleptMs}ms)`);
+apps/workers/src/gate/gate-worker-app.ts:176:    console.log('\n[GateWorker] 收到 SIGINT，正在关闭...');
+apps/workers/src/gate/gate-worker-app.ts:181:    console.log('[GateWorker] ✅ Worker 已关闭');
+apps/workers/src/gate/gate-worker-app.ts:186:    console.log('\n[GateWorker] 收到 SIGTERM，正在关闭...');
+apps/workers/src/gate/gate-worker-app.ts:191:    console.log('[GateWorker] ✅ Worker 已关闭');
+apps/workers/src/ce-core-processor.ts:39:    console.log(logMessage);
+apps/workers/src/ce-core-processor.ts:801:      console.log(
+apps/workers/src/worker-app.ts:82:console.log(
+apps/workers/src/worker-app.ts:89:console.log(`[Worker] PID file written: ${pidMeta.file}`);
+apps/workers/src/worker-app.ts:103:console.log(
+apps/workers/src/worker-app.ts:131:  console.log('[Worker] 正在注册 Worker 节点...');
+apps/workers/src/worker-app.ts:132:  console.log(`[Worker] Worker ID: ${workerId}`);
+apps/workers/src/worker-app.ts:133:  console.log(`[Worker] Worker Name: ${env.workerName}`);
+apps/workers/src/worker-app.ts:134:  console.log(`[Worker] API URL: ${apiBaseUrl}`);
+apps/workers/src/worker-app.ts:135:  console.log(
+apps/workers/src/worker-app.ts:138:  console.log(`[Worker] JOB_WORKER_ENABLED: ${env.jobWorkerEnabled}`);
+apps/workers/src/worker-app.ts:146:    console.log(`[Worker] API Key: ${env.workerApiKey.substring(0, 10)}... (configured)`);
+apps/workers/src/worker-app.ts:147:    console.log(`[Worker] API Secret: ${env.workerApiSecret ? 'SET' : 'NOT SET'}`);
+apps/workers/src/worker-app.ts:148:    console.log(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`);
+apps/workers/src/worker-app.ts:152:      console.log('[Worker] Testing DB Connection...');
+apps/workers/src/worker-app.ts:154:      console.log('[Worker] DB Connection Verified');
+apps/workers/src/worker-app.ts:172:    console.log(`[Worker] supportedEngines=${JSON.stringify(supportedEnginesFinal)}`);
+apps/workers/src/worker-app.ts:198:    console.log('[Worker] ✅ Worker 注册成功');
+apps/workers/src/worker-app.ts:261:    console.log(logMessage);
+apps/workers/src/worker-app.ts:456:    // console.log(`[WorkerRuntime] ${JSON.stringify(runtimeConfig)}`);
+apps/workers/src/worker-app.ts:460:    console.log(`[WorkerRuntime] ${JSON.stringify(runtimeConfig)}`);
+apps/workers/src/worker-app.ts:465:      // console.log(`[Worker] Max in-flight reached (${tasksRunning}/${jobMaxInFlight}). Waiting...`);
+apps/workers/src/worker-app.ts:504:  console.log('========================================');
+apps/workers/src/worker-app.ts:505:  console.log('Super Caterpillar Worker');
+apps/workers/src/worker-app.ts:506:  console.log('========================================\n');
+apps/workers/src/worker-app.ts:526:    console.log('[Worker] 正在连接数据库...');
+apps/workers/src/worker-app.ts:528:    console.log('[Worker] ✅ 数据库连接成功');
+apps/workers/src/worker-app.ts:544:      console.log(`[Probe] R=${isRunning} E=${env.jobWorkerEnabled}`);
+apps/workers/src/worker-app.ts:558:    console.log('\n[Worker] ✅ Worker 启动成功');
+apps/workers/src/worker-app.ts:559:    console.log(`[Worker] 心跳间隔: 5 秒`);
+apps/workers/src/worker-app.ts:560:    console.log(`[Worker] Job 轮询间隔: ${env.workerPollInterval}ms`);
+apps/workers/src/worker-app.ts:561:    console.log(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`);
+apps/workers/src/worker-app.ts:565:      console.log('\n[Worker] 收到 SIGINT，正在关闭...');
+apps/workers/src/worker-app.ts:570:      console.log('\n[Worker] 收到 SIGTERM，正在关闭...');
+apps/workers/src/worker-app.ts:585:  console.log('[Worker] 正在断开数据库连接...');
+apps/workers/src/worker-app.ts:587:  console.log('[Worker] ✅ Worker 已关闭');
+apps/workers/src/engine-adapter-client.ts:53:    console.log(logMessage);
+apps/workers/src/engine-adapter-client.ts:368:    console.log('[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (Stage-3-Final)');
+apps/workers/src/engine-adapter-client.ts:376:      console.log('[EngineAdapterClient] ce06_novel_parsing -> LocalAdapter (REPLAY mode)');
+apps/workers/src/worker-agent.ts:40:  console.log(`[Worker] Registering worker: ${WORKER_ID}...`);
+apps/workers/src/worker-agent.ts:58:    console.log(`[Worker] Registered successfully:`, result);
+apps/workers/src/worker-agent.ts:92:  console.log(`[Worker] Processing job: ${job.id} (type: ${job.type})`);
+apps/workers/src/worker-agent.ts:146:      console.log(`[Worker] Job ${job.id} completed successfully`);
+apps/workers/src/worker-agent.ts:199:  console.log(`[Worker] Starting Worker Agent...`);
+apps/workers/src/worker-agent.ts:200:  console.log(`[Worker] Worker ID: ${WORKER_ID}`);
+apps/workers/src/worker-agent.ts:201:  console.log(`[Worker] API Base URL: ${API_BASE_URL}`);
+apps/workers/src/worker-agent.ts:202:  console.log(`[Worker] API Key: ${API_KEY ? API_KEY.substring(0, 20) + '...' : 'NOT SET'}`);
+apps/workers/src/worker-agent.ts:203:  console.log(`[Worker] API Secret: ${API_SECRET ? 'SET' : 'NOT SET'}`);
+apps/workers/src/worker-agent.ts:235:  console.log(`[Worker] Worker Agent started successfully`);
+apps/workers/src/worker-agent.ts:236:  console.log(`[Worker] Heartbeat interval: ${HEARTBEAT_INTERVAL_MS}ms`);
+apps/workers/src/worker-agent.ts:237:  console.log(`[Worker] Job poll interval: ${JOB_POLL_INTERVAL_MS}ms`);
+apps/workers/src/worker-agent.ts:241:    console.log(`[Worker] Received ${signal}, shutting down gracefully...`);
+apps/workers/src/worker-agent.ts:248:      console.log(
+apps/workers/src/worker-agent.ts:264:    console.log(`[Worker] Exiting.`);
+apps/workers/src/video-render.processor.ts:23:  console.log(`[VideoRender] Cleaning up ${activeProcesses.size} active FFmpeg processes...`);
+apps/workers/src/video-render.processor.ts:88:  console.log(
+apps/workers/src/video-render.processor.ts:138:      console.log({ event: 'VIDEO_RENDER_SINGLE_IMAGE', jobId, cmd: [cmd, ...args].join(' ') });
+apps/workers/src/video-render.processor.ts:185:      console.log({ event: 'VIDEO_RENDER_SUCCESS_SINGLE', jobId, outputKey, durationSec: seconds });
+apps/workers/src/video-render.processor.ts:212:    console.log(`[VIDEO_RENDER_DEBUG] input.txt content:\n${joinedListContent}`);
+apps/workers/src/video-render.processor.ts:238:      console.log(`[VIDEO_RENDER] Using testsrc mode (VIDEO_RENDER_TESTSRC=1)`);
+apps/workers/src/video-render.processor.ts:257:      console.log(`[VIDEO_RENDER] Using real frames concat mode (frameKeys: ${frameKeys.length})`);
+apps/workers/src/video-render.processor.ts:260:    console.log(
+apps/workers/src/video-render.processor.ts:321:    console.log(
+apps/workers/src/video-render.processor.ts:332:    console.log(
+apps/workers/src/video-render.processor.ts:348:    console.log(
+apps/workers/src/video-render.processor.ts:360:    console.log(
+apps/workers/src/video-render.processor.ts:397:        console.log(
+apps/workers/src/novel-analysis-processor.ts:30:    console.log(logMessage);
+apps/api/src/main.ts:12:  console.log(`[GATE_DIAGNOSTIC] GATE_MODE=${process.env.GATE_MODE}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}`);
+apps/api/src/main.ts:112:          console.log(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`);
+apps/api/src/main.ts:117:    console.log(`[P0_EVIDENCE] StorageController registered = ${hasStorageController}`);
+apps/api/src/main.ts:118:    console.log(`[P0_EVIDENCE] Total controllers registered = ${totalControllers}`);
+packages/database/tools/smoke-enums.cjs:3:console.log('PrismaClient:', typeof db.PrismaClient);
+packages/database/tools/smoke-enums.cjs:4:console.log('JobStatus keys:', Object.keys(db.JobStatus || {}));
+packages/database/tools/smoke-enums.cjs:5:console.log('JobStatus.PENDING:', db.JobStatus?.PENDING);
+packages/database/prisma/seed.ts:6:  console.log('🌱 Seeding Engine data...');
+packages/database/prisma/seed.ts:125:      console.log(`✅ Updated engine: ${engine.engineKey} -> code: ${e.code} (${e.name})`);
+packages/database/prisma/seed.ts:131:      console.log(`✅ Created engine: ${engine.engineKey} -> code: ${e.code} (${e.name})`);
+packages/database/prisma/seed.ts:154:      console.log(`✅ Seeded default version for character_visual`);
+packages/database/prisma/seed.ts:158:  console.log('✅ Engine seeding completed!');
+packages/database/prisma/seed.ts:161:  console.log('🌱 Seeding RBAC data...');
+packages/database/prisma/seed.ts:179:  console.log('🧹 Cleaned non-standard roles');
+packages/database/prisma/seed.ts:188:  console.log('✅ Created/Updated roles:', roles.map((r) => r.name).join(', '));
+packages/database/prisma/seed.ts:219:  console.log('✅ Created/Updated permissions:', permissions.map((p) => p.key).join(', '));
+packages/database/prisma/seed.ts:336:    console.log(`✅ Assigned ${permKeys.length} permissions to role: ${roleName}`);
+packages/database/prisma/seed.ts:339:  console.log('✅ RBAC seeding completed!');
+packages/database/prisma/seed.ts:342:  console.log('🌱 Seeding API Keys...');
+packages/database/prisma/seed.ts:360:  console.log('✅ API Key seeding completed!');
+packages/database/prisma/seed.ts:363:  console.log('🌱 Seeding System User...');
+packages/database/prisma/seed.ts:374:  console.log('✅ System User seeding completed!');
+packages/engines/shot_render/real/sdxl.adapter.ts:55:    console.log(`[ShotRender] Reusing existing asset: ${filePath}`);
+packages/engines/shot_render/real/sdxl.adapter.ts:91:  console.log(`[ShotRender] Calling real provider for: ${input.shotId}`);
+packages/engines/shot_render/real/sdxl.adapter.ts:136:  console.log(
+packages/database/prisma/seed.js:144:          console.log('🌱 Seeding Engine data...');
+packages/database/prisma/seed.js:225:          console.log(
+packages/database/prisma/seed.js:242:          console.log(
+packages/database/prisma/seed.js:253:          console.log('✅ Engine seeding completed!');
+packages/database/scripts/dev-episodes-fix.js:48:  console.log(
+packages/database/scripts/dev-post-migration-check.js:39:  console.log(
+packages/database/scripts/dev-episodes-check.js:12:  console.log(JSON.stringify({ total, nulls, grouped }, null, 2));
+apps/api/src/scripts/delete-worker.ts:8:  console.log('==============================');
+apps/api/src/scripts/delete-worker.ts:9:  console.log(' 删除 Worker 相关记录');
+apps/api/src/scripts/delete-worker.ts:10:  console.log('==============================');
+apps/api/src/scripts/delete-worker.ts:15:  console.log('✅ 已删除 workerNode 表全部记录');
+apps/api/src/scripts/p1_2_billing_seed.ts:70:  console.log(`PROJECT_ID=${project.id}`);
+apps/api/src/scripts/p1_2_billing_seed.ts:71:  console.log(`ORG_ID=${org.id}`);
+apps/api/src/scripts/p1_2_billing_seed.ts:72:  console.log(`TEST_JOB_ID=${job.id}`);
+apps/api/src/scripts/p1_2_billing_seed.ts:73:  console.log(`PERIOD_START=${iso(periodStart)}`);
+apps/api/src/scripts/p1_2_billing_seed.ts:74:  console.log(`PERIOD_END=${iso(periodEnd)}`);
+apps/api/src/scripts/p2_trigger.ts:30:    console.log(`JOB_ID=${job.id}`);
+apps/api/src/scripts/p2_trigger.ts:31:    console.log(`TRACE_ID=${traceId}`);
+apps/api/src/scripts/create-test-novel-job.ts:172:  console.log('[create-test-novel-job] created job:', {
+apps/api/src/scripts/dev-create-test-novel-job.ts:162:  console.log('Created job:', job.id, job.type, job.status);
+apps/api/src/scripts/create-novel-analysis-http-test-jobs.ts:172:    console.log(`[CreateHttpTestJob] Created job ${job.id} with mode=${mode}`);
+apps/api/src/scripts/debug-jobs.ts:16:  console.log(
+apps/api/src/scripts/p1_2_generate_statement.ts:52:  console.log(`CHECKSUM=${checksum}`);
+apps/api/src/scripts/p1_2_ha_seed.ts:75:    console.log(`PIDFILE_HIT=${pidRes.hit}`);
+apps/api/src/scripts/p1_2_ha_seed.ts:305:  console.log(`PROJECT_ID=${job.projectId}`);
+apps/api/src/scripts/p1_2_ha_seed.ts:306:  console.log(`TEST_JOB_ID=${job.id}`);
+apps/api/src/scripts/p1_2_ha_seed.ts:307:  console.log(`KILL_WORKER_ID=${killWorkerId}`);
+apps/api/src/scripts/p1_2_ha_seed.ts:308:  console.log(`KILL_WORKER_PID=${killPid}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:30:  console.log(`Triggering CE DAG E2E...`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:31:  console.log(`RUN_ID=${runId}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:32:  console.log(`TRACE_ID=${traceId}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:49:  console.log(`CE06_JOB_ID=${result.ce06JobId}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:50:  console.log(`CE03_JOB_ID=${result.ce03JobId}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:51:  console.log(`CE04_JOB_ID=${result.ce04JobId}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:52:  console.log(`CE03_SCORE=${result.ce03Score}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:53:  console.log(`CE04_SCORE=${result.ce04Score}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:54:  console.log(`SHOT_RENDER_JOB_IDS=${(result.shotRenderJobIds || []).join(',')}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:55:  console.log(`VIDEO_JOB_ID=${result.videoJobId || ''}`);
+apps/api/src/scripts/p2_ce_dag_gate.ts:56:  console.log(`VIDEO_KEY=${result.videoKey || ''}`);
+apps/api/src/scripts/debug_state.ts:8:  console.log('Checking Seed Data...');
+apps/api/src/scripts/debug_state.ts:13:    console.log(`Users: ${users}, Orgs: ${orgs}, Projects: ${projects}`);
+apps/api/src/scripts/debug_state.ts:15:    console.log('Checking Recent Jobs...');
+apps/api/src/scripts/debug_state.ts:22:    console.log(`Found ${jobs.length} recent jobs.`);
+apps/api/src/scripts/debug_state.ts:24:      console.log(
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:60:  console.log('[E2E] 步骤 1: 创建或获取测试用户和组织...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:68:    console.log('[E2E] 创建新测试用户...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:89:    console.log('[E2E] 创建新测试组织...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:118:  console.log(`[E2E] ✅ 用户 ID: ${user.id}, 组织 ID: ${organization.id}`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:128:  console.log('[E2E] 步骤 2: 创建或获取测试项目...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:140:    console.log('[E2E] 创建新测试项目...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:151:  console.log(`[E2E] ✅ 项目 ID: ${project.id}`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:162:  console.log('[E2E] 步骤 3: 导入测试小说...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:178:  console.log(`[E2E] ✅ NovelSource ID: ${novelSource.id}`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:201:  console.log(`[E2E] 解析到 ${chapters.length} 个章节`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:277:  console.log(`[E2E] ✅ Task ID: ${task.id}`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:302:  console.log(`[E2E] ✅ 创建了 ${jobIds.length} 个 Job`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:311:  console.log('[E2E] 步骤 4: 等待 Job 完成...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:334:    console.log(
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:346:        console.log(`[E2E] ⚠️  有 ${failedJobs.length} 个 Job 失败:`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:348:          console.log(`[E2E]   - Job ${job.id}: ${job.lastError || 'Unknown error'}`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:351:      console.log('[E2E] ✅ 所有 Job 已完成');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:362:  console.log('[E2E] 步骤 5: 触发 Orchestrator 调度...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:367:  console.log(
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:373:    console.log(`[E2E] 等待 2 秒让 Worker 拉取 Job...`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:383:  console.log('[E2E] 步骤 6: 使用模拟 Worker 将 Job 标记为成功...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:402:  console.log('[E2E] 步骤 6: 验证生成的结构...');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:423:  console.log(`[E2E] 项目: ${tree.name}`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:424:  console.log(`[E2E] Episode 数量: ${tree.episodes.length}`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:432:  console.log(
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:442:  console.log(
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:452:    console.log(`[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:455:    console.log(`[E2E]   ... 还有 ${firstScene.shots.length - 5} 个 Shot`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:465:  console.log(
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:468:  console.log('[E2E] ✅ 结构验证通过');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:472:  console.log('========================================');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:473:  console.log('E2E 测试：小说导入 → 分析 → 结构生成');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:474:  console.log('========================================\n');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:500:    console.log(`[E2E] 等待 3 秒让系统初始化...`);
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:513:    console.log('\n========================================');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:514:    console.log('✅ E2E 测试通过！');
+apps/api/src/scripts/legacy/e2e-novel-pipeline.legacy.ts:515:    console.log('========================================');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:55:  console.log('[E2E] 步骤 1: 创建或获取测试用户和组织...');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:63:    console.log('[E2E] 创建新测试用户...');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:84:    console.log('[E2E] 创建新测试组织...');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:113:  console.log(`[E2E] ✅ 用户 ID: ${user.id}, 组织 ID: ${organization.id}`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:123:  console.log('[E2E] 步骤 2: 创建或获取测试项目...');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:135:    console.log('[E2E] 创建新测试项目...');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:146:  console.log(`[E2E] ✅ 项目 ID: ${project.id}`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:157:  console.log('[E2E] 步骤 3: 导入测试小说...');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:173:  console.log(`[E2E] ✅ NovelSource ID: ${novelSource.id}`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:196:  console.log(`[E2E] 解析到 ${chapters.length} 个章节`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:272:  console.log(`[E2E] ✅ Task ID: ${task.id}`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:297:  console.log(`[E2E] ✅ 创建了 ${jobIds.length} 个 Job`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:302:  console.log('[E2E] 步骤 4: 触发 Orchestrator 调度...');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:307:  console.log(
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:313:    console.log(`[E2E] 等待 2 秒让 Worker 拉取 Job...`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:330:  console.log(`[E2E] 步骤 5: 等待真实 Worker 处理 Job...`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:331:  console.log(`[E2E] 监控 Job 数量: ${jobIds.length}`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:332:  console.log(`[E2E] 允许超时时间: ${timeoutMs / 1000} 秒`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:353:    console.log(
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:360:      console.log('[E2E] ✅ 所有 Job 已由真实 Worker 处理完成');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:384:  console.log('[E2E] 步骤 6: 验证生成的结构...');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:405:  console.log(`[E2E] 项目: ${tree.name}`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:406:  console.log(`[E2E] Episode 数量: ${tree.episodes.length}`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:414:  console.log(
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:424:  console.log(
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:434:    console.log(`[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:437:    console.log(`[E2E]   ... 还有 ${firstScene.shots.length - 5} 个 Shot`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:447:  console.log(
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:450:  console.log('[E2E] ✅ 结构验证通过');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:454:  console.log('========================================');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:455:  console.log('E2E 测试：真实 Worker 联调版（小说 → 分析 → 结构生成）');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:456:  console.log('========================================\n');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:481:    console.log(`[E2E] 等待 3 秒让系统初始化...`);
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:493:    console.log('\n========================================');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:494:    console.log('✅ E2E 测试通过（真实 Worker 联调版）！');
+apps/api/src/scripts/e2e-novel-worker-pipeline.ts:495:    console.log('========================================');
+apps/api/src/scripts/gate-p0r2-driver.ts:17:  console.log('--- DRIVER: Creating App Context ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:19:  console.log('--- DRIVER: App Context Created ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:28:  console.log('--- DRIVER: Starting Seeding ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:31:  console.log('--- DRIVER: CLEANUP Project ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:39:  console.log('--- DRIVER: UPSERT user ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:62:  console.log('--- DRIVER: UPSERT org ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:74:  console.log('--- DRIVER: CREATE project ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:87:  console.log('--- DRIVER: UPSERT engines ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:115:  console.log('--- DRIVER: UPSERT novelSource ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:130:  console.log('--- DRIVER: Creating Hierarchy (Season/Ep/Scene/Shot) ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:155:  console.log('--- DRIVER: CREATE shot ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:171:  console.log('--- DRIVER: Seeding Complete, Triggering CE DAG ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:181:  console.log(
+apps/api/src/scripts/gate-p0r2-driver.ts:189:    console.log('--- DRIVER: runCEDag returned ---');
+apps/api/src/scripts/gate-p0r2-driver.ts:191:    console.log('__RESULT_START__');
+apps/api/src/scripts/gate-p0r2-driver.ts:192:    console.log(JSON.stringify(result, null, 2));
+apps/api/src/scripts/gate-p0r2-driver.ts:193:    console.log('__RESULT_END__');
+apps/api/src/scripts/sync-engines-from-json.ts:18:      console.log(`[sync-engines] skip existing ${engine.engineKey}`);
+apps/api/src/scripts/sync-engines-from-json.ts:32:    console.log(`[sync-engines] created ${engine.engineKey}`);
+apps/api/src/scripts/sync-engines-from-json.ts:35:  console.log('[sync-engines] done');
+apps/api/src/scripts/ce01_trigger.ts:9:    console.log('[Regression] Testing Worker UPSERT...');
+apps/api/src/scripts/ce01_trigger.ts:54:    console.log('[Regression] Worker UPSERT Passed.');
+apps/api/src/scripts/ce01_trigger.ts:82:      console.log('Creating dummy hierarchy...');
+apps/api/src/scripts/ce01_trigger.ts:104:    console.log(`Triggering CE01 Job with ID: ${jobId}`);
+apps/api/src/scripts/ce01_trigger.ts:125:    console.log(`JOB_ID=${job.id}`);
+apps/api/src/scripts/p2_director_solver_gate.ts:126:  console.log(`OK: evidence at ${outDir}`);
+apps/api/src/scripts/p0r2_db_check.ts:14:  console.log('Engine Key:', binding.engineKey);
+apps/api/src/scripts/p0r2_db_check.ts:21:  console.log('✅ PASS: Engine Binding is correct');
+apps/api/src/scripts/p0r2_db_check.ts:32:    console.log('✅ PASS: CostLedger found');
+apps/api/src/scripts/p0r2_db_check.ts:34:    console.log('⚠️ WARNING: CostLedger not found immediately (might be async)');
+apps/api/src/scripts/p0r2_db_check.ts:37:  console.log('✅ PASS: DB Checks');
+apps/api/src/scripts/reset-test-jobs.ts:20:  console.log('reset count:', result.count);
+apps/api/src/scripts/ce06_trigger.ts:8:    console.log('Finding organization...');
+apps/api/src/scripts/ce06_trigger.ts:14:    console.log('Finding user...');
+apps/api/src/scripts/ce06_trigger.ts:20:    console.log('Creating/Finding test project for CE06...');
+apps/api/src/scripts/ce06_trigger.ts:33:    console.log('Preparing novel source...');
+apps/api/src/scripts/ce06_trigger.ts:42:    console.log('Finding anchor shot for foreign keys...');
+apps/api/src/scripts/ce06_trigger.ts:53:    console.log(`Triggering NOVEL_ANALYSIS Job: ${jobId}`);
+apps/api/src/scripts/ce06_trigger.ts:78:    console.log('Creating job engine binding...');
+apps/api/src/scripts/ce06_trigger.ts:89:    console.log(`JOB_ID=${job.id}`);
+apps/api/src/scripts/ce06_trigger.ts:90:    console.log(`PROJECT_ID=${project.id}`);
+apps/api/scripts/load-test.ts:169:    console.log(`Running load test: ${test.name}...`);
+apps/api/scripts/load-test.ts:224:  console.log(`Report written to: ${reportPath}`);
+apps/api/src/scripts/stress-trigger.ts:11:  console.log(`[StressTrigger] Injecting ${count} PENDING jobs...`);
+apps/api/src/scripts/stress-trigger.ts:74:  console.log(`[StressTrigger] ✅ Successfully injected ${count} jobs.`);
+apps/api/src/scripts/init-worker-api-key.ts:21:  console.log('========================================');
+apps/api/src/scripts/init-worker-api-key.ts:22:  console.log('初始化 Worker API Key');
+apps/api/src/scripts/init-worker-api-key.ts:23:  console.log('========================================\n');
+apps/api/src/scripts/init-worker-api-key.ts:36:      console.log(`✅ API Key 已存在: ${WORKER_API_KEY}`);
+apps/api/src/scripts/init-worker-api-key.ts:37:      console.log('   如需重新创建，请先删除数据库中的记录。\n');
+apps/api/src/scripts/init-worker-api-key.ts:54:    console.log('✅ Worker API Key 创建成功！');
+apps/api/src/scripts/init-worker-api-key.ts:55:    console.log(`   Key: ${apiKey.key}`);
+apps/api/src/scripts/init-worker-api-key.ts:56:    console.log(`   Secret: ${WORKER_API_SECRET}`);
+apps/api/src/scripts/init-worker-api-key.ts:57:    console.log('\n请将以下配置添加到 .env 文件：');
+apps/api/src/scripts/init-worker-api-key.ts:58:    console.log(`WORKER_API_KEY=${WORKER_API_KEY}`);
+apps/api/src/scripts/init-worker-api-key.ts:59:    console.log(`WORKER_API_SECRET=${WORKER_API_SECRET}`);
+apps/api/src/scripts/init-worker-api-key.ts:60:    console.log('========================================\n');
+apps/api/scripts/verify-s3a1.ts:17:    console.log('[LOG]', typeof message === 'string' ? message : JSON.stringify(message, null, 2));
+apps/api/scripts/verify-s3a1.ts:119:  console.log('='.repeat(80));
+apps/api/scripts/verify-s3a1.ts:120:  console.log('S3-A.1 HTTP 引擎配置与安全设计 - 验证脚本');
+apps/api/scripts/verify-s3a1.ts:121:  console.log('='.repeat(80));
+apps/api/scripts/verify-s3a1.ts:122:  console.log('');
+apps/api/scripts/verify-s3a1.ts:127:  console.log('【1】配置读取验证');
+apps/api/scripts/verify-s3a1.ts:128:  console.log('-'.repeat(80));
+apps/api/scripts/verify-s3a1.ts:138:    console.log('✓ engines.json 内容（脱敏）：');
+apps/api/scripts/verify-s3a1.ts:139:    console.log(JSON.stringify(enginesJson, null, 2));
+apps/api/scripts/verify-s3a1.ts:141:    console.log('⚠ engines.json 读取失败:', error);
+apps/api/scripts/verify-s3a1.ts:143:  console.log('');
+apps/api/scripts/verify-s3a1.ts:146:  console.log('场景 a: 只配置全局环境变量');
+apps/api/scripts/verify-s3a1.ts:164:    console.log('✓ 配置结果（场景 a）：');
+apps/api/scripts/verify-s3a1.ts:165:    console.log(
+apps/api/scripts/verify-s3a1.ts:180:    console.log('✗ 配置读取失败:', error);
+apps/api/scripts/verify-s3a1.ts:184:  console.log('');
+apps/api/scripts/verify-s3a1.ts:187:  console.log('场景 b: 只配置引擎级环境变量（清除全局变量）');
+apps/api/scripts/verify-s3a1.ts:209:    console.log('✓ 配置结果（场景 b）：');
+apps/api/scripts/verify-s3a1.ts:210:    console.log(
+apps/api/scripts/verify-s3a1.ts:225:    console.log(
+apps/api/scripts/verify-s3a1.ts:231:    console.log('✗ 配置读取失败:', error instanceof Error ? error.message : String(error));
+apps/api/scripts/verify-s3a1.ts:235:  console.log('');
+apps/api/scripts/verify-s3a1.ts:238:  console.log('场景 c: 只配置 JSON（不配 env，使用 authMode=none）');
+apps/api/scripts/verify-s3a1.ts:246:    console.log('✓ 配置结果（场景 c，使用 http_local_llm）：');
+apps/api/scripts/verify-s3a1.ts:247:    console.log(
+apps/api/scripts/verify-s3a1.ts:261:    console.log(
+apps/api/scripts/verify-s3a1.ts:267:    console.log('✗ 配置读取失败:', error);
+apps/api/scripts/verify-s3a1.ts:271:  console.log('');
+apps/api/scripts/verify-s3a1.ts:276:  console.log('【2】认证头拼装验证');
+apps/api/scripts/verify-s3a1.ts:277:  console.log('-'.repeat(80));
+apps/api/scripts/verify-s3a1.ts:284:  console.log('场景 a: authMode="bearer"');
+apps/api/scripts/verify-s3a1.ts:294:    console.log('✓ Bearer 认证 Headers（只显示键名）：');
+apps/api/scripts/verify-s3a1.ts:295:    console.log(JSON.stringify(Object.keys(headersBearer), null, 2));
+apps/api/scripts/verify-s3a1.ts:296:    console.log('预期：只有 Authorization header');
+apps/api/scripts/verify-s3a1.ts:298:    console.log('✗ Bearer 认证失败:', error);
+apps/api/scripts/verify-s3a1.ts:300:  console.log('');
+apps/api/scripts/verify-s3a1.ts:303:  console.log('场景 b: authMode="apiKey"');
+apps/api/scripts/verify-s3a1.ts:314:    console.log('✓ API Key 认证 Headers（只显示键名）：');
+apps/api/scripts/verify-s3a1.ts:315:    console.log(JSON.stringify(Object.keys(headersApiKey), null, 2));
+apps/api/scripts/verify-s3a1.ts:316:    console.log('预期：只有 X-Custom-API-Key header');
+apps/api/scripts/verify-s3a1.ts:318:    console.log('✗ API Key 认证失败:', error);
+apps/api/scripts/verify-s3a1.ts:320:  console.log('');
+apps/api/scripts/verify-s3a1.ts:323:  console.log('场景 c: authMode="none"');
+apps/api/scripts/verify-s3a1.ts:332:    console.log('✓ None 认证 Headers（只显示键名）：');
+apps/api/scripts/verify-s3a1.ts:333:    console.log(JSON.stringify(Object.keys(headersNone), null, 2));
+apps/api/scripts/verify-s3a1.ts:334:    console.log('预期：空的 headers 对象');
+apps/api/scripts/verify-s3a1.ts:336:    console.log('✗ None 认证失败:', error);
+apps/api/scripts/verify-s3a1.ts:338:  console.log('');
+apps/api/scripts/verify-s3a1.ts:343:  console.log('【3】错误分类验证');
+apps/api/scripts/verify-s3a1.ts:344:  console.log('-'.repeat(80));
+apps/api/scripts/verify-s3a1.ts:384:    console.log(`测试: ${testCase.name}`);
+apps/api/scripts/verify-s3a1.ts:396:      console.log(
+apps/api/scripts/verify-s3a1.ts:405:      console.log('✗ 测试失败:', error);
+apps/api/scripts/verify-s3a1.ts:408:  console.log('');
+apps/api/scripts/verify-s3a1.ts:411:  console.log('网络错误测试:');
+apps/api/scripts/verify-s3a1.ts:431:    console.log(`测试: error.code=${testCase.code}`);
+apps/api/scripts/verify-s3a1.ts:439:      console.log(
+apps/api/scripts/verify-s3a1.ts:448:      console.log('✗ 测试失败:', error);
+apps/api/scripts/verify-s3a1.ts:451:  console.log('');
+apps/api/scripts/verify-s3a1.ts:456:  console.log('【4】日志脱敏验证');
+apps/api/scripts/verify-s3a1.ts:457:  console.log('-'.repeat(80));
+apps/api/scripts/verify-s3a1.ts:484:      console.log('✓ 日志内容（脱敏检查）：');
+apps/api/scripts/verify-s3a1.ts:485:      console.log(
+apps/api/scripts/verify-s3a1.ts:498:      console.log('预期：hasFullApiKey=false（不包含完整 API Key）');
+apps/api/scripts/verify-s3a1.ts:500:      console.log('⚠ 日志解析失败:', error);
+apps/api/scripts/verify-s3a1.ts:503:    console.log('⚠ 未找到 HTTP_ENGINE_INVOKE_START 日志');
+apps/api/scripts/verify-s3a1.ts:505:  console.log('');
+apps/api/scripts/verify-s3a1.ts:510:  console.log('【5】边界与失败配置验证');
+apps/api/scripts/verify-s3a1.ts:511:  console.log('-'.repeat(80));
+apps/api/scripts/verify-s3a1.ts:514:  console.log('测试: 非法 baseUrl');
+apps/api/scripts/verify-s3a1.ts:521:    console.log('✗ 应该抛出错误，但配置读取成功:', configInvalid.baseUrl);
+apps/api/scripts/verify-s3a1.ts:523:    console.log('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error));
+apps/api/scripts/verify-s3a1.ts:526:  console.log('');
+apps/api/scripts/verify-s3a1.ts:529:  console.log('测试: 负数 timeoutMs');
+apps/api/scripts/verify-s3a1.ts:536:    console.log('✗ 应该抛出错误或使用默认值，但配置读取成功:', configNegative.timeoutMs);
+apps/api/scripts/verify-s3a1.ts:538:    console.log('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error));
+apps/api/scripts/verify-s3a1.ts:541:  console.log('');
+apps/api/scripts/verify-s3a1.ts:544:  console.log('测试: 空 baseUrl（无 fallback）');
+apps/api/scripts/verify-s3a1.ts:562:    console.log('✗ 应该抛出错误，但验证通过');
+apps/api/scripts/verify-s3a1.ts:564:    console.log('✓ 正确抛出错误:', error instanceof Error ? error.message : String(error));
+apps/api/scripts/verify-s3a1.ts:567:  console.log('');
+apps/api/scripts/verify-s3a1.ts:573:  console.log('='.repeat(80));
+apps/api/scripts/verify-s3a1.ts:574:  console.log('验证完成');
+apps/api/scripts/verify-s3a1.ts:575:  console.log('='.repeat(80));
+apps/api/scripts/verify-s3a1.ts:576:  console.log('✓ 环境变量已恢复到初始状态');
+packages/database/src/generated/prisma/runtime/react-native.js:1918:    (console.warn ?? console.log)(`${t} ${r}`, ...n);
+packages/database/src/generated/prisma/runtime/react-native.js:2098:  console.log(...e);
+packages/database/src/generated/prisma/runtime/react-native.js:2110:  console.log(`${It.query} ${e}`, ...t);
+apps/api/src/engine/engine-registry.service.ts:43:      console.log(message);
+apps/tools/mock-http-engine/server.ts:62:  console.log(`[MockHttpEngine] listening on http://localhost:${port}`);
+apps/api/test/stage4-flow.e2e-spec.ts:229:      console.log('Triggering Semantic Enhancement (this may take time due to LLM)...');
+apps/api/test/stage4-flow.e2e-spec.ts:243:      console.log('✅ Stage 4 E2E Test Passed!');
+apps/web/src/components/_legacy/workbench/overview/ProjectOverview.tsx:26:      console.log('Overview fetched:', overview);
+apps/web/src/components/_legacy/workbench/overview/ProjectOverview.tsx:40:    console.log('Action triggered:', key, href);
+packages/database/src/generated/prisma/runtime/edge-esm.js:1796:    (console.warn ?? console.log)(`${t} ${r}`, ...n);
+packages/database/src/generated/prisma/runtime/edge-esm.js:1922:  console.log(...e);
+packages/database/src/generated/prisma/runtime/edge-esm.js:1934:  console.log(`${At.query} ${e}`, ...t);
+packages/database/src/generated/prisma/runtime/wasm.js:1762:    (console.warn ?? console.log)(`${t} ${r}`, ...n);
+packages/database/src/generated/prisma/runtime/wasm.js:1931:  console.log(...e);
+packages/database/src/generated/prisma/runtime/wasm.js:1943:  console.log(`${lt.query} ${e}`, ...t);
+apps/api/src/prisma/prisma.service.ts:12:        console.log('[PrismaService] Prisma Client 诊断信息:', {
+apps/api/src/prisma/prisma.service.ts:22:        console.log('[PrismaService] Prisma Client 诊断信息:', {
+apps/api/src/prisma/prisma.service.ts:36:      console.log(`[P0_EVIDENCE] Active DATABASE_URL: ${masked}`);
+apps/api/src/permission/permission.service.ts:18:    console.log('[PermissionService] 构造成功，PrismaService 已注入');
+apps/api/src/permission/permission.service.ts:111:      console.log(`[PERM_DIAG] User=${userId} ContextOrg=${orgId || 'N/A'}`);
+apps/api/src/permission/permission.service.ts:112:      console.log(
+apps/api/src/permission/permission.service.ts:126:      console.log(
+apps/api/src/permission/permission.service.ts:133:        console.log(`[PERM_DIAG] UserRole=${user?.role} UserType=${user?.userType}`);
+apps/web/src/app/[locale]/dev/autofill/page.tsx:22:      console.log('Autofill result:', response);
+apps/api/src/novel-import/novel-import.controller.ts:767:        console.log(`[NovelImport] Created NOVEL_ANALYSIS Job: ${job.id}, Task: ${task.id}`);
+apps/api/test/hmac-security.e2e-spec.ts:92:  console.log('测试 1: 白名单免签接口 (/api/health)');
+apps/api/test/hmac-security.e2e-spec.ts:101:    console.log(passed ? '✅ 通过' : `❌ 失败: ${response.statusCode}`);
+apps/api/test/hmac-security.e2e-spec.ts:108:    console.log(`❌ 失败: ${error.message}`);
+apps/api/test/hmac-security.e2e-spec.ts:112:  console.log('\n测试 2: 必签接口缺少签名头应返回 4003');
+apps/api/test/hmac-security.e2e-spec.ts:132:    console.log(passed ? '✅ 通过' : `❌ 失败: ${JSON.stringify(body)}`);
+apps/api/test/hmac-security.e2e-spec.ts:139:    console.log(`❌ 失败: ${error.message}`);
+apps/api/test/hmac-security.e2e-spec.ts:144:    console.log('\n⚠️  跳过测试 3 & 4: 需要设置 HMAC_API_KEY 和 HMAC_SECRET 环境变量');
+apps/api/test/hmac-security.e2e-spec.ts:164:    console.log('\n测试 3: 合法签名请求应成功（非签名错误）');
+apps/api/test/hmac-security.e2e-spec.ts:186:      console.log(
+apps/api/test/hmac-security.e2e-spec.ts:197:      console.log(`❌ 失败: ${error.message}`);
+apps/api/test/hmac-security.e2e-spec.ts:201:    console.log('\n测试 4: Nonce 重放应返回 4004');
+apps/api/test/hmac-security.e2e-spec.ts:228:      console.log(passed ? '✅ 通过' : `❌ 失败: ${JSON.stringify(responseBody)}`);
+apps/api/test/hmac-security.e2e-spec.ts:235:      console.log(`❌ 失败: ${error.message}`);
+apps/api/test/hmac-security.e2e-spec.ts:240:  console.log('\n=== 测试结果汇总 ===');
+apps/api/test/hmac-security.e2e-spec.ts:243:  console.log(`通过: ${passedCount}/${totalCount}`);
+apps/api/test/hmac-security.e2e-spec.ts:246:    console.log(`${result.passed ? '✅' : '❌'} ${result.name}`);
+apps/api/test/hmac-security.e2e-spec.ts:248:      console.log(`   错误: ${result.error}`);
+apps/api/src/novel-import/novel-import.service.ts:85:      console.log(`Creating episode ${chIdx + 1} (Chapter: ${chapter.title})...`);
+apps/api/src/novel-import/novel-import.service.ts:92:      console.log(`Episode ${chIdx + 1} created: ${episode.id}`);
+apps/api/src/novel-import/novel-import.service.ts:111:      console.log(`SceneDraft created: ${sceneDraft.id}`);
+apps/api/src/novel-import/novel-import.service.ts:119:      console.log(`Scene created: ${scene.id}`);
+apps/api/src/novel-import/file-parser.service.ts:158:    console.log(`[FileParser] Parsing TXT file: ${filePath}`);
+apps/api/src/novel-import/file-parser.service.ts:162:    console.log(`[FileParser] File size: ${buffer.length} bytes`);
+apps/api/src/novel-import/file-parser.service.ts:167:    console.log(`[FileParser] Detected encoding: ${detectedEncoding}, using: ${encoding}`);
+apps/api/src/novel-import/file-parser.service.ts:178:      console.log(`[FileParser] Normalized to GBK for Chinese encoding`);
+apps/api/src/novel-import/file-parser.service.ts:186:        console.log(`[FileParser] Decoded as UTF-8`);
+apps/api/src/novel-import/file-parser.service.ts:190:        console.log(
+apps/api/src/novel-import/file-parser.service.ts:207:        console.log(`[FileParser] Fallback to UTF-8`);
+apps/api/src/novel-import/file-parser.service.ts:212:          console.log(`[FileParser] Fallback to GBK`);
+apps/api/src/novel-import/file-parser.service.ts:226:      console.log(`[FileParser] UTF-8 validation passed, final content length: ${content.length}`);
+apps/api/src/project/structure-generate.service.ts:25:    console.log(
+apps/api/src/project/structure-generate.service.ts:58:    console.log(
+apps/api/src/project/structure-generate.service.ts:69:    console.log(
+apps/api/src/project/structure-generate.service.ts:80:      console.log(
+apps/api/src/project/structure-generate.service.ts:118:        console.log(`Episode ${chIdx + 1} created: ${episode.id} (Chapter: ${chapter.title})`);
+apps/api/src/project/structure-generate.service.ts:127:        console.log(`Episode ${episode.id} already has ${existingScenes.length} scenes, skipping`);
+apps/api/src/project/structure-generate.service.ts:159:        console.log(`SceneDraft created: ${sceneDraft.id}`);
+apps/api/src/project/structure-generate.service.ts:175:        console.log(`Scene ${scIdx + 1} created: ${scene.id}`);
+packages/database/src/generated/prisma/runtime/edge.js:1821:    (console.warn ?? console.log)(`${t} ${r}`, ...n);
+packages/database/src/generated/prisma/runtime/edge.js:1947:  console.log(...e);
+packages/database/src/generated/prisma/runtime/edge.js:1959:  console.log(`${St.query} ${e}`, ...t);
+apps/api/src/storage/local-storage.service.ts:30:      console.log(`[Storage] root=${path.resolve(storageRoot)}`);
+apps/api/src/stage4/stage4.service.ts:56:      console.log(`[Stage4] Running SE for project=${projectId} scene=${sceneId} user=${userId}`);
+apps/api/src/stage4/stage4.service.ts:60:      console.log(`[Stage4] Scene found, invoking engine...`);
+apps/api/src/stage4/stage4.service.ts:74:      console.log(`[Stage4] Engine result: ${JSON.stringify(result)}`);
+apps/api/src/stage4/stage4.service.ts:80:      console.log(`[Stage4] Writing to DB...`);
+apps/api/src/storage/storage.controller.ts:59:    console.log('[StorageRaw]', { key, abs, exists });
+apps/api/src/storage/storage.controller.ts:303:    console.log(`[StorageSigned] key=${key}`);
+apps/api/src/storage/storage.controller.ts:304:    console.log(`[StorageSigned] resolved=${resolved}`);
+apps/api/src/storage/storage.controller.ts:305:    console.log(`[StorageSigned] exists=${exists}`);
+apps/api/src/storage/storage.controller.ts:308:      console.log(`[StorageSigned] stat.size=${st.size}`);
+apps/api/src/storage/storage.controller.ts:310:      console.log(`[StorageSigned] stat.error=${(e as any)?.message}`);
+apps/api/src/storage/storage-auth.service.ts:26:      console.log(
+apps/api/src/storage/storage-auth.service.ts:40:    console.log('[StorageAuth] verify', { key, tenantId, userId });
+apps/api/src/storage/storage-auth.service.ts:44:      console.log('[StorageAuth] Access granted for system-audit-viewer');
+apps/api/src/storage/storage-auth.service.ts:72:    console.log('[StorageAuth] asset-found', {
+apps/api/src/storage/storage-auth.service.ts:117:    console.log('[StorageAuth] access-granted', { key, tenantId, userId });
+packages/database/src/generated/prisma/runtime/library.js:347:    console.log(`[dotenv@${tc}][DEBUG] ${e}`);
+packages/database/src/generated/prisma/runtime/library.js:663:    (console.warn ?? console.log)(`${t} ${r}`, ...n);
+packages/database/src/generated/prisma/runtime/library.js:1636:  console.log(...e);
+packages/database/src/generated/prisma/runtime/library.js:1648:  console.log(`${Xt.query} ${e}`, ...t);
+apps/api/src/project/project.service.ts:593:    console.log('checkOwnership:', { projectId, userId, hasPrisma: !!this.prisma });
+apps/api/src/auth/hmac/hmac-auth.service.ts:205:        console.log('[HMAC Mismatch]', {
+apps/api/src/audit-insight/audit-insight.service.ts:262:      console.log(
+apps/api/src/auth/hmac/hmac-auth.guard.ts:116:      console.log('[HMAC DEBUG]', {
+apps/api/src/auth/hmac/hmac-auth.guard.ts:175:        console.log('[SMOKE_KEY_RESOLVE]', {
+apps/api/src/create-test-user.ts:9:  console.log('🚀 Creating Test User for Frontend Verification...');
+apps/api/src/create-test-user.ts:36:    console.log(`✅ Created user: ${email} / ${password} (ID: ${user.id})`);
+apps/api/src/create-test-user.ts:38:    console.log(`ℹ️ User already exists: ${email}. Resetting password...`);
+apps/api/src/create-test-user.ts:47:    console.log(`✅ Password reset to: ${password}`);
+apps/api/src/create-test-user.ts:52:  console.log(`✅ Organization ensured: ${orgId}`);
+apps/api/src/create-test-user.ts:63:      console.log(`✅ Permission ensured: ${key}`);
+apps/api/src/create-test-user.ts:73:    console.log(`✅ Role ensured: admin`);
+apps/api/src/create-test-user.ts:89:      console.log(`✅ Assigned ${key} to admin`);
+apps/api/src/auth/auth.service.ts:93:      console.log(`[AUTH_REG] Success: userId=${newUser.id} orgId=${org.id} role=OWNER`);
+apps/api/src/auth/nonce.service.ts:42:      console.log('[NonceService] 准备写入 nonce:', {
+apps/api/src/auth/nonce.service.ts:101:        console.log('[NonceService] ✅ nonce stored ok (使用 prisma.nonceStore):', {
+apps/api/src/auth/jwt.strategy.ts:35:    // console.log('[DEBUG] JwtStrategy Validating:', JSON.stringify(payload));
+apps/api/src/auth/jwt.strategy.ts:46:    // console.log('[DEBUG] User lookup result:', user ? 'Found' : 'Not Found', payload.sub);
+apps/api/src/job/job.controller.ts:165:    console.log(
+apps/api/src/job/job.controller.ts:169:    console.log(
+apps/api/src/job/job.rules.ts:171:  console.log(
+apps/api/src/job/job.service.ts:1329:          console.log(
+apps/api/src/job/job.service.ts:2530:      console.log(

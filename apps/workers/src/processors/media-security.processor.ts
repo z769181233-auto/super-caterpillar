@@ -45,7 +45,7 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
   if (targetAssetId) {
     const asset = await prisma.asset.findUnique({ where: { id: targetAssetId } });
     if (!asset) throw new Error(`[MediaSecurity] Asset not found for id: ${targetAssetId}`);
-    sourceStorageKey = asset.storageKey;
+    sourceStorageKey = asset.storageKey.replace(/^file:\/\//, '');
     console.log(`[MediaSecurity] Resolved AssetId ${targetAssetId} to storageKey ${sourceStorageKey}`);
   } else if (shotId) {
     if (PRODUCTION_MODE) {
@@ -64,7 +64,7 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
     });
     if (!asset) throw new Error(`[MediaSecurity] Legacy Asset not found for shotId: ${shotId}`);
     targetAssetId = asset.id;
-    sourceStorageKey = asset.storageKey;
+    sourceStorageKey = asset.storageKey.replace(/^file:\/\//, '');
   } else {
     throw new Error('[MediaSecurity] Missing required entry: assetId or shotId');
   }
@@ -114,7 +114,7 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
   // FFmpeg: HLS Packaging from Secure MP4
   const hlsArgs = [
     '-i', outputAbsPath,
-    '-codec:', 'copy',
+    '-c', 'copy',
     '-start_number', '0',
     '-hls_time', '10',
     '-hls_list_size', '0',
@@ -130,6 +130,20 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
   const fingerprint = hashSum.digest('hex');
 
   // 5. Update Asset (Security Link - Dedicated Columns DBSpec V1.1)
+  // Fix: Create SecurityFingerprint record first to satisfy FK constraint
+  let fpRecord = await prisma.securityFingerprint.findFirst({
+    where: { assetId: targetAssetId }
+  });
+
+  if (!fpRecord) {
+    fpRecord = await prisma.securityFingerprint.create({
+      data: {
+        assetId: targetAssetId,
+        fpVector: { algorithm: 'sha256', hash: fingerprint }
+      }
+    });
+  }
+
   await prisma.asset.update({
     where: { id: targetAssetId },
     data: {
@@ -140,7 +154,7 @@ export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
       hlsPlaylistUrl: hlsPlaylistRelativeKey,
       signedUrl: `/api/assets/signed-url?key=${outputRelativeKey}&t=${Date.now()}`,
       watermarkMode: 'SCU_VISIBLE_V1_BOTTOM_LEFT',
-      fingerprintId: fingerprint,
+      fingerprintId: fpRecord.id,
     },
   });
 

@@ -1,0 +1,11 @@
+[
+  {
+    "id": "a82d8cc2-4dda-4bf1-8169-913da3b97964",
+    "type": "CE06_NOVEL_PARSING",
+    "status": "FAILED",
+    "createdAt": "2026-01-12T08:35:49.633Z",
+    "updatedAt": "2026-01-12T08:36:01.578Z",
+    "lastError": "connect ECONNREFUSED 127.0.0.1:19000",
+    "securityProcessed": false
+  }
+]

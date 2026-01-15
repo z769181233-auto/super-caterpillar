@@ -1,0 +1,25 @@
+ volumes 
+---------
+      62
+(1 row)
+
+ chapters 
+----------
+        4
+(1 row)
+
+ scenes 
+--------
+      2
+(1 row)
+
+ scenes_with_density 
+---------------------
+                   0
+(1 row)
+
+ scenes_with_enriched 
+----------------------
+                    0
+(1 row)
+
