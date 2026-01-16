@@ -1,0 +1,11 @@
+\copy (
+  SELECT 
+    details->>'jobId' as job_id,
+    details->'identity'->'anchors'->0->>'characterId' as character_id,
+    details->'identity'->'anchors'->0->>'anchorId' as anchor_id,
+    details->'identity'->'anchors'->0->>'seed' as seed,
+    details->'identity'->'anchors'->0->>'viewKeysSha256' as view_hash
+  FROM audit_logs
+  WHERE details->>'jobId' IN ('__JOB1__', '__JOB2__')
+  ORDER BY job_id
+) TO STDOUT WITH CSV HEADER;

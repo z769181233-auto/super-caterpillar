@@ -242,5 +242,73 @@ FINAL_ASSET_KEY=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT \"storageKey\" FROM
 echo "[Gate] Final Asset Key: ${FINAL_ASSET_KEY}"
 if [[ "${FINAL_ASSET_KEY}" != *secure* ]]; then echo "❌ Asset Key missing 'secure' suffix"; exit 1; fi
 
+# ==============================================================================
+# PHASE 5D-4: Identity Regression Check (Consistency)
+# ==============================================================================
+echo "[Gate] Starting Identity Regression Check..."
+
+# 1. Run Consistency Runner (Independent)
+echo "[Gate] Running Identity Runner..."
+# Sync evidence dir for Runner
+echo "${EVID_DIR}" > .current_evidence_dir
+./node_modules/.bin/ts-node tools/gate/runners/run-identity-consistency.ts
+
+IDS_FILE="${EVID_DIR}/SHOT_RENDER_JOB_IDS.txt"
+
+if [ ! -f "${IDS_FILE}" ]; then
+    echo "[Gate] ❌ Identity Runner produced no ID file."
+    exit 1
+fi
+
+JOB1=$(sed -n '1p' "$IDS_FILE")
+JOB2=$(sed -n '2p' "$IDS_FILE")
+echo "[Gate] Identity Jobs: $JOB1, $JOB2"
+
+# 2. SQL Consistency Check (CSV)
+SQL_TEMPLATE="tools/gate/sql/audit_identity_consistency.sql"
+SQL_RUN="${EVID_DIR}/consistency_query.sql"
+sed "s/__JOB1__/$JOB1/g; s/__JOB2__/$JOB2/g" "$SQL_TEMPLATE" > "$SQL_RUN"
+
+CSV_OUT="${EVID_DIR}/AUDIT_IDENTITY_CONSISTENCY.csv"
+echo "[Gate] Querying Audit Logs (CSV)..."
+psql "${DATABASE_URL}" -f "$SQL_RUN" > "$CSV_OUT"
+
+# 3. Python Assertion (Anchor/Seed/Hash/CharID)
+echo "[Gate] Asserting CSV Consistency..."
+python3 -c "
+import csv, sys
+reader = csv.DictReader(open('${CSV_OUT}'))
+rows = list(reader)
+if len(rows) != 2:
+    print(f'❌ Expected 2 rows, got {len(rows)}')
+    sys.exit(1)
+
+r1, r2 = rows[0], rows[1]
+keys = ['character_id', 'anchor_id', 'seed', 'view_hash']
+for k in keys:
+    if r1[k] != r2[k]:
+        print(f'❌ Inconsistent {k}: {r1[k]} vs {r2[k]}')
+        sys.exit(1)
+print('✅ Identity Consistency Verified')
+"
+
+# 4. Generate SHA256 Index (Append to Gate's Evidence)
+echo "[Gate] Generating SHA256 Evidence Index..."
+export EVD="${EVID_DIR}"
+python3 -c '
+import hashlib, json, os
+root=os.environ["EVD"]
+out=[]
+for dirpath,_,files in os.walk(root):
+    for fn in sorted(files):
+        if fn == "EVIDENCE_INDEX.json": continue
+        p=os.path.join(dirpath,fn)
+        h=hashlib.sha256(open(p,"rb").read()).hexdigest()
+        out.append({"path":os.path.relpath(p,root),"sha256":h})
+with open(os.path.join(root,"EVIDENCE_INDEX.json"),"w") as f:
+    json.dump(out, f, ensure_ascii=False, indent=2)
+print(f"Index generated with {len(out)} files.")
+'
+
 echo "✅ ALL STEPS PASSED."
 exit 0
