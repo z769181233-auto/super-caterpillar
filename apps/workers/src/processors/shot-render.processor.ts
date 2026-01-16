@@ -1,11 +1,11 @@
 import { PrismaClient, AssetOwnerType, AssetType } from 'database';
-// @ts-ignore
-import { WorkerJob } from '../types';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as util from 'util';
 import { ApiClient } from '../api-client';
+import { EngineHubClient } from '../engine-hub-client';
 import { CostLedgerService } from '../billing/cost-ledger.service';
+import { ProcessorContext } from '../types/processor-context';
 
 export interface ShotRenderProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
@@ -13,12 +13,7 @@ export interface ShotRenderProcessorResult {
   error?: string;
 }
 
-export async function processShotRenderJob(context: {
-  prisma: PrismaClient;
-  job: WorkerJob;
-  apiClient: ApiClient;
-  logger?: any;
-}): Promise<ShotRenderProcessorResult> {
+export async function processShotRenderJob(context: ProcessorContext): Promise<ShotRenderProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
 
@@ -54,8 +49,68 @@ export async function processShotRenderJob(context: {
       throw new Error(`[ShotRender] Shot ${job.shotId} has no enrichedPrompt`);
     if (!projectId || !organizationId) throw new Error(`[ShotRender] Shot context incomplete`);
 
-    // 3. Mock Render Logic (Generate File)
-    const runtimeDir = path.resolve(process.cwd(), '.runtime', 'renders');
+    // 2.5. CE02 Identity Lock (角色一致性锁定)
+    logger.log(`[ShotRender] Calling CE02 Identity Lock for shot ${job.shotId}...`);
+    const engineHub = new EngineHubClient(apiClient);
+    const ce02Result = await engineHub.invoke({
+      engineKey: 'ce02_identity_lock',
+      engineVersion: 'v1.0',
+      payload: {
+        sceneText: shot.enrichedPrompt,
+        projectId,
+        traceId: traceId || job.id,
+      },
+      metadata: {
+        traceId: traceId || job.id,
+        shotId: shot.id,
+        projectId,
+      },
+    });
+
+    let identityLockToken = 'no-lock';
+    let lockedCharacters = [];
+    if (ce02Result.success && ce02Result.output) {
+      identityLockToken = (ce02Result.output as any).identity_lock_token || 'no-lock';
+      lockedCharacters = (ce02Result.output as any).locked_characters || [];
+      logger.log(`[ShotRender] CE02 Lock Token: ${identityLockToken}, Characters: ${lockedCharacters.length}`);
+    } else {
+      logger.warn(`[ShotRender] CE02 Identity Lock failed, proceeding without lock`);
+    }
+
+    // 3. Real Render Logic (Invoke Engine Hub)
+    logger.log(`[ShotRender] Invoking real engine hub for shot ${job.shotId}...`);
+    const renderResult = await engineHub.invoke({
+      engineKey: 'shot_render',
+      engineVersion: 'v1.1', // Assuming v1.1 for real video pass
+      payload: {
+        prompt: shot.enrichedPrompt,
+        enrichedPrompt: shot.enrichedPrompt,
+        shotId: shot.id,
+        projectId,
+        traceId: traceId || job.id,
+      },
+      metadata: {
+        traceId: traceId || job.id,
+        jobId: job.id,
+        projectId,
+        isVerification: process.env.GATE_MODE === '1',
+      },
+    });
+
+    if (!renderResult.success || !renderResult.output) {
+      const errorMsg = renderResult.error?.message || 'Render failed with no error message';
+      logger.error(`[ShotRender] Engine Hub invocation failed: ${errorMsg}`);
+      throw new Error(`SHOT_RENDER_FAILED: ${errorMsg}`);
+    }
+
+    const renderOutput = renderResult.output as any;
+    const sourceAbsPath = renderOutput.asset?.uri; // Assuming URI is absolute path from adapter
+
+    if (!sourceAbsPath || !fs.existsSync(sourceAbsPath)) {
+      throw new Error(`SHOT_RENDER_INVALID_OUTPUT: Engine returned missing or invalid file path: ${sourceAbsPath}`);
+    }
+
+    // 3.5. Persistence Location & Normalization
     const relativeKey = `renders/${projectId}/${shot.id}/${pipelineRunId}/keyframe.png`;
     const absolutePath = path.resolve(process.cwd(), '.runtime', relativeKey);
 
@@ -65,14 +120,9 @@ export async function processShotRenderJob(context: {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    // Write Real (but minimal) 2x2 PNG File (Red) to satisfy FFmpeg (H.264 requires even dimensions)
-    const png2x2 = Buffer.from(
-      '89504e470d0a1a0a0000000d494844520000000200000002080600000072b60d24000000114944415478da63f8cfc0f01f8419600c0047ca07f91ab6f1a90000000049454e44ae426082',
-      'hex'
-    );
-    fs.writeFileSync(absolutePath, png2x2);
-
-    logger.log(`[ShotRender] Generated mock file at ${absolutePath}`);
+    // Move/Copy file from adapter local storage to job-specific storage
+    fs.copyFileSync(sourceAbsPath, absolutePath);
+    logger.log(`[ShotRender] Real image moved to ${absolutePath}`);
 
     // 4. Persistence (Asset & Audit)
     const asset = await prisma.asset.upsert({
@@ -110,9 +160,11 @@ export async function processShotRenderJob(context: {
         details: {
           jobId: job.id,
           assetId: asset.id,
-          engine: 'mock',
+          engine: renderOutput.render_meta?.engine || 'real',
+          provider: renderOutput.audit_trail?.providerSelected,
           actorId: 'system-worker',
           traceId: traceId,
+          renderMeta: renderOutput.render_meta,
         },
       },
     });
@@ -131,6 +183,60 @@ export async function processShotRenderJob(context: {
       gpuSeconds: 2.5, // Mock duration for reliable audit (Real: duration from worker stats)
       cost: 0.05 // Mock cost (priced via PRICING_SSOT in real router)
     });
+
+    // 6. 自动触发 VIDEO_RENDER (P0-VIDEO-1: 可恢复幂等策略)
+    const sceneId = shot.scene?.id;
+    if (sceneId) {
+      const videoKey = `videos/${projectId}/${sceneId}/${pipelineRunId}/scene.mp4`;
+
+      // 查询现有 VIDEO 资产
+      const existingVideo = await prisma.asset.findUnique({
+        where: {
+          ownerType_ownerId_type: {
+            ownerType: AssetOwnerType.SCENE,
+            ownerId: sceneId,
+            type: AssetType.VIDEO,
+          },
+        },
+      });
+
+      let shouldTrigger = false;
+      if (!existingVideo) {
+        shouldTrigger = true;
+        logger.log(`[ShotRender] No VIDEO asset found for scene ${sceneId}, will trigger VIDEO_RENDER`);
+      } else {
+        // 检查是否为 pending 或文件不存在/损坏（可恢复）
+        const isPending = existingVideo.storageKey.startsWith('pending/');
+        const absPath = path.resolve(process.cwd(), '.runtime', existingVideo.storageKey);
+        const fileOk = fs.existsSync(absPath) && fs.statSync(absPath).size > 0;
+
+        if (isPending || !fileOk) {
+          shouldTrigger = true;
+          logger.log(`[ShotRender] VIDEO asset pending or broken for scene ${sceneId}, will re-trigger VIDEO_RENDER`);
+        } else {
+          logger.log(`[ShotRender] VIDEO asset ready for scene ${sceneId}, skipping VIDEO_RENDER`);
+        }
+      }
+
+      if (shouldTrigger) {
+        // 创建 VIDEO_RENDER Job（幂等在 VIDEO_RENDER 内部处理）
+        const frames = [relativeKey];
+        await apiClient.createJob({
+          projectId,
+          organizationId,
+          jobType: 'VIDEO_RENDER' as any,
+          payload: {
+            pipelineRunId,
+            traceId: traceId || job.id,
+            frames,
+            projectId,
+            sceneId,
+            episodeId: shot.scene?.episode?.id,
+          },
+        });
+        logger.log(`[ShotRender] VIDEO_RENDER job created for scene ${sceneId}`);
+      }
+    }
 
     return {
       status: 'SUCCEEDED',
