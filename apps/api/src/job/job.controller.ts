@@ -132,6 +132,7 @@ export class JobController {
     };
   }
 
+
   @Get('shots/:shotId/jobs')
   async getJobsByShot(
     @Param('shotId') shotId: string,

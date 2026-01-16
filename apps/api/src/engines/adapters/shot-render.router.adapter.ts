@@ -6,6 +6,7 @@ import {
 } from '@scu/shared-types';
 import { ShotRenderReplicateAdapter } from './shot-render.replicate.adapter';
 import { ShotRenderLocalAdapter } from './shot-render.local.adapter';
+import { ShotRenderComfyuiAdapter } from './shot-render.comfyui.adapter';
 import { createHash } from 'crypto';
 
 /**
@@ -13,7 +14,7 @@ import { createHash } from 'crypto';
  * 
  * Phase 0-R: Production Video Seal
  * - Explicit provider selection (not relying on providers order)
- * - Env-based routing: SHOT_RENDER_PROVIDER (replicate | local)
+ * - Env-based routing: SHOT_RENDER_PROVIDER (replicate | comfyui | local)
  * - Default: replicate
  * - Audit trail includes: providerSelected, modelId, selectionReason
  * - No silent fallback to mock://
@@ -25,7 +26,8 @@ export class ShotRenderRouterAdapter implements EngineAdapter {
 
     constructor(
         private readonly replicateAdapter: ShotRenderReplicateAdapter,
-        private readonly localAdapter: ShotRenderLocalAdapter
+        private readonly localAdapter: ShotRenderLocalAdapter,
+        private readonly comfyuiAdapter: ShotRenderComfyuiAdapter
     ) { }
 
     supports(engineKey: string): boolean {
@@ -73,11 +75,15 @@ export class ShotRenderRouterAdapter implements EngineAdapter {
      * 
      * NO SILENT FALLBACK: If replicate selected but token missing, THROW.
      */
-    private selectProvider(): { provider: 'replicate' | 'local'; reason: string } {
+    private selectProvider(): { provider: 'replicate' | 'local' | 'comfyui'; reason: string } {
         const envProvider = (process.env.SHOT_RENDER_PROVIDER || 'replicate').toLowerCase();
 
         if (envProvider === 'local' || envProvider === 'local_mps') {
-            return { provider: envProvider as any, reason: `Explicit SHOT_RENDER_PROVIDER=${envProvider}` };
+            return { provider: 'local', reason: `Explicit SHOT_RENDER_PROVIDER=${envProvider}` };
+        }
+
+        if (envProvider === 'comfyui') {
+            return { provider: 'comfyui', reason: 'Explicit SHOT_RENDER_PROVIDER=comfyui' };
         }
 
         if (envProvider === 'replicate') {
@@ -87,12 +93,14 @@ export class ShotRenderRouterAdapter implements EngineAdapter {
             return { provider: 'replicate', reason: 'Default/Explicit SHOT_RENDER_PROVIDER=replicate' };
         }
 
-        throw new Error(`JOB_CONFIG_INVALID: Unknown SHOT_RENDER_PROVIDER="${envProvider}". Valid: replicate, local`);
+        throw new Error(`JOB_CONFIG_INVALID: Unknown SHOT_RENDER_PROVIDER="${envProvider}". Valid: replicate, comfyui, local`);
     }
 
     private getAdapter(provider: string): EngineAdapter {
         if (provider === 'replicate') {
             return this.replicateAdapter;
+        } else if (provider === 'comfyui') {
+            return this.comfyuiAdapter;
         } else {
             return this.localAdapter;
         }

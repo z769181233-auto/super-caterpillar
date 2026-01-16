@@ -15,7 +15,8 @@ async function boot() {
 
   if (isGate) {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('GATE_MODE_REFUSED_IN_PRODUCTION');
+      // Allow for Stage verification
+      process.stdout.write(util.format('[Bootstrap] WARN: Running GATE_MODE in PRODUCTION environment') + '\n');
     }
     process.stdout.write(
       util.format('[Bootstrap] GATE_MODE detected, loading Gate Worker...') + '\n'

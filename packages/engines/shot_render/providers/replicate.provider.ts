@@ -145,6 +145,15 @@ export async function renderWithReplicate(
 
   // [GATE] Test Bypass for CI/Gate environments
   if (token.startsWith('TEST_BYPASS_')) {
+    // Stage D: Gate Policy - Hard constraint
+    if (process.env.GATE_MODE !== '1' && process.env.ALLOW_TEST_BYPASS !== '1') {
+      throw new Error("[SECURITY] TEST_BYPASS_GATE token is ONLY allowed in GATE_MODE=1 or ALLOW_TEST_BYPASS=1");
+    }
+    if (process.env.PRODUCTION_MODE === '1' && process.env.ALLOW_TEST_BYPASS !== '1') {
+      throw new Error("[SECURITY] TEST_BYPASS_GATE strictly forbidden in PRODUCTION_MODE=1");
+    }
+    console.warn(`[AUDIT] 🚨 USING ${token} (Mock Result) 🚨 - This is NOT a real inference.`);
+
     console.log('[Replicate] Using TEST_BYPASS mode. Skipping API call.');
     // Create a simple 1x1 black PNG
     const dummyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/wlseKgAAAABJRU5ErkJggg==', 'base64');

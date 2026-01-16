@@ -1,154 +1,152 @@
 import axios from 'axios';
 import type { CE06Input, CE06Output, EngineBillingUsage, EngineAuditTrail } from './types';
+import { scanNovelVolumesAndChapters, ScanChunk } from './src/scan_util';
 
 /**
- * CE06 Real Engine - Gemini 2.0 Cinematic Analysis
- * Production-ready LLM parsing engine using Gemini 2.0 Flash.
- *
- * It extracts:
- * - Volumes, Chapters, Scenes
- * - Summary & Cinematic Directing Notes
- * - Billing & Audit Data
+ * CE06 Real Engine - Gemini 2.0 Cinematic Analysis (V1.3)
+ * 
+ * 核心变更：
+ * 1. 移除硬截断 rawText.slice(0, 30000)
+ * 2. 引入两阶段路由：SCAN (分片扫描) 与 CHUNK_PARSE (章节解析)
+ * 3. 严格对标 DBSpec V1.1 字段：snake_case
  */
 
 export async function ce06RealEngine(input: CE06Input): Promise<CE06Output> {
-  const rawText = input.structured_text || '';
+  const phase = input.phase || 'SCAN'; // 默认 SCAN 以兼容根任务发起
+  const rawText = input.structured_text || input.rawText || '';
   const traceId = input.traceId || `ce06_${Date.now()}`;
   const apiKey = process.env.GEMINI_API_KEY;
 
-  if (!apiKey) {
-    console.warn('[CE06] GEMINI_API_KEY not found, falling back to Deterministic Parser');
-    return ce06DeterministicParser(rawText, traceId);
+  if (phase === 'SCAN') {
+    return executeScanPhase(rawText, traceId);
   }
 
-  const model = 'gemini-1.5-flash'; // Optimized for speed and large context
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  return executeChunkParsePhase(input, apiKey);
+}
 
+/**
+ * Phase 1: SCAN (流式正则扫描)
+ * 目标：不调用 AI，快速切分千万字文本。
+ */
+async function executeScanPhase(rawText: string, traceId: string): Promise<CE06Output> {
+  const chunks = scanNovelVolumesAndChapters(rawText);
+
+  return {
+    volumes: chunks, // 返回扫描到的分片信息
+    chapters: [],
+    scenes: [],
+    audit_trail: {
+      engineVersion: 'ce06-scan-v1.3',
+      timestamp: new Date().toISOString(),
+      input_hash: traceId, // TODO: REAL HASH
+      phase: 'SCAN',
+      chunks_count: chunks.length
+    },
+    billing_usage: {
+      promptTokens: 0, // SCAN 不计 LLM 费用
+      completionTokens: 0,
+      totalTokens: 0,
+      model: 'deterministic-scan',
+    }
+  };
+}
+
+/**
+ * Phase 2: CHUNK_PARSE (章节级 AI 解析)
+ * 目标：针对单个章节分场，写入 raw_text/enriched_text/visual_density_score。
+ */
+async function executeChunkParsePhase(input: CE06Input, apiKey: string | undefined): Promise<CE06Output> {
+  const chapterText = input.structured_text || '';
+  const model = 'gemini-1.5-flash';
+
+  // 如果没有 API Key，降级到确定性解析
+  if (!apiKey) {
+    return ce06DeterministicChunkParser(chapterText);
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const systemPrompt = `
-You are a Cinematic Novel Processor. Your job is to parse the novel text and convert it into a structured JSON for video production.
+You are a Cinematic Novel Processor. Parse the provided SINGLE CHAPTER text into multiple Scenes.
 Rules:
-1. Divide the text into Chapters. If not explicitly mentioned, assume it's one chapter.
-2. Within each chapter, identify Scenes. A scene is a continuous action in one location.
-3. For each scene, provide:
-   - title: A short descriptive title
-   - summary: 1-sentence briefing
-   - content: The actual text belonging to this scene
-   - directing_notes: Visual atmosphere, lighting, camera angles
-   - shot_type: CLOSE_UP, MEDIUM_SHOT, or WIDE_SHOT
-4. Output MUST be valid JSON only.
+1. Divide the text into Scenes (continuous action in one location).
+2. For each scene, provide:
+   - title: Short descriptive title
+   - raw_text: The EXACT original text for this scene (DO NOT SUMMARIZE)
+   - enriched_text: Cinematic atmosphere & visual enhancements
+   - visual_density_score: A float from 0.0 to 1.0 reflecting visual complexity.
+3. Output MUST be valid JSON only.
 
 JSON Schema:
 {
-  "volumes": [
-    {
-      "title": "Main Volume",
-      "chapters": [
-        {
-          "title": "Chapter title",
-          "scenes": [
-            { "title": "...", "summary": "...", "content": "...", "directing_notes": "...", "shot_type": "..." }
-          ]
-        }
-      ]
-    }
+  "scenes": [
+    { "title": "...", "raw_text": "...", "enriched_text": "...", "visual_density_score": 0.8 }
   ]
 }
 `;
 
-  try {
-    const response = await axios.post(url, {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `${systemPrompt}\n\nNovel Text:\n${rawText.slice(0, 30000)}` }], // Safety limit
-        },
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json',
+  const response = await axios.post(url, {
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: `${systemPrompt}\n\nChapter Text:\n${chapterText}` }], // 无硬截断，依赖章节粒度控制长度
       },
-    }, { timeout: 60000 });
+    ],
+    generationConfig: {
+      responseMimeType: 'application/json',
+    },
+  }, { timeout: 60000 });
 
-    const rawResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    const parsed = JSON.parse(rawResponse);
+  const rawResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const parsed = JSON.parse(rawResponse);
 
-    return {
-      volumes: parsed.volumes || [],
-      chapters: [], // Legacy compat
-      scenes: [], // Legacy compat
-      parsing_quality: 0.95,
-      audit_trail: {
-        engine_version: 'gemini-2.0-flash-cinematic-v1',
-        timestamp: new Date().toISOString(),
-        input_hash: 'todo-hash',
-      },
-      billing_usage: {
-        promptTokens: response.data?.usageMetadata?.promptTokenCount || 0,
-        completionTokens: response.data?.usageMetadata?.candidatesTokenCount || 0,
-        totalTokens: response.data?.usageMetadata?.totalTokenCount || 0,
-        model: model,
-      },
-    };
-  } catch (error: any) {
-    console.error('[CE06] Gemini Invocation Failed:', error.message);
-    return ce06DeterministicParser(rawText, traceId);
-  }
+  return {
+    volumes: [],
+    chapters: [],
+    scenes: parsed.scenes || [],
+    billing_usage: {
+      promptTokens: response.data?.usageMetadata?.promptTokenCount || 0,
+      completionTokens: response.data?.usageMetadata?.candidatesTokenCount || 0,
+      totalTokens: response.data?.usageMetadata?.totalTokenCount || 0,
+      model: model,
+    },
+    audit_trail: {
+      engineVersion: 'gemini-2.0-flash-chunk-v1.3',
+      timestamp: new Date().toISOString(),
+      input_hash: 'todo',
+      phase: 'CHUNK_PARSE'
+    }
+  };
 }
 
 /**
- * Fallback / Legacy Deterministic Parser (Regex Based)
+ * 降级解析器 (不带 AI)
  */
-async function ce06DeterministicParser(rawText: string, traceId: string): Promise<CE06Output> {
-  const chapterRegex = /(第\s*[一二三四五六七八九十0-9]+\s*章|Chapter\s*\d+)/;
-  const hasChapters = chapterRegex.test(rawText);
-  const chapters = [];
+async function ce06DeterministicChunkParser(text: string): Promise<CE06Output> {
+  const sceneRegex = /\n{2,}/;
+  const parts = text.split(sceneRegex).filter(p => p.trim().length > 0);
 
-  if (!hasChapters) {
-    const scenes = rawText
-      .split(/\n{2,}/)
-      .filter((s) => s.trim().length > 0)
-      .map((s, idx) => ({
-        title: `Scene ${idx + 1}`,
-        summary: s.slice(0, 50).replace(/\n/g, ' '),
-        content: s,
-        scene_idx: idx,
-      }));
-    chapters.push({ title: 'Chapter 1', scenes });
-  } else {
-    const parts = rawText.split(chapterRegex).filter(Boolean);
-    let currentTitle = 'Prologue';
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i].trim();
-      if (chapterRegex.test(part)) {
-        currentTitle = part;
-      } else {
-        const scenes = part
-          .split(/\n{2,}/)
-          .filter((s) => s.trim().length > 0)
-          .map((s, idx) => ({
-            title: `Scene ${idx + 1}`,
-            summary: s.slice(0, 50).replace(/\n/g, ' '),
-            content: s,
-            scene_idx: idx,
-          }));
-        if (scenes.length > 0) chapters.push({ title: currentTitle, scenes });
-      }
-    }
-  }
+  const scenes = parts.map((p, i) => ({
+    index: i + 1,
+    title: `Scene ${i + 1}`,
+    raw_text: p,
+    enriched_text: '',
+    visual_density_score: 0.1
+  }));
 
   return {
-    volumes: [{ title: 'Main Volume', chapters }],
+    volumes: [],
     chapters: [],
-    scenes: [],
+    scenes,
     billing_usage: {
-      promptTokens: rawText.length,
-      completionTokens: chapters.length * 10,
-      totalTokens: rawText.length,
-      model: 'ce06-deterministic-fallback',
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+      model: 'deterministic-chunk-fallback',
     },
     audit_trail: {
-      engine_version: 'deterministic-fallback',
+      engineVersion: 'fallback-v1.3',
       timestamp: new Date().toISOString(),
-      input_hash: 'todo',
-    },
+      input_hash: 'todo'
+    }
   };
 }

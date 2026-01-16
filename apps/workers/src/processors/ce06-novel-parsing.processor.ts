@@ -1,9 +1,8 @@
-import { JobType } from 'database';
-import { PrismaClient } from 'database';
+import { PrismaClient, JobType } from 'database';
 import { ApiClient } from '../api-client';
-import { ce06RealEngine } from '../../../../packages/engines/ce06/real';
-import { createHash } from 'crypto';
+import { EngineHubClient } from '../engine-hub-client';
 import { CostLedgerService } from '../billing/cost-ledger.service';
+import { ProcessorContext } from '../types/processor-context';
 
 export interface ProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
@@ -11,194 +10,251 @@ export interface ProcessorResult {
   error?: string;
 }
 
-interface CE06Context {
-  prisma: PrismaClient;
-  job: any; // Using any for now to avoid compilation errors with WorkerJob
-  apiClient: ApiClient;
-  logger?: any;
+/**
+ * CE06 Novel Parsing Processor (V1.3.1: 母引擎收口 + 管线串联)
+ * 严格通过 EngineHubClient 调用引擎，确保审计链路完整
+ */
+export async function processCE06NovelParsingJob(context: ProcessorContext): Promise<ProcessorResult> {
+  const { prisma, job, apiClient } = context;
+  const logger = context.logger || console;
+  const engineHub = new EngineHubClient(apiClient);
+
+  try {
+    const payload = job.payload || {};
+    const phase = payload.phase || 'SCAN';
+
+    if (phase === 'SCAN') {
+      return executeScanJob(context, job, engineHub);
+    } else {
+      return executeChunkParseJob(context, job, engineHub);
+    }
+  } catch (error: any) {
+    logger.error(`[CE06] ${error.message}`);
+    return { status: 'FAILED', error: error.message };
+  }
 }
 
 /**
- * CE06 Novel Parsing Processor (Real AI Implementation)
- * Aligned with ce06_core_blueprint.md V1.1
+ * SCAN 阶段 (通过母引擎)
  */
-export async function processCE06NovelParsingJob(context: CE06Context): Promise<ProcessorResult> {
-  const { prisma, job, apiClient } = context;
+/**
+ * SCAN 阶段 (通过母引擎)
+ */
+async function executeScanJob(context: ProcessorContext, job: ProcessorContext['job'], engineHub: EngineHubClient): Promise<ProcessorResult> {
+  const { prisma, apiClient } = context;
   const logger = context.logger || console;
+  const payload = job.payload || {};
+  const rawText = payload.raw_text || payload.sourceText;
+  const traceId = payload.traceId || job.id;
 
-  try {
-    // 1. Context Hydration
-    const fullJob = await prisma.shotJob.findUnique({
-      where: { id: job.id },
-    });
+  if (!rawText) throw new Error('SCAN phase requires raw_text');
 
-    if (!fullJob) throw new Error(`Job ${job.id} not found`);
+  const projectId = job.projectId;
+  const organizationId = job.organizationId;
 
-    const payload = job.payload || {};
-    const rawText = payload.raw_text || payload.sourceText;
-    const projectId = fullJob.projectId;
-    const organizationId = fullJob.organizationId;
-    const userId = (fullJob as any).userId || 'system';
+  if (!projectId || !organizationId) {
+    throw new Error(`[CE06-SCAN] Missing projectId (${projectId}) or organizationId (${organizationId}) in job ${job.id}`);
+  }
 
-    if (!rawText || !projectId || !organizationId) {
-      throw new Error('Missing required job parameters (raw_text, projectId, or organizationId)');
-    }
+  logger.log(`[CE06-SCAN] Scanning via EngineHub for project ${projectId}...`);
 
-    // 2. Real AI Parsing (Gemini 2.0 Flash)
-    logger.log(`[CE06] Invoking Gemini for project ${projectId}...`);
-    const engineResult = await ce06RealEngine({
+  // 通过母引擎调用
+  const engineResult = await engineHub.invoke({
+    engineKey: 'ce06_novel_parsing',
+    engineVersion: 'v1.3.1',
+    payload: {
       structured_text: rawText,
-      traceId: payload.traceId || job.id,
-    });
+      phase: 'SCAN',
+      traceId,
+    },
+    metadata: {
+      traceId,
+      projectId,
+      organizationId,
+    },
+  });
 
-    if (!engineResult.audit_trail) {
-      throw new Error('Engine result missing audit_trail');
-    }
+  if (!engineResult.success) {
+    throw new Error(`SCAN failed: ${engineResult.error?.message}`);
+  }
 
-    // 3. DB Upsert Logic (Aligned with DBSpec V1.1)
-    const textHash = createHash('sha256').update(rawText).digest('hex');
-    const parserVer = engineResult.audit_trail.engine_version;
-    const idempotencyKey = createHash('sha256').update(`${projectId}${textHash}${parserVer}`).digest('hex');
+  const novelSource = await prisma.novelSource.findFirst({
+    where: { projectId },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!novelSource) throw new Error('NovelSource not found');
 
-    logger.log(`[CE06] Parsing successful. Saving to DB (Idempotency: ${idempotencyKey.slice(0, 8)})...`);
+  const chunks = (engineResult.output as any).volumes || [];
 
-    await prisma.$transaction(async (tx) => {
-      // Save Parse Result summary
-      await tx.novelParseResult.upsert({
-        where: { idempotencyKey },
+  await prisma.$transaction(async (tx) => {
+    for (const chunk of chunks) {
+      const vol = await tx.novelVolume.upsert({
+        where: { projectId_index: { projectId, index: chunk.volume_index } },
+        create: { projectId, novelSourceId: novelSource.id, index: chunk.volume_index, title: chunk.volume_title },
+        update: { title: chunk.volume_title },
+      });
+
+      const chapter = await tx.novelChapter.upsert({
+        where: { volumeId_index: { volumeId: vol.id, index: chunk.chapter_index } },
         create: {
-          idempotencyKey,
-          projectId,
-          organizationId,
-          status: 'COMPLETED',
-          parsingQuality: engineResult.parsing_quality || 1.0,
-          rawOutput: engineResult.volumes as any,
-          modelVersion: parserVer,
+          volumeId: vol.id,
+          novelSourceId: novelSource.id,
+          index: chunk.chapter_index,
+          title: chunk.chapter_title,
+          summary: '',
+          isSystemControlled: true,
+        },
+        update: { title: chunk.chapter_title },
+      });
+
+      // 扇出 CHUNK_PARSE 子任务
+      await apiClient.createJob({
+        jobType: JobType.CE06_NOVEL_PARSING,
+        projectId,
+        organizationId,
+        payload: {
+          phase: 'CHUNK_PARSE',
+          chapterId: chapter.id,
+          raw_text: rawText.substring(chunk.start_offset, chunk.end_offset),
+          traceId,
+        },
+        parentJobId: job.id,
+      });
+    }
+  });
+
+  logger.log(`[CE06-SCAN] Fan-out complete. Created ${chunks.length} child jobs.`);
+  return { status: 'SUCCEEDED', output: { chapters_count: chunks.length } };
+}
+
+/**
+ * CHUNK_PARSE 阶段 (通过母引擎 + 自动串联 CE03/CE04)
+ */
+/**
+ * CHUNK_PARSE 阶段 (通过母引擎 + 自动串联 CE03/CE04)
+ */
+async function executeChunkParseJob(context: ProcessorContext, job: ProcessorContext['job'], engineHub: EngineHubClient): Promise<ProcessorResult> {
+  const { prisma, apiClient } = context;
+  const logger = context.logger || console;
+  const payload = job.payload || {};
+  const chapterId = payload.chapterId;
+  const chapterText = payload.raw_text;
+  const traceId = payload.traceId || job.id;
+
+  const projectId = job.projectId;
+  const organizationId = job.organizationId;
+
+  if (!projectId || !organizationId) {
+    throw new Error(`[CE06-PARSE] Missing projectId (${projectId}) or organizationId (${organizationId}) in job ${job.id}`);
+  }
+
+  if (!chapterId || !chapterText) throw new Error('CHUNK_PARSE phase missing chapterId or raw_text');
+
+  logger.log(`[CE06-PARSE] Analyzing chapter ${chapterId} via EngineHub...`);
+
+  // Step 1: CE06 解析 (raw_text)
+  const ce06Result = await engineHub.invoke({
+    engineKey: 'ce06_novel_parsing',
+    engineVersion: 'v1.3.1',
+    payload: {
+      structured_text: chapterText,
+      phase: 'CHUNK_PARSE',
+      traceId,
+    },
+    metadata: {
+      traceId,
+      projectId,
+      organizationId,
+    },
+  });
+
+  if (!ce06Result.success) {
+    throw new Error(`CE06 CHUNK_PARSE failed: ${ce06Result.error?.message}`);
+  }
+
+  const scenes = (ce06Result.output as any).scenes || [];
+
+  // Step 2: 写入 raw_text 并串联 CE03/CE04
+  await prisma.$transaction(async (tx) => {
+    for (let i = 0; i < scenes.length; i++) {
+      const sc = scenes[i];
+      const sceneIndex = i + 1;
+
+      // 先写入基础数据
+      const scene = await tx.novelScene.upsert({
+        where: { chapterId_index: { chapterId, index: sceneIndex } },
+        create: {
+          chapterId,
+          index: sceneIndex,
+          title: sc.title || `Scene ${sceneIndex}`,
+          rawText: sc.raw_text || '',
         },
         update: {
-          status: 'COMPLETED',
-          parsingQuality: engineResult.parsing_quality || 1.0,
-          rawOutput: engineResult.volumes as any,
-          updatedAt: new Date(),
+          title: sc.title || `Scene ${sceneIndex}`,
+          rawText: sc.raw_text || '',
         },
       });
 
-      // NovelSource is assumed to exist from previous steps or handled here if needed
-      // For now, we look for an existing NovelSource to bind to
-      const novelSource = await tx.novelSource.findFirst({
-        where: { projectId },
-        orderBy: { createdAt: 'desc' },
+      // Step 3: 调用 CE03 计算密度
+      logger.log(`[CE03] Computing density for scene ${scene.id}...`);
+      const ce03Result = await engineHub.invoke({
+        engineKey: 'ce03_visual_density',
+        engineVersion: 'v1.0',
+        payload: {
+          sceneText: sc.raw_text || '',
+          traceId,
+        },
+        metadata: { traceId, sceneId: scene.id },
       });
 
-      if (!novelSource) {
-        throw new Error(`NovelSource for project ${projectId} not found. Cannot bind volumes/chapters.`);
+      let densityScore = 0.5; // 默认值
+      if (ce03Result.success) {
+        densityScore = (ce03Result.output as any)?.density_score || 0.5;
       }
 
-      // Iterate and Upsert Volume/Chapter/Scene
-      for (const vol of engineResult.volumes) {
-        const volume = await tx.novelVolume.upsert({
-          where: {
-            projectId_index: { projectId, index: vol.index || 1 },
-          },
-          create: {
-            projectId,
-            novelSourceId: novelSource.id,
-            index: vol.index || 1,
-            title: vol.title || 'Untitled Volume',
-          },
-          update: {
-            title: vol.title || 'Untitled Volume',
-          },
-        });
+      // Step 4: 调用 CE04 生成增强文本
+      logger.log(`[CE04] Enriching scene ${scene.id}...`);
+      const ce04Result = await engineHub.invoke({
+        engineKey: 'ce04_visual_enrichment',
+        engineVersion: 'v1.0',
+        payload: {
+          sceneText: sc.raw_text || '',
+          traceId,
+        },
+        metadata: { traceId, sceneId: scene.id },
+      });
 
-        for (const chap of (vol.chapters || [])) {
-          const chapter = await tx.novelChapter.upsert({
-            where: {
-              volumeId_index: { volumeId: volume.id, index: chap.index || 1 },
-            },
-            create: {
-              volumeId: volume.id,
-              novelSourceId: novelSource.id,
-              index: chap.index || 1,
-              title: chap.title || 'Untitled Chapter',
-              summary: chap.summary || '',
-              isSystemControlled: true,
-            },
-            update: {
-              title: chap.title || 'Untitled Chapter',
-              // Protection strategy: if manual override exists (not system controlled), don't overwrite summary
-              // For simplicity in MVP, we overwrite if system controlled
-              summary: chap.summary || '',
-            },
-          });
-
-          for (const sc of (chap.scenes || [])) {
-            await tx.novelScene.upsert({
-              where: {
-                chapterId_index: { chapterId: chapter.id, index: sc.index || 1 },
-              },
-              create: {
-                chapterId: chapter.id,
-                index: sc.index || 1,
-                title: sc.title || 'Untitled Scene',
-                rawText: sc.content || '',
-                directingNotes: sc.directing_notes || '',
-                shotType: sc.shot_type || 'MEDIUM_SHOT',
-              },
-              update: {
-                title: sc.title || 'Untitled Scene',
-                rawText: sc.content || '',
-                directingNotes: sc.directing_notes || '',
-                shotType: sc.shot_type || 'MEDIUM_SHOT',
-              },
-            });
-          }
-        }
+      let enrichedText = sc.raw_text || '';
+      if (ce04Result.success) {
+        enrichedText = (ce04Result.output as any)?.enriched_text || sc.raw_text || '';
       }
-    });
 
-    // 4. Billing (CostLedger Integration)
-    const costService = new CostLedgerService(apiClient);
-    await costService.recordCE06Billing({
+      // Step 5: 更新完整数据
+      await tx.novelScene.update({
+        where: { id: scene.id },
+        data: {
+          enrichedText,
+          visualDensityScore: densityScore,
+        },
+      });
+    }
+  });
+
+  // 计费 (只记录 CE06，CE03/CE04 由 EngineHub 自动记录)
+  const costService = new CostLedgerService(apiClient);
+  if (ce06Result.output && (ce06Result.output as any).billing_usage) {
+    await costService.recordEngineBilling({
       jobId: job.id,
       jobType: JobType.CE06_NOVEL_PARSING,
-      traceId: payload.traceId || job.id,
+      traceId,
       projectId,
-      userId,
+      userId: job.userId || 'system',
       orgId: organizationId,
-      attempt: fullJob.attempts || 1,
-      billingUsage: engineResult.billing_usage,
+      attempt: job.attempts || 1,
+      billingUsage: (ce06Result.output as any).billing_usage,
+      engineKey: 'ce06_novel_parsing',
     });
-
-    // 5. Audit Log
-    await prisma.auditLog.create({
-      data: {
-        resourceType: 'project',
-        resourceId: projectId,
-        action: 'ce06.novel_parsing.success',
-        orgId: organizationId,
-        userId: userId,
-        details: {
-          jobId: job.id,
-          traceId: payload.traceId,
-          audit_trail: engineResult.audit_trail,
-          billing: engineResult.billing_usage,
-        } as any,
-      },
-    });
-
-    return {
-      status: 'SUCCEEDED',
-      output: {
-        parsing_quality: engineResult.parsing_quality,
-        idempotencyKey,
-      },
-    };
-  } catch (error: any) {
-    logger.error(`[CE06] Failed: ${error.message}`);
-    return {
-      status: 'FAILED',
-      error: error.message,
-    };
   }
+
+  return { status: 'SUCCEEDED' };
 }

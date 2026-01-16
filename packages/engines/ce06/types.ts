@@ -19,6 +19,7 @@ export interface EngineAuditTrail {
   timestamp: string;
   input_hash?: string;
   traceId?: string;
+  phase?: string; // Phase identification (SCAN, CHUNK_PARSE)
   [k: string]: any;
 }
 
@@ -26,6 +27,7 @@ export interface EngineAuditTrail {
 export interface CE06NovelParsingInput {
   // NOTE：这里用"最小必需字段 + 扩展兼容字段"策略，避免破坏现有调用方
   structured_text: string;
+  phase?: 'SCAN' | 'CHUNK_PARSE';
 
   // 允许旧链路仍然传入（不强制删除）
   raw_text?: string;
@@ -44,11 +46,7 @@ export interface CE06NovelParsingOutput {
   chapters: any[];
   scenes: any[];
   parsing_quality?: number;
-  audit_trail?: {
-    engine_version: string;
-    timestamp: string;
-    input_hash: string;
-  };
+  audit_trail: EngineAuditTrail;
 
   // Stage-3-B 强制字段
   billing_usage: EngineBillingUsage;

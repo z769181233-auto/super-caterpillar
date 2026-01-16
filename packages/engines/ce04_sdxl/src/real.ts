@@ -81,3 +81,5 @@ export async function CE04SDXLRealEngine(input: CE04SDXLInput): Promise<CE04SDXL
     audit_trail,
   };
 }
+
+export const __ENGINE__RealEngine = CE04SDXLRealEngine;

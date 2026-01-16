@@ -46,27 +46,15 @@ export interface TimelineData {
   audio?: AudioConfig;
 }
 
-export interface TimelineComposeParams {
-  prisma: PrismaClient;
-  job: {
-    id: string;
-    payload: {
-      sceneId: string;
-      pipelineRunId: string;
-    };
-    shotId?: string;
-    projectId?: string;
-    traceId?: string;
-  };
-  apiClient: ApiClient;
-  engineHubClient?: EngineHubClient;
-}
+import { ProcessorContext } from '../types/processor-context';
 
 /**
  * CE10: Timeline Composition Processor
  * 职责：DB 溯源查询 Scene -> Shots，编排确定的 timeline.json，确立全链路渲染参数。
  */
-export async function processTimelineComposeJob({ prisma, job, apiClient, engineHubClient }: TimelineComposeParams) {
+export async function processTimelineComposeJob(context: ProcessorContext) {
+  const { prisma, job, apiClient } = context;
+  const engineHubClient = context.apiClient ? new EngineHubClient(apiClient) : undefined;
   const { sceneId, pipelineRunId } = job.payload;
   const traceId = job.traceId || `trace-${Date.now()}`;
 

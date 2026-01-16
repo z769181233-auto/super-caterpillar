@@ -2,8 +2,7 @@ import { JobType } from 'database';
 import { PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
 import { CostLedgerService } from '../billing/cost-ledger.service';
-// @ts-ignore
-import { WorkerJob } from '../types';
+import { ProcessorContext } from '../types/processor-context';
 
 export interface ProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
@@ -11,15 +10,8 @@ export interface ProcessorResult {
   error?: string;
 }
 
-interface CE04Context {
-  prisma: PrismaClient;
-  job: WorkerJob;
-  apiClient: ApiClient;
-  logger?: any;
-}
-
 export async function processCE04VisualEnrichmentJob(
-  context: CE04Context
+  context: ProcessorContext
 ): Promise<ProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;

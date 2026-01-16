@@ -5,29 +5,21 @@ import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { TimelineData } from './timeline-compose.processor';
 
-export interface TimelineRenderParams {
-  prisma: PrismaClient;
-  job: {
-    id: string;
-    payload: {
-      timelineStorageKey: string;
-      pipelineRunId: string;
-    };
-    organizationId: string;
-    projectId: string;
-    traceId?: string;
-  };
-  apiClient: ApiClient;
-}
+import { ProcessorContext } from '../types/processor-context';
 
 /**
  * S4-7: Timeline Render Processor
  * 职责：执行两段式渲染 (Shot MP4s -> Scene Concat)，锁死编码参数，绑定 Asset 至 firstShotId。
  */
-export async function processTimelineRenderJob({ prisma, job, apiClient }: TimelineRenderParams) {
-  const { timelineStorageKey, pipelineRunId } = job.payload;
+export async function processTimelineRenderJob(ctx: ProcessorContext) {
+  const { prisma, job, apiClient } = ctx;
+  const { timelineStorageKey, pipelineRunId } = job.payload as { timelineStorageKey: string; pipelineRunId: string };
   const traceId = job.traceId || `trace-${Date.now()}`;
-  const projectId = job.projectId;
+  const projectId = job.projectId || (job.payload as any)?.projectId;
+
+  if (!projectId) {
+    throw new Error(`[TimelineRender] [${traceId}] Missing projectId in job ${job.id}`);
+  }
 
   console.log(`[TimelineRender] [${traceId}] Loading timeline from: ${timelineStorageKey}`);
 

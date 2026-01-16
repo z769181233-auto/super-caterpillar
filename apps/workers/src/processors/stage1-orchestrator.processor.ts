@@ -1,16 +1,31 @@
 import { PrismaClient, JobType, JobStatus } from 'database';
 import { ApiClient } from '../api-client';
 import { WorkerJobBase } from '@scu/shared-types';
+import type { ProcessorContext } from '../types/processor-context';
 
-export async function processStage1OrchestratorJob(ctx: {
-    prisma: PrismaClient;
-    job: WorkerJobBase;
-    apiClient: ApiClient;
-}) {
-    const { prisma, job, apiClient } = ctx;
-    const payload = job.payload as any;
+export interface Stage1OrchestratorPayload {
+    novelText: string;
+    projectId: string;
+    episodeId: string;
+    pipelineRunId: string;
+    traceId?: string;
+}
+
+export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
+    const { prisma, job, logger } = ctx;
+    const apiClient = ctx.apiClient;
+
+    if (!apiClient) {
+        // Gate/Worker 运行 Stage1 编排必须具备 apiClient
+        throw new Error('STAGE1_API_CLIENT_MISSING');
+    }
+    const payload = job.payload as Stage1OrchestratorPayload;
     const { novelText, projectId, episodeId, pipelineRunId, traceId } = payload;
     const organizationId = job.organizationId;
+
+    if (!organizationId) {
+        throw new Error(`[Stage1] Missing organizationId in job ${job.id}`);
+    }
 
     console.log(`[Stage1] Starting orchestrator for run ${pipelineRunId} (Project: ${projectId})`);
 
@@ -117,7 +132,8 @@ export async function processStage1OrchestratorJob(ctx: {
 
     // 2. Spawn Concurrent Shot Renders
     // 核心：调用 API Client 以确保计费 (Billing) 和引擎绑定 (Engine Binding) 逻辑正确触发
-    const renderJobs = [];
+    // ✅ 商业级加固：失败即FAIL，不允许吞错SUCCEEDED
+    const renderJobs: string[] = [];
     for (const shotId of shotIds) {
         try {
             const response = await apiClient.createJob(shotId, {
@@ -127,16 +143,87 @@ export async function processStage1OrchestratorJob(ctx: {
                     pipelineRunId,
                     shotId,
                     traceId,
-                    referenceSheetId: refSheetId // E4 Compliance
+                    referenceSheetId: refSheetId, // E4 Compliance
+                    parentJobId: job.id,
                 }
             }, { 'x-organization-id': organizationId });
-            renderJobs.push(response.id);
+
+            const createdJobId = response?.id ?? response?.jobId;
+            if (!createdJobId) {
+                console.error({
+                    tag: 'STAGE1_CREATE_RENDER_JOB_FAILED',
+                    reason: 'missing_job_id_in_response',
+                    shotId,
+                    pipelineRunId,
+                    parentJobId: job.id,
+                    response,
+                });
+                throw new Error('STAGE1_CREATE_RENDER_JOB_FAILED: missing_job_id_in_response');
+            }
+
+            renderJobs.push(createdJobId);
         } catch (error: any) {
-            console.error(`[Stage1] Failed to spawn SHOT_RENDER for shot ${shotId}: ${error.message}`);
-            // 继续分发其它镜头
+            // ✅ 统一日志tag，并抛错中止（不允许继续）
+            console.error({
+                tag: 'STAGE1_CREATE_RENDER_JOB_FAILED',
+                shotId,
+                pipelineRunId,
+                parentJobId: job.id,
+                error: error?.message ?? String(error),
+                stack: error?.stack,
+            });
+
+            // ✅ 落库FAILED状态，保证审计可查
+            try {
+                await prisma.shotJob.update({
+                    where: { id: job.id },
+                    data: {
+                        status: 'FAILED' as any,
+                        result: {
+                            error: {
+                                code: 'STAGE1_CREATE_RENDER_JOB_FAILED',
+                                message: error?.message ?? String(error),
+                                shotId,
+                                pipelineRunId,
+                            },
+                        } as any,
+                    },
+                });
+            } catch (_) {
+                // 即便update失败，也不能吞原始错误
+            }
+
+            throw new Error(`STAGE1_CREATE_RENDER_JOB_FAILED: ${error?.message ?? String(error)}`);
         }
     }
 
+    // ✅ 双保险：renderJobIds为空直接FAIL（不允许空跑SUCCEEDED）
+    if (!renderJobs.length) {
+        console.error({
+            tag: 'STAGE1_RENDER_JOB_IDS_EMPTY',
+            pipelineRunId,
+            parentJobId: job.id,
+            shotIds,
+        });
+
+        try {
+            await prisma.shotJob.update({
+                where: { id: job.id },
+                data: {
+                    status: 'FAILED' as any,
+                    result: {
+                        error: {
+                            code: 'STAGE1_RENDER_JOB_IDS_EMPTY',
+                            message: 'renderJobIds is empty; pipeline must not SUCCEED',
+                            pipelineRunId,
+                        },
+                    } as any,
+                },
+            });
+        } catch (_) { }
+
+        throw new Error('STAGE1_RENDER_JOB_IDS_EMPTY');
+    }
 
     // 2.5 Blocking Aggregation Removed (Stage 3)
     // Orchestrator no longer waits. It exits after dispatching shots.

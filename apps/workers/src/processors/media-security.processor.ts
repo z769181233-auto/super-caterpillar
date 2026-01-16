@@ -16,9 +16,10 @@ import path from 'path';
 import crypto from 'crypto';
 import { spawn } from 'child_process';
 
-const prisma = new PrismaClient();
+import { ProcessorContext } from '../types/processor-context';
 
-export async function processMediaSecurityJob({ prisma, job, apiClient }: any) {
+export async function processMediaSecurityJob(context: ProcessorContext) {
+  const { prisma, job, apiClient } = context;
   // job: Job -> job: any
   const { assetId, videoAssetStorageKey, pipelineRunId, traceId, shotId, projectId } = job.payload;
   let organizationId = job.organizationId;

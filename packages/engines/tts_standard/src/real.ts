@@ -41,7 +41,7 @@ export async function TTSStandardRealEngine(input: TTSStandardInput): Promise<TT
 
     await new Promise((resolve, reject) => {
       writer.on('finish', () => {
-        resolve();
+        resolve(undefined);
       });
       writer.on('error', reject);
     });
@@ -77,3 +77,5 @@ export async function TTSStandardRealEngine(input: TTSStandardInput): Promise<TT
     audit_trail,
   };
 }
+
+export const __ENGINE__RealEngine = TTSStandardRealEngine;

@@ -61,6 +61,9 @@ import { processTimelineRenderJob } from './processors/timeline-render.processor
 import { processTimelinePreviewJob } from './processors/timeline-preview.processor';
 import { processMediaSecurityJob } from './processors/media-security.processor';
 import { processStage1OrchestratorJob } from './processors/stage1-orchestrator.processor';
+import { processNovelScan } from './processors/novel-scan.processor';
+import { processNovelChunk } from './processors/novel-chunk.processor';
+
 
 const prisma = new PrismaClient({
   datasources: {
@@ -225,6 +228,8 @@ async function registerWorker(): Promise<void> {
       JobType.SHOT_RENDER,
       JobType.PIPELINE_E2E_VIDEO,
       JobType.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
+      JobType.NOVEL_SCAN_TOC,
+      JobType.NOVEL_CHUNK_PARSE,
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW',
@@ -306,6 +311,8 @@ async function sendHeartbeat(): Promise<void> {
       JobType.SHOT_RENDER,
       JobType.PIPELINE_E2E_VIDEO,
       JobType.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
+      JobType.NOVEL_SCAN_TOC,
+      JobType.NOVEL_CHUNK_PARSE,
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW',
@@ -493,13 +500,18 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
           apiClient,
         });
       } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE') {
-        return processTimelineComposeJob({ prisma, job: job as any, apiClient, engineHubClient });
+        return processTimelineComposeJob({ prisma, job: job as any, apiClient });
       } else if (job.type === 'TIMELINE_RENDER') {
         return processTimelineRenderJob({ prisma, job: job as any, apiClient });
       } else if (job.type === 'TIMELINE_PREVIEW') {
         return processTimelinePreviewJob({ prisma, job: job as any, apiClient });
       } else if (job.type === 'CE09_MEDIA_SECURITY') {
         return processMediaSecurityJob({ prisma, job: job as any, apiClient });
+      } else if (job.type === 'NOVEL_SCAN_TOC') {
+        return processNovelScan({ prisma, job: job as any, apiClient, workerId });
+      } else if (job.type === 'NOVEL_CHUNK_PARSE') {
+        // @ts-ignore
+        return processNovelChunk({ prisma, job: job as any, apiClient, workerId });
       } else if (job.type.startsWith('CE')) {
         return processGenericCEJob(prisma, job as any, engineHubClient, apiClient);
       } else if (

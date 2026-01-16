@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { createHash } from 'crypto';
 import type { CE06Input, CE06Output, EngineBillingUsage } from './types';
 
 /**
@@ -61,9 +62,10 @@ export async function ce06ReplayEngine(input: CE06Input): Promise<CE06Output> {
     scenes: fixtureData.scenes || [],
     parsing_quality: 0.95,
     audit_trail: {
-      engine_version: 'replay-v1.0',
+      engineKey: 'ce06_novel_parsing',
+      engineVersion: 'v1.3-replay',
       timestamp: new Date().toISOString(),
-      input_hash: inputText.substring(0, 16), // 简化
+      paramsHash: createHash('sha256').update(JSON.stringify(input)).digest('hex'),
     },
     billing_usage: billingUsage, // ⚠️ 强制返回
   };

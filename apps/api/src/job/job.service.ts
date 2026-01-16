@@ -2178,12 +2178,23 @@ export class JobService {
 
     // Studio v0.7: 检查组织权限
     // 检查组织权限：支持 Season 和 Project 两种结构
-    const project = job.shot.scene.episode.season?.project;
-    if (!project || project.organizationId !== organizationId) {
-      this.logger.warn(
-        `[DEBUG] Project Org Mismatch.Proj Org = ${project?.organizationId}, Request Org = ${organizationId} `
-      );
-      throw new ForbiddenException('You do not have permission to access this job');
+    if (job.shot) {
+      const project = job.shot.scene.episode.season?.project;
+      if (!project || project.organizationId !== organizationId) {
+        this.logger.warn(
+          `[DEBUG] Project Org Mismatch.Proj Org = ${project?.organizationId}, Request Org = ${organizationId} `
+        );
+        throw new ForbiddenException('You do not have permission to access this job');
+      }
+    } else {
+      // 如果没有关联 Shot，直接检查项目组织 (NOVEL_SCAN_TOC 等任务)
+      const project = await this.prisma.project.findUnique({
+        where: { id: job.projectId },
+        select: { organizationId: true }
+      });
+      if (!project || project.organizationId !== organizationId) {
+        throw new ForbiddenException('You do not have permission to access this job (Project check failed)');
+      }
     }
 
     return job;
@@ -3443,8 +3454,13 @@ export class JobService {
     // 继承验证标记：同一 pipelineRunId 下的所有 shot 应该具有相同的 isVerification
     const isVerification = succeededShots[0]?.isVerification || false;
 
+    if (!targetShotId) {
+      this.logger.error(`[Stage-1] targetShotId is null, cannot assembly video. Run ${pipelineRunId}`);
+      return;
+    }
+
     await this.ensureVideoRenderJob(
-      targetShotId,
+      targetShotId!,
       frames,
       pipelineRunId,
       'system',

@@ -68,14 +68,18 @@ export async function processCE06Job(
   const jobId = job.id;
   // Stage13-Final: 使用 Job.traceId（Pipeline 级 traceId）
   const traceId = job.traceId;
+  const projectId = job.projectId!;
   if (!traceId) {
     throw new Error(`CE06 Job ${jobId} missing traceId`);
+  }
+  if (!projectId) {
+    throw new Error(`CE06 Job ${jobId} missing projectId`);
   }
 
   logStructured('info', {
     action: 'CE06_JOB_START',
     jobId,
-    projectId: job.projectId,
+    projectId,
     traceId,
   });
 
@@ -93,7 +97,7 @@ export async function processCE06Job(
 
     if (!rawText) {
       const novelSource = await prisma.novelSource.findFirst({
-        where: { projectId: job.projectId },
+        where: { projectId },
         orderBy: { createdAt: 'desc' },
       });
       if (novelSource) {
@@ -109,7 +113,7 @@ export async function processCE06Job(
     const input: CE06NovelParsingInput = {
       structured_text: rawText,
       context: {
-        projectId: job.projectId,
+        projectId,
         novelSourceId,
       },
     };
@@ -121,7 +125,7 @@ export async function processCE06Job(
       payload: input,
       metadata: {
         jobId,
-        projectId: job.projectId,
+        projectId,
         traceId,
       },
     };
@@ -139,13 +143,13 @@ export async function processCE06Job(
     // 3. 落库
     const parserVer = (result as any).audit_trail?.engine_version || 'v1.1';
     const textHash = createHash('sha256').update(rawText).digest('hex');
-    const idempotencyKey = createHash('sha256').update(`${job.projectId}${textHash}${parserVer}`).digest('hex');
+    const idempotencyKey = createHash('sha256').update(`${projectId}${textHash}${parserVer}`).digest('hex');
 
     await prisma.novelParseResult.upsert({
       where: { idempotencyKey },
       create: {
         idempotencyKey,
-        projectId: job.projectId,
+        projectId,
         organizationId: organizationId,
         status: 'COMPLETED',
         parsingQuality: result.parsing_quality || 1.0,
@@ -162,14 +166,14 @@ export async function processCE06Job(
 
     // 3.1 映射到层级结构并落库 (Season/Episode/Scene/Shot)
     // 这是 P1 能力闭环的关键：让物理引擎的产物进入业务主表
-    const structure = mapCE06OutputToProjectStructure(job.projectId, result);
+    const structure = mapCE06OutputToProjectStructure(projectId, result);
     await applyAnalyzedStructureToDatabase(prisma, structure);
 
     // [ORCHESTRATION] Stage 3: CE06 Success -> Trigger CE03 for all scenes
     try {
       // 2-step lookup to avoid relation naming guess
       const chapters = await prisma.novelChapter.findMany({
-        where: { novelSource: { projectId: job.projectId } },
+        where: { novelSource: { projectId } },
         select: { id: true },
       });
 
@@ -196,7 +200,7 @@ export async function processCE06Job(
 
       // 2. Fetch all Cinema Structure (Scenes + Shots) for mapping
       const cinemaStructure = await prisma.scene.findMany({
-        where: { episode: { projectId: job.projectId } },
+        where: { episode: { projectId } },
         select: {
           id: true,
           index: true,
@@ -216,7 +220,7 @@ export async function processCE06Job(
       if (allNovelScenes.length > 0) {
         logStructured('info', {
           action: 'ORCHESTRATION_TRIGGER_CE03',
-          projectId: job.projectId,
+          projectId,
           sceneCount: allNovelScenes.length,
         });
 
@@ -237,7 +241,7 @@ export async function processCE06Job(
                   mapKey,
                 });
                 return {
-                  projectId: job.projectId,
+                  projectId,
                   type: 'CE03_VISUAL_DENSITY',
                   status: 'PENDING',
                   payload: { novelSceneId: ns.id },
@@ -255,7 +259,7 @@ export async function processCE06Job(
             }
 
             return {
-              projectId: job.projectId,
+              projectId,
               type: 'CE03_VISUAL_DENSITY',
               status: 'PENDING',
               payload: { novelSceneId: ns.id },
@@ -288,7 +292,7 @@ export async function processCE06Job(
     try {
       const costLedgerService = new CostLedgerService(apiClient);
       const project = await prisma.project.findUnique({
-        where: { id: job.projectId },
+        where: { id: projectId },
         select: { ownerId: true },
       });
       const userId = project?.ownerId || 'system';
@@ -298,7 +302,7 @@ export async function processCE06Job(
           jobId,
           jobType: 'CE06_NOVEL_PARSING',
           traceId,
-          projectId: job.projectId,
+          projectId,
           userId,
           orgId: organizationId,
           attempt: (job as any).attempts ?? 1,
@@ -331,7 +335,7 @@ export async function processCE06Job(
     try {
       await apiClient.postAuditLog({
         traceId,
-        projectId: job.projectId,
+        projectId,
         jobId,
         jobType: 'CE06_NOVEL_PARSING',
         engineKey: 'ce06_novel_parsing',
@@ -354,7 +358,7 @@ export async function processCE06Job(
     logStructured('info', {
       action: 'CE06_JOB_SUCCESS',
       jobId,
-      projectId: job.projectId,
+      projectId,
       durationMs: duration,
       parsingQuality: result.parsing_quality,
     });
@@ -367,7 +371,7 @@ export async function processCE06Job(
     try {
       await apiClient.postAuditLog({
         traceId,
-        projectId: job.projectId,
+        projectId,
         jobId,
         jobType: 'CE06_NOVEL_PARSING',
         engineKey: 'ce06_novel_parsing',
@@ -387,7 +391,7 @@ export async function processCE06Job(
     logStructured('error', {
       action: 'CE06_JOB_FAILED',
       jobId,
-      projectId: job.projectId,
+      projectId,
       error: error?.message || 'Unknown error',
       durationMs: duration,
     });
@@ -407,13 +411,16 @@ export async function processCE03Job(
 ): Promise<CE03VisualDensityOutput> {
   const jobStartTime = Date.now();
   const jobId = job.id;
-  // Stage13-Final: 使用 Job.traceId(Pipeline 级 traceId),如果缺失则生成fallback
-  const traceId = job.traceId || `fallback_${jobId}_${Date.now()}`;
+  const traceId: string = job.traceId || `fallback_${jobId}_${Date.now()}`;
+  const projectId: string = job.projectId!;
+  if (!projectId) {
+    throw new Error(`CE03 Job ${jobId} missing projectId`);
+  }
 
   logStructured('info', {
     action: 'CE03_JOB_START',
     jobId,
-    projectId: job.projectId,
+    projectId,
     traceId,
   });
 
@@ -440,7 +447,7 @@ export async function processCE03Job(
       }
       // Production Fallback: all scenes (legacy/bulk mode)
       const parseResult = await prisma.novelParseResult.findUnique({
-        where: { projectId: job.projectId },
+        where: { projectId },
       });
       structuredText = parseResult?.rawOutput
         ? JSON.stringify(parseResult.rawOutput)
@@ -451,7 +458,7 @@ export async function processCE03Job(
     const input: CE03VisualDensityInput = {
       structured_text: structuredText,
       context: {
-        projectId: job.projectId,
+        projectId,
       },
     };
 
@@ -471,7 +478,7 @@ export async function processCE03Job(
       payload: input,
       metadata: {
         jobId,
-        projectId: job.projectId,
+        projectId: projectId,
         traceId,
       },
     };
@@ -496,7 +503,7 @@ export async function processCE03Job(
     // 3. 落库
     await prisma.qualityMetrics.create({
       data: {
-        projectId: job.projectId,
+        projectId,
         engine: 'CE03',
         jobId,
         traceId,
@@ -524,7 +531,7 @@ export async function processCE03Job(
       try {
         await prisma.shotJob.create({
           data: {
-            projectId: job.projectId,
+            projectId,
             type: 'CE04_VISUAL_ENRICHMENT',
             status: 'PENDING',
             payload: { novelSceneId },
@@ -552,7 +559,7 @@ export async function processCE03Job(
     try {
       const costLedgerService = new CostLedgerService(apiClient);
       const project = await prisma.project.findUnique({
-        where: { id: job.projectId },
+        where: { id: projectId },
         select: { ownerId: true },
       });
       const userId = project?.ownerId || 'system';
@@ -562,7 +569,7 @@ export async function processCE03Job(
         jobId,
         jobType: 'CE03_VISUAL_DENSITY',
         traceId,
-        projectId: job.projectId,
+        projectId,
         userId,
         orgId: organizationIdForCE03 || 'org_unknown',
         engineKey: 'ce03_visual_density',
@@ -585,7 +592,7 @@ export async function processCE03Job(
     try {
       await apiClient.postAuditLog({
         traceId,
-        projectId: job.projectId,
+        projectId,
         jobId,
         jobType: 'CE03_VISUAL_DENSITY',
         engineKey: 'ce03_visual_density',
@@ -607,7 +614,7 @@ export async function processCE03Job(
     logStructured('info', {
       action: 'CE03_JOB_SUCCESS',
       jobId,
-      projectId: job.projectId,
+      projectId,
       durationMs: duration,
       visualDensityScore: result.visual_density_score,
     });
@@ -620,7 +627,7 @@ export async function processCE03Job(
     try {
       await apiClient.postAuditLog({
         traceId,
-        projectId: job.projectId,
+        projectId,
         jobId,
         jobType: 'CE03_VISUAL_DENSITY',
         engineKey: 'ce03_visual_density',
@@ -639,7 +646,7 @@ export async function processCE03Job(
     logStructured('error', {
       action: 'CE03_JOB_FAILED',
       jobId,
-      projectId: job.projectId,
+      projectId,
       error: error?.message || 'Unknown error',
       durationMs: duration,
     });
@@ -659,12 +666,14 @@ export async function processCE04Job(
 ): Promise<CE04VisualEnrichmentOutput> {
   const jobStartTime = Date.now();
   const jobId = job.id;
-  const traceId = job.traceId || `fallback_${jobId}_${Date.now()}`;
+  if (!job.projectId) throw new Error(`[CE04] Missing projectId for job ${jobId}`);
+  const projectId: string = job.projectId;
+  const traceId: string = job.traceId || `trace-${jobId}`;
 
   logStructured('info', {
     action: 'CE04_JOB_START',
     jobId,
-    projectId: job.projectId,
+    projectId,
     traceId,
   });
 
@@ -682,7 +691,7 @@ export async function processCE04Job(
       structuredText = (job.payload as any).structured_text;
     } else {
       const parseResult = await prisma.novelParseResult.findUnique({
-        where: { projectId: job.projectId },
+        where: { projectId },
       });
       if (parseResult?.rawOutput) {
         structuredText = JSON.stringify(parseResult.rawOutput);
@@ -700,11 +709,11 @@ export async function processCE04Job(
         width: 1280,
         height: 720,
         traceId,
-        projectId: job.projectId,
+        projectId,
       },
       metadata: {
         jobId,
-        projectId: job.projectId,
+        projectId,
         traceId,
       },
     };
@@ -738,7 +747,7 @@ export async function processCE04Job(
     // 3. 落库 QualityMetrics (Keep Legacy)
     await prisma.qualityMetrics.create({
       data: {
-        projectId: job.projectId,
+        projectId,
         engine: 'CE04',
         jobId,
         traceId,
@@ -828,7 +837,7 @@ export async function processCE04Job(
     await apiClient
       .postAuditLog({
         traceId,
-        projectId: job.projectId,
+        projectId,
         jobId,
         jobType: 'CE04_VISUAL_ENRICHMENT',
         engineKey: 'ce04_visual_enrichment',
@@ -864,7 +873,10 @@ export async function processShotRenderJob(
 ): Promise<any> {
   const jobStartTime = Date.now();
   const jobId = job.id;
-  const traceId = job.traceId || `trace-render-${jobId}`;
+  const projectId: string = job.projectId!;
+  const traceId: string = job.traceId || `trace-render-${jobId}`;
+
+  if (!projectId) throw new Error(`[ShotRender] Missing projectId for job ${jobId}`);
 
   // @ts-ignore
   const shotId = (job.payload as any).shotId || job['shotId'];
@@ -872,7 +884,7 @@ export async function processShotRenderJob(
   logStructured('info', {
     action: 'SHOT_RENDER_START',
     jobId,
-    projectId: job.projectId,
+    projectId,
     shotId,
     traceId,
   });
@@ -907,7 +919,7 @@ export async function processShotRenderJob(
     let seed = 12345;
 
     const ce04Metric = await prisma.qualityMetrics.findFirst({
-      where: { projectId: job.projectId, engine: 'CE04' },
+      where: { projectId, engine: 'CE04' },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -954,9 +966,9 @@ export async function processShotRenderJob(
         prompt,
         seed,
         style,
-        context: { projectId: job.projectId },
+        context: { projectId },
       },
-      metadata: { jobId, projectId: job.projectId, traceId },
+      metadata: { jobId, projectId, traceId },
     });
 
     if (!engineResult.success || !engineResult.output) {
@@ -969,7 +981,7 @@ export async function processShotRenderJob(
     const asset = await prisma.asset.upsert({
       where: { ownerType_ownerId_type: { ownerType: 'SHOT', ownerId: shotId, type: 'IMAGE' } },
       create: {
-        projectId: job.projectId,
+        projectId,
         ownerType: 'SHOT',
         ownerId: shotId,
         type: 'IMAGE',
@@ -989,7 +1001,7 @@ export async function processShotRenderJob(
     // 4. Record Quality Metrics
     await prisma.qualityMetrics.create({
       data: {
-        projectId: job.projectId,
+        projectId,
         engine: 'SHOT_RENDER',
         jobId,
         traceId,
@@ -1007,7 +1019,7 @@ export async function processShotRenderJob(
     try {
       const costLedgerService = new CostLedgerService(apiClient);
       const project = await prisma.project.findUnique({
-        where: { id: job.projectId },
+        where: { id: projectId },
         select: { ownerId: true },
       });
       const shotJob = await prisma.shotJob.findUnique({
@@ -1021,7 +1033,7 @@ export async function processShotRenderJob(
           jobId,
           jobType: 'SHOT_RENDER',
           traceId,
-          projectId: job.projectId,
+          projectId,
           userId: project?.ownerId || 'system',
           orgId: shotJob.organizationId,
           engineKey: 'shot_render',
@@ -1041,7 +1053,7 @@ export async function processShotRenderJob(
     await apiClient
       .postAuditLog({
         traceId,
-        projectId: job.projectId,
+        projectId,
         jobId,
         jobType: 'SHOT_RENDER',
         engineKey: 'shot_render',
@@ -1080,12 +1092,15 @@ export async function processCE01Job(
 ): Promise<any> {
   const jobStartTime = Date.now();
   const jobId = job.id;
-  const traceId = job.traceId;
+  const projectId: string = job.projectId!;
+  const traceId: string = job.traceId || `trace-${jobId}`;
+
+  if (!projectId) throw new Error(`[CE01] Missing projectId for job ${jobId}`);
 
   logStructured('info', {
     action: 'CE01_JOB_START',
     jobId,
-    projectId: job.projectId,
+    projectId,
     traceId,
   });
 
@@ -1118,8 +1133,8 @@ export async function processCE01Job(
   // 上报审计日志
   await apiClient
     .postAuditLog({
-      traceId: traceId || `trace-${jobId}`,
-      projectId: job.projectId,
+      traceId,
+      projectId,
       jobId,
       jobType: 'CE01_REFERENCE_SHEET',
       engineKey: 'mock_ce01_engine',
@@ -1132,7 +1147,7 @@ export async function processCE01Job(
   logStructured('info', {
     action: 'CE01_JOB_SUCCESS',
     jobId,
-    projectId: job.projectId,
+    projectId,
     durationMs: duration,
   });
 
@@ -1156,8 +1171,10 @@ export async function processCE07Job(
 ): Promise<any> {
   const jobStartTime = Date.now();
   const jobId = job.id;
-  const traceId = job.traceId;
   const projectId = job.projectId;
+  const traceId = job.traceId || `trace-ce07-${jobId}`;
+
+  if (!projectId) throw new Error(`[CE07] Missing projectId for job ${jobId}`);
 
   logStructured('info', {
     action: 'CE07_MEMORY_UPDATE_START',
@@ -1209,6 +1226,7 @@ export async function processCE07Job(
     });
     // 优先场景概要，没有则取 Shot 汇总或 rawText
     currentText = scene?.summary || (scene as any)?.rawText || '';
+    if (!currentText) currentText = 'Fallback scene text';
   }
 
   // 2. 检索前序记忆
@@ -1282,7 +1300,7 @@ export async function processCE07Job(
   // 6. 上报审计日志
   await apiClient
     .postAuditLog({
-      traceId: traceId || `trace-${jobId}`,
+      traceId,
       projectId,
       jobId,
       jobType: 'CE07_MEMORY_UPDATE',
@@ -1294,7 +1312,7 @@ export async function processCE07Job(
         factsCount: result.key_facts?.length || 0,
       },
     })
-    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
+    .catch((e: any) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
 
   logStructured('info', {
     action: 'CE07_MEMORY_UPDATE_SUCCESS',
@@ -1324,13 +1342,16 @@ export async function processGenericCEJob(
 ): Promise<any> {
   const jobStartTime = Date.now();
   const jobId = job.id;
-  const traceId = job.traceId;
+  const projectId = job.projectId!;
+  const traceId = job.traceId || `trace-${jobId}`;
+
+  if (!job.projectId) throw new Error(`[GenericCE] Missing projectId for job ${jobId}`);
 
   logStructured('info', {
     action: 'GENERIC_CE_JOB_START',
     jobId,
     jobType: job.type,
-    projectId: job.projectId,
+    projectId,
     traceId,
   });
 
@@ -1377,12 +1398,11 @@ export async function processGenericCEJob(
   }
 
   const duration = Date.now() - jobStartTime;
-
   // 上报审计日志
   await apiClient
     .postAuditLog({
-      traceId: traceId || `trace-${jobId}`,
-      projectId: job.projectId,
+      traceId,
+      projectId,
       jobId,
       jobType: (job as any).type,
       engineKey: 'generic_ce_mock_engine',
@@ -1390,13 +1410,13 @@ export async function processGenericCEJob(
       latencyMs: duration,
       auditTrail: { message: `${(job as any).type} processed (generic mock)` },
     })
-    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
+    .catch((e: any) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
 
   logStructured('info', {
     action: 'GENERIC_CE_JOB_SUCCESS',
     jobId,
     jobType: job.type,
-    projectId: job.projectId,
+    projectId,
     durationMs: duration,
   });
 

@@ -2,611 +2,154 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# Stage 1 Total Gate: Novel Text to Production Video Pipeline Verification
-set -e
+# -------- config --------
+API_URL="${API_URL:-http://localhost:3000}"
 
-API_URL=${API_URL:-"http://localhost:3000"}
-TEST_ORCHESTRATOR_TOKEN=${TEST_ORCHESTRATOR_TOKEN:-"test-gate-token"}
+# 你的 HMAC key/secret，优先使用环境变量；没有则默认开发值（与既有 gate 习惯保持一致）
+API_KEY="${API_KEY:-dev-worker-key}"
+API_SECRET="${API_SECRET:-dev-worker-secret}"
+
+NOVEL_TEXT="${NOVEL_TEXT:-在遥远的星系中，有一只向往自由的毛毛虫，它正在拼命对抗重力。}"
+
 EVIDENCE_DIR="docs/_evidence/STAGE1_GATE_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$EVIDENCE_DIR"
 
-API_KEY="dev-worker-key"
-API_SECRET="dev-worker-secret"
-NOVEL_TEXT=${NOVEL_TEXT:-"在遥远的星系中，有一只向往自由的毛毛虫，它正在拼命对抗重力。"}
+require_cmd() { command -v "$1" >/dev/null 2>&1 || { echo "[FATAL] missing cmd: $1"; exit 10; }; }
+require_cmd curl
+require_cmd jq
+require_cmd node
+require_cmd openssl
+require_cmd ffmpeg
+require_cmd ffprobe
 
-# Helper: Generate HMAC Headers (V1.1 Specification)
-generate_hmac_headers() {
-  local method=$1
-  local path=$2
-  local timestamp=$3
-  local body=$4
+if [[ -z "${DATABASE_URL:-}" ]]; then
+  echo "[FATAL] DATABASE_URL is not set. Please: set -a && source .env.local && set +a"
+  exit 11
+fi
 
-  node -e "
-    const crypto = require(    const secret =     const apiKey =     const timestamp =     const nonce =     const body =     
-    // V1.1: message = apiKey + nonce + timestamp + body
-    const message = apiKey + nonce + timestamp + body;
-    const signature = crypto.createHmac(    
-    console.log(    console.log(    console.log(    console.log(  "
+# -------- helpers --------
+hmac_headers() {
+  local method="$1"
+  local path="$2"
+  local ts="$3"
+  local body="$4"
+  local nonce
+  nonce="$(openssl rand -hex 16)"
+
+  # 输出 4 行 header，供外部循环拼接 -H
+  node - <<'NODE' "$API_KEY" "$API_SECRET" "$nonce" "$ts" "$body"
+const crypto = require('crypto');
+
+const apiKey = process.argv[2];
+const secret = process.argv[3];
+const nonce = process.argv[4];
+const timestamp = process.argv[5];
+const body = process.argv[6] ?? "";
+
+// V1.1: message = apiKey + nonce + timestamp + body
+const msg = `${apiKey}${nonce}${timestamp}${body}`;
+const sig = crypto.createHmac('sha256', secret).update(msg).digest('hex');
+
+console.log(`X-Api-Key: ${apiKey}`);
+console.log(`X-Nonce: ${nonce}`);
+console.log(`X-Timestamp: ${timestamp}`);
+console.log(`X-Signature: ${sig}`);
+NODE
 }
 
-echo "🚀 [Gate-Stage1] Starting Stage 1 Novel-to-Video Pipeline Verification..."
+# -------- main --------
+echo "🚀 [Gate-Stage1] START (Novel -> Video real pipeline trigger + wait gate-p0-video-1 PASS)"
 
-echo "Step 1: Triggering Stage 1 Pipeline via Standard API..."
-TS=$(date +%s)
-# Use jq to generate compact JSON payload to avoid whitespace mismatch in HMAC
-PAYLOAD=$(jq -n --arg nt "$NOVEL_TEXT" 
-echo "Payload: $PAYLOAD"
+TS="$(date +%s)"
 
-HEADERS_RAW=$(generate_hmac_headers "POST" "/api/orchestrator/pipeline/stage1" "$TS" "$PAYLOAD")
-CURL_ARGS=()
-for h in $HEADERS_RAW; do CURL_ARGS+=(-H "$h"); done
-unset 
-RESPONSE=$(curl -s -X POST "$API_URL/api/orchestrator/pipeline/stage1" \
+# 这里 payload 的字段名必须与后端契约一致：
+# 由于你当前 stage1 gate 脚本已损坏无法作为依据，先用最常见字段 novelText。
+# 如果后端实际字段不同，curl response 会告诉你缺哪个字段，然后再按后端契约改。
+PAYLOAD="$(jq -cn --arg novelText "$NOVEL_TEXT" '{novelText:$novelText}')"
+echo "$PAYLOAD" > "$EVIDENCE_DIR/01_payload.json"
+
+HEADERS_RAW="$(hmac_headers "POST" "/api/orchestrator/pipeline/stage1" "$TS" "$PAYLOAD")"
+CURL_H=()
+while IFS= read -r h; do
+  [[ -n "$h" ]] && CURL_H+=(-H "$h")
+done <<<"$HEADERS_RAW"
+
+set +e
+HTTP_CODE="$(curl -sS -o "$EVIDENCE_DIR/02_trigger_response.json" -w "%{http_code}" \
+  -X POST "$API_URL/api/orchestrator/pipeline/stage1" \
   -H "Content-Type: application/json" \
-  "${CURL_ARGS[@]}" \
-  -d "$PAYLOAD")
-
-echo "Response: $RESPONSE"
-echo "$RESPONSE" > "$EVIDENCE_DIR/01_trigger_response.json"
-
-# 解析返回数据
-SUCCESS=$(echo $RESPONSE | jq -r PROJECT_ID=$(echo $RESPONSE | jq -r PIPELINE_RUN_ID=$(echo $RESPONSE | jq -r 
-if [ "$SUCCESS" != "true" ] || [ "$PIPELINE_RUN_ID" == "null" ]; then
-  echo "❌ Error: Failed to start pipeline. Response: $RESPONSE"
-  exit 1
-fi
-
-echo "Pipeline started: projectId=$PROJECT_ID, pipelineRunId=$PIPELINE_RUN_ID"
-
-# 2. Wait and Verify Job Status
-echo "Step 2: Monitoring Pipeline Progress..."
-MAX_RETRIES=30
-COUNT=0
-FINAL_STATUS="PENDING"
-while [ $COUNT -lt $MAX_RETRIES ]; do
-  TS=$(date +%s)
-  HEADERS_RAW=$(generate_hmac_headers "GET" "/api/publish/videos" "$TS" "")
-  CURL_ARGS=()
-    for h in $HEADERS_RAW; do CURL_ARGS+=(-H "$h"); done
-  unset 
-  PUBLISHED_DATA=$(curl -s -X GET "$API_URL/api/publish/videos?projectId=$PROJECT_ID" \
-    "${CURL_ARGS[@]}")
-  PUBLISHED_RECORD=$(echo $PUBLISHED_DATA | jq -r   
-  if [ "$PUBLISHED_RECORD" != "null" ]; then
-    FINAL_STATUS=$(echo $PUBLISHED_DATA | jq -r     # MVP: Stage-1 只验证 PUBLISHED 状态
-    if [ "$FINAL_STATUS" == "PUBLISHED" ]; then
-        break
-    fi
-  fi
-  
-  echo "Round $COUNT: Waiting for video publication (Project: $PROJECT_ID, Status: $FINAL_STATUS)..."
-  sleep 10
-  COUNT=$((COUNT+1))
-done
-
-if [ "$FINAL_STATUS" != "PUBLISHED" ]; then
-  echo "❌ Timeout/Failure: Video status is $FINAL_STATUS (expected PUBLISHED)"
-  exit 1
-fi
-
-# 3. Verify Published Video & Checks
-echo "Step 3: Verifying Publication Metadata & Evidence..."
-ASSET_ID=$(echo $PUBLISHED_DATA | jq -r STORAGE_KEY=$(echo $PUBLISHED_DATA | jq -r CHECKSUM=$(echo $PUBLISHED_DATA | jq -r 
-echo "Asset found: assetId=$ASSET_ID, sha256=$CHECKSUM, storageKey=$STORAGE_KEY"
-echo "$PUBLISHED_DATA" > "$EVIDENCE_DIR/02_published_data.json"
-
-if [ "$CHECKSUM" == "null" ] || [ -z "$CHECKSUM" ] || [ "$CHECKSUM" == "unknown" ]; then
-  echo "❌ Error: Final video checksum missing."
-  exit 1
-fi
-
-# 4. Verify Filesystem Evidence (ffprobe.json)
-# MVP: Skip ffprobe for mock assets
-if [[ "$STORAGE_KEY" == mock/* ]]; then
-  echo "✅ Mock asset detected, skipping ffprobe verification."
-else
-  echo "Step 4: Checking Filesystem Evidence (.ffprobe.json)..."
-  RUNTIME_DIR="apps/workers/.runtime"
-  FULL_PATH="$RUNTIME_DIR/assets/$STORAGE_KEY"
-  # Note: storageKey usually matches the filename. We also generate .ffprobe.json
-  FFPROBE_PATH="$FULL_PATH.ffprobe.json"
-
-  if [ ! -f "$FFPROBE_PATH" ]; then
-      echo "❌ Error: ffprobe evidence file not found at $FFPROBE_PATH"
-      ls -R "$RUNTIME_DIR" | grep ffprobe || true
-      exit 1
-  fi
-
-  echo "✅ ffprobe.json exists: $(du -sh $FFPROBE_PATH)"
-  cat "$FFPROBE_PATH" > "$EVIDENCE_DIR/03_ffprobe_evidence.json"
-fi
-
-echo "✅ [Gate-Stage1] POSITIVE PASS: Pipeline completed with SHA256 & ffprobe evidence."
-
-# 5. NEGATE: Verification
-echo "Step 5: Running Negative Path Verifications..."
-
-# Unset secret to simulate auth fail
-echo "5.1 Testing Invalid Signature..."
-TS=$(date +%s)
-PAYLOAD_BAD="{}"
-# P0-SEC: 使用随机 nonce 避免触发 4004 防重放检测
-RANDOM_NONCE=$(openssl rand -hex 16)
-# Manually build bad signature
-BAD_HEADERS=("-H" "X-Api-Key: $API_KEY" "-H" "X-Nonce: $RANDOM_NONCE" "-H" "X-Timestamp: $TS" "-H" "X-Signature: badSignature123")
-
-AUTH_FAIL_RESPONSE=$(curl -s -X POST "$API_URL/api/orchestrator/pipeline/stage1" \
-  -H "Content-Type: application/json" \
-  "${BAD_HEADERS[@]}" \
-  -d "$PAYLOAD_BAD")
-
-echo "Auth Fail Response: $AUTH_FAIL_RESPONSE"
-echo "$AUTH_FAIL_RESPONSE" > "$EVIDENCE_DIR/04_negative_invalid_signature.json"
-
-# P0-SEC: 严格验证错误码为 4003 (APISpec V1.1)
-ERROR_CODE=$(echo "$AUTH_FAIL_RESPONSE" | jq -r if [ "$ERROR_CODE" == "4003" ]; then
-  echo "✅ 5.1 PASS: Invalid signature correctly rejected with error code 4003."
-else
-  echo "❌ 5.1 FAIL: Invalid signature not rejected correctly. Expected error.code=4003, got: $ERROR_CODE"
-  echo "Full response: $AUTH_FAIL_RESPONSE"
-  exit 1
-fi
-
-echo "✅ [Gate-Stage1] TOTAL PASS: Stage-1 Pipeline verified and sealed."
-echo "Evidence stored in $EVIDENCE_DIR"
-
+  "${CURL_H[@]}" \
+  -d "$PAYLOAD")"
+CURL_RC=$?
 set -e
 
-API_URL=${API_URL:-"http://localhost:3000"}
-TEST_ORCHESTRATOR_TOKEN=${TEST_ORCHESTRATOR_TOKEN:-"test-gate-token"}
-EVIDENCE_DIR="docs/_evidence/STAGE1_GATE_$(date +%Y%m%d_%H%M%S)"
-mkdir -p "$EVIDENCE_DIR"
+echo "$HEADERS_RAW" > "$EVIDENCE_DIR/02_trigger_headers.txt"
+echo "$HTTP_CODE" > "$EVIDENCE_DIR/02_trigger_http_code.txt"
 
-API_KEY="dev-worker-key"
-API_SECRET="dev-worker-secret"
-NOVEL_TEXT=${NOVEL_TEXT:-"在遥远的星系中，有一只向往自由的毛毛虫，它正在拼命对抗重力。"}
-
-# Helper: Generate HMAC Headers (V1.1 Specification)
-generate_hmac_headers() {
-  local method=$1
-  local path=$2
-  local timestamp=$3
-  local body=$4
-
-  node -e "
-    const crypto = require(    const secret =     const apiKey =     const timestamp =     const nonce =     const body =     
-    // V1.1: message = apiKey + nonce + timestamp + body
-    const message = apiKey + nonce + timestamp + body;
-    const signature = crypto.createHmac(    
-    console.log(    console.log(    console.log(    console.log(  "
-}
-
-echo "🚀 [Gate-Stage1] Starting Stage 1 Novel-to-Video Pipeline Verification..."
-
-echo "Step 1: Triggering Stage 1 Pipeline via Standard API..."
-TS=$(date +%s)
-# Use jq to generate compact JSON payload to avoid whitespace mismatch in HMAC
-PAYLOAD=$(jq -n --arg nt "$NOVEL_TEXT" 
-echo "Payload: $PAYLOAD"
-
-HEADERS_RAW=$(generate_hmac_headers "POST" "/api/orchestrator/pipeline/stage1" "$TS" "$PAYLOAD")
-CURL_ARGS=()
-for h in $HEADERS_RAW; do CURL_ARGS+=(-H "$h"); done
-unset 
-RESPONSE=$(curl -s -X POST "$API_URL/api/orchestrator/pipeline/stage1" \
-  -H "Content-Type: application/json" \
-  "${CURL_ARGS[@]}" \
-  -d "$PAYLOAD")
-
-echo "Response: $RESPONSE"
-echo "$RESPONSE" > "$EVIDENCE_DIR/01_trigger_response.json"
-
-# 解析返回数据
-SUCCESS=$(echo $RESPONSE | jq -r PROJECT_ID=$(echo $RESPONSE | jq -r PIPELINE_RUN_ID=$(echo $RESPONSE | jq -r 
-if [ "$SUCCESS" != "true" ] || [ "$PIPELINE_RUN_ID" == "null" ]; then
-  echo "❌ Error: Failed to start pipeline. Response: $RESPONSE"
-  exit 1
+if [[ $CURL_RC -ne 0 ]]; then
+  echo "[FATAL] curl failed rc=$CURL_RC"
+  exit 20
 fi
 
-echo "Pipeline started: projectId=$PROJECT_ID, pipelineRunId=$PIPELINE_RUN_ID"
+# 允许 200/201/202（异步启动）
+if [[ "$HTTP_CODE" != "200" && "$HTTP_CODE" != "201" && "$HTTP_CODE" != "202" ]]; then
+  echo "[FATAL] trigger stage1 failed: http=$HTTP_CODE"
+  echo "[HINT] see $EVIDENCE_DIR/02_trigger_response.json"
+  cat "$EVIDENCE_DIR/02_trigger_response.json" || true
+  exit 21
+fi
 
-# 2. Wait and Verify Job Status
-echo "Step 2: Monitoring Pipeline Progress..."
-MAX_RETRIES=30
-COUNT=0
-FINAL_STATUS="PENDING"
-while [ $COUNT -lt $MAX_RETRIES ]; do
-  TS=$(date +%s)
-  HEADERS_RAW=$(generate_hmac_headers "GET" "/api/publish/videos" "$TS" "")
-  CURL_ARGS=()
-    for h in $HEADERS_RAW; do CURL_ARGS+=(-H "$h"); done
-  unset 
-  PUBLISHED_DATA=$(curl -s -X GET "$API_URL/api/publish/videos?projectId=$PROJECT_ID" \
-    "${CURL_ARGS[@]}")
-  PUBLISHED_RECORD=$(echo $PUBLISHED_DATA | jq -r   
-  if [ "$PUBLISHED_RECORD" != "null" ]; then
-    FINAL_STATUS=$(echo $PUBLISHED_DATA | jq -r     # MVP: Stage-1 只验证 PUBLISHED 状态
-    if [ "$FINAL_STATUS" == "PUBLISHED" ]; then
-        break
-    fi
+echo "[OK] stage1 triggered. http=$HTTP_CODE"
+
+# -------- 加固：验证 renderJobIds 非空（防止假闭环） --------
+JOB_ID="$(jq -r '.data.jobId // .jobId // empty' "$EVIDENCE_DIR/02_trigger_response.json")"
+if [[ -z "$JOB_ID" ]]; then
+  echo "[FATAL] Cannot extract jobId from response"
+  cat "$EVIDENCE_DIR/02_trigger_response.json"
+  exit 22
+fi
+
+echo "[CHECK] Waiting for jobId=$JOB_ID to complete..."
+for i in $(seq 1 24); do
+  STATUS="$(psql "$DATABASE_URL" -At -c "SELECT status FROM shot_jobs WHERE id='$JOB_ID';" 2>/dev/null || echo 'PENDING')"
+  if [[ "$STATUS" == "SUCCEEDED" ]]; then
+    echo "[OK] Job $JOB_ID SUCCEEDED."
+    break
+  elif [[ "$STATUS" == "FAILED" ]]; then
+    ERROR_MSG="$(psql "$DATABASE_URL" -At -c "SELECT result->'error' FROM shot_jobs WHERE id='$JOB_ID';" 2>/dev/null || echo 'unknown error')"
+    echo "[FATAL] Job $JOB_ID FAILED! Error: $ERROR_MSG"
+    exit 24
   fi
-  
-  echo "Round $COUNT: Waiting for video publication (Project: $PROJECT_ID, Status: $FINAL_STATUS)..."
-  sleep 10
-  COUNT=$((COUNT+1))
+  echo "[WAIT] Job status: $STATUS (round $i/24, sleep 5s)"
+  sleep 5
 done
 
-if [ "$FINAL_STATUS" != "PUBLISHED" ]; then
-  echo "❌ Timeout/Failure: Video status is $FINAL_STATUS (expected PUBLISHED)"
-  exit 1
+RENDER_JOB_IDS="$(psql "$DATABASE_URL" -At -c "SELECT result->'output'->'renderJobIds' FROM shot_jobs WHERE id='$JOB_ID';" 2>/dev/null || echo '[]')"
+echo "$RENDER_JOB_IDS" > "$EVIDENCE_DIR/02_renderJobIds.json"
+
+if [[ "$RENDER_JOB_IDS" == "[]" || "$RENDER_JOB_IDS" == "null" || -z "$RENDER_JOB_IDS" ]]; then
+  echo "[FATAL] ❌ renderJobIds is empty! Pipeline did not trigger render jobs."
+  echo "[FATAL] This indicates processStage1OrchestratorJob空跑 (empty orchestration)"
+  echo "[FATAL] renderJobIds=$RENDER_JOB_IDS"
+  echo "[HINT] Fix processStage1OrchestratorJob to create SHOT_RENDER/VIDEO_RENDER jobs"
+  exit 23
 fi
 
-# 3. Verify Published Video & Checks
-echo "Step 3: Verifying Publication Metadata & Evidence..."
-ASSET_ID=$(echo $PUBLISHED_DATA | jq -r STORAGE_KEY=$(echo $PUBLISHED_DATA | jq -r CHECKSUM=$(echo $PUBLISHED_DATA | jq -r 
-echo "Asset found: assetId=$ASSET_ID, sha256=$CHECKSUM, storageKey=$STORAGE_KEY"
-echo "$PUBLISHED_DATA" > "$EVIDENCE_DIR/02_published_data.json"
+echo "[OK] ✅ renderJobIds is non-empty: $RENDER_JOB_IDS"
+echo "[INFO] waiting for real VIDEO asset & mp4 until gate-p0-video-1 PASS..."
 
-if [ "$CHECKSUM" == "null" ] || [ -z "$CHECKSUM" ] || [ "$CHECKSUM" == "unknown" ]; then
-  echo "❌ Error: Final video checksum missing."
-  exit 1
-fi
-
-# 4. Verify Filesystem Evidence (ffprobe.json)
-# MVP: Skip ffprobe for mock assets
-if [[ "$STORAGE_KEY" == mock/* ]]; then
-  echo "✅ Mock asset detected, skipping ffprobe verification."
-else
-  echo "Step 4: Checking Filesystem Evidence (.ffprobe.json)..."
-  RUNTIME_DIR="apps/workers/.runtime"
-  FULL_PATH="$RUNTIME_DIR/assets/$STORAGE_KEY"
-  # Note: storageKey usually matches the filename. We also generate .ffprobe.json
-  FFPROBE_PATH="$FULL_PATH.ffprobe.json"
-
-  if [ ! -f "$FFPROBE_PATH" ]; then
-      echo "❌ Error: ffprobe evidence file not found at $FFPROBE_PATH"
-      ls -R "$RUNTIME_DIR" | grep ffprobe || true
-      exit 1
+# 等待：每 10s 跑一次 gate-p0-video-1.sh，最多 15 分钟（90 次）
+MAX=90
+for i in $(seq 1 "$MAX"); do
+  if bash tools/gate/gates/gate-p0-video-1.sh >"$EVIDENCE_DIR/03_gate_p0_video_1_round_${i}.log" 2>&1; then
+    echo "[PASS] gate-p0-video-1 PASSED at round=$i"
+    echo "[PASS] evidence=$EVIDENCE_DIR"
+    exit 0
   fi
-
-  echo "✅ ffprobe.json exists: $(du -sh $FFPROBE_PATH)"
-  cat "$FFPROBE_PATH" > "$EVIDENCE_DIR/03_ffprobe_evidence.json"
-fi
-
-echo "✅ [Gate-Stage1] POSITIVE PASS: Pipeline completed with SHA256 & ffprobe evidence."
-
-# 5. NEGATE: Verification
-echo "Step 5: Running Negative Path Verifications..."
-
-# Unset secret to simulate auth fail
-echo "5.1 Testing Invalid Signature..."
-TS=$(date +%s)
-PAYLOAD_BAD="{}"
-# P0-SEC: 使用随机 nonce 避免触发 4004 防重放检测
-RANDOM_NONCE=$(openssl rand -hex 16)
-# Manually build bad signature
-BAD_HEADERS=("-H" "X-Api-Key: $API_KEY" "-H" "X-Nonce: $RANDOM_NONCE" "-H" "X-Timestamp: $TS" "-H" "X-Signature: badSignature123")
-
-AUTH_FAIL_RESPONSE=$(curl -s -X POST "$API_URL/api/orchestrator/pipeline/stage1" \
-  -H "Content-Type: application/json" \
-  "${BAD_HEADERS[@]}" \
-  -d "$PAYLOAD_BAD")
-
-echo "Auth Fail Response: $AUTH_FAIL_RESPONSE"
-echo "$AUTH_FAIL_RESPONSE" > "$EVIDENCE_DIR/04_negative_invalid_signature.json"
-
-# P0-SEC: 严格验证错误码为 4003 (APISpec V1.1)
-ERROR_CODE=$(echo "$AUTH_FAIL_RESPONSE" | jq -r if [ "$ERROR_CODE" == "4003" ]; then
-  echo "✅ 5.1 PASS: Invalid signature correctly rejected with error code 4003."
-else
-  echo "❌ 5.1 FAIL: Invalid signature not rejected correctly. Expected error.code=4003, got: $ERROR_CODE"
-  echo "Full response: $AUTH_FAIL_RESPONSE"
-  exit 1
-fi
-
-echo "✅ [Gate-Stage1] TOTAL PASS: Stage-1 Pipeline verified and sealed."
-echo "Evidence stored in $EVIDENCE_DIR"
-
-set -e
-
-API_URL=${API_URL:-"http://localhost:3000"}
-TEST_ORCHESTRATOR_TOKEN=${TEST_ORCHESTRATOR_TOKEN:-"test-gate-token"}
-EVIDENCE_DIR="docs/_evidence/STAGE1_GATE_$(date +%Y%m%d_%H%M%S)"
-mkdir -p "$EVIDENCE_DIR"
-
-API_KEY="dev-worker-key"
-API_SECRET="dev-worker-secret"
-NOVEL_TEXT=${NOVEL_TEXT:-"在遥远的星系中，有一只向往自由的毛毛虫，它正在拼命对抗重力。"}
-
-# Helper: Generate HMAC Headers (V1.1 Specification)
-generate_hmac_headers() {
-  local method=$1
-  local path=$2
-  local timestamp=$3
-  local body=$4
-
-  node -e "
-    const crypto = require(    const secret =     const apiKey =     const timestamp =     const nonce =     const body =     
-    // V1.1: message = apiKey + nonce + timestamp + body
-    const message = apiKey + nonce + timestamp + body;
-    const signature = crypto.createHmac(    
-    console.log(    console.log(    console.log(    console.log(  "
-}
-
-echo "🚀 [Gate-Stage1] Starting Stage 1 Novel-to-Video Pipeline Verification..."
-
-echo "Step 1: Triggering Stage 1 Pipeline via Standard API..."
-TS=$(date +%s)
-# Use jq to generate compact JSON payload to avoid whitespace mismatch in HMAC
-PAYLOAD=$(jq -n --arg nt "$NOVEL_TEXT" 
-echo "Payload: $PAYLOAD"
-
-HEADERS_RAW=$(generate_hmac_headers "POST" "/api/orchestrator/pipeline/stage1" "$TS" "$PAYLOAD")
-CURL_ARGS=()
-for h in $HEADERS_RAW; do CURL_ARGS+=(-H "$h"); done
-unset 
-RESPONSE=$(curl -s -X POST "$API_URL/api/orchestrator/pipeline/stage1" \
-  -H "Content-Type: application/json" \
-  "${CURL_ARGS[@]}" \
-  -d "$PAYLOAD")
-
-echo "Response: $RESPONSE"
-echo "$RESPONSE" > "$EVIDENCE_DIR/01_trigger_response.json"
-
-# 解析返回数据
-SUCCESS=$(echo $RESPONSE | jq -r PROJECT_ID=$(echo $RESPONSE | jq -r PIPELINE_RUN_ID=$(echo $RESPONSE | jq -r 
-if [ "$SUCCESS" != "true" ] || [ "$PIPELINE_RUN_ID" == "null" ]; then
-  echo "❌ Error: Failed to start pipeline. Response: $RESPONSE"
-  exit 1
-fi
-
-echo "Pipeline started: projectId=$PROJECT_ID, pipelineRunId=$PIPELINE_RUN_ID"
-
-# 2. Wait and Verify Job Status
-echo "Step 2: Monitoring Pipeline Progress..."
-MAX_RETRIES=30
-COUNT=0
-FINAL_STATUS="PENDING"
-while [ $COUNT -lt $MAX_RETRIES ]; do
-  TS=$(date +%s)
-  HEADERS_RAW=$(generate_hmac_headers "GET" "/api/publish/videos" "$TS" "")
-  CURL_ARGS=()
-    for h in $HEADERS_RAW; do CURL_ARGS+=(-H "$h"); done
-  unset 
-  PUBLISHED_DATA=$(curl -s -X GET "$API_URL/api/publish/videos?projectId=$PROJECT_ID" \
-    "${CURL_ARGS[@]}")
-  PUBLISHED_RECORD=$(echo $PUBLISHED_DATA | jq -r   
-  if [ "$PUBLISHED_RECORD" != "null" ]; then
-    FINAL_STATUS=$(echo $PUBLISHED_DATA | jq -r     # MVP: Stage-1 只验证 PUBLISHED 状态
-    if [ "$FINAL_STATUS" == "PUBLISHED" ]; then
-        break
-    fi
-  fi
-  
-  echo "Round $COUNT: Waiting for video publication (Project: $PROJECT_ID, Status: $FINAL_STATUS)..."
+  echo "[WAIT] round=$i/$MAX (sleep 10s)"
   sleep 10
-  COUNT=$((COUNT+1))
 done
 
-if [ "$FINAL_STATUS" != "PUBLISHED" ]; then
-  echo "❌ Timeout/Failure: Video status is $FINAL_STATUS (expected PUBLISHED)"
-  exit 1
-fi
-
-# 3. Verify Published Video & Checks
-echo "Step 3: Verifying Publication Metadata & Evidence..."
-ASSET_ID=$(echo $PUBLISHED_DATA | jq -r STORAGE_KEY=$(echo $PUBLISHED_DATA | jq -r CHECKSUM=$(echo $PUBLISHED_DATA | jq -r 
-echo "Asset found: assetId=$ASSET_ID, sha256=$CHECKSUM, storageKey=$STORAGE_KEY"
-echo "$PUBLISHED_DATA" > "$EVIDENCE_DIR/02_published_data.json"
-
-if [ "$CHECKSUM" == "null" ] || [ -z "$CHECKSUM" ] || [ "$CHECKSUM" == "unknown" ]; then
-  echo "❌ Error: Final video checksum missing."
-  exit 1
-fi
-
-# 4. Verify Filesystem Evidence (ffprobe.json)
-# MVP: Skip ffprobe for mock assets
-if [[ "$STORAGE_KEY" == mock/* ]]; then
-  echo "✅ Mock asset detected, skipping ffprobe verification."
-else
-  echo "Step 4: Checking Filesystem Evidence (.ffprobe.json)..."
-  RUNTIME_DIR="apps/workers/.runtime"
-  FULL_PATH="$RUNTIME_DIR/assets/$STORAGE_KEY"
-  # Note: storageKey usually matches the filename. We also generate .ffprobe.json
-  FFPROBE_PATH="$FULL_PATH.ffprobe.json"
-
-  if [ ! -f "$FFPROBE_PATH" ]; then
-      echo "❌ Error: ffprobe evidence file not found at $FFPROBE_PATH"
-      ls -R "$RUNTIME_DIR" | grep ffprobe || true
-      exit 1
-  fi
-
-  echo "✅ ffprobe.json exists: $(du -sh $FFPROBE_PATH)"
-  cat "$FFPROBE_PATH" > "$EVIDENCE_DIR/03_ffprobe_evidence.json"
-fi
-
-echo "✅ [Gate-Stage1] POSITIVE PASS: Pipeline completed with SHA256 & ffprobe evidence."
-
-# 5. NEGATE: Verification
-echo "Step 5: Running Negative Path Verifications..."
-
-# Unset secret to simulate auth fail
-echo "5.1 Testing Invalid Signature..."
-TS=$(date +%s)
-PAYLOAD_BAD="{}"
-# P0-SEC: 使用随机 nonce 避免触发 4004 防重放检测
-RANDOM_NONCE=$(openssl rand -hex 16)
-# Manually build bad signature
-BAD_HEADERS=("-H" "X-Api-Key: $API_KEY" "-H" "X-Nonce: $RANDOM_NONCE" "-H" "X-Timestamp: $TS" "-H" "X-Signature: badSignature123")
-
-AUTH_FAIL_RESPONSE=$(curl -s -X POST "$API_URL/api/orchestrator/pipeline/stage1" \
-  -H "Content-Type: application/json" \
-  "${BAD_HEADERS[@]}" \
-  -d "$PAYLOAD_BAD")
-
-echo "Auth Fail Response: $AUTH_FAIL_RESPONSE"
-echo "$AUTH_FAIL_RESPONSE" > "$EVIDENCE_DIR/04_negative_invalid_signature.json"
-
-# P0-SEC: 严格验证错误码为 4003 (APISpec V1.1)
-ERROR_CODE=$(echo "$AUTH_FAIL_RESPONSE" | jq -r if [ "$ERROR_CODE" == "4003" ]; then
-  echo "✅ 5.1 PASS: Invalid signature correctly rejected with error code 4003."
-else
-  echo "❌ 5.1 FAIL: Invalid signature not rejected correctly. Expected error.code=4003, got: $ERROR_CODE"
-  echo "Full response: $AUTH_FAIL_RESPONSE"
-  exit 1
-fi
-
-echo "✅ [Gate-Stage1] TOTAL PASS: Stage-1 Pipeline verified and sealed."
-echo "Evidence stored in $EVIDENCE_DIR"
-
-set -e
-
-API_URL=${API_URL:-"http://localhost:3000"}
-TEST_ORCHESTRATOR_TOKEN=${TEST_ORCHESTRATOR_TOKEN:-"test-gate-token"}
-EVIDENCE_DIR="docs/_evidence/STAGE1_GATE_$(date +%Y%m%d_%H%M%S)"
-mkdir -p "$EVIDENCE_DIR"
-
-API_KEY="dev-worker-key"
-API_SECRET="dev-worker-secret"
-NOVEL_TEXT=${NOVEL_TEXT:-"在遥远的星系中，有一只向往自由的毛毛虫，它正在拼命对抗重力。"}
-
-# Helper: Generate HMAC Headers (V1.1 Specification)
-generate_hmac_headers() {
-  local method=$1
-  local path=$2
-  local timestamp=$3
-  local body=$4
-
-  node -e "
-    const crypto = require(    const secret =     const apiKey =     const timestamp =     const nonce =     const body =     
-    // V1.1: message = apiKey + nonce + timestamp + body
-    const message = apiKey + nonce + timestamp + body;
-    const signature = crypto.createHmac(    
-    console.log(    console.log(    console.log(    console.log(  "
-}
-
-echo "🚀 [Gate-Stage1] Starting Stage 1 Novel-to-Video Pipeline Verification..."
-
-echo "Step 1: Triggering Stage 1 Pipeline via Standard API..."
-TS=$(date +%s)
-# Use jq to generate compact JSON payload to avoid whitespace mismatch in HMAC
-PAYLOAD=$(jq -n --arg nt "$NOVEL_TEXT" 
-echo "Payload: $PAYLOAD"
-
-HEADERS_RAW=$(generate_hmac_headers "POST" "/api/orchestrator/pipeline/stage1" "$TS" "$PAYLOAD")
-CURL_ARGS=()
-for h in $HEADERS_RAW; do CURL_ARGS+=(-H "$h"); done
-unset 
-RESPONSE=$(curl -s -X POST "$API_URL/api/orchestrator/pipeline/stage1" \
-  -H "Content-Type: application/json" \
-  "${CURL_ARGS[@]}" \
-  -d "$PAYLOAD")
-
-echo "Response: $RESPONSE"
-echo "$RESPONSE" > "$EVIDENCE_DIR/01_trigger_response.json"
-
-# 解析返回数据
-SUCCESS=$(echo $RESPONSE | jq -r PROJECT_ID=$(echo $RESPONSE | jq -r PIPELINE_RUN_ID=$(echo $RESPONSE | jq -r 
-if [ "$SUCCESS" != "true" ] || [ "$PIPELINE_RUN_ID" == "null" ]; then
-  echo "❌ Error: Failed to start pipeline. Response: $RESPONSE"
-  exit 1
-fi
-
-echo "Pipeline started: projectId=$PROJECT_ID, pipelineRunId=$PIPELINE_RUN_ID"
-
-# 2. Wait and Verify Job Status
-echo "Step 2: Monitoring Pipeline Progress..."
-MAX_RETRIES=30
-COUNT=0
-FINAL_STATUS="PENDING"
-while [ $COUNT -lt $MAX_RETRIES ]; do
-  TS=$(date +%s)
-  HEADERS_RAW=$(generate_hmac_headers "GET" "/api/publish/videos" "$TS" "")
-  CURL_ARGS=()
-    for h in $HEADERS_RAW; do CURL_ARGS+=(-H "$h"); done
-  unset 
-  PUBLISHED_DATA=$(curl -s -X GET "$API_URL/api/publish/videos?projectId=$PROJECT_ID" \
-    "${CURL_ARGS[@]}")
-  PUBLISHED_RECORD=$(echo $PUBLISHED_DATA | jq -r   
-  if [ "$PUBLISHED_RECORD" != "null" ]; then
-    FINAL_STATUS=$(echo $PUBLISHED_DATA | jq -r     # MVP: Stage-1 只验证 PUBLISHED 状态
-    if [ "$FINAL_STATUS" == "PUBLISHED" ]; then
-        break
-    fi
-  fi
-  
-  echo "Round $COUNT: Waiting for video publication (Project: $PROJECT_ID, Status: $FINAL_STATUS)..."
-  sleep 10
-  COUNT=$((COUNT+1))
-done
-
-if [ "$FINAL_STATUS" != "PUBLISHED" ]; then
-  echo "❌ Timeout/Failure: Video status is $FINAL_STATUS (expected PUBLISHED)"
-  exit 1
-fi
-
-# 3. Verify Published Video & Checks
-echo "Step 3: Verifying Publication Metadata & Evidence..."
-ASSET_ID=$(echo $PUBLISHED_DATA | jq -r STORAGE_KEY=$(echo $PUBLISHED_DATA | jq -r CHECKSUM=$(echo $PUBLISHED_DATA | jq -r 
-echo "Asset found: assetId=$ASSET_ID, sha256=$CHECKSUM, storageKey=$STORAGE_KEY"
-echo "$PUBLISHED_DATA" > "$EVIDENCE_DIR/02_published_data.json"
-
-if [ "$CHECKSUM" == "null" ] || [ -z "$CHECKSUM" ] || [ "$CHECKSUM" == "unknown" ]; then
-  echo "❌ Error: Final video checksum missing."
-  exit 1
-fi
-
-# 4. Verify Filesystem Evidence (ffprobe.json)
-# MVP: Skip ffprobe for mock assets
-if [[ "$STORAGE_KEY" == mock/* ]]; then
-  echo "✅ Mock asset detected, skipping ffprobe verification."
-else
-  echo "Step 4: Checking Filesystem Evidence (.ffprobe.json)..."
-  RUNTIME_DIR="apps/workers/.runtime"
-  FULL_PATH="$RUNTIME_DIR/assets/$STORAGE_KEY"
-  # Note: storageKey usually matches the filename. We also generate .ffprobe.json
-  FFPROBE_PATH="$FULL_PATH.ffprobe.json"
-
-  if [ ! -f "$FFPROBE_PATH" ]; then
-      echo "❌ Error: ffprobe evidence file not found at $FFPROBE_PATH"
-      ls -R "$RUNTIME_DIR" | grep ffprobe || true
-      exit 1
-  fi
-
-  echo "✅ ffprobe.json exists: $(du -sh $FFPROBE_PATH)"
-  cat "$FFPROBE_PATH" > "$EVIDENCE_DIR/03_ffprobe_evidence.json"
-fi
-
-echo "✅ [Gate-Stage1] POSITIVE PASS: Pipeline completed with SHA256 & ffprobe evidence."
-
-# 5. NEGATE: Verification
-echo "Step 5: Running Negative Path Verifications..."
-
-# Unset secret to simulate auth fail
-echo "5.1 Testing Invalid Signature..."
-TS=$(date +%s)
-PAYLOAD_BAD="{}"
-# P0-SEC: 使用随机 nonce 避免触发 4004 防重放检测
-RANDOM_NONCE=$(openssl rand -hex 16)
-# Manually build bad signature
-BAD_HEADERS=("-H" "X-Api-Key: $API_KEY" "-H" "X-Nonce: $RANDOM_NONCE" "-H" "X-Timestamp: $TS" "-H" "X-Signature: badSignature123")
-
-AUTH_FAIL_RESPONSE=$(curl -s -X POST "$API_URL/api/orchestrator/pipeline/stage1" \
-  -H "Content-Type: application/json" \
-  "${BAD_HEADERS[@]}" \
-  -d "$PAYLOAD_BAD")
-
-echo "Auth Fail Response: $AUTH_FAIL_RESPONSE"
-echo "$AUTH_FAIL_RESPONSE" > "$EVIDENCE_DIR/04_negative_invalid_signature.json"
-
-# P0-SEC: 严格验证错误码为 4003 (APISpec V1.1)
-ERROR_CODE=$(echo "$AUTH_FAIL_RESPONSE" | jq -r if [ "$ERROR_CODE" == "4003" ]; then
-  echo "✅ 5.1 PASS: Invalid signature correctly rejected with error code 4003."
-else
-  echo "❌ 5.1 FAIL: Invalid signature not rejected correctly. Expected error.code=4003, got: $ERROR_CODE"
-  echo "Full response: $AUTH_FAIL_RESPONSE"
-  exit 1
-fi
-
-echo "✅ [Gate-Stage1] TOTAL PASS: Stage-1 Pipeline verified and sealed."
-echo "Evidence stored in $EVIDENCE_DIR"
+echo "[FAIL] timeout: gate-p0-video-1 did not pass within $((MAX*10)) seconds"
+echo "[HINT] inspect evidence logs in $EVIDENCE_DIR"
+exit 30

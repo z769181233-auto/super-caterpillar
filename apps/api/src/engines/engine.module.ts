@@ -15,6 +15,7 @@ import { CE04LocalAdapter } from './adapters/ce04.local.adapter';
 import { VideoMergeLocalAdapter } from './adapters/video-merge.local.adapter';
 import { ShotRenderLocalAdapter } from './adapters/shot-render.local.adapter';
 import { ShotRenderReplicateAdapter } from './adapters/shot-render.replicate.adapter';
+import { ShotRenderComfyuiAdapter } from './adapters/shot-render.comfyui.adapter';
 import { ShotRenderRouterAdapter } from './adapters/shot-render.router.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { EngineConfigService } from '../config/engine.config';
@@ -43,6 +44,7 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     VideoMergeLocalAdapter,
     ShotRenderLocalAdapter,
     ShotRenderReplicateAdapter,
+    ShotRenderComfyuiAdapter, // Registered
     ShotRenderRouterAdapter,
     HttpEngineAdapter,
   ],
@@ -66,6 +68,7 @@ export class EngineModule implements OnModuleInit {
     private readonly videoMergeAdapter: VideoMergeLocalAdapter,
     private readonly shotRenderAdapter: ShotRenderLocalAdapter,
     private readonly shotRenderReplicateAdapter: ShotRenderReplicateAdapter,
+    private readonly shotRenderComfyuiAdapter: ShotRenderComfyuiAdapter, // Injected
     private readonly shotRenderRouterAdapter: ShotRenderRouterAdapter,
     private readonly httpAdapter: HttpEngineAdapter
   ) { }
@@ -101,6 +104,7 @@ export class EngineModule implements OnModuleInit {
 
     // Keep individual adapters registered but not as primary alias
     this.registry.register(this.shotRenderReplicateAdapter);
+    this.registry.register(this.shotRenderComfyuiAdapter); // Registered
     this.registry.register(this.shotRenderAdapter);
 
     // P0-R2: Register Video Merge Adapter

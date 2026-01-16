@@ -2,8 +2,7 @@ import { JobType } from 'database';
 import { PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
 import { CostLedgerService } from '../billing/cost-ledger.service';
-// @ts-ignore
-import { WorkerJob } from '../types';
+import { ProcessorContext } from '../types/processor-context';
 
 export interface ProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
@@ -11,14 +10,7 @@ export interface ProcessorResult {
   error?: string;
 }
 
-interface CE03Context {
-  prisma: PrismaClient;
-  job: WorkerJob;
-  apiClient: ApiClient;
-  logger?: any;
-}
-
-export async function processCE03VisualDensityJob(context: CE03Context): Promise<ProcessorResult> {
+export async function processCE03VisualDensityJob(context: ProcessorContext): Promise<ProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
 

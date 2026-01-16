@@ -454,9 +454,9 @@ model ShotJob {
   id             String            @id @default(uuid())
   organizationId String
   projectId      String
-  episodeId      String
-  sceneId        String
-  shotId         String
+  episodeId      String?
+  sceneId        String?
+  shotId         String?
   taskId         String?
   workerId       String?
   status         JobStatus         @default(PENDING)
@@ -479,11 +479,11 @@ model ShotJob {
   securityProcessed Boolean           @default(false)
   generatedAsset    Asset[]           @relation("JobGeneratedAsset")
   engineBinding     JobEngineBinding? @relation("JobEngineBinding")
-  episode        Episode           @relation("EpisodeShotJobs", fields: [episodeId], references: [id], onDelete: Cascade)
+  episode        Episode?          @relation("EpisodeShotJobs", fields: [episodeId], references: [id], onDelete: Cascade)
   organization   Organization      @relation("OrganizationShotJobs", fields: [organizationId], references: [id])
   project        Project           @relation("ProjectShotJobs", fields: [projectId], references: [id], onDelete: Cascade)
-  scene          Scene             @relation("SceneShotJobs", fields: [sceneId], references: [id], onDelete: Cascade)
-  shot           Shot              @relation("ShotJobs", fields: [shotId], references: [id], onDelete: Cascade)
+  scene          Scene?            @relation("SceneShotJobs", fields: [sceneId], references: [id], onDelete: Cascade)
+  shot           Shot?             @relation("ShotJobs", fields: [shotId], references: [id], onDelete: Cascade)
   task           Task?             @relation("TaskJobs", fields: [taskId], references: [id], onDelete: Cascade)
   worker         WorkerNode?       @relation("WorkerNodeShotJobs", fields: [workerId], references: [id])
 
@@ -886,10 +886,12 @@ model NovelScene {
   chapterId      String   @map("chapter_id")
   index          Int
   title          String?
-  rawText        String?  @db.Text @map("raw_text")
-  enrichedText   String?  @db.Text @map("enriched_text")
-  directingNotes String?  @db.Text @map("directing_notes")
-  shotType       String?  @default("MEDIUM_SHOT") @map("shot_type")
+  rawText            String?  @db.Text @map("raw_text")
+  enrichedText       String?  @db.Text @map("enriched_text")
+  visualDensityScore Float?   @map("visual_density_score")
+  characterIds       Json?    @map("character_ids")
+  directingNotes     String?  @db.Text @map("directing_notes")
+  shotType           String?  @default("MEDIUM_SHOT") @map("shot_type")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -1212,6 +1214,8 @@ enum JobType {
   SHOT_RENDER
   NOVEL_ANALYSIS
   CE06_NOVEL_PARSING
+  NOVEL_SCAN_TOC
+  NOVEL_CHUNK_PARSE
   CE03_VISUAL_DENSITY
   CE04_VISUAL_ENRICHMENT
   CE01_REFERENCE_SHEET

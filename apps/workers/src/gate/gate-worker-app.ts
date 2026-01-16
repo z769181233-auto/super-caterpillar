@@ -11,15 +11,17 @@ import { processE2EVideoPipelineJob } from '../processors/e2e-video-pipeline.pro
 import { processCE06NovelParsingJob } from '../processors/ce06-novel-parsing.processor';
 import { processCE03VisualDensityJob } from '../processors/ce03-visual-density.processor';
 import { processCE04VisualEnrichmentJob } from '../processors/ce04-visual-enrichment.processor';
-import { processShotRenderJob } from '../processors/shot-render.processor';
+import { processShotRenderJob } from '../ce-core-processor';
 import { processVideoRenderJob } from '../processors/video-render.processor';
 import { processMediaSecurityJob } from '../processors/media-security.processor';
 import { processTimelineComposeJob } from '../processors/timeline-compose.processor';
 import { processTimelineRenderJob } from '../processors/timeline-render.processor';
 import { processStage1OrchestratorJob } from '../processors/stage1-orchestrator.processor';
+import type { ProcessorContext } from '../types/processor-context';
 import { JobType } from 'database';
 import { ApiClient } from '../api-client';
 import { PrismaClient } from 'database';
+import { EngineHubClient } from '../engine-hub-client';
 import { env } from '@scu/config';
 import * as util from 'util';
 
@@ -28,7 +30,8 @@ const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 import * as fs from 'fs';
 
 function assertNonProd() {
-  if (process.env.NODE_ENV === 'production') {
+  // Allow Gate Worker in Production ONLY if explicit GATE_MODE is set (for verification)
+  if (process.env.NODE_ENV === 'production' && process.env.GATE_MODE !== '1') {
     throw new Error('GATE_WORKER_REFUSED_IN_PRODUCTION');
   }
 }
@@ -57,6 +60,8 @@ export async function startGateWorkerApp() {
     workerApiSecret,
     workerId
   );
+
+  const engineHubClient = new EngineHubClient(apiClient);
 
   const prisma = new PrismaClient({
     datasources: {
@@ -149,32 +154,36 @@ export async function startGateWorkerApp() {
         if (job.type === 'PIPELINE_E2E_VIDEO') {
           // Real Processor for E2E Pipeline
           process.stdout.write(util.format(`[GateWorker] 执行 E2E Pipeline Job...`) + '\n');
-          result = await processE2EVideoPipelineJob({
+          const e2eCtx: ProcessorContext = {
             prisma,
-            job: job as any, // Cast to WorkerJobBase
+            job: job,
             apiClient,
-          });
+          };
+          result = await processE2EVideoPipelineJob(e2eCtx);
         } else if (job.type === 'CE06_NOVEL_PARSING') {
           process.stdout.write(util.format(`[GateWorker] 执行 CE06 Novel Parsing...`) + '\n');
-          result = await processCE06NovelParsingJob({
+          const ce06Ctx: ProcessorContext = {
             prisma,
-            job: job as any,
+            job: job,
             apiClient,
-          });
+          };
+          result = await processCE06NovelParsingJob(ce06Ctx);
         } else if (job.type === 'CE03_VISUAL_DENSITY') {
           process.stdout.write(util.format(`[GateWorker] 执行 CE03 Visual Density...`) + '\n');
-          result = await processCE03VisualDensityJob({
+          const ce03Ctx: ProcessorContext = {
             prisma,
-            job: job as any,
+            job: job,
             apiClient,
-          });
+          };
+          result = await processCE03VisualDensityJob(ce03Ctx);
         } else if (job.type === 'CE04_VISUAL_ENRICHMENT') {
           process.stdout.write(util.format(`[GateWorker] 执行 CE04 Visual Enrichment...`) + '\n');
-          result = await processCE04VisualEnrichmentJob({
+          const ce04Ctx: ProcessorContext = {
             prisma,
-            job: job as any,
+            job: job,
             apiClient,
-          });
+          };
+          result = await processCE04VisualEnrichmentJob(ce04Ctx);
         } else if (job.type === 'VIDEO_RENDER') {
           // S4-4: Conditional Routing
           const debugMsg = `[Debug] VIDEO_RENDER Job: Payload=${JSON.stringify(job.payload)} Env=${process.env.RENDER_ENGINE}\n`;
@@ -190,11 +199,12 @@ export async function startGateWorkerApp() {
               process.stdout.write(msg);
               fs.appendFileSync('worker-debug.log', msg);
             }
-            result = await processVideoRenderJob({
+            const videoRenderCtx: ProcessorContext = {
               prisma,
-              job: job as any,
+              job: job,
               apiClient,
-            });
+            };
+            result = await processVideoRenderJob(videoRenderCtx);
           } else {
             const msg = `[GateWorker] Fallback Noop for VIDEO_RENDER. pipelineRunId=${job.payload?.pipelineRunId} Env=${process.env.RENDER_ENGINE}\n`;
             process.stdout.write(msg);
@@ -207,37 +217,37 @@ export async function startGateWorkerApp() {
           }
         } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE') {
           process.stdout.write(util.format(`[GateWorker] 执行 CE10 Timeline Compose...`) + '\n');
-          result = await processTimelineComposeJob({
+          const timelineComposeCtx: ProcessorContext = {
             prisma,
-            job: job as any,
+            job: job,
             apiClient,
-          });
+          };
+          result = await processTimelineComposeJob(timelineComposeCtx);
         } else if (job.type === 'TIMELINE_RENDER') {
           process.stdout.write(
             util.format(`[GateWorker] 执行 Timeline Render (Two-Stage)...`) + '\n'
           );
-          result = await processTimelineRenderJob({
+          const timelineRenderCtx: ProcessorContext = {
             prisma,
-            job: job as any,
+            job: job,
             apiClient,
-          });
+          };
+          result = await processTimelineRenderJob(timelineRenderCtx);
         } else if (job.type === 'CE09_MEDIA_SECURITY') {
           process.stdout.write(util.format(`[GateWorker] 执行 CE09 Media Security...`) + '\n');
-          result = await processMediaSecurityJob({
+          const mediaSecurityCtx: ProcessorContext = {
             prisma,
-            job: job as any,
+            job: job,
             apiClient,
-          });
+          };
+          result = await processMediaSecurityJob(mediaSecurityCtx);
         } else if (job.type === 'SHOT_RENDER') {
           // S4-3: Conditional Routing
           // P0 Fix: Pipeline jobs should always produce mock frames to trigger real FFmpeg video render
           if (job.payload?.pipelineRunId) {
-            process.stdout.write(util.format(`[GateWorker] 执行 S4-3 Mock Shot Render...`) + '\n');
-            result = await processShotRenderJob({
-              prisma,
-              job: job as any,
-              apiClient,
-            });
+            process.stdout.write(util.format(`[GateWorker] 执行 S4-3 Real Engine Hub Shot Render...`) + '\n');
+            // Core Processor uses (prisma, job, engineHub, apiClient) signature
+            result = await processShotRenderJob(prisma, job, engineHubClient, apiClient);
           } else {
             // Gate Default (Noop)
             if (!shouldUseGateNoop(job)) {
@@ -248,11 +258,12 @@ export async function startGateWorkerApp() {
           }
         } else if (job.type === 'PIPELINE_STAGE1_NOVEL_TO_VIDEO') {
           process.stdout.write(util.format(`[GateWorker] 执行 Stage 1 Orchestrator...`) + '\n');
-          result = await processStage1OrchestratorJob({
+          const orchestratorCtx: ProcessorContext = {
             prisma,
-            job: job as any,
+            job: job,
             apiClient,
-          });
+          };
+          result = await processStage1OrchestratorJob(orchestratorCtx);
         } else {
           // Fallback for other types if any
           process.stdout.write(

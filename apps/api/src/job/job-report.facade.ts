@@ -220,7 +220,7 @@ export class JobReportFacade {
     if (updatedJob && updatedJob.status === JobStatusEnum.SUCCEEDED) {
       try {
         // Case A: SHOT_RENDER finished -> Trigger VIDEO_RENDER
-        if (updatedJob.type === JobTypeEnum.SHOT_RENDER) {
+        if (updatedJob.type === JobTypeEnum.SHOT_RENDER && updatedJob.shotId) {
           const frameKeys = params.result?.frameKeys || params.result?.assets || [];
           if (frameKeys.length > 0) {
             await this.jobService.ensureVideoRenderJob(

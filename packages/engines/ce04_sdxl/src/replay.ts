@@ -11,7 +11,7 @@ import { __ENGINE__Input, __ENGINE__Output, EngineBillingUsage, EngineAuditTrail
 /**
  * 确定性重放引擎
  */
-export async function __ENGINE__ReplayEngine(input: __ENGINE__Input): Promise<__ENGINE__Output> {
+async function __ENGINE__ReplayEngine_Impl(input: __ENGINE__Input): Promise<__ENGINE__Output> {
   const startTime = Date.now();
 
   // 1. 计算输入参数哈希
@@ -42,10 +42,12 @@ export async function __ENGINE__ReplayEngine(input: __ENGINE__Input): Promise<__
 
   // 5. 返回确定性结果
   return {
-    // TODO: 添加业务输出字段（确定性值）
-    // result: { deterministicSeed },
-
+    assets: {
+      image: 'mock://ce04_sdxl/replay_image.png',
+    },
     billing_usage,
     audit_trail,
   };
 }
+
+export const __ENGINE__ReplayEngine = __ENGINE__ReplayEngine_Impl;

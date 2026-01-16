@@ -43,3 +43,7 @@ export interface CE04SDXLOutput {
   billing_usage: EngineBillingUsage;
   audit_trail?: EngineAuditTrail;
 }
+
+// === Hub Alignment ===
+export type __ENGINE__Input = CE04SDXLInput;
+export type __ENGINE__Output = CE04SDXLOutput;

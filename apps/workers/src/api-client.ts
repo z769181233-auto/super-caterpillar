@@ -453,10 +453,30 @@ export class ApiClient {
 
   /**
    * 创建新 Job (通过 API 以确保计费和引擎绑定生效)
-   * POST /shots/:shotId/jobs
+   * 支持两种模式：
+   * 1. 基于 ShotID (Legacy): createJob(shotId, dto)
+   * 2. 通用架构 (Project-based): createJob({ jobType, projectId, organizationId, payload, ... })
    */
-  async createJob(shotId: string, dto: { type: string; payload?: any; traceId?: string }, headers?: Record<string, string>): Promise<any> {
-    const response = await this.request<any>('POST', `/api/shots/${shotId}/jobs`, dto, headers);
+  async createJob(
+    shotIdOrDto: string | { jobType: string; projectId: string; organizationId: string; payload?: any; parentJobId?: string; traceId?: string },
+    dto?: { type?: string; jobType?: string; payload?: any; traceId?: string },
+    headers?: Record<string, string>
+  ): Promise<any> {
+    let url = '/api/jobs'; // 默认通用路径
+    let body: any = {};
+
+    if (typeof shotIdOrDto === 'string') {
+      // Legacy Shot-based creation
+      url = `/api/shots/${shotIdOrDto}/jobs`;
+      body = dto || {};
+    } else {
+      // New Project-based distributed creation
+      body = shotIdOrDto;
+      // 适配 API 期望的字段名 (type vs jobType)
+      if (body.jobType && !body.type) body.type = body.jobType;
+    }
+
+    const response = await this.request<any>('POST', url, body, headers);
 
     if (!response.success && !(response as any).data) {
       throw new Error(`Failed to create job: ${response.error?.message || response.message}`);

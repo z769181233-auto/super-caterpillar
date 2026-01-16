@@ -22,6 +22,8 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
   }
 }
 
+import { ProcessorContext } from '../types/processor-context';
+
 export interface E2EVideoPipelinePayload {
   projectId: string; // 必须
   pipelineRunId?: string; // 可选，若不传则使用 jobId
@@ -42,11 +44,7 @@ export interface E2EVideoPipelineOutput {
  * 处理 PIPELINE_E2E_VIDEO Job
  * 策略: Fire-and-forget (Spawn CE06 and exit)
  */
-export async function processE2EVideoPipelineJob(ctx: {
-  prisma: PrismaClient;
-  job: WorkerJobBase;
-  apiClient: ApiClient;
-}): Promise<E2EVideoPipelineOutput> {
+export async function processE2EVideoPipelineJob(ctx: ProcessorContext): Promise<E2EVideoPipelineOutput> {
   const { prisma, job, apiClient } = ctx;
   const jobId = job.id;
   const payload = job.payload as E2EVideoPipelinePayload;
@@ -162,9 +160,9 @@ export async function processE2EVideoPipelineJob(ctx: {
 
     if (jobRecord) {
       orgId = jobRecord.organizationId;
-      episodeId = jobRecord.episodeId;
-      sceneId = jobRecord.sceneId;
-      shotId = jobRecord.shotId;
+      episodeId = jobRecord.episodeId ?? undefined;
+      sceneId = jobRecord.sceneId ?? undefined;
+      shotId = jobRecord.shotId ?? undefined;
     }
 
     // B. DB 缺失，尝试从 Job 对象本身 (WorkerJobBase 可能携带)

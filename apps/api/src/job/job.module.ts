@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JobController } from './job.controller';
+import { JobGenericController } from './job-generic.controller';
 import { JobService } from './job.service';
 import { JobWorkerService } from './job-worker.service';
 import { JobReportFacade } from './job-report.facade';

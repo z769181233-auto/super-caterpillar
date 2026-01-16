@@ -39,3 +39,7 @@ export interface TTSStandardOutput {
   billing_usage: EngineBillingUsage;
   audit_trail?: EngineAuditTrail;
 }
+
+// === Hub Alignment ===
+export type __ENGINE__Input = TTSStandardInput;
+export type __ENGINE__Output = TTSStandardOutput;
