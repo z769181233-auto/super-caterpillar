@@ -23,5 +23,5 @@
 - [x] STAGE F3 — 任务清单与 Walkthrough 收口 (最终产物 prefix=videos/) <!-- id: 20 -->
     - [x] `task.md` 补齐说明
     - [x] `walkthrough.md` 新增“审计裁决摘要”段落
-- [ ] STAGE F4 — Git Tag/封板声明 <!-- id: 21 -->
-    - [ ] 执行 `git tag seal/phase5A_real_video_pass_20260116`
+- [x] STAGE F4 — Git Tag/封板声明 (seal/phase5A_real_video_pass_20260116_v3) <!-- id: 21 -->
+    - [x] 执行 `git tag seal/phase5A_real_video_pass_20260116_v3`
