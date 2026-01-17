@@ -191,20 +191,14 @@ export async function startGateWorkerApp() {
           };
           result = await processCE04VisualEnrichmentJob(ce04Ctx);
         } else if (job.type === 'VIDEO_RENDER') {
-          // S4-4: Conditional Routing
-          const debugMsg = `[Debug] VIDEO_RENDER Job: Payload=${JSON.stringify(job.payload)} Env=${process.env.RENDER_ENGINE}\n`;
+          // S4-4: Conditional Routing (P4 Fix: Remove RENDER_ENGINE dependency)
+          const debugMsg = `[Debug] VIDEO_RENDER Job: Payload=${JSON.stringify(job.payload)}\n`;
           process.stdout.write(debugMsg);
           fs.appendFileSync('worker-debug.log', debugMsg);
 
-          if (
-            job.payload?.pipelineRunId &&
-            (process.env.RENDER_ENGINE === 'mock' || process.env.RENDER_ENGINE === 'ffmpeg')
-          ) {
-            if (process.env.DEBUG_WORKER_LOG === '1') {
-              const msg = `[GateWorker] 执行 S4-6 Real/Mock Video Syn (Engine=${process.env.RENDER_ENGINE})...\n`;
-              process.stdout.write(msg);
-              fs.appendFileSync('worker-debug.log', msg);
-            }
+          if (job.payload?.pipelineRunId) {
+            // P4 Fix: Any VIDEO_RENDER with pipelineRunId should use real processor
+            process.stdout.write(util.format(`[GateWorker] 执行 Real Video Render (pipelineRunId=${job.payload.pipelineRunId})...\n`));
             const videoRenderCtx: ProcessorContext = {
               prisma,
               job: job,
@@ -212,9 +206,7 @@ export async function startGateWorkerApp() {
             };
             result = await processVideoRenderJob(videoRenderCtx);
           } else {
-            const msg = `[GateWorker] Fallback Noop for VIDEO_RENDER. pipelineRunId=${job.payload?.pipelineRunId} Env=${process.env.RENDER_ENGINE}\n`;
-            process.stdout.write(msg);
-            fs.appendFileSync('worker-debug.log', msg);
+            // Fallback to Gate Noop only for non-pipeline jobs
             if (!shouldUseGateNoop(job)) {
               process.stdout.write(util.format(`[GateWorker] 跳过非 Gate job: ${job.id}`) + '\n');
               return;

@@ -33,6 +33,53 @@ export class JobReportFacade {
   ) { }
 
   /**
+   * PLAN-1 SSOT: Normalize storage key (remove path pollution)
+   * 
+   * Rules:
+   * - Remove absolute paths (starts with /)
+   * - Remove .runtime/ prefix
+   * - Remove apps/workers/.runtime/ prefix
+   * - Extract from last occurrence of assets/ or videos/
+   * - FAIL if no assets/ or videos/ found (prevent silent corruption)
+   */
+  private normalizeStorageKey(key: string): string {
+    if (!key) return key;
+
+    // If contains apps/workers/.runtime/: extract from assets/ or videos/
+    if (key.includes('apps/workers/.runtime/') || key.includes('.runtime/')) {
+      const assetsIdx = key.lastIndexOf('assets/');
+      const videosIdx = key.lastIndexOf('videos/');
+      const startIdx = Math.max(assetsIdx, videosIdx);
+
+      if (startIdx !== -1) {
+        const normalized = key.substring(startIdx);
+        this.logger.log(`[NormalizeKey] Stripped pollution: "${key}" -> "${normalized}"`);
+        return normalized;
+      } else {
+        throw new Error(`[NormalizeKey] REJECT: No assets/ or videos/ found in key: ${key}`);
+      }
+    }
+
+    // If absolute path: same extraction logic
+    if (key.startsWith('/')) {
+      const assetsIdx = key.lastIndexOf('assets/');
+      const videosIdx = key.lastIndexOf('videos/');
+      const startIdx = Math.max(assetsIdx, videosIdx);
+
+      if (startIdx !== -1) {
+        const normalized = key.substring(startIdx);
+        this.logger.log(`[NormalizeKey] Stripped absolute path: "${key}" -> "${normalized}"`);
+        return normalized;
+      } else {
+        throw new Error(`[NormalizeKey] REJECT: Absolute path without assets/ or videos/: ${key}`);
+      }
+    }
+
+    // Already clean (assets/... or videos/...)
+    return key;
+  }
+
+  /**
    * 处理 Job 回报（Facade 层）
    *
    * @param params 回报参数
@@ -221,7 +268,11 @@ export class JobReportFacade {
       try {
         // Case A: SHOT_RENDER finished -> Trigger VIDEO_RENDER
         if (updatedJob.type === JobTypeEnum.SHOT_RENDER && updatedJob.shotId) {
-          const frameKeys = params.result?.frameKeys || params.result?.assets || [];
+          const rawFrameKeys = params.result?.frameKeys || params.result?.assets || [];
+
+          // PLAN-1: Normalize frameKeys to pure storageKeys (remove .runtime/apps/workers pollution)
+          const frameKeys = rawFrameKeys.map((key: string) => this.normalizeStorageKey(key));
+
           if (frameKeys.length > 0) {
             await this.jobService.ensureVideoRenderJob(
               updatedJob.shotId,

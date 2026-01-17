@@ -71,7 +71,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
   }
 
   // 2. Locate Source File
-  const runtimeDir = path.resolve(process.cwd(), '.runtime');
+  const runtimeDir = process.env.STORAGE_ROOT || path.resolve(process.cwd(), '.runtime');
   const sourcePath = path.resolve(runtimeDir, sourceStorageKey);
 
   if (!fs.existsSync(sourcePath)) {
@@ -159,13 +159,17 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     },
   });
 
-  // Update ShotJob security status
-  await prisma.shotJob.update({
-    where: { id: job.id },
-    data: {
-      securityProcessed: true, // V1.1 Field
-    },
-  });
+  // Update ShotJob security status (Optional if record exists)
+  try {
+    await prisma.shotJob.update({
+      where: { id: job.id },
+      data: {
+        securityProcessed: true, // V1.1 Field
+      },
+    });
+  } catch (e) {
+    console.log(`[MediaSecurity] No ShotJob record for ID ${job.id} to update securityProcessed status.`);
+  }
 
   // 5. Audit
   await prisma.auditLog.create({
@@ -209,6 +213,15 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
       });
     }
   }
+
+  // P4 Fix: Return result data so API can update asset properly
+  return {
+    status: 'SUCCEEDED',
+    hlsPlaylistUrl: hlsPlaylistRelativeKey,
+    watermarkMode: 'SCU_VISIBLE_V1_BOTTOM_LEFT',
+    fingerprintId: fpRecord.id,
+    storageKey: outputRelativeKey,
+  };
 }
 
 async function runFfmpeg(args: string[], label: string) {
