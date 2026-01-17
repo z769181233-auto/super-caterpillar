@@ -208,7 +208,18 @@ model Shot {
   resultImageUrl String?          @map("result_image_url")
   resultVideoUrl String?          @map("result_video_url")
 
+  // V3.0 Bible Alignment
+  visualPrompt       String?  @map("visual_prompt")
+  negativePrompt     String?  @map("negative_prompt")
+  actionDescription  String?  @map("action_description")
+  dialogueContent    String?  @map("dialogue_content")
+  soundFx            String?  @map("sound_fx")
+  assetBindings      Json?    @map("asset_bindings")
+  controlnetSettings Json?    @map("controlnet_settings")
+  durationSec        Decimal? @map("duration_sec")
+
   @@index([sceneId, index])
+  @@index([shotType, cameraMovement, cameraAngle, lightingPreset], name: "idx_shots_director_controls")
   @@map("shots")
 }
 
@@ -936,6 +947,11 @@ model NovelScene {
   // V3.0 Alignment
   projectId          String? @map("project_id")
   graphStateSnapshot Json?   @map("graph_state_snapshot")
+
+  // V3.0 Bible Alignment
+  locationSlug    String?  @map("location_slug")
+  timeOfDay       String?  @map("time_of_day")
+  environmentTags String[] @map("environment_tags")
 
   chapter NovelChapter @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
 

@@ -226,7 +226,15 @@ exports.Prisma.ShotScalarFieldEnum = {
   lightingPreset: 'lightingPreset',
   renderStatus: 'renderStatus',
   resultImageUrl: 'resultImageUrl',
-  resultVideoUrl: 'resultVideoUrl'
+  resultVideoUrl: 'resultVideoUrl',
+  visualPrompt: 'visualPrompt',
+  negativePrompt: 'negativePrompt',
+  actionDescription: 'actionDescription',
+  dialogueContent: 'dialogueContent',
+  soundFx: 'soundFx',
+  assetBindings: 'assetBindings',
+  controlnetSettings: 'controlnetSettings',
+  durationSec: 'durationSec'
 };
 
 exports.Prisma.CharacterIdentityAnchorScalarFieldEnum = {
@@ -729,7 +737,10 @@ exports.Prisma.NovelSceneScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   projectId: 'projectId',
-  graphStateSnapshot: 'graphStateSnapshot'
+  graphStateSnapshot: 'graphStateSnapshot',
+  locationSlug: 'locationSlug',
+  timeOfDay: 'timeOfDay',
+  environmentTags: 'environmentTags'
 };
 
 exports.Prisma.MemoryShortTermScalarFieldEnum = {

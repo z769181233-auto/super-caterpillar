@@ -159,4 +159,131 @@ export const localFfmpegProvider = {
       cpuSeconds,
     };
   },
+  async concat(
+    input: {
+      videoPaths: string[];
+    },
+    ctx: { jobId?: string } = {}
+  ): Promise<VideoResult> {
+    const outDir =
+      process.env.ASSET_STORAGE_DIR ||
+      path.join(process.cwd(), 'apps/workers/.runtime/assets_gate_p2v3');
+    if (!fs.existsSync(outDir)) {
+      fs.mkdirSync(outDir, { recursive: true });
+    }
+
+    const jobId = ctx.jobId || `vc-${Date.now()}`;
+    const outPath = path.join(outDir, `video_concat_${jobId}.mp4`);
+    const concatListPath = path.join(outDir, `concat_${jobId}.txt`);
+
+    // Build concat list
+    const concatContent = input.videoPaths.map((p) => `file '${path.resolve(p)}'`).join('\n');
+    fs.writeFileSync(concatListPath, concatContent);
+
+    const t0 = Date.now();
+    const timeoutMs = Number(process.env.VIDEO_MERGE_TIMEOUT_MS) || 300000;
+
+    // First Try: -c copy (Fast)
+    const fastArgs = ['-y', '-f', 'concat', '-safe', '0', '-i', concatListPath, '-c', 'copy', outPath];
+    process.stdout.write(`video_concat_spawn_fast jobId=${jobId} args="${fastArgs.join(' ')}"\n`);
+
+    let result = await spawnWithTimeout({
+      cmd: 'ffmpeg',
+      args: fastArgs,
+      timeoutMs,
+      killSignal: 'SIGKILL',
+    });
+
+    if (result.code !== 0) {
+      process.stdout.write(
+        `video_concat_fast_failed jobId=${jobId} code=${result.code}. Retrying with re-encoding...\n`
+      );
+      // Fallback: libx264 re-encoding
+      const slowArgs = [
+        '-y',
+        '-f',
+        'concat',
+        '-safe',
+        '0',
+        '-i',
+        concatListPath,
+        '-c:v',
+        'libx264',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'aac',
+        '-movflags',
+        '+faststart',
+        outPath,
+      ];
+      process.stdout.write(`video_concat_spawn_slow jobId=${jobId} args="${slowArgs.join(' ')}"\n`);
+
+      result = await spawnWithTimeout({
+        cmd: 'ffmpeg',
+        args: slowArgs,
+        timeoutMs,
+        killSignal: 'SIGKILL',
+      });
+    }
+
+    const t1 = Date.now();
+    const cpuSeconds = (t1 - t0) / 1000;
+
+    // Cleanup concat list
+    if (fs.existsSync(concatListPath)) fs.unlinkSync(concatListPath);
+
+    if (result.timedOut) {
+      throw new Error(`FFmpeg concat timed out after ${timeoutMs}ms`);
+    }
+
+    if (result.code !== 0) {
+      throw new Error(`FFmpeg concat failed (status ${result.code}): ${result.stderr}`);
+    }
+
+    // Probing for duration/width/height if needed
+    let duration = 0;
+    let width = 0;
+    let height = 0;
+    let fps = 0;
+
+    try {
+      const probe = spawnSync('ffprobe', [
+        '-v',
+        'error',
+        '-show_entries',
+        'format=duration:stream=width,height,avg_frame_rate',
+        '-of',
+        'json',
+        outPath,
+      ]);
+      if (probe.status === 0) {
+        const metadata = JSON.parse(probe.stdout.toString());
+        duration = parseFloat(metadata.format.duration);
+        const videoStream = metadata.streams.find((s: any) => s.width);
+        if (videoStream) {
+          width = videoStream.width;
+          height = videoStream.height;
+          const [num, den] = videoStream.avg_frame_rate.split('/');
+          fps = Math.round(parseFloat(num) / parseFloat(den));
+        }
+      }
+    } catch (e) {
+      process.stdout.write(`FFprobe failed to probe ${outPath}, using defaults.\n`);
+    }
+
+    const stat = fs.statSync(outPath);
+
+    return {
+      path: outPath,
+      mime: 'video/mp4',
+      size: stat.size,
+      sha256: await sha256File(outPath),
+      duration,
+      width,
+      height,
+      fps,
+      cpuSeconds,
+    };
+  },
 };

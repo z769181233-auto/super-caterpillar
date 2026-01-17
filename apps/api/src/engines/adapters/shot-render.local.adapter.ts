@@ -27,15 +27,18 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
 
         try {
             // P0-R0: Call REAL engine from @scu/engines-shot-render
+            const shotId = (input.context?.shotId || input.payload?.shotId) as string;
+            const traceId = (input.context?.traceId || input.payload?.traceId) as string;
+
             const result = await shotRenderRealEngine({
-                shotId: input.context?.shotId as string,
-                traceId: input.context?.traceId as string,
+                shotId,
+                traceId,
                 prompt: input.payload.prompt,
                 width: input.payload.width || 1024,
                 height: input.payload.height || 1024,
                 seed: input.payload.seed,
             }, {
-                traceId: input.context?.traceId,
+                traceId,
                 model: 'sdxl' // 默认使用 SDXL
             });
 

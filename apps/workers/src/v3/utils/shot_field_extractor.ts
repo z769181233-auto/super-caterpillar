@@ -20,7 +20,7 @@ export function extractDirectorControls(params: any): DirectorControls {
         cameraMovement: params.camera_movement || params.cameraMovement || null,
         cameraAngle: params.camera_angle || params.cameraAngle || null,
         lightingPreset: params.lighting_preset || params.lightingPreset || null,
-    };
+    } as any;
 }
 
 /**

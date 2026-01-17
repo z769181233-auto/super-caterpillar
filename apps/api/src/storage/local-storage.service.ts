@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LocalStorageAdapter } from '@scu/storage';
 import * as path from 'path';
+import * as fs from 'fs';
 
 /**
  * Stage 8: Local Storage Service
@@ -19,10 +20,21 @@ export class LocalStorageService {
     } else if (process.env.STORAGE_ROOT) {
       storageRoot = process.env.STORAGE_ROOT;
     } else {
-      // Fallback: API runs from apps/api, go up two levels to project root
-      const repoRoot = path.resolve(process.cwd(), '../..');
+      // Robust detection: prioritize current directory if it contains apps/ and packages/
+      const cwd = process.cwd();
+      const hasApps = fs.existsSync(path.join(cwd, 'apps'));
+      const hasPackages = fs.existsSync(path.join(cwd, 'packages'));
+
+      let repoRoot = cwd;
+      if (hasApps && hasPackages) {
+        repoRoot = cwd;
+        this.logger.log(`Confirmed monorepo root at: ${repoRoot}`);
+      } else {
+        // Fallback: API runs from apps/api, go up two levels to project root
+        repoRoot = path.resolve(cwd, '../..');
+        this.logger.warn(`Fallback to parent-parent repo root: ${repoRoot}`);
+      }
       storageRoot = path.join(repoRoot, '.data/storage');
-      this.logger.warn('Using cwd fallback. STORAGE_ROOT not found.');
     }
 
     // Dev-only: Print final storage root for debugging

@@ -1,4 +1,14 @@
 import * as util from 'util';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load root .env (assuming CWD is apps/workers)
+const envPath = path.resolve(process.cwd(), '../../.env');
+dotenv.config({ path: envPath });
+// Also try current dir just in case
+dotenv.config();
+
+console.log(`[Bootstrap] Loaded env from ${envPath}. STORAGE_ROOT=${process.env.STORAGE_ROOT}`);
 
 /**
  * Worker Bootstrap 入口

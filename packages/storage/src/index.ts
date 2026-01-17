@@ -7,8 +7,21 @@ export class LocalStorageAdapter {
   private root: string;
 
   constructor(root?: string) {
-    // Default to .data/storage in repo root if not provided
-    this.root = root || path.resolve(process.cwd(), '../../.data/storage');
+    if (root) {
+      this.root = root;
+    } else {
+      // Robust detection: prioritize current directory if it contains apps/ or packages/
+      const cwd = process.cwd();
+      const hasApps = fs.existsSync(path.join(cwd, 'apps'));
+      const hasPackages = fs.existsSync(path.join(cwd, 'packages'));
+
+      if (hasApps && hasPackages) {
+        this.root = path.resolve(cwd, '.data/storage');
+      } else {
+        // Fallback to legacy assumption but make it absolute from current file
+        this.root = path.resolve(__dirname, '../../../.data/storage');
+      }
+    }
     fs.ensureDirSync(this.root);
     process.stdout.write(util.format(`[LocalStorageAdapter] Initialized at: ${this.root}`) + '\n');
   }

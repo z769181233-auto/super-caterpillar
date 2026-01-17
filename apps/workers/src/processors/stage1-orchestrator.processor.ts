@@ -115,11 +115,11 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
 
         // MVP P1-1: Heuristic Extraction for testing explicit columns
         const directorControls: any = {};
-        if (paragraph.toUpperCase().includes('WIDE SHOT')) directorControls.shot_type = 'WIDE SHOT';
-        if (paragraph.toUpperCase().includes('CLOSE UP')) directorControls.shot_type = 'CLOSE UP';
-        if (paragraph.toUpperCase().includes('PAN')) directorControls.camera_movement = 'PAN';
-        if (paragraph.toUpperCase().includes('LOW ANGLE')) directorControls.camera_angle = 'LOW ANGLE';
-        if (paragraph.toUpperCase().includes('NIGHT')) directorControls.lighting_preset = 'NIGHT';
+        if (paragraph.toUpperCase().includes('WIDE SHOT')) directorControls.shotType = 'WIDE SHOT';
+        if (paragraph.toUpperCase().includes('CLOSE UP')) directorControls.shotType = 'CLOSE UP';
+        if (paragraph.toUpperCase().includes('PAN')) directorControls.cameraMovement = 'PAN';
+        if (paragraph.toUpperCase().includes('LOW ANGLE')) directorControls.cameraAngle = 'LOW ANGLE';
+        if (paragraph.toUpperCase().includes('NIGHT')) directorControls.lightingPreset = 'NIGHT';
 
         // P1-2: Standardized ControlNet & Asset Bindings
         // Note: scene.graphStateSnapshot is typed as Json? (any)

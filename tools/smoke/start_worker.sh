@@ -14,7 +14,7 @@ echo ""
 
 if [ -d "apps/workers" ]; then
   echo "启动 Worker 服务（后台）..."
-  pnpm -w --filter workers dev > /tmp/worker.log 2>&1 &
+  pnpm dev:worker > /tmp/worker.log 2>&1 &
   WORKER_PID=$!
   
   echo "Worker 进程 PID: $WORKER_PID"

@@ -650,6 +650,10 @@ export class OrchestratorService {
    * Determines if subsequent jobs should be spawned.
    */
   async handleJobCompletion(jobId: string, result: any) {
+    const fs = require('fs');
+    const debugLog = (msg: string) => fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
+
+    debugLog(`handleJobCompletion called for ${jobId}`);
     const job = await this.prisma.shotJob.findUnique({
       where: { id: jobId },
       include: {
@@ -670,8 +674,13 @@ export class OrchestratorService {
    * Stage 3: Check if all shots in a pipeline run are complete, then spawn VIDEO_RENDER.
    */
   private async checkAndSpawnStage1VideoRender(completedJob: any) {
+    const fs = require('fs');
+    const debugLog = (msg: string) => fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
+
     const payload = completedJob.payload as any;
     const pipelineRunId = payload?.pipelineRunId;
+
+    debugLog(`checkAndSpawnStage1VideoRender: Job=${completedJob.id} Pipeline=${pipelineRunId}`);
 
     if (!pipelineRunId) {
       this.logger.debug(`[DAG] Job ${completedJob.id} has no pipelineRunId. Skipping DAG check.`);
@@ -774,7 +783,7 @@ export class OrchestratorService {
             projectId: contextJob.projectId,
             episodeId: contextJob.episodeId,
             frames,
-            publish: true,
+            publish: true, // Worker handles publishing (with dedupe_key idempotency)
             traceId: contextJob.traceId,
             isVerification, // 也在 payload 中携带，便于 Worker 识别
           }

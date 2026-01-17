@@ -4,6 +4,8 @@ export interface VideoMergeInput {
   /** Path pattern (e.g. "frames/%d.png") or list of files */
   framePattern?: string;
   framePaths?: string[];
+  /** Video fragments to concat */
+  videoPaths?: string[];
   fps?: number; // default 24
   width?: number; // default 512
   height?: number; // default 512

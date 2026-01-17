@@ -3521,5 +3521,28 @@ export class JobService {
     this.logger.log(
       `[Stage-1] Internal Publication recorded for run ${pipelineRunId} (Asset: ${assetId})`
     );
+
+    // ✅ P4 Gate Fix: Trigger CE09_MEDIA_SECURITY to reach PUBLISHED status
+    // CE09 will handle watermark and HLS packaging
+    await this.createCECoreJob({
+      projectId: job.projectId!,
+      organizationId: job.organizationId!,
+      taskId: job.taskId!,
+      jobType: JobTypeEnum.CE09_MEDIA_SECURITY,
+      payload: {
+        projectId: job.projectId,
+        assetId: assetId,
+        shotId: job.shotId || undefined,
+        engineKey: 'ce09_media_security',
+        previousJobId: job.id,
+        previousJobResult: result,
+        pipelineRunId: pipelineRunId,
+      },
+      traceId: pipelineRunId,
+    });
+
+    this.logger.log(
+      `[Stage-1] Triggered CE09_MEDIA_SECURITY for run ${pipelineRunId} (Asset: ${assetId})`
+    );
   }
 }

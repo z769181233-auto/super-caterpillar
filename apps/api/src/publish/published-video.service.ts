@@ -15,19 +15,34 @@ export class PublishedVideoService {
     }) {
         const { projectId, episodeId, assetId, storageKey, checksum, pipelineRunId } = params;
 
-        return await this.prisma.publishedVideo.create({
-            data: {
-                projectId,
-                episodeId,
-                assetId,
-                storageKey,
-                checksum,
-                status: 'INTERNAL_READY',
-                metadata: {
-                    pipelineRunId,
-                    publishedAt: new Date().toISOString(),
-                } as any,
-            },
+        return await this.prisma.$transaction(async (tx) => {
+            let pv = await tx.publishedVideo.findFirst({
+                where: { assetId }
+            });
+
+            if (!pv) {
+                pv = await tx.publishedVideo.create({
+                    data: {
+                        projectId,
+                        episodeId,
+                        assetId,
+                        storageKey,
+                        checksum,
+                        status: 'INTERNAL_READY',
+                        metadata: {
+                            pipelineRunId,
+                            publishedAt: new Date().toISOString(),
+                        } as any,
+                    },
+                });
+            }
+
+            await tx.asset.update({
+                where: { id: assetId },
+                data: { status: 'PUBLISHED' },
+            });
+
+            return pv;
         });
     }
 }

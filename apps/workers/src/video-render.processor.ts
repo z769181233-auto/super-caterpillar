@@ -96,16 +96,45 @@ export async function processVideoRenderJob(
     const cmd = 'ffmpeg';
     let args: string[] = [];
 
+    // Helper to resolve paths from multiple locations (Fix for mixed storage roots)
+    const resolveAssetPath = (key: string) => {
+      console.log(`[ResolvePath] Resolving key: ${key}. CWD: ${process.cwd()}`);
+      // 1. Try Storage Root
+      const p1 = storage.getAbsolutePath(key);
+      if (fs.existsSync(p1)) {
+        console.log(`[ResolvePath] Found at Storage Root: ${p1}`);
+        return p1;
+      }
+
+      // 2. Try Repo Root (for apps/workers/.runtime assets)
+      // Assuming CWD is apps/workers, ../.. is repo root
+      const p2 = path.resolve(process.cwd(), '../../', key);
+      if (fs.existsSync(p2)) {
+        console.log(`[ResolvePath] Found at Repo Root: ${p2}`);
+        return p2;
+      }
+
+      // 3. Try CWD relative
+      const p3 = path.resolve(process.cwd(), key);
+      if (fs.existsSync(p3)) {
+        console.log(`[ResolvePath] Found at CWD: ${p3}`);
+        return p3;
+      }
+
+      console.log(`[ResolvePath] FAILED to find file. Defaulting to: ${p1}`);
+      return p1; // Default to storage path even if missing
+    };
+
     if (frameKeys.length === 1 && isImageKey(frameKeys[0])) {
       // Single Image Loop Mode
-      const inputAbs = storage.getAbsolutePath(frameKeys[0]);
+      const inputAbs = resolveAssetPath(frameKeys[0]);
       await assertFrameFileOk(inputAbs);
       args = ['-hide_banner', '-loglevel', 'error', '-loop', '1', '-t', '1', '-i', inputAbs, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', String(fps), '-y', tempOutput];
     } else {
       // Concat Mode
       const listFilePath = path.join(workspaceDir, 'input.txt');
-      let listContent = frameKeys.map(k => `file '${storage.getAbsolutePath(k)}'\nduration 1.0`).join('\n');
-      listContent += `\nfile '${storage.getAbsolutePath(frameKeys[frameKeys.length - 1])}'`;
+      let listContent = frameKeys.map(k => `file '${resolveAssetPath(k)}'\nduration 1.0`).join('\n');
+      listContent += `\nfile '${resolveAssetPath(frameKeys[frameKeys.length - 1])}'`;
       fs.writeFileSync(listFilePath, listContent);
 
       const useTestsrc = !PRODUCTION_MODE && process.env.VIDEO_RENDER_TESTSRC === '1';
@@ -135,6 +164,7 @@ export async function processVideoRenderJob(
     const sizeBytes = videoBuffer.length;
     const checksum = createHash('sha256').update(videoBuffer).digest('hex');
 
+    // P4-FIX-1.1: Asset Idempotency (Prevent status regression)
     const asset = await prisma.asset.upsert({
       where: { ownerType_ownerId_type: { ownerType: 'SHOT', ownerId: shotId || pipelineRunId, type: 'VIDEO' } },
       create: {
@@ -147,25 +177,78 @@ export async function processVideoRenderJob(
         checksum: checksum,
         createdByJobId: jobId
       },
-      update: { status: 'GENERATED', checksum: checksum, createdByJobId: jobId }
+      update: {
+        // IMPORTANT: do not touch status here to prevent regression from PUBLISHED
+        checksum,
+        createdByJobId: jobId
+      }
     });
 
     const videoKey = `videos/${asset.id}.mp4`;
-    await storage.put(videoKey, videoBuffer);
-    await prisma.asset.update({ where: { id: asset.id }, data: { storageKey: videoKey } });
+
+    // P4-FIX-0: Unified Storage Root (Single Source of Truth)
+    const runtimeRoot = path.join(process.cwd(), '.runtime');
+
+    // Direct FS Write for MP4 (fs only)
+    const finalVideoPath = path.join(runtimeRoot, videoKey);
+    const finalVideoDir = path.dirname(finalVideoPath);
+    if (!fs.existsSync(finalVideoDir)) fs.mkdirSync(finalVideoDir, { recursive: true });
+
+    fs.writeFileSync(finalVideoPath, videoBuffer);
+    // REMOVED: await storage.put(videoKey, videoBuffer);
+
+    // 7.5 HLS Generation (P4 Requirement)
+    const hlsDir = path.join(workspaceDir, 'hls');
+    if (!fs.existsSync(hlsDir)) fs.mkdirSync(hlsDir, { recursive: true });
+    const hlsOutput = path.join(hlsDir, 'master.m3u8');
+
+    console.log(`[VIDEO_RENDER] Generating HLS...`);
+    await new Promise<void>((resolve, reject) => {
+      // Simple HLS: Split into 10s segments
+      const args = ['-hide_banner', '-loglevel', 'error', '-i', tempOutput, '-start_number', '0', '-hls_time', '10', '-hls_list_size', '0', '-f', 'hls', hlsOutput];
+      const proc = spawn('ffmpeg', args);
+      activeProcesses.add(proc);
+      let stderr = '';
+      proc.stderr?.on('data', d => stderr += d.toString());
+      proc.on('close', code => {
+        activeProcesses.delete(proc);
+        if (code === 0) resolve();
+        else reject(new Error(`FFmpeg HLS failed (${code}): ${stderr}`));
+      });
+    });
+
+    // Upload HLS (Direct FS Write only via Unified Root)
+    const hlsStorageDir = `videos/${asset.id}/hls`;
+    const finalHlsDir = path.join(runtimeRoot, hlsStorageDir);
+    if (!fs.existsSync(finalHlsDir)) fs.mkdirSync(finalHlsDir, { recursive: true });
+
+    const hlsFiles = fs.readdirSync(hlsDir);
+    for (const f of hlsFiles) {
+      const buf = fs.readFileSync(path.join(hlsDir, f));
+      fs.writeFileSync(path.join(finalHlsDir, f), buf);
+      // REMOVED: await storage.put(...)
+    }
+    const hlsPlaylistUrl = `${hlsStorageDir}/master.m3u8`;
+
+    await prisma.asset.update({
+      where: { id: asset.id },
+      data: { storageKey: videoKey, hlsPlaylistUrl: hlsPlaylistUrl }
+    });
 
     // 8. Cost & Audit
     const latency = Date.now() - jobStartTime;
     await apiClient.postAuditLog({
       traceId, projectId: job.projectId || 'system', jobId, jobType: 'VIDEO_RENDER',
       engineKey: 'ffmpeg', status: 'SUCCESS', latencyMs: latency,
-      auditTrail: { sizeBytes, checksum, frames: frameKeys.length }
+      auditTrail: { sizeBytes, checksum, frames: frameKeys.length, hls: hlsPlaylistUrl }
     }).catch(() => { });
 
-    // 7.1 ffprobe evidence (required by Real Baseline)
+    // 7.1 ffprobe evidence (fs only, Unified Root)
     const ffprobeKey = `${videoKey}.ffprobe.json`;
     try {
-      const ffprobeArgs = ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', storage.getAbsolutePath(videoKey)];
+      const ffprobeAbs = path.join(runtimeRoot, ffprobeKey);
+
+      const ffprobeArgs = ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', finalVideoPath];
       const ffprobeOut = await new Promise<string>((resolve, reject) => {
         const proc = spawn('ffprobe', ffprobeArgs);
         activeProcesses.add(proc);
@@ -179,8 +262,10 @@ export async function processVideoRenderJob(
           else reject(new Error(`ffprobe failed (${code}): ${stderr.slice(-200)}`));
         });
       });
-      await storage.put(ffprobeKey, Buffer.from(ffprobeOut, 'utf-8'));
-      console.log(`[VIDEO_RENDER] ffprobe evidence stored: ${ffprobeKey}`);
+
+      // Write ffprobe evidence
+      fs.writeFileSync(ffprobeAbs, ffprobeOut, 'utf-8');
+      console.log(`[VIDEO_RENDER] ffprobe evidence stored: ${ffprobeAbs}`);
     } catch (e: any) {
       // ✅ Real Baseline: ffprobe must exist, so fail hard.
       throw new Error(`[VIDEO_RENDER] ffprobe evidence generation failed: ${e.message}`);
@@ -195,48 +280,42 @@ export async function processVideoRenderJob(
         throw new Error(`[VIDEO_RENDER] publish=true but missing projectId/episodeId`);
       }
 
-      // publishedVideo schema 可能没有 upsert 唯一键：用 findFirst + update/create 保守实现
-      const existed = await prisma.publishedVideo.findFirst({
-        where: {
-          projectId,
-          episodeId,
-          metadata: { path: ['pipelineRunId'], equals: pipelineRunId },
-        },
-        select: { id: true },
+      // P4-FIX-1.3: PublishedVideo Upsert (Idempotency) using SQL
+      const dedupeKey = createHash('sha256')
+        .update(`${projectId}:${episodeId}:${pipelineRunId}`)
+        .digest('hex');
+
+      await prisma.$executeRawUnsafe(
+        `
+        INSERT INTO published_videos (id, "projectId", "episodeId", "assetId", "storageKey", checksum, status, metadata, "dedupe_key", "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, $5, $6, 'PUBLISHED', $7::jsonb, $8, NOW(), NOW())
+        ON CONFLICT (dedupe_key)
+        DO UPDATE SET
+          "assetId" = EXCLUDED."assetId",
+          "storageKey" = EXCLUDED."storageKey",
+          checksum = EXCLUDED.checksum,
+          status = 'PUBLISHED',
+          metadata = EXCLUDED.metadata,
+          "updatedAt" = NOW()
+        `,
+        crypto.randomUUID(), projectId, episodeId, asset.id, videoKey, checksum, JSON.stringify({ pipelineRunId, ffprobeKey }), dedupeKey
+      );
+
+      // Force asset to PUBLISHED status (safe because we rely on PublishedVideo uniqueness now)
+      await prisma.asset.update({
+        where: { id: asset.id },
+        data: { status: 'PUBLISHED' }
       });
 
-      if (existed) {
-        await prisma.publishedVideo.update({
-          where: { id: existed.id },
-          data: {
-            assetId: asset.id,
-            storageKey: videoKey,
-            checksum: checksum,
-            status: 'PUBLISHED',
-            metadata: { pipelineRunId, ffprobeKey },
-          },
-        });
-      } else {
-        await prisma.publishedVideo.create({
-          data: {
-            projectId,
-            episodeId,
-            assetId: asset.id,
-            storageKey: videoKey,
-            checksum,
-            status: 'PUBLISHED',
-            metadata: { pipelineRunId, ffprobeKey },
-          },
-        });
-      }
-
-      console.log(`[VIDEO_RENDER] PublishedVideo set to PUBLISHED: projectId=${projectId} episodeId=${episodeId} pipelineRunId=${pipelineRunId}`);
+      console.log(`[VIDEO_RENDER] PublishedVideo set to PUBLISHED: projectId=${projectId} episodeId=${episodeId} pipelineRunId=${pipelineRunId} dedupeKey=${dedupeKey}`);
     }
 
     // 9. Return Result
     return { assetId: asset.id, storageKey: videoKey, videoKey, sizeBytes, checksum, durationMs: latency, status: 'SUCCESS' };
 
   } finally {
-    fs.rmSync(workspaceDir, { recursive: true, force: true });
+    if (fs.existsSync(workspaceDir)) {
+      fs.rmSync(workspaceDir, { recursive: true, force: true });
+    }
   }
 }

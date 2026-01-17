@@ -54,7 +54,7 @@ export const localMpsProvider = {
 
     const outDir =
       process.env.ASSET_STORAGE_DIR ||
-      path.join(process.cwd(), 'apps/workers/.runtime/assets');
+      (process.env.STORAGE_ROOT ? path.join(process.env.STORAGE_ROOT, 'assets') : path.join(process.cwd(), 'apps/workers/.runtime/assets'));
     if (!fs.existsSync(outDir)) {
       fs.mkdirSync(outDir, { recursive: true });
     }

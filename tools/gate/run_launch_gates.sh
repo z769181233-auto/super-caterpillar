@@ -375,10 +375,24 @@ elif [ -z "$AUTH_TOKEN_A" ]; then
     echo "- ❌ AUTH_TOKEN_A is required" >> "$SIGNED_URL_OUTPUT"
     SIGNED_URL_PASSED=false
 else
-    # 路由前缀自检
+    # 路由前缀自检 (Keep bypass for probe)
     echo "  Debug: check sign route existence..."
     curl -s -o /dev/null -w "  /api/storage/__probe route HTTP=%{http_code}\n" \
       "${API_URL}/api/storage/__probe" -H "$AUTH_HEADER_A" || true
+    
+    # [CRITICAL] 移除 Bypass，进入正式商业级门禁断言
+    # 必须确保数据库中有 Asset 记录才能通过 (Legit Auth)
+    echo "  [Security] Unsetting SCU_GATE_ALLOW_TEMP_BYPASS for strict enforcement..."
+    unset SCU_GATE_ALLOW_TEMP_BYPASS
+
+    # 准备数据：确保 DB 中存在该 Asset (Gate 3 Legit Data)
+    echo "  [Setup] Seeding DB asset for Gate 3 strict check..."
+    # 确保 Prisma Client 最新，防止 MODULE_NOT_FOUND
+    if [ -d "packages/database" ]; then
+      (cd packages/database && npx prisma generate >/dev/null)
+    fi
+    export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+    npx tsx "$PROJECT_ROOT/tools/gate/scripts/ensure_gate3_data.ts"
 
     # 测试 1: 直接访问必须 404
     echo "  Test 1: Direct access rejection..."
@@ -740,6 +754,62 @@ else
     echo -e "${RED}❌ Gate 9 failed${NC}\n"
 fi
 
+# 门禁 10: Frame Merge Two Fragments (V3.0 P2-3)
+echo -e "${BLUE}Gate 10: Frame Merge Two Fragments (V3.0 P2-3)${NC}"
+echo "Running video fragments merge (CE34 concat) verification..."
+
+FRAME_MERGE_PASSED=true
+FRAME_MERGE_OUTPUT="$TEMP_DIR/frame_merge.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p2-3_frame_merge_two_fragments.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-p2-3_frame_merge_two_fragments.sh" > "$FRAME_MERGE_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ Frame Merge check passed${NC}"
+        echo "- ✅ Frame Merge check passed" >> "$FRAME_MERGE_OUTPUT"
+    else
+        echo -e "  ${RED}❌ Frame Merge check failed${NC}"
+        echo "- ❌ Frame Merge check failed" >> "$FRAME_MERGE_OUTPUT"
+        FRAME_MERGE_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Frame Merge gate script not found${NC}"
+    echo "- ⚠️  Frame Merge gate script not found" >> "$FRAME_MERGE_OUTPUT"
+    FRAME_MERGE_PASSED=false
+fi
+
+if [ "$FRAME_MERGE_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 10 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 10 failed${NC}\n"
+fi
+
+# 门禁 11: P4 E2E Pipeline (Novel -> Published HLS)
+echo -e "${BLUE}Gate 11: P4 E2E Pipeline (Novel -> Published HLS)${NC}"
+echo "Running full end-to-end pipeline verification..."
+
+P4_E2E_PASSED=true
+P4_E2E_OUTPUT="$TEMP_DIR/p4_e2e.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p4-e2e-novel-to-published-hls.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-p4-e2e-novel-to-published-hls.sh" > "$P4_E2E_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ P4 E2E Pipeline check passed${NC}"
+        echo "- ✅ P4 E2E Pipeline check passed" >> "$P4_E2E_OUTPUT"
+    else
+        echo -e "  ${RED}❌ P4 E2E Pipeline check failed${NC}"
+        echo "- ❌ P4 E2E Pipeline check failed" >> "$P4_E2E_OUTPUT"
+        P4_E2E_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  P4 E2E Pipeline gate script not found${NC}"
+    echo "- ⚠️  P4 E2E Pipeline gate script not found" >> "$P4_E2E_OUTPUT"
+    P4_E2E_PASSED=false
+fi
+
+if [ "$P4_E2E_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 11 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 11 failed${NC}\n"
+fi
+
 # 初始化商业级报告头部
 {
   echo "# GATEKEEPER VERIFICATION REPORT (Refinement Sealed)"
@@ -791,6 +861,12 @@ fi
   echo ""
   echo "### Gate 9: Shots Director Control Fields"
   cat "$SHOTS_DIRECTOR_OUTPUT"
+  echo ""
+  echo "### Gate 10: Frame Merge Two Fragments (P2-3)"
+  cat "$FRAME_MERGE_OUTPUT"
+  echo ""
+  echo "### Gate 11: P4 E2E Pipeline (Novel -> Published HLS)"
+  cat "$P4_E2E_OUTPUT"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 {
@@ -805,7 +881,9 @@ fi
   echo "- Gate 6 (Video Merge Memory): $([ "$VIDEO_MERGE_MEM_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 7 (Video Merge Guardrails): $([ "$VIDEO_MERGE_GUARD_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 8 (Context Injection): $([ "$CONTEXT_INJECTION_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
-  echo "- Gate 9 (Shots Director): $([ "$SHOTS_DIRECTOR_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 9 (Director Control): $([ "$SHOTS_DIRECTOR_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 10 (Frame Merge): $([ "$FRAME_MERGE_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 11 (P4 E2E Pipeline): $([ "$P4_E2E_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 # 最终判断
@@ -816,6 +894,9 @@ ALL_PASSED=true
 [ "$VIDEO_MERGE_MEM_PASSED" != true ] && ALL_PASSED=false
 [ "$VIDEO_MERGE_GUARD_PASSED" != true ] && ALL_PASSED=false
 [ "$CONTEXT_INJECTION_PASSED" != true ] && ALL_PASSED=false
+[ "$SHOTS_DIRECTOR_PASSED" != true ] && ALL_PASSED=false
+[ "$FRAME_MERGE_PASSED" != true ] && ALL_PASSED=false
+[ "$P4_E2E_PASSED" != true ] && ALL_PASSED=false
 
 # 只有在非 local 模式下，4/5 的失败才影响最终结果
 if [ "$GATE_ENV_MODE" != "local" ]; then

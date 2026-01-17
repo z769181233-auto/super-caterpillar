@@ -621,9 +621,11 @@ async function pollAndProcessJobs(): Promise<void> {
 
   for (let i = 0; i < currentWaveLimit; i++) {
     try {
+      process.stdout.write(util.format(`[WORKER_LOOP] Attempting to lease job (wave ${i + 1}/${currentWaveLimit})...`) + '\n');
       const job = await apiClient.getNextJob(workerId);
 
       if (job) {
+        process.stdout.write(util.format(`[WORKER_LOOP] ✅ Leased job: ${job.id} (${job.type})`) + '\n');
         // S2-ORCH-BASE: Must ACK to transition to RUNNING
         try {
           await apiClient.ackJob(job.id, workerId);

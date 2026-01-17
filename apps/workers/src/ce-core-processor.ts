@@ -977,7 +977,7 @@ export async function processShotRenderJob(
         style,
         context: { projectId },
       },
-      metadata: { jobId, projectId, traceId },
+      metadata: { jobId, projectId, traceId, shotId },
     });
 
     if (!engineResult.success || !engineResult.output) {
@@ -1089,9 +1089,13 @@ export async function processShotRenderJob(
       .catch(() => { });
 
     return {
+      status: 'SUCCESS',
+      output: {
+        assetId: asset.id,
+        storageKey: result.asset.uri,
+      },
       assetId: asset.id,
       secureUrl: result.asset.uri,
-      status: 'SUCCESS',
     };
   } catch (error: any) {
     logStructured('error', {
