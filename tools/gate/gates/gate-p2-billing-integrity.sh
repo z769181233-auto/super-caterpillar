@@ -4,6 +4,13 @@
 
 set -euo pipefail
 
+# Load environment variables
+if [ -f .env ]; then
+  set -a
+  source .env
+  set +a
+fi
+
 GATE_NAME="Gate 12 (Billing Integrity)"
 EVIDENCE_DIR="docs/_evidence/gate-12-$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$EVIDENCE_DIR"
@@ -16,7 +23,7 @@ curl -s --head http://localhost:3000/api/health > /dev/null || { echo "❌ API n
 
 # 2. Run HMAC Handshake Probe
 echo "[2/4] Probing HMAC Security Handshake..." | tee -a "$EVIDENCE_DIR/gate.log"
-npx tsx probe_internal_route_v2.ts | tee -a "$EVIDENCE_DIR/gate.log"
+npx tsx tools/gate/scripts/probe_internal_route_v2.ts | tee -a "$EVIDENCE_DIR/gate.log"
 if ! grep -q "HTTP 200" "$EVIDENCE_DIR/gate.log"; then
     echo "❌ HMAC Probe Failed" | tee -a "$EVIDENCE_DIR/gate.log"
     exit 1
@@ -24,7 +31,7 @@ fi
 
 # 3. Run E2E Billing Closed-Loop Integrity Check
 echo "[3/4] Running Billing Integrity E2E (Outbox + Credit CAS)..." | tee -a "$EVIDENCE_DIR/gate.log"
-npx tsx verify_billing_closed_loop.ts | tee -a "$EVIDENCE_DIR/gate.log"
+npx tsx tools/gate/scripts/verify_billing_closed_loop.ts | tee -a "$EVIDENCE_DIR/gate.log"
 if ! grep -q "Double PASS" "$EVIDENCE_DIR/gate.log"; then
     echo "❌ Billing Integrity Check Failed" | tee -a "$EVIDENCE_DIR/gate.log"
     exit 1

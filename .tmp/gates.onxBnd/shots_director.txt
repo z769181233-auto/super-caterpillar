@@ -1,2 +1,0 @@
-/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/gates/gate-p1-1_shots_director_cols.sh: line 9: export: `Caterpillar/.data/storage': not a valid identifier
-- ❌ Shots Director Control Fields check failed

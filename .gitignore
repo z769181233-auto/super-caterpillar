@@ -70,3 +70,4 @@ api_gate_*.txt
 docs/_evidence/_trash/
 docs/_evidence/S3_SCALE_EVENT_DAG_*/
 docs/_evidence/RETRY_S3_SCALE_EVENT_DAG_*/
+.tmp/
