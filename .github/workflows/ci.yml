@@ -7,6 +7,16 @@ on:
     branches: [main, develop]
 
 jobs:
+  path-leak-gate:
+    name: Required Check / Path Leak Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Path Leak Gate
+        run: bash tools/gate/gates/gate-path-leak.sh
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://test:test@localhost:5432/test' }}
+
   preflight:
     name: Preflight Gate
     runs-on: ubuntu-latest

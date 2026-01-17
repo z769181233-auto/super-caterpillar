@@ -354,6 +354,9 @@ importers:
 
   apps/workers:
     dependencies:
+      '@prisma/client':
+        specifier: 5.22.0
+        version: 5.22.0(prisma@5.22.0)
       '@scu/billing':
         specifier: workspace:*
         version: link:../../packages/billing

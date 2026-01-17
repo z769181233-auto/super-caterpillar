@@ -7,10 +7,11 @@
 
 import { replicateProvider, RenderResult } from './replicate.provider';
 import { localMpsProvider } from './local_mps.provider';
-export { localMpsProvider };
+import { comfyuiProvider } from './comfyui.provider';
+export { localMpsProvider, comfyuiProvider };
 
 export interface ShotRenderProvider {
-  key: 'replicate' | 'hf' | 'local' | 'local_mps';
+  key: 'replicate' | 'hf' | 'local' | 'local_mps' | 'comfyui';
   render(
     prompt: string,
     options?: {
@@ -18,6 +19,7 @@ export interface ShotRenderProvider {
       height?: number;
       seed?: number;
       negativePrompt?: string;
+      templateName?: string;
     }
   ): Promise<RenderResult>;
 }
@@ -28,6 +30,7 @@ export { RenderResult };
 const providers: Record<string, ShotRenderProvider> = {
   replicate: replicateProvider,
   local_mps: localMpsProvider,
+  comfyui: comfyuiProvider,
   // hf: hfProvider,  // 占位 - 未来实现
   // local: localProvider,  // 占位 - 未来实现
 };
@@ -58,6 +61,7 @@ export async function renderWithProvider(
     height?: number;
     seed?: number;
     negativePrompt?: string;
+    templateName?: string;
   }
 ): Promise<RenderResult> {
   const provider = getProvider();

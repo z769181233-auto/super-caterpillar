@@ -11,6 +11,7 @@ import * as path from 'path';
 
 export interface RenderResult {
     bytes: Buffer;
+    images?: Buffer[];
     mime: 'image/png' | 'image/webp';
     width: number;
     height: number;
@@ -89,13 +90,13 @@ export async function renderWithComfyUI(
         width?: number;
         height?: number;
         seed?: number;
+        templateName?: string;
     } = {}
 ): Promise<RenderResult> {
     const seed = options.seed || Math.floor(Math.random() * 1000000000);
 
     // 1. Load Template
-    // 1. Load Template
-    const templateName = 'comfyui_text2img_sdxl.json';
+    const templateName = options.templateName || 'comfyui_text2img_sdxl.json';
     const candidates = [
         path.join(__dirname, 'templates', templateName),
         // Fallback for Monorepo execution (Worker -> Packages)
@@ -181,22 +182,26 @@ export async function renderWithComfyUI(
         throw new Error('ComfyUI generation timed out');
     }
 
-    // 5. Get Image
+    // 5. Get Images
     // Find "Save Image" node output (Node 9)
     const outputs = history.outputs['9'];
     if (!outputs || !outputs.images || outputs.images.length === 0) {
         throw new Error('No output image found in ComfyUI history');
     }
 
-    const outputImage = outputs.images[0];
-    const imageBuffer = await downloadImage(
-        outputImage.filename,
-        outputImage.subfolder,
-        outputImage.type
-    );
+    const imageBuffers: Buffer[] = [];
+    for (const outputImage of outputs.images) {
+        const buffer = await downloadImage(
+            outputImage.filename,
+            outputImage.subfolder,
+            outputImage.type
+        );
+        imageBuffers.push(buffer);
+    }
 
     return {
-        bytes: imageBuffer,
+        bytes: imageBuffers[0],
+        images: imageBuffers,
         mime: 'image/png',
         width: options.width || 1024,
         height: options.height || 1024,

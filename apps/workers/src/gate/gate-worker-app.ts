@@ -17,6 +17,8 @@ import { processMediaSecurityJob } from '../processors/media-security.processor'
 import { processTimelineComposeJob } from '../processors/timeline-compose.processor';
 import { processTimelineRenderJob } from '../processors/timeline-render.processor';
 import { processStage1OrchestratorJob } from '../processors/stage1-orchestrator.processor';
+import { processNovelScan } from '../processors/novel-scan.processor';
+import { processNovelChunk } from '../processors/novel-chunk.processor';
 import type { ProcessorContext } from '../types/processor-context';
 import { JobType } from 'database';
 import { ApiClient } from '../api-client';
@@ -98,7 +100,11 @@ export async function startGateWorkerApp() {
         'CE09_MEDIA_SECURITY', // S4-5
         'PIPELINE_TIMELINE_COMPOSE', // S4-7
         'TIMELINE_RENDER', // S4-7
+        'PIPELINE_TIMELINE_COMPOSE', // S4-7
+        'TIMELINE_RENDER', // S4-7
         'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
+        'NOVEL_SCAN_TOC', // Stage 4 Scale
+        'NOVEL_CHUNK_PARSE', // Stage 4 Scale
       ],
       supportedModels: [],
       supportedEngines: ['gate_noop', 'pipeline_orchestrator', 'stage1_orchestrator', 'video_merge', 'default_shot_render'],
@@ -264,6 +270,22 @@ export async function startGateWorkerApp() {
             apiClient,
           };
           result = await processStage1OrchestratorJob(orchestratorCtx);
+        } else if (job.type === 'NOVEL_SCAN_TOC') {
+          process.stdout.write(util.format(`[GateWorker] 执行 Stage 4 Novel Scan...`) + '\n');
+          const scanCtx: ProcessorContext = {
+            prisma,
+            job: job,
+            apiClient,
+          };
+          result = await processNovelScan(scanCtx);
+        } else if (job.type === 'NOVEL_CHUNK_PARSE') {
+          process.stdout.write(util.format(`[GateWorker] 执行 Stage 4 Chunk Parse...`) + '\n');
+          const chunkCtx: ProcessorContext = {
+            prisma,
+            job: job,
+            apiClient,
+          };
+          result = await processNovelChunk(chunkCtx);
         } else {
           // Fallback for other types if any
           process.stdout.write(

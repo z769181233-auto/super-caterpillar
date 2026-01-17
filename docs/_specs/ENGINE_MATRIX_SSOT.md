@@ -17,8 +17,9 @@
 | EngineKey                | JobType                | 实现状态             | 计费模型                                 | 审计 Action 前缀     | Gate 脚本                                  | 封印 Tag                                   | 备注                         |
 | ------------------------ | ---------------------- | -------------------- | ---------------------------------------- | -------------------- | ------------------------------------------ | ------------------------------------------ | ---------------------------- |
 | `ce06_novel_parsing`     | CE06_NOVEL_PARSING     | LEGACY (Monolithic)  | router-based                             | `CE%`                | `gate-ce06-story-parse-real.sh`            | `legacy_monolithic`                        | **DEPRECATED**: Use SCAN/CHUNK              |
-| `ce06_scan_toc`          | NOVEL_SCAN_TOC         | REAL (Streaming)     | file-size-based                          | `ce06.scan`          | `gate-stage4-scale.sh`                     | `planned`                                  | **NEW**: Table of Contents Scanner          |
-| `ce06_chunk_parse`       | NOVEL_CHUNK_PARSE      | REAL (Gemini 2.0)    | token-based                              | `ce06.parse`         | `gate-stage4-scale.sh`                     | `planned`                                  | **NEW**: Parallel Chunk Parser              |
+| `ce06_scan_toc`          | NOVEL_SCAN_TOC         | REAL (Streaming)     | file-size-based                          | `ce06.scan`          | `gate-stage4-scale.sh`                     | `seal/stage4_scale_verified_20260116`      | **NEW**: Table of Contents Scanner          |
+| `ce06_chunk_parse`       | NOVEL_CHUNK_PARSE      | REAL (Streaming)     | file-size-based                          | `ce06.parse`         | `gate-stage4-scale.sh`                     | `seal/stage4_scale_verified_20260116`      | **NEW**: Chapter Content Parser             |
+| `ce02_identity_lock`     | CE02_IDENTITY_LOCK     | REAL (Postgres/Redis)| router-based                             | `ID%`                | `gate-ce02_identity_lock.sh`               | `seal/phase5D_identity_regression_20260116_v1` | **NEW**: Identity Consistency Anchor       |
 | `ce03_visual_density`    | CE03_VISUAL_DENSITY    | REAL (Heuristic)     | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
 | `ce04_visual_enrichment` | CE04_VISUAL_ENRICHMENT | REAL (Template)      | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
 | `shot_render`            | SHOT_RENDER            | REAL                 | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
@@ -47,6 +48,7 @@
 1. **shot_render** - 分镜渲染（视频产线末端）
 2. **video_merge** - 视频合成（视频产线末端）
 3. **ce06_novel_parsing** - 小说解析（产线入口）
+4. **ce02_identity_lock** - 角色一致性（中间件）
 
 ---
 
@@ -82,7 +84,8 @@
 ### P0（必须）
 
 - shot_render ✅
-- video_merge
+- video_merge ✅
+- ce02_identity_lock ✅
 
 ### P1（应该）
 
@@ -113,7 +116,8 @@
 | 2026-01-13 | Phase 3 HARD SEALED（Commercial E2E） | Gemini |
 | 2026-01-13 | Phase 4 UI Commercial Closure          | Gemini |
 | 2026-01-13 | **Billing Gap Closure (P0 Hotfix)** — CostLedger全链路闭环完成 | Antigravity |
-
+| 2026-01-16 | **Phase 5D HARD SEALED** — Identity Consistency Regression Complete | Antigravity |
+| 2026-01-16 | **Stage 4 SEALED** — Scale Architecture Verified (100 chaps → 100 chunk jobs, ce06_scan_toc + ce06_chunk_parse) | Antigravity |
 ---
 
 ## 系统能力矩阵 (System Capabilities)

@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { ProcessorContext } from '../types/processor-context';
 import { basicTextSegmentation, applyAnalyzedStructureToDatabase } from '../novel-analysis-processor';
+import { hydrateShotWithDirectorControls } from '../v3/utils/shot_field_extractor';
 
 /**
  * Stage 4: NOVEL_CHUNK_PARSE Processor
@@ -87,15 +88,18 @@ export async function processNovelChunk(context: ProcessorContext) {
 
             if (scene.shots.length > 0) {
                 await tx.shot.createMany({
-                    data: scene.shots.map((shot: any, shIdx: number) => ({
-                        organizationId: job.organizationId as string,
-                        sceneId: dbScene.id,
-                        index: shIdx + 1,
-                        title: shot.title,
-                        description: shot.summary || shot.text.slice(0, 50),
-                        type: 'novel_chunk',
-                        params: { sourceText: shot.text }
-                    }))
+                    data: scene.shots.map((shot: any, shIdx: number) => {
+                        const shotParams = { sourceText: shot.text };
+                        return hydrateShotWithDirectorControls({
+                            organizationId: job.organizationId as string,
+                            sceneId: dbScene.id,
+                            index: shIdx + 1,
+                            title: shot.title,
+                            description: shot.summary || shot.text.slice(0, 50),
+                            type: 'novel_chunk',
+                            params: shotParams
+                        }, shotParams);
+                    })
                 });
             }
         }

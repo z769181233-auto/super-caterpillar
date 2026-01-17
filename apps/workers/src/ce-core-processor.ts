@@ -958,6 +958,15 @@ export async function processShotRenderJob(
     }
 
     // 2. [CORE FIX] 统一调用母引擎，不再直连 Original Selector
+    // P2-FIX-2 DEBUG: 打印 payload 传递情况（仅 Gate/Dev）
+    if (process.env.GATE_MODE === '1' || process.env.NODE_ENV !== 'production') {
+      logStructured('info', {
+        action: 'SHOT_RENDER_INVOKE_PAYLOAD',
+        jobId,
+        payload: { shotId, traceId, seed, prompt: prompt.slice(0, 50) + '...' },
+      });
+    }
+
     const engineResult = await engineClient.invoke<any, any>({
       engineKey: (job as any).engineKey || 'shot_render',
       engineVersion: 'default',
@@ -1014,6 +1023,18 @@ export async function processShotRenderJob(
         } as any,
       },
     });
+
+    // P2-2 Compliance: Update Shot table to reflect real render status
+    // P2-FIX-1: Restored normal Prisma update after DMMF self-check implementation
+    await prisma.shot.update({
+      where: { id: shotId },
+      data: {
+        renderStatus: 'COMPLETED',
+        resultImageUrl: result.asset.uri,
+        resultVideoUrl: result.asset.videoUri ?? null,
+      },
+    });
+
 
     // 5. Billing (P0 Hotfix: Fixed)
     try {

@@ -2,6 +2,8 @@ import { PrismaClient, JobType, JobStatus } from 'database';
 import { ApiClient } from '../api-client';
 import { WorkerJobBase } from '@scu/shared-types';
 import type { ProcessorContext } from '../types/processor-context';
+import { hydrateShotWithDirectorControls } from '../v3/utils/shot_field_extractor';
+import { ControlNetMapper } from '../v3/render/controlnet_mapper';
 
 export interface Stage1OrchestratorPayload {
     novelText: string;
@@ -39,6 +41,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
     }
 
     // 获取当前 Episode 下的 Scene 结构（Stage-1 默认将所有 Shot 放入第一个 Scene）
+    // Ensure we fetch graph_state_snapshot
     let scene = await prisma.scene.findFirst({ where: { episodeId } });
     if (!scene) {
         scene = await prisma.scene.create({
@@ -48,45 +51,12 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
                 index: 1,
                 title: 'Main Scene',
                 summary: 'Auto-generated for Stage-1',
+                // P0-2: Ensure snapshot logic handled elsewhere or default null
             }
         });
     }
 
-    const shotIds: string[] = [];
-    // MVP: 限制每章最多 10 个镜头
-    const maxShots = Math.min(paragraphs.length, 10);
-
-    for (let i = 0; i < maxShots; i++) {
-        const paragraph = paragraphs[i].trim();
-        const shotParams = {
-            prompt: paragraph.substring(0, 800),
-            aspect_ratio: '16:9',
-            seed: Math.floor(Math.random() * 1000000),
-            engine_params: {
-                steps: 20,
-                guidance_scale: 7.0
-            }
-        };
-
-        const shot = await prisma.shot.create({
-            data: {
-                sceneId: scene.id,
-                organizationId,
-                index: i + 1,
-                title: `Shot ${i + 1}`,
-                description: paragraph.substring(0, 200),
-                reviewStatus: 'APPROVED', // Stage 1 自动化流水线直接标记为已审核
-                params: shotParams,
-                type: 'shot',
-                enrichedPrompt: paragraph, // ✅ SSOT alignment: SHOT_RENDER requires this
-            } as any
-        });
-        shotIds.push(shot.id);
-    }
-    console.log(`[Stage1] Planned ${shotIds.length} shots. Ensuring Reference Sheet exists...`);
-
-    // MVP: Ensure a mock reference sheet exists for E4 validation
-    // STAGE 1 MOCK: Create a dummy CE01 Job/Binding if not present
+    // P1-2: Refactored - Resolve Reference Sheet BEFORE creating shots to enable binding
     let refSheetId: string | undefined;
     const refSheetJob = await prisma.shotJob.findFirst({
         where: { projectId, type: 'CE01_REFERENCE_SHEET', status: 'SUCCEEDED' },
@@ -95,19 +65,28 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
 
     if (refSheetJob && refSheetJob.engineBinding) {
         refSheetId = refSheetJob.engineBinding.id;
-    } else if (shotIds.length > 0) {
+    } else {
+        // If not found, we create it dynamically.
+        // NOTE: We need a sceneId and potentially a shotId for the mock job.
+        // Since we haven't created shots yet, we use a placeholder or the scene itself.
+        // However, the original logic used shotIds[0].
+        // Strategy: Create the CE01 job but link it later? OR just use scene level.
+        // CE01 usually needs a shotId. Let's create a placeholder concept or just wait.
+        // Actually, for ControlNetMapper, we just need the ID string.
+
         // Find Character Visual Engine
         const engine = await prisma.engine.findFirst({
             where: { code: 'character_visual' }
         });
 
+        // We create the job now with NO shotId (scene level only) or just use scene.
         const dummyJob = await prisma.shotJob.create({
             data: {
                 projectId,
                 organizationId,
                 episodeId,
                 sceneId: scene.id,
-                shotId: shotIds[0],
+                // shotId: null, // Scene-level reference sheet
                 type: 'CE01_REFERENCE_SHEET',
                 status: 'SUCCEEDED',
                 payload: { mock: true },
@@ -123,10 +102,67 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
             }
         });
 
-        // MVP: 使用 Binding ID 作为 referenceSheetId
         refSheetId = binding.id;
-        console.log(`[Stage1] Created Mock Reference Sheet Job Binding: ${refSheetId}`);
+        console.log(`[Stage1] Created Mock Reference Sheet Job Binding (Scene Level): ${refSheetId}`);
     }
+
+    const shotIds: string[] = [];
+    // MVP: 限制每章最多 10 个镜头
+    const maxShots = Math.min(paragraphs.length, 10);
+
+    for (let i = 0; i < maxShots; i++) {
+        const paragraph = paragraphs[i].trim();
+
+        // MVP P1-1: Heuristic Extraction for testing explicit columns
+        const directorControls: any = {};
+        if (paragraph.toUpperCase().includes('WIDE SHOT')) directorControls.shot_type = 'WIDE SHOT';
+        if (paragraph.toUpperCase().includes('CLOSE UP')) directorControls.shot_type = 'CLOSE UP';
+        if (paragraph.toUpperCase().includes('PAN')) directorControls.camera_movement = 'PAN';
+        if (paragraph.toUpperCase().includes('LOW ANGLE')) directorControls.camera_angle = 'LOW ANGLE';
+        if (paragraph.toUpperCase().includes('NIGHT')) directorControls.lighting_preset = 'NIGHT';
+
+        // P1-2: Standardized ControlNet & Asset Bindings
+        // Note: scene.graphStateSnapshot is typed as Json? (any)
+        const { settings: controlNetSettings, bindings: assetBindings } = ControlNetMapper.mapFromGraphState(
+            scene.graphStateSnapshot,
+            refSheetId // Now resolved!
+        );
+
+        const shotParams = {
+            prompt: paragraph.substring(0, 800),
+            aspect_ratio: '16:9',
+            seed: Math.floor(Math.random() * 1000000),
+            engine_params: {
+                steps: 20,
+                guidance_scale: 7.0
+            },
+            controlnet_settings: controlNetSettings, // P1-2
+            asset_bindings: assetBindings,           // P1-2
+            ...directorControls
+        };
+
+        const shotData = hydrateShotWithDirectorControls({
+            sceneId: scene.id,
+            organizationId,
+            index: i + 1,
+            title: `Shot ${i + 1}`,
+            description: paragraph.substring(0, 200),
+            reviewStatus: 'APPROVED', // Stage 1 自动化流水线直接标记为已审核
+            params: shotParams,
+            type: 'shot',
+            enrichedPrompt: paragraph, // ✅ SSOT alignment: SHOT_RENDER requires this
+        }, shotParams);
+
+        const shot = await prisma.shot.create({
+            data: shotData as any
+        });
+        shotIds.push(shot.id);
+    }
+    console.log(`[Stage1] Planned ${shotIds.length} shots. Ensuring Reference Sheet exists...`);
+
+    // MVP: Ensure a mock reference sheet exists for E4 validation
+    // STAGE 1 MOCK: Create a dummy CE01 Job/Binding if not present
+
 
     console.log(`[Stage1] Spawning renders via API...`);
 

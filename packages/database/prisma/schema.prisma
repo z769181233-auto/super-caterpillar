@@ -158,6 +158,10 @@ model Scene {
   enrichedText       String?
   projectId          String
   visualDensityScore Float?
+  
+  // V3.0 Alignment: Core Consistency Anchor
+  graphStateSnapshot Json? @map("graph_state_snapshot") // Character states, items, locations per scene
+  
   engineTasks        EngineTask[] @relation("SceneEngineTask")
   episode            Episode      @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
   sceneDraft         SceneDraft?  @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
@@ -193,8 +197,39 @@ model Shot {
   organization      Organization?      @relation("OrganizationShots", fields: [organizationId], references: [id])
   scene             Scene              @relation("SceneShots", fields: [sceneId], references: [id], onDelete: Cascade)
 
+  shotType        String? @map("shot_type")
+  cameraMovement  String? @map("camera_movement")
+  cameraAngle     String? @map("camera_angle")
+
+  lightingPreset  String? @map("lighting_preset")
+
+  // P2: Real Render Status & Output
+  renderStatus    ShotRenderStatus @default(PENDING) @map("render_status")
+  resultImageUrl  String?          @map("result_image_url")
+  resultVideoUrl  String?          @map("result_video_url")
+
   @@index([sceneId, index])
   @@map("shots")
+}
+
+model CharacterIdentityAnchor {
+  id              String   @id @default(uuid())
+  characterId     String
+  status          String   @default("PROCESSING") // READY, FAILED, PROCESSING
+  provider        String?
+  seed            Int?
+  viewKeyFront    String?
+  viewKeySide     String?
+  viewKeyBack     String?
+  viewKeysSha256  String?
+  traceId         String?
+  lastError       String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([characterId])
+  @@map("character_identity_anchors")
 }
 
 model SemanticEnhancement {
@@ -870,6 +905,9 @@ model NovelChapter {
   isSystemControlled Boolean  @default(false) @map("is_system_controlled")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
+  
+  // V3.0 增量对齐 P0-2: 向量检索能力
+  summaryVector      Unsupported("vector")? @map("summary_vector")
 
   volume      NovelVolume  @relation("VolumeChapters", fields: [volumeId], references: [id], onDelete: Cascade)
   novelSource NovelSource  @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
@@ -885,7 +923,7 @@ model NovelScene {
   id             String   @id @default(uuid())
   chapterId      String   @map("chapter_id")
   index          Int
-  title          String?
+  title           String?
   rawText            String?  @db.Text @map("raw_text")
   enrichedText       String?  @db.Text @map("enriched_text")
   visualDensityScore Float?   @map("visual_density_score")
@@ -894,6 +932,10 @@ model NovelScene {
   shotType           String?  @default("MEDIUM_SHOT") @map("shot_type")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // V3.0 Alignment
+  projectId          String?  @map("project_id")
+  graphStateSnapshot Json?    @map("graph_state_snapshot")
 
   chapter NovelChapter @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
 
@@ -1208,6 +1250,13 @@ enum JobStatus {
   FAILED
   RETRYING
   DISPATCHED
+}
+
+enum ShotRenderStatus {
+  PENDING
+  RENDERING
+  COMPLETED
+  FAILED
 }
 
 enum JobType {

@@ -49,32 +49,47 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
       throw new Error(`[ShotRender] Shot ${job.shotId} has no enrichedPrompt`);
     if (!projectId || !organizationId) throw new Error(`[ShotRender] Shot context incomplete`);
 
-    // 2.5. CE02 Identity Lock (角色一致性锁定)
-    logger.log(`[ShotRender] Calling CE02 Identity Lock for shot ${job.shotId}...`);
+    // 2.5. CE02 Identity Lock Enforcement (Hard Check)
     const engineHub = new EngineHubClient(apiClient);
-    const ce02Result = await engineHub.invoke({
-      engineKey: 'ce02_identity_lock',
-      engineVersion: 'v1.0',
-      payload: {
-        sceneText: shot.enrichedPrompt,
-        projectId,
-        traceId: traceId || job.id,
-      },
-      metadata: {
-        traceId: traceId || job.id,
-        shotId: shot.id,
-        projectId,
-      },
-    });
+    let identityMetadata: any = {};
+    const characterIds = (job.payload as any)?.characterIds || (shot.params as any)?.characterIds || [];
 
-    let identityLockToken = 'no-lock';
-    let lockedCharacters = [];
-    if (ce02Result.success && ce02Result.output) {
-      identityLockToken = (ce02Result.output as any).identity_lock_token || 'no-lock';
-      lockedCharacters = (ce02Result.output as any).locked_characters || [];
-      logger.log(`[ShotRender] CE02 Lock Token: ${identityLockToken}, Characters: ${lockedCharacters.length}`);
+    if (Array.isArray(characterIds) && characterIds.length > 0) {
+      logger.log(`[ShotRender] Enforcing Identity Anchor for characters: ${characterIds.join(', ')}`);
+
+      const anchors = await prisma.characterIdentityAnchor.findMany({
+        where: {
+          characterId: { in: characterIds },
+          isActive: true,
+          status: 'READY'
+        }
+      });
+
+      const foundCharIds = anchors.map(a => a.characterId);
+      const missingCharIds = characterIds.filter(id => !foundCharIds.includes(id));
+
+      if (missingCharIds.length > 0) {
+        const errorMsg = `IDENTITY_ANCHOR_MISSING: Active anchors not found for characters: ${missingCharIds.join(', ')}`;
+        logger.error(`[ShotRender] ${errorMsg}`);
+        throw new Error(errorMsg);
+      }
+
+      // Construct Identity Metadata
+      const anchorMeta = anchors.map(a => ({
+        characterId: a.characterId,
+        anchorId: a.id,
+        seed: a.seed,
+        viewKeysSha256: a.viewKeysSha256
+      }));
+
+      identityMetadata = {
+        anchors: anchorMeta,
+        mode: 'required'
+      };
+
+      logger.log(`[ShotRender] Identity Anchors verified and injected: ${anchors.length}`);
     } else {
-      logger.warn(`[ShotRender] CE02 Identity Lock failed, proceeding without lock`);
+      logger.log(`[ShotRender] No characterIds found for shot ${job.shotId}, skipping Identity Lock.`);
     }
 
     // 3. Real Render Logic (Invoke Engine Hub)
@@ -94,6 +109,7 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
         jobId: job.id,
         projectId,
         isVerification: process.env.GATE_MODE === '1',
+        identity: identityMetadata // Inject Identity Metadata
       },
     });
 
@@ -147,6 +163,18 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
       },
     });
 
+    // P2-2: Update Shot Status & Result URL explicitly
+    await prisma.shot.update({
+      where: { id: shot.id },
+      data: {
+        renderStatus: 'COMPLETED', // Use COMPLETED (enum backed)
+        resultImageUrl: relativeKey,
+        // resultVideoUrl: ..., // If video produced
+      }
+    });
+
+
+
     // Audit
     await prisma.auditLog.create({
       data: {
@@ -165,6 +193,7 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
           actorId: 'system-worker',
           traceId: traceId,
           renderMeta: renderOutput.render_meta,
+          identity: identityMetadata // Explicitly log Identity Anchor info
         },
       },
     });

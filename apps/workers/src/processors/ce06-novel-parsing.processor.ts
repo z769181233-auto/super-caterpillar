@@ -3,6 +3,8 @@ import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
 import { CostLedgerService } from '../billing/cost-ledger.service';
 import { ProcessorContext } from '../types/processor-context';
+import { buildContext } from '../v3/context/context_injector';
+import { updateCharacterStates, snapshotScene, type CharacterState } from '../v3/graph/graph_state';
 
 export interface ProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
@@ -152,7 +154,22 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
 
   logger.log(`[CE06-PARSE] Analyzing chapter ${chapterId} via EngineHub...`);
 
-  // Step 1: CE06 解析 (raw_text)
+  // V3.0 P0-2: 获取章节信息用于上下文注入
+  const chapter = await prisma.novelChapter.findUnique({ where: { id: chapterId } });
+  if (!chapter) throw new Error(`Chapter ${chapterId} not found`);
+
+  // V3.0 P0-2: 构建递归注入上下文
+  const contextPrompt = await buildContext({
+    prisma,
+    projectId,
+    chapterId,
+    chapterIndex: chapter.index,
+    currentTextOrSummary: chapter.summary || chapterText.substring(0, 500),
+  });
+
+  logger.log(`[CE06-PARSE] Context injection built: Long-term=${contextPrompt.longTermMemory.substring(0, 50)}...`);
+
+  // Step 1: CE06 解析 (raw_text + context_injection)
   const ce06Result = await engineHub.invoke({
     engineKey: 'ce06_novel_parsing',
     engineVersion: 'v1.3.1',
@@ -160,6 +177,12 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
       structured_text: chapterText,
       phase: 'CHUNK_PARSE',
       traceId,
+      // V3.0 P0-2: 注入上下文到 CE06 引擎
+      context_injection: {
+        long_term_memory: contextPrompt.longTermMemory,
+        short_term_memory: contextPrompt.shortTermMemory,
+        entity_states: contextPrompt.entityStates,
+      },
     },
     metadata: {
       traceId,
@@ -173,6 +196,7 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
   }
 
   const scenes = (ce06Result.output as any).scenes || [];
+  logger.log(`[CE06-PARSE] Received ${scenes.length} scenes from engine output`);
 
   // Step 2: 写入 raw_text 并串联 CE03/CE04
   await prisma.$transaction(async (tx) => {
@@ -185,15 +209,21 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
         where: { chapterId_index: { chapterId, index: sceneIndex } },
         create: {
           chapterId,
+          projectId,
           index: sceneIndex,
           title: sc.title || `Scene ${sceneIndex}`,
           rawText: sc.raw_text || '',
         },
         update: {
+          projectId,
           title: sc.title || `Scene ${sceneIndex}`,
           rawText: sc.raw_text || '',
         },
       });
+
+      // V3.0 P0-2: projectId is not a column in novel_scenes table
+      // Removed projectId update logic
+
 
       // Step 3: 调用 CE03 计算密度
       logger.log(`[CE03] Computing density for scene ${scene.id}...`);
@@ -201,7 +231,7 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
         engineKey: 'ce03_visual_density',
         engineVersion: 'v1.0',
         payload: {
-          sceneText: sc.raw_text || '',
+          structured_text: sc.raw_text || '',
           traceId,
         },
         metadata: { traceId, sceneId: scene.id },
@@ -218,7 +248,7 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
         engineKey: 'ce04_visual_enrichment',
         engineVersion: 'v1.0',
         payload: {
-          sceneText: sc.raw_text || '',
+          structured_text: sc.raw_text || '',
           traceId,
         },
         metadata: { traceId, sceneId: scene.id },
@@ -236,6 +266,64 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
           enrichedText,
           visualDensityScore: densityScore,
         },
+      });
+
+      // V3.0 P0-2: 写入场景的 graph_state_snapshot
+      // 从 CE06 输出提取角色状态（若无则使用默认）
+      const sceneCharacters: CharacterState[] = (sc.characters || []).map((char: any) => ({
+        id: char.id || `char_${char.name}`,
+        name: char.name || '未知角色',
+        status: char.status || 'normal',
+        appearance: {
+          clothing: char.appearance?.clothing || '普通服饰',
+          hair: char.appearance?.hair || '普通发型',
+        },
+        items: char.items || [],
+        injuries: char.injuries || [],
+        location: char.location || '未知位置',
+      }));
+
+      await snapshotScene({
+        prisma: tx,
+        sceneId: scene.id,
+        snapshot: {
+          characters: sceneCharacters,
+          scene_index: sceneIndex,
+          chapter_id: chapterId,
+        },
+      });
+    }
+
+    // V3.0 P0-2: 提取并更新章节级角色状态到 memory_short_term
+    const allCharacters: CharacterState[] = [];
+    for (const sc of scenes) {
+      if (sc.characters) {
+        for (const char of sc.characters) {
+          const existingChar = allCharacters.find(c => c.id === (char.id || `char_${char.name}`));
+          if (!existingChar) {
+            allCharacters.push({
+              id: char.id || `char_${char.name}`,
+              name: char.name || '未知角色',
+              status: char.status || 'normal',
+              appearance: {
+                clothing: char.appearance?.clothing || '普通服饰',
+                hair: char.appearance?.hair || '普通发型',
+              },
+              items: char.items || [],
+              injuries: char.injuries || [],
+              location: char.location || '未知位置',
+            });
+          }
+        }
+      }
+    }
+
+    if (allCharacters.length > 0) {
+      await updateCharacterStates({
+        prisma: tx,
+        projectId,
+        chapterId,
+        characterStates: allCharacters,
       });
     }
   });

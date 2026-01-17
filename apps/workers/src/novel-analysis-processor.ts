@@ -12,6 +12,7 @@ import { CE06EngineSelector } from '@scu/engines-ce06';
 import { CE06Input, CE06Output } from '@scu/engines-ce06';
 import { ApiClient } from './api-client';
 import * as util from 'util';
+import { hydrateShotWithDirectorControls } from './v3/utils/shot_field_extractor';
 
 /**
  * 结构化日志输出函数
@@ -727,31 +728,39 @@ export async function applyAnalyzedStructureToDatabase(
 
             if (existingShot) {
               // S3-B Fine-Tune: 更新现有 Shot（仅更新 title/description/index/params，保留 id）
+              const shotParams = {
+                sourceText: shot.text,
+              } as any;
+
+              const updateData = hydrateShotWithDirectorControls({
+                index: shot.index, // 确保 index 正确
+                title: shot.title,
+                description: shot.summary || shot.text.substring(0, 200),
+                params: shotParams,
+              }, shotParams);
+
               await tx.shot.update({
                 where: { id: existingShot.id },
-                data: {
-                  index: shot.index, // 确保 index 正确
-                  title: shot.title,
-                  description: shot.summary || shot.text.substring(0, 200),
-                  params: {
-                    sourceText: shot.text,
-                  } as any,
-                },
+                data: updateData,
               });
               stats.updated.shots++;
             } else {
               // S3-B Fine-Tune: 创建新 Shot（批量写入，避免 1w+ 次 create 导致事务超时）
-              shotsToCreate.push({
+              const shotParams = {
+                sourceText: shot.text,
+              } as any;
+
+              const createData = hydrateShotWithDirectorControls({
                 sceneId: createdScene.id,
                 index: shot.index,
                 title: shot.title ?? null,
                 description: (shot.summary || shot.text.substring(0, 200)) ?? null,
                 type: 'novel_analysis',
-                params: {
-                  sourceText: shot.text,
-                } as any,
+                params: shotParams,
                 qualityScore: {} as any,
-              });
+              }, shotParams);
+
+              shotsToCreate.push(createData);
             }
           }
 

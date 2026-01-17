@@ -23,20 +23,43 @@ export const localMpsProvider = {
   key: 'local_mps' as const,
   async render(
     prompt: string,
-    options?: { width?: number; height?: number; seed?: number }
+    options: {
+      width?: number;
+      height?: number;
+      seed: number;
+      // P2-FIX-2: 必填追溯字段
+      shotId: string;
+      traceId: string;
+    }
   ): Promise<RenderResult> {
-    const width = options?.width ?? 768;
-    const height = options?.height ?? 768;
-    const seed = options?.seed ?? 42;
+    // P2-FIX-2: 强制校验必填字段
+    if (!options.shotId || !options.traceId) {
+      throw new Error(`[LOCAL_MPS_PROVIDER_INVALID] Missing required fields: shotId=${options.shotId}, traceId=${options.traceId}`);
+    }
+
+    const width = options.width ?? 768;
+    const height = options.height ?? 768;
+    const seed = options.seed;
+    const { shotId, traceId } = options;
+
+    // P2-FIX-2: 统一命名规范（inline 实现避免跨 package 导入）
+    const safeShot = shotId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeTrace = traceId.slice(-8).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const artifactName = `shot_${safeShot}_trace_${safeTrace}_${seed}.png`;
+
+    // P2-FIX-2 DEBUG: 打印命名参数（仅 Gate/Dev）
+    if (process.env.GATE_MODE === '1' || process.env.NODE_ENV !== 'production') {
+      console.log(`[LocalMpsProvider] Artifact name: ${artifactName} (shotId=${shotId}, traceId=${traceId}, seed=${seed})`);
+    }
 
     const outDir =
       process.env.ASSET_STORAGE_DIR ||
-      path.join(process.cwd(), 'apps/workers/.runtime/assets_gate_p0r0');
+      path.join(process.cwd(), 'apps/workers/.runtime/assets');
     if (!fs.existsSync(outDir)) {
       fs.mkdirSync(outDir, { recursive: true });
     }
 
-    const outPath = path.join(outDir, `shot_render_local_${Date.now()}_${seed}.png`);
+    const outPath = path.join(outDir, artifactName);
     const pythonBin = process.env.PYTHON_BIN || 'python3';
 
     // P0 Fix: Robust script path detection by walking up

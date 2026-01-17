@@ -63,6 +63,9 @@ import { processMediaSecurityJob } from './processors/media-security.processor';
 import { processStage1OrchestratorJob } from './processors/stage1-orchestrator.processor';
 import { processNovelScan } from './processors/novel-scan.processor';
 import { processNovelChunk } from './processors/novel-chunk.processor';
+import { processIdentityLockJob } from './processors/ce02-identity-lock.processor';
+import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.processor';
+import { ProcessorContext } from './types/processor-context';
 
 
 const prisma = new PrismaClient({
@@ -460,12 +463,17 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
           apiClient
         );
       } else if (job.type === 'CE06_NOVEL_PARSING') {
-        return processCE06Job(
+        const context: ProcessorContext = {
           prisma,
-          { ...job, projectId: job.projectId || '' },
-          engineHubClient,
-          apiClient
-        );
+          job: { ...job, projectId: job.projectId || '' },
+          apiClient,
+          logger: console,
+        };
+        const result = await processCE06NovelParsingJob(context);
+        if (result.status === 'FAILED') {
+          throw new Error(result.error || 'CE06 processor failed');
+        }
+        return result.output || { status: 'SUCCEEDED' };
       } else if (job.type === 'SHOT_RENDER' || job.type === 'SHOT_RENDER_HTTP') {
         return processShotRenderJob(
           prisma,
@@ -505,6 +513,8 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
         return processTimelineRenderJob({ prisma, job: job as any, apiClient });
       } else if (job.type === 'TIMELINE_PREVIEW') {
         return processTimelinePreviewJob({ prisma, job: job as any, apiClient });
+      } else if (job.type === 'CE02_IDENTITY_LOCK') {
+        return processIdentityLockJob({ prisma, job: job as any, apiClient, workerId });
       } else if (job.type === 'CE09_MEDIA_SECURITY') {
         return processMediaSecurityJob({ prisma, job: job as any, apiClient });
       } else if (job.type === 'NOVEL_SCAN_TOC') {

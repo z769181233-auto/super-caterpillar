@@ -202,7 +202,8 @@ exports.Prisma.SceneScalarFieldEnum = {
   characters: 'characters',
   enrichedText: 'enrichedText',
   projectId: 'projectId',
-  visualDensityScore: 'visualDensityScore'
+  visualDensityScore: 'visualDensityScore',
+  graphStateSnapshot: 'graphStateSnapshot'
 };
 
 exports.Prisma.ShotScalarFieldEnum = {
@@ -218,7 +219,31 @@ exports.Prisma.ShotScalarFieldEnum = {
   reviewedAt: 'reviewedAt',
   durationSeconds: 'durationSeconds',
   organizationId: 'organizationId',
-  enrichedPrompt: 'enrichedPrompt'
+  enrichedPrompt: 'enrichedPrompt',
+  shotType: 'shotType',
+  cameraMovement: 'cameraMovement',
+  cameraAngle: 'cameraAngle',
+  lightingPreset: 'lightingPreset',
+  renderStatus: 'renderStatus',
+  resultImageUrl: 'resultImageUrl',
+  resultVideoUrl: 'resultVideoUrl'
+};
+
+exports.Prisma.CharacterIdentityAnchorScalarFieldEnum = {
+  id: 'id',
+  characterId: 'characterId',
+  status: 'status',
+  provider: 'provider',
+  seed: 'seed',
+  viewKeyFront: 'viewKeyFront',
+  viewKeySide: 'viewKeySide',
+  viewKeyBack: 'viewKeyBack',
+  viewKeysSha256: 'viewKeysSha256',
+  traceId: 'traceId',
+  lastError: 'lastError',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SemanticEnhancementScalarFieldEnum = {
@@ -702,7 +727,9 @@ exports.Prisma.NovelSceneScalarFieldEnum = {
   directingNotes: 'directingNotes',
   shotType: 'shotType',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  projectId: 'projectId',
+  graphStateSnapshot: 'graphStateSnapshot'
 };
 
 exports.Prisma.MemoryShortTermScalarFieldEnum = {
@@ -946,6 +973,13 @@ exports.ShotReviewStatus = exports.$Enums.ShotReviewStatus = {
   FINALIZED: 'FINALIZED'
 };
 
+exports.ShotRenderStatus = exports.$Enums.ShotRenderStatus = {
+  PENDING: 'PENDING',
+  RENDERING: 'RENDERING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED'
+};
+
 exports.EngineTaskType = exports.$Enums.EngineTaskType = {
   scene_parse: 'scene_parse',
   shot_plan: 'shot_plan',
@@ -1161,6 +1195,7 @@ exports.Prisma.ModelName = {
   Episode: 'Episode',
   Scene: 'Scene',
   Shot: 'Shot',
+  CharacterIdentityAnchor: 'CharacterIdentityAnchor',
   SemanticEnhancement: 'SemanticEnhancement',
   ShotPlanning: 'ShotPlanning',
   StructureQualityReport: 'StructureQualityReport',

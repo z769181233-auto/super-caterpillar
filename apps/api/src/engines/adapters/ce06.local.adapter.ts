@@ -24,10 +24,10 @@ export class CE06LocalAdapter implements EngineAdapter {
 
         try {
             const output = await ce06RealEngine({
-                structured_text: input.payload.structured_text,
+                ...input.payload,
                 traceId: input.context?.traceId,
                 projectId: input.context?.projectId,
-            });
+            } as any);
 
             return {
                 status: 'SUCCESS' as any,

@@ -684,6 +684,62 @@ else
     echo -e "${RED}❌ Gate 7 failed${NC}\n"
 fi
 
+# 门禁 8: Context Injection Consistency (V3.0 P0-2)
+echo -e "${BLUE}Gate 8: Context Injection Consistency (V3.0 P0-2)${NC}"
+echo "Running context injection and character state consistency regression test..."
+
+CONTEXT_INJECTION_PASSED=true
+CONTEXT_INJECTION_OUTPUT="$TEMP_DIR/context_injection.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-context-injection-consistency.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-context-injection-consistency.sh" > "$CONTEXT_INJECTION_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ Context Injection consistency check passed${NC}"
+        echo "- ✅ Context Injection consistency check passed" >> "$CONTEXT_INJECTION_OUTPUT"
+    else
+        echo -e "  ${RED}❌ Context Injection consistency check failed${NC}"
+        echo "- ❌ Context Injection consistency check failed" >> "$CONTEXT_INJECTION_OUTPUT"
+        CONTEXT_INJECTION_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Context Injection gate script not found${NC}"
+    echo "- ⚠️  Context Injection gate script not found" >> "$CONTEXT_INJECTION_OUTPUT"
+    CONTEXT_INJECTION_PASSED=false
+fi
+
+if [ "$CONTEXT_INJECTION_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 8 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 8 failed${NC}\n"
+fi
+
+# 门禁 9: Shots Director Control Fields (V3.0 P1-1)
+echo -e "${BLUE}Gate 9: Shots Director Control Fields (V3.0 P1-1)${NC}"
+echo "Running shots director control fields verification..."
+
+SHOTS_DIRECTOR_PASSED=true
+SHOTS_DIRECTOR_OUTPUT="$TEMP_DIR/shots_director.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p1-1_shots_director_cols.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-p1-1_shots_director_cols.sh" > "$SHOTS_DIRECTOR_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ Shots Director Control Fields check passed${NC}"
+        echo "- ✅ Shots Director Control Fields check passed" >> "$SHOTS_DIRECTOR_OUTPUT"
+    else
+        echo -e "  ${RED}❌ Shots Director Control Fields check failed${NC}"
+        echo "- ❌ Shots Director Control Fields check failed" >> "$SHOTS_DIRECTOR_OUTPUT"
+        SHOTS_DIRECTOR_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Shots Director Control Fields gate script not found${NC}"
+    echo "- ⚠️  Shots Director Control Fields gate script not found" >> "$SHOTS_DIRECTOR_OUTPUT"
+    SHOTS_DIRECTOR_PASSED=false
+fi
+
+if [ "$SHOTS_DIRECTOR_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 9 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 9 failed${NC}\n"
+fi
+
 # 初始化商业级报告头部
 {
   echo "# GATEKEEPER VERIFICATION REPORT (Refinement Sealed)"
@@ -729,6 +785,12 @@ fi
   echo ""
   echo "### Gate 7: Video Merge Resource Guardrails"
   cat "$VIDEO_MERGE_GUARD_OUTPUT"
+  echo ""
+  echo "### Gate 8: Context Injection Consistency"
+  cat "$CONTEXT_INJECTION_OUTPUT"
+  echo ""
+  echo "### Gate 9: Shots Director Control Fields"
+  cat "$SHOTS_DIRECTOR_OUTPUT"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 {
@@ -742,6 +804,8 @@ fi
   echo "- Gate 5 (Capacity Report): $([ "$CAPACITY_REPORT_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 6 (Video Merge Memory): $([ "$VIDEO_MERGE_MEM_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 7 (Video Merge Guardrails): $([ "$VIDEO_MERGE_GUARD_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 8 (Context Injection): $([ "$CONTEXT_INJECTION_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 9 (Shots Director): $([ "$SHOTS_DIRECTOR_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 # 最终判断
@@ -751,6 +815,7 @@ ALL_PASSED=true
 [ "$SIGNED_URL_PASSED" != true ] && ALL_PASSED=false
 [ "$VIDEO_MERGE_MEM_PASSED" != true ] && ALL_PASSED=false
 [ "$VIDEO_MERGE_GUARD_PASSED" != true ] && ALL_PASSED=false
+[ "$CONTEXT_INJECTION_PASSED" != true ] && ALL_PASSED=false
 
 # 只有在非 local 模式下，4/5 的失败才影响最终结果
 if [ "$GATE_ENV_MODE" != "local" ]; then

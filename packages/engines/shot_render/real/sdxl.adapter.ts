@@ -74,6 +74,17 @@ export async function runShotRenderSDXL(
   input: ShotRenderInput,
   ctx: any = {}
 ): Promise<ShotRenderOutput> {
+  // P2-FIX-2: 强制校验 shotId/traceId
+  const { shotId, traceId } = input;
+  if (!shotId || !traceId) {
+    throw new Error(`[SHOT_RENDER_INPUT_INVALID] Missing required fields: shotId=${shotId}, traceId=${traceId}`);
+  }
+
+  // P2-FIX-2 DEBUG: 打印 adapter 入口参数（仅 Gate/Dev）
+  if (process.env.GATE_MODE === '1' || process.env.NODE_ENV !== 'production') {
+    process.stdout.write(util.format('[ShotRender Adapter] Input received: shotId=%s, traceId=%s, seed=%d', shotId, traceId, input.seed || 0) + '\n');
+  }
+
   const root = resolveSsotRoot();
   const ASSET_DIR =
     process.env.ASSET_STORAGE_DIR || path.join(root, 'apps/workers/.runtime/assets');
@@ -146,7 +157,15 @@ export async function runShotRenderSDXL(
   const providerKey = (process.env.SHOT_RENDER_PROVIDER || 'local_mps').trim();
   let renderResult: RenderResult;
 
+  // P2-1: No Fallback - Strict Dependency Check
+  // If we are using the REAL engine, we MUST fail if dependencies are missing. 
+  // We assume this file is only reachable if configuring for real render.
+
   if (providerKey === 'replicate') {
+    if (!process.env.REPLICATE_API_TOKEN) {
+      throw new Error(`[SHOT_RENDER_NO_FALLBACK] Provider 'replicate' requires REPLICATE_API_TOKEN. Fallback disallowed.`);
+    }
+
     const { replicateProvider } = require('../providers/replicate.provider');
     renderResult = await replicateProvider.render(input.prompt, {
       width,
@@ -155,14 +174,31 @@ export async function runShotRenderSDXL(
       negativePrompt: input.negative_prompt,
     });
   } else if (providerKey === 'local_mps') {
+    // Check if python script exists before even trying to run it
+    const pythonBin = process.env.PYTHON_BIN || 'python3';
+    // Use the same logic as provider to check, or just rely on provider throwing.
+    // However, to satisfy "No Fallback" explicit check, let's verify logic.
+    // Actually, localMpsProvider does robust check. But we want to fail FAST if key deps missing.
+    // The provider throws [LOCAL_MPS_RENDER_FAILED]. 
+    // We wrap it here to ensure specific error code if needed, but the provider's error is good.
+    // To strictly conform to P2-1 "Check dependencies", we can double check env if needed.
+    // But for local script, existence is the check.
+
     const { localMpsProvider } = require('../providers/local_mps.provider');
-    renderResult = await localMpsProvider.render(input.prompt, {
-      width,
-      height,
-      seed,
-    });
+    try {
+      renderResult = await localMpsProvider.render(input.prompt, {
+        width,
+        height,
+        seed,
+        // P2-FIX-2: 传递必填追溯字段
+        shotId,
+        traceId,
+      });
+    } catch (e: any) {
+      throw new Error(`[SHOT_RENDER_NO_FALLBACK] Provider 'local_mps' failed: ${e.message}`);
+    }
   } else {
-    throw new Error(`[ShotRender] Unknown SHOT_RENDER_PROVIDER=${providerKey}`);
+    throw new Error(`[SHOT_RENDER_NO_FALLBACK] Unknown SHOT_RENDER_PROVIDER=${providerKey}. Fallback disallowed.`);
   }
 
   // 5. 写入文件
