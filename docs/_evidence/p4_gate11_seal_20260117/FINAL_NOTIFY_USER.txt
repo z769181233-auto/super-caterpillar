@@ -1,0 +1,40 @@
+Gate 11 (P4 E2E：Novel → Published HLS) 封签完成
+
+验证结果
+Gate 11（P4 E2E：Novel → Published HLS）已完成双次独立验证：Attempt 22 PASS、Attempt 23 PASS
+
+判据
+1. CE09 job = SUCCEEDED
+2. Asset.status = PUBLISHED
+3. assets.hls_playlist_url 非空
+4. master.m3u8 + ts 分片存在
+5. ffprobe 对 HLS 与 MP4 均通过
+
+证据
+- Attempt 22: docs/_evidence/p4_e2e_publish_1768642685/ (traceId: trace_p4_1768642685, 6s)
+- Attempt 23: docs/_evidence/p4_e2e_publish_1768642768/ (traceId: trace_p4_1768642768, 6s)
+- 封签包: docs/_evidence/p4_gate11_seal_20260117/ (含 SHA256SUMS.txt)
+
+代码收口点
+
+1. frameKeys 规范化 (PLAN-1/2)
+   - API 侧清洗: job-report.facade.ts normalizeStorageKey()
+   - Worker 侧: video-render.processor.ts normalize + dual-root lookup
+   - 证据: Worker logs 显示 [NormalizeKey] Stripped pollution + [ResolvePath] HIT
+
+2. CE09 返回并写回 hls_playlist_url
+   - media-security.processor.ts 添加 return 语句
+   - 确保 Asset.hls_playlist_url 字段被正确更新
+
+3. Gate 11 强断言逻辑
+   - 修复前: 只检查 Asset.status = PUBLISHED (误判)
+   - 修复后: CE09 SUCCEEDED + Asset PUBLISHED + hls_playlist_url NOT NULL
+   - 轮询日志: CE09=$CE09_STATUS, Asset=$ASSET_STATUS
+
+4. Gate Worker 路由修复
+   - 移除 VIDEO_RENDER 对 RENDER_ENGINE 环境变量的错误依赖
+
+Git 封签
+- Commit: 6b5bee12 seal(p4_gate11): e2e novel->published hls double pass evidence
+- Tag: seal/p4_gate11_e2e_published_hls_20260117
+- Files: 5 files changed, 363 insertions(+), 32 deletions(-)
