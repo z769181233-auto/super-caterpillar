@@ -205,19 +205,22 @@ export class ApiClient {
         body: bodyString,
       });
 
-      const data = (await response.json()) as any;
-
+      // For non-2xx responses, parse the error body and log it.
       if (!response.ok) {
+        const errorBody = await response.text();
         process.stderr.write(
           util.format(
-            '[Worker HTTP Error]',
-            method,
-            url,
-            response.status,
-            data?.message || data?.error?.message || `HTTP ${response.status}`
+            `[ApiClient] request failed: ${method} ${path} -> HTTP ${response.status}\nBody: ${errorBody}`
           ) + '\n'
         );
-        // 打印请求头（不打印密钥）
+        let data: any;
+        try {
+          data = JSON.parse(errorBody);
+        } catch (e) {
+          // ignore, body might not be JSON
+        }
+
+        // Log headers sent for debugging
         process.stderr.write(
           util.format('[Worker HTTP Error] Headers sent:', {
             'X-Api-Key': headers['X-Api-Key']?.substring(0, 10) + '...',
@@ -229,7 +232,14 @@ export class ApiClient {
         throw new Error(data?.message || data?.error?.message || `HTTP ${response.status}`);
       }
 
-      return data as ApiResponse<T>;
+      const successText = await response.text();
+      let successData: any;
+      try {
+        successData = JSON.parse(successText);
+      } catch (e) {
+        successData = { success: true, data: successText };
+      }
+      return successData as ApiResponse<T>;
     } catch (error: any) {
       // 如果是网络错误，也打印 URL
       if (error.name === 'TypeError' || error.message.includes('fetch')) {

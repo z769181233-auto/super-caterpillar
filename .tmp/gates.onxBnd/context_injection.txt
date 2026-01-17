@@ -1,0 +1,144 @@
+[GATE] CONTEXT_INJECTION_CONSISTENCY - START
+[EVI] /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/context_injection_20260117_194534
+[GATE] Probing schema...
+   table_name   |      column_name      
+----------------+-----------------------
+ novel_chapters | id
+ novel_chapters | title
+ novel_chapters | created_at
+ novel_chapters | updated_at
+ novel_chapters | summary
+ novel_chapters | index
+ novel_chapters | is_system_controlled
+ novel_chapters | novel_source_id
+ novel_chapters | volume_id
+ novel_chapters | summary_vector
+ novel_scenes   | id
+ novel_scenes   | chapter_id
+ novel_scenes   | index
+ novel_scenes   | raw_text
+ novel_scenes   | enriched_text
+ novel_scenes   | visual_density_score
+ novel_scenes   | character_ids
+ novel_scenes   | created_at
+ novel_scenes   | updated_at
+ novel_scenes   | directing_notes
+ novel_scenes   | shot_type
+ novel_scenes   | title
+ novel_scenes   | graph_state_snapshot
+ novel_scenes   | project_id
+ novel_scenes   | location_slug
+ novel_scenes   | time_of_day
+ novel_scenes   | environment_tags
+ novel_sources  | id
+ novel_sources  | projectId
+ novel_sources  | novelTitle
+ novel_sources  | novelAuthor
+ novel_sources  | rawText
+ novel_sources  | filePath
+ novel_sources  | fileName
+ novel_sources  | fileSize
+ novel_sources  | fileType
+ novel_sources  | characterCount
+ novel_sources  | chapterCount
+ novel_sources  | metadata
+ novel_sources  | createdAt
+ novel_sources  | updatedAt
+ novel_volumes  | id
+ novel_volumes  | index
+ novel_volumes  | title
+ novel_volumes  | novel_source_id
+ novel_volumes  | created_at
+ novel_volumes  | project_id
+ novel_volumes  | updated_at
+ organizations  | id
+ organizations  | name
+ organizations  | ownerId
+ organizations  | slug
+ organizations  | createdAt
+ organizations  | updatedAt
+ organizations  | credits
+ organizations  | type
+ projects       | id
+ projects       | name
+ projects       | description
+ projects       | ownerId
+ projects       | organizationId
+ projects       | status
+ projects       | metadata
+ projects       | createdAt
+ projects       | updatedAt
+ projects       | settingsJson
+ scenes         | id
+ scenes         | episodeId
+ scenes         | index
+ scenes         | title
+ scenes         | summary
+ scenes         | sceneDraftId
+ scenes         | characters
+ scenes         | enrichedText
+ scenes         | projectId
+ scenes         | visualDensityScore
+ scenes         | reviewStatus
+ scenes         | graph_state_snapshot
+ shot_jobs      | id
+ shot_jobs      | organizationId
+ shot_jobs      | projectId
+ shot_jobs      | episodeId
+ shot_jobs      | sceneId
+ shot_jobs      | shotId
+ shot_jobs      | taskId
+ shot_jobs      | workerId
+ shot_jobs      | status
+ shot_jobs      | type
+ shot_jobs      | priority
+ shot_jobs      | maxRetry
+ shot_jobs      | retryCount
+ shot_jobs      | attempts
+ shot_jobs      | lease_until
+ shot_jobs      | locked_by
+ shot_jobs      | payload
+ shot_jobs      | engineConfig
+ shot_jobs      | lastError
+ shot_jobs      | createdAt
+ shot_jobs      | updatedAt
+ shot_jobs      | traceId
+ shot_jobs      | result
+ shot_jobs      | securityProcessed
+ shot_jobs      | dedupe_key
+ shot_jobs      | is_verification
+ users          | id
+ users          | email
+ users          | passwordHash
+ users          | avatar
+ users          | userType
+ users          | role
+ users          | tier
+ users          | quota
+ users          | defaultOrganizationId
+ users          | createdAt
+ users          | updatedAt
+(115 rows)
+
+[GATE] Using scene table: novel_scenes
+[GATE] Creating full project hierarchy (hierarchical fix)...
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 2
+UPDATE 1
+[GATE] Creating jobs in shot_jobs (with top-level traceId)...
+INSERT 0 2
+[GATE] Polling job status (120s timeout)...
+[GATE] Job status: JOB1=PENDING, JOB2=PENDING
+[GATE] Job status: JOB1=SUCCEEDED, JOB2=SUCCEEDED
+[GATE] Both jobs SUCCEEDED
+[GATE] Extracting graph_state_snapshot as JSON...
+[{"id": "6000773c-ddc4-45ae-b248-468a23f9e86e", "sort_key": "6000773c-ddc4-45ae-b248-468a23f9e86e", "graph_state_snapshot": {"chapter_id": "chapter_ctx_2_20260117_194534", "characters": [{"id": "char_zhangsan", "name": "张三", "items": ["长剑"], "status": "normal", "injuries": [], "location": "森林", "appearance": {"hair": "长发", "clothing": "红色长袍"}}], "scene_index": 1}}, {"id": "b771c64d-823b-4f00-95b7-ba4135222cb5", "sort_key": "b771c64d-823b-4f00-95b7-ba4135222cb5", "graph_state_snapshot": {"chapter_id": "chapter_ctx_1_20260117_194534", "characters": [{"id": "char_zhangsan", "name": "张三", "items": ["长剑"], "status": "normal", "injuries": [], "location": "森林", "appearance": {"hair": "长发", "clothing": "红色长袍"}}], "scene_index": 1}}]
+[GATE] Validating character consistency...
+[GATE] Verifying Long-term Memory retrieval...
+[GATE] WARN - Vector search might have returned empty results (check logs)
+[GATE] PASS - Character states consistent across snapshots!
+[EVI] Evidence archived to: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/context_injection_20260117_194534
+- ✅ Context Injection consistency check passed

@@ -164,10 +164,10 @@ fi
 # --- end auto-fill ---
 
 # 清理函数
-cleanup() {
-    rm -rf "$TEMP_DIR"
-}
-trap cleanup EXIT
+# cleanup() {
+#     rm -rf "$TEMP_DIR"
+# }
+# trap cleanup EXIT
 
 echo -e "${BLUE}🚪 Launch Gate Verification (Full Auto Test)${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -810,6 +810,34 @@ else
     echo -e "${RED}❌ Gate 11 failed${NC}\n"
 fi
 
+# 门禁 12: Billing Integrity & Closed-Loop (P2 Recovery)
+echo -e "${BLUE}Gate 12: Billing Integrity & Closed-Loop (P2 Recovery)${NC}"
+echo "Running billing integrity and outbox recovery verification..."
+
+BILLING_PASSED=true
+BILLING_OUTPUT="$TEMP_DIR/billing_integrity.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p2-billing-integrity.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-p2-billing-integrity.sh" > "$BILLING_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ Billing Integrity check passed${NC}"
+        echo "- ✅ Billing Integrity check passed" >> "$BILLING_OUTPUT"
+    else
+        echo -e "  ${RED}❌ Billing Integrity check failed${NC}"
+        echo "- ❌ Billing Integrity check failed" >> "$BILLING_OUTPUT"
+        BILLING_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Billing Integrity gate script not found${NC}"
+    echo "- ⚠️  Billing Integrity gate script not found" >> "$BILLING_OUTPUT"
+    BILLING_PASSED=false
+fi
+
+if [ "$BILLING_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 12 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 12 failed${NC}\n"
+fi
+
 # 初始化商业级报告头部
 {
   echo "# GATEKEEPER VERIFICATION REPORT (Refinement Sealed)"
@@ -867,6 +895,9 @@ fi
   echo ""
   echo "### Gate 11: P4 E2E Pipeline (Novel -> Published HLS)"
   cat "$P4_E2E_OUTPUT"
+  echo ""
+  echo "### Gate 12: Billing Integrity & Closed-Loop (P2 Recovery)"
+  cat "$BILLING_OUTPUT"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 {
@@ -884,6 +915,7 @@ fi
   echo "- Gate 9 (Director Control): $([ "$SHOTS_DIRECTOR_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 10 (Frame Merge): $([ "$FRAME_MERGE_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 11 (P4 E2E Pipeline): $([ "$P4_E2E_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 12 (Billing Integrity): $([ "$BILLING_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 # 最终判断
@@ -897,6 +929,7 @@ ALL_PASSED=true
 [ "$SHOTS_DIRECTOR_PASSED" != true ] && ALL_PASSED=false
 [ "$FRAME_MERGE_PASSED" != true ] && ALL_PASSED=false
 [ "$P4_E2E_PASSED" != true ] && ALL_PASSED=false
+[ "$BILLING_PASSED" != true ] && ALL_PASSED=false
 
 # 只有在非 local 模式下，4/5 的失败才影响最终结果
 if [ "$GATE_ENV_MODE" != "local" ]; then

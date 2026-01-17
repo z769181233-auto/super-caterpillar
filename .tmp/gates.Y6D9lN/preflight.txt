@@ -1,0 +1,9 @@
+- ✅ API health check passed
+  Command: curl -s -f http://localhost:3000/api/health
+  Picked: http://localhost:3000/api/health
+- ✅ Database connection check passed
+  Command: curl -s -f http://localhost:3000/health/ready
+  Picked: http://localhost:3000/health/ready
+- ✅ Metrics endpoint available
+  Command: curl -s -f http://localhost:3000/metrics
+- ⚠️  CORS production check skipped (NODE_ENV != production)

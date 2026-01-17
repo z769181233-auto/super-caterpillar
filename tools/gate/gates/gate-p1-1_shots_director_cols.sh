@@ -6,7 +6,9 @@ set -e
 
 # Load environment variables
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source .env
+    set +a
 fi
 
 GATE_ID="P1-1"

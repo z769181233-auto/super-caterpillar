@@ -1511,3 +1511,17 @@ model PublishedVideo {
 
   @@map("published_videos")
 }
+
+model BillingOutbox {
+  id          String    @id @default(uuid())
+  dedupeKey   String    @unique
+  payload     Json
+  status      String    @default("PENDING") // PENDING, SENT, FAILED
+  attempts    Int       @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("BillingOutbox")
+}

@@ -1,0 +1,45 @@
+[P2_3_FRAME_MERGE] START - Evidence at apps/workers/.runtime/_evidence/p2_3_merge_20260117_200608
+[P2_3_FRAME_MERGE] Generating dummy clips...
+clip_1: 4.0K	apps/workers/.runtime/_evidence/p2_3_merge_20260117_200608/clip_1.mp4
+clip_2: 4.0K	apps/workers/.runtime/_evidence/p2_3_merge_20260117_200608/clip_2.mp4
+[P2_3_FRAME_MERGE] Invoking Merge Engine...
+[Runner] Merging 2 videos: apps/workers/.runtime/_evidence/p2_3_merge_20260117_200608/clip_1.mp4, apps/workers/.runtime/_evidence/p2_3_merge_20260117_200608/clip_2.mp4
+video_concat_spawn_fast jobId=vc-1768655170067 args="-y -f concat -safe 0 -i /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p2v3/concat_vc-1768655170067.txt -c copy /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p2v3/video_concat_vc-1768655170067.mp4"
+--- RESULT START ---
+{
+  "asset": {
+    "uri": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p2v3/video_concat_vc-1768655170067.mp4",
+    "mimeType": "video/mp4",
+    "sizeBytes": 4167,
+    "sha256": "182ad5f3cd1cff96e8232b03f915f992e7f690bf5d918506540c4e02dbd1def4",
+    "width": 512,
+    "height": 512,
+    "durationSeconds": 2
+  },
+  "render_meta": {
+    "model": "ffmpeg-local-concat",
+    "fps": 25,
+    "codec": "h264"
+  },
+  "audit_trail": {
+    "engineKey": "video_merge",
+    "engineVersion": "1.0.0-local-concat",
+    "timestamp": "2026-01-17T13:06:10.170Z",
+    "paramsHash": "992952556306440c0f5ef8ee6d6d4fada6853d87886fce0cba2ce449974344ea"
+  },
+  "billing_usage": {
+    "cpuSeconds": 0.059,
+    "gpuSeconds": 0,
+    "model": "ffmpeg-local-concat"
+  }
+}
+--- RESULT END ---
+[P2_3_FRAME_MERGE] Final MP4: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p2v3/video_concat_vc-1768655170067.mp4
+[P2_3_FRAME_MERGE] Validating result...
+[P2_3_FRAME_MERGE] ✅ Size check passed: 4167 bytes
+[P2_3_FRAME_MERGE] ✅ ffprobe check passed
+[P2_3_FRAME_MERGE] Duration: 2.000000 s
+[P2_3_FRAME_MERGE] ✅ Duration check passed
+[P2_3_FRAME_MERGE] 🏆 PASS (Run at 20260117_200608)
+Evidence: apps/workers/.runtime/_evidence/p2_3_merge_20260117_200608
+- ✅ Frame Merge check passed

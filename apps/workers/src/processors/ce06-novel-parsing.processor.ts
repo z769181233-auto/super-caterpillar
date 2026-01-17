@@ -329,7 +329,7 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
   });
 
   // 计费 (只记录 CE06，CE03/CE04 由 EngineHub 自动记录)
-  const costService = new CostLedgerService(apiClient);
+  const costService = new CostLedgerService(apiClient, prisma);
   if (ce06Result.output && (ce06Result.output as any).billing_usage) {
     await costService.recordEngineBilling({
       jobId: job.id,

@@ -1296,7 +1296,7 @@ export async function processNovelAnalysisJob(
     try {
       // 动态导入避免循环依赖
       const { CostLedgerService } = await import('./billing/cost-ledger.service.js');
-      const costLedger = new CostLedgerService(apiClient);
+      const costLedger = new CostLedgerService(apiClient, prisma);
 
       // 从 structure 中提取 billing_usage（如果有）
       const billingUsage = (structure as any).billing_usage;

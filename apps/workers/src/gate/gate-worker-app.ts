@@ -26,6 +26,7 @@ import { PrismaClient } from 'database';
 import { EngineHubClient } from '../engine-hub-client';
 import { env } from '@scu/config';
 import * as util from 'util';
+import { BillingOutboxDispatcher } from '../billing/outbox-dispatcher.service';
 
 // 生产模式门禁：强制从环境变量读取
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
@@ -78,6 +79,10 @@ export async function startGateWorkerApp() {
   process.stdout.write(util.format('[GateWorker] 正在连接数据库...') + '\n');
   await prisma.$connect();
   process.stdout.write(util.format('[GateWorker] ✅ 数据库连接成功') + '\n');
+
+  // 启动计费 Outbox 调度器 (PLAN-2)
+  const billingDispatcher = new BillingOutboxDispatcher(prisma, apiClient);
+  billingDispatcher.start(30000); // 30秒扫描一次
 
   // 注册 Worker
   process.stdout.write(util.format('[GateWorker] 正在注册 Worker 节点...') + '\n');

@@ -102,7 +102,7 @@ export async function processCE03VisualDensityJob(context: ProcessorContext): Pr
 
     // 4.6 Billing (P0 Hotfix: 0-cost Audit Record)
     // Even if cost is 0, we must record it for commercial audit trails.
-    const costService = new CostLedgerService(apiClient);
+    const costService = new CostLedgerService(apiClient, prisma);
     await costService.recordEngineBilling({
       jobId: job.id,
       jobType: 'CE03_VISUAL_DENSITY',

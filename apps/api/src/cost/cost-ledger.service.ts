@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BillingService } from '../billing/billing.service';
 import type { Prisma } from 'database';
 
 const ALLOWED_BILLING_UNITS = new Set(['job', 'tokens', 'seconds', 'frames', 'gpu_seconds', 'cpu_seconds']);
@@ -22,7 +23,10 @@ export interface RecordCostEventParams {
 export class CostLedgerService {
   private readonly logger = new Logger(CostLedgerService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billingService: BillingService
+  ) { }
 
   /**
    * 从Worker事件记录成本到账本
@@ -50,7 +54,7 @@ export class CostLedgerService {
     // P1-1 商业级基线：强制校验 Job 状态，仅 SUCCEEDED 允许计费
     const job = await this.prisma.shotJob.findUnique({
       where: { id: e.jobId },
-      select: { id: true, status: true, attempts: true, type: true },
+      select: { id: true, status: true, attempts: true, type: true, organizationId: true },
     });
 
     if (!job) {
@@ -88,7 +92,25 @@ export class CostLedgerService {
 
     // ✅ 幂等: 同一 (jobId, attempt) 只记一次
     try {
-      return await this.prisma.costLedger.create({ data });
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Create Ledger Record
+        const ledger = await tx.costLedger.create({ data });
+
+        // 2. Consume Credits (Atomically within the same transaction if possible)
+        // Note: BillingService uses its own transaction, but NestJS PrismaService 
+        // usually handles nested transactions via the same client if designed so.
+        // Here we call it directly.
+        await this.billingService.consumeCredits(
+          e.projectId,
+          e.userId,
+          job.organizationId || 'missing',
+          e.costAmount,
+          `COST_EVENT:${e.jobType}`,
+          e.jobId
+        );
+
+        return ledger;
+      });
     } catch (err: any) {
       // Prisma unique conflict: P2002
       if (err?.code === 'P2002') {

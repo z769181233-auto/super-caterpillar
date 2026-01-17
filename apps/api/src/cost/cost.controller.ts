@@ -25,7 +25,23 @@ class CostEventDto implements RecordCostEventParams {
 @Controller('internal/events')
 @RequireSignature() // P0-2: HMAC Guard 全局保护
 export class InternalEventsController {
-  constructor(private readonly costLedger: CostLedgerService) {}
+  constructor(private readonly costLedger: CostLedgerService) { }
+
+  /**
+   * HMAC 健康检查接口（仅 HMAC，不需要 JWT）
+   * 用于压测和监控，验证 HMAC 签名机制正常工作
+   *
+   * 路径：GET /api/internal/events/hmac-ping
+   * 鉴权：仅 HMAC (@RequireSignature)
+   */
+  @Get('hmac-ping')
+  hmacPing(): { ok: boolean; ts: number; message: string } {
+    return {
+      ok: true,
+      ts: Date.now(),
+      message: 'HMAC authentication successful',
+    };
+  }
 
   /**
    * Worker报告Job成本事件
@@ -55,7 +71,7 @@ export class InternalEventsController {
  */
 @Controller('projects/:projectId/costs')
 export class CostController {
-  constructor(private readonly costLedgerService: CostLedgerService) {}
+  constructor(private readonly costLedgerService: CostLedgerService) { }
 
   /**
    * 获取项目的所有成本记录(分页TODO)

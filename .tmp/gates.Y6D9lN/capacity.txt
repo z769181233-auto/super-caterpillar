@@ -1,0 +1,2 @@
+- ✅ Capacity query endpoint works (HTTP 200)
+  Command: curl -H "Authorization: Bearer <AUTH_TOKEN_A>" http://localhost:3000/api/jobs/capacity

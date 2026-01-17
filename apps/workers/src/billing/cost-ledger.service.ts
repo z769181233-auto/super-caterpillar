@@ -13,8 +13,13 @@ import * as util from 'util';
  * - SSOT 价格表：packages/billing/model-price-table.ts
  */
 
+import { PrismaClient } from 'database';
+
 export class CostLedgerService {
-  constructor(private apiClient: ApiClient) { }
+  constructor(
+    private apiClient: ApiClient,
+    private prisma?: PrismaClient
+  ) { }
 
   /**
    * 记录计费（通用入口 - 商业级闭环）
@@ -66,11 +71,11 @@ export class CostLedgerService {
     // TODO: Add pricing logic for gpuSeconds/cpuSeconds if not provided in 'cost'
     // For now, we assume caller or PricingRouter provides 'cost' for time-based metrics
 
-    try {
-      // Idempotency Key Strategy: runId:engineKey or jobId (fallback)
-      const idempotencyKey = params.idempotencyKey ||
-        (params.runId ? `${params.runId}:${engineKey}` : `${jobId}:${engineKey}`);
+    // Idempotency Key Strategy: runId:engineKey or jobId (fallback)
+    const idempotencyKey = params.idempotencyKey ||
+      (params.runId ? `${params.runId}:${engineKey}` : `${jobId}:${engineKey}`);
 
+    try {
       await this.apiClient.postCostEvent({
         userId,
         projectId,
@@ -101,6 +106,55 @@ export class CostLedgerService {
       costLedgerRecordsTotal.inc({ status: 'success' });
     } catch (error: any) {
       process.stderr.write(util.format(`[CostLedger] ❌ Event failed: ${error.message}`) + '\n');
+
+      // P1: Implementation of Outbox Fallback
+      if (this.prisma) {
+        try {
+          await this.prisma.billingOutbox.upsert({
+            where: { dedupeKey: idempotencyKey },
+            update: {
+              status: 'FAILED',
+              lastError: error.message,
+              attempts: { increment: 1 },
+              updatedAt: new Date(),
+            },
+            create: {
+              dedupeKey: idempotencyKey,
+              payload: {
+                userId,
+                projectId,
+                jobId,
+                jobType,
+                attempt: params.attempt,
+                costAmount: finalCost,
+                currency: 'USD',
+                billingUnit: totalTokens > 0 ? 'tokens' : (gpuSeconds > 0 ? 'gpu_seconds' : 'cpu_seconds'),
+                quantity: totalTokens > 0 ? totalTokens : (gpuSeconds > 0 ? gpuSeconds : cpuSeconds),
+                metadata: {
+                  engineKey,
+                  traceId: params.traceId,
+                  runId: params.runId,
+                  gpuSeconds,
+                  cpuSeconds,
+                  totalTokens,
+                  model: billingUsage?.model || 'unknown',
+                  idempotencyKey
+                },
+              } as any,
+              status: 'PENDING',
+              attempts: 1,
+              lastError: error.message,
+              updatedAt: new Date(),
+            },
+          });
+          process.stdout.write(
+            util.format(`[CostLedger] 📥 Event saved to Outbox: ${idempotencyKey}`) + '\n'
+          );
+        } catch (dbError: any) {
+          process.stderr.write(util.format(`[CostLedger] ‼️ Failed to write Outbox: ${dbError.message}`) + '\n');
+        }
+      }
+
       costLedgerRecordsTotal.inc({ status: 'failed' });
     }
   }

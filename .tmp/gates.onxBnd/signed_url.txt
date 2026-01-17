@@ -1,0 +1,7 @@
+- ✅ Direct access rejected (HTTP 404)
+- ✅ Signed URL generated successfully
+    Signed URL (from API): http://localhost:3000/api/storage/signed/temp/gates/1768653924/probe.txt?expires=1768657527&tenantId=ba57df64-cb15-49b4-ab83-4297bcc1832b&userId=ac86126d-2f42-466e-a710-cba97f020149&signature=f569af2e9c5696a8727d30dfb496d9b38d7f3d837b8ff7cd284a65d1769f1ced
+- ✅ Header: Accept-Ranges found
+- ✅ Range request returned 206 Partial Content
+- ✅ Expired signature rejected (HTTP 404)
+- ✅ Tampered signature rejected (HTTP 404)

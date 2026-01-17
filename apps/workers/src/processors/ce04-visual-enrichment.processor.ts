@@ -64,7 +64,7 @@ export async function processCE04VisualEnrichmentJob(
     });
 
     // 4.5 Billing (P0 Hotfix)
-    const costService = new CostLedgerService(apiClient);
+    const costService = new CostLedgerService(apiClient, prisma);
     await costService.recordEngineBilling({
       jobId: job.id,
       jobType: 'CE04_VISUAL_ENRICHMENT',

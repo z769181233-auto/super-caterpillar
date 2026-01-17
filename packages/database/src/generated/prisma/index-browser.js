@@ -914,6 +914,18 @@ exports.Prisma.PublishedVideoScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.BillingOutboxScalarFieldEnum = {
+  id: 'id',
+  dedupeKey: 'dedupeKey',
+  payload: 'payload',
+  status: 'status',
+  attempts: 'attempts',
+  lastError: 'lastError',
+  nextRetryAt: 'nextRetryAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1256,7 +1268,8 @@ exports.Prisma.ModelName = {
   Asset: 'Asset',
   TextSafetyResult: 'TextSafetyResult',
   CostLedger: 'CostLedger',
-  PublishedVideo: 'PublishedVideo'
+  PublishedVideo: 'PublishedVideo',
+  BillingOutbox: 'BillingOutbox'
 };
 
 /**

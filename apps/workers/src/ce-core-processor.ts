@@ -290,7 +290,7 @@ export async function processCE06Job(
 
     // 3.2 记录计费 (Stage-3-B)
     try {
-      const costLedgerService = new CostLedgerService(apiClient);
+      const costLedgerService = new CostLedgerService(apiClient, prisma);
       const project = await prisma.project.findUnique({
         where: { id: projectId },
         select: { ownerId: true },
@@ -557,7 +557,7 @@ export async function processCE03Job(
 
     // 3.2 Billing (P0 Hotfix: Fixed)
     try {
-      const costLedgerService = new CostLedgerService(apiClient);
+      const costLedgerService = new CostLedgerService(apiClient, prisma);
       const project = await prisma.project.findUnique({
         where: { id: projectId },
         select: { ownerId: true },
@@ -801,7 +801,7 @@ export async function processCE04Job(
 
     // 4. Billing (P0 Hotfix: Fixed)
     try {
-      const costLedgerService = new CostLedgerService(apiClient);
+      const costLedgerService = new CostLedgerService(apiClient, prisma);
       const project = await prisma.project.findUnique({
         where: { id: job.projectId },
         select: { ownerId: true },
@@ -1038,7 +1038,7 @@ export async function processShotRenderJob(
 
     // 5. Billing (P0 Hotfix: Fixed)
     try {
-      const costLedgerService = new CostLedgerService(apiClient);
+      const costLedgerService = new CostLedgerService(apiClient, prisma);
       const project = await prisma.project.findUnique({
         where: { id: projectId },
         select: { ownerId: true },

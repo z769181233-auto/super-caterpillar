@@ -13,6 +13,7 @@ import { AuditLogService } from '../../audit-log/audit-log.service';
 import { AuditActions } from '../../audit/audit.constants';
 import { NonceService } from '../nonce.service';
 import { buildHmacError } from '../../common/utils/hmac-error.utils';
+import { RequestWithApiSecurity } from '../../security/api-security/api-security.types';
 
 /**
  * HMAC 认证 Guard
@@ -43,7 +44,7 @@ export class HmacAuthGuard implements CanActivate {
   ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<RequestWithApiSecurity>();
 
     // P1-1: 门禁模式旁路已移除（封板收口）
     // 强制回到 Spec：所有请求必须通过 HMAC 签名验证
@@ -116,15 +117,22 @@ export class HmacAuthGuard implements CanActivate {
       }
     }
 
-    // 3. 获取原始 body 字符串
-    const hasBodyObject =
-      request.body && typeof request.body === 'object' && Object.keys(request.body).length > 0;
-    const bodyString =
-      typeof request.body === 'string'
-        ? request.body
-        : hasBodyObject
-          ? JSON.stringify(request.body)
-          : '';
+    // 3. 获取原始 body 字符串 (P0: 优先使用 rawBody 以匹配签名)
+    let bodyString = '';
+    if (request.rawBody) {
+      bodyString = Buffer.isBuffer(request.rawBody)
+        ? request.rawBody.toString('utf8')
+        : String(request.rawBody);
+    } else {
+      const hasBodyObject =
+        request.body && typeof request.body === 'object' && Object.keys(request.body).length > 0;
+      bodyString =
+        typeof request.body === 'string'
+          ? request.body
+          : hasBodyObject
+            ? JSON.stringify(request.body)
+            : '';
+    }
 
     // HMAC_TRACE: Guard入口必达日志
     if (process.env.HMAC_TRACE === '1') {

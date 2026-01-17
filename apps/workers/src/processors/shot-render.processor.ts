@@ -199,7 +199,7 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
     });
 
     // 5. Billing (P0 Hotfix: GPU Seconds)
-    const costService = new CostLedgerService(apiClient);
+    const costService = new CostLedgerService(apiClient, prisma);
     await costService.recordEngineBilling({
       jobId: job.id,
       jobType: 'SHOT_RENDER',

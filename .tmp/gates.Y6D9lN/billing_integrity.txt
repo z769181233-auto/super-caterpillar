@@ -1,0 +1,29 @@
+=== Gate 12 (Billing Integrity) START ===
+[1/4] Checking API Connectivity...
+[2/4] Probing HMAC Security Handshake...
+[PROBE] Checking /api/internal/events/hmac-ping with dev-worker-key...
+[PROBE] Result: HTTP 200 {
+  ok: true,
+  ts: 1768655177383,
+  message: 'HMAC authentication successful'
+}
+[3/4] Running Billing Integrity E2E (Outbox + Credit CAS)...
+=== Billing Integrity Closed-Loop Verification ===
+[1/5] Setup: Project project-billing-test-1768655177764, Job job-billing-1768655177764
+[2/5] Initial Credits: 999990
+[3/5] Simulating Failed API Call -> Outbox Insertion...
+   (Simulating API Auth Failure 401)
+   (X) API Call Failed: HTTP 401: Unauthorized (Simulated)
+   (->) Writing to Outbox...
+✅ Outbox Record Created: job-billing-1768655177764:mock_engine, Status: PENDING
+[4/5] Recovery: Dispatching from Outbox via Real API...
+✅ Dispatch Successful: HTTP 201
+[5/5] Final Credit Verification...
+   Initial: 999990, Cost: 5, Final: 999985
+✅ Credit Deduction Precise!
+
+=== Double PASS: Billing Closed-Loop Integrity SEALED ===
+[4/4] Verifying Route Consolidation (No 404/Conflict)...
+=== Gate 12 (Billing Integrity) PASS ===
+Evidence archived to docs/_evidence/gate-12-20260117_200617
+- ✅ Billing Integrity check passed
