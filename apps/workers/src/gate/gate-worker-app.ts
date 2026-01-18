@@ -11,6 +11,8 @@ import { processE2EVideoPipelineJob } from '../processors/e2e-video-pipeline.pro
 import { processCE06NovelParsingJob } from '../processors/ce06-novel-parsing.processor';
 import { processCE03VisualDensityJob } from '../processors/ce03-visual-density.processor';
 import { processCE04VisualEnrichmentJob } from '../processors/ce04-visual-enrichment.processor';
+import { processCE02VisualDensityJob } from '../processors/ce02-visual-density.processor';
+import { processCE11ShotGeneratorJob } from '../processors/ce11-shot-generator.processor';
 import { processShotRenderJob } from '../ce-core-processor';
 import { processVideoRenderJob } from '../processors/video-render.processor';
 import { processMediaSecurityJob } from '../processors/media-security.processor';
@@ -101,6 +103,7 @@ export async function startGateWorkerApp() {
         'CE06_NOVEL_PARSING',
         'CE03_VISUAL_DENSITY',
         'CE04_VISUAL_ENRICHMENT',
+        'CE02_VISUAL_DENSITY',
         'VIDEO_RENDER', // S4-4
         'CE09_MEDIA_SECURITY', // S4-5
         'PIPELINE_TIMELINE_COMPOSE', // S4-7
@@ -110,9 +113,10 @@ export async function startGateWorkerApp() {
         'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
         'NOVEL_SCAN_TOC', // Stage 4 Scale
         'NOVEL_CHUNK_PARSE', // Stage 4 Scale
+        'CE11_SHOT_GENERATOR',
       ],
       supportedModels: [],
-      supportedEngines: ['gate_noop', 'pipeline_orchestrator', 'stage1_orchestrator', 'video_merge', 'default_shot_render'],
+      supportedEngines: ['gate_noop', 'pipeline_orchestrator', 'stage1_orchestrator', 'video_merge', 'default_shot_render', 'ce09_security_real', 'ce11_shot_generator_mock'],
       maxBatchSize: 1,
     },
   });
@@ -195,6 +199,22 @@ export async function startGateWorkerApp() {
             apiClient,
           };
           result = await processCE04VisualEnrichmentJob(ce04Ctx);
+        } else if (job.type === 'CE02_VISUAL_DENSITY') {
+          process.stdout.write(util.format(`[GateWorker] 执行 CE02 Visual Density...`) + '\n');
+          const ce02Ctx: ProcessorContext = {
+            prisma,
+            job: job,
+            apiClient,
+          };
+          result = await processCE02VisualDensityJob(ce02Ctx);
+        } else if (job.type === 'CE11_SHOT_GENERATOR') {
+          process.stdout.write(util.format(`[GateWorker] 执行 CE11 Shot Generator...`) + '\n');
+          const ce11Ctx: ProcessorContext = {
+            prisma,
+            job: job,
+            apiClient,
+          };
+          result = await processCE11ShotGeneratorJob(ce11Ctx);
         } else if (job.type === 'VIDEO_RENDER') {
           // S4-4: Conditional Routing (P4 Fix: Remove RENDER_ENGINE dependency)
           const debugMsg = `[Debug] VIDEO_RENDER Job: Payload=${JSON.stringify(job.payload)}\n`;
@@ -291,10 +311,10 @@ export async function startGateWorkerApp() {
           return;
         }
 
-        // ✅ 回写成功
+        // ✅ 回写结果
         await apiClient.reportJobResult({
           jobId: job.id,
-          status: 'SUCCEEDED',
+          status: result.status === 'SUCCEEDED' ? 'SUCCEEDED' : 'FAILED',
           result,
         });
 
