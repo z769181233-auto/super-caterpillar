@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { StoryService } from '../story/story.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AssetReceiptResolverService } from './asset-receipt-resolver.service';
 
 @Controller('v3/story')
 export class ContractStoryController {
@@ -18,7 +19,8 @@ export class ContractStoryController {
 
   constructor(
     private readonly storyService: StoryService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly assetResolver: AssetReceiptResolverService
   ) {}
 
   @Post('parse')
@@ -103,28 +105,44 @@ export class ContractStoryController {
     if (jobType === 'SHOT_RENDER') currentStep = 'SHOT_RENDER';
     if (jobType === 'VIDEO_RENDER') currentStep = 'VIDEO_MERGE';
 
-    // 3. Result Preview
+    // 3. Result Preview (Unified stable set)
+    const scenesCount = await this.prisma.scene.count({ where: { projectId: job.projectId } });
+    const shotsCount = await this.prisma.shot.count({
+      where: {
+        scene: {
+          projectId: job.projectId,
+        },
+      },
+    });
+
     let resultPreview = null;
     if (v3Status === 'SUCCEEDED') {
-      // Summary logic
-      const scenesCount = await this.prisma.scene.count({ where: { projectId: job.projectId } });
-      const shotsCount = await this.prisma.shot.count({
-        where: {
-          scene: {
-            projectId: job.projectId,
-          },
-        },
+      const assetReceipt = await this.assetResolver.resolveAsset({
+        projectId: job.projectId,
+        traceId: job.traceId || '',
+        jobId: job.id,
+        jobCreatedAt: job.createdAt,
       });
-      const asset = job.generatedAsset?.[0];
-
       resultPreview = {
+        ...assetReceipt,
         scenes_count: scenesCount,
         shots_count: shotsCount,
-        asset_id: asset?.id || null,
-        hls_url: (asset as any)?.hlsPlaylistUrl || null,
-        mp4_url: (asset as any)?.outputUrl || null,
-        checksum: asset?.checksum || null,
-        cost_ledger_count: 1, // Default to 1 for now
+        cost_ledger_count: 1,
+      };
+    } else {
+      // Maintain stable key set for FAILED/RUNNING
+      resultPreview = {
+        asset_id: null,
+        hls_url: null,
+        mp4_url: null,
+        checksum: null,
+        storage_key: null,
+        duration_sec: null,
+        fallback_reason: null,
+        scenes_count: scenesCount,
+        shots_count: shotsCount,
+        cost_ledger_count: 0,
+        error_code: v3Status === 'FAILED' ? 'JOB_FAILED' : undefined,
       };
     }
 
