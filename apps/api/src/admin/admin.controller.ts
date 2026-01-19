@@ -12,7 +12,7 @@ export class AdminController {
     private readonly prisma: PrismaService,
     private readonly workerService: WorkerService,
     private readonly orchestratorService: OrchestratorService
-  ) { }
+  ) {}
 
   // POST /admin/workers/reclaim
   @Post('workers/reclaim')
@@ -68,7 +68,9 @@ export class AdminController {
 
   // POST /admin/prod-gate/stage1-pipeline {novelText, projectId, organizationId}
   @Post('prod-gate/stage1-pipeline')
-  async startStage1Pipeline(@Body() body: { novelText: string; projectId?: string; organizationId?: string }) {
+  async startStage1Pipeline(
+    @Body() body: { novelText: string; projectId?: string; organizationId?: string }
+  ) {
     const result = await this.orchestratorService.startStage1Pipeline(body);
     return { success: true, data: result };
   }

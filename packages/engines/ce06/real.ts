@@ -4,7 +4,7 @@ import { scanNovelVolumesAndChapters, ScanChunk } from './src/scan_util';
 
 /**
  * CE06 Real Engine - Gemini 2.0 Cinematic Analysis (V1.3)
- * 
+ *
  * 核心变更：
  * 1. 移除硬截断 rawText.slice(0, 30000)
  * 2. 引入两阶段路由：SCAN (分片扫描) 与 CHUNK_PARSE (章节解析)
@@ -40,14 +40,14 @@ async function executeScanPhase(rawText: string, traceId: string): Promise<CE06O
       timestamp: new Date().toISOString(),
       input_hash: traceId, // TODO: REAL HASH
       phase: 'SCAN',
-      chunks_count: chunks.length
+      chunks_count: chunks.length,
     },
     billing_usage: {
       promptTokens: 0, // SCAN 不计 LLM 费用
       completionTokens: 0,
       totalTokens: 0,
       model: 'deterministic-scan',
-    }
+    },
   };
 }
 
@@ -55,7 +55,10 @@ async function executeScanPhase(rawText: string, traceId: string): Promise<CE06O
  * Phase 2: CHUNK_PARSE (章节级 AI 解析)
  * 目标：针对单个章节分场，写入 raw_text/enriched_text/visual_density_score。
  */
-async function executeChunkParsePhase(input: CE06Input, apiKey: string | undefined): Promise<CE06Output> {
+async function executeChunkParsePhase(
+  input: CE06Input,
+  apiKey: string | undefined
+): Promise<CE06Output> {
   const chapterText = input.structured_text || '';
   const model = 'gemini-1.5-flash';
 
@@ -84,17 +87,21 @@ JSON Schema:
 }
 `;
 
-  const response = await axios.post(url, {
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: `${systemPrompt}\n\nChapter Text:\n${chapterText}` }], // 无硬截断，依赖章节粒度控制长度
+  const response = await axios.post(
+    url,
+    {
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `${systemPrompt}\n\nChapter Text:\n${chapterText}` }], // 无硬截断，依赖章节粒度控制长度
+        },
+      ],
+      generationConfig: {
+        responseMimeType: 'application/json',
       },
-    ],
-    generationConfig: {
-      responseMimeType: 'application/json',
     },
-  }, { timeout: 60000 });
+    { timeout: 60000 }
+  );
 
   const rawResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
   const parsed = JSON.parse(rawResponse);
@@ -113,8 +120,8 @@ JSON Schema:
       engineVersion: 'gemini-2.0-flash-chunk-v1.3',
       timestamp: new Date().toISOString(),
       input_hash: 'todo',
-      phase: 'CHUNK_PARSE'
-    }
+      phase: 'CHUNK_PARSE',
+    },
   };
 }
 
@@ -123,7 +130,7 @@ JSON Schema:
  */
 async function ce06DeterministicChunkParser(text: string): Promise<CE06Output> {
   const sceneRegex = /\n{2,}/;
-  const parts = text.split(sceneRegex).filter(p => p.trim().length > 0);
+  const parts = text.split(sceneRegex).filter((p) => p.trim().length > 0);
 
   const scenes = parts.map((p, i) => ({
     index: i + 1,
@@ -132,17 +139,19 @@ async function ce06DeterministicChunkParser(text: string): Promise<CE06Output> {
     enriched_text: '',
     visual_density_score: 0.1,
     // V3.0 P0-2: Mock character detection for fallback testing
-    characters: text.includes('张三') ? [
-      {
-        id: 'char_zhangsan',
-        name: '张三',
-        status: 'normal',
-        appearance: { clothing: '红色长袍', hair: '长发' },
-        location: '森林',
-        items: ['长剑'],
-        injuries: [],
-      }
-    ] : []
+    characters: text.includes('张三')
+      ? [
+          {
+            id: 'char_zhangsan',
+            name: '张三',
+            status: 'normal',
+            appearance: { clothing: '红色长袍', hair: '长发' },
+            location: '森林',
+            items: ['长剑'],
+            injuries: [],
+          },
+        ]
+      : [],
   }));
 
   return {
@@ -158,7 +167,7 @@ async function ce06DeterministicChunkParser(text: string): Promise<CE06Output> {
     audit_trail: {
       engineVersion: 'fallback-v1.3',
       timestamp: new Date().toISOString(),
-      input_hash: 'todo'
-    }
+      input_hash: 'todo',
+    },
   };
 }

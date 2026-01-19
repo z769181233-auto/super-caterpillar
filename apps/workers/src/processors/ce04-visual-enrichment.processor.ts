@@ -78,9 +78,9 @@ export async function processCE04VisualEnrichmentJob(
         totalTokens: 0,
         promptTokens: 0,
         completionTokens: 0,
-        model: 'enrichment-v1-mock'
+        model: 'enrichment-v1-mock',
       },
-      cost: 0 // Router-based cost (currently free)
+      cost: 0, // Router-based cost (currently free)
     });
 
     // 5. Spawn SHOT_RENDER (S4-3)

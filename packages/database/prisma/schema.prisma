@@ -553,6 +553,7 @@ model WorkerNode {
   tasks         Task[]       @relation("TaskWorker")
   shotJobs      ShotJob[]    @relation("WorkerNodeShotJobs")
   jobs          WorkerJob[]  @relation("WorkerNodeJobs")
+  workerHeartbeat WorkerHeartbeat?
 
   @@index([status])
   @@map("worker_nodes")
@@ -564,6 +565,7 @@ model WorkerHeartbeat {
   status     String   @default("ALIVE")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
+  workerNode WorkerNode @relation(fields: [workerId], references: [workerId])
 
   @@index([status, lastSeenAt])
   @@map("worker_heartbeats")
@@ -919,6 +921,8 @@ model NovelChapter {
   
   // V3.0 增量对齐 P0-2: 向量检索能力
   summaryVector      Unsupported("vector")? @map("summary_vector")
+  visualDensityScore Decimal?               @map("visual_density_score")
+  visualDensityMeta  Json?                  @map("visual_density_meta")
 
   volume      NovelVolume  @relation("VolumeChapters", fields: [volumeId], references: [id], onDelete: Cascade)
   novelSource NovelSource  @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
@@ -952,6 +956,7 @@ model NovelScene {
   locationSlug    String?   @map("location_slug")
   timeOfDay       String?   @map("time_of_day")
   environmentTags String[]  @map("environment_tags")
+  visualDensityMeta Json?    @map("visual_density_meta")
 
   chapter NovelChapter @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
 
@@ -1281,6 +1286,7 @@ enum JobType {
   CE06_NOVEL_PARSING
   NOVEL_SCAN_TOC
   NOVEL_CHUNK_PARSE
+  CE02_VISUAL_DENSITY
   CE03_VISUAL_DENSITY
   CE04_VISUAL_ENRICHMENT
   CE01_REFERENCE_SHEET
@@ -1297,6 +1303,7 @@ enum JobType {
   TIMELINE_RENDER
   TIMELINE_PREVIEW
   PIPELINE_PROD_VIDEO_V1
+  CE11_SHOT_GENERATOR
 }
 
 enum JobEngineBindingStatus {

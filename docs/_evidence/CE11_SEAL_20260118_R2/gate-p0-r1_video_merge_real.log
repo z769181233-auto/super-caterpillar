@@ -1,0 +1,43 @@
+--- [GATE] P0-R1 VideoMerge Real START ---
+Generating 24 dummy frames...
+Running engine script...
+Found 24 frames
+Invoking video_merge engine...
+video_merge_spawn jobId=gate_p0r1_job ffmpeg_threads=1 timeout_ms=300000 args="-y -framerate 24 -i /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p0r1/temp_seq_gate_p0r1_job/frame_%04d.png -c:v libx264 -pix_fmt yuv420p -threads 1 -vf scale=512:512 /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p0r1/video_merge_gate_p0r1_job.mp4"
+__RESULT_START__
+{
+  "asset": {
+    "uri": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p0r1/video_merge_gate_p0r1_job.mp4",
+    "mimeType": "video/mp4",
+    "sizeBytes": 2426,
+    "sha256": "91ed14426866714992cd231c4ed97b3b98a1fdbcfaa47251fae7b982699e4182",
+    "width": 512,
+    "height": 512,
+    "durationSeconds": 1
+  },
+  "render_meta": {
+    "model": "ffmpeg-local",
+    "fps": 24,
+    "codec": "h264"
+  },
+  "audit_trail": {
+    "engineKey": "video_merge",
+    "engineVersion": "1.0.0-local",
+    "timestamp": "2026-01-18T13:34:59.398Z",
+    "paramsHash": "a0e547e908a68547f7702e45afad8d1196fd2e7cc970b1d79a021c5646953c3e",
+    "traceId": "gate_p0r1_trace"
+  },
+  "billing_usage": {
+    "cpuSeconds": 0.115,
+    "gpuSeconds": 0,
+    "model": "ffmpeg-local"
+  }
+}
+__RESULT_END__
+Verifying output...
+✅ Assertion 1: File exists at /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/assets_gate_p0r1/video_merge_gate_p0r1_job.mp4
+✅ Assertion 2: Valid MP4 signature (ftyp found)
+✅ Assertion 3: Duration (1 s) is correct
+✅ Assertion 4: Billing usage recorded (cpuSeconds: 0.115)
+
+--- [GATE] P0-R1 VideoMerge Real PASS ---

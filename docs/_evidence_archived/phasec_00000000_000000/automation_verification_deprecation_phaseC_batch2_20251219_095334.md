@@ -35,7 +35,7 @@
 ## 5) Git 快照
 
 - HEAD: HEAD
-NO_COMMIT_YET
+  NO_COMMIT_YET
 - status: 954 files changed
 
 ## 6) 结论

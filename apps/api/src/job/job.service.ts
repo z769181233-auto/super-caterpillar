@@ -1,3 +1,4 @@
+import * as util from 'util';
 import {
   Injectable,
   NotFoundException,
@@ -33,7 +34,16 @@ import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { UnprocessableEntityException } from '@nestjs/common';
 import { PRODUCTION_MODE } from '@scu/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma, JobStatus, JobType, TaskStatus, TaskType, JobEngineBindingStatus, ShotReviewStatus, ShotJob } from 'database';
+import {
+  Prisma,
+  JobStatus,
+  JobType,
+  TaskStatus,
+  TaskType,
+  JobEngineBindingStatus,
+  ShotReviewStatus,
+  ShotJob,
+} from 'database';
 import {
   assertTransition,
   isClaimableStatus,
@@ -86,21 +96,30 @@ export class JobService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => ProjectService)) private readonly projectService: ProjectService,
+    @Inject(forwardRef(() => ProjectService))
+    private readonly projectService: ProjectService,
     @Inject(TaskService) private readonly taskService: TaskService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry,
-    @Inject(QualityScoreService) private readonly qualityScoreService: QualityScoreService,
-    @Inject(EngineConfigStoreService) private readonly engineConfigStore: EngineConfigStoreService,
+    @Inject(QualityScoreService)
+    private readonly qualityScoreService: QualityScoreService,
+    @Inject(EngineConfigStoreService)
+    private readonly engineConfigStore: EngineConfigStoreService,
     @Inject(JobEngineBindingService)
     private readonly jobEngineBindingService: JobEngineBindingService,
     @Inject(BillingService) private readonly billingService: BillingService,
-    @Inject(CopyrightService) private readonly copyrightService: CopyrightService,
-    @Inject(CapacityGateService) private readonly capacityGateService: CapacityGateService,
-    @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService,
-    @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService,
+    @Inject(CopyrightService)
+    private readonly copyrightService: CopyrightService,
+    @Inject(CapacityGateService)
+    private readonly capacityGateService: CapacityGateService,
+    @Inject(FeatureFlagService)
+    private readonly featureFlagService: FeatureFlagService,
+    @Inject(TextSafetyService)
+    private readonly textSafetyService: TextSafetyService,
     @Inject(BudgetService) private readonly budgetService: BudgetService,
-    @Inject(PublishedVideoService) private readonly publishedVideoService: PublishedVideoService,
+    @Inject(PublishedVideoService)
+    private readonly publishedVideoService: PublishedVideoService,
+    @Inject(EventEmitter2)
     private readonly eventEmitter: EventEmitter2,
     @Inject(forwardRef(() => SceneGraphService))
     private readonly sceneGraphService?: SceneGraphService,
@@ -108,7 +127,7 @@ export class JobService {
     private readonly structureGenerateService?: StructureGenerateService,
     @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestratorService?: OrchestratorService
-  ) { }
+  ) {}
 
   async create(
     shotId: string,
@@ -206,14 +225,16 @@ export class JobService {
 
     // PRODUCTION_MODE Gate: 未审核不允许渲染
     if (PRODUCTION_MODE && createJobDto.type === JobTypeEnum.SHOT_RENDER) {
-      if (shot.reviewStatus !== ShotReviewStatus.APPROVED && shot.reviewStatus !== ShotReviewStatus.FINALIZED) {
+      if (
+        shot.reviewStatus !== ShotReviewStatus.APPROVED &&
+        shot.reviewStatus !== ShotReviewStatus.FINALIZED
+      ) {
         throw new ForbiddenException({
           code: 'SHOT_NOT_APPROVED',
           message: 'Production mode requires human approval (APPROVED/FINALIZED) before rendering.',
         });
       }
     }
-
 
     // API-Side Stable Error Code for Fail Fast
     if (createJobDto.type === JobTypeEnum.NOVEL_ANALYSIS) {
@@ -237,6 +258,10 @@ export class JobService {
       try {
         // TraceId for audit
         const traceId = `JOB_CREATE_${shotId}_${createJobDto.type}_${Date.now()}`;
+        console.log(`[JOB_DEBUG] billingService defined: ${!!this.billingService}`);
+        console.log(
+          `[JOB_DEBUG] calling billingService.consumeCredits with orgId=${organizationId} userId=${userId} credits=${requiredCredits}`
+        );
         await this.billingService.consumeCredits(
           project.id,
           userId,
@@ -245,9 +270,10 @@ export class JobService {
           createJobDto.type,
           traceId
         );
-      } catch (error) {
-        this.logger.warn(
-          `Billing gate rejected job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}`
+      } catch (error: any) {
+        // const util = require('util'); // Removed to fix lint error
+        console.error(
+          `[JOB_ERROR] Billing gate REJECTED job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}. Actual error: ${util.inspect(error, { depth: null })}`
         );
         throw new ForbiddenException(
           `Insufficient credits to start job. Required: ${requiredCredits} credits.`
@@ -334,7 +360,11 @@ export class JobService {
       });
     } catch (error: any) {
       // 并发冲突兜底：如果是 dedupeKey unique violation，再次查询返回已存在作业
-      if (createJobDto.dedupeKey && error.code === 'P2002' && error.meta?.target?.includes('dedupeKey')) {
+      if (
+        createJobDto.dedupeKey &&
+        error.code === 'P2002' &&
+        error.meta?.target?.includes('dedupeKey')
+      ) {
         const existing = await this.prisma.shotJob.findUnique({
           where: { dedupeKey: createJobDto.dedupeKey },
         });
@@ -348,7 +378,9 @@ export class JobService {
       throw error;
     }
 
-    this.logger.log(`Job created successfully: jobId=${job.id}, type=${job.type}, isVerification=${job.isVerification}`);
+    this.logger.log(
+      `Job created successfully: jobId=${job.id}, type=${job.type}, isVerification=${job.isVerification}`
+    );
     return job;
   }
 
@@ -563,130 +595,138 @@ export class JobService {
     isVerification?: boolean;
     dedupeKey?: string;
   }): Promise<any> {
-    const { projectId, organizationId, taskId, jobType, payload, isVerification, dedupeKey } = params;
-    let traceId = params.traceId;
+    try {
+      const { projectId, organizationId, taskId, jobType, payload, isVerification, dedupeKey } =
+        params;
+      let traceId = params.traceId;
 
-    if (!traceId && taskId) {
-      // Stage13-Final: 从 Task 获取 Pipeline 级 traceId
-      const task = await this.prisma.task.findUnique({
-        where: { id: taskId },
-        select: { traceId: true },
-      });
+      if (!traceId && taskId) {
+        // Stage13-Final: 从 Task 获取 Pipeline 级 traceId
+        const task = await this.prisma.task.findUnique({
+          where: { id: taskId },
+          select: { traceId: true },
+        });
 
-      if (task) {
-        traceId = task.traceId ?? undefined;
+        if (task) {
+          traceId = task.traceId ?? undefined;
+        }
       }
-    }
 
-    if (!traceId) {
-      // 如果没有传入 traceId 且无法从 Task 获取，生成一个新的
-      traceId = `tr_ce01_${randomUUID()}`;
-    }
+      if (!traceId) {
+        // 如果没有传入 traceId 且无法从 Task 获取，生成一个新的
+        traceId = `tr_ce01_${randomUUID()}`;
+      }
 
-    // CE Job 需要占位的 episode/scene/shot（因为 ShotJob 要求这些字段必填）
-    // 创建或获取占位结构
-    let season = await this.prisma.season.findFirst({
-      where: { projectId },
-      orderBy: { index: 'asc' },
-    });
-
-    if (!season) {
-      season = await this.prisma.season.create({
-        data: {
-          projectId,
-          index: 1,
-          title: 'Season 1',
-          description: 'Auto generated for CE Core Layer',
-          metadata: {},
-        },
+      // CE Job 需要占位的 episode/scene/shot（因为 ShotJob 要求这些字段必填）
+      // 创建或获取占位结构
+      let season = await this.prisma.season.findFirst({
+        where: { projectId },
+        orderBy: { index: 'asc' },
       });
-    }
 
-    let episode = await this.prisma.episode.findFirst({
-      where: { seasonId: season.id },
-      orderBy: { index: 'asc' },
-    });
+      if (!season) {
+        season = await this.prisma.season.create({
+          data: {
+            projectId,
+            index: 1,
+            title: 'Season 1',
+            description: 'Auto generated for CE Core Layer',
+            metadata: {},
+          },
+        });
+      }
 
-    if (!episode) {
-      episode = await this.prisma.episode.create({
-        data: {
-          seasonId: season.id,
-          projectId,
-          index: 1,
-          name: 'Episode 1',
-          summary: 'Auto generated for CE Core Layer',
-        },
+      let episode = await this.prisma.episode.findFirst({
+        where: { seasonId: season.id },
+        orderBy: { index: 'asc' },
       });
-    }
 
-    let scene = await this.prisma.scene.findFirst({
-      where: { episodeId: episode.id },
-      orderBy: { index: 'asc' },
-    });
+      if (!episode) {
+        episode = await this.prisma.episode.create({
+          data: {
+            seasonId: season.id,
+            projectId,
+            index: 1,
+            name: 'Episode 1',
+            summary: 'Auto generated for CE Core Layer',
+          },
+        });
+      }
 
-    if (!scene) {
-      scene = await this.prisma.scene.create({
-        data: {
-          episodeId: episode.id,
-          projectId, // Fix: Added missing projectId
-          index: 1,
-          title: 'Scene 1',
-          summary: 'Auto generated for CE Core Layer',
-        },
+      let scene = await this.prisma.scene.findFirst({
+        where: { episodeId: episode.id },
+        orderBy: { index: 'asc' },
       });
-    }
 
-    let shot = await this.prisma.shot.findFirst({
-      where: { sceneId: scene.id },
-      orderBy: { index: 'asc' },
-    });
+      if (!scene) {
+        scene = await this.prisma.scene.create({
+          data: {
+            episodeId: episode.id,
+            projectId, // Fix: Added missing projectId
+            index: 1,
+            title: 'Scene 1',
+            summary: 'Auto generated for CE Core Layer',
+          },
+        });
+      }
 
-    if (!shot) {
-      shot = await this.prisma.shot.create({
+      let shot = await this.prisma.shot.findFirst({
+        where: { sceneId: scene.id },
+        orderBy: { index: 'asc' },
+      });
+
+      if (!shot) {
+        shot = await this.prisma.shot.create({
+          data: {
+            sceneId: scene.id,
+            index: 1,
+            title: 'Shot 1',
+            description: 'Auto generated for CE Core Layer',
+            type: 'ce_core',
+            params: {},
+            organizationId,
+          },
+        });
+      }
+
+      // 创建 CE Job（使用占位的 episode/scene/shot）
+      const job = await this.prisma.shotJob.create({
         data: {
-          sceneId: scene.id,
-          index: 1,
-          title: 'Shot 1',
-          description: 'Auto generated for CE Core Layer',
-          type: 'ce_core',
-          params: {},
-          qualityScore: {},
           organizationId,
+          projectId,
+          episodeId: episode.id,
+          sceneId: scene.id,
+          shotId: shot.id,
+          taskId,
+          type: jobType,
+          status: JobStatusEnum.PENDING,
+          priority: 0,
+          maxRetry: 3,
+          retryCount: 0,
+          attempts: 0,
+          payload: payload ?? {},
+          engineConfig: payload.engineConfig ?? {},
+          traceId, // Stage13-Final: 使用 Pipeline 级 traceId
+          isVerification: isVerification || false,
+          dedupeKey: dedupeKey,
         },
       });
+
+      await this.auditLogService.record({
+        action: AuditActions.JOB_CREATED,
+        resourceType: 'job',
+        resourceId: job.id,
+        details: { type: job.type, taskId: job.taskId, jobType },
+      });
+
+      return job;
+    } catch (error) {
+      this.logger.error(
+        `[JobService] createCECoreJob FAILED: ${(error as any).message}`,
+        (error as any).stack
+      );
+      throw error;
     }
-
-    // 创建 CE Job（使用占位的 episode/scene/shot）
-    const job = await this.prisma.shotJob.create({
-      data: {
-        organizationId,
-        projectId,
-        episodeId: episode.id,
-        sceneId: scene.id,
-        shotId: shot.id,
-        taskId,
-        type: jobType,
-        status: JobStatusEnum.PENDING,
-        priority: 0,
-        maxRetry: 3,
-        retryCount: 0,
-        attempts: 0,
-        payload: payload ?? {},
-        engineConfig: payload.engineConfig ?? {},
-        traceId, // Stage13-Final: 使用 Pipeline 级 traceId
-        isVerification: isVerification || false,
-        dedupeKey: dedupeKey,
-      },
-    });
-
-    await this.auditLogService.record({
-      action: AuditActions.JOB_CREATED,
-      resourceType: 'job',
-      resourceId: job.id,
-      details: { type: job.type, taskId: job.taskId, jobType },
-    });
-
-    return job;
   }
 
   /**
@@ -1078,13 +1118,15 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${filterTypes.length > 0
-          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-          : Prisma.empty
+        ${
+          filterTypes.length > 0
+            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+            : Prisma.empty
         }
-        ${supportedEngines.length > 0
-          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-          : Prisma.empty
+        ${
+          supportedEngines.length > 0
+            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+            : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10
@@ -1396,7 +1438,8 @@ export class JobService {
             retryCount: job.retryCount,
             lastError: null,
             // workerId: null, // Keep workerId for history
-            securityProcessed: job.type === JobTypeEnum.CE09_MEDIA_SECURITY ? true : job.securityProcessed,
+            securityProcessed:
+              job.type === JobTypeEnum.CE09_MEDIA_SECURITY ? true : job.securityProcessed,
           },
           include: {
             task: true,
@@ -1529,7 +1572,9 @@ export class JobService {
       }
 
       // Verification Hook Trigger: Emit event for decoupled validation logic
-      console.log(`[EVENT DEBUG] Emitting job.succeeded for job ${updatedJob.id} type ${updatedJob.type}`);
+      console.log(
+        `[EVENT DEBUG] Emitting job.succeeded for job ${updatedJob.id} type ${updatedJob.type}`
+      );
       this.eventEmitter.emit('job.succeeded', updatedJob);
 
       // Stage-1: VIDEO_RENDER 完成后自动记录发布 (Internal Verification)
@@ -1915,7 +1960,9 @@ export class JobService {
 
     // 2. Strict Ownership Check
     if (job.workerId !== workerNode.id) {
-      this.logger.warn(`[JobService] Ack forbidden: Job ${jobId} owned by ${job.workerId}, but claimed by ${workerId} (${workerNode.id})`);
+      this.logger.warn(
+        `[JobService] Ack forbidden: Job ${jobId} owned by ${job.workerId}, but claimed by ${workerId} (${workerNode.id})`
+      );
       throw new ForbiddenException(`Job ownership mismatch`);
     }
 
@@ -1925,7 +1972,9 @@ export class JobService {
     }
 
     if (job.status !== JobStatusEnum.DISPATCHED) {
-      throw new BadRequestException(`Cannot ack job in status ${job.status} (expected DISPATCHED or RUNNING)`);
+      throw new BadRequestException(
+        `Cannot ack job in status ${job.status} (expected DISPATCHED or RUNNING)`
+      );
     }
 
     // 4. Atomic Transition
@@ -1972,7 +2021,9 @@ export class JobService {
 
     // 2. Strict Ownership Check
     if (job.workerId !== workerNode.id) {
-      this.logger.warn(`[JobService] Complete forbidden: Job ${jobId} owned by ${job.workerId}, but claimed by ${workerId} (${workerNode.id})`);
+      this.logger.warn(
+        `[JobService] Complete forbidden: Job ${jobId} owned by ${job.workerId}, but claimed by ${workerId} (${workerNode.id})`
+      );
       throw new ForbiddenException(`Job ownership mismatch`);
     }
 
@@ -1984,16 +2035,17 @@ export class JobService {
 
     if (job.status !== JobStatusEnum.RUNNING) {
       // Allow completing even if still DISPATCHED? No, strict flow: Next -> Ack -> Complete
-      // But if ack was skipped/lost, strictly we should fail. 
+      // But if ack was skipped/lost, strictly we should fail.
       // For Stage 2, enforce RUNNING.
-      throw new BadRequestException(`Cannot complete job in status ${job.status} (expected RUNNING)`);
+      throw new BadRequestException(
+        `Cannot complete job in status ${job.status} (expected RUNNING)`
+      );
     }
 
     // 4. Reuse reportJobResult logic for consistency (Audits, Billing, DAG)
     // Map string status to Enum
-    const targetStatus = params.status === 'SUCCEEDED'
-      ? JobStatusEnum.SUCCEEDED
-      : JobStatusEnum.FAILED;
+    const targetStatus =
+      params.status === 'SUCCEEDED' ? JobStatusEnum.SUCCEEDED : JobStatusEnum.FAILED;
 
     const updatedJob = await this.reportJobResult(
       jobId,
@@ -2190,10 +2242,12 @@ export class JobService {
       // 如果没有关联 Shot，直接检查项目组织 (NOVEL_SCAN_TOC 等任务)
       const project = await this.prisma.project.findUnique({
         where: { id: job.projectId },
-        select: { organizationId: true }
+        select: { organizationId: true },
       });
       if (!project || project.organizationId !== organizationId) {
-        throw new ForbiddenException('You do not have permission to access this job (Project check failed)');
+        throw new ForbiddenException(
+          'You do not have permission to access this job (Project check failed)'
+        );
       }
     }
 
@@ -2993,7 +3047,9 @@ export class JobService {
     if (job.type === JobTypeEnum.CE06_NOVEL_PARSING) {
       // Stage-3: CE06 真实层级落库 (Phase 1)
       if (result && (result as any).data && this.structureGenerateService) {
-        this.logger.log(`[Stage-3] CE06 SUCCEEDED, applying structure to DB for project ${job.projectId}`);
+        this.logger.log(
+          `[Stage-3] CE06 SUCCEEDED, applying structure to DB for project ${job.projectId}`
+        );
         try {
           const seasons = (result as any).data.seasons || (result as any).data.volumes || [];
           await this.structureGenerateService.applyAnalyzedStructureToDatabase({
@@ -3001,9 +3057,28 @@ export class JobService {
             seasons,
             stats: {
               seasonsCount: seasons.length,
-              episodesCount: seasons.reduce((acc: number, s: any) => acc + (s.episodes?.length || 0), 0),
-              scenesCount: seasons.reduce((acc: number, s: any) => acc + (s.episodes?.reduce((a: number, e: any) => a + (e.scenes?.length || 0), 0) || 0), 0),
-              shotsCount: seasons.reduce((acc: number, s: any) => acc + (s.episodes?.reduce((a: number, e: any) => a + (e.scenes?.reduce((sh: number, sc: any) => sh + (sc.shots?.length || 0), 0) || 0), 0) || 0), 0),
+              episodesCount: seasons.reduce(
+                (acc: number, s: any) => acc + (s.episodes?.length || 0),
+                0
+              ),
+              scenesCount: seasons.reduce(
+                (acc: number, s: any) =>
+                  acc +
+                  (s.episodes?.reduce((a: number, e: any) => a + (e.scenes?.length || 0), 0) || 0),
+                0
+              ),
+              shotsCount: seasons.reduce(
+                (acc: number, s: any) =>
+                  acc +
+                  (s.episodes?.reduce(
+                    (a: number, e: any) =>
+                      a +
+                      (e.scenes?.reduce((sh: number, sc: any) => sh + (sc.shots?.length || 0), 0) ||
+                        0),
+                    0
+                  ) || 0),
+                0
+              ),
             },
           });
         } catch (e: any) {
@@ -3047,7 +3122,11 @@ export class JobService {
       }
     } else if (job.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
       // CE04 完成，进入编排环节
-      if (pipeline.includes('VIDEO_EXPORT') || pipeline.includes('TIMELINE_RENDER') || pipeline.includes('PIPELINE_TIMELINE_COMPOSE')) {
+      if (
+        pipeline.includes('VIDEO_EXPORT') ||
+        pipeline.includes('TIMELINE_RENDER') ||
+        pipeline.includes('PIPELINE_TIMELINE_COMPOSE')
+      ) {
         // [Stage 4.1] Transition CE04 -> PIPELINE_TIMELINE_COMPOSE
         await this.auditLogService.record({
           action: 'CE_DAG_TRANSITION',
@@ -3075,14 +3154,18 @@ export class JobService {
             pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
           },
         });
-        this.logger.log(`CE04 completed, triggered PIPELINE_TIMELINE_COMPOSE for project ${job.projectId}`);
+        this.logger.log(
+          `CE04 completed, triggered PIPELINE_TIMELINE_COMPOSE for project ${job.projectId}`
+        );
       }
     } else if (job.type === JobTypeEnum.PIPELINE_TIMELINE_COMPOSE) {
       // 编排完成，进入正式渲染环节
       if (pipeline.includes('VIDEO_EXPORT') || pipeline.includes('TIMELINE_RENDER')) {
         const timelineStorageKey = (result as any)?.timelineStorageKey;
         if (!timelineStorageKey) {
-          this.logger.error(`[JobService] PIPELINE_TIMELINE_COMPOSE result missing timelineStorageKey for job ${job.id}`);
+          this.logger.error(
+            `[JobService] PIPELINE_TIMELINE_COMPOSE result missing timelineStorageKey for job ${job.id}`
+          );
           throw new Error('PIPELINE_TIMELINE_COMPOSE result missing timelineStorageKey');
         }
 
@@ -3113,7 +3196,9 @@ export class JobService {
             pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
           },
         });
-        this.logger.log(`PIPELINE_TIMELINE_COMPOSE completed, triggered TIMELINE_RENDER for project ${job.projectId}`);
+        this.logger.log(
+          `PIPELINE_TIMELINE_COMPOSE completed, triggered TIMELINE_RENDER for project ${job.projectId}`
+        );
       }
     } else if (job.type === JobTypeEnum.SHOT_RENDER) {
       // Stage-1: 检查是否所有 SHOT_RENDER 都已完成
@@ -3187,8 +3272,10 @@ export class JobService {
         // 2. 回写 Asset 安全字段 (DBSpec V1.1)
         // 从 CE09 结果中提取安全资产信息
         const securityResult = (result as any)?.securityResult || {};
-        const signedUrl = securityResult.signedUrl || `https://cdn.example.com/signed/${videoJob.id}.mp4`; // Mock/Shim if not real
-        const hlsUrl = securityResult.hlsPlaylistUrl || `https://cdn.example.com/hls/${videoJob.id}/master.m3u8`;
+        const signedUrl =
+          securityResult.signedUrl || `https://cdn.example.com/signed/${videoJob.id}.mp4`; // Mock/Shim if not real
+        const hlsUrl =
+          securityResult.hlsPlaylistUrl || `https://cdn.example.com/hls/${videoJob.id}/master.m3u8`;
         const watermarkMode = securityResult.watermarkMode || 'visible_user_id';
         const fingerprintId = securityResult.fingerprintId || `fp_${job.id}`;
 
@@ -3227,7 +3314,7 @@ export class JobService {
             videoJobId: videoJob.id,
             securityProcessed: true,
             watermarkMode,
-          }
+          },
         });
 
         this.logger.log(
@@ -3344,8 +3431,6 @@ export class JobService {
     }
   }
 
-
-
   /**
    * 获取队列快照，供背压限流使用
    */
@@ -3400,7 +3485,9 @@ export class JobService {
     });
 
     if (remainingCount === 0) {
-      this.logger.log(`[Stage-1] All shots completed for run ${pipelineRunId}. Triggering Assemble...`);
+      this.logger.log(
+        `[Stage-1] All shots completed for run ${pipelineRunId}. Triggering Assemble...`
+      );
       await this.triggerStage1PipelineAssemble(pipelineRunId, job.projectId, job.organizationId);
     }
   }
@@ -3429,7 +3516,9 @@ export class JobService {
       this.logger.warn(`[Stage-1] No succeeded shots found for run ${pipelineRunId} to assemble.`);
       return;
     }
-    this.logger.log(`[Stage-1] Found ${succeededShots.length} succeeded shots for run ${pipelineRunId}`);
+    this.logger.log(
+      `[Stage-1] Found ${succeededShots.length} succeeded shots for run ${pipelineRunId}`
+    );
 
     // 收集所有已成功的帧存储路径
     const frames = succeededShots
@@ -3455,7 +3544,9 @@ export class JobService {
     const isVerification = succeededShots[0]?.isVerification || false;
 
     if (!targetShotId) {
-      this.logger.error(`[Stage-1] targetShotId is null, cannot assembly video. Run ${pipelineRunId}`);
+      this.logger.error(
+        `[Stage-1] targetShotId is null, cannot assembly video. Run ${pipelineRunId}`
+      );
       return;
     }
 

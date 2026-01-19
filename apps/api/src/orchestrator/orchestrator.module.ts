@@ -34,4 +34,4 @@ import { Stage1VerificationHook } from './hooks/stage1-verification.hook';
   providers: [OrchestratorService, Stage1VerificationHook],
   exports: [OrchestratorService],
 })
-export class OrchestratorModule { }
+export class OrchestratorModule {}

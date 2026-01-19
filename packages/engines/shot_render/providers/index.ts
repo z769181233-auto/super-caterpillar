@@ -7,8 +7,9 @@
 
 import { replicateProvider, RenderResult } from './replicate.provider';
 import { localMpsProvider } from './local_mps.provider';
+import { localProvider } from './local.provider';
 import { comfyuiProvider } from './comfyui.provider';
-export { localMpsProvider, comfyuiProvider };
+export { localMpsProvider, localProvider, comfyuiProvider };
 
 export interface ShotRenderProvider {
   key: 'replicate' | 'hf' | 'local' | 'local_mps' | 'comfyui';
@@ -32,7 +33,7 @@ const providers: Record<string, ShotRenderProvider> = {
   local_mps: localMpsProvider,
   comfyui: comfyuiProvider,
   // hf: hfProvider,  // 占位 - 未来实现
-  // local: localProvider,  // 占位 - 未来实现
+  local: localProvider,
 };
 
 /**

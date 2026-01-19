@@ -1,1 +1,8 @@
-{"success":false,"error":{"code":"4003","message":"timestamp_must_be_seconds"},"requestId":"cbe16c47-c538-4677-a217-2aa54ec9e0ef","timestamp":"2026-01-12T14:30:12.648Z","path":"/api/assets/asset_gate_1768228212/secure-url","method":"GET"}
+{
+  "success": false,
+  "error": { "code": "4003", "message": "timestamp_must_be_seconds" },
+  "requestId": "cbe16c47-c538-4677-a217-2aa54ec9e0ef",
+  "timestamp": "2026-01-12T14:30:12.648Z",
+  "path": "/api/assets/asset_gate_1768228212/secure-url",
+  "method": "GET"
+}

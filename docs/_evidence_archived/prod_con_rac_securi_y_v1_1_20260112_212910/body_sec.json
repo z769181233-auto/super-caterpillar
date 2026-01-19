@@ -1,1 +1,10 @@
-{"success":true,"data":{"signed_url":"https://mock.com/s.mp4","signedUrl":"https://mock.com/s.mp4","url":"https://mock.com/s.mp4","expiresAt":"2026-01-12T15:29:15.321Z","expire":3600}}
+{
+  "success": true,
+  "data": {
+    "signed_url": "https://mock.com/s.mp4",
+    "signedUrl": "https://mock.com/s.mp4",
+    "url": "https://mock.com/s.mp4",
+    "expiresAt": "2026-01-12T15:29:15.321Z",
+    "expire": 3600
+  }
+}

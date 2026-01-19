@@ -2,6 +2,8 @@
 # P4 Gate: End-to-End Pipeline (Novel -> Published HLS)
 # 职责：验证从小说输入到 HLS 发布的全流程
 # 包含：Path A (DB 直插) 和 Path B (HTTP Fallback)
+# RED LINE: Strict CE09 Integration Required (No Bypass).
+# Must assert: CE09 SUCCEEDED, Asset PUBLISHED + HLS URL.
 
 set -euo pipefail
 
@@ -38,6 +40,10 @@ fi
 # Upsert Org with Credits
 # Note: ownerId is required
 psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", credits, \"createdAt\", \"updatedAt\") VALUES ('$ORG_ID', 'Gate Org', '$USER_ID', 999999, NOW(), NOW()) ON CONFLICT (id) DO UPDATE SET credits = 999999;" > /dev/null
+
+# Upsert API Key for Worker (HMAC align)
+log "Seeding Worker API Key..."
+psql "$DATABASE_URL" -c "INSERT INTO api_keys (id, key, \"secretHash\", \"ownerUserId\", \"ownerOrgId\", status, \"updatedAt\") VALUES ('ak-worker-gate', 'dev-worker-key', 'dev-worker-secret', '$USER_ID', '$ORG_ID', 'ACTIVE', NOW()) ON CONFLICT (key) DO UPDATE SET \"secretHash\" = 'dev-worker-secret', status = 'ACTIVE';" > /dev/null
 
 PROJ_ID="p4_proj_$TS"
 psql "$DATABASE_URL" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"updatedAt\") VALUES ('$PROJ_ID', 'P4 E2E $TS', '$USER_ID', '$ORG_ID', 'in_progress', NOW());" > /dev/null

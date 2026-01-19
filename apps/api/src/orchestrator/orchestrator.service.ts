@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
@@ -28,16 +29,20 @@ export class OrchestratorService {
   private readonly logger = new Logger(OrchestratorService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(forwardRef(() => WorkerService))
     private readonly workerService: WorkerService,
+    @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
+    @Inject(TaskService)
     private readonly taskService: TaskService,
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
+    @Inject(EngineRegistry)
     private readonly engineRegistry: EngineRegistry,
+    @Inject(PublishedVideoService)
     private readonly publishedVideoService: PublishedVideoService
-  ) { }
+  ) {}
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
@@ -561,22 +566,28 @@ export class OrchestratorService {
       });
 
       if (existingJob) {
-        this.logger.log(`[Orchestrator] Recovering existing job ${existingJob.id} for worker ${workerId}`);
+        this.logger.log(
+          `[Orchestrator] Recovering existing job ${existingJob.id} for worker ${workerId}`
+        );
         return existingJob;
       }
 
       // 2.1 Find one candidate PENDING job
       // TODO: Filter by worker capabilities (Stage-2 Scope: Allow all for now)
+      const pendingCount = await tx.shotJob.count({ where: { status: JobStatusEnum.PENDING } });
+      console.log(`[Orchestrator_DEBUG] Total PENDING jobs: ${pendingCount}`);
+
       const candidate = await tx.shotJob.findFirst({
         where: {
           status: JobStatusEnum.PENDING,
         },
-        orderBy: [
-          { priority: 'desc' },
-          { createdAt: 'asc' },
-        ],
-        take: 1
+        orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+        take: 1,
       });
+
+      console.log(
+        `[Orchestrator_DEBUG] Candidate for ${workerId}: ${candidate ? candidate.id : 'NONE'}`
+      );
 
       if (!candidate) {
         this.logger.warn(`[Orchestrator] No PENDING job found for dispatch.`);
@@ -599,7 +610,9 @@ export class OrchestratorService {
 
       if (updateResult.count === 0) {
         // Race condition: Job was claimed by another worker
-        this.logger.warn(`[Orchestrator] Race condition: Job ${candidate.id} claimed by another worker`);
+        this.logger.warn(
+          `[Orchestrator] Race condition: Job ${candidate.id} claimed by another worker`
+        );
         return null;
       }
 
@@ -650,23 +663,32 @@ export class OrchestratorService {
    * Determines if subsequent jobs should be spawned.
    */
   async handleJobCompletion(jobId: string, result: any) {
-    const fs = require('fs');
-    const debugLog = (msg: string) => fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
+    // const fs = require('fs');
+    const debugLog = (msg: string) =>
+      fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
 
     debugLog(`handleJobCompletion called for ${jobId}`);
     const job = await this.prisma.shotJob.findUnique({
       where: { id: jobId },
       include: {
-        worker: true
-      }
+        worker: true,
+      },
     });
 
     if (!job) return;
 
     // DAG Logic for Stage 1: SHOT_RENDER -> VIDEO_RENDER
     if (job.type === JobTypeEnum.SHOT_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
-      this.logger.log(`[DAG] SHOT_RENDER ${jobId} completed. Checking Stage 1 pipeline progress...`);
+      this.logger.log(
+        `[DAG] SHOT_RENDER ${jobId} completed. Checking Stage 1 pipeline progress...`
+      );
       await this.checkAndSpawnStage1VideoRender(job);
+    }
+
+    // DAG Logic: VIDEO_RENDER -> CE09 (Media Security)
+    if (job.type === JobTypeEnum.VIDEO_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
+      this.logger.log(`[DAG] VIDEO_RENDER ${jobId} completed. Checking CE09 trigger...`);
+      await this.checkAndSpawnCE09(job);
     }
   }
 
@@ -674,8 +696,9 @@ export class OrchestratorService {
    * Stage 3: Check if all shots in a pipeline run are complete, then spawn VIDEO_RENDER.
    */
   private async checkAndSpawnStage1VideoRender(completedJob: any) {
-    const fs = require('fs');
-    const debugLog = (msg: string) => fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
+    // const fs = require('fs');
+    const debugLog = (msg: string) =>
+      fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
 
     const payload = completedJob.payload as any;
     const pipelineRunId = payload?.pipelineRunId;
@@ -695,24 +718,28 @@ export class OrchestratorService {
         type: JobTypeEnum.SHOT_RENDER,
         payload: {
           path: ['pipelineRunId'],
-          equals: pipelineRunId
-        }
-      }
+          equals: pipelineRunId,
+        },
+      },
+      include: { shot: true },
     });
 
     const total = allShots.length;
-    const succeeded = allShots.filter(j => j.status === JobStatusEnum.SUCCEEDED).length;
+    const succeeded = allShots.filter((j) => j.status === JobStatusEnum.SUCCEEDED).length;
 
     // Check for failures (Fail Fast?) -> For now just wait for all to be non-pending
-    const pending = allShots.filter(j =>
-      j.status !== JobStatusEnum.SUCCEEDED && j.status !== JobStatusEnum.FAILED
+    const pending = allShots.filter(
+      (j) => j.status !== JobStatusEnum.SUCCEEDED && j.status !== JobStatusEnum.FAILED
     ).length;
 
-    this.logger.log(`[DAG] Pipeline ${pipelineRunId} progress: ${succeeded}/${total} (Pending: ${pending})`);
+    this.logger.log(
+      `[DAG] Pipeline ${pipelineRunId} progress: ${succeeded}/${total} (Pending: ${pending})`
+    );
 
     if (total > 0 && succeeded === total) {
       // 2. All Good! Aggregation Time.
-      await this.aggregateAndSpawnVideoRender(allShots, pipelineRunId, completedJob);
+      // Use allShots[0] as context because it has 'shot' relation loaded (unlike completedJob potentially)
+      await this.aggregateAndSpawnVideoRender(allShots, pipelineRunId, allShots[0]);
     }
   }
 
@@ -723,13 +750,15 @@ export class OrchestratorService {
         type: JobTypeEnum.VIDEO_RENDER,
         payload: {
           path: ['pipelineRunId'],
-          equals: pipelineRunId
-        }
-      }
+          equals: pipelineRunId,
+        },
+      },
     });
 
     if (existingVideoJob) {
-      this.logger.log(`[DAG] VIDEO_RENDER for ${pipelineRunId} already exists (${existingVideoJob.id}). Skipping.`);
+      this.logger.log(
+        `[DAG] VIDEO_RENDER for ${pipelineRunId} already exists (${existingVideoJob.id}). Skipping.`
+      );
       return;
     }
 
@@ -764,11 +793,15 @@ export class OrchestratorService {
     const dedupeKey = isVerification ? `gate_video:${pipelineRunId}` : undefined;
 
     if (isVerification) {
-      this.logger.log(`[DAG] VIDEO_RENDER will inherit isVerification=true from parent job ${contextJob.id}`);
+      this.logger.log(
+        `[DAG] VIDEO_RENDER will inherit isVerification=true from parent job ${contextJob.id}`
+      );
     }
 
     // 2.4 Spawn VIDEO_RENDER
-    this.logger.log(`[DAG] Spawning VIDEO_RENDER for ${pipelineRunId} with ${frames.length} frames (isVerification=${isVerification}).`);
+    this.logger.log(
+      `[DAG] Spawning VIDEO_RENDER for ${pipelineRunId} with ${frames.length} frames (isVerification=${isVerification}).`
+    );
 
     try {
       const videoJob = await this.jobService.create(
@@ -781,20 +814,85 @@ export class OrchestratorService {
           payload: {
             pipelineRunId,
             projectId: contextJob.projectId,
-            episodeId: contextJob.episodeId,
+            episodeId: contextJob.shot?.episodeId || contextJob.episodeId,
+            sceneId: contextJob.shot?.sceneId,
             frames,
             publish: true, // Worker handles publishing (with dedupe_key idempotency)
             traceId: contextJob.traceId,
             isVerification, // 也在 payload 中携带，便于 Worker 识别
-          }
+          },
         } as any,
         'system-dag', // triggered by system
         contextJob.organizationId
       );
 
-      this.logger.log(`[DAG] VIDEO_RENDER created: jobId=${videoJob.id}, isVerification=${isVerification}`);
+      this.logger.log(
+        `[DAG] VIDEO_RENDER created: jobId=${videoJob.id}, isVerification=${isVerification}`
+      );
     } catch (e: any) {
       this.logger.error(`[DAG] Failed to spawn VIDEO_RENDER: ${e.message}`);
+    }
+  }
+
+  /**
+   * Stage 3-Final: Trigger CE09 after VIDEO_RENDER
+   */
+  private async checkAndSpawnCE09(videoJob: any) {
+    const payload = videoJob.payload as any;
+    const pipelineRunId = payload?.pipelineRunId;
+
+    // 1. Idempotency Check
+    const existing = await this.prisma.shotJob.findFirst({
+      where: {
+        type: JobTypeEnum.CE09_MEDIA_SECURITY,
+        payload: { path: ['pipelineRunId'], equals: pipelineRunId },
+      },
+    });
+    if (existing) {
+      this.logger.log(`[DAG] CE09 for ${pipelineRunId} already exists (${existing.id}). Skipping.`);
+      return;
+    }
+
+    // 2. Resolve Asset ID from Result
+    const start = Date.now();
+    // Wait for result to be persisted if needed? No, handleJobCompletion fetched job, but did it fetch result?
+    // job.result is JSON.
+    const result = videoJob.result as any;
+    const assetId = result?.output?.assetId;
+    const storageKey = result?.output?.storageKey;
+
+    if (!assetId || !storageKey) {
+      this.logger.error(
+        `[DAG] VIDEO_RENDER succeeded but missing assetId/storageKey in result. Cannot spawn CE09. Result: ${JSON.stringify(result)}`
+      );
+      return;
+    }
+
+    this.logger.log(`[DAG] Spawning CE09 for ${pipelineRunId} from VIDEO_RENDER asset ${assetId}`);
+
+    try {
+      await this.jobService.create(
+        videoJob.shotId || videoJob.id,
+        {
+          type: JobTypeEnum.CE09_MEDIA_SECURITY,
+          traceId: videoJob.traceId,
+          payload: {
+            pipelineRunId,
+            projectId: payload.projectId,
+            episodeId: payload.episodeId,
+            shotId: videoJob.shotId,
+            assetId,
+            videoAssetStorageKey: storageKey,
+            traceId: videoJob.traceId,
+            engineKey: 'ce09_security_real',
+          },
+        } as any,
+        'system-dag', // triggered by system
+        videoJob.organizationId
+      );
+      this.logger.log(`[DAG] CE09 spawned successfully for ${pipelineRunId}`);
+    } catch (e: any) {
+      this.logger.error(`[DAG] Failed to spawn CE09: ${e.message}`);
     }
   }
 
@@ -992,7 +1090,9 @@ export class OrchestratorService {
         organizationId
       );
 
-      this.logger.log(`Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`);
+      this.logger.log(
+        `Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`
+      );
 
       return {
         success: true,

@@ -6,14 +6,14 @@
 
 ## Checks
 
-1) verify_entry.sh:
+1. verify_entry.sh:
 
 ```
 警告：refname 'HEAD' is ambiguous.
 警告：refname 'HEAD' is ambiguous.
 ```
 
-2) deprecation_guard (authoritative):
+2. deprecation_guard (authoritative):
 
 ```
 [deprecation_guard] start

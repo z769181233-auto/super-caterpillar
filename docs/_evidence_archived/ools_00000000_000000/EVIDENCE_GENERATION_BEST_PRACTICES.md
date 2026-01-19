@@ -109,4 +109,3 @@ Reference executable example:
 ## Reference
 
 See: `tools/dev/evidence_output_guidelines.sh` for executable examples.
-

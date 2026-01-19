@@ -24,7 +24,7 @@ export class CEEngineService {
     private readonly taskService: TaskService,
     private readonly textSafetyService: TextSafetyService,
     private readonly prisma: PrismaService
-  ) { }
+  ) {}
 
   /**
    * CE06: 解析小说

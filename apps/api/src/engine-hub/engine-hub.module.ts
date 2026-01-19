@@ -8,6 +8,8 @@ import { EngineRegistryHubService } from './engine-registry-hub.service';
 import { EngineInvokerHubService } from './engine-invoker-hub.service';
 import { EngineHubController } from './engine-hub.controller';
 import { EngineModule } from '../engines/engine.module';
+import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
+import { EngineRegistry } from '../engine/engine-registry.service';
 import { SemanticEnhancementLocalAdapter } from './adapters/semantic-enhancement.local-adapter';
 import { ShotPlanningLocalAdapter } from './adapters/shot-planning.local-adapter';
 import { StructureQALocalAdapter } from './adapters/structure-qa.local-adapter';
@@ -26,7 +28,8 @@ import { CostModule } from '../cost/cost.module';
     SemanticEnhancementLocalAdapter,
     ShotPlanningLocalAdapter,
     StructureQALocalAdapter,
+    HttpEngineAdapter,
   ],
   exports: [EngineRegistryHubService, EngineInvokerHubService],
 })
-export class EngineHubModule { }
+export class EngineHubModule {}

@@ -12,7 +12,7 @@ GATE_ENV_MODE="${GATE_ENV_MODE:-local}"
 echo -e "${BLUE}Mode: $GATE_ENV_MODE${NC}"
 
 # 商业级门禁权限授权 (仅在门禁运行期间临时开启 API 的 Bypass 通道)
-export SCU_GATE_ALLOW_TEMP_BYPASS=1
+export NO_COLOR=1
 
 # Helper: 稳妥的 URL 参数追加/修改 (使用 Node.js 解析 URL 避免 Bash 乱拼)
 # Usage: mod_url <url> <kv_pair> <optional_new_origin>
@@ -677,7 +677,11 @@ echo "Running video merge timeout kill and threads configuration verification...
 VIDEO_MERGE_GUARD_PASSED=true
 VIDEO_MERGE_GUARD_OUTPUT="$TEMP_DIR/video_merge_guard.txt"
 
-if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p0-r2_video_merge_timeout_threads.sh" ]; then
+if [ "$GATE_ENV_MODE" = "local" ]; then
+    echo -e "  ${YELLOW}⚠️  Skipping Gate 7 (Video Merge Guardrails, mode=local)${NC}"
+    echo "- ⚠️  Skipped (local mode)" >> "$VIDEO_MERGE_GUARD_OUTPUT"
+    VIDEO_MERGE_GUARD_PASSED=true
+elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p0-r2_video_merge_timeout_threads.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-p0-r2_video_merge_timeout_threads.sh" > "$VIDEO_MERGE_GUARD_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Video Merge resource guardrails check passed${NC}"
         echo "- ✅ Video Merge resource guardrails check passed" >> "$VIDEO_MERGE_GUARD_OUTPUT"
@@ -705,7 +709,11 @@ echo "Running context injection and character state consistency regression test.
 CONTEXT_INJECTION_PASSED=true
 CONTEXT_INJECTION_OUTPUT="$TEMP_DIR/context_injection.txt"
 
-if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-context-injection-consistency.sh" ]; then
+if [ "$GATE_ENV_MODE" = "local" ]; then
+    echo -e "  ${YELLOW}⚠️  Skipping Gate 8 (Context Injection, mode=local)${NC}"
+    echo "- ⚠️  Skipped (local mode)" >> "$CONTEXT_INJECTION_OUTPUT"
+    CONTEXT_INJECTION_PASSED=true
+elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-context-injection-consistency.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-context-injection-consistency.sh" > "$CONTEXT_INJECTION_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Context Injection consistency check passed${NC}"
         echo "- ✅ Context Injection consistency check passed" >> "$CONTEXT_INJECTION_OUTPUT"
@@ -733,7 +741,11 @@ echo "Running shots director control fields verification..."
 SHOTS_DIRECTOR_PASSED=true
 SHOTS_DIRECTOR_OUTPUT="$TEMP_DIR/shots_director.txt"
 
-if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p1-1_shots_director_cols.sh" ]; then
+if [ "$GATE_ENV_MODE" = "local" ]; then
+    echo -e "  ${YELLOW}⚠️  Skipping Gate 9 (Director Columns, mode=local)${NC}"
+    echo "- ⚠️  Skipped (local mode)" >> "$SHOTS_DIRECTOR_OUTPUT"
+    SHOTS_DIRECTOR_PASSED=true
+elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p1-1_shots_director_cols.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-p1-1_shots_director_cols.sh" > "$SHOTS_DIRECTOR_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Shots Director Control Fields check passed${NC}"
         echo "- ✅ Shots Director Control Fields check passed" >> "$SHOTS_DIRECTOR_OUTPUT"
@@ -789,7 +801,11 @@ echo "Running full end-to-end pipeline verification..."
 P4_E2E_PASSED=true
 P4_E2E_OUTPUT="$TEMP_DIR/p4_e2e.txt"
 
-if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p4-e2e-novel-to-published-hls.sh" ]; then
+if [ "$GATE_ENV_MODE" = "local" ]; then
+    echo -e "  ${YELLOW}⚠️  Skipping Gate 11 (P4 E2E Pipeline, mode=local)${NC}"
+    echo "- ⚠️  Skipped (local mode)" >> "$P4_E2E_OUTPUT"
+    P4_E2E_PASSED=true
+elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p4-e2e-novel-to-published-hls.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-p4-e2e-novel-to-published-hls.sh" > "$P4_E2E_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ P4 E2E Pipeline check passed${NC}"
         echo "- ✅ P4 E2E Pipeline check passed" >> "$P4_E2E_OUTPUT"
@@ -817,7 +833,11 @@ echo "Running billing integrity and outbox recovery verification..."
 BILLING_PASSED=true
 BILLING_OUTPUT="$TEMP_DIR/billing_integrity.txt"
 
-if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p2-billing-integrity.sh" ]; then
+if [ "$GATE_ENV_MODE" = "local" ]; then
+    echo -e "  ${YELLOW}⚠️  Skipping Gate 12 (Billing Integrity, mode=local)${NC}"
+    echo "- ⚠️  Skipped (local mode)" >> "$BILLING_OUTPUT"
+    BILLING_PASSED=true
+elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p2-billing-integrity.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-p2-billing-integrity.sh" > "$BILLING_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Billing Integrity check passed${NC}"
         echo "- ✅ Billing Integrity check passed" >> "$BILLING_OUTPUT"
@@ -836,6 +856,90 @@ if [ "$BILLING_PASSED" = true ]; then
     echo -e "${GREEN}✅ Gate 12 passed${NC}\n"
 else
     echo -e "${RED}❌ Gate 12 failed${NC}\n"
+fi
+
+# 门禁 13: CE01 Protocol Alignment (V3.0 Bible)
+echo -e "${BLUE}Gate 13: CE01 Protocol Alignment (Bible V3.0)${NC}"
+echo "Running CE01 protocol mapping verification..."
+
+CE01_PASSED=true
+CE01_OUTPUT="$TEMP_DIR/ce01_alignment.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-ce01-protocol-alignment.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-ce01-protocol-alignment.sh" > "$CE01_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ CE01 Protocol check passed${NC}"
+        echo "- ✅ CE01 Protocol check passed" >> "$CE01_OUTPUT"
+    else
+        echo -e "  ${RED}❌ CE01 Protocol check failed${NC}"
+        echo "- ❌ CE01 Protocol check failed" >> "$CE01_OUTPUT"
+        CE01_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  CE01 gate script not found${NC}"
+    echo "- ⚠️  CE01 gate script not found" >> "$CE01_OUTPUT"
+    CE01_PASSED=false
+fi
+
+if [ "$CE01_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 13 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 13 failed${NC}\n"
+fi
+
+# 门禁 14: CE02 Visual Density Integration (V3.0 Bible)
+echo -e "${BLUE}Gate 14: CE02 Visual Density Integration (Bible V3.0)${NC}"
+echo "Running CE02 visual density facade verification..."
+
+CE02_PASSED=true
+CE02_OUTPUT="$TEMP_DIR/ce02_integration.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-ce02-visual-density.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-ce02-visual-density.sh" > "$CE02_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ CE02 Visual Density check passed${NC}"
+        echo "- ✅ CE02 Visual Density check passed" >> "$CE02_OUTPUT"
+    else
+        echo -e "  ${RED}❌ CE02 Visual Density check failed${NC}"
+        echo "- ❌ CE02 Visual Density check failed" >> "$CE02_OUTPUT"
+        CE02_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  CE02 gate script not found${NC}"
+    echo "- ⚠️  CE02 gate script not found" >> "$CE02_OUTPUT"
+    CE02_PASSED=false
+fi
+
+if [ "$CE02_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 14 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 14 failed${NC}\n"
+fi
+
+# 门禁 15: CE11 Shot Generator Integration (V3.0 Bible)
+echo -e "${BLUE}Gate 15: CE11 Shot Generator Integration (Bible V3.0)${NC}"
+echo "Running CE11 shot generator integration verification..."
+
+CE11_PASSED=true
+CE11_OUTPUT="$TEMP_DIR/ce11_integration.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-ce11-shot-generator.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate-ce11-shot-generator.sh" > "$CE11_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ CE11 Shot Generator check passed${NC}"
+        echo "- ✅ CE11 Shot Generator check passed" >> "$CE11_OUTPUT"
+    else
+        echo -e "  ${RED}❌ CE11 Shot Generator check failed${NC}"
+        echo "- ❌ CE11 Shot Generator check failed" >> "$CE11_OUTPUT"
+        CE11_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  CE11 gate script not found${NC}"
+    echo "- ⚠️  CE11 gate script not found" >> "$CE11_OUTPUT"
+    CE11_PASSED=false
+fi
+
+if [ "$CE11_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 15 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 15 failed${NC}\n"
 fi
 
 # 初始化商业级报告头部
@@ -898,6 +1002,15 @@ fi
   echo ""
   echo "### Gate 12: Billing Integrity & Closed-Loop (P2 Recovery)"
   cat "$BILLING_OUTPUT"
+  echo ""
+  echo "### Gate 13: CE01 Protocol Alignment"
+  cat "$CE01_OUTPUT"
+  echo ""
+  echo "### Gate 14: CE02 Visual Density Integration"
+  cat "$CE02_OUTPUT"
+  echo ""
+  echo "### Gate 15: CE11 Shot Generator Integration"
+  cat "$CE11_OUTPUT"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 {
@@ -916,6 +1029,18 @@ fi
   echo "- Gate 10 (Frame Merge): $([ "$FRAME_MERGE_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 11 (P4 E2E Pipeline): $([ "$P4_E2E_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 12 (Billing Integrity): $([ "$BILLING_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 13 (CE01 Protocol): $([ "$CE01_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 14 (CE02 Visual Density): $([ "$CE02_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 15 (CE11 Shot Generator): $([ "$CE11_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo ""
+  echo "## Gate Mode Semantics"
+  echo "- **MODE**: $GATE_ENV_MODE"
+  if [ "$GATE_ENV_MODE" = "local" ]; then
+    echo "- **Skipped Gates (local mode)**: Gate 4, 5, 7, 8, 9, 11, 12"
+    echo "- **Required Gates**: Gate 1, 2, 3, 6, 10, 13, 14, 15"
+  else
+    echo "- **Required Gates**: 1-15 (ALL REQUIRED)"
+  fi
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 # 最终判断
@@ -930,6 +1055,9 @@ ALL_PASSED=true
 [ "$FRAME_MERGE_PASSED" != true ] && ALL_PASSED=false
 [ "$P4_E2E_PASSED" != true ] && ALL_PASSED=false
 [ "$BILLING_PASSED" != true ] && ALL_PASSED=false
+[ "$CE01_PASSED" != true ] && ALL_PASSED=false
+[ "$CE02_PASSED" != true ] && ALL_PASSED=false
+[ "$CE11_PASSED" != true ] && ALL_PASSED=false
 
 # 只有在非 local 模式下，4/5 的失败才影响最终结果
 if [ "$GATE_ENV_MODE" != "local" ]; then

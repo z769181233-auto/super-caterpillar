@@ -6,7 +6,7 @@ import { Stage1PipelinePayload } from '@scu/shared-types';
 @Controller('orchestrator')
 @UseGuards(JwtOrHmacGuard)
 export class OrchestratorController {
-  constructor(private readonly orchestratorService: OrchestratorService) { }
+  constructor(private readonly orchestratorService: OrchestratorService) {}
 
   /**
    * 手动触发调度

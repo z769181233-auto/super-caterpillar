@@ -6,7 +6,8 @@
  * 参考《毛毛虫宇宙_模型宇宙说明书_ModelUniverseSpec_V1.0》中与引擎注册相关的部分
  */
 
-import { Module, OnModuleInit, Logger } from '@nestjs/common';
+import { Module, OnModuleInit, Logger, Inject } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter.NEW';
 import { CE06LocalAdapter } from './adapters/ce06.local.adapter';
@@ -18,6 +19,7 @@ import { ShotRenderReplicateAdapter } from './adapters/shot-render.replicate.ada
 import { ShotRenderComfyuiAdapter } from './adapters/shot-render.comfyui.adapter';
 import { ShotRenderRouterAdapter } from './adapters/shot-render.router.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
+import { CE11MockAdapter } from './adapters/ce11.mock.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -47,6 +49,7 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     ShotRenderComfyuiAdapter, // Registered
     ShotRenderRouterAdapter,
     HttpEngineAdapter,
+    CE11MockAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -60,25 +63,46 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
 export class EngineModule implements OnModuleInit {
   private readonly logger = new Logger(EngineModule.name);
   constructor(
-    private readonly registry: EngineRegistry,
+    private readonly moduleRef: ModuleRef,
+    @Inject(EngineRegistry)
+    private registry: EngineRegistry,
+    @Inject(NovelAnalysisLocalAdapter)
     private readonly novelAdapter: NovelAnalysisLocalAdapter,
+    @Inject(CE06LocalAdapter)
     private readonly ce06Adapter: CE06LocalAdapter,
+    @Inject(CE03LocalAdapter)
     private readonly ce03Adapter: CE03LocalAdapter,
+    @Inject(CE04LocalAdapter)
     private readonly ce04Adapter: CE04LocalAdapter,
+    @Inject(VideoMergeLocalAdapter)
     private readonly videoMergeAdapter: VideoMergeLocalAdapter,
+    @Inject(ShotRenderLocalAdapter)
     private readonly shotRenderAdapter: ShotRenderLocalAdapter,
+    @Inject(ShotRenderReplicateAdapter)
     private readonly shotRenderReplicateAdapter: ShotRenderReplicateAdapter,
+    @Inject(ShotRenderComfyuiAdapter)
     private readonly shotRenderComfyuiAdapter: ShotRenderComfyuiAdapter, // Injected
+    @Inject(ShotRenderRouterAdapter)
     private readonly shotRenderRouterAdapter: ShotRenderRouterAdapter,
-    private readonly httpAdapter: HttpEngineAdapter
-  ) { }
+    @Inject(HttpEngineAdapter)
+    private readonly httpAdapter: HttpEngineAdapter,
+    @Inject(CE11MockAdapter)
+    private readonly ce11MockAdapter: CE11MockAdapter
+  ) {}
 
   onModuleInit() {
     if (!this.registry) {
       this.logger.warn(
-        '[EngineModule] EngineRegistry is undefined during onModuleInit, skipping early registration. Dependants will need to register manually or via ModuleRef.'
+        '[EngineModule] EngineRegistry is undefined during onModuleInit, attempting to resolve via ModuleRef...'
       );
-      return;
+      try {
+        this.registry = this.moduleRef.get(EngineRegistry, { strict: false });
+      } catch (e) {
+        this.logger.error(
+          '[EngineModule] Failed to resolve EngineRegistry via ModuleRef. Adapters will NOT be registered!'
+        );
+        return;
+      }
     }
     // 注册默认的 NovelAnalysisLocalAdapter
     this.registry.register(this.novelAdapter);
@@ -109,5 +133,9 @@ export class EngineModule implements OnModuleInit {
 
     // P0-R2: Register Video Merge Adapter
     this.registry.register(this.videoMergeAdapter);
+
+    // CE11 Mock Registration
+    this.registry.register(this.ce11MockAdapter);
+    this.registry.registerAlias('ce11_shot_generator_mock', this.ce11MockAdapter);
   }
 }

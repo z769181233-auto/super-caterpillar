@@ -184,7 +184,18 @@ export const localFfmpegProvider = {
     const timeoutMs = Number(process.env.VIDEO_MERGE_TIMEOUT_MS) || 300000;
 
     // First Try: -c copy (Fast)
-    const fastArgs = ['-y', '-f', 'concat', '-safe', '0', '-i', concatListPath, '-c', 'copy', outPath];
+    const fastArgs = [
+      '-y',
+      '-f',
+      'concat',
+      '-safe',
+      '0',
+      '-i',
+      concatListPath,
+      '-c',
+      'copy',
+      outPath,
+    ];
     process.stdout.write(`video_concat_spawn_fast jobId=${jobId} args="${fastArgs.join(' ')}"\n`);
 
     let result = await spawnWithTimeout({

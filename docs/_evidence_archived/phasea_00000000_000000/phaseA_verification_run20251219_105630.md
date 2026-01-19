@@ -5,6 +5,7 @@
 - head: 8876d1692e09f41c61ac12936acfcb47cabdce00
 
 ## 0) canonical workspace gate
+
 == Canonical workspace check ==
 [canonical] tracked_count=13
 [canonical] untracked_count=207
@@ -13,6 +14,7 @@ FAIL: canonical workspace gate (workspace is not canonical)
 Note: This verification run is BLOCKED. Must run in canonical workspace.
 
 ## 1) untracked allowlist (authoritative)
+
 [untracked] all_count=207
 [untracked] violation_count=200
 
@@ -200,8 +202,8 @@ docs/WORKER_HMAC_FIX_FINAL.md
 docs/WORKER_HMAC_FIX_SUMMARY.md
 docs/WORKER_HMAC_VERIFICATION.md
 docs/WORKER_SYSTEM_FIX.md
-docs/_risk/
-docs/_specs/
+docs/\_risk/
+docs/\_specs/
 docs/novel_parsing_engine_current_behavior_report.md
 docs/production_v0_readiness_report.md
 docs/run1.txt
@@ -219,6 +221,7 @@ tsconfig.json
 turbo.json
 
 ## 2) doc link spot checks (Phase A scope)
+
 ✓ docs/DEPRECATION_CLEANUP_PLAN.md exists
 ✓ docs/DEPRECATION_INDEX.md exists
 ✓ docs/DB_DEPRECATION_REMOVAL_RFC.md exists
@@ -228,4 +231,5 @@ turbo.json
 PASS: doc link references found
 
 ## Summary
+
 BLOCKED: Phase A verification cannot complete in non-canonical workspace

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  Inject,
-  forwardRef,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
 import { Request } from 'express';
 import { ApiSecurityService } from '../../security/api-security/api-security.service';
 
@@ -17,7 +12,7 @@ export class HmacAuthService {
   constructor(
     @Inject(forwardRef(() => ApiSecurityService))
     private readonly apiSecurity: ApiSecurityService
-  ) { }
+  ) {}
 
   /**
    * 验证 HMAC 签名

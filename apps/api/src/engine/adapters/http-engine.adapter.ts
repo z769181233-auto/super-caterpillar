@@ -49,7 +49,7 @@ export class HttpEngineAdapter implements EngineAdapter {
   public readonly name = 'http';
   private readonly logger = new Logger(HttpEngineAdapter.name);
 
-  constructor(private readonly engineConfigService: EngineConfigService) { }
+  constructor(private readonly engineConfigService: EngineConfigService) {}
 
   /**
    * 检查是否支持指定的引擎标识

@@ -14,11 +14,13 @@ import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 @Controller('ce-dag')
 @UseGuards(JwtOrHmacGuard)
 export class CEDagController {
-  constructor(private readonly orchestrator: CEDagOrchestratorService) { }
+  constructor(private readonly orchestrator: CEDagOrchestratorService) {}
 
   @Post('run')
   async runCEDag(@Body() request: CEDagRunRequestDto): Promise<CEDagRunResult> {
-    console.log(`[CE_DAG_CONTROLLER] [DEBUG] Entering runCEDag with request for shotId=${request.shotId}`);
+    console.log(
+      `[CE_DAG_CONTROLLER] [DEBUG] Entering runCEDag with request for shotId=${request.shotId}`
+    );
     try {
       const result = await this.orchestrator.runCEDag(request);
       console.log(`[CE_DAG_CONTROLLER] [DEBUG] Returning success result`);

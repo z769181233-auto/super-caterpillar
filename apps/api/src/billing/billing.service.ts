@@ -1,11 +1,11 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   /**
    * Get available credits for an organization.
@@ -48,6 +48,10 @@ export class BillingService {
     // Ensure organizationId is present
     if (!organizationId) throw new ForbiddenException('Organization ID is required');
 
+    console.error(
+      `[BILLING_DEBUG] consumeCredits orgId=${organizationId} amount=${amount} type=${type}`
+    );
+
     return this.prisma.$transaction(async (tx) => {
       // Atomic Update: Decrement credits ONLY if sufficient
       // We use updateMany to allow filtering by credits >= amount
@@ -64,6 +68,8 @@ export class BillingService {
       if (result.count === 0) {
         // If update failed, check if it was because org missing or funds missing
         const org = await tx.organization.findUnique({ where: { id: organizationId } });
+        console.error(`[BILLING_DEBUG] count=0. Org check: ${JSON.stringify(org)}`);
+
         if (!org) throw new NotFoundException('Organization not found');
 
         this.logger.warn(
@@ -73,14 +79,21 @@ export class BillingService {
       }
 
       // 3. Record Billing Event (Ledger)
+      // Ensure userId exists to avoid P2003 FK violation (e.g. if userId is an ApiKey ID)
+      let finalUserId = userId;
+      const userExists = await tx.user.findUnique({ where: { id: userId }, select: { id: true } });
+      if (!userExists) {
+        finalUserId = 'system';
+      }
+
       await tx.billingEvent.create({
         data: {
           projectId,
-          userId,
+          userId: finalUserId,
           orgId: organizationId,
           type: 'pay_as_you_go',
           creditsDelta: -amount,
-          metadata: { type, traceId, legacyEventType: 'pay_as_you_go' },
+          metadata: { type, traceId, legacyEventType: 'pay_as_you_go', originalUserId: userId },
         },
       });
 
@@ -105,7 +118,7 @@ export class BillingService {
 
       await tx.auditLog.create({
         data: {
-          userId,
+          userId: finalUserId,
           orgId: organizationId,
           action: 'BILLING_CONSUME',
           resourceType: 'job',

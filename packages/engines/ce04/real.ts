@@ -30,7 +30,8 @@ export async function ce04RealEngine(input: CE04Input): Promise<CE04Output> {
       model: 'ce04-template-v1',
     },
     assets: {
-      image: '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png'
-    }
+      image:
+        '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png',
+    },
   };
 }

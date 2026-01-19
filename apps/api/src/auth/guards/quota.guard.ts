@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { BillingService } from '../../billing/billing.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
@@ -13,7 +14,9 @@ export class QuotaGuard implements CanActivate {
   private readonly logger = new Logger(QuotaGuard.name);
 
   constructor(
+    @Inject(BillingService)
     private readonly billingService: BillingService,
+    @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
   ) {}
 

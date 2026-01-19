@@ -1,1 +1,5 @@
-{"message":"Bad control character in string literal in JSON at position 50 (line 2 column 49)","error":"Bad Request","statusCode":400}
+{
+  "message": "Bad control character in string literal in JSON at position 50 (line 2 column 49)",
+  "error": "Bad Request",
+  "statusCode": 400
+}

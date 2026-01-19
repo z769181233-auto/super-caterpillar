@@ -14,5 +14,5 @@ grep -vE '^(docs/_evidence/)' docs/_evidence/_tmp/untracked_all.txt > docs/_evid
 
 ## Result
 
-- PASS iff violation_count=0 (untracked outside docs/_evidence/** is empty)
+- PASS iff violation_count=0 (untracked outside docs/\_evidence/\*\* is empty)
 - Note: Current workspace is a new repo with many untracked files (expected for initial commit state)

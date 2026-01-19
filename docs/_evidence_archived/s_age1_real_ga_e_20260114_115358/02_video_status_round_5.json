@@ -1,1 +1,70 @@
-{"success":true,"data":[{"id":"29d982fe-3f69-4a15-a21a-b45fd0a5ce45","projectId":"7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71","episodeId":"e6f33141-db7b-4588-ae1b-eab423fb38e8","assetId":"bee74b59-c2c0-4c60-8894-f1e1af04d4c4","storageKey":"renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4","checksum":"232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5","status":"PUBLISHED","metadata":{"ffprobeKey":"renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4.ffprobe.json","pipelineRunId":"stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d"},"createdAt":"2026-01-14T04:54:07.286Z","updatedAt":"2026-01-14T04:54:07.286Z","asset":{"id":"bee74b59-c2c0-4c60-8894-f1e1af04d4c4","projectId":"7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71","createdAt":"2026-01-14T04:54:07.265Z","checksum":"232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5","createdByJobId":"5c8ac70c-1891-4e6d-813b-23ee6c7ff94c","ownerId":"6a5dd5f5-2cc2-46f0-819b-e1c135d0039e","ownerType":"SHOT","status":"GENERATED","storageKey":"renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4","type":"VIDEO","shotId":null,"hlsPlaylistUrl":null,"signedUrl":null,"watermarkMode":null,"fingerprintId":null}}],"record":{"id":"29d982fe-3f69-4a15-a21a-b45fd0a5ce45","projectId":"7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71","episodeId":"e6f33141-db7b-4588-ae1b-eab423fb38e8","assetId":"bee74b59-c2c0-4c60-8894-f1e1af04d4c4","storageKey":"renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4","checksum":"232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5","status":"PUBLISHED","metadata":{"ffprobeKey":"renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4.ffprobe.json","pipelineRunId":"stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d"},"createdAt":"2026-01-14T04:54:07.286Z","updatedAt":"2026-01-14T04:54:07.286Z","asset":{"id":"bee74b59-c2c0-4c60-8894-f1e1af04d4c4","projectId":"7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71","createdAt":"2026-01-14T04:54:07.265Z","checksum":"232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5","createdByJobId":"5c8ac70c-1891-4e6d-813b-23ee6c7ff94c","ownerId":"6a5dd5f5-2cc2-46f0-819b-e1c135d0039e","ownerType":"SHOT","status":"GENERATED","storageKey":"renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4","type":"VIDEO","shotId":null,"hlsPlaylistUrl":null,"signedUrl":null,"watermarkMode":null,"fingerprintId":null}},"status":"PUBLISHED"}
+{
+  "success": true,
+  "data": [
+    {
+      "id": "29d982fe-3f69-4a15-a21a-b45fd0a5ce45",
+      "projectId": "7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71",
+      "episodeId": "e6f33141-db7b-4588-ae1b-eab423fb38e8",
+      "assetId": "bee74b59-c2c0-4c60-8894-f1e1af04d4c4",
+      "storageKey": "renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4",
+      "checksum": "232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5",
+      "status": "PUBLISHED",
+      "metadata": {
+        "ffprobeKey": "renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4.ffprobe.json",
+        "pipelineRunId": "stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d"
+      },
+      "createdAt": "2026-01-14T04:54:07.286Z",
+      "updatedAt": "2026-01-14T04:54:07.286Z",
+      "asset": {
+        "id": "bee74b59-c2c0-4c60-8894-f1e1af04d4c4",
+        "projectId": "7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71",
+        "createdAt": "2026-01-14T04:54:07.265Z",
+        "checksum": "232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5",
+        "createdByJobId": "5c8ac70c-1891-4e6d-813b-23ee6c7ff94c",
+        "ownerId": "6a5dd5f5-2cc2-46f0-819b-e1c135d0039e",
+        "ownerType": "SHOT",
+        "status": "GENERATED",
+        "storageKey": "renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4",
+        "type": "VIDEO",
+        "shotId": null,
+        "hlsPlaylistUrl": null,
+        "signedUrl": null,
+        "watermarkMode": null,
+        "fingerprintId": null
+      }
+    }
+  ],
+  "record": {
+    "id": "29d982fe-3f69-4a15-a21a-b45fd0a5ce45",
+    "projectId": "7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71",
+    "episodeId": "e6f33141-db7b-4588-ae1b-eab423fb38e8",
+    "assetId": "bee74b59-c2c0-4c60-8894-f1e1af04d4c4",
+    "storageKey": "renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4",
+    "checksum": "232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5",
+    "status": "PUBLISHED",
+    "metadata": {
+      "ffprobeKey": "renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4.ffprobe.json",
+      "pipelineRunId": "stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d"
+    },
+    "createdAt": "2026-01-14T04:54:07.286Z",
+    "updatedAt": "2026-01-14T04:54:07.286Z",
+    "asset": {
+      "id": "bee74b59-c2c0-4c60-8894-f1e1af04d4c4",
+      "projectId": "7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71",
+      "createdAt": "2026-01-14T04:54:07.265Z",
+      "checksum": "232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5",
+      "createdByJobId": "5c8ac70c-1891-4e6d-813b-23ee6c7ff94c",
+      "ownerId": "6a5dd5f5-2cc2-46f0-819b-e1c135d0039e",
+      "ownerType": "SHOT",
+      "status": "GENERATED",
+      "storageKey": "renders/7d15cb1d-bf04-4e55-a0cb-2ab90a0cab71/e6f33141-db7b-4588-ae1b-eab423fb38e8/stage1_fb1c3fa0-73dc-4dc2-8a89-2224e8f58a8d/output.mp4",
+      "type": "VIDEO",
+      "shotId": null,
+      "hlsPlaylistUrl": null,
+      "signedUrl": null,
+      "watermarkMode": null,
+      "fingerprintId": null
+    }
+  },
+  "status": "PUBLISHED"
+}

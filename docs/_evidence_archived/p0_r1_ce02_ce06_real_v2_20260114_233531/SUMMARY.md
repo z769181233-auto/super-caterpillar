@@ -1,4 +1,5 @@
 # P0-R1 Industrial Gate Summary
+
 - Engine: ce06_novel_parsing
 - Engine Version: deterministic-fallback
 - TraceID: gate-p0r1-ce06-20260114_233531

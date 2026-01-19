@@ -10,7 +10,9 @@ export interface ProcessorResult {
   error?: string;
 }
 
-export async function processCE03VisualDensityJob(context: ProcessorContext): Promise<ProcessorResult> {
+export async function processCE03VisualDensityJob(
+  context: ProcessorContext
+): Promise<ProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
 
@@ -116,9 +118,9 @@ export async function processCE03VisualDensityJob(context: ProcessorContext): Pr
         totalTokens: 0,
         completionTokens: 0,
         promptTokens: 0,
-        model: 'heuristic-v1'
+        model: 'heuristic-v1',
       },
-      cost: 0 // Explicit 0 cost for pure router-based heuristic
+      cost: 0, // Explicit 0 cost for pure router-based heuristic
     });
 
     // 5. Orchestration (Trigger CE04)
@@ -167,7 +169,7 @@ export async function processCE03VisualDensityJob(context: ProcessorContext): Pr
       output: {
         densityScore,
         metrics: { score: densityScore },
-        billing_usage: { totalTokens: 0, model: 'heuristic-v1', cost: 0 } // Standardize Output
+        billing_usage: { totalTokens: 0, model: 'heuristic-v1', cost: 0 }, // Standardize Output
       },
     };
   } catch (error: any) {

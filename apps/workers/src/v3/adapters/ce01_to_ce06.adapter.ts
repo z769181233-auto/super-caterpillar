@@ -1,6 +1,6 @@
 /**
  * CE01 (External V3.0) to CE06 (Internal Stable) Protocol Adapter
- * 
+ *
  * V3.0 Manual (CE01): { text_chunk, prev_context }
  * Internal CE06: { structured_text, context_injection }
  */

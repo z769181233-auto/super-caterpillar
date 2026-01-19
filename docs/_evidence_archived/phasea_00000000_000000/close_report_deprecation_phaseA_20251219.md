@@ -6,8 +6,8 @@
 - Scope: docs-only (no code changes)
 - Policy (Authoritative):
   - Canonical workspace gate: MUST PASS
-  - untracked allowlist = docs/_evidence/** only
-  - repo-local tmp paths = docs/_evidence/_tmp/**
+  - untracked allowlist = docs/\_evidence/\*\* only
+  - repo-local tmp paths = docs/\_evidence/\_tmp/\*\*
 
 ## Final Authoritative Evidence (Canonical Workspace)
 
@@ -16,11 +16,11 @@
 - Workspace: ../SuperCaterpillar_canonical (git worktree)
 - Gate: PASS
 - tracked_count=19
-- untracked_count=6 (all under docs/_evidence/**)
+- untracked_count=6 (all under docs/\_evidence/\*\*)
 
 ### Phase A Verification Run (Canonical)
 
-- File: docs/_evidence/phaseA/phaseA_verification_run20251219_110515.md
+- File: docs/\_evidence/phaseA/phaseA_verification_run20251219_110515.md
 - Canonical workspace gate: PASS
 - Untracked allowlist: violation_count=0
 - Doc link spot checks: PASS
@@ -46,6 +46,7 @@ are superseded and MUST NOT be used to decide Close.
 ## Close Decision
 
 All hard requirements are satisfied:
+
 - Canonical gate: PASS
 - Phase A allowlist: violation_count=0
 - Doc chain: PASS

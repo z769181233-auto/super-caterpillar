@@ -30,7 +30,7 @@ export class WorkerController {
     private readonly orchestratorService: OrchestratorService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   /**
    * Worker 注册

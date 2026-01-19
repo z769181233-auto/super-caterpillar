@@ -27,7 +27,7 @@ export class WorkerService {
     private readonly auditLogService: AuditLogService,
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService
-  ) { }
+  ) {}
 
   /**
    * 注册或更新 Worker

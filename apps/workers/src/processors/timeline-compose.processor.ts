@@ -9,7 +9,7 @@ export interface TimelineShot {
   index: number;
   durationFrames: number;
   startFrames: number; // For auditing & offset calculation
-  endFrames: number;   // For auditing
+  endFrames: number; // For auditing
   framesTxtStorageKey: string;
   transition: 'none' | 'xfade';
   transitionFrames: number; // Overlap length
@@ -87,7 +87,9 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   const projectId = scene.episode.project.id;
   const episodeId = scene.episode.id;
 
-  console.log(`[TimelineCompose] [${traceId}] Found ${scene.shots.length} shots for scene ${sceneId}: ${scene.shots.map(s => s.id).join(', ')}`);
+  console.log(
+    `[TimelineCompose] [${traceId}] Found ${scene.shots.length} shots for scene ${sceneId}: ${scene.shots.map((s) => s.id).join(', ')}`
+  );
 
   if (scene.shots.length < 1) {
     throw new Error(
@@ -108,7 +110,9 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     const dialogue = params.dialogue || params.text || params.voiceText;
 
     if (dialogue && !params.voiceAssetStorageKey && engineHubClient) {
-      console.log(`[TimelineCompose] [${traceId}] Generating TTS for shot ${shot.id} (${dialogue.substring(0, 10)}...)`);
+      console.log(
+        `[TimelineCompose] [${traceId}] Generating TTS for shot ${shot.id} (${dialogue.substring(0, 10)}...)`
+      );
 
       try {
         const ttsRes = await engineHubClient.invoke<any, any>({
@@ -116,14 +120,14 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
           payload: {
             text: dialogue,
             voiceId: 'default', // TODO: Make configurable
-            speed: 1.0
+            speed: 1.0,
           },
           metadata: {
             jobId: job.id,
             traceId,
             projectId,
-            sceneId
-          }
+            sceneId,
+          },
         });
 
         if (ttsRes.success && ttsRes.output?.assetPath) {
@@ -145,15 +149,19 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
   // Persist updates to DB (Best Effort)
   if (pendingAudioUpdates.length > 0) {
-    console.log(`[TimelineCompose] [${traceId}] Persisting ${pendingAudioUpdates.length} audio keys to DB...`);
-    await Promise.allSettled(pendingAudioUpdates.map(u =>
-      prisma.shot.update({
-        where: { id: u.shotId },
-        data: {
-          params: shotParamsMap.get(u.shotId)
-        }
-      })
-    ));
+    console.log(
+      `[TimelineCompose] [${traceId}] Persisting ${pendingAudioUpdates.length} audio keys to DB...`
+    );
+    await Promise.allSettled(
+      pendingAudioUpdates.map((u) =>
+        prisma.shot.update({
+          where: { id: u.shotId },
+          data: {
+            params: shotParamsMap.get(u.shotId),
+          },
+        })
+      )
+    );
   }
 
   // 2. 编排确定性 Timeline 数据 (Hard Constraints)
@@ -169,11 +177,14 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
     // S4-8: 增强转场检测
     const transition = params.transition === 'xfade' ? 'xfade' : 'none';
-    const transitionFrames = transition === 'xfade' ? Math.floor((params.transitionSec || 0.5) * fps) : 0;
+    const transitionFrames =
+      transition === 'xfade' ? Math.floor((params.transitionSec || 0.5) * fps) : 0;
 
     // 安全校验：转场长度不能超过镜头时长一半
     if (transition === 'xfade' && transitionFrames >= durationFrames / 2) {
-      throw new Error(`[TimelineCompose] Transition frames (${transitionFrames}) too long for shot ${shot.id} duration (${durationFrames})`);
+      throw new Error(
+        `[TimelineCompose] Transition frames (${transitionFrames}) too long for shot ${shot.id} duration (${durationFrames})`
+      );
     }
 
     // 计算 Start/End (Auditing)
@@ -209,17 +220,21 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     shots: timelineShots,
     audio: {
       tracks: [
-        ...((job.payload as any).bgmStorageKey ? [{
-          id: 'bgm',
-          type: 'music' as const,
-          storageKey: (job.payload as any).bgmStorageKey,
-          gain: (job.payload as any).bgmGain || 0.5,
-          loop: (job.payload as any).bgmMode === 'loop',
-          ducking: { target: 'dialogue', gain: 0.2 },
-          truncate: 'shortest' as const,
-        }] : []),
+        ...((job.payload as any).bgmStorageKey
+          ? [
+              {
+                id: 'bgm',
+                type: 'music' as const,
+                storageKey: (job.payload as any).bgmStorageKey,
+                gain: (job.payload as any).bgmGain || 0.5,
+                loop: (job.payload as any).bgmMode === 'loop',
+                ducking: { target: 'dialogue', gain: 0.2 },
+                truncate: 'shortest' as const,
+              },
+            ]
+          : []),
         ...scene.shots
-          .map(s => {
+          .map((s) => {
             const params = shotParamsMap.get(s.id) || (s.params as any) || {};
             if (params.voiceAssetStorageKey) {
               const track: AudioTrack = {

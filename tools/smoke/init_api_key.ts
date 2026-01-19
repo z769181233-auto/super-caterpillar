@@ -289,7 +289,7 @@ async function main() {
     if (check.ownerUserId !== user.id || check.ownerOrgId !== organization.id) {
       throw new Error(
         `[smoke] apiKey binding mismatch. expected user=${user.id} org=${organization.id} but got user=${check.ownerUserId} org=${check.ownerOrgId}. ` +
-        `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
+          `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
       );
     }
     console.log(`✅ Verified apiKey binding: ${apiKey} -> user=${user.id} org=${organization.id}`);

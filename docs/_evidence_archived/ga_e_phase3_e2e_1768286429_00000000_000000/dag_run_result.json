@@ -1,1 +1,4 @@
-{"code":"REFERENCE_SHEET_REQUIRED","message":"referenceSheetId is required for SHOT_RENDER jobs"}
+{
+  "code": "REFERENCE_SHEET_REQUIRED",
+  "message": "referenceSheetId is required for SHOT_RENDER jobs"
+}

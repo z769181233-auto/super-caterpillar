@@ -15,7 +15,7 @@ import { createHmac, randomBytes, createHash } from 'crypto';
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) { }
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   /**
    * 记录审计日志
@@ -43,10 +43,17 @@ export class AuditLogService {
       const { req } = options;
 
       // PHASE-C: Capture Request-level Evidence (Spec V1.1)
-      const reqNonce = options.nonce || req?.headers['x-nonce'] || req?.headers['x-hmac-nonce'] || req?.hmacNonce;
-      const reqSignature = options.signature || req?.headers['x-signature'] || req?.headers['x-hmac-signature'] || req?.hmacSignature;
-      const reqTimestampStr = req?.headers['x-timestamp'] || req?.headers['x-hmac-timestamp'] || req?.hmacTimestamp;
-      const reqTimestamp = options.timestamp || (reqTimestampStr ? new Date(reqTimestampStr) : undefined);
+      const reqNonce =
+        options.nonce || req?.headers['x-nonce'] || req?.headers['x-hmac-nonce'] || req?.hmacNonce;
+      const reqSignature =
+        options.signature ||
+        req?.headers['x-signature'] ||
+        req?.headers['x-hmac-signature'] ||
+        req?.hmacSignature;
+      const reqTimestampStr =
+        req?.headers['x-timestamp'] || req?.headers['x-hmac-timestamp'] || req?.hmacTimestamp;
+      const reqTimestamp =
+        options.timestamp || (reqTimestampStr ? new Date(reqTimestampStr) : undefined);
 
       const ip = options.ip || req?.ip || req?.headers['x-forwarded-for'];
       const userAgent = options.userAgent || req?.headers['user-agent'];

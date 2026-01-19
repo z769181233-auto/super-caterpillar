@@ -1,4 +1,5 @@
 # P0-R4 VIDEO_RENDER Seal Summary
+
 - Engine: video_merge (JobType: VIDEO_RENDER)
 - Provider: ffmpeg-local
 - TraceID: gate-p0r4-video-20260114_233702

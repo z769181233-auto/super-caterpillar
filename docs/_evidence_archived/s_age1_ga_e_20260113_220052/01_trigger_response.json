@@ -1,1 +1,5 @@
-{"message":"Cannot POST /api/admin/prod-gate/stage1-pipeline","error":"Not Found","statusCode":404}
+{
+  "message": "Cannot POST /api/admin/prod-gate/stage1-pipeline",
+  "error": "Not Found",
+  "statusCode": 404
+}

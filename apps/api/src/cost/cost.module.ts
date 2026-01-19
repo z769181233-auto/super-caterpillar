@@ -11,4 +11,4 @@ import { CostController, InternalEventsController } from './cost.controller';
   providers: [CostLedgerService, CostLimitService],
   exports: [CostLedgerService, CostLimitService],
 })
-export class CostModule { }
+export class CostModule {}

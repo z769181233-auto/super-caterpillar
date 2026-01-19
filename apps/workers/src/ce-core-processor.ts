@@ -63,7 +63,10 @@ export async function processCE06Job(
   apiClient: ApiClient
 ): Promise<CE06NovelParsingOutput> {
   console.log('[S3-B Debug] processCE06Job START');
-  require('fs').appendFileSync('debug_ce06.txt', '[S3-B Debug] processCE06Job START ' + new Date().toISOString() + '\n');
+  require('fs').appendFileSync(
+    'debug_ce06.txt',
+    '[S3-B Debug] processCE06Job START ' + new Date().toISOString() + '\n'
+  );
   const jobStartTime = Date.now();
   const jobId = job.id;
   // Stage13-Final: 使用 Job.traceId（Pipeline 级 traceId）
@@ -143,7 +146,9 @@ export async function processCE06Job(
     // 3. 落库
     const parserVer = (result as any).audit_trail?.engine_version || 'v1.1';
     const textHash = createHash('sha256').update(rawText).digest('hex');
-    const idempotencyKey = createHash('sha256').update(`${projectId}${textHash}${parserVer}`).digest('hex');
+    const idempotencyKey = createHash('sha256')
+      .update(`${projectId}${textHash}${parserVer}`)
+      .digest('hex');
 
     await prisma.novelParseResult.upsert({
       where: { idempotencyKey },
@@ -443,7 +448,9 @@ export async function processCE03Job(
       structuredText = (job.payload as any).structured_text;
     } else {
       if (PRODUCTION_MODE) {
-        throw new Error(`PRODUCTION_MODE_FORBIDS_FALLBACK: No input data found for CE03 job ${jobId}`);
+        throw new Error(
+          `PRODUCTION_MODE_FORBIDS_FALLBACK: No input data found for CE03 job ${jobId}`
+        );
       }
       // Production Fallback: all scenes (legacy/bulk mode)
       const parseResult = await prisma.novelParseResult.findUnique({
@@ -468,8 +475,6 @@ export async function processCE03Job(
       engineKey: 'ce03_visual_density',
       inputSample: structuredText.substring(0, 100),
     });
-
-
 
     // 调用 CE03 Engine
     const engineReq: EngineInvocationRequest<CE03VisualDensityInput> = {
@@ -575,10 +580,19 @@ export async function processCE03Job(
         engineKey: 'ce03_visual_density',
         runId: pipelineRunId,
         cost: 0,
-        billingUsage: { totalTokens: 0, promptTokens: 0, completionTokens: 0, model: 'heuristic-v1' },
+        billingUsage: {
+          totalTokens: 0,
+          promptTokens: 0,
+          completionTokens: 0,
+          model: 'heuristic-v1',
+        },
       });
     } catch (billingError: any) {
-      logStructured('error', { action: 'CE03_BILLING_FAILED', jobId, error: billingError?.message });
+      logStructured('error', {
+        action: 'CE03_BILLING_FAILED',
+        jobId,
+        error: billingError?.message,
+      });
       // Non-blocking
     }
 
@@ -696,7 +710,9 @@ export async function processCE04Job(
       if (parseResult?.rawOutput) {
         structuredText = JSON.stringify(parseResult.rawOutput);
       } else if (PRODUCTION_MODE) {
-        throw new Error(`PRODUCTION_MODE_FORBIDS_FALLBACK: No scene data found for CE04 job ${jobId}`);
+        throw new Error(
+          `PRODUCTION_MODE_FORBIDS_FALLBACK: No scene data found for CE04 job ${jobId}`
+        );
       }
     }
 
@@ -719,7 +735,8 @@ export async function processCE04Job(
     };
 
     // Use an absolute path to a real existing image to satisfy FFmpeg
-    const dummyLocalImage = '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png';
+    const dummyLocalImage =
+      '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png';
 
     if (!fs.existsSync(dummyLocalImage)) {
       // Fallback if the above doesn't exist for some reason
@@ -791,7 +808,9 @@ export async function processCE04Job(
           const duration = shot.durationSeconds || 4;
           const content = `file '${realImagePath}'\nduration ${duration}\nfile '${realImagePath}'`;
           fs.writeFileSync(framesTxtPath, content);
-          console.log(`[CE04] Generated REAL SDXL frames.txt for shot ${shot.id} -> ${realImagePath}`);
+          console.log(
+            `[CE04] Generated REAL SDXL frames.txt for shot ${shot.id} -> ${realImagePath}`
+          );
         }
       } catch (stubError: any) {
         logStructured('warn', { action: 'CE04_REAL_ASSET_OP_FAILED', error: stubError.message });
@@ -823,11 +842,20 @@ export async function processCE04Job(
           engineKey: 'ce04_visual_enrichment',
           runId: pipelineRunId,
           cost: 0,
-          billingUsage: { totalTokens: 0, promptTokens: 0, completionTokens: 0, model: 'enrichment-mock' },
+          billingUsage: {
+            totalTokens: 0,
+            promptTokens: 0,
+            completionTokens: 0,
+            model: 'enrichment-mock',
+          },
         });
       }
     } catch (billingError: any) {
-      logStructured('error', { action: 'CE04_BILLING_FAILED', jobId, error: billingError?.message });
+      logStructured('error', {
+        action: 'CE04_BILLING_FAILED',
+        jobId,
+        error: billingError?.message,
+      });
       // Non-blocking
     }
 
@@ -847,7 +875,7 @@ export async function processCE04Job(
         latencyMs: duration,
         auditTrail: result.audit_trail,
       })
-      .catch(() => { });
+      .catch(() => {});
 
     return result;
   } catch (error: any) {
@@ -900,17 +928,22 @@ export async function processShotRenderJob(
       where: { id: shotId },
       select: { reviewStatus: true },
     });
-    if (!shot || (shot.reviewStatus !== ShotReviewStatus.APPROVED && shot.reviewStatus !== ShotReviewStatus.FINALIZED)) {
+    if (
+      !shot ||
+      (shot.reviewStatus !== ShotReviewStatus.APPROVED &&
+        shot.reviewStatus !== ShotReviewStatus.FINALIZED)
+    ) {
       logStructured('error', {
         action: 'PRODUCTION_MODE_BLOCK',
         reason: 'Shot not approved for rendering',
         shotId,
         reviewStatus: shot?.reviewStatus,
       });
-      throw new Error(`PRODUCTION_MODE_FORBIDS_UNAPPROVED_RENDER: Shot ${shotId} is ${shot?.reviewStatus || 'MISSING'}`);
+      throw new Error(
+        `PRODUCTION_MODE_FORBIDS_UNAPPROVED_RENDER: Shot ${shotId} is ${shot?.reviewStatus || 'MISSING'}`
+      );
     }
   }
-
 
   try {
     // 1. Resolve Input (Priority: CE04 Enriched -> Shot Text -> Fallback)
@@ -931,7 +964,7 @@ export async function processShotRenderJob(
       // Fallback: Try to fetch from Shot -> Scene -> NovelScene
       const richShot = await prisma.shot.findUnique({
         where: { id: shotId },
-        include: { scene: true }
+        include: { scene: true },
       });
       if (richShot?.scene?.summary) prompt = richShot.scene.summary;
 
@@ -941,9 +974,9 @@ export async function processShotRenderJob(
           logStructured('warn', {
             action: 'SHOT_RENDER_PROMPT_FALLBACK',
             reason: 'CE04 Metric missing or empty prompt',
-            jobId
+            jobId,
           });
-          prompt = "Cinematic scene (Fallback for Production Gate)";
+          prompt = 'Cinematic scene (Fallback for Production Gate)';
         } else {
           prompt = 'Fallback generic scene';
         }
@@ -954,7 +987,9 @@ export async function processShotRenderJob(
     if (payload?.style) style = payload.style;
 
     if (PRODUCTION_MODE && !prompt) {
-      throw new Error(`PRODUCTION_MODE_FORBIDS_EMPTY_PROMPT: No prompt found for SHOT_RENDER job ${jobId}`);
+      throw new Error(
+        `PRODUCTION_MODE_FORBIDS_EMPTY_PROMPT: No prompt found for SHOT_RENDER job ${jobId}`
+      );
     }
 
     // 2. [CORE FIX] 统一调用母引擎，不再直连 Original Selector
@@ -1035,7 +1070,6 @@ export async function processShotRenderJob(
       },
     });
 
-
     // 5. Billing (P0 Hotfix: Fixed)
     try {
       const costLedgerService = new CostLedgerService(apiClient, prisma);
@@ -1064,7 +1098,11 @@ export async function processShotRenderJob(
         });
       }
     } catch (billingError: any) {
-      logStructured('error', { action: 'SHOT_RENDER_BILLING_FAILED', jobId, error: billingError?.message });
+      logStructured('error', {
+        action: 'SHOT_RENDER_BILLING_FAILED',
+        jobId,
+        error: billingError?.message,
+      });
       // Non-blocking
     }
 
@@ -1086,7 +1124,7 @@ export async function processShotRenderJob(
         resourceId: asset.id,
         resourceType: 'asset',
       })
-      .catch(() => { });
+      .catch(() => {});
 
     return {
       status: 'SUCCESS',
@@ -1265,9 +1303,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-        summary: previousMemory.summary || '',
-        character_states: (previousMemory.characterStates as any) || {},
-      }
+          summary: previousMemory.summary || '',
+          character_states: (previousMemory.characterStates as any) || {},
+        }
       : undefined,
     context: {
       projectId,

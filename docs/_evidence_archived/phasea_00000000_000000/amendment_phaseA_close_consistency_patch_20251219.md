@@ -6,6 +6,7 @@
 ## Problem
 
 Earlier verification evidence contained:
+
 - an untracked allowlist that included `/tmp/` (invalid for `git status --porcelain` relative paths)
 - an example run showing `violation_count>0` (workspace had many untracked files)
 
@@ -38,4 +39,3 @@ test ! -s docs/_evidence/_tmp/untracked_violation.txt
 ## Outcome
 
 This patch only clarifies which evidence is authoritative. It does not change code, behavior, or the intended Phase A outcome.
-

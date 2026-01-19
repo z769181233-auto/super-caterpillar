@@ -6,8 +6,8 @@
 
 ## Changes
 
-- Created/updated: docs/_evidence/phaseD/INDEX.md
-- (Optional) Linked from: docs/_evidence/feature_phase_gate_20251219.md
+- Created/updated: docs/\_evidence/phaseD/INDEX.md
+- (Optional) Linked from: docs/\_evidence/feature_phase_gate_20251219.md
 
 ## Verification
 

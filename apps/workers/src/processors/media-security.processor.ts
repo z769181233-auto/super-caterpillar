@@ -33,7 +33,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     if (shotId) {
       const shot = await prisma.shot.findUnique({
         where: { id: shotId },
-        include: { scene: { include: { episode: { include: { project: true } } } } }
+        include: { scene: { include: { episode: { include: { project: true } } } } },
       });
       organizationId = shot?.scene?.episode?.project?.organizationId;
     } else if (projectId) {
@@ -47,10 +47,14 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     const asset = await prisma.asset.findUnique({ where: { id: targetAssetId } });
     if (!asset) throw new Error(`[MediaSecurity] Asset not found for id: ${targetAssetId}`);
     sourceStorageKey = asset.storageKey.replace(/^file:\/\//, '');
-    console.log(`[MediaSecurity] Resolved AssetId ${targetAssetId} to storageKey ${sourceStorageKey}`);
+    console.log(
+      `[MediaSecurity] Resolved AssetId ${targetAssetId} to storageKey ${sourceStorageKey}`
+    );
   } else if (shotId) {
     if (PRODUCTION_MODE) {
-      throw new Error(`PRODUCTION_MODE_FORBIDS_LEGACY_SHOT_ACCESS: Media Security requires explicit assetId in production.`);
+      throw new Error(
+        `PRODUCTION_MODE_FORBIDS_LEGACY_SHOT_ACCESS: Media Security requires explicit assetId in production.`
+      );
     }
     // Legacy / Fallback Mode (S4-7 Renders)
     console.log(`[MediaSecurity] Legacy Mode: Resolving Asset from ShotId ${shotId}`);
@@ -70,8 +74,15 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     throw new Error('[MediaSecurity] Missing required entry: assetId or shotId');
   }
 
-  // 2. Locate Source File
-  const runtimeDir = process.env.STORAGE_ROOT || path.resolve(process.cwd(), '.runtime');
+  // 2. Locate Source File & Root Resolution
+  let runtimeDir: string;
+  if (process.env.REPO_ROOT) {
+    runtimeDir = path.join(process.env.REPO_ROOT, '.data/storage');
+  } else if (process.env.STORAGE_ROOT) {
+    runtimeDir = process.env.STORAGE_ROOT;
+  } else {
+    runtimeDir = path.resolve(process.cwd(), '.runtime');
+  }
   const sourcePath = path.resolve(runtimeDir, sourceStorageKey);
 
   if (!fs.existsSync(sourcePath)) {
@@ -95,32 +106,49 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
   if (!fs.existsSync(hlsSecureDir)) fs.mkdirSync(hlsSecureDir, { recursive: true });
   const hlsPlaylistFilename = 'master.m3u8';
   const hlsPlaylistAbsPath = path.join(hlsSecureDir, hlsPlaylistFilename);
-  const hlsPlaylistRelativeKey = path.join(secureRelativeDir, 'hls', hlsPlaylistFilename).replace(/\\/g, '/');
+  const hlsPlaylistRelativeKey = path
+    .join(secureRelativeDir, 'hls', hlsPlaylistFilename)
+    .replace(/\\/g, '/');
 
   // 4. Real Security Operation: Watermark + HLS Packaging
-  console.log(`[MediaSecurity] Applying visible watermark and packaging HLS for ${sourceStorageKey}`);
+  console.log(
+    `[MediaSecurity] Applying visible watermark and packaging HLS for ${sourceStorageKey}`
+  );
 
   // FFmpeg: Visible Watermark + MP4 Output
   const watermarkText = 'SUPER_CATERPILLAR_UNIVERSE';
   const secureMp4Args = [
-    '-i', sourcePath,
-    '-vf', `drawtext=text='${watermarkText}':x=10:y=H-th-10:fontsize=24:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2`,
-    '-codec:v', 'libx264', '-pix_fmt', 'yuv420p',
-    '-codec:a', 'copy',
-    '-y', outputAbsPath
+    '-i',
+    sourcePath,
+    '-vf',
+    `drawtext=text='${watermarkText}':x=10:y=H-th-10:fontsize=24:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2`,
+    '-codec:v',
+    'libx264',
+    '-pix_fmt',
+    'yuv420p',
+    '-codec:a',
+    'copy',
+    '-y',
+    outputAbsPath,
   ];
 
   await runFfmpeg(secureMp4Args, 'CE09_Watermark_MP4');
 
   // FFmpeg: HLS Packaging from Secure MP4
   const hlsArgs = [
-    '-i', outputAbsPath,
-    '-c', 'copy',
-    '-start_number', '0',
-    '-hls_time', '10',
-    '-hls_list_size', '0',
-    '-f', 'hls',
-    hlsPlaylistAbsPath
+    '-i',
+    outputAbsPath,
+    '-c',
+    'copy',
+    '-start_number',
+    '0',
+    '-hls_time',
+    '10',
+    '-hls_list_size',
+    '0',
+    '-f',
+    'hls',
+    hlsPlaylistAbsPath,
   ];
   await runFfmpeg(hlsArgs, 'CE09_HLS_Secure');
 
@@ -133,15 +161,15 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
   // 5. Update Asset (Security Link - Dedicated Columns DBSpec V1.1)
   // Fix: Create SecurityFingerprint record first to satisfy FK constraint
   let fpRecord = await prisma.securityFingerprint.findFirst({
-    where: { assetId: targetAssetId }
+    where: { assetId: targetAssetId },
   });
 
   if (!fpRecord) {
     fpRecord = await prisma.securityFingerprint.create({
       data: {
         assetId: targetAssetId,
-        fpVector: { algorithm: 'sha256', hash: fingerprint }
-      }
+        fpVector: { algorithm: 'sha256', hash: fingerprint },
+      },
     });
   }
 
@@ -168,7 +196,9 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
       },
     });
   } catch (e) {
-    console.log(`[MediaSecurity] No ShotJob record for ID ${job.id} to update securityProcessed status.`);
+    console.log(
+      `[MediaSecurity] No ShotJob record for ID ${job.id} to update securityProcessed status.`
+    );
   }
 
   // 5. Audit
@@ -177,13 +207,13 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
       resourceType: 'asset',
       resourceId: targetAssetId,
       action: 'ce09.media_security.success',
-      orgId: (organizationId && organizationId !== 'unknown') ? organizationId : undefined,
+      orgId: organizationId && organizationId !== 'unknown' ? organizationId : undefined,
       details: {
         jobId: job.id,
         fingerprint,
         watermark: 'SCU',
         pipelineRunId,
-        legacyShotId: shotId
+        legacyShotId: shotId,
       },
     },
   });

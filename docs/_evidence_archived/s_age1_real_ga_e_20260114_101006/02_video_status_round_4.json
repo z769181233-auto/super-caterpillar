@@ -1,1 +1,70 @@
-{"success":true,"data":[{"id":"57dbfcc1-575b-42c7-9673-c9464c56f821","projectId":"27a4e76b-69c8-42a8-b3c1-62dbfee143fc","episodeId":"31e4e7ff-e21a-4bfd-8299-f69cbaac7148","assetId":"ed0d8504-989e-4b77-92eb-6e805899987f","storageKey":"renders/27a4e76b-69c8-42a8-b3c1-62dbfee143fc/31e4e7ff-e21a-4bfd-8299-f69cbaac7148/stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e/output.mp4","checksum":"232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5","status":"INTERNAL_READY","metadata":{"publishedAt":"2026-01-14T03:10:13.032Z","pipelineRunId":"stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e"},"createdAt":"2026-01-14T03:10:13.033Z","updatedAt":"2026-01-14T03:10:13.033Z","asset":{"id":"ed0d8504-989e-4b77-92eb-6e805899987f","projectId":"27a4e76b-69c8-42a8-b3c1-62dbfee143fc","createdAt":"2026-01-14T03:10:12.863Z","checksum":"232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5","createdByJobId":"04d43eac-5419-40e9-8db5-dade876eeef7","ownerId":"21e2dd5a-790e-4256-b6dd-4ae08ea6e19f","ownerType":"SHOT","status":"GENERATED","storageKey":"renders/27a4e76b-69c8-42a8-b3c1-62dbfee143fc/31e4e7ff-e21a-4bfd-8299-f69cbaac7148/stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e/output.mp4","type":"VIDEO","shotId":null,"hlsPlaylistUrl":null,"signedUrl":null,"watermarkMode":null,"fingerprintId":null}}],"record":{"id":"57dbfcc1-575b-42c7-9673-c9464c56f821","projectId":"27a4e76b-69c8-42a8-b3c1-62dbfee143fc","episodeId":"31e4e7ff-e21a-4bfd-8299-f69cbaac7148","assetId":"ed0d8504-989e-4b77-92eb-6e805899987f","storageKey":"renders/27a4e76b-69c8-42a8-b3c1-62dbfee143fc/31e4e7ff-e21a-4bfd-8299-f69cbaac7148/stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e/output.mp4","checksum":"232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5","status":"INTERNAL_READY","metadata":{"publishedAt":"2026-01-14T03:10:13.032Z","pipelineRunId":"stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e"},"createdAt":"2026-01-14T03:10:13.033Z","updatedAt":"2026-01-14T03:10:13.033Z","asset":{"id":"ed0d8504-989e-4b77-92eb-6e805899987f","projectId":"27a4e76b-69c8-42a8-b3c1-62dbfee143fc","createdAt":"2026-01-14T03:10:12.863Z","checksum":"232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5","createdByJobId":"04d43eac-5419-40e9-8db5-dade876eeef7","ownerId":"21e2dd5a-790e-4256-b6dd-4ae08ea6e19f","ownerType":"SHOT","status":"GENERATED","storageKey":"renders/27a4e76b-69c8-42a8-b3c1-62dbfee143fc/31e4e7ff-e21a-4bfd-8299-f69cbaac7148/stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e/output.mp4","type":"VIDEO","shotId":null,"hlsPlaylistUrl":null,"signedUrl":null,"watermarkMode":null,"fingerprintId":null}},"status":"INTERNAL_READY"}
+{
+  "success": true,
+  "data": [
+    {
+      "id": "57dbfcc1-575b-42c7-9673-c9464c56f821",
+      "projectId": "27a4e76b-69c8-42a8-b3c1-62dbfee143fc",
+      "episodeId": "31e4e7ff-e21a-4bfd-8299-f69cbaac7148",
+      "assetId": "ed0d8504-989e-4b77-92eb-6e805899987f",
+      "storageKey": "renders/27a4e76b-69c8-42a8-b3c1-62dbfee143fc/31e4e7ff-e21a-4bfd-8299-f69cbaac7148/stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e/output.mp4",
+      "checksum": "232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5",
+      "status": "INTERNAL_READY",
+      "metadata": {
+        "publishedAt": "2026-01-14T03:10:13.032Z",
+        "pipelineRunId": "stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e"
+      },
+      "createdAt": "2026-01-14T03:10:13.033Z",
+      "updatedAt": "2026-01-14T03:10:13.033Z",
+      "asset": {
+        "id": "ed0d8504-989e-4b77-92eb-6e805899987f",
+        "projectId": "27a4e76b-69c8-42a8-b3c1-62dbfee143fc",
+        "createdAt": "2026-01-14T03:10:12.863Z",
+        "checksum": "232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5",
+        "createdByJobId": "04d43eac-5419-40e9-8db5-dade876eeef7",
+        "ownerId": "21e2dd5a-790e-4256-b6dd-4ae08ea6e19f",
+        "ownerType": "SHOT",
+        "status": "GENERATED",
+        "storageKey": "renders/27a4e76b-69c8-42a8-b3c1-62dbfee143fc/31e4e7ff-e21a-4bfd-8299-f69cbaac7148/stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e/output.mp4",
+        "type": "VIDEO",
+        "shotId": null,
+        "hlsPlaylistUrl": null,
+        "signedUrl": null,
+        "watermarkMode": null,
+        "fingerprintId": null
+      }
+    }
+  ],
+  "record": {
+    "id": "57dbfcc1-575b-42c7-9673-c9464c56f821",
+    "projectId": "27a4e76b-69c8-42a8-b3c1-62dbfee143fc",
+    "episodeId": "31e4e7ff-e21a-4bfd-8299-f69cbaac7148",
+    "assetId": "ed0d8504-989e-4b77-92eb-6e805899987f",
+    "storageKey": "renders/27a4e76b-69c8-42a8-b3c1-62dbfee143fc/31e4e7ff-e21a-4bfd-8299-f69cbaac7148/stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e/output.mp4",
+    "checksum": "232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5",
+    "status": "INTERNAL_READY",
+    "metadata": {
+      "publishedAt": "2026-01-14T03:10:13.032Z",
+      "pipelineRunId": "stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e"
+    },
+    "createdAt": "2026-01-14T03:10:13.033Z",
+    "updatedAt": "2026-01-14T03:10:13.033Z",
+    "asset": {
+      "id": "ed0d8504-989e-4b77-92eb-6e805899987f",
+      "projectId": "27a4e76b-69c8-42a8-b3c1-62dbfee143fc",
+      "createdAt": "2026-01-14T03:10:12.863Z",
+      "checksum": "232fd1455c7fe087a3c4c8c3f010879edc7e32ba3e7effb58ead67375e642ad5",
+      "createdByJobId": "04d43eac-5419-40e9-8db5-dade876eeef7",
+      "ownerId": "21e2dd5a-790e-4256-b6dd-4ae08ea6e19f",
+      "ownerType": "SHOT",
+      "status": "GENERATED",
+      "storageKey": "renders/27a4e76b-69c8-42a8-b3c1-62dbfee143fc/31e4e7ff-e21a-4bfd-8299-f69cbaac7148/stage1_f04ef887-2d90-4fc8-afd4-a5375a01be6e/output.mp4",
+      "type": "VIDEO",
+      "shotId": null,
+      "hlsPlaylistUrl": null,
+      "signedUrl": null,
+      "watermarkMode": null,
+      "fingerprintId": null
+    }
+  },
+  "status": "INTERNAL_READY"
+}

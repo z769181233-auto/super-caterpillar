@@ -11,17 +11,17 @@
 ## 审计封板与收口交付 (STAGE F0 - F4)
 
 - [x] STAGE F0 — 证据封存索引 (EVIDENCE_INDEX.json) <!-- id: 17 -->
-    - [x] 遍历证据目录生成 SHA256 校验和
-    - [x] 生成 `EVIDENCE_INDEX.json`
+  - [x] 遍历证据目录生成 SHA256 校验和
+  - [x] 生成 `EVIDENCE_INDEX.json`
 - [x] STAGE F1 — 最终产物前缀 SSOT 对齐 (final=videos/) <!-- id: 18 -->
-    - [x] 修改 `VIDEO_RENDER` 最终落盘路径由 `renders/` 收口至 `videos/`
-    - [x] 更新资产 `storageKey` 为 `videos/` 前缀
-    - [x] 增加最终产物断言：`find .runtime/videos -name "*.mp4"`
+  - [x] 修改 `VIDEO_RENDER` 最终落盘路径由 `renders/` 收口至 `videos/`
+  - [x] 更新资产 `storageKey` 为 `videos/` 前缀
+  - [x] 增加最终产物断言：`find .runtime/videos -name "*.mp4"`
 - [x] STAGE F2 — 门禁硬化收口 <!-- id: 19 -->
-    - [x] `gate-shot-render-real-assert.sh` 增加像素方差阈值校验 (防纯色)
-    - [x] `gate-prod_slice_v1_real.sh` 同步断言 `videos/` 产物及 `ffprobe`
+  - [x] `gate-shot-render-real-assert.sh` 增加像素方差阈值校验 (防纯色)
+  - [x] `gate-prod_slice_v1_real.sh` 同步断言 `videos/` 产物及 `ffprobe`
 - [x] STAGE F3 — 任务清单与 Walkthrough 收口 (最终产物 prefix=videos/) <!-- id: 20 -->
-    - [x] `task.md` 补齐说明
-    - [x] `walkthrough.md` 新增“审计裁决摘要”段落
+  - [x] `task.md` 补齐说明
+  - [x] `walkthrough.md` 新增“审计裁决摘要”段落
 - [x] STAGE F4 — Git Tag/封板声明 (seal/phase5A_real_video_pass_20260116_v3) <!-- id: 21 -->
-    - [x] 执行 `git tag seal/phase5A_real_video_pass_20260116_v3`
+  - [x] 执行 `git tag seal/phase5A_real_video_pass_20260116_v3`

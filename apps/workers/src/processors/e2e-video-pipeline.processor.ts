@@ -44,7 +44,9 @@ export interface E2EVideoPipelineOutput {
  * 处理 PIPELINE_E2E_VIDEO Job
  * 策略: Fire-and-forget (Spawn CE06 and exit)
  */
-export async function processE2EVideoPipelineJob(ctx: ProcessorContext): Promise<E2EVideoPipelineOutput> {
+export async function processE2EVideoPipelineJob(
+  ctx: ProcessorContext
+): Promise<E2EVideoPipelineOutput> {
   const { prisma, job, apiClient } = ctx;
   const jobId = job.id;
   const payload = job.payload as E2EVideoPipelinePayload;
@@ -128,7 +130,7 @@ export async function processE2EVideoPipelineJob(ctx: ProcessorContext): Promise
             existingCE06Job: existingCE06.id,
           },
         })
-        .catch(() => { });
+        .catch(() => {});
 
       return {
         status: 'SPAWNED_CE06', // 逻辑上已成功
@@ -200,10 +202,9 @@ export async function processE2EVideoPipelineJob(ctx: ProcessorContext): Promise
             missingFields,
           },
         })
-        .catch(() => { });
+        .catch(() => {});
       throw new Error(errMsg);
     }
-
 
     /**
      * Polling Helper: Wait for a job to reach a terminal state
@@ -275,7 +276,7 @@ export async function processE2EVideoPipelineJob(ctx: ProcessorContext): Promise
           ce06JobId: newCE06.id,
         },
       })
-      .catch(() => { });
+      .catch(() => {});
 
     // =========================================================================
     // EXEC 2: PIPELINE_PROD_VIDEO_V1 Orchestration (Chain CE03 -> CE04)
@@ -301,12 +302,12 @@ export async function processE2EVideoPipelineJob(ctx: ProcessorContext): Promise
             sceneId: sceneId!,
             traceId,
             rootJobId: jobId,
-            pipelineRunId
+            pipelineRunId,
           },
           episodeId: episodeId!,
           sceneId: sceneId!,
-          shotId: shotId!
-        }
+          shotId: shotId!,
+        },
       });
       logStructured('info', { action: 'V1_CHAIN_SPAWN_CE03', jobId, ce03JobId: ce03Job.id });
 
@@ -327,12 +328,12 @@ export async function processE2EVideoPipelineJob(ctx: ProcessorContext): Promise
             sceneId: sceneId!,
             traceId,
             rootJobId: jobId,
-            pipelineRunId
+            pipelineRunId,
           },
           episodeId: episodeId!,
           sceneId: sceneId!,
-          shotId: shotId!
-        }
+          shotId: shotId!,
+        },
       });
       logStructured('info', { action: 'V1_CHAIN_SPAWN_CE04', jobId, ce04JobId: ce04Job.id });
 
@@ -346,7 +347,7 @@ export async function processE2EVideoPipelineJob(ctx: ProcessorContext): Promise
         spawned: {
           ce06JobId: newCE06.id,
           // extend logic if interface allowed, but this fulfills the gate requirement
-        }
+        },
       };
     }
 
@@ -377,9 +378,8 @@ export async function processE2EVideoPipelineJob(ctx: ProcessorContext): Promise
           action: 'pipeline.e2e_video.fail',
         },
       })
-      .catch(() => { });
+      .catch(() => {});
 
     throw error;
   }
 }
-

@@ -1,1 +1,5 @@
-{"message":"Cannot POST /api/projects/prod_slice_v1_20260115_003706/novel-sources","error":"Not Found","statusCode":404}
+{
+  "message": "Cannot POST /api/projects/prod_slice_v1_20260115_003706/novel-sources",
+  "error": "Not Found",
+  "statusCode": 404
+}

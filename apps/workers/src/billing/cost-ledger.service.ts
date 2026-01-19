@@ -19,7 +19,7 @@ export class CostLedgerService {
   constructor(
     private apiClient: ApiClient,
     private prisma?: PrismaClient
-  ) { }
+  ) {}
 
   /**
    * 记录计费（通用入口 - 商业级闭环）
@@ -42,9 +42,15 @@ export class CostLedgerService {
     idempotencyKey?: string; // Optional override
   }): Promise<void> {
     const {
-      jobId, jobType, projectId, userId, billingUsage,
-      gpuSeconds = 0, cpuSeconds = 0, cost,
-      engineKey
+      jobId,
+      jobType,
+      projectId,
+      userId,
+      billingUsage,
+      gpuSeconds = 0,
+      cpuSeconds = 0,
+      cost,
+      engineKey,
     } = params;
 
     // Validate Usage: at least one metric must be present
@@ -56,7 +62,8 @@ export class CostLedgerService {
     // However, if NO usage and NO cost provided, we skip.
     if (!hasUsage && cost === undefined) {
       process.stdout.write(
-        util.format(`[BILLING_SKIP] No usage (tokens/gpu/cpu) and no explicit cost for ${jobId}`) + '\n'
+        util.format(`[BILLING_SKIP] No usage (tokens/gpu/cpu) and no explicit cost for ${jobId}`) +
+          '\n'
       );
       return;
     }
@@ -72,7 +79,8 @@ export class CostLedgerService {
     // For now, we assume caller or PricingRouter provides 'cost' for time-based metrics
 
     // Idempotency Key Strategy: runId:engineKey or jobId (fallback)
-    const idempotencyKey = params.idempotencyKey ||
+    const idempotencyKey =
+      params.idempotencyKey ||
       (params.runId ? `${params.runId}:${engineKey}` : `${jobId}:${engineKey}`);
 
     try {
@@ -84,8 +92,8 @@ export class CostLedgerService {
         attempt: params.attempt,
         costAmount: finalCost,
         currency: 'USD', // Standardized for now
-        billingUnit: totalTokens > 0 ? 'tokens' : (gpuSeconds > 0 ? 'gpu_seconds' : 'cpu_seconds'),
-        quantity: totalTokens > 0 ? totalTokens : (gpuSeconds > 0 ? gpuSeconds : cpuSeconds),
+        billingUnit: totalTokens > 0 ? 'tokens' : gpuSeconds > 0 ? 'gpu_seconds' : 'cpu_seconds',
+        quantity: totalTokens > 0 ? totalTokens : gpuSeconds > 0 ? gpuSeconds : cpuSeconds,
         metadata: {
           engineKey,
           traceId: params.traceId,
@@ -94,7 +102,7 @@ export class CostLedgerService {
           cpuSeconds,
           totalTokens,
           model: billingUsage?.model || 'unknown',
-          idempotencyKey // Pass to API for deduplication
+          idempotencyKey, // Pass to API for deduplication
         },
       });
 
@@ -128,8 +136,9 @@ export class CostLedgerService {
                 attempt: params.attempt,
                 costAmount: finalCost,
                 currency: 'USD',
-                billingUnit: totalTokens > 0 ? 'tokens' : (gpuSeconds > 0 ? 'gpu_seconds' : 'cpu_seconds'),
-                quantity: totalTokens > 0 ? totalTokens : (gpuSeconds > 0 ? gpuSeconds : cpuSeconds),
+                billingUnit:
+                  totalTokens > 0 ? 'tokens' : gpuSeconds > 0 ? 'gpu_seconds' : 'cpu_seconds',
+                quantity: totalTokens > 0 ? totalTokens : gpuSeconds > 0 ? gpuSeconds : cpuSeconds,
                 metadata: {
                   engineKey,
                   traceId: params.traceId,
@@ -138,7 +147,7 @@ export class CostLedgerService {
                   cpuSeconds,
                   totalTokens,
                   model: billingUsage?.model || 'unknown',
-                  idempotencyKey
+                  idempotencyKey,
                 },
               } as any,
               status: 'PENDING',
@@ -151,7 +160,9 @@ export class CostLedgerService {
             util.format(`[CostLedger] 📥 Event saved to Outbox: ${idempotencyKey}`) + '\n'
           );
         } catch (dbError: any) {
-          process.stderr.write(util.format(`[CostLedger] ‼️ Failed to write Outbox: ${dbError.message}`) + '\n');
+          process.stderr.write(
+            util.format(`[CostLedger] ‼️ Failed to write Outbox: ${dbError.message}`) + '\n'
+          );
         }
       }
 

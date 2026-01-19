@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export enum BudgetLevel {
@@ -12,7 +12,7 @@ export enum BudgetLevel {
 export class BudgetService {
   private readonly logger = new Logger(BudgetService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async getBudgetStatus(
     organizationId: string,

@@ -1,1 +1,4 @@
-{"code":"SHOT_NOT_APPROVED","message":"Production mode requires human approval (APPROVED/FINALIZED) before rendering."}
+{
+  "code": "SHOT_NOT_APPROVED",
+  "message": "Production mode requires human approval (APPROVED/FINALIZED) before rendering."
+}

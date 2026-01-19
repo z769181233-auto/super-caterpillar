@@ -2,7 +2,7 @@
 
 - Date: 2025-12-19
 - Prereq: PASS canonical workspace gate
-  - bash docs/_evidence/_tools/check_canonical_workspace.sh
+  - bash docs/\_evidence/\_tools/check_canonical_workspace.sh
 
 ## Run
 
@@ -35,5 +35,4 @@ echo "PASS: Phase A canonical-only verification completed"
 
 ## Output Evidence (to be created when run in canonical workspace)
 
-docs/_evidence/phaseA/phaseA_verification_run<YYYYMMDD_HHMMSS>.md
-
+docs/\_evidence/phaseA/phaseA_verification_run<YYYYMMDD_HHMMSS>.md

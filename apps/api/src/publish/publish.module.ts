@@ -4,9 +4,9 @@ import { PublishedVideoController } from './published-video.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [PublishedVideoController],
-    providers: [PublishedVideoService],
-    exports: [PublishedVideoService],
+  imports: [PrismaModule],
+  controllers: [PublishedVideoController],
+  providers: [PublishedVideoService],
+  exports: [PublishedVideoService],
 })
-export class PublishModule { }
+export class PublishModule {}

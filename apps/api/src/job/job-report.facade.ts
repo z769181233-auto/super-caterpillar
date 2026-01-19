@@ -30,11 +30,11 @@ export class JobReportFacade {
     private readonly directorSolver: DirectorConstraintSolverService,
     @Inject(CostLedgerService)
     private readonly costLedger: CostLedgerService
-  ) { }
+  ) {}
 
   /**
    * PLAN-1 SSOT: Normalize storage key (remove path pollution)
-   * 
+   *
    * Rules:
    * - Remove absolute paths (starts with /)
    * - Remove .runtime/ prefix
@@ -362,7 +362,9 @@ export class JobReportFacade {
           metadata: metrics,
         });
       } catch (e: any) {
-        this.logger.error(`[Billing] Failed to record CE11 cost for job ${updatedJob.id}: ${e.message}`);
+        this.logger.error(
+          `[Billing] Failed to record CE11 cost for job ${updatedJob.id}: ${e.message}`
+        );
       }
     }
 

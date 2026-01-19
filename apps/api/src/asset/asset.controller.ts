@@ -19,7 +19,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('assets')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class AssetController {
-  constructor(private readonly assetService: AssetService) { }
+  constructor(private readonly assetService: AssetService) {}
 
   /**
    * GET /assets/:assetId/secure-url

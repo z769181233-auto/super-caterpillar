@@ -3,7 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import type { Prisma } from 'database';
 
-const ALLOWED_BILLING_UNITS = new Set(['job', 'tokens', 'seconds', 'frames', 'gpu_seconds', 'cpu_seconds']);
+const ALLOWED_BILLING_UNITS = new Set([
+  'job',
+  'tokens',
+  'seconds',
+  'frames',
+  'gpu_seconds',
+  'cpu_seconds',
+]);
 
 export interface RecordCostEventParams {
   userId: string;
@@ -26,7 +33,7 @@ export class CostLedgerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly billingService: BillingService
-  ) { }
+  ) {}
 
   /**
    * 从Worker事件记录成本到账本
@@ -97,7 +104,7 @@ export class CostLedgerService {
         const ledger = await tx.costLedger.create({ data });
 
         // 2. Consume Credits (Atomically within the same transaction if possible)
-        // Note: BillingService uses its own transaction, but NestJS PrismaService 
+        // Note: BillingService uses its own transaction, but NestJS PrismaService
         // usually handles nested transactions via the same client if designed so.
         // Here we call it directly.
         await this.billingService.consumeCredits(

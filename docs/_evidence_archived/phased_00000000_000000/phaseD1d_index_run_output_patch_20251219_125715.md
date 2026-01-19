@@ -6,7 +6,7 @@
 
 ## Target Evidence
 
-- Patched: docs/_evidence/phaseD/phaseD_index_update_run_20251219_125053.md
+- Patched: docs/\_evidence/phaseD/phaseD_index_update_run_20251219_125053.md
 
 ## Why the original output was empty
 
@@ -15,7 +15,7 @@
 
 ## What was done
 
-- Re-ran: docs/_evidence/_tools/verify_entry.sh
+- Re-ran: docs/\_evidence/\_tools/verify_entry.sh
 - Captured: stdout+stderr (tail 200)
 - Inserted captured output into the target evidence file under "## Verification".
 

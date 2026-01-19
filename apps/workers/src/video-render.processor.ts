@@ -14,9 +14,13 @@ const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 const activeProcesses = new Set<ChildProcess>();
 
 export function cleanupVideoRenderProcesses() {
-  process.stdout.write(util.format(`[VideoRender] Cleaning up ${activeProcesses.size} active processes...`) + '\n');
+  process.stdout.write(
+    util.format(`[VideoRender] Cleaning up ${activeProcesses.size} active processes...`) + '\n'
+  );
   for (const cp of activeProcesses) {
-    try { cp.kill('SIGKILL'); } catch (e) { }
+    try {
+      cp.kill('SIGKILL');
+    } catch (e) {}
   }
   activeProcesses.clear();
 }
@@ -56,30 +60,43 @@ export async function processVideoRenderJob(
 
   // 2. Shot Ownership & Approval Gate
   const shotId = payload?.shotId;
-  if (!shotId && !pipelineRunId) throw new Error(`[VIDEO_RENDER] shotId or pipelineRunId is required.`);
+  if (!shotId && !pipelineRunId)
+    throw new Error(`[VIDEO_RENDER] shotId or pipelineRunId is required.`);
 
   if (PRODUCTION_MODE && shotId) {
-    const shot = await prisma.shot.findUnique({ where: { id: shotId }, select: { reviewStatus: true } });
-    if (!shot || (shot.reviewStatus !== ShotReviewStatus.APPROVED && shot.reviewStatus !== ShotReviewStatus.FINALIZED)) {
-      throw new Error(`PRODUCTION_MODE_FORBIDS_UNAPPROVED_VIDEO_RENDER: Shot ${shotId} is ${shot?.reviewStatus || 'MISSING'}`);
+    const shot = await prisma.shot.findUnique({
+      where: { id: shotId },
+      select: { reviewStatus: true },
+    });
+    if (
+      !shot ||
+      (shot.reviewStatus !== ShotReviewStatus.APPROVED &&
+        shot.reviewStatus !== ShotReviewStatus.FINALIZED)
+    ) {
+      throw new Error(
+        `PRODUCTION_MODE_FORBIDS_UNAPPROVED_VIDEO_RENDER: Shot ${shotId} is ${shot?.reviewStatus || 'MISSING'}`
+      );
     }
   }
 
   // 3. Frame Aggregation logic
-  let frameKeys = payload.frameKeys as string[] || [];
+  let frameKeys = (payload.frameKeys as string[]) || [];
   if (pipelineRunId && frameKeys.length === 0) {
     console.log(`[Stage1] Aggregating frames for pipelineRunId: ${pipelineRunId}`);
     const renderJobs = await prisma.shotJob.findMany({
       where: {
         payload: { path: ['pipelineRunId'], equals: pipelineRunId },
         type: 'SHOT_RENDER',
-        status: 'SUCCEEDED'
+        status: 'SUCCEEDED',
       },
       select: { result: true },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     });
-    frameKeys = renderJobs.map(j => (j.result as any)?.storageKey || (j.result as any)?.imageKey).filter(Boolean);
-    if (frameKeys.length === 0) throw new Error(`No frames found for pipelineRunId: ${pipelineRunId}`);
+    frameKeys = renderJobs
+      .map((j) => (j.result as any)?.storageKey || (j.result as any)?.imageKey)
+      .filter(Boolean);
+    if (frameKeys.length === 0)
+      throw new Error(`No frames found for pipelineRunId: ${pipelineRunId}`);
   }
 
   if (frameKeys.length === 0) throw new Error('No frame keys provided');
@@ -129,19 +146,65 @@ export async function processVideoRenderJob(
       // Single Image Loop Mode
       const inputAbs = resolveAssetPath(frameKeys[0]);
       await assertFrameFileOk(inputAbs);
-      args = ['-hide_banner', '-loglevel', 'error', '-loop', '1', '-t', '1', '-i', inputAbs, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', String(fps), '-y', tempOutput];
+      args = [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-loop',
+        '1',
+        '-t',
+        '1',
+        '-i',
+        inputAbs,
+        '-c:v',
+        'libx264',
+        '-pix_fmt',
+        'yuv420p',
+        '-r',
+        String(fps),
+        '-y',
+        tempOutput,
+      ];
     } else {
       // Concat Mode
       const listFilePath = path.join(workspaceDir, 'input.txt');
-      let listContent = frameKeys.map(k => `file '${resolveAssetPath(k)}'\nduration 1.0`).join('\n');
+      let listContent = frameKeys
+        .map((k) => `file '${resolveAssetPath(k)}'\nduration 1.0`)
+        .join('\n');
       listContent += `\nfile '${resolveAssetPath(frameKeys[frameKeys.length - 1])}'`;
       fs.writeFileSync(listFilePath, listContent);
 
       const useTestsrc = !PRODUCTION_MODE && process.env.VIDEO_RENDER_TESTSRC === '1';
       if (useTestsrc) {
-        args = ['-f', 'lavfi', '-i', 'testsrc=duration=1:size=640x360:rate=24', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', tempOutput];
+        args = [
+          '-f',
+          'lavfi',
+          '-i',
+          'testsrc=duration=1:size=640x360:rate=24',
+          '-c:v',
+          'libx264',
+          '-pix_fmt',
+          'yuv420p',
+          '-y',
+          tempOutput,
+        ];
       } else {
-        args = ['-f', 'concat', '-safe', '0', '-i', listFilePath, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', String(fps), '-y', tempOutput];
+        args = [
+          '-f',
+          'concat',
+          '-safe',
+          '0',
+          '-i',
+          listFilePath,
+          '-c:v',
+          'libx264',
+          '-pix_fmt',
+          'yuv420p',
+          '-r',
+          String(fps),
+          '-y',
+          tempOutput,
+        ];
       }
     }
 
@@ -151,8 +214,8 @@ export async function processVideoRenderJob(
       const proc = spawn(cmd, args);
       activeProcesses.add(proc);
       let stderr = '';
-      proc.stderr?.on('data', d => stderr += d.toString());
-      proc.on('close', code => {
+      proc.stderr?.on('data', (d) => (stderr += d.toString()));
+      proc.on('close', (code) => {
         activeProcesses.delete(proc);
         if (code === 0) resolve();
         else reject(new Error(`FFmpeg failed (${code}): ${stderr.slice(-200)}`));
@@ -166,7 +229,13 @@ export async function processVideoRenderJob(
 
     // P4-FIX-1.1: Asset Idempotency (Prevent status regression)
     const asset = await prisma.asset.upsert({
-      where: { ownerType_ownerId_type: { ownerType: 'SHOT', ownerId: shotId || pipelineRunId, type: 'VIDEO' } },
+      where: {
+        ownerType_ownerId_type: {
+          ownerType: 'SHOT',
+          ownerId: shotId || pipelineRunId,
+          type: 'VIDEO',
+        },
+      },
       create: {
         projectId: job.projectId || 'system',
         ownerType: 'SHOT',
@@ -175,19 +244,19 @@ export async function processVideoRenderJob(
         status: 'GENERATED',
         storageKey: 'temp/pending',
         checksum: checksum,
-        createdByJobId: jobId
+        createdByJobId: jobId,
       },
       update: {
         // IMPORTANT: do not touch status here to prevent regression from PUBLISHED
         checksum,
-        createdByJobId: jobId
-      }
+        createdByJobId: jobId,
+      },
     });
 
     const videoKey = `videos/${asset.id}.mp4`;
 
     // P4-FIX-0: Unified Storage Root (Single Source of Truth)
-    const runtimeRoot = path.join(process.cwd(), '.runtime');
+    const runtimeRoot = storageRoot;
 
     // Direct FS Write for MP4 (fs only)
     const finalVideoPath = path.join(runtimeRoot, videoKey);
@@ -205,12 +274,27 @@ export async function processVideoRenderJob(
     console.log(`[VIDEO_RENDER] Generating HLS...`);
     await new Promise<void>((resolve, reject) => {
       // Simple HLS: Split into 10s segments
-      const args = ['-hide_banner', '-loglevel', 'error', '-i', tempOutput, '-start_number', '0', '-hls_time', '10', '-hls_list_size', '0', '-f', 'hls', hlsOutput];
+      const args = [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-i',
+        tempOutput,
+        '-start_number',
+        '0',
+        '-hls_time',
+        '10',
+        '-hls_list_size',
+        '0',
+        '-f',
+        'hls',
+        hlsOutput,
+      ];
       const proc = spawn('ffmpeg', args);
       activeProcesses.add(proc);
       let stderr = '';
-      proc.stderr?.on('data', d => stderr += d.toString());
-      proc.on('close', code => {
+      proc.stderr?.on('data', (d) => (stderr += d.toString()));
+      proc.on('close', (code) => {
         activeProcesses.delete(proc);
         if (code === 0) resolve();
         else reject(new Error(`FFmpeg HLS failed (${code}): ${stderr}`));
@@ -232,31 +316,46 @@ export async function processVideoRenderJob(
 
     await prisma.asset.update({
       where: { id: asset.id },
-      data: { storageKey: videoKey, hlsPlaylistUrl: hlsPlaylistUrl }
+      data: { storageKey: videoKey, hlsPlaylistUrl: hlsPlaylistUrl },
     });
 
     // 8. Cost & Audit
     const latency = Date.now() - jobStartTime;
-    await apiClient.postAuditLog({
-      traceId, projectId: job.projectId || 'system', jobId, jobType: 'VIDEO_RENDER',
-      engineKey: 'ffmpeg', status: 'SUCCESS', latencyMs: latency,
-      auditTrail: { sizeBytes, checksum, frames: frameKeys.length, hls: hlsPlaylistUrl }
-    }).catch(() => { });
+    await apiClient
+      .postAuditLog({
+        traceId,
+        projectId: job.projectId || 'system',
+        jobId,
+        jobType: 'VIDEO_RENDER',
+        engineKey: 'ffmpeg',
+        status: 'SUCCESS',
+        latencyMs: latency,
+        auditTrail: { sizeBytes, checksum, frames: frameKeys.length, hls: hlsPlaylistUrl },
+      })
+      .catch(() => {});
 
     // 7.1 ffprobe evidence (fs only, Unified Root)
     const ffprobeKey = `${videoKey}.ffprobe.json`;
     try {
       const ffprobeAbs = path.join(runtimeRoot, ffprobeKey);
 
-      const ffprobeArgs = ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', finalVideoPath];
+      const ffprobeArgs = [
+        '-v',
+        'error',
+        '-print_format',
+        'json',
+        '-show_format',
+        '-show_streams',
+        finalVideoPath,
+      ];
       const ffprobeOut = await new Promise<string>((resolve, reject) => {
         const proc = spawn('ffprobe', ffprobeArgs);
         activeProcesses.add(proc);
         let stdout = '';
         let stderr = '';
-        proc.stdout?.on('data', d => stdout += d.toString());
-        proc.stderr?.on('data', d => stderr += d.toString());
-        proc.on('close', code => {
+        proc.stdout?.on('data', (d) => (stdout += d.toString()));
+        proc.stderr?.on('data', (d) => (stderr += d.toString()));
+        proc.on('close', (code) => {
           activeProcesses.delete(proc);
           if (code === 0) resolve(stdout);
           else reject(new Error(`ffprobe failed (${code}): ${stderr.slice(-200)}`));
@@ -298,21 +397,37 @@ export async function processVideoRenderJob(
           metadata = EXCLUDED.metadata,
           "updatedAt" = NOW()
         `,
-        crypto.randomUUID(), projectId, episodeId, asset.id, videoKey, checksum, JSON.stringify({ pipelineRunId, ffprobeKey }), dedupeKey
+        crypto.randomUUID(),
+        projectId,
+        episodeId,
+        asset.id,
+        videoKey,
+        checksum,
+        JSON.stringify({ pipelineRunId, ffprobeKey }),
+        dedupeKey
       );
 
       // Force asset to PUBLISHED status (safe because we rely on PublishedVideo uniqueness now)
       await prisma.asset.update({
         where: { id: asset.id },
-        data: { status: 'PUBLISHED' }
+        data: { status: 'PUBLISHED' },
       });
 
-      console.log(`[VIDEO_RENDER] PublishedVideo set to PUBLISHED: projectId=${projectId} episodeId=${episodeId} pipelineRunId=${pipelineRunId} dedupeKey=${dedupeKey}`);
+      console.log(
+        `[VIDEO_RENDER] PublishedVideo set to PUBLISHED: projectId=${projectId} episodeId=${episodeId} pipelineRunId=${pipelineRunId} dedupeKey=${dedupeKey}`
+      );
     }
 
     // 9. Return Result
-    return { assetId: asset.id, storageKey: videoKey, videoKey, sizeBytes, checksum, durationMs: latency, status: 'SUCCESS' };
-
+    return {
+      assetId: asset.id,
+      storageKey: videoKey,
+      videoKey,
+      sizeBytes,
+      checksum,
+      durationMs: latency,
+      status: 'SUCCESS',
+    };
   } finally {
     if (fs.existsSync(workspaceDir)) {
       fs.rmSync(workspaceDir, { recursive: true, force: true });

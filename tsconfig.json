@@ -5,7 +5,8 @@
     "baseUrl": ".",
     "paths": {
       "database": ["packages/database/src"],
-      "@scu/shared-types": ["packages/shared-types/src"]
+      "@scu/shared-types": ["packages/shared-types/src"],
+      "@scu/engines/*": ["packages/engines/*"]
     },
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

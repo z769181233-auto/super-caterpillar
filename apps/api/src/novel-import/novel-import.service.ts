@@ -36,7 +36,7 @@ export class NovelImportService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly analysisProcessor: NovelAnalysisProcessorService
-  ) { }
+  ) {}
 
   /**
    * 分析单个章节
@@ -77,7 +77,7 @@ export class NovelImportService {
         include: { scenes: true },
       });
 
-      chaptersToProcess = dbChapters.map(c => ({
+      chaptersToProcess = dbChapters.map((c) => ({
         id: c.id,
         index: c.index,
         title: c.title || `Chapter ${c.index}`,
@@ -135,7 +135,7 @@ export class NovelImportService {
       });
 
       // 按段落切分生成 Shots（Stage-1 规则）
-      const paragraphs = chapter.rawText.split(/\n\n+/).filter(p => p.trim().length > 10);
+      const paragraphs = chapter.rawText.split(/\n\n+/).filter((p) => p.trim().length > 10);
       this.logger.log(`Segmenting chapter into ${paragraphs.length} paragraphs/shots...`);
 
       const shotsData = [];
@@ -151,8 +151,8 @@ export class NovelImportService {
           engine_params: {
             steps: 20,
             guidance_scale: 7.0,
-            scheduler: 'DPMSolverMultistepScheduler'
-          }
+            scheduler: 'DPMSolverMultistepScheduler',
+          },
         };
 
         const shot = await this.projectService.createShot(
@@ -170,12 +170,14 @@ export class NovelImportService {
         shotsData.push({
           shotId: shot.id,
           index: shIdx + 1,
-          ...shotParams
+          ...shotParams,
         });
       }
 
       // 记录段落切分证据 (Snapshot)
-      this.logger.log(`[Stage-1 Evidence] Generated structure for Episode ${episode.id} with ${shotsData.length} shots.`);
+      this.logger.log(
+        `[Stage-1 Evidence] Generated structure for Episode ${episode.id} with ${shotsData.length} shots.`
+      );
     }
   }
 

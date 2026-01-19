@@ -1,1 +1,8 @@
-{"success":false,"error":{"code":"4003","message":"Invalid signature"},"requestId":"3a6d0c6c-9fd8-4c6f-b13c-41b2aae8457a","timestamp":"2026-01-13T03:06:40.373Z","path":"/api/timeline/preview","method":"POST"}
+{
+  "success": false,
+  "error": { "code": "4003", "message": "Invalid signature" },
+  "requestId": "3a6d0c6c-9fd8-4c6f-b13c-41b2aae8457a",
+  "timestamp": "2026-01-13T03:06:40.373Z",
+  "path": "/api/timeline/preview",
+  "method": "POST"
+}

@@ -24,7 +24,7 @@ export class StoryService {
     private readonly jobService: JobService,
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   /**
    * 解析小说（CE06）

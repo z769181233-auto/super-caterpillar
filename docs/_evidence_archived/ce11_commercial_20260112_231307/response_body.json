@@ -1,1 +1,5 @@
-{"message":"Cannot create job: Scene analysis incomplete (missing summary). Please complete Stage 2 first.","error":"Bad Request","statusCode":400}
+{
+  "message": "Cannot create job: Scene analysis incomplete (missing summary). Please complete Stage 2 first.",
+  "error": "Bad Request",
+  "statusCode": 400
+}

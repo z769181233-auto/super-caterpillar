@@ -1,4 +1,5 @@
 # P0-R3 Industrial Gate Summary
+
 - Engine: ce04_visual_enrichment
 - TraceID: gate-p0r3-ce04-20260114_233533
 - JobID: job-p0r3-ce04-20260114_233533

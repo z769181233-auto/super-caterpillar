@@ -1,1 +1,64 @@
-{"success":true,"data":[{"id":"d9278173-98f8-4c50-864f-bc4d15abf05f","projectId":"eea9e86f-a2b1-49d4-8a8c-5a512b350529","episodeId":"7edb2a47-9203-497d-b04b-644ed8c2e6a7","assetId":"fdc0a7a9-de3a-4213-8061-843e2961cc26","storageKey":"mock/stage1/stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1/final.mp4","checksum":"mock-checksum-mvp","status":"PUBLISHED","metadata":{"pipelineRunId":"stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1"},"createdAt":"2026-01-13T17:28:50.303Z","updatedAt":"2026-01-13T17:28:50.303Z","asset":{"id":"fdc0a7a9-de3a-4213-8061-843e2961cc26","projectId":"eea9e86f-a2b1-49d4-8a8c-5a512b350529","createdAt":"2026-01-13T17:28:50.301Z","checksum":"mock-checksum-mvp","createdByJobId":null,"ownerId":"abb0ed55-2fc1-4113-afc0-fcaa616548fc","ownerType":"SCENE","status":"GENERATED","storageKey":"mock/stage1/stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1/final.mp4","type":"VIDEO","shotId":null,"hlsPlaylistUrl":null,"signedUrl":null,"watermarkMode":null,"fingerprintId":null}}],"record":{"id":"d9278173-98f8-4c50-864f-bc4d15abf05f","projectId":"eea9e86f-a2b1-49d4-8a8c-5a512b350529","episodeId":"7edb2a47-9203-497d-b04b-644ed8c2e6a7","assetId":"fdc0a7a9-de3a-4213-8061-843e2961cc26","storageKey":"mock/stage1/stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1/final.mp4","checksum":"mock-checksum-mvp","status":"PUBLISHED","metadata":{"pipelineRunId":"stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1"},"createdAt":"2026-01-13T17:28:50.303Z","updatedAt":"2026-01-13T17:28:50.303Z","asset":{"id":"fdc0a7a9-de3a-4213-8061-843e2961cc26","projectId":"eea9e86f-a2b1-49d4-8a8c-5a512b350529","createdAt":"2026-01-13T17:28:50.301Z","checksum":"mock-checksum-mvp","createdByJobId":null,"ownerId":"abb0ed55-2fc1-4113-afc0-fcaa616548fc","ownerType":"SCENE","status":"GENERATED","storageKey":"mock/stage1/stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1/final.mp4","type":"VIDEO","shotId":null,"hlsPlaylistUrl":null,"signedUrl":null,"watermarkMode":null,"fingerprintId":null}},"status":"PUBLISHED"}
+{
+  "success": true,
+  "data": [
+    {
+      "id": "d9278173-98f8-4c50-864f-bc4d15abf05f",
+      "projectId": "eea9e86f-a2b1-49d4-8a8c-5a512b350529",
+      "episodeId": "7edb2a47-9203-497d-b04b-644ed8c2e6a7",
+      "assetId": "fdc0a7a9-de3a-4213-8061-843e2961cc26",
+      "storageKey": "mock/stage1/stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1/final.mp4",
+      "checksum": "mock-checksum-mvp",
+      "status": "PUBLISHED",
+      "metadata": { "pipelineRunId": "stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1" },
+      "createdAt": "2026-01-13T17:28:50.303Z",
+      "updatedAt": "2026-01-13T17:28:50.303Z",
+      "asset": {
+        "id": "fdc0a7a9-de3a-4213-8061-843e2961cc26",
+        "projectId": "eea9e86f-a2b1-49d4-8a8c-5a512b350529",
+        "createdAt": "2026-01-13T17:28:50.301Z",
+        "checksum": "mock-checksum-mvp",
+        "createdByJobId": null,
+        "ownerId": "abb0ed55-2fc1-4113-afc0-fcaa616548fc",
+        "ownerType": "SCENE",
+        "status": "GENERATED",
+        "storageKey": "mock/stage1/stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1/final.mp4",
+        "type": "VIDEO",
+        "shotId": null,
+        "hlsPlaylistUrl": null,
+        "signedUrl": null,
+        "watermarkMode": null,
+        "fingerprintId": null
+      }
+    }
+  ],
+  "record": {
+    "id": "d9278173-98f8-4c50-864f-bc4d15abf05f",
+    "projectId": "eea9e86f-a2b1-49d4-8a8c-5a512b350529",
+    "episodeId": "7edb2a47-9203-497d-b04b-644ed8c2e6a7",
+    "assetId": "fdc0a7a9-de3a-4213-8061-843e2961cc26",
+    "storageKey": "mock/stage1/stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1/final.mp4",
+    "checksum": "mock-checksum-mvp",
+    "status": "PUBLISHED",
+    "metadata": { "pipelineRunId": "stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1" },
+    "createdAt": "2026-01-13T17:28:50.303Z",
+    "updatedAt": "2026-01-13T17:28:50.303Z",
+    "asset": {
+      "id": "fdc0a7a9-de3a-4213-8061-843e2961cc26",
+      "projectId": "eea9e86f-a2b1-49d4-8a8c-5a512b350529",
+      "createdAt": "2026-01-13T17:28:50.301Z",
+      "checksum": "mock-checksum-mvp",
+      "createdByJobId": null,
+      "ownerId": "abb0ed55-2fc1-4113-afc0-fcaa616548fc",
+      "ownerType": "SCENE",
+      "status": "GENERATED",
+      "storageKey": "mock/stage1/stage1_8c04a5b3-8378-4c84-be61-af72c89cdae1/final.mp4",
+      "type": "VIDEO",
+      "shotId": null,
+      "hlsPlaylistUrl": null,
+      "signedUrl": null,
+      "watermarkMode": null,
+      "fingerprintId": null
+    }
+  },
+  "status": "PUBLISHED"
+}

@@ -48,4 +48,4 @@ import { OrchestratorModule } from '../orchestrator/orchestrator.module';
     NovelAnalysisEngineService,
   ],
 })
-export class NovelImportModule { }
+export class NovelImportModule {}

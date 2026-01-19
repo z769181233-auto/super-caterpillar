@@ -8,8 +8,9 @@
 - TraceID: gate-p0r1-ce06-1768407269
 
 ## Invariants Verified
-1) Entry via CE02 Mother Engine (/_internal/engine/invoke)
-2) Real CE06 Logic execution (Volumes/Chapters returned)
-3) Audit Trail consistency (engine_version recorded)
-4) Ledger isolation for isVerification=true (0 records)
-5) Gate Exit Code: 0
+
+1. Entry via CE02 Mother Engine (/\_internal/engine/invoke)
+2. Real CE06 Logic execution (Volumes/Chapters returned)
+3. Audit Trail consistency (engine_version recorded)
+4. Ledger isolation for isVerification=true (0 records)
+5. Gate Exit Code: 0

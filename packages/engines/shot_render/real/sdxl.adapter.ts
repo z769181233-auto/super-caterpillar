@@ -32,9 +32,11 @@ function resolveSsotRoot(): string {
 
   // Fallback 1: Git Root (Dev machines)
   try {
-    const gitRoot = spawnSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf-8' }).stdout.trim();
+    const gitRoot = spawnSync('git', ['rev-parse', '--show-toplevel'], {
+      encoding: 'utf-8',
+    }).stdout.trim();
     if (gitRoot) return path.resolve(gitRoot);
-  } catch (e) { }
+  } catch (e) {}
 
   // Fallback 2: Hardcoded monorepo structure (Local Dev Emergency ONLY)
   return path.resolve(__dirname, '../../../../');
@@ -49,7 +51,7 @@ function toRelativeKey(absPath: string): string {
   let normalizedAbs = absPath.replace(/^file:\/\//, '');
   try {
     normalizedAbs = decodeURIComponent(normalizedAbs);
-  } catch (e) { }
+  } catch (e) {}
 
   // Ensure consistent separator for matching
   const normalizedRoot = path.resolve(root);
@@ -64,7 +66,9 @@ function toRelativeKey(absPath: string): string {
   if (path.isAbsolute(rel) || rel.startsWith('..') || !rel) {
     // Audit Requirement: Do NOT leak ssotRoot/absPath in error messages.
     // Use traceId (from context) if available for deep debugging.
-    throw new Error(`[STORAGE_KEY_VIOLATION] Derived key is invalid (absolute or out-of-bounds): ${rel || 'EMPTY'}. Assets must be stored relatively within the SSOT root.`);
+    throw new Error(
+      `[STORAGE_KEY_VIOLATION] Derived key is invalid (absolute or out-of-bounds): ${rel || 'EMPTY'}. Assets must be stored relatively within the SSOT root.`
+    );
   }
 
   return rel;
@@ -77,17 +81,25 @@ export async function runShotRenderSDXL(
   // P2-FIX-2: 强制校验 shotId/traceId
   const { shotId, traceId } = input;
   if (!shotId || !traceId) {
-    throw new Error(`[SHOT_RENDER_INPUT_INVALID] Missing required fields: shotId=${shotId}, traceId=${traceId}`);
+    throw new Error(
+      `[SHOT_RENDER_INPUT_INVALID] Missing required fields: shotId=${shotId}, traceId=${traceId}`
+    );
   }
 
   // P2-FIX-2 DEBUG: 打印 adapter 入口参数（仅 Gate/Dev）
   if (process.env.GATE_MODE === '1' || process.env.NODE_ENV !== 'production') {
-    process.stdout.write(util.format('[ShotRender Adapter] Input received: shotId=%s, traceId=%s, seed=%d', shotId, traceId, input.seed || 0) + '\n');
+    process.stdout.write(
+      util.format(
+        '[ShotRender Adapter] Input received: shotId=%s, traceId=%s, seed=%d',
+        shotId,
+        traceId,
+        input.seed || 0
+      ) + '\n'
+    );
   }
 
   const root = resolveSsotRoot();
-  const ASSET_DIR =
-    process.env.ASSET_STORAGE_DIR || path.join(root, 'apps/workers/.runtime/assets');
+  const ASSET_DIR = process.env.ASSET_STORAGE_DIR || path.join(root, '.runtime/assets');
   ensureDir(ASSET_DIR);
 
   const seed = input.seed || Math.floor(Math.random() * 1000000);
@@ -158,12 +170,14 @@ export async function runShotRenderSDXL(
   let renderResult: RenderResult;
 
   // P2-1: No Fallback - Strict Dependency Check
-  // If we are using the REAL engine, we MUST fail if dependencies are missing. 
+  // If we are using the REAL engine, we MUST fail if dependencies are missing.
   // We assume this file is only reachable if configuring for real render.
 
   if (providerKey === 'replicate') {
     if (!process.env.REPLICATE_API_TOKEN) {
-      throw new Error(`[SHOT_RENDER_NO_FALLBACK] Provider 'replicate' requires REPLICATE_API_TOKEN. Fallback disallowed.`);
+      throw new Error(
+        `[SHOT_RENDER_NO_FALLBACK] Provider 'replicate' requires REPLICATE_API_TOKEN. Fallback disallowed.`
+      );
     }
 
     const { replicateProvider } = require('../providers/replicate.provider');
@@ -179,7 +193,7 @@ export async function runShotRenderSDXL(
     // Use the same logic as provider to check, or just rely on provider throwing.
     // However, to satisfy "No Fallback" explicit check, let's verify logic.
     // Actually, localMpsProvider does robust check. But we want to fail FAST if key deps missing.
-    // The provider throws [LOCAL_MPS_RENDER_FAILED]. 
+    // The provider throws [LOCAL_MPS_RENDER_FAILED].
     // We wrap it here to ensure specific error code if needed, but the provider's error is good.
     // To strictly conform to P2-1 "Check dependencies", we can double check env if needed.
     // But for local script, existence is the check.
@@ -197,8 +211,17 @@ export async function runShotRenderSDXL(
     } catch (e: any) {
       throw new Error(`[SHOT_RENDER_NO_FALLBACK] Provider 'local_mps' failed: ${e.message}`);
     }
+  } else if (providerKey === 'local') {
+    const { localProvider } = require('../providers/local.provider');
+    renderResult = await localProvider.render(input.prompt, {
+      width,
+      height,
+      seed,
+    });
   } else {
-    throw new Error(`[SHOT_RENDER_NO_FALLBACK] Unknown SHOT_RENDER_PROVIDER=${providerKey}. Fallback disallowed.`);
+    throw new Error(
+      `[SHOT_RENDER_NO_FALLBACK] Unknown SHOT_RENDER_PROVIDER=${providerKey}. Fallback disallowed.`
+    );
   }
 
   // 5. 写入文件

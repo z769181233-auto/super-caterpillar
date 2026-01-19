@@ -24,7 +24,7 @@ export class CEDagOrchestratorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobService: JobService
-  ) { }
+  ) {}
 
   /**
    * Run full CE DAG: CE06 → CE03 → CE04 → SHOT_RENDERs → VIDEO_RENDER
@@ -41,7 +41,8 @@ export class CEDagOrchestratorService {
     if (PRODUCTION_MODE && !req.referenceSheetId) {
       throw new BadRequestException({
         code: 'REFERENCE_SHEET_REQUIRED',
-        message: 'Production mode requires referenceSheetId for the full pipeline (SHOT_RENDER stage).',
+        message:
+          'Production mode requires referenceSheetId for the full pipeline (SHOT_RENDER stage).',
       });
     }
 
@@ -61,7 +62,9 @@ export class CEDagOrchestratorService {
     const jobIds: CEDagJobIds = { shotRenderJobIds: [] };
     const warningsCount = 0;
 
-    this.logger.log(`[CE_DAG] Starting Full Pipeline runId=${runId}, traceId=${traceId}, project=${req.projectId}, shot=${req.shotId}`);
+    this.logger.log(
+      `[CE_DAG] Starting Full Pipeline runId=${runId}, traceId=${traceId}, project=${req.projectId}, shot=${req.shotId}`
+    );
 
     try {
       // == Phase 1: Heavy Analysis (CE06 -> CE03 -> CE04) ==
@@ -76,7 +79,7 @@ export class CEDagOrchestratorService {
           raw_text: req.rawText,
           novelSourceId: req.novelSourceId,
           runId,
-          engineKey: 'ce06_novel_parsing'
+          engineKey: 'ce06_novel_parsing',
         },
         traceId,
       });
@@ -86,7 +89,7 @@ export class CEDagOrchestratorService {
       // 4. Get Scene Context for CE03/04
       const anchorShot = await this.prisma.shot.findUnique({
         where: { id: req.shotId },
-        include: { scene: true }
+        include: { scene: true },
       });
       if (!anchorShot) throw new Error(`Shot ${req.shotId} not found`);
       const sceneId = anchorShot.sceneId;
@@ -95,13 +98,14 @@ export class CEDagOrchestratorService {
       const novelScene = await this.prisma.novelScene.findFirst({
         where: {
           chapter: {
-            novelSource: { projectId: req.projectId }
+            novelSource: { projectId: req.projectId },
           },
-          index: anchorShot.scene.index
-        }
+          index: anchorShot.scene.index,
+        },
       });
 
-      const structuredText = novelScene?.rawText || 'A cinematic scene based on ' + (anchorShot.title || 'novel');
+      const structuredText =
+        novelScene?.rawText || 'A cinematic scene based on ' + (anchorShot.title || 'novel');
 
       // 5. Trigger CE03 job
       const ce03Job = await this.jobService.createCECoreJob({
@@ -111,7 +115,7 @@ export class CEDagOrchestratorService {
         payload: {
           structured_text: structuredText,
           runId,
-          engineKey: 'ce03_visual_density'
+          engineKey: 'ce03_visual_density',
         },
         traceId,
       });
@@ -133,7 +137,7 @@ export class CEDagOrchestratorService {
         payload: {
           structured_text: structuredText,
           runId,
-          engineKey: 'ce04_visual_enrichment'
+          engineKey: 'ce04_visual_enrichment',
         },
         traceId,
       });
@@ -171,9 +175,9 @@ export class CEDagOrchestratorService {
               type: JobType.SHOT_RENDER,
               payload: {
                 runId,
-                referenceSheetId: req.referenceSheetId
+                referenceSheetId: req.referenceSheetId,
               },
-              traceId
+              traceId,
             },
             userId,
             orgId
@@ -184,7 +188,9 @@ export class CEDagOrchestratorService {
       await this.waitForJobsCompletion(jobIds.shotRenderJobIds, 'SHOT_RENDER');
 
       // 11. Trigger TIMELINE_COMPOSE
-      this.logger.log(`[CE_DAG] All shots rendered. Triggering PIPELINE_TIMELINE_COMPOSE for scene ${sceneId}`);
+      this.logger.log(
+        `[CE_DAG] All shots rendered. Triggering PIPELINE_TIMELINE_COMPOSE for scene ${sceneId}`
+      );
       const composeJob = await this.jobService.createCECoreJob({
         projectId: req.projectId,
         organizationId: orgId,
@@ -195,12 +201,17 @@ export class CEDagOrchestratorService {
       jobIds.timelineComposeJobId = composeJob.id;
       await this.waitForJobCompletion(composeJob.id, 'TIMELINE_COMPOSE');
 
-      const finalComposeJob = await this.prisma.shotJob.findUnique({ where: { id: composeJob.id } });
+      const finalComposeJob = await this.prisma.shotJob.findUnique({
+        where: { id: composeJob.id },
+      });
       const timelineStorageKey = (finalComposeJob?.result as any)?.output?.timelineStorageKey;
-      if (!timelineStorageKey) throw new Error('Timeline Compose failed to produce timelineStorageKey');
+      if (!timelineStorageKey)
+        throw new Error('Timeline Compose failed to produce timelineStorageKey');
 
       // 12. Trigger TIMELINE_PREVIEW (CE11)
-      this.logger.log(`[CE_DAG] Timeline composed at ${timelineStorageKey}. Triggering TIMELINE_PREVIEW`);
+      this.logger.log(
+        `[CE_DAG] Timeline composed at ${timelineStorageKey}. Triggering TIMELINE_PREVIEW`
+      );
       const previewJob = await this.jobService.createCECoreJob({
         projectId: req.projectId,
         organizationId: orgId,
@@ -212,8 +223,11 @@ export class CEDagOrchestratorService {
       await this.waitForJobCompletion(previewJob.id, 'TIMELINE_PREVIEW', 180000);
 
       // 13. Extract final preview information
-      const finalPreviewJob = await this.prisma.shotJob.findUnique({ where: { id: previewJob.id } });
-      const previewUrl = (finalPreviewJob?.result as any)?.output?.hls_playlist_url ||
+      const finalPreviewJob = await this.prisma.shotJob.findUnique({
+        where: { id: previewJob.id },
+      });
+      const previewUrl =
+        (finalPreviewJob?.result as any)?.output?.hls_playlist_url ||
         (finalPreviewJob?.result as any)?.output?.storageKey;
 
       const finishedAtIso = new Date().toISOString();
@@ -236,7 +250,10 @@ export class CEDagOrchestratorService {
         finishedAtIso,
       };
     } catch (error: any) {
-      this.logger.error(`[CE_DAG] [DEBUG] CAUGHT ERROR in runCEDag: ${error?.message || 'No message'}`, error?.stack);
+      this.logger.error(
+        `[CE_DAG] [DEBUG] CAUGHT ERROR in runCEDag: ${error?.message || 'No message'}`,
+        error?.stack
+      );
       this.logger.error(`[CE_DAG] FAILED: runId=${runId}, error=${error.message}`);
       throw error;
     }

@@ -1,32 +1,32 @@
 {
-    "evidence_dir": "docs/_evidence/stage1_isVerification_videoRender_20260114_204244",
-    "timestamp": "2026-01-14T20:38:17+07:00",
-    "pipelineRunId": "stage1_2378878e-ffd3-4191-a14b-56bef6df5265",
-    "objective": "验证 isVerification 从 SHOT_RENDER 传播到 VIDEO_RENDER 并确保账本零污染",
-    "checks": [
-        "SHOT_RENDER (x3) is_verification=true",
-        "VIDEO_RENDER is_verification=true",
-        "PIPELINE_STAGE1 is_verification=false (正常)",
-        "cost_ledgers JOIN shot_jobs WHERE is_verification=true => COUNT=0"
-    ],
-    "results": {
-        "isVerification_propagation": "PASS",
-        "ledger_contamination": "PASS (0 records)",
-        "all_jobs_succeeded": "PASS (5/5)",
-        "gate_exit_code": 0
-    },
-    "files": [
-        "RUN_ID.txt",
-        "sql_evidence_jobs.txt",
-        "sql_evidence_ledger.txt",
-        "SUMMARY.md",
-        "GATE_EXIT_CODE.txt",
-        "SHA256SUMS.txt",
-        "EVIDENCE_INDEX.json"
-    ],
-    "modifications": [
-        "apps/api/src/job/job.service.ts: ensureVideoRenderJob + isVerification support",
-        "apps/api/src/job/job-report.facade.ts: isVerification propagation",
-        "apps/api/src/orchestrator/hooks/stage1-verification.hook.ts: Mock injection with full context"
-    ]
+  "evidence_dir": "docs/_evidence/stage1_isVerification_videoRender_20260114_204244",
+  "timestamp": "2026-01-14T20:38:17+07:00",
+  "pipelineRunId": "stage1_2378878e-ffd3-4191-a14b-56bef6df5265",
+  "objective": "验证 isVerification 从 SHOT_RENDER 传播到 VIDEO_RENDER 并确保账本零污染",
+  "checks": [
+    "SHOT_RENDER (x3) is_verification=true",
+    "VIDEO_RENDER is_verification=true",
+    "PIPELINE_STAGE1 is_verification=false (正常)",
+    "cost_ledgers JOIN shot_jobs WHERE is_verification=true => COUNT=0"
+  ],
+  "results": {
+    "isVerification_propagation": "PASS",
+    "ledger_contamination": "PASS (0 records)",
+    "all_jobs_succeeded": "PASS (5/5)",
+    "gate_exit_code": 0
+  },
+  "files": [
+    "RUN_ID.txt",
+    "sql_evidence_jobs.txt",
+    "sql_evidence_ledger.txt",
+    "SUMMARY.md",
+    "GATE_EXIT_CODE.txt",
+    "SHA256SUMS.txt",
+    "EVIDENCE_INDEX.json"
+  ],
+  "modifications": [
+    "apps/api/src/job/job.service.ts: ensureVideoRenderJob + isVerification support",
+    "apps/api/src/job/job-report.facade.ts: isVerification propagation",
+    "apps/api/src/orchestrator/hooks/stage1-verification.hook.ts: Mock injection with full context"
+  ]
 }

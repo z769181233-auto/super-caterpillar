@@ -28,17 +28,25 @@ async function boot() {
     let prismaClientPath = '';
     try {
       prismaClientPath = require.resolve('@prisma/client');
-      process.stdout.write(util.format('[Bootstrap]   @prisma/client resolved to: %s', prismaClientPath) + '\n');
+      process.stdout.write(
+        util.format('[Bootstrap]   @prisma/client resolved to: %s', prismaClientPath) + '\n'
+      );
     } catch (e) {
-      process.stdout.write(util.format('[Bootstrap]   @prisma/client resolve failed: %s', (e as Error).message) + '\n');
+      process.stdout.write(
+        util.format('[Bootstrap]   @prisma/client resolve failed: %s', (e as Error).message) + '\n'
+      );
     }
 
     let databasePath = '';
     try {
       databasePath = require.resolve('database');
-      process.stdout.write(util.format('[Bootstrap]   database resolved to: %s', databasePath) + '\n');
+      process.stdout.write(
+        util.format('[Bootstrap]   database resolved to: %s', databasePath) + '\n'
+      );
     } catch (e) {
-      process.stdout.write(util.format('[Bootstrap]   database resolve failed: %s', (e as Error).message) + '\n');
+      process.stdout.write(
+        util.format('[Bootstrap]   database resolve failed: %s', (e as Error).message) + '\n'
+      );
     }
 
     // Import Prisma and check DMMF
@@ -70,12 +78,22 @@ async function boot() {
       process.stderr.write(util.format(errorMsg) + '\n');
 
       if (shouldEnforceDMMF) {
-        process.stderr.write(util.format('[Bootstrap] Gate/Dev mode: Continuing with WARNING (SHOT_RENDER jobs will fail if schema mismatch)') + '\n');
+        process.stderr.write(
+          util.format(
+            '[Bootstrap] Gate/Dev mode: Continuing with WARNING (SHOT_RENDER jobs will fail if schema mismatch)'
+          ) + '\n'
+        );
       } else {
-        process.stderr.write(util.format('[Bootstrap] Production mode: Continuing with WARNING (jobs will fail)') + '\n');
+        process.stderr.write(
+          util.format('[Bootstrap] Production mode: Continuing with WARNING (jobs will fail)') +
+            '\n'
+        );
       }
     } else {
-      process.stdout.write(util.format('[Bootstrap] ✅ DMMF Self-Check PASSED: All required Shot fields present') + '\n');
+      process.stdout.write(
+        util.format('[Bootstrap] ✅ DMMF Self-Check PASSED: All required Shot fields present') +
+          '\n'
+      );
     }
 
     await prisma.$disconnect();
@@ -84,9 +102,15 @@ async function boot() {
     process.stderr.write(util.format(errorMsg) + '\n');
 
     if (shouldEnforceDMMF) {
-      process.stderr.write(util.format('[Bootstrap] Gate/Dev mode: Continuing with WARNING (CE06/other jobs may still work)') + '\n');
+      process.stderr.write(
+        util.format(
+          '[Bootstrap] Gate/Dev mode: Continuing with WARNING (CE06/other jobs may still work)'
+        ) + '\n'
+      );
     } else {
-      process.stderr.write(util.format('[Bootstrap] Production mode: Continuing with WARNING') + '\n');
+      process.stderr.write(
+        util.format('[Bootstrap] Production mode: Continuing with WARNING') + '\n'
+      );
     }
   }
 
@@ -95,11 +119,12 @@ async function boot() {
     startMetricsServer(parseInt(process.env.WORKER_METRICS_PORT, 10));
   }
 
-
   if (isGate) {
     if (process.env.NODE_ENV === 'production') {
       // Allow for Stage verification
-      process.stdout.write(util.format('[Bootstrap] WARN: Running GATE_MODE in PRODUCTION environment') + '\n');
+      process.stdout.write(
+        util.format('[Bootstrap] WARN: Running GATE_MODE in PRODUCTION environment') + '\n'
+      );
     }
     process.stdout.write(
       util.format('[Bootstrap] GATE_MODE detected, loading Gate Worker...') + '\n'

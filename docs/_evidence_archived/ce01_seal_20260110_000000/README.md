@@ -9,15 +9,19 @@
 ## 证据文件清单
 
 ### 1. gate_output.log
+
 Gate 脚本完整输出，包含所有验证步骤和断言结果。
 
 ### 2. worker_consume_log.txt
+
 Worker 认领与完成 CE01 Job 的关键日志片段，证明真实 Worker 消费。
 
 ### 3. binding_metadata.csv
+
 JobEngineBinding 表的 metadata 字段导出，验证 fingerprint、artifacts 等字段正确写入。
 
 ### 4. org_verification.csv
+
 租户隔离验证，确认所有 binding 正确关联到对应的 organizationId 和 projectId。
 
 ## 验收标准

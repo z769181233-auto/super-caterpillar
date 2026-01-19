@@ -13,9 +13,21 @@ import { ProcessorContext } from '../types/processor-context';
  */
 export async function processTimelineRenderJob(ctx: ProcessorContext) {
   const { prisma, job, apiClient } = ctx;
-  const { timelineStorageKey, pipelineRunId } = job.payload as { timelineStorageKey: string; pipelineRunId: string };
+  const { timelineStorageKey, pipelineRunId } = job.payload as {
+    timelineStorageKey: string;
+    pipelineRunId: string;
+  };
   const traceId = job.traceId || `trace-${Date.now()}`;
   const projectId = job.projectId || (job.payload as any)?.projectId;
+
+  let storageRoot: string;
+  if (process.env.REPO_ROOT) {
+    storageRoot = path.join(process.env.REPO_ROOT, '.data/storage');
+  } else if (process.env.STORAGE_ROOT) {
+    storageRoot = process.env.STORAGE_ROOT;
+  } else {
+    storageRoot = path.join(path.resolve(process.cwd(), '../../'), '.data/storage');
+  }
 
   if (!projectId) {
     throw new Error(`[TimelineRender] [${traceId}] Missing projectId in job ${job.id}`);
@@ -51,7 +63,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     throw new Error(`[TimelineRender] FFmpeg binary missing: ${e.message}`);
   }
 
-  const tempMp4Dir = path.resolve(process.cwd(), '.runtime', 'temp_mp4s', pipelineRunId);
+  const tempMp4Dir = path.resolve(storageRoot, 'temp_mp4s', pipelineRunId);
   if (!fs.existsSync(tempMp4Dir)) fs.mkdirSync(tempMp4Dir, { recursive: true });
 
   const shotMp4Paths: string[] = [];
@@ -76,7 +88,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     if (existingAsset && existingAsset.status === 'GENERATED') {
       // Note: In real life, we should also verify if the existing asset matches our locked params (fps/res).
       // For S4-7, we assume the previous VIDEO_RENDER or our re-render handles this.
-      const fullPath = path.resolve(process.cwd(), '.runtime', existingAsset.storageKey);
+      const fullPath = path.resolve(storageRoot, existingAsset.storageKey);
       if (fs.existsSync(fullPath)) {
         console.log(`[TimelineRender] Reusing existing Asset for shotId=${shot.shotId}`);
         shotMp4Paths.push(fullPath);
@@ -94,9 +106,20 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
 
     // Real rendering for Stage 1: Shot Frames to MP4
     const args = [
-      '-f', 'concat', '-safe', '0', '-i', framesTxt,
-      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', fps.toString(),
-      '-y', shotOutputPath
+      '-f',
+      'concat',
+      '-safe',
+      '0',
+      '-i',
+      framesTxt,
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
+      '-r',
+      fps.toString(),
+      '-y',
+      shotOutputPath,
     ];
     await runFfmpeg(args, `Stage1_Shot_${shot.shotId}`);
     shotMp4Paths.push(shotOutputPath);
@@ -105,30 +128,30 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   // Stage 2: Scene Composition
   console.log(`[TimelineRender] Stage 2: Composing ${shotMp4Paths.length} shots`);
   const finalOutputRelative = `renders/${projectId}/scenes/${timeline.sceneId}/output.mp4`;
-  const finalOutputPath = path.resolve(process.cwd(), '.runtime', finalOutputRelative);
+  const finalOutputPath = path.resolve(storageRoot, finalOutputRelative);
   const finalOutputDir = path.dirname(finalOutputPath);
   if (!fs.existsSync(finalOutputDir)) fs.mkdirSync(finalOutputDir, { recursive: true });
 
   const hasTransitions = timeline.shots.some((s) => s.transition && s.transition !== 'none');
   const tracks = timeline.audio?.tracks || [];
-  const hasDucking = tracks.some(t => t.ducking);
+  const hasDucking = tracks.some((t) => t.ducking);
   const forcePathB = hasTransitions || tracks.length > 1 || hasDucking;
 
   if (!forcePathB) {
     // Path A: Simple Concat (Fast, no re-encoding)
     // Rule: audio.tracks.length <= 1 && no ducking && no transitions
-    console.log(`[TimelineRender] [Path A] Simple Concat (Demuxer/Copy) - Performance Conservation Mode`);
+    console.log(
+      `[TimelineRender] [Path A] Simple Concat (Demuxer/Copy) - Performance Conservation Mode`
+    );
     const concatListPath = path.join(tempMp4Dir, 'scene_concat.txt');
     const concatContent = shotMp4Paths.map((p) => `file '${p}'`).join('\n');
     fs.writeFileSync(concatListPath, concatContent);
 
-    const concatArgs = [
-      '-f', 'concat', '-safe', '0', '-i', concatListPath,
-    ];
+    const concatArgs = ['-f', 'concat', '-safe', '0', '-i', concatListPath];
 
     // If there is exactly 1 audio track, we try to include it.
     if (tracks.length === 1 && tracks[0].storageKey) {
-      const audioPath = path.resolve(process.cwd(), '.runtime', tracks[0].storageKey);
+      const audioPath = path.resolve(storageRoot, tracks[0].storageKey);
       if (fs.existsSync(audioPath)) {
         concatArgs.push('-i', audioPath);
         concatArgs.push('-map', '0:v', '-map', '1:a');
@@ -153,7 +176,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     const audioInputsOffset = shotMp4Paths.length;
     tracks.forEach((track, idx) => {
       if (track.storageKey) {
-        const audioPath = path.resolve(process.cwd(), '.runtime', track.storageKey);
+        const audioPath = path.resolve(storageRoot, track.storageKey);
         if (fs.existsSync(audioPath)) {
           if (track.loop) complexArgs.push('-stream_loop', '-1');
           complexArgs.push('-i', audioPath);
@@ -175,10 +198,10 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         const transDur = shot.transitionFrames / fps;
         const offset = currentTimelineDuration - transDur;
         filterString += `${lastVideoStream}[${i}:v]xfade=transition=fade:duration=${transDur.toFixed(3)}:offset=${offset.toFixed(3)}${outStream};`;
-        currentTimelineDuration = currentTimelineDuration + (shot.durationFrames / fps) - transDur;
+        currentTimelineDuration = currentTimelineDuration + shot.durationFrames / fps - transDur;
       } else {
         filterString += `${lastVideoStream}[${i}:v]concat=n=2:v=1:a=0${outStream};`;
-        currentTimelineDuration += (shot.durationFrames / fps);
+        currentTimelineDuration += shot.durationFrames / fps;
       }
       lastVideoStream = outStream;
     }
@@ -188,10 +211,12 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     // 2. Audio Chain (Mixing & Ducking)
     // 2.0 Identify targets needed for sidechain
     const sidechainTargets = new Set<string>();
-    tracks.forEach(t => {
+    tracks.forEach((t) => {
       if (t.ducking?.target) {
         // Resolve target ID or Type to a track index/id
-        const targetTrack = tracks.find(r => r.id === t.ducking!.target || r.type === t.ducking!.target);
+        const targetTrack = tracks.find(
+          (r) => r.id === t.ducking!.target || r.type === t.ducking!.target
+        );
         if (targetTrack) sidechainTargets.add(targetTrack.id);
       }
     });
@@ -214,7 +239,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         filterString += `${label}asplit=2${mixLabel}${scLabel};`;
         // Store mix label for final mix, sc label for lookups
         trackLabels[idx] = mixLabel;
-        // Hack: Store sc label in a way we can retrieve it? 
+        // Hack: Store sc label in a way we can retrieve it?
         // We'll rename local map just for this scope or use predictable naming
       } else {
         trackLabels[idx] = label;
@@ -224,7 +249,9 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     // 2.2 Apply Ducking
     tracks.forEach((track, idx) => {
       if (track.ducking) {
-        const targetIdx = tracks.findIndex(r => r.id === track.ducking!.target || r.type === track.ducking!.target);
+        const targetIdx = tracks.findIndex(
+          (r) => r.id === track.ducking!.target || r.type === track.ducking!.target
+        );
         if (targetIdx !== -1) {
           const currentStream = trackLabels[idx];
           const controlStream = `[a${targetIdx}_sc]`;
@@ -252,7 +279,17 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
       complexArgs.push('-c:a', 'aac', '-b:a', '128k');
     }
 
-    complexArgs.push('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', fps.toString(), '-y', '-shortest', finalOutputPath);
+    complexArgs.push(
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
+      '-r',
+      fps.toString(),
+      '-y',
+      '-shortest',
+      finalOutputPath
+    );
 
     // Real rendering for Path B: Advanced Compose
     await runFfmpeg(complexArgs, `Stage2_AdvancedCompose`);
@@ -265,13 +302,19 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
 
   console.log(`[TimelineRender] Generating HLS package at: ${hlsMasterPath}`);
   const hlsArgs = [
-    '-i', finalOutputPath,
-    '-codec:', 'copy',
-    '-start_number', '0',
-    '-hls_time', '10',
-    '-hls_list_size', '0',
-    '-f', 'hls',
-    hlsMasterPath
+    '-i',
+    finalOutputPath,
+    '-codec:',
+    'copy',
+    '-start_number',
+    '0',
+    '-hls_time',
+    '10',
+    '-hls_list_size',
+    '0',
+    '-f',
+    'hls',
+    hlsMasterPath,
   ];
   await runFfmpeg(hlsArgs, 'Stage3_HLS_Package');
 

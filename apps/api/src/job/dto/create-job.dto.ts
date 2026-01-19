@@ -9,11 +9,13 @@ type JobType =
   | 'NOVEL_ANALYSIS'
   | 'VIDEO_RENDER'
   | 'SHOT_RENDER'
+  | 'CE02_VISUAL_DENSITY'
   | 'CE03_VISUAL_DENSITY'
   | 'CE04_VISUAL_ENRICHMENT'
   | 'CE06_NOVEL_PARSING'
   | 'CE07_MEMORY_UPDATE'
-  | 'TIMELINE_PREVIEW';
+  | 'TIMELINE_PREVIEW'
+  | 'CE11_SHOT_GENERATOR';
 
 export class CreateJobDto {
   @IsEnum([
@@ -25,13 +27,27 @@ export class CreateJobDto {
     'NOVEL_ANALYSIS',
     'VIDEO_RENDER',
     'SHOT_RENDER',
+    'CE02_VISUAL_DENSITY',
     'CE03_VISUAL_DENSITY',
     'CE04_VISUAL_ENRICHMENT',
     'CE06_NOVEL_PARSING',
     'CE07_MEMORY_UPDATE',
     'TIMELINE_PREVIEW',
+    'CE11_SHOT_GENERATOR',
   ] as const)
   type: JobType;
+
+  @IsOptional()
+  @IsString()
+  jobType?: string; // Worker compatibility
+
+  @IsOptional()
+  @IsString()
+  projectId?: string; // Worker compatibility
+
+  @IsOptional()
+  @IsString()
+  organizationId?: string; // Worker compatibility
 
   @IsOptional()
   @IsObject()
@@ -55,4 +71,8 @@ export class CreateJobDto {
   @IsOptional()
   @IsString()
   dedupeKey?: string;
+
+  @IsOptional()
+  @IsString()
+  parentJobId?: string;
 }

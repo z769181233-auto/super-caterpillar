@@ -1,10 +1,13 @@
 import {
-    Controller,
-    Post,
-    Body,
-    UseGuards,
-    HttpException,
-    HttpStatus,
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Req,
+  Inject,
 } from '@nestjs/common';
 import { JobService } from './job.service';
 import { CreateJobDto } from './dto/create-job.dto';
@@ -24,58 +27,71 @@ import { JobType } from 'database';
 @Controller('jobs')
 @UseGuards(JwtOrHmacGuard)
 export class JobGenericController {
-    constructor(
-        private readonly jobService: JobService,
-        private readonly capacityGateService: CapacityGateService
-    ) { }
+  constructor(
+    @Inject(JobService)
+    private readonly jobService: JobService
+    // private readonly capacityGateService: CapacityGateService
+  ) {}
 
-    @Post()
-    async createGenericJob(
-        @Body() createJobDto: CreateJobDto,
-        @CurrentUser() user: AuthenticatedUser,
-        @CurrentOrganization() organizationId: string
-    ): Promise<any> {
-        // 权限与安全上下文劫持 (兼容 HMAC)
-        if (!user.userId) {
-            throw new HttpException('USER_CONTEXT_MISSING', HttpStatus.UNAUTHORIZED);
-        }
+  @Post()
+  async createGenericJob(
+    @Body() createJobDto: CreateJobDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string,
+    @Req() req: any
+  ): Promise<any> {
+    try {
+      console.log('[JobGenericController] Received request:', JSON.stringify(createJobDto));
+      console.log('[JobGenericController] User:', JSON.stringify(user));
 
-        // 1. 容量校验 (P1 修复项：防止并发爆炸)
-        const capacityResult = await this.capacityGateService.checkJobCapacity(
-            createJobDto.type as JobType,
-            organizationId,
-            user.userId
-        );
+      if (!process.env.ENABLE_JOB_GENERIC_CONTROLLER) {
+        throw new HttpException('JobGenericController is disabled', HttpStatus.FORBIDDEN);
+      }
 
-        if (!capacityResult.allowed) {
-            throw new HttpException(
-                capacityResult.reason || 'ORGANIZATION_CAPACITY_EXCEEDED',
-                HttpStatus.TOO_MANY_REQUESTS
-            );
-        }
+      const userId = user?.userId || req.apiKeyId || 'system-worker';
+      if (!userId) {
+        throw new HttpException('USER_CONTEXT_MISSING', HttpStatus.UNAUTHORIZED);
+      }
 
-        // 2. 提取必要的 projectId
-        const projectId = createJobDto.payload?.projectId;
-        if (!projectId) {
-            throw new HttpException('projectId is required in payload', HttpStatus.BAD_REQUEST);
-        }
+      // 1. 容量校验 (Disabled for now)
+      // ...
 
-        // 3. 调用通用的 CECoreJob 创建逻辑
-        const job = await this.jobService.createCECoreJob({
-            projectId,
-            organizationId,
-            jobType: createJobDto.type as JobType,
-            payload: createJobDto.payload,
-            traceId: createJobDto.traceId,
-            isVerification: createJobDto.isVerification,
-            dedupeKey: createJobDto.dedupeKey,
-        });
+      // 2. 创建 Job
+      // Security Hardening: Only use root jobType/projectId/orgId for system-worker/HMAC requests
+      const isSystemWorker = !!(req.apiKeyId || user?.userId === 'system-worker');
 
-        return {
-            success: true,
-            data: job,
-            requestId: randomUUID(),
-            timestamp: new Date().toISOString(),
-        };
+      const jobTypeStr = isSystemWorker
+        ? (createJobDto.jobType ?? createJobDto.type)
+        : createJobDto.type;
+      const projectId = isSystemWorker
+        ? (createJobDto.projectId ?? createJobDto.payload?.projectId ?? user?.userId)
+        : (createJobDto.payload?.projectId ?? user?.userId);
+      const orgId = isSystemWorker
+        ? (createJobDto.organizationId ?? organizationId ?? 'org-default')
+        : (organizationId ?? 'org-default');
+
+      const job = await this.jobService.createCECoreJob({
+        projectId,
+        organizationId: orgId,
+        jobType: jobTypeStr as JobType,
+        payload: createJobDto.payload,
+        traceId: createJobDto.traceId,
+        isVerification: createJobDto.isVerification,
+        dedupeKey: createJobDto.dedupeKey,
+        // taskId: undefined // Explicitly undefined to avoid parentJobId mapping
+      });
+
+      console.log('[JobGenericController] SUCCESS. Job:', JSON.stringify(job));
+
+      return {
+        success: true,
+        data: job,
+        requestId: randomUUID(),
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      console.error('[JobGenericController] CRITICAL ERROR:', error.message, error.stack);
+      throw error;
     }
+  }
 }

@@ -10,8 +10,8 @@ import { PrismaService } from '../prisma/prisma.service';
 export class StoryController {
   constructor(
     private readonly jobService: JobService,
-    private readonly prisma: PrismaService,
-  ) { }
+    private readonly prisma: PrismaService
+  ) {}
 
   /**
    * POST /api/story/parse
@@ -34,7 +34,8 @@ export class StoryController {
     const projectId = context?.projectId || topProjectId;
     const organizationId = req.user?.organizationId || req.apiKeyOwnerOrgId;
     const userId = req.user?.id || req.apiKeyOwnerUserId;
-    const traceId = req.headers['x-request-id'] || req.headers['x-trace-id'] || `req_${Date.now()} `;
+    const traceId =
+      req.headers['x-request-id'] || req.headers['x-trace-id'] || `req_${Date.now()} `;
 
     let novelSourceId = context?.novelSourceId;
 

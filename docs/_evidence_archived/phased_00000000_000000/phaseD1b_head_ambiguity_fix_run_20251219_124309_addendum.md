@@ -14,6 +14,7 @@ The original D-1b evidence file (`phaseD1b_head_ambiguity_fix_run_20251219_12430
 ## Root Cause Resolution
 
 The root cause was addressed in Stage D-1c:
+
 - Removed `refs/heads/HEAD` branch (local and remote)
 - Verified warnings eliminated without stderr suppression
 

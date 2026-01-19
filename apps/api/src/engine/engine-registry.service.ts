@@ -224,6 +224,7 @@ export class EngineRegistry {
       CE01_REFERENCE_SHEET: 'character_visual',
       TIMELINE_PREVIEW: 'ce11_timeline_preview',
       PIPELINE_STAGE1_NOVEL_TO_VIDEO: 'stage1_orchestrator',
+      CE09_MEDIA_SECURITY: 'ce09_security_real',
 
       // TEST_HTTP_ENGINE_CALL: 'mock_http_engine', // 仅用于测试，不接入现有业务流程
     };

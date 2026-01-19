@@ -5,13 +5,13 @@
 
 ## Results
 
-| Check | Result |
-|-------|--------|
-| CE01 Jobs SUCCEEDED | 0 |
-| Characters with Reference Sheets | 0 |
-| Audit Logs (10 min) | 0 |
-| Gate Checks Passed | 0
-0/5 |
+| Check                            | Result |
+| -------------------------------- | ------ |
+| CE01 Jobs SUCCEEDED              | 0      |
+| Characters with Reference Sheets | 0      |
+| Audit Logs (10 min)              | 0      |
+| Gate Checks Passed               | 0      |
+| 0/5                              |
 
 ## Files
 

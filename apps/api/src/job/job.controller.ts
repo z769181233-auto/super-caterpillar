@@ -54,7 +54,7 @@ export class JobController {
     private readonly auditLogService: AuditLogService,
     @Inject(CapacityGateService)
     private readonly capacityGateService: CapacityGateService
-  ) { }
+  ) {}
 
   @Get('debug-key/:key')
   @Public()
@@ -82,6 +82,9 @@ export class JobController {
     @Res({ passthrough: true }) res: Response
   ): Promise<any> {
     const u = (req as any).user;
+    // Fix: Handle HMAC/Worker mode where u might be null
+    const effectiveUserId = u?.userId || (req as any).apiKeyId || 'system-worker';
+
     // P1-1: API Backpressure Check
     const { env: scuEnv } = await import('@scu/config');
     if ((scuEnv as any).apiBackpressureEnabled) {
@@ -92,7 +95,7 @@ export class JobController {
       ) {
         // Record rejection audit
         await this.auditLogService.record({
-          userId: u.userId,
+          userId: effectiveUserId,
           action: 'JOB_REJECTED_BACKPRESSURE',
           resourceType: 'job',
           details: {
@@ -122,8 +125,8 @@ export class JobController {
       }
     }
 
-    // Fix: Use u.userId (checked above) instead of user.userId to ensure consistency
-    const job = await this.jobService.create(shotId, createJobDto, u.userId, organizationId);
+    // Fix: Use effectiveUserId instead of u.userId to ensure consistency
+    const job = await this.jobService.create(shotId, createJobDto, effectiveUserId, organizationId);
     return {
       success: true,
       data: job,
@@ -131,7 +134,6 @@ export class JobController {
       timestamp: new Date().toISOString(),
     };
   }
-
 
   @Get('shots/:shotId/jobs')
   async getJobsByShot(
@@ -437,10 +439,7 @@ export class JobController {
    * POST /jobs/:id/ack
    */
   @Post('jobs/:id/ack')
-  async ackJob(
-    @Param('id') jobId: string,
-    @Req() request: Request
-  ): Promise<any> {
+  async ackJob(@Param('id') jobId: string, @Req() request: Request): Promise<any> {
     const workerId = (request.body as any)?.workerId || (request.headers['x-worker-id'] as string);
     if (!workerId) {
       throw new BadRequestException('Worker ID is required');

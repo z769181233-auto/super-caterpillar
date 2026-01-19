@@ -93,7 +93,14 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Nonce', 'X-Timestamp', 'X-Signature', 'X-Api-Key'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Nonce',
+      'X-Timestamp',
+      'X-Signature',
+      'X-Api-Key',
+    ],
   });
 
   // HMAC_DEBUG: Request Tap (only when debugging HMAC issues)
@@ -113,7 +120,8 @@ async function bootstrap() {
             xApiKey: h['x-api-key'],
             xTimestamp: h['x-timestamp'],
             xNonce: h['x-nonce'],
-            xSignaturePrefix: typeof h['x-signature'] === 'string' ? h['x-signature'].slice(0, 12) : undefined,
+            xSignaturePrefix:
+              typeof h['x-signature'] === 'string' ? h['x-signature'].slice(0, 12) : undefined,
           })
         );
       } catch {
@@ -128,9 +136,7 @@ async function bootstrap() {
 
   // LISTEN DIAGNOSTIC: hard evidence around binding
   process.stdout.write(
-    util.format(
-      `[LISTEN_DIAG] before_listen host=127.0.0.1 port=${port} pid=${process.pid}`
-    ) + '\n'
+    util.format(`[LISTEN_DIAG] before_listen host=127.0.0.1 port=${port} pid=${process.pid}`) + '\n'
   );
 
   try {
@@ -168,7 +174,7 @@ async function bootstrap() {
           hasStorageController = true;
           process.stdout.write(
             util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
-            '\n'
+              '\n'
           );
         }
       }

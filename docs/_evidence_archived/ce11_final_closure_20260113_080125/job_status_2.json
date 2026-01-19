@@ -1,1 +1,149 @@
-{"success":true,"data":{"id":"6915026f-647a-493e-bef9-135165f8002d","organizationId":"org_gate_1768225130","projectId":"proj_gate_ce11_1768266085_25709","episodeId":"episode_gate_1768266085_25709","sceneId":"scene_gate_ce11_1768266085_25709","shotId":"shot_gate_ce11_1768266085_25709","taskId":"305f6a8a-339b-4760-973e-f181effa58a5","workerId":null,"status":"SUCCEEDED","type":"TIMELINE_PREVIEW","priority":0,"maxRetry":3,"retryCount":0,"attempts":1,"leaseUntil":"2026-01-13T08:03:26.164Z","lockedBy":"worker_seal_seal_1768266071","payload":{"fps":24,"width":640,"height":360,"result":{"audit":{"action":"ce11.timeline_preview.success","sceneId":"scene_gate_ce11_1768266085_25709","traceId":"trace-1768266086181"},"assetId":"94b2bc89-6ebc-4754-928b-5294100e93f1","success":true,"storageKey":"previews/proj_gate_ce11_1768266085_25709/scene_gate_ce11_1768266085_25709/run-1768266085849_preview.mp4"},"projectId":"proj_gate_ce11_1768266085_25709","pipelineRunId":"run-1768266085849","timelineStorageKey":"timelines/proj_gate_ce11_1768266085_25709/7fb89438-c843-49ed-807b-2df871997d02.json"},"engineConfig":{},"lastError":null,"createdAt":"2026-01-13T01:01:25.857Z","updatedAt":"2026-01-13T01:01:26.291Z","traceId":null,"result":{"audit":{"action":"ce11.timeline_preview.success","sceneId":"scene_gate_ce11_1768266085_25709","traceId":"trace-1768266086181"},"assetId":"94b2bc89-6ebc-4754-928b-5294100e93f1","success":true,"storageKey":"previews/proj_gate_ce11_1768266085_25709/scene_gate_ce11_1768266085_25709/run-1768266085849_preview.mp4"},"securityProcessed":false,"shot":{"id":"shot_gate_ce11_1768266085_25709","sceneId":"scene_gate_ce11_1768266085_25709","index":1,"title":"Shot 1","description":null,"reviewStatus":"DRAFT","type":"VIDEO","params":{},"qualityScore":{},"reviewedAt":null,"durationSeconds":null,"organizationId":null,"enrichedPrompt":null,"scene":{"id":"scene_gate_ce11_1768266085_25709","episodeId":"episode_gate_1768266085_25709","index":1,"title":"Gate Scene","summary":"Gate Scene Summary","sceneDraftId":null,"reviewStatus":"DRAFT","characters":null,"enrichedText":null,"projectId":"proj_gate_ce11_1768266085_25709","visualDensityScore":null,"episode":{"id":"episode_gate_1768266085_25709","seasonId":"season_gate_1768266085_25709","projectId":"proj_gate_ce11_1768266085_25709","index":1,"name":"Gate Episode","summary":null,"chapterId":null,"season":{"id":"season_gate_1768266085_25709","projectId":"proj_gate_ce11_1768266085_25709","index":1,"title":"Gate Season","description":null,"metadata":{},"createdAt":"2026-01-13T08:01:25.655Z","updatedAt":"2026-01-13T08:01:25.655Z","project":{"id":"proj_gate_ce11_1768266085_25709","name":"Gate Project 1768266085_25709","description":null,"ownerId":"user_gate_1768225130","organizationId":"org_gate_1768225130","status":"in_progress","metadata":null,"createdAt":"2026-01-13T08:01:25.634Z","updatedAt":"2026-01-13T08:01:25.634Z","settingsJson":null}}}}},"engineBinding":{"id":"49fadb48-5ef2-4dab-a03e-295aece9cbe8","jobId":"6915026f-647a-493e-bef9-135165f8002d","engineId":"eng_preview_1768234465_28425","engineVersionId":null,"engineKey":"ce11_timeline_preview","status":"BOUND","boundAt":"2026-01-13T01:01:25.868Z","executedAt":null,"completedAt":null,"errorMessage":null,"metadata":{"jobType":"TIMELINE_PREVIEW","strategy":"default"},"createdAt":"2026-01-13T01:01:25.868Z","updatedAt":"2026-01-13T01:01:25.868Z","engine":{"id":"eng_preview_1768234465_28425","engineKey":"ce11_timeline_preview","adapterName":"preview","adapterType":"real","mode":"http","config":{},"enabled":true,"version":null,"defaultVersion":null,"createdAt":"2026-01-12T23:14:25.291Z","updatedAt":"2026-01-12T23:14:25.291Z","code":"ce11_timeline_preview","isActive":true,"name":"Timeline Preview Gate","type":"TIMELINE_PREVIEW"},"engineVersion":null}},"requestId":"372d471e-db46-44f7-99f0-ec90aff870a9","timestamp":"2026-01-13T01:01:28.142Z"}
+{
+  "success": true,
+  "data": {
+    "id": "6915026f-647a-493e-bef9-135165f8002d",
+    "organizationId": "org_gate_1768225130",
+    "projectId": "proj_gate_ce11_1768266085_25709",
+    "episodeId": "episode_gate_1768266085_25709",
+    "sceneId": "scene_gate_ce11_1768266085_25709",
+    "shotId": "shot_gate_ce11_1768266085_25709",
+    "taskId": "305f6a8a-339b-4760-973e-f181effa58a5",
+    "workerId": null,
+    "status": "SUCCEEDED",
+    "type": "TIMELINE_PREVIEW",
+    "priority": 0,
+    "maxRetry": 3,
+    "retryCount": 0,
+    "attempts": 1,
+    "leaseUntil": "2026-01-13T08:03:26.164Z",
+    "lockedBy": "worker_seal_seal_1768266071",
+    "payload": {
+      "fps": 24,
+      "width": 640,
+      "height": 360,
+      "result": {
+        "audit": {
+          "action": "ce11.timeline_preview.success",
+          "sceneId": "scene_gate_ce11_1768266085_25709",
+          "traceId": "trace-1768266086181"
+        },
+        "assetId": "94b2bc89-6ebc-4754-928b-5294100e93f1",
+        "success": true,
+        "storageKey": "previews/proj_gate_ce11_1768266085_25709/scene_gate_ce11_1768266085_25709/run-1768266085849_preview.mp4"
+      },
+      "projectId": "proj_gate_ce11_1768266085_25709",
+      "pipelineRunId": "run-1768266085849",
+      "timelineStorageKey": "timelines/proj_gate_ce11_1768266085_25709/7fb89438-c843-49ed-807b-2df871997d02.json"
+    },
+    "engineConfig": {},
+    "lastError": null,
+    "createdAt": "2026-01-13T01:01:25.857Z",
+    "updatedAt": "2026-01-13T01:01:26.291Z",
+    "traceId": null,
+    "result": {
+      "audit": {
+        "action": "ce11.timeline_preview.success",
+        "sceneId": "scene_gate_ce11_1768266085_25709",
+        "traceId": "trace-1768266086181"
+      },
+      "assetId": "94b2bc89-6ebc-4754-928b-5294100e93f1",
+      "success": true,
+      "storageKey": "previews/proj_gate_ce11_1768266085_25709/scene_gate_ce11_1768266085_25709/run-1768266085849_preview.mp4"
+    },
+    "securityProcessed": false,
+    "shot": {
+      "id": "shot_gate_ce11_1768266085_25709",
+      "sceneId": "scene_gate_ce11_1768266085_25709",
+      "index": 1,
+      "title": "Shot 1",
+      "description": null,
+      "reviewStatus": "DRAFT",
+      "type": "VIDEO",
+      "params": {},
+      "qualityScore": {},
+      "reviewedAt": null,
+      "durationSeconds": null,
+      "organizationId": null,
+      "enrichedPrompt": null,
+      "scene": {
+        "id": "scene_gate_ce11_1768266085_25709",
+        "episodeId": "episode_gate_1768266085_25709",
+        "index": 1,
+        "title": "Gate Scene",
+        "summary": "Gate Scene Summary",
+        "sceneDraftId": null,
+        "reviewStatus": "DRAFT",
+        "characters": null,
+        "enrichedText": null,
+        "projectId": "proj_gate_ce11_1768266085_25709",
+        "visualDensityScore": null,
+        "episode": {
+          "id": "episode_gate_1768266085_25709",
+          "seasonId": "season_gate_1768266085_25709",
+          "projectId": "proj_gate_ce11_1768266085_25709",
+          "index": 1,
+          "name": "Gate Episode",
+          "summary": null,
+          "chapterId": null,
+          "season": {
+            "id": "season_gate_1768266085_25709",
+            "projectId": "proj_gate_ce11_1768266085_25709",
+            "index": 1,
+            "title": "Gate Season",
+            "description": null,
+            "metadata": {},
+            "createdAt": "2026-01-13T08:01:25.655Z",
+            "updatedAt": "2026-01-13T08:01:25.655Z",
+            "project": {
+              "id": "proj_gate_ce11_1768266085_25709",
+              "name": "Gate Project 1768266085_25709",
+              "description": null,
+              "ownerId": "user_gate_1768225130",
+              "organizationId": "org_gate_1768225130",
+              "status": "in_progress",
+              "metadata": null,
+              "createdAt": "2026-01-13T08:01:25.634Z",
+              "updatedAt": "2026-01-13T08:01:25.634Z",
+              "settingsJson": null
+            }
+          }
+        }
+      }
+    },
+    "engineBinding": {
+      "id": "49fadb48-5ef2-4dab-a03e-295aece9cbe8",
+      "jobId": "6915026f-647a-493e-bef9-135165f8002d",
+      "engineId": "eng_preview_1768234465_28425",
+      "engineVersionId": null,
+      "engineKey": "ce11_timeline_preview",
+      "status": "BOUND",
+      "boundAt": "2026-01-13T01:01:25.868Z",
+      "executedAt": null,
+      "completedAt": null,
+      "errorMessage": null,
+      "metadata": { "jobType": "TIMELINE_PREVIEW", "strategy": "default" },
+      "createdAt": "2026-01-13T01:01:25.868Z",
+      "updatedAt": "2026-01-13T01:01:25.868Z",
+      "engine": {
+        "id": "eng_preview_1768234465_28425",
+        "engineKey": "ce11_timeline_preview",
+        "adapterName": "preview",
+        "adapterType": "real",
+        "mode": "http",
+        "config": {},
+        "enabled": true,
+        "version": null,
+        "defaultVersion": null,
+        "createdAt": "2026-01-12T23:14:25.291Z",
+        "updatedAt": "2026-01-12T23:14:25.291Z",
+        "code": "ce11_timeline_preview",
+        "isActive": true,
+        "name": "Timeline Preview Gate",
+        "type": "TIMELINE_PREVIEW"
+      },
+      "engineVersion": null
+    }
+  },
+  "requestId": "372d471e-db46-44f7-99f0-ec90aff870a9",
+  "timestamp": "2026-01-13T01:01:28.142Z"
+}

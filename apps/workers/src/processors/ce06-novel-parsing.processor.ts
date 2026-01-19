@@ -11,15 +11,24 @@ export interface ProcessorResult {
   output?: any;
   error?: string;
 }
+import { CE01ProtocolAdapter } from '../adapters/ce01-protocol.adapter';
 
 /**
  * CE06 Novel Parsing Processor (V1.3.1: 母引擎收口 + 管线串联)
  * 严格通过 EngineHubClient 调用引擎，确保审计链路完整
  */
-export async function processCE06NovelParsingJob(context: ProcessorContext): Promise<ProcessorResult> {
+export async function processCE06NovelParsingJob(
+  context: ProcessorContext
+): Promise<ProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
   const engineHub = new EngineHubClient(apiClient);
+
+  // V3.0 Phase 2: Protocol Adapter (Bible -> Internal)
+  // Normalize payload globally so all sub-functions see strict internal types
+  if (job.payload) {
+    job.payload = CE01ProtocolAdapter.toInternal(job.payload);
+  }
 
   try {
     const payload = job.payload || {};
@@ -42,7 +51,11 @@ export async function processCE06NovelParsingJob(context: ProcessorContext): Pro
 /**
  * SCAN 阶段 (通过母引擎)
  */
-async function executeScanJob(context: ProcessorContext, job: ProcessorContext['job'], engineHub: EngineHubClient): Promise<ProcessorResult> {
+async function executeScanJob(
+  context: ProcessorContext,
+  job: ProcessorContext['job'],
+  engineHub: EngineHubClient
+): Promise<ProcessorResult> {
   const { prisma, apiClient } = context;
   const logger = context.logger || console;
   const payload = job.payload || {};
@@ -55,7 +68,9 @@ async function executeScanJob(context: ProcessorContext, job: ProcessorContext['
   const organizationId = job.organizationId;
 
   if (!projectId || !organizationId) {
-    throw new Error(`[CE06-SCAN] Missing projectId (${projectId}) or organizationId (${organizationId}) in job ${job.id}`);
+    throw new Error(
+      `[CE06-SCAN] Missing projectId (${projectId}) or organizationId (${organizationId}) in job ${job.id}`
+    );
   }
 
   logger.log(`[CE06-SCAN] Scanning via EngineHub for project ${projectId}...`);
@@ -92,7 +107,12 @@ async function executeScanJob(context: ProcessorContext, job: ProcessorContext['
     for (const chunk of chunks) {
       const vol = await tx.novelVolume.upsert({
         where: { projectId_index: { projectId, index: chunk.volume_index } },
-        create: { projectId, novelSourceId: novelSource.id, index: chunk.volume_index, title: chunk.volume_title },
+        create: {
+          projectId,
+          novelSourceId: novelSource.id,
+          index: chunk.volume_index,
+          title: chunk.volume_title,
+        },
         update: { title: chunk.volume_title },
       });
 
@@ -119,6 +139,7 @@ async function executeScanJob(context: ProcessorContext, job: ProcessorContext['
           chapterId: chapter.id,
           raw_text: rawText.substring(chunk.start_offset, chunk.end_offset),
           traceId,
+          projectId, // Required by JobGenericController
         },
         parentJobId: job.id,
       });
@@ -135,7 +156,11 @@ async function executeScanJob(context: ProcessorContext, job: ProcessorContext['
 /**
  * CHUNK_PARSE 阶段 (通过母引擎 + 自动串联 CE03/CE04)
  */
-async function executeChunkParseJob(context: ProcessorContext, job: ProcessorContext['job'], engineHub: EngineHubClient): Promise<ProcessorResult> {
+async function executeChunkParseJob(
+  context: ProcessorContext,
+  job: ProcessorContext['job'],
+  engineHub: EngineHubClient
+): Promise<ProcessorResult> {
   const { prisma, apiClient } = context;
   const logger = context.logger || console;
   const payload = job.payload || {};
@@ -147,10 +172,13 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
   const organizationId = job.organizationId;
 
   if (!projectId || !organizationId) {
-    throw new Error(`[CE06-PARSE] Missing projectId (${projectId}) or organizationId (${organizationId}) in job ${job.id}`);
+    throw new Error(
+      `[CE06-PARSE] Missing projectId (${projectId}) or organizationId (${organizationId}) in job ${job.id}`
+    );
   }
 
-  if (!chapterId || !chapterText) throw new Error('CHUNK_PARSE phase missing chapterId or raw_text');
+  if (!chapterId || !chapterText)
+    throw new Error('CHUNK_PARSE phase missing chapterId or raw_text');
 
   logger.log(`[CE06-PARSE] Analyzing chapter ${chapterId} via EngineHub...`);
 
@@ -167,7 +195,13 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
     currentTextOrSummary: chapter.summary || chapterText.substring(0, 500),
   });
 
-  logger.log(`[CE06-PARSE] Context injection built: Long-term=${contextPrompt.longTermMemory.substring(0, 50)}...`);
+  logger.log(
+    `[CE06-PARSE] Context injection built: Long-term=${contextPrompt.longTermMemory.substring(0, 50)}...`
+  );
+
+  // V3.0 Phase 2: Protocol Adapter (Bible -> Internal)
+  // Already normalized at top-level
+  // console.log('[CE06_DEBUG] Chunk Parse Payload:', JSON.stringify(job.payload));
 
   // Step 1: CE06 解析 (raw_text + context_injection)
   const ce06Result = await engineHub.invoke({
@@ -223,7 +257,6 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
 
       // V3.0 P0-2: projectId is not a column in novel_scenes table
       // Removed projectId update logic
-
 
       // Step 3: 调用 CE03 计算密度
       logger.log(`[CE03] Computing density for scene ${scene.id}...`);
@@ -299,7 +332,7 @@ async function executeChunkParseJob(context: ProcessorContext, job: ProcessorCon
     for (const sc of scenes) {
       if (sc.characters) {
         for (const char of sc.characters) {
-          const existingChar = allCharacters.find(c => c.id === (char.id || `char_${char.name}`));
+          const existingChar = allCharacters.find((c) => c.id === (char.id || `char_${char.name}`));
           if (!existingChar) {
             allCharacters.push({
               id: char.id || `char_${char.name}`,

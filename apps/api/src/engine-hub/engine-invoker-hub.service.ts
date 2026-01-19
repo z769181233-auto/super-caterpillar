@@ -3,7 +3,7 @@
  * Stage2: 统一的引擎调用服务，接收 EngineInvocationRequest，返回 EngineInvocationResult
  */
 
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, Inject, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { EngineInvocationRequest, EngineInvocationResult } from '@scu/shared-types';
 import { EngineRegistryHubService } from './engine-registry-hub.service';
@@ -20,17 +20,66 @@ import { createHash } from 'crypto';
  * 路由 + 调用聚合，统一包装为 EngineInvocationResult
  */
 @Injectable()
-export class EngineInvokerHubService {
+export class EngineInvokerHubService implements OnModuleInit {
   private readonly logger = new Logger(EngineInvokerHubService.name);
 
   constructor(
-    private readonly engineRegistry: EngineRegistryHubService,
-    private readonly memoryRegistry: EngineRegistry,
+    @Inject(EngineRegistryHubService)
+    private engineRegistry: EngineRegistryHubService,
+    @Inject(EngineRegistry)
+    private memoryRegistry: EngineRegistry,
     private readonly moduleRef: ModuleRef,
-    private readonly httpEngineAdapter: HttpEngineAdapter,
-    private readonly auditLogService: AuditLogService,
-    private readonly costLimit: CostLimitService
-  ) { }
+    @Inject(HttpEngineAdapter)
+    private httpEngineAdapter: HttpEngineAdapter,
+    @Inject(AuditLogService)
+    private auditLogService: AuditLogService,
+    @Inject(CostLimitService)
+    private costLimit: CostLimitService
+  ) {
+    console.log(`[EngineInvokerHubService] Constructor - costLimit defined: ${!!this.costLimit}`);
+  }
+
+  async onModuleInit() {
+    this.ensureDependencies();
+  }
+
+  private ensureDependencies() {
+    if (!this.engineRegistry) {
+      try {
+        this.engineRegistry = this.moduleRef.get(EngineRegistryHubService, { strict: false });
+      } catch (e) {
+        /* silent fail */
+      }
+    }
+    if (!this.memoryRegistry) {
+      try {
+        this.memoryRegistry = this.moduleRef.get(EngineRegistry, { strict: false });
+      } catch (e) {
+        /* silent fail */
+      }
+    }
+    if (!this.httpEngineAdapter) {
+      try {
+        this.httpEngineAdapter = this.moduleRef.get(HttpEngineAdapter, { strict: false });
+      } catch (e) {
+        /* silent fail */
+      }
+    }
+    if (!this.auditLogService) {
+      try {
+        this.auditLogService = this.moduleRef.get(AuditLogService, { strict: false });
+      } catch (e) {
+        /* silent fail */
+      }
+    }
+    if (!this.costLimit) {
+      try {
+        this.costLimit = this.moduleRef.get(CostLimitService, { strict: false });
+      } catch (e) {
+        /* silent fail */
+      }
+    }
+  }
 
   /**
    * 调用引擎
@@ -40,6 +89,7 @@ export class EngineInvokerHubService {
   async invoke<TInput, TOutput>(
     req: EngineInvocationRequest<TInput>
   ): Promise<EngineInvocationResult<TOutput>> {
+    this.ensureDependencies();
     const started = Date.now();
     let fallbackReason: string | undefined;
 
@@ -133,11 +183,15 @@ export class EngineInvokerHubService {
         }
 
         if (!descriptor) {
-          throw new Error(`Engine ${req.engineKey}@${req.engineVersion ?? 'default'} not registered or disabled`);
+          throw new Error(
+            `Engine ${req.engineKey}@${req.engineVersion ?? 'default'} not registered or disabled`
+          );
         }
 
         if (descriptor.mode === 'local') {
-          const adapter = this.moduleRef.get<EngineAdapter>(descriptor.adapterToken, { strict: false });
+          const adapter = this.moduleRef.get<EngineAdapter>(descriptor.adapterToken, {
+            strict: false,
+          });
           if (!adapter) throw new Error(`Adapter ${descriptor.adapterToken} not found`);
 
           const engineInput: EngineInvokeInput = {

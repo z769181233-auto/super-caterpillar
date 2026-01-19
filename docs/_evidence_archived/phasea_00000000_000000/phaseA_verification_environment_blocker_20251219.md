@@ -11,19 +11,20 @@
 ## Why this blocks Close
 
 Phase A untracked allowlist rule is:
-- allowlist = docs/_evidence/** only
+
+- allowlist = docs/\_evidence/\*\* only
 - PASS requires violation_count == 0
 
-If the workspace has大量 untracked outside docs/_evidence/**, the verification must FAIL by definition.
+If the workspace has大量 untracked outside docs/\_evidence/\*\*, the verification must FAIL by definition.
 
 ## Hard Preconditions (must be true before running Close verification)
 
-1) Repository is a valid canonical workspace:
+1. Repository is a valid canonical workspace:
    - `git rev-parse --is-inside-work-tree` = true
    - `git ls-files | wc -l` > 0
 
-2) Workspace is not "all-untracked":
-   - `git status --porcelain` must not show mass `??` outside docs/_evidence/**
+2. Workspace is not "all-untracked":
+   - `git status --porcelain` must not show mass `??` outside docs/\_evidence/\*\*
 
 ## Conclusion
 
@@ -36,4 +37,3 @@ Re-run verification in a canonical repo workspace before attempting Close.
 ```bash
 bash docs/_evidence/_tools/check_canonical_workspace.sh
 ```
-

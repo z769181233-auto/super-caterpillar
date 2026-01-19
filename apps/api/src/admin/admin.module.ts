@@ -10,4 +10,4 @@ import { OrchestratorModule } from '../orchestrator/orchestrator.module';
   imports: [PrismaModule, WorkerModule, EngineModule, OrchestratorModule],
   controllers: [AdminController, ProdGateController],
 })
-export class AdminModule { }
+export class AdminModule {}

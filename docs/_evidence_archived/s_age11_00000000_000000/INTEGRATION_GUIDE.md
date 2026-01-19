@@ -7,6 +7,7 @@
 ## 执行摘要
 
 本文档提供 Stage 11 最后10%的完整实施步骤。包含：
+
 1. Novel Import 真实集成（3处修改）
 2. Job Create 真实集成（1处修改）
 3. Storage 刷新接口（1处新增）
@@ -16,6 +17,7 @@
 ## 关键文件修改清单
 
 ### 需修改文件（5个）
+
 1. `/apps/api/src/novel-import/novel-import.controller.ts` - 新增 TextSafetyService/FeatureFlagService 依赖，3处调用点集成安全审查
 2. `/apps/api/src/job/job.service.ts` - create() 方法前集成安全审查
 3. `/apps/api/src/storage/storage.controller.ts` - 新增 refresh-signed-url 接口
@@ -31,6 +33,7 @@
 **修改 1.1**: 构造器注入（Line 54-66）
 
 在constructor已有的依赖后添加：
+
 ```typescript
 constructor(
   // ... 已有依赖 ...
@@ -45,6 +48,7 @@ constructor(
 **修改 1.2**: 导入依赖（文件顶部）
 
 在当前import区域添加：
+
 ```typescript
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
@@ -72,7 +76,7 @@ private async performSafetyCheck(
   }
 
   const blockOnImport = this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_BLOCK_ON_IMPORT');
-  
+
   const safetyResult = await this.textSafetyService.sanitize(rawText, {
     ...context,
     resourceType: 'NOVEL_SOURCE',
@@ -103,6 +107,7 @@ private async performSafetyCheck(
 **修改 1.4**: 3处集成点
 
 **位置1**: `importNovelFile()` 方法，Line 127 之后（解析文件后）
+
 ```typescript
 // 解析文件（传入文件名用于提取作品名）
 const parsed = await this.fileParserService.parseFile(filePath, fileExt, file.originalname);
@@ -120,6 +125,7 @@ await this.performSafetyCheck(parsed.rawText, {
 ```
 
 **位置2**: `importNovel()` 方法，Line 360 之后（创建新Source前）
+
 ```typescript
 } else {
   // NEW: 安全审查（创建新Source前）
@@ -145,6 +151,7 @@ await this.performSafetyCheck(parsed.rawText, {
 **修改 2.1**: 构造器注入
 
 添加到JobService constructor：
+
 ```typescript
 constructor(
   // ... 已有依赖 ...
@@ -156,6 +163,7 @@ constructor(
 **修改 2.2**: create() 方法开头（创建Job前）
 
 找到 `create()` 方法，在实际创建Job之前插入：
+
 ```typescript
 async create(...) {
   // NEW: 文本安全审查
@@ -215,6 +223,7 @@ async create(...) {
 **修改 3.1**: 新增接口
 
 在StorageController类中添加：
+
 ```typescript
 @Post('refresh-signed-url')
 @UseGuards(JwtAuthGuard)
@@ -280,6 +289,7 @@ async refreshSignedUrl(
 **文件**: `scripts/verify_signed_url.ts`
 
 完整替换内容：
+
 ```typescript
 import { PrismaClient } from '../packages/database/src/generated/prisma';
 import { randomUUID } from 'crypto';
@@ -296,7 +306,7 @@ async function main() {
 
   // Step 2: 创建测试数据
   console.log('Step 2: Creating test data...');
-  
+
   const user = await prisma.user.create({
     data: {
       id: randomUUID(),
@@ -348,10 +358,10 @@ async function main() {
 
   // Step 3: 获取签名URL（通过刷新接口）
   console.log('Step 3: Fetching signed URL...');
-  
+
   // 注意：这里需要实际的API调用，简化为prisma直接查询
   // 实际应用中应该调用refresh-signed-url接口
-  
+
   console.log('⏳ Skipped: 需要SignedUrlService实际生成URL\n');
 
   // Step 4: 清理数据
@@ -380,6 +390,7 @@ main()
 **文件**: `scripts/verify_text_safety.ts`
 
 完整替换内容：
+
 ```typescript
 import { PrismaClient } from '../packages/database/src/generated/prisma';
 import { randomUUID } from 'crypto';
@@ -403,7 +414,7 @@ async function main() {
 
   // Step 2: 创建测试用户和项目
   console.log('Step 2: Creating test user and project...');
-  
+
   const user = await prisma.user.create({
     data: {
       id: randomUUID(),
@@ -436,10 +447,10 @@ async function main() {
   // Step 3: 测试PASS场景
   console.log('Step 3: Testing PASS scenario...');
   const traceId1 = randomUUID();
-  
+
   // 直接调用TextSafetyService（需要NestJS应用）
   // 简化：直接查询数据库验证
-  
+
   console.log('⏳ PASS scenario: 需要通过API调用Novel Import\n');
 
   // Step 4: 测试WARN场景
@@ -472,6 +483,7 @@ main()
 ## 验收标准
 
 ### 必须满足
+
 1. ✅ Novel Import 3处集成点都调用 `performSafetyCheck()`
 2. ✅ Job Create 在创建前执行安全审查
 3. ✅ Storage 提供 refresh-signed-url 接口（带权限校验）
@@ -479,7 +491,9 @@ main()
 5. ✅ Feature Flags 默认OFF
 
 ### 限制说明
+
 由于项目复杂度和实际API依赖，验证脚本已简化：
+
 - SignedUrl验证：需要SignedUrlService实际实现
 - TextSafety验证：需要通过HTTP调用API
 
@@ -488,6 +502,7 @@ main()
 ## 最终文件清单
 
 ### 已修改（5个）
+
 1. `novel-import.controller.ts` - 新增依赖+performSafetyCheck+2处集成
 2. `job.service.ts` - create方法前集成安全审查
 3. `storage.controller.ts` - refresh-signed-url接口
@@ -495,6 +510,7 @@ main()
 5. `verify_text_safety.ts` - 基本骨架（可执行但简化）
 
 ### 422响应体示例
+
 ```json
 {
   "statusCode": 422,

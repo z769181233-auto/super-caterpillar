@@ -116,7 +116,15 @@ export async function startGateWorkerApp() {
         'CE11_SHOT_GENERATOR',
       ],
       supportedModels: [],
-      supportedEngines: ['gate_noop', 'pipeline_orchestrator', 'stage1_orchestrator', 'video_merge', 'default_shot_render', 'ce09_security_real', 'ce11_shot_generator_mock'],
+      supportedEngines: [
+        'gate_noop',
+        'pipeline_orchestrator',
+        'stage1_orchestrator',
+        'video_merge',
+        'default_shot_render',
+        'ce09_security_real',
+        'ce11_shot_generator_mock',
+      ],
       maxBatchSize: 1,
     },
   });
@@ -158,7 +166,9 @@ export async function startGateWorkerApp() {
         await apiClient.ackJob(job.id, workerId);
         process.stdout.write(util.format(`[GateWorker] ACK job: ${job.id}`) + '\n');
       } catch (ackError: any) {
-        process.stderr.write(util.format(`[GateWorker] ❌ ACK Job Failed: ${ackError.message}`) + '\n');
+        process.stderr.write(
+          util.format(`[GateWorker] ❌ ACK Job Failed: ${ackError.message}`) + '\n'
+        );
         // If Ack fails, we probably shouldn't process it, or we should retry?
         // For Gate, we continue but warn.
       }
@@ -223,7 +233,11 @@ export async function startGateWorkerApp() {
 
           if (job.payload?.pipelineRunId) {
             // P4 Fix: Any VIDEO_RENDER with pipelineRunId should use real processor
-            process.stdout.write(util.format(`[GateWorker] 执行 Real Video Render (pipelineRunId=${job.payload.pipelineRunId})...\n`));
+            process.stdout.write(
+              util.format(
+                `[GateWorker] 执行 Real Video Render (pipelineRunId=${job.payload.pipelineRunId})...\n`
+              )
+            );
             const videoRenderCtx: ProcessorContext = {
               prisma,
               job: job,
@@ -268,7 +282,9 @@ export async function startGateWorkerApp() {
           // S4-3: Conditional Routing
           // P0 Fix: Pipeline jobs should always produce mock frames to trigger real FFmpeg video render
           if (job.payload?.pipelineRunId) {
-            process.stdout.write(util.format(`[GateWorker] 执行 S4-3 Real Engine Hub Shot Render...`) + '\n');
+            process.stdout.write(
+              util.format(`[GateWorker] 执行 S4-3 Real Engine Hub Shot Render...`) + '\n'
+            );
             // Core Processor uses (prisma, job, engineHub, apiClient) signature
             result = await processShotRenderJob(prisma, job, engineHubClient, apiClient);
           } else {

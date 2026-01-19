@@ -22,7 +22,7 @@ export class JobEngineBindingService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(EngineConfigStoreService) private readonly engineConfigStore: EngineConfigStoreService,
     @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry
-  ) { }
+  ) {}
 
   /**
    * 根据 JobType 选择 Engine
@@ -42,9 +42,9 @@ export class JobEngineBindingService {
     // Stage3-A: 根据 engineKey（即 code）查找 Engine，只选 isActive=true
     const engine = await this.prisma.engine.findFirst({
       where: {
-        code: engineKey, // 使用 code 字段查找（与 engineKey 保持一致）
-        isActive: true, // 必须激活
-        enabled: true, // 同时检查 enabled
+        engineKey, // Stage13: 使用 engineKey 字段查找
+        isActive: true,
+        enabled: true,
       },
     });
 
@@ -60,20 +60,25 @@ export class JobEngineBindingService {
       const isDefault = engine.code.startsWith('default_') || engineKey.startsWith('default_');
 
       if (isStub || isDefault) {
-        this.logger.error(`[ZeroBypass] PRODUCTION_MODE blocked engine binding. Key: ${engineKey}, Mode: ${engine.mode}, Code: ${engine.code}`);
+        this.logger.error(
+          `[ZeroBypass] PRODUCTION_MODE blocked engine binding. Key: ${engineKey}, Mode: ${engine.mode}, Code: ${engine.code}`
+        );
         // Audit block
-        await this.prisma.auditLog.create({
-          data: {
-            action: 'PRODUCTION_BLOCK_ENGINE_BINDING',
-            resourceType: 'engine',
-            resourceId: engine.id,
-            details: { engineKey, mode: engine.mode, code: engine.code }
-          }
-        }).catch(() => { });
-        throw new Error(`PRODUCTION_MODE_FORBIDS_NON_PROD_ENGINE: ${engineKey} (Mode=${engine.mode}, Code=${engine.code})`);
+        await this.prisma.auditLog
+          .create({
+            data: {
+              action: 'PRODUCTION_BLOCK_ENGINE_BINDING',
+              resourceType: 'engine',
+              resourceId: engine.id,
+              details: { engineKey, mode: engine.mode, code: engine.code },
+            },
+          })
+          .catch(() => {});
+        throw new Error(
+          `PRODUCTION_MODE_FORBIDS_NON_PROD_ENGINE: ${engineKey} (Mode=${engine.mode}, Code=${engine.code})`
+        );
       }
     }
-
 
     // 可选：选择特定版本（如果有默认版本）
     let engineVersionId: string | undefined;

@@ -1,0 +1,11 @@
+[GATE15] Starting CE11 Verification at 20260119_080004...
+[GATE15] Evidence Dir: docs/_evidence/gate15_ce11_20260119_080004
+[GATE15] Bible Payload Prepared.
+[GATE15] Seeding DB Hierarchy...
+[GATE15] DB Hierarchy Seeded.
+[GATE15] Bible Payload Prepared with novelSceneId=scene_gate15_20260119_080004
+[GATE15] Job Inserted: job_gate15_20260119_080004. Waiting for Worker...
+Poll [0/60] Status: PENDING
+Poll [1/60] Status: PENDING
+Poll [2/60] Status: PENDING
+Poll [3/60] Status: PENDING

@@ -65,8 +65,8 @@ import { processNovelScan } from './processors/novel-scan.processor';
 import { processNovelChunk } from './processors/novel-chunk.processor';
 import { processIdentityLockJob } from './processors/ce02-identity-lock.processor';
 import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.processor';
+import { processCE02VisualDensityJob } from './processors/ce02-visual-density.processor';
 import { ProcessorContext } from './types/processor-context';
-
 
 const prisma = new PrismaClient({
   datasources: {
@@ -162,7 +162,7 @@ async function registerWorker(): Promise<void> {
   if (!env.workerApiKey || !env.workerApiSecret) {
     process.stdout.write(
       util.format('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!') +
-      '\n'
+        '\n'
     );
     process.stdout.write(
       util.format('[Worker] ⚠️  Worker will not be able to authenticate with API server.') + '\n'
@@ -181,7 +181,7 @@ async function registerWorker(): Promise<void> {
     );
     process.stdout.write(
       util.format(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`) +
-      '\n'
+        '\n'
     );
 
     // Test DB Connection
@@ -204,17 +204,35 @@ async function registerWorker(): Promise<void> {
 
     // 稳定兜底:至少要把本次P1-2验证用到的引擎带上
     let supportedEnginesFinal =
-      rawEngines.length > 0 ? rawEngines : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'ce04_sdxl', 'tts_standard', 'video_render', 'shot_render', 'real_shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline', 'ce11_timeline_preview'];
+      rawEngines.length > 0
+        ? rawEngines
+        : [
+            'default_novel_analysis',
+            'ce06_novel_parsing',
+            'ce03_visual_density',
+            'ce04_visual_enrichment',
+            'ce04_sdxl',
+            'tts_standard',
+            'video_render',
+            'shot_render',
+            'real_shot_render',
+            'timeline_render',
+            'ce09_media_security',
+            'ce_pipeline',
+            'ce11_timeline_preview',
+          ];
 
     // P1: Production Scrubbing - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
-      console.log('[Worker] PRODUCTION_MODE=1: Scrubbing non-prod engines (default_*, mock*, gate_*)');
-      supportedEnginesFinal = supportedEnginesFinal.filter(e =>
-        !e.startsWith('default_') &&
-        !e.startsWith('mock') &&
-        !e.startsWith('gate_')
+      console.log(
+        '[Worker] PRODUCTION_MODE=1: Scrubbing non-prod engines (default_*, mock*, gate_*)'
       );
-      console.log(`[Worker] FINAL SUPPORTED ENGINES (PROD): ${JSON.stringify(supportedEnginesFinal)}`);
+      supportedEnginesFinal = supportedEnginesFinal.filter(
+        (e) => !e.startsWith('default_') && !e.startsWith('mock') && !e.startsWith('gate_')
+      );
+      console.log(
+        `[Worker] FINAL SUPPORTED ENGINES (PROD): ${JSON.stringify(supportedEnginesFinal)}`
+      );
     }
 
     const supportedJobTypes = [
@@ -222,6 +240,7 @@ async function registerWorker(): Promise<void> {
       JobType.VIDEO_RENDER,
       JobType.CE01_REFERENCE_SHEET,
       JobType.CE02_IDENTITY_LOCK,
+      JobType.CE02_VISUAL_DENSITY,
       JobType.CE03_VISUAL_DENSITY,
       JobType.CE04_VISUAL_ENRICHMENT,
       JobType.CE05_DIRECTOR_CONTROL,
@@ -236,7 +255,8 @@ async function registerWorker(): Promise<void> {
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW',
-      'PIPELINE_PROD_VIDEO_V1' // Exec 1: New Prod Pipeline
+      'CE11_SHOT_GENERATOR',
+      'PIPELINE_PROD_VIDEO_V1', // Exec 1: New Prod Pipeline
     ];
 
     // Registration Retry Loop
@@ -253,7 +273,7 @@ async function registerWorker(): Promise<void> {
             supportedModels: [],
             supportedEngines: [
               ...supportedEnginesFinal,
-              'ce09_real_watermark' // Exec 3: CE09 Real
+              'ce09_real_watermark', // Exec 3: CE09 Real
             ],
             maxBatchSize: 1,
           },
@@ -262,7 +282,7 @@ async function registerWorker(): Promise<void> {
         console.log('[Worker] Worker registered successfully.');
       } catch (error: any) {
         console.error(`[Worker] Registration failed: ${error.message}. Retrying in 5 seconds...`);
-        await new Promise(r => setTimeout(r, 5000));
+        await new Promise((r) => setTimeout(r, 5000));
       }
     }
 
@@ -290,14 +310,26 @@ async function sendHeartbeat(): Promise<void> {
     let supportedEngines =
       rawEngines.length > 0
         ? rawEngines
-        : ['default_novel_analysis', 'ce06_novel_parsing', 'ce03_visual_density', 'ce04_visual_enrichment', 'ce04_sdxl', 'tts_standard', 'video_render', 'shot_render', 'timeline_render', 'ce09_media_security', 'ce_pipeline', 'ce11_timeline_preview', 'ce09_real_watermark'];
+        : [
+            'default_novel_analysis',
+            'ce06_novel_parsing',
+            'ce03_visual_density',
+            'ce04_visual_enrichment',
+            'ce04_sdxl',
+            'tts_standard',
+            'video_render',
+            'shot_render',
+            'timeline_render',
+            'ce09_media_security',
+            'ce_pipeline',
+            'ce11_timeline_preview',
+            'ce09_real_watermark',
+          ];
 
     // P1: Production Scrubbing (Heartbeat Sync) - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
-      supportedEngines = supportedEngines.filter(e =>
-        !e.startsWith('default_') &&
-        !e.startsWith('mock') &&
-        !e.startsWith('gate_')
+      supportedEngines = supportedEngines.filter(
+        (e) => !e.startsWith('default_') && !e.startsWith('mock') && !e.startsWith('gate_')
       );
     }
 
@@ -306,6 +338,7 @@ async function sendHeartbeat(): Promise<void> {
       JobType.VIDEO_RENDER,
       JobType.CE01_REFERENCE_SHEET,
       JobType.CE02_IDENTITY_LOCK,
+      JobType.CE02_VISUAL_DENSITY,
       JobType.CE03_VISUAL_DENSITY,
       JobType.CE04_VISUAL_ENRICHMENT,
       JobType.CE05_DIRECTOR_CONTROL,
@@ -319,7 +352,7 @@ async function sendHeartbeat(): Promise<void> {
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW',
-      'PIPELINE_PROD_VIDEO_V1'
+      'PIPELINE_PROD_VIDEO_V1',
     ];
 
     await apiClient.heartbeat({
@@ -513,6 +546,14 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
         return processTimelineRenderJob({ prisma, job: job as any, apiClient });
       } else if (job.type === 'TIMELINE_PREVIEW') {
         return processTimelinePreviewJob({ prisma, job: job as any, apiClient });
+      } else if (job.type === 'CE02_VISUAL_DENSITY') {
+        const context: ProcessorContext = {
+          prisma,
+          job: { ...job, projectId: job.projectId || '' },
+          apiClient,
+          logger: console,
+        };
+        return processCE02VisualDensityJob(context);
       } else if (job.type === 'CE02_IDENTITY_LOCK') {
         return processIdentityLockJob({ prisma, job: job as any, apiClient, workerId });
       } else if (job.type === 'CE09_MEDIA_SECURITY') {
@@ -621,11 +662,17 @@ async function pollAndProcessJobs(): Promise<void> {
 
   for (let i = 0; i < currentWaveLimit; i++) {
     try {
-      process.stdout.write(util.format(`[WORKER_LOOP] Attempting to lease job (wave ${i + 1}/${currentWaveLimit})...`) + '\n');
+      process.stdout.write(
+        util.format(
+          `[WORKER_LOOP] Attempting to lease job (wave ${i + 1}/${currentWaveLimit})...`
+        ) + '\n'
+      );
       const job = await apiClient.getNextJob(workerId);
 
       if (job) {
-        process.stdout.write(util.format(`[WORKER_LOOP] ✅ Leased job: ${job.id} (${job.type})`) + '\n');
+        process.stdout.write(
+          util.format(`[WORKER_LOOP] ✅ Leased job: ${job.id} (${job.type})`) + '\n'
+        );
         // S2-ORCH-BASE: Must ACK to transition to RUNNING
         try {
           await apiClient.ackJob(job.id, workerId);
@@ -700,7 +747,9 @@ export async function startWorkerApp() {
 
     // 启动 Job 轮询循环
     setInterval(() => {
-      process.stdout.write(util.format(`[Probe] R=${isRunning} E=${env.jobWorkerEnabled} (FORCED)`) + '\n');
+      process.stdout.write(
+        util.format(`[Probe] R=${isRunning} E=${env.jobWorkerEnabled} (FORCED)`) + '\n'
+      );
       if (isRunning && (env.jobWorkerEnabled || true)) {
         pollAndProcessJobs();
       }
@@ -719,7 +768,7 @@ export async function startWorkerApp() {
     process.stdout.write(util.format(`[Worker] Job 轮询间隔: ${env.workerPollInterval}ms`) + '\n');
     process.stdout.write(
       util.format(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`) +
-      '\n'
+        '\n'
     );
 
     // 优雅退出处理

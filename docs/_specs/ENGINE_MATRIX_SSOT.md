@@ -14,19 +14,19 @@
 
 ## 引擎矩阵
 
-| EngineKey                | JobType                | 实现状态             | 计费模型                                 | 审计 Action 前缀     | Gate 脚本                                  | 封印 Tag                                   | 备注                         |
-| ------------------------ | ---------------------- | -------------------- | ---------------------------------------- | -------------------- | ------------------------------------------ | ------------------------------------------ | ---------------------------- |
-| `ce06_novel_parsing`     | CE06_NOVEL_PARSING     | LEGACY (Monolithic)  | router-based                             | `CE%`                | `gate-ce06-story-parse-real.sh`            | `legacy_monolithic`                        | **DEPRECATED**: Use SCAN/CHUNK              |
-| `ce06_scan_toc`          | NOVEL_SCAN_TOC         | REAL (Streaming)     | file-size-based                          | `ce06.scan`          | `gate-stage4-scale.sh`                     | `seal/stage4_scale_verified_20260116`      | **NEW**: Table of Contents Scanner          |
-| `ce06_chunk_parse`       | NOVEL_CHUNK_PARSE      | REAL (Streaming)     | file-size-based                          | `ce06.parse`         | `gate-stage4-scale.sh`                     | `seal/stage4_scale_verified_20260116`      | **NEW**: Chapter Content Parser             |
-| `ce02_identity_lock`     | CE02_IDENTITY_LOCK     | REAL (Postgres/Redis)| router-based                             | `ID%`                | `gate-ce02_identity_lock.sh`               | `seal/phase5D_identity_regression_20260116_v1` | **NEW**: Identity Consistency Anchor       |
-| `ce03_visual_density`    | CE03_VISUAL_DENSITY    | REAL (Heuristic)     | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
-| `ce04_visual_enrichment` | CE04_VISUAL_ENRICHMENT | REAL (Template)      | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
-| `shot_render`            | SHOT_RENDER            | REAL                 | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
-| `video_merge`            | VIDEO_MERGE            | REAL                 | cpuSeconds (priced via PRICING_SSOT)     | `engine.video_merge` | `gate-p0-r1_video_merge_real.sh`           | `video_merge_local_ffmpeg_sealed_20260109` | LEGACY: Compatible with V1.0 |
-| `ce10_timeline_compose`  | TIMELINE_COMPOSE       | REAL                 | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
-| `ce11_timeline_preview`  | TIMELINE_PREVIEW       | REAL                 | cpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` |                              |
-| `workflow_ce_dag`        | CE06->SHOT->VIDEO      | REAL (Orchestrator)  | Multi-Step                               | `CE%`                | `gate-phase3-commercial-e2e.sh`            | `seal/phase3_commercial_e2e_hard_20260113` | Orchestrator Workflow        |
+| EngineKey                | JobType                | 实现状态              | 计费模型                                 | 审计 Action 前缀     | Gate 脚本                        | 封印 Tag                                       | 备注                                 |
+| ------------------------ | ---------------------- | --------------------- | ---------------------------------------- | -------------------- | -------------------------------- | ---------------------------------------------- | ------------------------------------ |
+| `ce06_novel_parsing`     | CE06_NOVEL_PARSING     | LEGACY (Monolithic)   | router-based                             | `CE%`                | `gate-ce06-story-parse-real.sh`  | `legacy_monolithic`                            | **DEPRECATED**: Use SCAN/CHUNK       |
+| `ce06_scan_toc`          | NOVEL_SCAN_TOC         | REAL (Streaming)      | file-size-based                          | `ce06.scan`          | `gate-stage4-scale.sh`           | `seal/stage4_scale_verified_20260116`          | **NEW**: Table of Contents Scanner   |
+| `ce06_chunk_parse`       | NOVEL_CHUNK_PARSE      | REAL (Streaming)      | file-size-based                          | `ce06.parse`         | `gate-stage4-scale.sh`           | `seal/stage4_scale_verified_20260116`          | **NEW**: Chapter Content Parser      |
+| `ce02_identity_lock`     | CE02_IDENTITY_LOCK     | REAL (Postgres/Redis) | router-based                             | `ID%`                | `gate-ce02_identity_lock.sh`     | `seal/phase5D_identity_regression_20260116_v1` | **NEW**: Identity Consistency Anchor |
+| `ce03_visual_density`    | CE03_VISUAL_DENSITY    | REAL (Heuristic)      | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`  | `seal/phase3_commercial_e2e_hard_20260113`     |                                      |
+| `ce04_visual_enrichment` | CE04_VISUAL_ENRICHMENT | REAL (Template)       | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`  | `seal/phase3_commercial_e2e_hard_20260113`     |                                      |
+| `shot_render`            | SHOT_RENDER            | REAL                  | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`  | `seal/phase3_commercial_e2e_hard_20260113`     |                                      |
+| `video_merge`            | VIDEO_MERGE            | REAL                  | cpuSeconds (priced via PRICING_SSOT)     | `engine.video_merge` | `gate-p0-r1_video_merge_real.sh` | `video_merge_local_ffmpeg_sealed_20260109`     | LEGACY: Compatible with V1.0         |
+| `ce10_timeline_compose`  | TIMELINE_COMPOSE       | REAL                  | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`  | `seal/phase3_commercial_e2e_hard_20260113`     |                                      |
+| `ce11_timeline_preview`  | TIMELINE_PREVIEW       | REAL                  | cpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`  | `seal/phase3_commercial_e2e_hard_20260113`     |                                      |
+| `workflow_ce_dag`        | CE06->SHOT->VIDEO      | REAL (Orchestrator)   | Multi-Step                               | `CE%`                | `gate-phase3-commercial-e2e.sh`  | `seal/phase3_commercial_e2e_hard_20260113`     | Orchestrator Workflow                |
 
 ---
 
@@ -105,19 +105,20 @@
 
 ## 变更记录
 
-| 日期       | 变更                   | 操作人 |
-| ---------- | ---------------------- | ------ |
-| 2026-01-09 | 初始化矩阵 SSOT        | Gemini |
-| 2026-01-09 | 添加 shot_render P0-R0 | Gemini |
-| 2026-01-09 | 封印 P0-R2 E2E 管线    | Gemini |
-| 2026-01-09 | P1-3 基础可观测性建设  | Gemini |
-| 2026-01-13 | 封印 CE11 Timeline Preview | Antigravity |
-| 2026-01-13 | Phase 1 HARD SEALED（CE06 Real + CE11 Regression） | Gemini |
-| 2026-01-13 | Phase 3 HARD SEALED（Commercial E2E） | Gemini |
-| 2026-01-13 | Phase 4 UI Commercial Closure          | Gemini |
-| 2026-01-13 | **Billing Gap Closure (P0 Hotfix)** — CostLedger全链路闭环完成 | Antigravity |
-| 2026-01-16 | **Phase 5D HARD SEALED** — Identity Consistency Regression Complete | Antigravity |
+| 日期       | 变更                                                                                                            | 操作人      |
+| ---------- | --------------------------------------------------------------------------------------------------------------- | ----------- |
+| 2026-01-09 | 初始化矩阵 SSOT                                                                                                 | Gemini      |
+| 2026-01-09 | 添加 shot_render P0-R0                                                                                          | Gemini      |
+| 2026-01-09 | 封印 P0-R2 E2E 管线                                                                                             | Gemini      |
+| 2026-01-09 | P1-3 基础可观测性建设                                                                                           | Gemini      |
+| 2026-01-13 | 封印 CE11 Timeline Preview                                                                                      | Antigravity |
+| 2026-01-13 | Phase 1 HARD SEALED（CE06 Real + CE11 Regression）                                                              | Gemini      |
+| 2026-01-13 | Phase 3 HARD SEALED（Commercial E2E）                                                                           | Gemini      |
+| 2026-01-13 | Phase 4 UI Commercial Closure                                                                                   | Gemini      |
+| 2026-01-13 | **Billing Gap Closure (P0 Hotfix)** — CostLedger全链路闭环完成                                                  | Antigravity |
+| 2026-01-16 | **Phase 5D HARD SEALED** — Identity Consistency Regression Complete                                             | Antigravity |
 | 2026-01-16 | **Stage 4 SEALED** — Scale Architecture Verified (100 chaps → 100 chunk jobs, ce06_scan_toc + ce06_chunk_parse) | Antigravity |
+
 ---
 
 ## 系统能力矩阵 (System Capabilities)

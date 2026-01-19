@@ -488,9 +488,13 @@ export async function applyAnalyzedStructureToDatabase(
       },
       orderBy: { index: 'asc' },
     });
-    console.log(`[S3-B Debug] Found ${existingSeasons.length} existing seasons for project ${projectId} (Index search)`);
+    console.log(
+      `[S3-B Debug] Found ${existingSeasons.length} existing seasons for project ${projectId} (Index search)`
+    );
     if (existingSeasons.length > 0) {
-      console.log(`[S3-B Debug] Season 0 ID: ${existingSeasons[0].id}, Index: ${existingSeasons[0].index}`);
+      console.log(
+        `[S3-B Debug] Season 0 ID: ${existingSeasons[0].id}, Index: ${existingSeasons[0].index}`
+      );
     }
 
     // S3-B Fine-Tune: 记录结构对比日志
@@ -732,12 +736,15 @@ export async function applyAnalyzedStructureToDatabase(
                 sourceText: shot.text,
               } as any;
 
-              const updateData = hydrateShotWithDirectorControls({
-                index: shot.index, // 确保 index 正确
-                title: shot.title,
-                description: shot.summary || shot.text.substring(0, 200),
-                params: shotParams,
-              }, shotParams);
+              const updateData = hydrateShotWithDirectorControls(
+                {
+                  index: shot.index, // 确保 index 正确
+                  title: shot.title,
+                  description: shot.summary || shot.text.substring(0, 200),
+                  params: shotParams,
+                },
+                shotParams
+              );
 
               await tx.shot.update({
                 where: { id: existingShot.id },
@@ -750,15 +757,18 @@ export async function applyAnalyzedStructureToDatabase(
                 sourceText: shot.text,
               } as any;
 
-              const createData = hydrateShotWithDirectorControls({
-                sceneId: createdScene.id,
-                index: shot.index,
-                title: shot.title ?? null,
-                description: (shot.summary || shot.text.substring(0, 200)) ?? null,
-                type: 'novel_analysis',
-                params: shotParams,
-                qualityScore: {} as any,
-              }, shotParams);
+              const createData = hydrateShotWithDirectorControls(
+                {
+                  sceneId: createdScene.id,
+                  index: shot.index,
+                  title: shot.title ?? null,
+                  description: (shot.summary || shot.text.substring(0, 200)) ?? null,
+                  type: 'novel_analysis',
+                  params: shotParams,
+                  qualityScore: {} as any,
+                },
+                shotParams
+              );
 
               shotsToCreate.push(createData);
             }
@@ -950,8 +960,8 @@ export async function applyAnalyzedStructureToDatabase(
   const result =
     prisma instanceof PrismaClient
       ? await (prisma as any).$transaction(executeInTransaction, {
-        timeout: 5 * 60 * 1000, // 5 minutes
-      })
+          timeout: 5 * 60 * 1000, // 5 minutes
+        })
       : await executeInTransaction(prisma);
 
   return result;
@@ -969,34 +979,40 @@ export function mapCE06OutputToProjectStructure(
   output: CE06NovelParsingOutput | CE06Output
 ): AnalyzedProjectStructure {
   console.log('[S3-B Debug] mapCE06 Output Keys:', Object.keys(output || {}));
-  if ((output as any).seasons) console.log('[S3-B Debug] Seasons length:', (output as any).seasons.length);
-  if ((output as any).volumes) console.log('[S3-B Debug] Volumes length:', (output as any).volumes.length);
+  if ((output as any).seasons)
+    console.log('[S3-B Debug] Seasons length:', (output as any).seasons.length);
+  if ((output as any).volumes)
+    console.log('[S3-B Debug] Volumes length:', (output as any).volumes.length);
 
   const seasons: AnalyzedSeason[] = [];
   let sIndex = 1;
 
   // S3-B Fix: Priority 1 - 'seasons' (V1.1 Structure from MockEngine/CE06)
-  if ((output as any).seasons && Array.isArray((output as any).seasons) && (output as any).seasons.length > 0) {
+  if (
+    (output as any).seasons &&
+    Array.isArray((output as any).seasons) &&
+    (output as any).seasons.length > 0
+  ) {
     for (const s of (output as any).seasons) {
       const season: AnalyzedSeason = {
         index: s.index,
         title: s.title || `第 ${s.index} 季`,
         summary: s.summary || '',
-        episodes: []
+        episodes: [],
       };
-      for (const e of (s.episodes || [])) {
+      for (const e of s.episodes || []) {
         const episode: AnalyzedEpisode = {
           index: e.index,
           title: e.title || `第 ${e.index} 集`,
           summary: e.summary || '',
-          scenes: []
+          scenes: [],
         };
-        for (const sc of (e.scenes || [])) {
+        for (const sc of e.scenes || []) {
           const scene: AnalyzedScene = {
             index: sc.index,
             title: sc.title || `场景 ${sc.index}`,
             summary: sc.summary || '',
-            shots: []
+            shots: [],
           };
           if (sc.shots && Array.isArray(sc.shots)) {
             for (const sh of sc.shots) {
@@ -1004,7 +1020,7 @@ export function mapCE06OutputToProjectStructure(
                 index: sh.index,
                 title: sh.title || `镜头 ${sh.index}`,
                 summary: sh.summary || sh.text || '',
-                text: sh.text || sh.summary || ''
+                text: sh.text || sh.summary || '',
               });
             }
           }
@@ -1025,33 +1041,36 @@ export function mapCE06OutputToProjectStructure(
       if (!groupedVolumes.has(chunk.volume_index)) {
         groupedVolumes.set(chunk.volume_index, {
           title: chunk.volume_title,
-          chapters: []
+          chapters: [],
         });
       }
       const vol = groupedVolumes.get(chunk.volume_index);
       vol.chapters.push({
         title: chunk.chapter_title,
         summary: '', // Scan phase doesn't have summary
-        scenes: [{ // Create dummy scene to hold content if needed, but SCAN has no content?
-          // ScanChunk has start/end offset.
-          // We need to create a dummy scene OR fetch content?
-          // Wait, SCAN phase output doesn't have CONTENT?
-          // ce06RealEngine (SCAN) returns only metadata.
-          // BUT we need scenes for validation: "structure.seasons[0].episodes[0].scenes[0]..."
-          // If we populate episodes but NO SCENES, validation warnings?
-          // Warnings are OK. Errors are not.
-          // Error: "AnalyzedProjectStructure must have at least one season"
-          // Warning: "Episode X has no scenes"
-          // So we just need structure.
-          // BUT we need SHOTS if we want valid pipeline?
-          // basicTextSegmentation makes shots.
-          // Here we are mapping mapCE06Output...
-          // If we just mapped Volumes/Chapters, we get empty episodes.
-          // Validation passes (valid: true).
-          // So we proceed.
-          content: 'Placeholder content for Scan Chunk',
-          title: 'Scene 1'
-        }]
+        scenes: [
+          {
+            // Create dummy scene to hold content if needed, but SCAN has no content?
+            // ScanChunk has start/end offset.
+            // We need to create a dummy scene OR fetch content?
+            // Wait, SCAN phase output doesn't have CONTENT?
+            // ce06RealEngine (SCAN) returns only metadata.
+            // BUT we need scenes for validation: "structure.seasons[0].episodes[0].scenes[0]..."
+            // If we populate episodes but NO SCENES, validation warnings?
+            // Warnings are OK. Errors are not.
+            // Error: "AnalyzedProjectStructure must have at least one season"
+            // Warning: "Episode X has no scenes"
+            // So we just need structure.
+            // BUT we need SHOTS if we want valid pipeline?
+            // basicTextSegmentation makes shots.
+            // Here we are mapping mapCE06Output...
+            // If we just mapped Volumes/Chapters, we get empty episodes.
+            // Validation passes (valid: true).
+            // So we proceed.
+            content: 'Placeholder content for Scan Chunk',
+            title: 'Scene 1',
+          },
+        ],
       });
     }
     // Reassign volumes to grouped list
@@ -1061,7 +1080,6 @@ export function mapCE06OutputToProjectStructure(
   // S3-B Fix: Priority 2 - 'volumes' (Legacy Structure) - Fallback ONLY if seasons is empty
   if (seasons.length === 0) {
     // 兼容性处理：CE06NovelParsingOutput 使用 content，CE06Output 使用 summary
-
 
     for (const vol of volumes) {
       const season: AnalyzedSeason = {
@@ -1090,7 +1108,11 @@ export function mapCE06OutputToProjectStructure(
           };
 
           // S3-B Fix: Even in legacy volumes check for shots if present (rare but possible)
-          if ((sc as any).shots && Array.isArray((sc as any).shots) && (sc as any).shots.length > 0) {
+          if (
+            (sc as any).shots &&
+            Array.isArray((sc as any).shots) &&
+            (sc as any).shots.length > 0
+          ) {
             let shIndex = 1;
             for (const shot of (sc as any).shots) {
               scene.shots.push({
@@ -1160,7 +1182,6 @@ export function mapCE06OutputToProjectStructure(
     },
   };
 }
-
 
 /**
  * Worker 侧处理 NOVEL_ANALYSIS Job 的主入口。
@@ -1324,7 +1345,7 @@ export async function processNovelAnalysisJob(
       // 计费失败不阻塞主流程
       process.stderr.write(
         util.format(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message) +
-        '\n'
+          '\n'
       );
     }
 

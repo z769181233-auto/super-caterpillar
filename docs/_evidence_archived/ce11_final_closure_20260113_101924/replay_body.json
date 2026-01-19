@@ -1,1 +1,9 @@
-{"success":false,"code":"4004","error":{"code":"4004","message":"Nonce replay detected"},"requestId":"b6485633-00d2-4d10-b810-fbcb6e0ebeea","timestamp":"2026-01-13T03:19:32.152Z","path":"/api/timeline/preview","method":"POST"}
+{
+  "success": false,
+  "code": "4004",
+  "error": { "code": "4004", "message": "Nonce replay detected" },
+  "requestId": "b6485633-00d2-4d10-b810-fbcb6e0ebeea",
+  "timestamp": "2026-01-13T03:19:32.152Z",
+  "path": "/api/timeline/preview",
+  "method": "POST"
+}

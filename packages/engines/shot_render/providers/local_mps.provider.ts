@@ -34,7 +34,9 @@ export const localMpsProvider = {
   ): Promise<RenderResult> {
     // P2-FIX-2: 强制校验必填字段
     if (!options.shotId || !options.traceId) {
-      throw new Error(`[LOCAL_MPS_PROVIDER_INVALID] Missing required fields: shotId=${options.shotId}, traceId=${options.traceId}`);
+      throw new Error(
+        `[LOCAL_MPS_PROVIDER_INVALID] Missing required fields: shotId=${options.shotId}, traceId=${options.traceId}`
+      );
     }
 
     const width = options.width ?? 768;
@@ -49,12 +51,16 @@ export const localMpsProvider = {
 
     // P2-FIX-2 DEBUG: 打印命名参数（仅 Gate/Dev）
     if (process.env.GATE_MODE === '1' || process.env.NODE_ENV !== 'production') {
-      console.log(`[LocalMpsProvider] Artifact name: ${artifactName} (shotId=${shotId}, traceId=${traceId}, seed=${seed})`);
+      console.log(
+        `[LocalMpsProvider] Artifact name: ${artifactName} (shotId=${shotId}, traceId=${traceId}, seed=${seed})`
+      );
     }
 
     const outDir =
       process.env.ASSET_STORAGE_DIR ||
-      (process.env.STORAGE_ROOT ? path.join(process.env.STORAGE_ROOT, 'assets') : path.join(process.cwd(), 'apps/workers/.runtime/assets'));
+      (process.env.STORAGE_ROOT
+        ? path.join(process.env.STORAGE_ROOT, 'assets')
+        : path.join(process.cwd(), 'apps/workers/.runtime/assets'));
     if (!fs.existsSync(outDir)) {
       fs.mkdirSync(outDir, { recursive: true });
     }
@@ -110,7 +116,7 @@ export const localMpsProvider = {
         relativePath = path.relative(root, meta.asset_path);
         // Convert to POSIX
         relativePath = relativePath.split(path.sep).join('/');
-      } catch (e) { }
+      } catch (e) {}
 
       return {
         bytes,

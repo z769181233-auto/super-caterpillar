@@ -1,1 +1,10 @@
-{"success":true,"data":{"success":true,"pipelineRunId":"stage1_f71dd419-5748-4929-9f77-1f2bfd634cfb","jobId":"9b131b6f-e538-434a-9d0f-c552ae699c6d","projectId":"eb95083f-b8e6-4cc5-bb26-6eaa3b8f755b","episodeId":"fa6653a4-9654-4050-ac26-a94dc1a9acc0"}}
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "pipelineRunId": "stage1_f71dd419-5748-4929-9f77-1f2bfd634cfb",
+    "jobId": "9b131b6f-e538-434a-9d0f-c552ae699c6d",
+    "projectId": "eb95083f-b8e6-4cc5-bb26-6eaa3b8f755b",
+    "episodeId": "fa6653a4-9654-4050-ac26-a94dc1a9acc0"
+  }
+}

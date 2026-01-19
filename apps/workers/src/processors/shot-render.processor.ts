@@ -13,7 +13,9 @@ export interface ShotRenderProcessorResult {
   error?: string;
 }
 
-export async function processShotRenderJob(context: ProcessorContext): Promise<ShotRenderProcessorResult> {
+export async function processShotRenderJob(
+  context: ProcessorContext
+): Promise<ShotRenderProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
 
@@ -22,6 +24,15 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
 
   if (!pipelineRunId) {
     throw new Error(`[ShotRender] Missing pipelineRunId in payload for job ${job.id}`);
+  }
+
+  let storageRoot: string;
+  if (process.env.REPO_ROOT) {
+    storageRoot = path.join(process.env.REPO_ROOT, '.data/storage');
+  } else if (process.env.STORAGE_ROOT) {
+    storageRoot = process.env.STORAGE_ROOT;
+  } else {
+    storageRoot = path.join(path.resolve(process.cwd(), '../../'), '.data/storage');
   }
 
   try {
@@ -52,21 +63,24 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
     // 2.5. CE02 Identity Lock Enforcement (Hard Check)
     const engineHub = new EngineHubClient(apiClient);
     let identityMetadata: any = {};
-    const characterIds = (job.payload as any)?.characterIds || (shot.params as any)?.characterIds || [];
+    const characterIds =
+      (job.payload as any)?.characterIds || (shot.params as any)?.characterIds || [];
 
     if (Array.isArray(characterIds) && characterIds.length > 0) {
-      logger.log(`[ShotRender] Enforcing Identity Anchor for characters: ${characterIds.join(', ')}`);
+      logger.log(
+        `[ShotRender] Enforcing Identity Anchor for characters: ${characterIds.join(', ')}`
+      );
 
       const anchors = await prisma.characterIdentityAnchor.findMany({
         where: {
           characterId: { in: characterIds },
           isActive: true,
-          status: 'READY'
-        }
+          status: 'READY',
+        },
       });
 
-      const foundCharIds = anchors.map(a => a.characterId);
-      const missingCharIds = characterIds.filter(id => !foundCharIds.includes(id));
+      const foundCharIds = anchors.map((a) => a.characterId);
+      const missingCharIds = characterIds.filter((id) => !foundCharIds.includes(id));
 
       if (missingCharIds.length > 0) {
         const errorMsg = `IDENTITY_ANCHOR_MISSING: Active anchors not found for characters: ${missingCharIds.join(', ')}`;
@@ -75,21 +89,23 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
       }
 
       // Construct Identity Metadata
-      const anchorMeta = anchors.map(a => ({
+      const anchorMeta = anchors.map((a) => ({
         characterId: a.characterId,
         anchorId: a.id,
         seed: a.seed,
-        viewKeysSha256: a.viewKeysSha256
+        viewKeysSha256: a.viewKeysSha256,
       }));
 
       identityMetadata = {
         anchors: anchorMeta,
-        mode: 'required'
+        mode: 'required',
       };
 
       logger.log(`[ShotRender] Identity Anchors verified and injected: ${anchors.length}`);
     } else {
-      logger.log(`[ShotRender] No characterIds found for shot ${job.shotId}, skipping Identity Lock.`);
+      logger.log(
+        `[ShotRender] No characterIds found for shot ${job.shotId}, skipping Identity Lock.`
+      );
     }
 
     // 3. Real Render Logic (Invoke Engine Hub)
@@ -109,7 +125,7 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
         jobId: job.id,
         projectId,
         isVerification: process.env.GATE_MODE === '1',
-        identity: identityMetadata // Inject Identity Metadata
+        identity: identityMetadata, // Inject Identity Metadata
       },
     });
 
@@ -123,12 +139,14 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
     const sourceAbsPath = renderOutput.asset?.uri; // Assuming URI is absolute path from adapter
 
     if (!sourceAbsPath || !fs.existsSync(sourceAbsPath)) {
-      throw new Error(`SHOT_RENDER_INVALID_OUTPUT: Engine returned missing or invalid file path: ${sourceAbsPath}`);
+      throw new Error(
+        `SHOT_RENDER_INVALID_OUTPUT: Engine returned missing or invalid file path: ${sourceAbsPath}`
+      );
     }
 
     // 3.5. Persistence Location & Normalization
     const relativeKey = `renders/${projectId}/${shot.id}/${pipelineRunId}/keyframe.png`;
-    const absolutePath = path.resolve(process.cwd(), '.runtime', relativeKey);
+    const absolutePath = path.resolve(storageRoot, relativeKey);
 
     // Ensure dir exists
     const dir = path.dirname(absolutePath);
@@ -170,10 +188,8 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
         renderStatus: 'COMPLETED', // Use COMPLETED (enum backed)
         resultImageUrl: relativeKey,
         // resultVideoUrl: ..., // If video produced
-      }
+      },
     });
-
-
 
     // Audit
     await prisma.auditLog.create({
@@ -193,7 +209,7 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
           actorId: 'system-worker',
           traceId: traceId,
           renderMeta: renderOutput.render_meta,
-          identity: identityMetadata // Explicitly log Identity Anchor info
+          identity: identityMetadata, // Explicitly log Identity Anchor info
         },
       },
     });
@@ -210,7 +226,7 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
       engineKey: 'shot_render',
       runId: pipelineRunId,
       gpuSeconds: 2.5, // Mock duration for reliable audit (Real: duration from worker stats)
-      cost: 0.05 // Mock cost (priced via PRICING_SSOT in real router)
+      cost: 0.05, // Mock cost (priced via PRICING_SSOT in real router)
     });
 
     // 6. 自动触发 VIDEO_RENDER (P0-VIDEO-1: 可恢复幂等策略)
@@ -232,16 +248,20 @@ export async function processShotRenderJob(context: ProcessorContext): Promise<S
       let shouldTrigger = false;
       if (!existingVideo) {
         shouldTrigger = true;
-        logger.log(`[ShotRender] No VIDEO asset found for scene ${sceneId}, will trigger VIDEO_RENDER`);
+        logger.log(
+          `[ShotRender] No VIDEO asset found for scene ${sceneId}, will trigger VIDEO_RENDER`
+        );
       } else {
         // 检查是否为 pending 或文件不存在/损坏（可恢复）
         const isPending = existingVideo.storageKey.startsWith('pending/');
-        const absPath = path.resolve(process.cwd(), '.runtime', existingVideo.storageKey);
+        const absPath = path.resolve(storageRoot, existingVideo.storageKey);
         const fileOk = fs.existsSync(absPath) && fs.statSync(absPath).size > 0;
 
         if (isPending || !fileOk) {
           shouldTrigger = true;
-          logger.log(`[ShotRender] VIDEO asset pending or broken for scene ${sceneId}, will re-trigger VIDEO_RENDER`);
+          logger.log(
+            `[ShotRender] VIDEO asset pending or broken for scene ${sceneId}, will re-trigger VIDEO_RENDER`
+          );
         } else {
           logger.log(`[ShotRender] VIDEO asset ready for scene ${sceneId}, skipping VIDEO_RENDER`);
         }

@@ -1,1 +1,16 @@
-{"runId":"ded21f8f-6aff-4f0d-b35e-dbbe6fc7d45e","traceId":"trace_507319394ed2414f","ce06JobId":"699a4b27-ec8e-414d-82d6-81cb8427210e","ce03JobId":"630a0a32-75f2-499a-b377-e3b94e6ec8c7","ce04JobId":"12e80b95-cc09-45ab-804f-6b5267dac301","shotRenderJobIds":["bbbb1b22-0fe1-4b69-b526-e1ecb0d0f17f"],"timelineComposeJobId":"4e6573fa-af79-471b-acee-cb3488da4a29","timelinePreviewJobId":"940a3357-53b9-4786-b19c-0b0f82be6696","previewUrl":"previews/proj_seed_1768298403_27839/scene_seed_1768298403_27839/ded21f8f-6aff-4f0d-b35e-dbbe6fc7d45e_preview.mp4","ce03Score":0,"ce04Score":0.85,"warningsCount":0,"startedAtIso":"2026-01-13T10:00:32.152Z","finishedAtIso":"2026-01-13T10:00:44.371Z"}
+{
+  "runId": "ded21f8f-6aff-4f0d-b35e-dbbe6fc7d45e",
+  "traceId": "trace_507319394ed2414f",
+  "ce06JobId": "699a4b27-ec8e-414d-82d6-81cb8427210e",
+  "ce03JobId": "630a0a32-75f2-499a-b377-e3b94e6ec8c7",
+  "ce04JobId": "12e80b95-cc09-45ab-804f-6b5267dac301",
+  "shotRenderJobIds": ["bbbb1b22-0fe1-4b69-b526-e1ecb0d0f17f"],
+  "timelineComposeJobId": "4e6573fa-af79-471b-acee-cb3488da4a29",
+  "timelinePreviewJobId": "940a3357-53b9-4786-b19c-0b0f82be6696",
+  "previewUrl": "previews/proj_seed_1768298403_27839/scene_seed_1768298403_27839/ded21f8f-6aff-4f0d-b35e-dbbe6fc7d45e_preview.mp4",
+  "ce03Score": 0,
+  "ce04Score": 0.85,
+  "warningsCount": 0,
+  "startedAtIso": "2026-01-13T10:00:32.152Z",
+  "finishedAtIso": "2026-01-13T10:00:44.371Z"
+}

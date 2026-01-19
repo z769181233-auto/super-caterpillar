@@ -403,11 +403,56 @@ export class EngineAdapterClient {
       name: 'default_shot_render',
       supports: (k) => k === 'default_shot_render',
       invoke: async (input) => {
-        // 由于这只是一个适配器层，真正的 logic 已经在 ce-core-processor.ts 中由 main.ts 分发了。
-        // 但为了 EngineHubClient.invoke 能够正常工作，我们需要在这里也注册它。
         throw new Error(
           'Direct invocation of default_shot_render via adapter is not recommended. Use dedicated processor.'
         );
+      },
+    });
+
+    // [P2b] 注册 CE11 Shot Generator Mock 适配器
+    this.adapters.set('ce11_shot_generator_mock', {
+      name: 'ce11_shot_generator_mock',
+      supports: (k) => k === 'ce11_shot_generator_mock',
+      invoke: async (input) => {
+        const traceId = input.payload?.traceId || (input as any).metadata?.traceId || 'unknown';
+        process.stdout.write(`[Engine:CE11_MOCK] Invoking mock shot generation for: ${traceId}\n`);
+
+        return {
+          status: 'SUCCESS' as any,
+          output: {
+            shots: [
+              {
+                shot_type: 'WIDE_SHOT',
+                camera_movement: 'PAN_LEFT',
+                camera_angle: 'EYE_LEVEL',
+                lighting_preset: 'DRAMATIC',
+                visual_prompt: 'A wide shot of a futuristic city under neon lights, pan left.',
+                action_description: 'Crowds moving through the streets.',
+                duration_sec: 3.5,
+              },
+              {
+                shot_type: 'CLOSE_UP',
+                camera_movement: 'STATIC',
+                camera_angle: 'LOW_ANGLE',
+                lighting_preset: 'NEON',
+                visual_prompt: 'A close up of a cybernetic eye reflecting neon signage.',
+                dialogue_content: '"I see everything."',
+                sound_fx: 'Electromagnetic hum',
+                duration_sec: 2.5,
+              },
+            ],
+            billing_usage: {
+              model: 'ce11-mock-v1',
+              totalTokens: 150,
+              cost: 0,
+            },
+          },
+          metrics: {
+            latencyMs: 150,
+            tokensIn: 50,
+            tokensOut: 100,
+          },
+        };
       },
     });
   }

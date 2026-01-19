@@ -1,1 +1,5 @@
-{"message":"Cannot GET /api/projects/80651fa0-dfc8-4584-92fe-5e027d7ef915/published-video","error":"Not Found","statusCode":404}
+{
+  "message": "Cannot GET /api/projects/80651fa0-dfc8-4584-92fe-5e027d7ef915/published-video",
+  "error": "Not Found",
+  "statusCode": 404
+}

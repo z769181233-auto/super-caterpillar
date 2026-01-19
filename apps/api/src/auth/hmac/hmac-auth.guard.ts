@@ -41,7 +41,7 @@ export class HmacAuthGuard implements CanActivate {
     private readonly auditLogService: AuditLogService,
     @Inject(forwardRef(() => NonceService))
     private readonly nonceService: NonceService
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithApiSecurity>();
@@ -86,7 +86,9 @@ export class HmacAuthGuard implements CanActivate {
 
     // 2.2 时间戳校验 (P0 - APISpec V1.1 Strict Seconds)
     const tsNum = Number(timestamp);
-    this.logger.warn(`[HMAC_GUARD_WARN] Incoming timestamp: ${timestamp} (type: ${typeof timestamp}), parsed: ${tsNum}`);
+    this.logger.warn(
+      `[HMAC_GUARD_WARN] Incoming timestamp: ${timestamp} (type: ${typeof timestamp}), parsed: ${tsNum}`
+    );
 
     if (!timestamp || isNaN(tsNum)) {
       throw buildHmacError('4003', 'Invalid or missing X-Timestamp', { path, method });
@@ -183,7 +185,9 @@ export class HmacAuthGuard implements CanActivate {
         }
       );
 
-      this.logger.log(`[HMAC_AUTH] ApiKey ownerOrgId: ${keyRecord.ownerOrgId}, ownerUserId: ${keyRecord.ownerUserId}`);
+      this.logger.log(
+        `[HMAC_AUTH] ApiKey ownerOrgId: ${keyRecord.ownerOrgId}, ownerUserId: ${keyRecord.ownerUserId}`
+      );
       // 7. 将 ApiKey 信息附加到请求对象，供后续使用
       (request as any).apiKey = keyRecord;
       (request as any).apiKeyId = keyRecord.id;
@@ -210,7 +214,9 @@ export class HmacAuthGuard implements CanActivate {
           tier: keyRecord.ownerUser.tier || 'FREE', // Fallback
           organizationId: keyRecord.ownerOrgId, // Implicit context
         };
-        this.logger.log(`[HMAC_AUTH] Resolved user: ${keyRecord.ownerUser.id}, org: ${keyRecord.ownerOrgId}`);
+        this.logger.log(
+          `[HMAC_AUTH] Resolved user: ${keyRecord.ownerUser.id}, org: ${keyRecord.ownerOrgId}`
+        );
       } else {
         // Explicitly mark as having no user bound
         (request as any).user = null;

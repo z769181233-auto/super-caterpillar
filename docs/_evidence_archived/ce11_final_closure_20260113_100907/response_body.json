@@ -1,1 +1,5 @@
-{"message":"You do not have permission to access this shot","error":"Forbidden","statusCode":403}
+{
+  "message": "You do not have permission to access this shot",
+  "error": "Forbidden",
+  "statusCode": 403
+}

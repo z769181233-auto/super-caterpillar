@@ -20,7 +20,7 @@ export class TimestampNonceGuard implements CanActivate {
   constructor(
     private readonly nonceService: NonceService,
     private reflector: Reflector
-  ) { }
+  ) {}
 
   private getPath(req: any): string {
     const raw = (req.originalUrl || req.url || '') as string;

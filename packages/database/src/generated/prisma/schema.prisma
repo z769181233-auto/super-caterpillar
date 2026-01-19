@@ -537,33 +537,35 @@ model ShotJob {
 }
 
 model WorkerNode {
-  id            String       @id @default(uuid())
-  workerId      String       @unique
-  name          String?
-  status        WorkerStatus @default(offline)
-  gpuCount      Int          @default(0)
-  gpuMemory     Int          @default(0)
-  gpuType       String       @default("unknown")
-  tasksRunning  Int          @default(0)
-  temperature   Float?
-  capabilities  Json         @default("{}")
-  lastHeartbeat DateTime     @default(now())
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  tasks         Task[]       @relation("TaskWorker")
-  shotJobs      ShotJob[]    @relation("WorkerNodeShotJobs")
-  jobs          WorkerJob[]  @relation("WorkerNodeJobs")
+  id              String           @id @default(uuid())
+  workerId        String           @unique
+  name            String?
+  status          WorkerStatus     @default(offline)
+  gpuCount        Int              @default(0)
+  gpuMemory       Int              @default(0)
+  gpuType         String           @default("unknown")
+  tasksRunning    Int              @default(0)
+  temperature     Float?
+  capabilities    Json             @default("{}")
+  lastHeartbeat   DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  tasks           Task[]           @relation("TaskWorker")
+  shotJobs        ShotJob[]        @relation("WorkerNodeShotJobs")
+  jobs            WorkerJob[]      @relation("WorkerNodeJobs")
+  workerHeartbeat WorkerHeartbeat?
 
   @@index([status])
   @@map("worker_nodes")
 }
 
 model WorkerHeartbeat {
-  workerId   String   @id @map("worker_id")
-  lastSeenAt DateTime @map("last_seen_at")
-  status     String   @default("ALIVE")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  workerId   String     @id @map("worker_id")
+  lastSeenAt DateTime   @map("last_seen_at")
+  status     String     @default("ALIVE")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  workerNode WorkerNode @relation(fields: [workerId], references: [workerId])
 
   @@index([status, lastSeenAt])
   @@map("worker_heartbeats")
@@ -918,7 +920,9 @@ model NovelChapter {
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   // V3.0 增量对齐 P0-2: 向量检索能力
-  summaryVector Unsupported("vector")? @map("summary_vector")
+  summaryVector      Unsupported("vector")? @map("summary_vector")
+  visualDensityScore Decimal?               @map("visual_density_score")
+  visualDensityMeta  Json?                  @map("visual_density_meta")
 
   volume      NovelVolume  @relation("VolumeChapters", fields: [volumeId], references: [id], onDelete: Cascade)
   novelSource NovelSource  @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
@@ -949,9 +953,10 @@ model NovelScene {
   graphStateSnapshot Json?   @map("graph_state_snapshot")
 
   // V3.0 Bible Alignment
-  locationSlug    String?  @map("location_slug")
-  timeOfDay       String?  @map("time_of_day")
-  environmentTags String[] @map("environment_tags")
+  locationSlug      String?  @map("location_slug")
+  timeOfDay         String?  @map("time_of_day")
+  environmentTags   String[] @map("environment_tags")
+  visualDensityMeta Json?    @map("visual_density_meta")
 
   chapter NovelChapter @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
 
@@ -1280,6 +1285,7 @@ enum JobType {
   CE06_NOVEL_PARSING
   NOVEL_SCAN_TOC
   NOVEL_CHUNK_PARSE
+  CE02_VISUAL_DENSITY
   CE03_VISUAL_DENSITY
   CE04_VISUAL_ENRICHMENT
   CE01_REFERENCE_SHEET
@@ -1296,6 +1302,7 @@ enum JobType {
   TIMELINE_RENDER
   TIMELINE_PREVIEW
   PIPELINE_PROD_VIDEO_V1
+  CE11_SHOT_GENERATOR
 }
 
 enum JobEngineBindingStatus {

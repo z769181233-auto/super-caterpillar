@@ -15,7 +15,9 @@ const ssotPath = getArg('ssot');
 const outPath = getArg('out');
 
 if (!releaseTag || !sealTag || !evidenceDir || !ssotPath || !outPath) {
-  console.error('Usage: node gen_release_note.js --releaseTag <tag> --sealTag <tag> --evidence <dir> --gate <cmd> --ssot <file> --out <file>');
+  console.error(
+    'Usage: node gen_release_note.js --releaseTag <tag> --sealTag <tag> --evidence <dir> --gate <cmd> --ssot <file> --out <file>'
+  );
   process.exit(1);
 }
 

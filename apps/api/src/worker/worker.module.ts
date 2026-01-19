@@ -23,4 +23,4 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   providers: [WorkerService],
   exports: [WorkerService],
 })
-export class WorkerModule { }
+export class WorkerModule {}

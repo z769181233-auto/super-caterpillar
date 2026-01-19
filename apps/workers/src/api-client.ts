@@ -88,12 +88,7 @@ function fingerprintParts(parts: {
  * v1: ${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}
  * v2: ${method}\n${path}\n${timestamp}\n${nonce}\n${contentHash}\n${workerId}
  */
-function buildMessage(
-  apiKey: string,
-  nonce: string,
-  timestamp: string,
-  body: string
-): string {
+function buildMessage(apiKey: string, nonce: string, timestamp: string, body: string): string {
   // Spec V1.1 Strict: apiKey + nonce + timestamp + body
   return apiKey + nonce + timestamp + body;
 }
@@ -349,9 +344,15 @@ export class ApiClient {
   }
 
   async ackJob(jobId: string, workerId: string): Promise<any> {
-    const response = await this.request<any>('POST', `/api/jobs/${jobId}/ack`, { workerId }, { 'x-worker-id': workerId });
+    const response = await this.request<any>(
+      'POST',
+      `/api/jobs/${jobId}/ack`,
+      { workerId },
+      { 'x-worker-id': workerId }
+    );
 
-    if (!response.success && !(response as any).data) { // Accommodate generic success wrappers
+    if (!response.success && !(response as any).data) {
+      // Accommodate generic success wrappers
       // If it's 200/201 but success flag is varied, it's fine.
       // But allow void/success returns.
     }
@@ -364,7 +365,7 @@ export class ApiClient {
     result?: any;
     errorMessage?: string; // Correct parameter name
     error?: any; // internal input
-    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number;[key: string]: any };
+    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number; [key: string]: any };
     retryable?: boolean;
   }): Promise<any> {
     const requestBody: any = {
@@ -468,7 +469,16 @@ export class ApiClient {
    * 2. 通用架构 (Project-based): createJob({ jobType, projectId, organizationId, payload, ... })
    */
   async createJob(
-    shotIdOrDto: string | { jobType: string; projectId: string; organizationId: string; payload?: any; parentJobId?: string; traceId?: string },
+    shotIdOrDto:
+      | string
+      | {
+          jobType: string;
+          projectId: string;
+          organizationId: string;
+          payload?: any;
+          parentJobId?: string;
+          traceId?: string;
+        },
     dto?: { type?: string; jobType?: string; payload?: any; traceId?: string },
     headers?: Record<string, string>
   ): Promise<any> {

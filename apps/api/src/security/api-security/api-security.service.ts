@@ -1,42 +1,45 @@
 import {
+  Inject,
   Injectable,
+  forwardRef,
   HttpException,
   UnauthorizedException,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
+import { AuditLogService } from '../../audit-log/audit-log.service';
 import { createHmac, createHash, timingSafeEqual } from 'crypto';
 
 // HMAC Secret SSOT: Centralized secret resolution with debug fingerprint
 function pickHmacSecretSSOT() {
   // SSOT: API_SECRET_KEY is the canonical secret env
   const candidates: Array<[string, string | undefined]> = [
-    ["API_SECRET_KEY", process.env.API_SECRET_KEY],
+    ['API_SECRET_KEY', process.env.API_SECRET_KEY],
     // legacy / fallback (do NOT remove; used to align envs across stages)
-    ["API_SECRET", process.env.API_SECRET],
-    ["TEST_API_SECRET", process.env.TEST_API_SECRET],
-    ["DEV_WORKER_SECRET", process.env.DEV_WORKER_SECRET],
+    ['API_SECRET', process.env.API_SECRET],
+    ['TEST_API_SECRET', process.env.TEST_API_SECRET],
+    ['DEV_WORKER_SECRET', process.env.DEV_WORKER_SECRET],
   ];
   for (const [k, v] of candidates) {
     if (v && String(v).length > 0) {
       return { envKey: k, secret: String(v) };
     }
   }
-  return { envKey: "NONE", secret: "" };
+  return { envKey: 'NONE', secret: '' };
 }
 
-function secretFingerprint(secret: string) {
-  // do not leak secret; only fingerprint
-  const fp = createHash("sha256").update(secret).digest("hex").slice(0, 12);
-  return { len: secret.length, sha12: fp };
-}
-import { PrismaService } from '../../prisma/prisma.service';
-import { RedisService } from '../../redis/redis.service';
-import { AuditLogService } from '../../audit-log/audit-log.service';
 import { AuditActions } from '../../audit/audit.constants';
 import { Prisma } from 'database';
 import { SecretEncryptionService } from './secret-encryption.service';
 import { buildHmacError } from '../../common/utils/hmac-error.utils';
+
+function secretFingerprint(secret: string) {
+  // do not leak secret; only fingerprint
+  const fp = createHash('sha256').update(secret).digest('hex').slice(0, 12);
+  return { len: secret.length, sha12: fp };
+}
 import {
   SignatureVerificationResult,
   SignatureVerificationContext,
@@ -58,11 +61,13 @@ export class ApiSecurityService {
   private readonly logger = new Logger(ApiSecurityService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly redis: RedisService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(RedisService) private readonly redis: RedisService,
+    @Inject(forwardRef(() => AuditLogService))
     private readonly auditLogService: AuditLogService,
+    @Inject(SecretEncryptionService)
     private readonly secretEncryptionService: SecretEncryptionService
-  ) { }
+  ) {}
 
   /**
    * 验证 HMAC 签名（v2 规范）
@@ -133,6 +138,17 @@ export class ApiSecurityService {
 
       // 1. 查找 API Key 记录
       dlog({ step: 'db_lookup_api_key_start', apiKey: apiKey.slice(0, 12) + '...' });
+
+      this.logger.log(
+        `[API_SEC_DEBUG] verifySignature: Searching for apiKey. this.prisma: ${!!this.prisma}`
+      );
+      if (!this.prisma?.apiKey) {
+        this.logger.error(
+          `[API_SEC_DEBUG] CRITICAL: this.prisma.apiKey is undefined! Keys: ${Object.keys(this.prisma || {})}`
+        );
+        throw new Error('Prisma Client Malformed: apiKey model missing');
+      }
+
       const keyRecord = await this.prisma.apiKey.findUnique({
         where: { key: apiKey },
         include: {
@@ -219,7 +235,12 @@ export class ApiSecurityService {
       const timeDiff = Math.abs(nowSec - timestampNum);
 
       if (timeDiff > this.TIMESTAMP_WINDOW_SECONDS) {
-        dlog({ step: 'reject', reason: 'timestamp_out_of_window', timeDiff, window: this.TIMESTAMP_WINDOW_SECONDS });
+        dlog({
+          step: 'reject',
+          reason: 'timestamp_out_of_window',
+          timeDiff,
+          window: this.TIMESTAMP_WINDOW_SECONDS,
+        });
         await this.writeAuditLog(
           {
             nonce,
@@ -344,11 +365,17 @@ export class ApiSecurityService {
       // 8. 对比签名 (Counter Timing Attack)
       // 8. 对比签名 (Counter Timing Attack) - Hex Buffer hardening
       // signature / expectedSignature are hex strings (sha256 HMAC hex)
-      const isHex = (s: string) => typeof s === 'string' && /^[0-9a-fA-F]+$/.test(s) && s.length % 2 === 0;
+      const isHex = (s: string) =>
+        typeof s === 'string' && /^[0-9a-fA-F]+$/.test(s) && s.length % 2 === 0;
 
       // Fast reject invalid hex to avoid Buffer.from throwing and to keep behavior deterministic
       if (!isHex(signature) || !isHex(expectedSignature)) {
-        dlog({ step: 'reject', reason: 'signature_format_error', sigIsHex: isHex(signature), expectedIsHex: isHex(expectedSignature) });
+        dlog({
+          step: 'reject',
+          reason: 'signature_format_error',
+          sigIsHex: isHex(signature),
+          expectedIsHex: isHex(expectedSignature),
+        });
         await this.writeAuditLog(
           {
             nonce,
@@ -616,7 +643,7 @@ export class ApiSecurityService {
 
         throw new InternalServerErrorException(
           `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-          `Production environment requires encrypted storage.`
+            `Production environment requires encrypted storage.`
         );
       } else {
         // dev/test 环境或主密钥未配置：允许 fallback

@@ -12,6 +12,7 @@ import { NovelAnalysisLocalAdapter } from '../engines/adapters/novel-analysis.lo
 import { CE06LocalAdapter } from '../engines/adapters/ce06.local.adapter';
 import { CE03LocalAdapter } from '../engines/adapters/ce03.local.adapter';
 import { CE04LocalAdapter } from '../engines/adapters/ce04.local.adapter';
+import { VideoMergeLocalAdapter } from '../engines/adapters/video-merge.local.adapter';
 
 /**
  * Engine Registry Hub
@@ -121,7 +122,27 @@ export class EngineRegistryHubService {
         path: '/generate/voice',
       },
     },
-    // 其它引擎占位以后再加
+    // Video Merge (Local)
+    {
+      engineKey: 'video_merge',
+      version: 'default',
+      mode: 'local',
+      adapterToken: VideoMergeLocalAdapter,
+    },
+    // Stage 1 Orchestrator (Local)
+    {
+      engineKey: 'stage1_orchestrator',
+      version: 'default',
+      mode: 'local',
+      adapterToken: 'Stage1OrchestratorAdapter', // Placeholder if needed
+    },
+    // CE09 Media Security (Local Placeholder)
+    {
+      engineKey: 'ce09_security_real',
+      version: 'default',
+      mode: 'local',
+      adapterToken: VideoMergeLocalAdapter,
+    },
   ];
 
   /**

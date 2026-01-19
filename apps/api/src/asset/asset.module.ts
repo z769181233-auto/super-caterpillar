@@ -15,4 +15,4 @@ import { AssetDeliveryController } from './asset-delivery.controller';
   providers: [AssetService],
   exports: [AssetService],
 })
-export class AssetModule { }
+export class AssetModule {}
