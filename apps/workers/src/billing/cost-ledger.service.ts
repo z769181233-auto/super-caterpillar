@@ -89,6 +89,7 @@ export class CostLedgerService {
         projectId,
         jobId,
         jobType,
+        engineKey,
         attempt: params.attempt,
         costAmount: finalCost,
         currency: 'USD', // Standardized for now

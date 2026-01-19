@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 const USER_ID = process.argv[2];
-const SECRET = process.env.JWT_SECRET || 'dev-secret';
+const SECRET = process.argv[3] || process.env.JWT_SECRET || 'dev-secret';
 
 if (!USER_ID) {
   console.error('Usage: tsx tools/gate/scripts/s2-gen-token.ts <USER_ID>');

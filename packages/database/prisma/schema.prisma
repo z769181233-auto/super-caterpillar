@@ -95,7 +95,7 @@ model Project {
   episodes               Episode[]               @relation("ProjectEpisodes")
   novelAnalysisJobs      NovelAnalysisJob[]      @relation("ProjectNovelAnalysisJobs")
   novelParseResults      NovelParseResult?       @relation("ProjectNovelParseResults")
-  novelSources           NovelSource[]           @relation("ProjectNovelSources")
+  novelSources           Novel[]                 @relation("ProjectNovelSources")
   projectMembers         ProjectMember[]
   organization           Organization            @relation("OrganizationProjects", fields: [organizationId], references: [id])
   owner                  User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
@@ -147,28 +147,51 @@ model Episode {
 
 model Scene {
   id                 String       @id @default(uuid())
-  episodeId          String
-  index              Int
-  title              String
+  // V3.0: scenes table requires chapter_id
+  chapterId          String?      @map("chapter_id")
+  episodeId          String?
+  sceneIndex         Int          @map("scene_index") // V3.0: scene_index
+  
+  // V3.0 Core Parsing Data
+  locationSlug       String?      @map("location_slug")
+  timeOfDay          String?      @map("time_of_day")
+  environmentTags    String[]     @map("environment_tags")
+
+  // V3.0 AI Expansion
+  // rawText            String?      @db.Text @map("raw_text") // REMOVED V3.0
+  enrichedText       String?      @db.Text @map("enriched_text")
+
+  // V3.0 State & Context
+  graphStateSnapshot Json?        @map("graph_state_snapshot")
+  visualDensityScore Decimal?     @map("visual_density_score")
+  visualDensityMeta  Json?        @map("visual_density_meta")
+
+  status             String?      @default("PENDING") // PENDING, GENERATING_SHOTS, READY
+
+  // Legacy / Helper / Production fields
+  title              String?
   summary            String?
   sceneDraftId       String?      @unique
   reviewStatus       ShotReviewStatus @default(DRAFT)
   characters         Json?
+  projectId          String?      @map("project_id")
+  // index              Int?         // REMOVED V3.0
+  directingNotes     String?      @db.Text @map("directing_notes")
+  shotType           String?      @default("MEDIUM_SHOT") @map("shot_type")
+  characterIds       Json?        @map("character_ids")
 
-  enrichedText       String?
-  projectId          String
-  visualDensityScore Float?
-  
-  // V3.0 Alignment: Core Consistency Anchor
-  graphStateSnapshot Json? @map("graph_state_snapshot") // Character states, items, locations per scene
-  
-  engineTasks        EngineTask[] @relation("SceneEngineTask")
-  episode            Episode      @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
-  sceneDraft         SceneDraft?  @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
-  shotJobs           ShotJob[]    @relation("SceneShotJobs")
-  shots              Shot[]       @relation("SceneShots")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
 
-  @@index([projectId, index])
+  chapter            NovelChapter? @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
+  engineTasks        EngineTask[]  @relation("SceneEngineTask")
+  episode            Episode?      @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
+  sceneDraft         SceneDraft?   @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
+  shotJobs           ShotJob[]     @relation("SceneShotJobs")
+  shots              Shot[]        @relation("SceneShots")
+
+  @@unique([chapterId, sceneIndex])
+  @@index([projectId, sceneIndex])
   @@map("scenes")
 }
 
@@ -717,28 +740,39 @@ model OrganizationMember {
   @@map("organization_members")
 }
 
-model NovelSource {
+// V3.0 Spec: novels
+model Novel {
   id             String             @id @default(uuid())
-  projectId      String
-  novelTitle     String?
-  novelAuthor    String?
-  rawText        String
-  filePath       String?
-  fileName       String?
-  fileSize       Int?
-  fileType       String?
-  characterCount Int?
-  chapterCount   Int?
+  projectId      String             @unique @map("project_id")
+  title          String             @map("title") // V3.0: title
+  author         String?            @map("author") // V3.0: author
+  organizationId String?            @map("organization_id")
+  
+  // V3.0: raw_file_url
+  rawFileUrl     String?            @map("raw_file_url")
+  
+  // V3.0 New Fields
+  totalTokens    BigInt?            @default(0) @map("total_tokens")
+  status         String?            @default("UPLOADING") // UPLOADING, PARSING, PARSED, FAILED
   metadata       Json?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+
+  // Legacy/Internal mappings (preserve for now or consolidate)
+  fileName       String?            @map("file_name")
+  fileSize       Int?               @map("file_size")
+  fileType       String?            @map("file_type")
+  characterCount Int?               @map("character_count")
+  chapterCount   Int?               @map("chapter_count")
+
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  
   analysisJobs   NovelAnalysisJob[] @relation("NovelSourceAnalysisJobs")
   chapters       NovelChapter[]     @relation("NovelSourceChapters")
   volumes        NovelVolume[]      @relation("NovelSourceVolumes")
   project        Project            @relation("ProjectNovelSources", fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([projectId])
-  @@map("novel_sources")
+  @@index([projectId], name: "idx_novels_project")
+  @@map("novels")
 }
 
 model SceneDraft {
@@ -775,7 +809,7 @@ model NovelAnalysisJob {
   progress      Json?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
-  novelSource   NovelSource?         @relation("NovelSourceAnalysisJobs", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  novelSource   Novel?               @relation("NovelSourceAnalysisJobs", fields: [novelSourceId], references: [id], onDelete: Cascade)
   project       Project              @relation("ProjectNovelAnalysisJobs", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
@@ -901,7 +935,7 @@ model NovelVolume {
   updatedAt     DateTime       @updatedAt @map("updated_at")
 
   project      Project        @relation("ProjectNovelVolumes", fields: [projectId], references: [id], onDelete: Cascade)
-  novelSource  NovelSource    @relation("NovelSourceVolumes", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  novelSource  Novel          @relation("NovelSourceVolumes", fields: [novelSourceId], references: [id], onDelete: Cascade)
   chapters     NovelChapter[] @relation("VolumeChapters")
 
   @@unique([projectId, index])
@@ -914,6 +948,7 @@ model NovelChapter {
   novelSourceId      String   @map("novel_source_id")
   index              Int
   title              String?
+  rawContent         String?  @db.Text @map("raw_content") // V3.0: raw_content
   summary            String?  @db.Text
   isSystemControlled Boolean  @default(false) @map("is_system_controlled")
   createdAt          DateTime @default(now()) @map("created_at")
@@ -925,8 +960,8 @@ model NovelChapter {
   visualDensityMeta  Json?                  @map("visual_density_meta")
 
   volume      NovelVolume  @relation("VolumeChapters", fields: [volumeId], references: [id], onDelete: Cascade)
-  novelSource NovelSource  @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
-  scenes      NovelScene[] @relation("ChapterNovelScenes")
+  novelSource Novel        @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  scenes      Scene[]      @relation("ChapterNovelScenes")
   episode     Episode?     @relation("ChapterEpisode")
   sceneDrafts SceneDraft[] @relation("ChapterSceneDrafts")
 
@@ -934,35 +969,7 @@ model NovelChapter {
   @@map("novel_chapters")
 }
 
-model NovelScene {
-  id             String   @id @default(uuid())
-  chapterId      String   @map("chapter_id")
-  index          Int
-  title           String?
-  rawText            String?  @db.Text @map("raw_text")
-  enrichedText       String?  @db.Text @map("enriched_text")
-  visualDensityScore Float?   @map("visual_density_score")
-  characterIds       Json?    @map("character_ids")
-  directingNotes     String?  @db.Text @map("directing_notes")
-  shotType           String?  @default("MEDIUM_SHOT") @map("shot_type")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  // V3.0 Alignment
-  projectId          String?  @map("project_id")
-  graphStateSnapshot Json?    @map("graph_state_snapshot")
-
-  // V3.0 Bible Alignment
-  locationSlug    String?   @map("location_slug")
-  timeOfDay       String?   @map("time_of_day")
-  environmentTags String[]  @map("environment_tags")
-  visualDensityMeta Json?    @map("visual_density_meta")
-
-  chapter NovelChapter @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
-
-  @@unique([chapterId, index])
-  @@map("novel_scenes")
-}
 
 model MemoryShortTerm {
   id              String   @id @default(uuid())

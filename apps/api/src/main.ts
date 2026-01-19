@@ -57,6 +57,10 @@ async function bootstrap() {
       '/ping',
       '/metrics',
       '/api/health',
+      // V3 Contract Facade (Root Level)
+      'v3/story/(.*)',
+      'v3/shot/(.*)',
+      'v3/(.*)',
     ],
   });
 

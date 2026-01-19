@@ -162,18 +162,18 @@ async function importNovel(
   // 读取测试小说文件
   const novelText = await fs.readFile(TEST_NOVEL_FILE, 'utf-8');
 
-  // 创建 NovelSource
+  // 创建 Novel
   const novelSource = await prisma.novelSource.create({
     data: {
       projectId,
-      novelTitle: '测试小说',
+      title: '测试小说',
       rawText: novelText,
       characterCount: novelText.length,
       fileType: 'txt',
     },
   });
 
-  process.stdout.write(util.format(`[E2E] ✅ NovelSource ID: ${novelSource.id}`) + '\n');
+  process.stdout.write(util.format(`[E2E] ✅ Novel ID: ${novelSource.id}`) + '\n');
 
   // 解析章节
   const chapterPattern =

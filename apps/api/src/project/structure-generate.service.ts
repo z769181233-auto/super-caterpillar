@@ -252,7 +252,7 @@ export class StructureGenerateService {
               data: {
                 episodeId: episode.id,
                 projectId,
-                index: sceneData.index,
+                sceneIndex: sceneData.index,
                 title: sceneData.title,
                 summary: sceneData.summary || undefined,
               },

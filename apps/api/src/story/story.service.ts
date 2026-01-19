@@ -71,6 +71,27 @@ export class StoryService {
     // 3. 生成 traceId（Pipeline 级）
     const traceId = `ce_pipeline_${randomUUID()}`;
 
+    // 3.5 确保 Novel (NovelSource) 记录存在
+    let novel = await this.prisma.novel.findFirst({ where: { projectId } });
+    if (!novel) {
+      await this.prisma.novel.create({
+        data: {
+          projectId,
+          title: dto.title || 'Untitled Story',
+          author: dto.author || 'Unknown',
+          rawFileUrl: '', // Explicitly provide empty string to satisfy required/missing arg check
+        },
+      });
+    } else {
+      await this.prisma.novel.update({
+        where: { id: novel.id },
+        data: {
+          title: dto.title,
+          author: dto.author,
+        },
+      });
+    }
+
     // 4. 创建 CE_CORE_PIPELINE Task
     if (!organizationId) {
       throw new BadRequestException('organizationId is required');
@@ -92,8 +113,8 @@ export class StoryService {
           ],
           input: {
             rawText: dto.rawText,
-            novelTitle: dto.novelTitle,
-            novelAuthor: dto.novelAuthor,
+            title: dto.title,
+            author: dto.author,
           },
         },
       },
@@ -109,8 +130,8 @@ export class StoryService {
         projectId,
         engineKey: 'ce06_novel_parsing',
         sourceText: dto.rawText,
-        novelTitle: dto.novelTitle,
-        novelAuthor: dto.novelAuthor,
+        title: dto.title,
+        author: dto.author,
         traceId,
       },
     });

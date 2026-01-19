@@ -9,7 +9,8 @@ import { env } from '@scu/config';
 import * as util from 'util';
 
 export interface ApiResponse<T = any> {
-  success: boolean;
+  success?: boolean;
+  ok?: boolean;
   data?: T;
   error?: {
     code: string;
@@ -449,17 +450,13 @@ export class ApiClient {
     quantity: number;
     metadata?: any;
   }): Promise<{ ok: boolean; id: string; deduplicated: boolean }> {
-    const response = await this.request<{ ok: boolean; id: string; deduplicated: boolean }>(
-      'POST',
-      '/api/internal/events/cost-ledger',
-      payload
-    );
+    const response = await this.request<any>('POST', '/api/internal/events/cost-ledger', payload);
 
-    if (!response.success) {
+    if (!response.success && !response.ok) {
       throw new Error('Failed to post cost event');
     }
 
-    return response.data || { ok: true, id: 'unknown', deduplicated: false };
+    return (response.data || response) as { ok: boolean; id: string; deduplicated: boolean };
   }
 
   /**

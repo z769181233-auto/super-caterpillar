@@ -103,11 +103,11 @@ export async function snapshotScene(params: {
 }): Promise<void> {
   const { prisma, sceneId, snapshot } = params;
 
-  console.log(`[GRAPH-DEBUG] Updating snapshot for novel_scene ${sceneId}`);
-  const updatedCount = await prisma.$executeRaw`
-    UPDATE novel_scenes
-    SET graph_state_snapshot = ${JSON.stringify(snapshot)}::jsonb
-    WHERE id = ${sceneId}
-  `;
-  console.log(`[GRAPH-DEBUG] Snapshot update count: ${updatedCount}`);
+  console.log(`[GRAPH-DEBUG] Updating snapshot for scene ${sceneId}`);
+  await (prisma as any).scene.update({
+    where: { id: sceneId },
+    data: {
+      graphStateSnapshot: snapshot as any,
+    },
+  });
 }

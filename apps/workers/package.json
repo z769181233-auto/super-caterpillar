@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "ts-node -r tsconfig-paths/register src/main.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/main.js"
+    "start": "node dist/apps/workers/src/main.js"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",

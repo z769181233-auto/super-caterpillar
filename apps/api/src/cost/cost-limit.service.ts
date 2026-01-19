@@ -130,6 +130,7 @@ export class CostLimitService implements OnModuleInit {
     actualOutputs: number;
     gpuSeconds: number;
     costUsd: number;
+    jobType?: string;
     attempt?: number; // Used for idempotency [jobId, attempt]
     metadata?: any;
   }): Promise<void> {
@@ -148,7 +149,7 @@ export class CostLimitService implements OnModuleInit {
         data: {
           jobId,
           projectId,
-          jobType: 'SHOT_RENDER', // Fixed for this phase
+          jobType: params.jobType || 'SHOT_RENDER',
           engineKey: params.engineKey,
           costAmount: costUsd,
           billingUnit: 'images',

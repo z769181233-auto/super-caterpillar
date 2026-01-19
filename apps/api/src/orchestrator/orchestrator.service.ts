@@ -959,7 +959,7 @@ export class OrchestratorService {
   /**
    * Stage 1: Novel -> Production Video 一键流水线启动
    * 1. 自动创建 Project/Season/Episode
-   * 2. 保存小说文本到 NovelSource/NovelChapter
+   * 2. 保存小说文本到 Novel/NovelChapter
    * 3. 投递 PIPELINE_STAGE1_NOVEL_TO_VIDEO Job
    */
   async startStage1Pipeline(params: { novelText: string; projectId?: string }) {
@@ -993,10 +993,10 @@ export class OrchestratorService {
       }
 
       // 2. Create Novel Source & Volume & Chapter
-      const novelSource = await this.prisma.novelSource.create({
+      const novelSource = await this.prisma.novel.create({
         data: {
           projectId,
-          novelAuthor: 'System',
+          author: 'System',
           rawText: novelText,
         } as any,
       });
@@ -1019,12 +1019,12 @@ export class OrchestratorService {
         } as any,
       });
 
-      // Save actual text to NovelScene (Minimal context)
-      await this.prisma.novelScene.create({
+      // Save actual text to Scene (Minimal context)
+      await this.prisma.scene.create({
         data: {
           chapterId: chapter.id,
-          index: 1,
-          rawText: novelText,
+          sceneIndex: 1, // V3.0 compliance
+          enrichedText: novelText,
         },
       });
 
@@ -1052,7 +1052,7 @@ export class OrchestratorService {
         data: {
           episodeId: episode.id,
           projectId,
-          index: 9999,
+          sceneIndex: 9999, // V3.0 compliance
           title: 'Stage 1 Pipeline Scene',
           summary: 'Auto-generated for pipeline orchestration',
         },

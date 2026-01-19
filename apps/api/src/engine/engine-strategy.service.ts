@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { EngineRoutingService } from './engine-routing.service';
 
 /**
@@ -50,6 +50,28 @@ export class EngineStrategyService {
     baseEngineKey?: string | null,
     context?: StrategyContext
   ): StrategyDecision {
+    // P5-0.1: CE11 Strict Engine Key Enforcement (No Silent Mock in Production)
+    if (jobType === 'CE11_SHOT_GENERATOR') {
+      const isVerification = payload?.isVerification === true || payload?.gateMode === true;
+      // Note: baseEngineKey is from input.engineKey. payload.engineKey might be legacy.
+      const explicitEngineKey = baseEngineKey || payload?.engineKey || payload?.engine;
+
+      if (!isVerification && !explicitEngineKey) {
+        throw new BadRequestException(
+          'CE11_SHOT_GENERATOR requires explicit engineKey in production (e.g. ce11_shot_generator_real)'
+        );
+      }
+
+      // If in verification mode and no key provided, default to mock (as per requirement)
+      if (isVerification && !explicitEngineKey) {
+        return {
+          engineKey: 'ce11_shot_generator_mock',
+          resolvedVersion: null,
+          strategyLabel: 'p5_verification_fallback',
+        };
+      }
+    }
+
     // S4-B Phase 1: 默认透传实现，不改变现有行为
     // 直接调用 EngineRoutingService，保持与 Stage3 完全一致的行为
     const routingResult = this.engineRoutingService.resolve({

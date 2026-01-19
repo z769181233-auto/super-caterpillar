@@ -466,7 +466,7 @@ export async function applyAnalyzedStructureToDatabase(
   const executeInTransaction = async (tx: Prisma.TransactionClient) => {
     // S3-A: 同时也需要处理 NovelVolume / NovelChapter / NovelScene
     // 我们先根据 projectId 找到关联的 NovelSource
-    const nSource = await tx.novelSource.findFirst({ where: { projectId } });
+    const nSource = await tx.novel.findFirst({ where: { projectId } });
 
     // 1. 查询当前 project 已有的结构
     const existingSeasons = await tx.season.findMany({
@@ -480,7 +480,7 @@ export async function applyAnalyzedStructureToDatabase(
                   orderBy: { index: 'asc' },
                 },
               },
-              orderBy: { index: 'asc' },
+              orderBy: { sceneIndex: 'asc' },
             },
           },
           orderBy: { index: 'asc' },
@@ -650,7 +650,7 @@ export async function applyAnalyzedStructureToDatabase(
             createdScene = await tx.scene.update({
               where: { id: existingScene.id },
               data: {
-                index: scene.index, // 确保 index 正确
+                sceneIndex: scene.index,
                 title: scene.title,
                 summary: scene.summary || undefined,
               },
@@ -662,51 +662,12 @@ export async function applyAnalyzedStructureToDatabase(
               data: {
                 projectId,
                 episodeId: createdEpisode.id,
-                index: scene.index,
+                sceneIndex: scene.index,
                 title: scene.title,
                 summary: scene.summary || undefined,
               },
             });
             stats.created.scenes++;
-          }
-
-          // S3-A: 同步写入 NovelScene
-          // S3-A: 同步写入 NovelScene
-          if (nSource && nVolume) {
-            // 首先通过 VolumeId 和 index 找到对应的 nChapterId
-            const nChapter = await tx.novelChapter.findUnique({
-              where: {
-                volumeId_index: { volumeId: nVolume.id, index: episode.index },
-              },
-            });
-
-            if (nChapter) {
-              const existingNScene = await tx.novelScene.findFirst({
-                where: { chapterId: nChapter.id, index: scene.index },
-              });
-
-              if (existingNScene) {
-                await tx.novelScene.update({
-                  where: { id: existingNScene.id },
-                  data: {
-                    enrichedText: scene.summary,
-                    // @ts-ignore
-                    characterIds: (scene as any).characterIds as any,
-                  },
-                });
-              } else {
-                await tx.novelScene.create({
-                  data: {
-                    chapterId: nChapter.id,
-                    index: scene.index,
-                    rawText: '',
-                    enrichedText: scene.summary,
-                    // @ts-ignore
-                    characterIds: (scene as any).characterIds as any,
-                  },
-                });
-              }
-            }
           }
 
           // 6. 处理 Shot（类似逻辑）
@@ -884,7 +845,7 @@ export async function applyAnalyzedStructureToDatabase(
                   orderBy: { index: 'asc' },
                 },
               },
-              orderBy: { index: 'asc' },
+              orderBy: { sceneIndex: 'asc' },
             },
           },
           orderBy: { index: 'asc' },
@@ -905,8 +866,8 @@ export async function applyAnalyzedStructureToDatabase(
           title: e.name,
           summary: e.summary || '',
           scenes: e.scenes.map((sc: (typeof e.scenes)[0]) => ({
-            index: sc.index,
-            title: sc.title,
+            index: sc.sceneIndex,
+            title: sc.title || '',
             summary: sc.summary || '',
             shots: sc.shots.map((sh: (typeof sc.shots)[0]) => ({
               index: sh.index,
@@ -1215,24 +1176,34 @@ export async function processNovelAnalysisJob(
 
     if (!sourceText) {
       if (payload.novelSourceId) {
-        novelSource = await prisma.novelSource.findUnique({
+        novelSource = await prisma.novel.findUnique({
           where: { id: payload.novelSourceId },
         });
-        if (novelSource) sourceText = novelSource.rawText;
+        if (novelSource) {
+          const chapters = await prisma.novelChapter.findMany({
+            where: { novelSourceId: novelSource.id },
+            orderBy: { index: 'asc' },
+          });
+          sourceText = chapters.map((c) => c.rawContent || '').join('\n');
+        }
       } else if (payload.chapterId) {
-        const scenes = await prisma.novelScene.findMany({
-          where: { chapterId: payload.chapterId },
-          orderBy: { index: 'asc' },
-          select: { rawText: true },
+        const chapter = await prisma.novelChapter.findUnique({
+          where: { id: payload.chapterId },
         });
-        if (scenes.length > 0) sourceText = scenes.map((s) => s.rawText).join('\n');
+        if (chapter) sourceText = chapter.rawContent || '';
       } else {
         // 没指定则取该项目最新的一条
-        novelSource = await prisma.novelSource.findFirst({
+        novelSource = await prisma.novel.findFirst({
           where: { projectId },
           orderBy: { createdAt: 'desc' as const },
         });
-        if (novelSource) sourceText = novelSource.rawText;
+        if (novelSource) {
+          const chapters = await prisma.novelChapter.findMany({
+            where: { novelSourceId: novelSource.id },
+            orderBy: { index: 'asc' },
+          });
+          sourceText = chapters.map((c) => c.rawContent || '').join('\n');
+        }
       }
     }
 

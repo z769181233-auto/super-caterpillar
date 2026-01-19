@@ -106,7 +106,7 @@ export class NovelImportController {
       ...context,
       orgId: context.organizationId || undefined,
       resourceType: 'NOVEL_SOURCE',
-      resourceId: context.traceId, // 暂用 traceId，实际落库时可能还没有 NovelSourceId
+      resourceId: context.traceId, // 暂用 traceId，实际落库时可能还没有 NovelId
     });
 
     if (safetyResult.decision === 'BLOCK' && blockOnImport) {
@@ -201,21 +201,23 @@ export class NovelImportController {
 
       // 使用解析后的数据或用户输入的数据
       // 优先级：用户输入 > 解析结果 > 文件名
-      const novelTitle =
+      const title =
         importNovelFileDto.title ||
         parsed.title ||
         this.fileParserService.extractTitleFromFileName(file.originalname) ||
         path.basename(file.originalname, path.extname(file.originalname));
-      const novelAuthor = importNovelFileDto.author || parsed.author;
+      const author = importNovelFileDto.author || parsed.author;
 
-      // 创建 NovelSource（使用 novelTitle 和 novelAuthor）
-      const novelSource = await this.prisma.novelSource.create({
+      // 创建 Novel（使用 title 和 author）
+      const novelSource = await this.prisma.novel.create({
         data: {
           projectId,
-          novelTitle,
-          novelAuthor,
-          rawText: parsed.rawText, // 确保是 UTF-8 编码的干净文本
-          filePath,
+          title,
+          author,
+
+          rawFileUrl: filePath, // V3.0: rawFileUrl
+          // rawText: parsed.rawText, // REMOVED
+          // filePath, // REMOVED
           fileName: file.originalname,
           fileSize: file.size,
           fileType: fileExt,
@@ -244,16 +246,19 @@ export class NovelImportController {
             novelSourceId: novelSource.id,
             volumeId: volume.id,
             index: i + 1,
+
             title: chapter.title,
+            rawContent: chapter.content, // V3.0: Save content to chapter
           },
         });
         // Create Scene with rawText
-        await this.prisma.novelScene.create({
+        await this.prisma.scene.create({
           data: {
             chapterId: savedChapter.id,
-            index: 1, // Default scene index
+            projectId, // Ensure projectId is marked
+            sceneIndex: 1, // V3.0 compliance
             title: `Scene 1`,
-            rawText: chapter.content,
+            // rawText: chapter.content, // REMOVED V3.0
           },
         });
         savedChapters.push(savedChapter);
@@ -278,8 +283,8 @@ export class NovelImportController {
             mimeType: file.mimetype,
             characterCount: parsed.characterCount,
             chapterCount: parsed.chapterCount,
-            novelTitle,
-            novelAuthor,
+            title,
+            author,
           },
         });
       } catch (auditError) {
@@ -349,8 +354,8 @@ export class NovelImportController {
             jobId: job.id,
             analysisJobId: analysisJob.id,
             novelSourceId: novelSource.id,
-            novelTitle,
-            novelAuthor,
+            title,
+            author,
             characterCount: parsed.characterCount,
             chapterCount: parsed.chapterCount,
           },
@@ -431,7 +436,7 @@ export class NovelImportController {
     // 检查项目权限
     await this.projectService.checkOwnership(projectId, user.userId);
 
-    // 1. 创建 NovelSource（文本导入模式）
+    // 1. 创建 Novel（文本导入模式）
     // 兼容多种 Payload 字段（支持前端直接传 title+content 或 title+rawText）
     let rawText =
       importNovelDto.rawText ||
@@ -440,8 +445,8 @@ export class NovelImportController {
       (request.body as any)?.content;
     const title = importNovelDto.title || (request.body as any)?.title || '未命名作品';
 
-    // 尝试查找已存在的最新 NovelSource（由 import-file 创建）
-    let novelSource = await this.prisma.novelSource.findFirst({
+    // 尝试查找已存在的最新 Novel（由 import-file 创建）
+    let novelSource = await this.prisma.novel.findFirst({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
     });
@@ -453,18 +458,16 @@ export class NovelImportController {
         (importNovelDto.novelName || importNovelDto.author || importNovelDto.fileUrl)
       ) {
         // 更新元数据模式
-        novelSource = await this.prisma.novelSource.update({
+        novelSource = await this.prisma.novel.update({
           where: { id: novelSource.id },
           data: {
-            novelTitle: importNovelDto.novelName || novelSource.novelTitle,
-            novelAuthor: importNovelDto.author || novelSource.novelAuthor,
+            title: importNovelDto.novelName || novelSource.title,
+            author: importNovelDto.author || novelSource.author,
             // filePath / fileUrl 等通常由 upload 决定，这里暂不覆盖除非明确
           },
         });
-        // 获取 rawText 以便后续重新生成 Task/Job (如果需要)
-        // 注意：如果是大文件，rawText 可能未全部加载。
-        // 但根据当前逻辑，import-file 保存了 rawText，所以我们可以取出来。
-        rawText = novelSource.rawText || '';
+        // V3.0: rawText column removed. Fetching from Chapters not implemented yet.
+        rawText = ''; // FIXME: Implement fetch from NovelChapter.rawContent
       }
 
       if (!rawText) {
@@ -481,12 +484,35 @@ export class NovelImportController {
       });
 
       // 标准文本导入模式：创建新 Source
-      novelSource = await this.prisma.novelSource.create({
+      novelSource = await this.prisma.novel.create({
         data: {
           projectId,
-          novelTitle: title,
-          rawText: rawText,
+          title: title,
+          rawFileUrl: 'text://direct-input',
           characterCount: rawText.length,
+        },
+      });
+
+      // V3.0: Direct text import needs to create structure
+      const volume = await this.prisma.novelVolume.create({
+        data: { projectId, novelSourceId: novelSource.id, index: 1, title: 'Default Volume' },
+      });
+      const chapter = await this.prisma.novelChapter.create({
+        data: {
+          novelSourceId: novelSource.id,
+          volumeId: volume.id,
+          index: 1,
+          title: 'Imported Text',
+          rawContent: rawText,
+        },
+      });
+      await this.prisma.scene.create({
+        data: {
+          chapterId: chapter.id,
+          projectId,
+          sceneIndex: 1,
+          title: 'Scene 1',
+          // rawText: rawText, // REMOVED V3.0
         },
       });
     }
@@ -527,12 +553,12 @@ export class NovelImportController {
           },
         });
         // Create Scene with rawText
-        await this.prisma.novelScene.create({
+        await this.prisma.scene.create({
           data: {
             chapterId: savedChapter.id,
-            index: 1, // Default scene index
+            sceneIndex: 1, // V3.0 compliance
             title: `Scene 1`,
-            rawText: chapter.content,
+            // rawText: chapter.content, // V3.0: REMOVED
           },
         });
         savedChapters.push(savedChapter);
@@ -587,7 +613,7 @@ export class NovelImportController {
         details: {
           projectId,
           novelSourceId: novelSource.id,
-          novelTitle: importNovelDto.title,
+          title: importNovelDto.title,
           characterCount: rawText.length,
           chapterCount: savedChapters.length,
           importMode: 'text',
@@ -684,8 +710,8 @@ export class NovelImportController {
     // 检查项目权限
     await this.projectService.checkOwnership(projectId, user.userId);
 
-    // 获取 NovelSource
-    const novelSource = await this.prisma.novelSource.findFirst({
+    // 获取 Novel
+    const novelSource = await this.prisma.novel.findFirst({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
     });

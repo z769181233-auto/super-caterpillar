@@ -65,7 +65,7 @@ export async function processCE02VisualDensityJob(
     }
 
     if (sceneId) {
-      await prisma.novelScene.update({
+      await prisma.scene.update({
         where: { id: sceneId },
         data: {
           visualDensityScore: score,

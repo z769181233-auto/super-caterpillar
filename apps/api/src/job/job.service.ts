@@ -7,6 +7,8 @@ import {
   Logger,
   Inject,
   forwardRef,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { getTraceId } from '@scu/observability';
@@ -32,7 +34,6 @@ import { TextSafetyService } from '../text-safety/text-safety.service';
 import { PublishedVideoService } from '../publish/published-video.service';
 import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { UnprocessableEntityException } from '@nestjs/common';
-import { PRODUCTION_MODE } from '@scu/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   Prisma,
@@ -224,7 +225,7 @@ export class JobService {
     }
 
     // PRODUCTION_MODE Gate: 未审核不允许渲染
-    if (PRODUCTION_MODE && createJobDto.type === JobTypeEnum.SHOT_RENDER) {
+    if (process.env.NODE_ENV === 'production' && createJobDto.type === JobTypeEnum.SHOT_RENDER) {
       if (
         shot.reviewStatus !== ShotReviewStatus.APPROVED &&
         shot.reviewStatus !== ShotReviewStatus.FINALIZED
@@ -238,10 +239,10 @@ export class JobService {
 
     // API-Side Stable Error Code for Fail Fast
     if (createJobDto.type === JobTypeEnum.NOVEL_ANALYSIS) {
-      const novelSource = await this.prisma.novelSource.findFirst({
+      const novelSource = await this.prisma.novel.findFirst({
         where: { projectId: project.id },
       });
-      if (!novelSource || !novelSource.rawText) {
+      if (!novelSource || !novelSource.rawFileUrl) {
         throw new BadRequestException(
           'NOVEL_SOURCE_MISSING: Project has no novel source or empty text.'
         );
@@ -453,11 +454,10 @@ export class JobService {
         episode = await this.prisma.episode.create({
           data: {
             seasonId: season.id,
-            projectId,
+            chapterId: chapterId,
             index: episodeIndex,
             name: `Episode ${episodeIndex}`,
             summary: 'Auto generated for novel analysis',
-            chapterId: chapterId ?? null,
           },
         });
       }
@@ -467,8 +467,9 @@ export class JobService {
       const scene = await this.prisma.scene.create({
         data: {
           episodeId: episode.id,
-          projectId, // Fix: Added missing projectId
-          index: 9999, // Use system index to prevent sync deletion
+          projectId,
+          // index: 9999, // REMOVED V3.0
+          sceneIndex: 9999,
           title: `Job Placeholder Scene`,
           summary: 'Auto generated for novel analysis',
         },
@@ -595,11 +596,55 @@ export class JobService {
     isVerification?: boolean;
     dedupeKey?: string;
   }): Promise<any> {
-    try {
-      const { projectId, organizationId, taskId, jobType, payload, isVerification, dedupeKey } =
-        params;
-      let traceId = params.traceId;
+    const { projectId, organizationId, taskId, jobType, payload, isVerification, dedupeKey } =
+      params;
+    let traceId = params.traceId;
 
+    // 0. Guardrails (P10-3)
+    // 0.1 Idempotency Check
+    if (dedupeKey) {
+      const existing = await this.prisma.shotJob.findUnique({
+        where: { dedupeKey },
+      });
+      if (existing) {
+        this.logger.log(
+          `[JobService] createCECoreJob: Idempotency hit for ${dedupeKey}, returning existing job ${existing.id}`
+        );
+        return existing;
+      }
+    }
+
+    // 0.2 Budget Guard
+    const budgetStatus = await this.budgetService.getBudgetStatus(organizationId, projectId);
+    if (budgetStatus.level === 'BLOCK_ALL_CONSUME') {
+      throw new BadRequestException(
+        `Budget Exceeded: Organization ${organizationId} is blocked due to excessive cost.`
+      );
+    }
+
+    // 0.3 Capacity Gate (Concurrency)
+    const capacity = await this.capacityGateService.checkJobCapacity(jobType, organizationId);
+    if (!capacity.allowed) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS, // 429
+          message: capacity.reason || 'Capacity Exceeded',
+          errorCode: capacity.errorCode,
+        },
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+    }
+
+    // 0.4 Pipeline Timeout Injection (Metadata)
+    if (payload && typeof payload === 'object') {
+      payload._metadata = {
+        ...payload._metadata,
+        pipeline_timeout_ms: 1800000, // 30 minutes default
+        created_at: new Date().toISOString(),
+      };
+    }
+
+    try {
       if (!traceId && taskId) {
         // Stage13-Final: 从 Task 获取 Pipeline 级 traceId
         const task = await this.prisma.task.findUnique({
@@ -655,17 +700,18 @@ export class JobService {
 
       let scene = await this.prisma.scene.findFirst({
         where: { episodeId: episode.id },
-        orderBy: { index: 'asc' },
+        orderBy: { sceneIndex: 'asc' }, // V3.0: sceneIndex
       });
 
       if (!scene) {
         scene = await this.prisma.scene.create({
           data: {
             episodeId: episode.id,
-            projectId, // Fix: Added missing projectId
-            index: 1,
-            title: 'Scene 1',
-            summary: 'Auto generated for CE Core Layer',
+            projectId,
+            // index: payload.sceneIndex || 1, // REMOVED V3.0
+            sceneIndex: payload.sceneIndex || 1,
+            title: payload.sceneTitle || 'Auto Scene',
+            summary: payload.sceneDescription || 'Auto generated for CE Core Layer',
           },
         });
       }
@@ -988,9 +1034,13 @@ export class JobService {
       if (!shotHierarchy) throw new NotFoundException('Resource not found');
 
       // 3. Create Task (Platform Task wrapper)
+      const projectId = shotHierarchy.scene.projectId || shotHierarchy.scene.episode?.projectId;
+
+      if (!projectId) throw new BadRequestException('Project ID not found for scene');
+
       const task = await this.taskService.create({
         organizationId,
-        projectId: shotHierarchy.scene.episode.projectId!, // Assuming episode has projectId or load further up
+        projectId: projectId,
         type: TaskTypeEnum.VIDEO_RENDER,
         status: TaskStatusEnum.PENDING,
         payload: { shotId, jobType, isVerification },
@@ -1001,7 +1051,7 @@ export class JobService {
       const job = await tx.shotJob.create({
         data: {
           organizationId,
-          projectId: shotHierarchy.scene.episode.projectId!,
+          projectId: projectId,
           episodeId: shotHierarchy.scene.episodeId,
           sceneId: shotHierarchy.scene.id,
           shotId,
@@ -1068,7 +1118,8 @@ export class JobService {
 
     // P1-1: 从 SSOT 配置读取限流参数
     const { env: scuEnv } = await import('@scu/config');
-    const { jobMaxInFlight, jobLeaseTtlMs } = scuEnv;
+    const jobMaxInFlight = (scuEnv as any).jobMaxInFlight || 10;
+    const jobLeaseTtlMs = (scuEnv as any).jobLeaseTtlMs || 30000;
 
     return this.prisma.$transaction(async (tx) => {
       // P1-1: Strict Concurrency - Serialize claims to prevent race conditions
@@ -2188,6 +2239,7 @@ export class JobService {
         organizationId, // Studio v0.7: 按组织过滤
       },
       include: {
+        task: true,
         shot: {
           include: {
             scene: {
@@ -2231,7 +2283,7 @@ export class JobService {
     // Studio v0.7: 检查组织权限
     // 检查组织权限：支持 Season 和 Project 两种结构
     if (job.shot) {
-      const project = job.shot.scene.episode.season?.project;
+      const project = job.shot.scene.episode?.season?.project;
       if (!project || project.organizationId !== organizationId) {
         this.logger.warn(
           `[DEBUG] Project Org Mismatch.Proj Org = ${project?.organizationId}, Request Org = ${organizationId} `

@@ -20,6 +20,11 @@ export interface EngineInvocationRequest<TInput = unknown> {
   engineVersion?: string;
 
   /**
+   * Job 类型（可选，用于推断默认引擎）
+   */
+  jobType?: string;
+
+  /**
    * 具体业务输入
    */
   payload: TInput;

@@ -147,7 +147,7 @@ export class ProjectService {
               include: {
                 shots: true,
               },
-              orderBy: { index: 'asc' },
+              orderBy: { sceneIndex: 'asc' }, // V3.0
             },
           },
           orderBy: { index: 'asc' },
@@ -214,7 +214,7 @@ export class ProjectService {
                 scenes: {
                   select: {
                     id: true,
-                    index: true,
+                    sceneIndex: true, // V3.0
                     title: true,
                     summary: true,
                     visualDensityScore: true, // V1.1 新增
@@ -242,7 +242,7 @@ export class ProjectService {
                       orderBy: { index: 'asc' },
                     },
                   },
-                  orderBy: { index: 'asc' },
+                  orderBy: { sceneIndex: 'asc' },
                 },
               },
               orderBy: { index: 'asc' },
@@ -283,7 +283,7 @@ export class ProjectService {
             scenes: {
               select: {
                 id: true,
-                index: true,
+                sceneIndex: true, // V3.0
                 title: true,
                 summary: true,
                 visualDensityScore: true,
@@ -310,7 +310,7 @@ export class ProjectService {
                   orderBy: { index: 'asc' },
                 },
               },
-              orderBy: { index: 'asc' },
+              orderBy: { sceneIndex: 'asc' },
             },
           },
           orderBy: { index: 'asc' },
@@ -820,7 +820,7 @@ export class ProjectService {
         data: {
           episodeId,
           projectId: episode.projectId || episode.project?.id || episode.season?.projectId || '',
-          index: createSceneDto.index,
+          sceneIndex: createSceneDto.index, // V3.0
           title: createSceneDto.title || `Scene ${createSceneDto.index}`,
           summary: createSceneDto.summary,
         },
@@ -857,7 +857,7 @@ export class ProjectService {
     }
 
     // 获取 project
-    const project = scene.episode.project;
+    const project = scene.episode?.project;
     if (!project) {
       throw new NotFoundException(`Project not found for scene ${sceneId}`);
     }
@@ -928,8 +928,8 @@ export class ProjectService {
       // Studio v0.7: 如果未传入 organizationId，从 Project 推导
       const finalOrganizationId =
         organizationId ||
-        scene.episode.project?.organizationId ||
-        scene.episode.season?.project?.organizationId;
+        scene.episode?.project?.organizationId ||
+        scene.episode?.season?.project?.organizationId;
 
       if (!finalOrganizationId) {
         throw new BadRequestException('Cannot determine organizationId for shot');
@@ -996,7 +996,7 @@ export class ProjectService {
     }
 
     // 获取 project（支持 Season 和 Project 两种结构）
-    const shotProject = shot.scene.episode.project ?? shot.scene.episode.season?.project;
+    const shotProject = shot.scene.episode?.project ?? shot.scene.episode?.season?.project;
     if (!shotProject) {
       throw new NotFoundException(`Project not found for shot ${shotId}`);
     }
@@ -1032,7 +1032,7 @@ export class ProjectService {
     }
 
     // 获取 project
-    const shotProject = shot.scene.episode.project;
+    const shotProject = shot.scene.episode?.project;
     if (!shotProject) {
       throw new NotFoundException(`Project not found for shot ${id}`);
     }
@@ -1073,7 +1073,7 @@ export class ProjectService {
       }
 
       // Studio v0.7: 检查组织权限
-      const shotProject = shot.scene.episode.project || shot.scene.episode.season?.project;
+      const shotProject = shot.scene.episode?.project || shot.scene.episode?.season?.project;
       if (!shotProject || shotProject.organizationId !== organizationId) {
         throw new ForbiddenException('You do not have permission to update this shot');
       }
@@ -1189,7 +1189,7 @@ export class ProjectService {
     const [data, total] = await Promise.all([
       this.prisma.scene.findMany({
         where,
-        orderBy: { index: 'asc' },
+        orderBy: { sceneIndex: 'asc' },
         skip,
         take,
         select: {
@@ -1197,7 +1197,7 @@ export class ProjectService {
           id: true,
           projectId: true, // Legacy field
           episodeId: true,
-          index: true,
+          sceneIndex: true,
           title: true,
           // Scene has no createdAt/updatedAt in schema
         },
@@ -1304,7 +1304,7 @@ export class ProjectService {
           scene: {
             select: {
               id: true,
-              index: true,
+              sceneIndex: true,
               episode: {
                 select: {
                   id: true,
@@ -1333,7 +1333,7 @@ export class ProjectService {
 
     // Studio v0.7: 过滤掉不属于当前组织的 Shots
     const filteredShots = shots.filter((shot: any) => {
-      const shotProject = shot.scene.episode.project;
+      const shotProject = shot.scene.episode?.project;
       return shotProject?.organizationId === organizationId;
     });
 
@@ -1345,12 +1345,12 @@ export class ProjectService {
       title: shot.title,
       description: shot.description,
       reviewedAt: shot.reviewedAt,
-      projectId: shot.scene.episode.project?.id,
-      projectName: shot.scene.episode.project?.name,
-      episodeId: shot.scene.episode.id,
-      episodeName: shot.scene.episode.name,
+      projectId: shot.scene.episode?.project?.id,
+      projectName: shot.scene.episode?.project?.name,
+      episodeId: shot.scene.episode?.id,
+      episodeName: shot.scene.episode?.name,
       sceneId: shot.scene.id,
-      sceneIndex: shot.scene.index,
+      sceneIndex: shot.scene.sceneIndex,
     }));
 
     return {
@@ -1744,7 +1744,7 @@ export class ProjectService {
       // 4. 每集创建 3 Scenes
       for (let scIndex = 1; scIndex <= 3; scIndex++) {
         let scene = await this.prisma.scene.findFirst({
-          where: { episodeId: episode.id, index: scIndex },
+          where: { episodeId: episode.id, sceneIndex: scIndex },
         });
 
         if (!scene) {
@@ -1752,7 +1752,7 @@ export class ProjectService {
             data: {
               episodeId: episode.id,
               projectId: project.id, // Legacy field
-              index: scIndex,
+              sceneIndex: scIndex,
               title: `Scene ${epIndex}-${scIndex}`,
               summary: `Auto-generated summary for Scene ${epIndex}-${scIndex}`,
             },

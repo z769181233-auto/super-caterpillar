@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { projectApi } from '@/lib/apiClient';
+import { projectApi, v3Api } from '@/lib/apiClient';
 import Link from 'next/link';
 
 // P4 Components
@@ -26,6 +26,8 @@ export default function StudioPage() {
   // 状态下钻
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(sceneId);
   const [selectedShotId, setSelectedShotId] = useState<string | null>(shotId);
+  const [v3Job, setV3Job] = useState<any>(null);
+  const [v3Polling, setV3Polling] = useState(false);
 
   useEffect(() => {
     loadProject();
@@ -59,6 +61,38 @@ export default function StudioPage() {
     setSelectedShotId(id);
     router.replace(`/projects/${projectId}/page-studio?sceneId=${selectedSceneId}&shotId=${id}`);
   };
+
+  // V3 Generation Logic
+  const handleV3Generate = async () => {
+    if (!selectedSceneId) return;
+    try {
+      setV3Polling(true);
+      const res = await v3Api.shot.batchGenerate({ scene_id: selectedSceneId });
+      setV3Job({ id: res.job_id, status: 'QUEUED', progress: 0 });
+    } catch (err: any) {
+      alert('Generation failed: ' + err.message);
+      setV3Polling(false);
+    }
+  };
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (v3Job?.id && v3Polling) {
+      timer = setInterval(async () => {
+        try {
+          const receipt = await v3Api.shot.getJob(v3Job.id);
+          setV3Job(receipt);
+          if (receipt.status === 'SUCCEEDED' || receipt.status === 'FAILED') {
+            setV3Polling(false);
+            if (receipt.status === 'SUCCEEDED') loadProject(); // Refresh to show new assets
+          }
+        } catch (err) {
+          console.error('V3 Polling failed:', err);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(timer);
+  }, [v3Job?.id, v3Polling]);
 
   const handleSaveShot = async (id: string, updates: any) => {
     try {
@@ -119,8 +153,35 @@ export default function StudioPage() {
           <span className="text-gray-300">/</span>
           <span className="text-gray-500 text-sm">Studio V3.0</span>
         </div>
-        <div className="flex gap-2">
-          <button className="px-3 py-1 bg-black text-white text-xs rounded font-bold hover:bg-gray-800">
+        <div className="flex gap-2 items-center">
+          {v3Job && (
+            <div className="flex items-center gap-2 mr-4">
+              <div className="text-[10px] font-mono text-gray-400 uppercase">
+                {v3Job.current_step || v3Job.status}
+              </div>
+              <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-600 transition-all duration-500"
+                  style={{ width: `${v3Job.progress || 0}%` }}
+                />
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleV3Generate}
+            disabled={!selectedSceneId || v3Polling}
+            className={`
+              px-3 py-1 text-xs rounded font-bold transition-all
+              ${
+                v3Polling
+                  ? 'bg-blue-100 text-blue-400 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+              }
+            `}
+          >
+            {v3Polling ? 'GENERATING...' : 'Generate & Publish'}
+          </button>
+          <button className="px-3 py-1 bg-black text-white text-xs rounded font-bold hover:bg-gray-800 ml-2">
             Export Video
           </button>
         </div>

@@ -56,7 +56,7 @@ export class AdminController {
       data: {
         projectId,
         status: 'PENDING',
-        jobType: jobType as any,
+        type: jobType as any,
         payload: (payload ?? {}) as any,
         traceId: `gate_enqueue_${Date.now()}`,
       } as any,

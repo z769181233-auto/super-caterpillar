@@ -103,12 +103,12 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
       let novelSource: any | null = null;
 
       if (novelSourceId) {
-        novelSource = await this.prisma.novelSource.findUnique({
+        novelSource = await this.prisma.novel.findUnique({
           where: { id: novelSourceId },
         });
       } else {
         // 没指定则取该项目最新的一条
-        novelSource = await this.prisma.novelSource.findFirst({
+        novelSource = await this.prisma.novel.findFirst({
           where: { projectId },
           orderBy: { createdAt: 'desc' as const },
         });

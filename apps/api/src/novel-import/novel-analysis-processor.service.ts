@@ -20,7 +20,7 @@ export class NovelAnalysisProcessorService {
         novelSource: true,
         scenes: {
           take: 1,
-          orderBy: { index: 'asc' },
+          orderBy: { sceneIndex: 'asc' },
         },
       },
     });
@@ -30,7 +30,7 @@ export class NovelAnalysisProcessorService {
     }
 
     // 读取章节原文
-    const rawText = chapter.scenes?.[0]?.rawText || '';
+    const rawText = chapter.content || '';
 
     // 简单规则：按段落切分场景
     // 未来替换为 LLM 调用

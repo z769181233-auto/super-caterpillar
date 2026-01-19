@@ -24,14 +24,14 @@ export class AuditInsightService {
   ) {}
 
   async getNovelInsight(novelSourceId: string): Promise<NovelInsightResponse> {
-    // 1. Find Project by NovelSource
-    const novelSource = await this.prisma.novelSource.findUnique({
+    // 1. Find Project by Novel
+    const novelSource = await this.prisma.novel.findUnique({
       where: { id: novelSourceId },
       include: { project: true },
     });
 
     if (!novelSource) {
-      throw new NotFoundException(`NovelSource ${novelSourceId} not found`);
+      throw new NotFoundException(`Novel ${novelSourceId} not found`);
     }
 
     const projectId = novelSource.projectId;
@@ -189,13 +189,13 @@ export class AuditInsightService {
 
   async getNovelAuditFull(novelSourceId: string, userId: string): Promise<NovelAuditFullResponse> {
     // 1. Resolve projectId
-    const novelSource = await this.prisma.novelSource.findUnique({
+    const novelSource = await this.prisma.novel.findUnique({
       where: { id: novelSourceId },
       include: { project: true },
     });
 
     if (!novelSource) {
-      throw new NotFoundException(`NovelSource ${novelSourceId} not found`);
+      throw new NotFoundException(`Novel ${novelSourceId} not found`);
     }
 
     const projectId = novelSource.projectId;
@@ -258,7 +258,7 @@ export class AuditInsightService {
     // Director Audit Logging (Production Hardened)
     if (shots.length === 0) {
       this.logger.warn(
-        `No shots found for NovelSource ${novelSourceId}. Check Episode->Season->Project relation.`
+        `No shots found for Novel ${novelSourceId}. Check Episode->Season->Project relation.`
       );
     } else {
       this.logger.log(`Found ${shots.length} shots. First params type: ${typeof shots[0].params}`);

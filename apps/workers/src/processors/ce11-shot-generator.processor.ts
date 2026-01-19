@@ -28,12 +28,12 @@ export async function processCE11ShotGeneratorJob(
 
     // 1. 获取小说场景内容
     // Use type-casting to avoid lint errors from outdated @scu/database types
-    const scene = await (prisma as any).novelScene.findUnique({
+    const scene = await (prisma as any).scene.findUnique({
       where: { id: novelSceneId },
     });
 
     if (!scene) {
-      throw new Error(`Novel scene ${novelSceneId} not found`);
+      throw new Error(`Scene ${novelSceneId} not found`);
     }
 
     const sceneDescription = scene.enrichedText || scene.rawText || '';
@@ -43,20 +43,56 @@ export async function processCE11ShotGeneratorJob(
       );
     }
 
-    // 2. 调用 CE11 引擎 (local mode uses mock)
+    // 2. 调用 CE11 引擎 (P5-3 Explicit Routing)
+    const selectedEngineKey = payload.engineKey || (job as any).engineKey;
+    const isVerification = !!(
+      job.isVerification ||
+      payload.isVerification ||
+      process.env.GATE_MODE
+    );
+
+    let finalEngineKey: string;
+    if (selectedEngineKey) {
+      finalEngineKey = selectedEngineKey;
+    } else if (isVerification) {
+      // 验证模式允许缺省，默认由后端策略决定（此处暂定 mock 以保持兼容）
+      finalEngineKey = 'ce11_shot_generator_mock';
+    } else {
+      // 非验证模式（生产路径）强制要求 engineKey
+      return {
+        status: 'FAILED',
+        error: {
+          code: 'MISSING_ENGINE_KEY',
+          message: 'CE11 Production requires explicit engineKey="ce11_shot_generator_real"',
+        },
+      };
+    }
+
     const engineResult = await engineHub.invoke({
-      engineKey: payload.engine || 'ce11_shot_generator_mock',
+      engineKey: finalEngineKey,
       engineVersion: payload.engineVersion || 'v1.0',
       payload: {
+        novelSceneId,
         scene_description: sceneDescription,
         traceId,
+        // 透传 seed 用于 P5-4 断言
+        seed: payload.seed,
       },
-      metadata: { traceId, jobId: job.id },
+      metadata: {
+        traceId,
+        jobId: job.id,
+        projectId: job.projectId || (payload as any).projectId,
+        organizationId: job.organizationId || (payload as any).organizationId,
+      },
     });
 
     if (!engineResult.success) {
       throw new Error(`CE11 Engine invocation failed: ${engineResult.error?.message}`);
     }
+
+    logger.log(
+      `[CE11] Engine invocation successful. selectedEngineKey=${engineResult.selectedEngineKey}`
+    );
 
     const engineOutput = engineResult.output as any;
     const outputShots = engineOutput.shots || [];
@@ -70,9 +106,8 @@ export async function processCE11ShotGeneratorJob(
       const shot = await (prisma as any).shot.create({
         data: {
           sceneId: novelSceneId,
-          index: i + 1, // sequence_no 从 1 开始
+          index: i + 1, // Bible V3: index (internal: index)
           type: shotData.shot_type || 'MEDIUM_SHOT',
-          shotType: shotData.shot_type,
           cameraMovement: shotData.camera_movement,
           cameraAngle: shotData.camera_angle,
           lightingPreset: shotData.lighting_preset,
@@ -87,7 +122,7 @@ export async function processCE11ShotGeneratorJob(
           organizationId: job.organizationId || 'org-default',
         },
       });
-      createdShots.push({ id: shot.id, index: shot.index });
+      createdShots.push({ id: shot.id, index: i + 1 });
     }
 
     // 4. 计费审计 (P1-2/Bible)
@@ -99,9 +134,9 @@ export async function processCE11ShotGeneratorJob(
       projectId: projectId || 'unknown',
       userId: 'system',
       orgId: job.organizationId || 'default-org',
-      engineKey: 'ce11_shot_generator',
+      engineKey: finalEngineKey,
       runId: payload.pipelineRunId || traceId,
-      billingUsage: engineOutput.billing_usage || { model: 'ce11-mock-v1', cost: 0 },
+      billingUsage: engineOutput.billing_usage || { model: finalEngineKey, cost: 0 },
       cost: 0,
     });
 
@@ -110,7 +145,7 @@ export async function processCE11ShotGeneratorJob(
       output: {
         shots_count: createdShots.length,
         shots: createdShots,
-        billing_usage: engineOutput.billing_usage || { model: 'ce11-mock-v1', cost: 0 },
+        billing_usage: engineOutput.billing_usage || { model: finalEngineKey, cost: 0 },
       },
     };
   } catch (error: any) {

@@ -122,7 +122,7 @@ export class ShotDirectorService {
       }
 
       if (assets.length === 0) {
-        // Fail Fast logic provided in user requirement is for NovelSource, but applies here too
+        // Fail Fast logic provided in user requirement is for Novel, but applies here too
         throw new Error(`Scene ${sceneId} has no generated assets to compose`);
       }
 
@@ -167,11 +167,18 @@ export class ShotDirectorService {
       // We need a Task first? JobService automatically creates Task.
       // Manually creating Task + Job.
 
+      const finalOrganizationId = organizationId || scene.episode?.season?.project?.organizationId;
+      const finalProjectId = scene.episode?.season?.project?.id;
+
+      if (!finalOrganizationId || !finalProjectId) {
+        throw new Error(`Cannot determine project/org for scene ${sceneId}`);
+      }
+
       const taskId = (
         await this.prisma.task.create({
           data: {
-            organizationId: organizationId || scene.episode.season.project.organizationId,
-            projectId: scene.episode.season.project.id,
+            organizationId: finalOrganizationId,
+            projectId: finalProjectId,
             type: 'VIDEO_RENDER',
             status: 'PENDING',
             payload: { sceneId, assetsCount: assets.length },
@@ -181,8 +188,8 @@ export class ShotDirectorService {
 
       const job = await this.prisma.shotJob.create({
         data: {
-          organizationId: organizationId || scene.episode.season.project.organizationId,
-          projectId: scene.episode.season.project.id,
+          organizationId: finalOrganizationId,
+          projectId: finalProjectId,
           episodeId: scene.episodeId,
           sceneId: scene.id,
           shotId: anchorShotId, // Anchor to first shot

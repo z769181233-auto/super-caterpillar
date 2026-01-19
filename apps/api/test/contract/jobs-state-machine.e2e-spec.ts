@@ -97,7 +97,7 @@ describe('Job State Machine Contract Tests', () => {
       data: {
         episodeId: episodeId,
         projectId: projectId,
-        index: 1,
+        sceneIndex: 1,
         title: 'Scene 1',
       },
     });

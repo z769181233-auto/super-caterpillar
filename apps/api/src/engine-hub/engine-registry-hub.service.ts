@@ -13,6 +13,7 @@ import { CE06LocalAdapter } from '../engines/adapters/ce06.local.adapter';
 import { CE03LocalAdapter } from '../engines/adapters/ce03.local.adapter';
 import { CE04LocalAdapter } from '../engines/adapters/ce04.local.adapter';
 import { VideoMergeLocalAdapter } from '../engines/adapters/video-merge.local.adapter';
+import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
 
 /**
  * Engine Registry Hub
@@ -142,6 +143,13 @@ export class EngineRegistryHubService {
       version: 'default',
       mode: 'local',
       adapterToken: VideoMergeLocalAdapter,
+    },
+    // CE11 Shot Generator (Real)
+    {
+      engineKey: 'ce11_shot_generator_real',
+      version: 'default',
+      mode: 'local',
+      adapterToken: CE11ComfyUIAdapter,
     },
   ];
 

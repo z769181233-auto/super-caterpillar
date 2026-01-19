@@ -20,21 +20,24 @@ export interface RenderResult {
   gpuSeconds: number;
 }
 
-interface ComfyUIResponse {
+export interface ComfyUIResponse {
   prompt_id: string;
   number: number;
   node_errors: any;
 }
 
-interface ComfyUIHistory {
+export interface ComfyUIHistory {
   [prompt_id: string]: {
     outputs: {
       [node_id: string]: {
-        images: Array<{
+        images?: Array<{
           filename: string;
           subfolder: string;
           type: string;
         }>;
+        // Text/JSON output support
+        text?: string[];
+        json?: any[];
       };
     };
     status: {
@@ -45,9 +48,9 @@ interface ComfyUIHistory {
   };
 }
 
-const COMFYUI_BASE_URL = process.env.COMFYUI_BASE_URL || 'http://127.0.0.1:8188';
+export const COMFYUI_BASE_URL = process.env.COMFYUI_BASE_URL || 'http://127.0.0.1:8188';
 
-async function httpRequest(
+export async function httpRequest(
   url: string,
   options: http.RequestOptions,
   body?: string

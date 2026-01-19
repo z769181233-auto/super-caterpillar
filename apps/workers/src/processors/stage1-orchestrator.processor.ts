@@ -48,7 +48,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       data: {
         episodeId,
         projectId,
-        index: 1,
+        sceneIndex: 1,
         title: 'Main Scene',
         summary: 'Auto-generated for Stage-1',
         // P0-2: Ensure snapshot logic handled elsewhere or default null

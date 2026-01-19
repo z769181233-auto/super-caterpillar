@@ -992,8 +992,49 @@ export const pipelineApi = {
         signal,
       }
     );
-    if (!res.ok) throw new Error(`Failed to force-pass node: ${res.status}`);
     const json = await res.json();
     return json?.data ?? json;
+  },
+};
+
+// ================= V3 API (P10-5) =================
+export const v3Api = {
+  story: {
+    async parse(payload: { project_id: string; raw_text: string; title?: string }) {
+      const res = await fetchWithAuth(`${API_BASE_URL}/v3/story/parse`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`V3 Story Parse failed: ${res.status}`);
+      return await res.json(); // { job_id }
+    },
+    async getJob(jobId: string) {
+      const res = await fetchWithAuth(`${API_BASE_URL}/v3/story/job/${jobId}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`V3 Get Story Job failed: ${res.status}`);
+      return await res.json(); // Standardized Receipt
+    },
+  },
+  shot: {
+    async batchGenerate(payload: { scene_id: string; dedupeKey?: string }) {
+      const res = await fetchWithAuth(`${API_BASE_URL}/v3/shot/batch-generate`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`V3 Batch Generate failed: ${res.status}`);
+      return await res.json(); // { job_id }
+    },
+    async getJob(jobId: string) {
+      const res = await fetchWithAuth(`${API_BASE_URL}/v3/shot/job/${jobId}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`V3 Get Shot Job failed: ${res.status}`);
+      return await res.json(); // Standardized Receipt
+    },
   },
 };

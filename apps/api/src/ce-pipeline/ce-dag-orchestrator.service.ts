@@ -94,18 +94,18 @@ export class CEDagOrchestratorService {
       if (!anchorShot) throw new Error(`Shot ${req.shotId} not found`);
       const sceneId = anchorShot.sceneId;
 
-      // Locate corresponding NovelScene
-      const novelScene = await this.prisma.novelScene.findFirst({
+      // Locate corresponding Scene
+      const novelScene = await this.prisma.scene.findFirst({
         where: {
           chapter: {
             novelSource: { projectId: req.projectId },
           },
-          index: anchorShot.scene.index,
+          sceneIndex: anchorShot.scene.sceneIndex,
         },
       });
 
       const structuredText =
-        novelScene?.rawText || 'A cinematic scene based on ' + (anchorShot.title || 'novel');
+        novelScene?.enrichedText || 'A cinematic scene based on ' + (anchorShot.title || 'novel');
 
       // 5. Trigger CE03 job
       const ce03Job = await this.jobService.createCECoreJob({

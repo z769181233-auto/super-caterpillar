@@ -84,7 +84,7 @@ export async function processNovelChunk(context: ProcessorContext) {
         data: {
           projectId,
           episodeId,
-          index: sIdx + 1,
+          sceneIndex: sIdx + 1,
           title: scene.title || `场景 ${sIdx + 1}`,
           summary: scene.description || '',
         },

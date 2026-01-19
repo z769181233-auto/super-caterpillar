@@ -119,13 +119,13 @@ async function main() {
     });
   }
 
-  // 5) ensure NovelSource and NovelChapter
+  // 5) ensure Novel and NovelChapter
   let novelSource = await prisma.novelSource.findFirst({ where: { projectId: project.id } });
   if (!novelSource) {
     novelSource = await prisma.novelSource.create({
       data: {
         projectId: project.id,
-        novelTitle: 'Test Novel',
+        title: 'Test Novel',
         rawText: 'Test novel content for job testing',
       },
     });

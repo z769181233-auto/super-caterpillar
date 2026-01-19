@@ -461,7 +461,7 @@ export class ProjectController {
         resourceId: scene.id,
         ip: requestInfo.ip,
         userAgent: requestInfo.userAgent,
-        details: { episodeId, sceneIndex: scene.index },
+        details: { episodeId, sceneIndex: scene.sceneIndex },
       })
       .catch(() => undefined);
 
@@ -495,7 +495,7 @@ export class ProjectController {
         resourceId: id,
         ip: requestInfo.ip,
         userAgent: requestInfo.userAgent,
-        details: { sceneIndex: scene.index },
+        details: { sceneIndex: scene.sceneIndex },
       })
       .catch(() => undefined);
 

@@ -116,6 +116,37 @@ export class EngineInvokerHubService implements OnModuleInit {
     const projectId = req.metadata?.projectId || 'default_project';
     const attempt = (req.metadata?.attempt as number) || 0;
 
+    // 0.0 Auto-resolve engineKey from jobType if missing
+    if (!req.engineKey && req.jobType) {
+      const defaultKey = this.memoryRegistry.getDefaultEngineKeyForJobType(req.jobType);
+
+      // P5-0.1: CE11 Strict Engine Key Enforcement (No Silent Mock in Production)
+      if (req.jobType === 'CE11_SHOT_GENERATOR') {
+        const payload = req.payload as any;
+        const isVerif =
+          !!req.metadata?.isVerification ||
+          !!(req.metadata?.gateMode as any) ||
+          !!payload?.isVerification ||
+          !!payload?.gateMode;
+
+        if (!isVerif) {
+          throw new BadRequestException(
+            'CE11_SHOT_GENERATOR requires explicit engineKey in production (e.g. ce11_shot_generator_real)'
+          );
+        }
+        // In verification mode, allow implicit mock resolution
+        if (defaultKey) req.engineKey = defaultKey;
+      } else if (defaultKey) {
+        req.engineKey = defaultKey;
+      }
+    }
+
+    if (!req.engineKey) {
+      throw new BadRequestException(
+        `Engine Key missing (and could not be resolved from jobType: ${req.jobType})`
+      );
+    }
+
     // 0.1 成本上限 Pre-Check (Budget Guard) & 重试上限 (Retry Guard)
     // 根据《项目成本控制说明书》：重试次数必须 <= 3
     if (attempt > 3) {
@@ -156,7 +187,7 @@ export class EngineInvokerHubService implements OnModuleInit {
       let engineResult: EngineInvokeResult | undefined;
 
       // 0.5. 优先检查内存注册表 (In-Memory Override)
-      const memoryAdapter = this.memoryRegistry.findAdapter(req.engineKey);
+      const memoryAdapter = this.memoryRegistry.getAdapter(req.engineKey);
       if (memoryAdapter) {
         const engineInput: EngineInvokeInput = {
           engineKey: req.engineKey,
@@ -255,6 +286,27 @@ export class EngineInvokerHubService implements OnModuleInit {
         }
       }
 
+      // P5-5: CE11 Real Engine Generic Billing
+      if (req.engineKey === 'ce11_shot_generator_real' && engineResult?.status === 'SUCCESS') {
+        const costUsd = 0; // P5-5: Allow cost=0 for ce11_real
+        const attempt = (req.metadata?.attempt as number) || 0;
+
+        if (!isVerification) {
+          await this.costLimit.postApplyUsage({
+            jobId,
+            projectId,
+            jobType: req.jobType || 'CE11_SHOT_GENERATOR',
+            engineKey: req.engineKey,
+            pricingKey: 'CE11_REAL_OT_0',
+            actualOutputs: 1,
+            gpuSeconds: engineResult.metrics?.gpuSeconds || 0,
+            costUsd,
+            attempt,
+            metadata: { traceId: req.metadata?.traceId },
+          });
+        }
+      }
+
       const finalResult: EngineInvocationResult<TOutput> = {
         success: true,
         selectedEngineKey: req.engineKey,
@@ -338,6 +390,9 @@ export class EngineInvokerHubService implements OnModuleInit {
     }
     if (engineKey === 'ce04_visual_enrichment') {
       return 'CE04_VISUAL_ENRICHMENT';
+    }
+    if (engineKey === 'ce11_shot_generator_real' || engineKey === 'ce11_shot_generator_mock') {
+      return 'CE11_SHOT_GENERATOR';
     }
     // 其他引擎的映射规则可以在这里扩展
     return 'UNKNOWN';

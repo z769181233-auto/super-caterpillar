@@ -53,7 +53,7 @@ export class SceneGraphService {
                       orderBy: { index: 'asc' },
                     },
                   },
-                  orderBy: { index: 'asc' },
+                  orderBy: { sceneIndex: 'asc' },
                 },
               },
               orderBy: { index: 'asc' },
@@ -162,7 +162,7 @@ export class SceneGraphService {
     return {
       id: scene.id,
       parentId: scene.episodeId,
-      index: scene.index,
+      index: scene.sceneIndex,
       title: scene.title,
       summary: scene.summary || null,
       shots: scene.shots.map((shot: any) => this.mapShotToNode(shot)),

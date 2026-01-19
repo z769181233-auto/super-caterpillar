@@ -39,17 +39,32 @@ export class StoryController {
 
     let novelSourceId = context?.novelSourceId;
 
-    // Create NovelSource if validation passed
+    // Create Novel if validation passed
     if (projectId && raw_text) {
-      const source = await this.prisma.novelSource.create({
+      const source = await this.prisma.novel.create({
         data: {
           projectId,
+          title: 'Direct Input',
+          rawFileUrl: 'text://direct-input',
           fileName: 'Direct Input',
           fileSize: raw_text.length,
-          rawText: raw_text,
         },
       });
       novelSourceId = source.id;
+
+      // Store content in chapter
+      const volume = await this.prisma.novelVolume.create({
+        data: { projectId, novelSourceId: source.id, index: 1, title: 'Default Volume' },
+      });
+      await this.prisma.novelChapter.create({
+        data: {
+          novelSourceId: source.id,
+          volumeId: volume.id,
+          index: 1,
+          title: 'Imported Text',
+          rawContent: raw_text,
+        },
+      });
     }
 
     // 创建 CE06 异步任务

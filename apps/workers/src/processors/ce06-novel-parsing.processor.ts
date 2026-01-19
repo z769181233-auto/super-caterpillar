@@ -95,7 +95,7 @@ async function executeScanJob(
     throw new Error(`SCAN failed: ${engineResult.error?.message}`);
   }
 
-  const novelSource = await prisma.novelSource.findFirst({
+  const novelSource = await prisma.novel.findFirst({
     where: { projectId },
     orderBy: { createdAt: 'desc' },
   });
@@ -239,19 +239,19 @@ async function executeChunkParseJob(
       const sceneIndex = i + 1;
 
       // 先写入基础数据
-      const scene = await tx.novelScene.upsert({
-        where: { chapterId_index: { chapterId, index: sceneIndex } },
+      const scene = await tx.scene.upsert({
+        where: { chapterId_sceneIndex: { chapterId, sceneIndex } },
         create: {
           chapterId,
           projectId,
-          index: sceneIndex,
+          sceneIndex,
           title: sc.title || `Scene ${sceneIndex}`,
-          rawText: sc.raw_text || '',
+          enrichedText: sc.raw_text || '',
         },
         update: {
           projectId,
           title: sc.title || `Scene ${sceneIndex}`,
-          rawText: sc.raw_text || '',
+          enrichedText: sc.raw_text || '',
         },
       });
 
@@ -289,11 +289,13 @@ async function executeChunkParseJob(
 
       let enrichedText = sc.raw_text || '';
       if (ce04Result.success) {
-        enrichedText = (ce04Result.output as any)?.enriched_text || sc.raw_text || '';
+        const ce04Output = ce04Result.output as any;
+        enrichedText =
+          ce04Output?.enriched_text || ce04Output?.enriched_prompt || sc.raw_text || '';
       }
 
       // Step 5: 更新完整数据
-      await tx.novelScene.update({
+      await tx.scene.update({
         where: { id: scene.id },
         data: {
           enrichedText,

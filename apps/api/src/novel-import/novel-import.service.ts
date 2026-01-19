@@ -60,7 +60,7 @@ export class NovelImportService {
     savedChapters?: Array<{ id: string; index: number; title: string; rawText: string }>
   ): Promise<void> {
     // 获取小说源
-    const novelSource = await this.prisma.novelSource.findUnique({
+    const novelSource = await this.prisma.novel.findUnique({
       where: { id: novelSourceId },
     });
 
@@ -81,7 +81,7 @@ export class NovelImportService {
         id: c.id,
         index: c.index,
         title: c.title || `Chapter ${c.index}`,
-        rawText: c.scenes?.[0]?.rawText || '',
+        rawText: c.rawContent || '',
       }));
     }
 

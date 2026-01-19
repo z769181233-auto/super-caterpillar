@@ -99,12 +99,17 @@ export async function processCE06Job(
     let novelSourceId: string | undefined = (job as any).payload?.novelSourceId;
 
     if (!rawText) {
-      const novelSource = await prisma.novelSource.findFirst({
+      const novelSource = await prisma.novel.findFirst({
         where: { projectId },
         orderBy: { createdAt: 'desc' },
       });
       if (novelSource) {
-        rawText = novelSource.rawText;
+        // Fetch chapters
+        const chapters = await prisma.novelChapter.findMany({
+          where: { novelSourceId: novelSource.id },
+          orderBy: { index: 'asc' },
+        });
+        rawText = chapters.map((c) => c.rawContent || '').join('\n');
         novelSourceId = novelSource.id;
       }
     }
@@ -182,22 +187,23 @@ export async function processCE06Job(
         select: { id: true },
       });
 
-      // [P0 FIX] Deterministic ID Binding: Map NovelScene -> CinemaScene via indices
-      // 1. Fetch all NovelScenes (select chapterId manually to avoid Relation issues)
-      const allNovelScenes = await prisma.novelScene.findMany({
+      // [P0 FIX] Deterministic ID Binding: Map Scene -> CinemaScene via indices
+      // 1. Fetch all Scenes (select chapterId manually to avoid Relation issues)
+      const allNovelScenes = await prisma.scene.findMany({
         where: {
           chapterId: { in: chapters.map((c) => c.id) },
         },
         select: {
           id: true,
-          index: true,
+          sceneIndex: true, // V3.0: index -> sceneIndex
           chapterId: true, // Fetch FK directly
         },
       });
 
       // 1b. Fetch related NovelChapters (Manual Join)
+      // Note: allNovelScenes type has sceneIndex now.
       const relatedChapters = await prisma.novelChapter.findMany({
-        where: { id: { in: allNovelScenes.map((ns) => ns.chapterId) } },
+        where: { id: { in: allNovelScenes.map((ns) => ns.chapterId!) } }, // Ensure non-null
         select: { id: true, index: true },
       });
       const chapterOrderMap = new Map<string, number>();
@@ -208,7 +214,7 @@ export async function processCE06Job(
         where: { episode: { projectId } },
         select: {
           id: true,
-          index: true,
+          sceneIndex: true, // V3.0: index -> sceneIndex
           episodeId: true,
           episode: { select: { index: true } },
           shots: { select: { id: true }, orderBy: { index: 'asc' }, take: 1 },
@@ -218,7 +224,7 @@ export async function processCE06Job(
       // 3. Build Lookup Map
       const cinemaMap = new Map<string, (typeof cinemaStructure)[0]>();
       for (const cs of cinemaStructure) {
-        const key = `${cs.episode.index}_${cs.index}`;
+        const key = `${cs.episode!.index}_${cs.sceneIndex}`;
         cinemaMap.set(key, cs);
       }
 
@@ -231,12 +237,13 @@ export async function processCE06Job(
 
         const ce03Jobs = allNovelScenes
           .map((ns) => {
-            const index = chapterOrderMap.get(ns.chapterId);
+            const index = chapterOrderMap.get(ns.chapterId!);
             // If index is missing (impossible due to FK), fallback
-            const mapKey = index !== undefined ? `${index}_${ns.index}` : `fail_${ns.id}`;
+            const mapKey = index !== undefined ? `${index}_${ns.sceneIndex}` : `fail_${ns.id}`;
             const targetScene = cinemaMap.get(mapKey);
 
-            if (!targetScene || targetScene.shots.length === 0) {
+            if (!targetScene || !targetScene.shots || targetScene.shots.length === 0) {
+              // Ensure shots property handled
               const defaultShot = cinemaStructure.find((s) => s.shots.length > 0);
               if (defaultShot) {
                 logStructured('warn', {
@@ -437,8 +444,8 @@ export async function processCE03Job(
     if (job.payload && typeof job.payload === 'object' && (job.payload as any).novelSceneId) {
       // [Stage 3] Granular Scene Mode
       novelSceneId = (job.payload as any).novelSceneId;
-      const ns = await prisma.novelScene.findUnique({ where: { id: novelSceneId } });
-      structuredText = ns?.rawText || ns?.enrichedText || '';
+      const ns = await prisma.scene.findUnique({ where: { id: novelSceneId } });
+      structuredText = ns?.enrichedText || '';
     } else if (
       job.payload &&
       typeof job.payload === 'object' &&
@@ -699,8 +706,8 @@ export async function processCE04Job(
     if (job.payload && (job.payload as any).novelSceneId) {
       // [Stage 3] Granular Mode
       novelSceneId = (job.payload as any).novelSceneId;
-      const ns = await prisma.novelScene.findUnique({ where: { id: novelSceneId } });
-      structuredText = ns?.rawText || '';
+      const ns = await prisma.scene.findUnique({ where: { id: novelSceneId } });
+      structuredText = ns?.enrichedText || '';
     } else if (job.payload && (job.payload as any).structured_text) {
       structuredText = (job.payload as any).structured_text;
     } else {

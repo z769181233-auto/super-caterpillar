@@ -20,6 +20,7 @@ import { ShotRenderComfyuiAdapter } from './adapters/shot-render.comfyui.adapter
 import { ShotRenderRouterAdapter } from './adapters/shot-render.router.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { CE11MockAdapter } from './adapters/ce11.mock.adapter';
+import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -50,6 +51,7 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     ShotRenderRouterAdapter,
     HttpEngineAdapter,
     CE11MockAdapter,
+    CE11ComfyUIAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -87,7 +89,9 @@ export class EngineModule implements OnModuleInit {
     @Inject(HttpEngineAdapter)
     private readonly httpAdapter: HttpEngineAdapter,
     @Inject(CE11MockAdapter)
-    private readonly ce11MockAdapter: CE11MockAdapter
+    private readonly ce11MockAdapter: CE11MockAdapter,
+    @Inject(CE11ComfyUIAdapter)
+    private readonly ce11ComfyUIAdapter: CE11ComfyUIAdapter
   ) {}
 
   onModuleInit() {
@@ -134,8 +138,10 @@ export class EngineModule implements OnModuleInit {
     // P0-R2: Register Video Merge Adapter
     this.registry.register(this.videoMergeAdapter);
 
-    // CE11 Mock Registration
     this.registry.register(this.ce11MockAdapter);
     this.registry.registerAlias('ce11_shot_generator_mock', this.ce11MockAdapter);
+
+    // CE11 Real Registration
+    this.registry.register(this.ce11ComfyUIAdapter);
   }
 }

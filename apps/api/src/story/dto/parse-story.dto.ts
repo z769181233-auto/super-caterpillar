@@ -15,9 +15,9 @@ export class ParseStoryDto {
 
   @IsString()
   @IsOptional()
-  novelTitle?: string;
+  title?: string;
 
   @IsString()
   @IsOptional()
-  novelAuthor?: string;
+  author?: string;
 }

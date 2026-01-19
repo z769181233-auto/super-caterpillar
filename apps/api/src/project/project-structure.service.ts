@@ -105,7 +105,7 @@ export class ProjectStructureService {
                   orderBy: { index: 'asc' },
                 },
               },
-              orderBy: { index: 'asc' },
+              orderBy: { sceneIndex: 'asc' },
             },
           },
           orderBy: { index: 'asc' },
@@ -188,7 +188,7 @@ export class ProjectStructureService {
           return {
             type: 'scene',
             id: scene.id,
-            index: scene.index,
+            index: scene.sceneIndex,
             title: scene.title,
             summary: scene.summary,
             visualDensityScore: scene.visualDensityScore,
