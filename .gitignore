@@ -74,3 +74,4 @@ docs/_evidence/RETRY_S3_SCALE_EVENT_DAG_*/
 
 # temp workspace
 .tmp/
+tools/gate/scripts/*.js
