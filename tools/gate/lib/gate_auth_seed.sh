@@ -65,8 +65,8 @@ VALUES ('$SEASON_ID', '$PROJ_ID', 1, 'Season 1', NOW(), NOW());
 INSERT INTO "episodes" ("id", "seasonId", "projectId", "index", "name") 
 VALUES ('$EPISODE_ID', '$SEASON_ID', '$PROJ_ID', 1, 'Ep 1');
 
-INSERT INTO "scenes" ("id", "episodeId", "projectId", "index", "title", "summary") 
-VALUES ('$SCENE_ID', '$EPISODE_ID', '$PROJ_ID', 1, 'Scene 1', 'Seeded Summary for Analysis');
+INSERT INTO "scenes" ("id", "episodeId", "project_id", "scene_index", "title", "summary", "created_at", "updated_at") 
+VALUES ('$SCENE_ID', '$EPISODE_ID', '$PROJ_ID', 1, 'Scene 1', 'Seeded Summary for Analysis', NOW(), NOW());
 
 -- 4. Shots
 INSERT INTO "shots" ("id", "sceneId", "index", "type", "durationSeconds", "reviewStatus") 
@@ -75,8 +75,8 @@ VALUES ('$SHOT_ID_1', '$SCENE_ID', 1, 'MEDIUM_SHOT', 2, 'APPROVED');
 INSERT INTO "shots" ("id", "sceneId", "index", "type", "durationSeconds", "reviewStatus") 
 VALUES ('$SHOT_ID_2', '$SCENE_ID', 2, 'CLOSE_UP', 3, 'APPROVED');
 
--- 5. Novel Source
-INSERT INTO "novel_sources" ("id", "projectId", "rawText", "createdAt", "updatedAt") 
+-- 5. Novels
+INSERT INTO "novels" ("id", "projectId", "sourceText", "createdAt", "updatedAt") 
 VALUES ('$NOVEL_SOURCE_ID', '$PROJ_ID', '毛毛虫在宇宙中漫游...', NOW(), NOW());
 
 -- 6. LINK API KEY to this User/Org (Crucial for Permission Checks)
