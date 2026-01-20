@@ -4,14 +4,28 @@
  */
 
 import { Controller, Get, Param, UseGuards, NotFoundException } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsMetricsService } from './ops-metrics.service';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 
 @Controller('ops')
-@UseGuards(JwtOrHmacGuard, PermissionsGuard)
+@UseGuards(JwtOrHmacGuard, PermissionsGuard, ThrottlerGuard)
 export class OpsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly metricsService: OpsMetricsService,
+  ) { }
+
+  /**
+   * GET /api/ops/metrics
+   * 聚合指标 (只读，带限流)
+   */
+  @Get('metrics')
+  async getMetrics() {
+    return this.metricsService.getProductionMetrics();
+  }
 
   /**
    * GET /api/ops/jobs/:id/diagnose
@@ -66,19 +80,19 @@ export class OpsController {
         workerId: job.workerId,
         worker: job.worker
           ? {
-              id: job.worker.id,
-              workerId: job.worker.workerId,
-              status: job.worker.status,
-              lastHeartbeat: job.worker.lastHeartbeat,
-            }
+            id: job.worker.id,
+            workerId: job.worker.workerId,
+            status: job.worker.status,
+            lastHeartbeat: job.worker.lastHeartbeat,
+          }
           : null,
         taskId: job.taskId,
         task: job.task
           ? {
-              id: job.task.id,
-              type: job.task.type,
-              status: job.task.status,
-            }
+            id: job.task.id,
+            type: job.task.type,
+            status: job.task.status,
+          }
           : null,
         createdAt: job.createdAt,
         updatedAt: job.updatedAt,
@@ -87,31 +101,31 @@ export class OpsController {
       },
       engineBinding: job.engineBinding
         ? {
-            id: job.engineBinding.id,
-            engineId: job.engineBinding.engineId,
-            engineKey: job.engineBinding.engineKey,
-            engineVersionId: job.engineBinding.engineVersionId,
-            status: job.engineBinding.status,
-            boundAt: job.engineBinding.boundAt,
-            executedAt: job.engineBinding.executedAt,
-            completedAt: job.engineBinding.completedAt,
-            errorMessage: job.engineBinding.errorMessage,
-            engine: job.engineBinding.engine
-              ? {
-                  id: job.engineBinding.engine.id,
-                  engineKey: job.engineBinding.engine.engineKey,
-                  adapterName: job.engineBinding.engine.adapterName,
-                  enabled: job.engineBinding.engine.enabled,
-                }
-              : null,
-            engineVersion: job.engineBinding.engineVersion
-              ? {
-                  id: job.engineBinding.engineVersion.id,
-                  versionName: job.engineBinding.engineVersion.versionName,
-                  enabled: job.engineBinding.engineVersion.enabled,
-                }
-              : null,
-          }
+          id: job.engineBinding.id,
+          engineId: job.engineBinding.engineId,
+          engineKey: job.engineBinding.engineKey,
+          engineVersionId: job.engineBinding.engineVersionId,
+          status: job.engineBinding.status,
+          boundAt: job.engineBinding.boundAt,
+          executedAt: job.engineBinding.executedAt,
+          completedAt: job.engineBinding.completedAt,
+          errorMessage: job.engineBinding.errorMessage,
+          engine: job.engineBinding.engine
+            ? {
+              id: job.engineBinding.engine.id,
+              engineKey: job.engineBinding.engine.engineKey,
+              adapterName: job.engineBinding.engine.adapterName,
+              enabled: job.engineBinding.engine.enabled,
+            }
+            : null,
+          engineVersion: job.engineBinding.engineVersion
+            ? {
+              id: job.engineBinding.engineVersion.id,
+              versionName: job.engineBinding.engineVersion.versionName,
+              enabled: job.engineBinding.engineVersion.enabled,
+            }
+            : null,
+        }
         : null,
       auditLogs: auditLogs.map((log) => ({
         id: log.id,

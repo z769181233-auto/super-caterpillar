@@ -54,6 +54,7 @@ import { SignedUrlService } from './storage/signed-url.service';
 import { StorageAuthService } from './storage/storage-auth.service';
 import { ApiSecurityGuard } from './security/api-security/api-security.guard';
 import { TraceMiddleware } from './observability/trace.middleware';
+import { OperationalGateGuard } from './common/guards/operational-gate.guard';
 
 // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
@@ -139,6 +140,10 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
       useClass: ApiSecurityGuard, // P0-2: HMAC 签名验证 Guard
     },
     {
+      provide: APP_GUARD,
+      useClass: OperationalGateGuard, // P11-4: Operational control (Feature Flags/Engine Offline)
+    },
+    {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
@@ -150,6 +155,8 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(TraceMiddleware).forRoutes('*');
+    consumer
+      .apply(TraceMiddleware)
+      .forRoutes('*');
   }
 }

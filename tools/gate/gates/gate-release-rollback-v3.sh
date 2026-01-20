@@ -103,6 +103,37 @@ start_services() {
     return 0
 }
 
+# ==============================================================================
+# EXEC-P11-0: Destructive Clean Safeguard (Double-Lock)
+# ==============================================================================
+safe_truncate_jobs() {
+    local label=$1
+    local db_name=$(echo "$DATABASE_URL" | sed -E 's/.*\/([^?]+).*/\1/')
+    local log_file="$EVIDENCE_DIR/DESTRUCTIVE_GUARD_${label}.txt"
+    
+    echo "TIMESTAMP: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > "$log_file"
+    echo "DATABASE_TARGET: $db_name" >> "$log_file"
+    echo "GATE_MODE: ${GATE_MODE:-0}" >> "$log_file"
+    echo "ALLOW_DATABASE_DESTRUCTIVE_CLEAN: ${ALLOW_DATABASE_DESTRUCTIVE_CLEAN:-false}" >> "$log_file"
+
+    local is_safe=false
+    if [ "${GATE_MODE:-0}" == "1" ] && \
+       [ "${ALLOW_DATABASE_DESTRUCTIVE_CLEAN:-false}" == "true" ] && \
+       ([[ "$db_name" == *"_gate"* ]] || [[ "$db_name" == *"_test"* ]]); then
+        is_safe=true
+    fi
+
+    echo "DECISION_SAFE: $is_safe" >> "$log_file"
+
+    if [ "$is_safe" == "true" ]; then
+        log "✅ [SAFEGUARD] Double-lock PASSED for DB [$db_name]. Executing TRUNCATE..."
+        psql "$DATABASE_URL" -c "TRUNCATE shot_jobs CASCADE;" >> "$log_file" 2>&1
+    else
+        log "⚠️ [SAFEGUARD] Double-lock REJECTED for DB [$db_name]. Skipping TRUNCATE to protect data."
+        echo "REASON: Env vars or DB name mismatch (Requires GATE_MODE=1, ALLOW_CLEAN=true, name~_gate|_test)" >> "$log_file"
+    fi
+}
+
 # Cleanup Trap
 trap "git checkout $ORIGINAL_HEAD --quiet; stop_services" EXIT
 
@@ -113,7 +144,7 @@ log "Phase 1: Dependency Matrix"
 
 # Ensure services are up for Phase 1 (HEAD)
 stop_services
-psql "$DATABASE_URL" -c "TRUNCATE shot_jobs CASCADE;" || true
+safe_truncate_jobs "PHASE1_HEAD"
 if ! start_services "PHASE1_HEAD"; then
     log "❌ Phase 1 Initial Startup Failed."
     exit 1
@@ -180,7 +211,7 @@ DRILL_SUCCESS=true
 log ">>> Drill Part A: Rollback to $ROLLBACK_TAG"
 stop_services
 git checkout -f "$ROLLBACK_TAG"
-psql "$DATABASE_URL" -c "TRUNCATE shot_jobs CASCADE;" || true
+safe_truncate_jobs "ROLLBACK"
 if ! start_services "ROLLBACK"; then
     log "❌ Rollback Startup Failed."
     DRILL_SUCCESS=false
@@ -195,7 +226,7 @@ fi
 log ">>> Drill Part B: Return to HEAD ($ORIGINAL_HEAD)"
 stop_services
 git checkout -f "$ORIGINAL_HEAD"
-psql "$DATABASE_URL" -c "TRUNCATE shot_jobs CASCADE;" || true
+safe_truncate_jobs "HEAD_VERIFY"
 if ! start_services "HEAD_VERIFY"; then
     log "❌ HEAD Recovery Startup Failed."
     DRILL_SUCCESS=false

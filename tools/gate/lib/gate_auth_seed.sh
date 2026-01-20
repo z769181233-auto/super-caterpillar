@@ -76,8 +76,8 @@ INSERT INTO "shots" ("id", "sceneId", "index", "type", "durationSeconds", "revie
 VALUES ('$SHOT_ID_2', '$SCENE_ID', 2, 'CLOSE_UP', 3, 'APPROVED');
 
 -- 5. Novels
-INSERT INTO "novels" ("id", "projectId", "sourceText", "createdAt", "updatedAt") 
-VALUES ('$NOVEL_SOURCE_ID', '$PROJ_ID', '毛毛虫在宇宙中漫游...', NOW(), NOW());
+INSERT INTO "novels" ("id", "project_id", "title", "organization_id", "status", "raw_file_url", "created_at", "updated_at") 
+VALUES ('$NOVEL_SOURCE_ID', '$PROJ_ID', 'Seeded Novel', '$ORG_ID', 'PARSED', 'http://mock/seeded.txt', NOW(), NOW());
 
 -- 6. LINK API KEY to this User/Org (Crucial for Permission Checks)
 UPDATE "api_keys" SET "ownerUserId"='$USER_ID', "ownerOrgId"='$ORG_ID' WHERE "key"='$VALID_API_KEY_ID';
