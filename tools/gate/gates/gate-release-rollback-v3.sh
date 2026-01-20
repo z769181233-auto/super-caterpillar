@@ -53,9 +53,57 @@ echo "$ROLLBACK_TAG" > "$EVIDENCE_DIR/SELECTED_ROLLBACK_TAG.txt"
 log "Selected Rollback Tag: $ROLLBACK_TAG"
 
 # ==============================================================================
+# Helpers: Service Lifecycle
+# ==============================================================================
+stop_services() {
+    log "Stopping API and Worker processes..."
+    # Kill processes listening on typical ports
+    lsof -t -i :3000 | xargs kill -9 2>/dev/null || true
+    lsof -t -i :3001 | xargs kill -9 2>/dev/null || true
+    # Grep based kill for safety
+    ps aux | grep -E "apps/api|apps/worker" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+    sleep 2
+}
+
+start_services() {
+    local label=$1
+    log "Starting services for [$label]..."
+    # Ensure environment is loaded
+    export $(grep -v '^#' .env | xargs)
+    pnpm dev:api > "$EVIDENCE_DIR/api_start_${label}.log" 2>&1 &
+    pnpm dev:worker > "$EVIDENCE_DIR/worker_start_${label}.log" 2>&1 &
+    pnpm mock:http-engine > "$EVIDENCE_DIR/mock_engine_start_${label}.log" 2>&1 &
+    sleep 5
+}
+
+wait_for_health() {
+    log "Waiting for service health check at $API_URL/api/health..."
+    for ((i=1; i<=MAX_WAIT; i+=CHECK_INTERVAL)); do
+        if curl -s -f "$API_URL/api/health" > /dev/null; then
+            log "✅ Service is HEALTHY."
+            return 0
+        fi
+        sleep $CHECK_INTERVAL
+    done
+    log "❌ Service Health Check TIMEOUT."
+    return 1
+}
+
+# Cleanup Trap
+trap "git checkout $ORIGINAL_HEAD --quiet; stop_services" EXIT
+
+# ==============================================================================
 # Phase 1: Dependency Matrix
 # ==============================================================================
 log "Phase 1: Dependency Matrix"
+
+# Ensure services are up for Phase 1 (HEAD)
+stop_services
+start_services "PHASE1_HEAD"
+if ! wait_for_health; then
+    log "❌ Phase 1 Initial Startup Failed."
+    exit 1
+fi
 
 # Using indexed arrays for Bash 3.2 compatibility (macOS default)
 GATES_LABELS=("P10.1_RECEIPT" "P11.2_LOAD_SLO" "P9_CONTRACT_PUB" "PHASE3_COMMERCIAL")
@@ -92,42 +140,18 @@ for ((i=0; i<${#GATES_LABELS[@]}; i++)); do
     fi
 done
 
-# Close JSON (remove last comma manually is hard in sh, so we just add a timestamp)
+# Close JSON
 echo "  \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"" >> "$MATRIX_FILE"
 echo "}" >> "$MATRIX_FILE"
 
 if [ ${#FAILED_GATES[@]} -gt 0 ]; then
-    log "❌ Phase 1 Dependency Check FAILED. Evidence archived."
-    # We continue if possible for the drill, but the gate will fail at the end.
+    log "⚠️ Phase 1 Dependency Check has failures. Will continue to Drill but final result will be FAIL."
 fi
 
 # ==============================================================================
 # Phase 2: Rollback Drill
 # ==============================================================================
 log "Phase 2: Rollback Drill"
-
-stop_services() {
-    log "Stopping API and Worker processes..."
-    # Kill processes listening on typical ports
-    lsof -t -i :3000 | xargs kill -9 2>/dev/null || true
-    lsof -t -i :3001 | xargs kill -9 2>/dev/null || true
-    # Grep based kill for safety
-    ps aux | grep -E "apps/api|apps/worker" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null || true
-    sleep 2
-}
-
-wait_for_health() {
-    log "Waiting for service health check at $API_URL/api/health..."
-    for ((i=1; i<=MAX_WAIT; i+=CHECK_INTERVAL)); do
-        if curl -s -f "$API_URL/api/health" > /dev/null; then
-            log "✅ Service is HEALTHY."
-            return 0
-        fi
-        sleep $CHECK_INTERVAL
-    done
-    log "❌ Service Health Check TIMEOUT."
-    return 1
-}
 
 run_receipt_gate() {
     local label=$1
@@ -142,10 +166,7 @@ DRILL_SUCCESS=true
 log ">>> Drill Part A: Rollback to $ROLLBACK_TAG"
 git checkout "$ROLLBACK_TAG" --quiet
 stop_services
-# Start services at the old tag (Assumes standard package scripts)
-log "Starting services at $ROLLBACK_TAG..."
-export $(grep -v '^#' .env | xargs) && pnpm dev:api > "$EVIDENCE_DIR/api_start_rollback.log" 2>&1 &
-export $(grep -v '^#' .env | xargs) && pnpm dev:worker > "$EVIDENCE_DIR/worker_start_rollback.log" 2>&1 &
+start_services "ROLLBACK"
 
 if ! wait_for_health; then
     log "❌ Rollback Health Check Failed."
@@ -161,16 +182,14 @@ fi
 log ">>> Drill Part B: Return to HEAD ($ORIGINAL_HEAD)"
 git checkout "$ORIGINAL_HEAD" --quiet
 stop_services
-log "Starting services at HEAD..."
-export $(grep -v '^#' .env | xargs) && pnpm dev:api > "$EVIDENCE_DIR/api_start_head.log" 2>&1 &
-export $(grep -v '^#' .env | xargs) && pnpm dev:worker > "$EVIDENCE_DIR/worker_start_head.log" 2>&1 &
+start_services "HEAD_VERIFY"
 
 if ! wait_for_health; then
-    log "❌ HEAD Health Check Failed."
+    log "❌ HEAD Recovery Health Check Failed."
     DRILL_SUCCESS=false
 else
     if ! run_receipt_gate "HEAD"; then
-        log "❌ HEAD Receipt Verification Failed."
+        log "❌ HEAD Recovery Receipt Verification Failed."
         DRILL_SUCCESS=false
     fi
 fi
