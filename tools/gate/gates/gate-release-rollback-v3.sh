@@ -67,26 +67,40 @@ stop_services() {
 
 start_services() {
     local label=$1
-    log "Starting services for [$label]..."
-    # Ensure environment is loaded
+    log "Starting services for [$label] (Sequential)..."
     export $(grep -v '^#' .env | xargs)
+    
+    # 1. API
+    log "Launching API..."
     pnpm dev:api > "$EVIDENCE_DIR/api_start_${label}.log" 2>&1 &
-    pnpm dev:worker > "$EVIDENCE_DIR/worker_start_${label}.log" 2>&1 &
-    pnpm mock:http-engine > "$EVIDENCE_DIR/mock_engine_start_${label}.log" 2>&1 &
-    sleep 5
-}
-
-wait_for_health() {
-    log "Waiting for service health check at $API_URL/api/health..."
+    
+    # 2. Wait for API Health
+    log "Waiting for API health..."
+    local api_up=false
     for ((i=1; i<=MAX_WAIT; i+=CHECK_INTERVAL)); do
         if curl -s -f "$API_URL/api/health" > /dev/null; then
-            log "✅ Service is HEALTHY."
-            return 0
+            log "✅ API is UP."
+            api_up=true
+            break
         fi
         sleep $CHECK_INTERVAL
     done
-    log "❌ Service Health Check TIMEOUT."
-    return 1
+    
+    if [ "$api_up" == "false" ]; then
+        log "❌ API Health Check TIMEOUT for [$label]."
+        return 1
+    fi
+    
+    # 3. Worker & Mock Engine
+    log "Launching Worker..."
+    pnpm dev:worker > "$EVIDENCE_DIR/worker_start_${label}.log" 2>&1 &
+    
+    log "Launching Mock Engine..."
+    pnpm mock:http-engine > "$EVIDENCE_DIR/mock_engine_start_${label}.log" 2>&1 &
+    
+    # Stabilize
+    sleep 5
+    return 0
 }
 
 # Cleanup Trap
@@ -99,8 +113,7 @@ log "Phase 1: Dependency Matrix"
 
 # Ensure services are up for Phase 1 (HEAD)
 stop_services
-start_services "PHASE1_HEAD"
-if ! wait_for_health; then
+if ! start_services "PHASE1_HEAD"; then
     log "❌ Phase 1 Initial Startup Failed."
     exit 1
 fi
@@ -166,10 +179,8 @@ DRILL_SUCCESS=true
 log ">>> Drill Part A: Rollback to $ROLLBACK_TAG"
 git checkout "$ROLLBACK_TAG" --quiet
 stop_services
-start_services "ROLLBACK"
-
-if ! wait_for_health; then
-    log "❌ Rollback Health Check Failed."
+if ! start_services "ROLLBACK"; then
+    log "❌ Rollback Startup Failed."
     DRILL_SUCCESS=false
 else
     if ! run_receipt_gate "ROLLBACK"; then
@@ -182,10 +193,8 @@ fi
 log ">>> Drill Part B: Return to HEAD ($ORIGINAL_HEAD)"
 git checkout "$ORIGINAL_HEAD" --quiet
 stop_services
-start_services "HEAD_VERIFY"
-
-if ! wait_for_health; then
-    log "❌ HEAD Recovery Health Check Failed."
+if ! start_services "HEAD_VERIFY"; then
+    log "❌ HEAD Recovery Startup Failed."
     DRILL_SUCCESS=false
 else
     if ! run_receipt_gate "HEAD"; then
