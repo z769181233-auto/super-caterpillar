@@ -245,12 +245,12 @@ async function executeChunkParseJob(
           chapterId,
           projectId,
           sceneIndex,
-          title: sc.title || `Scene ${sceneIndex}`,
+          title: (sc.title || `Scene ${sceneIndex}`) + ` [${traceId}]`,
           enrichedText: sc.raw_text || '',
         },
         update: {
           projectId,
-          title: sc.title || `Scene ${sceneIndex}`,
+          title: (sc.title || `Scene ${sceneIndex}`) + ` [${traceId}]`,
           enrichedText: sc.raw_text || '',
         },
       });

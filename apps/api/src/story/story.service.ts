@@ -24,7 +24,7 @@ export class StoryService {
     private readonly jobService: JobService,
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   /**
    * 解析小说（CE06）
@@ -41,7 +41,8 @@ export class StoryService {
     userId?: string,
     organizationId?: string,
     ip?: string,
-    userAgent?: string
+    userAgent?: string,
+    customTraceId?: string
   ) {
     // 1. 参数校验（DTO 已通过 class-validator）
     if (!dto.rawText || dto.rawText.trim().length === 0) {
@@ -69,10 +70,10 @@ export class StoryService {
     }
 
     // 3. 生成 traceId（Pipeline 级）
-    const traceId = `ce_pipeline_${randomUUID()}`;
+    const traceId = customTraceId || `ce_pipeline_${randomUUID()}`;
 
     // 3.5 确保 Novel (NovelSource) 记录存在
-    let novel = await this.prisma.novel.findFirst({ where: { projectId } });
+    const novel = await this.prisma.novel.findFirst({ where: { projectId } });
     if (!novel) {
       await this.prisma.novel.create({
         data: {

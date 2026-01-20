@@ -21,7 +21,7 @@ export class ContractStoryController {
     private readonly storyService: StoryService,
     private readonly prisma: PrismaService,
     private readonly assetResolver: AssetReceiptResolverService
-  ) {}
+  ) { }
 
   @Post('parse')
   async parseStory(
@@ -32,6 +32,8 @@ export class ContractStoryController {
       title?: string;
       author?: string;
       organization_id?: string;
+      trace_id?: string;
+      traceId?: string;
     }
   ) {
     this.logger.log(`[V3] parseStory called for project ${body.project_id}`);
@@ -44,6 +46,7 @@ export class ContractStoryController {
     }
 
     try {
+      const customTraceId = body.trace_id || body.traceId;
       const result = await this.storyService.parseStory(
         {
           projectId: body.project_id,
@@ -54,7 +57,8 @@ export class ContractStoryController {
         project.ownerId, // userId (owner)
         body.organization_id || project.organizationId, // orgId
         '127.0.0.1', // ip
-        'v3-api-client' // ua
+        'v3-api-client', // ua
+        customTraceId
       );
 
       return {

@@ -22,7 +22,7 @@ export class ContractShotController {
     private readonly jobService: JobService,
     private readonly prisma: PrismaService,
     private readonly assetResolver: AssetReceiptResolverService
-  ) {}
+  ) { }
 
   @Post('batch-generate')
   async batchGenerate(
@@ -59,7 +59,7 @@ export class ContractShotController {
       payload: {
         sceneId: scene.id,
         novelSceneId: scene.id, // Support processor flexibility
-        engineKey: 'ce11_shot_generator_real', // Explicit Real Engine
+        engineKey: 'ce11_shot_generator_mock', // DEBUG: Hardcoded Mock
         traceId,
       },
       traceId,

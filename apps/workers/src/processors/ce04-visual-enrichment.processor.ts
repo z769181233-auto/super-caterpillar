@@ -92,10 +92,6 @@ export async function processCE04VisualEnrichmentJob(
           organizationId: jobOrgId,
           shotId: job.shotId,
           type: 'SHOT_RENDER',
-          payload: {
-            path: ['pipelineRunId'],
-            equals: pipelineRunId,
-          },
         },
       });
 

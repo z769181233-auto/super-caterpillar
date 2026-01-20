@@ -133,10 +133,6 @@ export async function processCE03VisualDensityJob(
           organizationId: jobOrgId,
           shotId: job.shotId,
           type: 'CE04_VISUAL_ENRICHMENT',
-          payload: {
-            path: ['pipelineRunId'],
-            equals: pipelineRunId,
-          },
         },
       });
 
