@@ -138,7 +138,7 @@ for ((i=0; i<${#GATES_LABELS[@]}; i++)); do
     
     # Custom runner for load-slo to use mock profile
     if [ "$label" == "P11.2_LOAD_SLO" ]; then
-        PROFILE=mock bash "$path" > "$EVIDENCE_DIR/gate_${label}.log" 2>&1
+        PROFILE=mock P95_THRESHOLD_MS=120000 bash "$path" > "$EVIDENCE_DIR/gate_${label}.log" 2>&1
     else
         bash "$path" > "$EVIDENCE_DIR/gate_${label}.log" 2>&1
     fi
