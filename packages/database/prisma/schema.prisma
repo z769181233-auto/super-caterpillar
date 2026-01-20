@@ -1540,3 +1540,41 @@ model BillingOutbox {
 
   @@map("BillingOutbox")
 }
+
+// P13-0 (CE23) Identity Consistency Models
+model IdentityAnchor {
+  id               String   @id @default(uuid())
+  projectId        String   @map("project_id")
+  characterId      String   @map("character_id")
+  referenceAssetId String   @map("reference_asset_id")
+  identityHash     String   @map("identity_hash")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  identityScores   ShotIdentityScore[] @relation("AnchorIdentityScores")
+
+  @@index([projectId, characterId])
+  @@index([referenceAssetId])
+  @@unique([projectId, characterId, identityHash])
+  @@map("identity_anchors")
+}
+
+model ShotIdentityScore {
+  id                String          @id @default(uuid())
+  shotId            String          @map("shot_id")
+  characterId       String          @map("character_id")
+  referenceAnchorId String          @map("reference_anchor_id")
+  targetAssetId     String          @map("target_asset_id")
+  identityScore     Float           @map("identity_score")
+  verdict           String // PASS, FAIL
+  details           Json            @default("{}")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  identityAnchor    IdentityAnchor  @relation("AnchorIdentityScores", fields: [referenceAnchorId], references: [id], onDelete: Cascade)
+
+  @@index([shotId])
+  @@index([referenceAnchorId])
+  @@index([characterId])
+  @@index([createdAt])
+  @@map("shot_identity_scores")
+}

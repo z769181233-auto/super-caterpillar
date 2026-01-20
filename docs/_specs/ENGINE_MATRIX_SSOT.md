@@ -28,6 +28,7 @@
 | `ce11_timeline_preview`    | TIMELINE_PREVIEW       | REAL                  | cpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`    | `seal/phase3_commercial_e2e_hard_20260113`     |                                      |
 | `workflow_ce_dag`          | CE06->SHOT->VIDEO      | REAL (Orchestrator)   | Multi-Step                               | `CE%`                | `gate-phase3-commercial-e2e.sh`    | `seal/phase3_commercial_e2e_hard_20260113`     | Orchestrator Workflow                |
 | `ce11_shot_generator_real` | CE11_SHOT_GENERATOR    | REAL (ComfyUI)        | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-ce11-shot-generator-real.sh` | `seal/ce11_real_p5_sealed_20260119`            | **P5-NEW**: Explicit Real Routing    |
+| `ce23_identity_consistency`| CE23_IDENTITY_CONSISTENCY| REAL-STUB (Algo)    | router-based (internal)                  | `ID%`                | `gate-ce23-identity-consistency.sh`| `seal/ce23_p13_0_20260120`                     | **P13-0**: Minimal Consistency Loop  |
 
 ---
 
@@ -123,6 +124,7 @@
 | 2026-01-19 | **Phase P9 SEALED** — V3 Job Logic Integration complete. Contract API -> REAL Worker -> DB. Evidence: `docs/_evidence/v3_job_e2e_20260119193320`                            | Antigravity |
 | 2026-01-19 | **Phase P10 SEALED** — V3 Production Ready. Standardized Receipts, Guardrails (Concurrency/Budget), and Studio UI Integration. Evidence: `docs/_evidence/P10_SEAL_20260119` | Antigravity |
 | 2026-01-19 | **Phase P10.1 SEALED** — Receipt Completeness & Gate Upgrade. 0-Risk Asset Discovery + Availability Assertions. Evidence: `docs/_evidence/P10_1_SEAL_20260119`              | Antigravity |
+| 2026-01-20 | **P13-0 SEALED** — CE23 Identity Consistency Schema & Minimal Loop. Evidence: `docs/_evidence/ce23_identity_20260120*`                                                      | Antigravity |
 
 ---
 

@@ -47,6 +47,7 @@ import { FeatureFlagModule } from './feature-flag/feature-flag.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CostModule } from './cost/cost.module';
 import { V3Module } from './v3/v3.module';
+import { IdentityModule } from './identity/identity.module';
 import { env } from '@scu/config';
 import { StorageController } from './storage/storage.controller';
 import { LocalStorageService } from './storage/local-storage.service';
@@ -118,6 +119,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     CostModule, // P0: Cost tracking & billing foundation
     AdminModule, // P1-2: Admin endpoints for gate scripts (GATE_MODE=1 only)
     V3Module, // V3.0 Contract Facade
+    IdentityModule, // P13-0: CE23 Identity Consistency
     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS
       ? [OpsModule]
       : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
