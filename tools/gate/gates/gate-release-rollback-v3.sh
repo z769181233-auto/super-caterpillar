@@ -57,35 +57,38 @@ log "Selected Rollback Tag: $ROLLBACK_TAG"
 # ==============================================================================
 log "Phase 1: Dependency Matrix"
 
-declare -A GATES=(
-    ["P10.1_RECEIPT"]="tools/gate/gates/gate-v3-production-receipt.sh"
-    ["P11.2_LOAD_SLO"]="tools/gate/gates/gate-v3-load-slo.sh"
-    ["P9_CONTRACT_PUB"]="tools/gate/gates/gate-v3-contract-to-published.sh"
-    ["PHASE3_COMMERCIAL"]="tools/gate/gates/gate-phase3-commercial-e2e.sh"
+# Using indexed arrays for Bash 3.2 compatibility (macOS default)
+GATES_LABELS=("P10.1_RECEIPT" "P11.2_LOAD_SLO" "P9_CONTRACT_PUB" "PHASE3_COMMERCIAL")
+GATES_PATHS=(
+    "tools/gate/gates/gate-v3-production-receipt.sh"
+    "tools/gate/gates/gate-v3-load-slo.sh"
+    "tools/gate/gates/gate-v3-contract-to-published.sh"
+    "tools/gate/gates/gate-phase3-commercial-e2e.sh"
 )
 
 MATRIX_FILE="$EVIDENCE_DIR/dependency_matrix.json"
 echo "{" > "$MATRIX_FILE"
 
 FAILED_GATES=()
-for key in "${!GATES[@]}"; do
-    path="${GATES[$key]}"
-    log "Running $key ($path)..."
+for ((i=0; i<${#GATES_LABELS[@]}; i++)); do
+    label="${GATES_LABELS[$i]}"
+    path="${GATES_PATHS[$i]}"
+    log "Running $label ($path)..."
     
     # Custom runner for load-slo to use mock profile
-    if [ "$key" == "P11.2_LOAD_SLO" ]; then
-        PROFILE=mock bash "$path" > "$EVIDENCE_DIR/gate_${key}.log" 2>&1
+    if [ "$label" == "P11.2_LOAD_SLO" ]; then
+        PROFILE=mock bash "$path" > "$EVIDENCE_DIR/gate_${label}.log" 2>&1
     else
-        bash "$path" > "$EVIDENCE_DIR/gate_${key}.log" 2>&1
+        bash "$path" > "$EVIDENCE_DIR/gate_${label}.log" 2>&1
     fi
     EXIT_CODE=$?
     
-    echo "  \"$key\": $EXIT_CODE," >> "$MATRIX_FILE"
+    echo "  \"$label\": $EXIT_CODE," >> "$MATRIX_FILE"
     if [ $EXIT_CODE -ne 0 ]; then
-        log "❌ $key FAILED (Code $EXIT_CODE)"
-        FAILED_GATES+=("$key")
+        log "❌ $label FAILED (Code $EXIT_CODE)"
+        FAILED_GATES+=("$label")
     else
-        log "✅ $key PASSED"
+        log "✅ $label PASSED"
     fi
 done
 
