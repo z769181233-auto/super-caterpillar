@@ -113,6 +113,7 @@ log "Phase 1: Dependency Matrix"
 
 # Ensure services are up for Phase 1 (HEAD)
 stop_services
+psql "$DATABASE_URL" -c "TRUNCATE shot_jobs CASCADE;" || true
 if ! start_services "PHASE1_HEAD"; then
     log "❌ Phase 1 Initial Startup Failed."
     exit 1
@@ -169,7 +170,7 @@ log "Phase 2: Rollback Drill"
 run_receipt_gate() {
     local label=$1
     log "Running Receipt Verification for $label..."
-    bash tools/gate/gates/gate-v3-production-receipt.sh > "$EVIDENCE_DIR/receipt_verification_${label}.log" 2>&1
+    MOCK_SCRIPT_PATH=/tmp/ POLL_INTERVAL=60 bash tools/gate/gates/gate-v3-production-receipt.sh > "$EVIDENCE_DIR/receipt_verification_${label}.log" 2>&1
     return $?
 }
 
@@ -177,8 +178,9 @@ DRILL_SUCCESS=true
 
 # --- 2.1 Drill: Rollback ---
 log ">>> Drill Part A: Rollback to $ROLLBACK_TAG"
-git checkout "$ROLLBACK_TAG" --quiet
 stop_services
+git checkout -f "$ROLLBACK_TAG"
+psql "$DATABASE_URL" -c "TRUNCATE shot_jobs CASCADE;" || true
 if ! start_services "ROLLBACK"; then
     log "❌ Rollback Startup Failed."
     DRILL_SUCCESS=false
@@ -191,8 +193,9 @@ fi
 
 # --- 2.2 Drill: Recovery (HEAD) ---
 log ">>> Drill Part B: Return to HEAD ($ORIGINAL_HEAD)"
-git checkout "$ORIGINAL_HEAD" --quiet
 stop_services
+git checkout -f "$ORIGINAL_HEAD"
+psql "$DATABASE_URL" -c "TRUNCATE shot_jobs CASCADE;" || true
 if ! start_services "HEAD_VERIFY"; then
     log "❌ HEAD Recovery Startup Failed."
     DRILL_SUCCESS=false

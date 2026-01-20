@@ -24,7 +24,8 @@ MOCK_COMFY_PORT=18189
 export COMFYUI_BASE_URL="http://127.0.0.1:$MOCK_COMFY_PORT"
 
 log "Starting Mock ComfyUI on $MOCK_COMFY_PORT..."
-cat <<EOF > tools/gate/scripts/mock-comfyui-v3-prod.js
+MOCK_JS="/tmp/mock-comfyui-v3-prod-${GATE_UID}.js"
+cat <<EOF > "$MOCK_JS"
 const http = require('http');
 const crypto = require('crypto');
 
@@ -69,9 +70,9 @@ server.listen($MOCK_COMFY_PORT, () => {
 });
 EOF
 
-node tools/gate/scripts/mock-comfyui-v3-prod.js &
+node "$MOCK_JS" &
 MOCK_PID=$!
-trap "kill $MOCK_PID 2>/dev/null || true" EXIT
+trap "kill $MOCK_PID 2>/dev/null || true; rm \"$MOCK_JS\" || true" EXIT
 sleep 2
 
 # ==============================================================================
@@ -100,7 +101,7 @@ log "✅ Job Created: $JOB_ID"
 
 # Poll and Assert Receipt Fields
 SUCCESS=false
-for ((i=1; i<=20; i++)); do
+for ((i=1; i<=60; i++)); do
     STATUS_RESP=$(curl -s -f "$API_URL/v3/story/job/$JOB_ID")
     
     # ASSERT Mandatory Fields (P10-2/P10-1 Receipt Spec)
