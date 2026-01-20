@@ -67,14 +67,14 @@ stop_services() {
 
 start_services() {
     local label=$1
-    log "Starting services for [$label] (Sequential)..."
+    log "Starting services for [$label] (Direct Seq Start)..."
     export $(grep -v '^#' .env | xargs)
     
-    # 1. API
-    log "Launching API..."
-    pnpm dev:api > "$EVIDENCE_DIR/api_start_${label}.log" 2>&1 &
+    # 1. API (Direct)
+    log "Launching API via apps/api..."
+    (cd apps/api && pnpm dev) > "$EVIDENCE_DIR/api_start_${label}.log" 2>&1 &
     
-    # 2. Wait for API Health
+    # 2. Sequential Health Check for API
     log "Waiting for API health..."
     local api_up=false
     for ((i=1; i<=MAX_WAIT; i+=CHECK_INTERVAL)); do
@@ -91,9 +91,9 @@ start_services() {
         return 1
     fi
     
-    # 3. Worker & Mock Engine
-    log "Launching Worker..."
-    pnpm dev:worker > "$EVIDENCE_DIR/worker_start_${label}.log" 2>&1 &
+    # 3. Worker & Mock Engine (Direct)
+    log "Launching Worker via apps/workers..."
+    (cd apps/workers && pnpm dev) > "$EVIDENCE_DIR/worker_start_${label}.log" 2>&1 &
     
     log "Launching Mock Engine..."
     pnpm mock:http-engine > "$EVIDENCE_DIR/mock_engine_start_${label}.log" 2>&1 &
