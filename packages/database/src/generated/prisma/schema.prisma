@@ -623,18 +623,27 @@ model TemplatePreset {
 }
 
 model QualityScore {
-  id                 String   @id @default(uuid())
+  id                 String @id @default(uuid())
   shotId             String
-  visualDensityScore Float
-  consistencyScore   Float
-  motionScore        Float
-  clarityScore       Float
-  aestheticScore     Float
+  visualDensityScore Float?
+  consistencyScore   Float?
+  motionScore        Float?
+  clarityScore       Float?
+  aestheticScore     Float?
   overallScore       Float
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  shot               Shot     @relation("ShotQualityScore", fields: [shotId], references: [id])
 
+  // P13-3: 质量信号与返工逻辑
+  attempt     Int     @default(1)
+  verdict     String  @default("PASS") // PASS, FAIL
+  signals     Json?   @default("{}")
+  reworkJobId String? @map("rework_job_id")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shot Shot @relation("ShotQualityScore", fields: [shotId], references: [id], onDelete: Cascade)
+
+  @@index([shotId])
   @@map("quality_scores")
 }
 
@@ -955,9 +964,9 @@ model NovelChapter {
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   // V3.0 增量对齐 P0-2: 向量检索能力
-  summaryVector      Unsupported("vector")? @map("summary_vector")
-  visualDensityScore Decimal?               @map("visual_density_score")
-  visualDensityMeta  Json?                  @map("visual_density_meta")
+  // summaryVector      Unsupported("vector")? @map("summary_vector")
+  visualDensityScore Decimal? @map("visual_density_score")
+  visualDensityMeta  Json?    @map("visual_density_meta")
 
   volume      NovelVolume  @relation("VolumeChapters", fields: [volumeId], references: [id], onDelete: Cascade)
   novelSource Novel        @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
@@ -1576,4 +1585,15 @@ model ShotIdentityScore {
   @@index([characterId])
   @@index([createdAt])
   @@map("shot_identity_scores")
+}
+
+model ShotReworkDedupe {
+  id        String   @id @default(uuid())
+  reworkKey String   @unique @map("rework_key")
+  traceId   String?  @map("trace_id")
+  shotId    String   @map("shot_id")
+  attempt   Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("shot_rework_dedupe")
 }
