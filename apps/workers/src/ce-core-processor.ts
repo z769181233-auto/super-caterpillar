@@ -1134,7 +1134,7 @@ export async function processShotRenderJob(
       .catch(() => {});
 
     return {
-      status: 'SUCCESS',
+      status: 'SUCCEEDED',
       output: {
         assetId: asset.id,
         storageKey: result.asset.uri,

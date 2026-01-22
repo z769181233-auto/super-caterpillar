@@ -22,7 +22,7 @@ export class ContractShotController {
     private readonly jobService: JobService,
     private readonly prisma: PrismaService,
     private readonly assetResolver: AssetReceiptResolverService
-  ) { }
+  ) {}
 
   @Post('batch-generate')
   async batchGenerate(

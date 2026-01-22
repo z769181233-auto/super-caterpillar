@@ -20,6 +20,7 @@ import { ShotRenderComfyuiAdapter } from './adapters/shot-render.comfyui.adapter
 import { ShotRenderRouterAdapter } from './adapters/shot-render.router.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { CE11MockAdapter } from './adapters/ce11.mock.adapter';
+import { MockEngineAdapter } from '../engine/adapters/mock-engine.adapter';
 import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -51,6 +52,7 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     ShotRenderRouterAdapter,
     HttpEngineAdapter,
     CE11MockAdapter,
+    MockEngineAdapter,
     CE11ComfyUIAdapter,
   ],
   exports: [
@@ -90,6 +92,8 @@ export class EngineModule implements OnModuleInit {
     private readonly httpAdapter: HttpEngineAdapter,
     @Inject(CE11MockAdapter)
     private readonly ce11MockAdapter: CE11MockAdapter,
+    @Inject(MockEngineAdapter)
+    private readonly mockEngineAdapter: MockEngineAdapter,
     @Inject(CE11ComfyUIAdapter)
     private readonly ce11ComfyUIAdapter: CE11ComfyUIAdapter
   ) {}

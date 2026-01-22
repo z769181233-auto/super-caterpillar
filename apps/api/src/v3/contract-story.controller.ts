@@ -21,7 +21,7 @@ export class ContractStoryController {
     private readonly storyService: StoryService,
     private readonly prisma: PrismaService,
     private readonly assetResolver: AssetReceiptResolverService
-  ) { }
+  ) {}
 
   @Post('parse')
   async parseStory(

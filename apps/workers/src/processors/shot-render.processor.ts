@@ -158,6 +158,10 @@ export async function processShotRenderJob(
     fs.copyFileSync(sourceAbsPath, absolutePath);
     logger.log(`[ShotRender] Real image moved to ${absolutePath}`);
 
+    // Calculate Checksum (P13-1.1 Requirement)
+    const fileBuffer = fs.readFileSync(absolutePath);
+    const checksum = require('crypto').createHash('sha256').update(fileBuffer).digest('hex');
+
     // 4. Persistence (Asset & Audit)
     const asset = await prisma.asset.upsert({
       where: {
@@ -169,6 +173,8 @@ export async function processShotRenderJob(
       },
       update: {
         storageKey: relativeKey,
+        checksum: checksum,
+        status: 'GENERATED',
       },
       create: {
         projectId: projectId,
@@ -178,6 +184,7 @@ export async function processShotRenderJob(
         storageKey: relativeKey,
         status: 'GENERATED',
         createdByJobId: job.id,
+        checksum: checksum,
       },
     });
 
@@ -199,8 +206,6 @@ export async function processShotRenderJob(
         resourceId: shot.id,
         action: 'ce07.shot_render.success',
         orgId: organizationId,
-        // actorId, traceId moved to details if not in schema (will be verified next step but safe to put in details if unsure, but I will put in details to be safe or check schema)
-        // Actually, I'll put traceId in details to satisfy the error if it isn't in root.
         details: {
           jobId: job.id,
           assetId: asset.id,
@@ -209,7 +214,8 @@ export async function processShotRenderJob(
           actorId: 'system-worker',
           traceId: traceId,
           renderMeta: renderOutput.render_meta,
-          identity: identityMetadata, // Explicitly log Identity Anchor info
+          identity: identityMetadata,
+          checksum: checksum,
         },
       },
     });

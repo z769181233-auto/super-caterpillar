@@ -8,10 +8,11 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
 import { PermissionModule } from '../permission/permission.module';
 
 import { AssetDeliveryController } from './asset-delivery.controller';
+import { InternalAssetController } from './internal-asset.controller';
 
 @Module({
   imports: [PrismaModule, AuditLogModule, AuthModule, ApiSecurityModule, PermissionModule],
-  controllers: [AssetController, AssetDeliveryController],
+  controllers: [AssetController, AssetDeliveryController, InternalAssetController],
   providers: [AssetService],
   exports: [AssetService],
 })

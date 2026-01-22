@@ -4,6 +4,7 @@ import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/share
 import { ShotRenderReplicateAdapter } from './shot-render.replicate.adapter';
 import { ShotRenderLocalAdapter } from './shot-render.local.adapter';
 import { ShotRenderComfyuiAdapter } from './shot-render.comfyui.adapter';
+import { MockEngineAdapter } from '../../engine/adapters/mock-engine.adapter';
 import { createHash } from 'crypto';
 
 /**
@@ -29,7 +30,14 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     private localAdapter: ShotRenderLocalAdapter,
     @Inject(ShotRenderComfyuiAdapter)
     private comfyuiAdapter: ShotRenderComfyuiAdapter
+    // Note: MockEngineAdapter might not be provided in EngineModule's providers by default,
+    // so we don't @Inject(MockEngineAdapter) here to avoid startup error if missing.
+    // We resolve it lazily in onModuleInit or ensureDependencies.
+    // If we want to inject it, we must ensure it's in EngineModule.
+    // Since I can't easily edit EngineModule safely right now, I'll rely on lazy resolution via ModuleRef.
   ) {}
+
+  private mockAdapter: MockEngineAdapter | undefined; // Lazy loaded
 
   async onModuleInit() {
     this.ensureDependencies();
@@ -57,6 +65,13 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
         /* silent fail */
       }
     }
+    if (!this.mockAdapter) {
+      try {
+        this.mockAdapter = this.moduleRef.get(MockEngineAdapter, { strict: false });
+      } catch (e) {
+        /* silent fail */
+      }
+    }
   }
 
   supports(engineKey: string): boolean {
@@ -72,6 +87,10 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     // 1. Explicit provider selection
     const { provider, reason } = this.selectProvider();
     const adapter = this.getAdapter(provider);
+
+    if (!adapter) {
+      throw new Error(`Provider adapter for ${provider} not available.`);
+    }
 
     this.logger.log(`[ShotRenderRouter] Selected provider: ${provider} (reason: ${reason})`);
 
@@ -105,7 +124,10 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
    *
    * NO SILENT FALLBACK: If replicate selected but token missing, THROW.
    */
-  private selectProvider(): { provider: 'replicate' | 'local' | 'comfyui'; reason: string } {
+  private selectProvider(): {
+    provider: 'replicate' | 'local' | 'comfyui' | 'mock';
+    reason: string;
+  } {
     const envProvider = (process.env.SHOT_RENDER_PROVIDER || 'replicate').toLowerCase();
 
     if (envProvider === 'local' || envProvider === 'local_mps') {
@@ -114,6 +136,10 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
 
     if (envProvider === 'comfyui') {
       return { provider: 'comfyui', reason: 'Explicit SHOT_RENDER_PROVIDER=comfyui' };
+    }
+
+    if (envProvider === 'mock') {
+      return { provider: 'mock', reason: 'Explicit SHOT_RENDER_PROVIDER=mock (Gate Mode)' };
     }
 
     if (envProvider === 'replicate') {
@@ -126,7 +152,7 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     }
 
     throw new Error(
-      `JOB_CONFIG_INVALID: Unknown SHOT_RENDER_PROVIDER="${envProvider}". Valid: replicate, comfyui, local`
+      `JOB_CONFIG_INVALID: Unknown SHOT_RENDER_PROVIDER="${envProvider}". Valid: replicate, comfyui, local, mock`
     );
   }
 
@@ -135,6 +161,9 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
       return this.replicateAdapter;
     } else if (provider === 'comfyui') {
       return this.comfyuiAdapter;
+    } else if (provider === 'mock') {
+      // @ts-ignore
+      return this.mockAdapter;
     } else {
       return this.localAdapter;
     }

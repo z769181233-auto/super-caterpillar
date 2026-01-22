@@ -394,6 +394,13 @@ export class EngineInvokerHubService implements OnModuleInit {
     if (engineKey === 'ce11_shot_generator_real' || engineKey === 'ce11_shot_generator_mock') {
       return 'CE11_SHOT_GENERATOR';
     }
+    if (
+      engineKey === 'shot_render' ||
+      engineKey === 'default_shot_render' ||
+      engineKey === 'real_shot_render'
+    ) {
+      return 'SHOT_RENDER';
+    }
     // 其他引擎的映射规则可以在这里扩展
     return 'UNKNOWN';
   }

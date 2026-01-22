@@ -328,9 +328,10 @@ export async function startGateWorkerApp() {
         }
 
         // ✅ 回写结果
+        const isSuccess = result.status === 'SUCCEEDED' || result.success === true;
         await apiClient.reportJobResult({
           jobId: job.id,
-          status: result.status === 'SUCCEEDED' ? 'SUCCEEDED' : 'FAILED',
+          status: isSuccess ? 'SUCCEEDED' : 'FAILED',
           result,
         });
 

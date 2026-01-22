@@ -11,4 +11,4 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   controllers: [OpsController],
   providers: [OpsMetricsService],
 })
-export class OpsModule { }
+export class OpsModule {}

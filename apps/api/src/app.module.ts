@@ -157,8 +157,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(TraceMiddleware)
-      .forRoutes('*');
+    consumer.apply(TraceMiddleware).forRoutes('*');
   }
 }

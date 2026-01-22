@@ -1495,6 +1495,8 @@ enum AssetType {
   IMAGE
   VIDEO
   MODEL
+  AUDIO_TTS
+  AUDIO_BGM
 }
 
 enum AssetStatus {
