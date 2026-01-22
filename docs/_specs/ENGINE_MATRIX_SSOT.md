@@ -29,6 +29,8 @@
 | `workflow_ce_dag`           | CE06->SHOT->VIDEO         | REAL (Orchestrator)   | Multi-Step                               | `CE%`                | `gate-phase3-commercial-e2e.sh`     | `seal/phase3_commercial_e2e_hard_20260113`     | Orchestrator Workflow                |
 | `ce11_shot_generator_real`  | CE11_SHOT_GENERATOR       | REAL (ComfyUI)        | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-ce11-shot-generator-real.sh`  | `seal/ce11_real_p5_sealed_20260119`            | **P5-NEW**: Explicit Real Routing    |
 | `ce23_identity_consistency` | CE23_IDENTITY_CONSISTENCY | REAL-STUB (Algo)      | router-based (internal)                  | `ID%`                | `gate-ce23-identity-consistency.sh` | `seal/ce23_p13_0_20260120`                     | **P13-0**: Minimal Consistency Loop  |
+| `audio_tts`                | TIMELINE_RENDER (Sub)     | REAL-STUB (Wav)       | internal                                 | `CE%`                | `gate-audio-minloop.sh`             | `seal/p13_2_audio_minloop_20260121`            | **P13-2**: Deterministic TTS Wav     |
+| `audio_bgm`                | TIMELINE_RENDER (Sub)     | REAL-STUB (Wav)       | internal                                 | `CE%`                | `gate-audio-minloop.sh`             | `seal/p13_2_audio_minloop_20260121`            | **P13-2**: Deterministic BGM Wav     |
 
 ---
 
@@ -105,6 +107,16 @@
 
 ---
 
+---
+
+## 架构硬化事实记录 (Hardened Facts)
+
+### P13-2: 音频闭环与 DB 架构增强
+- **音频枚举化**：注入 `AssetType` (AUDIO_TTS, AUDIO_BGM) 与 `AssetOwnerType` (SCENE)，不再耦合 metadata 字符串判断。
+- **外键解耦**：彻底移除了 `assets.ownerId` -> `shots.id` 的强外键约束（`Asset_Shot_fkey`），改由应用层保障 `SCENE` / `SHOT` 级的多态归属，消除了场景级音频无法落库的架构死角。
+- **调度加固**：补齐 `shots.shot_type` 字段，确保 Scheduler 恢复及 Rework 逻辑下的状态一致性。
+- **异步计费基础**：引入 `BillingOutbox` 表，为后续 P13-3/P14 异步审计与计费风暴隔离奠定基础。
+
 ## 变更记录
 
 | 日期       | 变更                                                                                                                                                                          | 操作人      |
@@ -126,6 +138,7 @@
 | 2026-01-19 | **Phase P10.1 SEALED** — Receipt Completeness & Gate Upgrade. 0-Risk Asset Discovery + Availability Assertions. Evidence: `docs/_evidence/P10_1_SEAL_20260119`                | Antigravity |
 | 2026-01-20 | **P13-0 SEALED** — CE23 Identity Consistency Schema & Minimal Loop. Evidence: `docs/_evidence/ce23_identity_20260120*`                                                        | Antigravity |
 | 2026-01-21 | **P13-1 SEALED** — Shot Render Preview Loop (Visual Quality). Worker Write-back, Asset Persistence & Physical Verification. Evidence: `docs/_evidence/shot_preview_20260121*` | Antigravity |
+| 2026-01-22 | **P13-2 HARD SEALED** — Audio Minloop & DB Hardening. Enum Injection, Foreign Key Decoupling, and Automated Evidence Generation. Evidence: `docs/_evidence/P13_2_AUDIO_GATE_PASS` | Antigravity |
 
 ---
 
