@@ -75,6 +75,9 @@
 - **错误透明**: `JobService` 必须透传 `BillingService` 的原始 Forbidden 详情（含 Credits 缺口）。
 - **审计留痕**: `stopReason` 记录在 `quality_scores.signals` 中。
 
----
+### 5.4 运营约束 (Operational Constraints)
 
-**END OF SSOT**
+- **默认策略**: Feature Flag 初始状态必须为 **OFF**，仅对白名单 Organization/Project 开启。
+- **环境安全**: `QUALITY_HOOK_SYNC_FOR_GATE=1` 仅允许在 Gate 模式下启用，严禁用于生产热路径。
+
+---
