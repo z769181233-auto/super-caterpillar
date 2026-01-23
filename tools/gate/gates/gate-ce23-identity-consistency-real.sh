@@ -101,9 +101,12 @@ EOF
 echo "run,file,score,verdict" > "$EVIDENCE_DIR/scores.csv"
 
 # 5. Execute 5-shot test
+log "<<< CASE_P (Positive Control: Same content) >>>"
 run_score_test 1 "target_same.png"
 run_score_test 2 "target_same.png"
 run_score_test 3 "target_same.png"
+
+log "<<< CASE_N (Negative Control: Different content - Black/White Inverted) >>>"
 run_score_test 4 "target_diff.png"
 run_score_test 5 "target_diff.png"
 

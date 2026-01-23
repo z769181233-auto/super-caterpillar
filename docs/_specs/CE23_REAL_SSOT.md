@@ -1,7 +1,10 @@
 # CE23_REAL_SSOT.md - CE23 真实身份一致性单一真源（P15-0）
 
-> **状态**: DRAFT (P15-0 PPV-64)  
-> **更新时间**: 2026-01-23
+> **状态**: SEALED (P15-0 PPV-64)  
+> **更新时间**: 2026-01-23  
+> **硬收口门禁**: `gate-ce23-identity-consistency-real.sh`  
+> **封板证据**: `docs/_evidence/ce23_identity_real_20260123213226/`  
+> **封板 Tag**: `seal/p15_0_ce23_real_ppv64_20260123`
 
 ## 1. 目标
 
@@ -39,8 +42,13 @@
 
 ## 4. 判定阈值 (Pass/Fail)
 
-- **PASS**: `identity_score >= 0.80`
-- **FAIL**: `identity_score < 0.80` (触发返工流程)
+- **PASS**: `identity_score >= 0.80` (Case P 典型值: 1.0)
+- **FAIL**: `identity_score < 0.80` (Case N 典型值: < 0.60)
+
+### 4.1 门禁用例口径 (Gate Semantics)
+
+- **Case P (Positive)**: 必须针对相同图像或完全匹配的角色，断言 `score >= 0.80` (通常应为 1.0)。
+- **Case N (Negative)**: 必须针对明显不同的角色或反转图像，断言 `score < 0.80` (物理防跨度验证)。
 
 ## 5. 运营约束
 
