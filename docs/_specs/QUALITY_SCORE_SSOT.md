@@ -84,6 +84,9 @@
 ### 5.4 运营约束 (Operational Constraints)
 
 - **默认策略**: Feature Flag 初始状态必须为 **OFF**，仅对白名单 Organization/Project 开启。
+- **并发护栏参数**:
+  - `REWORK_MAX_CONCURRENCY_PER_ORG`: 默认值 **2**。
+  - **审计要求**: 拦截时必须写入 `STOP_REASON=RATE_LIMIT_BLOCKED`，并记录 `rateLimitSnapshot` (包含 `runningReworks` 与 `cap`)。
 - **环境安全**: `QUALITY_HOOK_SYNC_FOR_GATE=1` 仅允许在 Gate 模式下启用，严禁用于生产热路径。
 
 ---
