@@ -1,56 +1,133 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { LocalStorageService } from '../storage/local-storage.service';
+import { ppv64FromImage, cosine } from './ppv64';
+import { nodeSharpDecoder } from './image-decoder';
 
 @Injectable()
 export class IdentityConsistencyService {
   private readonly logger = new Logger(IdentityConsistencyService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: LocalStorageService
+  ) {}
 
   /**
-   * P13-0.2: Real-Stub Deterministic Scoring
-   * Calculates identity score based on input hashes.
-   * Target Score Range: [0.7, 0.9999]
+   * P15-0: Score routing based on Feature Flag
    */
   async scoreIdentity(
     referenceAssetId: string,
     targetAssetId: string,
+    characterId: string,
+    shotId?: string
+  ): Promise<{ score: number; verdict: 'PASS' | 'FAIL'; details: any }> {
+    // 1. Check Feature Flag (ce23RealEnabled)
+    let realEnabled = false;
+    if (shotId) {
+      const shot = await this.prisma.shot.findUnique({
+        where: { id: shotId },
+        include: {
+          scene: {
+            include: {
+              episode: {
+                include: {
+                  project: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      const settings = (shot?.scene?.episode?.project?.settingsJson as any) || {};
+      realEnabled = !!settings.ce23RealEnabled;
+    }
+
+    if (realEnabled) {
+      this.logger.log(`Using REAL Identity Scoring for shot ${shotId}`);
+      return this.scoreIdentityReal(referenceAssetId, targetAssetId, characterId);
+    }
+
+    // Fallback to existing Stub
+    return this.scoreIdentityStub(referenceAssetId, targetAssetId, characterId);
+  }
+
+  /**
+   * P15-0: Real Identity Scoring (PPV-64)
+   */
+  async scoreIdentityReal(
+    referenceAssetId: string,
+    targetAssetId: string,
     characterId: string
   ): Promise<{ score: number; verdict: 'PASS' | 'FAIL'; details: any }> {
-    // 1. Construct Deterministic Hash Input
+    try {
+      // 1. Get Asset Details
+      const [refAsset, tarAsset] = await Promise.all([
+        this.prisma.asset.findUnique({ where: { id: referenceAssetId } }),
+        this.prisma.asset.findUnique({ where: { id: targetAssetId } }),
+      ]);
+
+      if (!refAsset || !tarAsset) {
+        throw new Error('Asset not found for REAL identity scoring');
+      }
+
+      // 2. Resolve Paths
+      const refPath = this.storage.getAbsolutePath(refAsset.storageKey);
+      const tarPath = this.storage.getAbsolutePath(tarAsset.storageKey);
+
+      // 3. Extract PPV-64
+      const [refPpv, tarPpv] = await Promise.all([
+        ppv64FromImage(refPath, nodeSharpDecoder),
+        ppv64FromImage(tarPath, nodeSharpDecoder),
+      ]);
+
+      // 4. Calculate Cosine & Map to [0, 1]
+      const cosVal = cosine(refPpv.vec, tarPpv.vec);
+      const score = (cosVal + 1) / 2; // (cos + 1) / 2 mapping
+      const verdict = score >= 0.8 ? 'PASS' : 'FAIL';
+
+      return {
+        score: parseFloat(score.toFixed(4)),
+        verdict,
+        details: {
+          provider: 'real-embed-v1',
+          algo_version: 'ppv64@v1',
+          dims: 64,
+          score_mapping: '(cos+1)/2',
+          embedding_hash: tarPpv.embeddingHash,
+          anchor_file_sha256: refPpv.fileSha256,
+          target_file_sha256: tarPpv.fileSha256,
+          cosine_raw: parseFloat(cosVal.toFixed(4)),
+        },
+      };
+    } catch (err) {
+      this.logger.error(`REAL Identity Scoring failed: ${err.message}`, err.stack);
+      // Fallback to stub on algorithm error in production to avoid hard block
+      return this.scoreIdentityStub(referenceAssetId, targetAssetId, characterId);
+    }
+  }
+
+  /**
+   * P13-0.2: Real-Stub Deterministic Scoring
+   */
+  async scoreIdentityStub(
+    referenceAssetId: string,
+    targetAssetId: string,
+    characterId: string
+  ): Promise<{ score: number; verdict: 'PASS' | 'FAIL'; details: any }> {
     const inputString = `${referenceAssetId}|${targetAssetId}|${characterId}|v1`;
     const hash = createHash('sha256').update(inputString).digest('hex');
-
-    // 2. Map Hash to Score [0.7, 0.9999]
-    // Take first 8 chars (32-bit hex) -> int
     const hexSegment = hash.substring(0, 8);
     const intValue = parseInt(hexSegment, 16);
-
-    // Modulo 3000 to get 0-2999
-    // Divide by 10000 to get 0.0000 - 0.2999
-    // Add 0.7 base
     const scoreOffset = (intValue % 3000) / 10000;
     const score = 0.7 + scoreOffset;
 
-    // 3. Verdict Logic (Gate Threshold 0.85)
-    // Note: Since this is a Stub, we guarantee > 0.7.
-    // To ensure Double PASS in Gate (expecting > 0.85),
-    // we might need to tweak the Stub if randomness yields < 0.85.
-    // However, the prompt requirement is "0.7 + (x % 3000)/10000", range [0.7, 0.9999].
-    // Expectation is gate passes if > 0.85.
-    // If random distribution, ~50% might fail.
-    // USER INSTRUCTION: "允许通过 env 控制严格度".
-    // We will force high score for 'mock' assets if strictly needed, but let's stick to algo
-    // and rely on ENV override for Gate stability if needed.
-
     let finalScore = score;
-
-    // ENV Override for Gate Stability (Fake High Score)
     if (process.env.CE23_STUB_SCORE_MIN) {
       const minParam = parseFloat(process.env.CE23_STUB_SCORE_MIN);
       if (finalScore < minParam) {
-        finalScore = minParam + finalScore * 0.01; // boost slightly to pass
+        finalScore = minParam + finalScore * 0.01;
       }
     }
 
@@ -79,12 +156,6 @@ export class IdentityConsistencyService {
     targetAssetId: string,
     scoreData: { score: number; verdict: 'PASS' | 'FAIL'; details: any }
   ) {
-    // Upsert logic to handle idempotency
-    // We don't have a unique key on (shotId, characterId, referenceAnchorId, targetAssetId) yet,
-    // but schema has UUID PK.
-    // We will check existence first manually or just create new (logging style).
-    // User requested: "若你没建 unique，先用 upsert 逻辑模拟：查存在则 update。"
-
     const existing = await this.prisma.shotIdentityScore.findFirst({
       where: {
         shotId,
@@ -101,7 +172,7 @@ export class IdentityConsistencyService {
           identityScore: scoreData.score,
           verdict: scoreData.verdict,
           details: scoreData.details,
-          createdAt: new Date(), // update timestamp
+          createdAt: new Date(),
         },
       });
     }

@@ -11,9 +11,9 @@
 
 ### 2.1 提取逻辑
 
-- **下采样**: 将原始图像解码并 Resize 至 8x8。
+- **下采样**: 采用 **8x8 cell-average downsample** 策略。
 - **灰度化**: 使用固定权重的灰度计算：`gray = 0.299*R + 0.587*G + 0.114*B`。
-- **网格平均**: 采用 8x8 Cell 网格平均值（Cell Average）而非单点采样，以增强抗噪性。
+- **网格平均**: 在原图分辨率上计算 8x8 网格内的 Cell 平均值，作为 64 维向量的基础。
 - **维度**: **64** (1D Vector)。
 
 ### 2.2 确定性预处理 (Deterministic Preprocessing)
@@ -30,12 +30,12 @@
 
 ### 3.2 输出
 
-| 字段             | 类型   | 说明                                                                           |
-| :--------------- | :----- | :----------------------------------------------------------------------------- |
-| `identity_score` | Float  | Cosine 相似度，区间映射至 [0, 1]                                               |
-| `provider`       | String | 固定为 `real-embed-v1`                                                         |
-| `embedding_hash` | String | `sha256(float32_bytes)`，用于审计                                              |
-| `details`        | Object | 必须包含 `anchor_file_sha256`, `target_file_sha256`, `algo_version`, `dims=64` |
+| 字段             | 类型   | 说明                                                                                                              |
+| :--------------- | :----- | :---------------------------------------------------------------------------------------------------------------- |
+| `identity_score` | Float  | Cosine 相似度，使用公式 `(cosine + 1) / 2` 映射至 [0, 1]                                                          |
+| `provider`       | String | 固定为 `real-embed-v1`                                                                                            |
+| `embedding_hash` | String | `sha256(float32_bytes)`，用于审计                                                                                 |
+| `details`        | Object | 必须包含 `anchor_file_sha256`, `target_file_sha256`, `embedding_hash`, `algo_version`, `dims=64`, `score_mapping` |
 
 ## 4. 判定阈值 (Pass/Fail)
 

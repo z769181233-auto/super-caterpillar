@@ -26,7 +26,8 @@ export class IdentityController {
     const result = await this.identityService.scoreIdentity(
       referenceAssetId,
       targetAssetId,
-      characterId
+      characterId,
+      shotId
     );
 
     // 2. Write to DB

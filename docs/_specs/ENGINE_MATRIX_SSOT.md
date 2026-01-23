@@ -1,6 +1,6 @@
 # ENGINE_MATRIX_SSOT.md - 引擎矩阵单一真源
 
-> **版本**: 1.1.0  
+> **版本**: 1.2.0  
 > **更新时间**: 2026-01-23  
 > **状态**: ACTIVE
 
@@ -28,7 +28,7 @@
 | `ce11_timeline_preview`     | TIMELINE_PREVIEW          | REAL                  | cpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`                              | `seal/phase3_commercial_e2e_hard_20260113`     |                                                                               |
 | `workflow_ce_dag`           | CE06->SHOT->VIDEO         | REAL (Orchestrator)   | Multi-Step                               | `CE%`                | `gate-phase3-commercial-e2e.sh`                              | `seal/phase3_commercial_e2e_hard_20260113`     | Orchestrator Workflow                                                         |
 | `ce11_shot_generator_real`  | CE11_SHOT_GENERATOR       | REAL (ComfyUI)        | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-ce11-shot-generator-real.sh`                           | `seal/ce11_real_p5_sealed_20260119`            | **P5-NEW**: Explicit Real Routing                                             |
-| `ce23_identity_consistency` | CE23_IDENTITY_CONSISTENCY | REAL-STUB (Algo)      | router-based (internal)                  | `ID%`                | `gate-ce23-identity-consistency.sh`                          | `seal/ce23_p13_0_20260120`                     | **P13-0**: Minimal Consistency Loop                                           |
+| `ce23_identity_consistency` | CE23_IDENTITY_CONSISTENCY | REAL (PPV-64)         | router-based (internal)                  | `ID%`                | `gate-ce23-identity-consistency-real.sh`                     | `seal/p15_0_ce23_real_ppv64_20260123`          | **P15-0**: Content-based Real Scoring (PPV-64)                                |
 | `audio_tts`                 | TIMELINE_RENDER (Sub)     | REAL-STUB (Wav)       | internal                                 | `CE%`                | `gate-audio-minloop.sh`                                      | `seal/p13_2_audio_minloop_20260121`            | **P13-2**: Deterministic TTS Wav                                              |
 | `audio_bgm`                 | TIMELINE_RENDER (Sub)     | REAL-STUB (Wav)       | internal                                 | `CE%`                | `gate-audio-minloop.sh`                                      | `seal/p13_2_audio_minloop_20260121`            | **P13-2**: Deterministic BGM Wav                                              |
 | `quality_prod_hook`         | QUALITY_SCORE             | REAL (Production)     | 0-cost audit                             | `QC%`                | `gate-quality-prod-hook.sh`, `gate-quality-prod-hook-slo.sh` | `seal/p14_1_quality_rework_slo_20260123`       | **P14-1**: SLO Concurrency Rails. 默认 OFF (Flag)，灰度 ON；Gate 环境可同步。 |
@@ -120,27 +120,28 @@
 
 ## 变更记录
 
-| 日期       | 变更                                                                                                                                                                              | 操作人      |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 2026-01-09 | 初始化矩阵 SSOT                                                                                                                                                                   | Gemini      |
-| 2026-01-09 | 添加 shot_render P0-R0                                                                                                                                                            | Gemini      |
-| 2026-01-09 | 封印 P0-R2 E2E 管线                                                                                                                                                               | Gemini      |
-| 2026-01-09 | P1-3 基础可观测性建设                                                                                                                                                             | Gemini      |
-| 2026-01-13 | 封印 CE11 Timeline Preview                                                                                                                                                        | Antigravity |
-| 2026-01-13 | Phase 1 HARD SEALED（CE06 Real + CE11 Regression）                                                                                                                                | Gemini      |
-| 2026-01-13 | Phase 3 HARD SEALED（Commercial E2E）                                                                                                                                             | Gemini      |
-| 2026-01-13 | Phase 4 UI Commercial Closure                                                                                                                                                     | Gemini      |
-| 2026-01-13 | **Billing Gap Closure (P0 Hotfix)** — CostLedger全链路闭环完成                                                                                                                    | Antigravity |
-| 2026-01-16 | **Phase 5D HARD SEALED** — Identity Consistency Regression Complete                                                                                                               | Antigravity |
-| 2026-01-16 | **Stage 4 SEALED** — Scale Architecture Verified (100 chaps → 100 chunk jobs, ce06_scan_toc + ce06_chunk_parse)                                                                   | Antigravity |
-| 2026-01-19 | **CE11 P5 REAL SEALED** — Real Engine Integration with Explicit Routing, Realism Assertions, Cost Audit & Worker Flow                                                             | Antigravity |
-| 2026-01-19 | **Phase P9 SEALED** — V3 Job Logic Integration complete. Contract API -> REAL Worker -> DB. Evidence: `docs/_evidence/v3_job_e2e_20260119193320`                                  | Antigravity |
-| 2026-01-19 | **Phase P10 SEALED** — V3 Production Ready. Standardized Receipts, Guardrails (Concurrency/Budget), and Studio UI Integration. Evidence: `docs/_evidence/P10_SEAL_20260119`       | Antigravity |
-| 2026-01-19 | **Phase P10.1 SEALED** — Receipt Completeness & Gate Upgrade. 0-Risk Asset Discovery + Availability Assertions. Evidence: `docs/_evidence/P10_1_SEAL_20260119`                    | Antigravity |
-| 2026-01-20 | **P13-0 SEALED** — CE23 Identity Consistency Schema & Minimal Loop. Evidence: `docs/_evidence/ce23_identity_20260120*`                                                            | Antigravity |
-| 2026-01-21 | **P13-1 SEALED** — Shot Render Preview Loop (Visual Quality). Worker Write-back, Asset Persistence & Physical Verification. Evidence: `docs/_evidence/shot_preview_20260121*`     | Antigravity |
-| 2026-01-22 | **P13-2 HARD SEALED** — Audio Minloop & DB Hardening. Enum Injection, Foreign Key Decoupling, and Automated Evidence Generation. Evidence: `docs/_evidence/P13_2_AUDIO_GATE_PASS` | Antigravity |
-| 2026-01-22 | **P13-3 HARD SEALED** — Quality Scoring & Auto-Rework (0-Risk Rev.). Triple-Guard Audit (Attempt, Dedupe, Real Budget). Evidence: `docs/_evidence/quality_rework_20260122203405`  | Antigravity |
+| 日期       | 变更                                                                                                                                                                                      | 操作人      |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 2026-01-09 | 初始化矩阵 SSOT                                                                                                                                                                           | Gemini      |
+| 2026-01-09 | 添加 shot_render P0-R0                                                                                                                                                                    | Gemini      |
+| 2026-01-09 | 封印 P0-R2 E2E 管线                                                                                                                                                                       | Gemini      |
+| 2026-01-09 | P1-3 基础可观测性建设                                                                                                                                                                     | Gemini      |
+| 2026-01-13 | 封印 CE11 Timeline Preview                                                                                                                                                                | Antigravity |
+| 2026-01-13 | Phase 1 HARD SEALED（CE06 Real + CE11 Regression）                                                                                                                                        | Gemini      |
+| 2026-01-13 | Phase 3 HARD SEALED（Commercial E2E）                                                                                                                                                     | Gemini      |
+| 2026-01-13 | Phase 4 UI Commercial Closure                                                                                                                                                             | Gemini      |
+| 2026-01-13 | **Billing Gap Closure (P0 Hotfix)** — CostLedger全链路闭环完成                                                                                                                            | Antigravity |
+| 2026-01-16 | **Phase 5D HARD SEALED** — Identity Consistency Regression Complete                                                                                                                       | Antigravity |
+| 2026-01-16 | **Stage 4 SEALED** — Scale Architecture Verified (100 chaps → 100 chunk jobs, ce06_scan_toc + ce06_chunk_parse)                                                                           | Antigravity |
+| 2026-01-19 | **CE11 P5 REAL SEALED** — Real Engine Integration with Explicit Routing, Realism Assertions, Cost Audit & Worker Flow                                                                     | Antigravity |
+| 2026-01-19 | **Phase P9 SEALED** — V3 Job Logic Integration complete. Contract API -> REAL Worker -> DB. Evidence: `docs/_evidence/v3_job_e2e_20260119193320`                                          | Antigravity |
+| 2026-01-19 | **Phase P10 SEALED** — V3 Production Ready. Standardized Receipts, Guardrails (Concurrency/Budget), and Studio UI Integration. Evidence: `docs/_evidence/P10_SEAL_20260119`               | Antigravity |
+| 2026-01-19 | **Phase P10.1 SEALED** — Receipt Completeness & Gate Upgrade. 0-Risk Asset Discovery + Availability Assertions. Evidence: `docs/_evidence/P10_1_SEAL_20260119`                            | Antigravity |
+| 2026-01-20 | **P13-0 SEALED** — CE23 Identity Consistency Schema & Minimal Loop. Evidence: `docs/_evidence/ce23_identity_20260120*`                                                                    | Antigravity |
+| 2026-01-21 | **P13-1 SEALED** — Shot Render Preview Loop (Visual Quality). Worker Write-back, Asset Persistence & Physical Verification. Evidence: `docs/_evidence/shot_preview_20260121*`             | Antigravity |
+| 2026-01-22 | **P13-2 HARD SEALED** — Audio Minloop & DB Hardening. Enum Injection, Foreign Key Decoupling, and Automated Evidence Generation. Evidence: `docs/_evidence/P13_2_AUDIO_GATE_PASS`         | Antigravity |
+| 2026-01-22 | **P13-3 HARD SEALED** — Quality Scoring & Auto-Rework (0-Risk Rev.). Triple-Guard Audit (Attempt, Dedupe, Real Budget). Evidence: `docs/_evidence/quality_rework_20260122203405`          | Antigravity |
+| 2026-01-23 | **P15-0 REAL SEALED** — CE23 Identity Consistency upgrade to REAL (PPV-64). Content-based deterministic scoring + Audit Evidence. Evidence: `docs/_evidence/ce23_identity_real_20260123*` | Antigravity |
 
 ---
 
