@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * Feature Flag Service
@@ -9,6 +10,8 @@ import { Injectable, Logger } from '@nestjs/common';
 @Injectable()
 export class FeatureFlagService {
   private readonly logger = new Logger(FeatureFlagService.name);
+
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) { }
 
   /**
    * 检查指定 Feature Flag 是否启用 (支持 Stage 12 多级策略)
@@ -105,6 +108,42 @@ export class FeatureFlagService {
   }
 
   /**
+   * 检查自动返工是否启用 (P14-0 灰度策略)
+   * 优先 DB（org/project 配置），其次 env override，默认 OFF。
+   */
+  async isAutoReworkEnabled(context: {
+    orgId?: string;
+    projectId?: string;
+  }): Promise<boolean> {
+    // 1. 检查环境变量 Override (Gate/Staging 强制启用/禁用)
+    const envValue = process.env['FEATURE_AUTO_REWORK_ENABLED'];
+    if (envValue) {
+      const isEnvEnabled = ['true', '1', 'yes'].includes(envValue.toLowerCase());
+      if (isEnvEnabled) return true;
+    }
+
+    // 2. 检查 DB 配置 (Project 级)
+    if (context.projectId) {
+      try {
+        const project = await this.prisma.project.findUnique({
+          where: { id: context.projectId },
+          select: { settingsJson: true },
+        });
+        const settings = project?.settingsJson as Record<string, any>;
+        if (settings?.autoReworkEnabled === true) {
+          this.logger.debug(`Feature flag AUTO_REWORK enabled via DB for project ${context.projectId}`);
+          return true;
+        }
+      } catch (e) {
+        this.logger.error(`Failed to check project feature flag: ${e.message}`);
+      }
+    }
+
+    // 默认关闭
+    return false;
+  }
+
+  /**
    * 获取所有已知 Feature Flags 的状态
    * @returns 包含所有 Flag 状态的对象
    * @note 仅反映“全局强制开关”状态，不包含灰度/白名单策略结果
@@ -115,6 +154,7 @@ export class FeatureFlagService {
       'FEATURE_TEXT_SAFETY_TRI_STATE',
       'FEATURE_TEXT_SAFETY_BLOCK_ON_IMPORT',
       'FEATURE_TEXT_SAFETY_BLOCK_ON_JOB_CREATE',
+      'FEATURE_AUTO_REWORK_ENABLED',
     ];
 
     const flags: Record<string, boolean> = {};

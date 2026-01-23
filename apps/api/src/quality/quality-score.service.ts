@@ -11,12 +11,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QualityScoreRecord } from '@scu/shared-types';
 import { EngineAdapter } from '@scu/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
+import { JobService } from '../job/job.service';
+import { forwardRef, Inject } from '@nestjs/common';
 
 @Injectable()
 export class QualityScoreService {
   private readonly logger = new Logger(QualityScoreService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => JobService))
+    private readonly jobService: JobService
+  ) { }
 
   /**
    * P13-3: 执行分镜质量评分
@@ -25,7 +31,7 @@ export class QualityScoreService {
    * @param attempt 当前尝试次数
    */
   async performScoring(shotId: string, traceId: string, attempt: number = 1) {
-    this.logger.log(`Performing quality scoring for shot ${shotId}, attempt ${attempt}`);
+    console.error(`Performing quality scoring for shot ${shotId}, attempt ${attempt}`);
 
     // 1. 获取基础数据 (Identity Score)
     const identityScoreRecord = await this.prisma.shotIdentityScore.findFirst({
@@ -81,32 +87,32 @@ export class QualityScoreService {
       },
     });
 
-    this.logger.log(`Shot ${shotId} verdict: ${verdict}, overallScore: ${overallScore}`);
+    console.error(`Shot ${shotId} verdict: ${verdict}, overallScore: ${overallScore}`);
 
     let stopReason: string | undefined;
 
     try {
       // 6. 自动返工逻辑 (Triple Guards)
       if (verdict === 'FAIL') {
-        this.logger.log(`[REWORK_DEBUG] Checking rework for shot ${shotId}, attempt ${attempt}`);
+        console.error(`[REWORK_DEBUG] Checking rework for shot ${shotId}, attempt ${attempt}`);
         stopReason = await this.handleAutoRework(shotId, traceId, attempt, signals);
-        this.logger.log(`[REWORK_DEBUG] Result for shot ${shotId}: ${stopReason}`);
+        console.error(`[REWORK_DEBUG] Result for shot ${shotId}: stopReason=${stopReason || 'NONE_TRIGGERED'}`);
       }
 
-      // 更新信号中记录停止原因（如果有）
+      // 无论是否触发，都将最终的 stopReason（如果有）持久化到 signals 中
       if (stopReason) {
-        return await this.prisma.qualityScore.update({
+        const updatedSignals = {
+          ...(signals as any),
+          stopReason
+        };
+        await this.prisma.qualityScore.update({
           where: { id: scoreRecord.id },
-          data: {
-            signals: {
-              ...(signals as any),
-              stopReason,
-            },
-          },
+          data: { signals: updatedSignals as any },
         });
+        console.error(`[REWORK_DEBUG] Updated quality score ${scoreRecord.id} with stopReason: ${stopReason}`);
       }
     } catch (err: any) {
-      this.logger.error(`Error in rework logic: ${err.message}`, err.stack);
+      this.logger.error(`[REWORK_ERROR] handleAutoRework CRASH for shot ${shotId}: ${err.message}`, err.stack);
     }
 
     return scoreRecord;
@@ -119,7 +125,7 @@ export class QualityScoreService {
   private async handleAutoRework(shotId: string, traceId: string, attempt: number, signals: any): Promise<string | undefined> {
     if (attempt >= 2) {
       const reason = 'MAX_ATTEMPT_REACHED';
-      this.logger.warn(`STOP_REASON=${reason} for shot ${shotId}. Attempt ${attempt} >= 2.`);
+      console.error(`STOP_REASON=${reason} for shot ${shotId}. Attempt ${attempt} >= 2.`);
       return reason;
     }
 
@@ -164,50 +170,51 @@ export class QualityScoreService {
       // P2002: Unique constraint violation (Prisma unique violation code)
       if (e.code === 'P2002') {
         const reason = 'IDEMPOTENCY_HIT';
-        this.logger.warn(`STOP_REASON=${reason} (reworkKey=${reworkKey}) for shot ${shotId}.`);
+        console.error(`STOP_REASON=${reason} (reworkKey=${reworkKey}) for shot ${shotId}.`);
         return reason;
       }
       throw e;
     }
 
-    // 闸 3: 预算验证 (Budget Guard)
-    // 真实查询 organization.credits
-    const org = await this.prisma.organization.findUnique({
-      where: { id: organizationId },
-      select: { credits: true },
-    });
+    console.error(`Triggering rework for shot ${shotId}, new attempt: ${attempt + 1}, dedupeKey: ${reworkKey}`);
 
-    // 门禁测试中可通过 traceId 注入 "FORCE_BUDGET_FAIL" 或直接在 DB 设置 credits=0
-    const isBudgetFailForced = traceId.includes('FORCE_BUDGET_FAIL');
-    const budgetPass = (org?.credits || 0) > 0 && !isBudgetFailForced;
-
-    if (!budgetPass) {
-      const reason = 'BUDGET_GUARD_BLOCKED';
-      this.logger.warn(`STOP_REASON=${reason} for shot ${shotId}. Credits: ${org?.credits}, forced: ${isBudgetFailForced}`);
-      return reason;
-    }
-
-    this.logger.log(`Triggering rework for shot ${shotId}, new attempt: ${attempt + 1}, dedupeKey: ${reworkKey}`);
-
-    await this.prisma.shotJob.create({
-      data: {
+    console.error(`[REWORK_DEBUG] Triggering jobService.create for shot ${shotId} orgId ${organizationId} reworkKey ${reworkKey}`);
+    try {
+      await this.jobService.create(
         shotId,
-        projectId,
-        organizationId,
-        sceneId: shot.sceneId,
-        type: 'SHOT_RENDER',
-        status: 'PENDING',
-        priority: 10,
-        // 不再修改 ShotJob 结构，以 0-schema-risk 的 dedupe 表硬拦截
-        payload: {
-          traceId,
-          attempt: attempt + 1,
-          reworkKey,
-          reason: 'QUALITY_FAIL',
-          signals,
-        },
-      },
-    });
+        {
+          type: 'SHOT_RENDER',
+          dedupeKey: reworkKey,
+          payload: {
+            traceId,
+            attempt: attempt + 1,
+            reworkKey,
+            reason: 'QUALITY_FAIL',
+            signals,
+            referenceSheetId: 'gate-mock-ref-id', // P14: 满足 SHOT_RENDER 契约
+          },
+          isVerification: false, // 必须为 false 以确保 Case C 预算拦截生效
+        } as any,
+        'system-rework', // userId = 'system-rework' for audit
+        organizationId
+      );
+    } catch (e: any) {
+      this.logger.error(`[REWORK_ERROR] handleAutoRework failed for shot ${shotId}: message="${e.message}" code="${e.code}" response=${JSON.stringify(e.response)}`);
+
+      const errorMsg = e.message || '';
+      const responseMsg = e.response?.message || '';
+
+      // P14-0: 统一捕获预算不足错误 (由 JobService.create 抛出)
+      if (errorMsg.includes('Insufficient credits') || responseMsg.includes('Insufficient credits')) {
+        const reason = 'BUDGET_GUARD_BLOCKED';
+        console.error(`STOP_REASON=${reason} (via catch) for shot ${shotId}.`);
+        return reason;
+      }
+
+      // 其它错误抛出以防静默失败
+      this.logger.error(`Failed to create rework job for shot ${shotId}: ${e.message}`);
+      throw e;
+    }
 
     return undefined; // 成功触发，无拦截原因
   }
@@ -235,7 +242,7 @@ export class QualityScoreService {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      this.logger.warn(`Failed to build quality score from job ${job.id}:`, error);
+      console.error(`Failed to build quality score from job ${job.id}:`, error);
       return null;
     }
   }

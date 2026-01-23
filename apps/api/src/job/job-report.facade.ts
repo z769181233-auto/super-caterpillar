@@ -30,7 +30,7 @@ export class JobReportFacade {
     private readonly directorSolver: DirectorConstraintSolverService,
     @Inject(CostLedgerService)
     private readonly costLedger: CostLedgerService
-  ) {}
+  ) { }
 
   /**
    * PLAN-1 SSOT: Normalize storage key (remove path pollution)

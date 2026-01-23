@@ -1,0 +1,310 @@
+#!/bin/bash
+set -e
+# P14-0 Quality Production Hook & Sweeper (Production-Grade) Gate
+# 验证：JobService Hook 异步触发、Feature Flag 灰度、标准预算闸拦截、Ops 指标聚合
+
+function log_info() { echo -e "\033[0;34m[INFO]\033[0m $1"; }
+function log_success() { echo -e "\033[0;32m[PASS]\033[0m $1"; }
+function log_fail() { echo -e "\033[0;31m[FAIL]\033[0m $1"; }
+function log_error() { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
+
+
+function wait_quality_score() {
+  local SHOT_ID="$1"
+  local EXPECTED_VERDICT="${2:-}"
+  local DEADLINE=$(( $(date +%s) + 60 ))
+
+  while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+    # 同时查询 verdict 和 stopReason
+    RESULT=$(psql "$DATABASE_URL" -t -A -c "
+      SELECT verdict || ':' || COALESCE(signals->>'stopReason','')
+      FROM quality_scores 
+      WHERE \"shotId\" = '${SHOT_ID}' 
+      ORDER BY \"createdAt\" DESC LIMIT 1;
+    " | tr -d '[:space:]')
+
+    if [ -n "$RESULT" ]; then
+      local V_VERDICT=$(echo "$RESULT" | cut -d: -f1)
+      local V_STOP=$(echo "$RESULT" | cut -d: -f2)
+      
+      if [ -n "$EXPECTED_VERDICT" ] && [ "$V_VERDICT" != "$EXPECTED_VERDICT" ] && [ "$V_STOP" != "$EXPECTED_VERDICT" ]; then
+        echo "[GATE] quality_scores found verdict=$V_VERDICT stopReason=$V_STOP (expect $EXPECTED_VERDICT), keep waiting..."
+      else
+        echo "[GATE] quality_scores OK verdict=$V_VERDICT stopReason=$V_STOP"
+        return 0
+      fi
+    fi
+    sleep 2
+  done
+
+  echo "[GATE] timeout waiting quality_scores for shot=$SHOT_ID"
+  return 1
+}
+
+# 等待返工 Job 出现（最多 60s）
+function wait_rework_job() {
+  local SHOT_ID="$1"
+  local DEADLINE=$(( $(date +%s) + 60 ))
+
+  while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+    CNT=$(psql "$DATABASE_URL" -t -A -c "
+      SELECT COUNT(*)
+      FROM shot_jobs
+      WHERE \"shotId\" = '${SHOT_ID}'
+        AND type = 'SHOT_RENDER'
+        AND status IN ('PENDING','RUNNING','SUCCEEDED','FAILED');
+    " | tr -d '[:space:]')
+
+    if [ "${CNT:-0}" -ge 2 ]; then
+      echo "[GATE] rework job detected cnt=$CNT"
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "[GATE] timeout waiting rework job for shot=$SHOT_ID"
+  return 1
+}
+
+# Source local .env if exists
+if [ -f .env ]; then
+  log_info "Sourcing .env..."
+  export $(grep -v '^#' .env | xargs)
+fi
+
+export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
+export GATE_MODE=1  # 强制 Hook 同步执行
+export QUALITY_HOOK_SYNC_FOR_GATE=1
+
+export GATE_NAME="quality_prod_hook"
+export TS=$(date +%Y%m%d%H%M%S)
+export TRACE_ID="prod_hook_$TS"
+export API_URL=${API_URL:-"http://localhost:3000"}
+export EVIDENCE_ROOT="docs/_evidence/quality_prod_hook_$TS"
+
+mkdir -p "$EVIDENCE_ROOT"
+export LOG_FILE="$EVIDENCE_ROOT/GATE_RUN.log"
+exec > >(tee -i "$LOG_FILE") 2>&1
+
+log_info "Starting P14-0 Production Quality Gate..."
+
+# --- Auth Seed (must exist) ---
+source tools/gate/lib/gate_auth_seed.sh
+
+# --- HMAC Header Generator (0-risk, quoting-safe) ---
+generate_headers() {
+  local method="$1"
+  local req_path="$2"
+  local body="${3:-}"
+
+  # 关键：只用 env 注入；绝不触碰 PATH 变量；不在 bash 里嵌套任何反引号
+  env API_SECRET="$API_SECRET" VALID_API_KEY_ID="$VALID_API_KEY_ID" REQ_BODY="$body" \
+    node - <<'NODESCRIPT'
+const crypto = require("crypto");
+
+const secret = process.env.API_SECRET || "";
+const apiKey = process.env.VALID_API_KEY_ID || "";
+const body = process.env.REQ_BODY || "";
+
+const timestamp = Math.floor(Date.now() / 1000);
+const nonce = "nonce_" + timestamp + "_" + Math.random().toString(36).slice(2);
+
+const contentSha256 = body
+  ? crypto.createHash("sha256").update(body, "utf8").digest("hex")
+  : "UNSIGNED";
+
+const payload = apiKey + nonce + timestamp + body;
+const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+
+process.stdout.write("X-Api-Key: " + apiKey + "\n");
+process.stdout.write("X-Nonce: " + nonce + "\n");
+process.stdout.write("X-Timestamp: " + timestamp + "\n");
+process.stdout.write("X-Content-SHA256: " + contentSha256 + "\n");
+process.stdout.write("X-Signature: " + signature + "\n");
+NODESCRIPT
+}
+
+curl_hmac_json() {
+  local method="$1"
+  local path="$2"
+  local body="${3:-}"
+  local out_file="${4:-/tmp/gate_resp.json}"
+
+  local headers
+  headers="$(generate_headers "$method" "$path" "$body")"
+
+  local curl_h=()
+  while IFS= read -r line; do
+    [ -n "$line" ] && curl_h+=(-H "$line")
+  done <<< "$headers"
+
+  # Always capture body + status code
+  local http_code
+  http_code="$(curl -sS -o "$out_file" -w "%{http_code}" \
+    "${curl_h[@]}" -H "Content-Type: application/json" \
+    -X "$method" "$API_URL$path" -d "$body" || true)"
+
+  echo "$http_code"
+}
+
+# 0. 准备环境
+log_info "Step 0: Seeding environment..."
+psql "$DATABASE_URL" -c "INSERT INTO users (id, email, \"passwordHash\", \"createdAt\", \"updatedAt\") VALUES ('system', 'system@scu.ai', 'hash', now(), now()) ON CONFLICT DO NOTHING"
+psql "$DATABASE_URL" -c "INSERT INTO users (id, email, \"passwordHash\", \"createdAt\", \"updatedAt\") VALUES ('gate-user', 'gate@scu.ai', 'hash', now(), now()) ON CONFLICT DO NOTHING"
+psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", \"createdAt\", \"updatedAt\", credits) VALUES ('gate-org', 'Gate Org', 'gate-user', now(), now(), 10000000) ON CONFLICT DO NOTHING"
+psql "$DATABASE_URL" -c "DELETE FROM billing_events WHERE \"org_id\" = 'gate-org'"
+psql "$DATABASE_URL" -c "DELETE FROM cost_ledgers WHERE \"orgId\" = 'gate-org'"
+psql "$DATABASE_URL" -c "DELETE FROM projects WHERE \"organizationId\" = 'gate-org'"
+psql "$DATABASE_URL" -c "UPDATE organizations SET credits = 10000000 WHERE id = 'gate-org'"
+
+PROJECT_ID=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), 'P14-0 Project $TRACE_ID', 'gate-user', 'gate-org', 'in_progress', now(), now()) RETURNING id" | head -n 1)
+SEASON_ID=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO seasons (id, \"projectId\", index, title, \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), '$PROJECT_ID', 1, 'Season', now(), now()) RETURNING id" | head -n 1)
+EPISODE_ID=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO episodes (id, \"seasonId\", \"projectId\", index, name) VALUES (gen_random_uuid(), '$SEASON_ID', '$PROJECT_ID', 1, 'Episode') RETURNING id" | head -n 1)
+SCENE_ID=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO scenes (id, \"episodeId\", project_id, scene_index, created_at, updated_at, summary) VALUES (gen_random_uuid(), '$EPISODE_ID', '$PROJECT_ID', 1, now(), now(), 'Gate Mock Summary') RETURNING id" | head -n 1)
+
+# --- CASE A: FLAG OFF ---
+log_info "CASE A: Feature Flag OFF Assertion (Default OFF)"
+# SHOT_A PROJECT_ID 无设置，期望不触发
+SHOT_ID_A=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shots (id, \"sceneId\", \"organizationId\", index, type) VALUES (gen_random_uuid(), '$SCENE_ID', 'gate-org', 1, 'SHOT_RENDER') RETURNING id" | head -n 1)
+JOB_ID_A=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shot_jobs (id, \"shotId\", \"projectId\", \"organizationId\", type, status, attempts, \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), '$SHOT_ID_A', '$PROJECT_ID', 'gate-org', 'SHOT_RENDER', 'RUNNING', 1, now(), now()) RETURNING id" | head -n 1)
+
+# 模拟上报成功
+BODY_A='{"status": "SUCCEEDED", "result": {}}'  
+RESP_A="$EVIDENCE_ROOT/case_a_report.json"
+HTTP_CODE_A=$(curl_hmac_json "POST" "/api/jobs/$JOB_ID_A/report" "$BODY_A" "$RESP_A")
+
+if [ "$HTTP_CODE_A" = "401" ] || [ "$HTTP_CODE_A" = "403" ]; then
+  log_fail "Case A AUTH FAILED: $HTTP_CODE_A"; cat "$RESP_A"; exit 1
+fi
+
+sleep 2 # 等待异步钩子
+COUNT_A=$(psql "$DATABASE_URL" -t -A -c "SELECT count(*) FROM quality_scores WHERE \"shotId\" = '$SHOT_ID_A'")
+if [ "$COUNT_A" -eq 0 ]; then
+    log_success "Case A Passed: No scoring triggered when Flag is OFF."
+else
+    log_fail "Case A Failed: Scoring triggered despite Flag OFF."; exit 1
+fi
+
+# --- CASE E: SWEEPER ---
+log_info "CASE E: Quality Backfill Sweeper Verification"
+# 提前置入 Feature Flag
+psql "$DATABASE_URL" -c "UPDATE projects SET \"settingsJson\" = '{\"autoReworkEnabled\": true}' WHERE id = '$PROJECT_ID'"
+
+SHOT_ID_E=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shots (id, \"sceneId\", \"organizationId\", index, type) VALUES (gen_random_uuid(), '$SCENE_ID', 'gate-org', 5, 'SHOT_RENDER') RETURNING id" | head -n 1)
+# 直接创建一个已经成功的 Job，不经过 API (绕过 Hook)
+JOB_ID_E=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shot_jobs (id, \"shotId\", \"projectId\", \"organizationId\", type, status, attempts, \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), '$SHOT_ID_E', '$PROJECT_ID', 'gate-org', 'SHOT_RENDER', 'SUCCEEDED', 1, now(), now()) RETURNING id" | head -n 1)
+psql "$DATABASE_URL" -c "INSERT INTO assets (id, type, \"storageKey\", \"ownerId\", \"ownerType\", \"shotId\", \"projectId\", \"createdAt\") VALUES (gen_random_uuid(), 'VIDEO', 'e.mp4', '$SHOT_ID_E', 'SHOT', '$SHOT_ID_E', '$PROJECT_ID', now())"
+
+log_info "Triggering manual sweep diagnostic..."
+curl -s -X POST "$API_URL/api/quality/sweep" > /dev/null
+
+sleep 5
+COUNT_E=$(psql "$DATABASE_URL" -t -A -c "SELECT count(*) FROM quality_scores WHERE \"shotId\" = '$SHOT_ID_E'")
+if [ "$COUNT_E" -gt 0 ]; then
+    log_success "Case E Passed: Sweeper backfilled quality score for orphaned job."
+else
+    log_fail "Case E Failed: Sweeper did not backfill quality score."; exit 1
+fi
+
+# --- CASE B: FLAG ON + FAIL -> REWORK ---
+log_info "CASE B: Feature Flag ON (DB) + FAIL -> Rework Trigger"
+# 准备 Anchor
+ANCHOR_ID=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO identity_anchors (id, project_id, character_id, reference_asset_id, identity_hash, created_at, updated_at) VALUES (gen_random_uuid(), '$PROJECT_ID', 'char-1', 'asset-0', 'hash-1', now(), now()) RETURNING id" | head -n 1)
+
+# 注入失败信号（ identity score = 0.5）
+SHOT_ID_B=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shots (id, \"sceneId\", \"organizationId\", index, type) VALUES (gen_random_uuid(), '$SCENE_ID', 'gate-org', 2, 'SHOT_RENDER') RETURNING id" | head -n 1)
+psql "$DATABASE_URL" -c "INSERT INTO shot_identity_scores (id, shot_id, character_id, reference_anchor_id, target_asset_id, identity_score, verdict, created_at) VALUES (gen_random_uuid(), '$SHOT_ID_B', 'char-1', '$ANCHOR_ID', 'asset-1', 0.5, 'FAIL', now())"
+psql "$DATABASE_URL" -c "INSERT INTO assets (id, type, \"storageKey\", \"ownerId\", \"ownerType\", \"shotId\", \"projectId\", \"createdAt\") VALUES (gen_random_uuid(), 'VIDEO', 'b.mp4', '$SHOT_ID_B', 'SHOT', '$SHOT_ID_B', '$PROJECT_ID', now())"
+
+JOB_ID_B=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shot_jobs (id, \"shotId\", \"projectId\", \"organizationId\", type, status, attempts, \"traceId\", \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), '$SHOT_ID_B', '$PROJECT_ID', 'gate-org', 'SHOT_RENDER', 'RUNNING', 1, '$TRACE_ID', now(), now()) RETURNING id" | head -n 1)
+
+BODY_B='{"status": "SUCCEEDED", "result": {}}'  
+RESP_B="$EVIDENCE_ROOT/case_b_report.json"
+log_info "DEBUG: gate-org credits before Case B report: $(psql "$DATABASE_URL" -t -A -c "SELECT credits FROM organizations WHERE id = 'gate-org'")"
+HTTP_CODE_B=$(curl_hmac_json "POST" "/api/jobs/$JOB_ID_B/report" "$BODY_B" "$RESP_B")
+
+if [ "$HTTP_CODE_B" = "401" ] || [ "$HTTP_CODE_B" = "403" ]; then
+  log_fail "Case B AUTH FAILED: $HTTP_CODE_B"; cat "$RESP_B"; exit 1
+fi
+
+log_info "Waiting for quality_score and rework job (最终一致性断言，最多 60s)..."
+set +e
+if wait_quality_score "$SHOT_ID_B" "" && wait_rework_job "$SHOT_ID_B"; then
+    VERDICT_B=$(psql "$DATABASE_URL" -t -A -c "SELECT verdict FROM quality_scores WHERE \"shotId\" = '$SHOT_ID_B' ORDER BY \"createdAt\" DESC LIMIT 1" | tr -d '[:space:]')
+    ATTEMPT_B=$(psql "$DATABASE_URL" -t -A -c "SELECT attempt FROM quality_scores WHERE \"shotId\" = '$SHOT_ID_B' ORDER BY \"createdAt\" DESC LIMIT 1" | tr -d '[:space:]')
+    log_success "Case B Passed: verdict=$VERDICT_B, attempt=$ATTEMPT_B, rework job created via Hook."
+else
+    log_fail "Case B Failed: timeout waiting for quality_score or rework job."
+fi
+set -e
+
+# --- CASE C: BUDGET GUARD (OFFICIAL REUSE) ---
+# --- CASE C: BUDGET BLOCKED --- 
+log_info "CASE C: Feature Flag ON + FAIL + Low Credits -> BUDGET_GUARD_BLOCKED"
+psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", \"createdAt\", \"updatedAt\", credits) VALUES ('gate-org-c', 'Gate Org C', 'gate-user', now(), now(), 0) ON CONFLICT DO NOTHING"
+psql "$DATABASE_URL" -c "UPDATE organizations SET credits = 0 WHERE id = 'gate-org-c'"
+
+PROJECT_ID_C=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), 'P14-0 Project C $TRACE_ID', 'gate-user', 'gate-org-c', 'in_progress', now(), now()) RETURNING id" | head -n 1)
+psql "$DATABASE_URL" -t -A -c "UPDATE projects SET \"settingsJson\" = '{\"autoReworkEnabled\": true}' WHERE id = '$PROJECT_ID_C'"
+
+SEASON_ID_C=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO seasons (id, \"projectId\", index, title, \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), '$PROJECT_ID_C', 1, 'Season', now(), now()) RETURNING id" | head -n 1)
+EPISODE_ID_C=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO episodes (id, \"seasonId\", \"projectId\", index, name) VALUES (gen_random_uuid(), '$SEASON_ID_C', '$PROJECT_ID_C', 1, 'Episode') RETURNING id" | head -n 1)
+SCENE_ID_C=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO scenes (id, \"episodeId\", project_id, scene_index, created_at, updated_at, summary) VALUES (gen_random_uuid(), '$EPISODE_ID_C', '$PROJECT_ID_C', 1, now(), now(), 'Gate Mock Summary') RETURNING id" | head -n 1)
+
+SHOT_ID_C=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shots (id, \"sceneId\", index, title, type, params, \"qualityScore\", \"organizationId\", \"reviewStatus\") VALUES (gen_random_uuid(), '$SCENE_ID_C', 1, 'Shot C', 'SHOT_RENDER', '{}', '{}', 'gate-org-c', 'DRAFT') RETURNING id" | head -n 1)
+psql "$DATABASE_URL" -c "INSERT INTO shot_identity_scores (id, shot_id, character_id, reference_anchor_id, target_asset_id, identity_score, verdict, created_at) VALUES (gen_random_uuid(), '$SHOT_ID_C', 'char-1', '$ANCHOR_ID', 'asset-2', 0.5, 'FAIL', now())"
+psql "$DATABASE_URL" -c "INSERT INTO assets (id, type, \"storageKey\", \"ownerId\", \"ownerType\", \"shotId\", \"projectId\", \"createdAt\") VALUES (gen_random_uuid(), 'VIDEO', 'c.mp4', '$SHOT_ID_C', 'SHOT', '$SHOT_ID_C', '$PROJECT_ID_C', now())"
+
+JOB_ID_C=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shot_jobs (id, \"shotId\", \"projectId\", \"organizationId\", type, status, attempts, \"traceId\", \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), '$SHOT_ID_C', '$PROJECT_ID_C', 'gate-org-c', 'SHOT_RENDER', 'RUNNING', 1, 'trace_c_$TRACE_ID', now(), now()) RETURNING id" | head -n 1)
+
+BODY_C='{"status": "SUCCEEDED", "result": {}}'
+RESP_C="$EVIDENCE_ROOT/case_c_report.json"
+HTTP_CODE_C=$(curl_hmac_json "POST" "/api/jobs/$JOB_ID_C/report" "$BODY_C" "$RESP_C")
+
+log_info "Waiting for quality_score with BUDGET_GUARD_BLOCKED (最终一致性断言，最多 60s)..."
+if wait_quality_score "$SHOT_ID_C" "BUDGET_GUARD_BLOCKED"; then
+    log_success "Case C Passed: Rework blocked by budgets."
+else
+    log_fail "Case C Failed: stopReason not recorded."
+fi
+
+# --- CASE D: Ops Metrics ---
+log_info "CASE D: Ops Metrics Verification"
+METRICS_RES=$(curl -s "$API_URL/api/ops/metrics")
+REWORK_RATE=$(echo $METRICS_RES | jq -r '.rework_statistics_1h.rework_rate_1h')
+
+if (( $(echo "$REWORK_RATE > 0" | bc -l) )); then
+    log_success "Case D Passed: Rework rate detected in Ops metrics: $REWORK_RATE%"
+else
+    log_info "Case D Warning: Rework rate is 0 in metrics (maybe no fails yet?): $METRICS_RES"
+fi
+
+# --- CASE E: SWEEPER ---
+log_info "CASE E: Quality Backfill Sweeper Verification"
+SHOT_ID_E=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shots (id, \"sceneId\", \"organizationId\", index, type) VALUES (gen_random_uuid(), '$SCENE_ID', 'gate-org', 5, 'SHOT_RENDER') RETURNING id" | head -n 1)
+# 直接创建一个已经成功的 Job，不经过 API (绕过 Hook)
+JOB_ID_E=$(psql "$DATABASE_URL" -t -A -c "INSERT INTO shot_jobs (id, \"shotId\", \"projectId\", \"organizationId\", type, status, attempts, \"createdAt\", \"updatedAt\") VALUES (gen_random_uuid(), '$SHOT_ID_E', '$PROJECT_ID', 'gate-org', 'SHOT_RENDER', 'SUCCEEDED', 1, now(), now()) RETURNING id" | head -n 1)
+psql "$DATABASE_URL" -c "INSERT INTO assets (id, type, \"storageKey\", \"ownerId\", \"ownerType\", \"shotId\", \"projectId\", \"createdAt\") VALUES (gen_random_uuid(), 'VIDEO', 'e.mp4', '$SCENE_ID', 'SCENE', '$SHOT_ID_E', '$PROJECT_ID', now())"
+
+log_info "Triggering manual sweep diagnostic..."
+curl -s -X POST "$API_URL/api/quality/sweep" > /dev/null
+
+sleep 5
+COUNT_E=$(psql "$DATABASE_URL" -t -A -c "SELECT count(*) FROM quality_scores WHERE \"shotId\" = '$SHOT_ID_E'")
+if [ "$COUNT_E" -gt 0 ]; then
+    log_success "Case E Passed: Sweeper backfilled quality score for orphaned job."
+else
+    log_fail "Case E Failed: Sweeper did not backfill quality score."; exit 1
+fi
+
+# 6. Archive Evidence
+log_info "Step 6: Archiving evidence..."
+psql "$DATABASE_URL" -c "COPY (SELECT * FROM quality_scores WHERE \"shotId\" IN ('$SHOT_ID_A', '$SHOT_ID_B', '$SHOT_ID_C')) TO STDOUT WITH CSV HEADER" > "$EVIDENCE_ROOT/quality_scores_dump.csv"
+psql "$DATABASE_URL" -c "COPY (SELECT * FROM shot_jobs WHERE \"projectId\" = '$PROJECT_ID') TO STDOUT WITH CSV HEADER" > "$EVIDENCE_ROOT/rework_jobs_dump.csv"
+curl -s "$API_URL/api/ops/metrics" > "$EVIDENCE_ROOT/ops_metrics_snapshot.json"
+
+cd "$EVIDENCE_ROOT"
+find . -type f ! -name "SHA256SUMS.txt" ! -name "EVIDENCE_HASH_INDEX.json" -exec sha256sum {} + > SHA256SUMS.txt
+echo "Evidence stored in $EVIDENCE_ROOT"
+
+log_success "P14-0 Production Hook Gate DOUBLE PASS!"

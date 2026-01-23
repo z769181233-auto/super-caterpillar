@@ -1,5 +1,6 @@
 import { Module, Global } from '@nestjs/common';
 import { FeatureFlagService } from './feature-flag.service';
+import { PrismaModule } from '../prisma/prisma.module';
 
 /**
  * Feature Flag Module
@@ -8,7 +9,8 @@ import { FeatureFlagService } from './feature-flag.service';
  */
 @Global()
 @Module({
+  imports: [PrismaModule],
   providers: [FeatureFlagService],
   exports: [FeatureFlagService],
 })
-export class FeatureFlagModule {}
+export class FeatureFlagModule { }

@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) { }
 
   /**
    * Get available credits for an organization.
@@ -68,14 +68,13 @@ export class BillingService {
       if (result.count === 0) {
         // If update failed, check if it was because org missing or funds missing
         const org = await tx.organization.findUnique({ where: { id: organizationId } });
-        console.error(`[BILLING_DEBUG] count=0. Org check: ${JSON.stringify(org)}`);
 
         if (!org) throw new NotFoundException('Organization not found');
 
         this.logger.warn(
           `Insufficient credits for Org ${organizationId}. Required: ${amount}, Available: ${org.credits}`
         );
-        throw new ForbiddenException('Insufficient credits');
+        throw new ForbiddenException(`Insufficient credits to start job. Required: ${amount} credits. (Available: ${org.credits})`);
       }
 
       // 3. Record Billing Event (Ledger)

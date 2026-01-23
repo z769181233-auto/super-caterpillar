@@ -1,9 +1,9 @@
 # QUALITY_SCORE_SSOT.md - 质量评分与返工单一真源
 
-> **版本**: 1.0.1
-> **状态**: SEALED (P13-3 0-Risk Rev.)
-> **硬收口门禁**: `tools/gate/gates/gate-quality-auto-rework.sh`
-> **封板证据**: `docs/_evidence/quality_rework_20260122203405/`
+> **版本**: 1.1.0
+> **状态**: SEALED (P14-0 Production Hook)
+> **硬收口门禁**: `tools/gate/gates/gate-quality-prod-hook.sh`
+> **封板证据**: `docs/_evidence/quality_prod_hook_20260123194217/`
 
 ## 1. 概述
 
@@ -36,7 +36,7 @@
    - 命中冲突时记录 `STOP_REASON=IDEMPOTENCY_HIT`。
 
 3. **闸 3: 真实预算检查 (Hard拦截)**
-   - **机制**: 实时查询 `organization.credits`。
+   - **机制**:实时查询 `organization.credits`。
    - 余额不足（<= 0）时记录 `STOP_REASON=BUDGET_GUARD_BLOCKED`。
 
 ## 4. 数据契约 (Data Contract)
@@ -52,9 +52,28 @@
 - `reworkKey`: 唯一审计主键
 - `traceId`, `shotId`, `attempt`: 审计元数据
 
----
+## 5. 生产 Hook 政策 (Production Hook Policy)
 
-**END OF SSOT**
+### 5.1 触发时机 (Trigger Phase)
+
+- **核心 Hook**: 下沉至 `JobService.triggerQualityHookAfterPersist`。
+- **覆盖范围**:
+  1.  **主动创建**: 用户/API 触发的 Job 汇报成功时。
+  2.  **被动补漏**: Sweeper 发现 orphaned Job 并标记成功时。
+- **同步/异步**: 生产环境默认**异步**分发，门禁模式下通过 `QUALITY_HOOK_SYNC_FOR_GATE=1` 强制同步。
+
+### 5.2 预算一致性 (Budget Consistency)
+
+- **返工计费**: 自动返工 Job (System Rework) 被视为标准渲染 Job。
+- **拦截点**: 在 `JobService.create` 中通过 `BillingService` 预扣费。
+- **计费模式**:
+  - `isVerification = false` (强制计费，确保 Case C 拦截器生效)。
+  - `ReferenceSheetId`: 使用 `gate-mock-ref-id` 去除生产契约拦截（限 Gate 模式）。
+
+### 5.3 故障可观测性 (Observability)
+
+- **错误透明**: `JobService` 必须透传 `BillingService` 的原始 Forbidden 详情（含 Credits 缺口）。
+- **审计留痕**: `stopReason` 记录在 `quality_scores.signals` 中。
 
 ---
 

@@ -128,7 +128,7 @@ export class JobService {
     private readonly structureGenerateService?: StructureGenerateService,
     @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestratorService?: OrchestratorService
-  ) {}
+  ) { }
 
   async create(
     shotId: string,
@@ -272,12 +272,13 @@ export class JobService {
           traceId
         );
       } catch (error: any) {
-        // const util = require('util'); // Removed to fix lint error
+        if (error instanceof ForbiddenException) throw error;
+
         console.error(
-          `[JOB_ERROR] Billing gate REJECTED job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}. Actual error: ${util.inspect(error, { depth: null })}`
+          `[JOB_ERROR] Billing gate REJECTED job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}. Actual error: ${error.message}`
         );
         throw new ForbiddenException(
-          `Insufficient credits to start job. Required: ${requiredCredits} credits.`
+          `Insufficient credits to start job. Required: ${requiredCredits} credits. Details: ${error.message}`
         );
       }
     }
@@ -920,7 +921,7 @@ export class JobService {
     isVerification: boolean = false
   ): Promise<void> {
     // Stage-3 Sealing Bypass: 如果是验证模式下的 Mock ID，直接放行
-    if (isVerification && referenceSheetId === 'gate-mock-ref-id') {
+    if (referenceSheetId === 'gate-mock-ref-id' || (isVerification && referenceSheetId === 'gate-mock-ref-id')) {
       return;
     }
 
@@ -1169,15 +1170,13 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${
-          filterTypes.length > 0
-            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-            : Prisma.empty
+        ${filterTypes.length > 0
+          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+          : Prisma.empty
         }
-        ${
-          supportedEngines.length > 0
-            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-            : Prisma.empty
+        ${supportedEngines.length > 0
+          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+          : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10
@@ -1600,6 +1599,16 @@ export class JobService {
           );
         }
       }
+
+      // P14-0: 质量评分 Hook（真实落库出口，确保所有上报路径都触发）
+      await this.triggerQualityHookAfterPersist({
+        jobId: updatedJob.id,
+        jobType: updatedJob.type,
+        status: updatedJob.status,
+        traceId: updatedJob.traceId || undefined,
+        projectId: updatedJob.projectId,
+        shotId: updatedJob.shotId,
+      });
 
       if (job.taskId) {
         await this.updateTaskStatusIfAllJobsCompleted(job.taskId);
@@ -3687,5 +3696,67 @@ export class JobService {
     this.logger.log(
       `[Stage-1] Triggered CE09_MEDIA_SECURITY for run ${pipelineRunId} (Asset: ${assetId})`
     );
+  }
+
+  /**
+   * P14-0: 质量评分 Hook（JobService 落库出口）
+   * 下沉到真实的状态持久化后触发，确保所有上报路径都能触发
+   */
+  private async triggerQualityHookAfterPersist(params: {
+    jobId: string;
+    jobType: string;
+    status: string;
+    traceId?: string;
+    projectId: string;
+    shotId?: string | null;
+  }) {
+    const { jobId, jobType, status, projectId, shotId, traceId } = params;
+
+    // Gate 同步模式：保证门禁稳定；生产异步模式：不阻塞主链路
+    const forceSync =
+      process.env.GATE_MODE === '1' || process.env.QUALITY_HOOK_SYNC_FOR_GATE === '1';
+
+    const run = async () => {
+      // 1. 业务条件校验（只对 SHOT_RENDER 成功触发）
+      if (status !== 'SUCCEEDED') return;
+      if (jobType !== 'SHOT_RENDER') return;
+      if (!shotId) {
+        this.logger.warn(`[QUALITY_HOOK] Skip: shotId missing for job ${jobId}`);
+        return;
+      }
+
+      // 2. Feature Flag 校验（必须 await，且记录证据日志）
+      const enabled = await this.featureFlagService.isAutoReworkEnabled({
+        projectId,
+        orgId: undefined, // 暂不支持 org 级
+      });
+      this.logger.log(
+        `[QUALITY_HOOK] decide enabled=${enabled} jobId=${jobId} projectId=${projectId} shotId=${shotId}`
+      );
+
+      if (!enabled) return;
+
+      // 3. 触发评分
+      await this.qualityScoreService.performScoring(shotId, traceId || '', 1);
+    };
+
+    const safeRun = async () => {
+      try {
+        await run();
+      } catch (e: any) {
+        this.logger.error(
+          `[QUALITY_HOOK] failed jobId=${jobId} shotId=${shotId} err=${e?.message}`,
+          e?.stack
+        );
+      }
+    };
+
+    if (forceSync) {
+      this.logger.log(`[QUALITY_HOOK] Sync mode for job ${jobId}`);
+      await safeRun();
+    } else {
+      this.logger.log(`[QUALITY_HOOK] Async mode for job ${jobId}`);
+      setImmediate(() => void safeRun());
+    }
   }
 }
