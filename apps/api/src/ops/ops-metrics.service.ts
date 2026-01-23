@@ -82,17 +82,22 @@ export class OpsMetricsService {
       blocked_by_budget_1h: 0,
       blocked_by_max_attempt_1h: 0,
       idempotency_hit_1h: 0,
+      blocked_by_rate_limit_1h: 0,
     };
 
     qualityScores.forEach((s) => {
       const stopReason = (s.signals as any)?.stopReason;
       if (stopReason === 'BUDGET_GUARD_BLOCKED') reworkStats.blocked_by_budget_1h++;
-      if (stopReason === 'MAX_ATTEMPT_REACHED') reworkStats.blocked_by_max_attempt_1h++;
+      if (stopReason === 'MAX_ATTEMPT_REACHED')
+        reworkStats.blocked_by_max_attempt_1h++;
       if (stopReason === 'IDEMPOTENCY_HIT') reworkStats.idempotency_hit_1h++;
+      if (stopReason === 'RATE_LIMIT_BLOCKED') reworkStats.blocked_by_rate_limit_1h++;
     });
 
     const rework_rate_1h =
-      qualityScores.length > 0 ? (reworkStats.total_fails_1h / qualityScores.length) * 100 : 0;
+      qualityScores.length > 0
+        ? (reworkStats.total_fails_1h / qualityScores.length) * 100
+        : 0;
 
     return {
       job_success_rate_15m: Number(job_success_rate_15m.toFixed(2)),
@@ -100,9 +105,10 @@ export class OpsMetricsService {
       queue_depth: queueDepth,
       oldest_pending_age_ms,
       published_assets_24h: publishedCount,
-      rework_statistics_1h: {
+      rework_rate_1h: Number(rework_rate_1h.toFixed(2)),
+      rework_stats_1h: {
         ...reworkStats,
-        rework_rate_1h: Number(rework_rate_1h.toFixed(2)),
+        avg_rework_cost_estimate: 0, // Placeholder for P14-1
       },
       cost_by_engineKey_24h: costByEngine.reduce(
         (acc, curr) => {

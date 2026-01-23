@@ -154,14 +154,41 @@ export class QualityScoreService {
       return 'PROJECT_OR_ORG_MISSING';
     }
 
+    const standardizedTraceId = `${traceId}:rework:${attempt + 1}`;
     const reworkKey = `${traceId}:${shotId}:attempt_${attempt + 1}`;
+
+    // P14-1: Org 维度并发护栏
+    const reworkConcurrencyCap = parseInt(
+      process.env.REWORK_MAX_CONCURRENCY_PER_ORG || '2',
+      10
+    );
+    const runningReworks = await this.prisma.shotJob.count({
+      where: {
+        organizationId,
+        type: 'SHOT_RENDER',
+        status: { in: ['PENDING', 'RUNNING'] },
+        isVerification: false,
+        traceId: { contains: ':rework:' },
+      },
+    });
+
+    if (runningReworks >= reworkConcurrencyCap) {
+      const reason = 'RATE_LIMIT_BLOCKED';
+      console.error(
+        `STOP_REASON=${reason} for shot ${shotId}. Current running reworks: ${runningReworks}, Cap: ${reworkConcurrencyCap}`
+      );
+      if (signals) {
+        signals.rateLimitSnapshot = { runningReworks, cap: reworkConcurrencyCap };
+      }
+      return reason;
+    }
 
     // 闸 2: 幂等性校验 (硬拦截 via ShotReworkDedupe 表)
     try {
       await this.prisma.shotReworkDedupe.create({
         data: {
           reworkKey,
-          traceId,
+          traceId: standardizedTraceId, // 使用标准化 traceId
           shotId,
           attempt: attempt + 1,
         },
@@ -170,23 +197,30 @@ export class QualityScoreService {
       // P2002: Unique constraint violation (Prisma unique violation code)
       if (e.code === 'P2002') {
         const reason = 'IDEMPOTENCY_HIT';
-        console.error(`STOP_REASON=${reason} (reworkKey=${reworkKey}) for shot ${shotId}.`);
+        console.error(
+          `STOP_REASON=${reason} (reworkKey=${reworkKey}) for shot ${shotId}.`
+        );
         return reason;
       }
       throw e;
     }
 
-    console.error(`Triggering rework for shot ${shotId}, new attempt: ${attempt + 1}, dedupeKey: ${reworkKey}`);
+    console.error(
+      `Triggering rework for shot ${shotId}, new attempt: ${attempt + 1}, traceId: ${standardizedTraceId}`
+    );
 
-    console.error(`[REWORK_DEBUG] Triggering jobService.create for shot ${shotId} orgId ${organizationId} reworkKey ${reworkKey}`);
+    console.error(
+      `[REWORK_DEBUG] Triggering jobService.create for shot ${shotId} orgId ${organizationId} traceId ${standardizedTraceId}`
+    );
     try {
       await this.jobService.create(
         shotId,
         {
           type: 'SHOT_RENDER',
           dedupeKey: reworkKey,
+          traceId: standardizedTraceId, // P14-1: 标准化 traceId
           payload: {
-            traceId,
+            traceId: standardizedTraceId,
             attempt: attempt + 1,
             reworkKey,
             reason: 'QUALITY_FAIL',

@@ -1,9 +1,9 @@
 # QUALITY_SCORE_SSOT.md - 质量评分与返工单一真源
 
-> **版本**: 1.1.0
-> **状态**: SEALED (P14-0 Production Hook)
-> **硬收口门禁**: `tools/gate/gates/gate-quality-prod-hook.sh`
-> **封板证据**: `docs/_evidence/quality_prod_hook_20260123194217/`
+> **版本**: 1.2.0
+> **状态**: SEALED (P14-1 Rework SLO)
+> **硬收口门禁**: `tools/gate/gates/gate-quality-prod-hook-slo.sh`
+> **封板证据**: `docs/_evidence/quality_prod_hook_slo_20260123201549/`
 
 ## 1. 概述
 
@@ -36,8 +36,14 @@
    - 命中冲突时记录 `STOP_REASON=IDEMPOTENCY_HIT`。
 
 3. **闸 3: 真实预算检查 (Hard拦截)**
-   - **机制**:实时查询 `organization.credits`。
+   - **机制**: 实时查询 `organization.credits`。
    - 余额不足（<= 0）时记录 `STOP_REASON=BUDGET_GUARD_BLOCKED`。
+
+4. **闸 4: Org 维度并发护栏 (Production SLO)**
+   - **机制**: 统计 Org 下处于 `PENDING/RUNNING` 状态的返工 Job 总数。
+   - **识别标准**: `traceId` 包含 `:rework:` 标记。
+   - **阈值**: `REWORK_MAX_CONCURRENCY_PER_ORG` (默认 2)。
+   - **拦截动作**: 超过阈值时记录 `STOP_REASON=RATE_LIMIT_BLOCKED`，记录 `rateLimitSnapshot` 审计信息。
 
 ## 4. 数据契约 (Data Contract)
 
