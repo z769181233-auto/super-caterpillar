@@ -1,47 +1,53 @@
 # CE23_REAL_SSOT.md - CE23 真实身份一致性单一真源（P15-0）
 
-> **状态**: DRAFT (P15-0 Initial)  
+> **状态**: DRAFT (P15-0 PPV-64)  
 > **更新时间**: 2026-01-23
 
 ## 1. 目标
 
-通过引入真实图象 Embedding 提取与 Cosine 相似度计算，取代 P13/P14 阶段的 `real-stub` 模拟评分，从而驱动自动返工逻辑在真实画质判定下的闭环执行。
+通过引入基于图像内容像素采样的 **PPV-64 (Pixel-Perceptual-Vector)** 算法，取代 `real-stub` 模拟评分。P15-0 的定位为“内容相似度 v1”，旨在提供基于物理内容的、完全确定的、可审计的判定基础，为后续更高阶的身份识别算法奠定架构根基。
 
-## 2. 数据契约 (Data Contract)
+## 2. 算法规范 (PPV-64)
 
-### 2.1 输入参数
+### 2.1 提取逻辑
 
-| 参数             | 类型   | 说明                             |
-| :--------------- | :----- | :------------------------------- |
-| `anchorImageKey` | String | 角色锚点（参考图）的 Storage Key |
-| `targetImageKey` | String | 当前分镜生成的 Asset Storage Key |
-| `characterId`    | String | 角色唯一标识符                   |
+- **下采样**: 将原始图像解码并 Resize 至 8x8。
+- **灰度化**: 使用固定权重的灰度计算：`gray = 0.299*R + 0.587*G + 0.114*B`。
+- **网格平均**: 采用 8x8 Cell 网格平均值（Cell Average）而非单点采样，以增强抗噪性。
+- **维度**: **64** (1D Vector)。
 
-### 2.2 输出结果
+### 2.2 确定性预处理 (Deterministic Preprocessing)
 
-| 字段              | 类型   | 说明                                     |
-| :---------------- | :----- | :--------------------------------------- |
-| `identity_score`  | Float  | Cosine 相似度评分，区间 [0, 1]           |
-| `provider`        | String | 算法提供方标识，P15-0 为 `real-embed-v1` |
-| `embeddings_hash` | String | 参与计算的 Embedding 哈希值，用于审计    |
-| `details`         | Object | 包含 cosine 值、版本号等调试信息         |
+- **标准化**: `(x - mean) / (std + 1e-6)`。
+- **归一化**: 执行 L2 Normalize，确保向量模长为 1，以保证 Cosine 计算的数值稳定性。
 
-## 3. 判定阈值 (Pass/Fail)
+## 3. 判定契约 (Data Contract)
+
+### 3.1 输入
+
+- `anchorImageKey` / `targetImageKey`: Storage 索引。
+- `characterId`: 校验对象标识。
+
+### 3.2 输出
+
+| 字段             | 类型   | 说明                                                                           |
+| :--------------- | :----- | :----------------------------------------------------------------------------- |
+| `identity_score` | Float  | Cosine 相似度，区间映射至 [0, 1]                                               |
+| `provider`       | String | 固定为 `real-embed-v1`                                                         |
+| `embedding_hash` | String | `sha256(float32_bytes)`，用于审计                                              |
+| `details`        | Object | 必须包含 `anchor_file_sha256`, `target_file_sha256`, `algo_version`, `dims=64` |
+
+## 4. 判定阈值 (Pass/Fail)
 
 - **PASS**: `identity_score >= 0.80`
 - **FAIL**: `identity_score < 0.80` (触发返工流程)
 
-## 4. 灰度策略 (Feature Flag)
+## 5. 运营约束
 
-- 仅当 `projects.settingsJson.ce23RealEnabled == true` 时，系统由 `real-stub` 切换为 `REAL` 逻辑。
-- 默认设为 **OFF**。
-
-## 5. 算法说明 (v1)
-
-- **提取方式**: 本地推理提取 512d/768d 语义向量。
-- **计算逻辑**: `dot_product(v1, v2) / (|v1| * |v2|)`。
-- **确定性**: 固定模型版本与预处理参数，确保同一对图片在非极端场景下评分波动小于 0.001。
+- **Feature Flag**: `projects.settingsJson.ce23RealEnabled == true` 才启用 REAL。
+- **默认策略**: 默认 **OFF**。
 
 ---
 
 **END OF SSOT**
+MD
