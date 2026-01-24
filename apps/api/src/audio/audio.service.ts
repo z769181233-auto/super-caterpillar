@@ -7,6 +7,7 @@ import { StubWavProvider } from './providers/stub-wav.provider';
 import { RealTtsProvider } from './providers/real-tts.provider';
 import { BgmLibraryProvider } from './providers/bgm-library.provider';
 import { mixWithDucking, sha256File } from './mixer/ffmpeg-mixer';
+import { OpsMetricsService } from '../ops/ops-metrics.service';
 
 export type AudioProjectSettings = {
     audioRealEnabled?: boolean;        // default false
@@ -41,7 +42,7 @@ export class AudioService {
     private readonly realProvider: AudioProvider;
     private readonly bgmProvider: AudioProvider;
 
-    constructor() {
+    constructor(private readonly metrics: OpsMetricsService) {
         this.stubProvider = new StubWavProvider();
         this.realProvider = new RealTtsProvider();
         this.bgmProvider = new BgmLibraryProvider();
@@ -70,6 +71,9 @@ export class AudioService {
         const project = req.projectSettings ?? {};
         const killOn = this.isKillSwitchOn();
 
+        // P20-0: Metrics Instrumentation
+        if (req.preview) this.metrics.incrementAudioPreview();
+
         // Strict silence: when kill switch ON -> force legacy/stub, do not attempt real/shadow, do not emit real signals
         if (killOn) {
             const voice = await this.stubProvider.synthesize({ text: req.text });
@@ -92,6 +96,9 @@ export class AudioService {
 
         // P18-2 Logic: Selection based on Whitelist
         const provider = project.audioRealEnabled ? this.realProvider : this.stubProvider;
+        if (project.audioRealEnabled && !killOn) {
+            this.metrics.incrementAudioVendorCall();
+        }
         const voice = await provider.synthesize({
             text: req.text,
             preview: req.preview
@@ -158,7 +165,9 @@ export class AudioService {
         // P18-3.2 + P18-6.2: Use hardened mixer with caching
         if (fs.existsSync(outPath)) {
             console.log(`[CACHE] Mix Hit: ${outPath}`);
+            this.metrics.incrementAudioCacheHit();
         } else {
+            this.metrics.incrementAudioCacheMiss();
             await mixWithDucking({
                 voiceWavPath: voice.absPath,
                 bgmWavPath: bgm.absPath,

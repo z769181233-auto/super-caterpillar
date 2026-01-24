@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class OpsMetricsService {
   private readonly logger = new Logger(OpsMetricsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async getProductionMetrics() {
     const now = new Date();
@@ -156,6 +156,14 @@ export class OpsMetricsService {
       marginalFailCount = 0;
     }
 
+    // P20-0: Audio Runtime Metrics
+    const audio_kill_switch_active = process.env.AUDIO_REAL_FORCE_DISABLE === '1' ? 1 : 0;
+    const vendor_calls_1h = this.audioCounters.vendorCalls.getSum();
+    const cache_hits_1h = this.audioCounters.cacheHits.getSum();
+    const cache_misses_1h = this.audioCounters.cacheMisses.getSum();
+    const preview_requests_1h = this.audioCounters.previewRequests.getSum();
+    const cache_total = cache_hits_1h + cache_misses_1h;
+
     return {
       job_success_rate_15m: Number(job_success_rate_15m.toFixed(2)),
       job_counts_by_type,
@@ -180,7 +188,86 @@ export class OpsMetricsService {
         },
         {} as Record<string, number>
       ),
+      // P20-0 Audio
+      audio_metrics: {
+        audio_vendor_calls_total: this.audioCounters.vendorCallsTotal,
+        audio_cache_hits_total: this.audioCounters.cacheHitsTotal,
+        audio_cache_misses_total: this.audioCounters.cacheMissesTotal,
+        audio_preview_requests_total: this.audioCounters.previewRequestsTotal,
+        audio_vendor_calls_1h: vendor_calls_1h,
+        audio_cache_hits_1h: cache_hits_1h,
+        audio_cache_misses_1h: cache_misses_1h,
+        audio_preview_requests_1h: preview_requests_1h,
+        audio_cache_hit_rate_1h: cache_total > 0 ? Number((cache_hits_1h / cache_total).toFixed(2)) : 0,
+        audio_kill_switch_active
+      },
       timestamp: now.toISOString(),
     };
+  }
+
+  // P20-0: Audio Runtime Counters
+  private audioCounters = {
+    vendorCallsTotal: 0,
+    cacheHitsTotal: 0,
+    cacheMissesTotal: 0,
+    previewRequestsTotal: 0,
+    vendorCalls: new SlidingWindowCounter(),
+    cacheHits: new SlidingWindowCounter(),
+    cacheMisses: new SlidingWindowCounter(),
+    previewRequests: new SlidingWindowCounter()
+  };
+
+  incrementAudioVendorCall() {
+    this.audioCounters.vendorCallsTotal++;
+    this.audioCounters.vendorCalls.increment();
+  }
+  incrementAudioCacheHit() {
+    this.audioCounters.cacheHitsTotal++;
+    this.audioCounters.cacheHits.increment();
+  }
+  incrementAudioCacheMiss() {
+    this.audioCounters.cacheMissesTotal++;
+    this.audioCounters.cacheMisses.increment();
+  }
+  incrementAudioPreview() {
+    this.audioCounters.previewRequestsTotal++;
+    this.audioCounters.previewRequests.increment();
+  }
+}
+
+class SlidingWindowCounter {
+  private buckets = new Array(60).fill(0);
+  private lastMinute = -1;
+
+  increment() {
+    this.tick();
+    const minute = new Date().getMinutes();
+    this.buckets[minute]++;
+  }
+
+  getSum(): number {
+    this.tick();
+    return this.buckets.reduce((a, b) => a + b, 0);
+  }
+
+  private tick() {
+    const now = new Date();
+    const currentMinute = now.getMinutes();
+
+    // Simple tick: if minute changed, clear the new current minute bucket (it's archaic data)
+    // But we need to clear everything BETWEEN lastMinute and currentMinute if gap > 1
+    if (this.lastMinute === -1) {
+      this.lastMinute = currentMinute;
+      return;
+    }
+
+    if (currentMinute !== this.lastMinute) {
+      let m = (this.lastMinute + 1) % 60;
+      while (m !== (currentMinute + 1) % 60) {
+        this.buckets[m] = 0;
+        m = (m + 1) % 60;
+      }
+      this.lastMinute = currentMinute;
+    }
   }
 }

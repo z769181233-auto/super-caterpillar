@@ -54,14 +54,35 @@ Rule:
 Action:
 - Review marginal distribution; consider threshold adjustment / data quality.
 
-## 4. Snapshot Evidence
-Snapshot output must be saved under:
-- docs/_evidence/p17_0_ops_dashboard_<TS>/
-  - ops_metrics_raw.json
-  - dashboard_snapshot.json
-  - dashboard_snapshot.md
-  - trend_check.json (optional)
-  - SHA256SUMS.txt
+### 3.5 Audio Runtime Guardrails (P20-0)
+
+**P0: Kill Switch Active**
+Rule:
+- Trigger if `audio_kill_switch_active == 1` for 2 consecutive polls.
+
+Action:
+- 1) Confirm if intentional (Maintenance/Drill).
+- 2) If unintentional: Treat as Incident. Execute Audio Recovery Runbook (Verify Env Vars -> Restart).
+
+**P1: Cache Hit Rate Collapse**
+Rule:
+- Trigger if `audio_cache_hit_rate_1h < 0.5` AND `audio_preview_requests_1h >= 20`.
+
+Action:
+- 1) Check for library/version updates causing global invalidation.
+- 2) Verify `preview` vs `full` key generation logic.
+
+**P1: Vendor Cost Spike**
+Rule:
+- Trigger if `audio_vendor_calls_1h >= 50` (or `baseline * 2`).
+
+Action:
+- 1) Identify heavy project source.
+- 2) Verify if Whitelist is too broad.
+
+**P2: Preview Usage Ratio**
+Rule:
+- Trigger if `audio_preview_requests_1h / max(1, audio_requests_1h) > 0.8` (Informational).
 
 ## 5. Gate Requirements
 - Gate must verify required fields exist

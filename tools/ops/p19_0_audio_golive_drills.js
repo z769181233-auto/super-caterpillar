@@ -5,7 +5,14 @@ const path = require('path');
 
 async function runDrills(outPath) {
     if (!fs.existsSync(outPath)) fs.mkdirSync(outPath, { recursive: true });
-    const svc = new AudioService();
+
+    const mockMetrics = {
+        incrementAudioVendorCall: () => { },
+        incrementAudioCacheHit: () => { },
+        incrementAudioCacheMiss: () => { },
+        incrementAudioPreview: () => { },
+    };
+    const svc = new AudioService(mockMetrics);
     const results = [];
     const accessLog = [];
 

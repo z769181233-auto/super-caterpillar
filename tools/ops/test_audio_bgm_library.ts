@@ -5,7 +5,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 async function test() {
-    const svc = new AudioService();
+    const mockMetrics = {
+        incrementAudioVendorCall: () => { },
+        incrementAudioCacheHit: () => { },
+        incrementAudioCacheMiss: () => { },
+        incrementAudioPreview: () => { },
+    } as any;
+    const svc = new AudioService(mockMetrics);
     const evidenceDir = process.env.EVIDENCE_DIR || './tmp/test_bgm';
     fs.mkdirSync(evidenceDir, { recursive: true });
 

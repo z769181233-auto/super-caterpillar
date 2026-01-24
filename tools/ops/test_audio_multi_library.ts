@@ -3,7 +3,13 @@ import { AudioService } from '../../apps/api/src/audio/audio.service';
 import { PrismaClient } from 'database';
 
 async function test() {
-    const svc = new AudioService();
+    const mockMetrics = {
+        incrementAudioVendorCall: () => { },
+        incrementAudioCacheHit: () => { },
+        incrementAudioCacheMiss: () => { },
+        incrementAudioPreview: () => { },
+    } as any;
+    const svc = new AudioService(mockMetrics);
 
     console.log("[TEST] Verifying Multi-Library Routing");
 

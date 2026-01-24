@@ -10,5 +10,6 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   imports: [PrismaModule, AuthModule, PermissionModule, ApiSecurityModule],
   controllers: [OpsController],
   providers: [OpsMetricsService],
+  exports: [OpsMetricsService],
 })
-export class OpsModule {}
+export class OpsModule { }
