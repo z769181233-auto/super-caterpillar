@@ -11,12 +11,11 @@
 
 ## 2. 评分信号 (Scoring Signals)
 
-| 信号名称                    | 来源                 | 权重 | 判定标准                                                                              |
-| :-------------------------- | :------------------- | :--- | :------------------------------------------------------------------------------------ |
-| `identity_score`            | `CE23` (Consistency) | P0   | 角色一致性评分，低于 0.8 标记为 FAIL                                                  |
-| `identity_score_real_ppv64` | `CE23 REAL` (PPV-64) | P0   | `>= 0.80` PASS, else FAIL (仅当 `ce23RealEnabled=true` 时参与 Verdict；Shadow 仅审计) |
-| `render_physical`           | `Audit`              | P1   | 检查文件物理存在（VIDEO Asset）                                                       |
-| `audio_existence`           | `Audit`              | P0   | 场景级音频资产完整性审计                                                              |
+| 信号名称                    | 来源                 | 权重 | 判定标准                                                                                                                                           |
+| :-------------------------- | :------------------- | :--- | :------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------- | --- | ------------------------------- |
+| `identity_score`            | `CE23` (Consistency) | P0   | 角色一致性评分，低于 0.8 标记为 FAIL                                                                                                               |
+| `identity_score_real_ppv64` | `CE23 REAL` (PPV-64) | P0   | `>= 0.80` PASS. **Behavior**: <br>- `ce23RealEnabled=true`: Drive Verdict (Real Mode) <br>- `ce23RealShadowEnabled=true`: Audit Only (Shadow Mode) | `render_physical` | `Audit` | P1  | 检查文件物理存在（VIDEO Asset） |
+| `audio_existence`           | `Audit`              | P0   | 场景级音频资产完整性审计                                                                                                                           |
 
 ## 3. 返工政策 (Rework Policy)
 
@@ -96,5 +95,14 @@
 2.  **Shadow First**: New hooks (like CE23 REAL) must run in Shadow Mode first (write signal, ignore verdict).
 3.  **Real Mode Whitelist**: Switching to Real Mode requires `projects.settingsJson` whitelist and Gate proof.
 4.  **Gate Sync**: `QUALITY_HOOK_SYNC_FOR_GATE=1` allowed in CI/Gate environments.
+
+### 5.6 Ops Metrics (P16-1.4)
+
+P16-1 requires **SQL-based** aggregation (0-drift, TZ-aware) for the following 1h rolling metrics:
+
+| Metric Name                  | Source & Logic                                                     | Purpose                                                |
+| :--------------------------- | :----------------------------------------------------------------- | :----------------------------------------------------- |
+| `ce23_guardrail_blocked_1h`  | `count(*)` where `stopReason='GUARDRAIL_BLOCKED_REWORK'`           | Monitor volume of blocked reworks (saved cost).        |
+| `ce23_real_marginal_fail_1h` | `count(*)` where `Real < Threshold` AND `Real >= Threshold - 0.03` | Monitor marginal failures (potential false positives). |
 
 ---

@@ -142,6 +142,8 @@
 | 2026-01-22 | **P13-2 HARD SEALED** — Audio Minloop & DB Hardening. Enum Injection, Foreign Key Decoupling, and Automated Evidence Generation. Evidence: `docs/_evidence/P13_2_AUDIO_GATE_PASS`         | Antigravity |
 | 2026-01-22 | **P13-3 HARD SEALED** — Quality Scoring & Auto-Rework (0-Risk Rev.). Triple-Guard Audit (Attempt, Dedupe, Real Budget). Evidence: `docs/_evidence/quality_rework_20260122203405`          | Antigravity |
 | 2026-01-23 | **P15-0 REAL SEALED** — CE23 Identity Consistency upgrade to REAL (PPV-64). Content-based deterministic scoring + Audit Evidence. Evidence: `docs/_evidence/ce23_identity_real_20260123*` | Antigravity |
+| 2026-01-23 | **P16-0 EXT SERVICE SEALED** — CE23 Shadow/Real Mode Integration. Double-Pass Verified (S1 Shadow Audit / S2 Real Rework). Evidence: `docs/_evidence/ce23_real_shadow_20260123*`          | Antigravity |
+| 2026-01-24 | **P16-1 SEALED** — Dynamic Thresholds & Guardrails (0-Risk Rework Block). Ops Metrics + Double-Pass Verified. Evidence: `docs/_evidence/ce23_real_threshold_calib_20260124*`              | Antigravity |
 
 ---
 

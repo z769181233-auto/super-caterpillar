@@ -130,8 +130,14 @@ export class FeatureFlagService {
           select: { settingsJson: true },
         });
         const settings = project?.settingsJson as Record<string, any>;
-        if (settings?.autoReworkEnabled === true) {
-          this.logger.debug(`Feature flag AUTO_REWORK enabled via DB for project ${context.projectId}`);
+        if (
+          settings?.autoReworkEnabled === true ||
+          settings?.ce23RealEnabled === true ||
+          settings?.ce23RealShadowEnabled === true
+        ) {
+          this.logger.debug(
+            `Feature flag AUTO_REWORK/CE23 enabled via DB for project ${context.projectId}`
+          );
           return true;
         }
       } catch (e) {

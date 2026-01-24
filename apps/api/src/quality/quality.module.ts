@@ -7,8 +7,10 @@ import { JobModule } from '../job/job.module';
 
 import { QualityBackfillSweeper } from './quality-backfill.sweeper';
 
+import { IdentityModule } from '../identity/identity.module';
+
 @Module({
-  imports: [PrismaModule, forwardRef(() => JobModule)],
+  imports: [PrismaModule, forwardRef(() => JobModule), IdentityModule],
   controllers: [QualityGateController],
   providers: [QualityMetricsWriter, QualityScoreService, QualityBackfillSweeper],
   exports: [QualityMetricsWriter, QualityScoreService, QualityBackfillSweeper],

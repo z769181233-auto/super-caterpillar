@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class OpsMetricsService {
   private readonly logger = new Logger(OpsMetricsService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async getProductionMetrics() {
     const now = new Date();
@@ -88,16 +88,73 @@ export class OpsMetricsService {
     qualityScores.forEach((s) => {
       const stopReason = (s.signals as any)?.stopReason;
       if (stopReason === 'BUDGET_GUARD_BLOCKED') reworkStats.blocked_by_budget_1h++;
-      if (stopReason === 'MAX_ATTEMPT_REACHED')
-        reworkStats.blocked_by_max_attempt_1h++;
+      if (stopReason === 'MAX_ATTEMPT_REACHED') reworkStats.blocked_by_max_attempt_1h++;
       if (stopReason === 'IDEMPOTENCY_HIT') reworkStats.idempotency_hit_1h++;
       if (stopReason === 'RATE_LIMIT_BLOCKED') reworkStats.blocked_by_rate_limit_1h++;
     });
 
     const rework_rate_1h =
-      qualityScores.length > 0
-        ? (reworkStats.total_fails_1h / qualityScores.length) * 100
-        : 0;
+      qualityScores.length > 0 ? (reworkStats.total_fails_1h / qualityScores.length) * 100 : 0;
+
+    // P16-0: CE23 REAL Statistics (Last 1h)
+    const ce23Stats = {
+      scored_total: 0,
+      shadow_total: 0,
+      fail_total: 0,
+    };
+
+    qualityScores.forEach((s) => {
+      const signals = s.signals as any;
+      if (signals?.identity_score_real_ppv64 !== undefined) {
+        ce23Stats.scored_total++;
+        if (signals.ce23_real_mode === 'shadow') {
+          ce23Stats.shadow_total++;
+        }
+        if (signals.identity_score_real_ppv64 < 0.8) {
+          ce23Stats.fail_total++;
+        }
+      }
+    });
+
+    const ce23_real_fail_rate_1h =
+      ce23Stats.scored_total > 0 ? ce23Stats.fail_total / ce23Stats.scored_total : 0;
+
+    // P16-1.4: Use SQL aggregation for Guardrail/Marginal stats to ensure 0-drift and high performance
+    let guardrailBlockedCount = 0;
+    let marginalFailCount = 0;
+
+    try {
+      // Guardrail blocked (1h)
+      // Fix: createdAt is UTC (naive), NOW() is TZ-aware. Convert NOW to UTC naive for comparison.
+      const guardrailRes = await this.prisma.$queryRaw<{ count: bigint }[]>`
+        SELECT count(*)::int as count
+        FROM quality_scores 
+        WHERE "createdAt" >= (NOW() AT TIME ZONE 'UTC') - interval '1 hour'
+          AND (signals->>'stopReason') = 'GUARDRAIL_BLOCKED_REWORK'
+      `;
+      guardrailBlockedCount = Number(guardrailRes[0]?.count || 0);
+
+      // Marginal fail (1h)
+      const marginalRes = await this.prisma.$queryRaw<{ count: bigint }[]>`
+        SELECT count(*)::int as count
+        FROM quality_scores
+        WHERE "createdAt" >= (NOW() AT TIME ZONE 'UTC') - interval '1 hour'
+          AND (signals->>'identity_score_real_ppv64') IS NOT NULL
+          AND (signals->>'ce23_real_threshold_used') IS NOT NULL
+          AND ((signals->>'identity_score_real_ppv64')::float < (signals->>'ce23_real_threshold_used')::float)
+          AND ((signals->>'identity_score_real_ppv64')::float >= ((signals->>'ce23_real_threshold_used')::float - 0.03))
+      `;
+      marginalFailCount = Number(marginalRes[0]?.count || 0);
+
+      this.logger.log(
+        `[P16-1.4] Metrics SQL Result: Guardrail=${guardrailBlockedCount}, Marginal=${marginalFailCount}`
+      );
+    } catch (err) {
+      this.logger.error(`Failed to aggregate P16-1.4 metrics via SQL: ${err}`);
+      // Fallback to 0 (0 risk)
+      guardrailBlockedCount = 0;
+      marginalFailCount = 0;
+    }
 
     return {
       job_success_rate_15m: Number(job_success_rate_15m.toFixed(2)),
@@ -106,9 +163,15 @@ export class OpsMetricsService {
       oldest_pending_age_ms,
       published_assets_24h: publishedCount,
       rework_rate_1h: Number(rework_rate_1h.toFixed(2)),
+      ce23_real_scored_1h: ce23Stats.scored_total,
+      ce23_real_shadow_1h: ce23Stats.shadow_total,
+      ce23_real_fail_1h: ce23Stats.fail_total,
+      ce23_real_fail_rate_1h: Number(ce23_real_fail_rate_1h.toFixed(2)),
       rework_stats_1h: {
         ...reworkStats,
         avg_rework_cost_estimate: 0, // Placeholder for P14-1
+        ce23_guardrail_blocked_1h: guardrailBlockedCount,
+        ce23_real_marginal_fail_1h: marginalFailCount,
       },
       cost_by_engineKey_24h: costByEngine.reduce(
         (acc, curr) => {
