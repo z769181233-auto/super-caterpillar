@@ -12,7 +12,7 @@ export class IdentityConsistencyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: LocalStorageService
-  ) {}
+  ) { }
 
   /**
    * P15-0: Score routing based on Feature Flag
@@ -24,6 +24,12 @@ export class IdentityConsistencyService {
     shotId?: string
   ): Promise<{ score: number; verdict: 'PASS' | 'FAIL'; details: any }> {
     // 1. Check Feature Flag (ce23RealEnabled)
+    // P16-2: Secondary Kill Switch Guard
+    if (process.env.CE23_REAL_FORCE_DISABLE === '1') {
+      this.logger.warn(`[P16-2] Real Scoring BLOCKED by CE23_REAL_FORCE_DISABLE in IdentityConsistencyService`);
+      return this.scoreIdentityStub(referenceAssetId, targetAssetId, characterId);
+    }
+
     let realEnabled = false;
     if (shotId) {
       const shot = await this.prisma.shot.findUnique({

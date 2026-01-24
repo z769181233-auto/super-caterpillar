@@ -34,6 +34,7 @@ Thumbs.db
 
 # Prisma
 packages/database/prisma/migrations/
+packages/database/src/generated/
 
 # Misc
 *.tsbuildinfo
@@ -71,7 +72,12 @@ docs/_evidence/_trash/
 docs/_evidence/S3_SCALE_EVENT_DAG_*/
 docs/_evidence/RETRY_S3_SCALE_EVENT_DAG_*/
 .tmp/
+.api_pid_temp
+.*_temp
+gate_*_output.txt
 
 # temp workspace
 .tmp/
+tmp/
+**/*.wav
 tools/gate/scripts/*.js

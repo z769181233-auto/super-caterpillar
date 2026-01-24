@@ -24,7 +24,7 @@ export class QualityScoreService {
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
     private readonly identityService: IdentityConsistencyService
-  ) {}
+  ) { }
 
   /**
    * P13-3: 执行分镜质量评分
@@ -55,8 +55,24 @@ export class QualityScoreService {
       include: { scene: { include: { episode: { include: { project: true } } } } },
     });
     const settings = (shotForSettings?.scene?.episode?.project?.settingsJson as any) || {};
-    ce23RealEnabled = !!settings.ce23RealEnabled;
-    ce23RealShadowEnabled = !!settings.ce23RealShadowEnabled;
+
+    // P16-2.0: Kill Switch (Highest Priority)
+    // CE23_REAL_FORCE_DISABLE=1 -> Disable Real & Shadow globally
+    // P0 Patch: Direct env read for safety, fallback to config module
+    const forceDisable = process.env.CE23_REAL_FORCE_DISABLE === '1';
+
+    if (forceDisable) {
+      this.logger.warn(`[P16-2] CE23 Real/Shadow FORCE DISABLED by Env for shot ${shotId}`);
+      // Hard Kill: Force Legacy Mode
+      ce23RealEnabled = false;
+      ce23RealShadowEnabled = false;
+
+      // P0 Patch: Force clean slate for real/shadow variables to prevent any leakage
+      realScoreResult = null;
+    } else {
+      ce23RealEnabled = !!settings.ce23RealEnabled;
+      ce23RealShadowEnabled = !!settings.ce23RealShadowEnabled;
+    }
 
     if (ce23RealEnabled || ce23RealShadowEnabled) {
       try {
@@ -169,6 +185,20 @@ export class QualityScoreService {
     if (realError) {
       signals.ce23_real_error = realError;
     }
+    // P16-2.0: Kill Switch Signal Audit
+    if (forceDisable) {
+      signals.ce23_kill_switch = true;
+      signals.ce23_kill_switch_source = 'env';
+      // P0 Patch: Explicitly set mode to legacy
+      signals.ce23_real_mode = 'legacy';
+
+      // P0 Patch: Safety check - ensure no real/shadow artifacts leaked
+      delete signals.identity_score_real_ppv64;
+      delete signals.ce23_provider;
+      delete signals.ce23_algo_version;
+      delete signals.ce23_real_error;
+    }
+
 
     // P16: 阈值判定
     let identityThreshold = 0.8;

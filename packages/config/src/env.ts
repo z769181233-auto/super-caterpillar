@@ -247,4 +247,8 @@ export const env = {
   jobLeaseTtlMs: getEnvNumber('JOB_LEASE_TTL_MS', 120000), // 默认 2 分钟
   // WORKER_OFFLINE_GRACE_MS: Worker 判定离线的宽限期
   workerOfflineGraceMs: getEnvNumber('WORKER_OFFLINE_GRACE_MS', 180000), // 默认 3 分钟
+
+  // P16-2: Kill Switch for Quality Score Real/Shadow Mode
+  // Set to '1' to strictly disable all real/shadow scoring and side effects.
+  ce23RealForceDisable: process.env.CE23_REAL_FORCE_DISABLE === '1',
 };

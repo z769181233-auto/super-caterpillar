@@ -6,6 +6,7 @@ import * as crypto from 'crypto';
 import { spawn } from 'child_process';
 import { TimelineData } from './timeline-compose.processor';
 import { generateWav } from '../lib/audio/mock-wav';
+import { AudioService } from '@scu/api/audio/audio.service';
 
 import { ProcessorContext } from '../types/processor-context';
 
@@ -134,129 +135,106 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     shotMp4Paths.push(shotOutputPath);
   }
 
-  // Stage 1.5: Prepare Audio Assets (P13-2: Audio Minloop)
+  // Stage 1.5: Prepare Audio Assets (P18-1: Production Audio Routing)
   console.log(`[TimelineRender] Stage 1.5: Preparing audio assets for sceneId=${timeline.sceneId}`);
 
   const sceneId = timeline.sceneId;
   if (!sceneId) {
     console.log(`[TimelineRender] [WARN] No sceneId found, skipping audio assets`);
-  } else {
-    console.log(`[TimelineRender] Valid sceneId found: ${sceneId}`);
   }
 
-  // P13-2: 确定性 storageKey 规则
+  // P18-1: Instantiate AudioService and Resolve Routing
+  const audioService = new AudioService();
+  const audioSettings = await audioService.resolveProjectSettings(prisma, projectId);
+  const killOn = process.env.AUDIO_REAL_FORCE_DISABLE === '1';
+
+  // P13-2: 确定性 storageKey 规则 (We keep these for DB persistence)
   const ttsStorageKey = `audio/tts/${traceId}__${sceneId}.wav`;
   const bgmStorageKey = `audio/bgm/${traceId}__${sceneId}.wav`;
 
-  // 等值查询现有音频资产
+  // Determine if we should generate
+  // In P18-1, we ALWAYS attempt routing unless explicitly disabled
+  const shouldGenerate = sceneId && (process.env.GATE_MODE === '1' || process.env.AUDIO_MINLOOP_SYNC === '1' || audioSettings.audioRealEnabled);
+
   let ttsAsset: any = null;
   let bgmAsset: any = null;
 
-  if (sceneId) {
-    // TTS Asset 等值查询
-    ttsAsset = await prisma.asset.findFirst({
+  if (shouldGenerate && sceneId) {
+    console.log(`[TimelineRender] Routing to AudioService: projectId=${projectId}, sceneId=${sceneId}, ks=${killOn}`);
+
+    // 1. Generate Voice (TTS)
+    const audioRes = await audioService.generateAndMix({
+      text: `${traceId}:${sceneId}:AUDIO_TTS`, // Legacy seedKey as text
+      bgmSeed: `${traceId}:${sceneId}:AUDIO_BGM`,
+      projectSettings: audioSettings,
+    });
+
+    const ttsAbsPath = path.join(storageRoot, ttsStorageKey);
+    fs.mkdirSync(path.dirname(ttsAbsPath), { recursive: true });
+    fs.copyFileSync(audioRes.voice.absPath, ttsAbsPath);
+
+    // Persist TTS Asset
+    ttsAsset = await prisma.asset.upsert({
       where: {
+        ownerType_ownerId_type: {
+          ownerId: sceneId,
+          ownerType: AssetOwnerType.SCENE,
+          type: 'AUDIO_TTS' as any,
+        },
+      },
+      update: {
+        checksum: audioRes.voice.meta.audioFileSha256,
+        status: 'GENERATED',
+        storageKey: ttsStorageKey,
+      },
+      create: {
         projectId,
         ownerId: sceneId,
         ownerType: AssetOwnerType.SCENE,
-        storageKey: ttsStorageKey, // 等值匹配
+        type: 'AUDIO_TTS' as any,
+        storageKey: ttsStorageKey,
+        checksum: audioRes.voice.meta.audioFileSha256,
+        status: 'GENERATED',
       },
     });
-    console.log(`[TimelineRender] DEBUG: ttsAsset query found: ${ttsAsset ? ttsAsset.id : 'null'}`);
 
-    // BGM Asset 等值查询
-    bgmAsset = await prisma.asset.findFirst({
+    // 2. Handle BGM
+    // AudioService for P18-0 uses a separate internal synthesis for BGM.
+    // To get BGM as a separate asset key, we call it again with mixer disabled to isolation.
+    const bgmRes = await audioService.generateAndMix({
+      text: `BGM|${traceId}:${sceneId}:AUDIO_BGM`,
+      projectSettings: { ...audioSettings, audioMixerEnabled: false },
+    });
+
+    const bgmAbsPath = path.join(storageRoot, bgmStorageKey);
+    fs.mkdirSync(path.dirname(bgmAbsPath), { recursive: true });
+    fs.copyFileSync(bgmRes.voice.absPath, bgmAbsPath);
+
+    bgmAsset = await prisma.asset.upsert({
       where: {
+        ownerType_ownerId_type: {
+          ownerId: sceneId,
+          ownerType: AssetOwnerType.SCENE,
+          type: 'AUDIO_BGM' as any,
+        },
+      },
+      update: {
+        checksum: bgmRes.voice.meta.audioFileSha256,
+        status: 'GENERATED',
+        storageKey: bgmStorageKey,
+      },
+      create: {
         projectId,
         ownerId: sceneId,
         ownerType: AssetOwnerType.SCENE,
-        storageKey: bgmStorageKey, // 等值匹配
+        type: 'AUDIO_BGM' as any,
+        storageKey: bgmStorageKey,
+        checksum: bgmRes.voice.meta.audioFileSha256,
+        status: 'GENERATED',
       },
     });
-    console.log(`[TimelineRender] DEBUG: bgmAsset query found: ${bgmAsset ? bgmAsset.id : 'null'}`);
-  }
 
-  // 计算视频总时长（用于 BGM）
-  const videoDuration = timeline.shots.reduce((sum, s) => sum + (s.durationFrames || 24) / fps, 0);
-
-  // P13-2: 只在 GATE_MODE 或 AUDIO_MINLOOP_SYNC 时同步生成
-  if (process.env.GATE_MODE === '1' || process.env.AUDIO_MINLOOP_SYNC === '1') {
-    // TTS Asset 生成
-    if (!ttsAsset && sceneId) {
-      console.log(`[TimelineRender] [GATE_MODE] Generating TTS audio asset`);
-      const seedKey = `${traceId}:${sceneId}:AUDIO_TTS`;
-      const ttsAbsPath = path.join(storageRoot, ttsStorageKey);
-
-      try {
-        const {
-          path: wavPath,
-          checksum,
-          durationSec,
-        } = await generateWav({
-          seedKey,
-          durationSec: videoDuration + 0.3, // 预留 0.3s 容差
-          freqs: [440], // 440Hz (A4 音符)
-          outPath: ttsAbsPath,
-        });
-
-        // 落库（使用确定性 storageKey）
-        ttsAsset = await prisma.asset.create({
-          data: {
-            projectId,
-            ownerId: sceneId,
-            ownerType: AssetOwnerType.SCENE,
-            type: 'AUDIO_TTS' as any, // 修复唯一索引冲突
-            storageKey: ttsStorageKey, // 确定性 key
-            checksum,
-            status: 'GENERATED',
-          },
-        });
-        console.log(
-          `[TimelineRender] TTS asset created: ${ttsAsset.id}, storageKey: ${ttsStorageKey}`
-        );
-      } catch (err: any) {
-        console.error(`[TimelineRender] Failed to generate TTS: ${err.message}`);
-      }
-    }
-
-    // BGM Asset 生成
-    if (!bgmAsset && sceneId) {
-      console.log(`[TimelineRender] [GATE_MODE] Generating BGM audio asset`);
-      const seedKey = `${traceId}:${sceneId}:AUDIO_BGM`;
-      const bgmDuration = videoDuration + 0.3; // 预留 0.3s 容差
-      const bgmAbsPath = path.join(storageRoot, bgmStorageKey);
-
-      try {
-        const {
-          path: wavPath,
-          checksum,
-          durationSec,
-        } = await generateWav({
-          seedKey,
-          durationSec: bgmDuration,
-          freqs: [440, 880], // 440Hz + 880Hz (A4 + A5,模拟和弦)
-          outPath: bgmAbsPath,
-        });
-
-        // 落库（使用确定性 storageKey）
-        bgmAsset = await prisma.asset.create({
-          data: {
-            projectId,
-            ownerId: sceneId,
-            ownerType: AssetOwnerType.SCENE,
-            type: 'AUDIO_BGM' as any, // 修复唯一索引冲突
-            storageKey: bgmStorageKey, // 确定性 key
-            checksum,
-            status: 'GENERATED',
-          },
-        });
-        console.log(
-          `[TimelineRender] BGM asset created: ${bgmAsset.id}, storageKey: ${bgmStorageKey}`
-        );
-      } catch (err: any) {
-        console.error(`[TimelineRender] Failed to generate BGM: ${err.message}`);
-      }
-    }
+    console.log(`[TimelineRender] Audio prepared via AudioService. Mode=${audioRes.signals.audio_mode}, KS=${audioRes.signals.audio_kill_switch}`);
   }
 
   // Stage 2: Scene Composition
