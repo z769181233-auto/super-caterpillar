@@ -1,8 +1,9 @@
-# ALERTING_SSOT.md - Ops Alerting Single Source of Truth (P17-0)
+# ALERTING_SSOT.md - Ops Alerting Single Source of Truth (P17-0 + P20-0)
 
-> Status: DRAFT (P17-0)
-> Owner: Ops / Oncall
-> Source: P16-2.3 sealed alert_thresholds.md + tools/ops/p16_2_rollout.sql (Runbook)
+> **Status**: ACTIVE (P20-0)
+> **Owner**: Ops / Oncall
+> **Scope**: Covers CE23 (P17) and Audio Guardrails (P20).
+> **Source**: P16-2.3 sealed alert_thresholds.md + tools/ops/p16_2_rollout.sql (Runbook)
 > Generated Snapshot Tool: tools/ops/dashboard_snapshot.sh
 > Gate: tools/gate/gates/gate-ops-dashboard-snapshot.sh
 

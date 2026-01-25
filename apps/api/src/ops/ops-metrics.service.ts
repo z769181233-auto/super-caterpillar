@@ -188,7 +188,15 @@ export class OpsMetricsService {
         },
         {} as Record<string, number>
       ),
-      // P20-0 Audio
+      // P20-0 Audio (Flattened for convenience)
+      audio_kill_switch_active,
+      audio_vendor_calls_1h: vendor_calls_1h,
+      audio_cache_hits_1h: cache_hits_1h,
+      audio_cache_misses_1h: cache_misses_1h,
+      audio_preview_requests_1h: preview_requests_1h,
+      audio_cache_hit_rate_1h: cache_total > 0 ? Number((cache_hits_1h / cache_total).toFixed(2)) : 0,
+
+      // P20-0 Audio (Grouped for structure)
       audio_metrics: {
         audio_vendor_calls_total: this.audioCounters.vendorCallsTotal,
         audio_cache_hits_total: this.audioCounters.cacheHitsTotal,
