@@ -41,6 +41,15 @@ async function probe() {
     const latency = Date.now() - t0;
     console.log(`Probe Latency: ${latency}ms`);
 
+    // 2.1 Copy Mixed Audio for Evidence
+    if (res.mixed && res.mixed.absPath) {
+        const filename = path.basename(res.mixed.absPath);
+        const dest = path.join(evidenceDir, filename);
+        fs.copyFileSync(res.mixed.absPath, dest);
+        fs.writeFileSync(path.join(evidenceDir, 'SHA256SUMS.txt'), `${res.mixed.sha256}  ${filename}\n`);
+        console.log(`Evidence saved: ${filename}`);
+    }
+
     // 3. Verify Signals
     const signals = res.signals;
     const checks = [

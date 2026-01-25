@@ -98,12 +98,20 @@ const current = {
   blocked_by_rate_limit_1h: Number(raw.blocked_by_rate_limit_1h ?? 0),
   ce23_guardrail_blocked_1h: Number(raw.ce23_guardrail_blocked_1h ?? 0),
   ce23_real_marginal_fail_1h: Number(raw.ce23_real_marginal_fail_1h ?? 0),
+  // Audio
+  audio_kill_switch_active: Number(raw.audio_kill_switch_active ?? 0),
+  audio_cache_hit_rate_1h: Number(raw.audio_cache_hit_rate_1h ?? 0),
+  audio_vendor_calls_1h: Number(raw.audio_vendor_calls_1h ?? 0),
+  audio_preview_requests_1h: Number(raw.audio_preview_requests_1h ?? 0),
 };
 
 // thresholds
 const ABS_REWORK_1H = 5;
 const TH_GUARDRAIL_BLOCKED_1H = 20;
 const TH_MARGINAL_FAIL_1H = 50;
+const TH_AUDIO_VENDOR_LIMIT_1H = 50;
+const TH_AUDIO_CACHE_RATE_MIN = 0.5;
+const TH_AUDIO_PREVIEW_MIN_FOR_CACHE_ALERT = 20;
 
 const t_rework = Math.max(ABS_REWORK_1H, baseline.rework_rate_1h * 2);
 
@@ -141,14 +149,51 @@ evals.push({
     : "none",
 });
 
+// Audio P0: Kill Switch
+evals.push({
+  key: "audio_kill_switch_active",
+  level: (current.audio_kill_switch_active === 1) ? "P0" : "OK",
+  current: current.audio_kill_switch_active,
+  threshold: 1,
+  rule: "active == 1",
+  action: (current.audio_kill_switch_active === 1)
+    ? "Confirm if intentional. If not, treat as Incident. Verify env/restart."
+    : "none",
+});
+
+// Audio P1: Cache Hit Rate
+const cacheAlert = (current.audio_cache_hit_rate_1h < TH_AUDIO_CACHE_RATE_MIN && current.audio_preview_requests_1h >= TH_AUDIO_PREVIEW_MIN_FOR_CACHE_ALERT);
+evals.push({
+  key: "audio_cache_hit_rate_1h",
+  level: cacheAlert ? "P1" : "OK",
+  current: current.audio_cache_hit_rate_1h,
+  threshold: TH_AUDIO_CACHE_RATE_MIN,
+  rule: `< ${TH_AUDIO_CACHE_RATE_MIN} & previews >= ${TH_AUDIO_PREVIEW_MIN_FOR_CACHE_ALERT}`,
+  action: cacheAlert
+    ? "Check library/version updates. Verify cache key logic."
+    : "none",
+});
+
+// Audio P1: Vendor Calls
+evals.push({
+  key: "audio_vendor_calls_1h",
+  level: (current.audio_vendor_calls_1h >= TH_AUDIO_VENDOR_LIMIT_1H) ? "P1" : "OK",
+  current: current.audio_vendor_calls_1h,
+  threshold: TH_AUDIO_VENDOR_LIMIT_1H,
+  rule: `>= ${TH_AUDIO_VENDOR_LIMIT_1H}`,
+  action: (current.audio_vendor_calls_1h >= TH_AUDIO_VENDOR_LIMIT_1H)
+    ? "Identify heavy project. Verify Whitelist width."
+    : "none",
+});
+
 // Trend check
 function getRecentSnapshots(baseDir, n = 3) {
   const evidenceRoot = path.join(baseDir, "..");
   try {
-     const entries = fs.readdirSync(evidenceRoot)
-    .filter(d => d.startsWith("p17_0_ops_dashboard_"))
-    .map(d => ({ d, ts: Number(d.split("_").pop()) }))
-    .filter(x => Number.isFinite(x.ts))
+      const entries = fs.readdirSync(evidenceRoot)
+    .filter(d => d.includes("_ops_dashboard_"))
+    .map(d => ({ d, ts: Number(d.split("_").pop()) || 0 }))
+    .filter(x => x.ts > 0)
     .sort((a,b) => b.ts - a.ts)
     .slice(0, n);
 
@@ -197,6 +242,7 @@ const snapshot = {
     rework_rate_1h: t_rework,
     ce23_guardrail_blocked_1h: TH_GUARDRAIL_BLOCKED_1H,
     ce23_real_marginal_fail_1h: TH_MARGINAL_FAIL_1H,
+    audio_vendor_limit_1h: TH_AUDIO_VENDOR_LIMIT_1H,
   },
   evaluations: evals,
 };
@@ -206,17 +252,26 @@ fs.writeFileSync(outTrend, JSON.stringify(trend, null, 2), "utf8");
 
 // Markdown
 const lines = [];
-lines.push(`# P17-0 Ops Dashboard Snapshot`);
+lines.push(`# Ops Dashboard Snapshot (P17 + P21)`);
 lines.push(`- time: ${new Date().toISOString()}`);
 lines.push(`- evidence_dir: ${path.basename(evidDir)}`);
 lines.push("");
 lines.push(`## Current Metrics`);
-for (const [k,v] of Object.entries(current)) lines.push(`- ${k}: ${v}`);
+for (const [k,v] of Object.entries(current)) {
+    if (k.startsWith("audio_")) continue;
+    lines.push(`- ${k}: ${v}`);
+}
+lines.push("");
+lines.push(`## Audio Runtime`);
+for (const [k,v] of Object.entries(current)) {
+    if (k.startsWith("audio_")) lines.push(`- ${k}: ${v}`);
+}
 lines.push("");
 lines.push(`## Evaluations`);
 for (const e of evals) {
-  lines.push(`### ${e.key}`);
-  lines.push(`- level: ${e.level}`);
+  const emoji = e.level === "OK" ? "✅" : (e.level === "P0" ? "🚨" : "⚠️");
+  lines.push(`### ${emoji} ${e.key}`);
+  lines.push(`- level: **${e.level}**`);
   lines.push(`- current: ${e.current}`);
   if (e.threshold !== null) lines.push(`- threshold: ${e.threshold}`);
   lines.push(`- rule: ${e.rule}`);

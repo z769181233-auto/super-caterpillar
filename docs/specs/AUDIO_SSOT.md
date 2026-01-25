@@ -1,9 +1,9 @@
 # AUDIO_SSOT.md - Audio Engine Single Source of Truth
 
-> **Status**: LIVE (P20-0)
+> **Status**: LIVE (P21-0)
 > **Owner**: Audio Team / Gemini
-> **Gate**: `gate-audio-p20-0-guardrails.sh` (P20-0)
-> **Seal Tag**: `seal/p20_0_audio_runtime_guardrails_20260124`
+> **Gate**: `gate-audio-p21-0-ops.sh` (P21-0)
+> **Seal Tag**: `seal/p21_0_audio_ops_integration_20260124`
 
 
 ## 1. Providers
