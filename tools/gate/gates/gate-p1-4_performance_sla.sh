@@ -1,482 +1,126 @@
 #!/usr/bin/env bash
+# tools/gate/gates/gate-p1-4_performance_sla.sh
+# P24-0: Performance Hard Seal (Quantified SLA)
+# 目的：验证核心引擎在大并发（N=20）下的 P95 延迟符合 Bible 规范。
+
 set -euo pipefail
-IFS=$'\n\t'
 
-# Load ENV
-set -a
-source .env.local 2>/dev/null || true
-set +a
+# 1. Environment Configuration
 export NODE_ENV="development"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
-# export GATE_MODE="1"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export SHOT_RENDER_PROVIDER="mock"
+export BIBLE_INTERNAL_ALIAS_ENABLED=1
+export THROTTLER_LIMIT=999999
+export BICLE_THROTTLER_DISABLED=1
+export WORKER_MAX_CONCURRENCY=20
 export LOG_LEVEL="info"
 
-export API_KEY="gate-test-key"
-export API_SECRET="gate-test-secret"
-export WORKER_API_KEY="$API_KEY"
-export WORKER_API_SECRET="$API_SECRET"
+LOG_DIR="docs/_evidence/p24_0_performance_$(date +%s)"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/gate_p24.log"
+API_LOG="$LOG_DIR/api.log"
+WORKER_LOG="$LOG_DIR/worker.log"
 
-LOG_FILE="docs/_evidence/P1_4_GATE_RUN.log"
-API_LOG="docs/_evidence/P1_4_API.log"
-WORKER_LOG="docs/_evidence/P1_4_WORKER.log"
-echo "=== GATE P1-4 [PERFORMANCE_SLA] START ===" | tee "$LOG_FILE"
-date | tee -a "$LOG_FILE"
+log_info() {
+  echo "[$(date +'%Y-%m-%d %H:%M:%S')] [INFO] $1" | tee -a "$LOG_FILE"
+}
 
-# 0. Build
-echo "[0/5] Building..." | tee -a "$LOG_FILE"
-pnpm turbo run build --filter @scu/observability --filter api --filter @scu/worker >> "$LOG_FILE" 2>&1
+log_info "=== GATE P24-0 [PERFORMANCE_SLA] START ==="
 
-# 1. Start API & Worker
-echo "[1/5] Starting API & Worker..." | tee -a "$LOG_FILE"
-pnpm turbo run dev --filter api > "$API_LOG" 2>&1 &
+# 2. Cleanup & Initial Auth Seed
+log_info "Cleaning up existing processes..."
+lsof -t -i:3000 -i:3333 -i:9099 | xargs kill -9 || true
+
+log_info "Seeding Auth & Database..."
+source tools/gate/lib/gate_auth_seed.sh
+# Standardize for stress test
+export API_KEY="${VALID_API_KEY_ID}"
+export API_SECRET="${API_SECRET}"
+export API_URL="http://127.0.0.1:3000"
+
+log_info "Flushing stale job queue..."
+pnpm exec tsx tools/gate/lib/flush_jobs.ts
+
+log_info "Starting API..."
+export PORT=3000
+BIBLE_INTERNAL_ALIAS_ENABLED=1 pnpm --filter ./apps/api dev > "$API_LOG" 2>&1 &
 API_PID=$!
-echo "API PID: $API_PID" | tee -a "$LOG_FILE"
 
 # Wait for API
-for i in {1..30}; do
-  if curl -s http://localhost:3000/metrics | grep -q "scu_api_uptime"; then
-    echo "API is up!" | tee -a "$LOG_FILE"
+log_info "Waiting for API to be ready..."
+for i in {1..90}; do
+  if curl -s http://127.0.0.1:3000/health | grep -q '"status":"ok"'; then
+    log_info "API is UP."
     break
+  fi
+  if [ $i -eq 90 ]; then
+    log_info "❌ API failed to start within 90s"
+    kill $API_PID 2>/dev/null || true
+    exit 1
   fi
   sleep 1
 done
 
-# Start Worker
-WORKER_METRICS_PORT=9099
-export WORKER_SUPPORTED_ENGINES="ce03_visual_density,ce04_visual_enrichment,ce06_novel_parsing"
-DATABASE_URL="$DATABASE_URL" pnpm turbo run dev --filter @scu/worker -- --worker-id "stress-worker" --metrics-port "$WORKER_METRICS_PORT" > "$WORKER_LOG" 2>&1 &
+log_info "Starting Worker..."
+export API_URL="http://127.0.0.1:3000"
+export WORKER_METRICS_PORT=9099
+export WORKER_SUPPORTED_ENGINES="ce03_visual_density,ce04_visual_enrichment,ce06_novel_parsing,shot_render,timeline_render"
+pnpm --filter ./apps/workers dev > "$WORKER_LOG" 2>&1 &
 WORKER_PID=$!
-echo "Worker PID: $WORKER_PID" | tee -a "$LOG_FILE"
 
-# Wait for Worker
-sleep 5
+log_info "Waiting for Worker to register..."
+sleep 10
 
-# 2. Run Stress Test
-echo "[2/5] Running Stress Test..." | tee -a "$LOG_FILE"
-
+# 3. Run Stress Test (Phase 1 to 20)
+log_info "Running Stress Test (N=1, 5, 10, 20)..."
+export API_URL="http://127.0.0.1:3000"
+export PROJ_ID="${PROJ_ID}"
+# We use tsx to run the stress test script
 if ! pnpm exec tsx tools/stress/p1-4_engine_latency_stress.ts >> "$LOG_FILE" 2>&1; then
-    echo "❌ Stress Test Script Failed" | tee -a "$LOG_FILE"
-    kill $API_PID $WORKER_PID
+    log_info "❌ Stress Test Script Failed"
+    kill $API_PID $WORKER_PID 2>/dev/null || true
     exit 1
 fi
 
-# 3. Verify SLA via Metrics
-echo "[3/5] Verifying SLA Assertions..." | tee -a "$LOG_FILE"
-METRICS=$(curl -s http://localhost:9099/metrics)
+# 4. Verify SLA via Prometheus Metrics
+log_info "Verifying SLA Assertions from Worker Metrics..."
 
-# Helper function to check P95 from Histogram
-# Since we use buckets, calculating true P95 is hard from bash.
-# But we can check if buckets > SLA have 0 count? No.
-# Usage: check_sla engine limit_seconds
-# Actually, the stress test script calculates true latency seen by client.
-# The Metrics check is secondary confirming internal reporting.
-# We will trust the Stress Test output for now?
-# Or we parse the histogram buckets?
-# Let
-# Actually, the user requirement for Gate P1-4 is:
-# "P95 <= SLA_P95 ... from tools/gate/gates/gate-p1-4_performance_sla.sh"
-# So valid approach could be the stress script returning specific exit codes or a JSON report, OR the gate script analyzing metrics.
-
-# Let# Or simply check the metrics endpoint for $(scu_engine_latency_seconds_bucket).
-
-# For P1-4 simplicity and "Performance Quantification", checking # Checking P95 requires looking at buckets.
-# Example: If CE06 SLA is 1.5s. We look at le="1.5". If count(le="1.5") / total >= 0.95, then P95 <= 1.5.
-# This works!
-
-check_p95() {
+function check_p95() {
     ENGINE=$1
     SLA=$2
+    METRICS=$(curl -s http://localhost:9099/metrics)
+    TOTAL=$(echo "$METRICS" | grep "scu_engine_exec_duration_seconds_count{engine=\"$ENGINE\",mode=\"gate\"}" | awk '{print $NF}')
     
-    # Get total count for this engine
-    TOTAL=$(echo "$METRICS" | grep "scu_engine_latency_seconds_count{engine=\"$ENGINE\"}" | awk     if [ -z "$TOTAL" ] || [ "$TOTAL" -eq 0 ]; then
-        echo "⚠️  No data for $ENGINE. Skipping." | tee -a "$LOG_FILE"
-        return
-        # Or should we fail? User said "Stress Test" implies work was done.
-        # If stress test ran, we expect data.
+    if [ -z "$TOTAL" ] || [ "$TOTAL" -eq "0" ]; then
+        log_info "❌ $ENGINE: No metrics found (TOTAL=0)"
+        exit 1
     fi
+
+    # Histogram buckets: scu_engine_exec_duration_seconds_bucket{le="2",engine="...",mode="..."}
+    BUCKET_COUNT=$(echo "$METRICS" | grep "scu_engine_exec_duration_seconds_bucket{le=\"$SLA\",engine=\"$ENGINE\",mode=\"gate\"}" | awk '{print $NF}')
     
-    # Get count in SLA bucket (le="$SLA")
-    # Note: Histogram format: scu_engine_latency_seconds_bucket{engine="ce06",le="1.5"} 123
-    BUCKET_COUNT=$(echo "$METRICS" | grep "scu_engine_latency_seconds_bucket{engine=\"$ENGINE\",le=\"$SLA\"}" | awk     
-    # Calculate percentage
+    if [ -z "$BUCKET_COUNT" ]; then
+        BUCKET_COUNT=0
+    fi
+
     PCT=$(echo "scale=4; $BUCKET_COUNT / $TOTAL" | bc)
     
     if (( $(echo "$PCT >= 0.95" | bc -l) )); then
-        echo "✅ $ENGINE P95 <= $SLA (Actual: satisfied by ${PCT}%)" | tee -a "$LOG_FILE"
+        log_info "✅ $ENGINE P95 <= ${SLA}s (Actual: ${PCT} packets satisfied)"
     else
-        echo "❌ $ENGINE P95 > $SLA (Actual: only ${PCT}% <= $SLA)" | tee -a "$LOG_FILE"
+        log_info "❌ $ENGINE P95 > ${SLA}s (Actual: only ${PCT} <= $SLA)"
         exit 1
     fi
 }
 
+# SLA Defined in Bible
 check_p95 "ce06_novel_parsing" "1.5"
 check_p95 "ce03_visual_density" "2"
 check_p95 "ce04_visual_enrichment" "3"
-# Note: Bucket values are numbers in TS, stored as strings in Prometheus # My buckets: 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 8...
-# So "1.5", "2", "3" are valid "le" values. P95 check logic holds.
 
-echo "=== FINAL EVIDENCE ===" | tee -a "$LOG_FILE"
-echo "GATE P1-4 [PERFORMANCE_SLA]: PASS" | tee -a "$LOG_FILE"
+log_info "=== FINAL EVIDENCE SEALED ==="
+log_info "GATE P24-0 [PERFORMANCE_SLA]: PASS"
+log_info "Evidence saved to: $LOG_DIR"
 
-kill $API_PID $WORKER_PID
-exit 0
-set -e
-
-# Load ENV
-set -a
-source .env.local 2>/dev/null || true
-set +a
-export NODE_ENV="development"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
-# export GATE_MODE="1"
-export LOG_LEVEL="info"
-
-export API_KEY="gate-test-key"
-export API_SECRET="gate-test-secret"
-export WORKER_API_KEY="$API_KEY"
-export WORKER_API_SECRET="$API_SECRET"
-
-LOG_FILE="docs/_evidence/P1_4_GATE_RUN.log"
-API_LOG="docs/_evidence/P1_4_API.log"
-WORKER_LOG="docs/_evidence/P1_4_WORKER.log"
-echo "=== GATE P1-4 [PERFORMANCE_SLA] START ===" | tee "$LOG_FILE"
-date | tee -a "$LOG_FILE"
-
-# 0. Build
-echo "[0/5] Building..." | tee -a "$LOG_FILE"
-pnpm turbo run build --filter @scu/observability --filter api --filter @scu/worker >> "$LOG_FILE" 2>&1
-
-# 1. Start API & Worker
-echo "[1/5] Starting API & Worker..." | tee -a "$LOG_FILE"
-pnpm turbo run dev --filter api > "$API_LOG" 2>&1 &
-API_PID=$!
-echo "API PID: $API_PID" | tee -a "$LOG_FILE"
-
-# Wait for API
-for i in {1..30}; do
-  if curl -s http://localhost:3000/metrics | grep -q "scu_api_uptime"; then
-    echo "API is up!" | tee -a "$LOG_FILE"
-    break
-  fi
-  sleep 1
-done
-
-# Start Worker
-WORKER_METRICS_PORT=9099
-export WORKER_SUPPORTED_ENGINES="ce03_visual_density,ce04_visual_enrichment,ce06_novel_parsing"
-DATABASE_URL="$DATABASE_URL" pnpm turbo run dev --filter @scu/worker -- --worker-id "stress-worker" --metrics-port "$WORKER_METRICS_PORT" > "$WORKER_LOG" 2>&1 &
-WORKER_PID=$!
-echo "Worker PID: $WORKER_PID" | tee -a "$LOG_FILE"
-
-# Wait for Worker
-sleep 5
-
-# 2. Run Stress Test
-echo "[2/5] Running Stress Test..." | tee -a "$LOG_FILE"
-
-if ! pnpm exec tsx tools/stress/p1-4_engine_latency_stress.ts >> "$LOG_FILE" 2>&1; then
-    echo "❌ Stress Test Script Failed" | tee -a "$LOG_FILE"
-    kill $API_PID $WORKER_PID
-    exit 1
-fi
-
-# 3. Verify SLA via Metrics
-echo "[3/5] Verifying SLA Assertions..." | tee -a "$LOG_FILE"
-METRICS=$(curl -s http://localhost:9099/metrics)
-
-# Helper function to check P95 from Histogram
-# Since we use buckets, calculating true P95 is hard from bash.
-# But we can check if buckets > SLA have 0 count? No.
-# Usage: check_sla engine limit_seconds
-# Actually, the stress test script calculates true latency seen by client.
-# The Metrics check is secondary confirming internal reporting.
-# We will trust the Stress Test output for now?
-# Or we parse the histogram buckets?
-# Let
-# Actually, the user requirement for Gate P1-4 is:
-# "P95 <= SLA_P95 ... from tools/gate/gates/gate-p1-4_performance_sla.sh"
-# So valid approach could be the stress script returning specific exit codes or a JSON report, OR the gate script analyzing metrics.
-
-# Let# Or simply check the metrics endpoint for $(scu_engine_latency_seconds_bucket).
-
-# For P1-4 simplicity and "Performance Quantification", checking # Checking P95 requires looking at buckets.
-# Example: If CE06 SLA is 1.5s. We look at le="1.5". If count(le="1.5") / total >= 0.95, then P95 <= 1.5.
-# This works!
-
-check_p95() {
-    ENGINE=$1
-    SLA=$2
-    
-    # Get total count for this engine
-    TOTAL=$(echo "$METRICS" | grep "scu_engine_latency_seconds_count{engine=\"$ENGINE\"}" | awk     if [ -z "$TOTAL" ] || [ "$TOTAL" -eq 0 ]; then
-        echo "⚠️  No data for $ENGINE. Skipping." | tee -a "$LOG_FILE"
-        return
-        # Or should we fail? User said "Stress Test" implies work was done.
-        # If stress test ran, we expect data.
-    fi
-    
-    # Get count in SLA bucket (le="$SLA")
-    # Note: Histogram format: scu_engine_latency_seconds_bucket{engine="ce06",le="1.5"} 123
-    BUCKET_COUNT=$(echo "$METRICS" | grep "scu_engine_latency_seconds_bucket{engine=\"$ENGINE\",le=\"$SLA\"}" | awk     
-    # Calculate percentage
-    PCT=$(echo "scale=4; $BUCKET_COUNT / $TOTAL" | bc)
-    
-    if (( $(echo "$PCT >= 0.95" | bc -l) )); then
-        echo "✅ $ENGINE P95 <= $SLA (Actual: satisfied by ${PCT}%)" | tee -a "$LOG_FILE"
-    else
-        echo "❌ $ENGINE P95 > $SLA (Actual: only ${PCT}% <= $SLA)" | tee -a "$LOG_FILE"
-        exit 1
-    fi
-}
-
-check_p95 "ce06_novel_parsing" "1.5"
-check_p95 "ce03_visual_density" "2"
-check_p95 "ce04_visual_enrichment" "3"
-# Note: Bucket values are numbers in TS, stored as strings in Prometheus # My buckets: 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 8...
-# So "1.5", "2", "3" are valid "le" values. P95 check logic holds.
-
-echo "=== FINAL EVIDENCE ===" | tee -a "$LOG_FILE"
-echo "GATE P1-4 [PERFORMANCE_SLA]: PASS" | tee -a "$LOG_FILE"
-
-kill $API_PID $WORKER_PID
-exit 0
-set -e
-
-# Load ENV
-set -a
-source .env.local 2>/dev/null || true
-set +a
-export NODE_ENV="development"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
-# export GATE_MODE="1"
-export LOG_LEVEL="info"
-
-export API_KEY="gate-test-key"
-export API_SECRET="gate-test-secret"
-export WORKER_API_KEY="$API_KEY"
-export WORKER_API_SECRET="$API_SECRET"
-
-LOG_FILE="docs/_evidence/P1_4_GATE_RUN.log"
-API_LOG="docs/_evidence/P1_4_API.log"
-WORKER_LOG="docs/_evidence/P1_4_WORKER.log"
-echo "=== GATE P1-4 [PERFORMANCE_SLA] START ===" | tee "$LOG_FILE"
-date | tee -a "$LOG_FILE"
-
-# 0. Build
-echo "[0/5] Building..." | tee -a "$LOG_FILE"
-pnpm turbo run build --filter @scu/observability --filter api --filter @scu/worker >> "$LOG_FILE" 2>&1
-
-# 1. Start API & Worker
-echo "[1/5] Starting API & Worker..." | tee -a "$LOG_FILE"
-pnpm turbo run dev --filter api > "$API_LOG" 2>&1 &
-API_PID=$!
-echo "API PID: $API_PID" | tee -a "$LOG_FILE"
-
-# Wait for API
-for i in {1..30}; do
-  if curl -s http://localhost:3000/metrics | grep -q "scu_api_uptime"; then
-    echo "API is up!" | tee -a "$LOG_FILE"
-    break
-  fi
-  sleep 1
-done
-
-# Start Worker
-WORKER_METRICS_PORT=9099
-export WORKER_SUPPORTED_ENGINES="ce03_visual_density,ce04_visual_enrichment,ce06_novel_parsing"
-DATABASE_URL="$DATABASE_URL" pnpm turbo run dev --filter @scu/worker -- --worker-id "stress-worker" --metrics-port "$WORKER_METRICS_PORT" > "$WORKER_LOG" 2>&1 &
-WORKER_PID=$!
-echo "Worker PID: $WORKER_PID" | tee -a "$LOG_FILE"
-
-# Wait for Worker
-sleep 5
-
-# 2. Run Stress Test
-echo "[2/5] Running Stress Test..." | tee -a "$LOG_FILE"
-
-if ! pnpm exec tsx tools/stress/p1-4_engine_latency_stress.ts >> "$LOG_FILE" 2>&1; then
-    echo "❌ Stress Test Script Failed" | tee -a "$LOG_FILE"
-    kill $API_PID $WORKER_PID
-    exit 1
-fi
-
-# 3. Verify SLA via Metrics
-echo "[3/5] Verifying SLA Assertions..." | tee -a "$LOG_FILE"
-METRICS=$(curl -s http://localhost:9099/metrics)
-
-# Helper function to check P95 from Histogram
-# Since we use buckets, calculating true P95 is hard from bash.
-# But we can check if buckets > SLA have 0 count? No.
-# Usage: check_sla engine limit_seconds
-# Actually, the stress test script calculates true latency seen by client.
-# The Metrics check is secondary confirming internal reporting.
-# We will trust the Stress Test output for now?
-# Or we parse the histogram buckets?
-# Let
-# Actually, the user requirement for Gate P1-4 is:
-# "P95 <= SLA_P95 ... from tools/gate/gates/gate-p1-4_performance_sla.sh"
-# So valid approach could be the stress script returning specific exit codes or a JSON report, OR the gate script analyzing metrics.
-
-# Let# Or simply check the metrics endpoint for $(scu_engine_latency_seconds_bucket).
-
-# For P1-4 simplicity and "Performance Quantification", checking # Checking P95 requires looking at buckets.
-# Example: If CE06 SLA is 1.5s. We look at le="1.5". If count(le="1.5") / total >= 0.95, then P95 <= 1.5.
-# This works!
-
-check_p95() {
-    ENGINE=$1
-    SLA=$2
-    
-    # Get total count for this engine
-    TOTAL=$(echo "$METRICS" | grep "scu_engine_latency_seconds_count{engine=\"$ENGINE\"}" | awk     if [ -z "$TOTAL" ] || [ "$TOTAL" -eq 0 ]; then
-        echo "⚠️  No data for $ENGINE. Skipping." | tee -a "$LOG_FILE"
-        return
-        # Or should we fail? User said "Stress Test" implies work was done.
-        # If stress test ran, we expect data.
-    fi
-    
-    # Get count in SLA bucket (le="$SLA")
-    # Note: Histogram format: scu_engine_latency_seconds_bucket{engine="ce06",le="1.5"} 123
-    BUCKET_COUNT=$(echo "$METRICS" | grep "scu_engine_latency_seconds_bucket{engine=\"$ENGINE\",le=\"$SLA\"}" | awk     
-    # Calculate percentage
-    PCT=$(echo "scale=4; $BUCKET_COUNT / $TOTAL" | bc)
-    
-    if (( $(echo "$PCT >= 0.95" | bc -l) )); then
-        echo "✅ $ENGINE P95 <= $SLA (Actual: satisfied by ${PCT}%)" | tee -a "$LOG_FILE"
-    else
-        echo "❌ $ENGINE P95 > $SLA (Actual: only ${PCT}% <= $SLA)" | tee -a "$LOG_FILE"
-        exit 1
-    fi
-}
-
-check_p95 "ce06_novel_parsing" "1.5"
-check_p95 "ce03_visual_density" "2"
-check_p95 "ce04_visual_enrichment" "3"
-# Note: Bucket values are numbers in TS, stored as strings in Prometheus # My buckets: 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 8...
-# So "1.5", "2", "3" are valid "le" values. P95 check logic holds.
-
-echo "=== FINAL EVIDENCE ===" | tee -a "$LOG_FILE"
-echo "GATE P1-4 [PERFORMANCE_SLA]: PASS" | tee -a "$LOG_FILE"
-
-kill $API_PID $WORKER_PID
-exit 0
-set -e
-
-# Load ENV
-set -a
-source .env.local 2>/dev/null || true
-set +a
-export NODE_ENV="development"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
-# export GATE_MODE="1"
-export LOG_LEVEL="info"
-
-export API_KEY="gate-test-key"
-export API_SECRET="gate-test-secret"
-export WORKER_API_KEY="$API_KEY"
-export WORKER_API_SECRET="$API_SECRET"
-
-LOG_FILE="docs/_evidence/P1_4_GATE_RUN.log"
-API_LOG="docs/_evidence/P1_4_API.log"
-WORKER_LOG="docs/_evidence/P1_4_WORKER.log"
-echo "=== GATE P1-4 [PERFORMANCE_SLA] START ===" | tee "$LOG_FILE"
-date | tee -a "$LOG_FILE"
-
-# 0. Build
-echo "[0/5] Building..." | tee -a "$LOG_FILE"
-pnpm turbo run build --filter @scu/observability --filter api --filter @scu/worker >> "$LOG_FILE" 2>&1
-
-# 1. Start API & Worker
-echo "[1/5] Starting API & Worker..." | tee -a "$LOG_FILE"
-pnpm turbo run dev --filter api > "$API_LOG" 2>&1 &
-API_PID=$!
-echo "API PID: $API_PID" | tee -a "$LOG_FILE"
-
-# Wait for API
-for i in {1..30}; do
-  if curl -s http://localhost:3000/metrics | grep -q "scu_api_uptime"; then
-    echo "API is up!" | tee -a "$LOG_FILE"
-    break
-  fi
-  sleep 1
-done
-
-# Start Worker
-WORKER_METRICS_PORT=9099
-export WORKER_SUPPORTED_ENGINES="ce03_visual_density,ce04_visual_enrichment,ce06_novel_parsing"
-DATABASE_URL="$DATABASE_URL" pnpm turbo run dev --filter @scu/worker -- --worker-id "stress-worker" --metrics-port "$WORKER_METRICS_PORT" > "$WORKER_LOG" 2>&1 &
-WORKER_PID=$!
-echo "Worker PID: $WORKER_PID" | tee -a "$LOG_FILE"
-
-# Wait for Worker
-sleep 5
-
-# 2. Run Stress Test
-echo "[2/5] Running Stress Test..." | tee -a "$LOG_FILE"
-
-if ! pnpm exec tsx tools/stress/p1-4_engine_latency_stress.ts >> "$LOG_FILE" 2>&1; then
-    echo "❌ Stress Test Script Failed" | tee -a "$LOG_FILE"
-    kill $API_PID $WORKER_PID
-    exit 1
-fi
-
-# 3. Verify SLA via Metrics
-echo "[3/5] Verifying SLA Assertions..." | tee -a "$LOG_FILE"
-METRICS=$(curl -s http://localhost:9099/metrics)
-
-# Helper function to check P95 from Histogram
-# Since we use buckets, calculating true P95 is hard from bash.
-# But we can check if buckets > SLA have 0 count? No.
-# Usage: check_sla engine limit_seconds
-# Actually, the stress test script calculates true latency seen by client.
-# The Metrics check is secondary confirming internal reporting.
-# We will trust the Stress Test output for now?
-# Or we parse the histogram buckets?
-# Let
-# Actually, the user requirement for Gate P1-4 is:
-# "P95 <= SLA_P95 ... from tools/gate/gates/gate-p1-4_performance_sla.sh"
-# So valid approach could be the stress script returning specific exit codes or a JSON report, OR the gate script analyzing metrics.
-
-# Let# Or simply check the metrics endpoint for $(scu_engine_latency_seconds_bucket).
-
-# For P1-4 simplicity and "Performance Quantification", checking # Checking P95 requires looking at buckets.
-# Example: If CE06 SLA is 1.5s. We look at le="1.5". If count(le="1.5") / total >= 0.95, then P95 <= 1.5.
-# This works!
-
-check_p95() {
-    ENGINE=$1
-    SLA=$2
-    
-    # Get total count for this engine
-    TOTAL=$(echo "$METRICS" | grep "scu_engine_latency_seconds_count{engine=\"$ENGINE\"}" | awk     if [ -z "$TOTAL" ] || [ "$TOTAL" -eq 0 ]; then
-        echo "⚠️  No data for $ENGINE. Skipping." | tee -a "$LOG_FILE"
-        return
-        # Or should we fail? User said "Stress Test" implies work was done.
-        # If stress test ran, we expect data.
-    fi
-    
-    # Get count in SLA bucket (le="$SLA")
-    # Note: Histogram format: scu_engine_latency_seconds_bucket{engine="ce06",le="1.5"} 123
-    BUCKET_COUNT=$(echo "$METRICS" | grep "scu_engine_latency_seconds_bucket{engine=\"$ENGINE\",le=\"$SLA\"}" | awk     
-    # Calculate percentage
-    PCT=$(echo "scale=4; $BUCKET_COUNT / $TOTAL" | bc)
-    
-    if (( $(echo "$PCT >= 0.95" | bc -l) )); then
-        echo "✅ $ENGINE P95 <= $SLA (Actual: satisfied by ${PCT}%)" | tee -a "$LOG_FILE"
-    else
-        echo "❌ $ENGINE P95 > $SLA (Actual: only ${PCT}% <= $SLA)" | tee -a "$LOG_FILE"
-        exit 1
-    fi
-}
-
-check_p95 "ce06_novel_parsing" "1.5"
-check_p95 "ce03_visual_density" "2"
-check_p95 "ce04_visual_enrichment" "3"
-# Note: Bucket values are numbers in TS, stored as strings in Prometheus # My buckets: 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 8...
-# So "1.5", "2", "3" are valid "le" values. P95 check logic holds.
-
-echo "=== FINAL EVIDENCE ===" | tee -a "$LOG_FILE"
-echo "GATE P1-4 [PERFORMANCE_SLA]: PASS" | tee -a "$LOG_FILE"
-
-kill $API_PID $WORKER_PID
+kill $API_PID $WORKER_PID 2>/dev/null || true
 exit 0

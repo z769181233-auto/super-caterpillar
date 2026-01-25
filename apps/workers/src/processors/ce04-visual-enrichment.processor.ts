@@ -85,13 +85,22 @@ export async function processCE04VisualEnrichmentJob(
 
     // 5. Spawn SHOT_RENDER (S4-3)
     // Idempotency: Duplicate check for SHOT_RENDER in this run
-    if (projectId && jobOrgId && job.shotId) {
+    const shotId = job.shotId || (job.payload as any)?.shotId || (job.payload as any)?.metadata?.shotId;
+    logger.log(`[CE04_DEBUG] Spawning check. ID=${job.id} ShotId=${shotId} PLRunId=${pipelineRunId} Scope=${JSON.stringify({ projectId, jobOrgId })}`);
+
+    if (projectId && jobOrgId && shotId) {
+      const validPipelineRunId = pipelineRunId || fullJob.traceId || traceId || `fallback_run_${job.id}`;
+
       const existingRender = await prisma.shotJob.findFirst({
         where: {
           projectId,
           organizationId: jobOrgId,
-          shotId: job.shotId,
+          shotId: shotId,
           type: 'SHOT_RENDER',
+          payload: {
+            path: ['pipelineRunId'],
+            equals: validPipelineRunId,
+          },
         },
       });
 
@@ -105,7 +114,7 @@ export async function processCE04VisualEnrichmentJob(
             details: {
               reason: 'idempotency_hit',
               existingJobId: existingRender.id,
-              pipelineRunId,
+              pipelineRunId: validPipelineRunId,
               traceId,
               actorId: 'system-worker',
             },
@@ -118,15 +127,16 @@ export async function processCE04VisualEnrichmentJob(
             organizationId: jobOrgId,
             episodeId: episodeId,
             sceneId: sceneId,
-            shotId: job.shotId,
+            shotId: shotId,
             type: 'SHOT_RENDER',
             status: 'PENDING',
             payload: {
               rootJobId: job.payload?.rootJobId,
               sourceJobId: job.id,
-              pipelineRunId,
-              traceId,
+              pipelineRunId: validPipelineRunId,
+              traceId: fullJob.traceId,
             },
+            traceId: fullJob.traceId,
           },
         });
 

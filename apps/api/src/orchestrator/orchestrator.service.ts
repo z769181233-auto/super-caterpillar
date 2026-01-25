@@ -42,7 +42,7 @@ export class OrchestratorService {
     private readonly engineRegistry: EngineRegistry,
     @Inject(PublishedVideoService)
     private readonly publishedVideoService: PublishedVideoService
-  ) {}
+  ) { }
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
@@ -675,7 +675,16 @@ export class OrchestratorService {
       },
     });
 
-    if (!job) return;
+    if (!job) {
+      this.logger.warn(`[DAG] Job ${jobId} not found in DB during completion handler.`);
+      debugLog(`Job ${jobId} not found`);
+      return;
+    }
+
+    debugLog(`handleJobCompletion for ${jobId} type=${job.type} status=${job.status}`);
+
+    // this.logger.log(`[DAG_DEBUG] handleJobCompletion for ${jobId} type=${job.type} status=${job.status}`);
+    // this.logger.debug(`[DAG_DEBUG] result: ${JSON.stringify(result)}`);
 
     // DAG Logic for Stage 1: SHOT_RENDER -> VIDEO_RENDER
     if (job.type === JobTypeEnum.SHOT_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
@@ -689,6 +698,100 @@ export class OrchestratorService {
     if (job.type === JobTypeEnum.VIDEO_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
       this.logger.log(`[DAG] VIDEO_RENDER ${jobId} completed. Checking CE09 trigger...`);
       await this.checkAndSpawnCE09(job);
+    }
+
+    // DAG Logic: CE06 -> PIPELINE_TIMELINE_COMPOSE (P22-0 Video Pipeline Stage 2)
+    if (job.type === JobTypeEnum.CE06_NOVEL_PARSING && job.status === JobStatusEnum.SUCCEEDED) {
+      this.logger.log(
+        `[DAG] CE06 ${jobId} completed. Triggering PIPELINE_TIMELINE_COMPOSE for P22-0...`
+      );
+      await this.spawnTimelineCompose(job);
+    }
+
+    // DAG Logic: PIPELINE_TIMELINE_COMPOSE -> TIMELINE_RENDER (P22-0 Video Pipeline Stage 3)
+    if (
+      job.type === JobTypeEnum.PIPELINE_TIMELINE_COMPOSE &&
+      job.status === JobStatusEnum.SUCCEEDED
+    ) {
+      this.logger.log(
+        `[DAG] TIMELINE_COMPOSE ${jobId} completed. Triggering TIMELINE_RENDER for P22-0...`
+      );
+      await this.spawnTimelineRender(job, result);
+    }
+
+    // DAG Logic: TIMELINE_RENDER -> CE09 (P22-0 Completion)
+    if (job.type === JobTypeEnum.TIMELINE_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
+      this.logger.log(`[DAG] TIMELINE_RENDER ${jobId} completed. Triggering CE09 for P22-0...`);
+      await this.checkAndSpawnCE09(job);
+    }
+  }
+
+  /**
+   * P22-0 Video Health: Step 2 - Compose Timeline
+   */
+  private async spawnTimelineCompose(ce06Job: any) {
+    const { projectId, organizationId, traceId, sceneId, taskId } = ce06Job;
+    await this.jobService.createCECoreJob({
+      jobType: JobTypeEnum.PIPELINE_TIMELINE_COMPOSE,
+      projectId,
+      organizationId,
+      traceId,
+      taskId,
+      payload: {
+        projectId,
+        sceneId,
+        engineKey: 'gate_noop', // We don't need real engines for this gate's compose
+      },
+    });
+  }
+
+  /**
+   * P22-0 Video Health: Step 3 - Render Timeline
+   */
+  private async spawnTimelineRender(composeJob: any, result: any) {
+    const { projectId, organizationId, traceId, sceneId, taskId } = composeJob;
+
+    // SSOT: Prefer passed result, fallback to DB result
+    const safeResult = result || composeJob.result;
+    const timelineStorageKey = safeResult?.output?.timelineStorageKey;
+
+    const fs = require('fs');
+    const debugLog = (msg: string) =>
+      fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
+
+    if (!timelineStorageKey) {
+      const msg = `[DAG] SPAWN_FAIL: TIMELINE_RENDER aborted. Missing timelineStorageKey. Result keys: ${Object.keys(safeResult || {}).join(',')}`;
+      this.logger.error(msg);
+      debugLog(msg);
+      return;
+    }
+
+    this.logger.log(`[DAG] Spawning TIMELINE_RENDER with key: ${timelineStorageKey}`);
+    debugLog(`Spawning TIMELINE_RENDER with key: ${timelineStorageKey}`);
+
+    try {
+      const job = await this.jobService.createCECoreJob({
+        jobType: JobTypeEnum.TIMELINE_RENDER,
+        projectId,
+        organizationId,
+        traceId,
+        taskId,
+        payload: {
+          projectId,
+          sceneId,
+          timelineStorageKey,
+          pipelineRunId: taskId || traceId,
+          engineKey: 'timeline_render',
+          audioBgmEnabled: true,
+          audioMixerEnabled: true,
+          preview: true,
+          previewCapMs: 3000,
+        },
+      });
+      debugLog(`Created TIMELINE_RENDER job: ${job.id}`);
+    } catch (e: any) {
+      debugLog(`Failed to create TIMELINE_RENDER job: ${e.message}`);
+      this.logger.error(`Failed to create TIMELINE_RENDER job: ${e.message}`);
     }
   }
 

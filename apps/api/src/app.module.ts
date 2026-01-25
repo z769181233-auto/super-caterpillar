@@ -56,6 +56,7 @@ import { StorageAuthService } from './storage/storage-auth.service';
 import { ApiSecurityGuard } from './security/api-security/api-security.guard';
 import { TraceMiddleware } from './observability/trace.middleware';
 import { OperationalGateGuard } from './common/guards/operational-gate.guard';
+import { BibleAliasController } from './bible/bible-alias.controller';
 
 // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
@@ -73,7 +74,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 1000, // Relaxed for local dev/worker heartbeat stability
+        limit: parseInt(process.env.THROTTLER_LIMIT || '1000', 10),
       },
     ]),
     ScheduleModule.forRoot(), // P1 修复：启用定时任务模块（用于 Job Watchdog）
@@ -127,6 +128,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
   controllers: [
     AppController,
     StorageController, // FORCE REGISTRATION: Bypass StorageModule issue
+    BibleAliasController,
   ],
   providers: [
     {

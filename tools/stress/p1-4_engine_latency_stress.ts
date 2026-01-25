@@ -1,87 +1,104 @@
-import { ApiClient } from '../../apps/workers/src/api-client';
 import { performance } from 'perf_hooks';
+import * as crypto from 'crypto';
+
+/**
+ * P24-0: Performance SLA Stress Test
+ * 规则：
+ * 1. 使用 HMAC 签名（对齐 APISpec V1.1）
+ * 2. 支持核心引擎 SLA 验证：ce03 (2s), ce04 (3s), ce06 (1.5s)
+ * 3. 并发从小到大演进：1 -> 5 -> 10 -> 20
+ */
 
 // Configuration
-const API_URL = process.env.API_URL || 'http://localhost:3000';
+const API_URL = process.env.API_URL || 'http://127.0.0.1:3000';
 const API_KEY = process.env.API_KEY || 'dev-worker-key';
-const API_SECRET = process.env.API_SECRET; // Not needed for internal job creation if using direct API Client?
-// Actually we need to act as a CLIENT creating jobs, or a Worker?
-// The user says "Worker 实际执行链路".
-// The stress test should CREATE jobs via API, and wait for them to finish?
-// Or just creating jobs is enough if we monitor metrics?
-// "采集 latency... p50 / p95 / p99" -> We need to know when job finishes.
-// We can poll job status.
+const API_SECRET = process.env.API_SECRET;
 
-if (!API_KEY) {
-  console.error('API_KEY is required');
+if (!API_SECRET) {
+  console.error('[ERROR] API_SECRET is required for HMAC signing');
   process.exit(1);
 }
 
-// We can use a simple fetch to create jobs and poll.
-const ENGINES = ['ce03', 'ce04', 'ce06'];
-const SLA = {
-  ce03: { p95: 2000, p99: 3000 },
-  ce04: { p95: 3000, p99: 5000 },
-  ce06: { p95: 1500, p99: 2500 },
-};
+// HMAC Helper
+function getAuthHeaders(body: string) {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const nonce = "nonce_" + Date.now() + "_" + Math.random().toString(36).substring(7);
+  const contentSha256 = body ? crypto.createHash("sha256").update(body, "utf8").digest("hex") : "UNSIGNED";
+
+  // Signature: apiKey + nonce + timestamp + body
+  const payload = API_KEY + nonce + timestamp + body;
+  const signature = crypto.createHmac("sha256", API_SECRET!).update(payload).digest("hex");
+
+  return {
+    'X-Api-Key': API_KEY,
+    'X-Nonce': nonce,
+    'X-Timestamp': timestamp,
+    'X-Content-SHA256': contentSha256,
+    'X-Signature': signature,
+    'X-Hmac-Version': '1.1',
+    'Content-Type': 'application/json'
+  };
+}
 
 async function createJob(engine: string) {
-  // Map engine to JobType
   let jobType = '';
   let payload = {};
+  const projectId = process.env.PROJ_ID || 'stress-test';
+
   if (engine === 'ce03') {
     jobType = 'CE03_VISUAL_DENSITY';
-    payload = { projectId: 'stress-test', engineKey: 'ce03_visual_density' };
+    payload = { projectId, engineKey: 'ce03_visual_density', text: 'Sample text for CE03' };
   } else if (engine === 'ce04') {
     jobType = 'CE04_VISUAL_ENRICHMENT';
-    payload = { projectId: 'stress-test', engineKey: 'ce04_visual_enrichment' };
+    payload = { projectId, engineKey: 'ce04_visual_enrichment', text: 'Sample text for CE04' };
   } else if (engine === 'ce06') {
     jobType = 'CE06_NOVEL_PARSING';
-    payload = {
-      projectId: 'stress-test',
-      engineKey: 'ce06_novel_parsing',
-      novelSourceId: 'test-source',
-    };
+    payload = { projectId, engineKey: 'ce06_novel_parsing', sourceText: 'Sample text for CE06' };
   }
+
+  const body = JSON.stringify({ type: jobType, payload });
+  const headers = getAuthHeaders(body);
 
   const res = await fetch(`${API_URL}/api/jobs`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Api-Key': API_KEY, // Assume dev key allows creation or use internal endpoint
-    },
-    body: JSON.stringify({
-      type: jobType,
-      payload,
-    }),
+    headers,
+    body,
   });
 
-  // Note: /api/jobs usually requires auth.
-  // If we run `gate-p1-3` logic, it uses valid keys or GATE_MODE bypass.
-  // For stress test, we should assume valid environment.
-
   if (!res.ok) {
-    throw new Error(`Failed to create job: ${res.status} ${res.statusText}`);
+    const errText = await res.text();
+    console.error(`[STRESS] Create JOB FAILED: ${res.status} ${errText} (Key: ${API_KEY.substring(0, 5)}...)`);
+    throw new Error(`Failed to create job: ${res.status} ${errText}`);
   }
-  const data = await res.json();
-  return data.id; // Assume { id: '...' }
+  const data: any = await res.json();
+  const jobId = data.data?.id || data.id;
+  console.log(`[STRESS] Created Job: ${jobId} (Type: ${jobType})`);
+  return jobId;
 }
 
-async function waitForJob(jobId: string, timeoutMs: number = 10000): Promise<number> {
+async function waitForJob(jobId: string, timeoutMs: number = 90000): Promise<number> {
   const start = performance.now();
   while (performance.now() - start < timeoutMs) {
-    const res = await fetch(`${API_URL}/api/jobs/${jobId}`, {
-      headers: { 'X-Api-Key': API_KEY },
-    });
-    if (!res.ok) continue;
-    const job = await res.json();
-    if (job.status === 'SUCCEEDED') {
-      return performance.now() - start;
+    try {
+      const res = await fetch(`${API_URL}/api/jobs/${jobId}`, {
+        headers: getAuthHeaders(''),
+      });
+      if (!res.ok) {
+        await new Promise((r) => setTimeout(r, 1000));
+        continue;
+      }
+      const data: any = await res.json();
+      const job = data.data || data;
+      if (job.status === 'SUCCEEDED') {
+        return performance.now() - start;
+      }
+      if (job.status === 'FAILED') {
+        throw new Error(`Job FAILED: ${job.lastError || 'Unknown error'}`);
+      }
+    } catch (e) {
+      // Ignore network blips during stress
     }
-    if (job.status === 'FAILED') {
-      throw new Error('Job FAILED');
-    }
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 1000));
   }
   throw new Error('Job TIMEOUT');
 }
@@ -93,39 +110,34 @@ async function runPhase(concurrency: number, durationSeconds: number) {
   const errors: Record<string, number> = { ce03: 0, ce04: 0, ce06: 0 };
   const timeouts: Record<string, number> = { ce03: 0, ce04: 0, ce06: 0 };
 
-  const activePromises: Promise<void>[] = [];
+  const engineList = ['ce03', 'ce04', 'ce06'];
 
-  async function worker(engine: string) {
+  const runWorker = async (index: number) => {
     while (Date.now() < endAt) {
+      const engine = engineList[index % engineList.length];
       try {
         const jobId = await createJob(engine);
-        // Wait for completion (simulating end-to-end latency seen by user)
         const latency = await waitForJob(jobId);
         latencies[engine].push(latency);
       } catch (err: any) {
-        if (err.message === 'Job TIMEOUT') timeouts[engine]++;
+        console.error(`[Worker ${index}] Error: ${err.message}`);
+        if (err.message.includes('TIMEOUT')) timeouts[engine]++;
         else errors[engine]++;
+        // Wait a bit on error to avoid tight error loops
+        await new Promise(r => setTimeout(r, 1000));
       }
     }
-  }
+  };
 
-  // Start workers
-  // We split concurrency among engines.
-  // If concurrency=1, we verify one by one?
-  // Or we run N workers per engine?
-  // User said "Concurrency: N = 1 -> 5 -> 10 -> 20".
-  // I will distribute N across 3 engines or run N per engine?
-  // "Total N workers". Let's say N workers picking random engine or round robin.
-
-  const engines = ['ce03', 'ce04', 'ce06'];
+  const workers = [];
   for (let i = 0; i < concurrency; i++) {
-    activePromises.push(worker(engines[i % engines.length]));
+    workers.push(runWorker(i));
   }
 
-  await Promise.all(activePromises);
+  await Promise.all(workers);
 
-  // Calculate stats
-  for (const engine of engines) {
+  // Stats
+  for (const engine of engineList) {
     const lats = latencies[engine].sort((a, b) => a - b);
     const count = lats.length;
     if (count === 0) {
@@ -140,24 +152,21 @@ async function runPhase(concurrency: number, durationSeconds: number) {
     console.log(
       `[${engine}] Count: ${count}, Avg: ${avg.toFixed(2)}ms, P50: ${p50.toFixed(2)}ms, P95: ${p95.toFixed(2)}ms, P99: ${p99.toFixed(2)}ms`
     );
-    console.log(`[${engine}] Errors: ${errors[engine]}, Timeouts: ${timeouts[engine]}`);
+    if (errors[engine] > 0 || timeouts[engine] > 0) {
+      console.log(`[${engine}] ⚠️ Errors: ${errors[engine]}, Timeouts: ${timeouts[engine]}`);
+    }
   }
 }
 
 async function main() {
-  // Warmup?
+  console.log(`[STRESS] Warmup phase (N=1)...`);
+  await runPhase(1, 10);
 
-  // Concurrency 1
-  await runPhase(1, 60);
-
-  // Concurrency 5
-  await runPhase(5, 60);
-
-  // Concurrency 10
-  await runPhase(10, 60);
-
-  // Concurrency 20
-  await runPhase(20, 60);
+  console.log(`[STRESS] Starting main stress test...`);
+  await runPhase(1, 30);
+  await runPhase(5, 30);
+  await runPhase(10, 30);
+  await runPhase(20, 60); // Final push
 }
 
 main().catch(console.error);

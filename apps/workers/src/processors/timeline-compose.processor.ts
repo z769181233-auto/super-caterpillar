@@ -192,13 +192,48 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     const actualStart = idx === 0 ? 0 : currentFrame - transitionFrames;
     const actualEnd = actualStart + durationFrames;
 
+    // Generate frames.txt if shot has resultImageUrl
+    const framesTxtPath = path.join(process.cwd(), '.runtime', 'frames', shot.id, 'frames.txt');
+
+    // Resolve Storage Root
+    let storageRoot: string;
+    if (process.env.REPO_ROOT) {
+      storageRoot = path.join(process.env.REPO_ROOT, '.data/storage');
+    } else if (process.env.STORAGE_ROOT) {
+      storageRoot = process.env.STORAGE_ROOT;
+    } else {
+      storageRoot = path.join(path.resolve(process.cwd(), '../../'), '.data/storage');
+    }
+
+    if (shot.resultImageUrl) {
+      const imageAbsPath = path.resolve(storageRoot, shot.resultImageUrl);
+      if (fs.existsSync(imageAbsPath)) {
+        const dir = path.dirname(framesTxtPath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+        // Generate ffmpeg concat format frames.txt
+        // duration is specified in seconds per line? Or just repeat the file?
+        // "file '/path/to/image.png'"
+        // "duration 2.5"
+        // For single image as video, we usually use:
+        // file 'path'
+        // duration <total_duration>
+        // file 'path' (repeat last frame to ensure duration covers)
+
+        const durationSec = shot.durationSeconds || 1.0;
+        const content = `file '${imageAbsPath}'\nduration ${durationSec}\nfile '${imageAbsPath}'`;
+        fs.writeFileSync(framesTxtPath, content);
+        console.log(`[TimelineCompose] Generated frames.txt for shot ${shot.id} at ${framesTxtPath}`);
+      }
+    }
+
     const s: TimelineShot = {
       shotId: shot.id,
       index: shot.index,
       durationFrames,
       startFrames: actualStart,
       endFrames: actualEnd,
-      framesTxtStorageKey: path.join(process.cwd(), '.runtime', 'frames', shot.id, 'frames.txt'),
+      framesTxtStorageKey: framesTxtPath,
       transition,
       transitionFrames,
     };
@@ -222,16 +257,16 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       tracks: [
         ...((job.payload as any).bgmStorageKey
           ? [
-              {
-                id: 'bgm',
-                type: 'music' as const,
-                storageKey: (job.payload as any).bgmStorageKey,
-                gain: (job.payload as any).bgmGain || 0.5,
-                loop: (job.payload as any).bgmMode === 'loop',
-                ducking: { target: 'dialogue', gain: 0.2 },
-                truncate: 'shortest' as const,
-              },
-            ]
+            {
+              id: 'bgm',
+              type: 'music' as const,
+              storageKey: (job.payload as any).bgmStorageKey,
+              gain: (job.payload as any).bgmGain || 0.5,
+              loop: (job.payload as any).bgmMode === 'loop',
+              ducking: { target: 'dialogue', gain: 0.2 },
+              truncate: 'shortest' as const,
+            },
+          ]
           : []),
         ...scene.shots
           .map((s) => {

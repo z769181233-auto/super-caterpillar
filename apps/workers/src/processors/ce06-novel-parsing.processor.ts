@@ -140,6 +140,7 @@ async function executeScanJob(
           raw_text: rawText.substring(chunk.start_offset, chunk.end_offset),
           traceId,
           projectId, // Required by JobGenericController
+          pipelineRunId: job.payload?.pipelineRunId,
         },
         parentJobId: job.id,
       });
@@ -167,6 +168,8 @@ async function executeChunkParseJob(
   const chapterId = payload.chapterId;
   const chapterText = payload.raw_text;
   const traceId = payload.traceId || job.id;
+  const pipelineRunId = job.payload?.pipelineRunId || payload.pipelineRunId;
+  logger.log(`[CE06_DEBUG_CHUNK] JobID=${job.id} TraceId=${traceId} PLRunId=${pipelineRunId} Payload=${JSON.stringify(payload)}`);
 
   const projectId = job.projectId;
   const organizationId = job.organizationId;
@@ -255,6 +258,25 @@ async function executeChunkParseJob(
         },
       });
 
+      // Step 2.1: Ensure Default Shot exists (Gap Fix for SHOT_RENDER)
+      let defaultShot = await tx.shot.findFirst({
+        where: { sceneId: scene.id, index: 1 },
+      });
+
+      if (!defaultShot) {
+        defaultShot = await tx.shot.create({
+          data: {
+            sceneId: scene.id,
+            organizationId,
+            index: 1,
+            type: 'DEFAULT',
+            durationSeconds: 3,
+            renderStatus: 'PENDING',
+            title: `Shot 1 [${traceId}]`
+          },
+        });
+      }
+
       // V3.0 P0-2: projectId is not a column in novel_scenes table
       // Removed projectId update logic
 
@@ -266,8 +288,10 @@ async function executeChunkParseJob(
         payload: {
           structured_text: sc.raw_text || '',
           traceId,
+          pipelineRunId,
+          shotId: defaultShot.id,
         },
-        metadata: { traceId, sceneId: scene.id },
+        metadata: { traceId, sceneId: scene.id, shotId: defaultShot.id },
       });
 
       let densityScore = 0.5; // 默认值
@@ -283,8 +307,10 @@ async function executeChunkParseJob(
         payload: {
           structured_text: sc.raw_text || '',
           traceId,
+          pipelineRunId,
+          shotId: defaultShot.id,
         },
-        metadata: { traceId, sceneId: scene.id },
+        metadata: { traceId, sceneId: scene.id, shotId: defaultShot.id },
       });
 
       let enrichedText = sc.raw_text || '';

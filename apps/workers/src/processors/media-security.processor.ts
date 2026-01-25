@@ -81,7 +81,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
   } else if (process.env.STORAGE_ROOT) {
     runtimeDir = process.env.STORAGE_ROOT;
   } else {
-    runtimeDir = path.resolve(process.cwd(), '.runtime');
+    runtimeDir = path.join(path.resolve(process.cwd(), '../../'), '.data/storage');
   }
   const sourcePath = path.resolve(runtimeDir, sourceStorageKey);
 
