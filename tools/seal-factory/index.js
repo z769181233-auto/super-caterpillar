@@ -39,46 +39,70 @@ function render(template, data) {
 function parseSSOT() {
   const content = fs.readFileSync(SSOT_PATH, 'utf-8');
   const lines = content.split('\n');
-  const sections = { sealed: [], backlog: [] };
-  let currentSection = null;
+  const sections = { sealed: [], backlog: [] }; // backlog kept for compat but will be empty from SSOT
+  let scanningSealed = false;
 
   for (const line of lines) {
-    if (line.includes('## 1. 已封板引擎')) currentSection = 'sealed';
-    else if (line.includes('## 2. 待封板引擎'))
-      currentSection = 'sealed'; // User unified them in execution block
-    else if (line.includes('## 3. 待封板引擎')) currentSection = 'backlog';
-    else if (line.includes('## 2. 已封板引擎')) currentSection = 'sealed';
+    if (line.includes('## 2.1 已封板真实生产引擎')) {
+      scanningSealed = true;
+      continue;
+    }
+    if (line.includes('## 2.2')) {
+      scanningSealed = false;
+      continue;
+    }
 
-    if (line.startsWith('|') && line.includes('|') && !line.includes('----')) {
+    if (scanningSealed && line.startsWith('|') && line.includes('|') && !line.includes('----')) {
       const cells = line
         .split('|')
         .map((c) => c.trim())
         .filter((c) => c !== '');
       if (cells[0] === '领域' || cells[0] === '领域名') continue;
 
-      if (currentSection === 'sealed' && cells.length >= 6) {
+      // Schema: | 领域 | 引擎 Key | Gate 脚本 | 状态 | 说明 |
+      // Index:     0        1          2       3      4
+      if (cells.length >= 5) {
+        const status = cells[3];
+        const engineKey = cells[1].replace(/`/g, '');
+
+        // FAIL-FAST: 2.1 区必须全 sealed
+        if (!status.includes('SEALED')) {
+          throw new Error(`[Security] CRITICAL: Found NON-SEALED item in '2.1 Sealed' section: ${engineKey} (Status: ${status}). Move it to 2.2 Roadmap!`);
+        }
+
         sections.sealed.push({
           area: cells[0],
-          engineKey: cells[1].replace(/`/g, ''),
-          jobType: cells[2].replace(/`/g, ''),
-          phase: cells[3],
-          sealLevel: cells[4].replace(/\*\*/g, ''),
-          gateScript: cells[5].replace(/`/g, ''),
-          status: cells[6],
-        });
-      } else if (currentSection === 'backlog' && cells.length >= 6) {
-        sections.backlog.push({
-          area: cells[0],
-          engineKey: cells[1].replace(/`/g, ''),
-          jobType: cells[2].replace(/`/g, ''),
-          sealLevel: cells[3].replace(/\*\*/g, ''),
-          phase: cells[4],
-          module: cells[5],
-          status: cells[6],
+          engineKey: engineKey,
+          gateScript: cells[2].replace(/`/g, ''),
+          status: status,
+          // Mapped for template compatibility
+          phase: 'p0-rX', // Auto-filled mock, or parse from script name if needed? 
+          // Previous parser extracted phase from cells[3] but schema changed?
+          // Let's re-read the SSOT content carefully.
+          // The SSOT has: | Area | Key | Gate | Status | Desc |
+          // Old code assumed: | Area | Key | JobType | Phase | SealLevel | Gate | Status |
+          // Wait, the file I read in step 2233 shows:
+          // | 领域   | 引擎 Key                 | Gate 脚本                               | 状态      | 说明                 |
+          // This matches my new schema logic. However, existing template needs 'phase', 'sealLevel'.
+          // We need to extract phase from Gate Script name (e.g. gate-p0-r1_...)
         });
       }
     }
   }
+
+  // Post-process to extract metadata from Gate Script Name if possible, to keep template working
+  sections.sealed = sections.sealed.map(item => {
+    // gate-p0-r1_ce02_ce06_real.sh -> phase=P0-R1
+    const match = item.gateScript.match(/gate-(p\d+-r\d+)_/i);
+    const phase = match ? match[1].toUpperCase() : 'UNKNOWN';
+    return {
+      ...item,
+      phase,
+      sealLevel: 'L2', // Forced by 2.1 definition
+      jobType: 'Real'  // Default
+    };
+  });
+
   return sections;
 }
 

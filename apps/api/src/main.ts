@@ -6,6 +6,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { env } from '@scu/config';
+import { json, urlencoded } from 'express';
 import * as util from 'util';
 
 async function bootstrap() {
@@ -16,8 +17,19 @@ async function bootstrap() {
     ) + '\n'
   );
 
-  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
+  process.stdout.write(
+    util.format(
+      `[GATE_DIAGNOSTIC] GATE_MODE=${process.env.GATE_MODE}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}, HMAC_DEBUG=${process.env.HMAC_DEBUG}`
+    ) + '\n'
+  );
+
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true, bodyParser: false });
   app.useLogger(app.get(Logger));
+
+  // P0-NET: Increase body limit for 3M word import
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
 
   // Global exception filter (Registered in AppModule via APP_FILTER)
 
@@ -178,7 +190,7 @@ async function bootstrap() {
           hasStorageController = true;
           process.stdout.write(
             util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
-              '\n'
+            '\n'
           );
         }
       }

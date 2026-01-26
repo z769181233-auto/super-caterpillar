@@ -17,7 +17,7 @@ import { maskSensitiveData, maskSensitiveString } from '../utils/sensitive-data-
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  constructor(@Inject(AuditLogService) private readonly auditLogService: AuditLogService) {}
+  constructor(@Inject(AuditLogService) private readonly auditLogService: AuditLogService) { }
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -133,23 +133,29 @@ export class AllExceptionsFilter implements ExceptionFilter {
         );
       } else {
         // 开发环境：输出完整信息（包括堆栈）
-        this.logger.error(
-          JSON.stringify(
-            {
-              tag: 'UNHANDLED_EXCEPTION',
-              errorId,
-              method: req.method,
-              url: req.originalUrl || req.url,
-              status,
-              payload: maskSensitiveData(payload), // P1 修复：脱敏 payload
-              name: err?.name,
-              message: maskSensitiveString(err?.message), // P1 修复：脱敏消息内容
-              stack: err?.stack,
-            },
-            null,
-            2
-          )
-        );
+        try {
+          this.logger.error(
+            JSON.stringify(
+              {
+                tag: 'UNHANDLED_EXCEPTION',
+                errorId,
+                method: req.method,
+                url: req.originalUrl || req.url,
+                status,
+                payload: maskSensitiveData(payload), // P1 修复：脱敏 payload
+                name: err?.name,
+                message: maskSensitiveString(err?.message), // P1 修复：脱敏消息内容
+                stack: err?.stack,
+              },
+              null,
+              2
+            )
+          );
+        } catch (logErr) {
+          this.logger.error(
+            `[FILTER_LOG_FAIL] Failed to stringify error: ${logErr}. Raw error: ${err}`
+          );
+        }
       }
     }
 

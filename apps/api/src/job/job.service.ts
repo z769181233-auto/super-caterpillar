@@ -3222,7 +3222,7 @@ export class JobService {
     } else if (job.type === JobTypeEnum.PIPELINE_TIMELINE_COMPOSE) {
       // 编排完成，进入正式渲染环节
       if (pipeline.includes('VIDEO_EXPORT') || pipeline.includes('TIMELINE_RENDER')) {
-        const timelineStorageKey = (result as any)?.timelineStorageKey || (result as any)?.output?.timelineStorageKey;
+        const timelineStorageKey = (result as any)?.timelineStorageKey;
         if (!timelineStorageKey) {
           this.logger.error(
             `[JobService] PIPELINE_TIMELINE_COMPOSE result missing timelineStorageKey for job ${job.id}`

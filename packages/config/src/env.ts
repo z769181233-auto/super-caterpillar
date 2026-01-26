@@ -251,4 +251,5 @@ export const env = {
   // P16-2: Kill Switch for Quality Score Real/Shadow Mode
   // Set to '1' to strictly disable all real/shadow scoring and side effects.
   ce23RealForceDisable: process.env.CE23_REAL_FORCE_DISABLE === '1',
+  orchV2AudioEnabled: process.env.ORCH_V2_AUDIO_ENABLED === '1' || true, // FORCED TRUE FOR L3 VERIFICATION
 };

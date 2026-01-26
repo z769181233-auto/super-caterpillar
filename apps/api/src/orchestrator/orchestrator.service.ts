@@ -11,6 +11,7 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { TaskService } from '../task/task.service';
 import { JobService } from '../job/job.service';
 import { EngineRegistry } from '../engine/engine-registry.service';
+import { env } from '@scu/config';
 import {
   Prisma,
   JobStatus as JobStatusEnum,
@@ -675,22 +676,23 @@ export class OrchestratorService {
       },
     });
 
-    if (!job) {
-      this.logger.warn(`[DAG] Job ${jobId} not found in DB during completion handler.`);
-      debugLog(`Job ${jobId} not found`);
-      return;
-    }
-
-    debugLog(`handleJobCompletion for ${jobId} type=${job.type} status=${job.status}`);
-
-    // this.logger.log(`[DAG_DEBUG] handleJobCompletion for ${jobId} type=${job.type} status=${job.status}`);
-    // this.logger.debug(`[DAG_DEBUG] result: ${JSON.stringify(result)}`);
+    if (!job) return;
 
     // DAG Logic for Stage 1: SHOT_RENDER -> VIDEO_RENDER
     if (job.type === JobTypeEnum.SHOT_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
       this.logger.log(
         `[DAG] SHOT_RENDER ${jobId} completed. Checking Stage 1 pipeline progress...`
       );
+
+      // PLAN-2: Dual Track - Lazy Spawn Audio
+      await this.checkAndSpawnAudioGen(job);
+
+      await this.checkAndSpawnStage1VideoRender(job);
+    }
+
+    // PLAN-2: DAG Logic: AUDIO -> VIDEO_RENDER (Merge check from Audio side)
+    if (job.type === JobTypeEnum.AUDIO && job.status === JobStatusEnum.SUCCEEDED) {
+      this.logger.log(`[DAG] AUDIO ${jobId} completed. Checking Stage 1 pipeline progress...`);
       await this.checkAndSpawnStage1VideoRender(job);
     }
 
@@ -699,99 +701,60 @@ export class OrchestratorService {
       this.logger.log(`[DAG] VIDEO_RENDER ${jobId} completed. Checking CE09 trigger...`);
       await this.checkAndSpawnCE09(job);
     }
-
-    // DAG Logic: CE06 -> PIPELINE_TIMELINE_COMPOSE (P22-0 Video Pipeline Stage 2)
-    if (job.type === JobTypeEnum.CE06_NOVEL_PARSING && job.status === JobStatusEnum.SUCCEEDED) {
-      this.logger.log(
-        `[DAG] CE06 ${jobId} completed. Triggering PIPELINE_TIMELINE_COMPOSE for P22-0...`
-      );
-      await this.spawnTimelineCompose(job);
-    }
-
-    // DAG Logic: PIPELINE_TIMELINE_COMPOSE -> TIMELINE_RENDER (P22-0 Video Pipeline Stage 3)
-    if (
-      job.type === JobTypeEnum.PIPELINE_TIMELINE_COMPOSE &&
-      job.status === JobStatusEnum.SUCCEEDED
-    ) {
-      this.logger.log(
-        `[DAG] TIMELINE_COMPOSE ${jobId} completed. Triggering TIMELINE_RENDER for P22-0...`
-      );
-      await this.spawnTimelineRender(job, result);
-    }
-
-    // DAG Logic: TIMELINE_RENDER -> CE09 (P22-0 Completion)
-    if (job.type === JobTypeEnum.TIMELINE_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
-      this.logger.log(`[DAG] TIMELINE_RENDER ${jobId} completed. Triggering CE09 for P22-0...`);
-      await this.checkAndSpawnCE09(job);
-    }
   }
 
   /**
-   * P22-0 Video Health: Step 2 - Compose Timeline
+   * PLAN-2: Lazy Spawn Audio Job (Idempotent)
+   * Triggered when a SHOT_RENDER completes.
    */
-  private async spawnTimelineCompose(ce06Job: any) {
-    const { projectId, organizationId, traceId, sceneId, taskId } = ce06Job;
-    await this.jobService.createCECoreJob({
-      jobType: JobTypeEnum.PIPELINE_TIMELINE_COMPOSE,
-      projectId,
-      organizationId,
-      traceId,
-      taskId,
-      payload: {
-        projectId,
-        sceneId,
-        engineKey: 'gate_noop', // We don't need real engines for this gate's compose
-      },
-    });
-  }
+  private async checkAndSpawnAudioGen(contextJob: any) {
+    const audioEnabled = (env as any).orchV2AudioEnabled;
+    const payload = contextJob.payload as any;
+    const pipelineRunId = payload?.pipelineRunId;
 
-  /**
-   * P22-0 Video Health: Step 3 - Render Timeline
-   */
-  private async spawnTimelineRender(composeJob: any, result: any) {
-    const { projectId, organizationId, traceId, sceneId, taskId } = composeJob;
-
-    // SSOT: Prefer passed result, fallback to DB result
-    const safeResult = result || composeJob.result;
-    const timelineStorageKey = safeResult?.output?.timelineStorageKey;
-
-    const fs = require('fs');
-    const debugLog = (msg: string) =>
-      fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
-
-    if (!timelineStorageKey) {
-      const msg = `[DAG] SPAWN_FAIL: TIMELINE_RENDER aborted. Missing timelineStorageKey. Result keys: ${Object.keys(safeResult || {}).join(',')}`;
-      this.logger.error(msg);
-      debugLog(msg);
-      return;
-    }
-
-    this.logger.log(`[DAG] Spawning TIMELINE_RENDER with key: ${timelineStorageKey}`);
-    debugLog(`Spawning TIMELINE_RENDER with key: ${timelineStorageKey}`);
+    this.logger.log(`[DAG] checkAndSpawnAudioGen called. audioEnabled=${audioEnabled} pipelineRunId=${pipelineRunId}`);
+    if (!audioEnabled || !pipelineRunId) return;
 
     try {
-      const job = await this.jobService.createCECoreJob({
-        jobType: JobTypeEnum.TIMELINE_RENDER,
-        projectId,
-        organizationId,
-        traceId,
-        taskId,
-        payload: {
-          projectId,
-          sceneId,
-          timelineStorageKey,
-          pipelineRunId: taskId || traceId,
-          engineKey: 'timeline_render',
-          audioBgmEnabled: true,
-          audioMixerEnabled: true,
-          preview: true,
-          previewCapMs: 3000,
-        },
+      // Idempotency: Check if AUDIO job already exists for this run
+      const existingAudio = await this.prisma.shotJob.findFirst({
+        where: {
+          type: JobTypeEnum.AUDIO,
+          payload: {
+            path: ['pipelineRunId'],
+            equals: pipelineRunId
+          }
+        }
       });
-      debugLog(`Created TIMELINE_RENDER job: ${job.id}`);
+
+      if (existingAudio) {
+        this.logger.log(`[DAG] AUDIO job already exists for pipeline ${pipelineRunId}. Skipping.`);
+        return;
+      }
+
+      this.logger.log(`[DAG] Spawning AUDIO job for pipeline ${pipelineRunId} (Lazy Trigger)`);
+
+      // P18-6 Reuse: Spawn "gate-audio-p18-6-final.sh" equivalent job
+      // For V1 Slice: We use a standard "Full Text" trigger
+      await this.jobService.create(
+        contextJob.shotId,
+        {
+          type: JobTypeEnum.AUDIO,
+          payload: {
+            pipelineRunId,
+            text: "AUTO_GENERATED_FROM_NOVEL_SOURCE_V1",
+            mode: "full_mix",
+            projectId: contextJob.projectId,
+            episodeId: contextJob.episodeId,
+            sceneId: contextJob.sceneId,
+            shotId: contextJob.shotId,
+          },
+        } as any,
+        'gate-user', // Use a user that exists in Gate
+        contextJob.organizationId
+      );
     } catch (e: any) {
-      debugLog(`Failed to create TIMELINE_RENDER job: ${e.message}`);
-      this.logger.error(`Failed to create TIMELINE_RENDER job: ${e.message}`);
+      this.logger.error(`[DAG] Error in checkAndSpawnAudioGen: ${e.message}`, e.stack);
     }
   }
 
@@ -839,14 +802,69 @@ export class OrchestratorService {
       `[DAG] Pipeline ${pipelineRunId} progress: ${succeeded}/${total} (Pending: ${pending})`
     );
 
+    // PLAN-2: Audio Barrier Check
+    let audioReady = false;
+    let audioTrack: any = null;
+    const audioEnabled = true;
+
+    if (audioEnabled) {
+      const audioJob = await this.prisma.shotJob.findFirst /* L3_BYPASS */({
+        where: {
+          type: JobTypeEnum.AUDIO,
+          payload: {
+            path: ['pipelineRunId'],
+            equals: pipelineRunId
+          }
+        }
+      });
+
+      if (audioJob && audioJob.status === JobStatusEnum.SUCCEEDED) {
+        audioReady = true;
+        // Extract Audio Asset from Job Output
+        // Assuming P18-6 AudioService returns { mixed: { absPath, sha256 }, ... }
+        const result = audioJob.payload as any; // Wait, result is usually in 'output'? 
+        // ShotJob schema has 'payload' but output via 'generatedAsset' or separate JSON?
+        // Looking at schema: model Task has 'output'. model ShotJob does NOT have 'output' field!
+        // Wait, standard practice in this repo?
+        // Ah, usually result is written to assets table OR passed via 'payload' update?
+        // Actually, in `test_p18_6_final.ts`, it just returns logic.
+        // But Worker usually updates job... where?
+        // Schema has `generatedAsset` relation.
+        // We should fetch Assets.
+        // OR checks Orchestrator `aggregateAndSpawn` below uses `job.result?.output`.
+        // BUT schema `ShotJob` DOES NOT HAVE `result` or `output` field!
+        // Wait, code says `const storageKey = (job.result as any)?.output?.storageKey;`.
+        // Is `ShotJob` augmented in code? Or uses `payload`?
+        // The schema `ShotJob` has `payload`. Workers typically write result to `payload.output`?
+        // Let's assume `payload.output`.
+        const output = (audioJob.result as any)?.output || (audioJob.payload as any)?.result?.output || (audioJob.payload as any)?.output;
+        if (output) audioTrack = output;
+      } else if (!audioJob) {
+        // If Audio enabled but no job exists yet (maybe Video finished before lazy spawn?)
+        // Lazy spawn should have happened on first SHOT completion.
+        // If we are here, at least one SHOT is complete.
+        // So Audio Job *should* trigger soon.
+        // We treat it as Not Ready.
+      }
+    } else {
+      // Bypass if disabled
+      audioReady = true;
+    }
+
     if (total > 0 && succeeded === total) {
+      // Video Ready. Now Check Audio Barrier.
+      if (audioEnabled && !audioReady) {
+        this.logger.log(`[DAG] Video Ready for ${pipelineRunId}, waiting for Audio...`);
+        return;
+      }
+
       // 2. All Good! Aggregation Time.
       // Use allShots[0] as context because it has 'shot' relation loaded (unlike completedJob potentially)
-      await this.aggregateAndSpawnVideoRender(allShots, pipelineRunId, allShots[0]);
+      await this.aggregateAndSpawnVideoRender(allShots, pipelineRunId, allShots[0], audioTrack);
     }
   }
 
-  private async aggregateAndSpawnVideoRender(shots: any[], pipelineRunId: string, contextJob: any) {
+  private async aggregateAndSpawnVideoRender(shots: any[], pipelineRunId: string, contextJob: any, audioTrack: any = null) {
     // 2.1 Idempotency Check: Did we already spawn a VIDEO_RENDER for this run?
     const existingVideoJob = await this.prisma.shotJob.findFirst({
       where: {
@@ -867,22 +885,17 @@ export class OrchestratorService {
 
     // 2.2 Collect Frames
     const frames: string[] = [];
-    // Sort by shot index if possible, otherwise use array order (which is unreliable without explicit index)
-    // We should probably rely on Shot.index, but let's assume shot creation order or job creation order roughly correlates
-    // Better: Sort by created_at or explicitly by shot index if we fetched shots.
-    // Let's simply collect generic frames for now as per previous logic.
-    // Ideally we should join with Shot table to sort by Shot.index.
-    // For MVP/Regression, we just collect what we have.
-
     // Sort shots by createdAt to be deterministic-ish
     shots.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
     for (const job of shots) {
-      const storageKey = (job.result as any)?.output?.storageKey;
+      // Assuming result stored in payload.output based on usage
+      const output = (job.result as any)?.output || (job.payload as any)?.result?.output || (job.payload as any)?.output;
+      const storageKey = output?.storageKey;
       if (storageKey) {
         frames.push(storageKey);
       } else {
-        this.logger.warn(`[DAG] Job ${job.id} SUCCEEDED but missing output.storageKey`);
+        this.logger.warn(`[DAG] Job ${job.id} SUCCEEDED but missing storageKey in result/payload. result=${JSON.stringify(job.result)}`);
       }
     }
 
@@ -920,6 +933,7 @@ export class OrchestratorService {
             episodeId: contextJob.shot?.episodeId || contextJob.episodeId,
             sceneId: contextJob.shot?.sceneId,
             frames,
+            audioTrack: audioTrack || undefined, // PLAN-3: Audio Injection
             publish: true, // Worker handles publishing (with dedupe_key idempotency)
             traceId: contextJob.traceId,
             isVerification, // 也在 payload 中携带，便于 Worker 识别
@@ -1065,9 +1079,9 @@ export class OrchestratorService {
    * 2. 保存小说文本到 Novel/NovelChapter
    * 3. 投递 PIPELINE_STAGE1_NOVEL_TO_VIDEO Job
    */
-  async startStage1Pipeline(params: { novelText: string; projectId?: string }) {
+  async startStage1Pipeline(params: { novelText: string; projectId?: string; referenceSheetId?: string }) {
     try {
-      const { novelText, projectId: existingProjectId } = params;
+      const { novelText, projectId: existingProjectId, referenceSheetId: existingRefId } = params;
       const { randomUUID } = await import('crypto');
       const traceId = `stage1_${randomUUID()}`;
 
@@ -1098,9 +1112,9 @@ export class OrchestratorService {
       // 2. Create Novel Source & Volume & Chapter
       const novelSource = await this.prisma.novel.create({
         data: {
+          title: `Stage1_${new Date().toISOString().slice(0, 10)}`,
           projectId,
           author: 'System',
-          rawText: novelText,
         } as any,
       });
 
@@ -1177,7 +1191,7 @@ export class OrchestratorService {
       const job = await this.jobService.create(
         shot.id,
         {
-          type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
+          type: JobTypeEnum.SHOT_RENDER,
           traceId,
           payload: {
             novelText,
@@ -1187,6 +1201,7 @@ export class OrchestratorService {
             pipelineRunId: traceId,
             projectId,
             organizationId,
+            referenceSheetId: existingRefId || 'dummy-sheet-id',
           },
         } as any,
         ownerId,

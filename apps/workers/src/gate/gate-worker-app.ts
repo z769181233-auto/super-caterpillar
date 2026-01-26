@@ -22,6 +22,7 @@ import { processStage1OrchestratorJob } from '../processors/stage1-orchestrator.
 import { processNovelScan } from '../processors/novel-scan.processor';
 import { processNovelChunk } from '../processors/novel-chunk.processor';
 import type { ProcessorContext } from '../types/processor-context';
+import { processAudioJob } from '../processors/audio.processor';
 import { ApiClient } from '../api-client';
 import { PrismaClient } from 'database';
 import { EngineHubClient } from '../engine-hub-client';
@@ -93,7 +94,7 @@ export async function startGateWorkerApp() {
         'CE03_VISUAL_DENSITY', 'CE04_VISUAL_ENRICHMENT', 'CE02_VISUAL_DENSITY',
         'VIDEO_RENDER', 'CE09_MEDIA_SECURITY', 'PIPELINE_TIMELINE_COMPOSE',
         'TIMELINE_RENDER', 'PIPELINE_STAGE1_NOVEL_TO_VIDEO', 'NOVEL_SCAN_TOC',
-        'NOVEL_CHUNK_PARSE', 'CE11_SHOT_GENERATOR',
+        'NOVEL_CHUNK_PARSE', 'CE11_SHOT_GENERATOR', 'AUDIO',
       ],
       supportedModels: [],
       supportedEngines: [
@@ -101,6 +102,7 @@ export async function startGateWorkerApp() {
         'ce03_visual_density', 'ce04_visual_enrichment', 'ce02_visual_density',
         'stage1_orchestrator', 'video_merge', 'default_shot_render',
         'ce09_security_real', 'ce11_shot_generator_mock', 'timeline_render',
+        'audio_engine',
       ],
       maxBatchSize: maxConcurrency,
     },
@@ -160,6 +162,7 @@ export async function startGateWorkerApp() {
         } else if (job.type === 'PIPELINE_STAGE1_NOVEL_TO_VIDEO') result = await processStage1OrchestratorJob(ctx);
         else if (job.type === 'NOVEL_SCAN_TOC') result = await processNovelScan(ctx);
         else if (job.type === 'NOVEL_CHUNK_PARSE') result = await processNovelChunk(ctx);
+        else if (job.type === 'AUDIO') result = await processAudioJob(prisma, job, apiClient);
         else {
           process.stdout.write(util.format(`[GateWorker] ⚠️ Unknown Job Type: ${job.type}`) + '\n');
           tasksRunning--;

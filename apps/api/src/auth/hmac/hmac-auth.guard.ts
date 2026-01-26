@@ -41,13 +41,37 @@ export class HmacAuthGuard implements CanActivate {
     private readonly auditLogService: AuditLogService,
     @Inject(forwardRef(() => NonceService))
     private readonly nonceService: NonceService
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithApiSecurity>();
 
     // P1-1: 门禁模式旁路已移除（封板收口）
     // 强制回到 Spec：所有请求必须通过 HMAC 签名验证
+
+    // P0-FIX: 避免与 ApiSecurityGuard 重复验证导致 Nonce 冲突
+    // 如果 request.apiKey 已经存在，说明前序 Guard (ApiSecurityGuard) 已完成验证
+    if ((request as any).apiKey) {
+      if (process.env.NODE_ENV !== 'production') {
+        this.logger.log(`[HMAC_GUARD] Skipping validation, already validated by upstream Guard`);
+      }
+
+      // P0-FIX: Hydrate User Context from Upstream Record
+      const upstreamRecord = (request as any).apiKeyRecord;
+      if (upstreamRecord?.ownerUser) {
+        (request as any).user = {
+          userId: upstreamRecord.ownerUser.id,
+          id: upstreamRecord.ownerUser.id,
+          email: upstreamRecord.ownerUser.email,
+          userType: upstreamRecord.ownerUser.userType || 'USER',
+          role: upstreamRecord.ownerUser.role || 'USER',
+          tier: upstreamRecord.ownerUser.tier || 'FREE',
+          organizationId: upstreamRecord.ownerOrgId,
+        };
+        (request as any).authType = 'hmac';
+      }
+      return true;
+    }
 
     const method = request.method;
     // 商业级规范：验签path必须来自实际请求行（originalUrl优先）
@@ -232,6 +256,7 @@ export class HmacAuthGuard implements CanActivate {
             ownerOrgId: keyRecord.ownerOrgId,
           })}`
         );
+        this.logger.log(`[HMAC_GUARD_USER] request.user: ${JSON.stringify((request as any).user)}`);
       }
 
       return true;

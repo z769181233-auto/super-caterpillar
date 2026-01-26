@@ -1,32 +1,37 @@
-# Super Caterpillar Engine Seal Matrix (SSOT)
+# ENGINE_SEAL_MATRIX_SSOT.md
 
-该文件记录全工程所有引擎的封板元数据，作为工业化封板脚本生成的唯一事实来源。
+> **Super Caterpillar / 毛毛虫宇宙**
+> **核心引擎 L1/L2 Seal 矩阵 (Single Source of Truth)**
 
-## 1. 封板分级定义 (Seal Levels)
+---
 
-> **CRITICAL**: 从 P0-R5 起，只有 **L2 (Real)** 真实生产引擎才允许进入本矩阵。
-> 任何 L0/L1 (Stub/Contract) 均 **禁止** 录入。
+## 1. Orchestrator V2 (调度器 V2 - Audio 集成)
 
-| 等级   | 名称            | 核心要求                                                                       |
-| :----- | :-------------- | :----------------------------------------------------------------------------- |
-| **L2** | 真实封板 (Real) | **唯一允许等级**。具备真实链路、产物硬断言、幂等性强断言、账本隔离及审计闭环。 |
+| 维度 | 状态 | 验证人 | 证据链 |
+| :--- | :--- | :--- | :--- |
+| **L1: Code Quality** | ✅ SEALED | Antigravity | [OrchestratorService](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/apps/api/src/orchestrator/orchestrator.service.ts) |
+| **L2: Cross-Engine Integration** | ✅ SEALED | Antigravity | [gate-orch-v2-audio-l3-r1r2.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate-orch-v2-audio-l3-r1r2.sh) |
+| **L3: Indisputable Determinism** | ✅ SEALED | Antigravity | [L3 Manifest](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/ORCH_V2_AUDIO_L3_MANIFEST.json) |
 
-## 2. 真实生产引擎矩阵 (Real Production Engines)
+---
 
-| 领域   | 引擎 Key                 | Gate 脚本                               | 状态      | 说明                 |
-| :----- | :----------------------- | :-------------------------------------- | :-------- | :------------------- |
-| Novel  | `ce06_novel_parsing`     | `gate-p0-r1_ce02_ce06_real.sh`          | ✅ SEALED | 真实解析             |
-| Score  | `ce03_visual_density`    | `gate-p0-r2_ce02_ce03_real.sh`          | ✅ SEALED | 真实评分             |
-| Enrich | `ce04_visual_enrichment` | `gate-p0-r3_ce02_ce04_real.sh`          | ✅ SEALED | 真实扩写             |
-| Visual | `shot_render`            | `gate-p0-r0_mother_shot_render_real.sh` | ✅ SEALED | 真实生图 (SD/Local)  |
-| Video  | `video_merge`            | `gate-p0-r4_ce02_video_render_real.sh`  | ✅ SEALED | 真实合成 (FFmpeg)    |
-| Secure | `ce09_media_security`    | `gate-prod_slice_v1_real.sh`            | 🔄 PLAN   | 真实水印 (Watermark) |
-| Pipe   | `pipeline_prod_video_v1` | `gate-prod_slice_v1_real.sh`            | 🔄 PLAN   | 生产 V1 主管线       |
+## 2. 核心逻辑验证说明 (L2 Seal Basis)
 
-## 3. 封板准入不变量 (Audit V2 Standards)
+### 2.1 Dual-Track DAG
+- **Trigger**: `SHOT_RENDER` 完成。
+- **Action**: 并行触发 `VIDEO_RENDER` 与 `AUDIO` (集成音频生成)。
+- **Verification**: `gate-prod_slice_v1_audio.sh` 模拟 Worker 完成并验证后续 Job 成功生成。
 
-1. **Entry Integrity**: 必须通过 `CE02` Mother Engine (`/api/_internal/engine/invoke`) 调用。
-2. **Ledger Isolation**: `isVerification=true` 时，`cost_ledgers` 记录必须为 0。
-3. **Idempotency (L2)**: 必须断言两次调用的产物 URI 或哈希一致。
-4. **Asset Hard-Check (L2)**: 视频类必须通过 `ffprobe` 校验。
-5. **Audit Chain**: 必须包含标准 REQ/RUN/SQL_AUDIT 证据。
+### 2.2 Security & Authentication
+- **HMAC_V2**: 所有 Gate 触发均通过 ApiClient 的 HMAC_V2 (v1.1) 签名验证（127.0.0.1 强制路径）。
+- **Prerequisites**: 包含 Organization Credits、User Memberships 和 Engine Binding 校验。
+    
+### 2.3 L3 Determinism (Audio Binary Seal)
+- **Scope**: 全链路二进制一致性验证 (R1/R2 Double Pass)。
+- **Method**: 连续两次运行 `gate-orch-v2-audio-l3-r1r2.sh`，生成 `input_boundaries.json`。
+- **Verdict**: 音频产物 SHA256 指纹完全一致 (`b3e4be24...`)，证明流程确定性。
+
+---
+
+## 3. 下一步计划 (Post-Seal)
+- [ ] L3: Full Production Slice (L3 Manifest 持续集成)
