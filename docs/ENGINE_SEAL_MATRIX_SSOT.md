@@ -10,8 +10,8 @@
 | 维度 | 状态 | 验证人 | 证据链 |
 | :--- | :--- | :--- | :--- |
 | **L1: Code Quality** | ✅ SEALED | Antigravity | [OrchestratorService](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/apps/api/src/orchestrator/orchestrator.service.ts) |
-| **L2: Cross-Engine Integration** | ✅ SEALED | Antigravity | [gate-orch-v2-audio-l3-r1r2.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate-orch-v2-audio-l3-r1r2.sh) |
-| **L3: Indisputable Determinism** | ✅ SEALED | Antigravity | [L3 Manifest](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/ORCH_V2_AUDIO_L3_MANIFEST.json) |
+| **L2: Cross-Engine Integration** | ✅ SEALED | Antigravity | [gate-orch-v2-audio-l2-real.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate-orch-v2-audio-l2-real.sh) |
+| **L3: Indisputable Determinism** | ✅ SEALED | Antigravity | [gate-orch-v2-audio-l3-r1r2.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate-orch-v2-audio-l3-r1r2.sh) + [L3 Manifest](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/ORCH_V2_AUDIO_L3_MANIFEST.json) |
 
 ---
 
@@ -24,6 +24,7 @@
 
 ### 2.2 Security & Authentication
 - **HMAC_V2**: 所有 Gate 触发均通过 ApiClient 的 HMAC_V2 (v1.1) 签名验证（127.0.0.1 强制路径）。
+- **Manifest**: `signingScheme: HMAC_1_1`
 - **Prerequisites**: 包含 Organization Credits、User Memberships 和 Engine Binding 校验。
     
 ### 2.3 L3 Determinism (Audio Binary Seal)
