@@ -1,0 +1,175 @@
+turbo 2.6.3
+
+• Packages in scope: @scu/worker
+• Running dev in 1 packages
+• Remote caching disabled
+@scu/worker:dev: cache bypass, force executing def469afb0ea13c0
+@scu/worker:dev: 
+@scu/worker:dev: > @scu/worker@1.0.0 dev /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers
+@scu/worker:dev: > ts-node -r tsconfig-paths/register src/main.ts
+@scu/worker:dev: 
+@scu/worker:dev: [Bootstrap] Loaded env from /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.env. STORAGE_ROOT=undefined
+@scu/worker:dev: [Bootstrap] Prisma Client DMMF Self-Check...
+@scu/worker:dev: [Bootstrap]   process.cwd() = /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers
+@scu/worker:dev: [Bootstrap]   @prisma/client resolved to: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/default.js
+@scu/worker:dev: [Bootstrap]   database resolved to: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/index.ts
+@scu/worker:dev: [Bootstrap] ❌ DMMF Self-Check ERROR: Prisma DMMF not available or malformed
+@scu/worker:dev: [Bootstrap] Gate/Dev mode: Continuing with WARNING (CE06/other jobs may still work)
+@scu/worker:dev: [Bootstrap] GATE_MODE detected, loading Gate Worker...
+@scu/worker:dev: [Config] process.env.WORKER_OFFLINE_GRACE_MS: undefined
+@scu/worker:dev: [Config] DATABASE_URL resolved from .env.local file
+@scu/worker:dev: [CONFIG_DEBUG] JWT_SECRET read from env: your...
+@scu/worker:dev: ========================================
+@scu/worker:dev: Gate Worker (Minimal P1-1)
+@scu/worker:dev: ========================================
+@scu/worker:dev: 
+@scu/worker:dev: [GateWorker] Worker ID: local-worker
+@scu/worker:dev: [GateWorker] API URL: http://localhost:3000
+@scu/worker:dev: [GateWorker] 正在连接数据库...
+@scu/worker:dev: [GateWorker] ✅ 数据库连接成功
+@scu/worker:dev: [BillingOutbox] Dispatcher started with interval 30000ms
+@scu/worker:dev: [GateWorker] 正在注册 Worker 节点 (maxConcurrency=1)...
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/register
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/register nonce=6e9a6253... timestamp=1769443810 workerId=local-worker bodyString={"workerId":"local-worker","name":"local-worker","capabilities":{"supportedJobTypes":["SHOT_RENDER","PIPELINE_E2E_VIDEO","CE06_NOVEL_PARSING","CE03_VISUAL_DENSITY","CE04_VISUAL_ENRICHMENT","CE02_VISUAL_DENSITY","VIDEO_RENDER","CE09_MEDIA_SECURITY","PIPELINE_TIMELINE_COMPOSE","TIMELINE_RENDER","PIPELINE_STAGE1_NOVEL_TO_VIDEO","NOVEL_SCAN_TOC","NOVEL_CHUNK_PARSE","CE11_SHOT_GENERATOR","AUDIO"],"supportedModels":[],"supportedEngines":["gate_noop","pipeline_orchestrator","ce06_novel_parsing","ce03_visual_density","ce04_visual_enrichment","ce02_visual_density","stage1_orchestrator","video_merge","default_shot_render","ce09_security_real","ce11_shot_generator_mock","timeline_render","audio_engine"],"maxBatchSize":1}}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443810","X-Nonce":"6e9a62537a9f51ba1c5d24559a43209b-0-1769443810108","X-Signature":"67ef74bf8c7ca9b93b730faa70d853f6cf0e6146e932e751672a6a2817f9969e","X-Api-Key":"dev-worker-key","X-Content-SHA256":"ce4b2df06feb3266832699b8f7eb3563621dc1f46f085392cce857c82077c001","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [GateWorker] ✅ Worker 注册成功
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=52c34919... timestamp=1769443810 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443810","X-Nonce":"52c34919d6848610bf016cc15f2162cf-1-1769443810166","X-Signature":"601a16dec0eac8873461d584ec7ee8fe86f487fe5493db4f3be79548bb54117d","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-26T16:10:10.189Z"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=8cfde2c4... timestamp=1769443812 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443812","X-Nonce":"8cfde2c4af0432ec08aa4de0944b75e3-2-1769443812167","X-Signature":"b4f2fd393d05c46be33e5f1bf808e2f9851507d7a7e6a4e60ef68c3a6fe8d4e4","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-26T16:10:12.191Z"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=1be50edf... timestamp=1769443814 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443814","X-Nonce":"1be50edfe6af7ea347c7f084dbd887b3-3-1769443814167","X-Signature":"2f37d883a2631c257ddf320c1988ee4e66e80a4343d84baa1482f51c130ccc44","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-26T16:10:14.191Z"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=7c5049b5... timestamp=1769443816 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443816","X-Nonce":"7c5049b58351bbe5474e20a2edd35cb5-4-1769443816167","X-Signature":"e3c46389c59359ee38f22763762e8a52935f4cddc9f9ecdc17d8426faebc1fee","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-26T16:10:16.185Z"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=e3185c01... timestamp=1769443818 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443818","X-Nonce":"e3185c0198a1b59182c7d4d0e56a0911-5-1769443818168","X-Signature":"92169d21d7eef71650eaba82ae1ceed505551d76e4a78129973d51acdf5380d7","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-26T16:10:18.192Z"}
+@scu/worker:dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"online","tasksRunning":0}
+@scu/worker:dev: DEBUG: heartbeat body ACTUAL: {"status":"online","tasksRunning":0}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/heartbeat
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/heartbeat nonce=6683b249... timestamp=1769443820 workerId=local-worker bodyString={"status":"online","tasksRunning":0}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443820","X-Nonce":"6683b24953534cfc5d0dfe266a11ab08-6-1769443820166","X-Signature":"9aeb8ac8088d28c7845da7fb10c8a2cf92fc428b07acef9e87e4b85784991ff3","X-Api-Key":"dev-worker-key","X-Content-SHA256":"ff6c5d90c53213215e6fcbce899bdfad4139e62a3912e91f48746a01c0eea3fd","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=27786e53... timestamp=1769443820 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443820","X-Nonce":"27786e53816c4442f6369ca21d2d3be6-7-1769443820169","X-Signature":"80f0665a6366c6116d6b6f367410326a319820d6307a50f0a88ff805dcf4e5ef","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-26T16:10:20.209Z"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=fa342f39... timestamp=1769443822 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443822","X-Nonce":"fa342f39ba482ac46d30f8e599092cc4-8-1769443822169","X-Signature":"746f40d4f72642bdefd9f7f95ac14c4bc9131c860c0878d52687bae1011ff3a0","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-26T16:10:22.185Z"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=e0b1de50... timestamp=1769443824 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443824","X-Nonce":"e0b1de5048a050c26cbbc51314df0fd6-9-1769443824170","X-Signature":"29890e1226d58de0fc798caadc33c97b4e27a7e205b67e551e5305c710b5390a","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":"8cfadf04-acdc-4509-817b-525cc7aa7a03","timestamp":"2026-01-26T16:10:24.206Z"}
+@scu/worker:dev: [GateWorker] 认领 job: 8cfadf04-acdc-4509-817b-525cc7aa7a03 type=SHOT_RENDER
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/jobs/8cfadf04-acdc-4509-817b-525cc7aa7a03/ack
+@scu/worker:dev: [Worker HMAC v2] POST /api/jobs/8cfadf04-acdc-4509-817b-525cc7aa7a03/ack nonce=1e3e8720... timestamp=1769443824 workerId=local-worker bodyString={"workerId":"local-worker"}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443824","X-Nonce":"1e3e8720a5b2388fed951bdfe9164941-10-1769443824206","X-Signature":"d318e35b05d8c938b64986a3701af7a1ebf66f115a914dc5ce3708793bedca3b","X-Api-Key":"dev-worker-key","X-Content-SHA256":"9724295f1f12e3a20e76ad11528d19957f132622e78f8722e37407c7d92e65e3","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [GateWorker] ACK job: 8cfadf04-acdc-4509-817b-525cc7aa7a03
+@scu/worker:dev: {"level":"info","timestamp":"2026-01-26T16:10:24.223Z","action":"SHOT_RENDER_START","jobId":"8cfadf04-acdc-4509-817b-525cc7aa7a03","projectId":"5e2ec618-bf15-417e-b5b0-351ffe674ab1","shotId":"3cb849a3-8eae-4a37-bfff-3ce29d233b82","traceId":"L3_R1R2_1402116b"}
+@scu/worker:dev: {"level":"info","timestamp":"2026-01-26T16:10:24.238Z","action":"SHOT_RENDER_INVOKE_PAYLOAD","jobId":"8cfadf04-acdc-4509-817b-525cc7aa7a03","payload":{"shotId":"3cb849a3-8eae-4a37-bfff-3ce29d233b82","traceId":"L3_R1R2_1402116b","seed":12345,"prompt":"L3 R1R2 Test Summary..."}}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/_internal/engine/invoke
+@scu/worker:dev: [Worker HMAC v2] POST /api/_internal/engine/invoke nonce=47ad06be... timestamp=1769443824 workerId=local-worker bodyString={"engineKey":"shot_render","engineVersion":"default","payload":{"shotId":"3cb849a3-8eae-4a37-bfff-3ce29d233b82","prompt":"L3 R1R2 Test Summary","seed":12345,"style":"cinematic","context":{"projectId":"5e2ec618-bf15-417e-b5b0-351ffe674ab1"}},"metadata":{"jobId":"8cfadf04-acdc-4509-817b-525cc7aa7a03","projectId":"5e2ec618-bf15-417e-b5b0-351ffe674ab1","traceId":"L3_R1R2_1402116b","shotId":"3cb849a3-8eae-4a37-bfff-3ce29d233b82"}}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443824","X-Nonce":"47ad06beea742c6f524c5190703b84ca-11-1769443824238","X-Signature":"9c5d4d8eade39159b452f40642c9019bae4b451934e41c1c1ac143badf1a8bb0","X-Api-Key":"dev-worker-key","X-Content-SHA256":"79b0bcb7c4a9e5f97dc2ae592ac488fc721612486b1d220016b6c9d9d354c088","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/internal/events/cost-ledger
+@scu/worker:dev: [Worker HMAC v2] POST /api/internal/events/cost-ledger nonce=4baffcb3... timestamp=1769443824 workerId=local-worker bodyString={"userId":"gate-user","projectId":"5e2ec618-bf15-417e-b5b0-351ffe674ab1","jobId":"8cfadf04-acdc-4509-817b-525cc7aa7a03","jobType":"SHOT_RENDER","engineKey":"shot_render","costAmount":0.05,"currency":"USD","billingUnit":"gpu_seconds","quantity":2.5,"metadata":{"engineKey":"shot_render","traceId":"L3_R1R2_1402116b","runId":"L3_R1R2_1402116b","gpuSeconds":2.5,"cpuSeconds":0,"totalTokens":0,"model":"unknown","idempotencyKey":"L3_R1R2_1402116b:shot_render"}}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443824","X-Nonce":"4baffcb314944a910cfe73a4f1a1e5f8-12-1769443824271","X-Signature":"470ca6d4f9dbe353acc11d3ae8c0295595b3680476e916258e6230b904d426bf","X-Api-Key":"dev-worker-key","X-Content-SHA256":"1b39159643062a3b105653bd50b7a0dd43c6683a12a7f723df4f33668b8610bc","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [CostLedger] ✅ Event sent: type=SHOT_RENDER, cost=0.0500, engine=shot_render
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/audit/logs
+@scu/worker:dev: [Worker HMAC v2] POST /api/audit/logs nonce=0385451d... timestamp=1769443824 workerId=local-worker bodyString={"traceId":"L3_R1R2_1402116b","projectId":"5e2ec618-bf15-417e-b5b0-351ffe674ab1","jobId":"8cfadf04-acdc-4509-817b-525cc7aa7a03","jobType":"SHOT_RENDER","engineKey":"shot_render","status":"SUCCESS","inputHash":"d33e67e624114625","outputHash":"cf312c77c65a7ee0","latencyMs":75,"auditTrail":{"providerSelected":"mock","selectionReason":"Explicit SHOT_RENDER_PROVIDER=mock (Gate Mode)","routedBy":"shot_render_router","prompt_hash":"24ddf82f58385afe2c6fe2440820fc5f1365f5e1052b923c106e092f6a7540f0","pricing_key":"LOCAL_FREE"},"resourceId":"91a4678a-67ec-4050-965e-083d70d5df9d","resourceType":"asset"}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443824","X-Nonce":"0385451db6fcf5af83fa48fe58a987af-13-1769443824299","X-Signature":"75c13859a95e30ff0144fa9ea654455ea9111fe08ddfe8b04c25dfb25b0b07cd","X-Api-Key":"dev-worker-key","X-Content-SHA256":"1f06d13b1df7fe1a5b50f93f9ed7089dcb8974cbfc56cff293d32343a973d6f2","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/jobs/8cfadf04-acdc-4509-817b-525cc7aa7a03/report
+@scu/worker:dev: [Worker HMAC v2] POST /api/jobs/8cfadf04-acdc-4509-817b-525cc7aa7a03/report nonce=2098d273... timestamp=1769443824 workerId=local-worker bodyString={"status":"SUCCEEDED","result":{"status":"SUCCEEDED","output":{"assetId":"91a4678a-67ec-4050-965e-083d70d5df9d","storageKey":"temp/gates/mock_shot_render.png"},"assetId":"91a4678a-67ec-4050-965e-083d70d5df9d","secureUrl":"temp/gates/mock_shot_render.png"}}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443824","X-Nonce":"2098d273f1c8ec12bd7e0186e0f4e925-14-1769443824306","X-Signature":"21b891a08af348fb60943738d77f83748d16050f2eab498779a6dbbeca882a13","X-Api-Key":"dev-worker-key","X-Content-SHA256":"d9b0370959b974a52434af8cf6522ce6e883394c8ddc62d09761d7c8850c2096","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [GateWorker] ✅ job 8cfadf04-acdc-4509-817b-525cc7aa7a03 成功完成
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=c01ae256... timestamp=1769443826 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443826","X-Nonce":"c01ae256fc794c58e8e9590b01f8905e-15-1769443826170","X-Signature":"f1850a320c13b33a7713011027e8f237c9eb3508c3f259851c0d251f233557aa","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":"7adc3cff-5080-4d84-90ba-625a1db8754c","timestamp":"2026-01-26T16:10:26.196Z"}
+@scu/worker:dev: [GateWorker] 认领 job: 7adc3cff-5080-4d84-90ba-625a1db8754c type=AUDIO
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/jobs/7adc3cff-5080-4d84-90ba-625a1db8754c/ack
+@scu/worker:dev: [Worker HMAC v2] POST /api/jobs/7adc3cff-5080-4d84-90ba-625a1db8754c/ack nonce=f2779391... timestamp=1769443826 workerId=local-worker bodyString={"workerId":"local-worker"}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443826","X-Nonce":"f2779391dc2a86071c10132c7ed2cc76-16-1769443826196","X-Signature":"c6fad8fba3154527e265f9d2bbbaabd5cac385012cd2f238f1741b6dfcff948d","X-Api-Key":"dev-worker-key","X-Content-SHA256":"9724295f1f12e3a20e76ad11528d19957f132622e78f8722e37407c7d92e65e3","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [GateWorker] ACK job: 7adc3cff-5080-4d84-90ba-625a1db8754c
+@scu/worker:dev: [AudioProcessor] Processing AUDIO job 7adc3cff-5080-4d84-90ba-625a1db8754c for run L3_R1R2_1402116b
+@scu/worker:dev: [AudioProcessor] Spawning FFmpeg: ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t 2 -y /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/7adc3cff-5080-4d84-90ba-625a1db8754c/audio.wav
+@scu/worker:dev: [FFmpeg] stderr: ffmpeg version 8.0.1 Copyright (c) 2000-2025 the FFmpeg developers
+@scu/worker:dev:   built with Apple clang version 17.0.0 (clang-1700.4.4.1)
+@scu/worker:dev:   configuration: --prefix=/opt/homebrew/Cellar/ffmpeg/8.0.1 --enable-shared --enable-pthreads --enable-version3 --cc=clang --host-cflags= --host-ldflags= --enable-ffplay --enable-gnutls --enable-gpl --enable-libaom --enable-libaribb24 --enable-libbluray --enable-libdav1d --enable-libharfbuzz --enable-libjxl --enable-libmp3lame --enable-libopus --enable-librav1e --enable-librist --enable-librubberband --enable-libsnappy --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libvidstab --enable-libvmaf --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libxvid --enable-lzma --enable-libfontconfig --enable-libfreetype --enable-frei0r --enable-libass --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-libspeex --enable-libsoxr --enable-libzmq --enable-libzimg --disable-libjack --disable-indev=jack --enable-videotoolbox --enable-audiotoolbox --enable-neon
+@scu/worker:dev: 
+@scu/worker:dev: [FFmpeg] stderr:   libavutil      60.  8.100 / 60.  8.100
+@scu/worker:dev:   libavcodec     62. 11.100 / 62. 11.100
+@scu/worker:dev:   libavformat    62.  3.100 / 62.  3.100
+@scu/worker:dev:   libavdevice    62.  1.100 / 62.  1.100
+@scu/worker:dev:   libavfilter    11.  4.100 / 11.  4.100
+@scu/worker:dev:   libswscale      9.  1.100 /  9.  1.100
+@scu/worker:dev:   libswresample   6.  1.100 /  6.  1.100
+@scu/worker:dev: 
+@scu/worker:dev: [FFmpeg] stderr: Input #0, lavfi, from 'anullsrc=r=44100:cl=mono':
+@scu/worker:dev: 
+@scu/worker:dev: [FFmpeg] stderr:   Duration: N/A, start: 0.000000, bitrate: 352 kb/s
+@scu/worker:dev:   Stream #0:0: Audio: pcm_u8, 44100 Hz, mono, u8, 352 kb/s
+@scu/worker:dev: 
+@scu/worker:dev: [FFmpeg] stderr: Stream mapping:
+@scu/worker:dev:   Stream #0:0 -> #0:0 (pcm_u8 (native) -> pcm_s16le (native))
+@scu/worker:dev: [FFmpeg] stderr: 
+@scu/worker:dev: Press [q] to stop, [?] for help
+@scu/worker:dev: 
+@scu/worker:dev: [FFmpeg] stderr: Output #0, wav, to '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/7adc3cff-5080-4d84-90ba-625a1db8754c/audio.wav':
+@scu/worker:dev:   Metadata:
+@scu/worker:dev:     ISFT            : Lavf62.3.100
+@scu/worker:dev:   Stream #0:0: Audio: pcm_s16le ([1][0][0][0] / 0x0001), 44100 Hz, mono, s16, 705 kb/s
+@scu/worker:dev:     Metadata:
+@scu/worker:dev:       encoder         : Lavc62.11.100 pcm_s16le
+@scu/worker:dev: [out#0/wav @ 0x600003f50000] video:0KiB audio:172KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.044218%
+@scu/worker:dev: size=     172KiB time=00:00:02.00 bitrate= 705.9kbits/s speed= 570x elapsed=0:00:00.00    
+@scu/worker:dev: 
+@scu/worker:dev: [AudioProcessor] FFmpeg success: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/7adc3cff-5080-4d84-90ba-625a1db8754c/audio.wav
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/jobs/7adc3cff-5080-4d84-90ba-625a1db8754c/report
+@scu/worker:dev: [Worker HMAC v2] POST /api/jobs/7adc3cff-5080-4d84-90ba-625a1db8754c/report nonce=7e5ead83... timestamp=1769443826 workerId=local-worker bodyString={"status":"SUCCEEDED","result":{"status":"SUCCEEDED","output":{"assetId":"67b46302-6033-4c58-9b21-5730edf8a261","storageKey":"audios/67b46302-6033-4c58-9b21-5730edf8a261.wav","sha256":"b3e4be24700c9147fa5b43e3b1740aa9bb356b2e718f2455b15e0ed49118e079"}}}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443826","X-Nonce":"7e5ead83fc1191d71f42bb653f023387-17-1769443826345","X-Signature":"5632d0044a889f309296683a3f1f83c645ddd519bb6415ed9b2c7ab38eed9419","X-Api-Key":"dev-worker-key","X-Content-SHA256":"5212565ee742c42e571539b5cfa767c3dcf220b26a1448c232e1ac18a875b10c","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [GateWorker] ✅ job 7adc3cff-5080-4d84-90ba-625a1db8754c 成功完成
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=7d22a5de... timestamp=1769443828 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443828","X-Nonce":"7d22a5de84616307313c6cf47a798133-18-1769443828170","X-Signature":"b152bfa9f9312fe3cce1b4313b1ff67c77133c59736124b883d0f1e6efc356b8","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":"c408a863-2c20-43c5-969f-ce4a82bf64d9","timestamp":"2026-01-26T16:10:28.188Z"}
+@scu/worker:dev: [GateWorker] 认领 job: c408a863-2c20-43c5-969f-ce4a82bf64d9 type=VIDEO_RENDER
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/ack
+@scu/worker:dev: [Worker HMAC v2] POST /api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/ack nonce=25866066... timestamp=1769443828 workerId=local-worker bodyString={"workerId":"local-worker"}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443828","X-Nonce":"25866066e857130575a077bdc417a555-19-1769443828188","X-Signature":"4dad16577feb400cf07c34e68317a89e70e23c20bd70cf251cde1cd0ea9cec99","X-Api-Key":"dev-worker-key","X-Content-SHA256":"9724295f1f12e3a20e76ad11528d19957f132622e78f8722e37407c7d92e65e3","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [GateWorker] ACK job: c408a863-2c20-43c5-969f-ce4a82bf64d9
+@scu/worker:dev: [ResolvePath] HIT storageRoot="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime" key="temp/gates/mock_shot_render.png" abs="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/temp/gates/mock_shot_render.png"
+@scu/worker:dev: [VideoRender] ffmpeg single-frame -> /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4
+@scu/worker:dev: [VideoRender] Spawning ffmpeg with args: -y -loop 1 -t 1 -i /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/temp/gates/mock_shot_render.png -vf scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p -r 25 -c:v libx264 -pix_fmt yuv420p /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/report
+@scu/worker:dev: [Worker HMAC v2] POST /api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/report nonce=0a0c46ba... timestamp=1769443828 workerId=local-worker bodyString={"status":"SUCCEEDED","result":{"status":"SUCCEEDED","output":{"assetId":"745752c1-5aaf-441a-95d3-9fe37c615113","storageKey":"videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4","absolutePath":"/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4"}}}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443828","X-Nonce":"0a0c46ba6d14c12a0cf442cb3032b2b1-20-1769443828292","X-Signature":"38ec61deee966c4e3d7dbde2a44405560da6cfed3773f9d5c94fbb34955c9f79","X-Api-Key":"dev-worker-key","X-Content-SHA256":"affa62db74beab57fdde55b9c6b07d546d74d3f4b0b44f7731e878ce8277b691","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [GateWorker] ✅ job c408a863-2c20-43c5-969f-ce4a82bf64d9 成功完成
+@scu/worker:dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"online","tasksRunning":0}
+@scu/worker:dev: DEBUG: heartbeat body ACTUAL: {"status":"online","tasksRunning":0}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/heartbeat
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/heartbeat nonce=10ead324... timestamp=1769443830 workerId=local-worker bodyString={"status":"online","tasksRunning":0}
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443830","X-Nonce":"10ead324e54927565f50be7d8e09495e-21-1769443830166","X-Signature":"57a9a35ba06e6e716a1039f03bef85f41a1d3db40e97a437d9a8a7754493f596","X-Api-Key":"dev-worker-key","X-Content-SHA256":"ff6c5d90c53213215e6fcbce899bdfad4139e62a3912e91f48746a01c0eea3fd","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=52a91e3e... timestamp=1769443830 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443830","X-Nonce":"52a91e3e395564c4eddbf7542820cc00-22-1769443830171","X-Signature":"37326cefd89217f2dae73ed92f407b27dd0b76ad4c8e763fecd1e522603f00f3","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-26T16:10:30.197Z"}
+@scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
+@scu/worker:dev: [Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=dde74a42... timestamp=1769443832 workerId=local-worker bodyString=
+@scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443832","X-Nonce":"dde74a42418dca02f8e4288d9b54ffe7-23-1769443832172","X-Signature":"8246e0e9b3fe25bb760671a1bbf992c8b0140c52e4e481af382dd8c28dffbe2f","X-Api-Key":"dev-worker-key","X-Content-SHA256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
+@scu/worker:dev: {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-26T16:10:32.193Z"}
+@scu/worker:dev: 
+@scu/worker:dev: [GateWorker] 收到 SIGINT，正在关闭...
+@scu/worker:dev: 
+@scu/worker:dev: [GateWorker] 收到 SIGINT，正在关闭...
+@scu/worker:dev: [GateWorker] ✅ Worker 已关闭
+ ERROR  run failed: command  exited (1)

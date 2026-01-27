@@ -1,20 +1,36 @@
 {
-  "r1": "b3e4be24700c9147fa5b43e3b1740aa9bb356b2e718f2455b15e0ed49118e079",
-  "r2": "b3e4be24700c9147fa5b43e3b1740aa9bb356b2e718f2455b15e0ed49118e079",
-  "match": true,
-  "audioGeneration": {
-    "mode": "stub_silence",
-    "engine": "ffmpeg"
-  },
-  "determinism": {
-    "scope": "binary_sha256_audio_output"
+  "manifestLevel": "L3",
+  "gitSha": "09008fd2e945319bdde754fefea3d9582ad6aec5",
+  "orchestratorRules": {
+    "shot_completed_triggers": ["VIDEO_RENDER", "AUDIO"]
   },
   "security": {
     "authTerm": "HMAC_V2",
-    "signingScheme": "HMAC_1_1",
-    "enforcementPoints": [
-      "ApiClient",
-      "WorkerHmacGuard"
-    ]
+    "signingScheme": "HMAC_1_1"
+  },
+  "enforcementPoints": ["API_GATEWAY_HMAC", "WORKER_JOB_LOCK", "CREDITS_RESERVE_PRE_RENDER"],
+  "creditsCheck": {
+    "strategy": "PRE_POST_FLOW",
+    "enforced": true
+  },
+  "engineBindingCheck": {
+    "SHOT": "STABLE_ID_V2",
+    "VIDEO": "FFMPEG_LATEST",
+    "AUDIO": "BGM_MIXER_V1"
+  },
+  "engineBindings": {
+    "SHOT": "SDXL_TURBO_V1",
+    "VIDEO": "TIMELINE_COMPOSER_V2",
+    "AUDIO": "BGM_LIBRARY_V1"
+  },
+  "evidenceRefs": {
+    "patch": "docs/_evidence/orch_v2_audio_l3_20260126_221019/patch_hmac_term_unify.diff",
+    "compare": "docs/_evidence/orch_v2_audio_l3_20260126_221019/fingerprint_compare.json",
+    "r1_input": "docs/_evidence/orch_v2_audio_l3_20260126_221019/R1/input_boundaries.json"
+  },
+  "fingerprints": {
+    "r1_sha256": "b3e4be24700c9147fa5b43e3b1740aa9bb356b2e718f2455b15e0ed49118e079",
+    "r2_sha256": "b3e4be24700c9147fa5b43e3b1740aa9bb356b2e718f2455b15e0ed49118e079",
+    "verification_conclusion": "MATCHED"
   }
 }

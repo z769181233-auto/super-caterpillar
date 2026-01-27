@@ -9,6 +9,7 @@
 | **最终产物归口 (SSOT)** | **PASS** | `prefix=videos/` 已锁死，最终产物统一存放于 `.runtime/videos`           |
 | **真实性断言 (Gate)**   | **PASS** | `gate-shot-render-real-assert.sh`: Res >= 1024x1024, Pixel StdDev > 2.0 |
 | **视频编解码审计**      | **PASS** | `ffprobe` 验证: Duration 4.0s, Codec h264, PixFmt yuv420p               |
+| **调度器 V2 L3 封板**   | **PASS** | `HMAC_V2` 口径统一 & L3 Manifest 固化 & CI CI Gate PASS                 |
 | **路径泄露审计**        | **PASS** | DB/Payloads 0 Absolute Path Leak (User: adam)                           |
 | **证据完整性**          | **PASS** | 证据目录包含 `EVIDENCE_INDEX.json` (SHA256 固化)                        |
 
