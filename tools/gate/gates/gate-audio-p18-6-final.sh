@@ -17,8 +17,16 @@ export AUDIO_VENDOR_API_KEY="p18_final_key"
 cat > tools/ops/test_p18_6_final.ts <<EOF
 import { AudioService } from '../../apps/api/src/audio/audio.service';
 
+// Mock OpsMetricsService
+const mockMetrics = {
+    incrementAudioPreview: () => {},
+    incrementAudioVendorCall: () => {},
+    incrementAudioCacheHit: () => {},
+    incrementAudioCacheMiss: () => {}
+} as any;
+
 async function test() {
-    const svc = new AudioService();
+    const svc = new AudioService(mockMetrics);
     
     console.log("--- AUDIT & ROUTING CHECK ---");
     const res1 = await svc.generateAndMix({

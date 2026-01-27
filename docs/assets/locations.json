@@ -1,0 +1,22 @@
+[
+    {
+        "id": "LO_REUINS_BASE",
+        "name": "核心废墟",
+        "desc": "由于自毁程序导致的长廊，充满落灰。"
+    },
+    {
+        "id": "LO_SERVER_ROOM",
+        "name": "机房",
+        "desc": "高耸的服务器架，充满幽蓝色的指示灯。"
+    },
+    {
+        "id": "LO_BLACK_MARKET",
+        "name": "黑市街道",
+        "desc": "霓虹灯闪烁，肮脏阴冷的环境。"
+    },
+    {
+        "id": "LO_VIRTUAL_VOID",
+        "name": "虚拟虚空",
+        "desc": "由白色代码线条构成的纯黑空间。"
+    }
+]

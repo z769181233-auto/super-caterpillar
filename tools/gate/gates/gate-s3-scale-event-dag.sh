@@ -95,7 +95,7 @@ fi
 sleep 5
 
 # --- HMAC Probe (fail-fast) ---
-echo "🧪 HMAC Probe..."
+echo "🧪 HMAC_V2 Probe..."
 PROBE_TS=$(date +%s)
 PROBE_PAYLOAD=$(jq -n --arg nt "probe" PROBE_HEADERS=$(generate_hmac_headers "POST" "/api/orchestrator/pipeline/stage1" "$PROBE_TS" "$PROBE_PAYLOAD")
 PROBE_CURL_ARGS=()
@@ -109,10 +109,10 @@ PROBE_RESP=$("${CURL_BIN}" "${CURL_OPTS[@]}" -w "\nHTTP_CODE:%{http_code}" -X PO
 echo "$PROBE_RESP" | tee "${EVIDENCE_DIR}/hmac_probe.json"
 PROBE_CODE=$(echo "$PROBE_RESP" | grep "HTTP_CODE" | cut -d: -f2)
 if [[ ! "$PROBE_CODE" =~ ^20[0-2]$ ]]; then
-  echo "❌ FAIL: HMAC Probe failed with HTTP $PROBE_CODE"
+  echo "❌ FAIL: HMAC_V2 Probe failed with HTTP $PROBE_CODE"
   exit 1
 fi
-echo "✅ HMAC Probe PASS (HTTP $PROBE_CODE)"
+echo "✅ HMAC_V2 Probe PASS (HTTP $PROBE_CODE)"
 
 # === PART A: Multi-Worker Concurrency & Event-Driven DAG ===
 echo ""
@@ -377,7 +377,7 @@ fi
 sleep 5
 
 # --- HMAC Probe (fail-fast) ---
-echo "🧪 HMAC Probe..."
+echo "🧪 HMAC_V2 Probe..."
 PROBE_TS=$(date +%s)
 PROBE_PAYLOAD=$(jq -n --arg nt "probe" PROBE_HEADERS=$(generate_hmac_headers "POST" "/api/orchestrator/pipeline/stage1" "$PROBE_TS" "$PROBE_PAYLOAD")
 PROBE_CURL_ARGS=()
@@ -391,10 +391,10 @@ PROBE_RESP=$("${CURL_BIN}" "${CURL_OPTS[@]}" -w "\nHTTP_CODE:%{http_code}" -X PO
 echo "$PROBE_RESP" | tee "${EVIDENCE_DIR}/hmac_probe.json"
 PROBE_CODE=$(echo "$PROBE_RESP" | grep "HTTP_CODE" | cut -d: -f2)
 if [[ ! "$PROBE_CODE" =~ ^20[0-2]$ ]]; then
-  echo "❌ FAIL: HMAC Probe failed with HTTP $PROBE_CODE"
+  echo "❌ FAIL: HMAC_V2 Probe failed with HTTP $PROBE_CODE"
   exit 1
 fi
-echo "✅ HMAC Probe PASS (HTTP $PROBE_CODE)"
+echo "✅ HMAC_V2 Probe PASS (HTTP $PROBE_CODE)"
 
 # === PART A: Multi-Worker Concurrency & Event-Driven DAG ===
 echo ""
@@ -659,7 +659,7 @@ fi
 sleep 5
 
 # --- HMAC Probe (fail-fast) ---
-echo "🧪 HMAC Probe..."
+echo "🧪 HMAC_V2 Probe..."
 PROBE_TS=$(date +%s)
 PROBE_PAYLOAD=$(jq -n --arg nt "probe" PROBE_HEADERS=$(generate_hmac_headers "POST" "/api/orchestrator/pipeline/stage1" "$PROBE_TS" "$PROBE_PAYLOAD")
 PROBE_CURL_ARGS=()
@@ -673,10 +673,10 @@ PROBE_RESP=$("${CURL_BIN}" "${CURL_OPTS[@]}" -w "\nHTTP_CODE:%{http_code}" -X PO
 echo "$PROBE_RESP" | tee "${EVIDENCE_DIR}/hmac_probe.json"
 PROBE_CODE=$(echo "$PROBE_RESP" | grep "HTTP_CODE" | cut -d: -f2)
 if [[ ! "$PROBE_CODE" =~ ^20[0-2]$ ]]; then
-  echo "❌ FAIL: HMAC Probe failed with HTTP $PROBE_CODE"
+  echo "❌ FAIL: HMAC_V2 Probe failed with HTTP $PROBE_CODE"
   exit 1
 fi
-echo "✅ HMAC Probe PASS (HTTP $PROBE_CODE)"
+echo "✅ HMAC_V2 Probe PASS (HTTP $PROBE_CODE)"
 
 # === PART A: Multi-Worker Concurrency & Event-Driven DAG ===
 echo ""
@@ -941,7 +941,7 @@ fi
 sleep 5
 
 # --- HMAC Probe (fail-fast) ---
-echo "🧪 HMAC Probe..."
+echo "🧪 HMAC_V2 Probe..."
 PROBE_TS=$(date +%s)
 PROBE_PAYLOAD=$(jq -n --arg nt "probe" PROBE_HEADERS=$(generate_hmac_headers "POST" "/api/orchestrator/pipeline/stage1" "$PROBE_TS" "$PROBE_PAYLOAD")
 PROBE_CURL_ARGS=()
@@ -955,10 +955,10 @@ PROBE_RESP=$("${CURL_BIN}" "${CURL_OPTS[@]}" -w "\nHTTP_CODE:%{http_code}" -X PO
 echo "$PROBE_RESP" | tee "${EVIDENCE_DIR}/hmac_probe.json"
 PROBE_CODE=$(echo "$PROBE_RESP" | grep "HTTP_CODE" | cut -d: -f2)
 if [[ ! "$PROBE_CODE" =~ ^20[0-2]$ ]]; then
-  echo "❌ FAIL: HMAC Probe failed with HTTP $PROBE_CODE"
+  echo "❌ FAIL: HMAC_V2 Probe failed with HTTP $PROBE_CODE"
   exit 1
 fi
-echo "✅ HMAC Probe PASS (HTTP $PROBE_CODE)"
+echo "✅ HMAC_V2 Probe PASS (HTTP $PROBE_CODE)"
 
 # === PART A: Multi-Worker Concurrency & Event-Driven DAG ===
 echo ""

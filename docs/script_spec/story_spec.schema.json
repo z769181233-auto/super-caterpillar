@@ -1,0 +1,63 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": [
+        "episodeMeta",
+        "coreEvent",
+        "goal",
+        "obstacles",
+        "turns",
+        "cliffhanger"
+    ],
+    "properties": {
+        "episodeMeta": {
+            "type": "object",
+            "required": [
+                "episodeNo",
+                "durationSec",
+                "targetAudience",
+                "styleTag"
+            ],
+            "properties": {
+                "episodeNo": {
+                    "type": "string"
+                },
+                "durationSec": {
+                    "type": "number",
+                    "minimum": 300,
+                    "maximum": 480
+                },
+                "targetAudience": {
+                    "type": "string"
+                },
+                "styleTag": {
+                    "type": "string"
+                }
+            }
+        },
+        "coreEvent": {
+            "type": "string"
+        },
+        "goal": {
+            "type": "string"
+        },
+        "obstacles": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 4
+        },
+        "turns": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 3,
+            "maxItems": 4
+        },
+        "cliffhanger": {
+            "type": "string"
+        }
+    }
+}

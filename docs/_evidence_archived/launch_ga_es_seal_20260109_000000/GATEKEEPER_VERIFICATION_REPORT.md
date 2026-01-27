@@ -98,21 +98,21 @@ API already running on port 3000; skipping start_api.sh
 Waiting for worker to ready...
 [E2E] Worker log fingerprint (first 120 lines)...
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=74801b00... timestamp=1767974724710 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=74801b00... timestamp=1767974724710 workerId=local-worker bodyString=
 {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-09T16:05:24.720Z"}
 DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/heartbeat
-[Worker HMAC v2] POST /api/workers/local-worker/heartbeat nonce=7777d536... timestamp=1767974726681 workerId=local-worker bodyString={"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
+[Worker HMAC_V2] POST /api/workers/local-worker/heartbeat nonce=7777d536... timestamp=1767974726681 workerId=local-worker bodyString={"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 [Probe] R=true E=true
 [WorkerRuntime] {"jobMaxInFlight":10,"nodeMaxOldSpaceMb":2048,"jobWaveSize":5}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=c0e7d4a2... timestamp=1767974726710 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=c0e7d4a2... timestamp=1767974726710 workerId=local-worker bodyString=
 {"event":"GET_NEXT_JOB_RES","status":200,"jobId":null,"timestamp":"2026-01-09T16:05:26.717Z"}
 [Probe] R=true E=true
 [WorkerRuntime] {"jobMaxInFlight":10,"nodeMaxOldSpaceMb":2048,"jobWaveSize":5}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=5b7fe633... timestamp=1767974728711 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=5b7fe633... timestamp=1767974728711 workerId=local-worker bodyString=
 [Worker HTTP Error] POST http://localhost:3000/api/workers/local-worker/jobs/next 429 ThrottlerException: Too Many Requests
 [Worker HTTP Error] Headers sent: {
 'X-Api-Key': 'scu_smoke*...',
@@ -124,7 +124,7 @@ DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{
 [Probe] R=true E=true
 [WorkerRuntime] {"jobMaxInFlight":10,"nodeMaxOldSpaceMb":2048,"jobWaveSize":5}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=31ee17be... timestamp=1767974730710 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=31ee17be... timestamp=1767974730710 workerId=local-worker bodyString=
 [Worker HTTP Error] POST http://localhost:3000/api/workers/local-worker/jobs/next 429 ThrottlerException: Too Many Requests
 [Worker HTTP Error] Headers sent: {
 'X-Api-Key': 'scu*smoke*...',
@@ -136,11 +136,11 @@ DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{
 DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0,"capabilities":{"concurrency*managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/heartbeat
-[Worker HMAC v2] POST /api/workers/local-worker/heartbeat nonce=f51c65a0... timestamp=1767974731682 workerId=local-worker bodyString={"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
+[Worker HMAC_V2] POST /api/workers/local-worker/heartbeat nonce=f51c65a0... timestamp=1767974731682 workerId=local-worker bodyString={"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 [Probe] R=true E=true
 [WorkerRuntime] {"jobMaxInFlight":10,"nodeMaxOldSpaceMb":2048,"jobWaveSize":5}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=5713fc27... timestamp=1767974732711 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=5713fc27... timestamp=1767974732711 workerId=local-worker bodyString=
 [Worker HTTP Error] POST http://localhost:3000/api/workers/local-worker/jobs/next 429 ThrottlerException: Too Many Requests
 [Worker HTTP Error] Headers sent: {
 'X-Api-Key': 'scu_smoke*...',
@@ -152,7 +152,7 @@ DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{
 [Probe] R=true E=true
 [WorkerRuntime] {"jobMaxInFlight":10,"nodeMaxOldSpaceMb":2048,"jobWaveSize":5}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=f2d9f3a4... timestamp=1767974734711 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=f2d9f3a4... timestamp=1767974734711 workerId=local-worker bodyString=
 [Worker HTTP Error] POST http://localhost:3000/api/workers/local-worker/jobs/next 429 ThrottlerException: Too Many Requests
 [Worker HTTP Error] Headers sent: {
 'X-Api-Key': 'scu*smoke*...',
@@ -164,11 +164,11 @@ DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{
 DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0,"capabilities":{"concurrency*managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/heartbeat
-[Worker HMAC v2] POST /api/workers/local-worker/heartbeat nonce=6fd20d57... timestamp=1767974736684 workerId=local-worker bodyString={"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
+[Worker HMAC_V2] POST /api/workers/local-worker/heartbeat nonce=6fd20d57... timestamp=1767974736684 workerId=local-worker bodyString={"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 [Probe] R=true E=true
 [WorkerRuntime] {"jobMaxInFlight":10,"nodeMaxOldSpaceMb":2048,"jobWaveSize":5}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=c2ce80a4... timestamp=1767974736712 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=c2ce80a4... timestamp=1767974736712 workerId=local-worker bodyString=
 [Worker HTTP Error] POST http://localhost:3000/api/workers/local-worker/jobs/next 429 ThrottlerException: Too Many Requests
 [Worker HTTP Error] Headers sent: {
 'X-Api-Key': 'scu_smoke*...',
@@ -180,7 +180,7 @@ DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{
 [Probe] R=true E=true
 [WorkerRuntime] {"jobMaxInFlight":10,"nodeMaxOldSpaceMb":2048,"jobWaveSize":5}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=8c7bcc0a... timestamp=1767974738713 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=8c7bcc0a... timestamp=1767974738713 workerId=local-worker bodyString=
 [Worker HTTP Error] POST http://localhost:3000/api/workers/local-worker/jobs/next 429 ThrottlerException: Too Many Requests
 [Worker HTTP Error] Headers sent: {
 'X-Api-Key': 'scu*smoke*...',
@@ -192,7 +192,7 @@ DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{
 [Probe] R=true E=true
 [WorkerRuntime] {"jobMaxInFlight":10,"nodeMaxOldSpaceMb":2048,"jobWaveSize":5}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=c8eb76f0... timestamp=1767974740713 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=c8eb76f0... timestamp=1767974740713 workerId=local-worker bodyString=
 [Worker HTTP Error] POST http://localhost:3000/api/workers/local-worker/jobs/next 429 ThrottlerException: Too Many Requests
 [Worker HTTP Error] Headers sent: {
 'X-Api-Key': 'scu*smoke*...',
@@ -204,11 +204,11 @@ DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{
 DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"idle","tasksRunning":0,"capabilities":{"concurrency*managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 DEBUG: heartbeat body ACTUAL: {"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/heartbeat
-[Worker HMAC v2] POST /api/workers/local-worker/heartbeat nonce=a8981922... timestamp=1767974741684 workerId=local-worker bodyString={"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
+[Worker HMAC_V2] POST /api/workers/local-worker/heartbeat nonce=a8981922... timestamp=1767974741684 workerId=local-worker bodyString={"status":"idle","tasksRunning":0,"capabilities":{"concurrency_managed":true,"lease_supported":true,"supportedEngines":["default_novel_analysis"]}}
 [Probe] R=true E=true
 [WorkerRuntime] {"jobMaxInFlight":10,"nodeMaxOldSpaceMb":2048,"jobWaveSize":5}
 [Worker DEBUG] ApiClient request: POST /api/workers/local-worker/jobs/next
-[Worker HMAC v2] POST /api/workers/local-worker/jobs/next nonce=c75032de... timestamp=1767974742714 workerId=local-worker bodyString=
+[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next nonce=c75032de... timestamp=1767974742714 workerId=local-worker bodyString=
 [Worker HTTP Error] POST http://localhost:3000/api/workers/local-worker/jobs/next 429 ThrottlerException: Too Many Requests
 [Worker HTTP Error] Headers sent: {
 'X-Api-Key': 'scu_smoke*...',

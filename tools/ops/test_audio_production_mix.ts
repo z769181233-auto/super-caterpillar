@@ -22,7 +22,16 @@ function getDuration(absPath: string): Promise<number> {
 
 async function test() {
     const prisma = new PrismaClient();
-    const svc = new AudioService();
+
+    // Mock OpsMetricsService
+    const mockMetrics = {
+        incrementAudioPreview: () => { },
+        incrementAudioVendorCall: () => { },
+        incrementAudioCacheHit: () => { },
+        incrementAudioCacheMiss: () => { }
+    } as any;
+
+    const svc = new AudioService(mockMetrics);
 
     const projectId = `test_p18_3_${Date.now()}`;
     const orgId = `org_p18_3`;

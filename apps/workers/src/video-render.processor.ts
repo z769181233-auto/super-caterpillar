@@ -20,7 +20,7 @@ export function cleanupVideoRenderProcesses() {
   for (const cp of activeProcesses) {
     try {
       cp.kill('SIGKILL');
-    } catch (e) {}
+    } catch (e) { }
   }
   activeProcesses.clear();
 }
@@ -208,6 +208,34 @@ export async function processVideoRenderJob(
       }
     }
 
+    // PLAN-3: Audio Mixing Logic
+    const audioTrack = payload.audioTrack;
+    if (audioTrack) {
+      console.log(`[VIDEO_RENDER] Found audio track: ${JSON.stringify(audioTrack)}`);
+      // Resolve Audio Path (support storageKey or direct path)
+      const audioKey = audioTrack.storageKey || audioTrack.mixed || audioTrack.path;
+      if (audioKey) {
+        const audioPath = resolveAssetPath(audioKey);
+        if (fs.existsSync(audioPath)) {
+          // Add Audio Input
+          // Note: Input 0 is Video (Loop or Concat List), Input 1 will be Audio
+          args.push('-i', audioPath);
+
+          // Map Streams: Video from 0, Audio from 1
+          args.push('-map', '0:v');
+          args.push('-map', '1:a');
+
+          // Cut video/audio to shortest duration (e.g. if audio is longer than video frames)
+          args.push('-shortest');
+
+          // Ensure audio codec
+          args.push('-c:a', 'aac');
+        } else {
+          console.warn(`[VIDEO_RENDER] Audio file not found at: ${audioPath}`);
+        }
+      }
+    }
+
     // 6. Spawn FFmpeg
     console.log(`[VIDEO_RENDER] Executing: ${cmd} ${args.join(' ')}`);
     await new Promise<void>((resolve, reject) => {
@@ -332,7 +360,7 @@ export async function processVideoRenderJob(
         latencyMs: latency,
         auditTrail: { sizeBytes, checksum, frames: frameKeys.length, hls: hlsPlaylistUrl },
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // 7.1 ffprobe evidence (fs only, Unified Root)
     const ffprobeKey = `${videoKey}.ffprobe.json`;

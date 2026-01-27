@@ -1,0 +1,22 @@
+{
+  "episodeMeta": {
+    "episodeNo": "E0003",
+    "durationSec": 360,
+    "targetAudience": "青少年/科幻",
+    "styleTag": "赛博朋克/惊悚"
+  },
+  "coreEvent": "Eve发现团队内部有内鬼，在抓捕过程中陷入了道德困境。",
+  "goal": "找出并控制内鬼",
+  "obstacles": [
+    "所有通信设备都被监控",
+    "证据指向了Adam",
+    "实验室发生毒气泄漏",
+    "Eve的权限被临时冻结"
+  ],
+  "turns": [
+    "发现Adam是由于被精神控制才泄密",
+    "Eve选择相信直觉而非数据",
+    "内鬼竟是机房里的AI助理"
+  ],
+  "cliffhanger": "AI助理启动了全城广播，宣布Eve为头号通缉犯。"
+}

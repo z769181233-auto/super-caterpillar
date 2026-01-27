@@ -22,7 +22,7 @@ export class Stage1VerificationHook {
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
     private readonly prisma: PrismaService
-  ) {}
+  ) { }
 
   /**
    * 监听作业成功事件
@@ -125,6 +125,29 @@ export class Stage1VerificationHook {
           `[VerificationHook] Failed to inject Mock SHOT_RENDER ${i}: ${err.message}`
         );
       }
+    }
+
+    // 6. 注入并发 AUDIO 作业（P5 Parallel Track 验证）
+    const audioDedupeKey = `gate_audio:${parentJob.id}`;
+    try {
+      await this.jobService.createCECoreJob({
+        projectId: parentJob.projectId,
+        organizationId: parentJob.organizationId,
+        jobType: 'AUDIO' as any,
+        traceId: parentJob.traceId ?? undefined,
+        isVerification: true,
+        dedupeKey: audioDedupeKey,
+        payload: {
+          pipelineRunId,
+          projectId,
+          episodeId,
+          audioText: "Mock Audio Content for L2 Verification",
+          isVerification: true,
+        },
+      });
+      this.logger.log(`[VerificationHook] Injected Mock AUDIO for pipelineRunId=${pipelineRunId}`);
+    } catch (err: any) {
+      this.logger.error(`[VerificationHook] Failed to inject Mock AUDIO: ${err.message}`);
     }
   }
 }

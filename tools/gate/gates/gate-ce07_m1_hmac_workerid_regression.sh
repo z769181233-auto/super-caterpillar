@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# gate-ce07_m1_hmac_workerid_regression.sh# 核心逻辑：确保 WorkerId 必须进程级注入，HMAC v2 必须生效，审计链不可伪造。
+# gate-ce07_m1_hmac_workerid_regression.sh# 核心逻辑：确保 WorkerId 必须进程级注入，HMAC_V2 必须生效，审计链不可伪造。
 
 set -e
 
@@ -89,11 +89,11 @@ else
     exit 1
 fi
 
-# Assert 2: HMAC v2
+# Assert 2: HMAC_V2
 if grep -i "x-hmac-version" "$EVID_DIR/api.log" | grep -q "2"; then
-    log "${GREEN}✓ Assert 2 (HMAC v2): PASS${NC}"
+    log "${GREEN}✓ Assert 2 (HMAC_V2): PASS${NC}"
 else
-    log "${RED}FAIL: HMAC v2 Not Found in logs${NC}"
+    log "${RED}FAIL: HMAC_V2 Not Found in logs${NC}"
     exit 1
 fi
 
@@ -211,11 +211,11 @@ else
     exit 1
 fi
 
-# Assert 2: HMAC v2
+# Assert 2: HMAC_V2
 if grep -i "x-hmac-version" "$EVID_DIR/api.log" | grep -q "2"; then
-    log "${GREEN}✓ Assert 2 (HMAC v2): PASS${NC}"
+    log "${GREEN}✓ Assert 2 (HMAC_V2): PASS${NC}"
 else
-    log "${RED}FAIL: HMAC v2 Not Found in logs${NC}"
+    log "${RED}FAIL: HMAC_V2 Not Found in logs${NC}"
     exit 1
 fi
 
@@ -333,11 +333,11 @@ else
     exit 1
 fi
 
-# Assert 2: HMAC v2
+# Assert 2: HMAC_V2
 if grep -i "x-hmac-version" "$EVID_DIR/api.log" | grep -q "2"; then
-    log "${GREEN}✓ Assert 2 (HMAC v2): PASS${NC}"
+    log "${GREEN}✓ Assert 2 (HMAC_V2): PASS${NC}"
 else
-    log "${RED}FAIL: HMAC v2 Not Found in logs${NC}"
+    log "${RED}FAIL: HMAC_V2 Not Found in logs${NC}"
     exit 1
 fi
 
@@ -455,11 +455,11 @@ else
     exit 1
 fi
 
-# Assert 2: HMAC v2
+# Assert 2: HMAC_V2
 if grep -i "x-hmac-version" "$EVID_DIR/api.log" | grep -q "2"; then
-    log "${GREEN}✓ Assert 2 (HMAC v2): PASS${NC}"
+    log "${GREEN}✓ Assert 2 (HMAC_V2): PASS${NC}"
 else
-    log "${RED}FAIL: HMAC v2 Not Found in logs${NC}"
+    log "${RED}FAIL: HMAC_V2 Not Found in logs${NC}"
     exit 1
 fi
 

@@ -1317,6 +1317,7 @@ enum JobType {
   TIMELINE_PREVIEW
   PIPELINE_PROD_VIDEO_V1
   CE11_SHOT_GENERATOR
+  AUDIO
 }
 
 enum JobEngineBindingStatus {

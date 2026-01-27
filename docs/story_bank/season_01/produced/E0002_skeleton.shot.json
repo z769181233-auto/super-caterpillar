@@ -1,0 +1,186 @@
+{
+  "episodeMeta": {
+    "durationSec": 360
+  },
+  "beats": [
+    {
+      "id": "beat_0",
+      "paceTag": "常",
+      "estDurationSec": 45,
+      "beatGoal": "引入冲突: 下载加密协议",
+      "actionMotifs": [
+        "潜入",
+        "观察",
+        "开启"
+      ],
+      "sfxIds": [],
+      "thirdActorPropId": "",
+      "transitionTag": "物件匹配",
+      "reversalTag": false,
+      "climaxTag": null,
+      "shotLines": []
+    },
+    {
+      "id": "beat_1",
+      "paceTag": "快",
+      "estDurationSec": 45,
+      "beatGoal": "对抗阻碍: 防火墙多重锁定",
+      "actionMotifs": [
+        "冲刺",
+        "躲避",
+        "射击",
+        "反击"
+      ],
+      "sfxIds": [],
+      "thirdActorPropId": "",
+      "transitionTag": "动作匹配",
+      "reversalTag": false,
+      "climaxTag": null,
+      "shotLines": []
+    },
+    {
+      "id": "beat_2",
+      "paceTag": "快",
+      "estDurationSec": 45,
+      "beatGoal": "对抗阻碍: 巡逻队正在靠近门外",
+      "actionMotifs": [
+        "冲刺",
+        "躲避",
+        "射击",
+        "反击"
+      ],
+      "sfxIds": [],
+      "thirdActorPropId": "",
+      "transitionTag": "动作匹配",
+      "reversalTag": false,
+      "climaxTag": null,
+      "shotLines": []
+    },
+    {
+      "id": "beat_3",
+      "paceTag": "快",
+      "estDurationSec": 45,
+      "beatGoal": "对抗阻碍: 通风管道被杂物堵塞",
+      "actionMotifs": [
+        "冲刺",
+        "躲避",
+        "射击",
+        "反击"
+      ],
+      "sfxIds": [],
+      "thirdActorPropId": "",
+      "transitionTag": "动作匹配",
+      "reversalTag": false,
+      "climaxTag": "Small",
+      "shotLines": [],
+      "climaxEvidence": {
+        "triggerShotId": "beat_3_S1",
+        "propInvolved": "[核心道具]",
+        "payoff": "[视觉奇观]"
+      }
+    },
+    {
+      "id": "beat_4",
+      "paceTag": "快",
+      "estDurationSec": 45,
+      "beatGoal": "剧情转折: 发现数据是虚假的诱饵",
+      "actionMotifs": [
+        "翻转",
+        "对峙",
+        "博弈"
+      ],
+      "sfxIds": [],
+      "thirdActorPropId": "",
+      "transitionTag": "光影匹配",
+      "reversalTag": true,
+      "climaxTag": "Small",
+      "shotLines": [],
+      "reversalEvidence": {
+        "entryPose": "[起势姿态]",
+        "exitPose": "[落点姿态]",
+        "turnActionShotId": "beat_4_S1"
+      },
+      "climaxEvidence": {
+        "triggerShotId": "beat_4_S1",
+        "propInvolved": "[核心道具]",
+        "payoff": "[视觉奇观]"
+      }
+    },
+    {
+      "id": "beat_5",
+      "paceTag": "慢",
+      "estDurationSec": 45,
+      "beatGoal": "剧情转折: Adam用灭火器炸开排风口",
+      "actionMotifs": [
+        "翻转",
+        "对峙",
+        "博弈"
+      ],
+      "sfxIds": [],
+      "thirdActorPropId": "",
+      "transitionTag": "光影匹配",
+      "reversalTag": true,
+      "climaxTag": "Big",
+      "shotLines": [],
+      "reversalEvidence": {
+        "entryPose": "[起势姿态]",
+        "exitPose": "[落点姿态]",
+        "turnActionShotId": "beat_5_S1"
+      },
+      "climaxEvidence": {
+        "triggerShotId": "beat_5_S1",
+        "propInvolved": "[核心道具]",
+        "payoff": "[视觉奇观]"
+      }
+    },
+    {
+      "id": "beat_6",
+      "paceTag": "快",
+      "estDurationSec": 45,
+      "beatGoal": "剧情转折: 巡逻队长其实是假扮的盟友",
+      "actionMotifs": [
+        "翻转",
+        "对峙",
+        "博弈"
+      ],
+      "sfxIds": [],
+      "thirdActorPropId": "",
+      "transitionTag": "光影匹配",
+      "reversalTag": true,
+      "climaxTag": "Small",
+      "shotLines": [],
+      "reversalEvidence": {
+        "entryPose": "[起势姿态]",
+        "exitPose": "[落点姿态]",
+        "turnActionShotId": "beat_6_S1"
+      },
+      "climaxEvidence": {
+        "triggerShotId": "beat_6_S1",
+        "propInvolved": "[核心道具]",
+        "payoff": "[视觉奇观]"
+      }
+    },
+    {
+      "id": "beat_7",
+      "paceTag": "慢",
+      "estDurationSec": 45,
+      "beatGoal": "留下悬念: 盟友摘下面具，竟然长得和Eve一模一样。",
+      "actionMotifs": [
+        "告退",
+        "消失",
+        "回响"
+      ],
+      "sfxIds": [],
+      "thirdActorPropId": "",
+      "transitionTag": "声音匹配",
+      "reversalTag": false,
+      "climaxTag": "Small",
+      "shotLines": [],
+      "climaxEvidence": {
+        "triggerShotId": "beat_7_S1",
+        "propInvolved": "[核心道具]",
+        "payoff": "[视觉奇观]"
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+    "beats": [
+        {
+            "id": "beat_01",
+            "paceTag": "快",
+            "beatGoal": "逼让他退缩",
+            "sfxLines": [
+                "急促的键盘敲击声"
+            ],
+            "thirdActorProp": "破旧的笔记本电脑",
+            "transitionTag": "动作匹配",
+            "reversalTag": false,
+            "climaxTag": "Small",
+            "climaxEvidence": {
+                "triggerShotId": "S001",
+                "propInvolved": "破旧的笔记本电脑",
+                "payoff": "合上盖子"
+            },
+            "shotLines": [
+                {
+                    "id": "S001",
+                    "framing": "特写",
+                    "subject": "Adam的手",
+                    "actionChain": "Adam用力合上电脑盖(起势)，金属外壳发出闷响(过程)，手按在盖子上青筋暴起(落点)，他深吸一口气(反应)。",
+                    "parallelTask": "盯着屏幕反光",
+                    "dialogue": "这就结束了。"
+                }
+            ]
+        }
+    ]
+}

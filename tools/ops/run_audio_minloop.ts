@@ -2,8 +2,13 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Nest app context (no HTTP server)
-import { NestFactory } from '@nestjs/core';
+// Mock OpsMetricsService to satisfy AudioService constructor
+const mockMetrics = {
+    incrementAudioPreview: () => { },
+    incrementAudioVendorCall: () => { },
+    incrementAudioCacheHit: () => { },
+    incrementAudioCacheMiss: () => { }
+} as any;
 
 // IMPORTANT: Adjust import path if your api module root differs.
 // We avoid importing full AppModule to keep this isolated.
@@ -46,7 +51,7 @@ async function main() {
     };
 
     // For P18-0 we instantiate directly (0-risk, no DI).
-    const svc = new AudioService();
+    const svc = new AudioService(mockMetrics);
 
     const res = await svc.generateAndMix({
         text,

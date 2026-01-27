@@ -66,6 +66,7 @@ import { processNovelChunk } from './processors/novel-chunk.processor';
 import { processIdentityLockJob } from './processors/ce02-identity-lock.processor';
 import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.processor';
 import { processCE02VisualDensityJob } from './processors/ce02-visual-density.processor';
+import { processAudioJob } from './processors/audio.processor';
 import { ProcessorContext } from './types/processor-context';
 
 const prisma = new PrismaClient({
@@ -162,7 +163,7 @@ async function registerWorker(): Promise<void> {
   if (!env.workerApiKey || !env.workerApiSecret) {
     process.stdout.write(
       util.format('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!') +
-        '\n'
+      '\n'
     );
     process.stdout.write(
       util.format('[Worker] ⚠️  Worker will not be able to authenticate with API server.') + '\n'
@@ -181,7 +182,7 @@ async function registerWorker(): Promise<void> {
     );
     process.stdout.write(
       util.format(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`) +
-        '\n'
+      '\n'
     );
 
     // Test DB Connection
@@ -207,20 +208,20 @@ async function registerWorker(): Promise<void> {
       rawEngines.length > 0
         ? rawEngines
         : [
-            'default_novel_analysis',
-            'ce06_novel_parsing',
-            'ce03_visual_density',
-            'ce04_visual_enrichment',
-            'ce04_sdxl',
-            'tts_standard',
-            'video_render',
-            'shot_render',
-            'real_shot_render',
-            'timeline_render',
-            'ce09_media_security',
-            'ce_pipeline',
-            'ce11_timeline_preview',
-          ];
+          'default_novel_analysis',
+          'ce06_novel_parsing',
+          'ce03_visual_density',
+          'ce04_visual_enrichment',
+          'ce04_sdxl',
+          'tts_standard',
+          'video_render',
+          'shot_render',
+          'real_shot_render',
+          'timeline_render',
+          'ce09_media_security',
+          'ce_pipeline',
+          'ce11_timeline_preview',
+        ];
 
     // P1: Production Scrubbing - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
@@ -257,6 +258,7 @@ async function registerWorker(): Promise<void> {
       'TIMELINE_PREVIEW',
       'CE11_SHOT_GENERATOR',
       'PIPELINE_PROD_VIDEO_V1', // Exec 1: New Prod Pipeline
+      'AUDIO',
     ];
 
     // Registration Retry Loop
@@ -311,20 +313,20 @@ async function sendHeartbeat(): Promise<void> {
       rawEngines.length > 0
         ? rawEngines
         : [
-            'default_novel_analysis',
-            'ce06_novel_parsing',
-            'ce03_visual_density',
-            'ce04_visual_enrichment',
-            'ce04_sdxl',
-            'tts_standard',
-            'video_render',
-            'shot_render',
-            'timeline_render',
-            'ce09_media_security',
-            'ce_pipeline',
-            'ce11_timeline_preview',
-            'ce09_real_watermark',
-          ];
+          'default_novel_analysis',
+          'ce06_novel_parsing',
+          'ce03_visual_density',
+          'ce04_visual_enrichment',
+          'ce04_sdxl',
+          'tts_standard',
+          'video_render',
+          'shot_render',
+          'timeline_render',
+          'ce09_media_security',
+          'ce_pipeline',
+          'ce11_timeline_preview',
+          'ce09_real_watermark',
+        ];
 
     // P1: Production Scrubbing (Heartbeat Sync) - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
@@ -516,6 +518,12 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
         );
       } else if (job.type === 'VIDEO_RENDER') {
         return processVideoRenderJobImpl(
+          prisma,
+          { ...job, projectId: job.projectId || '' },
+          apiClient
+        );
+      } else if (job.type === 'AUDIO') {
+        return processAudioJob(
           prisma,
           { ...job, projectId: job.projectId || '' },
           apiClient
@@ -768,7 +776,7 @@ export async function startWorkerApp() {
     process.stdout.write(util.format(`[Worker] Job 轮询间隔: ${env.workerPollInterval}ms`) + '\n');
     process.stdout.write(
       util.format(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`) +
-        '\n'
+      '\n'
     );
 
     // 优雅退出处理

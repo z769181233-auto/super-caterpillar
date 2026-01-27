@@ -131,8 +131,8 @@ pnpm --filter @scu/worker dev
 
 - 日志中出现：`✅ Worker 注册成功`
 - 日志中出现：`✅ Worker 启动成功`
-- 定期输出心跳日志：`[Worker HMAC] POST /api/workers/heartbeat`
-- 定期输出 Job 轮询日志：`[Worker HMAC] POST /api/workers/local-worker/jobs/next`
+- 定期输出心跳日志：`[Worker HMAC_V2] POST /api/workers/heartbeat`
+- 定期输出 Job 轮询日志：`[Worker HMAC_V2] POST /api/workers/local-worker/jobs/next`
 - 没有 Job 时可能输出：`[DEV][Job] getNextPendingJobForWorker ... jobId=none ...`
 
 ### 终端 3：启动 Web

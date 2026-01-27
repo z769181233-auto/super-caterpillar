@@ -125,7 +125,7 @@ pnpm dev
 
 - `[Worker] API Key: ak_worker_dev_0000000000000000...`
 - `[Worker] API Secret: SET`
-- `[Worker HMAC] POST /api/workers/register ...`
+- `[Worker HMAC_V2] POST /api/workers/register ...`
 - 不再出现 `401 Unauthorized` 错误
 
 ## 关键代码片段

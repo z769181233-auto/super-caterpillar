@@ -226,11 +226,10 @@ export class EngineRegistry {
       PIPELINE_STAGE1_NOVEL_TO_VIDEO: 'stage1_orchestrator',
       CE09_MEDIA_SECURITY: 'ce09_security_real',
 
-      // P5: Explicit Real Engine Integration
       CE11_SHOT_GENERATOR: 'ce11_shot_generator_mock', // Default to Mock
       CE11_SHOT_GENERATOR_REAL: 'ce11_shot_generator_real', // Explicit Real
 
-      // TEST_HTTP_ENGINE_CALL: 'mock_http_engine', // 仅用于测试，不接入现有业务流程
+      AUDIO: 'audio_engine', // Added for dual-track integration
     };
 
     return jobTypeToEngineKey[jobType] || null;

@@ -176,7 +176,7 @@ pnpm dev
 [Worker] API Base URL: http://localhost:3000
 [Worker] API Key: ak_worker_dev_0000000000000000...
 [Worker] API Secret: SET
-[Worker HMAC] POST /api/workers/register nonce=a1b2c3d4... timestamp=1704067200000
+[Worker HMAC_V2] POST /api/workers/register nonce=a1b2c3d4... timestamp=1704067200000
 [Worker] Registered successfully: ...
 [Worker] Worker Agent started successfully
 ```

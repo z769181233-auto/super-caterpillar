@@ -1,0 +1,42 @@
+[
+    {
+        "id": "SF_EXPLOSION_LOUD",
+        "name": "重型爆炸声",
+        "tags": [
+            "暴力",
+            "巨大"
+        ]
+    },
+    {
+        "id": "SF_LASER_SHOT",
+        "name": "激光发射音",
+        "tags": [
+            "战斗",
+            "科幻"
+        ]
+    },
+    {
+        "id": "SF_METAL_CRASH",
+        "name": "金属撞击声",
+        "tags": [
+            "物理",
+            "环境"
+        ]
+    },
+    {
+        "id": "SF_ALARM_LOOP",
+        "name": "警报循环",
+        "tags": [
+            "紧急",
+            "音效"
+        ]
+    },
+    {
+        "id": "SF_BREATH_HEAVY",
+        "name": "沉重喘息",
+        "tags": [
+            "情感",
+            "Adam"
+        ]
+    }
+]
