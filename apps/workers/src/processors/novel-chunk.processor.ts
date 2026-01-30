@@ -1,21 +1,13 @@
-import { PrismaClient, JobType, JobStatus } from 'database';
+import { PrismaClient } from 'database';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as fsp from 'fs/promises';
 import { ProcessorContext } from '../types/processor-context';
-import {
-  basicTextSegmentation,
-  applyAnalyzedStructureToDatabase,
-} from '../novel-analysis-processor';
+import { fileExists } from '../../../../packages/shared/fs_async';
+import { streamSliceLines } from '../../../../packages/ingest/stream_slice';
+import { basicTextSegmentation } from '../novel-analysis-processor';
 import { hydrateShotWithDirectorControls } from '../v3/utils/shot_field_extractor';
 
-/**
- * Stage 4: NOVEL_CHUNK_PARSE Processor
- *
- * 职责：
- * 1. 读取指定行范围 (Chunk)。
- * 2. 调用语义分析 (CE06 / BasicSeg)。
- * 3. 事务写入该 Episode 的 Scenes/Shots。
- */
 export async function processNovelChunk(context: ProcessorContext) {
   const { prisma, job } = context;
   const { projectId, fileKey, episodeId, startLine, endLine } = job.payload;
@@ -25,14 +17,14 @@ export async function processNovelChunk(context: ProcessorContext) {
     `[NovelChunk] Parsing Project ${projectId}, Episode ${episodeId}, Lines ${startLine}-${endLine}`
   );
 
-  // [MOCK] Read file & slice
+  // 1. Path Resolution
   let filePath = fileKey;
-  if (!fs.existsSync(filePath)) {
-    filePath = path.resolve(process.cwd(), fileKey);
+  if (!(await fileExists(filePath))) {
+    throw new Error(`[NovelChunk] Source file not found: ${filePath}`);
   }
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const lines = content.split(/\r?\n/).slice(startLine, endLine + 1);
-  const chunkText = lines.join('\n');
+
+  // 2. Stream Slice (0-Memory-Bomb)
+  const chunkText = await streamSliceLines(filePath, startLine, endLine);
 
   // 1. Analyze (Reuse existing logic but for specific chunk)
   // 注意：basicTextSegmentation 默认生成 ProjectStructure.

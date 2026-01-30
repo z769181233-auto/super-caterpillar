@@ -1,0 +1,7 @@
+{
+  "seasonId": "season_01",
+  "budgetEpisodeCostUnits": 20000,
+  "budgetSeasonCostUnits": 200000,
+  "costUnitCurrency": "CU",
+  "notes": "Based on COST_MODEL_SSOT v1.0.0. 20000 CU approx equals 8640 frames * 2.3 avg multiplier"
+}

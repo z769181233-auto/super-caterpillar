@@ -21,6 +21,13 @@ bash tools/gate/gates/gate-asset-binding-resolve.sh
 # RenderPlan P0 Industrial Audit (Drift/HitRate)
 bash tools/gate/gates/gate-render-plan-p0.sh
 
+# Cost Budget Enforcement (G3)
+# Note: Inputs come from valid render plan execution in previous steps or implicit compilation.
+# For CI context, we often need to ensure compilation happens first.
+# Current flow: tools/gate/gates/gate-render-plan-p0.sh does compilation and outputs to evidence.
+# We will use that evidence.
+bash tools/gate/gates/gate-cost-budget.sh docs/_evidence/phase_f_commissioning_20260127_224500/E0001_full/cost_estimate.json docs/budgets/season_01_budget.json
+
 # Frame Continuity Enforcement (8640 Frames)
 bash tools/gate/gates/gate-frame-continuity.sh
 

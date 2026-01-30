@@ -94,8 +94,11 @@
     "@formatjs/icu-messageformat-parser": "^3.0.2",
     "dotenv": "^16.0.0",
     "express": "^4.19.2",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.11.0",
     "pg": "^8.16.3",
     "replicate": "^1.4.0",
+    "xmlbuilder2": "^4.0.3",
     "zod": "^4.3.5"
   }
 }

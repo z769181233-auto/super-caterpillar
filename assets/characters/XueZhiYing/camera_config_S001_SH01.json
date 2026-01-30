@@ -1,0 +1,26 @@
+{
+  "shot_id": "S001_SH01",
+  "camera_specs": {
+    "sensor": "FullFrame_36x24",
+    "focal_length_mm": 50,
+    "aperture_f_stop": 2.8,
+    "focus": {
+      "mode": "manual",
+      "target_id": "CH_XueZhiYing",
+      "target_point": "face_mid",
+      "distance_meters": 1.8
+    },
+    "shutter_angle": 180,
+    "iso": 400
+  },
+  "render_specs": {
+    "resolution": "7680x4320",
+    "color_space": "Linear_sRGB_10bit",
+    "format": "ProRes_4444_XQ",
+    "fps": 24
+  },
+  "audit": {
+    "status": "CAMERA_LOCKED",
+    "timestamp": "2026-01-30T00:35:00Z"
+  }
+}

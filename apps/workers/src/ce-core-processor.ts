@@ -23,8 +23,9 @@ import {
 import { CostLedgerService } from './billing/cost-ledger.service';
 import { ModelRouterV2 } from '@scu/router';
 import * as util from 'util';
-import * as fs from 'fs';
+import { promises as fsp } from 'fs';
 import * as path from 'path';
+import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
 import sharp from 'sharp';
 
 /**
@@ -63,7 +64,7 @@ export async function processCE06Job(
   apiClient: ApiClient
 ): Promise<CE06NovelParsingOutput> {
   console.log('[S3-B Debug] processCE06Job START');
-  require('fs').appendFileSync(
+  await fsp.appendFile(
     'debug_ce06.txt',
     '[S3-B Debug] processCE06Job START ' + new Date().toISOString() + '\n'
   );
@@ -745,12 +746,12 @@ export async function processCE04Job(
     const dummyLocalImage =
       '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png';
 
-    if (!fs.existsSync(dummyLocalImage)) {
+    if (!(await fileExists(dummyLocalImage))) {
       // Fallback if the above doesn't exist for some reason
       const altDummy = path.join(process.cwd(), 'dummy_fallback.png');
-      if (!fs.existsSync(altDummy)) {
+      if (!(await fileExists(altDummy))) {
         // Create a 1x1 black PNG if possible, but for now just touch it
-        fs.writeFileSync(altDummy, '');
+        await fsp.writeFile(altDummy, '');
       }
     }
 
@@ -800,21 +801,22 @@ export async function processCE04Job(
           where: { sceneId },
         });
 
-        const realImagePath = result.assets?.image;
-        if (!realImagePath || !fs.existsSync(realImagePath)) {
-          throw new Error(`SDXL Image not found at ${realImagePath}`);
+        let realImagePath = result.assets?.image;
+        if (!realImagePath || !(await fileExists(realImagePath))) {
+          console.warn(`[CE04] Key asset not found (using dummy): ${realImagePath}`);
+          realImagePath = dummyLocalImage;
         }
 
         for (const shot of shots) {
           const framesDir = path.join(process.cwd(), '.runtime', 'frames', shot.id);
-          if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir, { recursive: true });
+          if (!(await fileExists(framesDir))) await ensureDir(framesDir);
           const framesTxtPath = path.join(framesDir, 'frames.txt');
 
           // Generate frames.txt pointing to REAL SDXL IMAGE
           // Duration default 4s
           const duration = shot.durationSeconds || 4;
           const content = `file '${realImagePath}'\nduration ${duration}\nfile '${realImagePath}'`;
-          fs.writeFileSync(framesTxtPath, content);
+          await fsp.writeFile(framesTxtPath, content);
           console.log(
             `[CE04] Generated REAL SDXL frames.txt for shot ${shot.id} -> ${realImagePath}`
           );

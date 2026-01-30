@@ -30,6 +30,10 @@ import { EngineStrategyService } from '../engine/engine-strategy.service';
 import { EngineInvokerService } from './engine-invoker.service';
 import { EngineController } from '../engine/engine.controller';
 import { EngineAdminModule } from '../engine-admin/engine-admin.module';
+import { G5DialogueBindingAdapter } from './adapters/g5-dialogue-binding.adapter';
+import { G5SemanticMotionMapperAdapter } from './adapters/g5-semantic-motion-mapper.adapter';
+import { G5AssetLayeringResolverAdapter } from './adapters/g5-asset-layering-resolver.adapter';
+import { G5SubengineHubService } from './g5-subengine-hub.service';
 
 @Module({
   imports: [PrismaModule, EngineAdminModule], // S3-C.1: 导入 EngineAdminModule 以使用 EngineAdminService
@@ -54,6 +58,10 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     CE11MockAdapter,
     MockEngineAdapter,
     CE11ComfyUIAdapter,
+    G5DialogueBindingAdapter, // G5-P0-1: Dialogue Binding Engine
+    G5SemanticMotionMapperAdapter, // G5-P0-2: Semantic Motion Mapper
+    G5AssetLayeringResolverAdapter, // G5-P0-3: Asset Layering Resolver
+    G5SubengineHubService, // G5 Orchestrator
   ],
   exports: [
     EngineRegistry,
@@ -62,6 +70,7 @@ import { EngineAdminModule } from '../engine-admin/engine-admin.module';
     EngineConfigService,
     HttpEngineAdapter,
     ShotRenderRouterAdapter,
+    G5SubengineHubService,
   ], // S4-B: 导出策略服务 + HTTP 适配器与配置服务
 })
 export class EngineModule implements OnModuleInit {
@@ -95,7 +104,13 @@ export class EngineModule implements OnModuleInit {
     @Inject(MockEngineAdapter)
     private readonly mockEngineAdapter: MockEngineAdapter,
     @Inject(CE11ComfyUIAdapter)
-    private readonly ce11ComfyUIAdapter: CE11ComfyUIAdapter
+    private readonly ce11ComfyUIAdapter: CE11ComfyUIAdapter,
+    @Inject(G5DialogueBindingAdapter)
+    private readonly g5DialogueBindingAdapter: G5DialogueBindingAdapter,
+    @Inject(G5SemanticMotionMapperAdapter)
+    private readonly g5SemanticMotionMapperAdapter: G5SemanticMotionMapperAdapter,
+    @Inject(G5AssetLayeringResolverAdapter)
+    private readonly g5AssetLayeringResolverAdapter: G5AssetLayeringResolverAdapter
   ) {}
 
   onModuleInit() {
@@ -147,5 +162,14 @@ export class EngineModule implements OnModuleInit {
 
     // CE11 Real Registration
     this.registry.register(this.ce11ComfyUIAdapter);
+
+    // G5-P0-1: Dialogue Binding Engine
+    this.registry.register(this.g5DialogueBindingAdapter);
+
+    // G5-P0-2: Semantic Motion Mapper
+    this.registry.register(this.g5SemanticMotionMapperAdapter);
+
+    // G5-P0-3: Asset Layering Resolver
+    this.registry.register(this.g5AssetLayeringResolverAdapter);
   }
 }

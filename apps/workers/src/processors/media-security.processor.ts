@@ -12,10 +12,14 @@ import {
 // import { PRODUCTION_MODE } from '@scu/config';
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 import fs from 'fs';
-import path from 'path';
+import * as path from 'path';
+import { promises as fsp } from 'fs';
+import { ensureDir, fileExists } from '../../../../packages/shared/fs_async';
 import crypto from 'crypto';
 import { spawn } from 'child_process';
 
+import { EngineHubClient } from '../engine-hub-client';
+import { readBufferUnderLimit } from '../../../../packages/shared/fs_safe';
 import { ProcessorContext } from '../types/processor-context';
 
 export async function processMediaSecurityJob(context: ProcessorContext) {
@@ -85,8 +89,8 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
   }
   const sourcePath = path.resolve(runtimeDir, sourceStorageKey);
 
-  if (!fs.existsSync(sourcePath)) {
-    throw new Error(`[MediaSecurity] Source video asset not found at ${sourcePath}`);
+  if (!(await fileExists(sourcePath))) {
+    throw new Error(`[MediaSecurity] Source asset file not found: ${sourcePath}`);
   }
 
   // 3. Perform "Security" Operation (Mock)
@@ -94,16 +98,15 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
   const secureRelativeDir = path.join('secure', projectId, pipelineRunId);
   const secureAbsDir = path.join(runtimeDir, secureRelativeDir);
 
-  if (!fs.existsSync(secureAbsDir)) {
-    fs.mkdirSync(secureAbsDir, { recursive: true });
-  }
+  //   const secureAbsDir = path.dirname(outputAbsPath);
+  //   await ensureDir(secureAbsDir);
 
   const outputFilename = `secure_${path.basename(sourceStorageKey, path.extname(sourceStorageKey))}.mp4`;
   const outputAbsPath = path.join(secureAbsDir, outputFilename);
   const outputRelativeKey = path.join(secureRelativeDir, outputFilename).replace(/\\/g, '/');
 
   const hlsSecureDir = path.join(secureAbsDir, 'hls');
-  if (!fs.existsSync(hlsSecureDir)) fs.mkdirSync(hlsSecureDir, { recursive: true });
+  await ensureDir(hlsSecureDir);
   const hlsPlaylistFilename = 'master.m3u8';
   const hlsPlaylistAbsPath = path.join(hlsSecureDir, hlsPlaylistFilename);
   const hlsPlaylistRelativeKey = path
@@ -153,7 +156,8 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
   await runFfmpeg(hlsArgs, 'CE09_HLS_Secure');
 
   // Generate Fingerprint (SHA256) of the SECURE MP4
-  const fileBuffer = fs.readFileSync(outputAbsPath);
+  // Read file safely (Limit 20MB for check)
+  const fileBuffer = await readBufferUnderLimit(outputAbsPath, 20 * 1024 * 1024);
   const hashSum = crypto.createHash('sha256');
   hashSum.update(fileBuffer);
   const fingerprint = hashSum.digest('hex');

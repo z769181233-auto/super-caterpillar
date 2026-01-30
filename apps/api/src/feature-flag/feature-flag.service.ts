@@ -11,7 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class FeatureFlagService {
   private readonly logger = new Logger(FeatureFlagService.name);
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) { }
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   /**
    * 检查指定 Feature Flag 是否启用 (支持 Stage 12 多级策略)
@@ -111,10 +111,7 @@ export class FeatureFlagService {
    * 检查自动返工是否启用 (P14-0 灰度策略)
    * 优先 DB（org/project 配置），其次 env override，默认 OFF。
    */
-  async isAutoReworkEnabled(context: {
-    orgId?: string;
-    projectId?: string;
-  }): Promise<boolean> {
+  async isAutoReworkEnabled(context: { orgId?: string; projectId?: string }): Promise<boolean> {
     // 1. 检查环境变量 Override (Gate/Staging 强制启用/禁用)
     const envValue = process.env['FEATURE_AUTO_REWORK_ENABLED'];
     if (envValue) {

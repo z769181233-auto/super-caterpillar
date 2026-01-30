@@ -1,0 +1,25 @@
+{
+  "shot_id": "S001_SH02",
+  "camera_specs": {
+    "sensor": "FullFrame_36x24",
+    "focal_length_mm": 35,
+    "aperture_f_stop": 4.0,
+    "focus": {
+      "mode": "auto_tracking",
+      "target_id": "CH_ChunTao",
+      "target_point": "upper_body",
+      "distance_meters": 2.5
+    },
+    "motion": "Pan_Left_Slow"
+  },
+  "render_specs": {
+    "resolution": "7680x4320",
+    "color_space": "Linear_sRGB_10bit",
+    "format": "ProRes_4444_XQ",
+    "fps": 24
+  },
+  "audit": {
+    "status": "CAMERA_LOCKED",
+    "timestamp": "2026-01-30T00:42:00Z"
+  }
+}

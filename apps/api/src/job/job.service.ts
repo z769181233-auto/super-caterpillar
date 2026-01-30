@@ -128,7 +128,7 @@ export class JobService {
     private readonly structureGenerateService?: StructureGenerateService,
     @Inject(forwardRef(() => OrchestratorService))
     private readonly orchestratorService?: OrchestratorService
-  ) { }
+  ) {}
 
   async create(
     shotId: string,
@@ -921,7 +921,10 @@ export class JobService {
     isVerification: boolean = false
   ): Promise<void> {
     // Stage-3 Sealing Bypass: 如果是验证模式下的 Mock ID，直接放行
-    if (referenceSheetId === 'gate-mock-ref-id' || (isVerification && referenceSheetId === 'gate-mock-ref-id')) {
+    if (
+      referenceSheetId === 'gate-mock-ref-id' ||
+      (isVerification && referenceSheetId === 'gate-mock-ref-id')
+    ) {
       return;
     }
 
@@ -1170,13 +1173,15 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${filterTypes.length > 0
-          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-          : Prisma.empty
+        ${
+          filterTypes.length > 0
+            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+            : Prisma.empty
         }
-        ${supportedEngines.length > 0
-          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-          : Prisma.empty
+        ${
+          supportedEngines.length > 0
+            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+            : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10

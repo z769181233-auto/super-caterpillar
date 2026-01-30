@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "templates": {
+    "idle_breathing": {
+      "id": "idle_breathing",
+      "name": "呼吸感",
+      "params": {
+        "scale_y": "1 + 0.005*sin(t*2)",
+        "translate_y": "0",
+        "description": "微小的纵向拉伸模拟呼吸，y轴位移应为0"
+      }
+    },
+    "pause_thinking": {
+      "id": "pause_thinking",
+      "name": "沉思",
+      "params": {
+        "rotate": "2*sin(t*0.5)",
+        "scale": "1.01",
+        "description": "微小的身体前倾/旋转，模拟思考状态"
+      }
+    },
+    "turn_back_slow": {
+      "id": "turn_back_slow",
+      "name": "慢回首",
+      "params": {
+        "translate_x": "50 * t/duration",
+        "scale_x": "-1",
+        "description": "水平移动并翻转x轴，模拟转身"
+      }
+    },
+    "serve_tea": {
+      "id": "serve_tea",
+      "name": "倒茶/行礼",
+      "params": {
+        "translate_y": "10 * sin(t*3)",
+        "rotate": "5 * t/duration",
+        "description": "伴随y轴波动的旋转动作"
+      }
+    }
+  }
+}

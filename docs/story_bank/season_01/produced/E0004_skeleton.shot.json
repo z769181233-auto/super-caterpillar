@@ -8,11 +8,7 @@
       "paceTag": "常",
       "estDurationSec": 45,
       "beatGoal": "引入冲突: 夺取冷却模块",
-      "actionMotifs": [
-        "潜入",
-        "观察",
-        "开启"
-      ],
+      "actionMotifs": ["潜入", "观察", "开启"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "物件匹配",
@@ -25,12 +21,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 模块在黑市头目手中",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -43,12 +34,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 黑市街道布满陷阱",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -61,12 +47,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 当地帮派的阻挠",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -84,11 +65,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 黑市头目愿意用情报交换",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -111,11 +88,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 陷阱其实是通往控制室的捷径",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -138,11 +111,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 冷却模块已被由于过热开始漏液",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -165,11 +134,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "留下悬念: 在安装模块时，Eve发现模块内部刻着她父亲的名字。",
-      "actionMotifs": [
-        "告退",
-        "消失",
-        "回响"
-      ],
+      "actionMotifs": ["告退", "消失", "回响"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "声音匹配",

@@ -2,9 +2,10 @@ import { PrismaClient } from 'database';
 import { WorkerJobBase, EngineInvocationRequest } from '@scu/shared-types';
 import { EngineHubClient } from '../engine-hub-client';
 import { ApiClient } from '../api-client';
-import * as util from 'util';
+import { readFileUnderLimit, readBufferUnderLimit } from '../../../../packages/shared/fs_safe';
+import { promises as fsp } from 'fs';
 import * as path from 'path';
-import * as fs from 'fs';
+import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
 import * as crypto from 'crypto';
 import sharp from 'sharp';
 
@@ -31,9 +32,13 @@ function resolveAbsolutePath(relativeKey: string): string {
 /**
  * Helper: Get Evidence Dir
  */
-function getEvidenceDir(): string | null {
-  if (fs.existsSync(EVIDENCE_DIR_FILE)) {
-    return fs.readFileSync(EVIDENCE_DIR_FILE, 'utf-8').trim();
+async function getEvidenceDir(): Promise<string | null> {
+  if (await fileExists(EVIDENCE_DIR_FILE)) {
+    // 2.5 CE02 Check (Hard Gate)
+    // Use fs_safe
+    const evidenceContent = await readFileUnderLimit(EVIDENCE_DIR_FILE, 1024 * 1024); // 1MB limit for path file
+    const evidenceDir = evidenceContent.trim();
+    return evidenceDir;
   }
   return null;
 }
@@ -41,10 +46,10 @@ function getEvidenceDir(): string | null {
 /**
  * Helper: Log Evidence
  */
-function logEvidence(filename: string, content: string) {
-  const evdDir = getEvidenceDir();
+async function logEvidence(filename: string, content: string) {
+  const evdDir = await getEvidenceDir(); // Await the async function
   if (evdDir) {
-    fs.appendFileSync(path.join(evdDir, filename), content + '\n');
+    await fsp.appendFile(path.join(evdDir, filename), content + '\n');
   }
 }
 
@@ -157,8 +162,8 @@ export async function processIdentityLockJob(ctx: {
     const ssotRoot = resolveSsotRoot();
     const identityDir = path.join(ssotRoot, 'characters', characterId, 'identity', currentAnchorId);
 
-    if (!fs.existsSync(identityDir)) {
-      fs.mkdirSync(identityDir, { recursive: true });
+    if (!(await fileExists(identityDir))) {
+      await ensureDir(identityDir);
     }
 
     const views = ['front', 'side', 'back'];
@@ -201,14 +206,15 @@ export async function processIdentityLockJob(ctx: {
       const targetRelPath = path.relative(ssotRoot, targetAbsPath); // characters/...
 
       // Move file to SSOT Location
-      fs.renameSync(sourceAbsPath, targetAbsPath);
+      await fsp.rename(sourceAbsPath, targetAbsPath);
 
       // Validate: Sharp
       const metadata = await sharp(targetAbsPath).metadata();
       const isValid =
         (metadata.width || 0) >= MIN_RESOLUTION && (metadata.height || 0) >= MIN_RESOLUTION;
 
-      logEvidence(
+      await logEvidence(
+        // Await the async function
         'DECODE_ASSERT.log',
         `${new Date().toISOString()} [VALIDATE] ${targetRelPath} Width=${metadata.width} Format=${metadata.format} PASS=${isValid}`
       );
@@ -219,14 +225,14 @@ export async function processIdentityLockJob(ctx: {
         );
       }
 
-      // Validate: SHA256
-      const buffer = fs.readFileSync(targetAbsPath);
+      // Verify target
+      // Use buffer safe read (max 50MB for identity image? No, usually small. Set 20MB)
+      const buffer = await readBufferUnderLimit(targetAbsPath, 20 * 1024 * 1024);
       const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
       viewHashes.push(sha256);
       viewAssets[view] = targetRelPath;
 
       // Evidence
-      logEvidence('IDENTITY_TRIVIEW_LIST.txt', targetRelPath);
       logEvidence('IDENTITY_TRIVIEW_SHA256.txt', `${sha256}  ${targetRelPath}`);
     }
 

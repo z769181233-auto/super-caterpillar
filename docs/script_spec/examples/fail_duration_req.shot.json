@@ -1,28 +1,26 @@
 {
-    "episodeMeta": {
-        "durationSec": 400
-    },
-    "beats": [
+  "episodeMeta": {
+    "durationSec": 400
+  },
+  "beats": [
+    {
+      "id": "beat_fail_01",
+      "paceTag": "快",
+      "beatGoal": "砸碎门锁",
+      "sfxLines": ["碎裂声"],
+      "thirdActorProp": "铁锤",
+      "transitionTag": "动作匹配",
+      "reversalTag": false,
+      "climaxTag": null,
+      "shotLines": [
         {
-            "id": "beat_fail_01",
-            "paceTag": "快",
-            "beatGoal": "砸碎门锁",
-            "sfxLines": [
-                "碎裂声"
-            ],
-            "thirdActorProp": "铁锤",
-            "transitionTag": "动作匹配",
-            "reversalTag": false,
-            "climaxTag": null,
-            "shotLines": [
-                {
-                    "id": "S001",
-                    "framing": "特写",
-                    "subject": "锁",
-                    "actionChain": "举起锤子(起势)，砸向锁芯(过程)，锁芯变形(落点)，碎片飞溅(反应)。",
-                    "parallelTask": "喘粗气"
-                }
-            ]
+          "id": "S001",
+          "framing": "特写",
+          "subject": "锁",
+          "actionChain": "举起锤子(起势)，砸向锁芯(过程)，锁芯变形(落点)，碎片飞溅(反应)。",
+          "parallelTask": "喘粗气"
         }
-    ]
+      ]
+    }
+  ]
 }

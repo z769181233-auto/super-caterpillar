@@ -24,7 +24,7 @@ export class QualityScoreService {
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
     private readonly identityService: IdentityConsistencyService
-  ) { }
+  ) {}
 
   /**
    * P13-3: 执行分镜质量评分
@@ -198,7 +198,6 @@ export class QualityScoreService {
       delete signals.ce23_algo_version;
       delete signals.ce23_real_error;
     }
-
 
     // P16: 阈值判定
     let identityThreshold = 0.8;

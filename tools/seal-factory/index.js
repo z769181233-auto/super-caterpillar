@@ -67,7 +67,9 @@ function parseSSOT() {
 
         // FAIL-FAST: 2.1 区必须全 sealed
         if (!status.includes('SEALED')) {
-          throw new Error(`[Security] CRITICAL: Found NON-SEALED item in '2.1 Sealed' section: ${engineKey} (Status: ${status}). Move it to 2.2 Roadmap!`);
+          throw new Error(
+            `[Security] CRITICAL: Found NON-SEALED item in '2.1 Sealed' section: ${engineKey} (Status: ${status}). Move it to 2.2 Roadmap!`
+          );
         }
 
         sections.sealed.push({
@@ -76,7 +78,7 @@ function parseSSOT() {
           gateScript: cells[2].replace(/`/g, ''),
           status: status,
           // Mapped for template compatibility
-          phase: 'p0-rX', // Auto-filled mock, or parse from script name if needed? 
+          phase: 'p0-rX', // Auto-filled mock, or parse from script name if needed?
           // Previous parser extracted phase from cells[3] but schema changed?
           // Let's re-read the SSOT content carefully.
           // The SSOT has: | Area | Key | Gate | Status | Desc |
@@ -91,7 +93,7 @@ function parseSSOT() {
   }
 
   // Post-process to extract metadata from Gate Script Name if possible, to keep template working
-  sections.sealed = sections.sealed.map(item => {
+  sections.sealed = sections.sealed.map((item) => {
     // gate-p0-r1_ce02_ce06_real.sh -> phase=P0-R1
     const match = item.gateScript.match(/gate-(p\d+-r\d+)_/i);
     const phase = match ? match[1].toUpperCase() : 'UNKNOWN';
@@ -99,7 +101,7 @@ function parseSSOT() {
       ...item,
       phase,
       sealLevel: 'L2', // Forced by 2.1 definition
-      jobType: 'Real'  // Default
+      jobType: 'Real', // Default
     };
   });
 

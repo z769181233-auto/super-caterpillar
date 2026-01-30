@@ -8,11 +8,7 @@
       "paceTag": "常",
       "estDurationSec": 45,
       "beatGoal": "引入冲突: 采集无污染种子",
-      "actionMotifs": [
-        "潜入",
-        "观察",
-        "开启"
-      ],
+      "actionMotifs": ["潜入", "观察", "开启"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "物件匹配",
@@ -25,12 +21,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 植物藤蔓具有麻痹毒性",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -43,12 +34,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 温室自动灌溉系统喷射强酸",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -61,12 +47,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 缺乏有效的火焰武器",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -84,11 +65,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 发现阳光是植物的弱点",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -111,11 +88,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: Adam利用防护服电流清理路径",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -138,11 +111,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 种子其实寄生在母株心脏位置",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -165,11 +134,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "留下悬念: Eve被藤蔓刺破皮层，伤口处长出了发光的幼芽。",
-      "actionMotifs": [
-        "告退",
-        "消失",
-        "回响"
-      ],
+      "actionMotifs": ["告退", "消失", "回响"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "声音匹配",

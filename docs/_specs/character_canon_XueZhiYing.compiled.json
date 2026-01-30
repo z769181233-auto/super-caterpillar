@@ -1,0 +1,40 @@
+{
+  "characterId": "XueZhiYing",
+  "canon_source_sha": "680249a130e1a104f843880f5a4419693efec2a52dd30581a80cf2f416510482",
+  "face": {
+    "shape": "Oval (Standard Chinese)",
+    "eyes": "Phoenix Eyes (Narrow Double Eyelid)",
+    "eyebrows": "Raised, Sparse (Not Dense)",
+    "skin_texture": "Cold White, Translucent, Realistic Pores",
+    "forbidden": ["Big Euro Eyes", "Heavy Makeup", "Plastic Skin", "Anime Eyes"]
+  },
+  "hair": {
+    "style": "Simple High Bun",
+    "physics": "Individual Strands (Geometry)",
+    "accessory": "White Jade Hairpin",
+    "forbidden": ["Messy Hair (Non-gravity)", "Texture Plane Hair"]
+  },
+  "clothing": {
+    "layers": [
+      {
+        "layer": 1,
+        "name": "Inner",
+        "material": "Cotton",
+        "color": "Pale Cyan"
+      },
+      {
+        "layer": 2,
+        "name": "Outer",
+        "material": "Silk Satin",
+        "structure": "Rigid"
+      },
+      {
+        "layer": 3,
+        "name": "Cloak",
+        "material": "Snow Purple Fur",
+        "texture": "Physical Fur"
+      }
+    ],
+    "forbidden": ["Painted Texture", "Merged Layers"]
+  }
+}

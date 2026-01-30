@@ -169,7 +169,9 @@ async function executeChunkParseJob(
   const chapterText = payload.raw_text;
   const traceId = payload.traceId || job.id;
   const pipelineRunId = job.payload?.pipelineRunId || payload.pipelineRunId;
-  logger.log(`[CE06_DEBUG_CHUNK] JobID=${job.id} TraceId=${traceId} PLRunId=${pipelineRunId} Payload=${JSON.stringify(payload)}`);
+  logger.log(
+    `[CE06_DEBUG_CHUNK] JobID=${job.id} TraceId=${traceId} PLRunId=${pipelineRunId} Payload=${JSON.stringify(payload)}`
+  );
 
   const projectId = job.projectId;
   const organizationId = job.organizationId;
@@ -185,8 +187,11 @@ async function executeChunkParseJob(
 
   logger.log(`[CE06-PARSE] Analyzing chapter ${chapterId} via EngineHub...`);
 
-  // V3.0 P0-2: 获取章节信息用于上下文注入
-  const chapter = await prisma.novelChapter.findUnique({ where: { id: chapterId } });
+  // V3.0 P0-2: 获取章节信息用于上下文注入 (Include episode for downstream linkage)
+  const chapter = await prisma.novelChapter.findUnique({
+    where: { id: chapterId },
+    include: { episode: true },
+  });
   if (!chapter) throw new Error(`Chapter ${chapterId} not found`);
 
   // V3.0 P0-2: 构建递归注入上下文
@@ -247,12 +252,14 @@ async function executeChunkParseJob(
         create: {
           chapterId,
           projectId,
+          episodeId: chapter.episode?.id,
           sceneIndex,
           title: (sc.title || `Scene ${sceneIndex}`) + ` [${traceId}]`,
           enrichedText: sc.raw_text || '',
         },
         update: {
           projectId,
+          episodeId: chapter.episode?.id,
           title: (sc.title || `Scene ${sceneIndex}`) + ` [${traceId}]`,
           enrichedText: sc.raw_text || '',
         },
@@ -272,7 +279,7 @@ async function executeChunkParseJob(
             type: 'DEFAULT',
             durationSeconds: 3,
             renderStatus: 'PENDING',
-            title: `Shot 1 [${traceId}]`
+            title: `Shot 1 [${traceId}]`,
           },
         });
       }

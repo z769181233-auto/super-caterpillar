@@ -22,12 +22,14 @@ if (!API_SECRET) {
 // HMAC Helper
 function getAuthHeaders(body: string) {
   const timestamp = Math.floor(Date.now() / 1000).toString();
-  const nonce = "nonce_" + Date.now() + "_" + Math.random().toString(36).substring(7);
-  const contentSha256 = body ? crypto.createHash("sha256").update(body, "utf8").digest("hex") : "UNSIGNED";
+  const nonce = 'nonce_' + Date.now() + '_' + Math.random().toString(36).substring(7);
+  const contentSha256 = body
+    ? crypto.createHash('sha256').update(body, 'utf8').digest('hex')
+    : 'UNSIGNED';
 
   // Signature: apiKey + nonce + timestamp + body
   const payload = API_KEY + nonce + timestamp + body;
-  const signature = crypto.createHmac("sha256", API_SECRET!).update(payload).digest("hex");
+  const signature = crypto.createHmac('sha256', API_SECRET!).update(payload).digest('hex');
 
   return {
     'X-Api-Key': API_KEY,
@@ -36,7 +38,7 @@ function getAuthHeaders(body: string) {
     'X-Content-SHA256': contentSha256,
     'X-Signature': signature,
     'X-Hmac-Version': '1.1',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   };
 }
 
@@ -67,7 +69,9 @@ async function createJob(engine: string) {
 
   if (!res.ok) {
     const errText = await res.text();
-    console.error(`[STRESS] Create JOB FAILED: ${res.status} ${errText} (Key: ${API_KEY.substring(0, 5)}...)`);
+    console.error(
+      `[STRESS] Create JOB FAILED: ${res.status} ${errText} (Key: ${API_KEY.substring(0, 5)}...)`
+    );
     throw new Error(`Failed to create job: ${res.status} ${errText}`);
   }
   const data: any = await res.json();
@@ -124,7 +128,7 @@ async function runPhase(concurrency: number, durationSeconds: number) {
         if (err.message.includes('TIMEOUT')) timeouts[engine]++;
         else errors[engine]++;
         // Wait a bit on error to avoid tight error loops
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, 1000));
       }
     }
   };

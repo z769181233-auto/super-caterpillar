@@ -35,7 +35,7 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     // We resolve it lazily in onModuleInit or ensureDependencies.
     // If we want to inject it, we must ensure it's in EngineModule.
     // Since I can't easily edit EngineModule safely right now, I'll rely on lazy resolution via ModuleRef.
-  ) { }
+  ) {}
 
   private mockAdapter: MockEngineAdapter | undefined; // Lazy loaded
 

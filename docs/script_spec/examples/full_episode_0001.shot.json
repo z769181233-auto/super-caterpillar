@@ -7,9 +7,7 @@
       "id": "beat_0",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": true,
@@ -117,9 +115,7 @@
       "id": "beat_1",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -222,9 +218,7 @@
       "id": "beat_2",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -327,9 +321,7 @@
       "id": "beat_3",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -437,9 +429,7 @@
       "id": "beat_4",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -542,9 +532,7 @@
       "id": "beat_5",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": true,
@@ -652,9 +640,7 @@
       "id": "beat_6",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -762,9 +748,7 @@
       "id": "beat_7",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -867,9 +851,7 @@
       "id": "beat_8",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -972,9 +954,7 @@
       "id": "beat_9",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -1082,9 +1062,7 @@
       "id": "beat_10",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": true,
@@ -1192,9 +1170,7 @@
       "id": "beat_11",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -1297,9 +1273,7 @@
       "id": "beat_12",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -1407,9 +1381,7 @@
       "id": "beat_13",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -1512,9 +1484,7 @@
       "id": "beat_14",
       "paceTag": "常",
       "beatGoal": "让敌人退缩",
-      "sfxLines": [
-        "爆炸声"
-      ],
+      "sfxLines": ["爆炸声"],
       "thirdActorProp": "激光枪",
       "transitionTag": "动作匹配",
       "reversalTag": false,

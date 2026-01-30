@@ -1,5 +1,6 @@
 import { PrismaClient } from 'database';
-import * as fs from 'fs';
+import { promises as fsp } from 'fs';
+import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
 import * as path from 'path';
 import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
@@ -171,7 +172,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   const height = 720;
 
   let currentFrame = 0;
-  const timelineShots: TimelineShot[] = scene.shots.map((shot: any, idx: number) => {
+  const timelineShots: TimelineShot[] = [];
+  for (const [idx, shot] of (scene.shots as any[]).entries()) {
     const params = shotParamsMap.get(shot.id) || (shot.params as any) || {};
     const durationFrames = (shot.durationSeconds || 1) * fps;
 
@@ -207,9 +209,9 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
     if (shot.resultImageUrl) {
       const imageAbsPath = path.resolve(storageRoot, shot.resultImageUrl);
-      if (fs.existsSync(imageAbsPath)) {
+      if (await fileExists(imageAbsPath)) {
         const dir = path.dirname(framesTxtPath);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        if (!(await fileExists(dir))) await ensureDir(dir);
 
         // Generate ffmpeg concat format frames.txt
         // duration is specified in seconds per line? Or just repeat the file?
@@ -222,8 +224,10 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
         const durationSec = shot.durationSeconds || 1.0;
         const content = `file '${imageAbsPath}'\nduration ${durationSec}\nfile '${imageAbsPath}'`;
-        fs.writeFileSync(framesTxtPath, content);
-        console.log(`[TimelineCompose] Generated frames.txt for shot ${shot.id} at ${framesTxtPath}`);
+        await fsp.writeFile(framesTxtPath, content);
+        console.log(
+          `[TimelineCompose] Generated frames.txt for shot ${shot.id} at ${framesTxtPath}`
+        );
       }
     }
 
@@ -241,8 +245,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     // 更新游标：下一个镜头的基准开始时间是当前镜头的结束点
     currentFrame = actualEnd;
 
-    return s;
-  });
+    timelineShots.push(s);
+  }
 
   const timelineData: TimelineData = {
     sceneId,
@@ -257,16 +261,16 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       tracks: [
         ...((job.payload as any).bgmStorageKey
           ? [
-            {
-              id: 'bgm',
-              type: 'music' as const,
-              storageKey: (job.payload as any).bgmStorageKey,
-              gain: (job.payload as any).bgmGain || 0.5,
-              loop: (job.payload as any).bgmMode === 'loop',
-              ducking: { target: 'dialogue', gain: 0.2 },
-              truncate: 'shortest' as const,
-            },
-          ]
+              {
+                id: 'bgm',
+                type: 'music' as const,
+                storageKey: (job.payload as any).bgmStorageKey,
+                gain: (job.payload as any).bgmGain || 0.5,
+                loop: (job.payload as any).bgmMode === 'loop',
+                ducking: { target: 'dialogue', gain: 0.2 },
+                truncate: 'shortest' as const,
+              },
+            ]
           : []),
         ...scene.shots
           .map((s) => {
@@ -290,12 +294,12 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
   // 3. 产物持久化
   const runtimeDir = path.join(process.cwd(), '.runtime', 'timelines');
-  if (!fs.existsSync(runtimeDir)) fs.mkdirSync(runtimeDir, { recursive: true });
+  if (!(await fileExists(runtimeDir))) await ensureDir(runtimeDir);
 
   const timelineFileName = `timeline_${sceneId}_${Date.now()}.json`;
   const timelinePath = path.join(runtimeDir, timelineFileName);
 
-  fs.writeFileSync(timelinePath, JSON.stringify(timelineData, null, 2));
+  await fsp.writeFile(timelinePath, JSON.stringify(timelineData, null, 2));
   console.log(`[TimelineCompose] [${traceId}] Timeline generated at: ${timelinePath}`);
 
   return {

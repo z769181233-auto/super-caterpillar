@@ -8,11 +8,7 @@
       "paceTag": "常",
       "estDurationSec": 45,
       "beatGoal": "引入冲突: 守住基地入口",
-      "actionMotifs": [
-        "潜入",
-        "观察",
-        "开启"
-      ],
+      "actionMotifs": ["潜入", "观察", "开启"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "物件匹配",
@@ -25,12 +21,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 防空炮火失效",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -43,12 +34,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 敌人从四面八方登陆",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -61,12 +47,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 弹药库发生连锁爆炸",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -84,11 +65,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 发现干扰器在己方内部",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -111,11 +88,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 利用坍塌的建筑废墟做工事",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -138,11 +111,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: Adam在最后时刻恢复部分功能并充能",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -165,11 +134,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "留下悬念: 天空中降下了巨大的母舰影子，遮住了最后一丝阳光。",
-      "actionMotifs": [
-        "告退",
-        "消失",
-        "回响"
-      ],
+      "actionMotifs": ["告退", "消失", "回响"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "声音匹配",

@@ -8,14 +8,8 @@
       "paceTag": "常",
       "estDurationSec": 45,
       "beatGoal": "抢夺并引入冲突: 采集无污染种子",
-      "actionMotifs": [
-        "潜入",
-        "观察",
-        "开启"
-      ],
-      "sfxIds": [
-        "SF_EXPLOSION_LOUD"
-      ],
+      "actionMotifs": ["潜入", "观察", "开启"],
+      "sfxIds": ["SF_EXPLOSION_LOUD"],
       "thirdActorPropId": "PR_LASER_RIFLE",
       "transitionTag": "物件匹配",
       "reversalTag": false,
@@ -317,9 +311,7 @@
         }
       ],
       "thirdActorProp": "激光步枪",
-      "sfxLines": [
-        "重型爆炸声"
-      ],
+      "sfxLines": ["重型爆炸声"],
       "locationId": "LO_REUINS_BASE"
     },
     {
@@ -327,15 +319,8 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并对抗阻碍: 植物藤蔓具有麻痹毒性",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
-      "sfxIds": [
-        "SF_LASER_SHOT"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
+      "sfxIds": ["SF_LASER_SHOT"],
       "thirdActorPropId": "PR_PORTABLE_CORE",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -917,9 +902,7 @@
         }
       ],
       "thirdActorProp": "便携式能量核心",
-      "sfxLines": [
-        "激光发射音"
-      ],
+      "sfxLines": ["激光发射音"],
       "locationId": "LO_SERVER_ROOM"
     },
     {
@@ -927,15 +910,8 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并对抗阻碍: 温室自动灌溉系统喷射强酸",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
-      "sfxIds": [
-        "SF_METAL_CRASH"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
+      "sfxIds": ["SF_METAL_CRASH"],
       "thirdActorPropId": "PR_COOLING_MODULE",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -1517,9 +1493,7 @@
         }
       ],
       "thirdActorProp": "冷却模块",
-      "sfxLines": [
-        "金属撞击声"
-      ],
+      "sfxLines": ["金属撞击声"],
       "locationId": "LO_BLACK_MARKET"
     },
     {
@@ -1527,15 +1501,8 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并对抗阻碍: 缺乏有效的火焰武器",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
-      "sfxIds": [
-        "SF_ALARM_LOOP"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
+      "sfxIds": ["SF_ALARM_LOOP"],
       "thirdActorPropId": "PR_FIRE_EXTINGUISHER",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -2122,9 +2089,7 @@
         "payoff": "照片掉落"
       },
       "thirdActorProp": "灭火器",
-      "sfxLines": [
-        "警报循环"
-      ],
+      "sfxLines": ["警报循环"],
       "locationId": "LO_VIRTUAL_VOID"
     },
     {
@@ -2132,14 +2097,8 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并剧情转折: 发现阳光是植物的弱点",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
-      "sfxIds": [
-        "SF_BREATH_HEAVY"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
+      "sfxIds": ["SF_BREATH_HEAVY"],
       "thirdActorPropId": "PR_LASER_RIFLE",
       "transitionTag": "光影匹配",
       "reversalTag": true,
@@ -2731,9 +2690,7 @@
         "payoff": "血点溅墙"
       },
       "thirdActorProp": "激光步枪",
-      "sfxLines": [
-        "沉重喘息"
-      ],
+      "sfxLines": ["沉重喘息"],
       "locationId": "LO_REUINS_BASE"
     },
     {
@@ -2741,14 +2698,8 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "抢夺并剧情转折: Adam利用防护服电流清理路径",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
-      "sfxIds": [
-        "SF_EXPLOSION_LOUD"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
+      "sfxIds": ["SF_EXPLOSION_LOUD"],
       "thirdActorPropId": "PR_PORTABLE_CORE",
       "transitionTag": "光影匹配",
       "reversalTag": true,
@@ -2920,9 +2871,7 @@
         "payoff": "核心过载发出蓝光"
       },
       "thirdActorProp": "便携式能量核心",
-      "sfxLines": [
-        "重型爆炸声"
-      ],
+      "sfxLines": ["重型爆炸声"],
       "locationId": "LO_SERVER_ROOM"
     },
     {
@@ -2930,14 +2879,8 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并剧情转折: 种子其实寄生在母株心脏位置",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
-      "sfxIds": [
-        "SF_LASER_SHOT"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
+      "sfxIds": ["SF_LASER_SHOT"],
       "thirdActorPropId": "PR_COOLING_MODULE",
       "transitionTag": "光影匹配",
       "reversalTag": true,
@@ -3529,9 +3472,7 @@
         "payoff": "机械臂停止运作"
       },
       "thirdActorProp": "冷却模块",
-      "sfxLines": [
-        "激光发射音"
-      ],
+      "sfxLines": ["激光发射音"],
       "locationId": "LO_BLACK_MARKET"
     },
     {
@@ -3539,14 +3480,8 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "抢夺并留下悬念: Eve被藤蔓刺破皮层，伤口处长出了发光的幼芽。",
-      "actionMotifs": [
-        "告退",
-        "消失",
-        "回响"
-      ],
-      "sfxIds": [
-        "SF_METAL_CRASH"
-      ],
+      "actionMotifs": ["告退", "消失", "回响"],
+      "sfxIds": ["SF_METAL_CRASH"],
       "thirdActorPropId": "PR_FIRE_EXTINGUISHER",
       "transitionTag": "声音匹配",
       "reversalTag": false,
@@ -3713,9 +3648,7 @@
         "payoff": "屏幕显示认证通过"
       },
       "thirdActorProp": "灭火器",
-      "sfxLines": [
-        "金属撞击声"
-      ],
+      "sfxLines": ["金属撞击声"],
       "locationId": "LO_VIRTUAL_VOID"
     }
   ]

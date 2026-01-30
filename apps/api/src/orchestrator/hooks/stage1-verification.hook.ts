@@ -22,7 +22,7 @@ export class Stage1VerificationHook {
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
     private readonly prisma: PrismaService
-  ) { }
+  ) {}
 
   /**
    * 监听作业成功事件
@@ -141,7 +141,7 @@ export class Stage1VerificationHook {
           pipelineRunId,
           projectId,
           episodeId,
-          audioText: "Mock Audio Content for L2 Verification",
+          audioText: 'Mock Audio Content for L2 Verification',
           isVerification: true,
         },
       });

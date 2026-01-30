@@ -1,32 +1,57 @@
 [
-    {
-        "id": "CM_PUSH_IN",
-        "name": "推入",
-        "desc": "向主体恒速推近，增强压迫感。"
-    },
-    {
-        "id": "CM_PAN_LEFT",
-        "name": "横移向左",
-        "desc": "镜头平行于主体向左运动，追踪侧面。"
-    },
-    {
-        "id": "CM_SHAKY_HANDHELD",
-        "name": "手持抖动",
-        "desc": "模拟战地纪实感，高频率微小位移。"
-    },
-    {
-        "id": "CM_ORBIT_360",
-        "name": "环绕旋转",
-        "desc": "以主体为中心进行全角度环绕。"
-    },
-    {
-        "id": "CM_OVERHEAD_TRACK",
-        "name": "俯视追踪",
-        "desc": "垂直向下的跟踪拍摄。"
-    },
-    {
-        "id": "CM_RACK_FOCUS",
-        "name": "变焦拉回",
-        "desc": "景深由近及远或反之，焦点切换。"
-    }
+  {
+    "id": "CM_PUSH_IN",
+    "name": "推入",
+    "desc": "向主体恒速推近，增强压迫感。"
+  },
+  {
+    "id": "CM_PAN_LEFT",
+    "name": "横移向左",
+    "desc": "镜头平行于主体向左运动，追踪侧面。"
+  },
+  {
+    "id": "CM_SHAKY_HANDHELD",
+    "name": "手持抖动",
+    "desc": "模拟战地纪实感，高频率微小位移。"
+  },
+  {
+    "id": "CM_ORBIT_360",
+    "name": "环绕旋转",
+    "desc": "以主体为中心进行全角度环绕。"
+  },
+  {
+    "id": "CM_OVERHEAD_TRACK",
+    "name": "俯视追踪",
+    "desc": "垂直向下的跟踪拍摄。"
+  },
+  {
+    "id": "CM_RACK_FOCUS",
+    "name": "变焦拉回",
+    "desc": "景深由近及远或反之，焦点切换。"
+  },
+  {
+    "id": "CM_STATIC",
+    "name": "Static",
+    "description": "Static camera"
+  },
+  {
+    "id": "CM_PAN_RIGHT",
+    "name": "Pan Right",
+    "description": "Pan camera right"
+  },
+  {
+    "id": "CM_ZOOM_IN",
+    "name": "Zoom In",
+    "description": "Zoom in"
+  },
+  {
+    "id": "CM_ZOOM_OUT",
+    "name": "Zoom Out",
+    "description": "Zoom out"
+  },
+  {
+    "id": "CM_DOLLY_IN",
+    "name": "Dolly In",
+    "description": "Dolly in"
+  }
 ]

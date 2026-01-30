@@ -8,11 +8,7 @@
       "paceTag": "常",
       "estDurationSec": 45,
       "beatGoal": "引入冲突: 修复信号发射器",
-      "actionMotifs": [
-        "潜入",
-        "观察",
-        "开启"
-      ],
+      "actionMotifs": ["潜入", "观察", "开启"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "物件匹配",
@@ -25,12 +21,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 发射器核心缺失",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -43,12 +34,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 防卫机器人苏醒并攻击",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -61,12 +47,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 建筑结构开始坍塌",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -84,11 +65,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 发现干扰器其实是导航标",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -111,11 +88,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: Eve被迫手动短接电路(电击危险)",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -138,11 +111,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 机器人其实在保护发射器",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -165,11 +134,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "留下悬念: 发射器发出红光，接收端传回了Adam的声音，但他听起来在求救。",
-      "actionMotifs": [
-        "告退",
-        "消失",
-        "回响"
-      ],
+      "actionMotifs": ["告退", "消失", "回响"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "声音匹配",

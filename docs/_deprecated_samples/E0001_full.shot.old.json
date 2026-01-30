@@ -8,9 +8,7 @@
       "paceTag": "常",
       "estDurationSec": 45,
       "beatGoal": "抢夺并引入冲突: 修复信号发射器",
-      "sfxLines": [
-        "[占位音效]"
-      ],
+      "sfxLines": ["[占位音效]"],
       "thirdActorProp": "便携式能量核心",
       "transitionTag": "物件匹配",
       "reversalTag": false,
@@ -203,9 +201,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并对抗阻碍: 发射器核心缺失",
-      "sfxLines": [
-        "[占位音效]"
-      ],
+      "sfxLines": ["[占位音效]"],
       "thirdActorProp": "便携式能量核心",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -398,9 +394,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并对抗阻碍: 防卫机器人苏醒并攻击",
-      "sfxLines": [
-        "[占位音效]"
-      ],
+      "sfxLines": ["[占位音效]"],
       "thirdActorProp": "便携式能量核心",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -593,9 +587,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并对抗阻碍: 建筑结构开始坍塌",
-      "sfxLines": [
-        "[占位音效]"
-      ],
+      "sfxLines": ["[占位音效]"],
       "thirdActorProp": "便携式能量核心",
       "transitionTag": "动作匹配",
       "reversalTag": false,
@@ -793,9 +785,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并剧情转折: 发现干扰器其实是导航标",
-      "sfxLines": [
-        "[占位音效]"
-      ],
+      "sfxLines": ["[占位音效]"],
       "thirdActorProp": "便携式能量核心",
       "transitionTag": "光影匹配",
       "reversalTag": true,
@@ -998,9 +988,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "抢夺并剧情转折: Eve被迫手动短接电路(电击危险)",
-      "sfxLines": [
-        "[占位音效]"
-      ],
+      "sfxLines": ["[占位音效]"],
       "thirdActorProp": "便携式能量核心",
       "transitionTag": "光影匹配",
       "reversalTag": true,
@@ -1203,9 +1191,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "抢夺并剧情转折: 机器人其实在保护发射器",
-      "sfxLines": [
-        "[占位音效]"
-      ],
+      "sfxLines": ["[占位音效]"],
       "thirdActorProp": "便携式能量核心",
       "transitionTag": "光影匹配",
       "reversalTag": true,
@@ -1408,9 +1394,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "抢夺并留下悬念: 发射器发出红光，接收端传回了Adam的声音，但他听起来在求救。",
-      "sfxLines": [
-        "[占位音效]"
-      ],
+      "sfxLines": ["[占位音效]"],
       "thirdActorProp": "便携式能量核心",
       "transitionTag": "声音匹配",
       "reversalTag": false,

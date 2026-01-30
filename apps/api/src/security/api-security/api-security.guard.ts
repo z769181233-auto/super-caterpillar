@@ -25,7 +25,7 @@ export class ApiSecurityGuard implements CanActivate {
     @Inject(Reflector)
     private readonly reflector: Reflector,
     private readonly apiSecurityService: ApiSecurityService
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // 检查是否标记了 @RequireSignature()

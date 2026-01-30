@@ -1,32 +1,62 @@
 [
-    {
-        "id": "PO_IDLE_STAND",
-        "name": "站立待机",
-        "desc": "标准战斗站姿，双膝微屈。"
-    },
-    {
-        "id": "PO_CROUCH_READY",
-        "name": "伏地预备",
-        "desc": "低位潜行姿态，重心压低。"
-    },
-    {
-        "id": "PO_JUMP_START",
-        "name": "起跳姿态",
-        "desc": "发力跃迁瞬间，身体前倾。"
-    },
-    {
-        "id": "PO_DEFENSE_HIGH",
-        "name": "高位格挡",
-        "desc": "手臂交叉护住头部，动态防御。"
-    },
-    {
-        "id": "PO_SIT_RELAX",
-        "name": "坐姿放松",
-        "desc": "坐在障碍物上，身体松弛。"
-    },
-    {
-        "id": "PO_KNEEL_DOWN",
-        "name": "单膝下跪",
-        "desc": "致敬或检修姿态，重心落在一侧。"
-    }
+  {
+    "id": "PO_IDLE_STAND",
+    "name": "站立待机",
+    "desc": "标准战斗站姿，双膝微屈。"
+  },
+  {
+    "id": "PO_CROUCH_READY",
+    "name": "伏地预备",
+    "desc": "低位潜行姿态，重心压低。"
+  },
+  {
+    "id": "PO_JUMP_START",
+    "name": "起跳姿态",
+    "desc": "发力跃迁瞬间，身体前倾。"
+  },
+  {
+    "id": "PO_DEFENSE_HIGH",
+    "name": "高位格挡",
+    "desc": "手臂交叉护住头部，动态防御。"
+  },
+  {
+    "id": "PO_SIT_RELAX",
+    "name": "坐姿放松",
+    "desc": "坐在障碍物上，身体松弛。"
+  },
+  {
+    "id": "PO_KNEEL_DOWN",
+    "name": "单膝下跪",
+    "desc": "致敬或检修姿态，重心落在一侧。"
+  },
+  {
+    "id": "PO_STAND",
+    "name": "Stand",
+    "description": "Standing pose"
+  },
+  {
+    "id": "PO_SIT",
+    "name": "Sit",
+    "description": "Sitting pose"
+  },
+  {
+    "id": "PO_WALK",
+    "name": "Walk",
+    "description": "Walking pose"
+  },
+  {
+    "id": "PO_IDLE",
+    "name": "Idle",
+    "description": "Idle pose"
+  },
+  {
+    "id": "PO_RUN",
+    "name": "Run",
+    "description": "Running pose"
+  },
+  {
+    "id": "PO_FIGHT",
+    "name": "Fight",
+    "description": "Fighting pose"
+  }
 ]

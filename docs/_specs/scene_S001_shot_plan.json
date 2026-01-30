@@ -1,0 +1,29 @@
+{
+  "project": "Super Caterpillar",
+  "schema_version": "1.1",
+  "scene_id": "S001",
+  "shots": [
+    {
+      "shot_id": "S001_SH01",
+      "source_atoms": ["A001"],
+      "characters": ["XueZhiYing"],
+      "location": "InnPrivateRoom",
+      "shot_type": "CLOSE_UP",
+      "camera_intent": {
+        "emotion": "内敛 / 忧郁",
+        "distance": "Medium Close",
+        "movement": "Static",
+        "focus_target": "Eyes"
+      },
+      "action": {
+        "body": "Sitting by window",
+        "head": "Tilted slightly down",
+        "eyes": "Gazing at falling flowers"
+      },
+      "time": "Afternoon",
+      "light": "Natural Side Light (Soft)",
+      "canon_check": "MUST match CANON_CHARACTER_XueZhiYing.md"
+    }
+  ],
+  "traceability": "100% Locked to Atom A001"
+}

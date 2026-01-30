@@ -17,7 +17,7 @@ import { maskSensitiveData, maskSensitiveString } from '../utils/sensitive-data-
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  constructor(@Inject(AuditLogService) private readonly auditLogService: AuditLogService) { }
+  constructor(@Inject(AuditLogService) private readonly auditLogService: AuditLogService) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();

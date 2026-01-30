@@ -1,0 +1,19 @@
+{
+  "characterId": "XueZhiYing",
+  "name": "薛知盈",
+  "grade": "S",
+  "max_supported_resolution": "8k",
+  "canon_ref": "CANON_CHARACTER_XueZhiYing.md",
+  "physical_specs": {
+    "face_density_px": 6250,
+    "hair_type": "geometry_groom",
+    "clothing_layers": 4,
+    "material_model": "physically_based",
+    "encoding": "exr_prores_ready"
+  },
+  "audit": {
+    "last_seal_date": null,
+    "auditor": "Antigravity_Phase2",
+    "status": "RAW_ASSET_LOCKED"
+  }
+}

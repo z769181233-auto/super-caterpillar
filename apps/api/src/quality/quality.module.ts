@@ -15,4 +15,4 @@ import { IdentityModule } from '../identity/identity.module';
   providers: [QualityMetricsWriter, QualityScoreService, QualityBackfillSweeper],
   exports: [QualityMetricsWriter, QualityScoreService, QualityBackfillSweeper],
 })
-export class QualityModule { }
+export class QualityModule {}

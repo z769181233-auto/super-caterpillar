@@ -10,7 +10,7 @@ export class QualityGateController {
   constructor(
     private readonly qualityScoreService: QualityScoreService,
     private readonly qualitySweeper: QualityBackfillSweeper
-  ) { }
+  ) {}
 
   /**
    * 手动触发质量评分（门禁专用）

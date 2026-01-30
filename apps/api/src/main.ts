@@ -23,7 +23,11 @@ async function bootstrap() {
     ) + '\n'
   );
 
-  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true, bodyParser: false });
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+    bodyParser: false,
+  });
   app.useLogger(app.get(Logger));
 
   // P0-NET: Increase body limit for 3M word import
@@ -190,7 +194,7 @@ async function bootstrap() {
           hasStorageController = true;
           process.stdout.write(
             util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
-            '\n'
+              '\n'
           );
         }
       }

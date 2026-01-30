@@ -21,12 +21,7 @@ import { QualityModule } from '../quality/quality.module';
     QualityModule,
   ],
   controllers: [TaskGraphController],
-  providers: [
-    TaskService,
-    EngineTaskService,
-    TaskGraphService,
-    QualityFeedbackService,
-  ],
+  providers: [TaskService, EngineTaskService, TaskGraphService, QualityFeedbackService],
   exports: [TaskService, EngineTaskService, TaskGraphService], // 导出所有服务
 })
-export class TaskModule { }
+export class TaskModule {}

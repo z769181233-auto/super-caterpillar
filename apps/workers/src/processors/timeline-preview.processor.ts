@@ -1,7 +1,10 @@
 import { JobType, AssetOwnerType, AssetType, PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
+import { EngineHubClient } from '../engine-hub-client';
+import { readFileUnderLimit } from '../../../../packages/shared/fs_safe';
+import { promises as fsp } from 'fs';
 import * as path from 'path';
-import * as fs from 'fs';
+import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
 import { spawn } from 'child_process';
 import { TimelineData } from './timeline-compose.processor';
 
@@ -30,21 +33,23 @@ export interface TimelinePreviewParams {
 export async function processTimelinePreviewJob({ prisma, job, apiClient }: TimelinePreviewParams) {
   const startTime = Date.now();
   const { timelineStorageKey, pipelineRunId } = job.payload;
-  const traceId = job.traceId || `trace-${Date.now()}`;
+  const traceId = job.traceId || `trace - ${Date.now()} `;
   const projectId = job.projectId;
 
   const timelineAbsPath = path.resolve(process.cwd(), '.runtime', timelineStorageKey);
-  console.log(`[TimelinePreview] [${traceId}] Loading timeline from: ${timelineAbsPath}`);
+  console.log(`[TimelinePreview][${traceId}] Loading timeline from: ${timelineAbsPath} `);
 
   // 0. Load Timeline Data
-  if (!fs.existsSync(timelineAbsPath)) {
-    throw new Error(`[TimelinePreview] Timeline file not found: ${timelineAbsPath}`);
+  if (!(await fileExists(timelineAbsPath))) {
+    throw new Error(`[TimelinePreview] Timeline file not found: ${timelineAbsPath} `);
   }
-  const timeline: TimelineData = JSON.parse(fs.readFileSync(timelineAbsPath, 'utf-8'));
+  // Safe read timeline JSON (Limit 10MB)
+  const timelineJson = await readFileUnderLimit(timelineAbsPath, 10 * 1024 * 1024);
+  const timeline: TimelineData = JSON.parse(timelineJson);
 
   // Validation
   if (timeline.shots.length < 1) {
-    throw new Error(`[TimelinePreview] Fail-fast: Timeline must contain at least 1 shot.`);
+    throw new Error(`[TimelinePreview] Fail - fast: Timeline must contain at least 1 shot.`);
   }
 
   const fps = timeline.fps || 24;
@@ -58,21 +63,21 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       check.on('error', reject);
       check.on('close', (code) => {
         if (code === 0) resolve(true);
-        else reject(new Error(`ffmpeg check exited with code ${code}`));
+        else reject(new Error(`ffmpeg check exited with code ${code} `));
       });
     });
   } catch (e: any) {
-    throw new Error(`[TimelinePreview] FFmpeg binary missing: ${e.message}`);
+    throw new Error(`[TimelinePreview] FFmpeg binary missing: ${e.message} `);
   }
 
   const tempMp4Dir = path.resolve(process.cwd(), '.runtime', 'temp_mp4s', pipelineRunId);
-  if (!fs.existsSync(tempMp4Dir)) fs.mkdirSync(tempMp4Dir, { recursive: true });
+  if (!(await fileExists(tempMp4Dir))) await ensureDir(tempMp4Dir);
 
   const shotMp4Paths: string[] = [];
 
   // Stage 1: Per-Shot MP4 Generation (Reuse valid Assets or Generate)
   for (const shot of timeline.shots) {
-    console.log(`[TimelinePreview] Stage 1: Processing shotId=${shot.shotId}`);
+    console.log(`[TimelinePreview] Stage 1: Processing shotId = ${shot.shotId} `);
 
     const shotOutputPath = path.join(tempMp4Dir, `shot_${shot.shotId}.mp4`);
 
@@ -89,8 +94,8 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
 
     if (existingAsset && existingAsset.status === 'GENERATED') {
       const fullPath = path.resolve(process.cwd(), '.runtime', existingAsset.storageKey);
-      if (fs.existsSync(fullPath)) {
-        console.log(`[TimelinePreview] Reusing existing Asset for shotId=${shot.shotId}`);
+      if (await fileExists(fullPath)) {
+        console.log(`[TimelinePreview] Reusing existing Asset for shotId = ${shot.shotId}`);
         shotMp4Paths.push(fullPath);
         continue;
       }
@@ -98,9 +103,9 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
 
     // Fallback: Generate if missing
     const framesTxt = path.resolve(process.cwd(), '.runtime', shot.framesTxtStorageKey);
-    if (!fs.existsSync(framesTxt)) {
+    if (!(await fileExists(framesTxt))) {
       throw new Error(
-        `[TimelinePreview] Fail-fast: frames.txt not found for shotId=${shot.shotId} at ${framesTxt}`
+        `[TimelinePreview] Fail - fast: frames.txt not found for shotId = ${shot.shotId} at ${framesTxt} `
       );
     }
 
@@ -114,7 +119,7 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       '-i',
       framesTxt,
       '-s',
-      `${width}x${height}`,
+      `${width}x${height} `,
       '-c:v',
       'libx264',
       '-pix_fmt',
@@ -125,17 +130,15 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       shotOutputPath,
     ];
 
-    await runFfmpeg(args, `Stage1_Shot_${shot.shotId}`);
+    await runFfmpeg(args, `Stage1_Shot_${shot.shotId} `);
     shotMp4Paths.push(shotOutputPath);
   }
 
-  // Stage 2: Scene Composition
-  console.log(`[TimelinePreview] Stage 2: Composing ${shotMp4Paths.length} shots`);
   // Preview Output Path: Isolated from 'renders/' to avoid mixing formal outputs
   const finalOutputRelative = `previews/${projectId}/${timeline.sceneId}/${pipelineRunId}_preview.mp4`;
   const finalOutputPath = path.resolve(process.cwd(), '.runtime', finalOutputRelative);
   const finalOutputDir = path.dirname(finalOutputPath);
-  if (!fs.existsSync(finalOutputDir)) fs.mkdirSync(finalOutputDir, { recursive: true });
+  if (!(await fileExists(finalOutputDir))) await ensureDir(finalOutputDir);
 
   const hasTransitions = timeline.shots.some((s) => s.transition && s.transition !== 'none');
   const tracks = timeline.audio?.tracks || [];
@@ -144,16 +147,14 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
 
   if (!forcePathB) {
     // Path A: Simple Concat
-    console.log(`[TimelinePreview] [Path A] Simple Concat (Demuxer/Copy)`);
+    console.log(`[TimelinePreview][Path A] Simple Concat(Demuxer / Copy)`);
     const concatListPath = path.join(tempMp4Dir, 'scene_concat.txt');
-    const concatContent = shotMp4Paths.map((p) => `file '${p}'`).join('\n');
-    fs.writeFileSync(concatListPath, concatContent);
 
     const concatArgs = ['-f', 'concat', '-safe', '0', '-i', concatListPath];
 
     if (tracks.length === 1 && tracks[0].storageKey) {
       const audioPath = path.resolve(process.cwd(), '.runtime', tracks[0].storageKey);
-      if (fs.existsSync(audioPath)) {
+      if (await fileExists(audioPath)) {
         concatArgs.push('-i', audioPath);
         concatArgs.push('-map', '0:v', '-map', '1:a');
       }
@@ -163,21 +164,21 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
     await runFfmpeg(concatArgs, `Stage2_SimpleConcat`);
   } else {
     // Path B: Advanced Composition
-    console.log(`[TimelinePreview] [Path B] Advanced Composition (Mixing & Ducking)`);
+    console.log(`[TimelinePreview][Path B] Advanced Composition(Mixing & Ducking)`);
     const complexArgs: string[] = [];
 
     shotMp4Paths.forEach((p) => complexArgs.push('-i', p));
 
     const audioInputsOffset = shotMp4Paths.length;
-    tracks.forEach((track) => {
+    for (const track of tracks) {
       if (track.storageKey) {
         const audioPath = path.resolve(process.cwd(), '.runtime', track.storageKey);
-        if (fs.existsSync(audioPath)) {
+        if (await fileExists(audioPath)) {
           if (track.loop) complexArgs.push('-stream_loop', '-1');
           complexArgs.push('-i', audioPath);
         }
       }
-    });
+    }
 
     let filterString = '';
     let lastVideoStream = '[0:v]';
@@ -189,16 +190,16 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       if (shot.transition === 'xfade') {
         const transDur = shot.transitionFrames / fps;
         const offset = currentTimelineDuration - transDur;
-        filterString += `${lastVideoStream}[${i}:v]xfade=transition=fade:duration=${transDur.toFixed(3)}:offset=${offset.toFixed(3)}${outStream};`;
+        filterString += `${lastVideoStream} [${i}: v]xfade = transition = fade: duration = ${transDur.toFixed(3)}: offset = ${offset.toFixed(3)}${outStream}; `;
         currentTimelineDuration = currentTimelineDuration + shot.durationFrames / fps - transDur;
       } else {
-        filterString += `${lastVideoStream}[${i}:v]concat=n=2:v=1:a=0${outStream};`;
+        filterString += `${lastVideoStream} [${i}: v]concat = n = 2: v = 1: a = 0${outStream}; `;
         currentTimelineDuration += shot.durationFrames / fps;
       }
       lastVideoStream = outStream;
     }
     const finalVideoLabel = `[v_final]`;
-    filterString += `${lastVideoStream}copy${finalVideoLabel};`;
+    filterString += `${lastVideoStream}copy${finalVideoLabel}; `;
 
     // Audio Chain (Reuse S4-9 Logic)
     const sidechainTargets = new Set<string>();
@@ -216,13 +217,13 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       const inputIdx = audioInputsOffset + idx;
       let label = `[a${idx}_vol]`;
       const volRawLabel = `[a${idx}_vol_raw]`;
-      filterString += `[${inputIdx}:a]volume=${track.gain}${volRawLabel};`;
-      filterString += `${volRawLabel}apad${label};`;
+      filterString += `[${inputIdx}:a]volume = ${track.gain}${volRawLabel}; `;
+      filterString += `${volRawLabel}apad${label}; `;
 
       if (sidechainTargets.has(track.id)) {
         const mixLabel = `[a${idx}_mix]`;
         const scLabel = `[a${idx}_sc]`;
-        filterString += `${label}asplit=2${mixLabel}${scLabel};`;
+        filterString += `${label} asplit = 2${mixLabel}${scLabel}; `;
         trackLabels[idx] = mixLabel;
       } else {
         trackLabels[idx] = label;
@@ -238,7 +239,7 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
           const currentStream = trackLabels[idx];
           const controlStream = `[a${targetIdx}_sc]`;
           const duckedLabel = `[a${idx}_ducked]`;
-          filterString += `${currentStream}${controlStream}sidechaincompress=threshold=0.08:ratio=15:attack=0.1:release=1.2${duckedLabel};`;
+          filterString += `${currentStream}${controlStream} sidechaincompress = threshold = 0.08: ratio = 15: attack = 0.1: release = 1.2${duckedLabel}; `;
           trackLabels[idx] = duckedLabel;
         }
       }
@@ -246,7 +247,7 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
 
     if (trackLabels.length > 0) {
       const amixInputs = trackLabels.join('');
-      filterString += `${amixInputs}amix=inputs=${trackLabels.length}:duration=longest:dropout_transition=0[a_mixed];`;
+      filterString += `${amixInputs} amix = inputs = ${trackLabels.length}: duration = longest: dropout_transition = 0[a_mixed]; `;
     }
 
     complexArgs.push('-filter_complex', filterString);
@@ -328,7 +329,7 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
 }
 
 async function runFfmpeg(args: string[], label: string) {
-  console.log(`[FFmpeg ${label}] Executing: ffmpeg ${args.join(' ')}`);
+  console.log(`[FFmpeg ${label}]Executing: ffmpeg ${args.join(' ')} `);
   return new Promise<void>((resolve, reject) => {
     const child = spawn('ffmpeg', args);
     let output = '';
@@ -340,7 +341,7 @@ async function runFfmpeg(args: string[], label: string) {
       else
         reject(
           new Error(
-            `[FFmpeg ${label}] Exited with code ${code}. Output: ${output.substring(output.length - 500)}`
+            `[FFmpeg ${label}] Exited with code ${code}.Output: ${output.substring(output.length - 500)} `
           )
         );
     });

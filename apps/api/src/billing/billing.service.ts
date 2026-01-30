@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) { }
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   /**
    * Get available credits for an organization.
@@ -74,7 +74,9 @@ export class BillingService {
         this.logger.warn(
           `Insufficient credits for Org ${organizationId}. Required: ${amount}, Available: ${org.credits}`
         );
-        throw new ForbiddenException(`Insufficient credits to start job. Required: ${amount} credits. (Available: ${org.credits})`);
+        throw new ForbiddenException(
+          `Insufficient credits to start job. Required: ${amount} credits. (Available: ${org.credits})`
+        );
       }
 
       // 3. Record Billing Event (Ledger)

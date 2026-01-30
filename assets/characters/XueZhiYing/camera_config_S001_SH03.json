@@ -1,0 +1,25 @@
+{
+  "shot_id": "S001_SH03",
+  "camera_specs": {
+    "sensor": "FullFrame_36x24",
+    "focal_length_mm": 24,
+    "aperture_f_stop": 5.6,
+    "focus": {
+      "mode": "zone",
+      "target_id": "CH_XiaoYunQi",
+      "target_point": "full_body",
+      "distance_meters": 4.0
+    },
+    "motion": "Dolly_In_Slow"
+  },
+  "render_specs": {
+    "resolution": "7680x4320",
+    "color_space": "Linear_sRGB_10bit",
+    "format": "ProRes_4444_XQ",
+    "fps": 24
+  },
+  "audit": {
+    "status": "CAMERA_LOCKED",
+    "timestamp": "2026-01-30T00:42:00Z"
+  }
+}

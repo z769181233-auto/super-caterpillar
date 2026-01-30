@@ -1,0 +1,15 @@
+{
+  "envId": "InnPrivateRoom",
+  "canon_source_sha": "ece541908e0c53b019e673b4f7ee1ad5e44d7e686c18e81740035cabb710de7e",
+  "lighting": {
+    "key_light": "Natural Side Window (Left)",
+    "time_of_day": "Afternoon",
+    "shadows": "Hard Logical Shadows",
+    "forbidden": ["Unmotived Rim Light", "Fake Volumetric Bloom"]
+  },
+  "materials": {
+    "wood": "Worn Red Lacquer",
+    "paper": "Rice Paper Screen",
+    "forbidden": ["Low Res Texture", "Stretched UVs"]
+  }
+}

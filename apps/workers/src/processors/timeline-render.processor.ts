@@ -1,7 +1,9 @@
 import { JobType, AssetOwnerType, AssetType, PrismaClient } from 'database';
-import { ApiClient } from '../api-client';
+import { EngineHubClient } from '../engine-hub-client';
+import { readFileUnderLimit } from '../../../../packages/shared/fs_safe';
 import * as path from 'path';
-import * as fs from 'fs';
+import { promises as fsp } from 'fs';
+import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
 import * as crypto from 'crypto';
 import { spawn } from 'child_process';
 import { TimelineData } from './timeline-compose.processor';
@@ -39,10 +41,12 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   console.log(`[TimelineRender] [${traceId}] Loading timeline from: ${timelineStorageKey}`);
 
   // 0. Load Timeline Data
-  if (!fs.existsSync(timelineStorageKey)) {
+  if (!(await fileExists(timelineStorageKey))) {
     throw new Error(`[TimelineRender] Timeline file not found: ${timelineStorageKey}`);
   }
-  const timeline: TimelineData = JSON.parse(fs.readFileSync(timelineStorageKey, 'utf-8'));
+  // Load Timeline
+  const timelineJson = await readFileUnderLimit(timelineStorageKey, 20 * 1024 * 1024); // 20MB limit
+  const timeline: TimelineData = JSON.parse(timelineJson);
 
   if (timeline.shots.length < 1) {
     throw new Error(`[TimelineRender] Fail-fast: Timeline must contain at least 1 shot.`);
@@ -67,7 +71,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   }
 
   const tempMp4Dir = path.resolve(storageRoot, 'temp_mp4s', pipelineRunId);
-  if (!fs.existsSync(tempMp4Dir)) fs.mkdirSync(tempMp4Dir, { recursive: true });
+  if (!(await fileExists(tempMp4Dir))) await ensureDir(tempMp4Dir);
 
   const shotMp4Paths: string[] = [];
 
@@ -92,7 +96,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
       // Note: In real life, we should also verify if the existing asset matches our locked params (fps/res).
       // For S4-7, we assume the previous VIDEO_RENDER or our re-render handles this.
       const fullPath = path.resolve(storageRoot, existingAsset.storageKey);
-      if (fs.existsSync(fullPath)) {
+      if (await fileExists(fullPath)) {
         console.log(`[TimelineRender] Reusing existing Asset for shotId=${shot.shotId}`);
         shotMp4Paths.push(fullPath);
         continue;
@@ -103,16 +107,16 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     const framesTxt = shot.framesTxtStorageKey;
 
     // P22-0 Race Condition Fix: Wait for SHOT_RENDER completion (frames.txt availability)
-    if (!fs.existsSync(framesTxt)) {
+    if (!(await fileExists(framesTxt))) {
       console.log(`[TimelineRender] Waiting for frames.txt: ${framesTxt} (TIMEOUT=60s)`);
       const startWait = Date.now();
       while (Date.now() - startWait < 60000) {
-        if (fs.existsSync(framesTxt)) break;
+        if (await fileExists(framesTxt)) break;
         await new Promise((r) => setTimeout(r, 2000));
       }
     }
 
-    if (!fs.existsSync(framesTxt)) {
+    if (!(await fileExists(framesTxt))) {
       throw new Error(
         `[TimelineRender] Fail-fast: frames.txt not found for shotId=${shot.shotId} at ${framesTxt}`
       );
@@ -123,7 +127,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
       console.log(
         `[TimelineRender] Audio Minloop mode: Clipping real Stage 1 rendering, creating dummy MP4`
       );
-      fs.writeFileSync(shotOutputPath, 'dummy mp4 content');
+      await fsp.writeFile(shotOutputPath, 'dummy mp4 content');
     } else {
       const args = [
         '-f',
@@ -156,10 +160,10 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
 
   // P18-1: Instantiate AudioService and Resolve Routing
   const audioService = new AudioService({
-    incrementAudioVendorCall: () => { },
-    incrementAudioCacheHit: () => { },
-    incrementAudioCacheMiss: () => { },
-    incrementAudioPreview: () => { },
+    incrementAudioVendorCall: () => {},
+    incrementAudioCacheHit: () => {},
+    incrementAudioCacheMiss: () => {},
+    incrementAudioPreview: () => {},
   } as any);
   const audioSettings = await audioService.resolveProjectSettings(prisma, projectId);
   const killOn = process.env.AUDIO_REAL_FORCE_DISABLE === '1';
@@ -175,13 +179,19 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
 
   // Determine if we should generate
   // In P18-1, we ALWAYS attempt routing unless explicitly disabled
-  const shouldGenerate = sceneId && (process.env.GATE_MODE === '1' || process.env.AUDIO_MINLOOP_SYNC === '1' || audioSettings.audioRealEnabled);
+  const shouldGenerate =
+    sceneId &&
+    (process.env.GATE_MODE === '1' ||
+      process.env.AUDIO_MINLOOP_SYNC === '1' ||
+      audioSettings.audioRealEnabled);
 
   let ttsAsset: any = null;
   let bgmAsset: any = null;
 
   if (shouldGenerate && sceneId) {
-    console.log(`[TimelineRender] Routing to AudioService: projectId=${projectId}, sceneId=${sceneId}, ks=${killOn}, preview=${preview}`);
+    console.log(
+      `[TimelineRender] Routing to AudioService: projectId=${projectId}, sceneId=${sceneId}, ks=${killOn}, preview=${preview}`
+    );
 
     // P22-0: Force Audio settings for E2E consistency
     const forcedSettings = {
@@ -200,8 +210,8 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     });
 
     const ttsAbsPath = path.join(storageRoot, ttsStorageKey);
-    fs.mkdirSync(path.dirname(ttsAbsPath), { recursive: true });
-    fs.copyFileSync(audioRes.voice.absPath, ttsAbsPath);
+    await ensureDir(path.dirname(ttsAbsPath));
+    await fsp.copyFile(audioRes.voice.absPath, ttsAbsPath);
 
     // Persist TTS Asset
     ttsAsset = await prisma.asset.upsert({
@@ -237,8 +247,8 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     });
 
     const bgmAbsPath = path.join(storageRoot, bgmStorageKey);
-    fs.mkdirSync(path.dirname(bgmAbsPath), { recursive: true });
-    fs.copyFileSync(bgmRes.voice.absPath, bgmAbsPath);
+    await ensureDir(path.dirname(bgmAbsPath));
+    await fsp.copyFile(bgmRes.voice.absPath, bgmAbsPath);
 
     bgmAsset = await prisma.asset.upsert({
       where: {
@@ -264,7 +274,9 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
       },
     });
 
-    console.log(`[TimelineRender] Audio prepared via AudioService. Mode=${audioRes.signals.audio_mode}, KS=${audioRes.signals.audio_kill_switch}`);
+    console.log(
+      `[TimelineRender] Audio prepared via AudioService. Mode=${audioRes.signals.audio_mode}, KS=${audioRes.signals.audio_kill_switch}`
+    );
   }
 
   // Stage 2: Scene Composition
@@ -272,7 +284,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   const finalOutputRelative = `renders/${projectId}/scenes/${timeline.sceneId}/output.mp4`;
   const finalOutputPath = path.resolve(storageRoot, finalOutputRelative);
   const finalOutputDir = path.dirname(finalOutputPath);
-  if (!fs.existsSync(finalOutputDir)) fs.mkdirSync(finalOutputDir, { recursive: true });
+  if (!(await fileExists(finalOutputDir))) await ensureDir(finalOutputDir);
 
   // P13-2: 构建 audio tracks（如果音频资产存在）
   let tracks = timeline.audio?.tracks || [];
@@ -308,14 +320,14 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     );
     const concatListPath = path.join(tempMp4Dir, 'scene_concat.txt');
     const concatContent = shotMp4Paths.map((p) => `file '${p}'`).join('\n');
-    fs.writeFileSync(concatListPath, concatContent);
+    await fsp.writeFile(concatListPath, concatContent);
 
     const concatArgs = ['-f', 'concat', '-safe', '0', '-i', concatListPath];
 
     // If there is exactly 1 audio track, we try to include it.
     if (tracks.length === 1 && tracks[0].storageKey) {
       const audioPath = path.resolve(storageRoot, tracks[0].storageKey);
-      if (fs.existsSync(audioPath)) {
+      if (await fileExists(audioPath)) {
         concatArgs.push('-i', audioPath);
         concatArgs.push('-map', '0:v', '-map', '1:a');
         // Note: -c copy might fail if audio format is incompatible, but we aim for copy here as per user rule.
@@ -325,7 +337,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     // Real rendering for Path A: Simple Concat
     if (process.env.AUDIO_MINLOOP_SYNC === '1') {
       console.log(`[TimelineRender] Audio Minloop mode: Skipping Path A concat`);
-      fs.writeFileSync(finalOutputPath, 'dummy final mp4');
+      await fsp.writeFile(finalOutputPath, 'dummy final mp4');
     } else {
       concatArgs.push('-y', finalOutputPath);
       await runFfmpeg(concatArgs, `Stage2_SimpleConcat`);
@@ -342,15 +354,15 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
 
     // Inputs: All Audio Tracks
     const audioInputsOffset = shotMp4Paths.length;
-    tracks.forEach((track, idx) => {
+    for (const [idx, track] of tracks.entries()) {
       if (track.storageKey) {
         const audioPath = path.resolve(storageRoot, track.storageKey);
-        if (fs.existsSync(audioPath)) {
+        if (await fileExists(audioPath)) {
           if (track.loop) complexArgs.push('-stream_loop', '-1');
           complexArgs.push('-i', audioPath);
         }
       }
-    });
+    }
 
     // Building Filter Complex
     let filterString = '';
@@ -494,7 +506,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     console.log(`[TimelineRender] Audio Minloop mode: Skipping HLS generation`);
   } else {
     const hlsOutputDir = path.join(finalOutputDir, 'hls');
-    if (!fs.existsSync(hlsOutputDir)) fs.mkdirSync(hlsOutputDir, { recursive: true });
+    if (!(await fileExists(hlsOutputDir))) await ensureDir(hlsOutputDir);
     const hlsMasterPath = path.join(hlsOutputDir, 'master.m3u8');
 
     console.log(`[TimelineRender] Generating HLS package at: ${hlsMasterPath}`);

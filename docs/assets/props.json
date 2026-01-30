@@ -1,22 +1,47 @@
 [
-    {
-        "id": "PR_LASER_RIFLE",
-        "name": "激光步枪",
-        "desc": "标准的近战及远程通用激光枪。"
-    },
-    {
-        "id": "PR_PORTABLE_CORE",
-        "name": "便携式能量核心",
-        "desc": "蓝光闪烁的圆柱体，极不稳定。"
-    },
-    {
-        "id": "PR_COOLING_MODULE",
-        "name": "冷却模块",
-        "desc": "银色金属结构，带有液氦接口。"
-    },
-    {
-        "id": "PR_FIRE_EXTINGUISHER",
-        "name": "灭火器",
-        "desc": "红色钢瓶，Adam 的常用脱困工具。"
-    }
+  {
+    "id": "PR_LASER_RIFLE",
+    "name": "激光步枪",
+    "desc": "标准的近战及远程通用激光枪。"
+  },
+  {
+    "id": "PR_PORTABLE_CORE",
+    "name": "便携式能量核心",
+    "desc": "蓝光闪烁的圆柱体，极不稳定。"
+  },
+  {
+    "id": "PR_COOLING_MODULE",
+    "name": "冷却模块",
+    "desc": "银色金属结构，带有液氦接口。"
+  },
+  {
+    "id": "PR_FIRE_EXTINGUISHER",
+    "name": "灭火器",
+    "desc": "红色钢瓶，Adam 的常用脱困工具。"
+  },
+  {
+    "id": "PR_ANCIENT_BOOK",
+    "name": "书册",
+    "description": "Bound book"
+  },
+  {
+    "id": "PR_PURSE",
+    "name": "钱袋",
+    "description": "Embroidered purse"
+  },
+  {
+    "id": "PR_CARRIAGE",
+    "name": "马车",
+    "description": "Horse carriage"
+  },
+  {
+    "id": "PR_BIRD_NEST",
+    "name": "燕窝",
+    "description": "Bowl of bird nest soup"
+  },
+  {
+    "id": "PR_LETTER",
+    "name": "信笺",
+    "description": "Paper letter"
+  }
 ]

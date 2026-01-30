@@ -83,25 +83,45 @@ export async function startGateWorkerApp() {
 
   // 注册 Worker
   const maxConcurrency = parseInt(process.env.WORKER_MAX_CONCURRENCY || '1', 10);
-  process.stdout.write(util.format(`[GateWorker] 正在注册 Worker 节点 (maxConcurrency=${maxConcurrency})...`) + '\n');
+  process.stdout.write(
+    util.format(`[GateWorker] 正在注册 Worker 节点 (maxConcurrency=${maxConcurrency})...`) + '\n'
+  );
 
   await apiClient.registerWorker({
     workerId: workerId,
     name: workerId,
     capabilities: {
       supportedJobTypes: [
-        'SHOT_RENDER', 'PIPELINE_E2E_VIDEO', 'CE06_NOVEL_PARSING',
-        'CE03_VISUAL_DENSITY', 'CE04_VISUAL_ENRICHMENT', 'CE02_VISUAL_DENSITY',
-        'VIDEO_RENDER', 'CE09_MEDIA_SECURITY', 'PIPELINE_TIMELINE_COMPOSE',
-        'TIMELINE_RENDER', 'PIPELINE_STAGE1_NOVEL_TO_VIDEO', 'NOVEL_SCAN_TOC',
-        'NOVEL_CHUNK_PARSE', 'CE11_SHOT_GENERATOR', 'AUDIO',
+        'SHOT_RENDER',
+        'PIPELINE_E2E_VIDEO',
+        'CE06_NOVEL_PARSING',
+        'CE03_VISUAL_DENSITY',
+        'CE04_VISUAL_ENRICHMENT',
+        'CE02_VISUAL_DENSITY',
+        'VIDEO_RENDER',
+        'CE09_MEDIA_SECURITY',
+        'PIPELINE_TIMELINE_COMPOSE',
+        'TIMELINE_RENDER',
+        'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
+        'NOVEL_SCAN_TOC',
+        'NOVEL_CHUNK_PARSE',
+        'CE11_SHOT_GENERATOR',
+        'AUDIO',
       ],
       supportedModels: [],
       supportedEngines: [
-        'gate_noop', 'pipeline_orchestrator', 'ce06_novel_parsing',
-        'ce03_visual_density', 'ce04_visual_enrichment', 'ce02_visual_density',
-        'stage1_orchestrator', 'video_merge', 'default_shot_render',
-        'ce09_security_real', 'ce11_shot_generator_mock', 'timeline_render',
+        'gate_noop',
+        'pipeline_orchestrator',
+        'ce06_novel_parsing',
+        'ce03_visual_density',
+        'ce04_visual_enrichment',
+        'ce02_visual_density',
+        'stage1_orchestrator',
+        'video_merge',
+        'default_shot_render',
+        'ce09_security_real',
+        'ce11_shot_generator_mock',
+        'timeline_render',
         'audio_engine',
       ],
       maxBatchSize: maxConcurrency,
@@ -143,14 +163,19 @@ export async function startGateWorkerApp() {
         const start = performance.now();
         if (job.type === 'PIPELINE_E2E_VIDEO') result = await processE2EVideoPipelineJob(ctx);
         else if (job.type === 'CE06_NOVEL_PARSING') result = await processCE06NovelParsingJob(ctx);
-        else if (job.type === 'CE03_VISUAL_DENSITY') result = await processCE03VisualDensityJob(ctx);
-        else if (job.type === 'CE04_VISUAL_ENRICHMENT') result = await processCE04VisualEnrichmentJob(ctx);
-        else if (job.type === 'CE02_VISUAL_DENSITY') result = await processCE02VisualDensityJob(ctx);
-        else if (job.type === 'CE11_SHOT_GENERATOR') result = await processCE11ShotGeneratorJob(ctx);
+        else if (job.type === 'CE03_VISUAL_DENSITY')
+          result = await processCE03VisualDensityJob(ctx);
+        else if (job.type === 'CE04_VISUAL_ENRICHMENT')
+          result = await processCE04VisualEnrichmentJob(ctx);
+        else if (job.type === 'CE02_VISUAL_DENSITY')
+          result = await processCE02VisualDensityJob(ctx);
+        else if (job.type === 'CE11_SHOT_GENERATOR')
+          result = await processCE11ShotGeneratorJob(ctx);
         else if (job.type === 'VIDEO_RENDER') {
           if (job.payload?.pipelineRunId) result = await processVideoRenderJob(ctx);
           else result = await gateNoopShotRender(job);
-        } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE') result = await processTimelineComposeJob(ctx);
+        } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE')
+          result = await processTimelineComposeJob(ctx);
         else if (job.type === 'TIMELINE_RENDER') result = await processTimelineRenderJob(ctx);
         else if (job.type === 'CE09_MEDIA_SECURITY') result = await processMediaSecurityJob(ctx);
         else if (job.type === 'SHOT_RENDER') {
@@ -159,7 +184,8 @@ export async function startGateWorkerApp() {
           } else {
             result = await gateNoopShotRender(job);
           }
-        } else if (job.type === 'PIPELINE_STAGE1_NOVEL_TO_VIDEO') result = await processStage1OrchestratorJob(ctx);
+        } else if (job.type === 'PIPELINE_STAGE1_NOVEL_TO_VIDEO')
+          result = await processStage1OrchestratorJob(ctx);
         else if (job.type === 'NOVEL_SCAN_TOC') result = await processNovelScan(ctx);
         else if (job.type === 'NOVEL_CHUNK_PARSE') result = await processNovelChunk(ctx);
         else if (job.type === 'AUDIO') result = await processAudioJob(prisma, job, apiClient);
@@ -175,11 +201,21 @@ export async function startGateWorkerApp() {
         engineExecDuration.observe({ engine: engineKey, mode: 'gate' }, duration);
 
         const isSuccess = result.status === 'SUCCEEDED' || result.success === true;
-        await apiClient.reportJobResult({ jobId: job.id, status: isSuccess ? 'SUCCEEDED' : 'FAILED', result });
+        await apiClient.reportJobResult({
+          jobId: job.id,
+          status: isSuccess ? 'SUCCEEDED' : 'FAILED',
+          result,
+        });
         process.stdout.write(util.format(`[GateWorker] ✅ job ${job.id} 成功完成`) + '\n');
       } catch (err: any) {
-        process.stderr.write(util.format(`[GateWorker] ❌ job ${job.id} 执行失败:`, err.message) + '\n');
-        await apiClient.reportJobResult({ jobId: job.id, status: 'FAILED', error: { message: err.message } });
+        process.stderr.write(
+          util.format(`[GateWorker] ❌ job ${job.id} 执行失败:`, err.message) + '\n'
+        );
+        await apiClient.reportJobResult({
+          jobId: job.id,
+          status: 'FAILED',
+          error: { message: err.message },
+        });
       } finally {
         tasksRunning--;
       }

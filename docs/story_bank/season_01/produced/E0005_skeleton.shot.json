@@ -8,11 +8,7 @@
       "paceTag": "常",
       "estDurationSec": 45,
       "beatGoal": "引入冲突: 带出关键代码",
-      "actionMotifs": [
-        "潜入",
-        "观察",
-        "开启"
-      ],
+      "actionMotifs": ["潜入", "观察", "开启"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "物件匹配",
@@ -25,12 +21,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 代码隐藏在Eve的最痛苦回忆中",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -43,12 +34,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 系统开始吞噬不稳定的意识",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -61,12 +47,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "对抗阻碍: 虚拟敌人具有实体攻击力",
-      "actionMotifs": [
-        "冲刺",
-        "躲避",
-        "射击",
-        "反击"
-      ],
+      "actionMotifs": ["冲刺", "躲避", "射击", "反击"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "动作匹配",
@@ -84,11 +65,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 发现痛苦回忆是被篡改的",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -111,11 +88,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: Eve通过伤害自己来强行清醒",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -138,11 +111,7 @@
       "paceTag": "快",
       "estDurationSec": 45,
       "beatGoal": "剧情转折: 代码其实是Adam留下的坐标",
-      "actionMotifs": [
-        "翻转",
-        "对峙",
-        "博弈"
-      ],
+      "actionMotifs": ["翻转", "对峙", "博弈"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "光影匹配",
@@ -165,11 +134,7 @@
       "paceTag": "慢",
       "estDurationSec": 45,
       "beatGoal": "留下悬念: 坐标指向了基地的地下五层，那里在地图上本不存在。",
-      "actionMotifs": [
-        "告退",
-        "消失",
-        "回响"
-      ],
+      "actionMotifs": ["告退", "消失", "回响"],
       "sfxIds": [],
       "thirdActorPropId": "",
       "transitionTag": "声音匹配",

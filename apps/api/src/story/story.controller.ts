@@ -13,7 +13,7 @@ export class StoryController {
     private readonly storyService: StoryService,
     private readonly prisma: PrismaService,
     private readonly jobService: JobService
-  ) { }
+  ) {}
 
   /**
    * POST /api/story/parse
@@ -27,8 +27,7 @@ export class StoryController {
 
     const organizationId = req.user?.organizationId || req.apiKeyOwnerOrgId;
     const userId = req.user?.id || req.apiKeyOwnerUserId;
-    const traceId =
-      req.headers['x-request-id'] || req.headers['x-trace-id'] || `req_${Date.now()}`;
+    const traceId = req.headers['x-request-id'] || req.headers['x-trace-id'] || `req_${Date.now()}`;
 
     // Delegate to StoryService for Task & CE06 Job creation
     const result = await this.storyService.parseStory(

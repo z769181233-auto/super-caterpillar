@@ -99,7 +99,39 @@ CREATE TABLE shots (
 
     duration_sec DECIMAL(4,2) DEFAULT 3.0 -- 镜头时长
 );
+
+-- 5. 角色三视图 (character_triviews) - G5 法律必需件
+CREATE TABLE character_triviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    character_id UUID REFERENCES characters(id) ON DELETE CASCADE,
+    front_url TEXT NOT NULL,
+    side_url TEXT NOT NULL,
+    back_url TEXT NOT NULL,
+    mapping_json JSONB, -- {"pivot": {"x": 0.5, "y": 0.95}}
+    status VARCHAR(50) DEFAULT 'ACTIVE'
+);
 ```
+
+---
+
+## 第 1.5 部分：G5 生产法律 (G5 Production Laws - Hardened)
+
+> [!CAUTION]
+> **法律地位**：以下规则高于任何引擎逻辑。不满足以下条件的输出一律不得称为“视频”。
+
+1.  **Gate-0: 视频存在性法律**
+    - **帧率 (FPS)**：必须固定为 24.0 (严格)。
+    - **帧数连续性**：`nb_frames` 必须精确等于 `duration * 24`。
+    - **分辨率**：垂直分辨率必须达到 **1440p+** (Cinema High-Fi)。
+    - **封装**：必须为标准 MP4 (H.264 High Profile 4.1 + AAC)。
+
+2.  **资产先行原则 (Asset-First Priority)**
+    - **三视图必需性**：任何角色在进入 G5 渲染前，必须产出合规的三视图（Front/Side/Back）。严禁使用单视图拉伸。
+    - **地面锚定 (Grounding)**：角色必须具备逻辑阴影（Logical Shadow），严禁“贴纸式”悬浮。
+
+3.  **视角路由法律 (View Routing)**
+    - 视频生成必须支持相机角度驱动的视角切换。
+    - 在 `Orbit` 或 `Tracking` 镜头下，必须检测分界角度（如 45°）并物理切换资产文件。
 
 ---
 

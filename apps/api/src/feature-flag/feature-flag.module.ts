@@ -13,4 +13,4 @@ import { PrismaModule } from '../prisma/prisma.module';
   providers: [FeatureFlagService],
   exports: [FeatureFlagService],
 })
-export class FeatureFlagModule { }
+export class FeatureFlagModule {}

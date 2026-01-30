@@ -3,9 +3,9 @@ import { WorkerJobBase } from '@scu/shared-types';
 import { ApiClient } from './api-client';
 import { spawn } from 'child_process';
 import { createHash } from 'crypto';
-import * as fs from 'fs';
-import * as fsPromises from 'node:fs/promises';
+import { promises as fsp } from 'fs';
 import * as path from 'path';
+import { fileExists, ensureDir } from '../../../packages/shared/fs_async';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ChildProcess } from 'child_process';
 import * as util from 'util';
@@ -20,7 +20,7 @@ export function cleanupVideoRenderProcesses() {
   for (const cp of activeProcesses) {
     try {
       cp.kill('SIGKILL');
-    } catch (e) { }
+    } catch (e) {}
   }
   activeProcesses.clear();
 }
@@ -31,7 +31,7 @@ function isImageKey(key: string): boolean {
 }
 
 async function assertFrameFileOk(absPath: string): Promise<void> {
-  const st = await fsPromises.stat(absPath);
+  const st = await fsp.stat(absPath);
   if (!st.isFile() || st.size <= 0) throw new Error(`Frame file missing/empty: ${absPath}`);
   if (st.size < 1_000) throw new Error(`Frame too small (corrupt?): ${absPath} size=${st.size}`);
 }
@@ -103,7 +103,7 @@ export async function processVideoRenderJob(
 
   // 4. Workspace Preparation
   const workspaceDir = path.resolve(process.cwd(), 'workspace', jobId);
-  if (!fs.existsSync(workspaceDir)) fs.mkdirSync(workspaceDir, { recursive: true });
+  if (!(await fileExists(workspaceDir))) await ensureDir(workspaceDir);
 
   let tempOutput = path.join(workspaceDir, 'output.mp4');
 
@@ -114,26 +114,25 @@ export async function processVideoRenderJob(
     let args: string[] = [];
 
     // Helper to resolve paths from multiple locations (Fix for mixed storage roots)
-    const resolveAssetPath = (key: string) => {
+    const resolveAssetPath = async (key: string) => {
       console.log(`[ResolvePath] Resolving key: ${key}. CWD: ${process.cwd()}`);
       // 1. Try Storage Root
       const p1 = storage.getAbsolutePath(key);
-      if (fs.existsSync(p1)) {
+      if (await fileExists(p1)) {
         console.log(`[ResolvePath] Found at Storage Root: ${p1}`);
         return p1;
       }
 
       // 2. Try Repo Root (for apps/workers/.runtime assets)
-      // Assuming CWD is apps/workers, ../.. is repo root
       const p2 = path.resolve(process.cwd(), '../../', key);
-      if (fs.existsSync(p2)) {
+      if (await fileExists(p2)) {
         console.log(`[ResolvePath] Found at Repo Root: ${p2}`);
         return p2;
       }
 
       // 3. Try CWD relative
       const p3 = path.resolve(process.cwd(), key);
-      if (fs.existsSync(p3)) {
+      if (await fileExists(p3)) {
         console.log(`[ResolvePath] Found at CWD: ${p3}`);
         return p3;
       }
@@ -144,7 +143,7 @@ export async function processVideoRenderJob(
 
     if (frameKeys.length === 1 && isImageKey(frameKeys[0])) {
       // Single Image Loop Mode
-      const inputAbs = resolveAssetPath(frameKeys[0]);
+      const inputAbs = await resolveAssetPath(frameKeys[0]);
       await assertFrameFileOk(inputAbs);
       args = [
         '-hide_banner',
@@ -168,11 +167,10 @@ export async function processVideoRenderJob(
     } else {
       // Concat Mode
       const listFilePath = path.join(workspaceDir, 'input.txt');
-      let listContent = frameKeys
-        .map((k) => `file '${resolveAssetPath(k)}'\nduration 1.0`)
-        .join('\n');
-      listContent += `\nfile '${resolveAssetPath(frameKeys[frameKeys.length - 1])}'`;
-      fs.writeFileSync(listFilePath, listContent);
+      const resolvedList = await Promise.all(frameKeys.map((k) => resolveAssetPath(k)));
+      let listContent = resolvedList.map((abs) => `file '${abs}'\nduration 1.0`).join('\n');
+      listContent += `\nfile '${resolvedList[resolvedList.length - 1]}'`;
+      await fsp.writeFile(listFilePath, listContent);
 
       const useTestsrc = !PRODUCTION_MODE && process.env.VIDEO_RENDER_TESTSRC === '1';
       if (useTestsrc) {
@@ -215,8 +213,8 @@ export async function processVideoRenderJob(
       // Resolve Audio Path (support storageKey or direct path)
       const audioKey = audioTrack.storageKey || audioTrack.mixed || audioTrack.path;
       if (audioKey) {
-        const audioPath = resolveAssetPath(audioKey);
-        if (fs.existsSync(audioPath)) {
+        const audioPath = await resolveAssetPath(audioKey);
+        if (await fileExists(audioPath)) {
           // Add Audio Input
           // Note: Input 0 is Video (Loop or Concat List), Input 1 will be Audio
           args.push('-i', audioPath);
@@ -251,7 +249,7 @@ export async function processVideoRenderJob(
     });
 
     // 7. Asset Registration & Upload
-    const videoBuffer = fs.readFileSync(tempOutput);
+    const videoBuffer = await fsp.readFile(tempOutput);
     const sizeBytes = videoBuffer.length;
     const checksum = createHash('sha256').update(videoBuffer).digest('hex');
 
@@ -289,14 +287,14 @@ export async function processVideoRenderJob(
     // Direct FS Write for MP4 (fs only)
     const finalVideoPath = path.join(runtimeRoot, videoKey);
     const finalVideoDir = path.dirname(finalVideoPath);
-    if (!fs.existsSync(finalVideoDir)) fs.mkdirSync(finalVideoDir, { recursive: true });
+    if (!(await fileExists(finalVideoDir))) await ensureDir(finalVideoDir);
 
-    fs.writeFileSync(finalVideoPath, videoBuffer);
+    await fsp.writeFile(finalVideoPath, videoBuffer);
     // REMOVED: await storage.put(videoKey, videoBuffer);
 
     // 7.5 HLS Generation (P4 Requirement)
     const hlsDir = path.join(workspaceDir, 'hls');
-    if (!fs.existsSync(hlsDir)) fs.mkdirSync(hlsDir, { recursive: true });
+    if (!(await fileExists(hlsDir))) await ensureDir(hlsDir);
     const hlsOutput = path.join(hlsDir, 'master.m3u8');
 
     console.log(`[VIDEO_RENDER] Generating HLS...`);
@@ -332,12 +330,12 @@ export async function processVideoRenderJob(
     // Upload HLS (Direct FS Write only via Unified Root)
     const hlsStorageDir = `videos/${asset.id}/hls`;
     const finalHlsDir = path.join(runtimeRoot, hlsStorageDir);
-    if (!fs.existsSync(finalHlsDir)) fs.mkdirSync(finalHlsDir, { recursive: true });
+    if (!(await fileExists(finalHlsDir))) await ensureDir(finalHlsDir);
 
-    const hlsFiles = fs.readdirSync(hlsDir);
+    const hlsFiles = await fsp.readdir(hlsDir);
     for (const f of hlsFiles) {
-      const buf = fs.readFileSync(path.join(hlsDir, f));
-      fs.writeFileSync(path.join(finalHlsDir, f), buf);
+      const buf = await fsp.readFile(path.join(hlsDir, f));
+      await fsp.writeFile(path.join(finalHlsDir, f), buf);
       // REMOVED: await storage.put(...)
     }
     const hlsPlaylistUrl = `${hlsStorageDir}/master.m3u8`;
@@ -360,7 +358,7 @@ export async function processVideoRenderJob(
         latencyMs: latency,
         auditTrail: { sizeBytes, checksum, frames: frameKeys.length, hls: hlsPlaylistUrl },
       })
-      .catch(() => { });
+      .catch(() => {});
 
     // 7.1 ffprobe evidence (fs only, Unified Root)
     const ffprobeKey = `${videoKey}.ffprobe.json`;
@@ -391,7 +389,7 @@ export async function processVideoRenderJob(
       });
 
       // Write ffprobe evidence
-      fs.writeFileSync(ffprobeAbs, ffprobeOut, 'utf-8');
+      await fsp.writeFile(ffprobeAbs, ffprobeOut, 'utf-8');
       console.log(`[VIDEO_RENDER] ffprobe evidence stored: ${ffprobeAbs}`);
     } catch (e: any) {
       // ✅ Real Baseline: ffprobe must exist, so fail hard.
@@ -457,8 +455,8 @@ export async function processVideoRenderJob(
       status: 'SUCCESS',
     };
   } finally {
-    if (fs.existsSync(workspaceDir)) {
-      fs.rmSync(workspaceDir, { recursive: true, force: true });
+    if (await fileExists(workspaceDir)) {
+      await fsp.rm(workspaceDir, { recursive: true, force: true });
     }
   }
 }

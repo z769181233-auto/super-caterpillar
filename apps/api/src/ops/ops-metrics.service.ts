@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class OpsMetricsService {
   private readonly logger = new Logger(OpsMetricsService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async getProductionMetrics() {
     const now = new Date();
@@ -194,7 +194,8 @@ export class OpsMetricsService {
       audio_cache_hits_1h: cache_hits_1h,
       audio_cache_misses_1h: cache_misses_1h,
       audio_preview_requests_1h: preview_requests_1h,
-      audio_cache_hit_rate_1h: cache_total > 0 ? Number((cache_hits_1h / cache_total).toFixed(2)) : 0,
+      audio_cache_hit_rate_1h:
+        cache_total > 0 ? Number((cache_hits_1h / cache_total).toFixed(2)) : 0,
 
       // P20-0 Audio (Grouped for structure)
       audio_metrics: {
@@ -206,8 +207,9 @@ export class OpsMetricsService {
         audio_cache_hits_1h: cache_hits_1h,
         audio_cache_misses_1h: cache_misses_1h,
         audio_preview_requests_1h: preview_requests_1h,
-        audio_cache_hit_rate_1h: cache_total > 0 ? Number((cache_hits_1h / cache_total).toFixed(2)) : 0,
-        audio_kill_switch_active
+        audio_cache_hit_rate_1h:
+          cache_total > 0 ? Number((cache_hits_1h / cache_total).toFixed(2)) : 0,
+        audio_kill_switch_active,
       },
       timestamp: now.toISOString(),
     };
@@ -222,7 +224,7 @@ export class OpsMetricsService {
     vendorCalls: new SlidingWindowCounter(),
     cacheHits: new SlidingWindowCounter(),
     cacheMisses: new SlidingWindowCounter(),
-    previewRequests: new SlidingWindowCounter()
+    previewRequests: new SlidingWindowCounter(),
   };
 
   incrementAudioVendorCall() {

@@ -80,4 +80,10 @@ gate_*_output.txt
 .tmp/
 tmp/
 **/*.wav
-tools/gate/scripts/*.js
+
+# Ingest & Bench Evidence (Heavy 14GB+)
+docs/_bench/
+docs/_evidence/
+docs/_evidence_archived/
+workspace/
+.runtime/

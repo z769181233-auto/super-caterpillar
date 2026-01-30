@@ -43,7 +43,7 @@ export class OrchestratorService {
     private readonly engineRegistry: EngineRegistry,
     @Inject(PublishedVideoService)
     private readonly publishedVideoService: PublishedVideoService
-  ) { }
+  ) {}
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
@@ -712,7 +712,9 @@ export class OrchestratorService {
     const payload = contextJob.payload as any;
     const pipelineRunId = payload?.pipelineRunId;
 
-    this.logger.log(`[DAG] checkAndSpawnAudioGen called. audioEnabled=${audioEnabled} pipelineRunId=${pipelineRunId}`);
+    this.logger.log(
+      `[DAG] checkAndSpawnAudioGen called. audioEnabled=${audioEnabled} pipelineRunId=${pipelineRunId}`
+    );
     if (!audioEnabled || !pipelineRunId) return;
 
     try {
@@ -722,9 +724,9 @@ export class OrchestratorService {
           type: JobTypeEnum.AUDIO,
           payload: {
             path: ['pipelineRunId'],
-            equals: pipelineRunId
-          }
-        }
+            equals: pipelineRunId,
+          },
+        },
       });
 
       if (existingAudio) {
@@ -742,8 +744,8 @@ export class OrchestratorService {
           type: JobTypeEnum.AUDIO,
           payload: {
             pipelineRunId,
-            text: "AUTO_GENERATED_FROM_NOVEL_SOURCE_V1",
-            mode: "full_mix",
+            text: 'AUTO_GENERATED_FROM_NOVEL_SOURCE_V1',
+            mode: 'full_mix',
             projectId: contextJob.projectId,
             episodeId: contextJob.episodeId,
             sceneId: contextJob.sceneId,
@@ -808,21 +810,23 @@ export class OrchestratorService {
     const audioEnabled = true;
 
     if (audioEnabled) {
-      const audioJob = await this.prisma.shotJob.findFirst /* L3_BYPASS */({
-        where: {
-          type: JobTypeEnum.AUDIO,
-          payload: {
-            path: ['pipelineRunId'],
-            equals: pipelineRunId
-          }
+      const audioJob = await this.prisma.shotJob.findFirst(
+        /* L3_BYPASS */ {
+          where: {
+            type: JobTypeEnum.AUDIO,
+            payload: {
+              path: ['pipelineRunId'],
+              equals: pipelineRunId,
+            },
+          },
         }
-      });
+      );
 
       if (audioJob && audioJob.status === JobStatusEnum.SUCCEEDED) {
         audioReady = true;
         // Extract Audio Asset from Job Output
         // Assuming P18-6 AudioService returns { mixed: { absPath, sha256 }, ... }
-        const result = audioJob.payload as any; // Wait, result is usually in 'output'? 
+        const result = audioJob.payload as any; // Wait, result is usually in 'output'?
         // ShotJob schema has 'payload' but output via 'generatedAsset' or separate JSON?
         // Looking at schema: model Task has 'output'. model ShotJob does NOT have 'output' field!
         // Wait, standard practice in this repo?
@@ -837,7 +841,10 @@ export class OrchestratorService {
         // Is `ShotJob` augmented in code? Or uses `payload`?
         // The schema `ShotJob` has `payload`. Workers typically write result to `payload.output`?
         // Let's assume `payload.output`.
-        const output = (audioJob.result as any)?.output || (audioJob.payload as any)?.result?.output || (audioJob.payload as any)?.output;
+        const output =
+          (audioJob.result as any)?.output ||
+          (audioJob.payload as any)?.result?.output ||
+          (audioJob.payload as any)?.output;
         if (output) audioTrack = output;
       } else if (!audioJob) {
         // If Audio enabled but no job exists yet (maybe Video finished before lazy spawn?)
@@ -864,7 +871,12 @@ export class OrchestratorService {
     }
   }
 
-  private async aggregateAndSpawnVideoRender(shots: any[], pipelineRunId: string, contextJob: any, audioTrack: any = null) {
+  private async aggregateAndSpawnVideoRender(
+    shots: any[],
+    pipelineRunId: string,
+    contextJob: any,
+    audioTrack: any = null
+  ) {
     // 2.1 Idempotency Check: Did we already spawn a VIDEO_RENDER for this run?
     const existingVideoJob = await this.prisma.shotJob.findFirst({
       where: {
@@ -890,12 +902,17 @@ export class OrchestratorService {
 
     for (const job of shots) {
       // Assuming result stored in payload.output based on usage
-      const output = (job.result as any)?.output || (job.payload as any)?.result?.output || (job.payload as any)?.output;
+      const output =
+        (job.result as any)?.output ||
+        (job.payload as any)?.result?.output ||
+        (job.payload as any)?.output;
       const storageKey = output?.storageKey;
       if (storageKey) {
         frames.push(storageKey);
       } else {
-        this.logger.warn(`[DAG] Job ${job.id} SUCCEEDED but missing storageKey in result/payload. result=${JSON.stringify(job.result)}`);
+        this.logger.warn(
+          `[DAG] Job ${job.id} SUCCEEDED but missing storageKey in result/payload. result=${JSON.stringify(job.result)}`
+        );
       }
     }
 
@@ -1079,7 +1096,11 @@ export class OrchestratorService {
    * 2. 保存小说文本到 Novel/NovelChapter
    * 3. 投递 PIPELINE_STAGE1_NOVEL_TO_VIDEO Job
    */
-  async startStage1Pipeline(params: { novelText: string; projectId?: string; referenceSheetId?: string }) {
+  async startStage1Pipeline(params: {
+    novelText: string;
+    projectId?: string;
+    referenceSheetId?: string;
+  }) {
     try {
       const { novelText, projectId: existingProjectId, referenceSheetId: existingRefId } = params;
       const { randomUUID } = await import('crypto');

@@ -4,18 +4,10 @@
     "target": "ES2022",
     "baseUrl": ".",
     "paths": {
-      "database": [
-        "packages/database/src"
-      ],
-      "@scu/shared-types": [
-        "packages/shared-types/src"
-      ],
-      "@scu/engines/*": [
-        "packages/engines/*"
-      ],
-      "@scu/api/*": [
-        "apps/api/src/*"
-      ]
+      "database": ["packages/database/src"],
+      "@scu/shared-types": ["packages/shared-types/src"],
+      "@scu/engines/*": ["packages/engines/*"],
+      "@scu/api/*": ["apps/api/src/*"]
     },
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -23,9 +15,5 @@
     "skipLibCheck": true,
     "moduleResolution": "node"
   },
-  "include": [
-    "tools/**/*",
-    "apps/**/*",
-    "packages/**/*"
-  ]
+  "include": ["tools/**/*", "apps/**/*", "packages/**/*"]
 }

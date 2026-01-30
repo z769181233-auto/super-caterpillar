@@ -1,0 +1,46 @@
+{
+  "characterId": "CH_XueZhiYing",
+  "version": "v1.0.0",
+  "views": {
+    "front": {
+      "file": "front.png",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "anchor": {
+        "x": 0,
+        "y": -40
+      }
+    },
+    "side": {
+      "file": "side.png",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "anchor": {
+        "x": 0,
+        "y": -40
+      }
+    },
+    "back": {
+      "file": "back.png",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.95
+      },
+      "anchor": {
+        "x": 0,
+        "y": -40
+      }
+    }
+  },
+  "render_settings": {
+    "default_scale": 1.0,
+    "shadow_offset": {
+      "x": 0,
+      "y": 45
+    }
+  }
+}

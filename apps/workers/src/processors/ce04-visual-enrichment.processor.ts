@@ -85,11 +85,15 @@ export async function processCE04VisualEnrichmentJob(
 
     // 5. Spawn SHOT_RENDER (S4-3)
     // Idempotency: Duplicate check for SHOT_RENDER in this run
-    const shotId = job.shotId || (job.payload as any)?.shotId || (job.payload as any)?.metadata?.shotId;
-    logger.log(`[CE04_DEBUG] Spawning check. ID=${job.id} ShotId=${shotId} PLRunId=${pipelineRunId} Scope=${JSON.stringify({ projectId, jobOrgId })}`);
+    const shotId =
+      job.shotId || (job.payload as any)?.shotId || (job.payload as any)?.metadata?.shotId;
+    logger.log(
+      `[CE04_DEBUG] Spawning check. ID=${job.id} ShotId=${shotId} PLRunId=${pipelineRunId} Scope=${JSON.stringify({ projectId, jobOrgId })}`
+    );
 
     if (projectId && jobOrgId && shotId) {
-      const validPipelineRunId = pipelineRunId || fullJob.traceId || traceId || `fallback_run_${job.id}`;
+      const validPipelineRunId =
+        pipelineRunId || fullJob.traceId || traceId || `fallback_run_${job.id}`;
 
       const existingRender = await prisma.shotJob.findFirst({
         where: {

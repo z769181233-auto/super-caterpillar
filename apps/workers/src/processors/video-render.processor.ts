@@ -1,9 +1,10 @@
 import { PrismaClient, AssetOwnerType, AssetType } from 'database';
 import * as path from 'path';
-import * as fs from 'fs';
+import { promises as fsp } from 'fs';
 import { spawn } from 'child_process';
 import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
+import { fileExists, ensureDir as ensureDirAsync } from '../../../../packages/shared/fs_async';
 import { CostLedgerService } from '../billing/cost-ledger.service';
 import { ProcessorContext } from '../types/processor-context';
 
@@ -24,13 +25,13 @@ type VideoRenderPayload = {
   episodeId?: string;
 };
 
-function ensureDir(p: string) {
-  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+async function ensureDir(p: string) {
+  if (!(await fileExists(p))) await ensureDirAsync(p);
 }
 
-function fileOk(p: string) {
+async function fileOk(p: string) {
   try {
-    const st = fs.statSync(p);
+    const st = await fsp.stat(p);
     return st.isFile() && st.size > 0;
   } catch {
     return false;
@@ -39,18 +40,18 @@ function fileOk(p: string) {
 
 async function runFfmpeg(args: string[], logger: any) {
   await new Promise<void>((resolve, reject) => {
-    logger.log(`[VideoRender] Spawning ffmpeg with args: ${args.join(' ')}`);
+    logger.log(`[VideoRender] Spawning ffmpeg with args: ${args.join(' ')} `);
     const p = spawn('ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stderr = '';
     if (p.stdout) p.stdout.on('data', (d) => logger.log(String(d)));
     if (p.stderr) p.stderr.on('data', (d) => (stderr += String(d)));
     p.on('error', (err) => {
-      logger.error(`[VideoRender] ffmpeg spawn error: ${err.message}`);
+      logger.error(`[VideoRender] ffmpeg spawn error: ${err.message} `);
       reject(err);
     });
     p.on('close', (code) => {
       if (code === 0) return resolve();
-      reject(new Error(`ffmpeg exit=${code}. stderr=${stderr}`));
+      reject(new Error(`ffmpeg exit = ${code}.stderr = ${stderr} `));
     });
   });
 }
@@ -73,7 +74,7 @@ function normalizeStorageKey(key: string, logger: any): string {
       logger.log(`[NormalizeKey] Stripped pollution: "${key}" -> "${normalized}"`);
       return normalized;
     } else {
-      throw new Error(`[NormalizeKey] REJECT: No assets/ or videos/ in key: ${key}`);
+      throw new Error(`[NormalizeKey] REJECT: No assets / or videos / in key: ${key} `);
     }
   }
 
@@ -88,7 +89,7 @@ function normalizeStorageKey(key: string, logger: any): string {
       logger.log(`[NormalizeKey] Stripped absolute: "${key}" -> "${normalized}"`);
       return normalized;
     } else {
-      throw new Error(`[NormalizeKey] REJECT: Absolute path without assets/videos/: ${key}`);
+      throw new Error(`[NormalizeKey] REJECT: Absolute path without assets / videos /: ${key} `);
     }
   }
 
@@ -100,24 +101,32 @@ function normalizeStorageKey(key: string, logger: any): string {
  * PLAN-2: Dual-root asset path resolution
  * Try: 1) STORAGE_ROOT/<key>  2) apps/workers/.runtime/<key>
  */
-function resolveAssetPath(storageKey: string, storageRoot: string, logger: any): string {
+async function resolveAssetPath(
+  storageKey: string,
+  storageRoot: string,
+  logger: any
+): Promise<string> {
   // Priority 1: STORAGE_ROOT
   const path1 = path.resolve(storageRoot, storageKey);
-  if (fileOk(path1)) {
-    logger.log(`[ResolvePath] HIT storageRoot="${storageRoot}" key="${storageKey}" abs="${path1}"`);
+  if (await fileOk(path1)) {
+    logger.log(
+      `[ResolvePath] HIT storageRoot = "${storageRoot}" key = "${storageKey}" abs = "${path1}"`
+    );
     return path1;
   }
 
   // Priority 2: Fallback to .runtime (backward compat)
   const runtimeFallback = path.resolve(process.cwd(), '.runtime', storageKey);
-  if (fileOk(runtimeFallback)) {
-    logger.log(`[ResolvePath] HIT fallback .runtime key="${storageKey}" abs="${runtimeFallback}"`);
+  if (await fileOk(runtimeFallback)) {
+    logger.log(
+      `[ResolvePath] HIT fallback.runtime key = "${storageKey}" abs = "${runtimeFallback}"`
+    );
     return runtimeFallback;
   }
 
   // Not found in either location
   throw new Error(
-    `[ResolvePath] NOT FOUND: storageKey="${storageKey}" tried: ${path1}, ${runtimeFallback}`
+    `[ResolvePath] NOT FOUND: storageKey = "${storageKey}" tried: ${path1}, ${runtimeFallback} `
   );
 }
 
@@ -139,18 +148,20 @@ export async function processVideoRenderJob(
 
   // P4 Fix: If sceneId is missing, query from shotId
   if (!sceneId && payload.shotId) {
-    logger.log(`[VideoRender] sceneId missing in payload, querying from shotId=${payload.shotId}`);
+    logger.log(
+      `[VideoRender] sceneId missing in payload, querying from shotId = ${payload.shotId} `
+    );
     const shot = await prisma.shot.findUnique({
       where: { id: payload.shotId },
       select: { sceneId: true },
     });
     if (!shot || !shot.sceneId) {
       throw new Error(
-        `[VideoRender] Cannot resolve sceneId from shotId=${payload.shotId} for job ${job.id}`
+        `[VideoRender] Cannot resolve sceneId from shotId = ${payload.shotId} for job ${job.id}`
       );
     }
     sceneId = shot.sceneId;
-    logger.log(`[VideoRender] Resolved sceneId=${sceneId} from shotId`);
+    logger.log(`[VideoRender] Resolved sceneId = ${sceneId} from shotId`);
   }
 
   if (!sceneId) throw new Error(`[VideoRender] Missing sceneId in payload for job ${job.id}`);
@@ -158,7 +169,7 @@ export async function processVideoRenderJob(
   const traceId = payload.traceId || job.id;
   const rawFrameKeys = payload.frames || payload.frameKeys || [];
   if (!Array.isArray(rawFrameKeys) || rawFrameKeys.length === 0) {
-    throw new Error(`[VideoRender] Missing frames/frameKeys in payload for job ${job.id}`);
+    throw new Error(`[VideoRender] Missing frames / frameKeys in payload for job ${job.id}`);
   }
 
   // PLAN-2: Two-stage path resolution (normalize + dual-root lookup)
@@ -168,19 +179,21 @@ export async function processVideoRenderJob(
   const cleanKeys = rawFrameKeys.map((k) => normalizeStorageKey(k, logger));
 
   // Stage 2: Resolve to absolute paths with dual-root fallback
-  const absFrames = cleanKeys.map((k) => resolveAssetPath(k, runtimeRoot, logger));
+  const absFrames = await Promise.all(
+    cleanKeys.map((k) => resolveAssetPath(k, runtimeRoot, logger))
+  );
 
   // Validate all frames exist
   for (const f of absFrames) {
-    if (!fileOk(f)) throw new Error(`[VideoRender] Frame not found or empty: ${f}`);
+    if (!(await fileOk(f))) throw new Error(`[VideoRender] Frame not found or empty: ${f} `);
   }
 
   // VIDEO asset (SCENE, sceneId, VIDEO) 幂等：
   // - 先 upsert 成 pending（允许失败后重跑）
-  const pendingKey = `pending/videos/${projectId}/${sceneId}/${pipelineRunId}/scene.mp4`;
+  const pendingKey = `pending / videos / ${projectId} /${sceneId}/${pipelineRunId}/scene.mp4`;
   const finalKey = `videos/${projectId}/${sceneId}/${pipelineRunId}/scene.mp4`;
   const finalAbs = path.resolve(runtimeRoot, finalKey);
-  ensureDir(path.dirname(finalAbs));
+  await ensureDir(path.dirname(finalAbs));
 
   await prisma.asset.upsert({
     where: {
@@ -237,7 +250,7 @@ export async function processVideoRenderJob(
       const listPath = path.resolve(runtimeRoot, `tmp/ffconcat_${sceneId}_${pipelineRunId}.txt`);
       ensureDir(path.dirname(listPath));
       const body = absFrames.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join('\n') + '\n';
-      fs.writeFileSync(listPath, body, 'utf8');
+      await fsp.writeFile(listPath, body, 'utf8');
 
       const args = [
         '-y',
@@ -261,7 +274,8 @@ export async function processVideoRenderJob(
       await runFfmpeg(args, logger);
     }
 
-    if (!fileOk(finalAbs)) throw new Error(`[VideoRender] Output mp4 missing/empty: ${finalAbs}`);
+    if (!(await fileOk(finalAbs)))
+      throw new Error(`[VideoRender] Output mp4 missing/empty: ${finalAbs}`);
 
     // 更新为最终 storageKey
     const asset = await prisma.asset.upsert({

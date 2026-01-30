@@ -12,4 +12,4 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   providers: [OpsMetricsService],
   exports: [OpsMetricsService],
 })
-export class OpsModule { }
+export class OpsModule {}

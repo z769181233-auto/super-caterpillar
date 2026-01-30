@@ -1,227 +1,191 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "required": [
-        "episodeMeta",
-        "beats"
-    ],
-    "properties": {
-        "episodeMeta": {
-            "type": "object",
-            "required": [
-                "durationSec"
-            ],
-            "properties": {
-                "durationSec": {
-                    "type": "number",
-                    "minimum": 300,
-                    "maximum": 480
-                }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["episodeMeta", "beats"],
+  "properties": {
+    "episodeMeta": {
+      "type": "object",
+      "required": ["durationSec"],
+      "properties": {
+        "durationSec": {
+          "type": "number",
+          "minimum": 300,
+          "maximum": 480
+        }
+      }
+    },
+    "beats": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "paceTag",
+          "beatGoal",
+          "sfxLines",
+          "sfxIds",
+          "thirdActorProp",
+          "thirdActorPropId",
+          "locationId",
+          "transitionTag",
+          "reversalTag",
+          "climaxTag",
+          "estDurationSec",
+          "shotLines"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "paceTag": {
+            "type": "string",
+            "enum": ["快", "常", "慢"]
+          },
+          "estDurationSec": {
+            "type": "number",
+            "minimum": 5,
+            "maximum": 90
+          },
+          "beatGoal": {
+            "type": "string"
+          },
+          "sfxLines": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
-        },
-        "beats": {
+          },
+          "sfxIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^SF_"
+            }
+          },
+          "locationId": {
+            "type": "string",
+            "pattern": "^LO_"
+          },
+          "thirdActorProp": {
+            "type": "string"
+          },
+          "thirdActorPropId": {
+            "type": "string",
+            "pattern": "^PR_"
+          },
+          "foreground": {
+            "type": "string"
+          },
+          "background": {
+            "type": "string"
+          },
+          "shotRelation": {
+            "type": "string"
+          },
+          "transitionTag": {
+            "type": "string",
+            "enum": ["声音匹配", "动作匹配", "光影匹配", "画面匹配", "物件匹配"]
+          },
+          "reversalTag": {
+            "type": "boolean"
+          },
+          "reversalEvidence": {
+            "type": "object",
+            "required": ["entryPose", "exitPose", "turnActionShotId"],
+            "properties": {
+              "entryPose": {
+                "type": "string"
+              },
+              "exitPose": {
+                "type": "string"
+              },
+              "turnActionShotId": {
+                "type": "string"
+              }
+            }
+          },
+          "climaxTag": {
+            "type": ["string", "null"],
+            "enum": ["Big", "Small", null]
+          },
+          "climaxEvidence": {
+            "type": "object",
+            "required": ["triggerShotId", "propInvolved", "payoff"],
+            "properties": {
+              "triggerShotId": {
+                "type": "string"
+              },
+              "propInvolved": {
+                "type": "string"
+              },
+              "payoff": {
+                "type": "string"
+              }
+            }
+          },
+          "shotLines": {
             "type": "array",
             "minItems": 1,
             "items": {
-                "type": "object",
-                "required": [
-                    "id",
-                    "paceTag",
-                    "beatGoal",
-                    "sfxLines",
-                    "sfxIds",
-                    "thirdActorProp",
-                    "thirdActorPropId",
-                    "locationId",
-                    "transitionTag",
-                    "reversalTag",
-                    "climaxTag",
-                    "estDurationSec",
-                    "shotLines"
-                ],
-                "properties": {
-                    "id": {
-                        "type": "string"
-                    },
-                    "paceTag": {
-                        "type": "string",
-                        "enum": [
-                            "快",
-                            "常",
-                            "慢"
-                        ]
-                    },
-                    "estDurationSec": {
-                        "type": "number",
-                        "minimum": 5,
-                        "maximum": 90
-                    },
-                    "beatGoal": {
-                        "type": "string"
-                    },
-                    "sfxLines": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    },
-                    "sfxIds": {
-                        "type": "array",
-                        "items": {
-                            "type": "string",
-                            "pattern": "^SF_"
-                        }
-                    },
-                    "locationId": {
-                        "type": "string",
-                        "pattern": "^LO_"
-                    },
-                    "thirdActorProp": {
-                        "type": "string"
-                    },
-                    "thirdActorPropId": {
-                        "type": "string",
-                        "pattern": "^PR_"
-                    },
-                    "foreground": {
-                        "type": "string"
-                    },
-                    "background": {
-                        "type": "string"
-                    },
-                    "shotRelation": {
-                        "type": "string"
-                    },
-                    "transitionTag": {
-                        "type": "string",
-                        "enum": [
-                            "声音匹配",
-                            "动作匹配",
-                            "光影匹配",
-                            "画面匹配",
-                            "物件匹配"
-                        ]
-                    },
-                    "reversalTag": {
-                        "type": "boolean"
-                    },
-                    "reversalEvidence": {
-                        "type": "object",
-                        "required": [
-                            "entryPose",
-                            "exitPose",
-                            "turnActionShotId"
-                        ],
-                        "properties": {
-                            "entryPose": {
-                                "type": "string"
-                            },
-                            "exitPose": {
-                                "type": "string"
-                            },
-                            "turnActionShotId": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "climaxTag": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "enum": [
-                            "Big",
-                            "Small",
-                            null
-                        ]
-                    },
-                    "climaxEvidence": {
-                        "type": "object",
-                        "required": [
-                            "triggerShotId",
-                            "propInvolved",
-                            "payoff"
-                        ],
-                        "properties": {
-                            "triggerShotId": {
-                                "type": "string"
-                            },
-                            "propInvolved": {
-                                "type": "string"
-                            },
-                            "payoff": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "shotLines": {
-                        "type": "array",
-                        "minItems": 1,
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "id",
-                                "framing",
-                                "subject",
-                                "characterId",
-                                "actionChain",
-                                "poseId",
-                                "motionId",
-                                "cameraMoveId",
-                                "parallelTask"
-                            ],
-                            "properties": {
-                                "id": {
-                                    "type": "string"
-                                },
-                                "framing": {
-                                    "type": "string",
-                                    "enum": [
-                                        "特写",
-                                        "中景",
-                                        "全景",
-                                        "OTS",
-                                        "大特写"
-                                    ]
-                                },
-                                "subject": {
-                                    "type": "string"
-                                },
-                                "characterId": {
-                                    "type": "string",
-                                    "pattern": "^CH_"
-                                },
-                                "actionChain": {
-                                    "type": "string"
-                                },
-                                "parallelTask": {
-                                    "type": "string"
-                                },
-                                "dialogue": {
-                                    "type": "string",
-                                    "maxLength": 15
-                                },
-                                "poseId": {
-                                    "type": "string",
-                                    "pattern": "^PO_"
-                                },
-                                "motionId": {
-                                    "type": "string",
-                                    "pattern": "^MO_"
-                                },
-                                "cameraMoveId": {
-                                    "type": "string",
-                                    "pattern": "^CM_"
-                                },
-                                "impactFxId": {
-                                    "type": "string",
-                                    "pattern": "^FX_"
-                                }
-                            }
-                        }
-                    }
+              "type": "object",
+              "required": [
+                "id",
+                "framing",
+                "subject",
+                "characterId",
+                "actionChain",
+                "poseId",
+                "motionId",
+                "cameraMoveId",
+                "parallelTask"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "framing": {
+                  "type": "string",
+                  "enum": ["特写", "中景", "全景", "OTS", "大特写"]
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "characterId": {
+                  "type": "string",
+                  "pattern": "^CH_"
+                },
+                "actionChain": {
+                  "type": "string"
+                },
+                "parallelTask": {
+                  "type": "string"
+                },
+                "dialogue": {
+                  "type": "string",
+                  "maxLength": 15
+                },
+                "poseId": {
+                  "type": "string",
+                  "pattern": "^PO_"
+                },
+                "motionId": {
+                  "type": "string",
+                  "pattern": "^MO_"
+                },
+                "cameraMoveId": {
+                  "type": "string",
+                  "pattern": "^CM_"
+                },
+                "impactFxId": {
+                  "type": "string",
+                  "pattern": "^FX_"
                 }
+              }
             }
+          }
         }
+      }
     }
+  }
 }

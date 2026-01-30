@@ -1,22 +1,42 @@
 [
-    {
-        "id": "CH_ADAM",
-        "name": "Adam",
-        "description": "男性，半机械化，性格冷静，主角。"
-    },
-    {
-        "id": "CH_EVE",
-        "name": "Eve",
-        "description": "女性，黑客专家，性格果敢，主角。"
-    },
-    {
-        "id": "CH_DROID_A",
-        "name": "防卫机器人A",
-        "description": "量产型安全单位，配备轻型激光。"
-    },
-    {
-        "id": "CH_BLACK_MARKET_BOSS",
-        "name": "黑市头目",
-        "description": "身披斗篷的神秘人物。"
-    }
+  {
+    "id": "CH_ADAM",
+    "name": "Adam",
+    "description": "男性，半机械化，性格冷静，主角。"
+  },
+  {
+    "id": "CH_EVE",
+    "name": "Eve",
+    "description": "女性，黑客专家，性格果敢，主角。"
+  },
+  {
+    "id": "CH_DROID_A",
+    "name": "防卫机器人A",
+    "description": "量产型安全单位，配备轻型激光。"
+  },
+  {
+    "id": "CH_BLACK_MARKET_BOSS",
+    "name": "黑市头目",
+    "description": "身披斗篷的神秘人物。"
+  },
+  {
+    "id": "CH_XUE_ZHIYING",
+    "name": "薛知盈",
+    "description": "The cousin who runs away"
+  },
+  {
+    "id": "CH_XIAO_YUNQI",
+    "name": "萧昀祈",
+    "description": "The dedicated pursuer"
+  },
+  {
+    "id": "CH_CHUNTAO",
+    "name": "春桃",
+    "description": "Loyal maid"
+  },
+  {
+    "id": "CH_WANG_MOMO",
+    "name": "王嬷嬷",
+    "description": "Old servant"
+  }
 ]

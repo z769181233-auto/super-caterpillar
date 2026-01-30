@@ -1,0 +1,37 @@
+[
+  {
+    "atom_id": "A001",
+    "text": "薛知盈坐在客栈雅间的窗前，望着窗外的落花发呆。",
+    "semantic_hint": [
+      "Character: XueZhiYing",
+      "Action: Sit/Stare",
+      "Env: InnWindow",
+      "Mood: Melancholy"
+    ]
+  },
+  {
+    "atom_id": "A002",
+    "text": "“姑娘，天凉了，加件衣裳吧。”春桃拿着一件披风走了进来，脸上满是关切。",
+    "semantic_hint": ["Character: ChunTao", "Action: Enter/HoldCloak", "Dialog: Concern"]
+  },
+  {
+    "atom_id": "A003",
+    "text": "萧昀祈从书案房大步走来，面色凝重，似乎带来了什么不好的消息。",
+    "semantic_hint": ["Character: XiaoYunQi", "Action: Walk", "Mood: Serious"]
+  },
+  {
+    "atom_id": "A004",
+    "text": "“这表姑娘又跑了？”王嬷嬷在回廊下低声嘀咕，手里还端着一碗刚熬好的燕窝。",
+    "semantic_hint": ["Character: WangMoMo", "Action: Gossip/HoldBowl", "Location: Corridor"]
+  },
+  {
+    "atom_id": "A005",
+    "text": "薛知盈叹了一口气，她实在不想卷入这京城的纷争之中。",
+    "semantic_hint": ["Character: XueZhiYing", "Action: Sigh", "Mood: Reluctant"]
+  },
+  {
+    "atom_id": "A006",
+    "text": "“只要能离开这里，去哪里都好。”她轻声说道，眼中闪过一丝坚定。",
+    "semantic_hint": ["Character: XueZhiYing", "Dialog: Determination", "Expression: Firm"]
+  }
+]
