@@ -1,3 +1,15 @@
+## P4 SEALED（8K HEVC Delivery）
+
+- Evidence Dir: `docs/_evidence/p4_first_video_8k_hevc_20260130_235900/`
+- Index: `docs/_evidence/p4_first_video_8k_hevc_20260130_235900/EVIDENCE_INDEX.json`
+- Gates: `gate_p4_8k_hevc.sh PASS` · `gate_p4_ce09_security.sh PASS` · `gate_no_secrets.log PASS` · `release/DELIVERY_MANIFEST.json READY`
+
+**Verify（秒级复核）**
+```bash
+ffprobe -v error -show_streams -show_format docs/_evidence/p4_first_video_8k_hevc_20260130_235900/output/scene_8k_hevc_watermarked.mp4
+shasum -a 256 -c docs/_evidence/p4_first_video_8k_hevc_20260130_235900/release/EVIDENCE_INDEX.checksums
+```
+
 > [!IMPORTANT]
 > **P4 SEALED（8K HEVC Delivery）**
 > - **Evidence Dir**: `docs/_evidence/p4_first_video_8k_hevc_20260130_235900/`
