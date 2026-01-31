@@ -1,0 +1,39 @@
+name: p7-prod-deploy-drill
+
+on:
+  workflow_dispatch:
+
+jobs:
+  p7-prod-deploy-drill:
+    runs-on: ubuntu-latest
+
+    # Deployment environment secrets would be injected here
+    # environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Run P7 production deployment drill
+        env:
+          # Injected secrets for cloud provider / cluster access
+          # KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+          # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          EVI_OVERRIDE: /tmp/p7_prod_deploy_drill_evidence
+        run: |
+          bash tools/run_p7_prod_deploy_drill.sh
+
+      - name: Upload P7 evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: p7_prod_deploy_drill_evidence
+          path: /tmp/p7_prod_deploy_drill_evidence
+          if-no-files-found: error
