@@ -2,9 +2,6 @@
 # [NEGATIVE_TEST] simulate violations to check gate effectiveness
 set -euo pipefail
 IFS=$'\n\t'
-IFS=$'
-	'
-IFS=$'\n\t'
 
 EVID_DIR="docs/_evidence/negative_test_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$EVID_DIR"
@@ -18,7 +15,6 @@ CAT_BAD_SHELL="$EVID_DIR/bad_shell.sh"
 cat > "$CAT_BAD_SHELL" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-IFS=$'\n\t'
 # Missing IFS
 echo "test"
 EOF
@@ -37,7 +33,6 @@ CAT_EVAL_SHELL="$EVID_DIR/eval_shell.sh"
 cat > "$CAT_EVAL_SHELL" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-IFS=$'\n\t'
 IFS=\$'\n\t'
 eval "ls"
 EOF
@@ -56,7 +51,6 @@ CAT_SQL_SHELL="$EVID_DIR/bad_sql.sh"
 cat > "$CAT_SQL_SHELL" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-IFS=$'\n\t'
 IFS=\$'\n\t'
 DB="test"
 VAL="leak"
