@@ -1,0 +1,8 @@
+total 40
+drwxr-xr-x@   7 adam  staff   224B  1 31 20:10 .
+drwxr-xr-x@ 710 adam  staff    22K  1 31 20:19 ..
+-rw-r--r--@   1 adam  staff   1.5K  1 31 20:10 concurrency_perf.json
+-rw-r--r--@   1 adam  staff   262B  1 31 20:10 EVIDENCE_INDEX.checksums
+-rw-r--r--@   1 adam  staff   574B  1 31 20:10 EVIDENCE_INDEX.json
+-rw-r--r--@   1 adam  staff   194B  1 31 20:10 stability_audit.json
+-rw-r--r--@   1 adam  staff   411B  1 31 20:10 unit_cost_audit.json

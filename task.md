@@ -40,11 +40,14 @@ _Status: REAL SEALED | Production Ready_
 - [x] **P3'-REAL-5: 终极封印审计报告 (Industrial Review)**
   - Markdown Table Sealing.
 
-## Phase 5: Commercial Audit & Performance Gate
+## [x] Phase 5: Commercial Audit & Performance Gate
 
-- [/] P5-0: Throughput Gate (N=10 Concurrency, < 5s Latency)
-- [/] P5-1: Unit Cost Audit (8K HEVC Cost Analysis)
-- [/] P5-2: Commercial SLO Verification (P99 Stability Audit)
+_Status: SEALED | Commercial Ready_
+_Evidence Dir: docs/\_evidence/p5_final_review_20260131_201914/_
+
+- [x] P5-0: Throughput Gate (N=10 Concurrency, < 5s Latency)
+- [x] P5-1: Unit Cost Audit (8K HEVC Cost Analysis)
+- [x] P5-2: Commercial SLO Verification (P99 Stability Audit)
 
 ---
 

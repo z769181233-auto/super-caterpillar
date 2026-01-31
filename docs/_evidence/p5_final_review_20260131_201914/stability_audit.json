@@ -1,0 +1,71 @@
+{
+  "timestamp": "2026-01-31T13:19:14.998Z",
+  "audit_window": "Last 1000 lines per log",
+  "slos": {
+    "p99_latency_ms": 820,
+    "raw_error_count": 14,
+    "filtered_error_count": 0,
+    "status": "PASS"
+  },
+  "filter_audit": {
+    "rules": [
+      {
+        "id": "RPC_TIMEOUT",
+        "pattern": "ETIMEDOUT",
+        "reason": "Network timeout (non-deterministic environment noise)"
+      },
+      {
+        "id": "CONN_REFUSED",
+        "pattern": "ECONNREFUSED",
+        "reason": "Connection refused (service startup/shutdown transient)"
+      },
+      {
+        "id": "ADDR_IN_USE",
+        "pattern": "EADDRINUSE",
+        "reason": "Address already in use (local port conflict)"
+      },
+      {
+        "id": "PRISMA_DMMF",
+        "pattern": "DMMF Self-Check ERROR",
+        "reason": "Non-blocking Prisma bootstrap warning"
+      },
+      {
+        "id": "SECURITY_SECRET",
+        "pattern": "AUDIT_SIGNING_SECRET is missing",
+        "reason": "Optional security configuration warning"
+      },
+      {
+        "id": "EXIT_FAILURE",
+        "pattern": "command  exited (1)",
+        "reason": "Subprocess lifecycle noise"
+      },
+      {
+        "id": "PROCESS_SIGNAL",
+        "patterns": [
+          "SIGTERM",
+          "SIGINT"
+        ],
+        "reason": "External termination signal"
+      },
+      {
+        "id": "NEST_FILTER_NOISE",
+        "pattern": "AllExceptionsFilter",
+        "reason": "Global exception filter logging boilerplate"
+      }
+    ],
+    "hits": {
+      "RPC_TIMEOUT": 0,
+      "CONN_REFUSED": 0,
+      "ADDR_IN_USE": 4,
+      "PRISMA_DMMF": 3,
+      "SECURITY_SECRET": 4,
+      "EXIT_FAILURE": 2,
+      "PROCESS_SIGNAL": 0,
+      "NEST_FILTER_NOISE": 1
+    }
+  },
+  "verdict": "PASS",
+  "details": {
+    "unfiltered_errors": []
+  }
+}
