@@ -16,9 +16,11 @@ SCHEMA="$(git ls-files | grep -m1 'schema\.prisma$' || true)"
 # Resolve DATABASE_URL from env or .env (untracked ok)
 DATABASE_URL="${DATABASE_URL:-}"
 if [ -z "$DATABASE_URL" ] && [ -f .env ]; then
-  DATABASE_URL="$(grep -E '^DATABASE_URL=' .env | head -n 1 | sed 's/^DATABASE_URL=//')"
+  # Read and remove potential quotes
+  DATABASE_URL="$(grep -E '^DATABASE_URL=' .env | head -n 1 | sed 's/^DATABASE_URL=//' | sed 's/^\"//;s/\"$//' | sed \"s/^'//;s/'$//\")"
 fi
 [ -n "$DATABASE_URL" ] || die "DATABASE_URL not set (export DATABASE_URL or provide .env)"
+export DATABASE_URL
 
 # Build a shadow db url (postgres): append suffix to db name
 SHADOW_DB_URL="$(node - <<'NODE'
