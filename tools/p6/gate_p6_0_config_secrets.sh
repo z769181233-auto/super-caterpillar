@@ -37,8 +37,8 @@ if [ -s "$EVI/p6_0_secret_scan_hits_fileline.txt" ]; then
   STATUS="FAIL"
 fi
 
-# 3) forbid obvious bypass flags in code (exclude tools/smoke where we validate these flags)
-BYPASS_HITS="$(grep_hits_fileline '(DISABLE|BYPASS|SKIP)_(AUTH|HMAC|CREDITS|LEDGER|QUOTA)|CREDITS_DISABLED|LEDGER_DISABLED' apps packages tools | grep -v 'tools/smoke/' || true)"
+# 3) forbid obvious bypass flags in code (exclude tools/p6 and tools/smoke where we validate these flags)
+BYPASS_HITS="$(grep_hits_fileline '(DISABLE|BYPASS|SKIP)_(AUTH|HMAC|CREDITS|LEDGER|QUOTA)|CREDITS_DISABLED|LEDGER_DISABLED' apps packages tools | grep -vE 'tools/(p6|smoke)/' || true)"
 printf "%s\n" "$BYPASS_HITS" | sed '/^$/d' > "$EVI/p6_0_bypass_flag_hits_fileline.txt"
 if [ -s "$EVI/p6_0_bypass_flag_hits_fileline.txt" ]; then
   log "[P6-0] FAIL: bypass-like flags detected in code paths"

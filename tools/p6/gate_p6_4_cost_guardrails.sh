@@ -7,8 +7,8 @@ mkdir -p "$EVI"
 
 need git
 
-log "[P6-4] scan for credits/ledger bypass in code (exclude tools/smoke)..."
-BYPASS="$(grep_hits_fileline '(DISABLE|BYPASS|SKIP)_(CREDITS|LEDGER|QUOTA)|CREDITS_DISABLED|LEDGER_DISABLED|FREE_CREDITS' apps packages tools | grep -v 'tools/smoke/' || true)"
+log "[P6-4] scan for credits/ledger bypass in code (exclude tools/p6/smoke)..."
+BYPASS="$(grep_hits_fileline '(DISABLE|BYPASS|SKIP)_(CREDITS|LEDGER|QUOTA)|CREDITS_DISABLED|LEDGER_DISABLED|FREE_CREDITS' apps packages tools | grep -vE 'tools/(p6|smoke)/' || true)"
 printf "%s\n" "$BYPASS" | sed '/^$/d' > "$EVI/p6_4_bypass_scan_fileline.txt"
 if [ -s "$EVI/p6_4_bypass_scan_fileline.txt" ]; then
   log "[P6-4] FAIL: bypass-like flags detected (see p6_4_bypass_scan_fileline.txt)"
