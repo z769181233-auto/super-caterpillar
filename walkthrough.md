@@ -61,3 +61,8 @@ NOTE: Phase 4 sealing evidence is tracked in real_production_review.md §8 and d
 
 **Verification Date**: 2026-01-31
 **Execution Environment**: Mac (Commercial Production Final Review)
+
+# Phase 6: Release Readiness (P6)
+
+- Evidence: docs/\_evidence/p6_release_readiness_20260131_202847/
+- Goals: prod deployable, observable, rollbackable, cost-guarded
