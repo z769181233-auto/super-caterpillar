@@ -8,6 +8,14 @@ mkdir -p "$EVI"
 need git
 need node
 
+# Define path-only exclusions (auditable, non-expandable)
+EXCLUDE_PATHS=(
+  "tools/p9/gate_p9_1_secret_scan.sh"
+)
+
+# Output exclusions to evidence for audit trail
+printf "%s\n" "${EXCLUDE_PATHS[@]}" > "$EVI/p9_1_excluded_paths.txt"
+
 # Scan tracked files only, exclude evidence/delivery blobs, scanner itself, and known non-source paths
 FILES_LIST="$EVI/p9_1_files_scanned.txt"
 git ls-files \
