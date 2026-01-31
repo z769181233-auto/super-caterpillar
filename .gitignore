@@ -87,3 +87,4 @@ docs/_evidence/
 docs/_evidence_archived/
 workspace/
 .runtime/
+tools/deploy/p7_secrets.local.env
