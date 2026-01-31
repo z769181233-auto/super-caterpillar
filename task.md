@@ -53,11 +53,11 @@ _Evidence Dir: docs/\_evidence/p5_final_review_20260131_201914/_
 
 ## [/] Phase 6: Release Readiness (P6)
 
-- [ ] P6-0: 配置与密钥红线审计 (Config/Secrets Sanity)
-- [ ] P6-1: 数据库迁移安全演练 (DB Migration Safety)
-- [ ] P6-2: 核心指标可观测性接入 (Observability Required)
-- [ ] P6-3: 生产级回滚全流程演练 (Rollback Drill)
-- [ ] P6-4: 成本配额与熔断护栏验证 (Cost Guardrails)
+- [x] P6-0: 配置与密钥红线审计 (Config/Secrets Sanity)
+- [x] P6-1: 数据库迁移安全演练 (DB Migration Safety)
+- [x] P6-2: 核心指标可观测性接入 (Observability Required)
+- [x] P6-3: 生产级回滚全流程演练 (Rollback Drill)
+- [x] P6-4: 成本配额与熔断护栏验证 (Cost Guardrails)
 
 ---
 
