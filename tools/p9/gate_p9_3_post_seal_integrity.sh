@@ -4,6 +4,8 @@ source "$(dirname "$0")/_lib.sh"
 
 EVI="${1:?usage: gate_p9_3_post_seal_integrity.sh <evidence_dir>}"
 mkdir -p "$EVI"
+# Resolve to absolute path before any git checkout operations
+EVI="$(cd "$EVI" && pwd)"
 need git
 SHA="$(sha_tool)"
 
@@ -35,6 +37,7 @@ while IFS= read -r tag; do
     fi
   done
 done < "$EVI/p9_3_sealed_tags.txt"
+
 
 # Return to original branch
 git checkout -q "$CURRENT_BRANCH"
