@@ -22,3 +22,10 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     echo "[HOOK] P6 PASS. push allowed."
   fi
 done
+
+
+# --- P9-1 secret scan (HOOK-ENFORCED) ---
+TMP_EVI="$(mktemp -d 2>/dev/null || mktemp -d -t p9_secret_scan)";
+trap 'rm -rf "$TMP_EVI" || true' EXIT
+bash tools/p9/gate_p9_1_secret_scan.sh "$TMP_EVI" >/dev/null
+# ---------------------------------------
