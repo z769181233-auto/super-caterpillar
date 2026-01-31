@@ -67,3 +67,9 @@ NOTE: Phase 4 sealing evidence is tracked in real_production_review.md §8 and d
 - Evidence: [docs/_evidence/p6_release_readiness_20260131_205330/](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p6_release_readiness_20260131_205330/)
 - Goals: prod deployable, observable, rollbackable, cost-guarded
 - Gates: P6-0 to P6-4 ALL PASS
+- Status: **CI-ENFORCED** (Branch Protection Required)
+
+# Phase 7: Production Deployment Drill (Prod Drill)
+
+- Status: **Adapter Ready** (Workflow & Scripts Implemented)
+- Next: Execute Manual Drill
