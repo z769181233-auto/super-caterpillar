@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-lint_budget.sh
 

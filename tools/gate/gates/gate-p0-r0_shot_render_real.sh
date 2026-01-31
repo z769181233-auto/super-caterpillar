@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # ===== P0-R0: SHOT_RENDER Real Render Gate =====
 # 验证：真实图片产出 + 非纯色 + 计费存在 + 审计存在

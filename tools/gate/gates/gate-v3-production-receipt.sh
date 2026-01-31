@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-v3-production-receipt.sh
 # V3 Production Readiness Gate: Assert Standardized Receipts
 # Usage: ./gate-v3-production-receipt.sh

@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # Gate: Cost Budget Enforcement (Phase G3)

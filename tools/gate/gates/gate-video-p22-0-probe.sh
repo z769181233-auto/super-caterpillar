@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # P22-0: Video E2E Health Probe & GPU Gate

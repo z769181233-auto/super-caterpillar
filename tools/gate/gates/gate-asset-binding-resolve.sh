@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # Gate: Asset Binding Resolve

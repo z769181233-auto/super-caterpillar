@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"# ===== Stage-3-E: ShotRender Realization Gate =====
 # 验证：真实文件产出 + 高额计费 + 幂等 + Trace贯通

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-studio-ce11-preview.sh# Phase 2: Studio Real Integration Guard
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-post_sealed_governance.sh
 # 聚合门禁单入口 (Single Entry Point)

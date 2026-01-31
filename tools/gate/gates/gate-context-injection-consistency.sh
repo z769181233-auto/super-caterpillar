@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 GATE_NAME="CONTEXT_INJECTION_CONSISTENCY"
 REPO_ROOT="$(pwd)"

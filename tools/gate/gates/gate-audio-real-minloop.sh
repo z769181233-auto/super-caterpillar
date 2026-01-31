@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 echo "=============================================="
 echo "GATE: P18-0 Audio Minloop (Double PASS)"

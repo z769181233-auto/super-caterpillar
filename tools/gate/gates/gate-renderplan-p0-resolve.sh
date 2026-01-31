@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # P0-RP: RenderPlan Resolve Gate

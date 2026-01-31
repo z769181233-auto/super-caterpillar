@@ -4,6 +4,9 @@
 # Evidence: docs/_evidence/p25_1_full_3m_<TS>
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # 1. Environment Setup
 if [ -f .env.local ]; then

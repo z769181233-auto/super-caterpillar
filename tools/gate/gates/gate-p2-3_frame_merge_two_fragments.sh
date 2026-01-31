@@ -3,6 +3,9 @@
 # 目标：验证 2 个视频片段合并，固化运行态证据。
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 GATE_NAME="P2_3_FRAME_MERGE"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)

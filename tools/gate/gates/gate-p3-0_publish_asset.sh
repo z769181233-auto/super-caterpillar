@@ -3,6 +3,9 @@
 # 目标：验证合并产物写回 DB 且可通过 API 生成 Signed URL。
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 GATE_NAME="P3_0_PUBLISH_ASSET"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)

@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 # P14-0 Quality Production Hook & Sweeper (Production-Grade) Gate
 # 验证：JobService Hook 异步触发、Feature Flag 灰度、标准预算闸拦截、Ops 指标聚合

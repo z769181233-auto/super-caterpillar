@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # P18-6.1: Partial Preview Gate

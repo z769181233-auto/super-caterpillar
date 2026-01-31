@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # Cleanup any leaking ports
 lsof -t -i :3000 | xargs kill -9 || true

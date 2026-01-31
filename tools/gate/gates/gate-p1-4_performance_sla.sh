@@ -4,6 +4,9 @@
 # 目的：验证核心引擎在大并发（N=20）下的 P95 延迟符合 Bible 规范。
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # 1. Environment Configuration
 export NODE_ENV="development"

@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-p2-no-fallback-real-render.sh
 # V3.0 P2-1: Real Render No-Fallback Verification
 

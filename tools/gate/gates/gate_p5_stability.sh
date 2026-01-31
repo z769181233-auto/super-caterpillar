@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate_p5_stability.sh: 断言 SLO 稳定性与延迟
 EVI_DIR=$1
 STABILITY_JSON="$EVI_DIR/stability_audit.json"

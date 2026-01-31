@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-prod_shot_render_real.sh
 # 验证理由：路由锁死 + 真实生成。

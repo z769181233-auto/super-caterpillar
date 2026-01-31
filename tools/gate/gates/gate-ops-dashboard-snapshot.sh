@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # Gate: Ops Dashboard Snapshot (P17-0)
 # Double PASS requirement: run snapshot twice with separate evidence dirs.

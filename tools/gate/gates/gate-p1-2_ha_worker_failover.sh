@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # P1-2: HA Worker Failover Gate
 # 目标:kill worker → 60s 内 reclaim > 0 → 新 worker 完成;3 轮;无 lease 泄漏;无重复计费。

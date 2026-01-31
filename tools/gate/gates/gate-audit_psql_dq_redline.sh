@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-audit_psql_dq_redline.sh
 # 使用 Node.js 进行高保真 SQL 注入红线审计

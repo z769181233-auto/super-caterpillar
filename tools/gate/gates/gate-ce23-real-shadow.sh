@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # P16-0: CE23 REAL Shadow/Real Mode Gate (Robust Version)
 # Implements PLAN-0 to PLAN-4.

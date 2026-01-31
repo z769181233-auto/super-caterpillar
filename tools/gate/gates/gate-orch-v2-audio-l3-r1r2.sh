@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # Orchestrator V2: Audio Integration L3 R1/R2 Runner
 # Based on gate-orch-v2-audio-l2-real.sh

@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-v3-job-state-ssot.sh
 # 校验 V3_JOB_STATE_SSOT.md 中的核心进度枚举是否符合生产规范
 

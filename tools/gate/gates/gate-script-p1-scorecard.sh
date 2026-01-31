@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # Script P1 Scorecard Gate
 # Usage: ./gate-script-p1-scorecard.sh [shot_spec.json]

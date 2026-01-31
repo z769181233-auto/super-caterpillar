@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # P20-0: Audio Runtime Guardrails (Health & Metrics)

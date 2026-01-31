@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # GATE 14: CE02 Visual Density Integration
 # Goal: Verify Bible V3.0 CE02 Protocol (text -> score, breakdown, verdict) maps to Production DB (chapters/scenes).

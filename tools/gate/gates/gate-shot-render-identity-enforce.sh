@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # GATE: Shot Render Identity Enforce
 # Output: EVIDENCE_INDEX.json (with sha256)

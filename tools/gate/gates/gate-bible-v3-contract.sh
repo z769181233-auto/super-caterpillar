@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # gate-bible-v3-contract.sh
 # Purpose: Verify strict V3 Bible Contract compliance (DB Views & API)

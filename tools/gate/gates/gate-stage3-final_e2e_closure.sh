@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"# ===== Stage-3-Final: E2E Closure Gate =====
 # 验证：全链路贯通 (CE06 -> CE03 -> CE04 -> ShotRender) + 双跑幂等

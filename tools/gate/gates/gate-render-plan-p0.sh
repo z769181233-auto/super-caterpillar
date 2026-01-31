@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # Gate: RenderPlan P0 Industrial Audit

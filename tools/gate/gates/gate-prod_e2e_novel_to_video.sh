@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-prod_e2e_novel_to_video.sh
 # 验证理由：全链路真实性 + 成本审计。

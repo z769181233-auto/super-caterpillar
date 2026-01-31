@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # Gate: Novel Ingest Audit (Phase H0)

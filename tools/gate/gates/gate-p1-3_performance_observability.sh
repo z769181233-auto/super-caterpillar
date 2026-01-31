@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # P1-3 Performance & Observability Gate
 # Validates Metrics Liveness, Trace Propagation, and basic Performance SLA

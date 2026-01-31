@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # ===== Gate P0-R1: Video Merge Real (Local FFmpeg) =====
 # 目标:

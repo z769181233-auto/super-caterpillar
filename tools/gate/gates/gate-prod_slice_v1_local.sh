@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-prod_slice_v1_local.sh# 链路: CE06 -> CE03 -> CE04 -> SHOT_RENDER -> VIDEO_RENDER -> CE09
 

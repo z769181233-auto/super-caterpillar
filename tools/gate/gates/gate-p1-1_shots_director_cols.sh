@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-p1-1_shots_director_cols.sh
 # V3.0 P1-1: 验证 shots 导演控制字段显式化
 

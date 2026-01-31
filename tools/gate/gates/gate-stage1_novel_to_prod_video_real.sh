@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # Stage-1 Real Baseline Gate
 # Verifies: real video (non-mock), checksum (sha256), ffprobe evidence

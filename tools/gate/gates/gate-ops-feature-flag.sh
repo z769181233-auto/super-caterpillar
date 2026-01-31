@@ -4,6 +4,9 @@
 # Usage: ./gate-ops-feature-flag.sh
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # ==============================================================================
 # Configuration

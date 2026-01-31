@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # ==============================================================================# 目标：验证真实视频产出节点、审计链、资产落盘、账本隔离及幂等性。
 # 规格：Audit V2 Hardened (Zero-Python, ffprobe-check, Idempotency-Assert)

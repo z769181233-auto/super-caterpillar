@@ -29,7 +29,8 @@ while read -r f; do
   fi
   
   # Check forbidden patterns (eval), excluding comments and the auditor itself
-  if grep -v "^#" "$f" | grep -q "\\b"eval"\\b" ; then
+  # Use -w to match whole word 'eval' to avoid matching 'evaluate', 'retrieval' etc.
+  if grep -v "^#" "$f" | grep -wq "eval" ; then
      # Special case for the auditor itself
      if [[ "$f" == *"gate-audit_shell_safety_redline.sh" ]]; then
         continue

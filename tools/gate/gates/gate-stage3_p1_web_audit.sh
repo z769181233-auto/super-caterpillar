@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # P1-B: Web-Audit Visibility Closure Hardpass Gate
 # 功能：验证聚合审计接口数据准确性，确保 P2 产出在 Web 可见且满足商用标准。

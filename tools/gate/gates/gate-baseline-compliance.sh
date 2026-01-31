@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 SSOT_FILE="docs/RENDER_PLAN_SSOT.md"

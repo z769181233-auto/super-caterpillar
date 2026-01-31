@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-s3-scale-event-dag.sh# Verifies: DATABASE-LEVEL assertions, HMAC auth, authorization guards, Stage-1 regression
 

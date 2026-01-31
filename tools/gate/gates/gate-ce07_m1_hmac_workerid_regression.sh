@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-ce07_m1_hmac_workerid_regression.sh# 核心逻辑：确保 WorkerId 必须进程级注入，HMAC_V2 必须生效，审计链不可伪造。
 

@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-p2-real-render-single-shot.sh
 # V3.0 P2-4: Real Render End-to-End Single Shot Verification
 

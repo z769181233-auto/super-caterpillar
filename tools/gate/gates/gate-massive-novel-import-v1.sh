@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # gate-massive-novel-import-v1.sh
 # 验证 CE06 V1.3: SCAN + CHUNK_PARSE 分布式流式解析 (千万字级)

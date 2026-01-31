@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate_p5_throughput.sh: 断言并发吞吐能力
 EVI_DIR=$1
 PERF_JSON="$EVI_DIR/concurrency_perf.json"

@@ -3,6 +3,9 @@
 # P13-1: Shot Render 真实预览闭环门禁
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 set -x
 
 # Configuration

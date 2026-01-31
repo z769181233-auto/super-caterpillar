@@ -4,6 +4,9 @@
 # Usage: PROFILE=mock|real ./tools/gate/gates/gate-v3-load-slo.sh
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # ==============================================================================
 # Configuration

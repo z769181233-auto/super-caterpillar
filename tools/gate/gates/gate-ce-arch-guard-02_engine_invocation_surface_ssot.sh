@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 GATE_NAME="CE-ARCH-GUARD-02_ENGINE_INVOCATION_SURFACE_SSOT"
 EVID_DIR="docs/_evidence/CE02_SEAL_20260110/engine_invocation_surface_ssot"

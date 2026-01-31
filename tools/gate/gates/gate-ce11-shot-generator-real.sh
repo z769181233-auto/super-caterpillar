@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # =================================================================================================
 # GATE: CE11 Shot Generator (Real Engine Integration)

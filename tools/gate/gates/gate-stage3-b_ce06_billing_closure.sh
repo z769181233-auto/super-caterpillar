@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"# ===== Stage-3-B: CE06 Credits 计费闭环门禁 =====
 # 验证：CostLedger 写入 + 幂等性 + Credits 计费 + 无重复

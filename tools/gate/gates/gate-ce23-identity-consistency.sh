@@ -4,6 +4,9 @@
 # Usage: ./gate-ce23-identity-consistency.sh
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # ==============================================================================
 # 0. Configuration & Initialization

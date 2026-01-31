@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # ==============================================================================
 # GATE CE07 M2: Memory Read Consistency (Read-Only)

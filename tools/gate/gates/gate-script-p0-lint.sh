@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # Script P0 Lint Gate
 # Usage: ./gate-script-p0-lint.sh [shot_spec.json]

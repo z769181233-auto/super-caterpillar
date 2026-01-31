@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate_p5_unit_cost.sh: 断言单位成本模型严谨性
 EVI_DIR=$1
 COST_JSON="$EVI_DIR/unit_cost_audit.json"

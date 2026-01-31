@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-engine_entry_ssot.sh# 禁止在非适配层新增对 src/engine/ 或 src/engines/ 的引用
 

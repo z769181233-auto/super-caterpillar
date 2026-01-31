@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # Orchestrator V2: Audio Integration L3 Manifest Gate

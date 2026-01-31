@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # Gate: CE01 Protocol Instantiation# - 实例化调用
 # - 产生 referenceSheetId

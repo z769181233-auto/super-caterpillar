@@ -4,6 +4,9 @@
 # 验证 /story/parse 和 /text/enrich 别名路由与内部路由的输出一致性。
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 API_BASE="${API_BASE:-http://localhost:3000/api}"
 TS="$(date +%s)_$RANDOM"

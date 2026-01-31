@@ -3,6 +3,9 @@
 # 验证 P5-0.1 策略：生产环境必须显式指定 engineKey，否则拒绝
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 GATE_NAME="CE11_REQ_GATE"
 TS=$(date +%s)

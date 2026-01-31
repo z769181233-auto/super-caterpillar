@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # Prisma Client Sync Gate
 # Goal: Ensure Prisma Client is generated and consistent with current schema.

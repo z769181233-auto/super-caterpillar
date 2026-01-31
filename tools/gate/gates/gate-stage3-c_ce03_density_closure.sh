@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"# ===== Stage-3-C: CE03 Density Closure Gate =====
 # 验证：CE03 视觉密度计算 + 落库(QualityMetrics) + 计费(CostLedger) + 幂等

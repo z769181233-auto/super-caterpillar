@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 TS="$(date +%Y%m%dT%H%M%S)"
 EVDIR="docs/_evidence/P0_R2_VIDEO_MERGE_GUARDRAILS_$TS"

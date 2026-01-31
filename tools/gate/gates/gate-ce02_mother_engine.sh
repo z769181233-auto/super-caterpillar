@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # Gate: CE02 Mother Engine (Engine Hub)# - 统一入口调用
 # - 路由审计记录 (selectedEngineKey, usage)

@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # GATE: Identity Consistency Check (Audit Based)
 # Output: AUDIT_IDENTITY_CONSISTENCY.sql.out, EVIDENCE_INDEX.json

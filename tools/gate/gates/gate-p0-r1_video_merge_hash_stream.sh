@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 LOG="docs/_evidence/P0_R1_VIDEO_MERGE_HASH_STREAM_$(date +%Y%m%dT%H%M%S).log"
 mkdir -p docs/_evidence

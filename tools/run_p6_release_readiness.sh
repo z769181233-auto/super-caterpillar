@@ -38,7 +38,7 @@ find "$EVI" -type f -maxdepth 1 -print0 | sort -z | xargs -0 shasum -a 256 > "$E
 node - <<'NODE' "$EVI"
 const fs = require("fs");
 const path = require("path");
-const dir = process.argv[1];
+const dir = process.argv[2];
 const sums = fs.readFileSync(path.join(dir, "SHA256SUMS.txt"), "utf8")
   .trim().split("\n").filter(Boolean)
   .map(line => {

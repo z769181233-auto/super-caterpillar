@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # P16-2: Gate for CE23 Kill Switch Verification
 # Usage: ./tools/gate/gates/gate-ce23-killswitch.sh
 

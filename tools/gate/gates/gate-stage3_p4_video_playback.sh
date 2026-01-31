@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # Gate: Video Playback Signed URL + Range Support Verification# Evidence: Audit API response + HTTP headers for no-range/range requests
 

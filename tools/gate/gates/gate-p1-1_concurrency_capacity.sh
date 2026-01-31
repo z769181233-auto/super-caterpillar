@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # P1-1 Concurrency & Capacity Governance Gate
 # Focus: TokenBucket Limiter, API Backpressure, and Billing Idempotency (Attempt-aware)

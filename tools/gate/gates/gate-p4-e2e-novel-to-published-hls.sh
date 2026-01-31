@@ -6,6 +6,9 @@
 # Must assert: CE09 SUCCEEDED, Asset PUBLISHED + HLS URL.
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 GATE_NAME="P4_E2E_PUBLISH"
 TS=$(date +%s)

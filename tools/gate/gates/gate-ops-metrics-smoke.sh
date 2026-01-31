@@ -4,6 +4,9 @@
 # Usage: ./gate-ops-metrics-smoke.sh
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # ==============================================================================
 # Configuration

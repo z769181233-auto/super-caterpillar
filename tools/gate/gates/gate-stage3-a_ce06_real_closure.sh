@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-stage3-a_ce06_real_closure.sh# This ensures we use the exact same verified logic (HMAC/Nonce, DB, Worker)
 # as confirmed in the Phase 1 Realization.

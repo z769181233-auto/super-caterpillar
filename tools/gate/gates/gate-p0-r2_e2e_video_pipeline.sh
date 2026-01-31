@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # ===== Gate P0-R2: E2E Video Pipeline (Orchestration & Verification) =====
 # 目标:

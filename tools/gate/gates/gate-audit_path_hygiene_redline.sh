@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-audit_path_hygiene_redline.sh
 # Redline: 禁止泄露绝对路径或敏感环境前缀。

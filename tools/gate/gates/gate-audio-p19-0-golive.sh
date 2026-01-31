@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # P19-0: Audio Engine Production Go-Live Drill

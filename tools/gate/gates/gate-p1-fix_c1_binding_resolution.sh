@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-p1-fix_c1_binding_resolution.sh
 # V3.0 P1-FIX-0: Hardening C1 & Binding Resolution
 

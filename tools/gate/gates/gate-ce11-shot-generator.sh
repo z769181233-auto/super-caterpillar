@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # GATE 15: CE11 Shot Generator Integration
 # Goal: Verify Bible V3.0 CE11 Protocol (sceneId -> shots) maps to Production DB (shots table).

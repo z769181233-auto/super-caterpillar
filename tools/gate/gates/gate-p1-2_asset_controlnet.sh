@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-p1-2_asset_controlnet.sh
 # V3.0 P1-2: Asset Bindings & ControlNet Standardization
 

@@ -3,6 +3,9 @@
 # 验证：路由统一、HMAC 连通、Outbox 机制、额度扣减精度
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # Load environment variables
 if [ -f .env ]; then

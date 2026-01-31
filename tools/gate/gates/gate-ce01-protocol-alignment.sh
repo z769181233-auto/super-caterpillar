@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # GATE 13: CE01 Protocol Alignment
 # Goal: Verify Bible V3.0 Protocol (text_chunk, prev_context) maps to Production DB (novel_scenes) without data loss.

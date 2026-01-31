@@ -3,6 +3,9 @@
 # 路径泄露门禁：扫描数据库及日志中的绝对路径泄露 (SSOT 锁死版)
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 EVD_DIR=$(cat .current_evidence_dir 2>/dev/null || echo "docs/_evidence/path_leak_$(date +%Y%m%d_%H%M%S)")
 mkdir -p "$EVD_DIR"

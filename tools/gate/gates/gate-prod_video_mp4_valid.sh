@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-prod_video_mp4_valid.sh
 # 验证理由：封板必须确保导出的 MP4 是标准且可播放的。

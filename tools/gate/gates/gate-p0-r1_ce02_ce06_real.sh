@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # ==============================================================================# 目标：验证小说解析真实引擎集成。
 # 规格：Audit V2 Hardened (Zero-Python, Dual-Path SQL Audit)

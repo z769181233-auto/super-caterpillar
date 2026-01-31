@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 trap 'echo "[FATAL] line=$LINENO cmd=$BASH_COMMAND" >&2' ERR
 
 # gate-prod_slice_v1_real.sh

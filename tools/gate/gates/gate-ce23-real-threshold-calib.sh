@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-ce23-real-threshold-calib.sh
 # P16-1: Calibration & Guardrail Verification (Real Assets)
 # Usage: bash tools/gate/gates/gate-ce23-real-threshold-calib.sh

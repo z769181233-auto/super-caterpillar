@@ -3,6 +3,9 @@
 # 真实渲染断言门禁：验证 .runtime/renders 下的产物是否符合真实渲染标准
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 TARGET_DIR=${1:-".runtime/renders"}
 MIN_DIM=512

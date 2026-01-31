@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-audit_governance_integrity.sh
 # 红线的红线：确保治理体系本身不被旁路、不被降级。

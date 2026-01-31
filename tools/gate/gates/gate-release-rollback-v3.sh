@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-release-rollback-v3.sh
 # V3 Release & Rollback Gate: Verify Release Safety & Rollback Capability
 # Usage: ./tools/gate/gates/gate-release-rollback-v3.sh

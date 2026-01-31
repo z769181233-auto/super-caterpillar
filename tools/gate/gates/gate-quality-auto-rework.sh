@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 # P13-3 Quality Scoring & Auto-Rework Sealing Gate (0-Risk Rev.)
 # 验证：质量评分触发返工 -> 三道闸（Attempt, Idempotency, Budget）-> 封板级证据链

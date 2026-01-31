@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # P21-0 Audio: Production Ops Integration Gate
 # Logic: Verify all ops tools (Snapshot, Probe, Diagnostics) are functional.

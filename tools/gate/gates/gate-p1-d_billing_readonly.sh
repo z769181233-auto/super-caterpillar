@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # --- [GATE] P1-D Billing Readonly Closure ---
 GATE_NAME="P1-D Billing Readonly"

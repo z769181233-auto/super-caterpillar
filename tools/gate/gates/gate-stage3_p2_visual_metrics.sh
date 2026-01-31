@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # ==============================================================================
 # Gate: Stage 3 P2 Visual Metrics (CE03/CE04 End-to-End Verification)

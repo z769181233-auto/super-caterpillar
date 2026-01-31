@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # Purpose: Verify V1.1 API Contract, strict timestamp security, and Production Mode Zero Bypass.
 

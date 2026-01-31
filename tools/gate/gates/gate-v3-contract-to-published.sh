@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-v3-contract-to-published.sh
 # V3 E2E Gate: From Contract to Published Assert
 # Usage: ./gate-v3-contract-to-published.sh

@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 API_URL=${API_URL:-"http://localhost:3000"}
 GATE_NAME="CE23_IDENTITY_REAL"

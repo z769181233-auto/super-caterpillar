@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 echo "=================================================="
 echo "[GATE] Repo-wide Zero Direct Link (Worker Domain)"

@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 # gate-ce23-kill-switch.sh
 # P16-2.0: Verify CE23 Kill Switch (ENV Priority)
 set -e

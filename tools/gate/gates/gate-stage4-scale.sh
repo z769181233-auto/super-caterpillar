@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # gate-stage4-scale.sh
 # 验证 Stage 4: Industrial Scale Refactor (The Shredder)

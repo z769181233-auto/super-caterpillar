@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 # P14-1 Quality Rework SLO & Rate Limit Gate
 # 验证：Org 维度并发护栏 (RATE_LIMIT_BLOCKED)、标准化 TraceId、Ops 指标扩展

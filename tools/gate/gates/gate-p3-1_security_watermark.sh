@@ -3,6 +3,9 @@
 # 目标：验证视频安全处理流程（可见水印、HLS 转换、SHA256 指纹）。
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 GATE_NAME="P3_MEDIA_SECURITY"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)

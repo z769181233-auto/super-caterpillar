@@ -4,6 +4,9 @@
 # 验证 TTS + BGM 音频资产化、混音合成、物理可用性
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 set -x
 
 # Configuration

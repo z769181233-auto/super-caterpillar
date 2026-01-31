@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # GATE-CE02: Identity Lock Verifier
 # Scope: Verify CE02 Processor Logic (Idempotency, SSOT Path, Validation)

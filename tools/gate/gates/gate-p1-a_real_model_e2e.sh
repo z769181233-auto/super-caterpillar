@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"# ===== P1-A: Real Model E2E Gate =====
 # 验证：真实模型路由 (Router 2.0) + Gemini/SDXL/Flux 适配器 + 质量分上报

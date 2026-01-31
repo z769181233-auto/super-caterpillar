@@ -1,4 +1,6 @@
 #!/bin/bash
+IFS=$'
+	'
 set -e
 
 # Orchestrator V2: Audio Integration Real L2 Gate

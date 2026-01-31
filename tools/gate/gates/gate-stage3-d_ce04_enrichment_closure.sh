@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 source "$(dirname "${BASH_SOURCE[0]}")/../common/load_env.sh"# ===== Stage-3-D: CE04 Enrichment Closure Gate =====
 # 验证：CE04 视觉丰富度计算 + Prompt生成 + 落库 + 计费 + 幂等

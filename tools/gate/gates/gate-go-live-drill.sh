@@ -4,6 +4,9 @@
 # Usage: ./gate-go-live-drill.sh
 
 set -euo pipefail
+IFS=$'\n\t'
+IFS=$'
+	'
 
 # ==============================================================================
 # 0. Configuration & Initialization

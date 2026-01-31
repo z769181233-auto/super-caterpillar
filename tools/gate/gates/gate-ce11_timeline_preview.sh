@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-ce11_timeline_preview.sh# Features: No Eval, Fail-fast, Self-Start, Unique IDs, Nonce Replay Check, Audit Log Check, API Polling.
 

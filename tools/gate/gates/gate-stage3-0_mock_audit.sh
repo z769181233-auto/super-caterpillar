@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+IFS=$'
+	'
+IFS=$'\n\t'
 
 # gate-stage3-0_mock_audit.sh
 # Stage 3 Negative Audit: Identifies all Mock/Stub/Placeholder implementations 
