@@ -108,3 +108,23 @@ NOTE: Phase 4 sealing evidence is tracked in real_production_review.md §8 and d
 
 > [!IMPORTANT]
 > **Commercial Compliance Achieved**: The project now has a closed-loop audit trail for dependencies, automated secret scanning in the development workflow, and a portable evidence mirroring mechanism for external audits.
+
+# Phase 9.1: Compliance Hardening Patch (P9.1) — SEALED
+
+- Tag: `sealed_p9_1_governance_hardening_841ceaa`
+- Evidence Dir: `docs/_evidence/p9_governance_hardening_20260201_003211`
+- Verify:
+  - `SHA256SUMS.txt` PASS  
+  - `EVIDENCE_INDEX.sha256` PASS
+- Gates:
+  - **P9-0 Dependency Compliance**: PASS (Structured TSV allowlist with expiry enforcement)
+  - **P9-1 Secret Scan**: PASS (Path-only exclusions, pattern exclusions removed)
+  - **P9-2 Archive Integrity**: PASS
+  - **P9-3 Post-Seal Integrity**: PASS (All historical sealed tags replay-verified)
+
+> [!IMPORTANT]  
+> **Compliance Improvements**: 
+> - **Structured Allowlist**: Migrated from unstructured text to TSV format with mandatory expiry dates, owner, and mitigation fields
+> - **Hardened Secret Scan Policy**: Removed pattern-based exclusions, only path-based exclusions permitted (e.g., `docs/_evidence/`)
+> - **Post-Seal Integrity Gate**: New P9-3 gate verifies all sealed tags can replay their evidence checksums, preventing silent corruption of audit trail
+
