@@ -68,13 +68,13 @@ _Evidence Dir: docs/\_evidence/p5_final_review_20260131_201914/_
   - [x] Harden scripts (rollback trap, evidence index checksum)
   - [x] Use cross-platform checksum logic (sha256sum/shasum)
   - [x] Remove `|| true` from P6-1 for strict failure
-  - [x] Enable Branch Protection (User Action)
+  - [x] Enable Hook Enforcement (Local pre-push hook)
 - [x] PLAN-P7-1: Create Manual Trigger Workflow
   - [x] Create `.github/workflows/p7_prod_deploy_drill.yml`
   - [x] Wire secrets in workflow env
-- [x] PLAN-P7-2: Production Drill Execution (User Action)
-  - [x] Configure GitHub Secrets (deployed commands & health checks)
-  - [x] Trigger manual workflow `p7-prod-deploy-drill`
+- [x] PLAN-P7-2: Production Drill Execution (Local Equivalence)
+  - [x] Configure Local Secrets (`tools/deploy/p7_secrets.local.env`)
+  - [x] Trigger Manual Drill (`tools/run_p7_prod_deploy_drill.sh`)
   - [x] Verify evidence artifact (`p7_prod_deploy_drill_evidence`) from successful run
   - [x] Seal Phase 7 (Update docs & git tag)
 
