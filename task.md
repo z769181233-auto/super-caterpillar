@@ -84,10 +84,16 @@ _Evidence Dir: docs/\_evidence/p5_final_review_20260131_201914/_
   - [x] PLAN-P8-2: Incident Drill (Simulated Outage)
   - [x] PLAN-P8-3: Cost Circuit Breaker Drill
 
-- [x] Phase 9: Governance & Security Hardening (P9)
+- [x] Phase 9: Governance & Security Hardening (P9) — **SEALED**
   - [x] PLAN-P9-0: Automated Dependency Compliance
   - [x] PLAN-P9-1: Secret Leakage Prevention (HOOK-ENFORCED)
   - [x] PLAN-P9-2: Evidence Archive Integrity (Mirror Bundle Generated)
+  - [x] **P9.1 Compliance Patch** — Tag: `sealed_p9_1_governance_hardening_5ee2909`
+    - [x] Structured TSV Allowlist with Expiry Enforcement
+    - [x] Hardened Secret Scan Policy (Path-only exclusions)
+    - [x] Post-Seal Integrity Gate (P9-3)
+    - [x] S3-A.1 Legacy Materials Archived
+    - [x] Auditable Exclusion List (`p9_1_excluded_paths.txt`)
 
 ---
 

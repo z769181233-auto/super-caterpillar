@@ -130,8 +130,21 @@ NOTE: Phase 4 sealing evidence is tracked in real_production_review.md §8 and d
 
 
 ## Phase 9.1 Patch Follow-up — SEALED
-- Evidence Dir: `docs/_evidence/p9_governance_hardening_20260201_004609`
-- Audit Improvements:
+
+- **Tag**: `sealed_p9_1_governance_hardening_5ee2909`
+- **Evidence Dir**: `docs/_evidence/p9_governance_hardening_20260201_004609`
+- **Verify**:
+  - `SHA256SUMS.txt` PASS
+  - `EVIDENCE_INDEX.sha256` PASS
+  - `p9_1_excluded_paths.txt` 仅包含1行 (path-only, auditable)
+- **Audit Improvements**:
   - **S3-A.1 Legacy Materials Archived**: `docs/_archive/s3a1_verification_legacy/` 保留历史审计追溯性
   - **Excluded Paths Auditable**: `p9_1_excluded_paths.txt` 只包含1条路径,严格限定不可扩展
   - **Pattern Exclusions Prohibited**: P9-1强制只允许path-based排除,符合P9.1合规要求
+
+> [!IMPORTANT]
+> **合规口径钉死**: 
+> - Path-only exclusions (不允许pattern排除)
+> - Auditable exclusion list (证据工件可审计)
+> - Legacy materials archived (不裸删,保留审计追溯性)
+
