@@ -1598,3 +1598,27 @@ model ShotReworkDedupe {
 
   @@map("shot_rework_dedupe")
 }
+
+model CharacterMemory {
+  id          String   @id @default(uuid())
+  characterId String   @map("character_id")
+  sceneId     String   @map("scene_id")
+  memoryType  String   @map("memory_type")
+  content     String   @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([characterId, createdAt])
+  @@index([sceneId, createdAt])
+  @@map("character_memories")
+}
+
+model SceneMemory {
+  id         String   @id @default(uuid())
+  sceneId    String   @map("scene_id")
+  memoryType String   @map("memory_type")
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([sceneId, createdAt])
+  @@map("scene_memories")
+}

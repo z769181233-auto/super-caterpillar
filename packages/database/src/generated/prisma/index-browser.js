@@ -957,6 +957,23 @@ exports.Prisma.ShotReworkDedupeScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.CharacterMemoryScalarFieldEnum = {
+  id: 'id',
+  characterId: 'characterId',
+  sceneId: 'sceneId',
+  memoryType: 'memoryType',
+  content: 'content',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SceneMemoryScalarFieldEnum = {
+  id: 'id',
+  sceneId: 'sceneId',
+  memoryType: 'memoryType',
+  content: 'content',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1307,7 +1324,9 @@ exports.Prisma.ModelName = {
   BillingOutbox: 'BillingOutbox',
   IdentityAnchor: 'IdentityAnchor',
   ShotIdentityScore: 'ShotIdentityScore',
-  ShotReworkDedupe: 'ShotReworkDedupe'
+  ShotReworkDedupe: 'ShotReworkDedupe',
+  CharacterMemory: 'CharacterMemory',
+  SceneMemory: 'SceneMemory'
 };
 
 /**
