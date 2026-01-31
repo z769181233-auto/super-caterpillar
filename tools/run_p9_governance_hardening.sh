@@ -23,6 +23,7 @@ log "[P9] evidence dir: $EVI"
 bash tools/p9/gate_p9_0_cve_audit.sh "$EVI"
 bash tools/p9/gate_p9_1_secret_scan.sh "$EVI"
 bash tools/p9/gate_p9_2_archive_integrity.sh "$EVI"
+bash tools/p9/gate_p9_3_post_seal_integrity.sh "$EVI"
 
 # checksums + index (closed loop, include index files)
 SHA_CMD="$(sha_tool)"

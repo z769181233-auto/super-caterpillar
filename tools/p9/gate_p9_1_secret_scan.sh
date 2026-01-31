@@ -8,11 +8,10 @@ mkdir -p "$EVI"
 need git
 need node
 
-# Scan tracked files only, exclude evidence/delivery blobs, scan script, and known mock files
+# Scan tracked files only, exclude evidence/delivery blobs and known non-source paths
 FILES_LIST="$EVI/p9_1_files_scanned.txt"
 git ls-files \
   | grep -vE '^(docs/_evidence/|docs/_delivery/|node_modules/|tmp/)' \
-  | grep -vE "(gate_p9_1_secret_scan\.sh|verify-s3a1\.ts|S3A1_REVIEW_REPORT\.md)" \
   > "$FILES_LIST"
 
 # Secret patterns (extend as needed)

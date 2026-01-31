@@ -36,14 +36,34 @@ test -s "$RAW" || die "pnpm audit produced empty json (network/registry issue or
 
 # Summarize and decide policy:
 # PASS policy: no critical/high vulns (post-filtering allowlist)
-ALLOWLIST="tools/p9/audit_allowlist.txt"
-[ -f "$ALLOWLIST" ] || printf "" > "$ALLOWLIST"
+ALLOWLIST="tools/p9/audit_allowlist.tsv"
+[ -f "$ALLOWLIST" ] || printf "# id_type\tid\tpackage\treason\towner\texpires_at\tmitigation\n" > "$ALLOWLIST"
 
 node - <<'NODE' "$RAW" "$ALLOWLIST" "$EVI/p9_0_cve_summary.json" "$EXITC"
 const fs = require("fs");
 
 const raw = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
-const allow = fs.readFileSync(process.argv[3], "utf8").split("\n").map(s=>s.trim()).filter(Boolean);
+const tsvPath = process.argv[3];
+const tsvContent = fs.readFileSync(tsvPath, "utf8");
+const tsvLines = tsvContent.split("\n").filter(l => l.trim() && !l.trim().startsWith("#"));
+
+const now = new Date();
+const allow = [];
+
+for (const line of tsvLines) {
+  const cols = line.split("\t");
+  if (cols.length < 6) continue;
+  const id = cols[1];
+  const expires = cols[5];
+  
+  if (!expires) continue;
+  const d = new Date(expires + "T00:00:00Z");
+  if (String(d) === "Invalid Date") throw new Error("Invalid expires_at in allowlist: " + line);
+  if (d < now) throw new Error("Expired allowlist entry: " + line);
+  
+  allow.push(id.trim());
+}
+
 const exitc = Number(process.argv[5] || "0");
 
 function normalizeFindings(raw){
@@ -110,7 +130,7 @@ cat > "$EVI/p9_0_cve_audit.json" <<JSON
     "raw": "p9_0_pnpm_audit_raw.json",
     "log": "p9_0_pnpm_audit.log",
     "summary": "p9_0_cve_summary.json",
-    "allowlist": "tools/p9/audit_allowlist.txt"
+    "allowlist": "tools/p9/audit_allowlist.tsv"
   },
   "timestamp": "$(date -Iseconds)"
 }
