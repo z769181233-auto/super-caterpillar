@@ -1,0 +1,45 @@
+{
+  "phase": "7",
+  "name": "prod deployment drill",
+  "status": "PASS",
+  "evidence_dir": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p7_prod_deploy_drill_20260131_231247",
+  "generated_at": "2026-01-31T16:58:16.451Z",
+  "artifacts": [
+    {
+      "file": "env_snapshot.txt",
+      "sha256": "c49e900c32cc49d2385089a6c0ee1c541ec57c78adb5df4e1590262700dfdd7e"
+    },
+    {
+      "file": "p7_1_deploy_blue.log",
+      "sha256": "6ea20610478aaa3d4362fbec82629c4d496f23aa8e22994c3a2e8c50c0870d42"
+    },
+    {
+      "file": "p7_1_health_blue.log",
+      "sha256": "656586f5a2312055651bd4d4f69ddb2efbc9213dd9ccf23ff5c579f7c7722650"
+    },
+    {
+      "file": "p7_2_deploy_green.log",
+      "sha256": "2143ee6fa4d57e3d66fb705307357328456ae2dbbe658a90b9443a1acf48414b"
+    },
+    {
+      "file": "p7_2_health_green.log",
+      "sha256": "4e3639e90ffacadce7b9cdf2763c46799d86297fb627f9737411ee27ba2464df"
+    },
+    {
+      "file": "p7_3_cutover.log",
+      "sha256": "e62ffce0d301b375955867a78739b485f99d01ac9181099c09ecbb1161de7279"
+    },
+    {
+      "file": "p7_3_health_live.log",
+      "sha256": "603221a2da7fc4ef2b2d589f5b8dbaeb977ac33e1f1b842700a722afb1d8eef2"
+    },
+    {
+      "file": "p7_4_health_live.log",
+      "sha256": "1bae34d71431f8eb1c7a15d14ce6192ce643123ffb242295aeab20b097e48243"
+    },
+    {
+      "file": "p7_4_rollback.log",
+      "sha256": "16f826ebc6d5a064be89f941b7b1fadb6dae6ca400b91445dfb3601fffdc7556"
+    }
+  ]
+}

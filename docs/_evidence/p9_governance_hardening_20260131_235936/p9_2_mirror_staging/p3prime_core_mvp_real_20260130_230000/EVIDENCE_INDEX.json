@@ -1,0 +1,21 @@
+{
+  "evidence_dir": "p3prime_core_mvp_real_20260130_230000",
+  "timestamp": "2026-01-30T15:10:16.596Z",
+  "files": [
+    {
+      "path": "EVIDENCE_INDEX.checksums",
+      "sha256": "d685512011da14ebd4346d94a2807b3a08aa1b8c1c721cf798101d4875abb3ea",
+      "size": 264
+    },
+    {
+      "path": "gate_core_mvp.log",
+      "sha256": "ba39b78643ceb0fd1a4caa14e19c8ebf3ecf82022107cb7dda6733375c431e77",
+      "size": 156
+    },
+    {
+      "path": "run_core_mvp.log",
+      "sha256": "302995f0f6129505b52c40dc92f7c5d660f8947f37299799b442575f23ae1c28",
+      "size": 253
+    }
+  ]
+}

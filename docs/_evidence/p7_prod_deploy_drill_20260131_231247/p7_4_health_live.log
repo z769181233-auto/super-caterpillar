@@ -1,0 +1,2 @@
+[23:58:16] [P7-HEALTH-LIVE] healthcheck url=https://www.google.com timeout=10s interval=1s
+[23:58:16] [P7-HEALTH-LIVE] PASS

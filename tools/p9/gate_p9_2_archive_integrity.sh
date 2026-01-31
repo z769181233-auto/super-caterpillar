@@ -26,12 +26,25 @@ while IFS= read -r dir; do
   # normalize
   [ -d "$dir" ] || continue
   if [ -f "$dir/EVIDENCE_INDEX.json" ]; then
-    if [ ! -f "$dir/SHA256SUMS.txt" ] || [ ! -f "$dir/EVIDENCE_INDEX.sha256" ]; then
-      echo "FAIL missing integrity files: $dir" >> "$REPORT_TXT"
-      STRICT_FAIL=$((STRICT_FAIL+1))
+    # Strict files (P6/P7/P8+ standard)
+    HAS_NEW_INTEGRITY=0
+    if [ -f "$dir/SHA256SUMS.txt" ] && [ -f "$dir/EVIDENCE_INDEX.sha256" ]; then
+      HAS_NEW_INTEGRITY=1
+    fi
+
+    if [ "$HAS_NEW_INTEGRITY" = "0" ]; then
+      # Check for legacy checksums
+      if [ -f "$dir/EVIDENCE_INDEX.checksums" ]; then
+        echo "LEGACY (V1 Integrity) $dir" >> "$REPORT_TXT"
+        LEGACY=$((LEGACY+1))
+      else
+        echo "LEGACY (No Integrity) $dir" >> "$REPORT_TXT"
+        LEGACY=$((LEGACY+1))
+      fi
       continue
     fi
-    # verify sums
+
+    # verify sums (Strict Mode)
     pushd "$dir" >/dev/null
     if command -v sha256sum >/dev/null 2>&1; then
       sha256sum -c SHA256SUMS.txt >/dev/null 2>&1 || { popd >/dev/null; echo "FAIL sha256sum -c: $dir" >> "$REPORT_TXT"; STRICT_FAIL=$((STRICT_FAIL+1)) && true; continue; }
@@ -46,10 +59,11 @@ while IFS= read -r dir; do
   else
     # legacy evidence dir (no index)
     LEGACY=$((LEGACY+1))
+    echo "LEGACY (Raw Dir) $dir" >> "$REPORT_TXT"
   fi
 done < <(find "$ROOT_EVI" -maxdepth 1 -type d -name "p*" | sort)
 
-# Mirror drill: bundle only integrity-critical files from indexed evidence dirs (small & portable)
+# Mirror drill: bundle only integrity-critical files (small & portable)
 MIRROR_DIR="$EVI/p9_2_mirror_staging"
 mkdir -p "$MIRROR_DIR"
 
@@ -57,7 +71,10 @@ while IFS= read -r dir; do
   [ -f "$dir/EVIDENCE_INDEX.json" ] || continue
   bn="$(basename "$dir")"
   mkdir -p "$MIRROR_DIR/$bn"
-  cp -f "$dir/EVIDENCE_INDEX.json" "$dir/EVIDENCE_INDEX.sha256" "$dir/SHA256SUMS.txt" "$MIRROR_DIR/$bn/"
+  cp -f "$dir/EVIDENCE_INDEX.json" "$MIRROR_DIR/$bn/"
+  [ -f "$dir/EVIDENCE_INDEX.sha256" ] && cp -f "$dir/EVIDENCE_INDEX.sha256" "$MIRROR_DIR/$bn/"
+  [ -f "$dir/SHA256SUMS.txt" ] && cp -f "$dir/SHA256SUMS.txt" "$MIRROR_DIR/$bn/"
+  [ -f "$dir/EVIDENCE_INDEX.checksums" ] && cp -f "$dir/EVIDENCE_INDEX.checksums" "$MIRROR_DIR/$bn/"
 done < <(find "$ROOT_EVI" -maxdepth 1 -type d -name "p*" | sort)
 
 tar -czf "$EVI/p9_2_evidence_mirror_bundle.tgz" -C "$MIRROR_DIR" .

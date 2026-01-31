@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-01-28T15:34:33Z",
+  "episode": "E0001",
+  "novel": "表姑娘又又又又跑了",
+  "compliance": "PLAN-G4-REAL",
+  "artifacts": {
+    "preview_real_R1.mp4": "5bc3e12eee403ead7496304ac5608285b0cd2d84d6e46f6fea953f89fc409880",
+    "preview_real_R2.mp4": "5bc3e12eee403ead7496304ac5608285b0cd2d84d6e46f6fea953f89fc409880",
+    "preview_ffprobe_R1.json": "449d63449e049548e05948d924aba3a3bcba545a3011ed416bf3b2c0d7a085f3",
+    "preview_ffprobe_R2.json": "4aed15590dc0e6d6c7af682ea8192b8f759aff9ff3a697954ad85f4df31aec18",
+    "asset_binding_report.json": "cca891a10d7aaf0e3ededa16db1f07e205bb6885538fba0da07b34ca88da0e7d",
+    "resolve_report.json": "5e0486789b9f6f9262f67cf77affb3595110e109e853418079590bc6d4156609",
+    "frame_continuity_report.json": "5c723bc92d382c1661bafe2cf990ec23e505645eda6d360c6ccfdc1a5ec16990",
+    "determinism_report.json": "e1cc01e03ff23c78214b5f8ce1f093dc8b192e69352c69a627994da92c9d7dca",
+    "frame_manifest_R1.json": "2c1b64e53c35ce8ea52554d1d541881b75fb71ebd0163859f97fa960654b2733",
+    "frame_manifest_R2.json": "8a44e05e4b09681cc9964dc376c83b0e8f7f8bd582e8b39757948b2e3d1b8a4a",
+    "real_render_assert_report.json": "bb4b4743ea145c0c6ff9ccd8cd48474cd1f7174a4776a58e563a6be6d404f371"
+  },
+  "summary": {
+    "stubCount": 0,
+    "determinism": true,
+    "physicalPass": true
+  }
+}

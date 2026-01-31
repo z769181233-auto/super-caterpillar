@@ -93,3 +93,18 @@ NOTE: Phase 4 sealing evidence is tracked in real_production_review.md §8 and d
   - P8-1 Monitoring SSOT PASS
   - P8-2 Incident Drill PASS
   - P8-3 Cost Circuit Breaker PASS
+
+# Phase 9: Governance & Security Hardening (P9) — SEALED
+
+- Evidence Dir: `docs/_evidence/p9_governance_hardening_20260131_235936`
+- Status: **HOOK-ENFORCED** (Merged into `.githooks/pre-push`)
+- Verify:
+  - `SHA256SUMS.txt` PASS
+  - `EVIDENCE_INDEX.sha256` PASS
+- Gates:
+  - **P9-0 Dependency Compliance**: PASS (1 CVE allowlisted: 1112653)
+  - **P9-1 Secret Scan**: PASS (2 mock patterns excluded, active leakage prevention enabled)
+  - **P9-2 Archive Integrity**: PASS (Mirror Bundle Generated, Strict checking of P6/P7/P8+ enabled)
+
+> [!IMPORTANT]
+> **Commercial Compliance Achieved**: The project now has a closed-loop audit trail for dependencies, automated secret scanning in the development workflow, and a portable evidence mirroring mechanism for external audits.

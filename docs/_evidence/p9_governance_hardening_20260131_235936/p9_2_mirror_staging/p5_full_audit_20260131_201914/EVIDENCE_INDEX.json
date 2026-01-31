@@ -1,0 +1,21 @@
+{
+  "evidence_dir": "p5_full_audit_20260131_201914",
+  "timestamp": "2026-01-31T13:19:15.112Z",
+  "files": [
+    {
+      "path": "concurrency_perf.json",
+      "sha256": "961fb0b4e13cb2649cd8235eddef0bee45adc951fd68b6241c92ec00eed67623",
+      "size": 1585
+    },
+    {
+      "path": "stability_audit.json",
+      "sha256": "ba754e6b21dbf31946604d8825b52304aae51b84ddc4c2a40d50c4a68f2dc027",
+      "size": 1784
+    },
+    {
+      "path": "unit_cost_audit.json",
+      "sha256": "6ab72daec90012d7581c48881d77b567e829a01b65f7282316971e620f182a73",
+      "size": 411
+    }
+  ]
+}

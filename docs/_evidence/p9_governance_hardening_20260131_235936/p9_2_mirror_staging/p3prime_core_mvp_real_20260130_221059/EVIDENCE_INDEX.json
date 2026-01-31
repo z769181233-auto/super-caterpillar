@@ -1,0 +1,51 @@
+{
+  "evidence_dir": "p3prime_core_mvp_real_20260130_221059",
+  "timestamp": "2026-01-30T15:11:00.276Z",
+  "files": [
+    {
+      "path": "EVIDENCE_INDEX.checksums",
+      "sha256": "f3f3ca200ba430351fc3232fc7de2a67a47fe4c8c6f1a3247ac22b7792ec8d3a",
+      "size": 830
+    },
+    {
+      "path": "gate_core_mvp.log",
+      "sha256": "00fbc6b0982361b5b306b69025eacc06aed50873ce2e2c84ee6c3e38c3e4ded0",
+      "size": 231
+    },
+    {
+      "path": "output/crops/clothing_200.png",
+      "sha256": "5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+      "size": 1024
+    },
+    {
+      "path": "output/crops/eye_200.png",
+      "sha256": "5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+      "size": 1024
+    },
+    {
+      "path": "output/crops/face_200.png",
+      "sha256": "5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+      "size": 1024
+    },
+    {
+      "path": "output/crops/hair_200.png",
+      "sha256": "5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+      "size": 1024
+    },
+    {
+      "path": "output/scene.mp4",
+      "sha256": "5ef0d6d107159c865593eb861b7d6203bd978b3bc1035eac435fc652330eec60",
+      "size": 737606
+    },
+    {
+      "path": "output/shot_gate_report_real.json",
+      "sha256": "d5fb82b8e73c711302d4a62d333ffb2c501d63affdf916cf107fe8485c3b4118",
+      "size": 555
+    },
+    {
+      "path": "run_core_mvp.log",
+      "sha256": "e50d8708c2675366560befd768509a778fd6a4f3a1eb76611e953a123e0a459f",
+      "size": 497
+    }
+  ]
+}

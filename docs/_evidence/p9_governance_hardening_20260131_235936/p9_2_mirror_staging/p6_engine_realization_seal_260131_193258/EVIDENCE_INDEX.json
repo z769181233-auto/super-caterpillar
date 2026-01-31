@@ -1,0 +1,101 @@
+{
+  "evidence_dir": "p6_engine_realization_seal_260131_193258",
+  "timestamp": "2026-01-31T12:35:27.962Z",
+  "files": [
+    {
+      "path": "HEAD_SHA.txt",
+      "sha256": "679e91f7750fb2cdb8cc6c5a4362f5fde0c0b89ed7c5f29ac64ec238b9d5a367",
+      "size": 41
+    },
+    {
+      "path": "gate_core_mvp_real_regression.log",
+      "sha256": "9a0530ea126a4983668c9cd33e81c0168efaa932a199b55c04bd05ff32dd037f",
+      "size": 306
+    },
+    {
+      "path": "gate_engine_realization_full.log",
+      "sha256": "6c3bfcb5fbb37bb245d706b8439553040e61a22aafb8ab4577c18fc7851a5cc8",
+      "size": 321
+    },
+    {
+      "path": "gate_no_physical_logic_in_processors.log",
+      "sha256": "fa1703a33f648584de41d5aff94f4023bb18283e472299fbeaaf957f99c09e46",
+      "size": 145
+    },
+    {
+      "path": "gate_no_sync_in_adapters.log",
+      "sha256": "e51d06726f186161aca8bf752ad1bde92c598dc4eae74b977fcdbb73c6f37957",
+      "size": 105
+    },
+    {
+      "path": "gate_registry_unique.log",
+      "sha256": "84f2a941bf7b00c681bbda8fe6b3e8796f0ca1ada22761458add6dc6f009e416",
+      "size": 142
+    },
+    {
+      "path": "gen_evidence_index.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "node_version.txt",
+      "sha256": "da61e6e0d33c4fd2c37f522789c749ef1028242d8a36978dcae0e2ad1a35c063",
+      "size": 8
+    },
+    {
+      "path": "output/crops/frame_0_200.png",
+      "sha256": "5bed8bd640f633508dfed6b96f5071bf033c80b41c5ac91e33bfdc18de2ff15b",
+      "size": 611
+    },
+    {
+      "path": "output/crops/frame_1_200.png",
+      "sha256": "5bed8bd640f633508dfed6b96f5071bf033c80b41c5ac91e33bfdc18de2ff15b",
+      "size": 611
+    },
+    {
+      "path": "output/crops/frame_2_200.png",
+      "sha256": "5bed8bd640f633508dfed6b96f5071bf033c80b41c5ac91e33bfdc18de2ff15b",
+      "size": 611
+    },
+    {
+      "path": "output/crops/frame_3_200.png",
+      "sha256": "5bed8bd640f633508dfed6b96f5071bf033c80b41c5ac91e33bfdc18de2ff15b",
+      "size": 611
+    },
+    {
+      "path": "output/crops/frame_4_200.png",
+      "sha256": "5bed8bd640f633508dfed6b96f5071bf033c80b41c5ac91e33bfdc18de2ff15b",
+      "size": 611
+    },
+    {
+      "path": "output/crops/frame_5_200.png",
+      "sha256": "5bed8bd640f633508dfed6b96f5071bf033c80b41c5ac91e33bfdc18de2ff15b",
+      "size": 611
+    },
+    {
+      "path": "output/scene.mp4",
+      "sha256": "044767ab4682310ff7524b5cecea515d34987dc6d69296e3c9d7e2167c160fae",
+      "size": 1853
+    },
+    {
+      "path": "output/shot_gate_report_1769862852940.json",
+      "sha256": "421524cbc9fbe97022ec6990eb1268507af642bf18ab8efdad219c4a7597cc3c",
+      "size": 187
+    },
+    {
+      "path": "p3prime_core_mvp_runner_real.log",
+      "sha256": "63ae21db4fe89b4732274cf96294b2680147a3cb7f6a3ec2675b7b960549468f",
+      "size": 399
+    },
+    {
+      "path": "pnpm_version.txt",
+      "sha256": "077ee5b3a3a7fc2622ceff6466fea0c28f3fb08b24653dcc7f4baab29b9aef36",
+      "size": 6
+    },
+    {
+      "path": "test.txt",
+      "sha256": "f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2",
+      "size": 5
+    }
+  ]
+}

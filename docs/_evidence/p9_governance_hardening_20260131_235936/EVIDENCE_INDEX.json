@@ -1,0 +1,65 @@
+{
+  "phase": "9",
+  "name": "governance & security hardening",
+  "status": "PASS",
+  "evidence_dir": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p9_governance_hardening_20260131_235936",
+  "generated_at": "2026-01-31T17:00:36.057Z",
+  "artifacts": [
+    {
+      "file": "env_snapshot.txt",
+      "sha256": "ca4c12a8912a8fe8723973efe64c65e281529ab3ea630396f8750a2d4a4dab29"
+    },
+    {
+      "file": "p9_0_cve_audit.json",
+      "sha256": "0b6767c01d85cc0907887908317b97fe3d5d834f53f24bc4e33957390e08eadc"
+    },
+    {
+      "file": "p9_0_cve_summary.json",
+      "sha256": "7ee84fd24b5d0e7f44aa34ba94c7ed21615fc129aa629d16277bfa60b03008f2"
+    },
+    {
+      "file": "p9_0_env_snapshot.txt",
+      "sha256": "1eef3ce4b5f4d2c57818193744bbf38994e61b8d65b99c6eaa08ba10534c0f6e"
+    },
+    {
+      "file": "p9_0_pnpm_audit_raw.json",
+      "sha256": "174ecfddc996170905c3eb71e090e47f7450e5546faf6666c4056887485dceda"
+    },
+    {
+      "file": "p9_0_pnpm_audit.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "p9_1_files_scanned.txt",
+      "sha256": "ec1880f4fd01fd59d17d276ac4f4402918dc4f12aedf42a8e09b95950a413718"
+    },
+    {
+      "file": "p9_1_patterns.txt",
+      "sha256": "f9a927d7a6787c94ac753235091396d2f155d00abe6d8987a5ebc2b8ce540693"
+    },
+    {
+      "file": "p9_1_secret_scan_audit.json",
+      "sha256": "db1b0b186c8b11c438a8282005a51c6b76cfd815108948ca663fa6d82d967c4c"
+    },
+    {
+      "file": "p9_1_secret_scan_hits_fileline.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "p9_2_archive_integrity.json",
+      "sha256": "01a761b021b38438b54cca1fadd744694e5304ecc28ae4eac2fe81853cf31efa"
+    },
+    {
+      "file": "p9_2_archive_report.txt",
+      "sha256": "40ce29ce25807a66c1e56f38b15f21529f54a7fed9551776189d6881cd055725"
+    },
+    {
+      "file": "p9_2_evidence_mirror_bundle.sha256",
+      "sha256": "160c23daebbcb5fedbafdf3dfe17b2649da4da7451696349b3e37126f01d2d87"
+    },
+    {
+      "file": "p9_2_evidence_mirror_bundle.tgz",
+      "sha256": "f0a142e99771306ae66a6d9e77953ed07b438ec79f9eef8c72798b82a8ddadd4"
+    }
+  ]
+}

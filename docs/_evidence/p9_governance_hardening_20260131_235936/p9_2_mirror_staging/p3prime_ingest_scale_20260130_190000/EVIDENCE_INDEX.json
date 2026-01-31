@@ -1,0 +1,56 @@
+{
+  "phase": "P3'-Ingest-Scale",
+  "status": "SEALED",
+  "evidence_dir": "docs/_evidence/p3prime_ingest_scale_20260130_190000",
+  "timestamp_local": "2026-01-30T19:00:00+07:00",
+  "gates": {
+    "static_ingest": "PASS",
+    "static_global": "PASS",
+    "runtime_heap": "PASS (~143MB)",
+    "runtime_rss": "PASS (Dev Context < 450MB, ts-node overhead)"
+  },
+  "files": [
+    {
+      "name": "EVIDENCE_INDEX.checksums",
+      "bytes": 629,
+      "mtime": "2026-01-30T13:14:33.835Z",
+      "sha256": null
+    },
+    {
+      "name": "bench_novel_120mb.meta.json",
+      "bytes": 290,
+      "mtime": "2026-01-30T11:55:25.122Z",
+      "sha256": "6ed5ecb3851a74108fa4a24b415095fa01304b2e12bcac85e4be46c76f86b4cc"
+    },
+    {
+      "name": "bench_novel_60mb.meta.json",
+      "bytes": 286,
+      "mtime": "2026-01-30T11:55:25.123Z",
+      "sha256": "6f576024c9fba9d1cd7e29d1fa1c2e85308e8b54b756406c6fc766562410e4d7"
+    },
+    {
+      "name": "bench_seed.json",
+      "bytes": 734,
+      "mtime": "2026-01-30T11:55:25.121Z",
+      "sha256": "3d05cc26c139f73c6c19b478f727ba29639fe014e41f9ed23ee5f4ebffa3ae36"
+    },
+    {
+      "name": "gate_static_ingest.log",
+      "bytes": 120,
+      "mtime": "2026-01-30T11:55:25.121Z",
+      "sha256": "fc7979ae0ae4ca2d145a73b250e2ff1b06a7aa26982af5be6494146c95cb8fc4"
+    },
+    {
+      "name": "gate_static_workers.log",
+      "bytes": 112,
+      "mtime": "2026-01-30T11:55:25.122Z",
+      "sha256": "801dd2cd3b0f84fffcc0eddef18b08e9b9750cbbd5894c509b0538ba7ae5e6ec"
+    },
+    {
+      "name": "ingest_run.log",
+      "bytes": 378,
+      "mtime": "2026-01-30T11:55:25.122Z",
+      "sha256": "6911995729adc728b2582289c23916399e5db13b2407dd932b6dcafbd928b603"
+    }
+  ]
+}

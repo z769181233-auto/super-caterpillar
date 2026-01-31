@@ -1,0 +1,16 @@
+{
+  "gate": "P9-2",
+  "name": "evidence archive integrity + mirror drill",
+  "status": "PASS",
+  "counts": {
+    "indexed_evidence_ok": 2,
+    "indexed_evidence_fail": 0,
+    "legacy_evidence_dirs": 397
+  },
+  "artifacts": {
+    "report": "p9_2_archive_report.txt",
+    "mirror_bundle": "p9_2_evidence_mirror_bundle.tgz",
+    "mirror_bundle_sha256": "p9_2_evidence_mirror_bundle.sha256"
+  },
+  "timestamp": "2026-02-01T00:00:36+07:00"
+}

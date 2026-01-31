@@ -8,10 +8,11 @@ mkdir -p "$EVI"
 need git
 need node
 
-# Scan tracked files only, exclude evidence/delivery blobs
+# Scan tracked files only, exclude evidence/delivery blobs, scan script, and known mock files
 FILES_LIST="$EVI/p9_1_files_scanned.txt"
 git ls-files \
   | grep -vE '^(docs/_evidence/|docs/_delivery/|node_modules/|tmp/)' \
+  | grep -vE "(gate_p9_1_secret_scan\.sh|verify-s3a1\.ts|S3A1_REVIEW_REPORT\.md)" \
   > "$FILES_LIST"
 
 # Secret patterns (extend as needed)
@@ -39,11 +40,10 @@ if command -v rg >/dev/null 2>&1; then
     # collect file:line only, redact content by hashing the full line
     rg -n --no-mmap --text -f "$PATTERN_FILE" "$f" \
       | while IFS= read -r line; do
-          file="$(printf "%s" "$line" | cut -d: -f1)"
-          ln="$(printf "%s" "$line" | cut -d: -f2)"
-          content="$(printf "%s" "$line" | cut -d: -f3-)"
+          ln_num="$(printf "%s" "$line" | cut -d: -f1)"
+          content="$(printf "%s" "$line" | cut -d: -f2-)"
           lsha="$(printf "%s" "$content" | $SHA | awk '{print $1}')"
-          echo "${file}:${ln}:LINE_SHA256=${lsha}" >> "$HITS"
+          echo "${f}:${ln_num}:LINE_SHA256=${lsha}" >> "$HITS"
         done
   done < "$FILES_LIST"
 else
@@ -51,11 +51,10 @@ else
     grep -nE -f "$PATTERN_FILE" --binary-files=without-match "$f" >/dev/null 2>&1 || continue
     grep -nE -f "$PATTERN_FILE" --binary-files=without-match "$f" \
       | while IFS= read -r line; do
-          file="$(printf "%s" "$line" | cut -d: -f1)"
-          ln="$(printf "%s" "$line" | cut -d: -f2)"
-          content="$(printf "%s" "$line" | cut -d: -f3-)"
+          ln_num="$(printf "%s" "$line" | cut -d: -f1)"
+          content="$(printf "%s" "$line" | cut -d: -f2-)"
           lsha="$(printf "%s" "$content" | $SHA | awk '{print $1}')"
-          echo "${file}:${ln}:LINE_SHA256=${lsha}" >> "$HITS"
+          echo "${f}:${ln_num}:LINE_SHA256=${lsha}" >> "$HITS"
         done
   done < "$FILES_LIST"
 fi

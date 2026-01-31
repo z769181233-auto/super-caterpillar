@@ -1,0 +1,93 @@
+{
+  "phase": "8",
+  "name": "production operating readiness",
+  "status": "PASS",
+  "evidence_dir": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p8_operating_readiness_20260131_233552",
+  "generated_at": "2026-01-31T16:35:52.385Z",
+  "artifacts": [
+    {
+      "file": "env_snapshot.txt",
+      "sha256": "cc6fd78ceef393e445eb273a6011dd3c194482b3db7be2a35591283bffc8301e"
+    },
+    {
+      "file": "p8_0_release_audit.json",
+      "sha256": "23a4661692996c6cef0ad7f0b25e9ff3a91ad281dde33eb19345558819c2f131"
+    },
+    {
+      "file": "p8_0_release_inputs.txt",
+      "sha256": "aa238fa04a3325864afedf9b4b54a3546c8f607d5c0a54854953e6ba250effce"
+    },
+    {
+      "file": "p8_1_alert_plan.json",
+      "sha256": "1b37986c3e9653a387135a2b499c22a1cfdeefdddc9024f5177de69293aa8003"
+    },
+    {
+      "file": "p8_1_configure_alerts.log",
+      "sha256": "b2dbcf1d4eb2040bfbbb901da3826f407ac664c3fa21435a1294ca1701fbb6e6"
+    },
+    {
+      "file": "p8_1_monitoring_audit.json",
+      "sha256": "2d59d245cb293961caaf60598964ba2ae0627245cb93d7d83be5594d914433fd"
+    },
+    {
+      "file": "p8_2_drill_driver.log",
+      "sha256": "a4b2cc1af10c321025716e05e2e293e50543b003670a7791821acd3f65ab6841"
+    },
+    {
+      "file": "p8_2_incident_audit.json",
+      "sha256": "155aa6b2c004950ce53347ce8b6ced81cc5101d2e05989e90d7d1e6c1d40d0d7"
+    },
+    {
+      "file": "p8_2_inject.log",
+      "sha256": "db42716fa697b48c33a16157177da1c77f028331eab233088f4a8ab443448ad6"
+    },
+    {
+      "file": "p8_2_inputs.txt",
+      "sha256": "44f5ef1d42490a090d7966871716ec9e4f36336a92a0fd8e430d5d710b86af47"
+    },
+    {
+      "file": "p8_2_observe_baseline.log",
+      "sha256": "107f68998570eb934182fd1e6eef11c068e78984f10dcec08913598037308985"
+    },
+    {
+      "file": "p8_2_observe_loop.log",
+      "sha256": "08cf8181bb2689fda09b64f485e18248aeb2b92ea6c51acc6f482af2f127b8b8"
+    },
+    {
+      "file": "p8_2_recover.log",
+      "sha256": "7f5fab0383fabcdecca143d30899157bd49caf64bf942809fd22e221b7371001"
+    },
+    {
+      "file": "p8_3_cost_cb_audit.json",
+      "sha256": "4c1bada2bf9005ee4152d2e72852809ec9a9542199713b914e773a1e2ee5872a"
+    },
+    {
+      "file": "p8_3_drill_driver.log",
+      "sha256": "ca9afc8b623264eeec505d615bf5b7d2f9b3caa491a8e6ccb71bf75032dedcbe"
+    },
+    {
+      "file": "p8_3_inputs.txt",
+      "sha256": "b143826e99b95db6a370fa2168d7d139275c41793b80f598d944a3e1c3cfa941"
+    },
+    {
+      "file": "p8_3_reset.log",
+      "sha256": "777c6e51b0c528f89a6d9dab0df7693db4dc440bc5c7af522c1a42b5c9cfb4d3"
+    },
+    {
+      "file": "p8_3_spike.log",
+      "sha256": "bdbe540d7d2ad0a2fb0c709e12143b7dc30209fba5ddaa76cb0f9cdcd46c40ff"
+    },
+    {
+      "file": "p8_3_status_after_reset.log",
+      "sha256": "2172ee66fbba8f72ec66f3f0c1515d5e0a8bd1bac9ee1fc01ad992d461945a11"
+    },
+    {
+      "file": "p8_3_status_baseline.log",
+      "sha256": "2172ee66fbba8f72ec66f3f0c1515d5e0a8bd1bac9ee1fc01ad992d461945a11"
+    },
+    {
+      "file": "p8_3_status_loop.log",
+      "sha256": "30696d1836d1c97c844f0792c7fa65db28ead2275c2c9781b88357a895afa010"
+    }
+  ]
+}
