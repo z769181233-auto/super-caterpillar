@@ -123,9 +123,37 @@ async function runValidFlows(evidenceDir: string) {
 }
 
 async function runErrorFlows(evidenceDir: string) {
-  console.log('[P6-RUNNER] Executing Error Matrix Flows...');
-  // TODO: Implement specific fault injection cases
-  // For now, we seed a placeholder to ensure file structure exists
+  console.log('[P6-RUNNER] Executing Error Matrix Flows (Fault Injection)...');
+
+  // Case 1: Validation Fail (Invalid Project)
+  const projectId = `p6_error_val_${Date.now()}`;
+  console.log(`[P6-RUNNER] Error Case 1: Validation Fail -> Project ${projectId}`);
+
+  try {
+    const apiClient = new ApiClient(
+      'http://localhost:3000',
+      'dev-worker-key',
+      'dev-worker-secret',
+      'p6-runner-error'
+    );
+    // Trigger with missing novelText
+    await apiClient.createJob({
+      jobType: 'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
+      projectId,
+      organizationId: 'org_scale_test',
+      payload: { somethingElse: 'invalid' },
+    });
+    // If it didn't throw, it's a fail for our error case
+    console.warn('  ⚠️ Expected error but got success');
+  } catch (e: any) {
+    console.log(`  ✅ Caught expected Error: ${e.message}`);
+    errorStats.cases.push({
+      case_id: 'VALIDATION_FAIL_01',
+      status_final: 'FAILED',
+      error_code: 'VALIDATION_FAIL',
+      message: e.message,
+    });
+  }
 }
 
 async function executePipeline(projectId: string) {

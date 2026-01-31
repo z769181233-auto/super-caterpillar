@@ -86,16 +86,25 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
 
     // 4. Publishing Review
     if (shotId) {
-      await prisma.publishingReview.upsert({
+      const existingReview = await prisma.publishingReview.findFirst({
         where: { shotId },
-        update: { result: ReviewResult.require_review },
-        create: {
-          shotId,
-          reviewType: ReviewType.semi_auto,
-          result: ReviewResult.require_review,
-          reviewLog: {},
-        },
       });
+
+      if (existingReview) {
+        await prisma.publishingReview.update({
+          where: { id: existingReview.id },
+          data: { result: ReviewResult.require_review },
+        });
+      } else {
+        await prisma.publishingReview.create({
+          data: {
+            shotId,
+            reviewType: ReviewType.semi_auto,
+            result: ReviewResult.require_review,
+            reviewLog: {},
+          },
+        });
+      }
     }
 
     // 5. Audit

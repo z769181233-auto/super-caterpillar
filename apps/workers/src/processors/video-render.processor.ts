@@ -85,11 +85,6 @@ export async function processVideoRenderJob(
         checksum: sha256,
         status: 'GENERATED',
         createdByJobId: job.id,
-        metadata: {
-          duration,
-          engine: 'video_merge',
-          provider: 'local_ffmpeg',
-        },
       },
     });
 

@@ -43,12 +43,6 @@ export async function processAudioJob(
         storageKey,
         checksum: sha256,
         createdByJobId: job.id,
-        metadata: {
-          duration,
-          size,
-          engine: 'audio_tts',
-          provider: ttsResult.output.provider,
-        },
       },
     });
 

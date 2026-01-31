@@ -66,7 +66,7 @@ export async function processShotRenderJob(
         const ce23Result = await apiClient.invokeEngine({
           engineKey: 'ce23_identity_consistency',
           payload: {
-            anchorImageKey: anchor.imageKey,
+            anchorImageKey: anchor.viewKeyFront,
             targetImageKey: storageKey,
             characterId: anchor.characterId,
           },
@@ -115,7 +115,7 @@ export async function processShotRenderJob(
     if (shot.sceneId) {
       await apiClient.createJob({
         projectId,
-        organizationId: shot.organizationId,
+        organizationId: shot.organizationId || 'system',
         jobType: 'VIDEO_RENDER' as any,
         payload: {
           pipelineRunId,
@@ -133,7 +133,7 @@ export async function processShotRenderJob(
     logger.error(`[ShotRender_HUB] Failed: ${error.message}`);
     await prisma.shot
       .update({ where: { id: shotId }, data: { renderStatus: 'FAILED' } })
-      .catch(() => {});
+      .catch(() => { });
     return { status: 'FAILED', error: error.message };
   }
 }

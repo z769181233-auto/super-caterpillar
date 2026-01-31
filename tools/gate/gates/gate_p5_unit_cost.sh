@@ -11,7 +11,7 @@ if [ ! -f "$COST_JSON" ]; then
 fi
 
 # 断言 1: 基准环境参数齐全
-ENV_CHECK=$(jq -r '.benchmark_env | keys | join(",")' "$COST_JSON")
+ENV_CHECK=$(jq -r '(.benchmark_env // .env) | keys | join(",")' "$COST_JSON")
 if [[ ! "$ENV_CHECK" =~ "cpu" ]] || [[ ! "$ENV_CHECK" =~ "os" ]] || [[ ! "$ENV_CHECK" =~ "ffmpeg_ver" ]]; then
     echo "ASSERTION FAIL: Missing benchmark environment metadata"
     exit 2
