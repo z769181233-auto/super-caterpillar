@@ -93,10 +93,8 @@ function getEnvNumber(key: string, defaultValue?: number): number {
   return num;
 }
 
-process.stdout.write(
-  util.format(
-    `[CONFIG_DEBUG] JWT_SECRET read from env: ${process.env.JWT_SECRET?.substring(0, 4)}...`
-  ) + '\n'
+console.log(
+  `[CONFIG_DEBUG] JWT_SECRET_PRESENT=${!!process.env.JWT_SECRET}`
 );
 
 export const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
