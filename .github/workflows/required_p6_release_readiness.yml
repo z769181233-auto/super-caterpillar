@@ -70,6 +70,7 @@ jobs:
           test -f /tmp/p6_release_readiness_evidence/EVIDENCE_INDEX.json
           test -f /tmp/p6_release_readiness_evidence/SHA256SUMS.txt
           shasum -a 256 -c /tmp/p6_release_readiness_evidence/SHA256SUMS.txt
+          shasum -a 256 -c /tmp/p6_release_readiness_evidence/EVIDENCE_INDEX.sha256
 
       - name: Ensure repo unchanged after gates
         run: |

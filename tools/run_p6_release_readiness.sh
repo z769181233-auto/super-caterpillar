@@ -32,7 +32,7 @@ bash tools/p6/gate_p6_3_rollback_drill.sh "$EVI"
 bash tools/p6/gate_p6_4_cost_guardrails.sh "$EVI"
 
 # checksums for evidence dir
-find "$EVI" -type f -maxdepth 1 -print0 | sort -z | xargs -0 shasum -a 256 > "$EVI/SHA256SUMS.txt"
+find "$EVI" -maxdepth 1 -type f -print0 | sort -z | xargs -0 shasum -a 256 > "$EVI/SHA256SUMS.txt"
 
 # evidence index json
 node - <<'NODE' "$EVI"
