@@ -152,6 +152,7 @@
 | 2026-01-24 | **P16-1 SEALED** — Dynamic Thresholds & Guardrails (0-Risk Rework Block). Ops Metrics + Double-Pass Verified. Evidence: `docs/_evidence/ce23_real_threshold_calib_20260124*`              | Antigravity |
 | 2026-01-25 | **P24-0 HARD SEALED** — Performance SLA (CE03/04/06) verified with N=20 concurrency. P95 targets fully met. Evidence: `docs/_evidence/p24_0_performance_1769321734`                       | Antigravity |
 | 2026-01-29 | **G5-B HARD SEALED** — First Real Video (E0001) achieved. 15s Orbit, 1440p, 3-View Switch, Grounding Shadow. Definition: Gate-0 Law. Evidence: `docs/_evidence_archived/G5_M1_E0001_REAL` | Antigravity |
+| 2026-01-31 | **Phase 8 HARD SEALED** — Production Operating Readiness. Release Audit, Monitoring, Incident & Cost Drills implemented and verified. Evidence: `docs/_evidence/p8_operating_readiness_20260131_233552` | Antigravity |
 
 ---
 
@@ -174,3 +175,9 @@
 
 | **Trace x Perf** | ACTIVE | `Span-Correlated` | Queue/Prepare/Exec/Persist Breakdown | `gate-p1-5_trace_perf_correlation.sh` |
 | **Ops Dashboard**| ACTIVE | `Snapshot-Model` | P16-2.3 Alerting (Rework/Block/Fail). Evidence: `docs/_evidence/p17_0_ops_dashboard_1769270258_31617` | `gate-ops-dashboard-snapshot.sh` |
+| **Operating Readiness**| ACTIVE | `P8-Enforced` | Release Audit, Monitoring, Incident & Cost Drills | `tools/run_p8_operating_readiness.sh` |
+
+> [!IMPORTANT]
+> **P8 Status: HARD SEALED** (2026-01-31)
+> Release governance, Monitoring SSOT, Incident simulation, and Cost circuit breakers are fully verified.
+> Evidence: `docs/_evidence/p8_operating_readiness_20260131_233552`
