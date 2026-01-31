@@ -46,7 +46,8 @@ log "[P7-4] ROLLBACK -> BLUE"
 bash tools/deploy/p7_rollback_to_blue.sh 2>&1 | tee "$EVI/p7_4_rollback.log"
 bash tools/deploy/p7_healthcheck.sh live 2>&1 | tee "$EVI/p7_4_health_live.log"
 
-# checksums for evidence dir
+# --- P7 evidence sealing: index + checksums (must include index files) ---
+
 SHA_CMD=""
 if command -v sha256sum >/dev/null 2>&1; then
   SHA_CMD="sha256sum"
@@ -56,18 +57,14 @@ else
   die "Missing checksum tool: sha256sum or shasum"
 fi
 
-find "$EVI" -maxdepth 1 -type f -print0 | sort -z | xargs -0 $SHA_CMD > "$EVI/SHA256SUMS.txt"
-
+# generate evidence index json
 node - <<'NODE' "$EVI"
 const fs = require("fs");
 const path = require("path");
 const dir = process.argv[2];
-const sums = fs.readFileSync(path.join(dir, "SHA256SUMS.txt"), "utf8")
-  .trim().split("\n").filter(Boolean)
-  .map(line => {
-    const [sha, file] = line.trim().split(/\s+/);
-    return { file: file.replace(dir + "/", ""), sha256: sha };
-  });
+
+// Collect all top-level evidence files (we will checksum them next)
+const files = fs.readdirSync(dir).filter(f => fs.statSync(path.join(dir, f)).isFile());
 
 const index = {
   phase: "7",
@@ -75,11 +72,25 @@ const index = {
   status: "PASS",
   evidence_dir: dir,
   generated_at: new Date().toISOString(),
-  artifacts: sums,
+  artifacts: files.sort().map(f => ({ file: f, sha256: "<filled_by_SHA256SUMS>" })),
 };
+
 fs.writeFileSync(path.join(dir, "EVIDENCE_INDEX.json"), JSON.stringify(index, null, 2) + "\n");
 NODE
 
+# independent checksum for the index itself
 $SHA_CMD "$EVI/EVIDENCE_INDEX.json" > "$EVI/EVIDENCE_INDEX.sha256"
+
+# checksums for evidence dir (now includes EVIDENCE_INDEX.json + EVIDENCE_INDEX.sha256)
+find "$EVI" -maxdepth 1 -type f -print0 | sort -z | xargs -0 $SHA_CMD > "$EVI/SHA256SUMS.txt"
+
+# verify (fail if mismatch)
+if command -v sha256sum >/dev/null 2>&1; then
+  sha256sum -c "$EVI/SHA256SUMS.txt"
+  sha256sum -c "$EVI/EVIDENCE_INDEX.sha256"
+else
+  shasum -a 256 -c "$EVI/SHA256SUMS.txt"
+  shasum -a 256 -c "$EVI/EVIDENCE_INDEX.sha256"
+fi
 
 log "[P7] PASS: production deployment drill completed"

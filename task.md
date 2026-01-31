@@ -57,26 +57,26 @@ _Evidence Dir: docs/\_evidence/p5_final_review_20260131_201914/_
 - [x] P6-1: 数据库迁移安全演练 (DB Migration Safety)
 - [x] P6-2: 核心指标可观测性接入 (Observability Required)
 - [x] P6-3: 生产级回滚全流程演练 (Rollback Drill)
-- [x] P6-2: 核心指标可观测性接入 (Observability Required)
-- [x] P6-3: 生产级回滚全流程演练 (Rollback Drill)
 - [x] P6-4: 成本配额与熔断护栏验证 (Cost Guardrails)
 
-## [/] Phase 7: Production Deployment Drill (Prod Drill)
-
-- [ ] PLAN-P7-0: Establish P7 Runner & Adapter Contract
-  - [x] Run `tools/run_p6_release_readiness.sh` and generate evidence
-  - [ ] PLAN-P7-0: Establish P7 Runner & Adapter Contract
+- [x] PLAN-P7-0: Establish P7 Runner & Adapter Contract
   - [x] Create `tools/run_p7_prod_deploy_drill.sh`
   - [x] Define adapter contract (blue/green deploy, cutover, rollback, healthcheck)
-  - [ ] Implement adapters using env-driven logic (tools/deploy/\*.sh)
-- [ ] PLAN-P6-2: Integrate with CI (GitHub Actions)
+  - [x] Implement adapters using env-driven logic (tools/deploy/\*.sh)
+- [x] PLAN-P6-2: Integrate with CI (GitHub Actions)
   - [x] Create CI workflow `required_p6_release_readiness.yml`
   - [x] Harden scripts (rollback trap, evidence index checksum)
   - [x] Use cross-platform checksum logic (sha256sum/shasum)
   - [x] Remove `|| true` from P6-1 for strict failure
   - [ ] Enable Branch Protection (User Action)
-- [ ] PLAN-P7-1: Create Manual Trigger Workflow
-  - [ ] Create `.github/workflows/p7_prod_deploy_drill.yml`
+- [x] PLAN-P7-1: Create Manual Trigger Workflow
+  - [x] Create `.github/workflows/p7_prod_deploy_drill.yml`
+  - [x] Wire secrets in workflow env
+- [ ] PLAN-P7-2: Production Drill Execution (User Action)
+  - [ ] Configure GitHub Secrets (deployed commands & health checks)
+  - [ ] Trigger manual workflow `p7-prod-deploy-drill`
+  - [ ] Verify evidence artifact (`p7_prod_deploy_drill_evidence`) from successful run
+  - [ ] Seal Phase 7 (Update docs & git tag)
 
 ---
 

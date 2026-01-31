@@ -7,7 +7,6 @@ mkdir -p "$EVI"
 
 need git
 need node
-need shasum
 
 # Try locate prisma schema
 SCHEMA="$(git ls-files | grep -m1 'schema\.prisma$' || true)"
