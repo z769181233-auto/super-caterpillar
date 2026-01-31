@@ -15,6 +15,9 @@ CLEAN_STATUS="$(git status --porcelain | grep -v 'tmp_pgvector' || true)"
 [ -z "$CLEAN_STATUS" ] || die "Working tree not clean; commit/stash first: $CLEAN_STATUS"
 
 CUR_SHA="$(git rev-parse HEAD)"
+cleanup(){ git checkout -q "$CUR_SHA" || true; }
+trap cleanup EXIT
+
 echo "CURRENT_SHA=$CUR_SHA" > "$EVI/p6_3_rollback_inputs.txt"
 echo "ROLLBACK_TAG=$TAG" >> "$EVI/p6_3_rollback_inputs.txt"
 

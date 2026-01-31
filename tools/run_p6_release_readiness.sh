@@ -59,3 +59,8 @@ NODE
 
 log "[P6] PASS: Release Readiness gates completed"
 log "[P6] EVIDENCE_INDEX: $EVI/EVIDENCE_INDEX.json"
+
+# generate independent checksum for the index itself
+shasum -a 256 "$EVI/EVIDENCE_INDEX.json" > "$EVI/EVIDENCE_INDEX.sha256"
+# Index checksum is safe to append to SHA256SUMS.txt (not self-referential to the index content)
+cat "$EVI/EVIDENCE_INDEX.sha256" >> "$EVI/SHA256SUMS.txt"
