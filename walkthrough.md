@@ -128,3 +128,10 @@ NOTE: Phase 4 sealing evidence is tracked in real_production_review.md §8 and d
 > - **Hardened Secret Scan Policy**: Removed pattern-based exclusions, only path-based exclusions permitted (e.g., `docs/_evidence/`)
 > - **Post-Seal Integrity Gate**: New P9-3 gate verifies all sealed tags can replay their evidence checksums, preventing silent corruption of audit trail
 
+
+## Phase 9.1 Patch Follow-up — SEALED
+- Evidence Dir: `docs/_evidence/p9_governance_hardening_20260201_004609`
+- Audit Improvements:
+  - **S3-A.1 Legacy Materials Archived**: `docs/_archive/s3a1_verification_legacy/` 保留历史审计追溯性
+  - **Excluded Paths Auditable**: `p9_1_excluded_paths.txt` 只包含1条路径,严格限定不可扩展
+  - **Pattern Exclusions Prohibited**: P9-1强制只允许path-based排除,符合P9.1合规要求
