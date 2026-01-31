@@ -69,7 +69,14 @@ NOTE: Phase 4 sealing evidence is tracked in real_production_review.md §8 and d
 - Gates: P6-0 to P6-4 ALL PASS
 - Status: **CI-ENFORCED** (Branch Protection Required)
 
-# Phase 7: Production Deployment Drill (Prod Drill)
+# Phase 7: Production Deployment Drill (P7) — SEALED
 
-- Status: **Adapter Ready** (Workflow & Scripts Implemented)
-- Next: Execute Manual Drill
+- Evidence Dir: `docs/_evidence/p7_prod_deploy_drill_20260131_231247`
+- Verify:
+  - SHA256SUMS.txt PASS
+  - EVIDENCE_INDEX.sha256 PASS
+- Result:
+  - P7-1 Deploy BLUE PASS
+  - P7-2 Deploy GREEN PASS
+  - P7-3 Cutover -> GREEN PASS
+  - P7-4 Rollback -> BLUE PASS
