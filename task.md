@@ -78,6 +78,21 @@ _Evidence Dir: docs/\_evidence/p5_final_review_20260131_201914/_
   - [x] Verify evidence artifact (`p7_prod_deploy_drill_evidence`) from successful run
   - [x] Seal Phase 7 (Update docs & git tag)
 
+## [ ] Phase 8: Production Operating Readiness (P8)
+
+- [x] PLAN-P8-0: Release Auditing & Versioning
+  - [x] Define release note strategy & impact analysis
+  - [x] Establish rollback policy checklist
+- [x] PLAN-P8-1: Production Monitoring SSOT
+  - [x] Define SLI/SLO for critical paths
+  - [x] Configure alert severity & silence policies
+- [x] PLAN-P8-2: Incident Drill (Simulated Outage)
+  - [x] Simulate failure -> Alert trigger -> Fix -> Recover
+  - [x] Generate incident report evidence
+- [x] PLAN-P8-3: Cost Circuit Breaker Drill
+  - [x] Simulate budget threshold breach -> Circuit breaker trip -> Reset
+  - [x] Audit trail verification
+
 ---
 
 ## 历史封存区块（ARCHIVED）

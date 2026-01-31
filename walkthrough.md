@@ -81,3 +81,15 @@ NOTE: Phase 4 sealing evidence is tracked in real_production_review.md §8 and d
   - P7-2 Deploy GREEN PASS
   - P7-3 Cutover -> GREEN PASS
   - P7-4 Rollback -> BLUE PASS
+
+# Phase 8: Production Operating Readiness (P8) — SEALED
+
+- Evidence Dir: `docs/_evidence/p8_operating_readiness_20260131_233552`
+- Verify:
+  - SHA256SUMS.txt PASS
+  - EVIDENCE_INDEX.sha256 PASS
+- Gates:
+  - P8-0 Release Auditing PASS
+  - P8-1 Monitoring SSOT PASS
+  - P8-2 Incident Drill PASS
+  - P8-3 Cost Circuit Breaker PASS

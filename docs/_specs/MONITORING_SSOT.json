@@ -1,0 +1,39 @@
+{
+    "version": 1,
+    "services": [
+        {
+            "name": "api",
+            "slos": [
+                {
+                    "sli": "http_request_latency_p99_ms",
+                    "target": 2000,
+                    "severity": "P1",
+                    "window_sec": 300
+                },
+                {
+                    "sli": "http_5xx_rate_pct",
+                    "target": 1.0,
+                    "severity": "P0",
+                    "window_sec": 300
+                }
+            ]
+        },
+        {
+            "name": "worker",
+            "slos": [
+                {
+                    "sli": "job_queue_lag_sec",
+                    "target": 60,
+                    "severity": "P0",
+                    "window_sec": 300
+                },
+                {
+                    "sli": "job_fail_rate_pct",
+                    "target": 1.0,
+                    "severity": "P0",
+                    "window_sec": 300
+                }
+            ]
+        }
+    ]
+}

@@ -88,3 +88,5 @@ docs/_evidence_archived/
 workspace/
 .runtime/
 tools/deploy/p7_secrets.local.env
+tools/ops/p8_secrets.local.env
+tools/ops/p8_secrets.local.env
