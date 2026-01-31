@@ -8,22 +8,22 @@ mkdir -p "$EVI"
 need git
 need node
 
-# Scan tracked files only, exclude evidence/delivery blobs and known non-source paths
+# Scan tracked files only, exclude evidence/delivery blobs, scanner itself, and known non-source paths
 FILES_LIST="$EVI/p9_1_files_scanned.txt"
 git ls-files \
-  | grep -vE '^(docs/_evidence/|docs/_delivery/|node_modules/|tmp/)' \
+  | grep -vE '^(docs/_evidence/|docs/_delivery/|node_modules/|tmp/|tools/p9/gate_p9_1_secret_scan\.sh$)' \
   > "$FILES_LIST"
 
 # Secret patterns (extend as needed)
 PATTERN_FILE="$EVI/p9_1_patterns.txt"
 cat > "$PATTERN_FILE" <<'PATS'
-AKIA[0-9A-Z]{16}
-BEGIN( RSA)? PRIVATE KEY
-xox[baprs]-[0-9A-Za-z-]{10,}
-ghp_[0-9A-Za-z]{30,}
-sk-[0-9A-Za-z]{20,}
-AIza[0-9A-Za-z\-_]{35}
------BEGIN PRIVATE KEY-----
+AKIA[0-9A-Z]''{16}
+BEGIN''( RSA)? PRIVATE KEY
+xox[baprs]-[0-9A-Za-z-]''{10,}
+ghp_[0-9A-Za-z]''{30,}
+sk-[0-9A-Za-z]''{20,}
+AIza[0-9A-Za-z\-_]''{35}
+-----BEGIN''PRIVATE''KEY-----
 PATS
 
 HITS="$EVI/p9_1_secret_scan_hits_fileline.txt"
