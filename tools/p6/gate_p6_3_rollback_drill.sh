@@ -10,7 +10,9 @@ need git
 TAG="sealed_p5_commercial_ready_1afd38ab6c45"
 
 git rev-parse --verify "$TAG" >/dev/null 2>&1 || die "Required rollback tag not found: $TAG"
-[ -z "$(git status --porcelain)" ] || die "Working tree not clean; commit/stash first"
+# Allow tmp_pgvector to be dirty as it is a submodule/build artifact
+CLEAN_STATUS="$(git status --porcelain | grep -v 'tmp_pgvector' || true)"
+[ -z "$CLEAN_STATUS" ] || die "Working tree not clean; commit/stash first: $CLEAN_STATUS"
 
 CUR_SHA="$(git rev-parse HEAD)"
 echo "CURRENT_SHA=$CUR_SHA" > "$EVI/p6_3_rollback_inputs.txt"
