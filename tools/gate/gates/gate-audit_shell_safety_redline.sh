@@ -6,14 +6,14 @@ IFS=$'\n\t'
 # Redline: All shell scripts in tools/ must have safety baseline
 # and MUST NOT use forbidden commands (eval).
 
-fail() { echo "[SHELL][FAIL] $*" >&2; exit 1; }
+EXIT_CODE=0
+fail() { echo "[SHELL][FAIL] $*" >&2; EXIT_CODE=1; }
 pass() { echo "[SHELL][PASS] $*"; }
 
 CONFIG="docs/_specs/governance/gov_post_sealed.config.json"
 
 while read -r f; do
   [[ -z "$f" ]] && continue
-  
   # Exclude tester itself
   if [[ "$f" == *"negative_tests.sh" ]]; then
      continue
@@ -38,6 +38,10 @@ while read -r f; do
      fail "$f contains forbidden pattern: eval"
   fi
 
-done < <(find tools/gate/gates -name "*.sh" 2>/dev/null)
+done < <(find tools/gate/gates -name "*.sh")
 
-pass "All gate scripts meet shell safety redline."
+if [ "$EXIT_CODE" -eq 0 ]; then
+  pass "All gate scripts meet shell safety redline."
+else
+  exit 1
+fi

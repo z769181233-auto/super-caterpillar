@@ -19,10 +19,13 @@ set -euo pipefail
 echo "test"
 EOF
 mv "$CAT_BAD_SHELL" tools/gate/gates/temp_bad_shell.sh
-if (bash tools/gate/gates/gate-audit_shell_safety_redline.sh 2>&1 || true) | grep -q "missing required line"; then
+ls -l tools/gate/gates/temp_bad_shell.sh || echo "File missing!"
+OUT=$(bash tools/gate/gates/gate-audit_shell_safety_redline.sh 2>&1 || true)
+if echo "$OUT" | grep -q "missing required line"; then
   log "SUCCESS: Missing IFS blocked."
 else
-  log "FAIL: Missing IFS NOT blocked."
+  log "FAIL: Missing IFS NOT blocked. Output:"
+  echo "$OUT"
   HAS_FAIL=1
 fi
 rm tools/gate/gates/temp_bad_shell.sh
