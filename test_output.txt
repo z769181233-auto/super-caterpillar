@@ -1,0 +1,178 @@
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/index.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/auth.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/worker.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/user.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/novel-analysis.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/scene-graph.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/engines/index.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/engines/engine-adapter.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/engines/engine-invocation.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/engines/semantic-enhancement.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/engines/shot-planning.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/engines/structure-qa.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/engines/ce-core.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/tasks/index.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/tasks/engine-task.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/tasks/task-graph-with-engine-info.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/quality/index.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/quality/quality-score.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/jobs/index.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/jobs/job-with-engine-info.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/jobs/video-render.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/jobs/pipeline.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/engine-profile/index.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/engine-profile/engine-profile.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/projects/index.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/projects/project-structure.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/dist/workbench/project-overview.dto.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/generated/prisma/index.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+ts-jest[ts-compiler] (WARN) Got a `.js` file to compile while `allowJs` option is not set to `true` (file: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/generated/prisma/runtime/library.js). To fix this:
+  - if you want TypeScript to process JS files, set `allowJs` to `true` in your TypeScript config (usually tsconfig.json)
+  - if you do not want TypeScript to process your `.js` files, in your Jest config change the `transform` key which value is `ts-jest` so that it does not match `.js` files anymore
+[32m[Nest] 48355  - [39m2026/02/01 02:35:17 [32m    LOG[39m [38;5;3m[PrismaService] [39m[32m[PrismaService] Prisma Client 诊断信息:[39m
+[32m[Nest] 48355  - [39m2026/02/01 02:35:17 [32m    LOG[39m [38;5;3m[PrismaService] [39m[32mObject:[39m
+{
+  "prismaClientSource": "PrismaService",
+  "prismaClientPath": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/index.ts",
+  "hasNonceStore": true,
+  "modelKeys": [
+    "logger",
+    "user",
+    "organization",
+    "membership",
+    "project",
+    "season",
+    "episode",
+    "scene",
+    "shot",
+    "characterIdentityAnchor",
+    "semanticEnhancement",
+    "shotPlanning",
+    "structureQualityReport",
+    "engineTask",
+    "engine",
+    "engineVersion",
+    "jobEngineBinding",
+    "nonceStore",
+    "role",
+    "permission",
+    "rolePermission",
+    "projectMember",
+    "task",
+    "workerJob",
+    "shotJob",
+    "workerNode",
+    "workerHeartbeat",
+    "modelRegistry",
+    "templatePreset",
+    "qualityScore"
+  ]
+}
+
+[32m[Nest] 48355  - [39m2026/02/01 02:35:17 [32m    LOG[39m [38;5;3m[PrismaService] [39m[32m[P0_EVIDENCE] Active DATABASE_URL: postgresql://postgres:***@localhost:5432/scu[39m
+[31m[Nest] 48355  - [39m2026/02/01 02:35:17 [31m  ERROR[39m [38;5;3m[CE07MemoryUpdateAdapter] [39m[31m[CE07] Failed: BILLING_REJECTED_ATTEMPT_GT_JOB attempts=0 attempt=1 jobId=job_b47e4037-c172-4cb0-982a-14f597b290fe[39m
+Error: BILLING_REJECTED_ATTEMPT_GT_JOB attempts=0 attempt=1 jobId=job_b47e4037-c172-4cb0-982a-14f597b290fe
+    at CostLedgerService.recordFromEvent (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/cost/cost-ledger.service.ts:81:13)
+    at CE07MemoryUpdateAdapter.invoke (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce07_memory_update.local.adapter.ts:106:13)
+    at Object.<anonymous> (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/__tests__/ce07_memory_update.spec.ts:117:24)
+  console.error
+    Adapter failed: {
+      code: 'CE07_EXECUTION_ERROR',
+      message: 'BILLING_REJECTED_ATTEMPT_GT_JOB attempts=0 attempt=1 jobId=job_b47e4037-c172-4cb0-982a-14f597b290fe'
+    }
+
+      123 |
+      124 |         if (String(result.status).toUpperCase() !== "SUCCESS") {
+    > 125 |             console.error("Adapter failed:", result.error);
+          |                     ^
+      126 |         }
+      127 |
+      128 |         expect(String(result.status).toUpperCase()).toBe("SUCCESS");
+
+      at Object.<anonymous> (engines/adapters/__tests__/ce07_memory_update.spec.ts:125:21)
+
+FAIL src/engines/adapters/__tests__/ce07_memory_update.spec.ts
+  ce07_memory_update integration
+    ✕ should write memory, audit, and ledger (36 ms)
+
+  ● ce07_memory_update integration › should write memory, audit, and ledger
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "SUCCESS"
+    Received: "FAILED"
+
+      126 |         }
+      127 |
+    > 128 |         expect(String(result.status).toUpperCase()).toBe("SUCCESS");
+          |                                                     ^
+      129 |
+      130 |         // Verify DB
+      131 |         const cm = await prisma.characterMemory.findFirst({
+
+      at Object.<anonymous> (engines/adapters/__tests__/ce07_memory_update.spec.ts:128:53)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 1 total
+Snapshots:   0 total
+Time:        3.664 s
+Ran all test suites matching /src\/engines\/adapters\/__tests__\/ce07_memory_update.spec.ts/i.
+undefined
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: jest src/engines/adapters/__tests__/ce07_memory_update.spec.ts
