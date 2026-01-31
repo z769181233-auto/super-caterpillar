@@ -6,7 +6,6 @@ cd "$ROOT"
 
 source tools/p6/_lib.sh
 need git
-need shasum
 need node
 
 TS="${TS_OVERRIDE:-$(date +%Y%m%d_%H%M%S)}"
@@ -32,7 +31,16 @@ bash tools/p6/gate_p6_3_rollback_drill.sh "$EVI"
 bash tools/p6/gate_p6_4_cost_guardrails.sh "$EVI"
 
 # checksums for evidence dir
-find "$EVI" -maxdepth 1 -type f -print0 | sort -z | xargs -0 shasum -a 256 > "$EVI/SHA256SUMS.txt"
+SHA_CMD=""
+if command -v sha256sum >/dev/null 2>&1; then
+  SHA_CMD="sha256sum"
+elif command -v shasum >/dev/null 2>&1; then
+  SHA_CMD="shasum -a 256"
+else
+  echo "ERROR: Missing checksum tool: sha256sum or shasum" >&2; exit 1
+fi
+
+find "$EVI" -maxdepth 1 -type f -print0 | sort -z | xargs -0 $SHA_CMD > "$EVI/SHA256SUMS.txt"
 
 # evidence index json
 node - <<'NODE' "$EVI"
@@ -61,6 +69,6 @@ log "[P6] PASS: Release Readiness gates completed"
 log "[P6] EVIDENCE_INDEX: $EVI/EVIDENCE_INDEX.json"
 
 # generate independent checksum for the index itself
-shasum -a 256 "$EVI/EVIDENCE_INDEX.json" > "$EVI/EVIDENCE_INDEX.sha256"
+$SHA_CMD "$EVI/EVIDENCE_INDEX.json" > "$EVI/EVIDENCE_INDEX.sha256"
 # Index checksum is safe to append to SHA256SUMS.txt (not self-referential to the index content)
 cat "$EVI/EVIDENCE_INDEX.sha256" >> "$EVI/SHA256SUMS.txt"

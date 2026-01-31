@@ -57,7 +57,25 @@ _Evidence Dir: docs/\_evidence/p5_final_review_20260131_201914/_
 - [x] P6-1: 数据库迁移安全演练 (DB Migration Safety)
 - [x] P6-2: 核心指标可观测性接入 (Observability Required)
 - [x] P6-3: 生产级回滚全流程演练 (Rollback Drill)
+- [x] P6-2: 核心指标可观测性接入 (Observability Required)
+- [x] P6-3: 生产级回滚全流程演练 (Rollback Drill)
 - [x] P6-4: 成本配额与熔断护栏验证 (Cost Guardrails)
+
+## [/] Phase 7: Production Deployment Drill (Prod Drill)
+
+- [ ] PLAN-P7-0: Establish P7 Runner & Adapter Contract
+  - [x] Run `tools/run_p6_release_readiness.sh` and generate evidence
+  - [x] Verify evidence package
+  - [ ] Create `tools/run_p7_prod_deploy_drill.sh`
+  - [ ] Define adapter contract (blue/green deploy, cutover, rollback, healthcheck)
+- [ ] PLAN-P6-2: Integrate with CI (GitHub Actions)
+  - [x] Create CI workflow `required_p6_release_readiness.yml`
+  - [x] Harden scripts (rollback trap, evidence index checksum)
+  - [ ] Use cross-platform checksum logic (sha256sum/shasum)
+  - [ ] Remove `|| true` from P6-1 for strict failure
+  - [ ] Enable Branch Protection (User Action)
+- [ ] PLAN-P7-1: Create Manual Trigger Workflow
+  - [ ] Create `.github/workflows/p7_prod_deploy_drill.yml`
 
 ---
 

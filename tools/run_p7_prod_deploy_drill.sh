@@ -46,4 +46,40 @@ log "[P7-4] ROLLBACK -> BLUE"
 bash tools/deploy/p7_rollback_to_blue.sh 2>&1 | tee "$EVI/p7_4_rollback.log"
 bash tools/deploy/p7_healthcheck.sh live 2>&1 | tee "$EVI/p7_4_health_live.log"
 
+# checksums for evidence dir
+SHA_CMD=""
+if command -v sha256sum >/dev/null 2>&1; then
+  SHA_CMD="sha256sum"
+elif command -v shasum >/dev/null 2>&1; then
+  SHA_CMD="shasum -a 256"
+else
+  die "Missing checksum tool: sha256sum or shasum"
+fi
+
+find "$EVI" -maxdepth 1 -type f -print0 | sort -z | xargs -0 $SHA_CMD > "$EVI/SHA256SUMS.txt"
+
+node - <<'NODE' "$EVI"
+const fs = require("fs");
+const path = require("path");
+const dir = process.argv[2];
+const sums = fs.readFileSync(path.join(dir, "SHA256SUMS.txt"), "utf8")
+  .trim().split("\n").filter(Boolean)
+  .map(line => {
+    const [sha, file] = line.trim().split(/\s+/);
+    return { file: file.replace(dir + "/", ""), sha256: sha };
+  });
+
+const index = {
+  phase: "7",
+  name: "prod deployment drill",
+  status: "PASS",
+  evidence_dir: dir,
+  generated_at: new Date().toISOString(),
+  artifacts: sums,
+};
+fs.writeFileSync(path.join(dir, "EVIDENCE_INDEX.json"), JSON.stringify(index, null, 2) + "\n");
+NODE
+
+$SHA_CMD "$EVI/EVIDENCE_INDEX.json" > "$EVI/EVIDENCE_INDEX.sha256"
+
 log "[P7] PASS: production deployment drill completed"

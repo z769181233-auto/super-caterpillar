@@ -47,7 +47,7 @@ log "[P6-1] shadow db migrate status..."
 
 # Minimal structure check: ensure Prisma can connect & query something (no data assumptions)
 log "[P6-1] prisma db pull (schema validation only, no file write)..."
-( pnpm -s prisma db pull --schema "$SCHEMA" --print 2>&1 || true ) | tee "$EVI/p6_1_db_pull_shadow.log"
+( pnpm -s prisma db pull --schema "$SCHEMA" --print 2>&1 ) | tee "$EVI/p6_1_db_pull_shadow.log"
 # Revert schema changes to keep working tree clean for P6-3
 log "[P6-1] reverting schema.prisma changes..."
 git checkout "$SCHEMA" || true
