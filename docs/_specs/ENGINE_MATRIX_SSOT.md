@@ -181,3 +181,21 @@
 > **P8 Status: HARD SEALED** (2026-01-31)
 > Release governance, Monitoring SSOT, Incident simulation, and Cost circuit breakers are fully verified.
 > Evidence: `docs/_evidence/p8_operating_readiness_20260131_233552`
+
+---
+
+## PLANNED ENGINES (Backlog → REAL)
+
+> 说明：此表是"规划侧 SSOT"。没有写在这里的引擎，不允许在实现层偷偷出现；反之，写在这里的引擎，必须最终进入 REAL/SEALED。
+
+| engine_key | status | priority | spec_ref | adapter_path | gate_path | cost_model | deps | notes |
+|---|---|---|---|---|---|---|---|---|
+| ce07_memory_update | PLANNED | P1 | EngineSpec_V3.0 §CE07 | apps/api/src/engines/adapters/ce07_memory_update.local.adapter.ts | tools/gate/gates/gate_ce07_memory_update.sh | ledger_required | postgres | memory timeline + query |
+| shot_preview | PLANNED | P1 | EngineSpec_V3.0 §PREVIEW | apps/api/src/engines/adapters/shot_preview.fast.adapter.ts | tools/gate/gates/gate_shot_preview_fast.sh | ledger_required | redis+render | <5s preview target |
+| translation_engine | PLANNED | P1 | EngineSpec_V3.0 §TRANS | apps/api/src/engines/adapters/translation_engine.adapter.ts | tools/gate/gates/gate_translation_engine.sh | ledger_required | provider_api | no-key => FAIL |
+| style_transfer | PLANNED | P1 | EngineSpec_V3.0 §STYLE | apps/api/src/engines/adapters/style_transfer.adapter.ts | tools/gate/gates/gate_style_transfer.sh | ledger_required | comfy/remote | multi-style batch gate |
+| character_gen | PLANNED | P2 | EngineSpec_V3.0 §CHAR | apps/api/src/engines/adapters/character_gen.adapter.ts | tools/gate/gates/gate_character_gen.sh | ledger_required | gpu/remote | multi-view |
+| scene_composition | PLANNED | P2 | EngineSpec_V3.0 §SCENE | apps/api/src/engines/adapters/scene_composition.adapter.ts | tools/gate/gates/gate_scene_composition.sh | ledger_required | ffmpeg | layers+light |
+| emotion_analysis | PLANNED | P2 | EngineSpec_V3.0 §EMO | apps/api/src/engines/adapters/emotion_analysis.adapter.ts | tools/gate/gates/gate_emotion_analysis.sh | ledger_required | nlp | 6 emotions |
+| dialogue_optimization | PLANNED | P2 | EngineSpec_V3.0 §DIA | apps/api/src/engines/adapters/dialogue_optimization.adapter.ts | tools/gate/gates/gate_dialogue_optimization.sh | ledger_required | llm | ooc guard |
+
