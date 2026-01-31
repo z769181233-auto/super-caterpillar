@@ -15,6 +15,7 @@ import { NovelImportModule } from '../novel-import/novel-import.module';
 import { PublishModule } from '../publish/publish.module';
 
 import { Stage1VerificationHook } from './hooks/stage1-verification.hook';
+import { ProductionFlowHook } from './hooks/production-flow.hook';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { Stage1VerificationHook } from './hooks/stage1-verification.hook';
     PublishModule,
   ],
   controllers: [OrchestratorController, OrchestratorMonitorController],
-  providers: [OrchestratorService, Stage1VerificationHook],
+  providers: [OrchestratorService, Stage1VerificationHook, ProductionFlowHook],
   exports: [OrchestratorService],
 })
 export class OrchestratorModule {}

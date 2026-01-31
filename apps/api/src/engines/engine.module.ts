@@ -6,7 +6,7 @@
  * 参考《毛毛虫宇宙_模型宇宙说明书_ModelUniverseSpec_V1.0》中与引擎注册相关的部分
  */
 
-import { Module, OnModuleInit, Logger, Inject } from '@nestjs/common';
+import { Module, OnModuleInit, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter.NEW';
@@ -34,9 +34,10 @@ import { G5DialogueBindingAdapter } from './adapters/g5-dialogue-binding.adapter
 import { G5SemanticMotionMapperAdapter } from './adapters/g5-semantic-motion-mapper.adapter';
 import { G5AssetLayeringResolverAdapter } from './adapters/g5-asset-layering-resolver.adapter';
 import { G5SubengineHubService } from './g5-subengine-hub.service';
+import { EngineHubModule } from '../engine-hub/engine-hub.module';
 
 @Module({
-  imports: [PrismaModule, EngineAdminModule], // S3-C.1: 导入 EngineAdminModule 以使用 EngineAdminService
+  imports: [PrismaModule, EngineAdminModule, forwardRef(() => EngineHubModule)], // 修复 DI 缺失
   controllers: [EngineController], // S3-C.1: 注册公开的引擎控制器
   providers: [
     EngineRegistry,

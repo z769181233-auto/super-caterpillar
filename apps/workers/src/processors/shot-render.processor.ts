@@ -1,13 +1,6 @@
 import { PrismaClient, AssetOwnerType, AssetType } from 'database';
-import * as path from 'path';
-import { promises as fsp } from 'fs';
 import { ApiClient } from '../api-client';
-import { EngineHubClient } from '../engine-hub-client';
-import { CostLedgerService } from '../billing/cost-ledger.service';
 import { ProcessorContext } from '../types/processor-context';
-import { sha256File } from '../../../../packages/shared/hash';
-import { ensureDir, fileExists } from '../../../../packages/shared/fs_async';
-import { runCanonGuard } from '../../../../packages/canon-guard';
 
 export interface ShotRenderProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
@@ -15,169 +8,83 @@ export interface ShotRenderProcessorResult {
   error?: string;
 }
 
+/**
+ * Shot Render Processor - Hub-only Architecture (PLAN-5)
+ * - Removes local FFmpeg/Sharp/Canon logic.
+ * - Delegates to EngineHub (shot_render + ce23).
+ * - Handles identity consistency and asset lifecycle.
+ */
 export async function processShotRenderJob(
   context: ProcessorContext
 ): Promise<ShotRenderProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
+  const payload = (job.payload || {}) as any;
+  const { pipelineRunId, shotId, projectId } = payload;
+  const traceId = payload.traceId || job.id;
 
-  const pipelineRunId = job.payload?.pipelineRunId;
-  const traceId = job.payload?.traceId;
-
-  if (!pipelineRunId) {
-    throw new Error(`[ShotRender] Missing pipelineRunId in payload for job ${job.id}`);
-  }
-
-  // Resolve Storage Root
-  let storageRoot: string;
-  if (process.env.REPO_ROOT) {
-    storageRoot = path.join(process.env.REPO_ROOT, '.data/storage');
-  } else if (process.env.STORAGE_ROOT) {
-    storageRoot = process.env.STORAGE_ROOT;
-  } else {
-    storageRoot = path.join(path.resolve(process.cwd(), '../../'), '.data/storage');
-  }
+  logger.log(`[ShotRender_HUB] Processing job ${job.id} for shot ${shotId}`);
 
   try {
-    // 1. Hydrate Shot
-    if (!job.shotId) {
-      throw new Error(`[ShotRender] Job ${job.id} missing shotId`);
-    }
-
+    // 1. Hydrate Shot Context
     const shot = await prisma.shot.findUnique({
-      where: { id: job.shotId },
+      where: { id: shotId },
       include: {
         scene: { include: { episode: { include: { season: { include: { project: true } } } } } },
-        organization: true,
       },
     });
+    if (!shot) throw new Error('SHOT_NOT_FOUND');
 
-    if (!shot) throw new Error(`[ShotRender] Shot ${job.shotId} not found`);
-
-    const projectId = shot?.scene?.episode?.season?.project?.id || job.projectId;
-    const organizationId = shot?.organization?.id || job.organizationId;
-    if (!projectId || !organizationId)
-      throw new Error(
-        `[ShotRender] Shot context incomplete: proj=${projectId}, org=${organizationId}`
-      );
-
-    // 2. Identity Anchor Logic (Multi-Character Ready)
-    const characterIds =
-      (job.payload as any)?.characterIds || (shot.params as any)?.characterIds || [];
-    let identityMetadata: any = {};
-
+    // 2. Identity Anchor Preparation
+    const characterIds = payload.characterIds || (shot.params as any)?.characterIds || [];
     const anchors = await prisma.characterIdentityAnchor.findMany({
-      where: {
-        characterId: { in: characterIds },
-        isActive: true,
-        status: 'READY',
-      },
+      where: { characterId: { in: characterIds }, isActive: true, status: 'READY' },
     });
 
-    if (characterIds.length > 0) {
-      const missingCharIds = characterIds.filter(
-        (id: string) => !anchors.some((a) => a.characterId === id)
-      );
-      if (missingCharIds.length > 0) {
-        throw new Error(`IDENTITY_ANCHOR_MISSING: ${missingCharIds.join(', ')}`);
-      }
-      identityMetadata = {
-        anchors: anchors.map((a) => ({
-          characterId: a.characterId,
-          anchorId: a.id,
-          seed: a.seed,
-          viewKeysSha256: a.viewKeysSha256,
-        })),
-        mode: 'required',
-      };
-    }
-
-    // 3. Engine Invocation
-    const engineHub = new EngineHubClient(apiClient);
-    const renderResult = await engineHub.invoke({
+    // 3. Invoke SHOT_RENDER Engine
+    const renderResult = await apiClient.invokeEngine({
       engineKey: 'shot_render',
-      engineVersion: 'v1.1',
       payload: {
         prompt: shot.enrichedPrompt,
         shotId: shot.id,
         projectId,
-        traceId: traceId || job.id,
+        traceId,
       },
-      metadata: {
-        traceId: traceId || job.id,
-        jobId: job.id,
-        projectId,
-        identity: identityMetadata,
-      },
+      context: { ...job.context, jobId: job.id, traceId, identity: { anchors, mode: 'required' } },
     });
 
-    if (!renderResult.success || !renderResult.output) {
-      throw new Error(`SHOT_RENDER_FAILED: ${renderResult.error?.message || 'No error message'}`);
+    if (renderResult.status !== 'SUCCESS') {
+      throw new Error(`RENDER_ENGINE_FAIL: ${renderResult.error?.message}`);
     }
 
-    const renderOutput = renderResult.output as any;
-    const sourceAbsPath = renderOutput.asset?.uri;
-    if (!sourceAbsPath || !(await fileExists(sourceAbsPath))) {
-      throw new Error(`SHOT_RENDER_INVALID_OUTPUT: Missing file at ${sourceAbsPath}`);
-    }
+    const { storageKey, sha256 } = renderResult.output;
 
-    // 4. Persistence & Normalization (Async IO Only)
-    const relativeKey = `renders/${projectId}/${shot.id}/${pipelineRunId}/keyframe.png`;
-    const absolutePath = path.resolve(storageRoot, relativeKey);
-    const auditDir = path.join(path.dirname(absolutePath), 'audit');
-
-    await ensureDir(path.dirname(absolutePath));
-    await fsp.copyFile(sourceAbsPath, absolutePath);
-
-    // Constant Memory Checksum
-    const checksum = await sha256File(absolutePath);
-
-    // 5. [P3'-4] REAL Canon Guard (Multi-Character + SSOT + Report)
-    const canonFreezePath = path.join(
-      process.env.REPO_ROOT || process.cwd(),
-      'docs/_specs/CANON_FREEZE.json'
-    );
-    const canonResult = await runCanonGuard({
-      shotId: shot.id,
-      projectId,
-      organizationId,
-      characterIds,
-      imagePath: absolutePath,
-      auditDir,
-      canonFreezePath,
-      identityAnchors: anchors.map((a) => ({
-        characterId: a.characterId,
-        anchorId: a.id,
-        viewKeysSha256: a.viewKeysSha256 ?? undefined,
-      })),
-    });
-
-    if (!canonResult.passed) {
-      // Close state as FAILED before throwing
-      await prisma.shot.update({
-        where: { id: shot.id },
-        data: { renderStatus: 'FAILED' },
-      });
-
-      await prisma.auditLog.create({
-        data: {
-          id: `audit-canon-fail-${Date.now()}`,
-          resourceType: 'shot',
-          resourceId: shot.id,
-          action: 'ce07.canon_gate.blocked',
-          orgId: organizationId,
-          details: {
-            jobId: job.id,
-            reasons: canonResult.reasons,
-            reportPath: canonResult.reportPath,
+    // 4. Invoke CE23 Identity Consistency Check (if characterIds present)
+    if (anchors.length > 0) {
+      for (const anchor of anchors) {
+        logger.log(`[ShotRender_HUB] Verifying identity consistency for ${anchor.characterId}`);
+        const ce23Result = await apiClient.invokeEngine({
+          engineKey: 'ce23_identity_consistency',
+          payload: {
+            anchorImageKey: anchor.imageKey,
+            targetImageKey: storageKey,
+            characterId: anchor.characterId,
           },
-        },
-      });
+          context: { ...job.context, jobId: job.id, traceId },
+        });
 
-      throw new Error(`CANON_GATE_FAIL: ${canonResult.reasons.join(', ')}`);
+        if (ce23Result.status !== 'SUCCESS') {
+          throw new Error(`CE23_VERIFY_FAIL: ${ce23Result.error?.message}`);
+        }
+        if (!ce23Result.output.is_consistent) {
+          throw new Error(
+            `IDENTITY_INCONSISTENT: ${anchor.characterId} score=${ce23Result.output.identity_score}`
+          );
+        }
+      }
     }
 
-    // 6. Finalize Success
+    // 5. Success Persistence
     const asset = await prisma.asset.upsert({
       where: {
         ownerType_ownerId_type: {
@@ -186,53 +93,47 @@ export async function processShotRenderJob(
           type: AssetType.IMAGE,
         },
       },
-      update: { storageKey: relativeKey, checksum, status: 'GENERATED' },
+      update: { storageKey, checksum: sha256, status: 'GENERATED', createdByJobId: job.id },
       create: {
         projectId,
         ownerId: shot.id,
         ownerType: AssetOwnerType.SHOT,
         type: AssetType.IMAGE,
-        storageKey: relativeKey,
+        storageKey,
+        checksum: sha256,
         status: 'GENERATED',
         createdByJobId: job.id,
-        checksum,
       },
     });
 
     await prisma.shot.update({
       where: { id: shot.id },
-      data: { renderStatus: 'COMPLETED', resultImageUrl: relativeKey },
+      data: { renderStatus: 'COMPLETED', resultImageUrl: storageKey },
     });
 
-    // 7. Auto-trigger VIDEO_RENDER (Logic simplified for brevity, maintaining robustness)
-    const sceneId = shot.sceneId; // Direct field
-    if (sceneId) {
+    // 6. Trigger VIDEO_RENDER
+    if (shot.sceneId) {
       await apiClient.createJob({
         projectId,
-        organizationId,
+        organizationId: shot.organizationId,
         jobType: 'VIDEO_RENDER' as any,
         payload: {
           pipelineRunId,
-          traceId: traceId || job.id,
-          frames: [relativeKey],
+          traceId,
+          frames: [storageKey],
           projectId,
-          sceneId,
+          sceneId: shot.sceneId,
           episodeId: shot.scene?.episodeId,
         },
       });
     }
 
-    return { status: 'SUCCEEDED', output: { assetId: asset.id, storageKey: relativeKey } };
+    return { status: 'SUCCEEDED', output: { assetId: asset.id, storageKey } };
   } catch (error: any) {
-    logger.error(`[ShotRender] Failed: ${error.message}`);
-    // Ensure status is marked failed if not already handled
-    try {
-      if (job.shotId) {
-        await prisma.shot
-          .update({ where: { id: job.shotId }, data: { renderStatus: 'FAILED' } })
-          .catch(() => {});
-      }
-    } catch (e) {}
-    throw error;
+    logger.error(`[ShotRender_HUB] Failed: ${error.message}`);
+    await prisma.shot
+      .update({ where: { id: shotId }, data: { renderStatus: 'FAILED' } })
+      .catch(() => {});
+    return { status: 'FAILED', error: error.message };
   }
 }

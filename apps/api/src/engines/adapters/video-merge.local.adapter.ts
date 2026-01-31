@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
+import {
+  EngineAdapter,
+  EngineInvokeInput,
+  EngineInvokeResult,
+  EngineInvokeStatus,
+} from '@scu/shared-types';
 import { videoMergeRealEngine } from '@scu/engines/video_merge';
 
 /**
@@ -32,12 +37,12 @@ export class VideoMergeLocalAdapter implements EngineAdapter {
       const output = await videoMergeRealEngine(engineInput, input.context);
 
       return {
-        status: 'SUCCESS',
+        status: EngineInvokeStatus.SUCCESS,
         output,
         metrics: {
           usage: output.billing_usage,
         },
-      } as EngineInvokeResult;
+      };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`VIDEO_RENDER Local execution failed: ${message}`);

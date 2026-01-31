@@ -1,9 +1,11 @@
 import * as path from 'path';
+import { runCoreMvpDev } from './p3prime_core_mvp_runner_dev';
+import { runCoreMvpReal } from './p3prime_core_mvp_runner_real';
 
 const args = process.argv.slice(2);
-const get = (k: string, d?: string) => {
-  const i = args.indexOf(k);
-  return i >= 0 && i + 1 < args.length ? args[i + 1] : d;
+const get = (key: string, def?: string) => {
+  const idx = args.indexOf(key);
+  return idx !== -1 ? args[idx + 1] : def;
 };
 
 const mode = get('--mode', 'real') as 'real' | 'dev';
@@ -16,25 +18,23 @@ if (!evidenceDir) {
   process.exit(1);
 }
 
-const absoluteEvidenceDir = path.isAbsolute(evidenceDir)
-  ? evidenceDir
-  : path.join(process.cwd(), evidenceDir);
+const absoluteEvidenceDir = path.resolve(process.cwd(), evidenceDir);
 
-(async () => {
-  console.log(`[Dispatcher] Starting Core MVP Runner in mode: ${mode}`);
-  console.log(`[Dispatcher] Evidence Directory: ${absoluteEvidenceDir}`);
+console.log(`[Dispatcher] Starting Core MVP Runner in mode: ${mode}`);
+console.log(`[Dispatcher] Evidence Directory: ${absoluteEvidenceDir}`);
 
-  if (mode === 'real') {
-    // 动态加载真实运行器，确保静态分析时不包含 Mock
-    const mod = await import('./p3prime_core_mvp_runner_real');
-    await mod.runCoreMvpReal({ evidenceDir: absoluteEvidenceDir, args });
-    return;
+async function main() {
+  try {
+    if (mode === 'real') {
+      await runCoreMvpReal({ evidenceDir: absoluteEvidenceDir, args });
+    } else {
+      await runCoreMvpDev({ evidenceDir: absoluteEvidenceDir, args });
+    }
+    console.log('[Dispatcher] Runner Finished Successfully.');
+  } catch (err) {
+    console.error('[Dispatcher] Critical Failure:', err);
+    process.exit(1);
   }
+}
 
-  // Dev 模式仅限开发者显式调用
-  const mod = await import('./p3prime_core_mvp_runner_dev');
-  await mod.runCoreMvpDev({ evidenceDir: absoluteEvidenceDir, args });
-})().catch((err) => {
-  console.error('[Dispatcher] Critical Failure:', err);
-  process.exit(1);
-});
+main();

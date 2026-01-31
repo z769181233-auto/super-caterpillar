@@ -25,7 +25,7 @@ import { ModelRouterV2 } from '@scu/router';
 import * as util from 'util';
 import { promises as fsp } from 'fs';
 import * as path from 'path';
-import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
+import { fileExists, ensureDir } from '../../../packages/shared/fs_async';
 import sharp from 'sharp';
 
 /**

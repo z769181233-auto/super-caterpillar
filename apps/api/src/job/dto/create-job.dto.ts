@@ -34,6 +34,7 @@ export class CreateJobDto {
     'CE07_MEMORY_UPDATE',
     'TIMELINE_PREVIEW',
     'CE11_SHOT_GENERATOR',
+    'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
   ] as const)
   type: JobType;
 

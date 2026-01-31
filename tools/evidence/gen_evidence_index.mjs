@@ -4,7 +4,7 @@ import * as path from 'path';
 
 /**
  * P3' Evidence Index Generator (Strong Consistency)
- * 确保所有条目 sha256 非空，且包含 checksums 自身。
+ * Generates both EVIDENCE_INDEX.json and EVIDENCE_INDEX.checksums
  */
 const targetDir = process.argv[2];
 if (!targetDir) {
@@ -21,7 +21,8 @@ function getFiles(dir, allFiles = []) {
     if (fs.statSync(name).isDirectory()) {
       getFiles(name, allFiles);
     } else {
-      if (!name.endsWith('EVIDENCE_INDEX.json')) {
+      const base = path.basename(name);
+      if (base !== 'EVIDENCE_INDEX.json' && base !== 'EVIDENCE_INDEX.checksums') {
         allFiles.push(name);
       }
     }
@@ -46,6 +47,14 @@ const index = {
   files: items,
 };
 
+// 1. Write JSON
 const indexPath = path.join(absoluteDir, 'EVIDENCE_INDEX.json');
 fs.writeFileSync(indexPath, JSON.stringify(index, null, 2));
+
+// 2. Write Checksums (Standard shasum format)
+const checksumsContent = items.map((i) => `${i.sha256}  ${i.path}`).join('\n') + '\n';
+const checksumsPath = path.join(absoluteDir, 'EVIDENCE_INDEX.checksums');
+fs.writeFileSync(checksumsPath, checksumsContent);
+
 console.log(`[INDEX] Generated: ${indexPath} (${items.length} files)`);
+console.log(`[INDEX] Checksums: ${checksumsPath}`);

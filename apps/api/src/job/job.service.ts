@@ -137,253 +137,264 @@ export class JobService {
     organizationId: string,
     taskId?: string
   ) {
-    // 0. dedupeKey 幂等检查（商业级强幂等，防止重复创建）
-    if (createJobDto.dedupeKey) {
-      const existing = await this.prisma.shotJob.findUnique({
-        where: { dedupeKey: createJobDto.dedupeKey },
-      });
-      if (existing) {
-        this.logger.log(
-          `[Job] create: dedupeKey=${createJobDto.dedupeKey} already exists, returning jobId=${existing.id}`
-        );
-        return existing;
-      }
-    }
-
-    // 文本安全审查
-    if (this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_TRI_STATE')) {
-      const payload = (createJobDto.payload || {}) as Record<string, any>;
-      const textToCheck =
-        payload.enrichedText ?? payload.promptText ?? payload.rawText ?? payload.text ?? null;
-
-      if (textToCheck) {
-        const traceId = payload.traceId || randomUUID();
-        // 使用一个临时ID进行检查，Job ID在后续创建
-        const tempJobId = randomUUID();
-
-        const safetyResult = await this.textSafetyService.sanitize(textToCheck, {
-          projectId: (createJobDto.payload as any)?.projectId || shotId, // 尽力获取 projectId
-          userId,
-          orgId: organizationId,
-          traceId,
-          resourceType: 'JOB',
-          resourceId: tempJobId,
-        });
-
-        if (
-          safetyResult.decision === 'BLOCK' &&
-          this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_BLOCK_ON_JOB_CREATE')
-        ) {
-          throw new UnprocessableEntityException({
-            statusCode: 422,
-            error: 'Unprocessable Entity',
-            message: 'Job creation blocked by safety check',
-            code: 'TEXT_SAFETY_VIOLATION',
-            details: {
-              decision: safetyResult.decision,
-              riskLevel: safetyResult.riskLevel,
-              reasons: safetyResult.reasons,
-              flags: safetyResult.flags,
-              traceId: safetyResult.traceId,
-            },
-          });
-        }
-      }
-    }
-
-    const shot = await this.projectService.checkShotOwnership(shotId, userId, organizationId);
-    if (!shot) throw new NotFoundException('Shot not found');
-
-    const shotWithHierarchy = await this.prisma.shot.findUnique({
-      where: { id: shotId },
-      include: {
-        scene: {
-          include: {
-            episode: {
-              include: {
-                season: { include: { project: true } },
-              },
-            },
-          },
-        },
-      },
-    });
-    const scene = shotWithHierarchy?.scene;
-    const episode = scene?.episode;
-    const project = episode?.season?.project;
-
-    if (!scene || !episode || !project) {
-      throw new NotFoundException('Shot hierarchy is incomplete');
-    }
-
-    // Stage 4: Hard Gate
-    // 工业化硬性门槛：Scene 必须通过 Stage 2 (Novel Analysis) 才能进入 Stage 3 (Shot Render)
-    if (!scene.summary) {
-      throw new BadRequestException(
-        'Cannot create job: Scene analysis incomplete (missing summary). Please complete Stage 2 first.'
-      );
-    }
-
-    // PRODUCTION_MODE Gate: 未审核不允许渲染
-    if (process.env.NODE_ENV === 'production' && createJobDto.type === JobTypeEnum.SHOT_RENDER) {
-      if (
-        shot.reviewStatus !== ShotReviewStatus.APPROVED &&
-        shot.reviewStatus !== ShotReviewStatus.FINALIZED
-      ) {
-        throw new ForbiddenException({
-          code: 'SHOT_NOT_APPROVED',
-          message: 'Production mode requires human approval (APPROVED/FINALIZED) before rendering.',
-        });
-      }
-    }
-
-    // API-Side Stable Error Code for Fail Fast
-    if (createJobDto.type === JobTypeEnum.NOVEL_ANALYSIS) {
-      const novelSource = await this.prisma.novel.findFirst({
-        where: { projectId: project.id },
-      });
-      if (!novelSource || !novelSource.rawFileUrl) {
-        throw new BadRequestException(
-          'NOVEL_SOURCE_MISSING: Project has no novel source or empty text.'
-        );
-      }
-    }
-
-    // Stage 10: Billing Hard Gate for High Cost Jobs
-    // COST_TABLE: VIDEO_RENDER = 10, SHOT_RENDER = 2, OTHERS = 0 (for now)
-    let requiredCredits = 0;
-    if (createJobDto.type === JobTypeEnum.VIDEO_RENDER) requiredCredits = 10;
-    else if (createJobDto.type === JobTypeEnum.SHOT_RENDER) requiredCredits = 2;
-
-    if (requiredCredits > 0) {
-      try {
-        // TraceId for audit
-        const traceId = `JOB_CREATE_${shotId}_${createJobDto.type}_${Date.now()}`;
-        console.log(`[JOB_DEBUG] billingService defined: ${!!this.billingService}`);
-        console.log(
-          `[JOB_DEBUG] calling billingService.consumeCredits with orgId=${organizationId} userId=${userId} credits=${requiredCredits}`
-        );
-        await this.billingService.consumeCredits(
-          project.id,
-          userId,
-          organizationId,
-          requiredCredits,
-          createJobDto.type,
-          traceId
-        );
-      } catch (error: any) {
-        if (error instanceof ForbiddenException) throw error;
-
-        console.error(
-          `[JOB_ERROR] Billing gate REJECTED job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}. Actual error: ${error.message}`
-        );
-        throw new ForbiddenException(
-          `Insufficient credits to start job. Required: ${requiredCredits} credits. Details: ${error.message}`
-        );
-      }
-    }
-
-    // E4: SHOT_RENDER 强制契约 - 必须携带有效 referenceSheetId
-    if (createJobDto.type === JobTypeEnum.SHOT_RENDER) {
-      const referenceSheetId = createJobDto.payload?.referenceSheetId;
-      await this.validateReferenceSheetId(
-        referenceSheetId,
-        organizationId,
-        project.id,
-        createJobDto.isVerification
-      );
-    }
-
-    const finalTaskId =
-      taskId ||
-      (
-        await this.taskService.create({
-          organizationId,
-          projectId: project.id,
-          type: TaskTypeEnum.SHOT_RENDER,
-          status: TaskStatusEnum.PENDING,
-          payload: { shotId, jobType: createJobDto.type, ...createJobDto.payload },
-        })
-      ).id;
-
-    // Stage3-A: 在事务中创建 Job 并绑定 Engine（确保原子性）
-    // 绑定之前不要对外返回 job，绑定失败必须保证 job 不可领取
-    let job;
     try {
-      job = await this.prisma.$transaction(async (tx) => {
-        // 1. 创建 Job
-        const createdJob = await tx.shotJob.create({
-          data: {
-            organizationId,
-            projectId: project.id,
-            episodeId: episode.id,
-            sceneId: scene.id,
-            shotId,
-            taskId: finalTaskId,
-            type: createJobDto.type as JobTypeType,
-            status: JobStatusEnum.PENDING,
-            priority: 0,
-            maxRetry: 3,
-            retryCount: 0,
-            attempts: 0,
-            payload: createJobDto.payload ?? {},
-            engineConfig: createJobDto.engineConfig ?? {},
-            traceId: createJobDto.traceId,
-            isVerification: createJobDto.isVerification || false, // Handle isVerification
-            dedupeKey: createJobDto.dedupeKey, // Handle dedupeKey
-          },
-        });
-
-        // 2. 绑定 Engine（在同一个事务中）
-        const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
-          createJobDto.type as JobType
-        );
-        if (!engineSelection) {
-          // 如果没有可用 Engine，事务会自动回滚 Job 创建
-          throw new BadRequestException(`No engine available for job type: ${createJobDto.type}`);
-        }
-
-        // 3. 创建 Engine Binding（在同一个事务中）
-        await tx.jobEngineBinding.create({
-          data: {
-            jobId: createdJob.id,
-            engineId: engineSelection.engineId,
-            engineKey: engineSelection.engineKey,
-            engineVersionId: engineSelection.engineVersionId,
-            status: JobEngineBindingStatus.BOUND,
-            metadata: {
-              selectedAt: new Date().toISOString(),
-              reason: 'Job creation binding',
-            },
-          },
-        });
-
-        return createdJob;
-      });
-    } catch (error: any) {
-      // 并发冲突兜底：如果是 dedupeKey unique violation，再次查询返回已存在作业
-      if (
-        createJobDto.dedupeKey &&
-        error.code === 'P2002' &&
-        error.meta?.target?.includes('dedupeKey')
-      ) {
+      // 0. dedupeKey 幂等检查（商业级强幂等，防止重复创建）
+      if (createJobDto.dedupeKey) {
         const existing = await this.prisma.shotJob.findUnique({
           where: { dedupeKey: createJobDto.dedupeKey },
         });
         if (existing) {
           this.logger.log(
-            `[Job] create: Caught dedupeKey unique violation, returning existing jobId=${existing.id}`
+            `[Job] create: dedupeKey=${createJobDto.dedupeKey} already exists, returning jobId=${existing.id}`
           );
           return existing;
         }
       }
-      throw error;
-    }
 
-    this.logger.log(
-      `Job created successfully: jobId=${job.id}, type=${job.type}, isVerification=${job.isVerification}`
-    );
-    return job;
+      // 文本安全审查
+      if (this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_TRI_STATE')) {
+        const payload = (createJobDto.payload || {}) as Record<string, any>;
+        const textToCheck =
+          payload.enrichedText ?? payload.promptText ?? payload.rawText ?? payload.text ?? null;
+
+        if (textToCheck) {
+          const traceId = payload.traceId || randomUUID();
+          // 使用一个临时ID进行检查，Job ID在后续创建
+          const tempJobId = randomUUID();
+
+          const safetyResult = await this.textSafetyService.sanitize(textToCheck, {
+            projectId: (createJobDto.payload as any)?.projectId || shotId, // 尽力获取 projectId
+            userId,
+            orgId: organizationId,
+            traceId,
+            resourceType: 'JOB',
+            resourceId: tempJobId,
+          });
+
+          if (
+            safetyResult.decision === 'BLOCK' &&
+            this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_BLOCK_ON_JOB_CREATE')
+          ) {
+            throw new UnprocessableEntityException({
+              statusCode: 422,
+              error: 'Unprocessable Entity',
+              message: 'Job creation blocked by safety check',
+              code: 'TEXT_SAFETY_VIOLATION',
+              details: {
+                decision: safetyResult.decision,
+                riskLevel: safetyResult.riskLevel,
+                reasons: safetyResult.reasons,
+                flags: safetyResult.flags,
+                traceId: safetyResult.traceId,
+              },
+            });
+          }
+        }
+      }
+
+      const shot = await this.projectService.checkShotOwnership(shotId, userId, organizationId);
+      if (!shot) throw new NotFoundException('Shot not found');
+
+      const shotWithHierarchy = await this.prisma.shot.findUnique({
+        where: { id: shotId },
+        include: {
+          scene: {
+            include: {
+              episode: {
+                include: {
+                  season: { include: { project: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+      const scene = shotWithHierarchy?.scene;
+      const episode = scene?.episode;
+      const project = episode?.season?.project;
+
+      if (!scene || !episode || !project) {
+        throw new NotFoundException('Shot hierarchy is incomplete');
+      }
+
+      // Stage 4: Hard Gate
+      // 工业化硬性门槛：Scene 必须通过 Stage 2 (Novel Analysis) 才能进入 Stage 3 (Shot Render)
+      if (!scene.summary) {
+        throw new BadRequestException(
+          'Cannot create job: Scene analysis incomplete (missing summary). Please complete Stage 2 first.'
+        );
+      }
+
+      // PRODUCTION_MODE Gate: 未审核不允许渲染
+      if (process.env.NODE_ENV === 'production' && createJobDto.type === JobTypeEnum.SHOT_RENDER) {
+        if (
+          shot.reviewStatus !== ShotReviewStatus.APPROVED &&
+          shot.reviewStatus !== ShotReviewStatus.FINALIZED
+        ) {
+          throw new ForbiddenException({
+            code: 'SHOT_NOT_APPROVED',
+            message:
+              'Production mode requires human approval (APPROVED/FINALIZED) before rendering.',
+          });
+        }
+      }
+
+      // API-Side Stable Error Code for Fail Fast
+      if (createJobDto.type === JobTypeEnum.NOVEL_ANALYSIS) {
+        const novelSource = await this.prisma.novel.findFirst({
+          where: { projectId: project.id },
+        });
+        if (!novelSource || !novelSource.rawFileUrl) {
+          throw new BadRequestException(
+            'NOVEL_SOURCE_MISSING: Project has no novel source or empty text.'
+          );
+        }
+      }
+
+      // Stage 10: Billing Hard Gate for High Cost Jobs
+      // COST_TABLE: VIDEO_RENDER = 10, SHOT_RENDER = 2, OTHERS = 0 (for now)
+      let requiredCredits = 0;
+      if (createJobDto.type === JobTypeEnum.VIDEO_RENDER) requiredCredits = 10;
+      else if (createJobDto.type === JobTypeEnum.SHOT_RENDER) requiredCredits = 2;
+
+      if (requiredCredits > 0) {
+        try {
+          // TraceId for audit
+          const traceId = `JOB_CREATE_${shotId}_${createJobDto.type}_${Date.now()}`;
+          console.log(`[JOB_DEBUG] billingService defined: ${!!this.billingService}`);
+          console.log(
+            `[JOB_DEBUG] calling billingService.consumeCredits with orgId=${organizationId} userId=${userId} credits=${requiredCredits}`
+          );
+          await this.billingService.consumeCredits(
+            project.id,
+            userId,
+            organizationId,
+            requiredCredits,
+            createJobDto.type,
+            traceId
+          );
+        } catch (error: any) {
+          if (error instanceof ForbiddenException) throw error;
+
+          console.error(
+            `[JOB_ERROR] Billing gate REJECTED job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}. Actual error: ${error.message}`
+          );
+          throw new ForbiddenException(
+            `Insufficient credits to start job. Required: ${requiredCredits} credits. Details: ${error.message}`
+          );
+        }
+      }
+
+      // E4: SHOT_RENDER 强制契约 - 必须携带有效 referenceSheetId
+      if (createJobDto.type === JobTypeEnum.SHOT_RENDER) {
+        const referenceSheetId = createJobDto.payload?.referenceSheetId;
+        await this.validateReferenceSheetId(
+          referenceSheetId,
+          organizationId,
+          project.id,
+          createJobDto.isVerification
+        );
+      }
+
+      const finalTaskId =
+        taskId ||
+        (
+          await this.taskService.create({
+            organizationId,
+            projectId: project.id,
+            type: TaskTypeEnum.SHOT_RENDER,
+            status: TaskStatusEnum.PENDING,
+            payload: { shotId, jobType: createJobDto.type, ...createJobDto.payload },
+          })
+        ).id;
+
+      // Stage3-A: 在事务中创建 Job 并绑定 Engine（确保原子性）
+      // 绑定之前不要对外返回 job，绑定失败必须保证 job 不可领取
+      let job;
+      try {
+        job = await this.prisma.$transaction(async (tx) => {
+          // 1. 创建 Job
+          const createdJob = await tx.shotJob.create({
+            data: {
+              organizationId,
+              projectId: project.id,
+              episodeId: episode.id,
+              sceneId: scene.id,
+              shotId,
+              taskId: finalTaskId,
+              type: createJobDto.type as JobTypeType,
+              status: JobStatusEnum.PENDING,
+              priority: 0,
+              maxRetry: 3,
+              retryCount: 0,
+              attempts: 0,
+              payload: createJobDto.payload ?? {},
+              engineConfig: createJobDto.engineConfig ?? {},
+              traceId: createJobDto.traceId,
+              isVerification: createJobDto.isVerification || false, // Handle isVerification
+              dedupeKey: createJobDto.dedupeKey, // Handle dedupeKey
+            },
+          });
+
+          // 2. 绑定 Engine（在同一个事务中）
+          const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
+            createJobDto.type as JobType
+          );
+          if (!engineSelection) {
+            // 如果没有可用 Engine，事务会自动回滚 Job 创建
+            throw new BadRequestException(`No engine available for job type: ${createJobDto.type}`);
+          }
+
+          // 3. 创建 Engine Binding（在同一个事务中）
+          await tx.jobEngineBinding.create({
+            data: {
+              jobId: createdJob.id,
+              engineId: engineSelection.engineId,
+              engineKey: engineSelection.engineKey,
+              engineVersionId: engineSelection.engineVersionId,
+              status: JobEngineBindingStatus.BOUND,
+              metadata: {
+                selectedAt: new Date().toISOString(),
+                reason: 'Job creation binding',
+              },
+            },
+          });
+
+          return createdJob;
+        });
+      } catch (error: any) {
+        // 并发冲突兜底：如果是 dedupeKey unique violation，再次查询返回已存在作业
+        if (
+          createJobDto.dedupeKey &&
+          error.code === 'P2002' &&
+          error.meta?.target?.includes('dedupeKey')
+        ) {
+          const existing = await this.prisma.shotJob.findUnique({
+            where: { dedupeKey: createJobDto.dedupeKey },
+          });
+          if (existing) {
+            this.logger.log(
+              `[Job] create: Caught dedupeKey unique violation, returning existing jobId=${existing.id}`
+            );
+            return existing;
+          }
+        }
+        throw error;
+      }
+
+      this.logger.log(
+        `Job created successfully: jobId=${job.id}, type=${job.type}, isVerification=${job.isVerification}`
+      );
+      return job;
+    } catch (err: any) {
+      // DEBUG: Log error to file
+      const fs = await import('fs');
+      const logPath =
+        '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/job_create_error.log';
+      const msg = `[${new Date().toISOString()}] JobService.create FAILED:\n${err.message}\n${err.stack}\n----------------\n`;
+      fs.appendFileSync(logPath, msg);
+      throw err;
+    }
   }
 
   /**

@@ -527,6 +527,12 @@ importers:
         specifier: ^4.3.5
         version: 4.3.5
 
+  packages/shared:
+    dependencies:
+      sharp:
+        specifier: 0.34.5
+        version: 0.34.5
+
   packages/shared-types:
     dependencies:
       class-validator:

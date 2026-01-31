@@ -502,4 +502,16 @@ export class ApiClient {
 
     return response.data;
   }
+
+  /**
+   * 调用 EngineHub 引擎 (Stage13)
+   * POST /_internal/engine/invoke
+   */
+  async invokeEngine<T = any>(req: { engineKey: string; payload: any; context: any }): Promise<T> {
+    const response = await this.request<T>('POST', '/_internal/engine/invoke', req);
+    if (!response.success || !response.data) {
+      throw new Error(`Engine invocation failed: ${response.error?.message || response.message}`);
+    }
+    return response.data;
+  }
 }

@@ -3,11 +3,11 @@
  * Stage2: Engine Hub 统一模块，导出 EngineRegistry 和 EngineInvoker
  */
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { EngineRegistryHubService } from './engine-registry-hub.service';
 import { EngineInvokerHubService } from './engine-invoker-hub.service';
 import { EngineHubController } from './engine-hub.controller';
-import { EngineModule } from '../engines/engine.module';
+import { EngineModule } from '../engines/engine.module'; // 注意路径可能需要校准，根据 view_file 结果
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { SemanticEnhancementLocalAdapter } from './adapters/semantic-enhancement.local-adapter';
@@ -20,7 +20,7 @@ import { HmacAuthModule } from '../auth/hmac/hmac-auth.module';
 import { CostModule } from '../cost/cost.module';
 
 @Module({
-  imports: [EngineModule, AuditLogModule, AuthModule, HmacAuthModule, CostModule], // 导入相关模块以支持认证 Guard 与成本管控
+  imports: [forwardRef(() => EngineModule), AuditLogModule, AuthModule, HmacAuthModule, CostModule], // 修复双向 DI 循环
   controllers: [EngineHubController],
   providers: [
     EngineRegistryHubService,

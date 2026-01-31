@@ -42,3 +42,21 @@ export async function readBufferUnderLimit(
 
   return await readFileAsync(filePath);
 }
+
+/**
+ * Safe path joining to prevent traversal vulnerabilities.
+ * Ensures the resulting path is within the specified root.
+ */
+import * as path from 'path';
+
+export function safeJoin(root: string, key: string): string {
+  const cleaned = key.replace(/^file:\/\//, '').replace(/^\/+/, '');
+  const full = path.resolve(root, cleaned);
+  const rootAbs = path.resolve(root);
+
+  if (!full.startsWith(rootAbs + path.sep) && full !== rootAbs) {
+    throw new Error(`PATH_TRAVERSAL_BLOCKED: Key "${key}" attempts to escape root "${rootAbs}"`);
+  }
+
+  return full;
+}

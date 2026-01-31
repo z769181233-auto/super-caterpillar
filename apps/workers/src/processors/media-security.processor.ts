@@ -1,279 +1,126 @@
-// import { Job } from 'bullmq'; // Module missing in workers, using any for Job type to avoid build fail being blocked by types
-import {
-  JobType,
-  JobStatus,
-  AssetOwnerType,
-  AssetType,
-  ReviewStatus,
-  ReviewResult,
-  ReviewType,
-  PrismaClient,
-} from 'database';
-// import { PRODUCTION_MODE } from '@scu/config';
-const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
-import fs from 'fs';
-import * as path from 'path';
-import { promises as fsp } from 'fs';
-import { ensureDir, fileExists } from '../../../../packages/shared/fs_async';
-import crypto from 'crypto';
-import { spawn } from 'child_process';
-
-import { EngineHubClient } from '../engine-hub-client';
-import { readBufferUnderLimit } from '../../../../packages/shared/fs_safe';
+import { AssetOwnerType, AssetType, ReviewResult, ReviewType, PrismaClient } from 'database';
+import { ApiClient } from '../api-client';
 import { ProcessorContext } from '../types/processor-context';
 
+/**
+ * Media Security Processor - Hub-only Architecture (PLAN-5)
+ * - Removes local FFmpeg watermark/HLS logic.
+ * - Delegates to EngineHub (ce09_security).
+ * - Handles publishing review & asset updates.
+ */
 export async function processMediaSecurityJob(context: ProcessorContext) {
   const { prisma, job, apiClient } = context;
-  // job: Job -> job: any
-  const { assetId, videoAssetStorageKey, pipelineRunId, traceId, shotId, projectId } = job.payload;
-  let organizationId = job.organizationId;
-  let sourceStorageKey = videoAssetStorageKey;
-  let targetAssetId = assetId;
+  const { assetId, videoAssetStorageKey, pipelineRunId, shotId, projectId } = job.payload;
 
-  console.log(`[MediaSecurity] Processing job ${job.id}. AssetId=${assetId}, ShotId=${shotId}`);
+  console.log(`[MediaSecurity_HUB] Processing job ${job.id}. AssetId=${assetId}`);
 
-  // 0. Unified Context Resolution
-  if (!organizationId) {
-    if (shotId) {
-      const shot = await prisma.shot.findUnique({
-        where: { id: shotId },
-        include: { scene: { include: { episode: { include: { project: true } } } } },
-      });
-      organizationId = shot?.scene?.episode?.project?.organizationId;
-    } else if (projectId) {
-      const project = await prisma.project.findUnique({ where: { id: projectId } });
-      organizationId = project?.organizationId;
-    }
-  }
-
-  // 1. Resolve Asset & Source Path (Priority: assetId -> Legacy: shotId)
-  if (targetAssetId) {
-    const asset = await prisma.asset.findUnique({ where: { id: targetAssetId } });
-    if (!asset) throw new Error(`[MediaSecurity] Asset not found for id: ${targetAssetId}`);
-    sourceStorageKey = asset.storageKey.replace(/^file:\/\//, '');
-    console.log(
-      `[MediaSecurity] Resolved AssetId ${targetAssetId} to storageKey ${sourceStorageKey}`
-    );
-  } else if (shotId) {
-    if (PRODUCTION_MODE) {
-      throw new Error(
-        `PRODUCTION_MODE_FORBIDS_LEGACY_SHOT_ACCESS: Media Security requires explicit assetId in production.`
-      );
-    }
-    // Legacy / Fallback Mode (S4-7 Renders)
-    console.log(`[MediaSecurity] Legacy Mode: Resolving Asset from ShotId ${shotId}`);
-    const asset = await prisma.asset.findUnique({
-      where: {
-        ownerType_ownerId_type: {
-          ownerType: AssetOwnerType.SHOT,
-          ownerId: shotId,
-          type: AssetType.VIDEO,
-        },
-      },
-    });
-    if (!asset) throw new Error(`[MediaSecurity] Legacy Asset not found for shotId: ${shotId}`);
-    targetAssetId = asset.id;
-    sourceStorageKey = asset.storageKey.replace(/^file:\/\//, '');
-  } else {
-    throw new Error('[MediaSecurity] Missing required entry: assetId or shotId');
-  }
-
-  // 2. Locate Source File & Root Resolution
-  let runtimeDir: string;
-  if (process.env.REPO_ROOT) {
-    runtimeDir = path.join(process.env.REPO_ROOT, '.data/storage');
-  } else if (process.env.STORAGE_ROOT) {
-    runtimeDir = process.env.STORAGE_ROOT;
-  } else {
-    runtimeDir = path.join(path.resolve(process.cwd(), '../../'), '.data/storage');
-  }
-  const sourcePath = path.resolve(runtimeDir, sourceStorageKey);
-
-  if (!(await fileExists(sourcePath))) {
-    throw new Error(`[MediaSecurity] Source asset file not found: ${sourcePath}`);
-  }
-
-  // 3. Perform "Security" Operation (Mock)
-  // Logic: Copy file -> generate fingerprint -> simulate watermark
-  const secureRelativeDir = path.join('secure', projectId, pipelineRunId);
-  const secureAbsDir = path.join(runtimeDir, secureRelativeDir);
-
-  //   const secureAbsDir = path.dirname(outputAbsPath);
-  //   await ensureDir(secureAbsDir);
-
-  const outputFilename = `secure_${path.basename(sourceStorageKey, path.extname(sourceStorageKey))}.mp4`;
-  const outputAbsPath = path.join(secureAbsDir, outputFilename);
-  const outputRelativeKey = path.join(secureRelativeDir, outputFilename).replace(/\\/g, '/');
-
-  const hlsSecureDir = path.join(secureAbsDir, 'hls');
-  await ensureDir(hlsSecureDir);
-  const hlsPlaylistFilename = 'master.m3u8';
-  const hlsPlaylistAbsPath = path.join(hlsSecureDir, hlsPlaylistFilename);
-  const hlsPlaylistRelativeKey = path
-    .join(secureRelativeDir, 'hls', hlsPlaylistFilename)
-    .replace(/\\/g, '/');
-
-  // 4. Real Security Operation: Watermark + HLS Packaging
-  console.log(
-    `[MediaSecurity] Applying visible watermark and packaging HLS for ${sourceStorageKey}`
-  );
-
-  // FFmpeg: Visible Watermark + MP4 Output
-  const watermarkText = 'SUPER_CATERPILLAR_UNIVERSE';
-  const secureMp4Args = [
-    '-i',
-    sourcePath,
-    '-vf',
-    `drawtext=text='${watermarkText}':x=10:y=H-th-10:fontsize=24:fontcolor=white:shadowcolor=black:shadowx=2:shadowy=2`,
-    '-codec:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-codec:a',
-    'copy',
-    '-y',
-    outputAbsPath,
-  ];
-
-  await runFfmpeg(secureMp4Args, 'CE09_Watermark_MP4');
-
-  // FFmpeg: HLS Packaging from Secure MP4
-  const hlsArgs = [
-    '-i',
-    outputAbsPath,
-    '-c',
-    'copy',
-    '-start_number',
-    '0',
-    '-hls_time',
-    '10',
-    '-hls_list_size',
-    '0',
-    '-f',
-    'hls',
-    hlsPlaylistAbsPath,
-  ];
-  await runFfmpeg(hlsArgs, 'CE09_HLS_Secure');
-
-  // Generate Fingerprint (SHA256) of the SECURE MP4
-  // Read file safely (Limit 20MB for check)
-  const fileBuffer = await readBufferUnderLimit(outputAbsPath, 20 * 1024 * 1024);
-  const hashSum = crypto.createHash('sha256');
-  hashSum.update(fileBuffer);
-  const fingerprint = hashSum.digest('hex');
-
-  // 5. Update Asset (Security Link - Dedicated Columns DBSpec V1.1)
-  // Fix: Create SecurityFingerprint record first to satisfy FK constraint
-  let fpRecord = await prisma.securityFingerprint.findFirst({
-    where: { assetId: targetAssetId },
-  });
-
-  if (!fpRecord) {
-    fpRecord = await prisma.securityFingerprint.create({
-      data: {
-        assetId: targetAssetId,
-        fpVector: { algorithm: 'sha256', hash: fingerprint },
-      },
-    });
-  }
-
-  await prisma.asset.update({
-    where: { id: targetAssetId },
-    data: {
-      storageKey: outputRelativeKey,
-      checksum: fingerprint,
-      status: 'PUBLISHED',
-      // V1.1 Security Fields (Real Values)
-      hlsPlaylistUrl: hlsPlaylistRelativeKey,
-      signedUrl: `/api/assets/signed-url?key=${outputRelativeKey}&t=${Date.now()}`,
-      watermarkMode: 'SCU_VISIBLE_V1_BOTTOM_LEFT',
-      fingerprintId: fpRecord.id,
-    },
-  });
-
-  // Update ShotJob security status (Optional if record exists)
   try {
-    await prisma.shotJob.update({
-      where: { id: job.id },
-      data: {
-        securityProcessed: true, // V1.1 Field
-      },
-    });
-  } catch (e) {
-    console.log(
-      `[MediaSecurity] No ShotJob record for ID ${job.id} to update securityProcessed status.`
-    );
-  }
+    let targetAssetId = assetId;
+    let sourceStorageKey = videoAssetStorageKey;
 
-  // 5. Audit
-  await prisma.auditLog.create({
-    data: {
-      resourceType: 'asset',
-      resourceId: targetAssetId,
-      action: 'ce09.media_security.success',
-      orgId: organizationId && organizationId !== 'unknown' ? organizationId : undefined,
-      details: {
-        jobId: job.id,
-        fingerprint,
-        watermark: 'SCU',
-        pipelineRunId,
-        legacyShotId: shotId,
-      },
-    },
-  });
-
-  // 6. Publishing Review (Only if ShotId context exists)
-  if (shotId) {
-    const existingReview = await prisma.publishingReview.findFirst({
-      where: { shotId },
-    });
-
-    if (existingReview) {
-      await prisma.publishingReview.update({
-        where: { id: existingReview.id },
-        data: {
-          result: ReviewResult.require_review,
+    // 1. Resolve Asset
+    if (!targetAssetId && shotId) {
+      const asset = await prisma.asset.findUnique({
+        where: {
+          ownerType_ownerId_type: {
+            ownerType: AssetOwnerType.SHOT,
+            ownerId: shotId,
+            type: AssetType.VIDEO,
+          },
         },
       });
-    } else {
-      await prisma.publishingReview.create({
+      if (asset) {
+        targetAssetId = asset.id;
+        sourceStorageKey = asset.storageKey;
+      }
+    }
+
+    if (!targetAssetId || !sourceStorageKey) {
+      throw new Error('MISSING_ASSET_OR_STORAGE_KEY');
+    }
+
+    // 2. Invoke EngineHub
+    const secResult = await apiClient.invokeEngine({
+      engineKey: 'ce09_security',
+      payload: {
+        videoPath: sourceStorageKey,
+        watermarkText: 'SUPER_CATERPILLAR',
+        projectId,
+        pipelineRunId,
+      },
+      context: { ...job.context, jobId: job.id, traceId: job.payload.traceId },
+    });
+
+    if (secResult.status !== 'SUCCESS') {
+      throw new Error(`SECURITY_ENGINE_FAIL: ${secResult.error?.message}`);
+    }
+
+    const { storageKey, hlsPlaylistKey, screenshotKey, framemd5Key, sha256 } = secResult.output;
+
+    // 3. Update Asset
+    let fpRecord = await prisma.securityFingerprint.findFirst({
+      where: { assetId: targetAssetId },
+    });
+
+    if (!fpRecord) {
+      fpRecord = await prisma.securityFingerprint.create({
         data: {
+          assetId: targetAssetId,
+          fpVector: { algorithm: 'sha256', hash: sha256 },
+        },
+      });
+    }
+
+    const updatedAsset = await prisma.asset.update({
+      where: { id: targetAssetId },
+      data: {
+        storageKey,
+        checksum: sha256,
+        status: 'PUBLISHED',
+        hlsPlaylistUrl: hlsPlaylistKey,
+        signedUrl: `/api/assets/signed-url?key=${storageKey}&t=${Date.now()}`,
+        watermarkMode: 'SCU_VISIBLE_V1_ASYNC',
+        fingerprintId: fpRecord.id,
+      },
+    });
+
+    // 4. Publishing Review
+    if (shotId) {
+      await prisma.publishingReview.upsert({
+        where: { shotId },
+        update: { result: ReviewResult.require_review },
+        create: {
           shotId,
           reviewType: ReviewType.semi_auto,
-          reviewerId: null,
           result: ReviewResult.require_review,
           reviewLog: {},
         },
       });
     }
+
+    // 5. Audit
+    await prisma.auditLog.create({
+      data: {
+        id: `audit-sec-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        resourceType: 'asset',
+        resourceId: targetAssetId,
+        action: 'ce09.media_security.hub_success',
+        details: {
+          jobId: job.id,
+          sha256,
+          storageKey,
+        },
+      },
+    });
+
+    return {
+      status: 'SUCCEEDED',
+      hlsPlaylistUrl: hlsPlaylistKey,
+      storageKey,
+      fingerprintId: fpRecord.id,
+    };
+  } catch (error: any) {
+    console.error(`[MediaSecurity_HUB] Failed: ${error.message}`);
+    throw error;
   }
-
-  // P4 Fix: Return result data so API can update asset properly
-  return {
-    status: 'SUCCEEDED',
-    hlsPlaylistUrl: hlsPlaylistRelativeKey,
-    watermarkMode: 'SCU_VISIBLE_V1_BOTTOM_LEFT',
-    fingerprintId: fpRecord.id,
-    storageKey: outputRelativeKey,
-  };
-}
-
-async function runFfmpeg(args: string[], label: string) {
-  console.log(`[FFmpeg ${label}] Executing: ffmpeg ${args.join(' ')}`);
-  return new Promise<void>((resolve, reject) => {
-    const child = spawn('ffmpeg', args);
-    let output = '';
-    child.stderr.on('data', (data) => {
-      output += data.toString();
-    });
-    child.on('close', (code) => {
-      if (code === 0) resolve();
-      else
-        reject(
-          new Error(
-            `[FFmpeg ${label}] Exited with code ${code}. Output: ${output.substring(output.length - 500)}`
-          )
-        );
-    });
-  });
 }
