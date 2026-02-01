@@ -1318,6 +1318,10 @@ enum JobType {
   PIPELINE_PROD_VIDEO_V1
   CE11_SHOT_GENERATOR
   AUDIO
+  VG_RENDER
+  AU_RENDER
+  PP_RENDER
+  QC_CHECK
 }
 
 enum JobEngineBindingStatus {

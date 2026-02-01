@@ -1152,7 +1152,11 @@ exports.JobType = exports.$Enums.JobType = {
   TIMELINE_PREVIEW: 'TIMELINE_PREVIEW',
   PIPELINE_PROD_VIDEO_V1: 'PIPELINE_PROD_VIDEO_V1',
   CE11_SHOT_GENERATOR: 'CE11_SHOT_GENERATOR',
-  AUDIO: 'AUDIO'
+  AUDIO: 'AUDIO',
+  VG_RENDER: 'VG_RENDER',
+  AU_RENDER: 'AU_RENDER',
+  PP_RENDER: 'PP_RENDER',
+  QC_CHECK: 'QC_CHECK'
 };
 
 exports.WorkerStatus = exports.$Enums.WorkerStatus = {

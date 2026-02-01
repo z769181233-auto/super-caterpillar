@@ -26,6 +26,19 @@ import { TranslationCloudAdapter } from './adapters/translation.cloud.adapter';
 import { StyleTransferReplicateAdapter } from './adapters/style-transfer.replicate.adapter';
 import { CharacterGenAdapter } from './adapters/character_gen.adapter';
 import { SceneCompositionAdapter } from './adapters/scene_composition.adapter';
+import { EmotionAnalysisAdapter } from './adapters/emotion_analysis.adapter';
+import { DialogueOptimizationAdapter } from './adapters/dialogue_optimization.adapter';
+import { CE07MemoryUpdateAdapter } from './adapters/ce07_memory_update.local.adapter';
+import { CE01NarrativeStructureAdapter } from './adapters/ce01_narrative_structure.adapter';
+import { CE05ConflictDetectorAdapter } from './adapters/ce05_conflict_detector.adapter';
+import { CE08CharacterArcAdapter } from './adapters/ce08_character_arc.adapter';
+import { CE12ThemeExtractorAdapter } from './adapters/ce12_theme_extractor.adapter';
+import { CE13PacingAnalyzerAdapter } from './adapters/ce13_pacing_analyzer.adapter';
+import { VG01BackgroundRenderAdapter } from './adapters/vg01_background_render.adapter';
+import { VG02CharacterRenderAdapter } from './adapters/vg02_character_render.adapter';
+import { VG03LightingEngineAdapter } from './adapters/vg03_lighting_engine.adapter';
+import { VG04CameraPathAdapter } from './adapters/vg04_camera_path.adapter';
+import { VG05VFXCompositorAdapter } from './adapters/vg05_vfx_compositor.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -71,6 +84,19 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
     StyleTransferReplicateAdapter,
     CharacterGenAdapter,
     SceneCompositionAdapter,
+    EmotionAnalysisAdapter,
+    DialogueOptimizationAdapter,
+    CE07MemoryUpdateAdapter,
+    CE01NarrativeStructureAdapter,
+    CE05ConflictDetectorAdapter,
+    CE08CharacterArcAdapter,
+    CE12ThemeExtractorAdapter,
+    CE13PacingAnalyzerAdapter,
+    VG01BackgroundRenderAdapter,
+    VG02CharacterRenderAdapter,
+    VG03LightingEngineAdapter,
+    VG04CameraPathAdapter,
+    VG05VFXCompositorAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -80,6 +106,16 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
     HttpEngineAdapter,
     ShotRenderRouterAdapter,
     G5SubengineHubService,
+    CE01NarrativeStructureAdapter,
+    CE05ConflictDetectorAdapter,
+    CE08CharacterArcAdapter,
+    CE12ThemeExtractorAdapter,
+    CE13PacingAnalyzerAdapter,
+    VG01BackgroundRenderAdapter,
+    VG02CharacterRenderAdapter,
+    VG03LightingEngineAdapter,
+    VG04CameraPathAdapter,
+    VG05VFXCompositorAdapter,
   ], // S4-B: 导出策略服务 + HTTP 适配器与配置服务
 })
 export class EngineModule implements OnModuleInit {
@@ -127,7 +163,33 @@ export class EngineModule implements OnModuleInit {
     @Inject(CharacterGenAdapter)
     private readonly characterGenAdapter: CharacterGenAdapter,
     @Inject(SceneCompositionAdapter)
-    private readonly sceneCompositionAdapter: SceneCompositionAdapter
+    private readonly sceneCompositionAdapter: SceneCompositionAdapter,
+    @Inject(EmotionAnalysisAdapter)
+    private readonly emotionAnalysisAdapter: EmotionAnalysisAdapter,
+    @Inject(DialogueOptimizationAdapter)
+    private readonly dialogueOptimizationAdapter: DialogueOptimizationAdapter,
+    @Inject(CE07MemoryUpdateAdapter)
+    private readonly ce07Adapter: CE07MemoryUpdateAdapter,
+    @Inject(CE01NarrativeStructureAdapter)
+    private readonly ce01Adapter: CE01NarrativeStructureAdapter,
+    @Inject(CE05ConflictDetectorAdapter)
+    private readonly ce05Adapter: CE05ConflictDetectorAdapter,
+    @Inject(CE08CharacterArcAdapter)
+    private readonly ce08Adapter: CE08CharacterArcAdapter,
+    @Inject(CE12ThemeExtractorAdapter)
+    private readonly ce12Adapter: CE12ThemeExtractorAdapter,
+    @Inject(CE13PacingAnalyzerAdapter)
+    private readonly ce13Adapter: CE13PacingAnalyzerAdapter,
+    @Inject(VG01BackgroundRenderAdapter)
+    private readonly vg01Adapter: VG01BackgroundRenderAdapter,
+    @Inject(VG02CharacterRenderAdapter)
+    private readonly vg02Adapter: VG02CharacterRenderAdapter,
+    @Inject(VG03LightingEngineAdapter)
+    private readonly vg03Adapter: VG03LightingEngineAdapter,
+    @Inject(VG04CameraPathAdapter)
+    private readonly vg04Adapter: VG04CameraPathAdapter,
+    @Inject(VG05VFXCompositorAdapter)
+    private readonly vg05Adapter: VG05VFXCompositorAdapter
   ) { }
 
   onModuleInit() {
@@ -173,8 +235,12 @@ export class EngineModule implements OnModuleInit {
 
     // P0-R2: Register Video Merge Adapter
     this.registry.register(this.videoMergeAdapter);
-
     this.registry.register(this.ce11MockAdapter);
+    this.registry.register(this.characterGenAdapter);
+    this.registry.register(this.sceneCompositionAdapter);
+    this.registry.register(this.emotionAnalysisAdapter);
+    this.registry.register(this.dialogueOptimizationAdapter);
+    this.registry.register(this.ce07Adapter);
     this.registry.registerAlias('ce11_shot_generator_mock', this.ce11MockAdapter);
 
     // CE11 Real Registration
@@ -200,5 +266,23 @@ export class EngineModule implements OnModuleInit {
 
     // P2.2: Scene Composition Engine
     this.registry.register(this.sceneCompositionAdapter);
+
+    // P3: CE01 Narrative Structure
+    this.registry.register(this.ce01Adapter);
+
+    // P3: CE05 Conflict Detector
+    this.registry.register(this.ce05Adapter);
+
+    // P3.3 Batch: Character Arc, Theme, Pacing
+    this.registry.register(this.ce08Adapter);
+    this.registry.register(this.ce12Adapter);
+    this.registry.register(this.ce13Adapter);
+
+    // P3.2 Batch: VG Engines
+    this.registry.register(this.vg01Adapter);
+    this.registry.register(this.vg02Adapter);
+    this.registry.register(this.vg03Adapter);
+    this.registry.register(this.vg04Adapter);
+    this.registry.register(this.vg05Adapter);
   }
 }

@@ -46,6 +46,11 @@
 | `ce08_character_arc`       | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch_v2.sh`                 | `seal/p3_ce_batch_v2_20260201`                 | **P3.3**: Character arc progression. Evidence: `docs/_evidence/p3_ce_batch_v2_20260201`                                                                    |
 | `ce12_theme_extractor`      | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch_v2.sh`                 | `seal/p3_ce_batch_v2_20260201`                 | **P3.3**: Theme & motif extraction. Evidence: `docs/_evidence/p3_ce_batch_v2_20260201`                                                                     |
 | `ce13_pacing_analyzer`      | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch_v2.sh`                 | `seal/p3_ce_batch_v2_20260201`                 | **P3.3**: Narrative pacing analysis. Evidence: `docs/_evidence/p3_ce_batch_v2_20260201`                                                                    |
+| `vg01_background_render`   | VG_RENDER (P3)            | REAL-STUB (FFmpeg)    | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg01_background_render_20260201`         | **P3.2A**: Background generation. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                      |
+| `vg02_character_render`    | VG_RENDER (P3)            | REAL-STUB (FFmpeg)    | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg02_character_render_20260201`          | **P3.2A**: Character rendering. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                         |
+| `vg03_lighting_engine`     | VG_RENDER (P3)            | REAL-STUB (FFmpeg)    | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg03_lighting_engine_20260201`           | **P3.2A**: Lighting effects. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                            |
+| `vg04_camera_path`         | VG_RENDER (P3)            | REAL-STUB (JSON)      | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg04_camera_path_20260201`               | **P3.2A**: Camera path generation. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                     |
+| `vg05_vfx_compositor`      | VG_RENDER (P3)            | REAL-STUB (FFmpeg)    | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg05_vfx_compositor_20260201`            | **P3.2A**: VFX composition. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                            |
 
 ### 2. 迭代中引擎 (IN-PROGRESS ENGINES)
 
@@ -57,11 +62,7 @@
 
 | EngineKey | JobType | 实现状态 | 优先级 | 适配器路径 | Gate 脚本 | 计费单位 | 依赖引擎 | 备注 |
 | --------- | ------- | -------- | ------ | ---------- | --------- | -------- | -------- | ---- |
-| `vg01_background_render` | VG_RENDER | PLANNED | P3 | adapters/vg01_background_render.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | ce10 | 背景渲染：输入 prompt/style -> 输出 file://png (deterministic) |
-| `vg02_character_render` | VG_RENDER | PLANNED | P3 | adapters/vg02_character_render.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | ce11 | 角色立绘：输入 prompt/view/style -> 输出 file://png |
-| `vg03_lighting_engine` | VG_RENDER | PLANNED | P3 | adapters/vg03_lighting_engine.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | vg01 | 光照引擎：输入 source_url + lighting preset -> 输出 file://png (FFmpeg filter) |
-| `vg04_camera_path` | VG_RENDER | PLANNED | P3 | adapters/vg04_camera_path.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | ce10 | 镜头路径：输入 duration/fps + mode -> 输出 JSON (deterministic) |
-| `vg05_vfx_compositor` | VG_RENDER | PLANNED | P3 | adapters/vg05_vfx_compositor.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | vg03 | VFX 合成：输入 source_url + vfx preset -> 输出 file://png (FFmpeg overlay/noise) |
+|           |         |          |          |            |           |          |          |      |
 
 
 ---
