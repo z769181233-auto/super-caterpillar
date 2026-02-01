@@ -48,9 +48,9 @@
 ate_p3_pp_batch_v1.sh` | - | 工业级视频拼接 |
 | `pp02_subtitle_overlay` | `PP_RENDER` | P1 | YES | PP02 | `apps/api/src/engines/adapters/pp02_subtitle_overlay.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | - | 自动化字幕压制 |
 | `pp03_watermark` | `PP_RENDER` | P1 | YES | PP03 | `apps/api/src/engines/adapters/pp03_watermark.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | - | 版权隐形水印 |
-| `g5_dialogue_binding` | `AUDIO` | P1 | YES | G501 | `apps/api/src/engines/adapters/g5-dialogue-binding.adapter.ts` | `tools/gate/gates/g5_b_E0001_real.sh` | - | 语义对话绑定 |
-| `g5_semantic_motion` | `SHOT_RENDER` | P1 | YES | G502 | `apps/api/src/engines/adapters/g5-semantic-motion-mapper.adapter.ts` | `tools/gate/gates/g5_b_E0001_real.sh` | - | 动作原语合成 |
-| `g5_asset_layering` | `SHOT_RENDER` | P1 | YES | G503 | `apps/api/src/engines/adapters/g5-asset-layering-resolver.adapter.ts` | `tools/gate/gates/g5_b_E0001_real.sh` | - | 动态图层解算 |
+| `g5_dialogue_binding` | `AUDIO` | P1 | YES | G501 | `apps/api/src/engines/adapters/g5-dialogue-binding.adapter.ts` | `tools/gate/gates/g5_b_E0001_real.sh` | `seal/p3_4_promote_20260201_154257_g5`| 语义对话绑定 |
+| `g5_semantic_motion` | `SHOT_RENDER` | P1 | YES | G502 | `apps/api/src/engines/adapters/g5-semantic-motion-mapper.adapter.ts` | `tools/gate/gates/g5_b_E0001_real.sh` | `seal/p3_4_promote_20260201_154257_g5`| 动作原语合成 |
+| `g5_asset_layering` | `SHOT_RENDER` | P1 | YES | G503 | `apps/api/src/engines/adapters/g5-asset-layering-resolver.adapter.ts` | `tools/gate/gates/g5_b_E0001_real.sh` | `seal/p3_4_promote_20260201_154257_g5`| 动态图层解算 |
 | `shot_render_router` | `SHOT_RENDER` | P1 | YES | SR00 | `apps/api/src/engines/adapter
 | engine_key | job_type | state | ledger_required | audit_prefix | adapter_path | gate_path | seal_tag | notes | expected_adapter_path | expected_gate_path |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |

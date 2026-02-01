@@ -19,7 +19,7 @@ echo "[1] Run promoter (syntax preflight + gate double-run tolerant + SSOT migra
 node tools/p3/ssot/plan34_promote_inprogress_v1.js "$SSOT_PATH" "$EVI_DIR"
 
 echo "[2] Stage changes (SSOT + evidence + scripts)..."
-git add "$SSOT_PATH" "$EVI_DIR" tools/p3/ssot/plan34_promote_inprogress_v1.js tools/gate/gates/gate_promote_inprogress_buckets.sh
+git add "$SSOT_PATH" tools/p3/ssot/plan34_promote_inprogress_v1.js tools/gate/gates/gate_promote_inprogress_buckets.sh tools/gate/gates/gate_engine_matrix_integrity.sh tools/p3/ssot/parse_engine_matrix_ssot.js 2>/dev/null || true || true
 
 # If nothing changed (0 promoted), still keep evidence
 if git diff --cached --quiet; then
