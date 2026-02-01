@@ -39,6 +39,18 @@ import { VG02CharacterRenderAdapter } from './adapters/vg02_character_render.ada
 import { VG03LightingEngineAdapter } from './adapters/vg03_lighting_engine.adapter';
 import { VG04CameraPathAdapter } from './adapters/vg04_camera_path.adapter';
 import { VG05VFXCompositorAdapter } from './adapters/vg05_vfx_compositor.adapter';
+import { AU01VoiceTTSAdapter } from './adapters/au01_voice_tts.adapter';
+import { AU02BGMGenAdapter } from './adapters/au02_bgm_gen.adapter';
+import { AU03SFXGenAdapter } from './adapters/au03_sfx_gen.adapter';
+import { AU04AudioMixAdapter } from './adapters/au04_audio_mix.adapter';
+import { PP01VideoStitchAdapter } from './adapters/pp01_video_stitch.adapter';
+import { PP02SubtitleOverlayAdapter } from './adapters/pp02_subtitle_overlay.adapter';
+import { PP03WatermarkAdapter } from './adapters/pp03_watermark.adapter';
+import { PP04HLSPackageAdapter } from './adapters/pp04_hls_package.adapter';
+import { QC01VisualFidelityAdapter } from './adapters/qc01_visual_fidelity.adapter';
+import { QC02NarrativeConsistencyAdapter } from './adapters/qc02_narrative_consistency.adapter';
+import { QC03IdentityContinuityAdapter } from './adapters/qc03_identity_continuity.adapter';
+import { QC04ComplianceScanAdapter } from './adapters/qc04_compliance_scan.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -97,6 +109,18 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
     VG03LightingEngineAdapter,
     VG04CameraPathAdapter,
     VG05VFXCompositorAdapter,
+    AU01VoiceTTSAdapter,
+    AU02BGMGenAdapter,
+    AU03SFXGenAdapter,
+    AU04AudioMixAdapter,
+    PP01VideoStitchAdapter,
+    PP02SubtitleOverlayAdapter,
+    PP03WatermarkAdapter,
+    PP04HLSPackageAdapter,
+    QC01VisualFidelityAdapter,
+    QC02NarrativeConsistencyAdapter,
+    QC03IdentityContinuityAdapter,
+    QC04ComplianceScanAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -116,6 +140,18 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
     VG03LightingEngineAdapter,
     VG04CameraPathAdapter,
     VG05VFXCompositorAdapter,
+    AU01VoiceTTSAdapter,
+    AU02BGMGenAdapter,
+    AU03SFXGenAdapter,
+    AU04AudioMixAdapter,
+    PP01VideoStitchAdapter,
+    PP02SubtitleOverlayAdapter,
+    PP03WatermarkAdapter,
+    PP04HLSPackageAdapter,
+    QC01VisualFidelityAdapter,
+    QC02NarrativeConsistencyAdapter,
+    QC03IdentityContinuityAdapter,
+    QC04ComplianceScanAdapter,
   ], // S4-B: 导出策略服务 + HTTP 适配器与配置服务
 })
 export class EngineModule implements OnModuleInit {
@@ -189,7 +225,31 @@ export class EngineModule implements OnModuleInit {
     @Inject(VG04CameraPathAdapter)
     private readonly vg04Adapter: VG04CameraPathAdapter,
     @Inject(VG05VFXCompositorAdapter)
-    private readonly vg05Adapter: VG05VFXCompositorAdapter
+    private readonly vg05Adapter: VG05VFXCompositorAdapter,
+    @Inject(AU01VoiceTTSAdapter)
+    private readonly au01Adapter: AU01VoiceTTSAdapter,
+    @Inject(AU02BGMGenAdapter)
+    private readonly au02Adapter: AU02BGMGenAdapter,
+    @Inject(AU03SFXGenAdapter)
+    private readonly au03Adapter: AU03SFXGenAdapter,
+    @Inject(AU04AudioMixAdapter)
+    private readonly au04Adapter: AU04AudioMixAdapter,
+    @Inject(PP01VideoStitchAdapter)
+    private readonly pp01Adapter: PP01VideoStitchAdapter,
+    @Inject(PP02SubtitleOverlayAdapter)
+    private readonly pp02Adapter: PP02SubtitleOverlayAdapter,
+    @Inject(PP03WatermarkAdapter)
+    private readonly pp03Adapter: PP03WatermarkAdapter,
+    @Inject(PP04HLSPackageAdapter)
+    private readonly pp04Adapter: PP04HLSPackageAdapter,
+    @Inject(QC01VisualFidelityAdapter)
+    private readonly qc01Adapter: QC01VisualFidelityAdapter,
+    @Inject(QC02NarrativeConsistencyAdapter)
+    private readonly qc02Adapter: QC02NarrativeConsistencyAdapter,
+    @Inject(QC03IdentityContinuityAdapter)
+    private readonly qc03Adapter: QC03IdentityContinuityAdapter,
+    @Inject(QC04ComplianceScanAdapter)
+    private readonly qc04Adapter: QC04ComplianceScanAdapter
   ) { }
 
   onModuleInit() {
@@ -284,5 +344,23 @@ export class EngineModule implements OnModuleInit {
     this.registry.register(this.vg03Adapter);
     this.registry.register(this.vg04Adapter);
     this.registry.register(this.vg05Adapter);
+
+    // P3.2 Batch: AU Engines
+    this.registry.register(this.au01Adapter);
+    this.registry.register(this.au02Adapter);
+    this.registry.register(this.au03Adapter);
+    this.registry.register(this.au04Adapter);
+
+    // P3.2 Batch: PP Engines
+    this.registry.register(this.pp01Adapter);
+    this.registry.register(this.pp02Adapter);
+    this.registry.register(this.pp03Adapter);
+    this.registry.register(this.pp04Adapter);
+
+    // P3.2 Batch: QC Engines
+    this.registry.register(this.qc01Adapter);
+    this.registry.register(this.qc02Adapter);
+    this.registry.register(this.qc03Adapter);
+    this.registry.register(this.qc04Adapter);
   }
 }

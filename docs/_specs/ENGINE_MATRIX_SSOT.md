@@ -51,6 +51,18 @@
 | `vg03_lighting_engine`     | VG_RENDER (P3)            | REAL-STUB (FFmpeg)    | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg03_lighting_engine_20260201`           | **P3.2A**: Lighting effects. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                            |
 | `vg04_camera_path`         | VG_RENDER (P3)            | REAL-STUB (JSON)      | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg04_camera_path_20260201`               | **P3.2A**: Camera path generation. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                     |
 | `vg05_vfx_compositor`      | VG_RENDER (P3)            | REAL-STUB (FFmpeg)    | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg05_vfx_compositor_20260201`            | **P3.2A**: VFX composition. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                            |
+| `au01_voice_tts` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au01_voice_tts_20260201` | **P3.2D**: Voice TTS. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
+| `au02_bgm_gen` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au02_bgm_gen_20260201` | **P3.2D**: BGM Generation. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
+| `au03_sfx_gen` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au03_sfx_gen_20260201` | **P3.2D**: SFX Generation. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
+| `au04_audio_mix` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au04_audio_mix_20260201` | **P3.2D**: Audio Mixing. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
+| `pp01_video_stitch` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp01_video_stitch_20260201` | **P3.2D**: Video Stitching. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
+| `pp02_subtitle_overlay` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp02_subtitle_overlay_20260201` | **P3.2D**: Subtitle Overlay. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
+| `pp03_watermark` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp03_watermark_20260201` | **P3.2D**: Watermarking. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
+| `pp04_hls_package` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp04_hls_package_20260201` | **P3.2D**: HLS Packaging. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
+| `qc01_visual_fidelity` | QC_CHECK (P3) | REAL-STUB (Mock) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc01_visual_fidelity_20260201` | **P3.2D**: Visual fidelity check. Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
+| `qc02_narrative_consistency` | QC_CHECK (P3) | REAL-STUB (Mock) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc02_narrative_consistency_20260201` | **P3.2D**: Narrative consistency check. Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
+| `qc03_identity_continuity` | QC_CHECK (P3) | REAL-STUB (Mock) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc03_identity_continuity_20260201` | **P3.2D**: Identity continuity check. Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
+| `qc04_compliance_scan` | QC_CHECK (P3) | REAL-STUB (Mock) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc04_compliance_scan_20260201` | **P3.2D**: Compliance scan. Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
 
 ### 2. 迭代中引擎 (IN-PROGRESS ENGINES)
 
@@ -62,18 +74,7 @@
 
 | EngineKey | JobType | 实现状态 | 优先级 | 适配器路径 | Gate 脚本 | 计费单位 | 依赖引擎 | 备注 |
 | --------- | ------- | -------- | ------ | ---------- | --------- | -------- | -------- | ---- |
-| `au01_voice_tts` | AU_RENDER | PLANNED | P3 | adapters/au01_voice_tts.adapter.ts | gate_p3_au_batch_v1.sh | ledger_required | ce01 | 语音合成：文本 -> 语音文件 |
-| `au02_bgm_gen` | AU_RENDER | PLANNED | P3 | adapters/au02_bgm_gen.adapter.ts | gate_p3_au_batch_v1.sh | ledger_required | ce05 | 背景音乐：风格 -> 音乐文件 |
-| `au03_sfx_gen` | AU_RENDER | PLANNED | P3 | adapters/au03_sfx_gen.adapter.ts | gate_p3_au_batch_v1.sh | ledger_required | ce05 | 音效生成：描述 -> 音效文件 |
-| `au04_audio_mix` | AU_RENDER | PLANNED | P3 | adapters/au04_audio_mix.adapter.ts | gate_p3_au_batch_v1.sh | ledger_required | au01 | 音频混写：多轨道合成 |
-| `pp01_video_stitch` | PP_RENDER | PLANNED | P3 | adapters/pp01_video_stitch.adapter.ts | gate_p3_pp_batch_v1.sh | ledger_required | vg01 | 视频缝合：分镜拼接 |
-| `pp02_subtitle_overlay` | PP_RENDER | PLANNED | P3 | adapters/pp02_subtitle_overlay.adapter.ts | gate_p3_pp_batch_v1.sh | ledger_required | au01 | 字幕叠加：SRT -> 视频内嵌 |
-| `pp03_watermark` | PP_RENDER | PLANNED | P3 | adapters/pp03_watermark.adapter.ts | gate_p3_pp_batch_v1.sh | ledger_required | pp01 | 水印引擎：动态/静态水印 |
-| `pp04_hls_package` | PP_RENDER | PLANNED | P3 | adapters/pp04_hls_package.adapter.ts | gate_p3_pp_batch_v1.sh | ledger_required | pp01 | HLS 切片：视频流分发准备 |
-| `qc01_visual_fidelity` | QC_CHECK | PLANNED | P3 | adapters/qc01_visual_fidelity.adapter.ts | gate_p3_qc_batch_v1.sh | ledger_required | vg01 | 视觉质量：分辨率/清晰度检测 |
-| `qc02_narrative_consistency` | QC_CHECK | PLANNED | P3 | adapters/qc02_narrative_consistency.adapter.ts | gate_p3_qc_batch_v1.sh | ledger_required | ce01 | 叙事一致性：逻辑冲突检测 |
-| `qc03_identity_continuity` | QC_CHECK | PLANNED | P3 | adapters/qc03_identity_continuity.adapter.ts | gate_p3_qc_batch_v1.sh | ledger_required | ce02 | 角色一致性：穿帮检测 |
-| `qc04_compliance_scan` | QC_CHECK | PLANNED | P3 | adapters/qc04_compliance_scan.adapter.ts | gate_p3_qc_batch_v1.sh | ledger_required | ce06 | 合规扫描：违禁内容识别 |
+|           |         |          |          |            |           |          |          |      |
 
 
 ---
