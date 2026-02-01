@@ -69,7 +69,6 @@ export abstract class VgBaseEngine {
         // 1. Cache Check
         try {
             const cached = await this.redis.getJson(cacheKey);
-            this.logger.debug(`Cache lookup key=${cacheKey} found=${!!cached}`);
             if (cached) {
                 await this.auditHelper(input, 'HIT', cacheKey);
                 await this.recordCost(input, 0, { status: 'CACHE_HIT' });
@@ -105,7 +104,6 @@ export abstract class VgBaseEngine {
 
             // 3. Save Cache (7 days)
             await this.redis.setJson(cacheKey, finalOutput, 60 * 60 * 24 * 7);
-            this.logger.debug(`Cache saved key=${cacheKey}`);
 
             // 4. Audit & Cost (MISS = 1 unit)
             await this.auditHelper(input, 'MISS', 'generated');
