@@ -62,7 +62,18 @@
 
 | EngineKey | JobType | 实现状态 | 优先级 | 适配器路径 | Gate 脚本 | 计费单位 | 依赖引擎 | 备注 |
 | --------- | ------- | -------- | ------ | ---------- | --------- | -------- | -------- | ---- |
-|           |         |          |          |            |           |          |          |      |
+| `au01_voice_tts` | AU_RENDER | PLANNED | P3 | adapters/au01_voice_tts.adapter.ts | gate_p3_au_batch_v1.sh | ledger_required | ce01 | 语音合成：文本 -> 语音文件 |
+| `au02_bgm_gen` | AU_RENDER | PLANNED | P3 | adapters/au02_bgm_gen.adapter.ts | gate_p3_au_batch_v1.sh | ledger_required | ce05 | 背景音乐：风格 -> 音乐文件 |
+| `au03_sfx_gen` | AU_RENDER | PLANNED | P3 | adapters/au03_sfx_gen.adapter.ts | gate_p3_au_batch_v1.sh | ledger_required | ce05 | 音效生成：描述 -> 音效文件 |
+| `au04_audio_mix` | AU_RENDER | PLANNED | P3 | adapters/au04_audio_mix.adapter.ts | gate_p3_au_batch_v1.sh | ledger_required | au01 | 音频混写：多轨道合成 |
+| `pp01_video_stitch` | PP_RENDER | PLANNED | P3 | adapters/pp01_video_stitch.adapter.ts | gate_p3_pp_batch_v1.sh | ledger_required | vg01 | 视频缝合：分镜拼接 |
+| `pp02_subtitle_overlay` | PP_RENDER | PLANNED | P3 | adapters/pp02_subtitle_overlay.adapter.ts | gate_p3_pp_batch_v1.sh | ledger_required | au01 | 字幕叠加：SRT -> 视频内嵌 |
+| `pp03_watermark` | PP_RENDER | PLANNED | P3 | adapters/pp03_watermark.adapter.ts | gate_p3_pp_batch_v1.sh | ledger_required | pp01 | 水印引擎：动态/静态水印 |
+| `pp04_hls_package` | PP_RENDER | PLANNED | P3 | adapters/pp04_hls_package.adapter.ts | gate_p3_pp_batch_v1.sh | ledger_required | pp01 | HLS 切片：视频流分发准备 |
+| `qc01_visual_fidelity` | QC_CHECK | PLANNED | P3 | adapters/qc01_visual_fidelity.adapter.ts | gate_p3_qc_batch_v1.sh | ledger_required | vg01 | 视觉质量：分辨率/清晰度检测 |
+| `qc02_narrative_consistency` | QC_CHECK | PLANNED | P3 | adapters/qc02_narrative_consistency.adapter.ts | gate_p3_qc_batch_v1.sh | ledger_required | ce01 | 叙事一致性：逻辑冲突检测 |
+| `qc03_identity_continuity` | QC_CHECK | PLANNED | P3 | adapters/qc03_identity_continuity.adapter.ts | gate_p3_qc_batch_v1.sh | ledger_required | ce02 | 角色一致性：穿帮检测 |
+| `qc04_compliance_scan` | QC_CHECK | PLANNED | P3 | adapters/qc04_compliance_scan.adapter.ts | gate_p3_qc_batch_v1.sh | ledger_required | ce06 | 合规扫描：违禁内容识别 |
 
 
 ---
