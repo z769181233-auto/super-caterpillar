@@ -14,6 +14,7 @@ bash tools/gate/gates/gate-path-leak.sh
 bash tools/gate/gates/gate_p3_nlp_base.sh
 bash tools/gate/gates/gate_p3_ce_batch_v2.sh
 bash tools/gate/gates/gate_p3_vg_base.sh
+bash tools/gate/gates/gate_p3_vg_batch_v1.sh
 
 # 2. Main Branch Strict Enforcement
 while read -r local_ref local_sha remote_ref remote_sha; do
