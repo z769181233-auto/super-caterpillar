@@ -22,6 +22,7 @@ import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { CE11MockAdapter } from './adapters/ce11.mock.adapter';
 import { MockEngineAdapter } from '../engine/adapters/mock-engine.adapter';
 import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
+import { TranslationCloudAdapter } from './adapters/translation.cloud.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -63,6 +64,7 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
     G5SemanticMotionMapperAdapter, // G5-P0-2: Semantic Motion Mapper
     G5AssetLayeringResolverAdapter, // G5-P0-3: Asset Layering Resolver
     G5SubengineHubService, // G5 Orchestrator
+    TranslationCloudAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -111,8 +113,10 @@ export class EngineModule implements OnModuleInit {
     @Inject(G5SemanticMotionMapperAdapter)
     private readonly g5SemanticMotionMapperAdapter: G5SemanticMotionMapperAdapter,
     @Inject(G5AssetLayeringResolverAdapter)
-    private readonly g5AssetLayeringResolverAdapter: G5AssetLayeringResolverAdapter
-  ) {}
+    private readonly g5AssetLayeringResolverAdapter: G5AssetLayeringResolverAdapter,
+    @Inject(TranslationCloudAdapter)
+    private readonly translationCloudAdapter: TranslationCloudAdapter
+  ) { }
 
   onModuleInit() {
     if (!this.registry) {
@@ -172,5 +176,8 @@ export class EngineModule implements OnModuleInit {
 
     // G5-P0-3: Asset Layering Resolver
     this.registry.register(this.g5AssetLayeringResolverAdapter);
+
+    // P1: Translation Engine
+    this.registry.register(this.translationCloudAdapter);
   }
 }

@@ -34,6 +34,7 @@
 | `audio_tts`                 | TIMELINE_RENDER (Sub)     | REAL (Production)     | router-based (internal)                  | `CE%`                | `gate-audio-p21-0-ops.sh`                | `seal/p21_0_audio_ops_integration_20260124`    | **P21-0**: Ops Integration Sealed. Dashboard Snapshot + Health Heartbeat + Auto-Diagnostic verified. Evidence: `p21_0_ops_integration_1769309936_gesrrand` |
 | `audio_bgm`                 | TIMELINE_RENDER (Sub)     | REAL (Production)     | router-based (internal)                  | `CE%`                | `gate-audio-p21-0-ops.sh`                | `seal/p21_0_audio_ops_integration_20260124`    | **P21-0**: Ops Integration Sealed.                                                                                                                         |
 | `g5_video_render`           | VIDEO_RENDER (G5)         | REAL (Production)     | gpuSeconds (priced via PRICING_SSOT)     | `G5%`                | `g5_b_E0001_real.sh`                     | `seal/g5_b_E0001_real_20260129`                | **G5-M1**: 15s Orbit Proof achieved. 1440p High-Fi, 3-View View Routing, Grounding Shadows.                                                                |
+| `translation_engine`        | TRANSLATION (P1)          | REAL (Redis+Stub)     | job (ledgered)                           | `TRANSLATION`        | `gate_translation_engine.sh`             | `seal/translation_engine_20260201`             | **P1.1**: Pluggable Provider (DeepL/Stub), Content-Hash Cache, No-Key Fail verified. Evidence: `docs/_evidence/translation_engine_v1`                      |
 
 ---
 
@@ -194,10 +195,8 @@
 |---|---|---|---|---|---|---|---|---|
 
 
-| translation_engine | PLANNED | P1 | EngineSpec_V3.0 §TRANS | apps/api/src/engines/adapters/translation_engine.adapter.ts | tools/gate/gates/gate_translation_engine.sh | ledger_required | provider_api | no-key => FAIL |
-| style_transfer | PLANNED | P1 | EngineSpec_V3.0 §STYLE | apps/api/src/engines/adapters/style_transfer.adapter.ts | tools/gate/gates/gate_style_transfer.sh | ledger_required | comfy/remote | multi-style batch gate |
+| style_transfer | PLANNED | P1 | EngineSpec_V3.0 §STYLE | apps/api/src/engines/adapters/style_transfer.replicate.adapter.ts | tools/gate/gates/gate_style_transfer.sh | ledger_required | comfy/remote | multi-style batch gate |
 | character_gen | PLANNED | P2 | EngineSpec_V3.0 §CHAR | apps/api/src/engines/adapters/character_gen.adapter.ts | tools/gate/gates/gate_character_gen.sh | ledger_required | gpu/remote | multi-view |
 | scene_composition | PLANNED | P2 | EngineSpec_V3.0 §SCENE | apps/api/src/engines/adapters/scene_composition.adapter.ts | tools/gate/gates/gate_scene_composition.sh | ledger_required | ffmpeg | layers+light |
 | emotion_analysis | PLANNED | P2 | EngineSpec_V3.0 §EMO | apps/api/src/engines/adapters/emotion_analysis.adapter.ts | tools/gate/gates/gate_emotion_analysis.sh | ledger_required | nlp | 6 emotions |
 | dialogue_optimization | PLANNED | P2 | EngineSpec_V3.0 §DIA | apps/api/src/engines/adapters/dialogue_optimization.adapter.ts | tools/gate/gates/gate_dialogue_optimization.sh | ledger_required | llm | ooc guard |
-

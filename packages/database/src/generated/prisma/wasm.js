@@ -974,6 +974,18 @@ exports.Prisma.SceneMemoryScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.TranslationCacheScalarFieldEnum = {
+  id: 'id',
+  organizationId: 'organizationId',
+  projectId: 'projectId',
+  provider: 'provider',
+  sourceLang: 'sourceLang',
+  targetLang: 'targetLang',
+  inputHash: 'inputHash',
+  outputText: 'outputText',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1326,7 +1338,8 @@ exports.Prisma.ModelName = {
   ShotIdentityScore: 'ShotIdentityScore',
   ShotReworkDedupe: 'ShotReworkDedupe',
   CharacterMemory: 'CharacterMemory',
-  SceneMemory: 'SceneMemory'
+  SceneMemory: 'SceneMemory',
+  TranslationCache: 'TranslationCache'
 };
 
 /**

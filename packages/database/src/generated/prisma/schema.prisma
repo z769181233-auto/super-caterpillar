@@ -1622,3 +1622,19 @@ model SceneMemory {
   @@index([sceneId, createdAt])
   @@map("scene_memories")
 }
+
+model TranslationCache {
+  id             String   @id @default(uuid())
+  organizationId String
+  projectId      String
+  provider       String
+  sourceLang     String
+  targetLang     String
+  inputHash      String
+  outputText     String   @db.Text
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, targetLang, inputHash, projectId], name: "provider_target_hash_project")
+  @@index([organizationId])
+  @@map("translation_cache")
+}
