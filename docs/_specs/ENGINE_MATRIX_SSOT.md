@@ -159,6 +159,7 @@
 | 2026-01-25 | **P24-0 HARD SEALED** — Performance SLA (CE03/04/06) verified with N=20 concurrency. P95 targets fully met. Evidence: `docs/_evidence/p24_0_performance_1769321734`                       | Antigravity |
 | 2026-01-29 | **G5-B HARD SEALED** — First Real Video (E0001) achieved. 15s Orbit, 1440p, 3-View Switch, Grounding Shadow. Definition: Gate-0 Law. Evidence: `docs/_evidence_archived/G5_M1_E0001_REAL` | Antigravity |
 | 2026-01-31 | **Phase 8 HARD SEALED** — Production Operating Readiness. Release Audit, Monitoring, Incident & Cost Drills implemented and verified. Evidence: `docs/_evidence/p8_operating_readiness_20260131_233552` | Antigravity |
+| 2026-02-01 | **P2 Minloop SEALED** — Character -> Scene -> Preview Integration. Minloop Gate Passed (Double-Run, Audit, Cost). Evidence: `docs/_evidence/p2_minloop_scene_to_preview_v1`                             | Antigravity |
 
 ---
 
