@@ -41,8 +41,11 @@
 | `scene_composition`         | SCENE_COMPOSITION (P2)    | REAL-STUB (FFmpeg)    | ledger_required                          | `SCENE`              | `gate_scene_composition.sh`              | `seal/scene_composition_20260201`              | **P2.2**: FFmpeg Layering (Overlay), Redis Cache. Evidence: `docs/_evidence/scene_composition_v1`                                                 |
 | `emotion_analysis`          | NOVEL_ANALYSIS (P2)       | REAL-STUB (Regex)     | job (priced via PRICING_SSOT)            | `EMO`                | `gate_emotion_analysis.sh`               | `seal/emotion_analysis_20260201`               | **P2.3**: Cache/Stub, Audit/Cost Verified. Evidence: `docs/_evidence/emotion_analysis_v1`                                                         |
 | `dialogue_optimization`     | NOVEL_ANALYSIS (P2)       | REAL-STUB (Regex)     | job (priced via PRICING_SSOT)            | `DIA`                | `gate_dialogue_optimization.sh`          | `seal/dialogue_optimization_20260201`          | **P2.4**: Cache/Stub, Audit/Cost Verified. Evidence: `docs/_evidence/dialogue_optimization_v1`                                                    |
-| `ce01_narrative_structure`  | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch.sh`                    | `seal/p3_ce_batch_ce01_ce05_20260201`          | **P3.2**: Story beat analysis. Evidence: `docs/_evidence/p3_ce_batch_20260201`                                                                             |
-| `ce05_conflict_detector`    | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch.sh`                    | `seal/p3_ce_batch_ce01_ce05_20260201`          | **P3.2**: Conflict detection. Evidence: `docs/_evidence/p3_ce_batch_20260201`                                                                              |
+| `ce01_narrative_structure`  | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch_v2.sh`                 | `seal/p3_ce_batch_ce01_ce05_20260201`          | **P3.2**: Story beat analysis. Evidence: `docs/_evidence/p3_ce_batch_20260201`                                                                             |
+| `ce05_conflict_detector`    | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch_v2.sh`                 | `seal/p3_ce_batch_ce01_ce05_20260201`          | **P3.2**: Conflict detection. Evidence: `docs/_evidence/p3_ce_batch_20260201`                                                                              |
+| `ce08_character_arc`       | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch_v2.sh`                 | `seal/p3_ce_batch_v2_20260201`                 | **P3.3**: Character arc progression. Evidence: `docs/_evidence/p3_ce_batch_v2_20260201`                                                                    |
+| `ce12_theme_extractor`      | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch_v2.sh`                 | `seal/p3_ce_batch_v2_20260201`                 | **P3.3**: Theme & motif extraction. Evidence: `docs/_evidence/p3_ce_batch_v2_20260201`                                                                     |
+| `ce13_pacing_analyzer`      | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch_v2.sh`                 | `seal/p3_ce_batch_v2_20260201`                 | **P3.3**: Narrative pacing analysis. Evidence: `docs/_evidence/p3_ce_batch_v2_20260201`                                                                    |
 
 ### 2. 迭代中引擎 (IN-PROGRESS ENGINES)
 
@@ -54,7 +57,11 @@
 
 | EngineKey | JobType | 实现状态 | 优先级 | 适配器路径 | Gate 脚本 | 计费单位 | 依赖引擎 | 备注 |
 | --------- | ------- | -------- | ------ | ---------- | --------- | -------- | -------- | ---- |
-|           |         |          |          |            |           |          |          |      |
+| `vg01_background_render` | VG_RENDER | PLANNED | P3 | adapters/vg01_background_render.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | ce10 | 背景渲染：输入 prompt/style -> 输出 file://png (deterministic) |
+| `vg02_character_render` | VG_RENDER | PLANNED | P3 | adapters/vg02_character_render.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | ce11 | 角色立绘：输入 prompt/view/style -> 输出 file://png |
+| `vg03_lighting_engine` | VG_RENDER | PLANNED | P3 | adapters/vg03_lighting_engine.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | vg01 | 光照引擎：输入 source_url + lighting preset -> 输出 file://png (FFmpeg filter) |
+| `vg04_camera_path` | VG_RENDER | PLANNED | P3 | adapters/vg04_camera_path.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | ce10 | 镜头路径：输入 duration/fps + mode -> 输出 JSON (deterministic) |
+| `vg05_vfx_compositor` | VG_RENDER | PLANNED | P3 | adapters/vg05_vfx_compositor.adapter.ts | gate_p3_vg_batch_v1.sh | ledger_required | vg03 | VFX 合成：输入 source_url + vfx preset -> 输出 file://png (FFmpeg overlay/noise) |
 
 
 ---
@@ -183,6 +190,7 @@
 | 2026-02-01 | **P2 Text Minloop SEALED** — Dialogue -> Emotion -> Memory Integration. Validated Audit/Cost Chain. Evidence: `docs/_evidence/p2_text_minloop_dialogue_to_memory_v1`                                    | Antigravity |
 | 2026-02-01 | **P3 NLP Base SEALED** — Standardized Tokenize/Hash/Cache/Audit/Ledger. Hardened Infrastructure for Extension Engines. Tag: `seal/p3_nlp_base_20260201`. Evidence: `docs/_evidence/p3_nlp_base_20260201` | Antigravity |
 | 2026-02-01 | **P3 CE Batch SEALED** — CE01 Narrative Structure & CE05 Conflict Detector. REAL-STUB, NLP Base, Pre-push Integrated. Tag: `seal/p3_ce_batch_ce01_ce05_20260201` | Antigravity |
+| 2026-02-01 | **P3.3 CE Batch V2 SEALED** — CE08 Character Arc, CE12 Theme, CE13 Pacing. REAL-STUB, Comprehensive Batch Gate. Tag: `seal/p3_ce_batch_v2_20260201` | Antigravity |
 
 ---
 

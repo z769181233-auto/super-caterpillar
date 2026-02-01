@@ -12,7 +12,8 @@ echo "[G1] Governance & NLP Base..."
 bash tools/gate/gates/gate-post_sealed_governance.sh
 bash tools/gate/gates/gate-path-leak.sh
 bash tools/gate/gates/gate_p3_nlp_base.sh
-bash tools/gate/gates/gate_p3_ce_batch.sh
+bash tools/gate/gates/gate_p3_ce_batch_v2.sh
+bash tools/gate/gates/gate_p3_vg_base.sh
 
 # 2. Main Branch Strict Enforcement
 while read -r local_ref local_sha remote_ref remote_sha; do
