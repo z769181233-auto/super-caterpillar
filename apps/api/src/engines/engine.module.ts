@@ -23,6 +23,7 @@ import { CE11MockAdapter } from './adapters/ce11.mock.adapter';
 import { MockEngineAdapter } from '../engine/adapters/mock-engine.adapter';
 import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
 import { TranslationCloudAdapter } from './adapters/translation.cloud.adapter';
+import { StyleTransferReplicateAdapter } from './adapters/style-transfer.replicate.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -65,6 +66,7 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
     G5AssetLayeringResolverAdapter, // G5-P0-3: Asset Layering Resolver
     G5SubengineHubService, // G5 Orchestrator
     TranslationCloudAdapter,
+    StyleTransferReplicateAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -115,7 +117,9 @@ export class EngineModule implements OnModuleInit {
     @Inject(G5AssetLayeringResolverAdapter)
     private readonly g5AssetLayeringResolverAdapter: G5AssetLayeringResolverAdapter,
     @Inject(TranslationCloudAdapter)
-    private readonly translationCloudAdapter: TranslationCloudAdapter
+    private readonly translationCloudAdapter: TranslationCloudAdapter,
+    @Inject(StyleTransferReplicateAdapter)
+    private readonly styleTransferReplicateAdapter: StyleTransferReplicateAdapter
   ) { }
 
   onModuleInit() {
@@ -179,5 +183,8 @@ export class EngineModule implements OnModuleInit {
 
     // P1: Translation Engine
     this.registry.register(this.translationCloudAdapter);
+
+    // P1: Style Transfer Engine
+    this.registry.register(this.styleTransferReplicateAdapter);
   }
 }
