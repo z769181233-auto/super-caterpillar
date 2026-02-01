@@ -9,9 +9,6 @@ source "$ROOT/tools/gate/lib/gate_bootstrap.sh"
 # === END PATCH ===
 
 IFS=$'\n\t'
-IFS=$'
-	'
-IFS=$'\n\t'
 trap 'echo "[FATAL] line=$LINENO cmd=$BASH_COMMAND" >&2' ERR
 
 # gate-prod_slice_v1_real.sh
@@ -21,7 +18,7 @@ trap 'echo "[FATAL] line=$LINENO cmd=$BASH_COMMAND" >&2' ERR
 # ==============================================================================
 # 1. Environment & Variables
 # ==============================================================================
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+ROOT_DIR="$ROOT"
 EVID_ROOT="${ROOT_DIR}/docs/_evidence"
 TS="$(date +"%Y%m%d_%H%M%S")"
 EVID_DIR="${EVID_ROOT}/prod_slice_v1_real_${TS}"
@@ -91,8 +88,8 @@ psql -d "${DATABASE_URL}" -c "INSERT INTO projects (id, name, \"ownerId\", \"org
 # Create NovelSource
 echo "[Gate] Creating NovelSource (SQL)..."
 NOVEL_SOURCE_ID="ns-${PROJECT_ID}"
-    REAL_TEXT="Season 1\nChapter 1: The Beginning\n\nScene 1: The Street.\nThe neon lights reflected in the puddles.\n"
-    psql -d "${DATABASE_URL}" -c "INSERT INTO novels (id, \"projectId\", \"rawText\", \"createdAt\", \"updatedAt\") VALUES ('${NOVEL_SOURCE_ID}', '${PROJECT_ID}', E'${REAL_TEXT}', NOW(), NOW());"
+    REAL_TEXT="Season 1 Chapter 1: The Beginning"
+    psql -d "${DATABASE_URL}" -c "INSERT INTO novels (id, project_id, title, created_at, updated_at) VALUES ('${NOVEL_SOURCE_ID}', '${PROJECT_ID}', '${REAL_TEXT}', NOW(), NOW());"
 echo "[Gate] Novel Source ID: ${NOVEL_SOURCE_ID}"
 
 # Create Hierarchy (Season -> Episode -> Scene -> Shot)
