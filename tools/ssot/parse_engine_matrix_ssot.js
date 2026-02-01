@@ -12,33 +12,36 @@ function sliceBetween(begin, end) {
 }
 
 function parseTable(block) {
-  const lines = block.split("\n").map(s=>s.trim()).filter(Boolean);
+  const lines = block.split("\n").map(s => s.trim()).filter(Boolean);
+  let header = null;
   const rows = [];
+
   for (const ln of lines) {
     if (!ln.startsWith("|")) continue;
     if (ln.includes("---")) continue;         // separator
-    if (ln.includes("engine_key") && ln.includes("job_type")) continue; // header
-    const cols = ln.split("|").map(s=>s.trim()).filter(s => s !== "");
-    if (cols.length < 8) continue;
-    const [engine_key_raw, job_type_raw, state, billing, audit_prefix, adapter_path_raw, gate_path_raw, seal_tag_raw, notes] = cols;
-    
-    const engine_key = engine_key_raw.replace(/`/g, "").trim();
-    const job_type = job_type_raw.replace(/`/g, "").trim();
-    const adapter_path = adapter_path_raw.replace(/`/g, "").trim();
-    const gate_path = gate_path_raw.replace(/`/g, "").trim();
-    const seal_tag = seal_tag_raw.replace(/`/g, "").trim();
 
-    rows.push({ 
-        engine_key, 
-        job_type, 
-        state, 
-        billing, 
-        audit_prefix, 
-        adapter_path, 
-        gate_path, 
-        seal_tag, 
-        notes: notes ? notes.trim() : "" 
+    const cols = ln.split("|").map(s => s.trim()).filter(s => s !== "");
+
+    // First non-separator row is header
+    if (!header) {
+      header = cols.map(s => s.replace(/`/g, "").trim());
+      continue;
+    }
+
+    // Data row - map to header
+    if (cols.length < header.length) continue; // skip malformed
+
+    const row = {};
+    header.forEach((colName, idx) => {
+      if (idx < cols.length) {
+        row[colName] = cols[idx].replace(/`/g, "").trim();
+      }
     });
+
+    // Ensure required fields exist
+    if (!row.engine_key) continue;
+
+    rows.push(row);
   }
   return rows;
 }
@@ -47,7 +50,7 @@ const sealed = parseTable(sliceBetween("<!-- SSOT_TABLE:SEALED_BEGIN -->", "<!--
 const inprogress = parseTable(sliceBetween("<!-- SSOT_TABLE:INPROGRESS_BEGIN -->", "<!-- SSOT_TABLE:INPROGRESS_END -->"));
 const planned = parseTable(sliceBetween("<!-- SSOT_TABLE:PLANNED_BEGIN -->", "<!-- SSOT_TABLE:PLANNED_END -->"));
 
-function uniqKeys(rows){ return Array.from(new Set(rows.map(r=>r.engine_key).filter(Boolean))); }
+function uniqKeys(rows) { return Array.from(new Set(rows.map(r => r.engine_key).filter(Boolean))); }
 
 const out = {
   ssotPath,

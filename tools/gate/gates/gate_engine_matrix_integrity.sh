@@ -40,10 +40,12 @@ for (const row of rows) {
     const tag = row.seal_tag;
     const adapter = row.adapter_path;
     
-    // Check gate script
-    const gatePath = 'tools/gate/gates/' + gate;
-    if (!fs.existsSync(gatePath)) {
-        console.error('   ❌ SEALED [' + key + ']: Gate script missing: ' + gatePath);
+    // Paths are now root-relative, use directly
+    if (!gate) {
+        console.error('   ❌ SEALED [' + key + ']: Gate path empty');
+        violations++;
+    } else if (!fs.existsSync(gate)) {
+        console.error('   ❌ SEALED [' + key + ']: Gate script missing: ' + gate);
         violations++;
     }
     
@@ -54,9 +56,11 @@ for (const row of rows) {
     }
     
     // Check adapter
-    const adapterPath = 'apps/api/src/engines/adapters/' + adapter;
-    if (!fs.existsSync(adapterPath)) {
-        console.error('   ❌ SEALED [' + key + ']: Adapter missing: ' + adapterPath);
+    if (!adapter) {
+        console.error('   ❌ SEALED [' + key + ']: Adapter path empty');
+        violations++;
+    } else if (!fs.existsSync(adapter)) {
+        console.error('   ❌ SEALED [' + key + ']: Adapter missing: ' + adapter);
         violations++;
     }
 }
@@ -75,10 +79,12 @@ for (const row of rows) {
     const tag = row.seal_tag;
     const adapter = row.adapter_path;
     
-    // Check gate script
-    const gatePath = 'tools/gate/gates/' + gate;
-    if (!fs.existsSync(gatePath)) {
-        console.error('   ❌ IN-PROGRESS [' + key + ']: Gate script missing: ' + gatePath);
+    // Check gate script (root-relative path)
+    if (!gate) {
+        console.error('   ❌ IN-PROGRESS [' + key + ']: Gate path empty');
+        violations++;
+    } else if (!fs.existsSync(gate)) {
+        console.error('   ❌ IN-PROGRESS [' + key + ']: Gate script missing: ' + gate);
         violations++;
     }
     
@@ -88,10 +94,12 @@ for (const row of rows) {
         violations++;
     }
     
-    // Check adapter
-    const adapterPath = 'apps/api/src/engines/adapters/' + adapter;
-    if (!fs.existsSync(adapterPath)) {
-        console.error('   ❌ IN-PROGRESS [' + key + ']: Adapter missing: ' + adapterPath);
+    // Check adapter (root-relative path)
+    if (!adapter) {
+        console.error('   ❌ IN-PROGRESS [' + key + ']: Adapter path empty');
+        violations++;
+    } else if (!fs.existsSync(adapter)) {
+        console.error('   ❌ IN-PROGRESS [' + key + ']: Adapter missing: ' + adapter);
         violations++;
     }
 }
@@ -99,7 +107,7 @@ process.exit(violations);
 " || VIOLATIONS=$((VIOLATIONS + $?))
 
 echo "🔹 Step 4: Validating PLANNED Engines..."
-# PLANNED must have: adapter MUST NOT exist, gate MUST NOT exist (or can exist but not runnable), seal tag MUST be empty
+# PLANNED must have: adapter MUST NOT exist, gate MUST NOT exist, seal tag MUST be empty
 echo "$PLANNED_ROWS" | node -e "
 const rows = JSON.parse(require('fs').readFileSync(0));
 const fs = require('fs');
@@ -110,23 +118,30 @@ for (const row of rows) {
     const tag = row.seal_tag;
     const adapter = row.adapter_path;
     
-    // Check adapter MUST NOT exist
-    const adapterPath = 'apps/api/src/engines/adapters/' + adapter;
-    if (fs.existsSync(adapterPath)) {
-        console.error('   ❌ PLANNED [' + key + ']: Adapter ILLEGALLY exists: ' + adapterPath);
+    // PLANNED adapter_path and gate_path should be empty
+    if (adapter && adapter !== '' && adapter !== '-') {
+        console.error('   ❌ PLANNED [' + key + ']: Adapter path MUST be empty, found: ' + adapter);
         violations++;
+        // Also check if it exists
+        if (fs.existsSync(adapter)) {
+            console.error('   ❌ PLANNED [' + key + ']: Adapter ILLEGALLY exists: ' + adapter);
+            violations++;
+        }
     }
     
     // Check gate MUST NOT exist
-    const gatePath = 'tools/gate/gates/' + gate;
-    if (fs.existsSync(gatePath)) {
-        console.error('   ❌ PLANNED [' + key + ']: Gate script ILLEGALLY exists: ' + gatePath);
+    if (gate && gate !== '' && gate !== '-') {
+        console.error('   ❌ PLANNED [' + key + ']: Gate path MUST be empty, found: ' + gate);
         violations++;
+        if (fs.existsSync(gate)) {
+            console.error('   ❌ PLANNED [' + key + ']: Gate script ILLEGALLY exists: ' + gate);
+            violations++;
+        }
     }
     
-    // Check seal tag MUST be empty
+    // Check seal tag MUST be empty or '-'
     if (tag && tag !== '-' && tag !== '') {
-        console.error('   ❌ PLANNED [' + key + ']: Seal tag MUST be empty, found: ' + tag);
+        console.error('   ❌ PLANNED [' + key + ']: Seal tag MUST be empty or -, found: ' + tag);
         violations++;
     }
 }
