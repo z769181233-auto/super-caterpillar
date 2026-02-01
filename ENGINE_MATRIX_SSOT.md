@@ -24,10 +24,7 @@
 | `qc02_narrative_consistency` | `QC_CHECK` | P1 | NO | QC02 | `apps/api/src/engines/adapters/qc02_narrative_consistency.adapter.ts` | `tools/gate/gates/gate_p3_qc_batch_v1.sh` | `seal/p3_3_qc_deterministic_20260201` | 叙事连贯性 QC (schema) |
 | `qc03_identity_continuity` | `QC_CHECK` | P1 | NO | QC03 | `apps/api/src/engines/adapters/qc03_identity_continuity.adapter.ts` | `tools/gate/gates/gate_p3_qc_batch_v1.sh` | `seal/p3_3_qc_deterministic_20260201` | 形象一致性 QC (score) |
 | `qc04_compliance_scan` | `QC_CHECK` | P1 | NO | QC04 | `apps/api/src/engines/adapters/qc04_compliance_scan.adapter.ts` | `tools/gate/gates/gate_p3_qc_batch_v1.sh` | `seal/p3_3_qc_deterministic_20260201` | 内容合规性 QC (rules) |
-<!-- SSOT_TABLE:SEALED_END -->
-
-## IN-PROGRESS (已实现/待封印)
-<!-- SSOT_TABLE:INPROGRESS_BEGIN -->
+| `emotion_analysis` | `CE06_NOVEL_PARSING` | P1 | YES | EA01 | `apps/api/src/engines/adapter
 | engine_key | job_type | state | ledger_required | audit_prefix | adapter_path | gate_path | seal_tag | notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `ce05_conflict_detector` | `CE05_DIRECTOR_CONTROL` | P1 | YES | CE05 | `apps/api/src/engines/adapters/ce05_conflict_detector.adapter.ts` | `tools/gate/gates/gate-ce05_m1_hard.sh` | - | 剧情冲突检测 |
@@ -39,8 +36,6 @@
 | `style_transfer` | `SHOT_RENDER` | P1 | YES | ST01 | `apps/api/src/engines/adapters/style-transfer.replicate.adapter.ts` | `tools/gate/gates/gate_style_transfer.sh` | - | 风格迁移与艺术化 |
 | `character_gen` | `CE02_IDENTITY_LOCK` | P1 | YES | CG01 | `apps/api/src/engines/adapters/character_gen.adapter.ts` | `tools/gate/gates/gate_character_gen.sh` | - | 角色基座资产生成 |
 | `scene_composition` | `SHOT_RENDER` | P1 | YES | SC01 | `apps/api/src/engines/adapters/scene_composition.adapter.ts` | `tools/gate/gates/gate_scene_composition.sh` | - | 场景布局合成 |
-| `emotion_analysis` | `CE06_NOVEL_PARSING` | P1 | YES | EA01 | `apps/api/src/engines/adapters/emotion_analysis.adapter.ts` | `tools/gate/gates/gate_emotion_analysis.sh` | - | 情感与反馈分析 |
-| `dialogue_optimization` | `CE06_NOVEL_PARSING` | P1 | YES | DO01 | `apps/api/src/engines/adapters/dialogue_optimization.adapter.ts` | `tools/gate/gates/gate_dialogue_optimization.sh` | - | 对话润色与本土化 |
 | `vg01_background_render` | `VG_RENDER` | P1 | YES | VG01 | `apps/api/src/engines/adapters/vg01_background_render.adapter.ts` | `tools/gate/gates/gate_p3_vg_batch_v1.sh` | - | 背景高精渲染 |
 | `vg02_character_render` | `VG_RENDER` | P1 | YES | VG02 | `apps/api/src/engines/adapters/vg02_character_render.adapter.ts` | `tools/gate/gates/gate_p3_vg_batch_v1.sh` | - | 角色高精渲染 |
 | `vg03_lighting_engine` | `VG_RENDER` | P1 | YES | VG03 | `apps/api/src/engines/adapters/vg03_lighting_engine.adapter.ts` | `tools/gate/gates/gate_p3_vg_batch_v1.sh` | - | AI 灯光系统 |
@@ -49,16 +44,18 @@
 | `pp01_video_stitch` | `PP_RENDER` | P1 | YES | PP01 | `apps/api/src/engines/adapters/pp01_video_stitch.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | - | 工业级视频拼接 |
 | `pp02_subtitle_overlay` | `PP_RENDER` | P1 | YES | PP02 | `apps/api/src/engines/adapters/pp02_subtitle_overlay.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | - | 自动化字幕压制 |
 | `pp03_watermark` | `PP_RENDER` | P1 | YES | PP03 | `apps/api/src/engines/adapters/pp03_watermark.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | - | 版权隐形水印 |
+| `shot_render_router` | `SHOT_RENDER` | P1 | YES | SR00 | `apps/api/src/engines/adapters/shot-render.router.adapter.ts` | `tools/gate/gates/gate-prod_slice_v1_real.sh` | - | 分发路由层 |
+ate_p3_pp_batch_v1.sh` | - | 工业级视频拼接 |
+| `pp02_subtitle_overlay` | `PP_RENDER` | P1 | YES | PP02 | `apps/api/src/engines/adapters/pp02_subtitle_overlay.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | - | 自动化字幕压制 |
+| `pp03_watermark` | `PP_RENDER` | P1 | YES | PP03 | `apps/api/src/engines/adapters/pp03_watermark.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | - | 版权隐形水印 |
 | `g5_dialogue_binding` | `AUDIO` | P1 | YES | G501 | `apps/api/src/engines/adapters/g5-dialogue-binding.adapter.ts` | `tools/gate/gates/g5_b_E0001_real.sh` | - | 语义对话绑定 |
 | `g5_semantic_motion` | `SHOT_RENDER` | P1 | YES | G502 | `apps/api/src/engines/adapters/g5-semantic-motion-mapper.adapter.ts` | `tools/gate/gates/g5_b_E0001_real.sh` | - | 动作原语合成 |
 | `g5_asset_layering` | `SHOT_RENDER` | P1 | YES | G503 | `apps/api/src/engines/adapters/g5-asset-layering-resolver.adapter.ts` | `tools/gate/gates/g5_b_E0001_real.sh` | - | 动态图层解算 |
-| `shot_render_router` | `SHOT_RENDER` | P1 | YES | SR00 | `apps/api/src/engines/adapters/shot-render.router.adapter.ts` | `tools/gate/gates/gate-prod_slice_v1_real.sh` | - | 分发路由层 |
-<!-- SSOT_TABLE:INPROGRESS_END -->
-
-## PLANNED ENGINES (纯规划)
-<!-- SSOT_TABLE:PLANNED_BEGIN -->
+| `shot_render_router` | `SHOT_RENDER` | P1 | YES | SR00 | `apps/api/src/engines/adapter
 | engine_key | job_type | state | ledger_required | audit_prefix | adapter_path | gate_path | seal_tag | notes | expected_adapter_path | expected_gate_path |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `ce14_narrative_climax` | `NOVEL_ANALYSIS` | PLAN | YES | CE14 |  |  | - | 高潮与反转识别 | `ce14_narrative_climax.adapter.ts` | `gate_ce14_climax.sh` |
+--- | :--- | :--- | :--- | :--- | :--- |
 | `ce14_narrative_climax` | `NOVEL_ANALYSIS` | PLAN | YES | CE14 |  |  | - | 高潮与反转识别 | `ce14_narrative_climax.adapter.ts` | `gate_ce14_climax.sh` |
 <!-- SSOT_TABLE:PLANNED_END -->
 

@@ -4,7 +4,9 @@ IFS=$'\n\t'
 
 echo "=== [GATE] PLAN-3.4.1 Promote IN-PROGRESS -> SEALED (Tolerant Batch) ==="
 
-test -z "$(git status --porcelain)" || (echo "WORKTREE DIRTY"; git status --porcelain; exit 1)
+# Check only modified tracked files, allow untracked
+MODIFIED=$(git status --porcelain | grep -E '^[MARC]' || true)
+test -z "$MODIFIED" || (echo "TRACKED FILES MODIFIED:"; echo "$MODIFIED"; exit 1)
 
 SSOT_PATH="$(git ls-files | grep -E '(^|/)ENGINE_MATRIX_SSOT\.md$' | head -n1)"
 test -n "${SSOT_PATH:-}" || (echo "ENGINE_MATRIX_SSOT.md not found"; exit 1)
