@@ -25,6 +25,7 @@ import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
 import { TranslationCloudAdapter } from './adapters/translation.cloud.adapter';
 import { StyleTransferReplicateAdapter } from './adapters/style-transfer.replicate.adapter';
 import { CharacterGenAdapter } from './adapters/character_gen.adapter';
+import { SceneCompositionAdapter } from './adapters/scene_composition.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -69,6 +70,7 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
     TranslationCloudAdapter,
     StyleTransferReplicateAdapter,
     CharacterGenAdapter,
+    SceneCompositionAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -123,7 +125,9 @@ export class EngineModule implements OnModuleInit {
     @Inject(StyleTransferReplicateAdapter)
     private readonly styleTransferReplicateAdapter: StyleTransferReplicateAdapter,
     @Inject(CharacterGenAdapter)
-    private readonly characterGenAdapter: CharacterGenAdapter
+    private readonly characterGenAdapter: CharacterGenAdapter,
+    @Inject(SceneCompositionAdapter)
+    private readonly sceneCompositionAdapter: SceneCompositionAdapter
   ) { }
 
   onModuleInit() {
@@ -193,5 +197,8 @@ export class EngineModule implements OnModuleInit {
 
     // P2.1: Character Gen Engine
     this.registry.register(this.characterGenAdapter);
+
+    // P2.2: Scene Composition Engine
+    this.registry.register(this.sceneCompositionAdapter);
   }
 }
