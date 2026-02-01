@@ -10,7 +10,7 @@ source "$ROOT/tools/gate/lib/gate_bootstrap.sh"
 
 
 # gate_character_gen.sh <evidence_dir>
-EVI="${1:?usage: gate.sh <evidence_dir>}"
+EVI="${1:-$ROOT/docs/_evidence/gate_character_gen_$(date +%Y%m%d_%H%M%S)}"
 # Ensure absolute path
 EVI=$(mkdir -p "$EVI" && cd "$EVI" && pwd)
 

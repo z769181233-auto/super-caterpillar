@@ -40,6 +40,11 @@
 | `pp01_video_stitch` | `PP_RENDER` | SEALED | YES | PP01 | `apps/api/src/engines/adapters/pp01_video_stitch.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | `seal/p3_4_2_promote_pass1_pp_20260201_194738` | 工业级视频拼接 |
 | `pp02_subtitle_overlay` | `PP_RENDER` | SEALED | YES | PP02 | `apps/api/src/engines/adapters/pp02_subtitle_overlay.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | `seal/p3_4_2_promote_pass1_pp_20260201_194738` | 自动化字幕压制 |
 | `pp03_watermark` | `PP_RENDER` | SEALED | YES | PP03 | `apps/api/src/engines/adapters/pp03_watermark.adapter.ts` | `tools/gate/gates/gate_p3_pp_batch_v1.sh` | `seal/p3_4_2_promote_pass1_pp_20260201_194738` | 版权隐形水印 |
+| `ce07_memory_update` | `CE07_MEMORY_UPDATE` | SEALED | YES | CE07 | `apps/api/src/engines/adapters/ce07_memory_update.local.adapter.ts` | `tools/gate/gates/gate_ce07_memory_update.sh` | `seal/p3_4_2_promote_pass2_20260201_204451` | 故事长程记忆更新 |
+| `translation_engine` | `CE06_NOVEL_PARSING` | SEALED | YES | TR01 | `apps/api/src/engines/adapters/translation.cloud.adapter.ts` | `tools/gate/gates/gate_translation_engine.sh` | `seal/p3_4_2_promote_pass2_20260201_204451` | 多语言云端翻译 |
+| `style_transfer` | `SHOT_RENDER` | SEALED | YES | ST01 | `apps/api/src/engines/adapters/style-transfer.replicate.adapter.ts` | `tools/gate/gates/gate_style_transfer.sh` | `seal/p3_4_2_promote_pass2_20260201_204451` | 风格迁移与艺术化 |
+| `character_gen` | `CE02_IDENTITY_LOCK` | SEALED | YES | CG01 | `apps/api/src/engines/adapters/character_gen.adapter.ts` | `tools/gate/gates/gate_character_gen.sh` | `seal/p3_4_2_promote_pass2_20260201_204451` | 角色基座资产生成 |
+| `scene_composition` | `SHOT_RENDER` | SEALED | YES | SC01 | `apps/api/src/engines/adapters/scene_composition.adapter.ts` | `tools/gate/gates/gate_scene_composition.sh` | `seal/p3_4_2_promote_pass2_20260201_204451` | 场景布局合成 |
 <!-- SSOT_TABLE:SEALED_END -->
 
 ## IN-PROGRESS (已实现/待封印)
@@ -47,17 +52,11 @@
 | engine_key | job_type | state | ledger_required | audit_prefix | adapter_path | gate_path | seal_tag | notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `ce05_conflict_detector` | `CE05_DIRECTOR_CONTROL` | P1 | YES | CE05 | `apps/api/src/engines/adapters/ce05_conflict_detector.adapter.ts` | `tools/gate/gates/gate-ce05_m1_hard.sh` | - | 剧情冲突检测 |
-| `ce07_memory_update` | `CE07_MEMORY_UPDATE` | P1 | YES | CE07 | `apps/api/src/engines/adapters/ce07_memory_update.local.adapter.ts` | `tools/gate/gates/gate_ce07_memory_update.sh` | - | 故事长程记忆更新 |
-| `translation_engine` | `CE06_NOVEL_PARSING` | P1 | YES | TR01 | `apps/api/src/engines/adapters/translation.cloud.adapter.ts` | `tools/gate/gates/gate_translation_engine.sh` | - | 多语言云端翻译 |
-| `style_transfer` | `SHOT_RENDER` | P1 | YES | ST01 | `apps/api/src/engines/adapters/style-transfer.replicate.adapter.ts` | `tools/gate/gates/gate_style_transfer.sh` | - | 风格迁移与艺术化 |
-| `character_gen` | `CE02_IDENTITY_LOCK` | P1 | YES | CG01 | `apps/api/src/engines/adapters/character_gen.adapter.ts` | `tools/gate/gates/gate_character_gen.sh` | - | 角色基座资产生成 |
-| `scene_composition` | `SHOT_RENDER` | P1 | YES | SC01 | `apps/api/src/engines/adapters/scene_composition.adapter.ts` | `tools/gate/gates/gate_scene_composition.sh` | - | 场景布局合成 |
 | `shot_render_router` | `SHOT_RENDER` | P1 | YES | SR00 | `apps/api/src/engines/adapters/shot-render.router.adapter.ts` | `tools/gate/gates/gate-prod_slice_v1_real.sh` | - | 分发路由层 |
 <!-- SSOT_TABLE:INPROGRESS_END -->
 
 ## PLANNED ENGINES (纯规划)
 <!-- SSOT_TABLE:PLANNED_BEGIN -->
-
 | engine_key | job_type | state | ledger_required | audit_prefix | adapter_path | gate_path | seal_tag | notes | expected_adapter_path | expected_gate_path |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `ce14_narrative_climax` | `NOVEL_ANALYSIS` | PLAN | YES | CE14 |  |  |  | 高潮与反转识别 | `apps/api/src/engines/adapters/ce14_narrative_climax.adapter.ts` | `tools/gate/gates/gate_ce14_climax.sh` |

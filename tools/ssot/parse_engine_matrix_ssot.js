@@ -11,6 +11,17 @@ function sliceBetween(begin, end) {
   return text.slice(b + begin.length, e);
 }
 
+function splitRow(ln) {
+  // keep empty cells; remove only leading/trailing pipe empties
+  const raw = ln.split("|");
+  const cells = raw.slice(1, -1).map(s => (s ?? "").trim());
+  return cells;
+}
+
+function cleanCell(s) {
+  return (s ?? "").replace(/`/g, "").trim();
+}
+
 function parseTable(block) {
   const lines = block.split("\n").map(s => s.trim()).filter(Boolean);
   let header = null;
@@ -18,29 +29,22 @@ function parseTable(block) {
 
   for (const ln of lines) {
     if (!ln.startsWith("|")) continue;
-    if (ln.includes("---")) continue;         // separator
+    if (ln.includes("---")) continue; // separator row
 
-    const cols = ln.split("|").map(s => s.trim()).filter(s => s !== "");
+    const cells = splitRow(ln);
 
-    // First non-separator row is header
     if (!header) {
-      header = cols.map(s => s.replace(/`/g, "").trim());
+      header = cells.map(cleanCell);
       continue;
     }
 
-    // Data row - map to header
-    if (cols.length < header.length) continue; // skip malformed
-
     const row = {};
     header.forEach((colName, idx) => {
-      if (idx < cols.length) {
-        row[colName] = cols[idx].replace(/`/g, "").trim();
-      }
+      row[colName] = cleanCell(cells[idx] ?? "");
     });
 
-    // Ensure required fields exist
+    // required key
     if (!row.engine_key) continue;
-
     rows.push(row);
   }
   return rows;

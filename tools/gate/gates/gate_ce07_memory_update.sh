@@ -10,7 +10,7 @@ source "$ROOT/tools/gate/lib/gate_bootstrap.sh"
 
 # gate_ce07_memory_update.sh <evidence_dir>
 
-EVI="${1:?usage: gate.sh <evidence_dir>}"
+EVI="${1:-$ROOT/docs/_evidence/ce07_memory_update_$(date +%Y%m%d_%H%M%S)}"
 mkdir -p "$EVI"
 
 # Ensure DB URL

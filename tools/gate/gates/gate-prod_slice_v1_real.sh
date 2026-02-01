@@ -92,7 +92,7 @@ psql -d "${DATABASE_URL}" -c "INSERT INTO projects (id, name, \"ownerId\", \"org
 echo "[Gate] Creating NovelSource (SQL)..."
 NOVEL_SOURCE_ID="ns-${PROJECT_ID}"
     REAL_TEXT="Season 1\nChapter 1: The Beginning\n\nScene 1: The Street.\nThe neon lights reflected in the puddles.\n"
-    psql -d "${DATABASE_URL}" -c "INSERT INTO novel_sources (id, \"projectId\", \"rawText\", \"createdAt\", \"updatedAt\") VALUES ('${NOVEL_SOURCE_ID}', '${PROJECT_ID}', E'${REAL_TEXT}', NOW(), NOW());"
+    psql -d "${DATABASE_URL}" -c "INSERT INTO novels (id, \"projectId\", \"rawText\", \"createdAt\", \"updatedAt\") VALUES ('${NOVEL_SOURCE_ID}', '${PROJECT_ID}', E'${REAL_TEXT}', NOW(), NOW());"
 echo "[Gate] Novel Source ID: ${NOVEL_SOURCE_ID}"
 
 # Create Hierarchy (Season -> Episode -> Scene -> Shot)
