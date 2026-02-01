@@ -14,7 +14,7 @@ if [ -z "${DATABASE_URL:-}" ]; then
   export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
 fi
 
-echo "=== Gate Translation Engine: Pluggable & No-Key Fail ===" | tee "$EVI/gate.log"
+echo "=== Gate Translation Engine: Pluggable & No-Key Fail ===" | tee "$EVI/translation_gate.log"
 
 # Env Snapshot
 {
@@ -24,12 +24,15 @@ echo "=== Gate Translation Engine: Pluggable & No-Key Fail ===" | tee "$EVI/gate
 } > "$EVI/env_snapshot.txt"
 
 # Run Logic Verification
-echo "Executing Runner..."
+echo "Executing Runner..." | tee -a "$EVI/translation_gate.log"
 npx ts-node -r tsconfig-paths/register "$RUNNER" > "$EVI/runner_output.txt" 2>&1 || {
-    echo "❌ Runner Failed"
-    cat "$EVI/runner_output.txt"
+    echo "❌ Runner Failed" | tee -a "$EVI/translation_gate.log"
+    cat "$EVI/runner_output.txt" | tee -a "$EVI/translation_gate.log"
     exit 1
 }
+
+# Dump runner output to main log
+cat "$EVI/runner_output.txt" >> "$EVI/translation_gate.log"
 
 # Verify Output Content
 if grep -q "Translation Logic Verified" "$EVI/runner_output.txt"; then
@@ -52,6 +55,7 @@ cat <<EOF > "$EVI/EVIDENCE_INDEX.json"
   "gate": "gate_translation_engine.sh",
   "status": "PASS",
   "runner": "run_translation.ts",
+  "evidence": ["env_snapshot.txt", "translation_gate.log", "runner_output.txt"],
   "features": ["Provider Pluggable", "Cache (Hash)", "No-Key Fail"],
   "timestamp": "$(date -Iseconds)"
 }
@@ -60,7 +64,13 @@ EOF
 # Checksums
 cd "$EVI"
 if command -v sha256sum >/dev/null; then SHA=sha256sum; else SHA="shasum -a 256"; fi
-find . -type f -not -name "SHA256SUMS.txt" -print0 | xargs -0 $SHA > SHA256SUMS.txt
+if command -v sha256sum >/dev/null; then SHA=sha256sum; else SHA="shasum -a 256"; fi
+find . -type f -not -name "SHA256SUMS.txt" -not -name "EVIDENCE_INDEX.sha256" -not -name "translation_gate.log" -print0 | xargs -0 $SHA > SHA256SUMS.txt
 $SHA EVIDENCE_INDEX.json > EVIDENCE_INDEX.sha256
 
-echo "✅ Gate PASS"
+# Verify Checksums
+echo "Verifying Checksums..." | tee -a translation_gate.log
+$SHA -c SHA256SUMS.txt >> translation_gate.log 2>&1 || { echo "❌ Checksum Verification Failed"; exit 1; }
+$SHA -c EVIDENCE_INDEX.sha256 >> translation_gate.log 2>&1 || { echo "❌ Index Verification Failed"; exit 1; }
+
+echo "✅ Gate PASS" | tee -a translation_gate.log
