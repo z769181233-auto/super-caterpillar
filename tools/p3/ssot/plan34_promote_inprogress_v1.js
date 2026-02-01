@@ -5,15 +5,21 @@ const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
 
-function sh(cmd) {
-    return cp.execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'] }).toString('utf8').trim();
+function exec(cmd, opts = {}) {
+    return cp.execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], ...opts }).toString('utf8');
 }
-function shAllow(cmd) {
-    try { return sh(cmd); } catch { return ''; }
+function execAllow(cmd) {
+    try { return exec(cmd).trim(); } catch { return ''; }
+}
+function nowTsCompact() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
 const SSOT = process.argv[2];
 const EVI_DIR = process.argv[3];
+
 if (!SSOT || !EVI_DIR) {
     console.error('Usage: plan34_promote_inprogress_v1.js <SSOT_PATH> <EVI_DIR>');
     process.exit(2);
@@ -40,11 +46,15 @@ function parseTable(block) {
     const lines = block.split('\n');
     const tableLines = lines.filter(l => l.trim().startsWith('|'));
     if (tableLines.length < 2) throw new Error('Table not found / too short');
+
     const header = splitRow(tableLines[0]).map(s => s.trim());
     const rows = [];
+
     for (let i = 2; i < tableLines.length; i++) {
         const raw = tableLines[i];
         if (!raw.trim().startsWith('|')) continue;
+        if (raw.includes('SSOT_TABLE')) continue;
+
         const cols0 = splitRow(raw);
         const cols = cols0.slice();
 
@@ -71,6 +81,17 @@ function renderTable(header, rows) {
     return [head, sep, ...body].join('\n');
 }
 
+function ensureDir(p) { fs.mkdirSync(p, { recursive: true }); }
+
+function sha256OfFile(fpath) {
+    // mac: shasum, linux: sha256sum
+    const cmd = process.platform === 'darwin'
+        ? `shasum -a 256 "${fpath}"`
+        : `sha256sum "${fpath}"`;
+    const out = exec(cmd).trim();
+    return out.split(/\s+/)[0];
+}
+
 function bucketOf(engineKey) {
     const k = engineKey;
     if (k.startsWith('ce')) return 'ce';
@@ -83,29 +104,62 @@ function bucketOf(engineKey) {
     return 'misc';
 }
 
-function ensureDir(p) { fs.mkdirSync(p, { recursive: true }); }
-
-function sha256File(fpath) {
-    if (process.platform === 'darwin') {
-        return sh(`shasum -a 256 "${fpath}"`).split(/\s+/)[0];
+function bashSyntaxOk(gatePath, outFile) {
+    try {
+        exec(`bash -n "${gatePath}"`, { stdio: ['ignore', 'pipe', 'pipe'] });
+        fs.writeFileSync(outFile, '[OK] bash -n passed\n');
+        return { ok: true, err: '' };
+    } catch (e) {
+        const msg = (e.stderr ? e.stderr.toString('utf8') : '') || (e.message || String(e));
+        fs.writeFileSync(outFile, `[FAIL] bash -n failed\n${msg}\n`);
+        return { ok: false, err: msg };
     }
-    // linux
-    const out = sh(`sha256sum "${fpath}"`);
-    return out.split(/\s+/)[0];
 }
 
-function runGateTwice(gatePath, logDir) {
+function runGateTwiceTolerant(gatePath, logDir) {
     const base = path.basename(gatePath).replace(/[^\w.-]+/g, '_');
+    const pre = path.join(logDir, `${base}.syntax.log`);
     const log1 = path.join(logDir, `${base}.run1.log`);
     const log2 = path.join(logDir, `${base}.run2.log`);
 
-    sh(`bash "${gatePath}" > "${log1}" 2>&1`);
-    sh(`bash "${gatePath}" > "${log2}" 2>&1`);
+    const syntax = bashSyntaxOk(gatePath, pre);
+    if (!syntax.ok) {
+        fs.writeFileSync(log1, `[SKIP] Gate skipped due to syntax error\n`);
+        fs.writeFileSync(log2, `[SKIP] Gate skipped due to syntax error\n`);
+        return { gatePath, syntax_ok: false, run1_ok: false, run2_ok: false, success: false, error: `SYNTAX_ERROR: ${syntax.err}`, pre, log1, log2 };
+    }
 
-    return { gatePath, log1, log2 };
+    let run1Ok = false;
+    let run2Ok = false;
+    let errMsg = '';
+
+    try {
+        exec(`bash "${gatePath}" > "${log1}" 2>&1`);
+        run1Ok = true;
+    } catch (e) {
+        errMsg = (e.stderr ? e.stderr.toString('utf8') : '') || (e.message || String(e));
+        fs.appendFileSync(log1, `\n[FAIL] run1 failed\n${errMsg}\n`);
+        fs.writeFileSync(log2, `[SKIP] run2 skipped because run1 failed\n`);
+        return { gatePath, syntax_ok: true, run1_ok: false, run2_ok: false, success: false, error: `RUN1_FAIL: ${errMsg}`, pre, log1, log2 };
+    }
+
+    try {
+        exec(`bash "${gatePath}" > "${log2}" 2>&1`);
+        run2Ok = true;
+    } catch (e) {
+        errMsg = (e.stderr ? e.stderr.toString('utf8') : '') || (e.message || String(e));
+        fs.appendFileSync(log2, `\n[FAIL] run2 failed\n${errMsg}\n`);
+        return { gatePath, syntax_ok: true, run1_ok: true, run2_ok: false, success: false, error: `RUN2_FAIL: ${errMsg}`, pre, log1, log2 };
+    }
+
+    return { gatePath, syntax_ok: true, run1_ok: run1Ok, run2_ok: run2Ok, success: run1Ok && run2Ok, error: '', pre, log1, log2 };
 }
 
 // --- main ---
+ensureDir(EVI_DIR);
+const logsDir = path.join(EVI_DIR, 'logs');
+ensureDir(logsDir);
+
 const src = fs.readFileSync(SSOT, 'utf8');
 
 const SEALED = sliceBetween(src, '<!-- SSOT_TABLE:SEALED_BEGIN -->', '<!-- SSOT_TABLE:SEALED_END -->');
@@ -116,90 +170,143 @@ const tSealed = parseTable(SEALED.block);
 const tInp = parseTable(INP.block);
 const tPlan = parseTable(PLAN.block);
 
-// sanity: must have ledger_required column already
+// tolerate legacy column name: billing -> ledger_required
+function normalizeLedgerColumn(t) {
+    if (!t.header.includes('ledger_required') && t.header.includes('billing')) {
+        t.header = t.header.map(h => h === 'billing' ? 'ledger_required' : h);
+        for (const r of t.rows) {
+            r.ledger_required = r.billing;
+            delete r.billing;
+        }
+    }
+}
+normalizeLedgerColumn(tSealed);
+normalizeLedgerColumn(tInp);
+normalizeLedgerColumn(tPlan);
+
 if (!tSealed.header.includes('ledger_required')) throw new Error('SEALED missing ledger_required');
 if (!tInp.header.includes('ledger_required')) throw new Error('INPROGRESS missing ledger_required');
 
-// collect inprogress rows
 const inRows = tInp.rows.map(r => {
     const ek = stripTicks(r.engine_key);
     const gp = stripTicks(r.gate_path);
     const ap = stripTicks(r.adapter_path);
     return { ek, gp, ap, raw: r };
-});
+}).filter(x => x.ek);
 
 if (inRows.length === 0) {
+    fs.writeFileSync(path.join(EVI_DIR, 'PROMOTION_INDEX.json'), JSON.stringify({ ts: new Date().toISOString(), note: 'no inprogress rows' }, null, 2));
     console.log('[OK] No IN-PROGRESS rows. Nothing to promote.');
     process.exit(0);
 }
 
-ensureDir(EVI_DIR);
-const logsDir = path.join(EVI_DIR, 'logs');
-ensureDir(logsDir);
-
-// dedupe gates
 const uniqueGates = [...new Set(inRows.map(x => x.gp).filter(Boolean))];
 
-// run each gate twice
+// gate run (tolerant)
 const gateRuns = [];
 for (const gp of uniqueGates) {
-    gateRuns.push(runGateTwice(gp, logsDir));
+    gateRuns.push(runGateTwiceTolerant(gp, logsDir));
 }
 
-// write checksums
+// checksums for logs
 const sums = [];
 for (const gr of gateRuns) {
-    sums.push({ file: path.relative(EVI_DIR, gr.log1), sha256: sha256File(gr.log1) });
-    sums.push({ file: path.relative(EVI_DIR, gr.log2), sha256: sha256File(gr.log2) });
+    for (const f of [gr.pre, gr.log1, gr.log2]) {
+        sums.push({ file: path.relative(EVI_DIR, f), sha256: sha256OfFile(f) });
+    }
 }
 fs.writeFileSync(path.join(EVI_DIR, 'SHA256SUMS.json'), JSON.stringify(sums, null, 2));
 
-// build promotion mapping (engine -> seal_tag)
-const today = new Date();
-const yyyymmdd = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+// map gate -> success
+const gateSuccess = new Map(gateRuns.map(g => [g.gatePath, !!g.success]));
 
+// promote only engines whose gate succeeded
+const promotable = [];
+const skipped = [];
+
+for (const row of inRows) {
+    const ok = gateSuccess.get(row.gp) === true;
+    if (ok) promotable.push(row);
+    else skipped.push({ engine_key: row.ek, gate_path: row.gp, reason: 'GATE_FAIL_OR_SYNTAX' });
+}
+
+const failedGates = gateRuns.filter(g => !g.success).map(g => ({
+    gate_path: g.gatePath,
+    syntax_ok: g.syntax_ok,
+    run1_ok: g.run1_ok,
+    run2_ok: g.run2_ok,
+    error: g.error,
+    logs: {
+        syntax: path.relative(EVI_DIR, g.pre),
+        run1: path.relative(EVI_DIR, g.log1),
+        run2: path.relative(EVI_DIR, g.log2),
+    }
+}));
+
+fs.writeFileSync(path.join(EVI_DIR, 'FAILED_GATES.json'), JSON.stringify(failedGates, null, 2));
+fs.writeFileSync(path.join(EVI_DIR, 'SKIPPED_ENGINES.json'), JSON.stringify(skipped, null, 2));
+
+// if nothing promotable, keep SSOT unchanged
+if (promotable.length === 0) {
+    fs.writeFileSync(path.join(EVI_DIR, 'PROMOTED_ENGINES.json'), JSON.stringify([], null, 2));
+    fs.writeFileSync(path.join(EVI_DIR, 'PROMOTION_INDEX.json'), JSON.stringify({
+        ts: new Date().toISOString(),
+        note: 'no promotable engines; all gates failed',
+        inprogress_total: inRows.length,
+        promotable: 0,
+        skipped: skipped.length,
+        unique_gates: uniqueGates.length,
+        failed_gates: failedGates.length
+    }, null, 2));
+    console.log('[WARN] No promotable engines. SSOT not changed.');
+    process.exit(0);
+}
+
+// bucket tags (only for buckets that actually promote >=1 engine)
+const tagSuffix = path.basename(EVI_DIR).replace(/^p3_4_promote_inprogress_/, 'p3_4_promote_');
 const bucketTags = {};
 const engineTag = {};
 
-for (const row of inRows) {
+for (const row of promotable) {
     const b = bucketOf(row.ek);
-    if (!bucketTags[b]) bucketTags[b] = `seal/p3_4_promote_${b}_${yyyymmdd}`;
-
-    // prefer existing per-engine tag if present
-    const existing = shAllow(`git tag -l "seal/${row.ek}_*" | sort | tail -n 1`);
-    engineTag[row.ek] = existing ? existing : bucketTags[b];
+    if (!bucketTags[b]) bucketTags[b] = `seal/${tagSuffix}_${b}`; // unique per evidence run
+    engineTag[row.ek] = bucketTags[b];
 }
 
-// move rows: INPROGRESS -> SEALED, set seal_tag
+fs.writeFileSync(path.join(EVI_DIR, 'PROMOTED_ENGINES.json'), JSON.stringify(promotable.map(x => ({ engine_key: x.ek, gate_path: x.gp, seal_tag: engineTag[x.ek] })), null, 2));
+
+// move rows: INPROGRESS -> SEALED, set seal_tag to planned bucket tag (created later by wrapper)
 const sealedKeySet = new Set(tSealed.rows.map(r => stripTicks(r.engine_key)));
+
 for (const r of tInp.rows) {
     const ek = stripTicks(r.engine_key);
     if (!ek) continue;
+    if (!engineTag[ek]) continue;
 
-    if (engineTag[ek]) {
-        // set seal_tag
-        r.seal_tag = codeCell(engineTag[ek]);
+    // normalize cells
+    r.engine_key = codeCell(ek);
+    r.job_type = codeCell(stripTicks(r.job_type));
+    r.audit_prefix = stripTicks(r.audit_prefix) ? stripTicks(r.audit_prefix) : r.audit_prefix;
+    r.adapter_path = codeCell(stripTicks(r.adapter_path));
+    r.gate_path = codeCell(stripTicks(r.gate_path));
+    r.seal_tag = codeCell(engineTag[ek]);
 
-        // ensure code formatting for key/job_type paths (keep existing tick style stable)
-        r.engine_key = codeCell(ek);
-        r.job_type = codeCell(stripTicks(r.job_type));
-        r.adapter_path = codeCell(stripTicks(r.adapter_path));
-        r.gate_path = codeCell(stripTicks(r.gate_path));
+    // ensure ledger_required is preserved as-is
+    r.ledger_required = stripTicks(r.ledger_required) ? stripTicks(r.ledger_required) : r.ledger_required;
 
-        if (!sealedKeySet.has(ek)) {
-            tSealed.rows.push(r);
-            sealedKeySet.add(ek);
-        }
+    if (!sealedKeySet.has(ek)) {
+        tSealed.rows.push(r);
+        sealedKeySet.add(ek);
     }
 }
 
-// filter INPROGRESS to empty
+// filter INPROGRESS to keep only non-promoted
 tInp.rows = tInp.rows.filter(r => {
     const ek = stripTicks(r.engine_key);
     return !engineTag[ek];
 });
 
-// render new ssot
+// render new ssot blocks
 const sealedNew = '\n' + renderTable(tSealed.header, tSealed.rows) + '\n';
 const inpNew = '\n' + renderTable(tInp.header, tInp.rows) + '\n';
 const planNew = '\n' + renderTable(tPlan.header, tPlan.rows) + '\n';
@@ -211,17 +318,21 @@ out = out.slice(0, PLAN.bi + PLAN.begin.length) + planNew + out.slice(PLAN.ei);
 
 fs.writeFileSync(SSOT, out, 'utf8');
 
-// write promotion index
 const index = {
-    ts: today.toISOString(),
-    counts_before: { sealed: tSealed.rows.length - inRows.length, inprogress: inRows.length, planned: tPlan.rows.length },
-    counts_after: { sealed: tSealed.rows.length, inprogress: tInp.rows.length, planned: tPlan.rows.length },
-    unique_gates: uniqueGates,
-    gate_runs: gateRuns.map(g => ({ gate: g.gatePath, run1: path.relative(EVI_DIR, g.log1), run2: path.relative(EVI_DIR, g.log2) })),
+    ts: new Date().toISOString(),
+    evi_dir: EVI_DIR,
+    inprogress_total_before: inRows.length,
+    promotable: promotable.length,
+    skipped: skipped.length,
+    unique_gates: uniqueGates.length,
+    failed_gates: failedGates.length,
     bucket_tags: bucketTags,
     engine_tag: engineTag
 };
 fs.writeFileSync(path.join(EVI_DIR, 'PROMOTION_INDEX.json'), JSON.stringify(index, null, 2));
 
-console.log('[OK] Gates double-run completed, SSOT promoted, evidence generated.');
+console.log('[OK] Promotion completed (tolerant).');
 console.log(`[EVI] ${EVI_DIR}`);
+console.log(`[PROMOTED] ${promotable.length} engines`);
+console.log(`[SKIPPED] ${skipped.length} engines (see SKIPPED_ENGINES.json)`);
+console.log(`[FAILED_GATES] ${failedGates.length} (see FAILED_GATES.json)`);
