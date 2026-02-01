@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/core';
+import { Injectable } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
 import { QcBaseEngine } from '../base/qc_base.engine';
 import { RedisService } from '../../redis/redis.service';

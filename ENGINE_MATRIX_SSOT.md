@@ -20,6 +20,10 @@
 | `au04_audio_mix` | `AU_RENDER` | P1 | YES | AU04 | `au04_audio_mix.adapter.ts` | `gate-audio-production-mix.sh` | `seal/p19_0_audio_golive_20260124` | 自动化混音 |
 | `video_merge` | `VIDEO_RENDER` | P1 | YES | VM01 | `video-merge.local.adapter.ts` | `gate-p0-r1_video_merge_real.sh` | `p0-video-merge-v2-sealed-20260109` | 视频硬合并 |
 | `pp04_hls_package` | `PP_RENDER` | P1 | NO | PP04 | `pp04_hls_package.adapter.ts` | `gate-p4-e2e-novel-to-published-hls.sh` | `seal/p4_gate11_e2e_published_hls_20260117` | HLS 切片分发包装 |
+| `qc01_visual_fidelity` | `QC_CHECK` | P1 | NO | QC01 | `qc01_visual_fidelity.adapter.ts` | `gate_p3_qc_batch_v1.sh` | `seal/p3_3_qc_deterministic_20260201` | 视觉忠诚度 QC (ffprobe) |
+| `qc02_narrative_consistency` | `QC_CHECK` | P1 | NO | QC02 | `qc02_narrative_consistency.adapter.ts` | `gate_p3_qc_batch_v1.sh` | `seal/p3_3_qc_deterministic_20260201` | 叙事连贯性 QC (schema) |
+| `qc03_identity_continuity` | `QC_CHECK` | P1 | NO | QC03 | `qc03_identity_continuity.adapter.ts` | `gate_p3_qc_batch_v1.sh` | `seal/p3_3_qc_deterministic_20260201` | 形象一致性 QC (score) |
+| `qc04_compliance_scan` | `QC_CHECK` | P1 | NO | QC04 | `qc04_compliance_scan.adapter.ts` | `gate_p3_qc_batch_v1.sh` | `seal/p3_3_qc_deterministic_20260201` | 内容合规性 QC (rules) |
 <!-- SSOT_TABLE:SEALED_END -->
 
 ## IN-PROGRESS (已实现/待封印)
@@ -45,10 +49,6 @@
 | `pp01_video_stitch` | `PP_RENDER` | P1 | YES | PP01 | `pp01_video_stitch.adapter.ts` | `gate_p3_pp_batch_v1.sh` | - | 工业级视频拼接 |
 | `pp02_subtitle_overlay` | `PP_RENDER` | P1 | YES | PP02 | `pp02_subtitle_overlay.adapter.ts` | `gate_p3_pp_batch_v1.sh` | - | 自动化字幕压制 |
 | `pp03_watermark` | `PP_RENDER` | P1 | YES | PP03 | `pp03_watermark.adapter.ts` | `gate_p3_pp_batch_v1.sh` | - | 版权隐形水印 |
-| `qc01_visual_fidelity` | `QC_CHECK` | P1 | NO | QC01 | `qc01_visual_fidelity.adapter.ts` | `gate_p3_qc_batch_v1.sh` | - | 视觉忠诚度 QC |
-| `qc02_narrative_consistency` | `QC_CHECK` | P1 | NO | QC02 | `qc02_narrative_consistency.adapter.ts` | `gate_p3_qc_batch_v1.sh` | - | 叙事连贯性 QC |
-| `qc03_identity_continuity` | `QC_CHECK` | P1 | NO | QC03 | `qc03_identity_continuity.adapter.ts` | `gate_p3_qc_batch_v1.sh` | - | 形象一致性 QC |
-| `qc04_compliance_scan` | `QC_CHECK` | P1 | NO | QC04 | `qc04_compliance_scan.adapter.ts` | `gate_p3_qc_batch_v1.sh` | - | 内容合规性 QC |
 | `g5_dialogue_binding` | `AUDIO` | P1 | YES | G501 | `g5-dialogue-binding.adapter.ts` | `g5_b_E0001_real.sh` | - | 语义对话绑定 |
 | `g5_semantic_motion` | `SHOT_RENDER` | P1 | YES | G502 | `g5-semantic-motion-mapper.adapter.ts` | `g5_b_E0001_real.sh` | - | 动作原语合成 |
 | `g5_asset_layering` | `SHOT_RENDER` | P1 | YES | G503 | `g5-asset-layering-resolver.adapter.ts` | `g5_b_E0001_real.sh` | - | 动态图层解算 |

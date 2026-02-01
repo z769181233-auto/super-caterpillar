@@ -19,7 +19,11 @@ describe('ShotPreviewFastAdapter', () => {
             invoke: jest.fn()
         } as unknown as ShotRenderRouterAdapter;
 
-        adapter = new ShotPreviewFastAdapter(redisService, routerAdapter);
+        // Mock Audit and Cost services
+        const auditService = {} as any;
+        const costLedgerService = {} as any;
+
+        adapter = new ShotPreviewFastAdapter(redisService, routerAdapter, auditService, costLedgerService);
     });
 
     it('should return cached result on HIT', async () => {
