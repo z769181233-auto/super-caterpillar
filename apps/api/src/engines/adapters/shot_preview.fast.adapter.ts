@@ -121,6 +121,11 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
 
         } catch (error: any) {
             this.logger.error(`[ShotPreview] Failed: ${error.message}`);
+
+            // AUDIT_LOG_INTEGRITY: Record failure
+            await this.auditPreview(input, 'MISS', 'failed_request', { status: 'FAILED', error: error.message });
+            await this.recordCost(input, 0, { status: 'FAILED' }); // 0 cost for failed
+
             return {
                 status: 'FAILED' as any,
                 error: {
@@ -131,17 +136,19 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
         }
     }
 
-    private async auditPreview(input: EngineInvokeInput, type: 'HIT' | 'MISS', cacheKey: string) {
+    private async auditPreview(input: EngineInvokeInput, type: 'HIT' | 'MISS', cacheKey: string, extraDetails: any = {}) {
         try {
             await this.auditService.log({
-                projectId: input.context.projectId,
-                userId: input.context.userId,
                 action: 'SHOT_PREVIEW',
                 resourceId: cacheKey,
+                resourceType: 'preview',
                 details: {
+                    projectId: input.context.projectId,
+                    userId: input.context.userId,
                     cache: type,
                     engine: this.name,
-                    traceId: input.context.traceId
+                    traceId: input.context.traceId,
+                    ...extraDetails
                 }
             });
         } catch (e) {
@@ -149,16 +156,22 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
         }
     }
 
-    private async recordCost(input: EngineInvokeInput, amount: number) {
+    private async recordCost(input: EngineInvokeInput, amount: number, extraDetails: any = {}) {
         try {
             await this.costLedgerService.recordFromEvent({
+                userId: input.context.userId,
                 projectId: input.context.projectId,
                 jobId: input.context.jobId,
-                traceId: input.context.traceId || 'unknown',
+                jobType: input.jobType || 'SHOT_PREVIEW',
                 engineKey: this.name,
-                cost: amount,
-                details: {
-                    type: 'preview'
+                costAmount: amount, // Correct field name
+                billingUnit: 'job', // Required
+                quantity: 1,        // Required
+                attempt: (input.context as any).attempt || 1,
+                metadata: {         // details -> metadata
+                    type: 'preview',
+                    traceId: input.context.traceId || 'unknown',
+                    ...extraDetails
                 }
             });
         } catch (e) {

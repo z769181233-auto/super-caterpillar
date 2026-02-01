@@ -5,7 +5,6 @@ import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { AuditService } from '../../apps/api/src/audit/audit.service';
 import { CostLedgerService } from '../../apps/api/src/cost/cost-ledger.service';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import { ModuleRef } from '@nestjs/core';
 import { performance } from 'perf_hooks';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -17,11 +16,19 @@ class ShotRenderFileStubAdapter implements EngineAdapter {
     name = 'shot_render_local';
     supports(k: string) { return true; }
     async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
-        // Generate real file
+        // Generate real file with PNG header
         const tmpDir = os.tmpdir();
-        const fname = `preview_stub_${Date.now()}_${Math.random()}.txt`; // Using .txt for simplicity, could be .png
+        const fname = `preview_stub_${Date.now()}_${Math.random()}.png`;
         const fpath = path.join(tmpDir, fname);
-        fs.writeFileSync(fpath, "REAL_ASSET_CONTENT");
+        // Minimal PNG Header: \x89PNG\r\n\x1a\n + IHDR chunk (basic)
+        const pngHeader = Buffer.from([
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, // 1x1
+            0x08, 0x06, 0x00, 0x00, 0x00, // bit depth 8, truecolor alpha
+            0x1F, 0x15, 0xC4, 0x89  // crc
+        ]);
+        fs.writeFileSync(fpath, pngHeader);
 
         return {
             status: 'SUCCESS' as any,
@@ -119,8 +126,17 @@ async function main() {
         if (!url1 || !url1.startsWith('file://')) { console.error("FAIL: Run 1 URL not file:// schema: " + url1); exitCode = 1; }
         if (url1.includes('mock')) { console.error("FAIL: Run 1 URL contains mock"); exitCode = 1; }
 
-        // 3. Check Audit
-        const auditLogs = await prisma.auditLog.findMany({ where: { action: 'SHOT_PREVIEW' } });
+        // 3. Check Audit (Filtered by traceId via details JSON)
+        // Note: Prisma JSON path filtering syntax for details field
+        const auditLogs = await prisma.auditLog.findMany({
+            where: {
+                action: 'SHOT_PREVIEW',
+                details: {
+                    path: ['traceId'],
+                    equals: input.context.traceId
+                }
+            }
+        });
         console.log(`Audit Logs Found: ${auditLogs.length}`);
         if (auditLogs.length !== 2) { console.error("FAIL: Expected 2 audit logs"); exitCode = 1; }
 
@@ -131,7 +147,17 @@ async function main() {
 
         // Cleanup
         await prisma.costLedger.deleteMany({ where: { jobId: job.id } });
-        await prisma.auditLog.deleteMany({ where: { projectId: project.id } });
+        // Cleanup Audit: Find by traceId then delete (projectId is inside details)
+        const runLogs = await prisma.auditLog.findMany({
+            where: {
+                action: 'SHOT_PREVIEW',
+                details: { path: ['traceId'], equals: `trace_${suffix}` }
+            },
+            select: { id: true }
+        });
+        if (runLogs.length > 0) {
+            await prisma.auditLog.deleteMany({ where: { id: { in: runLogs.map(l => l.id) } } });
+        }
         await prisma.shotJob.deleteMany({ where: { projectId: project.id } });
         await prisma.task.deleteMany({ where: { projectId: project.id } });
         await prisma.project.delete({ where: { id: project.id } });
