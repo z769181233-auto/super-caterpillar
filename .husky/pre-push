@@ -1,6 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-IFS=$'\n\t'
-
-bash tools/gate/gates/gate-post_sealed_governance.sh
-bash tools/gate/gates/gate-path-leak.sh
+bash .githooks/pre-push

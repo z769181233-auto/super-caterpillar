@@ -12,7 +12,9 @@
 
 ---
 
-## 引擎矩阵
+## 引擎清单 (Engine Inventory)
+
+### 1. 已封印引擎 (SEALED ENGINES)
 
 | EngineKey                   | JobType                   | 实现状态              | 计费模型                                 | 审计 Action 前缀     | Gate 脚本                                | 封印 Tag                                       | 备注                                                                                                                                                       |
 | --------------------------- | ------------------------- | --------------------- | ---------------------------------------- | -------------------- | ---------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,7 +30,6 @@
 | `video_merge`               | VIDEO_MERGE               | REAL                  | cpuSeconds (priced via PRICING_SSOT)     | `engine.video_merge` | `gate-p0-r1_video_merge_real.sh`         | `video_merge_local_ffmpeg_sealed_20260109`     | LEGACY: Compatible with V1.0                                                                                                                               |
 | `ce10_timeline_compose`     | TIMELINE_COMPOSE          | REAL                  | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113`     |                                                                                                                                                            |
 | `ce11_timeline_preview`     | TIMELINE_PREVIEW          | REAL                  | cpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113`     |                                                                                                                                                            |
-| `workflow_ce_dag`           | CE06->SHOT->VIDEO         | REAL (Orchestrator)   | Multi-Step                               | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113`     | Orchestrator Workflow                                                                                                                                      |
 | `ce11_shot_generator_real`  | CE11_SHOT_GENERATOR       | REAL (ComfyUI)        | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-ce11-shot-generator-real.sh`       | `seal/ce11_real_p5_sealed_20260119`            | **P5-NEW**: Explicit Real Routing                                                                                                                          |
 | `ce23_identity_consistency` | CE23_IDENTITY_CONSISTENCY | REAL (PPV-64)         | router-based (internal)                  | `ID%`                | `gate-ce23-identity-consistency-real.sh` | `seal/p15_0_ce23_real_ppv64_20260123`          | **P15-0**: Content-based Real Scoring (PPV-64)                                                                                                             |
 | `audio_tts`                 | TIMELINE_RENDER (Sub)     | REAL (Production)     | router-based (internal)                  | `CE%`                | `gate-audio-p21-0-ops.sh`                | `seal/p21_0_audio_ops_integration_20260124`    | **P21-0**: Ops Integration Sealed. Dashboard Snapshot + Health Heartbeat + Auto-Diagnostic verified. Evidence: `p21_0_ops_integration_1769309936_gesrrand` |
@@ -38,6 +39,23 @@
 | `style_transfer`            | STYLE_TRANSFER (P1)       | REAL-STUB (Provider-pluggable) | ledger_required                          | `STYLE`              | `gate_style_transfer.sh`                 | `seal/style_transfer_20260201`                 | **P1.2**: Pluggable (Stub/Replicate), Redis Cache, No-Key Fail verified. Evidence: `docs/_evidence/style_transfer_v1`                             |
 | `character_gen`             | CHARACTER_GEN (P2)        | REAL-STUB (Provider-pluggable) | ledger_required                          | `CHAR`               | `gate_character_gen.sh`                  | `seal/character_gen_20260201`                  | **P2.1**: Pluggable (Stub/Replicate), Redis Cache, No-Key Fail verified. Evidence: `docs/_evidence/character_gen_v1`                              |
 | `scene_composition`         | SCENE_COMPOSITION (P2)    | REAL-STUB (FFmpeg)    | ledger_required                          | `SCENE`              | `gate_scene_composition.sh`              | `seal/scene_composition_20260201`              | **P2.2**: FFmpeg Layering (Overlay), Redis Cache. Evidence: `docs/_evidence/scene_composition_v1`                                                 |
+| `emotion_analysis`          | NOVEL_ANALYSIS (P2)       | REAL-STUB (Regex)     | job (priced via PRICING_SSOT)            | `EMO`                | `gate_emotion_analysis.sh`               | `seal/emotion_analysis_20260201`               | **P2.3**: Cache/Stub, Audit/Cost Verified. Evidence: `docs/_evidence/emotion_analysis_v1`                                                         |
+| `dialogue_optimization`     | NOVEL_ANALYSIS (P2)       | REAL-STUB (Regex)     | job (priced via PRICING_SSOT)            | `DIA`                | `gate_dialogue_optimization.sh`          | `seal/dialogue_optimization_20260201`          | **P2.4**: Cache/Stub, Audit/Cost Verified. Evidence: `docs/_evidence/dialogue_optimization_v1`                                                    |
+| `ce01_narrative_structure`  | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch.sh`                    | `seal/p3_ce_batch_ce01_ce05_20260201`          | **P3.2**: Story beat analysis. Evidence: `docs/_evidence/p3_ce_batch_20260201`                                                                             |
+| `ce05_conflict_detector`    | NOVEL_ANALYSIS (P3)       | REAL-STUB (Regex)     | job                                      | `CE%`                | `gate_p3_ce_batch.sh`                    | `seal/p3_ce_batch_ce01_ce05_20260201`          | **P3.2**: Conflict detection. Evidence: `docs/_evidence/p3_ce_batch_20260201`                                                                              |
+
+### 2. 迭代中引擎 (IN-PROGRESS ENGINES)
+
+| EngineKey | JobType | 实现状态 | 计费模型 | 审计 Action 前缀 | Gate 脚本 | 封印 Tag | 备注 |
+| --------- | ------- | -------- | -------- | ---------------- | --------- | -------- | ---- |
+|           |         |          |          |                  |           |          |      |
+
+### 3. 规划中引擎 (PLANNED ENGINES)
+
+| EngineKey | JobType | 实现状态 | 优先级 | 适配器路径 | Gate 脚本 | 计费单位 | 依赖引擎 | 备注 |
+| --------- | ------- | -------- | ------ | ---------- | --------- | -------- | -------- | ---- |
+|           |         |          |          |            |           |          |          |      |
+
 
 ---
 
@@ -160,6 +178,11 @@
 | 2026-01-29 | **G5-B HARD SEALED** — First Real Video (E0001) achieved. 15s Orbit, 1440p, 3-View Switch, Grounding Shadow. Definition: Gate-0 Law. Evidence: `docs/_evidence_archived/G5_M1_E0001_REAL` | Antigravity |
 | 2026-01-31 | **Phase 8 HARD SEALED** — Production Operating Readiness. Release Audit, Monitoring, Incident & Cost Drills implemented and verified. Evidence: `docs/_evidence/p8_operating_readiness_20260131_233552` | Antigravity |
 | 2026-02-01 | **P2 Minloop SEALED** — Character -> Scene -> Preview Integration. Minloop Gate Passed (Double-Run, Audit, Cost). Evidence: `docs/_evidence/p2_minloop_scene_to_preview_v1`                             | Antigravity |
+| 2026-02-01 | **P2.3 SEALED** — Emotion Analysis (REAL-STUB). Deterministic Regex, Redis Cache, Job Billing. Evidence: `docs/_evidence/emotion_analysis_v1`                                                           | Antigravity |
+| 2026-02-01 | **P2.4 SEALED** — Dialogue Optimization (REAL-STUB). Deterministic Regex, Redis Cache, Job Billing. Evidence: `docs/_evidence/dialogue_optimization_v1`                                                 | Antigravity |
+| 2026-02-01 | **P2 Text Minloop SEALED** — Dialogue -> Emotion -> Memory Integration. Validated Audit/Cost Chain. Evidence: `docs/_evidence/p2_text_minloop_dialogue_to_memory_v1`                                    | Antigravity |
+| 2026-02-01 | **P3 NLP Base SEALED** — Standardized Tokenize/Hash/Cache/Audit/Ledger. Hardened Infrastructure for Extension Engines. Tag: `seal/p3_nlp_base_20260201`. Evidence: `docs/_evidence/p3_nlp_base_20260201` | Antigravity |
+| 2026-02-01 | **P3 CE Batch SEALED** — CE01 Narrative Structure & CE05 Conflict Detector. REAL-STUB, NLP Base, Pre-push Integrated. Tag: `seal/p3_ce_batch_ce01_ce05_20260201` | Antigravity |
 
 ---
 
@@ -191,11 +214,6 @@
 
 ---
 
-## PLANNED ENGINES (Backlog → REAL)
 
-> 说明：此表是"规划侧 SSOT"。没有写在这里的引擎，不允许在实现层偷偷出现；反之，写在这里的引擎，必须最终进入 REAL/SEALED。
 
-| engine_key | status | priority | spec_ref | adapter_path | gate_path | cost_model | deps | notes |
-|---|---|---|---|---|---|---|---|---|
-| emotion_analysis | PLANNED | P2 | EngineSpec_V3.0 §EMO | apps/api/src/engines/adapters/emotion_analysis.adapter.ts | tools/gate/gates/gate_emotion_analysis.sh | ledger_required | nlp | 6 emotions |
-| dialogue_optimization | PLANNED | P2 | EngineSpec_V3.0 §DIA | apps/api/src/engines/adapters/dialogue_optimization.adapter.ts | tools/gate/gates/gate_dialogue_optimization.sh | ledger_required | llm | ooc guard |
+
