@@ -29,6 +29,11 @@ export PRODUCTION_MODE=1
 export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 export JWT_SECRET="${JWT_SECRET:-f0f4cb55a02a5bf2b2e9cbb273daf87991ad426e3ea68cf90cf394027c6ac23c9140290dce913869d9241aa675335d27}"
 
+# DB helper: unified psql call
+db() {
+  psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 -X -q "$@"
+}
+
 PROJECT_ID="prod_slice_v1_${TS}"
 TRACE_ID="trace_${PROJECT_ID}"
 NOVEL_SOURCE="${ROOT_DIR}/docs/_specs/novel_source_sample.txt"
@@ -55,12 +60,12 @@ wait_for_job_success() {
 
   echo "[Gate] Waiting for Job ${job_id} (Timeout: ${timeout}s)..."
   while [ "${elapsed}" -lt "${timeout}" ]; do
-    local STATUS=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT status FROM shot_jobs WHERE id='${job_id}'")
+    local STATUS=$(db -t -A -c "SELECT status FROM shot_jobs WHERE id='${job_id}'")
     if [ "${STATUS}" == "SUCCEEDED" ]; then
       echo "✅ Job ${job_id} SUCCEEDED"
       return 0
     elif [ "${STATUS}" == "FAILED" ]; then
-      local ERR=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT \"lastError\" FROM shot_jobs WHERE id='${job_id}'")
+      local ERR=$(db -t -A -c "SELECT last_error FROM shot_jobs WHERE id='${job_id}'")
       echo "❌ Job ${job_id} FAILED: ${ERR}"
       exit 1
     fi
@@ -77,19 +82,19 @@ wait_for_job_success() {
 
 # Seed User/Org
 echo "[Gate] Seeding Test User & Org..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ('user-gate', 'gate@test.com', 'hash', 'Pro', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
-psql -d "${DATABASE_URL}" -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ('org-gate', 'Gate Org', 'gate-org', 'user-gate', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
-psql -d "${DATABASE_URL}" -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ('om-gate', 'org-gate', 'user-gate', 'OWNER', NOW(), NOW()) ON CONFLICT (\"userId\", \"organizationId\") DO NOTHING;"
+db -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ('user-gate', 'gate@test.com', 'hash', 'Pro', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+db -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ('org-gate', 'Gate Org', 'gate-org', 'user-gate', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+db -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ('om-gate', 'org-gate', 'user-gate', 'OWNER', NOW(), NOW()) ON CONFLICT (\"userId\", \"organizationId\") DO NOTHING;"
 
 # Create Project
 echo "[Gate] Step 1: Create Project (SQL)..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\") VALUES ('${PROJECT_ID}', 'Gate Project', 'user-gate', 'org-gate', 'in_progress', NOW(), NOW());"
+db -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\") VALUES ('${PROJECT_ID}', 'Gate Project', 'user-gate', 'org-gate', 'in_progress', NOW(), NOW());"
 
 # Create NovelSource
 echo "[Gate] Creating NovelSource (SQL)..."
 NOVEL_SOURCE_ID="ns-${PROJECT_ID}"
     REAL_TEXT="Season 1 Chapter 1: The Beginning"
-    psql -d "${DATABASE_URL}" -c "INSERT INTO novels (id, project_id, title, created_at, updated_at) VALUES ('${NOVEL_SOURCE_ID}', '${PROJECT_ID}', '${REAL_TEXT}', NOW(), NOW());"
+    db -c "INSERT INTO novels (id, project_id, title, created_at, updated_at) VALUES ('${NOVEL_SOURCE_ID}', '${PROJECT_ID}', '${REAL_TEXT}', NOW(), NOW());"
 echo "[Gate] Novel Source ID: ${NOVEL_SOURCE_ID}"
 
 # Create Hierarchy (Season -> Episode -> Scene -> Shot)
@@ -99,15 +104,15 @@ EPISODE_ID="ep-${PROJECT_ID}"
 SCENE_ID="sc-${PROJECT_ID}"
 SHOT_ID_DUMMY="shot-${PROJECT_ID}"
 
-psql -d "${DATABASE_URL}" -c "INSERT INTO seasons (id, \"projectId\", index, title, \"createdAt\", \"updatedAt\") VALUES ('${SEASON_ID}', '${PROJECT_ID}', 1, 'Season 1', NOW(), NOW());"
-psql -d "${DATABASE_URL}" -c "INSERT INTO episodes (id, \"seasonId\", \"projectId\", index, name) VALUES ('${EPISODE_ID}', '${SEASON_ID}', '${PROJECT_ID}', 1, 'Ep 1');"
-psql -d "${DATABASE_URL}" -c "INSERT INTO scenes (id, \"episodeId\", \"projectId\", index, title, \"reviewStatus\") VALUES ('${SCENE_ID}', '${EPISODE_ID}', '${PROJECT_ID}', 1, 'Scene 1', 'DRAFT');"
-psql -d "${DATABASE_URL}" -c "INSERT INTO shots (id, \"sceneId\", index, type, \"reviewStatus\") VALUES ('${SHOT_ID_DUMMY}', '${SCENE_ID}', 1, 'DEFAULT', 'DRAFT');"
+db -c "INSERT INTO seasons (id, \"projectId\", index, title, \"createdAt\", \"updatedAt\") VALUES ('${SEASON_ID}', '${PROJECT_ID}', 1, 'Season 1', NOW(), NOW());"
+db -c "INSERT INTO episodes (id, \"seasonId\", \"projectId\", index, name) VALUES ('${EPISODE_ID}', '${SEASON_ID}', '${PROJECT_ID}', 1, 'Ep 1');"
+db -c "INSERT INTO scenes (id, \"episodeId\", \"projectId\", index, title, \"reviewStatus\") VALUES ('${SCENE_ID}', '${EPISODE_ID}', '${PROJECT_ID}', 1, 'Scene 1', 'DRAFT');"
+db -c "INSERT INTO shots (id, \"sceneId\", index, type, \"reviewStatus\") VALUES ('${SHOT_ID_DUMMY}', '${SCENE_ID}', 1, 'DEFAULT', 'DRAFT');"
 
 # Trigger PIPELINE_PROD_VIDEO_V1
 echo "[Gate] Triggering PIPELINE_PROD_VIDEO_V1 (ShotJob)..."
 PIPE_JOB_ID="job-pipe-${PROJECT_ID}"
-psql -d "${DATABASE_URL}" -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${PIPE_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID_DUMMY}', 'PIPELINE_PROD_VIDEO_V1', 'PENDING', '{\"novelSourceId\": \"${NOVEL_SOURCE_ID}\", \"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}');"
+db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${PIPE_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID_DUMMY}', 'PIPELINE_PROD_VIDEO_V1', 'PENDING', '{\"novelSourceId\": \"${NOVEL_SOURCE_ID}\", \"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}');"
 echo "[Gate] Pipeline Job: ${PIPE_JOB_ID}"
 
 wait_for_job_success "${PIPE_JOB_ID}" 300 &
@@ -118,7 +123,7 @@ echo "[Gate] Waiting for CE06 to be spawned by Pipeline..."
 ELAPSED=0
 CE06_JOB_ID=""
 while [ "${ELAPSED}" -lt 60 ]; do
-  CE06_JOB_ID=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT id FROM shot_jobs WHERE type='CE06_NOVEL_PARSING' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
+  CE06_JOB_ID=$(db -t -A -c "SELECT id FROM shot_jobs WHERE type='CE06_NOVEL_PARSING' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
   if [ -n "${CE06_JOB_ID}" ]; then
     echo "✅ Detected CE06 Job: ${CE06_JOB_ID}"
     break
@@ -134,7 +139,7 @@ echo "[Gate] Waiting for CE03 to be spawned by Pipeline..."
 ELAPSED=0
 CE03_JOB_ID=""
 while [ "${ELAPSED}" -lt 60 ]; do
-  CE03_JOB_ID=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT id FROM shot_jobs WHERE type='CE03_VISUAL_DENSITY' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
+  CE03_JOB_ID=$(db -t -A -c "SELECT id FROM shot_jobs WHERE type='CE03_VISUAL_DENSITY' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
   if [ -n "${CE03_JOB_ID}" ]; then
     echo "✅ Detected CE03 Job: ${CE03_JOB_ID}"
     break
@@ -153,7 +158,7 @@ echo "[Gate] Waiting for CE04 to be spawned by Pipeline..."
 ELAPSED=0
 CE04_JOB_ID=""
 while [ "${ELAPSED}" -lt 60 ]; do
-  CE04_JOB_ID=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT id FROM shot_jobs WHERE type='CE04_VISUAL_ENRICHMENT' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
+  CE04_JOB_ID=$(db -t -A -c "SELECT id FROM shot_jobs WHERE type='CE04_VISUAL_ENRICHMENT' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
   if [ -n "${CE04_JOB_ID}" ]; then
     echo "✅ Detected CE04 Job: ${CE04_JOB_ID}"
     break
@@ -169,7 +174,7 @@ wait_for_job_success "${CE04_JOB_ID}" 60
 
 # Chain: SHOT_RENDER
 echo "[Gate] Fetching Shot ID for SHOT_RENDER..."
-SHOT_ID=$(psql -d "${DATABASE_URL}" -t -A -c "
+SHOT_ID=$(db -t -A -c "
 SELECT s.id
 FROM shots s
 JOIN scenes sc ON s.\"sceneId\" = sc.id
@@ -184,12 +189,12 @@ if [ -z "${SHOT_ID}" ] || [ "${SHOT_ID}" = "null" ]; then
 fi
 echo "[Gate] Shot ID: ${SHOT_ID}"
 
-EXISTING_SHOT_RENDER=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT id FROM shot_jobs WHERE type='SHOT_RENDER' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
+EXISTING_SHOT_RENDER=$(db -t -A -c "SELECT id FROM shot_jobs WHERE type='SHOT_RENDER' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
 
 if [ -z "${EXISTING_SHOT_RENDER}" ]; then
   echo "[Gate] Spawning SHOT_RENDER (SQL)..."
   SHOT_JOB_ID="job-shot-${PROJECT_ID}"
-  psql -d "${DATABASE_URL}" -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${SHOT_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'SHOT_RENDER', 'PENDING', '{\"shotId\": \"${SHOT_ID}\", \"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\", \"prompt\": \"A cyberpunk neon city noodle shop\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
+  db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${SHOT_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'SHOT_RENDER', 'PENDING', '{\"shotId\": \"${SHOT_ID}\", \"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\", \"prompt\": \"A cyberpunk neon city noodle shop\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
   echo "[Gate] Spawned SHOT_RENDER: ${SHOT_JOB_ID}"
   wait_for_job_success "${SHOT_JOB_ID}" 60
 else
@@ -198,7 +203,7 @@ else
 fi
 
 # Verify Asset
-SHOT_ASSET_URI=$(psql -d "${DATABASE_URL}" -t -A -c "
+SHOT_ASSET_URI=$(db -t -A -c "
 SELECT a.\"storageKey\" 
 FROM assets a
 JOIN shots s ON a.\"ownerId\" = s.id
@@ -213,15 +218,15 @@ if [ -z "${SHOT_ASSET_URI}" ]; then echo "❌ PNG Asset Missing"; exit 1; fi
 # Chain: VIDEO_RENDER
 echo "[Gate] Spawning VIDEO_RENDER (SQL)..."
 VIDEO_JOB_ID="job-video-${PROJECT_ID}"
-psql -d "${DATABASE_URL}" -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${VIDEO_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'VIDEO_RENDER', 'PENDING', '{\"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\", \"engineKey\": \"video_render\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
+db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${VIDEO_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'VIDEO_RENDER', 'PENDING', '{\"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\", \"engineKey\": \"video_render\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
 echo "[Gate] VIDEO_RENDER Job: ${VIDEO_JOB_ID}"
 wait_for_job_success "${VIDEO_JOB_ID}" 60
 
 # Verify MP4
-VIDEO_ASSET_ID=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT id FROM assets WHERE \"createdByJobId\"='${VIDEO_JOB_ID}' LIMIT 1")
+VIDEO_ASSET_ID=$(db -t -A -c "SELECT id FROM assets WHERE \"createdByJobId\"='${VIDEO_JOB_ID}' LIMIT 1")
 if [ -z "${VIDEO_ASSET_ID}" ]; then echo "❌ Video Asset ID Missing"; exit 1; fi
 
-VIDEO_PATH_RAW=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT \"storageKey\" FROM assets WHERE id='${VIDEO_ASSET_ID}'")
+VIDEO_PATH_RAW=$(db -t -A -c "SELECT \"storageKey\" FROM assets WHERE id='${VIDEO_ASSET_ID}'")
 echo "[Gate] Video StorageKey: ${VIDEO_PATH_RAW}"
 
 if [[ "${VIDEO_PATH_RAW}" != videos/* ]]; then
@@ -241,12 +246,12 @@ ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:no
 # Chain: CE09
 echo "[Gate] Spawning CE09 (SQL)..."
 CE09_JOB_ID="job-ce09-${PROJECT_ID}"
-psql -d "${DATABASE_URL}" -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${CE09_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'CE09_MEDIA_SECURITY', 'PENDING', '{\"assetId\": \"${VIDEO_ASSET_ID}\", \"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\", \"engineKey\": \"ce09_real_watermark\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
+db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${CE09_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'CE09_MEDIA_SECURITY', 'PENDING', '{\"assetId\": \"${VIDEO_ASSET_ID}\", \"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\", \"engineKey\": \"ce09_real_watermark\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
 echo "[Gate] CE09 Job: ${CE09_JOB_ID}"
 wait_for_job_success "${CE09_JOB_ID}" 30
 
 # Verify Watermark
-FINAL_ASSET_KEY=$(psql -d "${DATABASE_URL}" -t -A -c "SELECT \"storageKey\" FROM assets WHERE \"createdByJobId\"='${CE09_JOB_ID}' LIMIT 1")
+FINAL_ASSET_KEY=$(db -t -A -c "SELECT \"storageKey\" FROM assets WHERE \"createdByJobId\"='${CE09_JOB_ID}' LIMIT 1")
 echo "[Gate] Final Asset Key: ${FINAL_ASSET_KEY}"
 if [[ "${FINAL_ASSET_KEY}" != *secure* ]]; then echo "❌ Asset Key missing 'secure' suffix"; exit 1; fi
 
@@ -279,7 +284,7 @@ sed "s/__JOB1__/$JOB1/g; s/__JOB2__/$JOB2/g" "$SQL_TEMPLATE" > "$SQL_RUN"
 
 CSV_OUT="${EVID_DIR}/AUDIT_IDENTITY_CONSISTENCY.csv"
 echo "[Gate] Querying Audit Logs (CSV)..."
-psql "${DATABASE_URL}" -f "$SQL_RUN" > "$CSV_OUT"
+db -f "$SQL_RUN" > "$CSV_OUT"
 
 # 3. Python Assertion (Anchor/Seed/Hash/CharID)
 echo "[Gate] Asserting CSV Consistency..."
