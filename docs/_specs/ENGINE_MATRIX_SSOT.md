@@ -16,6 +16,10 @@
 
 ### 1. 已封印引擎 (SEALED ENGINES)
 
+> [!IMPORTANT]
+> **完成条件**：`规划中引擎 (PLANNED ENGINES)` 表为空 && `迭代中引擎 (IN-PROGRESS ENGINES)` 表为空。
+> 任何新引擎代码实现前必须先入 `PLANNED` 表，否则门禁合规检查将失败。
+
 | EngineKey                   | JobType                   | 实现状态              | 计费模型                                 | 审计 Action 前缀     | Gate 脚本                                | 封印 Tag                                       | 备注                                                                                                                                                       |
 | --------------------------- | ------------------------- | --------------------- | ---------------------------------------- | -------------------- | ---------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ce06_novel_parsing`        | CE06_NOVEL_PARSING        | LEGACY (Monolithic)   | router-based                             | `CE%`                | `gate-ce06-story-parse-real.sh`          | `legacy_monolithic`                            | **DEPRECATED**: Use SCAN/CHUNK                                                                                                                             |
@@ -24,12 +28,12 @@
 | `ce02_identity_lock`        | CE02_IDENTITY_LOCK        | REAL (Postgres/Redis) | router-based                             | `ID%`                | `gate-ce02_identity_lock.sh`             | `seal/phase5D_identity_regression_20260116_v1` | **NEW**: Identity Consistency Anchor                                                                                                                       |
 | `ce07_memory_update`        | CE07_MEMORY_UPDATE        | REAL (Postgres)       | ledger_required                          | `CE%`                | `gate_ce07_memory_update.sh`             | `seal/ce07_memory_update_20260201`             | **NEW**: P1 Memory Consistency Engine. Cost: MISS=1 HIT=0                                                                                                  |
 | `shot_preview`              | SHOT_PREVIEW              | REAL (Redis+Render)   | ledger_required                          | `CE%`                | `gate_shot_preview_fast.sh`              | `seal/shot_preview_fast_20260201_v2`           | **NEW**: P1 Fast Preview (<1s cache, 0 secret, Real File). Cost: MISS=1 HIT=0                                                              |
-| `ce03_visual_density`       | CE03_VISUAL_DENSITY       | REAL (Heuristic)      | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113`     |                                                                                                                                                            |
-| `ce04_visual_enrichment`    | CE04_VISUAL_ENRICHMENT    | REAL (Template)       | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113`     |                                                                                                                                                            |
+| `ce03_visual_density`       | CE03_VISUAL_DENSITY       | REAL (Heuristic)      | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113_153210`     |                                                                                                                                                            |
+| `ce04_visual_enrichment`    | CE04_VISUAL_ENRICHMENT    | REAL (Template)       | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113_153210`     |                                                                                                                                                            |
 | `shot_render`               | SHOT_RENDER               | REAL (Verified)       | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-shot-render-preview.sh`            | `seal/p13_1_shot_preview_20260121`             | **P13-1**: Verified via Preview Loop                                                                                                                       |
 | `video_merge`               | VIDEO_MERGE               | REAL                  | cpuSeconds (priced via PRICING_SSOT)     | `engine.video_merge` | `gate-p0-r1_video_merge_real.sh`         | `video_merge_local_ffmpeg_sealed_20260109`     | LEGACY: Compatible with V1.0                                                                                                                               |
-| `ce10_timeline_compose`     | TIMELINE_COMPOSE          | REAL                  | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113`     |                                                                                                                                                            |
-| `ce11_timeline_preview`     | TIMELINE_PREVIEW          | REAL                  | cpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113`     |                                                                                                                                                            |
+| `ce10_timeline_compose`     | TIMELINE_COMPOSE          | REAL                  | router-based (dynamic; see PRICING_SSOT) | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113_153210`     |                                                                                                                                                            |
+| `ce11_timeline_preview`     | TIMELINE_PREVIEW          | REAL                  | cpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-phase3-commercial-e2e.sh`          | `seal/phase3_commercial_e2e_hard_20260113_153210`     |                                                                                                                                                            |
 | `ce11_shot_generator_real`  | CE11_SHOT_GENERATOR       | REAL (ComfyUI)        | gpuSeconds (priced via PRICING_SSOT)     | `CE%`                | `gate-ce11-shot-generator-real.sh`       | `seal/ce11_real_p5_sealed_20260119`            | **P5-NEW**: Explicit Real Routing                                                                                                                          |
 | `ce23_identity_consistency` | CE23_IDENTITY_CONSISTENCY | REAL (PPV-64)         | router-based (internal)                  | `ID%`                | `gate-ce23-identity-consistency-real.sh` | `seal/p15_0_ce23_real_ppv64_20260123`          | **P15-0**: Content-based Real Scoring (PPV-64)                                                                                                             |
 | `audio_tts`                 | TIMELINE_RENDER (Sub)     | REAL (Production)     | router-based (internal)                  | `CE%`                | `gate-audio-p21-0-ops.sh`                | `seal/p21_0_audio_ops_integration_20260124`    | **P21-0**: Ops Integration Sealed. Dashboard Snapshot + Health Heartbeat + Auto-Diagnostic verified. Evidence: `p21_0_ops_integration_1769309936_gesrrand` |
@@ -51,18 +55,18 @@
 | `vg03_lighting_engine`     | VG_RENDER (P3)            | REAL-STUB (FFmpeg)    | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg03_lighting_engine_20260201`           | **P3.2A**: Lighting effects. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                            |
 | `vg04_camera_path`         | VG_RENDER (P3)            | REAL-STUB (JSON)      | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg04_camera_path_20260201`               | **P3.2A**: Camera path generation. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                     |
 | `vg05_vfx_compositor`      | VG_RENDER (P3)            | REAL-STUB (FFmpeg)    | ledger_required                          | `VG%`                | `gate_p3_vg_batch_v1.sh`                 | `seal/vg05_vfx_compositor_20260201`            | **P3.2A**: VFX composition. Evidence: `docs/_evidence/p3_vg_batch_v1_20260201`                                                                            |
-| `au01_voice_tts` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au01_voice_tts_20260201` | **P3.2D**: Voice TTS. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
-| `au02_bgm_gen` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au02_bgm_gen_20260201` | **P3.2D**: BGM Generation. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
-| `au03_sfx_gen` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au03_sfx_gen_20260201` | **P3.2D**: SFX Generation. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
-| `au04_audio_mix` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au04_audio_mix_20260201` | **P3.2D**: Audio Mixing. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
-| `pp01_video_stitch` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp01_video_stitch_20260201` | **P3.2D**: Video Stitching. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
-| `pp02_subtitle_overlay` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp02_subtitle_overlay_20260201` | **P3.2D**: Subtitle Overlay. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
-| `pp03_watermark` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp03_watermark_20260201` | **P3.2D**: Watermarking. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
-| `pp04_hls_package` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp04_hls_package_20260201` | **P3.2D**: HLS Packaging. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
-| `qc01_visual_fidelity` | QC_CHECK (P3) | REAL-STUB (Mock) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc01_visual_fidelity_20260201` | **P3.2D**: Visual fidelity check. Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
-| `qc02_narrative_consistency` | QC_CHECK (P3) | REAL-STUB (Mock) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc02_narrative_consistency_20260201` | **P3.2D**: Narrative consistency check. Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
-| `qc03_identity_continuity` | QC_CHECK (P3) | REAL-STUB (Mock) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc03_identity_continuity_20260201` | **P3.2D**: Identity continuity check. Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
-| `qc04_compliance_scan` | QC_CHECK (P3) | REAL-STUB (Mock) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc04_compliance_scan_20260201` | **P3.2D**: Compliance scan. Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
+| `au01_voice_tts` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au_batch_v1_20260201` | **P3.2D**: Voice TTS. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
+| `au02_bgm_gen` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au_batch_v1_20260201` | **P3.2D**: BGM Generation. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
+| `au03_sfx_gen` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au_batch_v1_20260201` | **P3.2D**: SFX Generation. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
+| `au04_audio_mix` | AU_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `AU%` | `gate_p3_au_batch_v1.sh` | `seal/au_batch_v1_20260201` | **P3.2D**: Audio Mixing. Evidence: `docs/_evidence/p3_au_batch_v1_20260201` |
+| `pp01_video_stitch` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp_batch_v1_20260201` | **P3.2D**: Video Stitching. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
+| `pp02_subtitle_overlay` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp_batch_v1_20260201` | **P3.2D**: Subtitle Overlay. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
+| `pp03_watermark` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp_batch_v1_20260201` | **P3.2D**: Watermarking. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
+| `pp04_hls_package` | PP_RENDER (P3) | REAL-STUB (FFmpeg) | ledger_required | `PP%` | `gate_p3_pp_batch_v1.sh` | `seal/pp_batch_v1_20260201` | **P3.2D**: HLS Packaging. Evidence: `docs/_evidence/p3_pp_batch_v1_20260201` |
+| `qc01_visual_fidelity` | QC_CHECK (P3) | REAL-STUB (Deterministic) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc_batch_v1_20260201` | **P3.2D**: Visual fidelity check (FFprobe). Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
+| `qc02_narrative_consistency` | QC_CHECK (P3) | REAL-STUB (Deterministic) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc_batch_v1_20260201` | **P3.2D**: Narrative consistency check (Field Valid). Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
+| `qc03_identity_continuity` | QC_CHECK (P3) | REAL-STUB (Deterministic) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc_batch_v1_20260201` | **P3.2D**: Identity continuity check (Score Assert). Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
+| `qc04_compliance_scan` | QC_CHECK (P3) | REAL-STUB (Deterministic) | ledger_required | `QC%` | `gate_p3_qc_batch_v1.sh` | `seal/qc_batch_v1_20260201` | **P3.2D**: Compliance scan (Keyword scan). Evidence: `docs/_evidence/p3_qc_batch_v1_20260201` |
 
 ### 2. 迭代中引擎 (IN-PROGRESS ENGINES)
 
@@ -74,7 +78,46 @@
 
 | EngineKey | JobType | 实现状态 | 优先级 | 适配器路径 | Gate 脚本 | 计费单位 | 依赖引擎 | 备注 |
 | --------- | ------- | -------- | ------ | ---------- | --------- | -------- | -------- | ---- |
-|           |         |          |          |            |           |          |          |      |
+| `ce14_role_consistency_score` | NOVEL_ANALYSIS | PLANNED | P3 | adapters/ce14_role_consistency_score.adapter.ts | gate_p3_ce_batch_v3.sh | job | ce02 | 角色一致性评分 |
+| `ce15_keyframe_planning` | SHOT_PLANNING | PLANNED | P3 | adapters/ce15_keyframe_planning.adapter.ts | gate_p3_ce_batch_v3.sh | job | ce10 | 关键帧规划 |
+| `ce16_camera_move_strategy` | SHOT_PLANNING | PLANNED | P3 | adapters/ce16_camera_move_strategy.adapter.ts | gate_p3_ce_batch_v3.sh | job | ce10 | 镜头运动策略 |
+| `ce17_color_palette_gen` | SHOT_PLANNING | PLANNED | P3 | adapters/ce17_color_palette_gen.adapter.ts | gate_p3_ce_batch_v3.sh | job | ce10 | 配色方案生成 |
+| `ce18_sound_script_planning` | NOVEL_ANALYSIS | PLANNED | P3 | adapters/ce18_sound_script_planning.adapter.ts | gate_p3_ce_batch_v3.sh | job | ce01 | 音效脚本规划 |
+| `ce19_subtitle_gen_from_text` | PP_RENDER | PLANNED | P3 | adapters/ce19_subtitle_gen.adapter.ts | gate_p3_ce_batch_v3.sh | job | ce01 | 基于文本生成 SRT |
+| `ce20_marketing_copy_gen` | CONTENT_GEN | PLANNED | P3 | adapters/ce20_marketing_copy.adapter.ts | gate_p3_ce_batch_v3.sh | tokens | ce01 | 营销文案生成 |
+| `vg06_pose_adjustment` | VG_RENDER | PLANNED | P3 | adapters/vg06_pose_adj.adapter.ts | gate_p3_vg_batch_v2.sh | gpu_seconds | vg02 | 姿态微调 |
+| `vg07_expression_morphing` | VG_RENDER | PLANNED | P3 | adapters/vg07_expr_morph.adapter.ts | gate_p3_vg_batch_v2.sh | gpu_seconds | vg02 | 表情迁移 |
+| `vg08_cloth_simulation` | VG_RENDER | PLANNED | P3 | adapters/vg08_cloth_sim.adapter.ts | gate_p3_vg_batch_v2.sh | gpu_seconds | vg02 | 布料物理模拟 |
+| `vg09_hair_physics` | VG_RENDER | PLANNED | P4 | adapters/vg09_hair_phys.adapter.ts | gate_p3_vg_batch_v2.sh | gpu_seconds | vg02 | 头发物理模拟 |
+| `vg10_particle_fx` | VG_RENDER | PLANNED | P4 | adapters/vg10_particle_fx.adapter.ts | gate_p3_vg_batch_v2.sh | gpu_seconds | vg05 | 粒子特效 (烟/火) |
+| `vg11_face_swap` | VG_RENDER | PLANNED | P4 | adapters/vg11_face_swap.adapter.ts | gate_p3_vg_batch_v2.sh | gpu_seconds | vg02 | AI 换脸 |
+| `vg12_style_consistency_fix` | VG_RENDER | PLANNED | P4 | adapters/vg12_style_fix.adapter.ts | gate_p3_vg_batch_v2.sh | gpu_seconds | style_transfer | 风格一致性修复 |
+| `vg13_video_upscaler_4k` | VG_RENDER | PLANNED | P3 | adapters/vg13_upscaler.adapter.ts | gate_p3_vg_batch_v2.sh | gpu_seconds | video_merge | 4K 超分 |
+| `vg14_denoising_engine` | VG_RENDER | PLANNED | P4 | adapters/vg14_denoising.adapter.ts | gate_p3_vg_batch_v2.sh | gpu_seconds | vg01 | 画面降噪 |
+| `vg15_depth_map_gen` | VG_RENDER | PLANNED | P5 | adapters/vg15_depth_gen.adapter.ts | gate_p3_vg_batch_v2.sh | job | vg01 | 深度图生成 |
+| `au05_voice_cloning` | AU_RENDER | PLANNED | P3 | adapters/au05_voice_clone.adapter.ts | gate_p3_au_batch_v2.sh | job | au01 | 声音克隆 |
+| `au06_audio_restoration` | AU_RENDER | PLANNED | P4 | adapters/au06_audio_rest.adapter.ts | gate_p3_au_batch_v2.sh | seconds | au01 | 音频修复/降噪 |
+| `au07_beat_sync_engine` | AU_RENDER | PLANNED | P3 | adapters/au07_beat_sync.adapter.ts | gate_p3_au_batch_v2.sh | job | au02 | 卡点/节奏同步 |
+| `au08_lyrics_gen` | CONTENT_GEN | PLANNED | P5 | adapters/au08_lyrics_gen.adapter.ts | gate_p3_au_batch_v2.sh | tokens | ce01 | 歌词生成 |
+| `au09_vocal_tuning` | AU_RENDER | PLANNED | P5 | adapters/au09_vocal_tune.adapter.ts | gate_p3_au_batch_v2.sh | seconds | au05 | 人声调优 (Auto-Tune) |
+| `au10_spatial_audio_3d` | AU_RENDER | PLANNED | P5 | adapters/au10_spatial_3d.adapter.ts | gate_p3_au_batch_v2.sh | seconds | au04 | 3D 空间音频 |
+| `pp05_motion_graphics_gen` | PP_RENDER | PLANNED | P3 | adapters/pp05_motion_gfx.adapter.ts | gate_p3_pp_batch_v2.sh | job | vg05 | 动态图形生成 |
+| `pp06_transitions_engine` | PP_RENDER | PLANNED | P3 | adapters/pp06_transitions.adapter.ts | gate_p3_pp_batch_v2.sh | job | video_merge | 转场处理 |
+| `pp07_end_credits_gen` | PP_RENDER | PLANNED | P4 | adapters/pp07_end_credits.adapter.ts | gate_p3_pp_batch_v2.sh | job | video_merge | 片尾滚动字幕 |
+| `pp08_bokeh_effect` | PP_RENDER | PLANNED | P5 | adapters/pp08_bokeh.adapter.ts | gate_p3_pp_batch_v2.sh | gpu_seconds | vg03 | 虚化/散景效果 |
+| `pp09_color_grading_lut` | PP_RENDER | PLANNED | P3 | adapters/pp09_color_grade.adapter.ts | gate_p3_pp_batch_v2.sh | job | video_merge | 调色 (LUT 映射) |
+| `pp10_video_stabilizer` | PP_RENDER | PLANNED | P5 | adapters/pp10_stabilizer.adapter.ts | gate_p3_pp_batch_v2.sh | job | video_merge | 画面防抖 |
+| `qc05_audio_clipping_det` | QC_CHECK | PLANNED | P3 | adapters/qc05_audio_clip.adapter.ts | gate_p3_qc_batch_v2.sh | job | au04 | 音频爆音检测 |
+| `qc06_lip_sync_verify` | QC_CHECK | PLANNED | P3 | adapters/qc06_lip_sync.adapter.ts | gate_p3_qc_batch_v2.sh | job | vg07 | 嘴型同步校验 |
+| `qc07_brand_safety_guard` | QC_CHECK | PLANNED | P3 | adapters/qc07_brand_safety.adapter.ts | gate_p3_qc_batch_v2.sh | job | ce09 | 品牌安全过滤 |
+| `qc08_copyright_check` | QC_CHECK | PLANNED | P3 | adapters/qc08_copyright_chk.adapter.ts | gate_p3_qc_batch_v2.sh | job | ce09 | 版权侵权检测 |
+| `qc09_file_integrity_chk` | QC_CHECK | PLANNED | P4 | adapters/qc09_file_integ.adapter.ts | gate_p3_qc_batch_v2.sh | job | pp04 | 文件完整性校验 (MD5) |
+| `qc10_metadata_validation` | QC_CHECK | PLANNED | P4 | adapters/qc10_meta_val.adapter.ts | gate_p3_qc_batch_v2.sh | job | pp04 | 元数据准确性评估 |
+| `ce24_novel_summary_gen` | NOVEL_ANALYSIS | PLANNED | P3 | adapters/ce24_summary.adapter.ts | gate_p3_ce_batch_v3.sh | tokens | ce01 | 小说提纲/摘要生成 |
+| `ce25_world_setting_gen` | NOVEL_ANALYSIS | PLANNED | P3 | adapters/ce25_world_set.adapter.ts | gate_p3_ce_batch_v3.sh | tokens | ce01 | 世界观设定解析 |
+| `vg16_lighting_bake` | VG_RENDER | PLANNED | P5 | adapters/vg16_light_bake.adapter.ts | gate_p3_vg_batch_v2.sh | job | vg03 | 光照烘焙 |
+| `au11_bgm_stem_extract` | AU_RENDER | PLANNED | P5 | adapters/au11_stem_extract.adapter.ts | gate_p3_au_batch_v2.sh | job | au02 | BGM 分道拆解 |
+| `pp11_motion_blur_fix` | PP_RENDER | PLANNED | P5 | adapters/pp11_motion_blur.adapter.ts | gate_p3_pp_batch_v2.sh | gpu_seconds | video_merge | 运动模糊修正 |
 
 
 ---

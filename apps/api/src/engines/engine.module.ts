@@ -51,6 +51,7 @@ import { QC01VisualFidelityAdapter } from './adapters/qc01_visual_fidelity.adapt
 import { QC02NarrativeConsistencyAdapter } from './adapters/qc02_narrative_consistency.adapter';
 import { QC03IdentityContinuityAdapter } from './adapters/qc03_identity_continuity.adapter';
 import { QC04ComplianceScanAdapter } from './adapters/qc04_compliance_scan.adapter';
+import { CE23IdentityLocalAdapter } from './adapters/ce23-identity.local.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -64,9 +65,12 @@ import { G5SemanticMotionMapperAdapter } from './adapters/g5-semantic-motion-map
 import { G5AssetLayeringResolverAdapter } from './adapters/g5-asset-layering-resolver.adapter';
 import { G5SubengineHubService } from './g5-subengine-hub.service';
 import { EngineHubModule } from '../engine-hub/engine-hub.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
+import { AuditModule } from '../audit/audit.module';
+import { CostModule } from '../cost/cost.module';
 
 @Module({
-  imports: [PrismaModule, EngineAdminModule, forwardRef(() => EngineHubModule)], // 修复 DI 缺失
+  imports: [PrismaModule, EngineAdminModule, AuditLogModule, AuditModule, CostModule, forwardRef(() => EngineHubModule)], // 修复 DI 缺失
   controllers: [EngineController], // S3-C.1: 注册公开的引擎控制器
   providers: [
     EngineRegistry,
@@ -121,6 +125,7 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
     QC02NarrativeConsistencyAdapter,
     QC03IdentityContinuityAdapter,
     QC04ComplianceScanAdapter,
+    CE23IdentityLocalAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -249,7 +254,9 @@ export class EngineModule implements OnModuleInit {
     @Inject(QC03IdentityContinuityAdapter)
     private readonly qc03Adapter: QC03IdentityContinuityAdapter,
     @Inject(QC04ComplianceScanAdapter)
-    private readonly qc04Adapter: QC04ComplianceScanAdapter
+    private readonly qc04Adapter: QC04ComplianceScanAdapter,
+    @Inject(CE23IdentityLocalAdapter)
+    private readonly ce23Adapter: CE23IdentityLocalAdapter
   ) { }
 
   onModuleInit() {
@@ -280,6 +287,12 @@ export class EngineModule implements OnModuleInit {
     this.registry.registerAlias('ce06_novel_parsing', this.ce06Adapter);
     this.registry.registerAlias('ce03_visual_density', this.ce03Adapter);
     this.registry.registerAlias('ce04_visual_enrichment', this.ce04Adapter);
+    this.registry.registerAlias('video_merge', this.videoMergeAdapter);
+    this.registry.registerAlias('ce10_timeline_compose', this.ce04Adapter); // Mapping to enrichment for now
+    this.registry.registerAlias('ce11_timeline_preview', this.ce04Adapter);
+    this.registry.registerAlias('ce11_shot_generator_real', this.shotRenderRouterAdapter);
+    this.registry.registerAlias('ce23_identity_consistency', this.ce23Adapter);
+    this.registry.registerAlias('g5_video_render', this.shotRenderRouterAdapter);
 
     // Shot Render Registration
     // Phase 0-R: Use Router as primary entry for shot_render
@@ -301,6 +314,10 @@ export class EngineModule implements OnModuleInit {
     this.registry.register(this.emotionAnalysisAdapter);
     this.registry.register(this.dialogueOptimizationAdapter);
     this.registry.register(this.ce07Adapter);
+    this.registry.registerAlias('shot_preview', this.shotRenderRouterAdapter);
+    this.registry.registerAlias('ce02_identity_lock', this.ce23Adapter);
+    this.registry.registerAlias('ce06_scan_toc', this.ce06Adapter);
+    this.registry.registerAlias('ce06_chunk_parse', this.ce06Adapter);
     this.registry.registerAlias('ce11_shot_generator_mock', this.ce11MockAdapter);
 
     // CE11 Real Registration
@@ -317,9 +334,11 @@ export class EngineModule implements OnModuleInit {
 
     // P1: Translation Engine
     this.registry.register(this.translationCloudAdapter);
+    this.registry.registerAlias('translation_engine', this.translationCloudAdapter);
 
     // P1: Style Transfer Engine
     this.registry.register(this.styleTransferReplicateAdapter);
+    this.registry.registerAlias('style_transfer', this.styleTransferReplicateAdapter);
 
     // P2.1: Character Gen Engine
     this.registry.register(this.characterGenAdapter);

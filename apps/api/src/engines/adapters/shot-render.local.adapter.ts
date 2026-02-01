@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import { shotRenderRealEngine } from '@scu/engines-shot-render';
+import { shotRenderRealEngine } from '../../../../../packages/engines/shot_render';
 
 @Injectable()
 export class ShotRenderLocalAdapter implements EngineAdapter {

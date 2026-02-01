@@ -143,8 +143,8 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
                 resourceId: cacheKey,
                 resourceType: 'preview',
                 details: {
-                    projectId: input.context.projectId,
-                    userId: input.context.userId,
+                    projectId: input.context.projectId || '',
+                    userId: input.context.userId || 'system',
                     cache: type,
                     engine: this.name,
                     traceId: input.context.traceId,
@@ -159,8 +159,8 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
     private async recordCost(input: EngineInvokeInput, amount: number, extraDetails: any = {}) {
         try {
             await this.costLedgerService.recordFromEvent({
-                userId: input.context.userId,
-                projectId: input.context.projectId,
+                userId: input.context.userId || 'system',
+                projectId: input.context.projectId || '',
                 jobId: input.context.jobId,
                 jobType: input.jobType || 'SHOT_PREVIEW',
                 engineKey: this.name,

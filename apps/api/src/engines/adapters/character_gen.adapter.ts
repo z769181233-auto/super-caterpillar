@@ -144,7 +144,7 @@ export class CharacterGenAdapter implements EngineAdapter {
             resourceType: 'character_gen',
             details: {
                 projectId: input.context.projectId,
-                userId: input.context.userId,
+                userId: input.context.userId || 'system',
                 cache: type,
                 traceId: input.context.traceId,
                 ...extraDetails
@@ -154,7 +154,7 @@ export class CharacterGenAdapter implements EngineAdapter {
 
     private async recordCost(input: EngineInvokeInput, amount: number, extraDetails: any = {}) {
         await this.costLedgerService.recordFromEvent({
-            userId: input.context.userId,
+            userId: input.context.userId || 'system',
             projectId: input.context.projectId || '',
             jobId: input.context.jobId,
             jobType: input.jobType || 'CHARACTER_GEN', // Ensure db supports this or map to generic

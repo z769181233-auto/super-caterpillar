@@ -96,7 +96,7 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
             resourceType: 'emotion_result',
             details: {
                 projectId: input.context.projectId,
-                userId: input.context.userId,
+                userId: input.context.userId || 'system',
                 cache: type,
                 traceId: input.context.traceId
             }
@@ -105,7 +105,7 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
 
     private async recordCost(input: EngineInvokeInput, amount: number, extra: any = {}) {
         await this.costLedgerService.recordFromEvent({
-            userId: input.context.userId,
+            userId: input.context.userId || 'system',
             projectId: input.context.projectId || '',
             jobId: input.context.jobId,
             jobType: input.jobType || 'EMOTION_ANALYSIS',

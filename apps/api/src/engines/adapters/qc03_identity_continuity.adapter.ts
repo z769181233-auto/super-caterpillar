@@ -1,40 +1,70 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
+import { Injectable } from '@nestjs/common';
+import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
 import { QcBaseEngine } from '../base/qc_base.engine';
+import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
-import { RedisService } from '../../redis/redis.service';
+import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { mkdirSync, writeFileSync } from 'fs';
+import { createHash } from 'crypto';
 
 @Injectable()
-export class QC03IdentityContinuityAdapter extends QcBaseEngine {
+export class QC03IdentityContinuityAdapter extends QcBaseEngine implements EngineAdapter {
     constructor(
-        @Inject(RedisService) redis: RedisService,
-        @Inject(AuditService) audit: AuditService,
-        @Inject(CostLedgerService) cost: CostLedgerService
+        redis: RedisService,
+        audit: AuditService,
+        cost: CostLedgerService
     ) {
         super('qc03_identity_continuity', redis, audit, cost);
     }
 
     async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
-        return this.execute(input, input.payload);
+        return this.execute(input, input.payload || {});
     }
 
-    protected async processLogic(payload: any): Promise<any> {
-        const hash = this.generateCacheKey(payload).split(':').pop();
+    protected async processLogic(payload: any, input: EngineInvokeInput): Promise<{ status: 'PASS' | 'FAIL' | 'WARN'; reportUrl?: string; meta?: any; metrics?: any }> {
+        // QC03: Identity Continuity - Use deterministic score check
+        const characterId = payload.characterId || 'unknown';
+        const identityScore = payload.identityScore || payload.score || 0;
+
+        // Threshold-based check (simulating ce23_identity_consistency)
+        const threshold = 0.85;
+        const reasons: string[] = [];
+
+        if (!characterId || characterId === 'unknown') {
+            reasons.push('Missing characterId');
+        }
+        if (identityScore < threshold) {
+            reasons.push(`Identity score ${identityScore} below threshold ${threshold}`);
+        }
+
+        const passed = characterId && characterId !== 'unknown' && identityScore >= threshold;
+        const score = passed ? 95 : (identityScore * 100);
+
+        const hash = createHash('sha256').update(JSON.stringify(payload)).digest('hex').substring(0, 16);
         const outputDir = join(process.cwd(), 'storage/qc/identity');
         mkdirSync(outputDir, { recursive: true });
-        const reportPath = join(outputDir, `${hash}.json`);
+        const reportPath = join(outputDir, `qc03_${hash}.json`);
 
-        const score = 95;
-        const report = { status: 'PASS', identityScore: score, deviations: [] };
+        const report = {
+            characterId,
+            identityScore,
+            threshold,
+            continuityScore: score,
+            passed,
+            reasons,
+            checks: {
+                faceIdConsistency: passed ? 'MATCH' : 'MISMATCH',
+                featureLock: 'ACTIVE'
+            },
+            timestamp: new Date().toISOString()
+        };
         writeFileSync(reportPath, JSON.stringify(report, null, 2));
 
         return {
-            status: 'PASS',
+            status: score >= 90 ? 'PASS' : (score >= 70 ? 'WARN' : 'FAIL'),
             reportUrl: `file://${reportPath}`,
-            metrics: { identityScore: score }
+            metrics: { score, reasons }
         };
     }
 }

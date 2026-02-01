@@ -133,8 +133,8 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
             resourceId: resourceId,
             resourceType: 'style_transfer',
             details: {
-                projectId: input.context.projectId,
-                userId: input.context.userId,
+                projectId: input.context.projectId || '',
+                userId: input.context.userId || 'system',
                 cache: type,
                 traceId: input.context.traceId,
                 ...extraDetails
@@ -144,7 +144,7 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
 
     private async recordCost(input: EngineInvokeInput, amount: number, extraDetails: any = {}) {
         await this.costLedgerService.recordFromEvent({
-            userId: input.context.userId,
+            userId: input.context.userId || 'system',
             projectId: input.context.projectId || '',
             jobId: input.context.jobId,
             jobType: input.jobType || 'STYLE_TRANSFER',

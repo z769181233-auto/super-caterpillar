@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import { ce04RealEngine } from '@scu/engines/ce04';
+import { ce04RealEngine } from '../../../../../packages/engines/ce04';
 
 /**
  * CE04LocalAdapter
