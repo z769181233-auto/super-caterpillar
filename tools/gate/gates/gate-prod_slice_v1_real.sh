@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+# === PATCH: enforce repo-root gate semantics ===
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [[ -z "${ROOT}" ]]; then echo "[FATAL] cannot resolve repo root"; exit 1; fi
+cd "$ROOT"
+source "$ROOT/tools/gate/lib/gate_bootstrap.sh"
+# === END PATCH ===
+
 IFS=$'\n\t'
 IFS=$'
 	'
