@@ -24,6 +24,7 @@ import { MockEngineAdapter } from '../engine/adapters/mock-engine.adapter';
 import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
 import { TranslationCloudAdapter } from './adapters/translation.cloud.adapter';
 import { StyleTransferReplicateAdapter } from './adapters/style-transfer.replicate.adapter';
+import { CharacterGenAdapter } from './adapters/character_gen.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -67,6 +68,7 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
     G5SubengineHubService, // G5 Orchestrator
     TranslationCloudAdapter,
     StyleTransferReplicateAdapter,
+    CharacterGenAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -119,7 +121,9 @@ export class EngineModule implements OnModuleInit {
     @Inject(TranslationCloudAdapter)
     private readonly translationCloudAdapter: TranslationCloudAdapter,
     @Inject(StyleTransferReplicateAdapter)
-    private readonly styleTransferReplicateAdapter: StyleTransferReplicateAdapter
+    private readonly styleTransferReplicateAdapter: StyleTransferReplicateAdapter,
+    @Inject(CharacterGenAdapter)
+    private readonly characterGenAdapter: CharacterGenAdapter
   ) { }
 
   onModuleInit() {
@@ -186,5 +190,8 @@ export class EngineModule implements OnModuleInit {
 
     // P1: Style Transfer Engine
     this.registry.register(this.styleTransferReplicateAdapter);
+
+    // P2.1: Character Gen Engine
+    this.registry.register(this.characterGenAdapter);
   }
 }
