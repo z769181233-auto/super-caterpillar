@@ -1,6 +1,23 @@
 #!/usr/bin/env node
 'use strict';
 
+if (process.env.ALLOW_MANUAL_PROMOTE !== '1') {
+    console.error('❌ ERROR: Manual promotion is DISABLED by default to protect 基线.');
+    console.error('To override, use: ALLOW_MANUAL_PROMOTE=1 node ...');
+    process.exit(1);
+}
+
+const TICKET = process.env.MANUAL_PROMOTE_TICKET;
+const REASON = process.env.MANUAL_PROMOTE_REASON;
+
+if (!TICKET || !REASON) {
+    console.error('❌ ERROR: Manual promotion requires AUDIT metadata.');
+    console.error('Required Env Vars:');
+    console.error('  MANUAL_PROMOTE_TICKET - The ticket/approval number (e.g., SCU-101)');
+    console.error('  MANUAL_PROMOTE_REASON - Brief summary of why this promotion is necessary');
+    process.exit(1);
+}
+
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
@@ -193,6 +210,17 @@ const inRows = tInp.rows.map(r => {
     const ap = stripTicks(r.adapter_path);
     return { ek, gp, ap, raw: r };
 }).filter(x => x.ek);
+
+// Write Audit Metadata early to capture intent
+const auditMetadata = {
+    ts: new Date().toISOString(),
+    ticket: TICKET,
+    reason: REASON,
+    executor: process.env.USER || 'unknown',
+    inprogress_detected: inRows.length,
+    ssot_path: path.resolve(SSOT)
+};
+fs.writeFileSync(path.join(EVI_DIR, 'MANUAL_PROMOTE_AUDIT.json'), JSON.stringify(auditMetadata, null, 2));
 
 if (inRows.length === 0) {
     fs.writeFileSync(path.join(EVI_DIR, 'PROMOTION_INDEX.json'), JSON.stringify({ ts: new Date().toISOString(), note: 'no inprogress rows' }, null, 2));
