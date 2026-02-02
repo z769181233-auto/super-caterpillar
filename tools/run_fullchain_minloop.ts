@@ -57,6 +57,7 @@ async function run() {
             if (!adapter) throw new Error(`Adapter missing for ${item.key}`);
 
             const res = await adapter.invoke({
+                engineKey: item.key,
                 jobType: JobType.CE06_NOVEL_PARSING,
                 payload: item.payload,
                 context: { traceId, projectId, userId, organizationId: 'default-org', jobId, attempt: 1 } as any
@@ -95,6 +96,7 @@ async function run() {
 
             const adapter = registry.getAdapter(key);
             const res = await adapter.invoke({
+                engineKey: key,
                 jobType: JobType.QC_CHECK as any,
                 payload: {
                     url: 'render_output.mp4',

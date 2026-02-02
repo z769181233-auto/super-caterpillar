@@ -90,3 +90,7 @@ workspace/
 tools/deploy/p7_secrets.local.env
 tools/ops/p8_secrets.local.env
 tools/ops/p8_secrets.local.env
+
+# Governance Hardening (Post-Sealing)
+/tmp_pgvector/
+/PROMOTION_INDEX.json

@@ -101,5 +101,23 @@ const metadata = {
 fs.writeFileSync(runDir + "/EVIDENCE_INDEX.json", JSON.stringify(metadata, null, 2));
 EOF
 
+# --- 5. 仓库纯净度断言 (Pure Repo Assertion) ---
+log "Running Pure Repo Assertion..."
+
+# 1) 已跟踪文件不允许被修改 (No tracked files modified)
+git diff --exit-code || { err "PURE_REPO: Tracked files have been modified."; exit 1; }
+git diff --cached --exit-code || { err "PURE_REPO: Staged changes detected."; exit 1; }
+
+# 2) 允许仅出现 docs/_evidence/ 的未跟踪输出，其它未跟踪一律禁止
+# Witelist docs/_evidence/ from untracked check
+DIRTY="$(git status --porcelain | grep -vE '^\?\? docs/_evidence/' || true)"
+if [ -n "$DIRTY" ]; then
+  err "❌ [PURE_REPO] unexpected dirty files (tracked modified or non-evidence untracked):"
+  err "$DIRTY"
+  exit 1
+fi
+
+log "✅ [PURE_REPO] tracked files clean; untracked evidence allowed."
+
 log "[POST_SEALED][PASS] All post-sealed governance audits passed."
 log "[POST_SEALED][PASS] Evidence: $EVID_DIR"

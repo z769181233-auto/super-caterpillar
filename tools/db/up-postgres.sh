@@ -5,7 +5,7 @@
 set -euo pipefail
 
 CONTAINER_NAME="scu-postgres"
-IMAGE="postgres:16-alpine"
+IMAGE="pgvector/pgvector:pg16"
 POSTGRES_USER="postgres"
 POSTGRES_PASSWORD="postgres"
 POSTGRES_DB="scu"
