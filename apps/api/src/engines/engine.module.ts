@@ -34,6 +34,7 @@ import { CE05ConflictDetectorAdapter } from './adapters/ce05_conflict_detector.a
 import { CE08CharacterArcAdapter } from './adapters/ce08_character_arc.adapter';
 import { CE12ThemeExtractorAdapter } from './adapters/ce12_theme_extractor.adapter';
 import { CE13PacingAnalyzerAdapter } from './adapters/ce13_pacing_analyzer.adapter';
+import { Ce14NarrativeClimaxAdapter } from './adapters/ce14_narrative_climax.adapter';
 import { VG01BackgroundRenderAdapter } from './adapters/vg01_background_render.adapter';
 import { VG02CharacterRenderAdapter } from './adapters/vg02_character_render.adapter';
 import { VG03LightingEngineAdapter } from './adapters/vg03_lighting_engine.adapter';
@@ -108,6 +109,7 @@ import { CostModule } from '../cost/cost.module';
     CE08CharacterArcAdapter,
     CE12ThemeExtractorAdapter,
     CE13PacingAnalyzerAdapter,
+    Ce14NarrativeClimaxAdapter,
     VG01BackgroundRenderAdapter,
     VG02CharacterRenderAdapter,
     VG03LightingEngineAdapter,
@@ -140,6 +142,7 @@ import { CostModule } from '../cost/cost.module';
     CE08CharacterArcAdapter,
     CE12ThemeExtractorAdapter,
     CE13PacingAnalyzerAdapter,
+    Ce14NarrativeClimaxAdapter,
     VG01BackgroundRenderAdapter,
     VG02CharacterRenderAdapter,
     VG03LightingEngineAdapter,
@@ -221,6 +224,8 @@ export class EngineModule implements OnModuleInit {
     private readonly ce12Adapter: CE12ThemeExtractorAdapter,
     @Inject(CE13PacingAnalyzerAdapter)
     private readonly ce13Adapter: CE13PacingAnalyzerAdapter,
+    @Inject(Ce14NarrativeClimaxAdapter)
+    private readonly ce14Adapter: Ce14NarrativeClimaxAdapter,
     @Inject(VG01BackgroundRenderAdapter)
     private readonly vg01Adapter: VG01BackgroundRenderAdapter,
     @Inject(VG02CharacterRenderAdapter)
@@ -356,6 +361,7 @@ export class EngineModule implements OnModuleInit {
     this.registry.register(this.ce08Adapter);
     this.registry.register(this.ce12Adapter);
     this.registry.register(this.ce13Adapter);
+    this.registry.register(this.ce14Adapter);
 
     // P3.2 Batch: VG Engines
     this.registry.register(this.vg01Adapter);

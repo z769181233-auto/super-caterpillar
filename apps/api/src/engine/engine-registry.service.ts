@@ -228,6 +228,7 @@ export class EngineRegistry {
 
       CE11_SHOT_GENERATOR: 'ce11_shot_generator_mock', // Default to Mock
       CE11_SHOT_GENERATOR_REAL: 'ce11_shot_generator_real', // Explicit Real
+      CE14_NARRATIVE_CLIMAX: 'ce14_narrative_climax',
 
       AUDIO: 'audio_engine', // Added for dual-track integration
     };

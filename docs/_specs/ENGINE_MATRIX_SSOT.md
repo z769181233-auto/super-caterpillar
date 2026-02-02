@@ -47,6 +47,7 @@
 | `scene_composition` | `SHOT_RENDER` | SEALED | YES | SC01 | `apps/api/src/engines/adapters/scene_composition.adapter.ts` | `tools/gate/gates/gate_scene_composition.sh` | `seal/p3_4_2_promote_pass2_20260201_204451` | 场景布局合成 |
 | `shot_render_router` | `SHOT_RENDER` | SEALED | YES | SR00 | `apps/api/src/engines/adapters/shot-render.router.adapter.ts` | `tools/gate/gates/gate-prod_slice_v1_real.sh` | `seal/p3_4_2_promote_pass2_20260201_235003` | 分发路由层 |
 | `ce05_conflict_detector` | `CE05_DIRECTOR_CONTROL` | SEALED | YES | CE05 | `apps/api/src/engines/adapters/ce05_conflict_detector.adapter.ts` | `tools/gate/gates/gate-ce05_m1_hard.sh` | `seal/gate41_ce05_promote_20260202_204746` | 剧情冲突检测 |
+| `ce14_narrative_climax` | `NOVEL_ANALYSIS` | SEALED | YES | CE14 | `apps/api/src/engines/adapters/ce14_narrative_climax.adapter.ts` | `tools/gate/gates/gate_ce14_climax.sh` | `seal/gate42_ce14_promote_20260202_213304` | 高潮与反转识别 |
 <!-- SSOT_TABLE:SEALED_END -->
 
 ## IN-PROGRESS ENGINES (开发中/验证中)
@@ -59,7 +60,6 @@
 <!-- SSOT_TABLE:PLANNED_BEGIN -->
 | engine_key | job_type | state | ledger_required | audit_prefix | adapter_path | gate_path | seal_tag | notes | expected_adapter_path | expected_gate_path |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `ce14_narrative_climax` | `NOVEL_ANALYSIS` | PLAN | YES | CE14 |  |  |  | 高潮与反转识别 | `apps/api/src/engines/adapters/ce14_narrative_climax.adapter.ts` | `tools/gate/gates/gate_ce14_climax.sh` |
 <!-- SSOT_TABLE:PLANNED_END -->
 
 > **Note**: 本矩阵共包含 42 个引擎入口。PLANNED 列表中的引擎尚未实施，禁止在 Registry 中注册或存在实现文件。
