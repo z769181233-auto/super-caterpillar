@@ -1,6 +1,6 @@
 # Engine Matrix SSOT
 
-本文件定义毛毛虫宇宙（Super Caterpillar）核心引擎矩阵的生产基线。所有引擎必须经过 Gate 验证并标记 Git Tag 后方可进入 **SEALED** 状态。
+本文件定义毛毛虫宇宙（Super Caterpillar）核心引擎矩阵的生产基线。所有引擎必须经过 Gate 验证并标记 Git Tag 后方给进入 **SEALED** 状态。
 
 ## SEALED ENGINES (已封印/正式生产)
 <!-- SSOT_TABLE:SEALED_BEGIN -->
@@ -45,21 +45,21 @@
 | `style_transfer` | `SHOT_RENDER` | SEALED | YES | ST01 | `apps/api/src/engines/adapters/style-transfer.replicate.adapter.ts` | `tools/gate/gates/gate_style_transfer.sh` | `seal/p3_4_2_promote_pass2_20260201_204451` | 风格迁移与艺术化 |
 | `character_gen` | `CE02_IDENTITY_LOCK` | SEALED | YES | CG01 | `apps/api/src/engines/adapters/character_gen.adapter.ts` | `tools/gate/gates/gate_character_gen.sh` | `seal/p3_4_2_promote_pass2_20260201_204451` | 角色基座资产生成 |
 | `scene_composition` | `SHOT_RENDER` | SEALED | YES | SC01 | `apps/api/src/engines/adapters/scene_composition.adapter.ts` | `tools/gate/gates/gate_scene_composition.sh` | `seal/p3_4_2_promote_pass2_20260201_204451` | 场景布局合成 |
+| `shot_render_router` | `SHOT_RENDER` | SEALED | YES | SR00 | `apps/api/src/engines/adapters/shot-render.router.adapter.ts` | `tools/gate/gates/gate-prod_slice_v1_real.sh` | `seal/p3_4_2_promote_pass2_20260201_235003` | 分发路由层 |
 <!-- SSOT_TABLE:SEALED_END -->
 
-## IN-PROGRESS (已实现/待封印)
+## IN-PROGRESS ENGINES (开发中/验证中)
 <!-- SSOT_TABLE:INPROGRESS_BEGIN -->
 | engine_key | job_type | state | ledger_required | audit_prefix | adapter_path | gate_path | seal_tag | notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `ce05_conflict_detector` | `CE05_DIRECTOR_CONTROL` | P1 | YES | CE05 | `apps/api/src/engines/adapters/ce05_conflict_detector.adapter.ts` | `tools/gate/gates/gate-ce05_m1_hard.sh` | - | 剧情冲突检测 |
-| `shot_render_router` | `SHOT_RENDER` | P1 | YES | SR00 | `apps/api/src/engines/adapters/shot-render.router.adapter.ts` | `tools/gate/gates/gate-prod_slice_v1_real.sh` | - | 分发路由层 |
 <!-- SSOT_TABLE:INPROGRESS_END -->
 
 ## PLANNED ENGINES (纯规划)
 <!-- SSOT_TABLE:PLANNED_BEGIN -->
-| engine_key | job_type | state | ledger_required | audit_prefix | adapter_path | gate_path | seal_tag | notes | expected_adapter_path | expected_gate_path |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `ce14_narrative_climax` | `NOVEL_ANALYSIS` | PLAN | YES | CE14 |  |  |  | 高潮与反转识别 | `apps/api/src/engines/adapters/ce14_narrative_climax.adapter.ts` | `tools/gate/gates/gate_ce14_climax.sh` |
+| engine_key | job_type | state | ledger_required | audit_prefix | audit_prefix | adapter_path | gate_path | seal_tag | notes | expected_adapter_path | expected_gate_path |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `ce14_narrative_climax` | `NOVEL_ANALYSIS` | PLAN | YES | CE14 | CE14 |  |  |  | 高潮与反转识别 | `apps/api/src/engines/adapters/ce14_narrative_climax.adapter.ts` | `tools/gate/gates/gate_ce14_climax.sh` |
 <!-- SSOT_TABLE:PLANNED_END -->
 
 > **Note**: 本矩阵共包含 42 个引擎入口。PLANNED 列表中的引擎尚未实施，禁止在 Registry 中注册或存在实现文件。

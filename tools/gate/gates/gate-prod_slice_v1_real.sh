@@ -65,7 +65,7 @@ wait_for_job_success() {
       echo "✅ Job ${job_id} SUCCEEDED"
       return 0
     elif [ "${STATUS}" == "FAILED" ]; then
-      local ERR=$(db -t -A -c "SELECT last_error FROM shot_jobs WHERE id='${job_id}'")
+      local ERR=$(db -t -A -c "SELECT \"lastError\" FROM shot_jobs WHERE id='${job_id}'")
       echo "❌ Job ${job_id} FAILED: ${ERR}"
       exit 1
     fi
@@ -93,8 +93,8 @@ db -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, 
 # Create NovelSource
 echo "[Gate] Creating NovelSource (SQL)..."
 NOVEL_SOURCE_ID="ns-${PROJECT_ID}"
-    REAL_TEXT="Season 1 Chapter 1: The Beginning"
-    db -c "INSERT INTO novels (id, project_id, title, created_at, updated_at) VALUES ('${NOVEL_SOURCE_ID}', '${PROJECT_ID}', '${REAL_TEXT}', NOW(), NOW());"
+REAL_TEXT="Season 1 Chapter 1: The Beginning"
+db -c "INSERT INTO novels (id, project_id, title, created_at, updated_at) VALUES ('${NOVEL_SOURCE_ID}', '${PROJECT_ID}', '${REAL_TEXT}', NOW(), NOW());"
 echo "[Gate] Novel Source ID: ${NOVEL_SOURCE_ID}"
 
 # Create Hierarchy (Season -> Episode -> Scene -> Shot)
@@ -106,13 +106,13 @@ SHOT_ID_DUMMY="shot-${PROJECT_ID}"
 
 db -c "INSERT INTO seasons (id, \"projectId\", index, title, \"createdAt\", \"updatedAt\") VALUES ('${SEASON_ID}', '${PROJECT_ID}', 1, 'Season 1', NOW(), NOW());"
 db -c "INSERT INTO episodes (id, \"seasonId\", \"projectId\", index, name) VALUES ('${EPISODE_ID}', '${SEASON_ID}', '${PROJECT_ID}', 1, 'Ep 1');"
-db -c "INSERT INTO scenes (id, \"episodeId\", \"projectId\", index, title, \"reviewStatus\") VALUES ('${SCENE_ID}', '${EPISODE_ID}', '${PROJECT_ID}', 1, 'Scene 1', 'DRAFT');"
-db -c "INSERT INTO shots (id, \"sceneId\", index, type, \"reviewStatus\") VALUES ('${SHOT_ID_DUMMY}', '${SCENE_ID}', 1, 'DEFAULT', 'DRAFT');"
+db -c "INSERT INTO scenes (id, \"episodeId\", project_id, scene_index, title, \"reviewStatus\", created_at, updated_at) VALUES ('${SCENE_ID}', '${EPISODE_ID}', '${PROJECT_ID}', 1, 'Scene 1', 'APPROVED', NOW(), NOW());"
+db -c "INSERT INTO shots (id, \"sceneId\", index, type, \"reviewStatus\", params, \"qualityScore\", render_status) VALUES ('${SHOT_ID_DUMMY}', '${SCENE_ID}', 1, 'DEFAULT', 'APPROVED', '{}'::jsonb, '{}'::jsonb, 'PENDING');"
 
 # Trigger PIPELINE_PROD_VIDEO_V1
 echo "[Gate] Triggering PIPELINE_PROD_VIDEO_V1 (ShotJob)..."
 PIPE_JOB_ID="job-pipe-${PROJECT_ID}"
-db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${PIPE_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID_DUMMY}', 'PIPELINE_PROD_VIDEO_V1', 'PENDING', '{\"novelSourceId\": \"${NOVEL_SOURCE_ID}\", \"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}');"
+db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${PIPE_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID_DUMMY}', 'PIPELINE_PROD_VIDEO_V1', 'PENDING', jsonb_build_object('novelSourceId', '${NOVEL_SOURCE_ID}', 'projectId', '${PROJECT_ID}', 'traceId', '${TRACE_ID}'), NOW(), NOW(), 'org-gate', '${TRACE_ID}');"
 echo "[Gate] Pipeline Job: ${PIPE_JOB_ID}"
 
 wait_for_job_success "${PIPE_JOB_ID}" 300 &
@@ -120,32 +120,32 @@ PIPE_PID=$!
 
 # Wait for CE06
 echo "[Gate] Waiting for CE06 to be spawned by Pipeline..."
-ELAPSED=0
+elapsed=0
 CE06_JOB_ID=""
-while [ "${ELAPSED}" -lt 60 ]; do
+while [ "${elapsed}" -lt 60 ]; do
   CE06_JOB_ID=$(db -t -A -c "SELECT id FROM shot_jobs WHERE type='CE06_NOVEL_PARSING' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
-  if [ -n "${CE06_JOB_ID}" ]; then
+  if [ -n "${CE06_JOB_ID}" ] && [ "${CE06_JOB_ID}" != "null" ]; then
     echo "✅ Detected CE06 Job: ${CE06_JOB_ID}"
     break
   fi
   sleep 2
-  ELAPSED=$((ELAPSED+2))
+  elapsed=$((elapsed+2))
 done
-if [ -z "${CE06_JOB_ID}" ]; then echo "❌ CE06 Not Spawned by Pipeline"; exit 1; fi
+if [ -z "${CE06_JOB_ID}" ] || [ "${CE06_JOB_ID}" = "null" ]; then echo "❌ CE06 Not Spawned by Pipeline"; exit 1; fi
 wait_for_job_success "${CE06_JOB_ID}" 60
 
 # Wait for CE03
 echo "[Gate] Waiting for CE03 to be spawned by Pipeline..."
-ELAPSED=0
+elapsed=0
 CE03_JOB_ID=""
-while [ "${ELAPSED}" -lt 60 ]; do
+while [ "${elapsed}" -lt 60 ]; do
   CE03_JOB_ID=$(db -t -A -c "SELECT id FROM shot_jobs WHERE type='CE03_VISUAL_DENSITY' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
   if [ -n "${CE03_JOB_ID}" ]; then
     echo "✅ Detected CE03 Job: ${CE03_JOB_ID}"
     break
   fi
   sleep 2
-  ELAPSED=$((ELAPSED+2))
+  elapsed=$((elapsed+2))
 done
 if [ -z "${CE03_JOB_ID}" ]; then 
   echo "❌ CE03 Not Spawned (pipeline must spawn automatically)"
@@ -155,16 +155,16 @@ wait_for_job_success "${CE03_JOB_ID}" 30
 
 # Wait for CE04
 echo "[Gate] Waiting for CE04 to be spawned by Pipeline..."
-ELAPSED=0
+elapsed=0
 CE04_JOB_ID=""
-while [ "${ELAPSED}" -lt 60 ]; do
+while [ "${elapsed}" -lt 60 ]; do
   CE04_JOB_ID=$(db -t -A -c "SELECT id FROM shot_jobs WHERE type='CE04_VISUAL_ENRICHMENT' AND \"projectId\"='${PROJECT_ID}' LIMIT 1")
   if [ -n "${CE04_JOB_ID}" ]; then
     echo "✅ Detected CE04 Job: ${CE04_JOB_ID}"
     break
   fi
   sleep 2
-  ELAPSED=$((ELAPSED+2))
+  elapsed=$((elapsed+2))
 done
 if [ -z "${CE04_JOB_ID}" ]; then 
   echo "❌ CE04 Not Spawned (pipeline must spawn automatically)"
@@ -194,7 +194,7 @@ EXISTING_SHOT_RENDER=$(db -t -A -c "SELECT id FROM shot_jobs WHERE type='SHOT_RE
 if [ -z "${EXISTING_SHOT_RENDER}" ]; then
   echo "[Gate] Spawning SHOT_RENDER (SQL)..."
   SHOT_JOB_ID="job-shot-${PROJECT_ID}"
-  db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${SHOT_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'SHOT_RENDER', 'PENDING', '{\"shotId\": \"${SHOT_ID}\", \"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\", \"prompt\": \"A cyberpunk neon city noodle shop\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
+  db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${SHOT_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'SHOT_RENDER', 'PENDING', jsonb_build_object('shotId', '${SHOT_ID}', 'projectId', '${PROJECT_ID}', 'traceId', '${TRACE_ID}', 'prompt', 'A cyberpunk neon city noodle shop'), NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
   echo "[Gate] Spawned SHOT_RENDER: ${SHOT_JOB_ID}"
   wait_for_job_success "${SHOT_JOB_ID}" 60
 else
@@ -218,7 +218,7 @@ if [ -z "${SHOT_ASSET_URI}" ]; then echo "❌ PNG Asset Missing"; exit 1; fi
 # Chain: VIDEO_RENDER
 echo "[Gate] Spawning VIDEO_RENDER (SQL)..."
 VIDEO_JOB_ID="job-video-${PROJECT_ID}"
-db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${VIDEO_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'VIDEO_RENDER', 'PENDING', '{\"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\", \"engineKey\": \"video_render\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
+db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${VIDEO_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'VIDEO_RENDER', 'PENDING', jsonb_build_object('projectId', '${PROJECT_ID}', 'traceId', '${TRACE_ID}', 'engineKey', 'video_render'), NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
 echo "[Gate] VIDEO_RENDER Job: ${VIDEO_JOB_ID}"
 wait_for_job_success "${VIDEO_JOB_ID}" 60
 
@@ -246,7 +246,7 @@ ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:no
 # Chain: CE09
 echo "[Gate] Spawning CE09 (SQL)..."
 CE09_JOB_ID="job-ce09-${PROJECT_ID}"
-db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${CE09_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'CE09_MEDIA_SECURITY', 'PENDING', '{\"assetId\": \"${VIDEO_ASSET_ID}\", \"projectId\": \"${PROJECT_ID}\", \"traceId\": \"${TRACE_ID}\", \"engineKey\": \"ce09_real_watermark\"}', NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
+db -c "INSERT INTO shot_jobs (id, \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\", \"organizationId\", \"traceId\") VALUES ('${CE09_JOB_ID}', '${PROJECT_ID}', '${EPISODE_ID}', '${SCENE_ID}', '${SHOT_ID}', 'CE09_MEDIA_SECURITY', 'PENDING', jsonb_build_object('assetId', '${VIDEO_ASSET_ID}', 'projectId', '${PROJECT_ID}', 'traceId', '${TRACE_ID}', 'engineKey', 'ce09_real_watermark'), NOW(), NOW(), 'org-gate', '${TRACE_ID}') ON CONFLICT (id) DO NOTHING;"
 echo "[Gate] CE09 Job: ${CE09_JOB_ID}"
 wait_for_job_success "${CE09_JOB_ID}" 30
 

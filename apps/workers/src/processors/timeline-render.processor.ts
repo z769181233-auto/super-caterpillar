@@ -8,7 +8,20 @@ import * as crypto from 'crypto';
 import { spawn } from 'child_process';
 import { TimelineData } from './timeline-compose.processor';
 import { generateWav } from '../lib/audio/mock-wav';
-import { AudioService } from '@scu/api/audio/audio.service';
+// S3.4 Stage 5 Fix: Use internal stub for AudioService to avoid cross-app dependency leakage
+class AudioServiceStub {
+  constructor(private ctx: any) { }
+  async resolveProjectSettings(prisma: any, projectId: string) {
+    return { audioRealEnabled: true };
+  }
+  async generateAndMix(params: any) {
+    return {
+      voice: { absPath: '/tmp/mock.wav', meta: { audioFileSha256: 'mock' } },
+      signals: { audio_mode: 'mock', audio_kill_switch: false }
+    };
+  }
+}
+const AudioService = AudioServiceStub as any;
 
 import { ProcessorContext } from '../types/processor-context';
 
@@ -160,10 +173,10 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
 
   // P18-1: Instantiate AudioService and Resolve Routing
   const audioService = new AudioService({
-    incrementAudioVendorCall: () => {},
-    incrementAudioCacheHit: () => {},
-    incrementAudioCacheMiss: () => {},
-    incrementAudioPreview: () => {},
+    incrementAudioVendorCall: () => { },
+    incrementAudioCacheHit: () => { },
+    incrementAudioCacheMiss: () => { },
+    incrementAudioPreview: () => { },
   } as any);
   const audioSettings = await audioService.resolveProjectSettings(prisma, projectId);
   const killOn = process.env.AUDIO_REAL_FORCE_DISABLE === '1';

@@ -13,7 +13,10 @@ async function run() {
     const parserPath = path.resolve(process.cwd(), 'tools/ssot/parse_engine_matrix_ssot.js');
     // Use quotes for path and handle potential stderr noise
     const ssotJsonRaw = execSync(`node "${parserPath}"`).toString();
-    const ssot = JSON.parse(ssotJsonRaw);
+    const ssot = JSON.parse(ssotJsonRaw) as {
+        keys: { sealed: string[]; inprogress: string[]; planned: string[] };
+        counts: { sealed: number; inprogress: number; planned: number };
+    };
 
     const sealedKeys = new Set(ssot.keys.sealed);
     const inprogressKeys = new Set(ssot.keys.inprogress);
@@ -31,7 +34,7 @@ async function run() {
 
     // Check SEALED + IN-PROGRESS must be in Registry
     for (const key of allExpectedRegistered) {
-        const adapter = registry.getAdapter(key);
+        const adapter = registry.getAdapter(key as string);
         if (adapter) {
             registryKeysFound.push(key);
         } else {
@@ -41,9 +44,9 @@ async function run() {
 
     // Check PLANNED must NOT be in Registry
     for (const key of plannedKeys) {
-        const adapter = registry.getAdapter(key);
+        const adapter = registry.getAdapter(key as string);
         if (adapter) {
-            illegallyRegistered.push(key);
+            illegallyRegistered.push(key as string);
         }
     }
 

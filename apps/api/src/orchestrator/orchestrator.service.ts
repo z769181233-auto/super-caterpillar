@@ -43,7 +43,7 @@ export class OrchestratorService {
     private readonly engineRegistry: EngineRegistry,
     @Inject(PublishedVideoService)
     private readonly publishedVideoService: PublishedVideoService
-  ) {}
+  ) { }
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
@@ -574,15 +574,25 @@ export class OrchestratorService {
       }
 
       // 2.1 Find one candidate PENDING job
-      // TODO: Filter by worker capabilities (Stage-2 Scope: Allow all for now)
-      const pendingCount = await tx.shotJob.count({ where: { status: JobStatusEnum.PENDING } });
-      console.log(`[Orchestrator_DEBUG] Total PENDING jobs: ${pendingCount}`);
+      // S3.1: Capability Filtering - 数据库级过滤
+      const capabilities = (workerNode.capabilities as any) || {};
+      const supportedJobTypes = (capabilities.supportedJobTypes as string[]) || [];
+
+      // 如果 Worker 没有声明支持任何类型，则直接返回 null
+      if (supportedJobTypes.length === 0) {
+        this.logger.warn(`[Orchestrator] Worker ${workerId} has no supportedJobTypes defined.`);
+        return null;
+      }
 
       const candidate = await tx.shotJob.findFirst({
         where: {
           status: JobStatusEnum.PENDING,
+          type: { in: supportedJobTypes as any }, // 断言过滤
         },
-        orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+        orderBy: [
+          { priority: 'desc' }, // 门禁任务通常设置更高优先级
+          { createdAt: 'asc' },
+        ],
         take: 1,
       });
 
@@ -700,6 +710,64 @@ export class OrchestratorService {
     if (job.type === JobTypeEnum.VIDEO_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
       this.logger.log(`[DAG] VIDEO_RENDER ${jobId} completed. Checking CE09 trigger...`);
       await this.checkAndSpawnCE09(job);
+    }
+
+    // PHASE-4 Hard Upgrade: PIPELINE_PROD_VIDEO_V1 Non-blocking Chain (CE06 -> CE03 -> CE04)
+    if (job.status === JobStatusEnum.SUCCEEDED) {
+      const payload = (job.payload as any) || {};
+      const rootJobId = payload.rootJobId;
+      if (rootJobId) {
+        await this.handleV1PipelineChain(job, rootJobId);
+      }
+    }
+  }
+
+  /**
+   * Stage 4: Handle V1 Pipeline Chain logic on API side
+   */
+  private async handleV1PipelineChain(completedChildJob: any, rootJobId: string) {
+    const rootJob = await this.prisma.shotJob.findUnique({ where: { id: rootJobId } });
+    if (!rootJob || rootJob.type !== JobTypeEnum.PIPELINE_PROD_VIDEO_V1) return;
+
+    const payload = (completedChildJob.payload as any) || {};
+    const pipelineRunId = payload.pipelineRunId;
+
+    if (completedChildJob.type === JobTypeEnum.CE06_NOVEL_PARSING) {
+      this.logger.log(`[V1-ORCH] CE06 done for Root=${rootJobId}. Spawning CE03...`);
+      await this.jobService.createCECoreJob({
+        projectId: rootJob.projectId,
+        organizationId: rootJob.organizationId,
+        taskId: rootJob.taskId || undefined,
+        jobType: JobTypeEnum.CE03_VISUAL_DENSITY as any,
+        traceId: rootJob.traceId || undefined,
+        payload: {
+          projectId: rootJob.projectId,
+          sceneId: completedChildJob.sceneId,
+          rootJobId: rootJob.id,
+          pipelineRunId,
+        }
+      });
+    } else if (completedChildJob.type === JobTypeEnum.CE03_VISUAL_DENSITY) {
+      this.logger.log(`[V1-ORCH] CE03 done for Root=${rootJobId}. Spawning CE04...`);
+      await this.jobService.createCECoreJob({
+        projectId: rootJob.projectId,
+        organizationId: rootJob.organizationId,
+        taskId: rootJob.taskId || undefined,
+        jobType: JobTypeEnum.CE04_VISUAL_ENRICHMENT as any,
+        traceId: rootJob.traceId || undefined,
+        payload: {
+          projectId: rootJob.projectId,
+          sceneId: completedChildJob.sceneId,
+          rootJobId: rootJob.id,
+          pipelineRunId,
+        }
+      });
+    } else if (completedChildJob.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
+      this.logger.log(`[V1-ORCH] CE04 done for Root=${rootJobId}. Chain Complete.`);
+      await this.prisma.shotJob.update({
+        where: { id: rootJobId },
+        data: { status: JobStatusEnum.SUCCEEDED }
+      });
     }
   }
 
