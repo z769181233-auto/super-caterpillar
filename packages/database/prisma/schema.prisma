@@ -1522,6 +1522,7 @@ enum AssetStatus {
 enum AssetOwnerType {
   SCENE
   SHOT
+  CHARACTER
 }
 
 model PublishedVideo {
@@ -1643,4 +1644,24 @@ model TranslationCache {
   @@unique([provider, targetLang, inputHash, projectId], name: "provider_target_hash_project")
   @@index([organizationId])
   @@map("translation_cache")
+}
+
+model BillingLedger {
+  id          String   @id @default(uuid())
+  tenantId    String
+  traceId     String
+  itemType    String   // JOB, STORAGE, API
+  itemId      String   // JobId, AssetId
+  chargeCode  String   // SKU
+  amount      Int
+  currency    String   @default("CREDIT")
+  status      String   // PENDING, POSTED, REVERSED, FAILED
+  evidenceRef String?  // Pointer to audit log or asset path
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, traceId, itemType, itemId, chargeCode])
+  @@index([traceId])
+  @@index([status])
+  @@map("billing_ledgers")
 }

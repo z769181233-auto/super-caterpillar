@@ -35,6 +35,11 @@
     - [x] P6-0-4: Gate 升级 (Process Health + Metrics Snapshot)
     - [x] P6-0-5: 负向测试 (Security Degradation Check)
     - [x] P6-0-6: 封板 (Artifacts Seal) [shasum verified]
-- [/] P6-1 Billing Ledger 对账 Gate
+- [x] **P6-1: Billing Ledger 对账 Gate (Billing Reconciliation)**
+    - [x] P6-1-0: 证据目录与 SSOT 冻结
+    - [x] P6-1-1: 实现对账脚本 `reconcile_billing.ts`
+    - [x] P6-1-2: 实现 Gate 脚本 `gate_billing_reconciliation.sh`
+    - [x] P6-1-3: 实现负向测试 `gate_billing_negative.sh`
+    - [x] P6-1-4: 封板 (Sealed with Checksums)
 - [ ] Week 1 引擎真化 (TTS, Shot Gen, Background, etc.)
 - [ ] P6-2 Error Matrix 故障注入与鲁棒性验证

@@ -138,3 +138,16 @@
 > **Status**: [SEALED]
 > **Final Protocol**: Storage Ref + Stream + HMAC+SHA Loop.
 > **Evidence**: `docs/_evidence/p6_0_massive_import_seal_20260204_233835`
+
+### 阶段 P6-1: Billing Ledger 对账 (Reconciliation Gate)
+
+#### [NEW] [Gate P6-1] (Cost Validation)
+- **Goal**: 确保每一次物理计算（Job SUCCEEDED）都产生了对应的计费记录（Billing Ledger）。
+- **Formula**: `Count(BillingLedger WHERE type=JOB) == Count(ShotJob WHERE status=SUCCEEDED)` (允许 1% 误差).
+- **Gate Script**: `tools/gate/gates/gate_billing_reconciliation.sh`.
+- **Logic**:
+    1. 统计 P6-0 产生的 Job 总数（按类型分组）。
+    2. 统计 `BillingLedger` 表中的记录数（按 `resourceType` 分组）。
+    3. 校验一致性。
+    4. 校验 `amount` 是否符合 `PriceTable` (SSOT)。
+
