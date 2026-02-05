@@ -218,6 +218,14 @@ if ! bash tools/gate/gates/gate_billing_doc_hygiene.sh; then
 fi
 echo ""
 
+# P6-2 Error Matrix (heavy; off by default)
+if [[ "${P6_2:-0}" == "1" ]]; then
+  echo "[GATE] P6-2 Error Matrix enabled (P6_2=1)"
+  bash tools/gate/gates/gate_p6_2_error_matrix.sh run
+else
+  echo "[GATE] P6-2 Error Matrix skipped (set P6_2=1 to enable)"
+fi
+
 # 门禁 1: Preflight 检查（含 CORS 生产验证）
 echo -e "${BLUE}Gate 1: Preflight Check + CORS Production Validation${NC}"
 echo "Running preflight checks..."
