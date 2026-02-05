@@ -1,9 +1,17 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # 门禁证据自动化脚本（全自动真验版本）
 # 一键运行所有门禁检查并生成报告
 
-set -e
+set -euo pipefail
+umask 022
+
+# 颜色输出（必须在首次使用前定义；配合 -u）
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 # 环境模式设定 (local | staging)
 # local: 默认跳过需要 credits 的 Gate 4/5
@@ -46,6 +54,7 @@ mod_url() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REPORT_DIR="$PROJECT_ROOT/docs"
+ORIG_PWD="$(pwd)"
 
 # Source evidence pipe library
 source "$PROJECT_ROOT/tools/dev/_lib/evidence_pipe.sh"
@@ -60,12 +69,7 @@ AUTH_TOKEN="${AUTH_TOKEN:-$AUTH_TOKEN_A}" # 向后兼容
 export AUTH_EMAIL="${AUTH_EMAIL:-smoke@example.com}"
 export AUTH_PASSWORD="${AUTH_PASSWORD:-smoke-dev-password}"
 
-# 颜色输出
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+
 
 # 简单的 HTTP code 诊断（不打印 body）
 req_code() {
@@ -96,7 +100,12 @@ pick_first_2xx() {
   # args: urls...
   for u in "$@"; do
     local c
-    c=$(req_code "$u")
+    c="$(req_code "$u" || true)"
+    c="${c:-0}"
+    # 兜底：非 3 位数字一律按 0 处理，避免 CI stderr 污染
+    if [[ ! "$c" =~ ^[0-9]{3}$ ]]; then
+      c="0"
+    fi
     if [ "$c" -ge 200 ] && [ "$c" -lt 300 ]; then
       echo "$u"
       return 0
@@ -112,8 +121,14 @@ mkdir -p "$EVI_DIR"
 REPORT_FILE="$EVI_DIR/GATEKEEPER_VERIFICATION_REPORT.md"
 
 TEMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t scu_gates)"
-cleanup() { rm -rf "$TEMP_DIR" 2>/dev/null || true; }
+cleanup() {
+  cd "$ORIG_PWD" 2>/dev/null || true
+  rm -rf "$TEMP_DIR" 2>/dev/null || true
+}
 trap cleanup EXIT
+
+# 统一切到项目根目录，确保 CI/任意工作目录调用都稳定
+cd "$PROJECT_ROOT"
 
 # --- Auto-fill required env for full-auto gates (best-effort) ---
 # 统一的鉴权 Header（env 中只存裸 token，在这里拼接 Bearer）
@@ -189,47 +204,41 @@ command -v jq >/dev/null 2>&1 || { echo -e "${YELLOW}⚠️  jq not found, JSON 
 command -v node >/dev/null 2>&1 || { echo -e "${RED}❌ node is required for mod_url${NC}"; exit 1; }
 
 # 初始化报告
-cat > "$REPORT_FILE" <<EOF
-# 门禁验证报告（全自动真验）
-
-生成时间: $(date -Iseconds)
-
-## 执行环境
-
-- API URL: $API_URL
-- Nginx URL: $NGINX_URL
-- Test Storage Key: ${TEST_STORAGE_KEY:-<not set>}
-- Auth Token A: ${AUTH_TOKEN_A:+<set>}${AUTH_TOKEN_A:-<not set>}
-- Auth Token B: ${AUTH_TOKEN_B:+<set>}${AUTH_TOKEN_B:-<not set>}
-- Gate Env Mode: $GATE_ENV_MODE
-
-## 执行摘要
-
-EOF
-
-ALL_GATES_PASSED=true
+: > "$REPORT_FILE"
 
 # --- Stability & Hygiene Pre-Gates ---
 echo -e "${BLUE}Stability Gate: Repo Root Pollution Check${NC}"
-if ! bash tools/gate/gates/gate_repo_root_pollution.sh; then
+PRE_POLLUTION_OUTPUT="$TEMP_DIR/pre_repo_root_pollution.txt"
+if ! bash "$PROJECT_ROOT/tools/gate/gates/gate_repo_root_pollution.sh" >"$PRE_POLLUTION_OUTPUT" 2>&1; then
     echo -e "${RED}❌ Stability check failed${NC}"
     exit 1
 fi
 
 echo -e "${BLUE}Hygiene Gate: Billing Doc Hygiene Check${NC}"
-if ! bash tools/gate/gates/gate_billing_doc_hygiene.sh; then
+PRE_BILL_DOC_OUTPUT="$TEMP_DIR/pre_billing_doc_hygiene.txt"
+if ! bash "$PROJECT_ROOT/tools/gate/gates/gate_billing_doc_hygiene.sh" >"$PRE_BILL_DOC_OUTPUT" 2>&1; then
     echo -e "${RED}❌ Hygiene check failed${NC}"
     exit 1
 fi
 echo ""
 
 # P6-2 Error Matrix (heavy; off by default)
+P6_2_PASSED=true
+P6_2_OUTPUT="$TEMP_DIR/p6_2_error_matrix.txt"
 if [[ "${P6_2:-0}" == "1" ]]; then
   echo "[GATE] P6-2 Error Matrix enabled (P6_2=1)"
-  bash tools/gate/gates/gate_p6_2_error_matrix.sh run
+  if bash "$PROJECT_ROOT/tools/gate/gates/gate_p6_2_error_matrix.sh" run >"$P6_2_OUTPUT" 2>&1; then
+    P6_2_PASSED=true
+  else
+    P6_2_PASSED=false
+  fi
 else
   echo "[GATE] P6-2 Error Matrix skipped (set P6_2=1 to enable)"
+  echo "- ⚠️  Skipped (set P6_2=1 to enable)" >"$P6_2_OUTPUT"
+  P6_2_PASSED=true
 fi
+
+ALL_GATES_PASSED=true
 
 # 门禁 1: Preflight 检查（含 CORS 生产验证）
 echo -e "${BLUE}Gate 1: Preflight Check + CORS Production Validation${NC}"
@@ -416,8 +425,8 @@ else
     # 准备数据：确保 DB 中存在该 Asset (Gate 3 Legit Data)
     echo "  [Setup] Seeding DB asset for Gate 3 strict check..."
     # 确保 Prisma Client 最新，防止 MODULE_NOT_FOUND
-    if [ -d "packages/database" ]; then
-      (cd packages/database && npx prisma generate >/dev/null)
+    if [ -d "$PROJECT_ROOT/packages/database" ]; then
+      (cd "$PROJECT_ROOT/packages/database" && npx prisma generate >/dev/null)
     fi
     export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
     npx tsx "$PROJECT_ROOT/tools/gate/scripts/ensure_gate3_data.ts"
@@ -1107,10 +1116,16 @@ fi
   else
     echo "- **Required Gates**: 1-16 (ALL REQUIRED)"
   fi
+  echo ""
+  echo "## Optional Gate Summary"
+  echo "- Gate P6-2 (Error Matrix): $([ "$P6_2_PASSED" = true ] && echo "✅ PASSED/OK" || echo "❌ FAILED")"
+  echo "- Post Repo Root Pollution: $([ "$POST_POLLUTION_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 # 最终判断
 ALL_PASSED=true
+[ "$P6_2_PASSED" != true ] && ALL_PASSED=false
+[ "$POST_POLLUTION_PASSED" != true ] && ALL_PASSED=false
 [ "$PREFLIGHT_PASSED" != true ] && ALL_PASSED=false
 [ "$CAPACITY_GATE_PASSED" != true ] && ALL_PASSED=false
 [ "$SIGNED_URL_PASSED" != true ] && ALL_PASSED=false
