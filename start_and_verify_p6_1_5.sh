@@ -13,25 +13,29 @@ echo ""
 
 # 1. 停止旧进程
 echo "[1/6] 清理旧进程..."
-lsof -ti tcp:3000 | xargs kill -9 2>/dev/null || true
-lsof -ti tcp:3001 | xargs kill -9 2>/dev/null || true
+source tools/gate/common/safe_proc.sh
+kill_port 3000
+kill_port 3001
 sleep 1
 
 # 2. 启动 API（后台）
 echo "[2/6] 启动 API..."
+mkdir -p logs .data/pids
 cd apps/api
-pnpm dev > ../../.api.log 2>&1 &
+pnpm dev > ../../logs/api_p6_1_5.log 2>&1 &
 API_PID=$!
 echo "API PID: $API_PID"
+echo $API_PID > ../../.data/pids/api_p6_1_5.pid
 cd ../..
 sleep 3
 
 # 3. 启动 Worker（后台）
 echo "[3/6] 启动 Worker..."
 cd apps/workers
-pnpm dev > ../../.worker.log 2>&1 &
+pnpm dev > ../../logs/worker_p6_1_5.log 2>&1 &
 WORKER_PID=$!
 echo "Worker PID: $WORKER_PID"
+echo $WORKER_PID > ../../.data/pids/worker_p6_1_5.pid
 cd ../..
 sleep 3
 
@@ -45,7 +49,7 @@ for i in $(seq 1 60); do
   if [ $i -eq 60 ]; then
     echo "❌ API 健康检查超时"
     echo "=== API 日志（最后 50 行）==="
-    tail -50 .api.log
+    tail -50 logs/api_p6_1_5.log || true
     exit 1
   fi
   sleep 1

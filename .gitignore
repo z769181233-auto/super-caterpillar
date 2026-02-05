@@ -94,3 +94,12 @@ tools/ops/p8_secrets.local.env
 # Governance Hardening (Post-Sealing)
 /tmp_pgvector/
 /PROMOTION_INDEX.json
+
+# --- Stability governance ---
+logs/
+*.pid
+*.log
+.api.log
+.worker.log
+api_startup.log
+api_direct.log

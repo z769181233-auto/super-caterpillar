@@ -1,0 +1,9 @@
+# --- Stability governance: exclude heavy artifacts from indexing ---
+logs/
+docs/_evidence/
+*.log
+*.pid
+api_startup.log
+api_direct.log
+.api.log
+.worker.log
