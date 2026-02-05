@@ -1,0 +1,17 @@
+=== [P6-2] GATE_ROOT_POLLUTION ===
+Executing: bash tools/gate/gates/gate_repo_root_pollution.sh
+=== [P6-2] GATE_BILLING_DOC_HYGIENE ===
+Executing: bash tools/gate/gates/gate_billing_doc_hygiene.sh
+=== [P6-2] CASE01_CE06_SMOKE ===
+Executing: bash tools/gate/gates/gate_ce06_smoke_v1.sh
+=== [P6-2] CASE02_BILLING_NEGATIVE ===
+Executing: bash tools/gate/gates/gate_billing_negative.sh
+Testing CASE03 (Security Failure)...
+Testing CASE04 (Worker Recovery)...
+=== [P6-2] CASE04_RESTART_SERVICES ===
+Executing: bash start_audit_services.sh
+=== [P6-2] CASE04_CE06_SMOKE_AFTER_RESTART ===
+Executing: bash tools/gate/gates/gate_ce06_smoke_v1.sh
+=== [P6-2] CASE04_RECONCILE_STRICT ===
+Executing: bash tools/gate/gates/gate_billing_reconciliation.sh
+[P6-2] DONE. Evidence archived in docs/_evidence/p6_2_error_matrix_20260205_225204

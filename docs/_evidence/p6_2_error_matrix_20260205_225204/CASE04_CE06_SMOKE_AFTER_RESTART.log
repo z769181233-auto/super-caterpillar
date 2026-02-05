@@ -1,0 +1,147 @@
+====================================================
+CE06 SMOKE TEST (P6-1-5 Billing Verification)
+====================================================
+DELETE 1
+DELETE 1
+DELETE 1
+DELETE 1
+DELETE 1
+[Step 1] Seeding User, Project & Org Data...
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+[Step 1.1] Seeding Legacy Job for Logic Verification (10 credits for 95123 chars)...
+INSERT 0 1
+[Step 2] Creating Novel metadata...
+Novel ID: cec6a4f5-a937-4ce6-8723-535e173374c9 INSERT 0 1
+[Step 3] Pre-checking API...
+[Step 4] Triggering CE06 SCAN Job via SQL...
+Job ID: smoke-job-5cc41864-a3aa-4226-b8e2-021661c8a1fd INSERT 0 1
+[Step 5] Waiting for Worker to process and post billing (max 120s)...
+[1/120] Job Status: 
+[2/120] Job Status: 
+[3/120] Job Status: 
+[4/120] Job Status: 
+[5/120] Job Status: 
+[6/120] Job Status: 
+[7/120] Job Status: 
+[8/120] Job Status: 
+[9/120] Job Status: 
+[10/120] Job Status: 
+[11/120] Job Status: 
+[12/120] Job Status: 
+[13/120] Job Status: 
+[14/120] Job Status: 
+[15/120] Job Status: 
+[16/120] Job Status: 
+[17/120] Job Status: 
+[18/120] Job Status: 
+[19/120] Job Status: 
+[20/120] Job Status: 
+[21/120] Job Status: 
+[22/120] Job Status: 
+[23/120] Job Status: 
+[24/120] Job Status: 
+[25/120] Job Status: 
+[26/120] Job Status: 
+[27/120] Job Status: 
+[28/120] Job Status: 
+[29/120] Job Status: 
+[30/120] Job Status: 
+[31/120] Job Status: 
+[32/120] Job Status: 
+[33/120] Job Status: 
+[34/120] Job Status: 
+[35/120] Job Status: 
+[36/120] Job Status: 
+[37/120] Job Status: 
+[38/120] Job Status: 
+[39/120] Job Status: 
+[40/120] Job Status: 
+[41/120] Job Status: 
+[42/120] Job Status: 
+[43/120] Job Status: 
+[44/120] Job Status: 
+[45/120] Job Status: 
+[46/120] Job Status: 
+[47/120] Job Status: 
+[48/120] Job Status: 
+[49/120] Job Status: 
+[50/120] Job Status: 
+[51/120] Job Status: 
+[52/120] Job Status: 
+[53/120] Job Status: 
+[54/120] Job Status: 
+[55/120] Job Status: 
+[56/120] Job Status: 
+[57/120] Job Status: 
+[58/120] Job Status: 
+[59/120] Job Status: 
+[60/120] Job Status: 
+[61/120] Job Status: 
+[62/120] Job Status: 
+[63/120] Job Status: 
+[64/120] Job Status: 
+[65/120] Job Status: 
+[66/120] Job Status: 
+[67/120] Job Status: 
+[68/120] Job Status: 
+[69/120] Job Status: 
+[70/120] Job Status: 
+[71/120] Job Status: 
+[72/120] Job Status: 
+[73/120] Job Status: 
+[74/120] Job Status: 
+[75/120] Job Status: 
+[76/120] Job Status: 
+[77/120] Job Status: 
+[78/120] Job Status: 
+[79/120] Job Status: 
+[80/120] Job Status: 
+[81/120] Job Status: 
+[82/120] Job Status: 
+[83/120] Job Status: 
+[84/120] Job Status: 
+[85/120] Job Status: 
+[86/120] Job Status: 
+[87/120] Job Status: 
+[88/120] Job Status: 
+[89/120] Job Status: 
+[90/120] Job Status: 
+[91/120] Job Status: 
+[92/120] Job Status: 
+[93/120] Job Status: 
+[94/120] Job Status: 
+[95/120] Job Status: 
+[96/120] Job Status: 
+[97/120] Job Status: 
+[98/120] Job Status: 
+[99/120] Job Status: 
+[100/120] Job Status: 
+[101/120] Job Status: 
+[102/120] Job Status: 
+[103/120] Job Status: 
+[104/120] Job Status: 
+[105/120] Job Status: 
+[106/120] Job Status: 
+[107/120] Job Status: 
+[108/120] Job Status: 
+[109/120] Job Status: 
+[110/120] Job Status: 
+[111/120] Job Status: 
+[112/120] Job Status: 
+[113/120] Job Status: 
+[114/120] Job Status: 
+[115/120] Job Status: 
+[116/120] Job Status: 
+[117/120] Job Status: 
+[118/120] Job Status: 
+[119/120] Job Status: 
+[120/120] Job Status: 
+[Step 6] Final Billing Check...
+               traceId                | amount | status 
+--------------------------------------+--------+--------
+ 5a51685b-e508-4ec6-b53d-bf428f4165f9 |     10 | POSTED
+(1 row)
+
+✅ CE06 SMOKE COMPLETE
