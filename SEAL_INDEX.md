@@ -1,17 +1,30 @@
-# SEAL INDEX
+  # SEAL INDEX
 
-## P6-1-5 BUSINESS SEALED (CONSOLIDATED)
-- **Status**: BUSINESS SEALED (PATCH APPLIED)
-- **Primary Tag**: P6-1-5_BILLING_BUSINESS_SEALED_PATCH_20260205_213343
-- **Supersedes**: P6-1-5_BILLING_BUSINESS_SEALED_20260205_210633 (Manual phrasing correction)
-- **Evidence**: docs/_evidence/p6_1_5_billing_business_verify_patch_20260205_211959/
-- **Consolidation Trace**: EVI=docs/_evidence/p6_1_5_doc_hygiene_20260205_214204/
+  ## P6-1-5 BUSINESS SEALED (CONSOLIDATED)
+  - **Status**: BUSINESS SEALED (PATCH APPLIED)
+  - **Primary Tag**: P6-1-5_BILLING_BUSINESS_SEALED_PATCH_20260205_213343
+  - **Supersedes**: P6-1-5_BILLING_BUSINESS_SEALED_20260205_210633 (Manual phrasing correction)
+  - **Evidence**: docs/_evidence/p6_1_5_billing_business_verify_patch_20260205_211959/
+  - **Consolidation Trace**: EVI=docs/_evidence/p6_1_5_doc_hygiene_20260205_214204/
 
-## P6-2 ERROR MATRIX (PATCH SEALED)
-- **Status**: PATCH SEALED (HARDENED)
-- **Primary Tag**: P6-2_ERROR_MATRIX_PATCH_20260205_230702
-- **Evidence**: docs/_evidence/p6_2_error_matrix_20260205_230211/
-- **Gate**: tools/gate/gates/gate_p6_2_error_matrix.sh
-- **Notes**:
-  - Case03 uses gate_security_negative.sh (real auth/HMAC failure) and enforces Ledger delta=0.
-  - Case04 uses PID SSOT + port fallback; includes curl/psql timeouts to prevent hangs.
+  ## P6-2 ERROR MATRIX (PATCH SEALED)
+  - **Status**: PATCH SEALED (HARDENED)
+  - **Primary Tag**: P6-2_ERROR_MATRIX_PATCH_20260205_230702
+  - **Evidence**: docs/_evidence/p6_2_error_matrix_20260205_230211/
+  - **Gate**: tools/gate/gates/gate_p6_2_error_matrix.sh
+  - **Notes**:
+    - Case03 uses gate_security_negative.sh (real auth/HMAC failure) and enforces Ledger delta=0.
+    - Case04 uses PID SSOT + port fallback; includes curl/psql timeouts to prevent hangs.
+
+  ## P6-2.1 CI INTEGRATION (PATCH SEALED)
+  - **Status**: PATCH SEALED (CI READY)
+  - **Primary Tag**: P6-2_1_CI_HARDEN_SEALED_20260206_001730
+  - **Supersedes**: P6-2_1_CI_HARDEN_SEALED_20260205_233136
+  - **Evidence**:
+    - Local: docs/_evidence/run_launch_gates_20260205_235610/
+    - CI (Placeholder): docs/_evidence/p6_2_1_ci_20260206_001715/
+  - **CI Workflow**: .github/workflows/launch-gates-required.yml
+  - **Changes**:
+    - Added `GATE_ENV_MODE=ci` semantics to `run_launch_gates.sh`.
+    - Integrated P6-2 as Required Check in CI mode.
+    - Fixed Post Pollution Gate cleanliness in CI.
