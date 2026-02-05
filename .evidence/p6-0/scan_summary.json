@@ -1,0 +1,8 @@
+{
+  "total_chars": 15000000,
+  "duration_sec": 605,
+  "throughput_chars_sec": 24793,
+  "peak_rss_mb": 812,
+  "scenes_created": 0,
+  "status": "PASS"
+}

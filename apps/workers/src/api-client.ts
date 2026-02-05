@@ -137,7 +137,7 @@ export class ApiClient {
 
     // 序列化请求体（商业级规范：空对象视为 empty string 以对齐 API Guard 逻辑）
     const hasBodyContent = body && typeof body === 'object' && Object.keys(body).length > 0;
-    const bodyString = typeof body === 'string' ? body : hasBodyContent ? JSON.stringify(body) : '';
+    let bodyString = typeof body === 'string' ? body : hasBodyContent ? JSON.stringify(body) : '';
 
     // 如果配置了 API Key 和 Secret，使用 HMAC 认证
     if (this.apiKey && this.apiSecret) {
@@ -146,16 +146,23 @@ export class ApiClient {
       const timestamp = Math.floor(Date.now() / 1000).toString();
       const nonce = generateNonce();
 
-      // 2. 强制要求x-worker-id（商业级：避免回退到v1签名）
-      // 优先使用实例workerId，其次使用extraHeaders中的
+      // 2. 强制要求x-worker-id
       const workerId = this.workerId ?? extraHeaders?.['x-worker-id'];
       if (!workerId) {
         throw new Error('[AUTH] missing x-worker-id header; refusing to sign without workerId');
       }
 
-      const message = buildMessage(this.apiKey, nonce, timestamp, bodyString);
-      const signature = createHmac('sha256', this.apiSecret).update(message).digest('hex');
-      const bodyHash = createHash('sha256').update(bodyString).digest('hex');
+      // [P6-0 Fix]: Special bypass for massive bodies (>1MB) to align with API Guard's bypass
+      const isMassive = bodyString.length > 1024 * 1024;
+      const bodyHash = computeBodyHash(bodyString);
+
+      // If massive, we sign the HASH instead of the raw body to save CPU/Memory on both ends
+      // This is a protocol agreement for internal /_internal/engine/invoke calls.
+      const messageBody = isMassive ? `__MASSIVE_BODY_BYPASS__:${bodyString.length}` : bodyString;
+      const signBody = isMassive ? bodyHash : messageBody;
+
+      const message = buildMessage(this.apiKey, nonce, timestamp, signBody);
+      const signature = computeSignature(this.apiSecret, message);
 
       // 4. 设置 HMAC 认证头
       headers['X-Timestamp'] = timestamp;
@@ -367,7 +374,7 @@ export class ApiClient {
     result?: any;
     errorMessage?: string; // Correct parameter name
     error?: any; // internal input
-    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number; [key: string]: any };
+    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number;[key: string]: any };
     retryable?: boolean;
   }): Promise<any> {
     const requestBody: any = {
@@ -470,13 +477,13 @@ export class ApiClient {
     shotIdOrDto:
       | string
       | {
-          jobType: string;
-          projectId: string;
-          organizationId: string;
-          payload?: any;
-          parentJobId?: string;
-          traceId?: string;
-        },
+        jobType: string;
+        projectId: string;
+        organizationId: string;
+        payload?: any;
+        parentJobId?: string;
+        traceId?: string;
+      },
     dto?: { type?: string; jobType?: string; payload?: any; traceId?: string },
     headers?: Record<string, string>
   ): Promise<any> {

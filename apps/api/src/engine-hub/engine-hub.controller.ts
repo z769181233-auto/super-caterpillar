@@ -29,26 +29,30 @@ export class EngineHubController {
 
   @Post('invoke')
   async invoke(@Body() req: EngineInvocationRequest<unknown>) {
-    console.log(
-      `[EngineHubController] invoke called. engineInvoker defined: ${!!this.engineInvoker}`
-    );
-    if (!this.engineInvoker) {
-      console.warn(
-        '[EngineHubController] engineInvoker is undefined in invoke! Attempting manual resolution...'
-      );
-      try {
-        this.engineInvoker = this.moduleRef.get(EngineInvokerHubService, { strict: false });
-        console.log(`[EngineHubController] Manual resolution success: ${!!this.engineInvoker}`);
-      } catch (e) {
-        console.error(`[EngineHubController] Manual resolution FAILED: ${e}`);
-      }
+    const jobId = req.metadata?.jobId;
+    // P6-0: Physical trace with minimal overhead
+    process.stdout.write(`\n!!! [15M-TRACE-ENTRY] JobId: ${jobId} !!!\n`);
+    console.error(`!!! [15M-DEBUG] JobId: ${jobId} Entry. Keys: ${Object.keys(req.payload || {}).join(',')}`);
+    if ((req.payload as any)?.raw_text) {
+      console.error(`!!! [15M-DEBUG] raw_text len: ${(req.payload as any).raw_text.length}`);
+    } else if ((req.payload as any)?.structured_text) {
+      console.error(`!!! [15M-DEBUG] structured_text len: ${(req.payload as any).structured_text.length}`);
+    } else {
+      console.error(`!!! [15M-DEBUG] NO TEXT FOUND IN PAYLOAD`);
     }
 
-    // 风险A收口：仅在 GATE_MODE=1 时允许内部直连调用
-    // if (process.env.GATE_MODE !== '1') {
-    //   throw new ForbiddenException('Internal engine invocation is only allowed in GATE_MODE');
-    // }
-    const result = await this.engineInvoker.invoke(req);
-    return { success: true, data: result };
+    if (!this.engineInvoker) {
+      this.engineInvoker = this.moduleRef.get(EngineInvokerHubService, { strict: false });
+    }
+
+    try {
+      // P6-0: Forward to invoker which now handles large payloads via AuditLog hardening
+      const result = await this.engineInvoker.invoke(req);
+      process.stdout.write(`!!! [15M-TRACE-EXIT] JobId: ${jobId} SUCCESS !!!\n`);
+      return { success: true, data: result };
+    } catch (e: any) {
+      process.stdout.write(`!!! [15M-TRACE-CRASH] JobId: ${jobId} ERROR: ${e.message} !!!\n`);
+      throw e;
+    }
   }
 }

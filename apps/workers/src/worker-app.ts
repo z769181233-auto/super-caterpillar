@@ -144,7 +144,15 @@ let tasksRunning = 0;
 const engineAdapterClient = new EngineAdapterClient(prisma);
 
 // 创建 EngineHubClient 实例（Stage2: 使用新的统一接口）
+// 创建 EngineHubClient 实例（Stage2: 使用新的统一接口）
 const engineHubClient = new EngineHubClient(apiClient);
+
+// [P6-0 Fix] Instantiate LocalStorageAdapter for Worker
+import { LocalStorageAdapter } from '@scu/storage';
+import * as path from 'path';
+const storageRoot = process.env.STORAGE_ROOT ||
+  (process.env.REPO_ROOT ? path.join(process.env.REPO_ROOT, '.data/storage') : path.join(process.cwd(), '.data/storage'));
+const localStorageAdapter = new LocalStorageAdapter(storageRoot);
 
 /**
  * 注册 Worker 节点
@@ -163,7 +171,7 @@ async function registerWorker(): Promise<void> {
   if (!env.workerApiKey || !env.workerApiSecret) {
     process.stdout.write(
       util.format('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!') +
-        '\n'
+      '\n'
     );
     process.stdout.write(
       util.format('[Worker] ⚠️  Worker will not be able to authenticate with API server.') + '\n'
@@ -182,7 +190,7 @@ async function registerWorker(): Promise<void> {
     );
     process.stdout.write(
       util.format(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`) +
-        '\n'
+      '\n'
     );
 
     // Test DB Connection
@@ -208,21 +216,21 @@ async function registerWorker(): Promise<void> {
       rawEngines.length > 0
         ? rawEngines
         : [
-            'default_novel_analysis',
-            'ce06_novel_parsing',
-            'ce03_visual_density',
-            'ce04_visual_enrichment',
-            'ce04_sdxl',
-            'tts_standard',
-            'video_render',
-            'shot_render',
-            'real_shot_render',
-            'stage1_orchestrator',
-            'timeline_render',
-            'ce09_media_security',
-            'ce_pipeline',
-            'ce11_timeline_preview',
-          ];
+          'default_novel_analysis',
+          'ce06_novel_parsing',
+          'ce03_visual_density',
+          'ce04_visual_enrichment',
+          'ce04_sdxl',
+          'tts_standard',
+          'video_render',
+          'shot_render',
+          'real_shot_render',
+          'stage1_orchestrator',
+          'timeline_render',
+          'ce09_media_security',
+          'ce_pipeline',
+          'ce11_timeline_preview',
+        ];
 
     // P1: Production Scrubbing - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
@@ -314,21 +322,21 @@ async function sendHeartbeat(): Promise<void> {
       rawEngines.length > 0
         ? rawEngines
         : [
-            'default_novel_analysis',
-            'ce06_novel_parsing',
-            'ce03_visual_density',
-            'ce04_visual_enrichment',
-            'ce04_sdxl',
-            'tts_standard',
-            'video_render',
-            'shot_render',
-            'stage1_orchestrator',
-            'timeline_render',
-            'ce09_media_security',
-            'ce_pipeline',
-            'ce11_timeline_preview',
-            'ce09_real_watermark',
-          ];
+          'default_novel_analysis',
+          'ce06_novel_parsing',
+          'ce03_visual_density',
+          'ce04_visual_enrichment',
+          'ce04_sdxl',
+          'tts_standard',
+          'video_render',
+          'shot_render',
+          'stage1_orchestrator',
+          'timeline_render',
+          'ce09_media_security',
+          'ce_pipeline',
+          'ce11_timeline_preview',
+          'ce09_real_watermark',
+        ];
 
     // P1: Production Scrubbing (Heartbeat Sync) - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
@@ -461,6 +469,45 @@ async function handleEngineResultAndReport(
       result: engineResult.output ?? null,
       metrics: engineResult.metrics ?? undefined,
     });
+
+    // P6-1-5: Billing Hook（只对 CE06_NOVEL_PARSING 计费）
+    if (job.type === 'CE06_NOVEL_PARSING') {
+      try {
+        const charCount = job.payload?.charCount || job.payload?.totalTokens || 0;
+        if (charCount > 0) {
+          const amount = Math.ceil(charCount / 10000); // SCAN_CHAR 口径
+          const tenantId = job.payload?.organizationId || 'default-org';
+
+          // P6-1-5: 调用 BillingLedgerWriter（幂等）
+          // Note: writeBillingLedger 暂通过直接 DB 写入（无需跨包导入）
+          await prisma.billingLedger.create({
+            data: {
+              tenantId,
+              traceId: job.id,
+              itemType: 'JOB',
+              itemId: job.id,
+              chargeCode: 'SCAN_CHAR',
+              amount,
+              currency: 'CREDIT',
+              status: 'POSTED',
+              evidenceRef: `job:${job.id}`
+            }
+          }).catch((err: any) => {
+            if (err.code === 'P2002') {
+              // Unique constraint - 幂等，已存在
+              console.log(`[Billing] ℹ️  Ledger entry already exists (idempotent): ${job.id}`);
+            } else {
+              throw err;
+            }
+          });
+
+          console.log(`[Billing] ✅ CE06 Job ${job.id}: charCount=${charCount}, amount=${amount} credits POSTED`);
+        }
+      } catch (err) {
+        console.error(`[Billing] ❌ Failed to write ledger for Job ${job.id}:`, err);
+        // 不阻断 Job 完成流程
+      }
+    }
   } else if (engineResult.status === ('RETRYABLE' as EngineInvokeStatus)) {
     await apiClient.reportJobResult({
       jobId: job.id,
@@ -499,18 +546,6 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
           engineHubClient,
           apiClient
         );
-      } else if (job.type === 'CE06_NOVEL_PARSING') {
-        const context: ProcessorContext = {
-          prisma,
-          job: { ...job, projectId: job.projectId || '' },
-          apiClient,
-          logger: console,
-        };
-        const result = await processCE06NovelParsingJob(context);
-        if (result.status === 'FAILED') {
-          throw new Error(result.error || 'CE06 processor failed');
-        }
-        return result.output || { status: 'SUCCEEDED' };
       } else if (job.type === 'SHOT_RENDER' || job.type === 'SHOT_RENDER_HTTP') {
         return processShotRenderJob(
           prisma,
@@ -569,6 +604,15 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
       } else if (job.type === 'NOVEL_CHUNK_PARSE') {
         // @ts-ignore
         return processNovelChunk({ prisma, job: job as any, apiClient, workerId });
+      } else if (job.type === 'CE06_NOVEL_PARSING') {
+        const context: ProcessorContext = {
+          prisma,
+          job: { ...job, projectId: job.projectId || '' },
+          apiClient,
+          logger: console,
+          localStorage: localStorageAdapter, // P6-0 Fix: Inject Storage
+        };
+        return processCE06NovelParsingJob(context);
       } else if (job.type.startsWith('CE')) {
         return processGenericCEJob(prisma, job as any, engineHubClient, apiClient);
       } else if (
@@ -774,7 +818,7 @@ export async function startWorkerApp() {
     process.stdout.write(util.format(`[Worker] Job 轮询间隔: ${env.workerPollInterval}ms`) + '\n');
     process.stdout.write(
       util.format(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`) +
-        '\n'
+      '\n'
     );
 
     // 优雅退出处理

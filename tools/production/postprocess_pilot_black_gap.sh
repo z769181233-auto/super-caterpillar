@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Stage B-0: Locate Evidence & Scenes
-# Find the latest prod_pilot evidence directory if not provided
-EVI="${EVI:-$(find docs/_evidence/prod_pilot_sealed42_* -type d | sort -r | head -n 1)}"
+# Find the latest pilot evidence directory if not provided (prod or real)
+EVI="${EVI:-$(find docs/_evidence/*pilot_sealed42_* -type d | sort -r | head -n 1)}"
 echo "📂 Target Evidence Dir: $EVI"
 
 # Define Output Dir (Production Pilot Output)

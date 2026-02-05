@@ -1,60 +1,43 @@
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 /**
- * P3' Evidence Index Generator (Strong Consistency)
- * Generates both EVIDENCE_INDEX.json and EVIDENCE_INDEX.checksums
+ * tools/evidence/gen_evidence_index.mjs
+ * 生成证据箱索引与校验和
  */
+
 const targetDir = process.argv[2];
-if (!targetDir) {
-  console.error('Usage: node gen_evidence_index.mjs <target_dir>');
+if (!targetDir || !fs.existsSync(targetDir)) {
+  console.error('Usage: node gen_evidence_index.mjs <directory>');
   process.exit(1);
 }
 
-const absoluteDir = path.resolve(targetDir);
-
-function getFiles(dir, allFiles = []) {
-  const files = fs.readdirSync(dir);
-  for (const file of files) {
-    const name = path.join(dir, file);
-    if (fs.statSync(name).isDirectory()) {
-      getFiles(name, allFiles);
-    } else {
-      const base = path.basename(name);
-      if (base !== 'EVIDENCE_INDEX.json' && base !== 'EVIDENCE_INDEX.checksums') {
-        allFiles.push(name);
-      }
-    }
-  }
-  return allFiles;
-}
-
-const fileList = getFiles(absoluteDir);
-const items = fileList.map((f) => {
-  const relativePath = path.relative(absoluteDir, f);
-  const sha256 = execSync(`shasum -a 256 "${f}"`).toString().trim().split(/\s+/)[0];
-  return {
-    path: relativePath,
-    sha256,
-    size: fs.statSync(f).size,
-  };
-});
-
+const files = fs.readdirSync(targetDir).filter(f => !f.startsWith('.') && f !== 'EVIDENCE_INDEX.json' && f !== 'EVIDENCE_INDEX.checksums');
 const index = {
-  evidence_dir: path.basename(absoluteDir),
   timestamp: new Date().toISOString(),
-  files: items,
+  files: []
 };
 
-// 1. Write JSON
-const indexPath = path.join(absoluteDir, 'EVIDENCE_INDEX.json');
-fs.writeFileSync(indexPath, JSON.stringify(index, null, 2));
+let checksums = '';
 
-// 2. Write Checksums (Standard shasum format)
-const checksumsContent = items.map((i) => `${i.sha256}  ${i.path}`).join('\n') + '\n';
-const checksumsPath = path.join(absoluteDir, 'EVIDENCE_INDEX.checksums');
-fs.writeFileSync(checksumsPath, checksumsContent);
+for (const file of files) {
+  const filePath = path.join(targetDir, file);
+  if (fs.statSync(filePath).isDirectory()) continue;
 
-console.log(`[INDEX] Generated: ${indexPath} (${items.length} files)`);
-console.log(`[INDEX] Checksums: ${checksumsPath}`);
+  const content = fs.readFileSync(filePath);
+  const hash = crypto.createHash('sha256').update(content).digest('hex');
+
+  index.files.push({
+    name: file,
+    sha256: hash,
+    size: content.length
+  });
+
+  checksums += `${hash}  ${file}\n`;
+}
+
+fs.writeFileSync(path.join(targetDir, 'EVIDENCE_INDEX.json'), JSON.stringify(index, null, 2));
+fs.writeFileSync(path.join(targetDir, 'EVIDENCE_INDEX.checksums'), checksums);
+
+console.log(`[EvidenceIndex] Generated index for ${files.length} files in ${targetDir}`);

@@ -1,0 +1,11 @@
+{
+  "Hero": {
+    "name": "Hero",
+    "assets": {
+      "front": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage/characters/hero/turnaround_front.png",
+      "side": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage/characters/hero/turnaround_side.png",
+      "back": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage/characters/hero/turnaround_back.png"
+    },
+    "frequency": 1
+  }
+}

@@ -1,8 +1,10 @@
-import { JobType } from 'database';
-import { PrismaClient } from 'database';
+import { JobType, AssetOwnerType, AssetType, PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
 import { CostLedgerService } from '../billing/cost-ledger.service';
 import { ProcessorContext } from '../types/processor-context';
+import { ComfyUIClient } from '../../../../tools/prod/comfyui_client';
+import * as path from 'path';
+import * as fs from 'fs';
 
 export interface ProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
@@ -15,6 +17,7 @@ export async function processCE04VisualEnrichmentJob(
 ): Promise<ProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
+  const comfy = new ComfyUIClient();
 
   try {
     // 1. Hydrate Context
@@ -23,151 +26,121 @@ export async function processCE04VisualEnrichmentJob(
       include: { shot: true },
     });
 
-    if (!fullJob) throw new Error(`Job ${job.id} not found`);
-    const jobOrgId = fullJob.organizationId || fullJob.shot?.organizationId;
-
-    // Hierarchy Context
+    if (!fullJob || !fullJob.shot) throw new Error(`Job ${job.id} or Shot not found`);
+    const jobOrgId = fullJob.organizationId || fullJob.shot.organizationId || 'org_unknown';
     const projectId = fullJob.projectId;
-    const episodeId = fullJob.episodeId;
     const sceneId = fullJob.sceneId;
+    const shotId = fullJob.shotId!;
 
-    // 2. Logic (Simulate Enrichment)
-    const enrichedPrompt = `Enriched: ${fullJob.shot?.enrichedPrompt || 'cyberpunk heavy rain'}`;
+    // 2. ComfyUI Image Generation (P1)
+    const prompt = fullJob.shot.enrichedPrompt || (fullJob.shot.params as any)?.prompt || 'Cinematic scenery';
+    logger.log(`[CE04] Generating keyframe via ComfyUI: ${prompt.substring(0, 50)}...`);
 
-    // 3. Persistence
-    if (job.shotId) {
-      await prisma.shot.update({
-        where: { id: job.shotId },
-        data: {
-          enrichedPrompt,
-        },
-      });
-    }
+    const templatePath = path.join(process.cwd(), 'packages/engines/shot_render/providers/templates/comfyui_text2img_sdxl.json');
+    const template = JSON.parse(fs.readFileSync(templatePath, 'utf8'));
 
+    // Inject params
+    template["3"].inputs.seed = Math.floor(Math.random() * 1000000);
+    template["6"].inputs.text = prompt;
+
+    const buffer = await comfy.generateImage(template);
+
+    // Save to .data/storage/keyframes
+    const storageRoot = path.resolve(process.env.STORAGE_ROOT || '.data/storage');
+    const keyframeDir = path.join(storageRoot, 'keyframes', projectId, shotId);
+    if (!fs.existsSync(keyframeDir)) fs.mkdirSync(keyframeDir, { recursive: true });
+
+    const keyframeFilename = 'keyframe.png';
+    const keyframePath = path.join(keyframeDir, keyframeFilename);
+    const absKeyframePath = path.resolve(keyframePath);
+    fs.writeFileSync(absKeyframePath, buffer);
+
+    const storageKey = path.relative(storageRoot, absKeyframePath);
+
+    // 3. Asset Persistence
+    await prisma.asset.upsert({
+      where: {
+        ownerType_ownerId_type: {
+          ownerId: shotId,
+          ownerType: AssetOwnerType.SHOT,
+          type: AssetType.IMAGE,
+        }
+      },
+      update: { storageKey, status: 'GENERATED' },
+      create: {
+        projectId,
+        ownerId: shotId,
+        ownerType: AssetOwnerType.SHOT,
+        type: AssetType.IMAGE,
+        storageKey,
+        status: 'GENERATED',
+      }
+    });
+
+    // 4. Update frames.txt (P1 Requirement)
+    const runtimeFramesDir = path.join(process.cwd(), '.runtime', 'frames', shotId);
+    if (!fs.existsSync(runtimeFramesDir)) fs.mkdirSync(runtimeFramesDir, { recursive: true });
+    const framesTxtPath = path.join(runtimeFramesDir, 'frames.txt');
+
+    // Format: file 'path' (Phase T1 requirement: absolute path)
+    const framesContent = `file '${absKeyframePath}'\nduration 5\nfile '${absKeyframePath}'\n`;
+    fs.writeFileSync(framesTxtPath, framesContent);
+
+    // 5. Billing & Audit
     const traceId = job.payload?.traceId;
     const pipelineRunId = job.payload?.pipelineRunId;
 
-    // 4. Audit
     await prisma.auditLog.create({
       data: {
         resourceType: 'shot',
-        resourceId: job.shotId || 'unknown',
+        resourceId: shotId,
         action: 'ce04.visual_enrichment.success',
         orgId: jobOrgId || 'default-org',
         details: {
           jobId: job.id,
           traceId,
-          pipelineRunId,
-          actorId: 'system-worker',
+          keyframeKey: storageKey,
         },
       },
     });
 
-    // 4.5 Billing (P0 Hotfix)
-    const costService = new CostLedgerService(apiClient, prisma);
-    await costService.recordEngineBilling({
-      jobId: job.id,
-      jobType: 'CE04_VISUAL_ENRICHMENT',
-      traceId: (traceId as string) || job.id,
-      projectId,
-      userId: 'system',
-      orgId: jobOrgId || 'default-org',
-      engineKey: 'ce04_visual_enrichment',
-      runId: pipelineRunId as string,
-      billingUsage: {
-        totalTokens: 0,
-        promptTokens: 0,
-        completionTokens: 0,
-        model: 'enrichment-v1-mock',
+    // 6. Spawn SHOT_RENDER
+    const validPipelineRunId = pipelineRunId || fullJob.traceId || traceId || `run_${job.id}`;
+
+    const existingRender = await prisma.shotJob.findFirst({
+      where: {
+        projectId,
+        shotId,
+        type: 'SHOT_RENDER',
+        payload: { path: ['pipelineRunId'], equals: validPipelineRunId },
       },
-      cost: 0, // Router-based cost (currently free)
     });
 
-    // 5. Spawn SHOT_RENDER (S4-3)
-    // Idempotency: Duplicate check for SHOT_RENDER in this run
-    const shotId =
-      job.shotId || (job.payload as any)?.shotId || (job.payload as any)?.metadata?.shotId;
-    logger.log(
-      `[CE04_DEBUG] Spawning check. ID=${job.id} ShotId=${shotId} PLRunId=${pipelineRunId} Scope=${JSON.stringify({ projectId, jobOrgId })}`
-    );
-
-    if (projectId && jobOrgId && shotId) {
-      const validPipelineRunId =
-        pipelineRunId || fullJob.traceId || traceId || `fallback_run_${job.id}`;
-
-      const existingRender = await prisma.shotJob.findFirst({
-        where: {
+    if (!existingRender) {
+      await prisma.shotJob.create({
+        data: {
           projectId,
           organizationId: jobOrgId,
+          episodeId: fullJob.episodeId,
+          sceneId: sceneId,
           shotId: shotId,
           type: 'SHOT_RENDER',
+          status: 'PENDING',
           payload: {
-            path: ['pipelineRunId'],
-            equals: validPipelineRunId,
+            ...job.payload,
+            sourceJobId: job.id,
+            sourceImagePath: absKeyframePath, // Pass absolute path for ShotRender
+            pipelineRunId: validPipelineRunId,
           },
+          traceId: fullJob.traceId,
         },
       });
-
-      if (existingRender) {
-        await prisma.auditLog.create({
-          data: {
-            resourceType: 'job',
-            resourceId: existingRender.id,
-            action: 'ce04.spawn.shot_render.skipped',
-            orgId: jobOrgId || 'default-org',
-            details: {
-              reason: 'idempotency_hit',
-              existingJobId: existingRender.id,
-              pipelineRunId: validPipelineRunId,
-              traceId,
-              actorId: 'system-worker',
-            },
-          },
-        });
-      } else {
-        const renderJob = await prisma.shotJob.create({
-          data: {
-            projectId,
-            organizationId: jobOrgId,
-            episodeId: episodeId,
-            sceneId: sceneId,
-            shotId: shotId,
-            type: 'SHOT_RENDER',
-            status: 'PENDING',
-            payload: {
-              rootJobId: job.payload?.rootJobId,
-              sourceJobId: job.id,
-              pipelineRunId: validPipelineRunId,
-              traceId: fullJob.traceId,
-            },
-            traceId: fullJob.traceId,
-          },
-        });
-
-        await prisma.auditLog.create({
-          data: {
-            resourceType: 'job',
-            resourceId: renderJob.id,
-            action: 'ce04.spawn.shot_render',
-            orgId: jobOrgId || 'default-org',
-            details: {
-              renderJobId: renderJob.id,
-              ce04JobId: job.id,
-              pipelineRunId,
-              traceId,
-              actorId: 'system-worker',
-            },
-          },
-        });
-      }
     }
 
     return {
       status: 'SUCCEEDED',
       output: {
-        model: 'enrichment-v1-mock',
-        version: '1.0.0',
-        enrichedPrompt,
+        keyframeKey: storageKey,
         nextStep: 'SHOT_RENDER',
       },
     };

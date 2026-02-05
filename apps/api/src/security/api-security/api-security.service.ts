@@ -67,7 +67,7 @@ export class ApiSecurityService {
     private readonly auditLogService: AuditLogService,
     @Inject(SecretEncryptionService)
     private readonly secretEncryptionService: SecretEncryptionService
-  ) {}
+  ) { }
 
   /**
    * 验证 HMAC 签名（v2 规范）
@@ -344,7 +344,8 @@ export class ApiSecurityService {
         apiKey,
         timestamp,
         nonce,
-        bodyToSign
+        bodyToSign,
+        contentSha256
       );
 
       // Debug canonical WITHOUT leaking raw content: sha12 only
@@ -533,9 +534,16 @@ export class ApiSecurityService {
     apiKey: string,
     timestamp: string,
     nonce: string,
-    body: string
+    body: string,
+    contentSha256?: string
   ): string {
     // APISpec V1.1: X-Signature = HMAC_SHA256(api_key + nonce + timestamp + rawBody)
+    // [P6-0 Fix]: Protocol Upgrade - Streaming or Massive Uploads
+    // If method is POST and body is empty (meaning Guard skipped reading it), 
+    // we use contentSha256 for the canonical string (Sign Hash Protocol).
+    if (method === 'POST' && body === '' && contentSha256) {
+      return `${apiKey}${nonce}${timestamp}${contentSha256}`;
+    }
     const result = `${apiKey}${nonce}${timestamp}${body}`;
     return result;
   }
@@ -643,7 +651,7 @@ export class ApiSecurityService {
 
         throw new InternalServerErrorException(
           `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-            `Production environment requires encrypted storage.`
+          `Production environment requires encrypted storage.`
         );
       } else {
         // dev/test 环境或主密钥未配置：允许 fallback

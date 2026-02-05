@@ -986,6 +986,21 @@ exports.Prisma.TranslationCacheScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.BillingLedgerScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  traceId: 'traceId',
+  itemType: 'itemType',
+  itemId: 'itemId',
+  chargeCode: 'chargeCode',
+  amount: 'amount',
+  currency: 'currency',
+  status: 'status',
+  evidenceRef: 'evidenceRef',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1248,7 +1263,8 @@ exports.ApiKeyStatus = exports.$Enums.ApiKeyStatus = {
 
 exports.AssetOwnerType = exports.$Enums.AssetOwnerType = {
   SCENE: 'SCENE',
-  SHOT: 'SHOT'
+  SHOT: 'SHOT',
+  CHARACTER: 'CHARACTER'
 };
 
 exports.AssetStatus = exports.$Enums.AssetStatus = {
@@ -1343,7 +1359,8 @@ exports.Prisma.ModelName = {
   ShotReworkDedupe: 'ShotReworkDedupe',
   CharacterMemory: 'CharacterMemory',
   SceneMemory: 'SceneMemory',
-  TranslationCache: 'TranslationCache'
+  TranslationCache: 'TranslationCache',
+  BillingLedger: 'BillingLedger'
 };
 
 /**

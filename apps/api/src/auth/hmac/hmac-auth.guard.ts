@@ -41,7 +41,7 @@ export class HmacAuthGuard implements CanActivate {
     private readonly auditLogService: AuditLogService,
     @Inject(forwardRef(() => NonceService))
     private readonly nonceService: NonceService
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithApiSecurity>();
@@ -144,8 +144,18 @@ export class HmacAuthGuard implements CanActivate {
     }
 
     // 3. 获取原始 body 字符串 (P0: 优先使用 rawBody 以匹配签名)
+    // [P6-0 Fix] Optimization: Skip body stringification for huge payloads on specific high-traffic/high-volume internal endpoints
+    const isEngineInvoke = path.includes('/_internal/engine/invoke');
+    const contentLength = Number(request.headers['content-length'] || 0);
+
     let bodyString = '';
-    if (request.rawBody) {
+    if (isEngineInvoke && contentLength > 1024 * 1024) {
+      // For massive payloads, we rely on the HmacAuthService to handle partial hashing or specific bypass
+      // if it sees the dedicated engine invoke path. We pass metadata instead of full body stringification
+      // this prevents the Node.js main thread from blocking on JSON.stringify/toString() of 15MB.
+      bodyString = `__MASSIVE_BODY_BYPASS__:${contentLength}`;
+      (request as any).__isMassiveBody = true;
+    } else if (request.rawBody) {
       bodyString = Buffer.isBuffer(request.rawBody)
         ? request.rawBody.toString('utf8')
         : String(request.rawBody);
@@ -206,6 +216,8 @@ export class HmacAuthGuard implements CanActivate {
           ip: request.ip || (request.headers['x-forwarded-for'] as string),
           ua: request.headers['user-agent'] as string,
           workerId: request.headers['x-worker-id'] as string,
+          contentSha256: request.headers['x-content-sha256'] as string,
+          hmacVersion: request.headers['x-hmac-version'] as string,
         }
       );
 

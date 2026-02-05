@@ -26,14 +26,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
     rawBody: true,
-    bodyParser: false,
   });
   app.useLogger(app.get(Logger));
 
-  // P0-NET: Increase body limit for 3M word import
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ extended: true, limit: '50mb' }));
-  app.use(urlencoded({ limit: '50mb', extended: true }));
+  // P0-NET: Increase body limit for 15M novel import (approx 15-30MB JSON)
+  app.use(json({ limit: '100mb' }));
+  app.use(urlencoded({ extended: true, limit: '100mb' }));
 
   // Global exception filter (Registered in AppModule via APP_FILTER)
 
@@ -194,7 +192,7 @@ async function bootstrap() {
           hasStorageController = true;
           process.stdout.write(
             util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
-              '\n'
+            '\n'
           );
         }
       }

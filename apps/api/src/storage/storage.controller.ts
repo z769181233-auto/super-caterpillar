@@ -1,377 +1,86 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Res,
-  Query,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-  UnauthorizedException,
-  Header,
-  UseGuards,
-  Post,
-  Body,
-  Inject,
-} from '@nestjs/common';
-import { Response } from 'express';
-import { LocalStorageService } from './local-storage.service';
-import { SignedUrlService } from './signed-url.service';
-import { StorageAuthService } from './storage-auth.service';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { CurrentOrganization } from '../auth/decorators/current-organization.decorator';
-import { AuthenticatedUser } from '@scu/shared-types';
-import { Public } from '../auth/decorators/public.decorator';
-import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
-import { AuditLogService } from '../audit-log/audit-log.service';
-import { PrismaService } from '../prisma/prisma.service';
-import * as path from 'path';
+import { Controller, Post, Req, Res, HttpStatus } from '@nestjs/common';
+import { Request, Response } from 'express';
 import * as fs from 'fs';
-import { TextSafetyMetrics } from '../observability/text_safety.metrics';
-import { FeatureFlagService } from '../feature-flag/feature-flag.service';
+import * as path from 'path';
+import { createHash } from 'crypto';
+import { RequireSignature } from '../security/api-security/api-security.decorator';
 
 @Controller('storage')
 export class StorageController {
-  private readonly logger = new Logger(StorageController.name);
-  private debugLogged = false; // 仅记录一次调试日志
+  @Post('/novels')
+  @RequireSignature()
+  async uploadNovel(@Req() req: Request, @Res() res: Response) {
+    const headerSha = String(req.header('X-Content-SHA256') || '').trim();
+    const len = Number(req.header('content-length') || 0);
 
-  constructor(
-    @Inject(LocalStorageService) private readonly storageService: LocalStorageService,
-    @Inject(SignedUrlService) private readonly signedUrlService: SignedUrlService,
-    @Inject(StorageAuthService) private readonly storageAuthService: StorageAuthService,
-    @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
-    @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(FeatureFlagService) private readonly featureFlagService: FeatureFlagService
-  ) {}
-
-  @Public()
-  @Get('__probe')
-  probe() {
-    return { ok: true, ts: Date.now(), controller: 'StorageController' };
-  }
-
-  // DEV-ONLY: remove after signed-url acceptance
-  @Public()
-  @Get('raw/:key(*)')
-  raw(@Param('key') key: string, @Res() res: Response) {
-    const abs = this.storageService.getAbsolutePath(key);
-    const exists = this.storageService.exists(key);
-    this.logger.log(`raw: key=${key}, abs=${abs}, exists=${exists}`);
-    if (!exists) throw new NotFoundException('Resource not found');
-    return res.sendFile(abs);
-  }
-
-  @Post('refresh-signed-url')
-  @UseGuards(JwtOrHmacGuard)
-  async refreshSignedUrl(
-    @Body() body: { storageKey: string },
-    @CurrentUser() user: AuthenticatedUser,
-    @CurrentOrganization() organizationId: string
-  ) {
-    try {
-      TextSafetyMetrics.recordSignedUrlRefresh();
-
-      const { storageKey } = body;
-      if (!storageKey) {
-        // BadRequest is client error, not system failure, so maybe don't trigger fail-safe fallback but just throw
-        throw new BadRequestException('storageKey is required');
-      }
-
-      // Stage 12 Governance: Gating Check
-      const enabled = this.featureFlagService.isEnabled('FEATURE_SIGNED_URL_ENFORCED', {
-        orgId: organizationId,
-        userId: user.userId,
-      });
-
-      if (!enabled) {
-        return {
-          signedUrl: null,
-          expiresAt: null,
-          storageKey: body.storageKey,
-          fallback: true,
-        };
-      }
-
-      // 1. 查找 Asset (只需校验是否存在和归属项目)
-      const asset = await this.prisma.asset.findFirst({
-        where: { storageKey },
-        select: { id: true, projectId: true },
-      });
-
-      if (!asset) {
-        throw new NotFoundException('Asset not found');
-      }
-
-      // 2. 权限校验
-      try {
-        await this.storageAuthService.verifyAccess(storageKey, organizationId, user.userId);
-      } catch (e) {
-        TextSafetyMetrics.recordSignedUrlDeny();
-        this.logger.warn(`[StorageController] verifyAccess failed: ${e.message}`);
-        throw new UnauthorizedException('No permission to access this resource');
-      }
-
-      // 3. 生成签名 URL
-      const ttlMinutes = Number(process.env.SIGNED_URL_TTL_MINUTES ?? '10');
-      const { url, expiresAt } = this.signedUrlService.generateSignedUrl({
-        key: storageKey,
-        tenantId: organizationId,
-        userId: user.userId,
-        expiresIn: ttlMinutes * 60,
-      });
-
-      // 4. 审计
-      await this.auditLogService.record({
-        userId: user.userId,
-        // orgId: organizationId, // AuditLogService might not accept orgId directly in `record` depending on implementation, usually `details` or context.
-        action: 'SIGNED_URL_REFRESH',
-        resourceType: 'asset',
-        resourceId: asset.id,
-        details: { storageKey, expiresAt: expiresAt.toISOString(), organizationId },
-      });
-
-      return {
-        signedUrl: url,
-        expiresAt: expiresAt.toISOString(),
-      };
-    } catch (error) {
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException ||
-        error instanceof UnauthorizedException
-      ) {
-        throw error;
-      }
-
-      // Fail-safe: 明确返回失败状态，而不是伪造 URL
-      this.logger.error(
-        `refreshSignedUrl FAILED, fallback to legacy. Error: ${error.message}`,
-        error.stack
-      );
-
-      try {
-        await this.auditLogService.record({
-          userId: user.userId,
-          action: 'SIGNED_URL_FAILSAFE',
-          resourceType: 'asset',
-          resourceId: 'unknown',
-          details: { error: error.message, storageKey: body.storageKey },
-        });
-      } catch (e) {
-        /* ignore */
-      }
-
-      return {
-        signedUrl: null, // Explicitly null to indicate no signed URL generated
-        expiresAt: null,
-        storageKey: body.storageKey,
-        fallback: true,
-      };
+    if (!headerSha || !/^[a-f0-9]{64}$/i.test(headerSha)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({ error: 'INVALID_SHA256' });
     }
-  }
-
-  /**
-   * 生成签名 URL（需要鉴权 + RBAC 验证）
-   */
-  @UseGuards(JwtOrHmacGuard)
-  @Get('sign/:key(*)')
-  async generateSignedUrl(
-    @Param('key') key: string,
-    @Query('expiresIn') expiresIn?: string,
-    @CurrentUser() user?: AuthenticatedUser,
-    @CurrentOrganization() organizationId?: string
-  ): Promise<{ url: string; expiresAt: Date }> {
-    // P2 修复：统一 storage key 校验逻辑（与 StorageAuthService 一致）
-    if (!key || key.includes('..') || key.startsWith('/') || key.includes('\0')) {
-      throw new BadRequestException('Invalid storage key');
+    if (!Number.isFinite(len) || len <= 0) {
+      return res.status(HttpStatus.BAD_REQUEST).json({ error: 'INVALID_CONTENT_LENGTH' });
+    }
+    const MAX = Number(process.env.MAX_CONTENT_LENGTH || 64 * 1024 * 1024);
+    if (len > MAX) {
+      return res.status(HttpStatus.PAYLOAD_TOO_LARGE).json({ error: 'PAYLOAD_TOO_LARGE' });
     }
 
-    if (!user || !organizationId) {
-      throw new UnauthorizedException('Authentication required');
-    }
+    const storageRoot = process.env.STORAGE_ROOT || path.resolve(process.cwd(), '.data/storage');
+    const finalRel = `novels/${headerSha.toLowerCase()}.txt`;
+    const finalPath = path.resolve(storageRoot, finalRel);
 
-    // RBAC: 验证用户是否有权限访问该资源
-    try {
-      await this.storageAuthService.verifyAccess(key, organizationId, user.userId);
-    } catch (error) {
-      // 商业级交付规范：临时门禁 Bypass 必须具备环境判定、前缀收敛和审计日志
-      const isTempGateKey = key.startsWith('temp/gates/');
-      const isNonProduction = process.env.NODE_ENV !== 'production';
-      const isBypassEnabled = process.env.SCU_GATE_ALLOW_TEMP_BYPASS === '1';
+    // Ensure directories exist
+    fs.mkdirSync(path.dirname(finalPath), { recursive: true });
+    // Keep tmp specific to novels upload to avoid cross-contamination
+    fs.mkdirSync(path.resolve(storageRoot, 'novels/.tmp'), { recursive: true });
 
-      if (isTempGateKey && isNonProduction && isBypassEnabled) {
-        this.logger.log(
-          `[StorageAudit] BYPASS_GRANTED: action=generateSignedUrl, key=${key}, reason=TEMP_GATE_PROBE, tenantId=${organizationId}`
-        );
-      } else {
-        throw error;
+    // 幂等 check：已存在且 size 相同
+    if (fs.existsSync(finalPath)) {
+      const st = fs.statSync(finalPath);
+      if (st.size === len) {
+        return res.status(HttpStatus.OK).json({ storageKey: finalRel, sha256: headerSha.toLowerCase(), size: len, exists: true });
       }
     }
 
-    if (!this.storageService.exists(key)) {
-      // P1 修复：统一错误消息，不泄露资源信息
-      throw new NotFoundException('Resource not found');
-    }
+    const tmpPath = path.resolve(storageRoot, `novels/.tmp/${headerSha}.${process.pid}.${Date.now()}.tmp`);
+    const out = fs.createWriteStream(tmpPath, { flags: 'wx' });
+    const hash = createHash('sha256');
+    let bytes = 0;
 
-    const expiresInSeconds = expiresIn ? parseInt(expiresIn, 10) : undefined;
-    const result = this.signedUrlService.generateSignedUrl({
-      key,
-      tenantId: organizationId,
-      userId: user.userId,
-      expiresIn: expiresInSeconds,
+    req.on('data', (chunk: Buffer) => {
+      bytes += chunk.length;
+      hash.update(chunk);
     });
 
-    // 审计日志：记录签名 URL 生成
-    this.logger.log(
-      `[Storage] Generated signed URL for key: ${key}, tenantId: ${organizationId}, userId: ${user.userId}, expires: ${result.expiresAt.toISOString()}`
-    );
+    req.pipe(out);
 
-    return {
-      url: result.url,
-      expiresAt: result.expiresAt,
+    const cleanup = () => {
+      try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch { }
     };
-  }
 
-  /**
-   * 通过签名 URL 访问文件（使用 Nginx X-Accel-Redirect 直出）
-   * 公开端点，但需要验证签名和权限
-   */
-  @Public()
-  @Get('signed/:key(*)')
-  @Header('X-Accel-Buffering', 'no') // 禁用 Nginx 缓冲，支持流式传输
-  async serveFileWithSignature(
-    @Param('key') key: string,
-    @Query('expires') expires: string,
-    @Query('tenantId') tenantId: string,
-    @Query('userId') userId: string,
-    @Query('signature') signature: string,
-    @Res() res: Response
-  ) {
-    // P2 修复：统一 storage key 校验逻辑（与 StorageAuthService 一致）
-    if (!key || key.includes('..') || key.startsWith('/') || key.includes('\0')) {
-      throw new BadRequestException('Invalid storage key');
-    }
-
-    if (!expires || !signature || !tenantId || !userId) {
-      throw new BadRequestException(
-        'Missing required parameters: expires, signature, tenantId, userId'
-      );
-    }
-
-    const expiresNum = parseInt(expires, 10);
-    if (isNaN(expiresNum)) {
-      throw new BadRequestException('Invalid expires parameter');
-    }
-
-    // 验证签名（包含权限绑定）
-    const isValid = this.signedUrlService.verifySignedUrl(
-      key,
-      expiresNum,
-      signature,
-      tenantId,
-      userId,
-      'GET'
-    );
-    if (!isValid) {
-      this.logger.warn(
-        `[Storage] Invalid signed URL attempt: key=${key}, tenantId=${tenantId}, userId=${userId}`
-      );
-      throw new NotFoundException('Resource not found'); // 统一返回 404，防枚举
-    }
-
-    // 再次验证权限（双重检查）
-    try {
-      await this.storageAuthService.verifyAccess(key, tenantId, userId);
-    } catch (error) {
-      // 商业级交付规范：临时门禁 Bypass 必须具备环境判定、前缀收敛和审计日志
-      const isTempGateKey = key.startsWith('temp/gates/');
-      const isNonProduction = process.env.NODE_ENV !== 'production';
-      const isBypassEnabled = process.env.SCU_GATE_ALLOW_TEMP_BYPASS === '1';
-
-      if (isTempGateKey && isNonProduction && isBypassEnabled) {
-        this.logger.log(
-          `[StorageAudit] BYPASS_GRANTED: action=serveFileWithSignature, key=${key}, reason=TEMP_GATE_PROBE, tenantId=${tenantId}`
-        );
-      } else {
-        throw error;
-      }
-    }
-
-    // Debug logging for 404 diagnosis (ALWAYS ON for troubleshooting)
-    const resolved = this.storageService.getAbsolutePath(key);
-    const exists = this.storageService.exists(key);
-    this.logger.log(`key=${key}`);
-    this.logger.log(`resolved=${resolved}`);
-    this.logger.log(`exists=${exists}`);
-    try {
-      const st = fs.statSync(resolved);
-      this.logger.log(`stat.size=${st.size}`);
-    } catch (e) {
-      this.logger.log(`stat.error=${(e as any)?.message}`);
-    }
-
-    if (!this.storageService.exists(key)) {
-      throw new NotFoundException('Resource not found');
-    }
-
-    // Feature Flag: Nginx 直出开关
-    const useAccelRedirect = process.env.STORAGE_ACCEL_REDIRECT_ENABLED !== 'false';
-    const signedUrlEnforced = this.featureFlagService.isEnabled('FEATURE_SIGNED_URL_ENFORCED', {
-      orgId: tenantId,
-      userId,
+    out.on('error', (e) => {
+      cleanup();
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'WRITE_FAIL', message: String(e) });
     });
 
-    if (!signedUrlEnforced) {
-      // 回滚：禁用签名 URL，允许直接访问（仅开发环境）
-      if (process.env.NODE_ENV === 'production') {
-        throw new NotFoundException('Resource not found');
+    out.on('finish', () => {
+      const computed = hash.digest('hex');
+      if (computed !== headerSha.toLowerCase() || bytes !== len) {
+        cleanup();
+        return res.status(HttpStatus.UNAUTHORIZED).json({
+          error: 'SHA_MISMATCH',
+          expected: headerSha.toLowerCase(),
+          computed,
+          expectedBytes: len,
+          receivedBytes: bytes
+        });
       }
-      // 直接返回文件（回滚场景）
-      const absPath = this.storageService.getAbsolutePath(key);
-      res.setHeader('Accept-Ranges', 'bytes');
-      return res.sendFile(absPath);
-    }
-
-    // P1 修复：确保 STORAGE_ACCEL_REDIRECT_ENABLED=true 时走 X-Accel（API 不读文件）
-    if (useAccelRedirect) {
-      // 使用 Nginx X-Accel-Redirect 直出
-      const storagePath = this.storageAuthService.getStoragePath(key);
-      res.setHeader('X-Accel-Redirect', storagePath);
-
-      // 设置 Content-Type
-      if (key.endsWith('.mp4')) {
-        res.setHeader('Content-Type', 'video/mp4');
-      } else if (key.endsWith('.png')) {
-        res.setHeader('Content-Type', 'image/png');
-      } else if (key.endsWith('.jpg') || key.endsWith('.jpeg')) {
-        res.setHeader('Content-Type', 'image/jpeg');
+      try {
+        fs.renameSync(tmpPath, finalPath);
+        return res.status(HttpStatus.OK).json({ storageKey: finalRel, sha256: computed, size: bytes, exists: false });
+      } catch (err) {
+        cleanup();
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'RENAME_FAIL', message: String(err) });
       }
-
-      // 支持 Range 请求（视频播放需要）
-      res.setHeader('Accept-Ranges', 'bytes');
-
-      // 返回空响应，Nginx 会处理实际文件传输
-      res.status(200).end();
-    } else {
-      // 回退到 API 直出（仅开发环境或回滚场景）
-      if (process.env.NODE_ENV === 'production') {
-        this.logger.warn(
-          '[Storage] STORAGE_ACCEL_REDIRECT_ENABLED=false in production, this should only be used for rollback'
-        );
-      }
-
-      const absPath = this.storageService.getAbsolutePath(key);
-      res.setHeader('Accept-Ranges', 'bytes');
-      return res.sendFile(absPath);
-    }
-  }
-
-  /**
-   * 直接访问文件（已废弃：统一 404，强制走 signed URL）
-   */
-  @Public()
-  @Get(':key(*)')
-  serveFile(@Param('key') key: string, @Res() res: Response) {
-    throw new NotFoundException('Resource not found');
+    });
   }
 }

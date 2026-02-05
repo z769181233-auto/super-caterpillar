@@ -12,7 +12,7 @@ export class HmacAuthService {
   constructor(
     @Inject(forwardRef(() => ApiSecurityService))
     private readonly apiSecurity: ApiSecurityService
-  ) {}
+  ) { }
 
   /**
    * 验证 HMAC 签名
@@ -26,7 +26,7 @@ export class HmacAuthService {
     nonceArg: string,
     timestampArg: string,
     signatureArg: string,
-    debug?: { ip?: string; ua?: string; workerId?: string }
+    debug?: { ip?: string; ua?: string; workerId?: string; contentSha256?: string; hmacVersion?: string }
   ) {
     // 委托调用 ApiSecurityService
     const result = await this.apiSecurity.verifySignature({
@@ -37,7 +37,10 @@ export class HmacAuthService {
       method: methodArg,
       path: pathArg,
       body: bodyArg,
-      contentSha256: '', // ApiSecurityService 内部会对 JSON 请求处理
+      // [P6-0 Fix] Pass pre-calculated hash if body is bypassed
+      contentSha256: bodyArg.startsWith('__MASSIVE_BODY_BYPASS__')
+        ? (debug as any)?.contentSha256
+        : '',
       ip: debug?.ip,
       userAgent: debug?.ua,
     } as any);

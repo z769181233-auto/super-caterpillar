@@ -127,7 +127,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
   ],
   controllers: [
     AppController,
-    StorageController, // FORCE REGISTRATION: Bypass StorageModule issue
+    // [P6-0 Fix] StorageController is now provided by StorageModule
     BibleAliasController,
   ],
   providers: [
@@ -151,10 +151,10 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
-    // FORCE REGISTRATION: Storage services
-    LocalStorageService,
-    SignedUrlService,
-    StorageAuthService,
+    // FORCE REGISTRATION: Storage services moved to StorageModule or Global
+    // LocalStorageService,
+    // SignedUrlService,
+    // StorageAuthService,
   ],
 })
 export class AppModule implements NestModule {

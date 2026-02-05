@@ -25,7 +25,7 @@ export class ApiSecurityGuard implements CanActivate {
     @Inject(Reflector)
     private readonly reflector: Reflector,
     private readonly apiSecurityService: ApiSecurityService
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // 检查是否标记了 @RequireSignature()
@@ -73,11 +73,12 @@ export class ApiSecurityGuard implements CanActivate {
       );
     }
 
-    // 3. 判断是否为 multipart 端点（import-file）
-    // 注意：使用 pathWithQuery 判断，但匹配时不包含 query string
+    // 3. 判断是否为 multipart 端点或 streaming endpoints
     const isMultipartEndpoint =
       method === 'POST' &&
       pathWithQuery.match(/^\/api\/projects\/[^/]+\/novel\/import-file(\?.*)?$/);
+
+    const isStreamingEndpoint = pathWithQuery.match(/\/storage\/novels(\?.*)?$/);
 
     let finalContentSha256 = contentSha256;
 
@@ -90,10 +91,17 @@ export class ApiSecurityGuard implements CanActivate {
         });
       }
       finalContentSha256 = 'UNSIGNED';
+    } else if (isStreamingEndpoint) {
+      // streaming 端点：强制要求 X-Content-SHA256=HEX
+      if (!contentSha256 || !/^[a-f0-9]{64}$/.test(contentSha256)) {
+        throw buildHmacError('4003', 'Streaming endpoint requires valid X-Content-SHA256 hex', {
+          path,
+          method,
+        });
+      }
+      // finalContentSha256 trusted from header (will be verified by controller stream read)
     } else {
       // JSON 请求：验证 contentSha256 格式（必须是 hex 或 UNSIGNED）
-      // 当前实现信任客户端提供的 contentSha256
-      // 未来可以添加服务端计算并对比的验证
       if (contentSha256 && contentSha256 !== 'UNSIGNED' && !/^[a-f0-9]{64}$/.test(contentSha256)) {
         throw buildHmacError('4003', 'Invalid X-Content-SHA256 format (must be hex or UNSIGNED)', {
           path,
@@ -102,9 +110,9 @@ export class ApiSecurityGuard implements CanActivate {
       }
     }
 
-    // 4. 获取原始 body bytes（用于计算 SHA256，如果未提供且非 multipart）
+    // 4. 获取原始 body bytes（用于计算 SHA256，如果未提供且非 multipart/streaming）
     let rawBodyBytes: Buffer | undefined;
-    if (!isMultipartEndpoint) {
+    if (!isMultipartEndpoint && !isStreamingEndpoint) {
       // 非 multipart 端点：尝试获取 rawBody 或从 body 序列化
       if (request.rawBody) {
         rawBodyBytes = Buffer.isBuffer(request.rawBody)

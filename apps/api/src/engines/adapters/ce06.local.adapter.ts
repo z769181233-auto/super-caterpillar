@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
 import { ce06RealEngine } from '../../../../../packages/engines/ce06';
 
+import { LocalStorageService } from '../../storage/local-storage.service';
+
 /**
  * CE06LocalAdapter
  * Adapter for CE06 Novel Parsing Engine
@@ -11,6 +13,10 @@ export class CE06LocalAdapter implements EngineAdapter {
   public readonly name = 'ce06_novel_parsing';
   private readonly logger = new Logger(CE06LocalAdapter.name);
 
+  constructor(
+    private readonly localStorage: LocalStorageService
+  ) { }
+
   supports(engineKey: string): boolean {
     return engineKey === 'ce06_novel_parsing';
   }
@@ -19,8 +25,20 @@ export class CE06LocalAdapter implements EngineAdapter {
     this.logger.log(`[CE06_ADAPTER] Invoking real engine for traceId=${input.context?.traceId}`);
 
     try {
+      let payload = input.payload;
+
+      // [P6-0 Fix] Resolve novelRef to structured_text
+      if (payload.novelRef && payload.novelRef.storageKey) {
+        this.logger.log(`[CE06_ADAPTER] Resolving novelRef: ${payload.novelRef.storageKey}`);
+        const rawText = await this.localStorage.readString(payload.novelRef.storageKey);
+        payload = {
+          ...payload,
+          structured_text: rawText,
+        };
+      }
+
       const output = await ce06RealEngine({
-        ...input.payload,
+        ...payload,
         traceId: input.context?.traceId,
         projectId: input.context?.projectId,
       } as any);

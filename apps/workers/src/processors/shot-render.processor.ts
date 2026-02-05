@@ -41,6 +41,9 @@ export async function processShotRenderJob(
       where: { characterId: { in: characterIds }, isActive: true, status: 'READY' },
     });
 
+    // Debug Logs for S-3 Fix
+    logger.log(`[ShotRender_HUB DEBUG] projectId=${projectId}, sceneId=${shot.sceneId}, shotId=${shotId}`);
+
     // 3. Invoke SHOT_RENDER Engine
     const renderResult = await apiClient.invokeEngine({
       engineKey: 'shot_render',
@@ -50,7 +53,7 @@ export async function processShotRenderJob(
         projectId,
         traceId,
       },
-      context: { ...job.context, jobId: job.id, traceId, identity: { anchors, mode: 'required' } },
+      context: { ...job.context, jobId: job.id, traceId, identity: { anchors, mode: 'required' }, sceneId: shot.sceneId },
     });
 
     if (renderResult.status !== 'SUCCESS') {
@@ -90,7 +93,7 @@ export async function processShotRenderJob(
         ownerType_ownerId_type: {
           ownerId: shot.id,
           ownerType: AssetOwnerType.SHOT,
-          type: AssetType.IMAGE,
+          type: AssetType.VIDEO, // P0-R5: Hardcode VIDEO for Pilot, or dynamic based on ext
         },
       },
       update: { storageKey, checksum: sha256, status: 'GENERATED', createdByJobId: job.id },

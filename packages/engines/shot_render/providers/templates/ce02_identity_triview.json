@@ -2,15 +2,27 @@
   "3": {
     "inputs": {
       "seed": 1,
-      "steps": 1,
-      "cfg": 1,
+      "steps": 20,
+      "cfg": 7,
       "sampler_name": "euler_ancestral",
       "scheduler": "normal",
       "denoise": 1,
-      "model": ["4", 0],
-      "positive": ["6", 0],
-      "negative": ["7", 0],
-      "latent_image": ["5", 0]
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
     },
     "class_type": "KSampler",
     "_meta": {
@@ -19,7 +31,7 @@
   },
   "4": {
     "inputs": {
-      "ckpt_name": "sd_xl_turbo_1.0_fp16.safetensors"
+      "ckpt_name": "v1-5-pruned-emaonly.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
@@ -40,7 +52,10 @@
   "6": {
     "inputs": {
       "text": "beautiful scenery nature glass bottle landscape, purple galaxy bottle,",
-      "clip": ["4", 1]
+      "clip": [
+        "10",
+        0
+      ]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
@@ -50,17 +65,36 @@
   "7": {
     "inputs": {
       "text": "text, watermark",
-      "clip": ["4", 1]
+      "clip": [
+        "10",
+        0
+      ]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
       "title": "CLIP Text Encode (Negative Prompt)"
     }
   },
+  "10": {
+    "inputs": {
+      "clip_name": "clip_l.safetensors",
+      "type": "stable_diffusion"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
   "8": {
     "inputs": {
-      "samples": ["3", 0],
-      "vae": ["4", 2]
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
     },
     "class_type": "VAEDecode",
     "_meta": {
@@ -69,7 +103,11 @@
   },
   "9": {
     "inputs": {
-      "filename_prefix": "ComfyUI"
+      "filename_prefix": "scu_triview",
+      "images": [
+        "8",
+        0
+      ]
     },
     "class_type": "SaveImage",
     "_meta": {

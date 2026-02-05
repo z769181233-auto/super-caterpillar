@@ -116,6 +116,33 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
       }
     }
 
+    // P0-R5: High-Fidelity Pass-through (Phase T: Strict)
+    // If source asset is MP4, use it directly (bypass frames.txt/mock-compose)
+    try {
+      const sourceAsset = await prisma.asset.findFirst({
+        where: { ownerId: shot.shotId, ownerType: AssetOwnerType.SHOT, type: AssetType.VIDEO }, // Ensure VIDEO
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (sourceAsset && sourceAsset.storageKey) {
+        const sourcePath = path.resolve(storageRoot, sourceAsset.storageKey);
+        if (await fileExists(sourcePath)) {
+          process.stderr.write(`[TimelineRender] High-Fidelity Pass-through: Using source ${sourcePath}\n`);
+          await fsp.copyFile(sourcePath, shotOutputPath);
+          shotMp4Paths.push(shotOutputPath);
+          continue; // Success -> Next Shot
+        } else {
+          // [Phase T] Ban Fallback
+          throw new Error(`[TimelineRender] Source asset found but file missing: ${sourcePath}`);
+        }
+      } else {
+        // [Phase T] Ban Fallback
+        throw new Error(`[TimelineRender] No VIDEO source asset found for shotId=${shot.shotId}. Legacy fallback is BANNED.`);
+      }
+    } catch (e: any) {
+      throw new Error(`[TimelineRender] Critical Failure in Source Asset Resolution: ${e.message}`);
+    }
+
     // Render if not skipped
     const framesTxt = shot.framesTxtStorageKey;
 
@@ -136,30 +163,23 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     }
 
     // Real rendering for Stage 1: Shot Frames to MP4
-    if (process.env.AUDIO_MINLOOP_SYNC === '1') {
-      console.log(
-        `[TimelineRender] Audio Minloop mode: Clipping real Stage 1 rendering, creating dummy MP4`
-      );
-      await fsp.writeFile(shotOutputPath, 'dummy mp4 content');
-    } else {
-      const args = [
-        '-f',
-        'concat',
-        '-safe',
-        '0',
-        '-i',
-        framesTxt,
-        '-c:v',
-        'libx264',
-        '-pix_fmt',
-        'yuv420p',
-        '-r',
-        fps.toString(),
-        '-y',
-        shotOutputPath,
-      ];
-      await runFfmpeg(args, `Stage1_Shot_${shot.shotId}`);
-    }
+    const args = [
+      '-f',
+      'concat',
+      '-safe',
+      '0',
+      '-i',
+      framesTxt,
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
+      '-r',
+      fps.toString(),
+      '-y',
+      shotOutputPath,
+    ];
+    await runFfmpeg(args, `Stage1_Shot_${shot.shotId}`);
     shotMp4Paths.push(shotOutputPath);
   }
 
@@ -335,7 +355,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     const concatContent = shotMp4Paths.map((p) => `file '${p}'`).join('\n');
     await fsp.writeFile(concatListPath, concatContent);
 
-    const concatArgs = ['-f', 'concat', '-safe', '0', '-i', concatListPath];
+    const concatArgs = ['-f', 'concat', '-safe', '0', '-i', concatListPath, '-c:v', 'copy'];
 
     // If there is exactly 1 audio track, we try to include it.
     if (tracks.length === 1 && tracks[0].storageKey) {
@@ -348,13 +368,8 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     }
 
     // Real rendering for Path A: Simple Concat
-    if (process.env.AUDIO_MINLOOP_SYNC === '1') {
-      console.log(`[TimelineRender] Audio Minloop mode: Skipping Path A concat`);
-      await fsp.writeFile(finalOutputPath, 'dummy final mp4');
-    } else {
-      concatArgs.push('-y', finalOutputPath);
-      await runFfmpeg(concatArgs, `Stage2_SimpleConcat`);
-    }
+    concatArgs.push('-y', finalOutputPath);
+    await runFfmpeg(concatArgs, `Stage2_SimpleConcat`);
   } else {
     // Path B: Advanced Composition (FilterComplex, Re-encoding required)
     console.log(`[TimelineRender] [Path B] Advanced Composition (Mixing & Ducking)`);
@@ -477,6 +492,9 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
       'libx264',
       '-pix_fmt',
       'yuv420p',
+      '-crf', '18',
+      '-preset', 'slow',
+      '-b:v', '4M',
       '-r',
       fps.toString(),
       '-y',
@@ -485,39 +503,11 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     );
 
     // Real rendering for Path B: Advanced Compose
-    if (process.env.AUDIO_MINLOOP_SYNC === '1') {
-      console.log(`[TimelineRender] Audio Minloop mode: Generating valid mock MP4 for CE09`);
-      const mockArgs = [
-        '-f',
-        'lavfi',
-        '-i',
-        'color=c=black:s=1280x720:d=1',
-        '-f',
-        'lavfi',
-        '-i',
-        'anullsrc=r=44100:cl=stereo',
-        '-c:v',
-        'libx264',
-        '-t',
-        '1',
-        '-pix_fmt',
-        'yuv420p',
-        '-c:a',
-        'aac',
-        '-shortest',
-        '-y',
-        finalOutputPath,
-      ];
-      await runFfmpeg(mockArgs, `Stage2_MockCompose`);
-    } else {
-      await runFfmpeg(complexArgs, `Stage2_AdvancedCompose`);
-    }
+    await runFfmpeg(complexArgs, `Stage2_AdvancedCompose`);
   }
 
   // Add-on: Generate HLS (m3u8 + ts) along with MP4 for Production Readiness
-  if (process.env.AUDIO_MINLOOP_SYNC === '1') {
-    console.log(`[TimelineRender] Audio Minloop mode: Skipping HLS generation`);
-  } else {
+  {
     const hlsOutputDir = path.join(finalOutputDir, 'hls');
     if (!(await fileExists(hlsOutputDir))) await ensureDir(hlsOutputDir);
     const hlsMasterPath = path.join(hlsOutputDir, 'master.m3u8');

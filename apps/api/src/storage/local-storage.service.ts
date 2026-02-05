@@ -66,4 +66,13 @@ export class LocalStorageService {
   exists(key: string) {
     return this.adapter.exists(key);
   }
+
+  /**
+   * Read file content as string
+   * [P6-0 Fix] Support for resolving stored payloads
+   */
+  async readString(key: string): Promise<string> {
+    const absPath = this.adapter.getAbsolutePath(key);
+    return fs.promises.readFile(absPath, 'utf8');
+  }
 }

@@ -64,10 +64,6 @@ export async function processCE06Job(
   apiClient: ApiClient
 ): Promise<CE06NovelParsingOutput> {
   console.log('[S3-B Debug] processCE06Job START');
-  await fsp.appendFile(
-    'debug_ce06.txt',
-    '[S3-B Debug] processCE06Job START ' + new Date().toISOString() + '\n'
-  );
   const jobStartTime = Date.now();
   const jobId = job.id;
   // Stage13-Final: 使用 Job.traceId（Pipeline 级 traceId）
@@ -157,7 +153,7 @@ export async function processCE06Job(
       .digest('hex');
 
     await prisma.novelParseResult.upsert({
-      where: { idempotencyKey },
+      where: { projectId },
       create: {
         idempotencyKey,
         projectId,
@@ -187,9 +183,10 @@ export async function processCE06Job(
         where: { novelSource: { projectId } },
         select: { id: true },
       });
+      logStructured('info', { action: 'ORCHESTRATION_DEBUG_CHAPTERS', count: chapters.length });
 
       // [P0 FIX] Deterministic ID Binding: Map Scene -> CinemaScene via indices
-      // 1. Fetch all Scenes (select chapterId manually to avoid Relation issues)
+      // 1. Fetch all Scenes (select chapterId manually to avoid relation issues)
       const allNovelScenes = await prisma.scene.findMany({
         where: {
           chapterId: { in: chapters.map((c) => c.id) },
@@ -200,6 +197,7 @@ export async function processCE06Job(
           chapterId: true, // Fetch FK directly
         },
       });
+      logStructured('info', { action: 'ORCHESTRATION_DEBUG_SCENES', count: allNovelScenes.length });
 
       // 1b. Fetch related NovelChapters (Manual Join)
       // Note: allNovelScenes type has sceneIndex now.
@@ -803,6 +801,9 @@ export async function processCE04Job(
 
         let realImagePath = result.assets?.image;
         if (!realImagePath || !(await fileExists(realImagePath))) {
+          if (PRODUCTION_MODE) {
+            throw new Error(`[CE04] PRODUCTION_MODE prohibits dummy fallback. Key asset missing: ${realImagePath}`);
+          }
           console.warn(`[CE04] Key asset not found (using dummy): ${realImagePath}`);
           realImagePath = dummyLocalImage;
         }
@@ -884,7 +885,7 @@ export async function processCE04Job(
         latencyMs: duration,
         auditTrail: result.audit_trail,
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return result;
   } catch (error: any) {
@@ -925,6 +926,14 @@ export async function processShotRenderJob(
     shotId,
     traceId,
   });
+
+  // [Phase S Fix] Always fetch shot to get sceneId for orchestration
+  const shotCore = await prisma.shot.findUnique({
+    where: { id: shotId },
+    include: { scene: true }
+  });
+  if (!shotCore) throw new Error(`Shot ${shotId} not found`);
+  const sceneId = shotCore.sceneId;
 
   if (!shotId) {
     throw new Error('SHOT_RENDER job requires shotId');
@@ -1001,13 +1010,38 @@ export async function processShotRenderJob(
       );
     }
 
-    // 2. [CORE FIX] 统一调用母引擎，不再直连 Original Selector
-    // P2-FIX-2 DEBUG: 打印 payload 传递情况（仅 Gate/Dev）
+    // [Phase T] S1: Inject Real Image Source
+    const framesTxt = path.join(process.cwd(), '.runtime', 'frames', shotId, 'frames.txt');
+    let sourceImagePath: string | null = null;
+    if (await fileExists(framesTxt)) {
+      const txt = await fsp.readFile(framesTxt, 'utf8');
+      // Parse first "file '...'" line
+      const m = txt.match(/file\s+'([^']+)'/);
+      if (m && m[1]) {
+        sourceImagePath = m[1];
+        // Handle relative paths in frames.txt
+        if (!path.isAbsolute(sourceImagePath)) {
+          sourceImagePath = path.resolve(path.dirname(framesTxt), sourceImagePath);
+        }
+      }
+    }
+
+    if (!sourceImagePath) {
+      if (PRODUCTION_MODE) {
+        throw new Error(`[SHOT_RENDER] NO_SOURCE_IMAGE: frames.txt missing or empty/invalid for shotId=${shotId}`);
+      }
+      logStructured('warn', { action: 'SHOT_RENDER_NO_IMAGE', msg: 'Using placeholder (Non-Production)', shotId });
+    } else {
+      logStructured('info', { action: 'SHOT_RENDER_IMAGE_FOUND', sourceImagePath });
+    }
+
+    // 2. [CORE FIX] 统一调用母引擎
+    // P2-FIX-2 DEBUG: 打印 payload
     if (process.env.GATE_MODE === '1' || process.env.NODE_ENV !== 'production') {
       logStructured('info', {
         action: 'SHOT_RENDER_INVOKE_PAYLOAD',
         jobId,
-        payload: { shotId, traceId, seed, prompt: prompt.slice(0, 50) + '...' },
+        payload: { shotId, traceId, seed, prompt: ((prompt || '') as string).slice(0, 50) + '...' },
       });
     }
 
@@ -1019,9 +1053,11 @@ export async function processShotRenderJob(
         prompt,
         seed,
         style,
-        context: { projectId },
+        sourceImagePath, // [Phase T] Injected Image
+        context: { projectId, sceneId }, // Injected sceneId
+        projectId, // Injected top-level projectId for Adapter
       },
-      metadata: { jobId, projectId, traceId, shotId },
+      metadata: { jobId, projectId, traceId, shotId, sceneId },
     });
 
     if (!engineResult.success || !engineResult.output) {
@@ -1032,12 +1068,12 @@ export async function processShotRenderJob(
 
     // 3. Persist Asset
     const asset = await prisma.asset.upsert({
-      where: { ownerType_ownerId_type: { ownerType: 'SHOT', ownerId: shotId, type: 'IMAGE' } },
+      where: { ownerType_ownerId_type: { ownerType: 'SHOT', ownerId: shotId, type: 'VIDEO' } },
       create: {
         projectId,
         ownerType: 'SHOT',
         ownerId: shotId,
-        type: 'IMAGE',
+        type: 'VIDEO', // Force VIDEO for Pilot
         status: 'GENERATED',
         storageKey: result.asset.uri,
         checksum: result.asset.sha256,
@@ -1133,7 +1169,7 @@ export async function processShotRenderJob(
         resourceId: asset.id,
         resourceType: 'asset',
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return {
       status: 'SUCCEEDED',
@@ -1312,9 +1348,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-          summary: previousMemory.summary || '',
-          character_states: (previousMemory.characterStates as any) || {},
-        }
+        summary: previousMemory.summary || '',
+        character_states: (previousMemory.characterStates as any) || {},
+      }
       : undefined,
     context: {
       projectId,
@@ -1430,6 +1466,15 @@ export async function processGenericCEJob(
   // 分发到专有处理器（如果匹配）
   if (job.type === 'CE07_MEMORY_UPDATE') {
     return processCE07Job(prisma, job, engineHub, apiClient);
+  }
+  if (job.type === 'CE06_NOVEL_PARSING') {
+    return processCE06Job(prisma, job, engineHub, apiClient);
+  }
+  if (job.type === 'CE03_VISUAL_DENSITY') {
+    return processCE03Job(prisma, job, engineHub, apiClient);
+  }
+  if (job.type === 'CE04_VISUAL_ENRICHMENT') {
+    return processCE04Job(prisma, job, engineHub, apiClient);
   }
 
   // Mock processing

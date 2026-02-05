@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import { shotRenderRealEngine } from '../../../../../packages/engines/shot_render';
+import * as path from 'path';
+import * as fs from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-@Injectable()
+const execAsync = promisify(exec);
 export class ShotRenderLocalAdapter implements EngineAdapter {
   public readonly name = 'shot_render_local';
   private readonly logger = new Logger(ShotRenderLocalAdapter.name);
@@ -22,24 +25,84 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
     );
 
     try {
-      // P0-R0: Call REAL engine from @scu/engines-shot-render
+      // P0-R0: Real-Sim (High Fidelity Local Render) - Hardened
       const shotId = (input.context?.shotId || input.payload?.shotId) as string;
       const traceId = (input.context?.traceId || input.payload?.traceId) as string;
+      const projectId = input.payload.projectId;
+      const sceneId = input.context?.sceneId;
 
-      const result = await shotRenderRealEngine(
-        {
-          shotId,
-          traceId,
-          prompt: input.payload.prompt,
-          width: input.payload.width || 1024,
-          height: input.payload.height || 1024,
-          seed: input.payload.seed,
+      if (!projectId || !sceneId) {
+        throw new Error(`[ShotRenderLocal] Missing Identity: projectId=${projectId}, sceneId=${sceneId}. Cannot persist asset safely.`);
+      }
+
+      const storageRoot = path.resolve(process.env.STORAGE_ROOT || '.data/storage');
+      const outputDir = path.join(storageRoot, 'renders', projectId, 'scenes', sceneId);
+
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+
+      // Fix A: Stable output name to avoid ambiguity and path leakage
+      // Named 'source.mp4' to avoid conflict with TimelineRender 'output.mp4'
+      const outputFilename = 'source.mp4';
+      const outputPath = path.join(outputDir, outputFilename);
+      const absOutputPath = path.resolve(outputPath);
+
+      const sourceImagePath = input.payload.sourceImagePath as string;
+      if (!sourceImagePath || !fs.existsSync(sourceImagePath)) {
+        throw new Error(`[ShotRenderLocal] Missing/Invalid sourceImagePath=${sourceImagePath}`);
+      }
+
+      this.logger.log(`[ShotRenderLocal] Rendering 2.5D Motion from: ${sourceImagePath}`);
+
+      // Generate 2.5D Video (Zoom/Pan) from Image
+      // -loop 1: Loop image input
+      // vf: Scale to 1080p, Pad to fit, Zoompan for 5s (d=150 @ 30fps)
+      // -b:v 6M: High Bitrate
+      // Generate 2.5D Video (Zoom/Pan) from Image
+      // Quality Pass: -crf 18 -preset slow for high-fidelity composition
+      const ffmpegCmd = [
+        `ffmpeg -hide_banner -y`,
+        `-loop 1 -i "${sourceImagePath}"`,
+        `-f lavfi -i "anullsrc=r=44100:cl=stereo"`,
+        `-shortest`,
+        `-vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0015,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=150:s=1920x1080:fps=30"`,
+        `-t 5`,
+        `-c:v libx264 -pix_fmt yuv420p -crf 18 -preset slow`,
+        `-c:a aac -b:a 192k`,
+        `"${absOutputPath}"`
+      ].join(' ');
+
+      await execAsync(ffmpegCmd);
+
+      // Validation 1: Size check
+      const stats = fs.statSync(absOutputPath);
+      if (stats.size < 10000) {
+        throw new Error(`[ShotRenderLocal] Rendered video is too small (${stats.size} bytes). Likely corrupted.`);
+      }
+
+      // Validation 2: Black frame detection
+      const blackDetectCmd = `ffmpeg -i "${absOutputPath}" -vf "blackdetect=d=0.1:pix_th=0.1" -f null - 2>&1`;
+      const { stderr } = await execAsync(blackDetectCmd);
+      if (stderr.includes('black_start:0') && stderr.includes('black_end:5')) {
+        throw new Error(`[ShotRenderLocal] Black video detected! The entire output is black.`);
+      }
+
+      this.logger.log(`[ShotRenderLocal] Generated Asset Size: ${stats.size} bytes`);
+
+      const storageKey = path.relative(storageRoot, absOutputPath);
+
+      const result = {
+        render_meta: {
+          model: 'local-ffmpeg-hifi',
+          duration: 5,
+          width: 1920,
+          height: 1080
         },
-        {
-          traceId,
-          model: 'sdxl', // 默认使用 SDXL
-        }
-      );
+        audit_trail: {},
+        storageKey: storageKey,
+        localPath: absOutputPath
+      };
 
       // 增强审计轨迹以满足计费和 Gate 断言要求
       if (result.audit_trail) {

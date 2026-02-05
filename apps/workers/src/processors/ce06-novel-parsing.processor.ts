@@ -1,7 +1,6 @@
 import { PrismaClient, JobType } from 'database';
 import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
-import { CostLedgerService } from '../billing/cost-ledger.service';
 import { ProcessorContext } from '../types/processor-context';
 import { buildContext } from '../v3/context/context_injector';
 import { updateCharacterStates, snapshotScene, type CharacterState } from '../v3/graph/graph_state';
@@ -22,6 +21,14 @@ export async function processCE06NovelParsingJob(
 ): Promise<ProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
+
+  console.log(`\n!!! [CE06-ENTRY] JobId: ${job.id} !!!`);
+  console.log(`[CE06-ENTRY] Payload Type: ${typeof job.payload}`);
+  if (job.payload) {
+    console.log(`[CE06-ENTRY] Payload keys: ${Object.keys(job.payload)}`);
+    console.log(`[CE06-ENTRY] Payload string length: ${JSON.stringify(job.payload).length}`);
+  }
+
   const engineHub = new EngineHubClient(apiClient);
 
   // V3.0 Phase 2: Protocol Adapter (Bible -> Internal)
@@ -56,11 +63,33 @@ async function executeScanJob(
   job: ProcessorContext['job'],
   engineHub: EngineHubClient
 ): Promise<ProcessorResult> {
-  const { prisma, apiClient } = context;
+  const { prisma, apiClient, localStorage } = context;
   const logger = context.logger || console;
   const payload = job.payload || {};
-  const rawText = payload.raw_text || payload.sourceText;
+  let rawText = payload.raw_text || payload.sourceText;
   const traceId = payload.traceId || job.id;
+
+  // [P6-0 Fix] Support novelRef (Storage Reference)
+  if (payload.novelRef && payload.novelRef.storageKey) {
+    if (!localStorage) {
+      throw new Error('[CE06-SCAN] LocalStorageAdapter not injected into context');
+    }
+    const absPath = localStorage.getAbsolutePath(payload.novelRef.storageKey);
+    const fs = await import('fs');
+    if (fs.existsSync(absPath)) {
+      logger.log(`[CE06-SCAN] Loading rawText from Reference: ${payload.novelRef.storageKey}`);
+      rawText = fs.readFileSync(absPath, 'utf8');
+    } else {
+      throw new Error(`[CE06-SCAN] Referenced file not found: ${absPath}`);
+    }
+  }
+
+  console.log(`[CE06-DEBUG] JobId: ${job.id}, PayloadKeys: ${Object.keys(payload)}`);
+  if (rawText) {
+    console.log(`[CE06-DEBUG] rawText found, length: ${rawText.length}`);
+  } else {
+    console.log(`[CE06-DEBUG] rawText is missing or empty!`);
+  }
 
   if (!rawText) throw new Error('SCAN phase requires raw_text');
 
@@ -75,21 +104,33 @@ async function executeScanJob(
 
   logger.log(`[CE06-SCAN] Scanning via EngineHub for project ${projectId}...`);
 
+  // [P6-0 Fix] Use novelRef if available to avoid sending massive JSON to API
+  const invokePayload: any = {
+    phase: 'SCAN',
+    traceId,
+  };
+  if (payload.novelRef) {
+    invokePayload.novelRef = payload.novelRef;
+  } else {
+    invokePayload.structured_text = rawText;
+  }
+
   // 通过母引擎调用
   const engineResult = await engineHub.invoke({
     engineKey: 'ce06_novel_parsing',
     engineVersion: 'v1.3.1',
-    payload: {
-      structured_text: rawText,
-      phase: 'SCAN',
-      traceId,
-    },
+    payload: invokePayload,
     metadata: {
       traceId,
       projectId,
       organizationId,
     },
   });
+
+  console.log(`[CE06-SCAN] engineHub.invoke SUCCESS: ${engineResult.success}`);
+  if (!engineResult.success) {
+    console.log(`[CE06-SCAN] engineHub.invoke ERROR: ${JSON.stringify(engineResult.error)}`);
+  }
 
   if (!engineResult.success) {
     throw new Error(`SCAN failed: ${engineResult.error?.message}`);
@@ -102,6 +143,19 @@ async function executeScanJob(
   if (!novelSource) throw new Error('NovelSource not found');
 
   const chunks = (engineResult.output as any).volumes || [];
+
+  // P6-1-5: 计算 totalCharCount（用于计费）
+  const totalCharCount = rawText.length;
+  logger.log(`[CE06-SCAN] Total char count: ${totalCharCount}`);
+
+  // 写入 Novel 表（用于审计）
+  await prisma.novel.update({
+    where: { id: novelSource.id },
+    data: { characterCount: totalCharCount }
+  });
+
+  // [P6-0 Fix] Race Condition: Collect jobs inside TX, dispatch AFTER TX commit.
+  const jobsToDispatch: any[] = [];
 
   await prisma.$transaction(async (tx) => {
     for (const chunk of chunks) {
@@ -129,23 +183,30 @@ async function executeScanJob(
         update: { title: chunk.chapter_title },
       });
 
-      // 扇出 CHUNK_PARSE 子任务
-      await apiClient.createJob({
+      // Collect for dispatch
+      jobsToDispatch.push({
         jobType: JobType.CE06_NOVEL_PARSING,
         projectId,
         organizationId,
         payload: {
           phase: 'CHUNK_PARSE',
           chapterId: chapter.id,
-          raw_text: rawText.substring(chunk.start_offset, chunk.end_offset),
+          raw_text: rawText.substring(chunk.start_offset, chunk.end_offset), // extract from loaded rawText
           traceId,
-          projectId, // Required by JobGenericController
+          projectId,
           pipelineRunId: job.payload?.pipelineRunId,
+          charCount: totalCharCount, // P6-1-5: 传递 charCount 用于计费
         },
         parentJobId: job.id,
       });
     }
   });
+
+  // [P6-0 Fix] Dispatch jobs *outside* transaction to ensure chapters are visible
+  logger.log(`[CE06-SCAN] Dispatching ${jobsToDispatch.length} CHUNK jobs...`);
+  for (const jobParams of jobsToDispatch) {
+    await apiClient.createJob(jobParams);
+  }
 
   logger.log(`[CE06-SCAN] Fan-out complete. Created ${chunks.length} child jobs.`);
   return { status: 'SUCCEEDED', output: { chapters_count: chunks.length } };
@@ -396,20 +457,46 @@ async function executeChunkParseJob(
     }
   });
 
-  // 计费 (只记录 CE06，CE03/CE04 由 EngineHub 自动记录)
-  const costService = new CostLedgerService(apiClient, prisma);
-  if (ce06Result.output && (ce06Result.output as any).billing_usage) {
-    await costService.recordEngineBilling({
-      jobId: job.id,
-      jobType: JobType.CE06_NOVEL_PARSING,
-      traceId,
-      projectId,
-      userId: job.userId || 'system',
-      orgId: organizationId,
-      attempt: job.attempts || 1,
-      billingUsage: (ce06Result.output as any).billing_usage,
-      engineKey: 'ce06_novel_parsing',
-    });
+  // P6-1-5: 业务计费 - Job SUCCEEDED 时自动扣费
+  const charCount = payload.charCount || 0;
+  if (charCount > 0) {
+    logger.log(`[BILLING] Job ${job.id} SUCCEEDED, posting charge for ${charCount} chars`);
+    try {
+      const tenantId = 'default'; // 默认租户
+
+      // 幂等性检查：使用复合唯一键
+      const existing = await prisma.billingLedger.findUnique({
+        where: {
+          tenantId_traceId_itemType_itemId_chargeCode: {
+            tenantId,
+            traceId: job.id,
+            itemType: 'JOB',
+            itemId: job.id,
+            chargeCode: 'SCAN_CHAR',
+          },
+        },
+      });
+
+      if (existing) {
+        logger.log(`[BILLING] Charge already posted for Job ${job.id}, skipping`);
+      } else {
+        await prisma.billingLedger.create({
+          data: {
+            tenantId,
+            traceId: job.id,
+            itemType: 'JOB',
+            itemId: job.id,
+            chargeCode: 'SCAN_CHAR',
+            amount: charCount,
+            status: 'POSTED',
+          },
+        });
+        logger.log(`[BILLING] Posted charge for Job ${job.id}: ${charCount} chars`);
+      }
+    } catch (error: any) {
+      logger.error(`[BILLING] Failed to post charge for Job ${job.id}:`, error.message);
+      // 不阻塞 Job 完成，仅记录错误
+    }
   }
 
   return { status: 'SUCCEEDED' };
