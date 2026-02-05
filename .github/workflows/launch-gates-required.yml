@@ -1,0 +1,95 @@
+name: Required Check / Launch Gates
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  launch-gates-required:
+    name: Launch Gates (CI Mode)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: scu
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter database prisma:generate
+        env:
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
+
+      - name: Push DB Schema
+        run: pnpm --filter database prisma:push
+        env:
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
+
+      - name: Build Services
+        run: |
+          pnpm --filter api build
+          pnpm --filter worker build
+
+      - name: Start Services (Background)
+        run: |
+          # Start API
+          export DATABASE_URL="postgresql://postgres:password@localhost:5432/scu"
+          export API_PORT=3000
+          export NODE_ENV=staging
+          nohup pnpm --filter api start > api.log 2>&1 &
+          echo $! > api.pid
+          
+          # Start Worker (Ensure ENV parity with Gate)
+          export NODE_ENV=staging
+          export API_URL="http://localhost:3000"
+          nohup pnpm --filter worker start > worker.log 2>&1 &
+          echo $! > worker.pid
+          
+          # Wait for API health
+          echo "Waiting for API..."
+          timeout 60 bash -c 'until curl -s http://localhost:3000/health; do sleep 2; done'
+          echo "API is ready."
+
+      - name: Run Launch Gates (CI Mode + P6-2)
+        run: |
+          # CI Mode triggers Local-like subset strictly
+          bash tools/gate/run_launch_gates.sh
+        env:
+          GATE_ENV_MODE: ci
+          API_URL: http://localhost:3000
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
+          P6_2: "1" # Explicitly enable P6-2
+
+      - name: Upload Evidence Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-evidence-report
+          path: |
+            docs/_evidence/run_launch_gates_*
+            api.log
+            worker.log

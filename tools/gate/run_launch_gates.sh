@@ -16,6 +16,7 @@ NC='\033[0m' # No Color
 # 环境模式设定 (local | staging)
 # local: 默认跳过需要 credits 的 Gate 4/5
 # staging: 必须全量通过
+# ci: 等同于 staging 的严格性，但跳过重资源 Gate (同 local 集合)
 GATE_ENV_MODE="${GATE_ENV_MODE:-local}"
 echo -e "${BLUE}Mode: $GATE_ENV_MODE${NC}"
 
@@ -206,7 +207,11 @@ command -v node >/dev/null 2>&1 || { echo -e "${RED}❌ node is required for mod
 # 初始化报告
 : > "$REPORT_FILE"
 
+
 # --- Stability & Hygiene Pre-Gates ---
+# Default Post-Check Status (ensure initialized)
+POST_POLLUTION_PASSED=true
+
 echo -e "${BLUE}Stability Gate: Repo Root Pollution Check${NC}"
 PRE_POLLUTION_OUTPUT="$TEMP_DIR/pre_repo_root_pollution.txt"
 if ! bash "$PROJECT_ROOT/tools/gate/gates/gate_repo_root_pollution.sh" >"$PRE_POLLUTION_OUTPUT" 2>&1; then
@@ -426,10 +431,10 @@ else
     echo "  [Setup] Seeding DB asset for Gate 3 strict check..."
     # 确保 Prisma Client 最新，防止 MODULE_NOT_FOUND
     if [ -d "$PROJECT_ROOT/packages/database" ]; then
-      (cd "$PROJECT_ROOT/packages/database" && npx prisma generate >/dev/null)
+      (cd "$PROJECT_ROOT/packages/database" && pnpm -w exec prisma generate >/dev/null)
     fi
     export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
-    npx tsx "$PROJECT_ROOT/tools/gate/scripts/ensure_gate3_data.ts"
+    pnpm -w exec tsx "$PROJECT_ROOT/tools/gate/scripts/ensure_gate3_data.ts"
 
     # 测试 1: 直接访问必须 404
     echo "  Test 1: Direct access rejection..."
@@ -1019,8 +1024,14 @@ fi
   echo ""
   echo "## 运行环境语义 (Environmental Semantics)"
   echo ""
-  if [ "$GATE_ENV_MODE" = "local" ]; then
+  if [ "$GATE_ENV_MODE" = "local" ] || [ "$GATE_ENV_MODE" = "ci" ]; then
     echo "> [!NOTE]"
+    echo "> **LOCAL/CI MODE**: Skipping Costly/Credit-Consuming Gates (Gate 4, 5)"
+    echo "> Focus: Functional correctness, API contract, Security, and Code Hygiene."
+  else
+    echo "> **STAGING MODE**: FULL VERIFICATION (All Gates Required)"
+    echo "> Focus: Commercial Readiness, SLO Compliance, and Full E2E flows."
+  fi
     echo "> **MODE = local**: Gate 4/5 设为 **SKIP** (不计入最终失败)，本地开发优先保持稳定全绿。"
   else
     echo "> [!IMPORTANT]"
@@ -1110,8 +1121,8 @@ fi
   echo ""
   echo "## Gate Mode Semantics"
   echo "- **MODE**: $GATE_ENV_MODE"
-  if [ "$GATE_ENV_MODE" = "local" ]; then
-    echo "- **Skipped Gates (local mode)**: Gate 4, 5, 7, 8, 9, 11, 12"
+  if [ "$GATE_ENV_MODE" = "local" ] || [ "$GATE_ENV_MODE" = "ci" ]; then
+    echo "- **Skipped Gates (local/ci mode)**: Gate 4, 5, 7, 8, 9, 11, 12"
     echo "- **Required Gates**: Gate 1, 2, 3, 6, 10, 13, 14, 15, 16"
   else
     echo "- **Required Gates**: 1-16 (ALL REQUIRED)"
@@ -1141,8 +1152,8 @@ ALL_PASSED=true
 [ "$CE11_PASSED" != true ] && ALL_PASSED=false
 [ "$DOC_HYGIENE_PASSED" != true ] && ALL_PASSED=false
 
-# 只有在非 local 模式下，4/5 的失败才影响最终结果
-if [ "$GATE_ENV_MODE" != "local" ]; then
+# 只有在非 local 且非 ci 模式下 (即 staging)，4/5 的失败才影响最终结果
+if [ "$GATE_ENV_MODE" != "local" ] && [ "$GATE_ENV_MODE" != "ci" ]; then
     [ "$VIDEO_E2E_PASSED" != true ] && ALL_PASSED=false
     [ "$CAPACITY_REPORT_PASSED" != true ] && ALL_PASSED=false
 fi
