@@ -1,0 +1,14 @@
+{
+  "files.watcherExclude": {
+    "**/logs/**": true,
+    "**/docs/_evidence/**": true,
+    "**/*.log": true,
+    "**/*.pid": true
+  },
+  "search.exclude": {
+    "**/logs/**": true,
+    "**/docs/_evidence/**": true,
+    "**/*.log": true,
+    "**/*.pid": true
+  }
+}
