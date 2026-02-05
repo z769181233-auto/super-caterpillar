@@ -17,14 +17,16 @@
     - Case04 uses PID SSOT + port fallback; includes curl/psql timeouts to prevent hangs.
 
   ## P6-2.1 CI INTEGRATION (PATCH SEALED)
-  - **Status**: PATCH SEALED (CI READY)
+  - **Status**: PATCH SEALED (本地验证模式)
   - **Primary Tag**: P6-2_1_CI_HARDEN_SEALED_20260206_001730
   - **Supersedes**: P6-2_1_CI_HARDEN_SEALED_20260205_233136
   - **Evidence**:
-    - Local: docs/_evidence/run_launch_gates_20260205_235610/
-    - CI (Placeholder): docs/_evidence/p6_2_1_ci_20260206_001715/
-  - **CI Workflow**: .github/workflows/launch-gates-required.yml
+    - Local Validation: docs/_evidence/run_launch_gates_20260205_235610/
+  - **Environment**: 本地 Git 仓库（非 GitHub）
   - **Changes**:
     - Added `GATE_ENV_MODE=ci` semantics to `run_launch_gates.sh`.
     - Integrated P6-2 as Required Check in CI mode.
     - Fixed Post Pollution Gate cleanliness in CI.
+  - **Notes**: 
+    - 本地 Git 环境，无远程 GitHub Actions
+    - CI 模式验证通过（本地执行）

@@ -229,6 +229,9 @@ else
   echo "[INFO] Running SSOT regression hardpass suite (must pass)"
   echo ""
   bash tools/gate/gates/gate-ssot_regression_hardpass.sh
+  echo ""
+  echo "[INFO] Running Billing Documentation Hygiene hardpass (must pass)"
+  bash tools/gate/gates/gate_billing_doc_hygiene.sh
 fi
 
 exit 0
