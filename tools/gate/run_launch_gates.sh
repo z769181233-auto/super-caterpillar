@@ -106,9 +106,14 @@ pick_first_2xx() {
   return 1
 }
 # 报告文件
-REPORT_FILE="$REPORT_DIR/GATEKEEPER_VERIFICATION_REPORT.md"
-mkdir -p "$PROJECT_ROOT/.tmp"
-TEMP_DIR="$(mktemp -d "$PROJECT_ROOT/.tmp/gates.XXXXXX")"
+TS="$(date +%Y%m%d_%H%M%S)"
+EVI_DIR="$PROJECT_ROOT/docs/_evidence/run_launch_gates_${TS}"
+mkdir -p "$EVI_DIR"
+REPORT_FILE="$EVI_DIR/GATEKEEPER_VERIFICATION_REPORT.md"
+
+TEMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t scu_gates)"
+cleanup() { rm -rf "$TEMP_DIR" 2>/dev/null || true; }
+trap cleanup EXIT
 
 # --- Auto-fill required env for full-auto gates (best-effort) ---
 # 统一的鉴权 Header（env 中只存裸 token，在这里拼接 Bearer）
@@ -238,14 +243,14 @@ HEALTH_URL=$(pick_first_2xx \
   "${API_URL}/health" \
   "${API_URL}/api/healthz" \
   "${API_URL}/healthz" \
-)
+ || true)
 
 READY_URL=$(pick_first_2xx \
   "${API_URL}/api/health/ready" \
   "${API_URL}/health/ready" \
   "${API_URL}/api/ready" \
   "${API_URL}/ready" \
-)
+ || true)
 
 # 检查 API 健康
 if [ -n "$HEALTH_URL" ] && curl -s -f "$HEALTH_URL" > /dev/null 2>&1; then
@@ -382,6 +387,7 @@ fi
 
 # 门禁 3: Signed URL 全自动真验
 echo -e "${BLUE}Gate 3: Signed URL Full Auto Test${NC}"
+ORIG_BYPASS="${SCU_GATE_ALLOW_TEMP_BYPASS-__UNSET__}"
 echo "Testing signed URL security with real endpoints..."
 
 SIGNED_URL_PASSED=true
@@ -558,6 +564,12 @@ if [ "$SIGNED_URL_PASSED" = true ]; then
     echo -e "${GREEN}✅ Gate 3 passed${NC}\n"
 else
     echo -e "${RED}❌ Gate 3 failed${NC}\n"
+fi
+
+if [[ "$ORIG_BYPASS" == "__UNSET__" ]]; then
+  unset SCU_GATE_ALLOW_TEMP_BYPASS
+else
+  export SCU_GATE_ALLOW_TEMP_BYPASS="$ORIG_BYPASS"
 fi
 
 # 门禁 4: Video E2E 测试
