@@ -204,6 +204,20 @@ EOF
 
 ALL_GATES_PASSED=true
 
+# --- Stability & Hygiene Pre-Gates ---
+echo -e "${BLUE}Stability Gate: Repo Root Pollution Check${NC}"
+if ! bash tools/gate/gates/gate_repo_root_pollution.sh; then
+    echo -e "${RED}❌ Stability check failed${NC}"
+    exit 1
+fi
+
+echo -e "${BLUE}Hygiene Gate: Billing Doc Hygiene Check${NC}"
+if ! bash tools/gate/gates/gate_billing_doc_hygiene.sh; then
+    echo -e "${RED}❌ Hygiene check failed${NC}"
+    exit 1
+fi
+echo ""
+
 # 门禁 1: Preflight 检查（含 CORS 生产验证）
 echo -e "${BLUE}Gate 1: Preflight Check + CORS Production Validation${NC}"
 echo "Running preflight checks..."
@@ -942,6 +956,34 @@ else
     echo -e "${RED}❌ Gate 15 failed${NC}\n"
 fi
 
+# 门禁 16: Billing Documentation Hygiene
+echo -e "${BLUE}Gate 16: Billing Documentation Hygiene${NC}"
+echo "Checking documentation consistency for billing units..."
+
+DOC_HYGIENE_PASSED=true
+DOC_HYGIENE_OUTPUT="$TEMP_DIR/doc_hygiene.txt"
+
+if [ -f "$PROJECT_ROOT/tools/gate/gates/gate_billing_doc_hygiene.sh" ]; then
+    if bash "$PROJECT_ROOT/tools/gate/gates/gate_billing_doc_hygiene.sh" > "$DOC_HYGIENE_OUTPUT" 2>&1; then
+        echo -e "  ${GREEN}✅ Billing Documentation Hygiene check passed${NC}"
+        echo "- ✅ Billing Documentation Hygiene check passed" >> "$DOC_HYGIENE_OUTPUT"
+    else
+        echo -e "  ${RED}❌ Billing Documentation Hygiene check failed${NC}"
+        echo "- ❌ Billing Documentation Hygiene check failed" >> "$DOC_HYGIENE_OUTPUT"
+        DOC_HYGIENE_PASSED=false
+    fi
+else
+    echo -e "  ${YELLOW}⚠️  Doc hygiene gate script not found${NC}"
+    echo "- ⚠️  Doc hygiene gate script not found" >> "$DOC_HYGIENE_OUTPUT"
+    DOC_HYGIENE_PASSED=false
+fi
+
+if [ "$DOC_HYGIENE_PASSED" = true ]; then
+    echo -e "${GREEN}✅ Gate 16 passed${NC}\n"
+else
+    echo -e "${RED}❌ Gate 16 failed${NC}\n"
+fi
+
 # 初始化商业级报告头部
 {
   echo "# GATEKEEPER VERIFICATION REPORT (Refinement Sealed)"
@@ -1011,6 +1053,9 @@ fi
   echo ""
   echo "### Gate 15: CE11 Shot Generator Integration"
   cat "$CE11_OUTPUT"
+  echo ""
+  echo "### Gate 16: Billing Documentation Hygiene"
+  cat "$DOC_HYGIENE_OUTPUT"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 {
@@ -1032,14 +1077,15 @@ fi
   echo "- Gate 13 (CE01 Protocol): $([ "$CE01_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 14 (CE02 Visual Density): $([ "$CE02_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 15 (CE11 Shot Generator): $([ "$CE11_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 16 (Billing Documentation Hygiene): $([ "$DOC_HYGIENE_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo ""
   echo "## Gate Mode Semantics"
   echo "- **MODE**: $GATE_ENV_MODE"
   if [ "$GATE_ENV_MODE" = "local" ]; then
     echo "- **Skipped Gates (local mode)**: Gate 4, 5, 7, 8, 9, 11, 12"
-    echo "- **Required Gates**: Gate 1, 2, 3, 6, 10, 13, 14, 15"
+    echo "- **Required Gates**: Gate 1, 2, 3, 6, 10, 13, 14, 15, 16"
   else
-    echo "- **Required Gates**: 1-15 (ALL REQUIRED)"
+    echo "- **Required Gates**: 1-16 (ALL REQUIRED)"
   fi
 } | evidence_pipe "" >> "$REPORT_FILE"
 
@@ -1058,6 +1104,7 @@ ALL_PASSED=true
 [ "$CE01_PASSED" != true ] && ALL_PASSED=false
 [ "$CE02_PASSED" != true ] && ALL_PASSED=false
 [ "$CE11_PASSED" != true ] && ALL_PASSED=false
+[ "$DOC_HYGIENE_PASSED" != true ] && ALL_PASSED=false
 
 # 只有在非 local 模式下，4/5 的失败才影响最终结果
 if [ "$GATE_ENV_MODE" != "local" ]; then

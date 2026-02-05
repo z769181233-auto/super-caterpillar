@@ -6,6 +6,10 @@ set -euo pipefail
 # [G0] Anti-Bypass Discipline Enforcer
 bash tools/gate/gates/gate-no-bypass-commit.sh
 
+# [G0.1] Repo Stability & Hygiene Gates (Critical)
+bash tools/gate/gates/gate_repo_root_pollution.sh
+bash tools/gate/gates/gate_billing_doc_hygiene.sh
+
 # Currently requires L3 Seal Verification
 bash tools/gate/gates/gate-orch-v2-audio-l3-manifest.sh
 

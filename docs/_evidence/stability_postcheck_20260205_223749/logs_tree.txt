@@ -1,0 +1,11 @@
+logs:
+total 122744
+drwxr-xr-x@   9 adam  staff   288B  2  5 22:32 .
+drwxr-xr-x@ 233 adam  staff   7.3K  2  5 22:34 ..
+-rw-r--r--@   1 adam  staff   4.2M  2  5 22:37 api_audit.log
+-rw-r--r--@   1 adam  staff   282K  2  1 23:11 api_dev.log
+-rw-r--r--@   1 adam  staff    23M  1 16 20:37 api.log
+-rw-r--r--@   1 adam  staff   340K  2  5 22:37 worker_audit.log
+-rw-r--r--@   1 adam  staff   184K  2  1 23:01 worker_dev.log
+-rw-r--r--@   1 adam  staff   1.4M  1 17 08:34 worker_real.log
+-rw-r--r--@   1 adam  staff    30M  1 17 08:34 worker.log
