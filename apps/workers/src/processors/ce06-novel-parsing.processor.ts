@@ -459,8 +459,11 @@ async function executeChunkParseJob(
 
   // P6-1-5: 业务计费 - Job SUCCEEDED 时自动扣费
   const charCount = payload.charCount || 0;
-  if (charCount > 0) {
-    logger.log(`[BILLING] Job ${job.id} SUCCEEDED, posting charge for ${charCount} chars`);
+  // 核心纠正：10000 字符 = 1 Credit (ceil)
+  const amount = Math.ceil(charCount / 10000);
+
+  if (amount > 0) {
+    logger.log(`[BILLING] Job ${job.id} SUCCEEDED, charCount: ${charCount}, posting charge for ${amount} credits`);
     try {
       const tenantId = 'default'; // 默认租户
 
@@ -487,11 +490,11 @@ async function executeChunkParseJob(
             itemType: 'JOB',
             itemId: job.id,
             chargeCode: 'SCAN_CHAR',
-            amount: charCount,
+            amount: amount, // 以 credits 为单位
             status: 'POSTED',
           },
         });
-        logger.log(`[BILLING] Posted charge for Job ${job.id}: ${charCount} chars`);
+        logger.log(`[BILLING] Posted charge for Job ${job.id}: ${amount} credits`);
       }
     } catch (error: any) {
       logger.error(`[BILLING] Failed to post charge for Job ${job.id}:`, error.message);

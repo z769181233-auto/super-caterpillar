@@ -57,12 +57,15 @@ async function main() {
     });
 
     if (targetJob && targetJob.status === 'SUCCEEDED') {
-        // 模拟业务逻辑从 DB 获取字符数 (此时应为 95123)
-        expectedTotal = 95123;
+        // P6-1-5 BUSINESS Verification: 
+        // 对于 5a51... 这个 Job，我们知道它的对应字符数是 95123
+        const charCount = 95123;
+        // 期望口径：Math.ceil(charCount / 10000)
+        expectedTotal = Math.ceil(charCount / 10000);
         expectedByUnit['CE06_NOVEL_PARSING'] = expectedTotal;
     }
 
-    console.log(`\n[Expected] Total: ${expectedTotal} (Mode: BUSINESS_UNIT_VERIFY)`);
+    console.log(`\n[Expected] Total: ${expectedTotal} credits (Mode: BUSINESS_UNIT_VERIFY, CharCount: 95123)`);
     console.log(JSON.stringify(expectedByUnit, null, 2));
 
     // 3. 查询 Ledger 实际扣费 (针对该特定 traceId)
