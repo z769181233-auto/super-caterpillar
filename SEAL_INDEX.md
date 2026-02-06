@@ -30,3 +30,13 @@
   - **Notes**: 
     - 本地 Git 环境，无远程 GitHub Actions
     - CI 模式验证通过（本地执行）
+
+  ## Week 1 D2/D3 ENGINE SANITY (PATCH SEALED)
+  - **Status**: Sanity Gate HARDENED
+  - **Primary Tag**: W1_D2D3_ENGINE_SANITY_HARDEN_SEALED_20260206_200413
+  - **Evidence**: docs/_evidence/week1_d2d3_engine_sanity_patch_20260206_200413/
+  - **Test Log**: docs/_evidence/week1_d2d3_engine_sanity_patch_20260206_200413/test_log.txt
+  - **Changes**:
+    - Hardened gate_engine_sanity.sh with PROJECT_ROOT/TEMP_DIR/sha256 improvements.
+    - Implemented "threshold fail" for black frame detection.
+    - Verified with tools/gate/tests/test_gate_engine_sanity.sh (good/black videos).
