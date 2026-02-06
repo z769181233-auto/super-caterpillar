@@ -121,7 +121,7 @@ EVI_DIR="$PROJECT_ROOT/docs/_evidence/run_launch_gates_${TS}"
 mkdir -p "$EVI_DIR"
 REPORT_FILE="$EVI_DIR/GATEKEEPER_VERIFICATION_REPORT.md"
 
-TEMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t scu_gates)"
+TEMP_DIR="${TEMP_DIR:-$(mktemp -d 2>/dev/null || mktemp -d -t scu_gates)}"
 cleanup() {
   cd "$ORIG_PWD" 2>/dev/null || true
   rm -rf "$TEMP_DIR" 2>/dev/null || true
@@ -431,7 +431,7 @@ else
     echo "  [Setup] Seeding DB asset for Gate 3 strict check..."
     # 确保 Prisma Client 最新，防止 MODULE_NOT_FOUND
     if [ -d "$PROJECT_ROOT/packages/database" ]; then
-      (cd "$PROJECT_ROOT/packages/database" && pnpm -w exec prisma generate >/dev/null)
+      (cd "$PROJECT_ROOT/packages/database" && pnpm prisma:generate >/dev/null)
     fi
     export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
     pnpm -w exec tsx "$PROJECT_ROOT/tools/gate/scripts/ensure_gate3_data.ts"
@@ -1029,20 +1029,37 @@ if [[ "${ENGINE_REAL:-0}" == "1" ]]; then
     echo "Engine Sanity Check enabled (ENGINE_REAL=1)"
     echo "Validating real engine output (vs Mock placeholder)..."
     
-    if [ -f "$PROJECT_ROOT/tools/gate/gates/gate_engine_sanity.sh" ]; then
-        # Note: gate_engine_sanity.sh 需要 OUTPUT_FILE 环境变量指向真实生成的视频/图片
-        # 这里暂时跳过执行，等待与真实 SHOT_RENDER job 集成
-        echo -e "  ${YELLOW}⚠️  Engine Sanity script exists, but requires OUTPUT_FILE integration${NC}"
-        echo "  To run: OUTPUT_FILE=/path/to/real/output.mp4 bash tools/gate/gates/gate_engine_sanity.sh"
-        echo "- ⚠️  Engine Sanity script exists (requires OUTPUT_FILE)" >> "$ENGINE_SANITY_OUTPUT"
-        # 暂不标记为失败，等待后续集成
-    else
-        echo -e "  ${YELLOW}⚠️  Engine Sanity gate script not found${NC}"
-        echo "- ⚠️  Engine Sanity gate script not found" >> "$ENGINE_SANITY_OUTPUT"
+    # --- Week1 D4: Real SHOT_RENDER artifact contract ---
+    ART_DIR="$EVI_DIR/artifacts"
+    mkdir -p "$ART_DIR"
+    REAL_MP4="$ART_DIR/shot_render_output.mp4"
+
+    # NOTE: In a real run, the SHOT_RENDER producer should have placed/downloaded the file here.
+    # For verification within this script, we check its presence.
+    if [[ ! -f "$REAL_MP4" ]]; then
+      echo -e "  ${YELLOW}⚠️  D4: real output missing at $REAL_MP4${NC}"
+      echo "  Checking for any generated mp4 in $TEMP_DIR..."
+      # Fallback/Auto-detect for dev convenience: if something exists in TEMP_DIR, copy it
+      FOUND_MP4=$(find "$TEMP_DIR" -maxdepth 1 -name "*.mp4" | head -n1 || true)
+      if [[ -n "$FOUND_MP4" ]]; then
+        echo "  Found $FOUND_MP4, copying to $REAL_MP4"
+        cp "$FOUND_MP4" "$REAL_MP4"
+      fi
     fi
-    
-    # 在与真实引擎集成前，暂不强制失败
-    echo -e "${GREEN}✅ Gate 17 skipped (awaiting real engine integration)${NC}\n"
+
+    if [ -f "$REAL_MP4" ] && [ -s "$REAL_MP4" ]; then
+        echo "[GATE17] ENGINE_REAL=1 → running engine sanity on: $REAL_MP4"
+        OUTPUT_FILE="$REAL_MP4" \
+        EVIDENCE_DIR="$EVI_DIR/gate17_engine_sanity" \
+        bash tools/gate/gates/gate_engine_sanity.sh || {
+          echo -e "  ${RED}❌ Gate 17 failed (Real Engine)${NC}"
+          ENGINE_SANITY_PASSED=false
+        }
+    else
+        echo -e "  ${RED}❌ D4: real output missing or empty: $REAL_MP4${NC}"
+        echo "- ❌ D4: real output missing or empty" >> "$ENGINE_SANITY_OUTPUT"
+        ENGINE_SANITY_PASSED=false
+    fi
 else
     echo -e "  ${YELLOW}⚠️  Engine Sanity Check skipped (set ENGINE_REAL=1 to enable)${NC}"
     echo "- ⚠️  Engine Sanity Check skipped (ENGINE_REAL=0)" >> "$ENGINE_SANITY_OUTPUT"
@@ -1059,13 +1076,11 @@ fi
     echo "> [!NOTE]"
     echo "> **LOCAL/CI MODE**: Skipping Costly/Credit-Consuming Gates (Gate 4, 5)"
     echo "> Focus: Functional correctness, API contract, Security, and Code Hygiene."
-  else
-    echo "> **STAGING MODE**: FULL VERIFICATION (All Gates Required)"
-    echo "> Focus: Commercial Readiness, SLO Compliance, and Full E2E flows."
-  fi
     echo "> **MODE = local**: Gate 4/5 设为 **SKIP** (不计入最终失败)，本地开发优先保持稳定全绿。"
   else
     echo "> [!IMPORTANT]"
+    echo "> **STAGING MODE**: FULL VERIFICATION (All Gates Required)"
+    echo "> Focus: Commercial Readiness, SLO Compliance, and Full E2E flows."
     echo "> **MODE = staging**: 所有 Gate 均为 **REQUIRED**，必须全量通过方可交付。"
   fi
   echo ""
