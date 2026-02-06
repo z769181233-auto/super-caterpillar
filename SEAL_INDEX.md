@@ -43,7 +43,7 @@
 
   ## Week 1 D4 WIRING INTEGRATION (SEALED)
   - **Status**: E2E Wiring SEALED (Surrogate Validated)
-  - **Primary Tag**: W1_D4_WIRING_SURROGATE_SEALED_<PENDING_TS>
+  - **Primary Tag**: W1_D4_WIRING_SURROGATE_SEALED_20260206_202826
   - **Supersedes**: W1_D4_REAL_ENGINE_SEALED_20260206_201957 (Misnamed; wiring/surrogate focus)
   - **Evidence**: docs/_evidence/week1_d4_engine_real_seal_20260206_201957/
   - **Gate Result**: Gate 17 PASS (Validated with surrogate high-bitrate mp4)
