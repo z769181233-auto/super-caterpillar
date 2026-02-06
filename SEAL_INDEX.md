@@ -41,9 +41,11 @@
     - Implemented "threshold fail" for black frame detection.
     - Verified with tools/gate/tests/test_gate_engine_sanity.sh (good/black videos).
 
-  ## Week 1 D4 REAL ENGINE INTEGRATION (SEALED)
-  - **Status**: E2E Wiring SEALED (Gate 17 + Real Artifact)
-  - **Primary Tag**: W1_D4_REAL_ENGINE_SEALED_20260206_201957
+  ## Week 1 D4 WIRING INTEGRATION (SEALED)
+  - **Status**: E2E Wiring SEALED (Surrogate Validated)
+  - **Primary Tag**: W1_D4_WIRING_SURROGATE_SEALED_<PENDING_TS>
+  - **Supersedes**: W1_D4_REAL_ENGINE_SEALED_20260206_201957 (Misnamed; wiring/surrogate focus)
   - **Evidence**: docs/_evidence/week1_d4_engine_real_seal_20260206_201957/
-  - **Gate Result**: Gate 17 PASS (Real surrogate mp4: 523KB, Black=0s)
+  - **Gate Result**: Gate 17 PASS (Validated with surrogate high-bitrate mp4)
   - **Artifact Path**: artifacts/shot_render_output.mp4 (SSOT contract)
+  - **Notes**: Validated gate wiring + blackdetect logic; real SHOT_RENDER engine provenance (job/ledger) not sealed in Week 1.
