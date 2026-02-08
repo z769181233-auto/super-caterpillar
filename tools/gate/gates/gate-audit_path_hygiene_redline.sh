@@ -24,7 +24,8 @@ while read -r f; do
 
   # 匹配绝对路径模式 (Unix /Users, /home, /root; Windows C:\)
   # 并在匹配时排除典型的合法引用
-  bad_line=$(grep -E "/Users/|/home/|/root/|[A-Za-z]:\\\\" "$f" | \
+  # [V1.1 Fix] Windows path matching requires a space or start of line to avoid false positives like "Expected:\s"
+  bad_line=$(grep -E "/Users/|/home/|/root/|([[:space:]\"']|^)[A-Za-z]:\\\\" "$f" | \
              grep -vE "http|https|git@|docker|node:" | \
              head -n 1 || true)
 
