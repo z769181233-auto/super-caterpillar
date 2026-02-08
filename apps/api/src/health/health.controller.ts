@@ -9,7 +9,7 @@ export class HealthController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService?: RedisService
-  ) {}
+  ) { }
 
   @Get('/health')
   health() {
@@ -96,6 +96,21 @@ export class HealthController {
       ]
     );
 
+    // P5-1: Unified Scrape - Include Worker Metrics
+    let workerMetrics = '';
+    const workerMetricsPort = process.env.WORKER_METRICS_PORT || 3001;
+    try {
+      // Use dynamic import for axios to avoid static dependency in health check
+      const axios = (await import('axios')).default;
+      const workerResp = await axios.get(`http://127.0.0.1:${workerMetricsPort}/metrics`, {
+        timeout: 500,
+        validateStatus: (status) => status === 200
+      });
+      workerMetrics = '\n\n# --- Worker Metrics ---\n' + workerResp.data;
+    } catch (e) {
+      workerMetrics = '\n\n# --- Worker Metrics Unavailable ---';
+    }
+
     // Prometheus 格式的指标
     return `# scu_api_metrics
 # HELP scu_api_uptime_seconds API server uptime in seconds
@@ -139,6 +154,8 @@ scu_api_jobs_failed ${failedJobs}
 scu_api_jobs_video_render_pending ${videoRenderPending}
 
 ${TextSafetyMetrics.getPrometheusOutput()}
+
+${workerMetrics}
 `;
   }
 

@@ -1,6 +1,7 @@
 import * as util from 'util';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import './observability/stage4.metrics'; // P5-1: Register Stage4 metrics on startup
 
 // Load root .env (assuming CWD is apps/workers)
 const envPath = path.resolve(process.cwd(), '../../.env');
@@ -86,13 +87,13 @@ async function boot() {
       } else {
         process.stderr.write(
           util.format('[Bootstrap] Production mode: Continuing with WARNING (jobs will fail)') +
-            '\n'
+          '\n'
         );
       }
     } else {
       process.stdout.write(
         util.format('[Bootstrap] ✅ DMMF Self-Check PASSED: All required Shot fields present') +
-          '\n'
+        '\n'
       );
     }
 

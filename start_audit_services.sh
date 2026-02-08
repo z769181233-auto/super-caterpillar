@@ -13,6 +13,8 @@ echo "Starting API..."
 export REPO_ROOT="${PROJECT_ROOT}"
 echo "REPO_ROOT set to: ${REPO_ROOT}"
 export NODE_OPTIONS="--max-old-space-size=4096"
+export HMAC_DEBUG="1"
+export TS_NODE_TRANSPILE_ONLY="1"
 mkdir -p logs .data/pids
 pnpm -C apps/api dev > logs/api_audit.log 2>&1 &
 API_PID=$!
@@ -38,6 +40,7 @@ echo -e "\n✅ API is up."
 # 3. Start Worker
 echo "Starting Worker..."
 export NODE_OPTIONS="--max-old-space-size=4096"
+export WORKER_METRICS_PORT=3001
 pnpm -C apps/workers dev > logs/worker_audit.log 2>&1 &
 WORKER_PID=$!
 
