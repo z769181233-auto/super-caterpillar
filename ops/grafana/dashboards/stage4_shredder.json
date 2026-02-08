@@ -1,0 +1,46 @@
+{
+    "title": "Stage4 - The Shredder",
+    "timezone": "browser",
+    "panels": [
+        {
+            "type": "timeseries",
+            "title": "Jobs Succeeded/Failed (rate)",
+            "targets": [
+                {
+                    "expr": "rate(scu_stage4_jobs_total{status=\"SUCCEEDED\"}[5m])",
+                    "refId": "A"
+                },
+                {
+                    "expr": "rate(scu_stage4_jobs_total{status=\"FAILED\"}[5m])",
+                    "refId": "B"
+                }
+            ]
+        },
+        {
+            "type": "timeseries",
+            "title": "Duration p50/p95 (sec)",
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.50, sum(rate(scu_stage4_duration_seconds_bucket[10m])) by (le))",
+                    "refId": "A"
+                },
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(scu_stage4_duration_seconds_bucket[10m])) by (le))",
+                    "refId": "B"
+                }
+            ]
+        },
+        {
+            "type": "timeseries",
+            "title": "Peak RSS (MB)",
+            "targets": [
+                {
+                    "expr": "max_over_time(scu_stage4_peak_rss_mb[10m])",
+                    "refId": "A"
+                }
+            ]
+        }
+    ],
+    "schemaVersion": 38,
+    "version": 1
+}
