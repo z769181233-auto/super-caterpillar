@@ -13,13 +13,13 @@
 
 ### 阶段 P0：硬前提与污染治理
 
-#### [MODIFY] [run_production_pilot.ts](file:///tools/production/run_production_pilot.ts)
+#### [MODIFY] [run_production_pilot.ts](tools/production/run_production_pilot.ts)
 - 将 `PROJECT_ID` 修改为基于 `TRACE_ID` 的动态名称（格式：`prod-pilot-${RUN_ID}`）。
 
 #### [MODIFY] 处理器调试清理
 - 检查 `apps/workers/src/processors/` 目录下所有处理器，清理形如 `debug_ce06.txt` 的根目录写入行为，统一重定向至 `.data/`。
 
-#### [MODIFY] [timeline-render.processor.ts](file:///apps/workers/src/processors/timeline-render.processor.ts)
+#### [MODIFY] [timeline-render.processor.ts](apps/workers/src/processors/timeline-render.processor.ts)
 - 锁死渲染逻辑：必须存在 `AssetType.VIDEO` 资产才允许进行 Concat。
 - 移除所有 `testsrc`, `noise`, `dummy` 等兜底生成逻辑，遇到此类路径直接报错。
 
@@ -27,14 +27,14 @@
 
 ### 阶段 P1：接入 ComfyUI (图片生成)
 
-#### [NEW] [comfyui_client.ts](file:///tools/prod/comfyui_client.ts)
+#### [NEW] [comfyui_client.ts](tools/prod/comfyui_client.ts)
 - 实现通用 ComfyUI 客户端，支持 `prompt` 提交、`history` 轮询及产物下载。
 
-#### [MODIFY] [run_character_turnaround.ts](file:///tools/prod/run_character_turnaround.ts)
+#### [MODIFY] [run_character_turnaround.ts](tools/prod/run_character_turnaround.ts)
 - 接入 ComfyUI 生成角色 `front`, `side`, `back` 三视图图片。
 - 生成后图片存储于 `.data/storage/characters/` 并落库 `Asset` 表。
 
-#### [MODIFY] [ce04-visual-enrichment.processor.ts](file:///apps/workers/src/processors/ce04-visual-enrichment.processor.ts)
+#### [MODIFY] [ce04-visual-enrichment.processor.ts](apps/workers/src/processors/ce04-visual-enrichment.processor.ts)
 - 提交 `shot.prompt` 至 ComfyUI 生成 `keyframe.png`。
 - 落库 `Asset(ownerType=SHOT, type=IMAGE)`。
 - 生成绝对路径索引的 `frames.txt`。
@@ -43,7 +43,7 @@
 
 ### 阶段 P2：ShotRender 2.5D 化 (真画面+运动)
 
-#### [MODIFY] [shot-render.local.adapter.ts](file:///apps/api/src/engines/adapters/shot-render.local.adapter.ts)
+#### [MODIFY] [shot-render.local.adapter.ts](apps/api/src/engines/adapters/shot-render.local.adapter.ts)
 - 使用 `keyframe.png` 作为输入，通过 FFmpeg `zoompan` 滤镜实现 2.5D 动态效果。
 - 输出固定命名为 `source.mp4` 并落库 `Asset(ownerType=SHOT, type=VIDEO)`。
 - 增加基础质量断言：时长 >= 4s, 大小 >= 1MB, 黑帧比例 < 10%。
@@ -60,7 +60,7 @@
 
 ### 阶段 P4：门禁 (非占位符 Gate)
 
-#### [NEW] [gate_non_placeholder_video.sh](file:///tools/gate/gates/gate_non_placeholder_video.sh)
+#### [NEW] [gate_non_placeholder_video.sh](tools/gate/gates/gate_non_placeholder_video.sh)
 - 实现黑帧检测、时长/码率检测。
 - 检测命令行或日志中是否包含 `testsrc`, `smptebars`, `color`, `noise` 等占位符特征。
 
@@ -68,7 +68,7 @@
 
 ### 阶段 P5：崩坏治理与自愈 (Self-Healing)
 
-#### [MODIFY] [start_audit_services.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/start_audit_services.sh)
+#### [MODIFY] [start_audit_services.sh](start_audit_services.sh)
 - 优化进程管理：启动前先通过端口检查精准杀掉存量进程（而非盲目 pkill node）。
 - 增加服务健康度强制等待：API 未就绪前，禁止启动 Worker 和 Pilot。
 
@@ -96,7 +96,7 @@
 
 ### 阶段 P6-0: 15M Import OOM 治理
 
-#### [FIX] [start_audit_services.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/start_audit_services.sh)
+#### [FIX] [start_audit_services.sh](start_audit_services.sh)
 - 增加 `NODE_OPTIONS="--max-old-space-size=4096"`，为 API 和 Worker 进程分配 4GB 内存，防止 15M 文本处理时 OOM。
 
 ### 阶段 P6-0: Operational Grade 15M Import
