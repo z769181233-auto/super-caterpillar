@@ -113,7 +113,7 @@
   - `tools/gate/gates/phase5_seal_finalize.sh` (Hard-seal Control)
   - `tools/gate/gates/gate_phase5_p11_assert.sh` (Self-assertion / ALL PASS)
 - **SSOT Reference**: `MONITORING_SSOT.json` v3
-- **Commit SHA**: 49337d94c2fe9d74fc3f09ef8b683f2a3989d944
+- **Commit SHA**: 75665ae08c7a6d4a735fb6725715c38cd5ab1489
 - **Verification Highlights**:
   - ✅ **SLO Truth Layer**: Prometheus Histogram (`_bucket`) confirmed for duration.
   - ✅ **Security Matrix**: Unauthorized `/api/admin/metrics/p1` returns 401/403.
