@@ -208,19 +208,6 @@ async function bootstrap() {
     process.stderr.write(util.format('[P0_EVIDENCE] Failed to check modules:', e) + '\n');
   }
 
-  // Observability: Prometheus Metrics Endpoint
-  const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.get('/metrics', async (_req: any, res: any) => {
-    try {
-      // Lazy load prom-client to avoid critical startup dependency if missing
-      const client = await import('prom-client');
-      res.set('Content-Type', client.register.contentType);
-      res.end(await client.register.metrics());
-    } catch (e) {
-      res.status(500).send('Metrics unavailable');
-    }
-  });
-
   const logger = app.get(Logger);
   logger.log(`🚀 API Server is running on: http://localhost:${port}`);
 }
