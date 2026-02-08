@@ -27,7 +27,7 @@
   "evidence": {
     "root": "docs/_evidence",
     "run_dir_prefix": "post_sealed_governance",
-    "dir_regex": "^[_a-zA-Z0-9]+(_[a-zA-Z0-9]+)*$",
+    "dir_regex": "^[_a-zA-Z0-9.-]+$",
     "required_artifacts": [
       "RUN_LOG.txt",
       "SUMMARY.json",
