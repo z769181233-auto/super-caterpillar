@@ -104,17 +104,30 @@ logs/
 api_startup.log
 api_direct.log
 
-# --- Evidence vs Release Hygiene (Governance) ---
-# Ensure evidence directories are traversable
-!docs/_evidence/
-!docs/_evidence_archived/
-!docs/_evidence/*/
-!docs/_evidence_archived/*/
+# ============================
+# Evidence vs Release Hygiene (SSOT)
+# ============================
 
-# Default: ignore logs everywhere (Release Surface)
+# Default: ignore logs & outs everywhere (Release Surface)
 *.log
 *.out
 
-# Evidence surface: allow logs as auditable artifacts
-!docs/_evidence*/**/*.log
-!docs/_evidence*/**/*.out
+# Evidence roots must be traversable
+!docs/_evidence/
+!docs/_evidence/**/
+!docs/_evidence_archived/
+!docs/_evidence_archived/**/
+
+# Evidence surface: allow audit logs/outs as artifacts
+!docs/_evidence/**/*.log
+!docs/_evidence/**/*.out
+!docs/_evidence_archived/**/*.log
+!docs/_evidence_archived/**/*.out
+
+# Evidence surface: still ban noisy runtime logs (keep audit snapshots only)
+docs/_evidence/**/api.log
+docs/_evidence/**/worker.log
+docs/_evidence/**/gate.log
+docs/_evidence_archived/**/api.log
+docs/_evidence_archived/**/worker.log
+docs/_evidence_archived/**/gate.log
