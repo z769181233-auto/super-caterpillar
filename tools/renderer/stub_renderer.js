@@ -9,7 +9,7 @@ const { execSync } = require('child_process');
 
 // Use generated background if exists
 const MOCK_BG =
-  '/Users/adam/.gemini/antigravity/brain/b4cb3338-b254-46f7-af60-1bf231055ea5/ancient_chinese_mansion_bg_jpg_1769609041912.png';
+  'ancient_chinese_mansion_bg_jpg_1769609041912.png';
 
 function renderStub(planPath, rawOutputMp4, eviDir) {
   const plan = JSON.parse(fs.readFileSync(planPath, 'utf8'));

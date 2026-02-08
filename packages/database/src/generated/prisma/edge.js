@@ -1356,7 +1356,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/generated/prisma",
+      "value": "packages/database/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -1370,7 +1370,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/prisma/schema.prisma",
+    "sourceFilePath": "packages/database/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

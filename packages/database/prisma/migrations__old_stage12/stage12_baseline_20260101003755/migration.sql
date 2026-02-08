@@ -1,5 +1,5 @@
 
-> database@1.0.0 prisma /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+> database@1.0.0 prisma packages/database
 > prisma "migrate" "diff" "--from-empty" "--to-schema-datamodel" "prisma/schema.prisma" "--script"
 
 -- CreateEnum

@@ -2,7 +2,7 @@
 [CONFIG_DEBUG] JWT_SECRET read from env: 4c37...
 [PrismaService] Prisma Client 诊断信息: {
   prismaClientSource: 'PrismaService',
-  prismaClientPath: '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/index.ts',
+  prismaClientPath: 'packages/database/src/index.ts',
   hasNonceStore: true,
   hasMemoryShortTerm: true,
   hasMemoryUpdateLog: true,
@@ -63,7 +63,7 @@
 [PermissionService] 构造成功，PrismaService 已注入
 [PrismaService] Prisma Client 诊断信息: {
   prismaClientSource: 'PrismaService',
-  prismaClientPath: '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/index.ts',
+  prismaClientPath: 'packages/database/src/index.ts',
   hasNonceStore: true,
   hasMemoryShortTerm: true,
   hasMemoryUpdateLog: true,

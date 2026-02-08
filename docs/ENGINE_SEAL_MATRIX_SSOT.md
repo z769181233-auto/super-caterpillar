@@ -9,9 +9,9 @@
 
 | 维度                             | 状态             | 验证人      | 证据链                                                                                                                                                                                                                                           |
 | :------------------------------- | :--------------- | :---------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **L1: Code Quality**             | ✅ SEALED        | Antigravity | [OrchestratorService](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/apps/api/src/orchestrator/orchestrator.service.ts)                                                                                                          |
-| **L2: Cross-Engine Integration** | ✅ SEALED (Real) | Antigravity | [gate-orch-v2-audio-l2-real.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate-orch-v2-audio-l2-real.sh)                                                                                                   |
-| **L3: Indisputable Determinism** | ✅ CI Enabled    | Antigravity | [L3 Manifest](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/ORCH_V2_AUDIO_L3_MANIFEST.json) + [CI Gate](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate-orch-v2-audio-l3-manifest.sh) |
+| **L1: Code Quality**             | ✅ SEALED        | Antigravity | [OrchestratorService](../apps/api/src/orchestrator/orchestrator.service.ts)                                                                                                          |
+| **L2: Cross-Engine Integration** | ✅ SEALED (Real) | Antigravity | [gate-orch-v2-audio-l2-real.sh](../tools/gate/gates/gate-orch-v2-audio-l2-real.sh)                                                                                                   |
+| **L3: Indisputable Determinism** | ✅ CI Enabled    | Antigravity | [L3 Manifest](ORCH_V2_AUDIO_L3_MANIFEST.json) + [CI Gate](../tools/gate/gates/gate-orch-v2-audio-l3-manifest.sh) |
 
 ---
 
@@ -47,24 +47,24 @@
 
 | 维度                             | 状态                        | 验证人      | 证据链                                                                                                                                                                                     |
 | :------------------------------- | :-------------------------- | :---------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **L1: Code Quality**             | ✅ SEALED                   | Antigravity | [JobService.create](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/apps/api/src/job/job.service.ts#L133)                                                                   |
-| **L2: Contract + Job Loop**      | ✅ SEALED (DB Optional)     | Antigravity | [W3-1 L2 Evidence](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/w3_1_seal_fix_20260207_232857/)                                                           |
-| **L3: DB Traceability Required** | ✅ SEALED (Commercial Grade) | Antigravity | [W3-1 L3 Evidence](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/w3_1_l3_db_required_20260208_102428/) |
+| **L1: Code Quality**             | ✅ SEALED                   | Antigravity | [JobService.create](../apps/api/src/job/job.service.ts#L133)                                                                   |
+| **L2: Contract + Job Loop**      | ✅ SEALED (DB Optional)     | Antigravity | [W3-1 L2 Evidence](_evidence/w3_1_seal_fix_20260207_232857/)                                                           |
+| **L3: DB Traceability Required** | ✅ SEALED (Commercial Grade) | Antigravity | [W3-1 L3 Evidence](_evidence/w3_1_l3_db_required_20260208_102428/) |
 
 ### L3 Required Gates
 
 SHOT_RENDER 达到 L3 封板等级时，必须通过以下所有 Gate：
 
 1. **Gate 17**: ORIGIN_NATIVE_DROP Contract  
-   - Script: [gate17.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate17.sh)
+   - Script: [gate17.sh](../tools/gate/gates/gate17.sh)
    - Verifies: 产物文件存在性、SHA256 完整性
 
 2. **Gate 18 (Contract)**: Engine Provenance Contract  
-   - Script: [gate_engine_provenance.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate_engine_provenance.sh)
+   - Script: [gate_engine_provenance.sh](../tools/gate/gates/gate_engine_provenance.sh)
    - Verifies: Provenance JSON 契约约束
 
 3. **Gate 18b (DB Trace Required)**: DB Traceability Enforcement  
-   - Script: [gate18_dbtrace_required.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate18_dbtrace_required.sh)
+   - Script: [gate18_dbtrace_required.sh](../tools/gate/gates/gate18_dbtrace_required.sh)
    - Verifies: `shot_jobs` record, `shot_job_artifacts` records, SHA256 match
    - **Hard Fails**: DATABASE_URL missing (exit 12), DB unreachable (exit 13), records missing (exit 16)
 
@@ -81,8 +81,8 @@ SHOT_RENDER 达到 L3 封板等级时，必须通过以下所有 Gate：
 
 | 维度                             | 状态                        | 验证人      | 证据链                                                                                                                                                                                     |
 | :------------------------------- | :-------------------------- | :---------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **L1: Code Quality**             | ✅ SEALED                   | Antigravity | [StreamScanner](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/packages/ingest/stream_scan.ts)                                                                             |
-| **L2: Scalability & Idempotency**| ✅ SEALED (Logic Verified)  | Antigravity | [Stage 4 Handover](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/stage4_scaling_15m_20260208_142823/)                                                      |
+| **L1: Code Quality**             | ✅ SEALED                   | Antigravity | [StreamScanner](../packages/ingest/stream_scan.ts)                                                                             |
+| **L2: Scalability & Idempotency**| ✅ SEALED (Logic Verified)  | Antigravity | [Stage 4 Handover](_evidence/stage4_scaling_15m_20260208_142823/)                                                      |
 
 ### Verified Capabilities
 - **Streaming**: Byte-range scanning avoids OOM.

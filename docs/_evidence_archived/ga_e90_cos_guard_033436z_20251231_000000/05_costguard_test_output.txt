@@ -3,7 +3,7 @@
 [32m[Nest] 77626  - [39m2025/12/31 10:34:39 [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
 [PrismaService] Prisma Client 诊断信息: {
   prismaClientSource: 'PrismaService',
-  prismaClientPath: '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/index.ts',
+  prismaClientPath: 'packages/database/src/index.ts',
   hasNonceStore: true,
   hasMemoryShortTerm: true,
   hasMemoryUpdateLog: true,
@@ -64,7 +64,7 @@
 [PermissionService] 构造成功，PrismaService 已注入
 [PrismaService] Prisma Client 诊断信息: {
   prismaClientSource: 'PrismaService',
-  prismaClientPath: '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/index.ts',
+  prismaClientPath: 'packages/database/src/index.ts',
   hasNonceStore: true,
   hasMemoryShortTerm: true,
   hasMemoryUpdateLog: true,
@@ -227,7 +227,7 @@ SETTLE_SUCCESS: 33078d6c-d656-49e6-896d-30b40f0d6244
 RELEASE_SUCCESS: 0cc885b9-8a03-4f8d-980f-f3d2b16f7e79
 --- Test Case 5: Idempotency Check ---
 UnknownElementException [Error]: Nest could not find ModuleRef element (this provider does not exist in the current context)
-    at InstanceLinksHost.get (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@nestjs+core@10.4.20_@nestjs+common@10.4.20_class-transformer@0.5.1_class-validator@0.14.3_re_gurxqrqjjjfihi6dsfupr7mtne/node_modules/@nestjs/core/injector/instance-links-host.js:15:19)
-    at NestApplicationContext.find (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@nestjs+core@10.4.20_@nestjs+common@10.4.20_class-transformer@0.5.1_class-validator@0.14.3_re_gurxqrqjjjfihi6dsfupr7mtne/node_modules/@nestjs/core/injector/abstract-instance-resolver.js:8:60)
-    at NestApplicationContext.get (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@nestjs+core@10.4.20_@nestjs+common@10.4.20_class-transformer@0.5.1_class-validator@0.14.3_re_gurxqrqjjjfihi6dsfupr7mtne/node_modules/@nestjs/core/nest-application-context.js:70:20)
-    at run (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/smoke/test_costguard_p0.ts:161:25)
+    at InstanceLinksHost.get (node_modules/.pnpm/@nestjs+core@10.4.20_@nestjs+common@10.4.20_class-transformer@0.5.1_class-validator@0.14.3_re_gurxqrqjjjfihi6dsfupr7mtne/node_modules/@nestjs/core/injector/instance-links-host.js:15:19)
+    at NestApplicationContext.find (node_modules/.pnpm/@nestjs+core@10.4.20_@nestjs+common@10.4.20_class-transformer@0.5.1_class-validator@0.14.3_re_gurxqrqjjjfihi6dsfupr7mtne/node_modules/@nestjs/core/injector/abstract-instance-resolver.js:8:60)
+    at NestApplicationContext.get (node_modules/.pnpm/@nestjs+core@10.4.20_@nestjs+common@10.4.20_class-transformer@0.5.1_class-validator@0.14.3_re_gurxqrqjjjfihi6dsfupr7mtne/node_modules/@nestjs/core/nest-application-context.js:70:20)
+    at run (tools/smoke/test_costguard_p0.ts:161:25)

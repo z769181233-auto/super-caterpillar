@@ -58,7 +58,7 @@ async function main() {
             return {
                 status: 'SUCCESS',
                 output: {
-                    url: input.payload.url || 'file:///tmp/mock_preview_render.mp4',
+                    url: input.payload.url || '/tmp/mock_preview_render.mp4',
                     source: 'render-mock'
                 }
             };

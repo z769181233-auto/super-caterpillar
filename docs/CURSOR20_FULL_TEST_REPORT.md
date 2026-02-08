@@ -196,22 +196,22 @@ turbo 2.6.3
 • Remote caching disabled
 config:build: cache hit, replaying logs 6b6453e70fa12c28
 config:build:
-config:build: > config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+config:build: > config@1.0.0 build packages/config
 config:build: > tsc
 config:build:
 @scu/shared-types:build: cache hit, replaying logs 7bb19518b059ef4d
 @scu/shared-types:build:
-@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build packages/shared-types
 @scu/shared-types:build: > tsc -p tsconfig.build.json
 @scu/shared-types:build:
 database:build: cache hit, replaying logs 447c54f0d577adcb
 database:build:
-database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > database@1.0.0 build packages/database
 database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
 database:build:
 api:typecheck: cache hit, replaying logs 68f7b56f9a16f032
 api:typecheck:
-api:typecheck: > api@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+api:typecheck: > api@1.0.0 typecheck apps/api
 api:typecheck: > tsc -p tsconfig.json --noEmit
 api:typecheck:
 
@@ -230,26 +230,26 @@ api:lint:   29:15  warning  Unexpected any. Specify a different type         @ty
 api:lint:   83:15  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
 api:lint:   85:14  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
 api:lint:
-api:lint: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/text/text.controller.ts
+api:lint: apps/api/src/text/text.controller.ts
 api:lint:   39:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   40:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   66:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   67:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:
-api:lint: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/user/user.controller.ts
+api:lint: apps/api/src/user/user.controller.ts
 api:lint:   22:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   47:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   77:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:
-api:lint: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/user/user.service.ts
+api:lint: apps/api/src/user/user.service.ts
 api:lint:    8:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   14:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   37:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:
-api:lint: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/worker/dto/heartbeat.dto.ts
+api:lint: apps/api/src/worker/dto/heartbeat.dto.ts
 api:lint:   1:10  warning  'IsString' is defined but never used  @typescript-eslint/no-unused-vars
 api:lint:
-api:lint: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/worker/worker-alias.controller.ts
+api:lint: apps/api/src/worker/worker-alias.controller.ts
 api:lint:    35:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:    37:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:    77:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -260,7 +260,7 @@ api:lint:   125:31  warning  Unexpected any. Specify a different type  @typescri
 api:lint:   126:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   127:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:
-api:lint: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/worker/worker.controller.ts
+api:lint: apps/api/src/worker/worker.controller.ts
 api:lint:    30:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:    32:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:    73:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -271,7 +271,7 @@ api:lint:   140:31  warning  Unexpected any. Specify a different type  @typescri
 api:lint:   141:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   142:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:
-api:lint: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/worker/worker.service.ts
+api:lint: apps/api/src/worker/worker.service.ts
 api:lint:    31:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:    51:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:    64:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
@@ -288,11 +288,11 @@ api:lint:   478:39  warning  Unexpected any. Specify a different type  @typescri
 api:lint:   493:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   501:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:
-api:lint: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/test/contract/hmac-nonce.e2e-spec.ts
+api:lint: apps/api/test/contract/hmac-nonce.e2e-spec.ts
 api:lint:   18:9   warning  'API_SECRET' is assigned a value but never used     @typescript-eslint/no-unused-vars
 api:lint:   87:13  warning  'firstResponse' is assigned a value but never used  @typescript-eslint/no-unused-vars
 api:lint:
-api:lint: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/test/hmac-security.e2e-spec.ts
+api:lint: apps/api/test/hmac-security.e2e-spec.ts
 api:lint:   102:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   133:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 api:lint:   194:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any

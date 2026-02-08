@@ -155,7 +155,7 @@ index 7642b162..79bd5a74 100644
  apps/api dev:       },
  apps/api dev:       "remoteAddress": "::1",
 @@ -268,86 +268,86 @@ DB URL: postgresql://postgres:***@localhost:5433/scu?schema=public
-     at async main (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/smoke/e2e_verify.ts:246:9)
+     at async main (tools/smoke/e2e_verify.ts:246:9)
  ❌ E2E Verification Failed! exit=1
  📋 Worker Log Tail:
 -apps/workers dev: [Worker HMAC] POST /api/workers/local-worker/jobs/next nonce=3fd3ba9d... timestamp=1765957461380

@@ -84,7 +84,7 @@ EOF
 # Final ZIP Export
 echo "[5/5] Exporting Final Industrial Package..."
 ZIP_NAME="G4_Sealing_E0001_Final_$(date +%H%M).zip"
-zip -j "/Users/adam/.gemini/antigravity/brain/b4cb3338-b254-46f7-af60-1bf231055ea5/$ZIP_NAME" "$EVI_BASE"/*
+zip -j "$ZIP_NAME" "$EVI_BASE"/*
 
 echo "=== ✅ G4 INDUSTRIAL SEALING SUCCESS ==="
 echo "Evidence Box: $EVI_BASE"

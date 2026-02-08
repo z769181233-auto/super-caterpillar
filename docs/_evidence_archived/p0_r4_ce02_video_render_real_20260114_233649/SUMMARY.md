@@ -12,7 +12,7 @@ libswresample 6. 1.100 / 6. 1.100
 Last message repeated 1 times
 [image2 @ 0x13b804470] Could not find codec parameters for stream 0 (Video: png, none): unspecified size
 Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options
-Input #0, image2, from '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets*gate_p0r1/temp_seq_job-p0r4-video-20260114_233649/frame*%04d.png':
+Input #0, image2, from 'apps/api/apps/workers/.runtime/assets*gate_p0r1/temp_seq_job-p0r4-video-20260114_233649/frame*%04d.png':
 Duration: 00:00:00.08, start: 0.000000, bitrate: N/A
 Stream #0:0: Video: png, none, 24 fps, 24 tbr, 24 tbn
 Stream mapping:

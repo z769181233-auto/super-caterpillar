@@ -7,7 +7,7 @@
 
 ### 1. apps/web: Next.js Build
 
-> web@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web
+> web@1.0.0 build apps/web
 > next build
 
 ▲ Next.js 14.2.33

@@ -117,10 +117,10 @@ cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
 frame= 0 fps=0.0 q=0.0 Lsize= 0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00  
 Conversion failed!
 
-    at Object.merge (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/video_merge/providers/local_ffmpeg.provider.ts:134:13)
+    at Object.merge (packages/engines/video_merge/providers/local_ffmpeg.provider.ts:134:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async testThreads (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/gates/helper_p0r2_test.ts:33:18)
-    at async <anonymous> (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/gates/helper_p0r2_test.ts:80:26)
+    at async testThreads (tools/gate/gates/helper_p0r2_test.ts:33:18)
+    at async <anonymous> (tools/gate/gates/helper_p0r2_test.ts:80:26)
 
 Testing override threads (2)...
 video*merge_spawn jobId=p0r2_threads2 ffmpeg_threads=2 timeout_ms=60000 args="-y -framerate 2 -i apps/workers/.runtime/assets_gate_p0r2/temp_seq_p0r2_threads2/frame*%04d.png -c:v libx264 -pix*fmt yuv420p -threads 2 -vf scale=64:64 apps/workers/.runtime/assets_gate_p0r2/video_merge_p0r2_threads2.mp4"
@@ -166,10 +166,10 @@ cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
 frame= 0 fps=0.0 q=0.0 Lsize= 0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00  
 Conversion failed!
 
-    at Object.merge (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/video_merge/providers/local_ffmpeg.provider.ts:134:13)
+    at Object.merge (packages/engines/video_merge/providers/local_ffmpeg.provider.ts:134:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async testThreads (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/gates/helper_p0r2_test.ts:58:18)
-    at async <anonymous> (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/gates/helper_p0r2_test.ts:80:26)
+    at async testThreads (tools/gate/gates/helper_p0r2_test.ts:58:18)
+    at async <anonymous> (tools/gate/gates/helper_p0r2_test.ts:80:26)
 
 [3/3] PASS
 GATE P0-R2 [VIDEO_MERGE_GUARDRAILS]: PASS

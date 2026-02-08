@@ -41,7 +41,7 @@
     "status": "FAILED",
     "createdAt": "2026-01-12T07:42:12.894Z",
     "updatedAt": "2026-01-12T07:42:26.925Z",
-    "lastError": "[TimelineRender] Fail-fast: frames.txt not found for shotId=c04c02b3-5eec-452a-aa25-68c6aac9c494 at /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.runtime/frames/c04c02b3-5eec-452a-aa25-68c6aac9c494/frames.txt",
+    "lastError": "[TimelineRender] Fail-fast: frames.txt not found for shotId=c04c02b3-5eec-452a-aa25-68c6aac9c494 at .runtime/frames/c04c02b3-5eec-452a-aa25-68c6aac9c494/frames.txt",
     "securityProcessed": false
   }
 ]

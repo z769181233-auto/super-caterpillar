@@ -114,7 +114,7 @@ echo "$SCENE_ID" > "$EVIDENCE_DIR/scene_id.txt"
 # 确定性 storageKey
 TTS_KEY="audio/tts/${TRACE_ID}__${SCENE_ID}.wav"
 BGM_KEY="audio/bgm/${TRACE_ID}__${SCENE_ID}.wav"
-STORAGE_ROOT=${STORAGE_ROOT:-"/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage"}
+STORAGE_ROOT=${STORAGE_ROOT:-".data/storage"}
 
 log "TTS storageKey: $TTS_KEY"
 log "BGM storageKey: $BGM_KEY"

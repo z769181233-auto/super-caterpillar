@@ -1,6 +1,6 @@
 ====================================================
 STAGE 4: 15M SHREDDER SCALING TEST
-Input: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/uploads/novels/test_novel_3m.txt
+Input: uploads/novels/test_novel_3m.txt
 ====================================================
 [Step 1] Seeding Project & Org...
 INSERT 0 0

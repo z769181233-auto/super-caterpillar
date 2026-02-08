@@ -32,7 +32,7 @@ Pilot 已成功跑通 CE06 解析并完成了角色三处图生成。
 
 ### 2. ComfyUI 渲染产物 (角色三视图)
 
-![角色生成产物](/Users/adam/.gemini/antigravity/brain/b8ec0764-9e34-4c95-b21a-c639109d7a42/turnaround_front.png)
+![角色生成产物](_evidence/p5_self_healing_20260205/turnaround_front.png)
 
 ### 3. 系统状态快照
 
@@ -129,7 +129,7 @@ Pilot 已成功跑通 CE06 解析并完成了角色三处图生成。
 ### Evidence
 
 - **Evidence Dir**: `docs/_evidence/p6_1_billing_ledger_20260204_234341`
-- **SSOT**: [BILLING_LEDGER_SSOT.md](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_specs/BILLING_LEDGER_SSOT.md)
+- **SSOT**: [BILLING_LEDGER_SSOT.md](docs/_specs/BILLING_LEDGER_SSOT.md)
 - **Gate**:
   - `gate_billing_reconciliation.sh`: ✅ PASS (with WARNING: Ledger empty)
   - `gate_billing_negative.sh`: ✅ PASS

@@ -1,5 +1,5 @@
-file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/e0067244-ee2e-4eff-a284-5701de0d763a/dummy_frame1_png.png'
+file 'apps/workers/workspace/e0067244-ee2e-4eff-a284-5701de0d763a/dummy_frame1_png.png'
 duration 2
-file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/e0067244-ee2e-4eff-a284-5701de0d763a/dummy_frame2_png.png'
+file 'apps/workers/workspace/e0067244-ee2e-4eff-a284-5701de0d763a/dummy_frame2_png.png'
 duration 2
-file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/e0067244-ee2e-4eff-a284-5701de0d763a/dummy_frame2_png.png'
+file 'apps/workers/workspace/e0067244-ee2e-4eff-a284-5701de0d763a/dummy_frame2_png.png'

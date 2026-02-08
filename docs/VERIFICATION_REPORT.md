@@ -16973,7 +16973,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -17542,7 +17542,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -18111,7 +18111,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -18680,7 +18680,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -19249,7 +19249,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -19818,7 +19818,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -20387,7 +20387,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -20956,7 +20956,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -21525,7 +21525,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -22094,7 +22094,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -22663,7 +22663,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -23232,7 +23232,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -23801,7 +23801,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -24370,7 +24370,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -24939,7 +24939,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -25508,7 +25508,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -26077,7 +26077,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -26646,7 +26646,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -27215,7 +27215,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -27784,7 +27784,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -28353,7 +28353,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -28922,7 +28922,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -29491,7 +29491,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -30060,7 +30060,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -30629,7 +30629,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -31198,7 +31198,7 @@
         "timestamp": null,
         "createdAt": {},
         "details": {
-          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
+          "error": "\nInvalid `prisma.shot.deleteMany()` invocation in\napps/workers/src/novel-analysis-processor.ts:290:21\n\n  287 const { projectId, seasons } = structure;\n  288 \n  289 // 1. 清理旧结构（使用 deleteMany，按 Shot → Scene → Episode → Season 顺序，通过反向关联过滤 projectId）\n→ 290 await prisma.shot.deleteMany(\nForeign key constraint violated: `ShotJob_shotId_fkey (index)`",
           "taskId": "09468002-f8dd-4747-9613-57a61e5a04b9",
           "attempts": 2,
           "workerId": "27d400e5-8e4b-401e-bd20-af362f2cc826",
@@ -40106,7 +40106,7 @@ Raw query failed. Code: `42703`. Message: `column "project_id" does not exist`
 错误: Do not know how to serialize a BigInt
 堆栈: TypeError: Do not know how to serialize a BigInt
 at JSON.stringify (<anonymous>)
-at main (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/smoke/stage1_stage2_smoke.ts:322:63)
+at main (tools/smoke/stage1_stage2_smoke.ts:322:63)
 
 ## HMAC 测试
 

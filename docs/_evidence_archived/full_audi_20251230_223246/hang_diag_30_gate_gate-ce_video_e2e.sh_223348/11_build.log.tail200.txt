@@ -9,39 +9,39 @@ turbo 2.6.3
 • Remote caching disabled
 @scu/storage:build: cache hit, replaying logs 79b7c7563721b088
 @scu/storage:build: 
-@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > @scu/storage@0.0.1 build packages/storage
 @scu/storage:build: > tsc
 @scu/storage:build: 
 config:build: cache hit, replaying logs dc103ef6428fbddf
 config:build: 
-config:build: > config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+config:build: > config@1.0.0 build packages/config
 config:build: > tsc
 config:build: 
 @scu/shared-types:build: cache hit, replaying logs f4ae780f653f2d5a
 @scu/shared-types:build: 
-@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build packages/shared-types
 @scu/shared-types:build: > tsc -p tsconfig.build.json
 @scu/shared-types:build: 
 database:build: cache hit, replaying logs 2bd226635ef9bc01
 database:build: 
 database:build: 
-database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > database@1.0.0 build packages/database
 database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
 database:build: 
 @scu/worker:build: cache miss, executing 2ed0d8615c460627
 api:build: cache hit, replaying logs 95c4baacdf3c2372
 api:build: 
-api:build: > api@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+api:build: > api@1.0.0 build apps/api
 api:build: > nest build
 api:build: 
 api:build: webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 4355 ms
 @scu/worker:build: 
-@scu/worker:build: > @scu/worker@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers
+@scu/worker:build: > @scu/worker@1.0.0 build apps/workers
 @scu/worker:build: > tsc -p tsconfig.json
 @scu/worker:build: 
 web:build: cache hit, replaying logs da5cb0f551cc0ba2
 web:build: 
-web:build: > web@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web
+web:build: > web@1.0.0 build apps/web
 web:build: > next build
 web:build: 
 web:build:   ▲ Next.js 14.2.33

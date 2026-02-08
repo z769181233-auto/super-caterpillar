@@ -62,7 +62,7 @@
 
 === Stage 8 Video E2E Test ===
 Repo: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
-Storage: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage
+Storage: .data/storage
 [Env] DATABASE*URL=postgresql://postgres:\*\*\*@localhost:5432/scu?schema=public
 [0/4] Initializing API Key...
 🔑 Initializing API Key for smoke tests...
@@ -354,10 +354,10 @@ cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
 frame= 0 fps=0.0 q=0.0 Lsize= 0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00  
 Conversion failed!
 
-    at Object.merge (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/video_merge/providers/local_ffmpeg.provider.ts:134:13)
+    at Object.merge (packages/engines/video_merge/providers/local_ffmpeg.provider.ts:134:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async testThreads (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/gates/helper_p0r2_test.ts:32:22)
-    at async <anonymous> (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/gates/helper_p0r2_test.ts:63:28)
+    at async testThreads (tools/gate/gates/helper_p0r2_test.ts:32:22)
+    at async <anonymous> (tools/gate/gates/helper_p0r2_test.ts:63:28)
 
 Testing override threads (2)...
 video*merge_spawn jobId=p0r2_threads2 ffmpeg_threads=2 timeout_ms=60000 args="-y -framerate 2 -i apps/workers/.runtime/assets_gate_p0r2/temp_seq_p0r2_threads2/frame*%04d.png -c:v libx264 -pix*fmt yuv420p -threads 2 -vf scale=64:64 apps/workers/.runtime/assets_gate_p0r2/video_merge_p0r2_threads2.mp4"
@@ -403,10 +403,10 @@ cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
 frame= 0 fps=0.0 q=0.0 Lsize= 0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.00  
 Conversion failed!
 
-    at Object.merge (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/video_merge/providers/local_ffmpeg.provider.ts:134:13)
+    at Object.merge (packages/engines/video_merge/providers/local_ffmpeg.provider.ts:134:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async testThreads (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/gates/helper_p0r2_test.ts:48:22)
-    at async <anonymous> (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/gates/helper_p0r2_test.ts:63:28)
+    at async testThreads (tools/gate/gates/helper_p0r2_test.ts:48:22)
+    at async <anonymous> (tools/gate/gates/helper_p0r2_test.ts:63:28)
 
 [3/3] PASS
 GATE P0-R2 [VIDEO_MERGE_GUARDRAILS]: PASS

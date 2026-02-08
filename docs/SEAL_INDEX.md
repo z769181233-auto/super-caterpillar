@@ -33,10 +33,10 @@
 
 | 阶段      | 引擎节点                 | 状态      | 等级   | 证据目录 (SSOT)                                                                                                                                                |
 | :-------- | :----------------------- | :-------- | :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P0-R1** | [CE06] Novel Parsing     | ✅ SEALED | **L2** | [p0_r1_..._v2h_20260114_235250](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r1_ce02_ce06_real_v2h_20260114_235250)         |
-| **P0-R2** | [CE03] Visual Density    | ✅ SEALED | **L2** | [p0_r2_..._v2h_20260114_235251](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r2_ce02_ce03_real_v2h_20260114_235251)         |
-| **P0-R3** | [CE04] Visual Enrichment | ✅ SEALED | **L2** | [p0_r3_..._v2h_20260114_235251](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r3_ce02_ce04_real_v2h_20260114_235251)         |
-| **P0-R4** | [VIDEO_RENDER] Merge     | ✅ SEALED | **L2** | [p0_r4_..._v2h_20260114_235225](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/\_evidence/p0_r4_ce02_video_render_real_v2h_20260114_235225) |
+| **P0-R1** | [CE06] Novel Parsing     | ✅ SEALED | **L2** | [p0_r1_..._20260114_235250](_evidence/p0_r1_ce02_ce06_real_v2h_20260114_235250/) |
+| **P0-R2** | [CE03] Visual Density    | ✅ SEALED | **L2** | [p0_r2_..._20260114_235251](_evidence/p0_r2_ce02_ce03_real_v2h_20260114_235251/) |
+| **P0-R3** | [CE04] Visual Enrichment | ✅ SEALED | **L2** | [p0_r3_..._20260114_235251](_evidence/p0_r3_ce02_ce04_real_v2h_20260114_235251/) |
+| **P0-R4** | [VIDEO_RENDER] Merge     | ✅ SEALED | **L2** | [p0_r4_..._20260114_235225](_evidence/p0_r4_ce02_video_render_real_v2h_20260114_235225/) |
 
 ---
 

@@ -2,7 +2,7 @@
   "phase": "7",
   "name": "prod deployment drill",
   "status": "PASS",
-  "evidence_dir": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p7_prod_deploy_drill_20260131_231247",
+  "evidence_dir": "docs/_evidence/p7_prod_deploy_drill_20260131_231247",
   "generated_at": "2026-01-31T16:58:16.451Z",
   "artifacts": [
     {

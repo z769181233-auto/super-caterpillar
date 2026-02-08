@@ -1,8 +1,8 @@
-[PHASE-5] Starting Full Audit -> /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p5_full_audit_20260131_201914
-[PHASE-5] Reusing P5-0/P5-1 baseline from /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p5_commercial_audit_20260130_233000
+[PHASE-5] Starting Full Audit -> docs/_evidence/p5_full_audit_20260131_201914
+[PHASE-5] Reusing P5-0/P5-1 baseline from docs/_evidence/p5_commercial_audit_20260130_233000
 [PHASE-5] Running P5-2 Stability Audit...
-[STABILITY-AUDIT] Analyzing evidence in: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p5_full_audit_20260131_201914
-✅ [STABILITY-AUDIT] Audit Complete: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p5_full_audit_20260131_201914/stability_audit.json
+[STABILITY-AUDIT] Analyzing evidence in: docs/_evidence/p5_full_audit_20260131_201914
+✅ [STABILITY-AUDIT] Audit Complete: docs/_evidence/p5_full_audit_20260131_201914/stability_audit.json
    P99 Latency: 820ms
    Raw Errors: 14
    Filtered Errors: 0
@@ -22,7 +22,7 @@ P99 Latency: 820ms
 Error Count: 0
 --- [GATE] P5-2 STABILITY PASS ---
 [PHASE-5] Generating Evidence Index...
-[INDEX] Generated: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p5_full_audit_20260131_201914/EVIDENCE_INDEX.json (3 files)
-[INDEX] Checksums: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p5_full_audit_20260131_201914/EVIDENCE_INDEX.checksums
+[INDEX] Generated: docs/_evidence/p5_full_audit_20260131_201914/EVIDENCE_INDEX.json (3 files)
+[INDEX] Checksums: docs/_evidence/p5_full_audit_20260131_201914/EVIDENCE_INDEX.checksums
 ✅ [PHASE-5] Full Audit PASS
-Evidence: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p5_full_audit_20260131_201914
+Evidence: docs/_evidence/p5_full_audit_20260131_201914

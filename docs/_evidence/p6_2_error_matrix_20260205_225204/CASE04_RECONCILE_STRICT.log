@@ -2,20 +2,20 @@
 P6-1 BILLING LEDGER RECONCILIATION GATE
 ====================================================
 [Step 1] Running Reconciliation Script...
-/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/generated/prisma/runtime/library.js:124
+packages/database/src/generated/prisma/runtime/library.js:124
 It should have this form: { url: "CONNECTION_STRING" }`);if(typeof o!="string")throw new F(`Invalid value ${JSON.stringify(o)} for datasource "${r}" provided to PrismaClient constructor.
                                                                                      ^
 PrismaClientConstructorValidationError: Invalid value undefined for datasource "db" provided to PrismaClient constructor.
 It should have this form: { url: "CONNECTION_STRING" }
 Read more at https://pris.ly/d/client-constructor
-    at Object.datasources (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/generated/prisma/runtime/library.js:124:86)
-    at Gl (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/generated/prisma/runtime/library.js:126:2527)
-    at new t (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/generated/prisma/runtime/library.js:130:748)
-    at Object.<anonymous> (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/gate/scripts/reconcile_billing.ts:5:16)
+    at Object.datasources (packages/database/src/generated/prisma/runtime/library.js:124:86)
+    at Gl (packages/database/src/generated/prisma/runtime/library.js:126:2527)
+    at new t (packages/database/src/generated/prisma/runtime/library.js:130:748)
+    at Object.<anonymous> (tools/gate/scripts/reconcile_billing.ts:5:16)
     at Module._compile (node:internal/modules/cjs/loader:1692:14)
-    at Module.m._compile (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/src/index.ts:1618:23)
+    at Module.m._compile (node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/src/index.ts:1618:23)
     at node:internal/modules/cjs/loader:1824:10
-    at Object.require.extensions.<computed> [as .ts] (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/src/index.ts:1621:12)
+    at Object.require.extensions.<computed> [as .ts] (node_modules/.pnpm/ts-node@10.9.2_@swc+core@1.15.5_@types+node@20.19.25_typescript@5.9.3/node_modules/ts-node/src/index.ts:1621:12)
     at Module.load (node:internal/modules/cjs/loader:1427:32)
     at Module._load (node:internal/modules/cjs/loader:1250:12)
 [Step 2] Checking for Duplicate Billing...

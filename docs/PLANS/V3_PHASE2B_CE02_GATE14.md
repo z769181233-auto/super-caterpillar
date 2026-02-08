@@ -3,15 +3,15 @@
 ## ✅ 已完成 (Audit by PLAN-0)
 
 - [x] **SSOT 确认**: `novel_scenes` (Product) + `shots` (Product) + `novel_chapters`.
-  - [describe_novel_chapters.txt](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/v3_phase2b_ce02_plan0_20260118_140131/describe_novel_chapters.txt)
-  - [describe_novel_scenes.txt](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/v3_phase2b_ce02_plan0_20260118_140131/describe_novel_scenes.txt)
-  - [describe_shots.txt](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/v3_phase2b_ce02_plan0_20260118_140131/describe_shots.txt)
+  - [describe_novel_chapters.txt](_evidence/v3_phase2b_ce02_plan0_20260118_140131/describe_novel_chapters.txt)
+  - [describe_novel_scenes.txt](_evidence/v3_phase2b_ce02_plan0_20260118_140131/describe_novel_scenes.txt)
+  - [describe_shots.txt](_evidence/v3_phase2b_ce02_plan0_20260118_140131/describe_shots.txt)
 - [x] **增量字段到位**:
   - `novel_chapters`: `visual_density_score` (nullable)
   - `novel_scenes`: `visual_density_score` (nullable)
   - `shots`: V3.0 nullable fields (visual_prompt, negative_prompt, etc.)
 - [x] **现有实现点定位**:
-  - Processor: `CE03_VISUAL_DENSITY` ([rg_worker_density_processors.txt](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/v3_phase2b_ce02_plan0_20260118_140131/rg_worker_density_processors.txt))
+  - Processor: `CE03_VISUAL_DENSITY` ([rg_worker_density_processors.txt](_evidence/v3_phase2b_ce02_plan0_20260118_140131/rg_worker_density_processors.txt))
   - Adapter: `visual-density.adapter.ts`
 - [x] **协议对齐**: `CE01ProtocolAdapter` 已集成至 `CE06_NOVEL_PARSING`.
 - [x] **Gate PASS**: Gate 11/12/13 已 PASS.

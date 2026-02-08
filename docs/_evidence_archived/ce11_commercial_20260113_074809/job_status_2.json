@@ -28,7 +28,7 @@
       "timelineStorageKey": "timelines/proj_gate_ce11_1768265289_31581/7034447a-12dc-46b6-b460-79aff07ddead.json"
     },
     "engineConfig": {},
-    "lastError": "[TimelinePreview] Timeline file not found: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/timelines/proj_gate_ce11_1768265289_31581/7034447a-12dc-46b6-b460-79aff07ddead.json",
+    "lastError": "[TimelinePreview] Timeline file not found: apps/workers/.runtime/timelines/proj_gate_ce11_1768265289_31581/7034447a-12dc-46b6-b460-79aff07ddead.json",
     "createdAt": "2026-01-13T00:48:09.647Z",
     "updatedAt": "2026-01-13T00:48:09.930Z",
     "traceId": null,

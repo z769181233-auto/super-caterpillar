@@ -31,7 +31,7 @@ async function main() {
         const res = await adapter.invoke({
             jobType: 'VG_RENDER',
             engineKey: 'vg05_vfx_compositor',
-            payload: { sourceUrl: "file:///tmp/not_found.png", vfxPreset: "sepia" },
+            payload: { sourceUrl: "/tmp/not_found.png", vfxPreset: "sepia" },
             context: { projectId, userId, traceId: `trace_vg05_${suffix}`, jobId, organizationId: orgId }
         });
         console.log("Res:", JSON.stringify(res, null, 2));

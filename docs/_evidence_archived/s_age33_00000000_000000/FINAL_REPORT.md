@@ -196,8 +196,8 @@ $ pnpm -w exec tsx tools/smoke/generate_health_snapshot.ts
 **输出**:
 
 ```
-✅ Snapshot JSON: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/stage29/health_snapshot.json
-✅ Snapshot MD: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/stage29/health_snapshot.md
+✅ Snapshot JSON: docs/_evidence/stage29/health_snapshot.json
+✅ Snapshot MD: docs/_evidence/stage29/health_snapshot.md
 ```
 
 ### 3.4 API 验证 (HMAC)

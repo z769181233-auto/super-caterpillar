@@ -77,43 +77,43 @@ database:build: cache miss, executing 6c1365032fa60cd7
 @scu/engines-ce06:build: cache miss, executing 85812aa4876424d3
 @scu/billing:build: cache miss, executing c86b7f5407d0b196
 @scu/observability:build: 
-@scu/observability:build: > @scu/observability@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/observability
+@scu/observability:build: > @scu/observability@0.0.0 build packages/observability
 @scu/observability:build: > tsup src/index.ts --format cjs --dts --clean
 @scu/observability:build: 
 @scu/storage:build: 
-@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > @scu/storage@0.0.1 build packages/storage
 @scu/storage:build: > tsc
 @scu/storage:build: 
 @scu/engines-video-merge:build: 
-@scu/engines-video-merge:build: > @scu/engines-video-merge@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/video_merge
+@scu/engines-video-merge:build: > @scu/engines-video-merge@0.0.0 build packages/engines/video_merge
 @scu/engines-video-merge:build: > tsup src/index.ts --format cjs --dts --clean
 @scu/engines-video-merge:build: 
 database:build: 
-database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > database@1.0.0 build packages/database
 database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
 database:build: 
 @scu/config:build: 
-@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+@scu/config:build: > @scu/config@1.0.0 build packages/config
 @scu/config:build: > tsc
 @scu/config:build: 
 @scu/engines-shot-render:build: 
-@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render
+@scu/engines-shot-render:build: > @scu/engines-shot-render@0.0.0 build packages/engines/shot_render
 @scu/engines-shot-render:build: > tsup src/index.ts --format cjs --dts --clean
 @scu/engines-shot-render:build: 
 @scu/engines-ce06:build: 
-@scu/engines-ce06:build: > @scu/engines-ce06@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce06
+@scu/engines-ce06:build: > @scu/engines-ce06@0.0.0 build packages/engines/ce06
 @scu/engines-ce06:build: > tsup src/index.ts --format cjs --dts --clean
 @scu/engines-ce06:build: 
 @scu/shared-types:build: 
-@scu/shared-types:build: > @scu/shared-types@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types
+@scu/shared-types:build: > @scu/shared-types@1.0.0 build packages/shared-types
 @scu/shared-types:build: > tsc -p tsconfig.build.json
 @scu/shared-types:build: 
 @scu/engines-ce04:build: 
-@scu/engines-ce04:build: > @scu/engines-ce04@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce04
+@scu/engines-ce04:build: > @scu/engines-ce04@0.0.0 build packages/engines/ce04
 @scu/engines-ce04:build: > tsup src/index.ts --format cjs --dts --clean
 @scu/engines-ce04:build: 
 @scu/billing:build: 
-@scu/billing:build: > @scu/billing@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/billing
+@scu/billing:build: > @scu/billing@1.0.0 build packages/billing
 @scu/billing:build: > tsup index.ts model-price-table.ts --format cjs --dts --clean
 @scu/billing:build: 
 @scu/engines-ce06:build: CLI Building entry: src/index.ts
@@ -181,10 +181,10 @@ database:build:
 @scu/engines-shot-render:build: DTS Build start
 @scu/engines-ce04:build: DTS Build start
 @scu/billing:build: DTS Build start
-@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: error TS5083: Cannot read file 'tsconfig.base.json'.
 @scu/billing:build: 
 @scu/engines-ce03:build: 
-@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/ce03
+@scu/engines-ce03:build: > @scu/engines-ce03@0.0.0 build packages/engines/ce03
 @scu/engines-ce03:build: > tsup src/index.ts --format cjs --dts --clean
 @scu/engines-ce03:build: 
 web:lint: cache miss, executing 0346a2f731619d65
@@ -196,17 +196,17 @@ web:lint: cache miss, executing 0346a2f731619d65
 @scu/engines-ce03:build: CJS Build start
 @scu/engines-ce03:build: CJS dist/index.js 3.16 KB
 @scu/engines-ce03:build: CJS ⚡️ Build success in 32ms
-@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: error TS5083: Cannot read file 'tsconfig.base.json'.
 @scu/billing:build: 
 @scu/engines-ce06:build: DTS ⚡️ Build success in 1915ms
 @scu/engines-ce06:build: DTS dist/index.d.ts 1.73 KB
 @scu/observability:build: DTS ⚡️ Build success in 1874ms
 @scu/observability:build: DTS dist/index.d.ts 1.48 KB
 api:lint: cache miss, executing 67c1f6c2dea68e87
-@scu/billing:build: error TS5083: Cannot read file '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tsconfig.base.json'.
+@scu/billing:build: error TS5083: Cannot read file 'tsconfig.base.json'.
 @scu/billing:build: 
 web:lint: 
-web:lint: > web@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web
+web:lint: > web@1.0.0 lint apps/web
 web:lint: > next lint "--concurrency=1"
 web:lint: 
 @scu/engines-ce03:build: DTS Build start
@@ -221,8 +221,8 @@ web:lint: error: unknown option '--concurrency=1'
 web:lint:  ELIFECYCLE  Command failed with exit code 1.
 @scu/engines-shot-render:build: DTS ⚡️ Build success in 1846ms
 @scu/engines-shot-render:build: DTS dist/index.d.ts 1.56 KB
-web:lint: ERROR: command finished with error: command (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web) /Users/adam/Library/pnpm/.tools/pnpm/9.1.0/bin/pnpm run lint --concurrency=1 exited (1)
-web#lint: command (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web) /Users/adam/Library/pnpm/.tools/pnpm/9.1.0/bin/pnpm run lint --concurrency=1 exited (1)
+web:lint: ERROR: command finished with error: command (apps/web) /Users/adam/Library/pnpm/.tools/pnpm/9.1.0/bin/pnpm run lint --concurrency=1 exited (1)
+web#lint: command (apps/web) /Users/adam/Library/pnpm/.tools/pnpm/9.1.0/bin/pnpm run lint --concurrency=1 exited (1)
 
  Tasks:    9 successful, 13 total
 Cached:    0 cached, 13 total

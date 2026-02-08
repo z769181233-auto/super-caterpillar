@@ -5,7 +5,7 @@
     "selectedEngineKey": "video_merge",
     "output": {
       "asset": {
-        "uri": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets_gate_p0r1/video_merge_job-p0r4-video-20260114_233702.mp4",
+        "uri": "apps/api/apps/workers/.runtime/assets_gate_p0r1/video_merge_job-p0r4-video-20260114_233702.mp4",
         "mimeType": "video/mp4",
         "sizeBytes": 1658,
         "sha256": "d4536944b049d7bbbca514d19b227c3f583fff918e4e47c8d1c635e23f3e460f",

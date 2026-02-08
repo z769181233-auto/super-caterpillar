@@ -18,7 +18,7 @@
     "lockedBy": "local-worker",
     "payload": {
       "result": {
-        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/processors/ce06-novel-parsing.processor.ts:47:49\n\n  44 const pipelineRunId = job.payload?.pipelineRunId;\n  45 \n  46 if (projectId && jobOrgId && job.shotId) {\n→ 47   const existingCE03 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
+        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\napps/workers/src/processors/ce06-novel-parsing.processor.ts:47:49\n\n  44 const pipelineRunId = job.payload?.pipelineRunId;\n  45 \n  46 if (projectId && jobOrgId && job.shotId) {\n→ 47   const existingCE03 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
         "status": "FAILED"
       },
       "traceId": "ce_pipeline_e27b7117-4646-4c65-9e97-c4ed2dd80e93",
@@ -32,7 +32,7 @@
     "updatedAt": "2026-01-12T04:54:23.335Z",
     "traceId": "ce_pipeline_e27b7117-4646-4c65-9e97-c4ed2dd80e93",
     "result": {
-      "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/processors/ce06-novel-parsing.processor.ts:47:49\n\n  44 const pipelineRunId = job.payload?.pipelineRunId;\n  45 \n  46 if (projectId && jobOrgId && job.shotId) {\n→ 47   const existingCE03 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
+      "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\napps/workers/src/processors/ce06-novel-parsing.processor.ts:47:49\n\n  44 const pipelineRunId = job.payload?.pipelineRunId;\n  45 \n  46 if (projectId && jobOrgId && job.shotId) {\n→ 47   const existingCE03 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
       "status": "FAILED"
     },
     "securityProcessed": false
@@ -56,14 +56,14 @@
     "lockedBy": "local-worker",
     "payload": {
       "result": {
-        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/processors/ce03-visual-density.processor.ts:99:49\n\n  96 // S4-2 Requirement: CE03 -> CE04\n  97 if (job.shotId && projectId && jobOrgId) {\n  98   // Idempotency Check\n→ 99   const existingCE04 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
+        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\napps/workers/src/processors/ce03-visual-density.processor.ts:99:49\n\n  96 // S4-2 Requirement: CE03 -> CE04\n  97 if (job.shotId && projectId && jobOrgId) {\n  98   // Idempotency Check\n→ 99   const existingCE04 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
         "status": "FAILED"
       },
       "engineKey": "ce03_visual_density",
       "projectId": "b5eeea9f-4b03-4c59-bea5-304ec69bb161",
       "previousJobId": "c11c2c1f-8ccd-498f-aae8-c2552adcdf01",
       "previousJobResult": {
-        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/processors/ce06-novel-parsing.processor.ts:47:49\n\n  44 const pipelineRunId = job.payload?.pipelineRunId;\n  45 \n  46 if (projectId && jobOrgId && job.shotId) {\n→ 47   const existingCE03 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
+        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\napps/workers/src/processors/ce06-novel-parsing.processor.ts:47:49\n\n  44 const pipelineRunId = job.payload?.pipelineRunId;\n  45 \n  46 if (projectId && jobOrgId && job.shotId) {\n→ 47   const existingCE03 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
         "status": "FAILED"
       }
     },
@@ -73,7 +73,7 @@
     "updatedAt": "2026-01-12T04:54:24.304Z",
     "traceId": "ce_pipeline_e27b7117-4646-4c65-9e97-c4ed2dd80e93",
     "result": {
-      "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/processors/ce03-visual-density.processor.ts:99:49\n\n  96 // S4-2 Requirement: CE03 -> CE04\n  97 if (job.shotId && projectId && jobOrgId) {\n  98   // Idempotency Check\n→ 99   const existingCE04 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
+      "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\napps/workers/src/processors/ce03-visual-density.processor.ts:99:49\n\n  96 // S4-2 Requirement: CE03 -> CE04\n  97 if (job.shotId && projectId && jobOrgId) {\n  98   // Idempotency Check\n→ 99   const existingCE04 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
       "status": "FAILED"
     },
     "securityProcessed": false
@@ -97,14 +97,14 @@
     "lockedBy": "local-worker",
     "payload": {
       "result": {
-        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/processors/ce04-visual-enrichment.processor.ts:76:51\n\n  73 // 5. Spawn SHOT_RENDER (S4-3)\n  74 // Idempotency: Duplicate check for SHOT_RENDER in this run\n  75 if (projectId && jobOrgId && job.shotId) {\n→ 76   const existingRender = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
+        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\napps/workers/src/processors/ce04-visual-enrichment.processor.ts:76:51\n\n  73 // 5. Spawn SHOT_RENDER (S4-3)\n  74 // Idempotency: Duplicate check for SHOT_RENDER in this run\n  75 if (projectId && jobOrgId && job.shotId) {\n→ 76   const existingRender = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
         "status": "FAILED"
       },
       "engineKey": "ce04_visual_enrichment",
       "projectId": "b5eeea9f-4b03-4c59-bea5-304ec69bb161",
       "previousJobId": "5ddbb6bc-1dad-4032-b255-56b47a09deef",
       "previousJobResult": {
-        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/processors/ce03-visual-density.processor.ts:99:49\n\n  96 // S4-2 Requirement: CE03 -> CE04\n  97 if (job.shotId && projectId && jobOrgId) {\n  98   // Idempotency Check\n→ 99   const existingCE04 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
+        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\napps/workers/src/processors/ce03-visual-density.processor.ts:99:49\n\n  96 // S4-2 Requirement: CE03 -> CE04\n  97 if (job.shotId && projectId && jobOrgId) {\n  98   // Idempotency Check\n→ 99   const existingCE04 = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
         "status": "FAILED"
       }
     },
@@ -114,7 +114,7 @@
     "updatedAt": "2026-01-12T04:54:25.303Z",
     "traceId": "ce_pipeline_e27b7117-4646-4c65-9e97-c4ed2dd80e93",
     "result": {
-      "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/processors/ce04-visual-enrichment.processor.ts:76:51\n\n  73 // 5. Spawn SHOT_RENDER (S4-3)\n  74 // Idempotency: Duplicate check for SHOT_RENDER in this run\n  75 if (projectId && jobOrgId && job.shotId) {\n→ 76   const existingRender = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
+      "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\napps/workers/src/processors/ce04-visual-enrichment.processor.ts:76:51\n\n  73 // 5. Spawn SHOT_RENDER (S4-3)\n  74 // Idempotency: Duplicate check for SHOT_RENDER in this run\n  75 if (projectId && jobOrgId && job.shotId) {\n→ 76   const existingRender = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
       "status": "FAILED"
     },
     "securityProcessed": false
@@ -143,7 +143,7 @@
       "pipelineRunId": "53f8521d-198b-4f66-88df-e7df616743b7",
       "previousJobId": "53f8521d-198b-4f66-88df-e7df616743b7",
       "previousJobResult": {
-        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\n/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/processors/ce04-visual-enrichment.processor.ts:76:51\n\n  73 // 5. Spawn SHOT_RENDER (S4-3)\n  74 // Idempotency: Duplicate check for SHOT_RENDER in this run\n  75 if (projectId && jobOrgId && job.shotId) {\n→ 76   const existingRender = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
+        "error": "\nInvalid `prisma.shotJob.findFirst()` invocation in\napps/workers/src/processors/ce04-visual-enrichment.processor.ts:76:51\n\n  73 // 5. Spawn SHOT_RENDER (S4-3)\n  74 // Idempotency: Duplicate check for SHOT_RENDER in this run\n  75 if (projectId && jobOrgId && job.shotId) {\n→ 76   const existingRender = await prisma.shotJob.findFirst(\nInput error. A JSON path cannot be set without a scalar filter.",
         "status": "FAILED"
       }
     },

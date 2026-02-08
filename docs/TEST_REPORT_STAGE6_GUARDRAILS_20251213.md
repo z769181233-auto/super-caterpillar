@@ -88,7 +88,7 @@ test -f .github/workflows/ci.yml && grep -A 2 "Stage6 guard" .github/workflows/c
 ### 4.1 ESLint 规则验证输出
 
 ```
-/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/test-stage6-prisma-import.ts
+apps/api/src/test-stage6-prisma-import.ts
   2:1   error    '@prisma/client' import is restricted from being used.
                  ❌ 禁止在 apps/api 中直接使用 @prisma/client。
                  PrismaClient/Prisma 类型必须从 database 包导入。
@@ -128,7 +128,7 @@ test -f .github/workflows/ci.yml && grep -A 2 "Stage6 guard" .github/workflows/c
 ### 4.4 API 构建验证输出
 
 ```
-> api@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+> api@1.0.0 build apps/api
 > nest build
 
 webpack 5.97.1 compiled successfully in 3249 ms

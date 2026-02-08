@@ -1,7 +1,7 @@
-SHOT_ASSET_URI=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
-SHOT_ASSET_KEY=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
+SHOT_ASSET_URI=apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
+SHOT_ASSET_KEY=apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
 ROOT_DIR=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
 CANDIDATES:
- - /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png [OK]
- - /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/api/apps/workers/.runtime/apps/workers/.runtime/api/api/apps/workers/.runtime/apps/workers/.runtime/workers/.runtime/assets/undefined_12345_95b84c85198a.png [MISS]
-RESOLVED=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
+ - apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png [OK]
+ - api/apps/workers/.runtime/apps/workers/.runtime/api/api/apps/workers/.runtime/apps/workers/.runtime/workers/.runtime/assets/undefined_12345_95b84c85198a.png [MISS]
+RESOLVED=apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png

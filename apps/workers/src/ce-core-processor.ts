@@ -742,7 +742,7 @@ export async function processCE04Job(
 
     // Use an absolute path to a real existing image to satisfy FFmpeg
     const dummyLocalImage =
-      '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png';
+      'node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png';
 
     if (!(await fileExists(dummyLocalImage))) {
       // Fallback if the above doesn't exist for some reason

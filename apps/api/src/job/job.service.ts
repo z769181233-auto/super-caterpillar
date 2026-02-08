@@ -390,7 +390,7 @@ export class JobService {
       // DEBUG: Log error to file
       const fs = await import('fs');
       const logPath =
-        '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/tools/job_create_error.log';
+        'tools/job_create_error.log';
       const msg = `[${new Date().toISOString()}] JobService.create FAILED:\n${err.message}\n${err.stack}\n----------------\n`;
       fs.appendFileSync(logPath, msg);
       throw err;

@@ -13,18 +13,18 @@ database:build: cache bypass, force executing 1cdc6ab4e8a64bcf
 @scu/storage:build: cache bypass, force executing 3e8367af8a262d17
 @scu/observability:build: 
 @scu/config:build: 
-@scu/observability:build: > @scu/observability@0.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/observability
-@scu/config:build: > @scu/config@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/config
+@scu/observability:build: > @scu/observability@0.0.0 build packages/observability
+@scu/config:build: > @scu/config@1.0.0 build packages/config
 @scu/config:build: > tsc
 @scu/config:build: 
 @scu/observability:build: > tsup src/index.ts --format cjs --dts --clean
 @scu/observability:build: 
 @scu/storage:build: 
-@scu/storage:build: > @scu/storage@0.0.1 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/storage
+@scu/storage:build: > @scu/storage@0.0.1 build packages/storage
 @scu/storage:build: > tsc
 @scu/storage:build: 
 database:build: 
-database:build: > database@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database
+database:build: > database@1.0.0 build packages/database
 database:build: > tsc -p tsconfig.json && cp -r src/generated dist/
 database:build: 
 @scu/observability:build: CLI Building entry: src/index.ts
@@ -40,7 +40,7 @@ database:build:
 @scu/observability:build: DTS dist/index.d.ts 1.48 KB
 api:build: cache bypass, force executing 18054ea1dfbc21a4
 api:build: 
-api:build: > api@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+api:build: > api@1.0.0 build apps/api
 api:build: > nest build
 api:build: 
 api:build: webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 4311 ms

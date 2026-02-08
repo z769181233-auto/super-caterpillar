@@ -5,7 +5,7 @@
     "selectedEngineKey": "video_merge",
     "error": {
       "code": "ENGINE_CALL_FAILED",
-      "message": "ENOENT: no such file or directory, copyfile '/tmp/f1.png' -> '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/apps/workers/.runtime/assets_gate_p0r1/temp_seq_job-p0r4-video-20260114_233629/frame_0000.png'",
+      "message": "ENOENT: no such file or directory, copyfile '/tmp/f1.png' -> 'apps/api/apps/workers/.runtime/assets_gate_p0r1/temp_seq_job-p0r4-video-20260114_233629/frame_0000.png'",
       "details": {
         "isVerification": true,
         "traceId": "gate-p0r4-video-20260114_233629",

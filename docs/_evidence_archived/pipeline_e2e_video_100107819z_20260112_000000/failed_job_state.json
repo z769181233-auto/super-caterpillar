@@ -41,7 +41,7 @@
     "status": "FAILED",
     "createdAt": "2026-01-12T10:01:19.067Z",
     "updatedAt": "2026-01-12T10:01:31.134Z",
-    "lastError": "[FFmpeg Stage1_Shot_21403123-f4f0-4e0a-9279-942a0921e28f] Exited with code 183. Output: 6.  1.100\n[concat @ 0x157f04430] Impossible to open '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/apps/workers/workspace/0a658576-3bbe-4c4a-a92a-f415e95d5715/dummy_frame1_png.png'\n[in#0 @ 0x157f041c0] Error opening input: Invalid data found when processing input\nError opening input file /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/frames/21403123-f4f0-4e0a-9279-942a0921e28f/frames.txt.\nError opening input files: Invalid data found when processing input\n",
+    "lastError": "[FFmpeg Stage1_Shot_21403123-f4f0-4e0a-9279-942a0921e28f] Exited with code 183. Output: 6.  1.100\n[concat @ 0x157f04430] Impossible to open 'apps/workers/apps/workers/workspace/0a658576-3bbe-4c4a-a92a-f415e95d5715/dummy_frame1_png.png'\n[in#0 @ 0x157f041c0] Error opening input: Invalid data found when processing input\nError opening input file apps/workers/.runtime/frames/21403123-f4f0-4e0a-9279-942a0921e28f/frames.txt.\nError opening input files: Invalid data found when processing input\n",
     "securityProcessed": false
   }
 ]

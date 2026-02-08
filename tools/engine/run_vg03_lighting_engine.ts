@@ -31,7 +31,7 @@ async function main() {
         const res = await adapter.invoke({
             jobType: 'VG_RENDER',
             engineKey: 'vg03_lighting_engine',
-            payload: { sourceUrl: "file:///tmp/not_found.png", lightingPreset: "night" },
+            payload: { sourceUrl: "/tmp/not_found.png", lightingPreset: "night" },
             context: { projectId, userId, traceId: `trace_vg03_${suffix}`, jobId, organizationId: orgId }
         });
         console.log("Res:", JSON.stringify(res, null, 2));

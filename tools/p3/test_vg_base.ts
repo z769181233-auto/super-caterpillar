@@ -14,7 +14,7 @@ class MockVgEngine extends VgBaseEngine {
         return this.execute(input, input.payload);
     }
     protected async processLogic(payload: any) {
-        return { assetUrl: 'file:///tmp/mock_vg.png', meta: { mock: true } };
+        return { assetUrl: '/tmp/mock_vg.png', meta: { mock: true } };
     }
 }
 

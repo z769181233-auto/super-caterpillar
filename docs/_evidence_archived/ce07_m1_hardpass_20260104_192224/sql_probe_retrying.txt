@@ -1,5 +1,5 @@
  RETRYING |        1 | [GATE] Injected CE07 Fail-Once Error                                                                                                        +| 
           |          | Error: [GATE] Injected CE07 Fail-Once Error                                                                                                 +| 
-          |          |     at processCE07Job (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/dist/apps/workers/src/engines/ce07/index.js:19:15)+| 
-          |          |     at processJob (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/dist/apps/workers/src/main.js:373:42)                 +| 
+          |          |     at processCE07Job (apps/workers/dist/apps/workers/src/engines/ce07/index.js:19:15)+| 
+          |          |     at processJob (apps/workers/dist/apps/workers/src/main.js:373:42)                 +| 
           |          |     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)                                                           | 

@@ -1,4 +1,4 @@
-EVID_DIR=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/repo_audit_20251231_080101
+EVID_DIR=docs/_evidence/repo_audit_20251231_080101
 
 1) Inventory: 02_inventory.txt
 2) Gate refs: 03_gate_refs.txt

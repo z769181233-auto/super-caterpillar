@@ -5,14 +5,14 @@ turbo 2.6.3
 • Remote caching disabled
 @scu/worker:dev: cache bypass, force executing def469afb0ea13c0
 @scu/worker:dev: 
-@scu/worker:dev: > @scu/worker@1.0.0 dev /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers
+@scu/worker:dev: > @scu/worker@1.0.0 dev apps/workers
 @scu/worker:dev: > ts-node -r tsconfig-paths/register src/main.ts
 @scu/worker:dev: 
-@scu/worker:dev: [Bootstrap] Loaded env from /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.env. STORAGE_ROOT=undefined
+@scu/worker:dev: [Bootstrap] Loaded env from .env. STORAGE_ROOT=undefined
 @scu/worker:dev: [Bootstrap] Prisma Client DMMF Self-Check...
-@scu/worker:dev: [Bootstrap]   process.cwd() = /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers
-@scu/worker:dev: [Bootstrap]   @prisma/client resolved to: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/default.js
-@scu/worker:dev: [Bootstrap]   database resolved to: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/database/src/index.ts
+@scu/worker:dev: [Bootstrap]   process.cwd() = apps/workers
+@scu/worker:dev: [Bootstrap]   @prisma/client resolved to: node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/default.js
+@scu/worker:dev: [Bootstrap]   database resolved to: packages/database/src/index.ts
 @scu/worker:dev: [Bootstrap] ❌ DMMF Self-Check ERROR: Prisma DMMF not available or malformed
 @scu/worker:dev: [Bootstrap] Gate/Dev mode: Continuing with WARNING (CE06/other jobs may still work)
 @scu/worker:dev: [Bootstrap] GATE_MODE detected, loading Gate Worker...
@@ -101,7 +101,7 @@ turbo 2.6.3
 @scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443826","X-Nonce":"f2779391dc2a86071c10132c7ed2cc76-16-1769443826196","X-Signature":"c6fad8fba3154527e265f9d2bbbaabd5cac385012cd2f238f1741b6dfcff948d","X-Api-Key":"dev-worker-key","X-Content-SHA256":"9724295f1f12e3a20e76ad11528d19957f132622e78f8722e37407c7d92e65e3","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
 @scu/worker:dev: [GateWorker] ACK job: 7adc3cff-5080-4d84-90ba-625a1db8754c
 @scu/worker:dev: [AudioProcessor] Processing AUDIO job 7adc3cff-5080-4d84-90ba-625a1db8754c for run L3_R1R2_1402116b
-@scu/worker:dev: [AudioProcessor] Spawning FFmpeg: ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t 2 -y /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/7adc3cff-5080-4d84-90ba-625a1db8754c/audio.wav
+@scu/worker:dev: [AudioProcessor] Spawning FFmpeg: ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t 2 -y apps/workers/workspace/7adc3cff-5080-4d84-90ba-625a1db8754c/audio.wav
 @scu/worker:dev: [FFmpeg] stderr: ffmpeg version 8.0.1 Copyright (c) 2000-2025 the FFmpeg developers
 @scu/worker:dev:   built with Apple clang version 17.0.0 (clang-1700.4.4.1)
 @scu/worker:dev:   configuration: --prefix=/opt/homebrew/Cellar/ffmpeg/8.0.1 --enable-shared --enable-pthreads --enable-version3 --cc=clang --host-cflags= --host-ldflags= --enable-ffplay --enable-gnutls --enable-gpl --enable-libaom --enable-libaribb24 --enable-libbluray --enable-libdav1d --enable-libharfbuzz --enable-libjxl --enable-libmp3lame --enable-libopus --enable-librav1e --enable-librist --enable-librubberband --enable-libsnappy --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libtesseract --enable-libtheora --enable-libvidstab --enable-libvmaf --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libxvid --enable-lzma --enable-libfontconfig --enable-libfreetype --enable-frei0r --enable-libass --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-libspeex --enable-libsoxr --enable-libzmq --enable-libzimg --disable-libjack --disable-indev=jack --enable-videotoolbox --enable-audiotoolbox --enable-neon
@@ -124,7 +124,7 @@ turbo 2.6.3
 @scu/worker:dev: [FFmpeg] stderr: 
 @scu/worker:dev: Press [q] to stop, [?] for help
 @scu/worker:dev: 
-@scu/worker:dev: [FFmpeg] stderr: Output #0, wav, to '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/7adc3cff-5080-4d84-90ba-625a1db8754c/audio.wav':
+@scu/worker:dev: [FFmpeg] stderr: Output #0, wav, to 'apps/workers/workspace/7adc3cff-5080-4d84-90ba-625a1db8754c/audio.wav':
 @scu/worker:dev:   Metadata:
 @scu/worker:dev:     ISFT            : Lavf62.3.100
 @scu/worker:dev:   Stream #0:0: Audio: pcm_s16le ([1][0][0][0] / 0x0001), 44100 Hz, mono, s16, 705 kb/s
@@ -133,7 +133,7 @@ turbo 2.6.3
 @scu/worker:dev: [out#0/wav @ 0x600003f50000] video:0KiB audio:172KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.044218%
 @scu/worker:dev: size=     172KiB time=00:00:02.00 bitrate= 705.9kbits/s speed= 570x elapsed=0:00:00.00    
 @scu/worker:dev: 
-@scu/worker:dev: [AudioProcessor] FFmpeg success: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/workspace/7adc3cff-5080-4d84-90ba-625a1db8754c/audio.wav
+@scu/worker:dev: [AudioProcessor] FFmpeg success: apps/workers/workspace/7adc3cff-5080-4d84-90ba-625a1db8754c/audio.wav
 @scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/jobs/7adc3cff-5080-4d84-90ba-625a1db8754c/report
 @scu/worker:dev: [Worker HMAC v2] POST /api/jobs/7adc3cff-5080-4d84-90ba-625a1db8754c/report nonce=7e5ead83... timestamp=1769443826 workerId=local-worker bodyString={"status":"SUCCEEDED","result":{"status":"SUCCEEDED","output":{"assetId":"67b46302-6033-4c58-9b21-5730edf8a261","storageKey":"audios/67b46302-6033-4c58-9b21-5730edf8a261.wav","sha256":"b3e4be24700c9147fa5b43e3b1740aa9bb356b2e718f2455b15e0ed49118e079"}}}
 @scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443826","X-Nonce":"7e5ead83fc1191d71f42bb653f023387-17-1769443826345","X-Signature":"5632d0044a889f309296683a3f1f83c645ddd519bb6415ed9b2c7ab38eed9419","X-Api-Key":"dev-worker-key","X-Content-SHA256":"5212565ee742c42e571539b5cfa767c3dcf220b26a1448c232e1ac18a875b10c","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
@@ -147,11 +147,11 @@ turbo 2.6.3
 @scu/worker:dev: [Worker HMAC v2] POST /api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/ack nonce=25866066... timestamp=1769443828 workerId=local-worker bodyString={"workerId":"local-worker"}
 @scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443828","X-Nonce":"25866066e857130575a077bdc417a555-19-1769443828188","X-Signature":"4dad16577feb400cf07c34e68317a89e70e23c20bd70cf251cde1cd0ea9cec99","X-Api-Key":"dev-worker-key","X-Content-SHA256":"9724295f1f12e3a20e76ad11528d19957f132622e78f8722e37407c7d92e65e3","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
 @scu/worker:dev: [GateWorker] ACK job: c408a863-2c20-43c5-969f-ce4a82bf64d9
-@scu/worker:dev: [ResolvePath] HIT storageRoot="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime" key="temp/gates/mock_shot_render.png" abs="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/temp/gates/mock_shot_render.png"
-@scu/worker:dev: [VideoRender] ffmpeg single-frame -> /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4
-@scu/worker:dev: [VideoRender] Spawning ffmpeg with args: -y -loop 1 -t 1 -i /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/temp/gates/mock_shot_render.png -vf scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p -r 25 -c:v libx264 -pix_fmt yuv420p /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4
+@scu/worker:dev: [ResolvePath] HIT storageRoot="apps/workers/.runtime" key="temp/gates/mock_shot_render.png" abs="apps/workers/.runtime/temp/gates/mock_shot_render.png"
+@scu/worker:dev: [VideoRender] ffmpeg single-frame -> apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4
+@scu/worker:dev: [VideoRender] Spawning ffmpeg with args: -y -loop 1 -t 1 -i apps/workers/.runtime/temp/gates/mock_shot_render.png -vf scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p -r 25 -c:v libx264 -pix_fmt yuv420p apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4
 @scu/worker:dev: [Worker DEBUG] ApiClient request: POST /api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/report
-@scu/worker:dev: [Worker HMAC v2] POST /api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/report nonce=0a0c46ba... timestamp=1769443828 workerId=local-worker bodyString={"status":"SUCCEEDED","result":{"status":"SUCCEEDED","output":{"assetId":"745752c1-5aaf-441a-95d3-9fe37c615113","storageKey":"videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4","absolutePath":"/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4"}}}
+@scu/worker:dev: [Worker HMAC v2] POST /api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/report nonce=0a0c46ba... timestamp=1769443828 workerId=local-worker bodyString={"status":"SUCCEEDED","result":{"status":"SUCCEEDED","output":{"assetId":"745752c1-5aaf-441a-95d3-9fe37c615113","storageKey":"videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4","absolutePath":"apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4"}}}
 @scu/worker:dev: [ApiClient DEBUG] Headers: {"Content-Type":"application/json","X-Timestamp":"1769443828","X-Nonce":"0a0c46ba6d14c12a0cf442cb3032b2b1-20-1769443828292","X-Signature":"38ec61deee966c4e3d7dbde2a44405560da6cfed3773f9d5c94fbb34955c9f79","X-Api-Key":"dev-worker-key","X-Content-SHA256":"affa62db74beab57fdde55b9c6b07d546d74d3f4b0b44f7731e878ce8277b691","X-Hmac-Version":"1.1","x-worker-id":"local-worker"}
 @scu/worker:dev: [GateWorker] ✅ job c408a863-2c20-43c5-969f-ce4a82bf64d9 成功完成
 @scu/worker:dev: DEBUG: heartbeat params (FIXED): {"workerId":"local-worker","status":"online","tasksRunning":0}

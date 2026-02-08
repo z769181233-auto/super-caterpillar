@@ -111,7 +111,7 @@ export async function renderWithComfyUI(
     // Fallback for API execution
     path.join(process.cwd(), 'packages/engines/shot_render/providers/templates', templateName),
     // Absolute path fallback
-    '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines/shot_render/providers/templates/comfyui_text2img_sdxl.json',
+    'packages/engines/shot_render/providers/templates/comfyui_text2img_sdxl.json',
   ];
 
   let templatePath = '';

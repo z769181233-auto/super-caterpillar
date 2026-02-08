@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-ART="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/w3_1_seal_fix_20260207_232857/artifacts"
+ART="docs/_evidence/w3_1_seal_fix_20260207_232857/artifacts"
 
 cd "$ART"
 

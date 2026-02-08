@@ -5,7 +5,7 @@ turbo 2.6.3
 • Remote caching disabled
 api:dev: cache bypass, force executing 32a6ec469d39ecd3
 api:dev: 
-api:dev: > api@1.0.0 dev /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+api:dev: > api@1.0.0 dev apps/api
 api:dev: > nest start --watch
 api:dev: 
 api:dev: 
@@ -19,8 +19,8 @@ api:dev: [Config] DATABASE_URL resolved from .env file
 api:dev: [CONFIG_DEBUG] JWT_SECRET read from env: your...
 api:dev: [GATE_DIAGNOSTIC] GATE_MODE=1, NODE_ENV=development, PORT=undefined, HMAC_DEBUG=undefined
 api:dev: [GATE_DIAGNOSTIC] GATE_MODE=1, NODE_ENV=development, PORT=undefined, HMAC_DEBUG=undefined
-api:dev: [LocalStorageAdapter] Initialized at: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage
-api:dev: [LocalStorageAdapter] Initialized at: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage
+api:dev: [LocalStorageAdapter] Initialized at: .data/storage
+api:dev: [LocalStorageAdapter] Initialized at: .data/storage
 api:dev: [EngineInvokerHubService] Constructor - costLimit defined: true
 api:dev: [EngineHubController] Initialized. engineInvoker defined: true
 api:dev: [LISTEN_DIAG] before_listen host=127.0.0.1 port=3000 pid=73240
@@ -31,17 +31,17 @@ api:dev: [P0_EVIDENCE] StorageController registered = true
 api:dev: [P0_EVIDENCE] Total controllers registered = 51
 api:dev: [23:10:05.102] INFO (73240): Starting Nest application...
 api:dev:     context: "NestFactory"
-api:dev: [23:10:05.103] INFO (73240): root=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage
+api:dev: [23:10:05.103] INFO (73240): root=.data/storage
 api:dev:     context: "LocalStorageService"
-api:dev: [23:10:05.103] INFO (73240): Initializing Storage Adapter at: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage
+api:dev: [23:10:05.103] INFO (73240): Initializing Storage Adapter at: .data/storage
 api:dev:     context: "LocalStorageService"
 api:dev: [23:10:05.103] INFO (73240): [PrismaService] Prisma Client 诊断信息:
 api:dev:     context: "PrismaService"
 api:dev: [23:10:05.103] INFO (73240): [P0_EVIDENCE] Active DATABASE_URL: postgresql://postgres:***@localhost:5433/scu
 api:dev:     context: "PrismaService"
-api:dev: [23:10:05.103] INFO (73240): root=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage
+api:dev: [23:10:05.103] INFO (73240): root=.data/storage
 api:dev:     context: "LocalStorageService"
-api:dev: [23:10:05.103] INFO (73240): Initializing Storage Adapter at: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage
+api:dev: [23:10:05.103] INFO (73240): Initializing Storage Adapter at: .data/storage
 api:dev:     context: "LocalStorageService"
 api:dev: [23:10:05.103] INFO (73240): PrismaModule dependencies initialized
 api:dev:     context: "InstanceLoader"
@@ -11335,7 +11335,7 @@ api:dev:       "remoteAddress": "127.0.0.1",
 api:dev:       "remotePort": 60227
 api:dev:     }
 api:dev:     context: "NonceService"
-api:dev: [23:10:28.294] INFO (73240): [HMAC DEBUG]: {"method":"POST","path":"/api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/report","headers":{"x-api-key":"dev-worker-key","x-nonce":"0a0c46ba6d14c12a0cf442cb3032b2b1-20-1769443828292","x-timestamp":"1769443828","x-signature":"38ec61deee966c4e3d7dbde2a44405560da6cfed3773f9d5c94fbb34955c9f79"},"bodyString":"{\"status\":\"SUCCEEDED\",\"result\":{\"status\":\"SUCCEEDED\",\"output\":{\"assetId\":\"745752c1-5aaf-441a-95d3-9fe37c615113\",\"storageKey\":\"videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4\",\"absolutePath\":\"/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4\"}}}"}
+api:dev: [23:10:28.294] INFO (73240): [HMAC DEBUG]: {"method":"POST","path":"/api/jobs/c408a863-2c20-43c5-969f-ce4a82bf64d9/report","headers":{"x-api-key":"dev-worker-key","x-nonce":"0a0c46ba6d14c12a0cf442cb3032b2b1-20-1769443828292","x-timestamp":"1769443828","x-signature":"38ec61deee966c4e3d7dbde2a44405560da6cfed3773f9d5c94fbb34955c9f79"},"bodyString":"{\"status\":\"SUCCEEDED\",\"result\":{\"status\":\"SUCCEEDED\",\"output\":{\"assetId\":\"745752c1-5aaf-441a-95d3-9fe37c615113\",\"storageKey\":\"videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4\",\"absolutePath\":\"apps/workers/.runtime/videos/5e2ec618-bf15-417e-b5b0-351ffe674ab1/05f0e514-85f9-4e5d-9377-97a69cb2fc4b/L3_R1R2_1402116b/scene.mp4\"}}}"}
 api:dev:     req: {
 api:dev:       "id": 22,
 api:dev:       "method": "POST",

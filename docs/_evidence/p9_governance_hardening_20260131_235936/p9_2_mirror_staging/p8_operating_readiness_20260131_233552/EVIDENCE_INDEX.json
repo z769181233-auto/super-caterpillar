@@ -2,7 +2,7 @@
   "phase": "8",
   "name": "production operating readiness",
   "status": "PASS",
-  "evidence_dir": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/p8_operating_readiness_20260131_233552",
+  "evidence_dir": "docs/_evidence/p8_operating_readiness_20260131_233552",
   "generated_at": "2026-01-31T16:35:52.385Z",
   "artifacts": [
     {

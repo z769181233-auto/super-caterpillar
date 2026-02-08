@@ -5,6 +5,6 @@ Audit: 2/3 S. Types=[VIDEO_RENDER,AUDIO,SHOT_RENDER]
 [Found] Audio Asset: e0a764ab-bbb1-476e-8b0f-187ff73c23aa at audios/e0a764ab-bbb1-476e-8b0f-187ff73c23aa.wav
 Audit: 3/3 S. Types=[VIDEO_RENDER,AUDIO,SHOT_RENDER]
 ✅ Pipeline reached VIDEO_RENDER completion.
-[Check] Audio file exists? true (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/.data/storage/audios/e0a764ab-bbb1-476e-8b0f-187ff73c23aa.wav)
+[Check] Audio file exists? true (.data/storage/audios/e0a764ab-bbb1-476e-8b0f-187ff73c23aa.wav)
 
 ✅ L3 R1/R2 SUCCESS.

@@ -3,7 +3,7 @@ Pager usage is off.
 --------------------------------------+----------+----------------------+----------------------+----------+----------+-----------------------------------------------------------------------------------------------------------+-------------------------+-------------------------+---------------------------------------------------------
  a53aff4d-bbcd-437a-bfa7-2d239845a14b | RETRYING | CE01_REFERENCE_SHEET | ce01_reference_sheet |        1 |        3 | Unsupported job type: CE01_REFERENCE_SHEET                                                               +| 2026-01-04 04:08:53.671 | 2026-01-04 03:45:06.573 | ce01_a80b6dd9-6a9d-4f8c-a780-708d7723b21e_1767498306529
                                       |          |                      |                      |          |          | Error: Unsupported job type: CE01_REFERENCE_SHEET                                                        +|                         |                         | 
-                                      |          |                      |                      |          |          |     at processJob (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/workers/src/main.ts:538:11)+|                         |                         | 
+                                      |          |                      |                      |          |          |     at processJob (apps/workers/src/main.ts:538:11)+|                         |                         | 
                                       |          |                      |                      |          |          |     at processTicksAndRejections (node:internal/process/task_queues:105:5)                                |                         |                         | 
 (1 row)
 
