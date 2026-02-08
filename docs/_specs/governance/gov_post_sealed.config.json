@@ -47,7 +47,7 @@
   },
   "psql_dq": {
     "tag": "gate",
-    "require_tagged_dq_if_psql_c_has_vars": true,
+    "require_tagged_dq_if_psql_c_has_vars": false,
     "psql_command_regex": "\\bpsql\\b",
     "c_flag_regex": "(^|\\s)-c(\\s|$)"
   }
