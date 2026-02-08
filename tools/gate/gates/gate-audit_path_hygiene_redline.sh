@@ -18,7 +18,7 @@ while read -r f; do
   [[ -z "$f" ]] && continue
   
   # 排除测试脚本和审计脚本中的正则本身
-  if [[ "$f" == *"negative_tests.sh"* ]] || [[ "$f" == *"gate-audit_path_hygiene"* ]]; then
+  if [[ "$f" == *"negative_tests.sh"* ]] || [[ "$f" == *"gate-audit_path_hygiene"* ]] || [[ "$f" == *"gate-path-leak.sh"* ]] || [[ "$f" == *"gate_billing_doc_hygiene.sh"* ]]; then
      continue
   fi
 
