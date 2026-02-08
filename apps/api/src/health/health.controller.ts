@@ -96,7 +96,9 @@ export class HealthController {
       ]
     );
 
-    // P5-1: Unified Scrape - Include Worker Metrics
+    // P5-1: Unified Scrape - Include Global Registry + Worker Metrics
+    const globalMetrics = await (await import('@scu/observability')).registry.metrics();
+
     let workerMetrics = '';
     const workerMetricsPort = process.env.WORKER_METRICS_PORT || 3001;
     try {
@@ -133,7 +135,7 @@ scu_api_memory_heap_total_bytes ${memUsage.heapTotal}
 # TYPE scu_api_memory_rss_bytes gauge
 scu_api_memory_rss_bytes ${memUsage.rss}
 
-# HELP scu_api_jobs_total Total number of jobs
+# HELP scu_api_jobs_total Total number of jobs (API DB snapshot)
 # TYPE scu_api_jobs_total gauge
 scu_api_jobs_total ${totalJobs}
 
@@ -154,6 +156,8 @@ scu_api_jobs_failed ${failedJobs}
 scu_api_jobs_video_render_pending ${videoRenderPending}
 
 ${TextSafetyMetrics.getPrometheusOutput()}
+
+${globalMetrics}
 
 ${workerMetrics}
 `;
