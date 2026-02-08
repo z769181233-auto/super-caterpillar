@@ -458,8 +458,22 @@ exports.Prisma.ShotJobScalarFieldEnum = {
   traceId: 'traceId',
   isVerification: 'isVerification',
   dedupeKey: 'dedupeKey',
+  outputSha256: 'outputSha256',
+  engineProvider: 'engineProvider',
+  engineRunId: 'engineRunId',
+  engineModel: 'engineModel',
   result: 'result',
   securityProcessed: 'securityProcessed'
+};
+
+exports.Prisma.ShotJobArtifactScalarFieldEnum = {
+  id: 'id',
+  jobId: 'jobId',
+  kind: 'kind',
+  path: 'path',
+  sha256: 'sha256',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.WorkerNodeScalarFieldEnum = {
@@ -1319,6 +1333,7 @@ exports.Prisma.ModelName = {
   Task: 'Task',
   WorkerJob: 'WorkerJob',
   ShotJob: 'ShotJob',
+  ShotJobArtifact: 'ShotJobArtifact',
   WorkerNode: 'WorkerNode',
   WorkerHeartbeat: 'WorkerHeartbeat',
   ModelRegistry: 'ModelRegistry',

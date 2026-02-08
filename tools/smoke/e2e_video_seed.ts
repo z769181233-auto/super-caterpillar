@@ -93,7 +93,7 @@ async function main() {
   const scene = await prisma.scene.create({
     data: {
       episodeId: episode.id,
-      index: 1,
+      sceneIndex: 1,
       title: 'Sc1',
       summary: 'E2E Test Scene Summary',
       projectId: project.id,

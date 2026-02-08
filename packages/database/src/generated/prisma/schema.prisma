@@ -520,30 +520,37 @@ model WorkerJob {
 }
 
 model ShotJob {
-  id                String            @id @default(uuid())
-  organizationId    String
-  projectId         String
-  episodeId         String?
-  sceneId           String?
-  shotId            String?
-  taskId            String?
-  workerId          String?
-  status            JobStatus         @default(PENDING)
-  type              JobType
-  priority          Int               @default(0)
-  maxRetry          Int               @default(3)
-  retryCount        Int               @default(0)
-  attempts          Int               @default(0)
-  leaseUntil        DateTime?         @map("lease_until")
-  lockedBy          String?           @map("locked_by")
-  payload           Json?
-  engineConfig      Json?
-  lastError         String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  traceId           String?
-  isVerification    Boolean           @default(false) @map("is_verification")
-  dedupeKey         String?           @unique @map("dedupe_key")
+  id             String    @id @default(uuid())
+  organizationId String
+  projectId      String
+  episodeId      String?
+  sceneId        String?
+  shotId         String?
+  taskId         String?
+  workerId       String?
+  status         JobStatus @default(PENDING)
+  type           JobType
+  priority       Int       @default(0)
+  maxRetry       Int       @default(3)
+  retryCount     Int       @default(0)
+  attempts       Int       @default(0)
+  leaseUntil     DateTime? @map("lease_until")
+  lockedBy       String?   @map("locked_by")
+  payload        Json?
+  engineConfig   Json?
+  lastError      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  traceId        String?
+  isVerification Boolean   @default(false) @map("is_verification")
+  dedupeKey      String?   @unique @map("dedupe_key")
+
+  // REAL ENGINE PROVENANCE (Week 2 Enhancement)
+  outputSha256   String? @map("output_sha256")
+  engineProvider String? @map("engine_provider")
+  engineRunId    String? @map("engine_run_id")
+  engineModel    String? @map("engine_model")
+
   result            Json?
   securityProcessed Boolean           @default(false)
   generatedAsset    Asset[]           @relation("JobGeneratedAsset")
@@ -555,8 +562,26 @@ model ShotJob {
   shot              Shot?             @relation("ShotJobs", fields: [shotId], references: [id], onDelete: Cascade)
   task              Task?             @relation("TaskJobs", fields: [taskId], references: [id], onDelete: Cascade)
   worker            WorkerNode?       @relation("WorkerNodeShotJobs", fields: [workerId], references: [id])
+  artifacts         ShotJobArtifact[] @relation("ShotJobArtifacts")
 
   @@map("shot_jobs")
+}
+
+model ShotJobArtifact {
+  id        String   @id @default(uuid())
+  jobId     String   @map("job_id")
+  kind      String // SHOT_RENDER_OUTPUT_MP4, PROVENANCE_JSON, etc.
+  path      String // Relative or absolute path to artifact
+  sha256    String // SHA256 checksum
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  job ShotJob @relation("ShotJobArtifacts", fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, kind])
+  @@index([jobId])
+  @@index([kind])
+  @@map("shot_job_artifacts")
 }
 
 model WorkerNode {

@@ -1,4 +1,0 @@
-==============================================
-GATE: Orchestrator V2 Audio Integration
-==============================================
-[Gate] Feature Flag: ORCH_V2_AUDIO_ENABLED=1

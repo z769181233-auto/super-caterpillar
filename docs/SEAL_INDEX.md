@@ -45,3 +45,5 @@
 - **Stage 3**: 事件驱动 DAG 与多 Worker 负载均衡封板 (2026-01-14)
 - **Stage 1**: `isVerification` 传播链与视频渲染流程验证 (2026-01-14)
 - **CE-ARCH-GUARD-02**: 引擎调用界面 SSOT 门禁通过 (2026-01-10)
+- **Tag**: W2_REAL_ENGINE_ACCEPT_SEALED_20260206_232838
+- **Status**: PASSED (Manual Repair Verified)

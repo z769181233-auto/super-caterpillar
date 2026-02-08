@@ -40,3 +40,37 @@
 ## 3. 下一步计划 (Post-Seal)
 
 - [ ] L3: Full Production Slice (L3 Manifest 持续集成)
+
+---
+
+## 4. SHOT_RENDER L3 Seal (W3-1 - DB Traceability Required)
+
+| 维度                             | 状态                        | 验证人      | 证据链                                                                                                                                                                                     |
+| :------------------------------- | :-------------------------- | :---------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **L1: Code Quality**             | ✅ SEALED                   | Antigravity | [JobService.create](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/apps/api/src/job/job.service.ts#L133)                                                                   |
+| **L2: Contract + Job Loop**      | ✅ SEALED (DB Optional)     | Antigravity | [W3-1 L2 Evidence](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/w3_1_seal_fix_20260207_232857/)                                                           |
+| **L3: DB Traceability Required** | ✅ SEALED (Commercial Grade) | Antigravity | [W3-1 L3 Evidence](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/w3_1_l3_db_required_20260208_102428/) |
+
+### L3 Required Gates
+
+SHOT_RENDER 达到 L3 封板等级时，必须通过以下所有 Gate：
+
+1. **Gate 17**: ORIGIN_NATIVE_DROP Contract  
+   - Script: [gate17.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate17.sh)
+   - Verifies: 产物文件存在性、SHA256 完整性
+
+2. **Gate 18 (Contract)**: Engine Provenance Contract  
+   - Script: [gate_engine_provenance.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate_engine_provenance.sh)
+   - Verifies: Provenance JSON 契约约束
+
+3. **Gate 18b (DB Trace Required)**: DB Traceability Enforcement  
+   - Script: [gate18_dbtrace_required.sh](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/gate18_dbtrace_required.sh)
+   - Verifies: `shot_jobs` record, `shot_job_artifacts` records, SHA256 match
+   - **Hard Fails**: DATABASE_URL missing (exit 12), DB unreachable (exit 13), records missing (exit 16)
+
+### L3 Technical Requirements
+
+- `shot_jobs` 表必须包含: `status=SUCCEEDED`, `outputSha256` 非空
+- `shot_job_artifacts` 表必须包含至少 2 条记录: `SHOT_RENDER_OUTPUT_MP4`, `PROVENANCE_JSON`
+- Worker 必须在 job 成功时自动写入 DB 记录（禁止手动补写）
+- `@@unique([jobId, kind])` 约束确保幂等写入

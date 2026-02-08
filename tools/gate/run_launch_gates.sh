@@ -119,6 +119,19 @@ pick_first_2xx() {
 TS="$(date +%Y%m%d_%H%M%S)"
 EVI_DIR="$PROJECT_ROOT/docs/_evidence/run_launch_gates_${TS}"
 mkdir -p "$EVI_DIR"
+
+# W3-0: ARTIFACT_DIR 契约强制（唯一 SSOT）
+ARTIFACT_DIR="${ARTIFACT_DIR:-$EVI_DIR/artifacts}"
+mkdir -p "$ARTIFACT_DIR"
+test -d "$ARTIFACT_DIR" || { echo -e "${RED}❌ ARTIFACT_DIR not a directory${NC}"; exit 1; }
+test -w "$ARTIFACT_DIR" || { echo -e "${RED}❌ ARTIFACT_DIR not writable${NC}"; exit 1; }
+export ARTIFACT_DIR
+
+# Back-compat alias (MUST NOT diverge)
+export SSOT_ARTIFACTS_DIR="${SSOT_ARTIFACTS_DIR:-$ARTIFACT_DIR}"
+
+echo -e "${BLUE}[GATES] ARTIFACT_DIR=$ARTIFACT_DIR${NC}"
+
 REPORT_FILE="$EVI_DIR/GATEKEEPER_VERIFICATION_REPORT.md"
 
 TEMP_DIR="${TEMP_DIR:-$(mktemp -d 2>/dev/null || mktemp -d -t scu_gates)}"
@@ -1029,25 +1042,29 @@ if [[ "${ENGINE_REAL:-0}" == "1" ]]; then
     echo "Engine Sanity Check enabled (ENGINE_REAL=1)"
     echo "Validating real engine output (vs Mock placeholder)..."
     
-    # --- Week1 D4: Real SHOT_RENDER artifact contract ---
-    ART_DIR="$EVI_DIR/artifacts"
-    mkdir -p "$ART_DIR"
+    # ---W3-0: 使用 ARTIFACT_DIR（禁止 fallback）---
+    ART_DIR="$ARTIFACT_DIR"
     REAL_MP4="$ART_DIR/shot_render_output.mp4"
 
-    # NOTE: In a real run, the SHOT_RENDER producer should have placed/downloaded the file here.
-    # For verification within this script, we check its presence.
-    if [[ ! -f "$REAL_MP4" ]]; then
-      echo -e "  ${YELLOW}⚠️  D4: real output missing at $REAL_MP4${NC}"
-      echo "  Checking for any generated mp4 in $TEMP_DIR..."
-      # Fallback/Auto-detect for dev convenience: if something exists in TEMP_DIR, copy it
-      FOUND_MP4=$(find "$TEMP_DIR" -maxdepth 1 -name "*.mp4" | head -n1 || true)
-      if [[ -n "$FOUND_MP4" ]]; then
-        echo "  Found $FOUND_MP4, copying to $REAL_MP4"
-        cp "$FOUND_MP4" "$REAL_MP4"
-      fi
+    CONTRACT_LOG="$EVI_DIR/gate17_origin_native_drop_contract.log"
+
+    # W3-1: 强制契约验证（四件套 + sha + marker）
+    if ! ARTIFACT_DIR="$ART_DIR" bash tools/gate/gates/gate_origin_native_drop_contract.sh >"$CONTRACT_LOG" 2>&1; then
+      echo -e "  ${RED}❌ W3-1 contract failed: $CONTRACT_LOG${NC}"
+      cat "$CONTRACT_LOG" >> "$ENGINE_SANITY_OUTPUT" 2>/dev/null || true
+      ENGINE_SANITY_PASSED=false
+    else
+      echo "✅ W3-1 contract OK (log: $CONTRACT_LOG)" >> "$ENGINE_SANITY_OUTPUT"
     fi
 
-    if [ -f "$REAL_MP4" ] && [ -s "$REAL_MP4" ]; then
+    # 没通过就别继续做 engine_sanity
+    if [ "$ENGINE_SANITY_PASSED" != true ]; then
+      true
+    elif [[ ! -f "$REAL_MP4" ]] || [[ ! -s "$REAL_MP4" ]]; then
+        echo -e "  ${RED}❌ D4: real output missing or empty: $REAL_MP4${NC}"
+        echo "- ❌ D4: real output missing or empty" >> "$ENGINE_SANITY_OUTPUT"
+        ENGINE_SANITY_PASSED=false
+    else
         echo "[GATE17] ENGINE_REAL=1 → running engine sanity on: $REAL_MP4"
         OUTPUT_FILE="$REAL_MP4" \
         EVIDENCE_DIR="$EVI_DIR/gate17_engine_sanity" \
@@ -1055,15 +1072,79 @@ if [[ "${ENGINE_REAL:-0}" == "1" ]]; then
           echo -e "  ${RED}❌ Gate 17 failed (Real Engine)${NC}"
           ENGINE_SANITY_PASSED=false
         }
-    else
-        echo -e "  ${RED}❌ D4: real output missing or empty: $REAL_MP4${NC}"
-        echo "- ❌ D4: real output missing or empty" >> "$ENGINE_SANITY_OUTPUT"
-        ENGINE_SANITY_PASSED=false
     fi
 else
     echo -e "  ${YELLOW}⚠️  Engine Sanity Check skipped (set ENGINE_REAL=1 to enable)${NC}"
     echo "- ⚠️  Engine Sanity Check skipped (ENGINE_REAL=0)" >> "$ENGINE_SANITY_OUTPUT"
     echo -e "${BLUE}ℹ️  Gate 17 skipped (Mock mode)${NC}\n"
+fi
+
+# 门禁 18: Engine Provenance (Week 2 真实产出溯源契约)
+# 仅在 ENGINE_REAL=1 时执行
+echo -e "${BLUE}Gate 18: Engine Provenance (Real Engine Auditing)${NC}"
+ENGINE_PROVENANCE_PASSED=true
+ENGINE_PROVENANCE_OUTPUT="$TEMP_DIR/engine_provenance.txt"
+
+if [[ "${ENGINE_REAL:-0}" == "1" ]]; then
+    echo "Engine Provenance Check enabled (ENGINE_REAL=1)"
+    EVIDENCE_DIR="$EVI_DIR" \
+    DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}" \
+    bash tools/gate/gates/gate_engine_provenance.sh > "$ENGINE_PROVENANCE_OUTPUT" 2>&1 || {
+        echo -e "  ${RED}❌ Gate 18 failed (Provenance Audit)${NC}"
+        ENGINE_PROVENANCE_PASSED=false
+    }
+    if [ "$ENGINE_PROVENANCE_PASSED" = true ]; then echo -e "  ${GREEN}✅ Engine Provenance check passed${NC}"; fi
+else
+    echo -e "  ${YELLOW}⚠️  Engine Provenance Check skipped (set ENGINE_REAL=1 to enable)${NC}"
+    echo "- ⚠️  Engine Provenance Check skipped (ENGINE_REAL=0)" >> "$ENGINE_PROVENANCE_OUTPUT"
+    echo -e "${BLUE}ℹ️  Gate 18 skipped (Mock mode)${NC}\n"
+fi
+
+# 门禁 18b: Gate 18 DB Traceability REQUIRED (L3 - POST-L3-0 硬化)
+# CI 强制执行，local 可选（但默认也跑除非明确 ALLOW_DBTRACE_SKIP=1）
+echo -e "${BLUE}Gate 18b: DB Traceability Required (L3)${NC}"
+ENGINE_DBTRACE_PASSED=true
+ENGINE_DBTRACE_OUTPUT="$TEMP_DIR/engine_dbtrace_required.txt"
+
+if [[ "${GATE_ENV_MODE:-local}" == "ci" ]]; then
+    # CI 模式：DATABASE_URL 必须存在，Gate 必须执行
+    if [[ -z "${DATABASE_URL:-}" ]]; then
+        echo -e "  ${RED}❌ DATABASE_URL is required in CI for Gate18 DB Traceability${NC}"
+        echo "- ❌ DATABASE_URL is required in CI" >> "$ENGINE_DBTRACE_OUTPUT"
+        ENGINE_DBTRACE_PASSED=false
+        ALL_GATES_PASSED=false
+    else
+        echo "  DB Traceability REQUIRED (CI mode)"
+        if bash tools/gate/gates/gate18_dbtrace_required.sh "$ARTIFACT_DIR" > "$ENGINE_DBTRACE_OUTPUT" 2>&1; then
+            echo -e "  ${GREEN}✅ Gate 18b DB Traceability passed${NC}"
+        else
+            echo -e "  ${RED}❌ Gate 18b DB Traceability failed${NC}"
+            ENGINE_DBTRACE_PASSED=false
+            ALL_GATES_PASSED=false
+        fi
+    fi
+else
+    # local 模式：默认也跑，除非明确设置 ALLOW_DBTRACE_SKIP=1
+    if [[ "${ALLOW_DBTRACE_SKIP:-0}" == "1" ]]; then
+        echo -e "  ${YELLOW}⚠️  [WARN] ALLOW_DBTRACE_SKIP=1 set. Skipping Gate18 DB Traceability (NOT ALLOWED FOR L3 SEAL).${NC}"
+        echo "- ⚠️  Skipped (ALLOW_DBTRACE_SKIP=1)" >> "$ENGINE_DBTRACE_OUTPUT"
+    else
+        if [[ -z "${DATABASE_URL:-}" ]]; then
+            echo -e "  ${RED}❌ DATABASE_URL missing. Gate18 DB Traceability REQUIRED in local unless ALLOW_DBTRACE_SKIP=1.${NC}"
+            echo "- ❌ DATABASE_URL missing (required unless ALLOW_DBTRACE_SKIP=1)" >> "$ENGINE_DBTRACE_OUTPUT"
+            ENGINE_DBTRACE_PASSED=false
+            ALL_GATES_PASSED=false
+        else
+            echo "  DB Traceability REQUIRED (local mode, DATABASE_URL set)"
+            if bash tools/gate/gates/gate18_dbtrace_required.sh "$ARTIFACT_DIR" > "$ENGINE_DBTRACE_OUTPUT" 2>&1; then
+                echo -e "  ${GREEN}✅ Gate 18b DB Traceability passed${NC}"
+            else
+                echo -e "  ${RED}❌ Gate 18b DB Traceability failed${NC}"
+                ENGINE_DBTRACE_PASSED=false
+                ALL_GATES_PASSED=false
+            fi
+        fi
+    fi
 fi
 
 # 初始化商业级报告头部
@@ -1142,6 +1223,9 @@ fi
   echo ""
   echo "### Gate 16: Billing Documentation Hygiene"
   cat "$DOC_HYGIENE_OUTPUT"
+  echo ""
+  echo "### Gate 18: Engine Provenance (Week 2)"
+  cat "$ENGINE_PROVENANCE_OUTPUT"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 {
@@ -1165,6 +1249,7 @@ fi
   echo "- Gate 15 (CE11 Shot Generator): $([ "$CE11_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 16 (Billing Documentation Hygiene): $([ "$DOC_HYGIENE_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 17 (Engine Sanity): $([ "$ENGINE_SANITY_PASSED" = true ] && echo "✅ PASSED" || echo "⚠️  SKIPPED")"
+  echo "- Gate 18 (Engine Provenance): $([ "$ENGINE_PROVENANCE_PASSED" = true ] && echo "✅ PASSED" || echo "⚠️  SKIPPED")"
   echo ""
   echo "## Gate Mode Semantics"
   echo "- **MODE**: $GATE_ENV_MODE"
@@ -1198,6 +1283,11 @@ ALL_PASSED=true
 [ "$CE02_PASSED" != true ] && ALL_PASSED=false
 [ "$CE11_PASSED" != true ] && ALL_PASSED=false
 [ "$DOC_HYGIENE_PASSED" != true ] && ALL_PASSED=false
+
+if [[ "${ENGINE_REAL:-0}" == "1" ]]; then
+    [ "$ENGINE_SANITY_PASSED" != true ] && ALL_PASSED=false
+    [ "$ENGINE_PROVENANCE_PASSED" != true ] && ALL_PASSED=false
+fi
 
 # 只有在非 local 且非 ci 模式下 (即 staging)，4/5 的失败才影响最终结果
 if [ "$GATE_ENV_MODE" != "local" ] && [ "$GATE_ENV_MODE" != "ci" ]; then

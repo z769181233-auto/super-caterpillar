@@ -1,9 +1,0 @@
-{
-  "characterId": "char_valid_123",
-  "continuityScore": 99,
-  "checks": {
-    "faceIdConsistency": "MATCH",
-    "featureLock": "ACTIVE"
-  },
-  "timestamp": "2026-02-01T06:41:04.506Z"
-}

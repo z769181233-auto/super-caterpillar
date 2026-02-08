@@ -1,0 +1,4 @@
+ERROR:  column "outputSha256" does not exist
+LINE 1: SELECT id, status, "outputSha256", "engineProvider" FROM sho...
+                           ^
+HINT:  Perhaps you meant to reference the column "shot_jobs.output_sha256".

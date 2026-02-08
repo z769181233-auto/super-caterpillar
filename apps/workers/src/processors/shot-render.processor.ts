@@ -101,7 +101,7 @@ export async function processShotRenderJob(
         projectId,
         ownerId: shot.id,
         ownerType: AssetOwnerType.SHOT,
-        type: AssetType.IMAGE,
+        type: AssetType.VIDEO,
         storageKey,
         checksum: sha256,
         status: 'GENERATED',
@@ -129,6 +129,40 @@ export async function processShotRenderJob(
           episodeId: shot.scene?.episodeId,
         },
       });
+    }
+
+    // W3-1: 原生落盘四件套（禁止 fallback） - PLAN-B Permanent Fix
+    const path = await import('node:path');
+    const repoRoot = process.env.SCU_REPO_ROOT || process.cwd();
+    const artifactDirAbs = payload.artifactDir
+      ? (path.isAbsolute(payload.artifactDir) ? payload.artifactDir : path.resolve(repoRoot, payload.artifactDir))
+      : (process.env.ARTIFACT_DIR ? path.resolve(process.env.ARTIFACT_DIR) : undefined);
+
+    if (artifactDirAbs) {
+      // Safety check: must be inside docs/_evidence
+      const allowedBase = path.resolve(repoRoot, 'docs/_evidence');
+      const resolved = path.resolve(artifactDirAbs);
+      if (!resolved.startsWith(allowedBase + path.sep)) {
+        throw new Error(`[W3] artifactDir out of allowed base: ${resolved}`);
+      }
+
+      const { dropOriginNativeFourPack } = await import('../lib/origin_native_drop');
+      // 从 storageKey 推断本地路径（假设在 .data/storage 下）
+      const storagePath = storageKey.startsWith('/')
+        ? storageKey
+        : path.resolve(repoRoot, 'apps/api/.data/storage', storageKey);
+
+      await dropOriginNativeFourPack({
+        artifactDir: artifactDirAbs,
+        mp4Path: storagePath,
+        meta: {
+          shotId,
+          jobId: job.id,
+          engine: 'shot_render',
+          source: { kind: 'storage_key', storageKey },
+        },
+      });
+      logger.log(`[W3-1] Native drop OK: ${artifactDirAbs}/ORIGIN_NATIVE_DROP_OK.txt`);
     }
 
     return { status: 'SUCCEEDED', output: { assetId: asset.id, storageKey } };
