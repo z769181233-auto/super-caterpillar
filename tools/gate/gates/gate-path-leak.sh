@@ -33,7 +33,7 @@ for target in "${TARGETS[@]}"; do
   echo "  Scanning $TABLE.$FIELD..." | tee -a "$LOG_FILE"
   
   # 查找包含绝对路径的记录 (排除常见合法路径)
-  # 掩码脱敏示例：/Users/adam/ -> /Users/***/
+  # 掩码脱敏示例：/Users/***/ -> /Users/***/
   QUERY="SELECT $PK, $FIELD FROM $TABLE WHERE $FIELD::text LIKE '%/Users/%' LIMIT 10;"
   HITS=$(psql -d "$DATABASE_URL" -t -A -c "$QUERY" 2>/dev/null || true)
   
