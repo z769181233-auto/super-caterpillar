@@ -105,5 +105,5 @@
   - ✅ RSS Definition Validated (Internal Peak vs Swarm Total)
   - ✅ Nightly 3MB Baseline Gate Formalized
 
-- **Phase 6**: Go-Live Engineering - Nightly Gate + Runbook (PENDING EVIDENCE)
-- **P6-0/P6-1 Hardened**: CI blocking enabled + metrics delta verification + environment SSOT (2026-02-08)
+- **Phase 6**: Go-Live Engineering - Hardened-Ready (V3.1) [Evidence](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/stage4_scaling_15m_20260208_175418)
+- **P6-0/P6-1 Hardened**: CI blocking (V3.1) + Readiness + Multi-signal Delta + Trap (2026-02-08)
