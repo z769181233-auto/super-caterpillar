@@ -105,5 +105,16 @@
   - ✅ RSS Definition Validated (Internal Peak vs Swarm Total)
   - ✅ Nightly 3MB Baseline Gate Formalized
 
-- **Phase 6**: Go-Live Engineering - Hardened-Ready (V3.1) [Evidence](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/stage4_scaling_15m_20260208_175418)
-- **P6-0/P6-1 Hardened**: CI blocking (V3.1) + Readiness + Multi-signal Delta + Trap (2026-02-08)
+## Phase 6: Go-Live Engineering (Hardened-Ready V3.1)
+
+- **Status**: HARDENED-READY (Commercial Nightly Gate)
+- **Primary Tag**: STAGE4_PHASE6_NIGHTLY_GATE_SEALED_20260208
+- **Evidence**: docs/_evidence/stage4_scaling_15m_20260208_175418/
+- **Scope**:
+  - ✅ Gate-led SSOT evidence path (`docs/_evidence/current_stage4_evidence_path.txt`)
+  - ✅ Mandatory `metrics_pre.txt` + `metrics_post.txt` (+ trap best-effort on failure)
+  - ✅ Multi-signal delta assertion (`jobs_total` OR `duration_seconds_count`)
+  - ✅ Anti-hang short-circuit (exit 17 if no progress after 120s)
+  - ✅ RSS scope disambiguation (`peakSwarmRssMb` in `final_summary.json`)
+- **Notes**:
+  - Nightly CI workflow consumes SSOT evidence path and blocks on `final_summary.json: PASS`.

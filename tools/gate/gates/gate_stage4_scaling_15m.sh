@@ -27,7 +27,7 @@ TS="$(date +%Y%m%d_%H%M%S)"
 EVI_DIR="${ROOT_DIR}/docs/_evidence/stage4_scaling_15m_${TS}"
 mkdir -p "${EVI_DIR}"
 
-# --- [V3.2] Mandatory Post-metrics Capture (Trap) ---
+# --- [V3.1] Mandatory Post-metrics Capture (Trap) ---
 BEST_EFFORT_METRICS_POST() {
   echo "[AUDIT] Attempting post-run metrics capture..."
   curl -fsS http://localhost:3000/metrics > "${EVI_DIR}/metrics_post.txt" 2>/dev/null || true
