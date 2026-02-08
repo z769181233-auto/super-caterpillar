@@ -153,13 +153,26 @@ export class ApiClient {
       }
 
       // [P6-0 Fix]: Special bypass for massive bodies (>1MB) to align with API Guard's bypass
+      const isPost = method.toUpperCase() === 'POST';
+      const isEmptyBody = bodyString === '';
       const isMassive = bodyString.length > 1024 * 1024;
       const bodyHash = computeBodyHash(bodyString);
 
       // If massive, we sign the HASH instead of the raw body to save CPU/Memory on both ends
       // This is a protocol agreement for internal /_internal/engine/invoke calls.
       const messageBody = isMassive ? `__MASSIVE_BODY_BYPASS__:${bodyString.length}` : bodyString;
-      const signBody = isMassive ? bodyHash : messageBody;
+      let signBody = isMassive ? bodyHash : messageBody;
+
+      // 3. 计算 contentHash
+      const contentHash = createHash('sha256').update(bodyString).digest('hex');
+
+      // 4. 计算签名
+      // [HMAC V1.1 Fix] Align with API Guard logic:
+      // If POST and body is empty, API uses contentHash in canonical string.
+      // If GET/DELETE, API uses body (which is empty string).
+      if (method.toUpperCase() === 'POST' && bodyString === '') {
+        signBody = contentHash;
+      }
 
       const message = buildMessage(this.apiKey, nonce, timestamp, signBody);
       const signature = computeSignature(this.apiSecret, message);

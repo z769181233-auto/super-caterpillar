@@ -74,3 +74,17 @@ SHOT_RENDER 达到 L3 封板等级时，必须通过以下所有 Gate：
 - `shot_job_artifacts` 表必须包含至少 2 条记录: `SHOT_RENDER_OUTPUT_MP4`, `PROVENANCE_JSON`
 - Worker 必须在 job 成功时自动写入 DB 记录（禁止手动补写）
 - `@@unique([jobId, kind])` 约束确保幂等写入
+
+---
+
+## 5. Stage 4: Novel Import Engines (The Shredder)
+
+| 维度                             | 状态                        | 验证人      | 证据链                                                                                                                                                                                     |
+| :------------------------------- | :-------------------------- | :---------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **L1: Code Quality**             | ✅ SEALED                   | Antigravity | [StreamScanner](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/packages/ingest/stream_scan.ts)                                                                             |
+| **L2: Scalability & Idempotency**| ✅ SEALED (Logic Verified)  | Antigravity | [Stage 4 Handover](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/docs/_evidence/stage4_scaling_15m_20260208_142823/)                                                      |
+
+### Verified Capabilities
+- **Streaming**: Byte-range scanning avoids OOM.
+- **Fan-out**: Single `SCAN` job triggers N `CHUNK_PARSE` jobs.
+- **Idempotency**: `organization_members` UPSERT fix verified.

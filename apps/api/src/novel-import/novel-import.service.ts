@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectService } from '../project/project.service';
 import { NovelAnalysisProcessorService } from './novel-analysis-processor.service';
+import { randomUUID } from 'crypto';
 
 /**
  * 小说分析结果结构（为未来接入 LLM 预留）
@@ -36,7 +37,7 @@ export class NovelImportService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly analysisProcessor: NovelAnalysisProcessorService
-  ) {}
+  ) { }
 
   /**
    * 分析单个章节
@@ -300,6 +301,71 @@ export class NovelImportService {
           episodes,
         },
       ],
+    };
+  }
+
+  /**
+   * 触发 Shredder (Stage 4) 流程：流式扫描与分片解析
+   * 适用于 100万字以上的长篇小说
+   */
+  async triggerShredderWorkflow(
+    novelSourceId: string,
+    projectId: string,
+    organizationId: string,
+    userId: string,
+    filePath: string,
+    title: string,
+    traceId?: string
+  ): Promise<any> {
+    this.logger.log(`[Stage 4] Triggering Shredder workflow for Novel: ${novelSourceId} (${projectId})`);
+
+    // 1. 创建 Task (类型为 NOVEL_ANALYSIS，符合现有架构)
+    const task = await this.prisma.task.create({
+      data: {
+        organizationId,
+        projectId,
+        type: 'NOVEL_ANALYSIS' as any,
+        status: 'PENDING',
+        traceId: traceId || `tr_shredder_${randomUUID()}`,
+        payload: {
+          novelSourceId,
+          projectId,
+          mode: 'SHREDDER', // 标记为分片模式
+        },
+      },
+    });
+
+    // 2. 创建 NOVEL_SCAN_TOC Job
+    // 使用 createCECoreJob 确保符合 Job 系统规范（带占位层级）
+    const job = await this.prisma.shotJob.create({
+      data: {
+        organizationId,
+        projectId,
+        // 下面这几个 ID 在 createCECoreJob 中是自动创建占位的，
+        // 这里为了简单，我们直接手动模拟 Job 系统的“带占位”创建
+        // 后续 Scan 任务会创建真实的 Season/Episode
+        taskId: task.id,
+        type: 'NOVEL_SCAN_TOC' as any,
+        status: 'PENDING',
+        priority: 10, // 高优先级，因为是根任务
+        maxRetry: 3,
+        payload: {
+          novelSourceId,
+          projectId,
+          organizationId,
+          userId,
+          fileKey: filePath,
+          title,
+        },
+        traceId: task.traceId,
+      },
+    });
+
+    this.logger.log(`[Stage 4] Shredder root job (NOVEL_SCAN_TOC) created: ${job.id}`);
+
+    return {
+      jobId: job.id,
+      taskId: task.id,
     };
   }
 

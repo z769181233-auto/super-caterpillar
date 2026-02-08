@@ -251,3 +251,29 @@ export const env = {
   ce23RealForceDisable: process.env.CE23_REAL_FORCE_DISABLE === '1',
   orchV2AudioEnabled: process.env.ORCH_V2_AUDIO_ENABLED === '1' || true, // FORCED TRUE FOR L3 VERIFICATION
 };
+
+/**
+ * P0-1: HMAC Secret SSOT (Single Source of Truth)
+ * 统一变量名与加载优先级，禁止代码硬编码。
+ * 优先级：HMAC_SECRET_KEY > API_SECRET_KEY > WORKER_API_SECRET
+ */
+export function pickHmacSecretSSOT(): string {
+  const v =
+    process.env.HMAC_SECRET_KEY ||
+    process.env.API_SECRET_KEY ||
+    process.env.WORKER_API_SECRET;
+
+  if (!v) {
+    throw new Error('HMAC_SECRET_MISSING: Please set HMAC_SECRET_KEY in environment or .env.local');
+  }
+
+  // Deprecation warnings (do not block)
+  if (!process.env.HMAC_SECRET_KEY) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[WARN] HMAC_SECRET_KEY missing; fallback to legacy env used. Please migrate to HMAC_SECRET_KEY.'
+    );
+  }
+
+  return v;
+}

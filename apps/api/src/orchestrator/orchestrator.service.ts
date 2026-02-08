@@ -596,9 +596,11 @@ export class OrchestratorService {
         take: 1,
       });
 
+      /*
       console.log(
-        `[Orchestrator_DEBUG] Candidate for ${workerId}: ${candidate ? candidate.id : 'NONE'}`
+        `[Orchestrator_DEBUG] Candidate for ${workerId}: ${candidate ? candidate.id : 'NONE'}. SupportedTypes: ${JSON.stringify(supportedJobTypes)}`
       );
+      */
 
       if (!candidate) {
         this.logger.warn(`[Orchestrator] No PENDING job found for dispatch.`);

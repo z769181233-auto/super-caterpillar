@@ -11,7 +11,7 @@
 /// <reference path="./types/config.d.ts" />
 import * as util from 'util';
 import { PrismaClient, Prisma, JobType } from 'database';
-import { env, config as appConfig } from '@scu/config';
+import { env, config as appConfig, pickHmacSecretSSOT } from '@scu/config';
 
 // 生产模式门禁：强制从环境变量读取
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
@@ -118,7 +118,7 @@ const apiSecretFromCli = readArg('apiSecret');
  */
 const apiBaseUrl = apiUrlFromCli || env.apiUrl || 'http://localhost:3000';
 const workerApiKey = apiKeyFromCli || env.workerApiKey;
-const workerApiSecret = apiSecretFromCli || env.workerApiSecret;
+const workerApiSecret = apiSecretFromCli || pickHmacSecretSSOT();
 
 process.stdout.write(
   util.format(

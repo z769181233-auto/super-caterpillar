@@ -55,10 +55,20 @@ export class ApiSecurityGuard implements CanActivate {
     const path = request.path || request.url?.split('?')[0] || '';
 
     // 1. 提取请求头（v2 规范）
+    // DEBUG: Log all headers to debug missing x-content-sha256
+    // console.log('[ApiSecurityGuard] HMAC_DEBUG=', process.env.HMAC_DEBUG);
+    // console.log('[ApiSecurityGuard] Headers:', JSON.stringify(request.headers));
+
     const apiKey = request.headers['x-api-key'] as string;
     const nonce = request.headers['x-nonce'] as string;
     const timestamp = request.headers['x-timestamp'] as string;
+    // contentSha256 might be missing or different case?
     const contentSha256 = request.headers['x-content-sha256'] as string;
+
+    if (!contentSha256 && process.env.HMAC_DEBUG === '1') {
+      console.log('[HMAC_DEBUG] Missing x-content-sha256! Headers:', Object.keys(request.headers));
+    }
+
     const signature = request.headers['x-signature'] as string;
 
     // 2. 检查必需的头字段
@@ -114,12 +124,17 @@ export class ApiSecurityGuard implements CanActivate {
     let rawBodyBytes: Buffer | undefined;
     if (!isMultipartEndpoint && !isStreamingEndpoint) {
       // 非 multipart 端点：尝试获取 rawBody 或从 body 序列化
+      const contentLength = parseInt(request.headers['content-length'] as string, 10);
+
       if (request.rawBody) {
         rawBodyBytes = Buffer.isBuffer(request.rawBody)
           ? request.rawBody
           : Buffer.from(request.rawBody);
+      } else if (contentLength === 0 || !request.body || Object.keys(request.body).length === 0) {
+        // 如果 Content-Length 为 0 或 body 为空，强制视为 empty
+        rawBodyBytes = Buffer.alloc(0);
       } else if (request.body) {
-        // 如果没有 rawBody，从 body 对象序列化
+        // 如果没有 rawBody，从 body 对象序列化 (慎用)
         rawBodyBytes = Buffer.from(JSON.stringify(request.body), 'utf8');
       }
 

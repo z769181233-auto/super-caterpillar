@@ -354,18 +354,24 @@ async function main() {
   // ========== API Keys Seed: Worker Key ==========
   process.stdout.write(util.format('🌱 Seeding API Keys...') + '\n');
   const workerApiKey = 'ak_worker_dev_0000000000000000';
-  const workerApiSecret =
-    'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
+  const hmacSecret =
+    process.env.HMAC_SECRET_KEY || process.env.WORKER_API_SECRET || process.env.API_SECRET_KEY;
+
+  if (!hmacSecret) {
+    throw new Error(
+      'SEED_HMAC_SECRET_MISSING: set HMAC_SECRET_KEY for seeding worker secret'
+    );
+  }
 
   await prisma.apiKey.upsert({
     where: { key: workerApiKey },
     update: {
-      secretHash: workerApiSecret, // Dev env fallback allows plain secret in secretHash
+      secretHash: hmacSecret, // Dev env fallback allows plain secret in secretHash
       status: 'ACTIVE',
     },
     create: {
       key: workerApiKey,
-      secretHash: workerApiSecret,
+      secretHash: hmacSecret,
       name: 'Dev Worker Key',
       status: 'ACTIVE',
     },

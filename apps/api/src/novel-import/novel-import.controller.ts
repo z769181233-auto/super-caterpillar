@@ -60,6 +60,7 @@ import { UnprocessableEntityException } from '@nestjs/common';
 export class NovelImportController {
   private readonly logger = new Logger(NovelImportController.name);
   private readonly uploadDir = path.join(process.cwd(), 'uploads', 'novels');
+  private readonly SHREDDER_THRESHOLD_CHARACTERS = 1000000;
 
   constructor(
     @Inject(NovelImportService) private readonly novelImportService: NovelImportService,
@@ -172,127 +173,37 @@ export class NovelImportController {
     @CurrentOrganization() organizationId: string | null,
     @Req() request: Request
   ) {
-    if (!file) {
-      throw new BadRequestException('File is required');
-    }
-
-    if (!organizationId) {
-      throw new ForbiddenException('No organization context');
-    }
-
-    // 检查项目权限
+    if (!file) throw new BadRequestException('File is required');
+    if (!organizationId) throw new ForbiddenException('No organization context');
     await this.projectService.checkOwnership(projectId, user.userId);
 
     const fileExt = path.extname(file.originalname).toLowerCase().substring(1);
     const filePath = file.path;
+    const traceId = randomUUID();
 
     try {
-      // 解析文件（传入文件名用于提取作品名）
-      const parsed = await this.fileParserService.parseFile(filePath, fileExt, file.originalname);
-
-      // 安全审查 (BLOCK 时必须零写入)
-      const traceId = randomUUID();
-      await this.performSafetyCheck(parsed.rawText, {
-        projectId,
-        userId: user.userId,
-        organizationId,
-        traceId,
-      });
-
-      // 使用解析后的数据或用户输入的数据
-      // 优先级：用户输入 > 解析结果 > 文件名
-      const title =
+      // 1. 预创建核心记录 (SSOT)
+      const initialTitle =
         importNovelFileDto.title ||
-        parsed.title ||
         this.fileParserService.extractTitleFromFileName(file.originalname) ||
         path.basename(file.originalname, path.extname(file.originalname));
-      const author = importNovelFileDto.author || parsed.author;
 
-      // 创建 Novel（使用 title 和 author）
       const novelSource = await this.prisma.novel.create({
         data: {
           projectId,
-          title,
-          author,
-
-          rawFileUrl: filePath, // V3.0: rawFileUrl
-          // rawText: parsed.rawText, // REMOVED
-          // filePath, // REMOVED
-          fileName: file.originalname,
-          fileSize: file.size,
-          fileType: fileExt,
-          characterCount: parsed.characterCount,
-          chapterCount: parsed.chapterCount,
-          metadata: parsed.metadata ? JSON.parse(JSON.stringify(parsed.metadata)) : null,
-        },
-      });
-
-      // Create default volume
-      const volume = await this.prisma.novelVolume.create({
-        data: {
-          projectId,
-          novelSourceId: novelSource.id,
-          index: 1,
-          title: '默认卷',
-        },
-      });
-
-      // 保存章节原文到 NovelChapter
-      const savedChapters = [];
-      for (let i = 0; i < parsed.chapters.length; i++) {
-        const chapter = parsed.chapters[i];
-        const savedChapter = await this.prisma.novelChapter.create({
-          data: {
-            novelSourceId: novelSource.id,
-            volumeId: volume.id,
-            index: i + 1,
-
-            title: chapter.title,
-            rawContent: chapter.content, // V3.0: Save content to chapter
-          },
-        });
-        // Create Scene with rawText
-        await this.prisma.scene.create({
-          data: {
-            chapterId: savedChapter.id,
-            projectId, // Ensure projectId is marked
-            sceneIndex: 1, // V3.0 compliance
-            title: `Scene 1`,
-            // rawText: chapter.content, // REMOVED V3.0
-          },
-        });
-        savedChapters.push(savedChapter);
-      }
-
-      // 记录审计日志：NOVEL_IMPORT_FILE
-      const requestInfo = AuditLogService.extractRequestInfo(request);
-      try {
-        await this.auditLogService.record({
-          userId: user.userId,
-          action: 'NOVEL_IMPORT_FILE',
-          resourceType: 'project',
-          resourceId: projectId,
-          ip: requestInfo.ip,
-          userAgent: requestInfo.userAgent,
-          details: {
-            projectId,
-            novelSourceId: novelSource.id,
-            fileName: file.originalname,
+          organizationId,
+          title: initialTitle,
+          author: importNovelFileDto.author || 'Unknown',
+          status: 'PARSING',
+          metadata: {
+            originalFileName: file.originalname,
             fileSize: file.size,
-            fileType: fileExt,
-            mimeType: file.mimetype,
-            characterCount: parsed.characterCount,
-            chapterCount: parsed.chapterCount,
-            title,
-            author,
+            importType: 'FILE',
+            traceId,
           },
-        });
-      } catch (auditError) {
-        // 审计日志写入失败不影响主流程
-        this.logger.error('Failed to record audit log for NOVEL_IMPORT_FILE:', auditError);
-      }
+        },
+      });
 
-      // 创建分析任务（通过 Job 系统异步处理，符合 Stage1 规则）
       const analysisJob = await this.prisma.novelAnalysisJob.create({
         data: {
           projectId,
@@ -302,48 +213,27 @@ export class NovelImportController {
         },
       });
 
-      try {
-        // 1. 创建 Task
-        const task = await this.taskService.create({
-          organizationId,
+      // P0-S4: Massive File Guard (0-Memory-Bomb)
+      // 如果文件 > 5MB，直接进入 Shredder，不走 FileParserService
+      if (file.size > 5000000) {
+        const result = await this.novelImportService.triggerShredderWorkflow(
+          novelSource.id,
           projectId,
-          type: TaskTypeEnum.NOVEL_ANALYSIS,
-          status: TaskStatusEnum.PENDING,
-          payload: {
-            projectId,
-            novelSourceId: novelSource.id,
-            analysisJobId: analysisJob.id,
-          },
-        });
-
-        // 2. 创建 NOVEL_ANALYSIS Job（只创建 1 个 Job，符合"只保留最新一条"规则）
-        const job = await this.jobService.createNovelAnalysisJob(
-          {
-            type: 'NOVEL_ANALYSIS' as any,
-            payload: {
-              projectId,
-              novelSourceId: novelSource.id,
-              organizationId,
-              userId: user.userId,
-            },
-          },
-          user.userId,
           organizationId,
-          task.id,
-          undefined, // apiKeyId
-          request.ip || (request.headers['x-forwarded-for'] as string),
-          request.headers['user-agent']
+          user.userId,
+          filePath,
+          file.originalname,
+          traceId
         );
 
-        // 3. 更新 NovelAnalysisJob 状态为 PENDING（等待 Worker 处理）
         await this.prisma.novelAnalysisJob.update({
           where: { id: analysisJob.id },
           data: {
-            status: 'PENDING',
             progress: {
-              message: 'Job created, waiting for worker',
-              jobId: job.id,
-              taskId: task.id,
+              message: 'Massive file detected, Shredder Scan started',
+              jobId: result.jobId,
+              taskId: result.taskId,
+              mode: 'SHREDDER',
             },
           },
         });
@@ -351,77 +241,142 @@ export class NovelImportController {
         return {
           success: true,
           data: {
-            jobId: job.id,
-            analysisJobId: analysisJob.id,
+            jobId: result.jobId,
+            taskId: result.taskId,
             novelSourceId: novelSource.id,
-            title,
-            author,
-            characterCount: parsed.characterCount,
-            chapterCount: parsed.chapterCount,
+            mode: 'SHREDDER',
           },
-          message: 'Novel imported, analysis job created',
+          message: 'Massive novel detected, Shredder scanning started',
           requestId: randomUUID(),
           timestamp: new Date().toISOString(),
         };
-      } catch (error: any) {
-        // 更新任务状态为 FAILED
-        await this.prisma.novelAnalysisJob.update({
-          where: { id: analysisJob.id },
+      }
+
+      // 2. 普通解析路径
+      const parsed = await this.fileParserService.parseFile(filePath, fileExt, file.originalname);
+
+      // 安全审查
+      await this.performSafetyCheck(parsed.rawText, {
+        projectId,
+        userId: user.userId,
+        organizationId,
+        traceId,
+      });
+
+      // 3. 更新模型并创建结构 (V3.0)
+      const title = importNovelFileDto.title || parsed.title || initialTitle;
+      const author = importNovelFileDto.author || parsed.author || 'Unknown';
+
+      await this.prisma.novel.update({
+        where: { id: novelSource.id },
+        data: {
+          title,
+          author,
+          characterCount: parsed.characterCount,
+          chapterCount: parsed.chapterCount,
+          metadata: parsed.metadata ? JSON.parse(JSON.stringify(parsed.metadata)) : novelSource.metadata,
+        },
+      });
+
+      const volume = await this.prisma.novelVolume.create({
+        data: { projectId, novelSourceId: novelSource.id, index: 1, title: '默认卷' },
+      });
+
+      for (let j = 0; j < parsed.chapters.length; j++) {
+        const ch = parsed.chapters[j];
+        const savedChapter = await this.prisma.novelChapter.create({
           data: {
-            status: 'FAILED',
-            errorMessage: error?.message || 'Unknown error',
+            novelSourceId: novelSource.id,
+            volumeId: volume.id,
+            index: j + 1,
+            title: ch.title,
+            rawContent: ch.content,
           },
         });
-
-        // 统一错误处理：将错误转换为明确的业务异常
-        if (
-          error instanceof NotFoundException ||
-          error instanceof BadRequestException ||
-          error instanceof ConflictException
-        ) {
-          throw error;
-        }
-
-        // 其他未知错误，转换为 BadRequestException
-        throw new BadRequestException(error?.message || '导入小说失败，请稍后重试');
+        await this.prisma.scene.create({
+          data: {
+            chapterId: savedChapter.id,
+            projectId,
+            sceneIndex: 1,
+            title: 'Scene 1',
+          },
+        });
       }
+
+      // 4. 发起异步 Job
+      const task = await this.taskService.create({
+        organizationId,
+        projectId,
+        type: 'NOVEL_ANALYSIS',
+        status: 'PENDING',
+        traceId,
+      });
+
+      const job = await this.jobService.createNovelAnalysisJob(
+        {
+          type: JobTypeEnum.NOVEL_ANALYSIS as any,
+          payload: {
+            projectId,
+            novelSourceId: novelSource.id,
+            taskId: task.id,
+            traceId,
+            title,
+            author,
+            chapterCount: parsed.chapterCount,
+          },
+        },
+        user.userId,
+        organizationId,
+        task.id,
+        undefined,
+        request.ip || (request.headers['x-forwarded-for'] as string),
+        request.headers['user-agent']
+      );
+
+      await this.prisma.novelAnalysisJob.update({
+        where: { id: analysisJob.id },
+        data: {
+          progress: { message: 'Job created', jobId: job.id, taskId: task.id },
+        },
+      });
+
+      // 审计日志
+      const requestInfo = AuditLogService.extractRequestInfo(request);
+      this.auditLogService
+        .record({
+          userId: user.userId,
+          action: 'NOVEL_IMPORT_FILE',
+          resourceType: 'project',
+          resourceId: projectId,
+          ip: requestInfo.ip,
+          userAgent: requestInfo.userAgent,
+          details: { novelSourceId: novelSource.id, title, characterCount: parsed.characterCount },
+        })
+        .catch((e) => this.logger.error('Audit fail', e));
+
+      return {
+        success: true,
+        data: {
+          jobId: job.id,
+          analysisJobId: analysisJob.id,
+          novelSourceId: novelSource.id,
+          title,
+          author,
+          characterCount: parsed.characterCount,
+          chapterCount: parsed.chapterCount,
+        },
+        message: 'Novel imported, analysis job created',
+        requestId: randomUUID(),
+        timestamp: new Date().toISOString(),
+      };
     } catch (error: any) {
-      // 清理上传的文件
-      try {
-        await fs.unlink(filePath);
-      } catch (unlinkError) {
-        this.logger.error('Failed to delete uploaded file:', unlinkError);
-      }
-
-      // 如果已经是封装好的 UnprocessableEntityException，直接抛出
-      if (error instanceof UnprocessableEntityException) {
-        throw error;
-      }
-
-      // 明确区分错误类型，提供清晰的中文错误提示
-      let errorMessage = '导入失败，请稍后重试';
-      if (error instanceof BadRequestException) {
-        // 如果已经是 BadRequestException，直接使用其 message
-        errorMessage = error.message;
-      } else if (error.message?.includes('Unsupported file type')) {
-        errorMessage = '文件格式错误：不支持的文件类型';
-      } else if (
-        error.message?.includes('Failed to decode') ||
-        error.message?.includes('encoding')
-      ) {
-        errorMessage = '编码错误：无法识别文件编码，请确保文件为 UTF-8 编码';
-      } else if (error.message?.includes('parse') || error.message?.includes('解析')) {
-        errorMessage = '解析错误：无法解析小说文本，请检查文件编码或内容格式';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      throw new BadRequestException(errorMessage);
+      if (filePath) await fs.unlink(filePath).catch(() => { });
+      if (error instanceof UnprocessableEntityException) throw error;
+      throw new BadRequestException(error.message || 'Import failed');
     }
   }
-
   @Post('import')
-  @RequireSignature() // CE10: 高成本接口，强制签名验证
+  @RequireSignature()
   async importNovel(
     @Param('projectId') projectId: string,
     @Body() importNovelDto: ImportNovelDto,
@@ -429,212 +384,121 @@ export class NovelImportController {
     @CurrentOrganization() organizationId: string | null,
     @Req() request: Request
   ) {
-    if (!organizationId) {
-      throw new ForbiddenException('No organization context');
-    }
-
-    // 检查项目权限
+    if (!organizationId) throw new ForbiddenException('No organization context');
     await this.projectService.checkOwnership(projectId, user.userId);
 
-    // 1. 创建 Novel（文本导入模式）
-    // 兼容多种 Payload 字段（支持前端直接传 title+content 或 title+rawText）
-    let rawText =
-      importNovelDto.rawText ||
-      importNovelDto.content ||
-      (request.body as any)?.rawText ||
-      (request.body as any)?.content;
-    const title = importNovelDto.title || (request.body as any)?.title || '未命名作品';
+    const rawText = importNovelDto.rawText || importNovelDto.content || '';
+    if (!rawText) throw new BadRequestException('小说内容不能为空');
 
-    // 尝试查找已存在的最新 Novel（由 import-file 创建）
-    let novelSource = await this.prisma.novel.findFirst({
-      where: { projectId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const traceId = randomUUID();
+    const title = importNovelDto.title || 'Direct Import ' + new Date().toISOString();
 
-    // 如果没有 rawText，检查是否是仅更新元数据或确认
-    if (!rawText) {
-      if (
-        novelSource &&
-        (importNovelDto.novelName || importNovelDto.author || importNovelDto.fileUrl)
-      ) {
-        // 更新元数据模式
-        novelSource = await this.prisma.novel.update({
-          where: { id: novelSource.id },
-          data: {
-            title: importNovelDto.novelName || novelSource.title,
-            author: importNovelDto.author || novelSource.author,
-            // filePath / fileUrl 等通常由 upload 决定，这里暂不覆盖除非明确
-          },
-        });
-        // V3.0: rawText column removed. Fetching from Chapters not implemented yet.
-        rawText = ''; // FIXME: Implement fetch from NovelChapter.rawContent
-      }
+    // P0-S4: Massive Text Guard (Shredder)
+    if (rawText.length > this.SHREDDER_THRESHOLD_CHARACTERS) {
+      this.logger.log(`[Stage 4] Large text import detected (${rawText.length} chars), offloading to Shredder.`);
 
-      if (!rawText) {
-        throw new BadRequestException('小说内容不能为空 (rawText or content is required)');
-      }
-    } else {
-      // 安全审查 (BLOCK 时必须零写入)
-      const traceId = randomUUID();
-      await this.performSafetyCheck(rawText, {
-        projectId,
-        userId: user.userId,
-        organizationId,
-        traceId,
-      });
+      const tempFileName = `direct-import-${Date.now()}.txt`;
+      const tempPath = path.join(this.uploadDir, tempFileName);
+      await fs.writeFile(tempPath, rawText);
 
-      // 标准文本导入模式：创建新 Source
-      novelSource = await this.prisma.novel.create({
+      const novelSource = await this.prisma.novel.create({
         data: {
           projectId,
-          title: title,
-          rawFileUrl: 'text://direct-input',
-          characterCount: rawText.length,
+          organizationId,
+          title,
+          author: importNovelDto.author || 'Unknown',
+          status: 'PARSING',
+          metadata: { importType: 'TEXT', traceId, originalFileName: tempFileName },
         },
       });
 
-      // V3.0: Direct text import needs to create structure
-      const volume = await this.prisma.novelVolume.create({
-        data: { projectId, novelSourceId: novelSource.id, index: 1, title: 'Default Volume' },
-      });
-      const chapter = await this.prisma.novelChapter.create({
+      const result = await this.novelImportService.triggerShredderWorkflow(
+        novelSource.id,
+        projectId,
+        organizationId,
+        user.userId,
+        tempPath,
+        tempFileName,
+        traceId
+      );
+
+      return {
+        success: true,
+        data: { jobId: result.jobId, taskId: result.taskId, novelSourceId: novelSource.id, mode: 'SHREDDER' },
+        message: 'Massive text detected, Shredder scanning started',
+      };
+    }
+
+    // 普通文本导入路径
+    await this.performSafetyCheck(rawText, { projectId, userId: user.userId, organizationId, traceId });
+
+    const novelSource = await this.prisma.novel.create({
+      data: {
+        projectId,
+        organizationId,
+        title,
+        author: importNovelDto.author || 'Unknown',
+        characterCount: rawText.length,
+        status: 'PARSING',
+      },
+    });
+
+    // 创建 V3.0 结构：Volume -> Chapter -> Scene
+    const volume = await this.prisma.novelVolume.create({
+      data: { projectId, novelSourceId: novelSource.id, index: 1, title: '默认卷' },
+    });
+
+    const chapters = this.fileParserService.parseChaptersFromText(rawText);
+    const savedChapterIds = [];
+    for (let i = 0; i < chapters.length; i++) {
+      const ch = chapters[i];
+      const savedChapter = await this.prisma.novelChapter.create({
         data: {
           novelSourceId: novelSource.id,
           volumeId: volume.id,
-          index: 1,
-          title: 'Imported Text',
-          rawContent: rawText,
+          index: i + 1,
+          title: ch.title,
+          rawContent: ch.content,
         },
       });
       await this.prisma.scene.create({
-        data: {
-          chapterId: chapter.id,
-          projectId,
-          sceneIndex: 1,
-          title: 'Scene 1',
-          // rawText: rawText, // REMOVED V3.0
-        },
+        data: { chapterId: savedChapter.id, projectId, sceneIndex: 1, title: 'Scene 1' },
       });
+      savedChapterIds.push(savedChapter.id);
     }
 
-    if (!novelSource) {
-      throw new BadRequestException(
-        '无法定位小说源且未提供新内容 (Novel source not found and no content provided)'
-      );
-    }
-
-    // 2. 检查现存章节（幂等性处理）
-    let savedChapters = await this.prisma.novelChapter.findMany({
-      where: { novelSourceId: novelSource.id },
-      orderBy: { index: 'asc' },
-    });
-
-    if (savedChapters.length === 0) {
-      // Create default volume
-      const volume = await this.prisma.novelVolume.create({
-        data: {
-          projectId,
-          novelSourceId: novelSource.id,
-          index: 1,
-          title: '默认卷',
-        },
-      });
-
-      const chapters = this.fileParserService.parseChaptersFromText(rawText);
-      savedChapters = [];
-      for (let i = 0; i < chapters.length; i++) {
-        const chapter = chapters[i];
-        const savedChapter = await this.prisma.novelChapter.create({
-          data: {
-            novelSourceId: novelSource.id,
-            volumeId: volume.id,
-            index: i + 1,
-            title: chapter.title,
-          },
-        });
-        // Create Scene with rawText
-        await this.prisma.scene.create({
-          data: {
-            chapterId: savedChapter.id,
-            sceneIndex: 1, // V3.0 compliance
-            title: `Scene 1`,
-            // rawText: chapter.content, // V3.0: REMOVED
-          },
-        });
-        savedChapters.push(savedChapter);
-      }
-    }
-
-    // 4. 创建 Task（NOVEL_ANALYSIS 类型）
     const task = await this.taskService.create({
       organizationId,
       projectId,
-      type: TaskTypeEnum.NOVEL_ANALYSIS,
-      status: TaskStatusEnum.PENDING,
-      payload: {
-        novelSourceId: novelSource.id,
-        chapterIds: savedChapters.map((ch) => ch.id),
-      },
+      type: 'NOVEL_ANALYSIS',
+      status: 'PENDING',
+      traceId,
     });
 
-    // 5. 为每个章节创建 Job（NOVEL_ANALYZE_CHAPTER 类型）
-    const jobIds = [];
-    for (const chapter of savedChapters) {
-      const job = await this.jobService.createNovelAnalysisJob(
-        {
-          type: 'NOVEL_ANALYSIS' as any,
-          payload: {
-            chapterId: chapter.id,
-            projectId,
-            organizationId,
-            userId: user.userId,
-          },
-        },
-        user.userId,
-        organizationId,
-        task.id,
-        undefined, // apiKeyId
-        request.ip || (request.headers['x-forwarded-for'] as string),
-        request.headers['user-agent']
-      );
-      jobIds.push(job.id);
-    }
-
-    // 记录审计日志：NOVEL_IMPORT
-    const requestInfo = AuditLogService.extractRequestInfo(request);
-    try {
-      await this.auditLogService.record({
-        userId: user.userId,
-        action: 'NOVEL_IMPORT',
-        resourceType: 'project',
-        resourceId: projectId,
-        ip: requestInfo.ip,
-        userAgent: requestInfo.userAgent,
-        details: {
+    const job = await this.jobService.createNovelAnalysisJob(
+      {
+        type: JobTypeEnum.NOVEL_ANALYSIS as any,
+        payload: {
           projectId,
           novelSourceId: novelSource.id,
-          title: importNovelDto.title,
-          characterCount: rawText.length,
-          chapterCount: savedChapters.length,
-          importMode: 'text',
+          taskId: task.id,
+          traceId,
+          title,
+          chapterCount: chapters.length,
         },
-      });
-    } catch (auditError) {
-      // 审计日志写入失败不影响主流程
-      this.logger.error('Failed to record audit log for NOVEL_IMPORT:', auditError);
-    }
+      },
+      user.userId,
+      organizationId,
+      task.id,
+      undefined,
+      request.ip || (request.headers['x-forwarded-for'] as string),
+      request.headers['user-agent']
+    );
 
     return {
       success: true,
-      data: {
-        taskId: task.id,
-        novelSourceId: novelSource.id,
-        chapterCount: savedChapters.length,
-        jobIds,
-      },
-      message: 'Novel imported, analysis tasks created',
-      requestId: randomUUID(),
-      timestamp: new Date().toISOString(),
+      data: { jobId: job.id, taskId: task.id, novelSourceId: novelSource.id, chapterCount: chapters.length },
+      message: 'Novel imported, analysis job created',
     };
   }
 
@@ -643,236 +507,73 @@ export class NovelImportController {
     @Param('projectId') projectId: string,
     @CurrentUser() user: { userId: string },
     @CurrentOrganization() organizationId: string | null
-  ): Promise<any> {
-    if (!organizationId) {
-      throw new ForbiddenException('No organization context');
-    }
-
-    // 检查项目权限
+  ) {
+    if (!organizationId) throw new ForbiddenException('No organization context');
     await this.projectService.checkOwnership(projectId, user.userId);
 
-    // 返回 NOVEL_ANALYSIS 类型的 ShotJob（符合前端期望）
-    const jobs = await this.prisma.shotJob.findMany({
-      where: {
-        projectId,
-        type: JobTypeEnum.NOVEL_ANALYSIS,
-        organizationId,
-      },
+    const jobs = await this.prisma.novelAnalysisJob.findMany({
+      where: { projectId },
       orderBy: { createdAt: 'desc' },
-      take: 10, // 只返回最新的 10 条，符合"只保留最新一条有效记录"的规则
+      take: 10,
     });
-
-    // 映射为前端期望的格式
-    const mappedJobs = jobs.map((job: any) => ({
-      id: job.id,
-      type: job.type,
-      status: job.status,
-      createdAt: job.createdAt.toISOString(),
-      updatedAt: job.updatedAt.toISOString(),
-      payload: job.payload,
-      // 额外可观测字段：用于前端展示“为什么一直重试/失败”
-      lastError: job.lastError ?? null,
-      retryCount: job.retryCount ?? null,
-    }));
-
-    // 查询 EngineTask 视图（只读聚合，不修改数据）
-    const engineTasks = await this.engineTaskService.findEngineTasksByProject(
-      projectId,
-      'NOVEL_ANALYSIS'
-    );
 
     return {
       success: true,
-      data: {
-        jobs: mappedJobs, // 保持原有字段，确保前端兼容
-        engineTasks, // 新增字段：EngineTask 视图
-      },
+      data: { jobs },
       requestId: randomUUID(),
       timestamp: new Date().toISOString(),
     };
   }
 
   @Post('analyze')
-  @RequireSignature() // CE10: 高成本接口（触发解析/增强），强制签名验证
+  @RequireSignature()
   @Permissions(ProjectPermissions.PROJECT_GENERATE)
-  @AuditAction(AuditActions.JOB_CREATE)
   async analyzeNovel(
     @Param('projectId') projectId: string,
-    @Body() body: { chapterId?: string }, // 如果提供 chapterId，只分析单章；否则分析全书
+    @Body() body: { chapterId?: string },
     @CurrentUser() user: { userId: string },
     @CurrentOrganization() organizationId: string | null,
     @Req() request: Request
   ) {
-    if (!organizationId) {
-      throw new ForbiddenException('No organization context');
-    }
-
-    // 检查项目权限
+    if (!organizationId) throw new ForbiddenException('No organization context');
     await this.projectService.checkOwnership(projectId, user.userId);
 
-    // 获取 Novel
     const novelSource = await this.prisma.novel.findFirst({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
     });
+    if (!novelSource) throw new NotFoundException('找不到小说源');
 
-    if (!novelSource) {
-      throw new NotFoundException('当前项目没有可用的小说源，请先导入小说文件');
-    }
-
-    // 创建分析任务
-    const analysisJob = await this.prisma.novelAnalysisJob.create({
-      data: {
-        projectId,
-        novelSourceId: novelSource.id,
-        chapterId: body.chapterId || null,
-        jobType: body.chapterId ? 'ANALYZE_CHAPTER' : 'ANALYZE_ALL',
-        status: 'PENDING',
-      },
+    const task = await this.taskService.create({
+      organizationId,
+      projectId,
+      type: 'NOVEL_ANALYSIS',
+      status: 'PENDING',
     });
 
-    // 如果是单章分析，立即处理
-    let job: any = null;
-
-    if (body.chapterId) {
-      try {
-        await this.prisma.novelAnalysisJob.update({
-          where: { id: analysisJob.id },
-          data: { status: 'RUNNING' },
-        });
-
-        // P0-B: 封死同步 Stub 直调路径（强制分布式离散化）
-        throw new BadRequestException(
-          'DEPRECATED: Synchronous analysis is disabled. Use the Job pipeline instead.'
-        );
-        // await this.novelImportService.analyzeChapter(body.chapterId);
-
-        // 记录审计日志：NOVEL_ANALYZE（单章分析）
-        const requestInfo = AuditLogService.extractRequestInfo(request);
-        try {
-          await this.auditLogService.record({
-            userId: user.userId,
-            action: 'NOVEL_ANALYZE',
-            resourceType: 'novel_analysis_job',
-            resourceId: analysisJob.id,
-            ip: requestInfo.ip,
-            userAgent: requestInfo.userAgent,
-            details: {
-              projectId,
-              novelSourceId: novelSource?.id,
-              jobType: analysisJob.jobType,
-              chapterId: body.chapterId,
-            },
-          });
-        } catch (auditError) {
-          // 审计日志写入失败不影响主流程
-          this.logger.error('Failed to record audit log for NOVEL_ANALYZE:', auditError);
-        }
-      } catch (error: any) {
-        await this.prisma.novelAnalysisJob.update({
-          where: { id: analysisJob.id },
-          data: {
-            status: 'FAILED',
-            errorMessage: error?.message || 'Unknown error',
-          },
-        });
-        throw error;
-      }
-    } else {
-      // 全书分析：通过 Job 系统异步处理
-      try {
-        // 1. 创建 Task
-        const task = await this.taskService.create({
-          organizationId,
+    const job = await this.jobService.createNovelAnalysisJob(
+      {
+        type: JobTypeEnum.NOVEL_ANALYSIS as any,
+        payload: {
           projectId,
-          type: TaskTypeEnum.NOVEL_ANALYSIS,
-          status: TaskStatusEnum.PENDING,
-          payload: {
-            projectId,
-            novelSourceId: novelSource.id,
-            analysisJobId: analysisJob.id,
-          },
-        });
-
-        // 2. 创建 NOVEL_ANALYSIS Job（不需要 shotId，使用 createNovelAnalysisJob 但传入最小 payload）
-        // 注意：createNovelAnalysisJob 会创建占位结构，但 Worker 会重新生成完整结构
-        job = await this.jobService.createNovelAnalysisJob(
-          {
-            type: 'NOVEL_ANALYSIS' as any,
-            payload: {
-              projectId,
-              novelSourceId: novelSource.id,
-              organizationId,
-              userId: user.userId,
-            },
-          },
-          user.userId,
+          novelSourceId: novelSource.id,
+          chapterId: body.chapterId,
           organizationId,
-          task.id,
-          undefined, // apiKeyId
-          request.ip || (request.headers['x-forwarded-for'] as string),
-          request.headers['user-agent']
-        );
-
-        // 3. 更新 NovelAnalysisJob 状态为 PENDING（等待 Worker 处理）
-        await this.prisma.novelAnalysisJob.update({
-          where: { id: analysisJob.id },
-          data: {
-            status: 'PENDING',
-            progress: {
-              message: 'Job created, waiting for worker',
-              jobId: job.id,
-              taskId: task.id,
-            },
-          },
-        });
-
-        this.logger.log(`[NovelImport] Created NOVEL_ANALYSIS Job: ${job.id}, Task: ${task.id}`);
-
-        // 记录审计日志：NOVEL_ANALYZE
-        const requestInfo = AuditLogService.extractRequestInfo(request);
-        try {
-          await this.auditLogService.record({
-            userId: user.userId,
-            action: 'NOVEL_ANALYZE',
-            resourceType: 'novel_analysis_job',
-            resourceId: analysisJob.id,
-            ip: requestInfo.ip,
-            userAgent: requestInfo.userAgent,
-            details: {
-              projectId,
-              novelSourceId: novelSource.id,
-              jobType: analysisJob.jobType,
-              chapterId: body.chapterId || null,
-              jobId: job.id,
-              taskId: task.id,
-            },
-          });
-        } catch (auditError) {
-          // 审计日志写入失败不影响主流程
-          this.logger.error('Failed to record audit log for NOVEL_ANALYZE:', auditError);
-        }
-      } catch (error: any) {
-        await this.prisma.novelAnalysisJob.update({
-          where: { id: analysisJob.id },
-          data: {
-            status: 'FAILED',
-            errorMessage: error?.message || 'Unknown error',
-          },
-        });
-        throw error;
-      }
-    }
+          userId: user.userId,
+        },
+      },
+      user.userId,
+      organizationId,
+      task.id,
+      undefined,
+      request.ip || (request.headers['x-forwarded-for'] as string),
+      request.headers['user-agent']
+    );
 
     return {
       success: true,
-      data: {
-        jobId: job?.id || analysisJob.id,
-        analysisStatus: (body.chapterId ? 'DONE' : 'ANALYZING') as NovelAnalysisStatus,
-        message: body.chapterId ? 'Chapter analysis started' : 'Full novel analysis started',
-      },
-      requestId: randomUUID(),
-      timestamp: new Date().toISOString(),
+      data: { jobId: job.id, taskId: task.id },
+      message: 'Analysis started',
     };
   }
 }

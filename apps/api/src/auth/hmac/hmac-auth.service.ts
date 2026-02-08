@@ -37,10 +37,8 @@ export class HmacAuthService {
       method: methodArg,
       path: pathArg,
       body: bodyArg,
-      // [P6-0 Fix] Pass pre-calculated hash if body is bypassed
-      contentSha256: bodyArg.startsWith('__MASSIVE_BODY_BYPASS__')
-        ? (debug as any)?.contentSha256
-        : '',
+      // [P6-0 Fix] Pass pre-calculated hash if body is bypassed OR if client provides it (for strict matching)
+      contentSha256: (debug as any)?.contentSha256 || '',
       ip: debug?.ip,
       userAgent: debug?.ua,
     } as any);

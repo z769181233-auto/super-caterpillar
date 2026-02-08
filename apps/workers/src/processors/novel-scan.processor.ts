@@ -15,7 +15,8 @@ import { streamScanFile, ScanResult } from '../../../../packages/ingest/stream_s
  */
 export async function processNovelScan(context: ProcessorContext) {
   const { prisma, job, workerId } = context;
-  const { projectId, fileKey, options } = job.payload;
+  const { projectId, options } = job.payload;
+  const fileKey = job.payload.fileKey || job.payload.filePath;
 
   console.log(`[NovelScan] Starting Scan for Project ${projectId}, File: ${fileKey}`);
 
@@ -35,74 +36,83 @@ export async function processNovelScan(context: ProcessorContext) {
 
   console.log(`[NovelScan] Scanned ${episodes.length} episodes via Stream.`);
 
-  // 3. Transaction Write & Fan-out
-  await prisma.$transaction(async (tx) => {
-    // Create Season
-    const season = await tx.season.create({
-      data: {
-        projectId,
-        index: 1,
-        title: '第一季',
-        description: 'Auto-scanned from upload',
-      },
-    });
-
-    // Batch Create Episodes & Jobs
-    // Batch size 50 to keep transaction time low
-    const BATCH_SIZE = 50;
-    for (let i = 0; i < episodes.length; i += BATCH_SIZE) {
-      const batch = episodes.slice(i, i + BATCH_SIZE);
-
-      await Promise.all(
-        batch.map(async (ep: ScanResult, idx: number) => {
-          const globalIndex = i + idx + 1;
-
-          // A. DB Insert
-          const dbEp = await tx.episode.create({
-            data: {
-              seasonId: season.id,
-              projectId,
-              index: globalIndex,
-              name: ep.title,
-              summary: `Lines ${ep.startLine}-${ep.endLine}`,
-            },
-          });
-
-          // B. Construct Job Payload
-          const jobPayload = {
-            projectId,
-            fileKey, // Reference ONLY. No body text.
-            startLine: ep.startLine,
-            endLine: ep.endLine,
-            episodeId: dbEp.id,
-          };
-
-          // [HARDENING] Payload Size Assert (P3'-2 Requirement)
-          const payloadSize = Buffer.byteLength(JSON.stringify(jobPayload));
-          if (payloadSize > 16 * 1024) {
-            throw new Error(
-              `[NovelScan] Payload Size Violation: ${payloadSize} bytes > 16KB limit.`
-            );
-          }
-
-          // C. Create Job
-          await tx.shotJob.create({
-            data: {
-              organizationId: job.organizationId as string,
-              projectId,
-              episodeId: dbEp.id,
-              sceneId: null,
-              shotId: null,
-              type: JobType.NOVEL_CHUNK_PARSE,
-              status: JobStatus.PENDING,
-              priority: 50,
-              payload: jobPayload,
-            },
-          });
-        })
-      );
-    }
+  // 3. Create Season (Single Transaction)
+  const season = await prisma.season.create({
+    data: {
+      projectId,
+      index: 1,
+      title: '第一季',
+      description: 'Auto-scanned from upload',
+    },
   });
 
-  console.log(`[NovelScan] Fan-out complete. Dispatched ${episodes.length} parse jobs.`);
+  // 4. Batch Create Episodes & Jobs (Small Transactions)
+  // Batch size 50 to keep transaction time low and prevent lock contention
+  const BATCH_SIZE = 50;
+  let processedCount = 0;
+
+  for (let i = 0; i < episodes.length; i += BATCH_SIZE) {
+    const batch = episodes.slice(i, i + BATCH_SIZE);
+
+    await prisma.$transaction(async (tx) => {
+      // Use efficient createMany if possible? 
+      // Prisma createMany doesn't return IDs easily for dependent records (Jobs).
+      // So we have to loop or use query raw?
+      // For 50 items, loop await is acceptable if inside tx.
+
+      for (const [idx, ep] of batch.entries()) {
+        const globalIndex = i + idx + 1;
+
+        // A. DB Insert Episode
+        const dbEp = await tx.episode.create({
+          data: {
+            seasonId: season.id,
+            projectId,
+            index: globalIndex,
+            name: ep.title,
+            summary: `Bytes ${ep.startByte}-${ep.endByte}`,
+          },
+        });
+
+        // B. Construct Job Payload with Byte Ranges
+        const jobPayload = {
+          projectId,
+          fileKey: fileKey,
+          startByte: ep.startByte,
+          endByte: ep.endByte,
+          episodeId: dbEp.id,
+          title: ep.title
+        };
+
+        // [HARDENING] Payload Size Assert
+        const payloadSize = Buffer.byteLength(JSON.stringify(jobPayload));
+        if (payloadSize > 16 * 1024) {
+          throw new Error(
+            `[NovelScan] Payload Size Violation: ${payloadSize} bytes > 16KB limit.`
+          );
+        }
+
+        // C. Create Job
+        await tx.shotJob.create({
+          data: {
+            organizationId: job.organizationId as string,
+            projectId,
+            type: JobType.NOVEL_CHUNK_PARSE,
+            status: 'PENDING',
+            priority: 50,
+            payload: jobPayload,
+            episodeId: dbEp.id
+          },
+        });
+      }
+    }, { timeout: 10000 }); // 10s timeout for batch of 50
+
+    processedCount += batch.length;
+    if (processedCount % 500 === 0) {
+      console.log(`[NovelScan] Progress: ${processedCount}/${episodes.length} episodes processed.`);
+    }
+  }
+
+  console.log(`[NovelScan] Fan-out complete. Dispatched ${episodes.length} chunk jobs.`);
+  return { status: 'SUCCEEDED', message: `Dispatched ${episodes.length} chunk jobs.` };
 }

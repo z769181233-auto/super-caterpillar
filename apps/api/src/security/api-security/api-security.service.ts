@@ -11,24 +11,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
 import { createHmac, createHash, timingSafeEqual } from 'crypto';
+import { pickHmacSecretSSOT } from '@scu/config';
 
-// HMAC Secret SSOT: Centralized secret resolution with debug fingerprint
-function pickHmacSecretSSOT() {
-  // SSOT: API_SECRET_KEY is the canonical secret env
-  const candidates: Array<[string, string | undefined]> = [
-    ['API_SECRET_KEY', process.env.API_SECRET_KEY],
-    // legacy / fallback (do NOT remove; used to align envs across stages)
-    ['API_SECRET', process.env.API_SECRET],
-    ['TEST_API_SECRET', process.env.TEST_API_SECRET],
-    ['DEV_WORKER_SECRET', process.env.DEV_WORKER_SECRET],
-  ];
-  for (const [k, v] of candidates) {
-    if (v && String(v).length > 0) {
-      return { envKey: k, secret: String(v) };
-    }
-  }
-  return { envKey: 'NONE', secret: '' };
-}
 
 import { AuditActions } from '../../audit/audit.constants';
 import { Prisma } from 'database';
@@ -108,6 +92,7 @@ export class ApiSecurityService {
       xNonce: nonce ? nonce.slice(0, 20) + '...' : undefined,
       xSigLen: signature ? signature.length : 0,
       xSigPrefix: signature ? signature.slice(0, 12) : undefined,
+      contentSha256: contentSha256 || 'undefined',
     });
 
     try {
@@ -307,9 +292,8 @@ export class ApiSecurityService {
       }
 
       if (!secret || secret.length === 0) {
-        const picked = pickHmacSecretSSOT();
-        secret = picked.secret;
-        secretSource = `env:${picked.envKey}`;
+        secret = pickHmacSecretSSOT();
+        secretSource = 'SSOT';
       }
 
       if (dbg) {
@@ -542,8 +526,10 @@ export class ApiSecurityService {
     // If method is POST and body is empty (meaning Guard skipped reading it), 
     // we use contentSha256 for the canonical string (Sign Hash Protocol).
     if (method === 'POST' && body === '' && contentSha256) {
+      if (process.env.HMAC_DEBUG === '1') console.log('[HMAC_DEBUG] Using ContentHash strategy');
       return `${apiKey}${nonce}${timestamp}${contentSha256}`;
     }
+    if (process.env.HMAC_DEBUG === '1') console.log(`[HMAC_DEBUG] Using Body strategy. Method=${method}, BodyLen=${body.length}, HasContentSha256=${!!contentSha256}`);
     const result = `${apiKey}${nonce}${timestamp}${body}`;
     return result;
   }

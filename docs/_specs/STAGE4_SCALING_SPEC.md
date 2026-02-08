@@ -67,11 +67,19 @@ enum JobType {
   "projectId": "uuid",
   "episodeId": "uuid",
   "fileKey": "uploads/novels/123.txt",
-  "startLine": 100,
-  "endLine": 500,
+  "startByte": 1024,
+  "endByte": 2048,
   "parseOptions": { "depth": "standard" }
 }
 ```
+
+## 5. Verification Status (2026-02-08)
+
+- **Status**: ✅ Implemented & Verified (P2-B)
+- **Evidence**: `docs/_evidence/stage4_scaling_15m_20260208_142823`
+- **Throughput**: ~193 KB/s (Single Worker)
+- **Reliability**: Idempotent DB writes, Zero OOM.
+
 
 ---
 

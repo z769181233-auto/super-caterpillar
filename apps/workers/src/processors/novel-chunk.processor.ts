@@ -4,17 +4,17 @@ import * as fs from 'fs';
 import * as fsp from 'fs/promises';
 import { ProcessorContext } from '../types/processor-context';
 import { fileExists } from '../../../../packages/shared/fs_async';
-import { streamSliceLines } from '../../../../packages/ingest/stream_slice';
 import { basicTextSegmentation } from '../novel-analysis-processor';
 import { hydrateShotWithDirectorControls } from '../v3/utils/shot_field_extractor';
 
 export async function processNovelChunk(context: ProcessorContext) {
   const { prisma, job } = context;
-  const { projectId, fileKey, episodeId, startLine, endLine } = job.payload;
+  const { projectId, episodeId, startByte, endByte } = job.payload;
+  const fileKey = job.payload.fileKey || job.payload.filePath;
   // job.data was used in scan, here unified to payload
 
   console.log(
-    `[NovelChunk] Parsing Project ${projectId}, Episode ${episodeId}, Lines ${startLine}-${endLine}`
+    `[NovelChunk] Parsing Project ${projectId}, Episode ${episodeId}, Bytes ${startByte}-${endByte}`
   );
 
   // 1. Path Resolution
@@ -23,8 +23,8 @@ export async function processNovelChunk(context: ProcessorContext) {
     throw new Error(`[NovelChunk] Source file not found: ${filePath}`);
   }
 
-  // 2. Stream Slice (0-Memory-Bomb)
-  const chunkText = await streamSliceLines(filePath, startLine, endLine);
+  // 2. Stream Slice (0-Memory-Bomb) using Bytes
+  const chunkText = await readChunk(filePath, startByte, endByte);
 
   // 1. Analyze (Reuse existing logic but for specific chunk)
   // 注意：basicTextSegmentation 默认生成 ProjectStructure.
@@ -105,4 +105,16 @@ export async function processNovelChunk(context: ProcessorContext) {
   });
 
   console.log(`[NovelChunk] Success. Imported ${analyzedScenes.length} scenes.`);
+  return { status: 'SUCCEEDED', message: `Imported ${analyzedScenes.length} scenes` };
+}
+async function readChunk(filePath: string, start: number, end: number): Promise<string> {
+  const chunks: Buffer[] = [];
+  // end is exclusive in payload, but fs.createReadStream end is inclusive.
+  // So we read up to end - 1.
+  const readStream = fs.createReadStream(filePath, { start: start, end: end - 1 });
+
+  for await (const chunk of readStream) {
+    chunks.push(chunk as Buffer);
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }

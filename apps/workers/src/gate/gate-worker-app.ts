@@ -26,7 +26,7 @@ import { processAudioJob } from '../processors/audio.processor';
 import { ApiClient } from '../api-client';
 import { PrismaClient } from 'database';
 import { EngineHubClient } from '../engine-hub-client';
-import { env } from '@scu/config';
+import { env, pickHmacSecretSSOT } from '@scu/config';
 import * as util from 'util';
 import { BillingOutboxDispatcher } from '../billing/outbox-dispatcher.service';
 import * as fs from 'fs';
@@ -57,7 +57,7 @@ export async function startGateWorkerApp() {
   const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
   const apiBaseUrl = env.apiUrl || 'http://localhost:3001';
   const workerApiKey = env.workerApiKey;
-  const workerApiSecret = env.workerApiSecret;
+  const workerApiSecret = pickHmacSecretSSOT();
 
   process.stdout.write(util.format(`[GateWorker] Worker ID: ${workerId}`) + '\n');
   process.stdout.write(util.format(`[GateWorker] API URL: ${apiBaseUrl}`) + '\n');
