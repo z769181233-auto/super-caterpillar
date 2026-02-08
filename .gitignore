@@ -5,7 +5,7 @@ node_modules/
 
 # Testing
 coverage/
-*.log
+# *.log handled in SSOT
 
 # Production
 dist/
@@ -49,20 +49,12 @@ reports/stability/*.md
 .data/
 uploads/
 
-# Gate 自动化运行证据(全面忽略，仅保留正式归档脚本产出的必要索引)
-docs/_evidence/*
-!docs/_evidence/.gitkeep
-!docs/_evidence/README.md
-
 # --- runtime artifacts (MUST NOT COMMIT) ---
 .runtime/
 **/.runtime/
 **/*.pid
 **/pids/
 apps/workers/.runtime/assets_gate_*/
-docs/_evidence/**/api.log
-docs/_evidence/**/worker.log
-docs/_evidence/**/gate.log
 
 # Gate evidence
 api_gate_*.txt
@@ -83,8 +75,6 @@ tmp/
 
 # Ingest & Bench Evidence (Heavy 14GB+)
 docs/_bench/
-docs/_evidence/
-docs/_evidence_archived/
 workspace/
 .runtime/
 tools/deploy/p7_secrets.local.env
@@ -98,7 +88,6 @@ tools/ops/p8_secrets.local.env
 # --- Stability governance ---
 logs/
 *.pid
-*.log
 .api.log
 .worker.log
 api_startup.log
