@@ -163,7 +163,7 @@ Pilot 已成功跑通 CE06 解析并完成了角色三处图生成。
 **SSOT Indices**: [SEAL_INDEX.md](SEAL_INDEX.md) + [docs/SEAL_INDEX.md](docs/SEAL_INDEX.md) (synced)
 
 ### What is closed
-- ✅ Zero hardcoded local paths (`/Users/...`) and zero `file:[///]` references across repo + DB.
+- ✅ Zero hardcoded local paths (`/Users/...`) and zero `file:[///]` protocol references across repo + DB. `file:[///]` is permitted in docs as masked text only.
 - ✅ All SSOT evidence links are repo-relative and portable across CI/dev machines.
 - ✅ Governance audit scripts are config-driven via `gov_post_sealed.config.json`.
 - ✅ Sealing tag is pushed to remote origin and can be reproduced via `git fetch --tags`.
@@ -174,7 +174,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 # 1) Global path hygiene
 rg -n "/Users/[a]dam/" -S . && exit 1 || echo "OK: no /Users/adam paths"
-rg -n '[f]ile:///' -S . && exit 1 || echo "OK: no file:[///] refs"
+rg -n '[f]ile:///' -S . && exit 1 || echo "OK: no file:[///] protocol refs (masked file:[///] in docs is allowed)"
 
 # 2) Tag reproducibility
 git fetch --tags origin
