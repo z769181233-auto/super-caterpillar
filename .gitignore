@@ -108,6 +108,8 @@ api_direct.log
 # Ensure evidence directories are traversable
 !docs/_evidence/
 !docs/_evidence_archived/
+!docs/_evidence/*/
+!docs/_evidence_archived/*/
 
 # Default: ignore logs everywhere (Release Surface)
 *.log
