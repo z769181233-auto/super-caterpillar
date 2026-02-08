@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
-IFS=$'
-	'
-IFS=$'\n\t'
 
-# gate-audit_psql_dq_redline.sh
-# 使用 Node.js 进行高保真 SQL 注入红线审计
-
+# gate-audit_psql_dq_redline.sh (Refactored to respect config)
 fail() { echo "[SQL][FAIL] $*" >&2; exit 1; }
 pass() { echo "[SQL][PASS] $*"; }
 
-# 核心审计逻辑：使用 Node.js 确保变量识别的准确度
-node <<'EOF'
+CONFIG="docs/_specs/governance/gov_post_sealed.config.json"
+[[ -f "$CONFIG" ]] || fail "Missing config: $CONFIG"
+
+node <<'NODE_EOF'
 const fs = require("fs");
 const path = require("path");
+
+const CONFIG_PATH = "docs/_specs/governance/gov_post_sealed.config.json";
+const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+const requirementEnabled = config.psql_dq.require_tagged_dq_if_psql_c_has_vars;
+
+if (!requirementEnabled) {
+  process.exit(0);
+}
 
 const dir = "tools/gate/gates";
 const files = fs.readdirSync(dir)
@@ -45,10 +50,10 @@ for (const f of files) {
   });
 }
 if (hasError) process.exit(1);
-EOF
+NODE_EOF
 
 if [ $? -eq 0 ]; then
-  pass "所有 gate 脚本中的 psql 调用均符合 Tagged Dollar-Quoting 规范。"
+  pass "SQL data quality check passed (Config Aware)."
 else
   exit 1
 fi
