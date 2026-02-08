@@ -4,3 +4,8 @@
 === Internal Metrics Peak RSS ===
 scu_stage4_peak_rss_mb{type="NOVEL_SCAN_TOC"} 55
 scu_stage4_peak_rss_mb{type="NOVEL_CHUNK_PARSE"} 201
+
+NOTE:
+- `ps RSS` above is a point-in-time snapshot for the same PID.
+- `scu_stage4_peak_rss_mb` is the peak RSS observed during the whole run.
+- Therefore it is expected that peak values can be higher than the snapshot value.

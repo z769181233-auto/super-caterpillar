@@ -95,3 +95,12 @@
     - Job System 端到端闭环已验证（含强制 DB traceability）
     - 商业级无争议封板：所有 Gate 必须 PASS，DB 记录必须存在且匹配
     - L2 → L3 升级完成，职责收口到位（API 入队 + Worker 回写 + Gate 强制验证）
+
+## Phase 5: Observability Seal (Evidence Sealed)
+- **Status**: GO-LIVE READY / AUDIT PASSED
+- **Primary Tag**: PHASE5_OBSERVABILITY_SEAL_20260208_172500
+- **Evidence**: docs/_evidence/phase5_observability_seal_20260208_170304/
+- **Verification**:
+  - ✅ Unified Metrics (API:3000/metrics proxies Worker:3001)
+  - ✅ RSS Definition Validated (Internal Peak vs Swarm Total)
+  - ✅ Nightly 3MB Baseline Gate Formalized
