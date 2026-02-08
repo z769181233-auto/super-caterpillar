@@ -1,0 +1,2 @@
+✅ Load Test Completed in 21s.
+Throughput: 142987 bytes/sec

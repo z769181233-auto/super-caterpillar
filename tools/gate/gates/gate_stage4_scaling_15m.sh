@@ -21,6 +21,22 @@ echo "===================================================="
 # Define PSQL with ON_ERROR_STOP and no-rc
 PSQL="psql -v ON_ERROR_STOP=1 -X"
 
+# --- [ASSERT] Define Readiness Checker ---
+require_url() {
+    local url="$1"
+    local name="$2"
+    echo "Checking $name readiness..."
+    for i in $(seq 1 30); do
+        if curl -fsS "$url" >/dev/null; then
+            echo "[READY] $name is up."
+            return 0
+        fi
+        sleep 1
+    done
+    echo "[FATAL] $name not ready after 30s."
+    exit 14
+}
+
 # 证据目录 (符合 docs/_evidence/ 规范)
 TS="$(date +%Y%m%d_%H%M%S)"
 EVI_DIR="${ROOT_DIR}/docs/_evidence/stage4_scaling_15m_${TS}"
@@ -39,6 +55,12 @@ echo "HMAC_SECRET_KEY=***" >> "${EVI_DIR}/env.proof.txt"
 echo "PROJECT_ID=${PROJECT_ID}" >> "${EVI_DIR}/env.proof.txt"
 echo "ORG_ID=${ORG_ID}" >> "${EVI_DIR}/env.proof.txt"
 echo "USER_ID=${USER_ID}" >> "${EVI_DIR}/env.proof.txt"
+
+# --- [Step 0] Readiness Check ---
+require_url "http://localhost:3000/metrics" "API_METRICS"
+
+# Capture baseline BEFORE test
+curl -fsS http://localhost:3000/metrics > "${EVI_DIR}/metrics_pre.txt"
 
 # 2. 数据准备 (幂等)
 echo "[Step 1] Seeding Project & Org..."
@@ -128,7 +150,6 @@ while [ "${ELAPSED}" -lt "${MAX_WAIT}" ]; do
         echo "[Monitor] Time:${ELAPSED}s | Jobs: Total=${TOTAL} Succ=${SUCCEEDED} Fail=${FAILED} Pen=${PENDING} Run=${RUNNING} | RSS:${RSS_MB}MB" | tee -a "${EVI_DIR}/monitor.log"
 
         # 判定完成: Root Scan 完成 且 所有 chunk 完成 (且没有 pending/running)
-        
         SCAN_STATUS=$(${PSQL} -d "${DATABASE_URL}" -t -A -c "SELECT status FROM shot_jobs WHERE id='${JOB_ID}'" | xargs)
         
         if [ "$SCAN_STATUS" == "FAILED" ]; then
@@ -148,13 +169,28 @@ while [ "${ELAPSED}" -lt "${MAX_WAIT}" ]; do
              
              echo "✅ Load Test Completed in ${DURATION}s." | tee -a "${EVI_DIR}/result.txt"
              echo "Throughput: ${THROUGHPUT_BPS} bytes/sec" | tee -a "${EVI_DIR}/result.txt"
-             
-             # P6-0.2: SSOT Evidence Path (for CI/CD)
+
+             # --- [AUDIT: SSOT Evidence Path] ---
              echo "${EVI_DIR}" > "${ROOT_DIR}/docs/_evidence/current_stage4_evidence_path.txt"
 
-             # P6-0.1: Best-effort local metrics capture (Unified metrics at API:3000)
-             curl -fsS http://localhost:3000/metrics > "${EVI_DIR}/metrics_snapshot.txt" || true
+             # --- [AUDIT: Metrics Post-run & Delta Assertion] ---
+             curl -fsS http://localhost:3000/metrics > "${EVI_DIR}/metrics_post.txt"
+             cp "${EVI_DIR}/metrics_post.txt" "${EVI_DIR}/metrics_snapshot.txt"
 
+             # Assert Content
+             grep -q "scu_stage4_jobs_total" "${EVI_DIR}/metrics_snapshot.txt" || { echo "[FATAL] missing scu_stage4_jobs_total"; exit 15; }
+             grep -q "scu_stage4_peak_rss_mb" "${EVI_DIR}/metrics_snapshot.txt" || { echo "[FATAL] missing scu_stage4_peak_rss_mb"; exit 15; }
+
+             # Assert Growth
+             PRE_TOTAL="$(grep -E 'scu_stage4_jobs_total\{.*status="SUCCEEDED".*\}' "${EVI_DIR}/metrics_pre.txt" | awk '{s+=$2} END{print s+0}')"
+             POST_TOTAL="$(grep -E 'scu_stage4_jobs_total\{.*status="SUCCEEDED".*\}' "${EVI_DIR}/metrics_post.txt" | awk '{s+=$2} END{print s+0}')"
+             
+             echo "Audit: PRE_TOTAL=$PRE_TOTAL, POST_TOTAL=$POST_TOTAL" | tee -a "${EVI_DIR}/monitor.log"
+             if [ "$POST_TOTAL" -le "$PRE_TOTAL" ]; then
+               echo "❌ [FATAL] Metrics did not change: PRE_TOTAL=$PRE_TOTAL POST_TOTAL=$POST_TOTAL" | tee -a "${EVI_DIR}/error.log"
+               exit 16
+             fi
+             
              # Final Artifacts
              cat <<EOF > "${EVI_DIR}/final_summary.json"
 {

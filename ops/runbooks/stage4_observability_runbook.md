@@ -1,5 +1,12 @@
 # Stage 4 Observability Runbook (Go-Live)
 
+## 0. Execution Environment SSOT (MANDATORY)
+The Nightly Gate must be executed in a environment that mimics production:
+1. **GitHub Runner (Hosted)**: Must use `docker-compose.yml` to spin up PostgreSQL, Redis, API, and Worker before running the gate script.
+2. **Self-Hosted Runner**: Must have API/Worker services managed by `pm2` or `systemd`, locked to the same version as the artifact being tested.
+- **Port Lock**: API (3000), Worker Metrics (3001).
+- **Hard Readiness**: Gate will fail if `http://localhost:3000/metrics` is unreachable.
+
 ## Evidence Template (MANDATORY)
 Create: `docs/_evidence/incident_<TS>/`
 Must include:
