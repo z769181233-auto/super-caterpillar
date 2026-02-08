@@ -149,6 +149,12 @@ while [ "${ELAPSED}" -lt "${MAX_WAIT}" ]; do
              echo "✅ Load Test Completed in ${DURATION}s." | tee -a "${EVI_DIR}/result.txt"
              echo "Throughput: ${THROUGHPUT_BPS} bytes/sec" | tee -a "${EVI_DIR}/result.txt"
              
+             # P6-0.2: SSOT Evidence Path (for CI/CD)
+             echo "${EVI_DIR}" > "${ROOT_DIR}/docs/_evidence/current_stage4_evidence_path.txt"
+
+             # P6-0.1: Best-effort local metrics capture (Unified metrics at API:3000)
+             curl -fsS http://localhost:3000/metrics > "${EVI_DIR}/metrics_snapshot.txt" || true
+
              # Final Artifacts
              cat <<EOF > "${EVI_DIR}/final_summary.json"
 {

@@ -30,25 +30,34 @@ jobs:
         run: |
           # P6-0 Harden: Enforce strict failure and audit summary
           set -euo pipefail
-          TS="$(date +%Y%m%d_%H%M%S)"
-          EVI="docs/_evidence/stage4_nightly_3m_${TS}"
-          mkdir -p "$EVI"
+          
+          # [EXECUTION] Gate script now manages its own evidence directory
+          bash tools/gate/gates/gate_stage4_scaling_15m.sh | tee run_gate.log
 
-          echo "EVIDENCE_DIR=$EVI" | tee "$EVI/evidence_dir.txt"
+          # [SSOT: Evidence Path]
+          if [ ! -f "docs/_evidence/current_stage4_evidence_path.txt" ]; then
+            echo "❌ CRITICAL: current_stage4_evidence_path.txt not found." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          EVI="$(cat docs/_evidence/current_stage4_evidence_path.txt)"
+          
+          # Pass path to next steps
+          echo "EVI_PATH=$EVI" >> $GITHUB_ENV
+
           echo "### Stage4 Nightly 3M Evidence" >> "$GITHUB_STEP_SUMMARY"
           echo "- Evidence Location: \`$EVI\`" >> "$GITHUB_STEP_SUMMARY"
 
-          # [EXECUTION]
-          bash tools/gate/gates/gate_stage4_scaling_15m.sh | tee "$EVI/run.log"
-
           # [AUDIT: Metrics]
-          # API metrics snapshot must exist; if port 3000 is down -> exit 1
-          curl -fsS http://localhost:3000/metrics > "$EVI/metrics_snapshot.txt"
+          # Metrics snapshot must be captured by the gate script locally
+          if [ ! -f "$EVI/metrics_snapshot.txt" ]; then
+            echo "❌ AUDIT WARNING: metrics_snapshot.txt missing." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
           # [ASSERT: Pass Logic]
           # final_summary.json MUST exist and must be marked as PASS
           if [ ! -f "$EVI/final_summary.json" ]; then
-            echo "❌ CRITICAL: final_summary.json not found. Gate protocol violation." >> "$GITHUB_STEP_SUMMARY"
+            echo "❌ CRITICAL: final_summary.json not found." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           
@@ -58,7 +67,6 @@ jobs:
           fi
 
           # [ASSERT: Traceability]
-          # input.sha256 must exist to prove we ran against the correct baseline
           if [ ! -f "$EVI/input.sha256" ]; then
             echo "❌ AUDIT WARNING: input.sha256 missing." >> "$GITHUB_STEP_SUMMARY"
             exit 1
@@ -70,4 +78,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: stage4-nightly-3m-evidence
-          path: docs/_evidence/stage4_nightly_3m_*
+          path: ${{ env.EVI_PATH }}

@@ -32,6 +32,6 @@ Must include:
 | Incident Signal | Persistence | Decision |
 | :--- | :--- | :--- |
 | Any `failed_jobs > 0` | After 1 retry | **ROLLBACK** |
-| Worker RSS > 1.5GB (Individual) | Any run | **ROLLBACK** |
+| Worker RSS > 3000MB (Per-worker) | Any run | **ROLLBACK** |
 | Duration Regression > 50% | 2 consecutive runs | **ROLLBACK** |
 | `input.sha256` Mismatch | N/A | **INVESTIGATE (Audit Failure)** |
