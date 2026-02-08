@@ -22,7 +22,7 @@ pnpm --filter api dev
 在**新的终端窗口**中执行：
 
 ```bash
-cd /Users/adam/Desktop/adam/毛毛虫宇宙/Super\ Caterpillar
+cd 
 bash tools/dev/stage5-p0-verification.sh
 ```
 

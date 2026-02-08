@@ -4,7 +4,7 @@
 1. Running Lint (Checking TODOs allowed for Stage 12)
 ----------------------------------------
 
-> super-caterpillar-universe@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 lint 
 > turbo run lint
 
 turbo 2.6.3
@@ -60,7 +60,7 @@ Cached:    3 cached, 6 total
 2. Running Typecheck (Strict, 0 Errors)
 ----------------------------------------
 
-> super-caterpillar-universe@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 typecheck 
 > turbo run typecheck
 
 turbo 2.6.3
@@ -167,7 +167,7 @@ Ran all test suites.
 4. Running Build (Production Build)
 ----------------------------------------
 
-> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 build 
 > turbo run build
 
 turbo 2.6.3

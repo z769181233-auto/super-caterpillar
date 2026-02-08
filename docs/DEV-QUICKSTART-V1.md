@@ -102,7 +102,7 @@ pnpm --filter database prisma:generate
 ### 终端 1：启动 API
 
 ```bash
-cd "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"  # 替换为你的实际路径
+cd ""  # 替换为你的实际路径
 
 JOB_WORKER_ENABLED=false \
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/super_caterpillar_dev?schema=public" \
@@ -118,7 +118,7 @@ pnpm --filter ./apps/api dev
 ### 终端 2：启动 Worker
 
 ```bash
-cd "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"  # 替换为你的实际路径
+cd ""  # 替换为你的实际路径
 
 API_URL=http://localhost:3000 \
 WORKER_API_KEY=ak_worker_dev_0000000000000000 \
@@ -138,7 +138,7 @@ pnpm --filter @scu/worker dev
 ### 终端 3：启动 Web
 
 ```bash
-cd "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"  # 替换为你的实际路径
+cd ""  # 替换为你的实际路径
 
 pnpm --filter ./apps/web dev
 ```
@@ -158,7 +158,7 @@ pnpm --filter ./apps/web dev
 在**新终端**（终端 4）中执行：
 
 ```bash
-cd "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"  # 替换为你的实际路径
+cd ""  # 替换为你的实际路径
 
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/super_caterpillar_dev?schema=public" \
 pnpm --filter ./apps/api create:test-novel-job
@@ -198,7 +198,7 @@ pnpm --filter ./apps/api create:test-novel-job
 ### 步骤 3：验证 Job 状态（终端 4）
 
 ```bash
-cd "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"  # 替换为你的实际路径
+cd ""  # 替换为你的实际路径
 
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/super_caterpillar_dev?schema=public" \
 pnpm --filter ./apps/api debug:jobs

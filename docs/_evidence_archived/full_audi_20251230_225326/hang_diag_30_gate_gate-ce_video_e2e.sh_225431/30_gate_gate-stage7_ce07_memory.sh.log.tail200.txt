@@ -1,4 +1,4 @@
-[gate] ROOT_DIR=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+[gate] ROOT_DIR=
 [gate] EVID_DIR=docs/_evidence/gate_stage7_ce07_memory_20251230_225332
 [gate] loading env...
 [gate] loading env...
@@ -14,7 +14,7 @@
 [1] Verifying Prisma models...
 [PRE] Fail-fast: build/typecheck must pass
 
-> super-caterpillar-universe@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 typecheck 
 > turbo run typecheck
 
 turbo 2.6.3
@@ -54,7 +54,7 @@ Cached:    5 cached, 5 total
   Time:    161ms >>> FULL TURBO
 
 
-> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 build 
 > turbo run build
 
 turbo 2.6.3

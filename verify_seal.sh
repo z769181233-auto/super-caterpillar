@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Super Caterpillar W3-1 Seal Verification Script (Safe Edition)
-ROOT="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"
+ROOT=""
 EVI_LATEST=$(cat /tmp/w3_1_last_evi.txt)
 ART="$ROOT/$EVI_LATEST/artifacts"
 SHOT_ID="c33ccc66-1080-48c3-9ea0-5bfdf77934d5"

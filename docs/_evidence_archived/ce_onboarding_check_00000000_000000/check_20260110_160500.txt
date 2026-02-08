@@ -2,7 +2,7 @@
 [CE ONBOARDING CHECK] START
 ==================================================
 Mode: CHECK (default)
-Repo: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+Repo: 
 Tmp:  /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.gqoLV9hysH
 Time: 2026-01-10T16:05:00+0700
 
@@ -58,7 +58,7 @@ Evidence: docs/_evidence/CE02_SEAL_20260110/zero_direct_link/zero_direct_link_re
 [RUN] [4/5] Lint
 ==================================================
 
-> super-caterpillar-universe@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 lint 
 > turbo run lint "--workspace-concurrency=1"
 
  ERROR  unexpected argument '--workspace-concurrency' found

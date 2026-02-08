@@ -1,0 +1,16 @@
+{
+  "score": 20,
+  "checks": {
+    "storyBeat": false,
+    "dialogue": false,
+    "shotId": false,
+    "sceneId": false,
+    "emotion": false
+  },
+  "reasons": [
+    "Missing required field: storyBeat",
+    "Missing required field: dialogue"
+  ],
+  "payload_schema": [],
+  "timestamp": "2026-02-08T11:36:26.340Z"
+}

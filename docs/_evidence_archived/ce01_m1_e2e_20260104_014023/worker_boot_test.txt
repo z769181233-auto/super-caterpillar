@@ -1,14 +1,14 @@
 
-> super-caterpillar-universe@1.0.0 dev:worker /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 dev:worker 
 > pnpm -w --filter workers dev
 
-No projects matched the filters "workers" in "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"
+No projects matched the filters "workers" in ""
 
-> super-caterpillar-universe@1.0.0 dev /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 dev 
 > pnpm env:init && turbo run dev --parallel --filter=api --filter=web
 
 
-> super-caterpillar-universe@1.0.0 env:init /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 env:init 
 > node tools/env/init-env-local.js
 
 ========================================

@@ -1,5 +1,5 @@
 
-> super-caterpillar-universe@1.0.0 build /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 build 
 > turbo run build
 
 turbo 2.6.3

@@ -20,7 +20,7 @@
 ## 1. 启动 API
 
 ```bash
-cd "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"
+cd ""
 pnpm --filter api dev
 ```
 

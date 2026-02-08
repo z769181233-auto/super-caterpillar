@@ -51,7 +51,7 @@ Cached:    0 cached, 5 total
 
 🔎 Capturing port ownership evidence (3000)...
 [whoami] adam
-[pwd] /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+[pwd] 
 [API_URL] http://127.0.0.1:3000
 [API_PID] 78680
 [HMAC_DEBUG] HMAC_DEBUG

@@ -1,6 +1,6 @@
 SHOT_ASSET_URI=apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
 SHOT_ASSET_KEY=apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
-ROOT_DIR=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+ROOT_DIR=
 CANDIDATES:
  - apps/api/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png [OK]
  - apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png [MISS]

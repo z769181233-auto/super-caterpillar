@@ -2,7 +2,7 @@
 [CE ONBOARDING CHECK] START
 ==================================================
 Mode: UPDATE (--update)
-Repo: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+Repo: 
 Tmp:  /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.XiPCvBJDw8
 Time: 2026-01-10T16:25:21+07:00
 

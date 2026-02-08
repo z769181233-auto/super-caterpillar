@@ -1,1 +1,1 @@
-[gate] ROOT_DIR=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+[gate] ROOT_DIR=

@@ -1,5 +1,5 @@
 [whoami] adam
-[pwd] /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+[pwd] 
 [API_URL] http://127.0.0.1:3000
 [API_PID] 75832
 [HMAC_DEBUG] HMAC_DEBUG

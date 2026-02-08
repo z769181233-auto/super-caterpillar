@@ -1,5 +1,5 @@
 === DIAG 2025-12-30T22:33:48+07:00 ===
-PWD=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+PWD=
 --- git ---
 ## fix/stage6_7_internal_import
  M apps/workers/src/api-client.ts

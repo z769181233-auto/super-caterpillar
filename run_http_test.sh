@@ -4,7 +4,7 @@ set -e
 ##############################################
 #  0) 自动进入项目目录（解决空格和中文路径问题）
 ##############################################
-PROJECT_DIR="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"
+PROJECT_DIR=""
 echo "�� 切换目录: $PROJECT_DIR"
 cd "$PROJECT_DIR"
 

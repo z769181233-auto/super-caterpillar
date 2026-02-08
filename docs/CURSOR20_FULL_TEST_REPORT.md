@@ -186,7 +186,7 @@ Error: P3009
 
 ```
 
-> super-caterpillar-universe@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 typecheck 
 > turbo run typecheck
 
 turbo 2.6.3
@@ -312,7 +312,7 @@ Cached:    5 cached, 5 total
 
 ```
 0. Verify sources...
-[verify] root=/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+[verify] root=
 [verify] entry=tools/smoke/stage1_stage2_smoke.ts
 [verify] expected:
 [verify]   tools/smoke/helpers/health_check.ts

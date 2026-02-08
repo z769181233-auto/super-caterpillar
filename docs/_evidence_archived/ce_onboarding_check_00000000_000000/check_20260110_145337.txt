@@ -2,7 +2,7 @@
 [CE ONBOARDING CHECK] START
 ==================================================
 Mode: UPDATE (--update)
-Repo: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+Repo: 
 Tmp:  /var/folders/7f/j5h3b2ys05v2z15qq3zs6h5w0000gn/T/tmp.iXQeNxMwSV
 Time: 2026-01-10T14:53:37+0700
 
@@ -58,7 +58,7 @@ Evidence: docs/_evidence/CE02_SEAL_20260110/zero_direct_link/zero_direct_link_re
 [RUN] [4/5] Lint
 ==================================================
 
-> super-caterpillar-universe@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 lint 
 > turbo run lint
 
 turbo 2.6.3
@@ -1329,7 +1329,7 @@ Cached:    12 cached, 13 total
 [RUN] [5/5] TypeCheck
 ==================================================
 
-> super-caterpillar-universe@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 typecheck 
 > turbo run typecheck
 
 turbo 2.6.3

@@ -61,7 +61,7 @@
 ### Gate 4: Video E2E Test
 
 === Stage 8 Video E2E Test ===
-Repo: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+Repo: 
 Storage: .data/storage
 [Env] DATABASE*URL=postgresql://postgres:\*\*\*@localhost:5432/scu?schema=public
 [0/4] Initializing API Key...

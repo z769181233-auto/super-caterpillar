@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Manual W3-1 Seal - Simplified
-ROOT="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"
+ROOT=""
 EVI_LATEST="docs/_evidence/w3_1_seal_fix_20260207_232857"
 ART="$ROOT/$EVI_LATEST/artifacts"
 SHOT_ID="c33ccc66-1080-48c3-9ea0-5bfdf77934d5"

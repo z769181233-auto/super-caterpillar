@@ -1,5 +1,5 @@
 == root ==
-/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+
 == status ==
 M  task.md
  M tools/dev/gate_and_autocommit.sh

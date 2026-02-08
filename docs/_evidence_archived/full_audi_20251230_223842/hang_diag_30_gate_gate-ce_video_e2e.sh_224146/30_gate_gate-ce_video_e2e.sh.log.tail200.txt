@@ -29,7 +29,7 @@ INSERT 0 1
 [22:39:13] Waiting 30s for services...
 [22:39:43] Step 1: typecheck
 
-> super-caterpillar-universe@1.0.0 typecheck /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+> super-caterpillar-universe@1.0.0 typecheck 
 > turbo run typecheck
 
 turbo 2.6.3

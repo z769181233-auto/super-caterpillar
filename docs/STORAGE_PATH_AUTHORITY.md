@@ -34,7 +34,7 @@
 在 `.env.local` 或环境变量中设置：
 
 ```bash
-export REPO_ROOT="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"
+export REPO_ROOT=""
 ```
 
 或使用绝对路径：

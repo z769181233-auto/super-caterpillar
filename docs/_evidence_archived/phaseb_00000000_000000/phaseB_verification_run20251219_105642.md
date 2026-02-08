@@ -1,7 +1,7 @@
 # Phase B Verification Run (Canonical Workspace Only)
 
 - timestamp: 20251219_105642
-- repo_root: /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar
+- repo_root: 
 - head: 8876d1692e09f41c61ac12936acfcb47cabdce00
 
 ## 0) canonical workspace gate

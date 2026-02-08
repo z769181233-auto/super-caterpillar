@@ -8,7 +8,7 @@
 
 ### 1.1 工作区位置
 
-- **当前目录**: `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar`
+- **当前目录**: ``
 - **当前分支**: `chore/zero-risk-hardening-task-system`
 - **分支状态**: 新分支，无提交历史
 
