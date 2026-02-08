@@ -16,7 +16,7 @@
 - [x] **Unified Metrics**: API 3000/metrics proxies Worker 3001/metrics (**PASS**)
 - [x] **RSS Calibration**: Internal RSS (201MB) vs Cluster RSS (1389MB) documented (**PASS**)
 - [x] **Alerting**: Failure/RSS/Regression rules enabled (**PASS**)
-- [x] **Last Verified**: `docs/_evidence/phase5_observability_seal_$(cat current_evidence_path.txt | rev | cut -d/ -f1 | rev)`
+- [x] **Last Verified**: `docs/_evidence/phase5_observability_seal_20260208_170304/`
 
 ## 3. Commercial Readiness Assertion
 

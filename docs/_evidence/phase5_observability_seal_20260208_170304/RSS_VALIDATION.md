@@ -6,14 +6,15 @@
 | **Internal Metric** (`scu_stage4_peak_rss_mb`) | ~201 MB | Single Node.js Worker Process | `process.memoryUsage().rss` |
 | **Gate Monitor** (`monitor.log`) | ~1389 MB | Total @scu/worker swarm | `ps -ax o rss | grep worker` |
 
-## 2. Discrepancy Analysis
-The ~1.2GB delta is attributed to the `dev` environment overhead:
-1. **Runner Overhead**: `pnpm` and `ts-node` wrapper processes.
-2. **Sub-process Swarm**: The `dev` command spawns multiple layers of Node.js for hot-reloading and transpilation.
-3. **Internal vs System**: The internal metric strictly measures the V8 container's physical memory footprint, excluding shared libraries and mapping overhead captured by `ps`.
+## 2. Correction (Definition & Scope)
+- `process.memoryUsage().rss` measures the **RSS of the current Node.js process** (resident set size).
+- `ps`-based RSS measurements are comparable **only when referencing the same PID** at approximately the same time.
+- The observed delta (e.g., 201MB vs 1389MB) is caused by **scope mismatch**:
+  - Swarm / multiple worker processes active simultaneously.
+  - Dev wrappers (`pnpm`/`ts-node`/hot-reload) spawning additional Node.js processes.
+  - Summing multiple PIDs or sampling different moments.
 
-## 3. Commercial Reliability Conclusion
-- The value **201MB** for 3M baseline is **VALID** for a single-worker instance.
-- The historical **1.7GB-2.0GB** for 15M represents the **TOTAL SYSTEM IMPACT** under stress.
-- **Decision**: Retain `process.memoryUsage().rss` as the high-fidelity internal signal, but use Gate Monitoring for "Total Infrastructure Impact" regression.
-- **Alert Threshold**: Updated to `3000MB` (Cluster) in `stage4.alerts.yml`.
+## 3. Audit Decision (Two-tier Signals)
+- Keep `scu_stage4_peak_rss_mb` as **per-worker process RSS** signal for high-fidelity code regressions.
+- Keep `monitor.log` / swarm RSS as **total system impact** signal for infra capacity planning.
+- Any "Commercial Seal" verification must distinguish between single-process stability and swarm-level impact.
