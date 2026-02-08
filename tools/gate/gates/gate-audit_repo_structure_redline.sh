@@ -15,7 +15,7 @@ pass() { echo "[STRUCTURE][PASS] $*"; }
 # minimal json reader (支持字符串与对象混排)
 req_dirs=$(node -e "const c=require('./$CONFIG'); console.log(c.required_dirs.join('\n'))")
 req_files=$(node -e "const c=require('./$CONFIG'); console.log(c.required_files.map(x => typeof x === 'string' ? x : x.script).join('\n'))")
-dir_regex=$(node -e "const c=require('./$CONFIG'); console.log(c.evidence.run_dir_prefix + '_' + '.*')")
+dir_regex=$(node -e "const c=require('./$CONFIG'); console.log(c.evidence.dir_regex)")
 
 while read -r d; do
   [[ -z "$d" ]] && continue

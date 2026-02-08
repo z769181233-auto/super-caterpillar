@@ -1,6 +1,11 @@
 {
   "version": "1.0.0",
-  "required_dirs": ["docs/_specs", "docs/_specs/governance", "docs/_evidence", "tools/gate/gates"],
+  "required_dirs": [
+    "docs/_specs",
+    "docs/_specs/governance",
+    "docs/_evidence",
+    "tools/gate/gates"
+  ],
   "required_files": [
     "docs/_specs/governance/ENGINEERING_GOVERNANCE_POST_SEALED.md",
     "docs/_specs/governance/gov_post_sealed.config.json",
@@ -22,14 +27,26 @@
   "evidence": {
     "root": "docs/_evidence",
     "run_dir_prefix": "post_sealed_governance",
-    "dir_regex": "^[a-z0-9]+(_[a-z0-9]+)*_[0-9]{8}_[0-9]{6}$",
-    "required_artifacts": ["RUN_LOG.txt", "SUMMARY.json", "EVIDENCE_INDEX.json"]
+    "dir_regex": "^[a-zA-Z0-9]+(_[a-zA-Z0-9]+)*_([0-9]{8}_[0-9]{6}|[0-9]{14})$",
+    "required_artifacts": [
+      "RUN_LOG.txt",
+      "SUMMARY.json",
+      "EVIDENCE_INDEX.json"
+    ]
   },
   "gate_shell": {
     "glob": "tools/gate/gates/*.sh",
     "required_shebang": "#!/usr/bin/env bash",
-    "required_contains": ["set -euo pipefail", "IFS=$'\\n\\t'"],
-    "forbidden_regex": ["\\beval\\b", "`", "source\\s*<\\(", "curl\\s+[^|]+\\|\\s*(bash|sh)"]
+    "required_contains": [
+      "set -euo pipefail",
+      "IFS=$'\\n\\t'"
+    ],
+    "forbidden_regex": [
+      "\\beval\\b",
+      "`",
+      "source\\s*<\\(",
+      "curl\\s+[^|]+\\|\\s*(bash|sh)"
+    ]
   },
   "psql_dq": {
     "tag": "gate",
