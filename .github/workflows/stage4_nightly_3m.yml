@@ -1,0 +1,37 @@
+name: Stage4 Nightly 3M Baseline Gate (Required)
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # daily 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  stage4-nightly-3m:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install
+        run: corepack enable && pnpm -v && pnpm i --frozen-lockfile
+      - name: Run Gate (3M baseline)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          HMAC_SECRET_KEY: ${{ secrets.HMAC_SECRET_KEY }}
+          WORKER_API_KEY: ${{ secrets.WORKER_API_KEY }}
+          MIN_CHUNK_JOBS: "5"
+          MAX_FAILED_JOBS: "0"
+        run: |
+          TS="$(date +%Y%m%d_%H%M%S)"
+          EVI="docs/_evidence/stage4_nightly_3m_${TS}"
+          mkdir -p "$EVI"
+          bash tools/gate/gates/gate_stage4_scaling_15m.sh | tee "$EVI/run.log"
+          curl -fsS http://localhost:3000/metrics > "$EVI/metrics_snapshot.txt" || true
+      - name: Upload Evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage4-nightly-3m-evidence
+          path: docs/_evidence/stage4_nightly_3m_*

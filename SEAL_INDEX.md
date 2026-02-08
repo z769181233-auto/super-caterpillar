@@ -104,3 +104,5 @@
   - ✅ Unified Metrics (API:3000/metrics proxies Worker:3001)
   - ✅ RSS Definition Validated (Internal Peak vs Swarm Total)
   - ✅ Nightly 3MB Baseline Gate Formalized
+
+- **Phase 6**: Go-Live Engineering - Nightly Gate + Runbook (PENDING EVIDENCE)
