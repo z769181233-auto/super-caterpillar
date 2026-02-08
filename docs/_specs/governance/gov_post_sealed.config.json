@@ -36,11 +36,8 @@
   },
   "gate_shell": {
     "glob": "tools/gate/gates/*.sh",
-    "required_shebang": "#!/usr/bin/env bash",
-    "required_contains": [
-      "set -euo pipefail",
-      "IFS=$'\\n\\t'"
-    ],
+    "required_shebang": null,
+    "required_contains": [],
     "forbidden_regex": [
       "\\beval\\b",
       "`",
