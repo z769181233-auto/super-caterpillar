@@ -153,3 +153,40 @@ Pilot 已成功跑通 CE06 解析并完成了角色三处图生成。
 - **Actual Cost**: 0 (Billing logic not yet implemented)
 - **Result**: ✅ PASS with WARNING (infrastructure verified, pending business logic)
 - **Negative Tests**: ✅ Unique constraint enforced, duplicate billing blocked
+
+---
+
+## Stage 4 Global Audit Closure: 100% Normalized (CLOSED)
+
+**Closure Tag**: `STAGE4_PHASE6_NIGHTLY_GATE_SEALED_20260208`  
+**Primary Evidence**: `docs/_evidence/stage4_scaling_15m_20260208_175418/`  
+**SSOT Indices**: [SEAL_INDEX.md](SEAL_INDEX.md) + [docs/SEAL_INDEX.md](docs/SEAL_INDEX.md) (synced)
+
+### What is closed
+- ✅ Zero hardcoded local paths (`/Users/...`) and zero `file:`/// references across repo + DB.
+- ✅ All SSOT evidence links are repo-relative and portable across CI/dev machines.
+- ✅ Governance audit scripts are config-driven via `gov_post_sealed.config.json`.
+- ✅ Sealing tag is pushed to remote origin and can be reproduced via `git fetch --tags`.
+
+### How to re-verify (copy-paste)
+```bash
+cd "$(git rev-parse --show-toplevel)"
+
+# 1) Global path hygiene
+rg -n "/Users/[a]dam/" -S . && exit 1 || echo "OK: no /Users/adam paths"
+rg -n "file:"/// -S . && exit 1 || echo "OK: no file":/// refs
+
+# 2) Tag reproducibility
+git fetch --tags origin
+git tag -l | rg "STAGE4_PHASE6_NIGHTLY_GATE_SEALED_20260208"
+
+# 3) Evidence must exist
+test -f "docs/_evidence/stage4_scaling_15m_20260208_175418/final_summary.json" && echo "OK: evidence present"
+cat "docs/_evidence/stage4_scaling_15m_20260208_175418/final_summary.json" | rg '"status": "PASS"' && echo "OK: PASS"
+```
+
+### Evidence completeness checklist (Phase 6 V3.1)
+- [x] **metrics_pre.txt + metrics_post.txt** (+ trap best-effort)
+- [x] **rss_trace.jsonl** (swarm scope) + **final_summary.json** includes peakSwarmRssMb
+- [x] **monitor.log** includes multi-signal delta assertion outcome
+- [x] **final_summary.json** status = PASS

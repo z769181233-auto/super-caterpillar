@@ -118,3 +118,4 @@
   - ✅ RSS scope disambiguation (`peakSwarmRssMb` in `final_summary.json`)
 - **Notes**:
   - Nightly CI workflow consumes SSOT evidence path and blocks on `final_summary.json: PASS`.
+  - **Closure Audit**: [walkthrough.md#stage-4-global-audit-closure-100-normalized-closed](walkthrough.md#stage-4-global-audit-closure-100-normalized-closed)
