@@ -105,10 +105,14 @@ api_startup.log
 api_direct.log
 
 # --- Evidence vs Release Hygiene (Governance) ---
+# Ensure evidence directories are traversable
+!docs/_evidence/
+!docs/_evidence_archived/
+
 # Default: ignore logs everywhere (Release Surface)
 *.log
 *.out
 
 # Evidence surface: allow logs as auditable artifacts
-!docs/_evidence/**/*.log
-!docs/_evidence/**/*.out
+!docs/_evidence*/**/*.log
+!docs/_evidence*/**/*.out
