@@ -6,6 +6,11 @@ import { JobType as JobTypeEnum, TaskType as TaskTypeEnum } from 'database';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditActions } from '../audit/audit.constants';
 import { randomUUID } from 'crypto';
+import { NovelImportService } from '../novel-import/novel-import.service';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+
+const SHREDDER_THRESHOLD = 500000; // 50w 字符分流阈值
 
 /**
  * Story Service
@@ -23,8 +28,9 @@ export class StoryService {
   constructor(
     private readonly jobService: JobService,
     private readonly prisma: PrismaService,
-    private readonly auditLogService: AuditLogService
-  ) {}
+    private readonly auditLogService: AuditLogService,
+    private readonly novelImportService: NovelImportService
+  ) { }
 
   /**
    * 解析小说（CE06）
@@ -42,15 +48,17 @@ export class StoryService {
     organizationId?: string,
     ip?: string,
     userAgent?: string,
-    customTraceId?: string
+    targetTraceId?: string,
+    isVerification?: boolean
   ) {
     // 1. 参数校验（DTO 已通过 class-validator）
+    const projectId = dto.projectId;
+    this.logger.log(`Parsing story for project ${projectId}, isVerification=${isVerification}`);
     if (!dto.rawText || dto.rawText.trim().length === 0) {
       throw new BadRequestException('rawText is required and cannot be empty');
     }
 
     // 2. 如果提供了 projectId，验证项目存在
-    const projectId = dto.projectId;
     if (projectId) {
       const project = await this.prisma.project.findUnique({
         where: { id: projectId },
@@ -70,7 +78,68 @@ export class StoryService {
     }
 
     // 3. 生成 traceId（Pipeline 级）
-    const traceId = customTraceId || `ce_pipeline_${randomUUID()}`;
+    const traceId = targetTraceId || `ce_pipeline_${randomUUID()}`;
+
+    // [Stage 4] Shredder 分流逻辑
+    if (dto.rawText.length > SHREDDER_THRESHOLD) {
+      this.logger.log(`[Stage 4] Text length ${dto.rawText.length} exceeds threshold ${SHREDDER_THRESHOLD}, bypassing monolithic parsing.`);
+
+      // 1. 确保 Novel 记录存在
+      let novel = await this.prisma.novel.findFirst({ where: { projectId } });
+      if (!novel) {
+        novel = await this.prisma.novel.create({
+          data: {
+            projectId,
+            title: dto.title || 'Untitled Story',
+            author: dto.author || 'Unknown',
+            rawFileUrl: '',
+            status: 'UPLOADING',
+          },
+        });
+      }
+
+      // 2. 将内容写入磁盘作为流式源 (Shredder 模式必备)
+      const uploadDir = path.join(process.cwd(), 'uploads/novels');
+      await fs.mkdir(uploadDir, { recursive: true });
+      const filePath = path.join(uploadDir, `shredder_${projectId}_${Date.now()}.txt`);
+      await fs.writeFile(filePath, dto.rawText);
+
+      // 3. 触发 Shredder 工作流
+      const result = await this.novelImportService.triggerShredderWorkflow(
+        novel.id,
+        projectId,
+        organizationId as string,
+        userId || 'system',
+        filePath,
+        dto.title || 'Untitled Story',
+        traceId,
+        isVerification
+      );
+
+      // 4. 记录审计日志
+      await this.auditLogService.record({
+        userId,
+        action: AuditActions.JOB_CREATED,
+        resourceType: 'job',
+        resourceId: result.jobId,
+        ip,
+        userAgent,
+        details: {
+          jobType: 'NOVEL_SCAN_TOC',
+          mode: 'SHREDDER',
+          taskId: result.taskId,
+          traceId,
+          projectId,
+        },
+      });
+
+      return {
+        jobId: result.jobId,
+        traceId,
+        status: 'PENDING',
+        taskId: result.taskId,
+      };
+    }
 
     // 3.5 确保 Novel (NovelSource) 记录存在
     const novel = await this.prisma.novel.findFirst({ where: { projectId } });

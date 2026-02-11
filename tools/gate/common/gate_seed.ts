@@ -74,7 +74,7 @@ async function main() {
     const workerId = args.find((a) => a.startsWith('--workerId='))?.split('=')[1] || 'p1b-tester';
     const apiKey = args.find((a) => a.startsWith('--apiKey='))?.split('=')[1] || 'ak_worker_tester';
     const apiSecret =
-      args.find((a) => a.startsWith('--apiSecret='))?.split('=')[1] || 'sk_worker_tester';
+      args.find((a) => a.startsWith('--apiSecret='))?.split('=')[1] || '[REDACTED_MOCK_SECRET]';
 
     // 1. Ensure WorkerNode exists (without apiKey field)
     await prisma.workerNode.upsert({

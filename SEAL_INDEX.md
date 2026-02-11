@@ -114,6 +114,9 @@
   - `tools/gate/gates/gate_phase5_p11_assert.sh` (Self-assertion / ALL PASS)
 - **SSOT Reference**: `MONITORING_SSOT.json` v3
 - **Commit SHA**: 75665ae08c7a6d4a735fb6725715c38cd5ab1489
+- **Governance SSOT Commit**: eece5d80 (gitignore evidence hygiene)
+- **Integrity Fix Commit**: 2b99c283 (track missing monitoring source)
+- **Integrity Fix 2 Commit**: 50ff372a (monitoring integration & SSOT updates)
 - **Verification Highlights**:
   - ✅ **SLO Truth Layer**: Prometheus Histogram (`_bucket`) confirmed for duration.
   - ✅ **Security Matrix**: Unauthorized `/api/admin/metrics/p1` returns 401/403.
@@ -134,3 +137,20 @@
 - **Notes**:
   - Nightly CI workflow consumes SSOT evidence path and blocks on `final_summary.json: PASS`.
   - **Closure Audit**: [walkthrough.md#stage-4-global-audit-closure-100-normalized-closed](walkthrough.md#stage-4-global-audit-closure-100-normalized-closed)
+
+## V3.1 COMMERCIAL FULL SEALING (P25-1)
+
+- **Status**: COMMERCIAL SEALED (Full Novel E2E)
+- **Primary Tag**: V3_1_COMMERCIAL_SEALED_20260211
+- **Evidence**: docs/_evidence/p25_1_full_3m_1770784468/E2E/
+- **Run ID**: 18
+- **Project ID**: `ea83491f-9d22-4158-8acf-c5de245a16ce`
+- **Scope**:
+  - ✅ 3 Million Word Stress Test (Target: 3,000,000 words)
+  - ✅ L3 Commercial Audit (No Data Loss)
+  - ✅ Dynamic Auth & Schema Fixes (Port 5433, OrgID)
+  - ✅ Streamed Logging & Execution Stability
+- **Notes**:
+  - Validated against V3.1 Schema (Permissions/Users/Heartbeats fixes)
+  - Executed with `pnpm exec tsx` and `stdio: inherit` for production stability
+  - Ready for Commercial Deployment

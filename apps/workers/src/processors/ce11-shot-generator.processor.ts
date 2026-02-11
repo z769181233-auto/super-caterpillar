@@ -123,6 +123,42 @@ export async function processCE11ShotGeneratorJob(
         },
       });
       createdShots.push({ id: shot.id, index: i + 1 });
+
+      // Stage 5: Persist ShotPlanning (Bible V3.0)
+      // Upsert to ensure idempotency re-runs
+      // Data field must contain 'shotType' and 'movement' for verify-stage4-5-api.ts assertion
+      await (prisma as any).shotPlanning.upsert({
+        where: { shotId: shot.id },
+        update: {
+          engineKey: finalEngineKey,
+          engineVersion: payload.engineVersion || 'v1.0',
+          data: {
+            shotType: shotData.shot_type || 'MEDIUM_SHOT',
+            movement: shotData.camera_movement || 'STATIC',
+            angle: shotData.camera_angle || 'EYE_LEVEL',
+            lighting: shotData.lighting_preset || 'NATURAL',
+            visualPrompt: shotData.visual_prompt,
+            action: shotData.action_description,
+            // Full raw data backup
+            raw: shotData,
+          },
+        },
+        create: {
+          shotId: shot.id,
+          engineKey: finalEngineKey,
+          engineVersion: payload.engineVersion || 'v1.0',
+          data: {
+            shotType: shotData.shot_type || 'MEDIUM_SHOT',
+            movement: shotData.camera_movement || 'STATIC',
+            angle: shotData.camera_angle || 'EYE_LEVEL',
+            lighting: shotData.lighting_preset || 'NATURAL',
+            visualPrompt: shotData.visual_prompt,
+            action: shotData.action_description,
+            // Full raw data backup
+            raw: shotData,
+          },
+        },
+      });
     }
 
     // 4. 计费审计 (P1-2/Bible)

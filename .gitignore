@@ -67,6 +67,7 @@ docs/_evidence/RETRY_S3_SCALE_EVENT_DAG_*/
 .api_pid_temp
 .*_temp
 gate_*_output.txt
+tmp_*.json
 
 # temp workspace
 .tmp/
@@ -114,9 +115,15 @@ api_direct.log
 !docs/_evidence_archived/**/*.out
 
 # Evidence surface: still ban noisy runtime logs (keep audit snapshots only)
-docs/_evidence/**/api.log
-docs/_evidence/**/worker.log
-docs/_evidence/**/gate.log
-docs/_evidence_archived/**/api.log
-docs/_evidence_archived/**/worker.log
-docs/_evidence_archived/**/gate.log
+# Evidence surface: DEFAULT IGNORE ALL
+docs/_evidence/
+docs/_evidence_archived/
+
+# Whitelist: Core indexes and summaries (Force add these if not picked up)
+!docs/_evidence/**/EVIDENCE_INDEX.md
+!docs/_evidence/**/final_summary.json
+!docs/_evidence/**/job_summary_final.json
+!docs/_evidence/**/audit_coverage_final.json
+!docs/_evidence/**/l3_sample_manifest.json
+
+# Whitelist: Keep specific pinned evidence folders if they are already tracked (Git will respect tracked files)

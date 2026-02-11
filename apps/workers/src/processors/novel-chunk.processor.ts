@@ -1,4 +1,4 @@
-import { PrismaClient } from 'database';
+import { PrismaClient, JobType, JobStatus } from 'database';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as fsp from 'fs/promises';
@@ -75,6 +75,8 @@ export async function processNovelChunk(context: ProcessorContext) {
     }
 
     // 3. Write to DB (Transactional for this Episode only)
+    const createdSceneIds: string[] = [];
+
     await prisma.$transaction(async (tx) => {
       // Clear existing scenes for this episode (Idempotency)
       // NOT DELETE ALL, because "Chunk" usually maps 1:1 to Episode in our scan logic.
@@ -99,9 +101,11 @@ export async function processNovelChunk(context: ProcessorContext) {
             episodeId,
             sceneIndex: sIdx + 1,
             title: scene.title || `场景 ${sIdx + 1}`,
-            summary: scene.description || '',
+            summary: scene.description || scene.summary || '',
+            enrichedText: scene.shots.map((s: any) => s.text).join('\n'),
           },
         });
+        createdSceneIds.push(dbScene.id);
 
         if (scene.shots.length > 0) {
           await tx.shot.createMany({
@@ -125,7 +129,42 @@ export async function processNovelChunk(context: ProcessorContext) {
       }
     });
 
-    console.log(`[NovelChunk] Success. Imported ${analyzedScenes.length} scenes.`);
+    console.log(`[NovelChunk] Success. Imported ${analyzedScenes.length} scenes. Transaction Committed.`);
+
+    // Cascade Trigger: Stage 5 (Shot Planning)
+    // Immediately trigger Shot Generator for created scenes to maximize parallelism (Shredder Mode)
+    if (createdSceneIds.length > 0) {
+      const isVerification = job.isVerification;
+      // P5-3: Explicit Engine Key Routing
+      // If verification, stick to mock. If production, use real engine.
+      const targetEngineKey = isVerification ? 'ce11_shot_generator_mock' : 'ce11_shot_generator_real';
+
+      const cascadeJobs = createdSceneIds.map((sceneId) => ({
+        type: JobType.CE11_SHOT_GENERATOR,
+        status: JobStatus.PENDING,
+        projectId,
+        organizationId: job.organizationId,
+        workerId: null,
+        taskId: job.taskId, // CRITICAL: Propagate Aggregate Task ID
+        traceId: job.traceId || job.payload?.traceId,
+        isVerification,
+        payload: {
+          novelSceneId: sceneId,
+          projectId,
+          traceId: job.traceId || job.payload?.traceId,
+          engineKey: targetEngineKey,
+          isVerification, // Redundant but safe
+        },
+      }));
+
+      await prisma.shotJob.createMany({
+        data: cascadeJobs as any,
+      });
+
+      console.log(
+        `[Cascade] Triggered ${cascadeJobs.length} CE11_SHOT_GENERATOR jobs for taskId=${job.taskId}`
+      );
+    }
 
     // Metrics: Success
     const durationSec = (Date.now() - t0) / 1000;

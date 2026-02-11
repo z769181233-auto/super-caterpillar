@@ -30,7 +30,7 @@ export class WorkerController {
     private readonly orchestratorService: OrchestratorService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   /**
    * Worker 注册
@@ -211,6 +211,7 @@ export class WorkerController {
         sceneId: job.sceneId, // Added
         organizationId: job.organizationId, // Added
         traceId: job.traceId,
+        isVerification: job.isVerification, // Added for Gate Mode identification
         createdAt: job.createdAt,
       },
     };

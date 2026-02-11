@@ -838,6 +838,12 @@ export async function startWorkerApp() {
   }
 }
 
+// 启动程序
+startWorkerApp().catch((err) => {
+  console.error('Fatal error during worker startup:', err);
+  process.exit(1);
+});
+
 /**
  * 优雅关闭
  */

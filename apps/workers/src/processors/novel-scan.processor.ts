@@ -26,7 +26,7 @@ export async function processNovelScan(context: ProcessorContext) {
   }
 
   const { prisma, job, workerId } = context;
-  const { projectId, options } = job.payload;
+  const { projectId, options, isVerification } = job.payload;
   const fileKey = job.payload.fileKey || job.payload.filePath;
 
   try {
@@ -97,7 +97,8 @@ export async function processNovelScan(context: ProcessorContext) {
             startByte: ep.startByte,
             endByte: ep.endByte,
             episodeId: dbEp.id,
-            title: ep.title
+            title: ep.title,
+            isVerification: !!isVerification
           };
 
           // [HARDENING] Payload Size Assert
@@ -117,7 +118,9 @@ export async function processNovelScan(context: ProcessorContext) {
               status: 'PENDING',
               priority: 50,
               payload: jobPayload,
-              episodeId: dbEp.id
+              taskId: job.taskId,
+              episodeId: dbEp.id,
+              isVerification: !!isVerification
             },
           });
         }

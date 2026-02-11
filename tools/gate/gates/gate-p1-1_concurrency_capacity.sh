@@ -72,7 +72,7 @@ export STRIPE_SECRET_KEY="sk_test_p1_1"
 export ALLOW_TEST_BILLING_GRANT=1
 export GATE_MODE=1
 export WORKER_API_KEY="ak_worker_p1_1_gate"
-export WORKER_API_SECRET="sk_worker_p1_1_gate"
+export WORKER_API_SECRET="[REDACTED_MOCK_SECRET]"
 JWT_SECRET="$JWT_SECRET" node apps/api/dist/main.js > "$EVIDENCE_DIR/api.log" 2>&1 &
 API_PID=$!
 
@@ -279,7 +279,7 @@ export STRIPE_SECRET_KEY="sk_test_p1_1"
 export ALLOW_TEST_BILLING_GRANT=1
 export GATE_MODE=1
 export WORKER_API_KEY="ak_worker_p1_1_gate"
-export WORKER_API_SECRET="sk_worker_p1_1_gate"
+export WORKER_API_SECRET="[REDACTED_MOCK_SECRET]"
 JWT_SECRET="$JWT_SECRET" node apps/api/dist/main.js > "$EVIDENCE_DIR/api.log" 2>&1 &
 API_PID=$!
 
@@ -486,7 +486,7 @@ export STRIPE_SECRET_KEY="sk_test_p1_1"
 export ALLOW_TEST_BILLING_GRANT=1
 export GATE_MODE=1
 export WORKER_API_KEY="ak_worker_p1_1_gate"
-export WORKER_API_SECRET="sk_worker_p1_1_gate"
+export WORKER_API_SECRET="[REDACTED_MOCK_SECRET]"
 JWT_SECRET="$JWT_SECRET" node apps/api/dist/main.js > "$EVIDENCE_DIR/api.log" 2>&1 &
 API_PID=$!
 
@@ -693,7 +693,7 @@ export STRIPE_SECRET_KEY="sk_test_p1_1"
 export ALLOW_TEST_BILLING_GRANT=1
 export GATE_MODE=1
 export WORKER_API_KEY="ak_worker_p1_1_gate"
-export WORKER_API_SECRET="sk_worker_p1_1_gate"
+export WORKER_API_SECRET="[REDACTED_MOCK_SECRET]"
 JWT_SECRET="$JWT_SECRET" node apps/api/dist/main.js > "$EVIDENCE_DIR/api.log" 2>&1 &
 API_PID=$!
 

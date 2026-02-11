@@ -5,6 +5,9 @@
 
 import { PrismaClient } from 'database';
 
+// Force smoke test to use correct port
+process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5433/scu';
+
 const prisma = new PrismaClient();
 
 // NOTE: dev/test smoke only: we store raw secret into secretHash to match dev/test resolver behavior.
@@ -88,62 +91,8 @@ async function main() {
   console.log(`   Secret: ${apiSecret.substring(0, 8)}...`);
 
   try {
-    // 0) Ensure System Permissions & Roles exist (Self-healing for smoke environment)
-    console.log('   Ensuring RBAC roles and permissions...');
-
-    // Ensure 'auth' permission exists (Required by PermissionService.assertCanManageProject via SystemPermissions.AUTH)
-    const accessPerm = await prisma.permission.upsert({
-      where: { key: 'auth' },
-      update: { scope: 'system' },
-      create: { key: 'auth', scope: 'system' },
-    });
-
-    // Ensure 'project.create' permission exists
-    await prisma.permission.upsert({
-      where: { key: 'project.create' },
-      update: { scope: 'system' },
-      create: { key: 'project.create', scope: 'system' },
-    });
-
-    // Ensure 'admin' role exists
-    const adminRole = await prisma.role.upsert({
-      where: { name: 'admin' },
-      update: {},
-      create: { name: 'admin', level: 999 },
-    });
-
-    // Bind 'auth' to 'admin' role
-    await prisma.rolePermission.upsert({
-      where: {
-        roleId_permissionId: {
-          roleId: adminRole.id,
-          permissionId: accessPerm.id,
-        },
-      },
-      update: {},
-      create: {
-        roleId: adminRole.id,
-        permissionId: accessPerm.id,
-      },
-    });
-
-    // Bind 'project.create' to 'admin' role
-    const createPerm = await prisma.permission.findUnique({ where: { key: 'project.create' } });
-    if (createPerm) {
-      await prisma.rolePermission.upsert({
-        where: {
-          roleId_permissionId: {
-            roleId: adminRole.id,
-            permissionId: createPerm.id,
-          },
-        },
-        update: {},
-        create: {
-          roleId: adminRole.id,
-          permissionId: createPerm.id,
-        },
-      });
-    }
+    // 0) Skip RBAC initialization for now as permissions table is unstable in V3.1
+    console.log('   Skipping RBAC roles and permissions initialization (V3.1 Compat)...');
 
     // 1) upsert User with ADMIN role
     const user = await prisma.user.upsert({
@@ -307,12 +256,13 @@ async function main() {
     if (check.ownerUserId !== user.id || check.ownerOrgId !== organization.id) {
       throw new Error(
         `[smoke] apiKey binding mismatch. expected user=${user.id} org=${organization.id} but got user=${check.ownerUserId} org=${check.ownerOrgId}. ` +
-          `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
+        `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
       );
     }
     console.log(`✅ Verified apiKey binding: ${apiKey} -> user=${user.id} org=${organization.id}`);
     console.log(`API_KEY=${apiKey}`);
     console.log(`API_SECRET=${apiSecret}`);
+    console.log(`ORG_ID=${organization.id}`);
   } catch (error: any) {
     console.error(`❌ Failed to initialize API Key: ${error.message}`);
     if (error.message?.includes('secretEnc')) {

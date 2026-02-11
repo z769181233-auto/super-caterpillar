@@ -315,7 +315,8 @@ export class NovelImportService {
     userId: string,
     filePath: string,
     title: string,
-    traceId?: string
+    traceId?: string,
+    isVerification?: boolean
   ): Promise<any> {
     this.logger.log(`[Stage 4] Triggering Shredder workflow for Novel: ${novelSourceId} (${projectId})`);
 
@@ -331,6 +332,7 @@ export class NovelImportService {
           novelSourceId,
           projectId,
           mode: 'SHREDDER', // 标记为分片模式
+          isVerification: !!isVerification,
         },
       },
     });
@@ -356,6 +358,7 @@ export class NovelImportService {
           userId,
           fileKey: filePath,
           title,
+          isVerification: !!isVerification,
         },
         traceId: task.traceId,
       },

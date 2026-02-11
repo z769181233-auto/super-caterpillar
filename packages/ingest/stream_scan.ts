@@ -37,7 +37,9 @@ export async function streamScanFile(
   // Regex for Chapter Headers
   // Matches "第N章" or similar patterns.
   // Note: We trim the line before checking, but byte calculation uses strict raw line.
-  const chapterPattern = /^第\s*([0-9一二三四五六七八九十百千]+)\s*[章回集]/;
+  // Regex for Chapter Headers
+  // Matches "第N章", "第N卷", "第N回", "Chapter N", etc.
+  const chapterPattern = /^(第\s*[0-9一二三四五六七八九十百千]+\s*[章节回卷集篇]|Chapter\s*[0-9]+|Section\s*[0-9]+)/i;
 
   for await (const chunk of stream) {
     // Decode chunk to string, handling incomplete multibyte sequences

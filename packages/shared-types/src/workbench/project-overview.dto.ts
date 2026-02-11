@@ -102,6 +102,13 @@ export interface JobBrief {
   type: string;
   status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELED';
   progressPct?: number;
+  currentStep?: string; // e.g., 'Scanning', 'Parsing Chunks'
+  progressBreakdown?: {
+    scanPct?: number;
+    parsePct?: number;
+    doneChunks?: number;
+    totalChunks?: number;
+  };
   startedAt?: string;
   workerId?: string;
   engineKey?: string;

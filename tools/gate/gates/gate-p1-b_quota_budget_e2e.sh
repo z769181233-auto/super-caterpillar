@@ -22,7 +22,7 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 export PORT=3011
 export API_URL="http://localhost:$PORT"
 export WORKER_API_KEY="ak_worker_tester"
-export WORKER_API_SECRET="sk_worker_tester"
+export WORKER_API_SECRET="[REDACTED_MOCK_SECRET]"
 # Ensure DATABASE_URL is set
 export DATABASE_URL=${DATABASE_URL:-$(grep "^DATABASE_URL=" .env.local | cut -d= -f2- | tr -d # Ensure JWT_SECRET is set
 export JWT_SECRET=${JWT_SECRET:-$(grep "^JWT_SECRET=" .env.local | cut -d= -f2- | tr -d 
@@ -193,7 +193,7 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 export PORT=3011
 export API_URL="http://localhost:$PORT"
 export WORKER_API_KEY="ak_worker_tester"
-export WORKER_API_SECRET="sk_worker_tester"
+export WORKER_API_SECRET="[REDACTED_MOCK_SECRET]"
 # Ensure DATABASE_URL is set
 export DATABASE_URL=${DATABASE_URL:-$(grep "^DATABASE_URL=" .env.local | cut -d= -f2- | tr -d # Ensure JWT_SECRET is set
 export JWT_SECRET=${JWT_SECRET:-$(grep "^JWT_SECRET=" .env.local | cut -d= -f2- | tr -d 
@@ -364,7 +364,7 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 export PORT=3011
 export API_URL="http://localhost:$PORT"
 export WORKER_API_KEY="ak_worker_tester"
-export WORKER_API_SECRET="sk_worker_tester"
+export WORKER_API_SECRET="[REDACTED_MOCK_SECRET]"
 # Ensure DATABASE_URL is set
 export DATABASE_URL=${DATABASE_URL:-$(grep "^DATABASE_URL=" .env.local | cut -d= -f2- | tr -d # Ensure JWT_SECRET is set
 export JWT_SECRET=${JWT_SECRET:-$(grep "^JWT_SECRET=" .env.local | cut -d= -f2- | tr -d 
@@ -535,7 +535,7 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 export PORT=3011
 export API_URL="http://localhost:$PORT"
 export WORKER_API_KEY="ak_worker_tester"
-export WORKER_API_SECRET="sk_worker_tester"
+export WORKER_API_SECRET="[REDACTED_MOCK_SECRET]"
 # Ensure DATABASE_URL is set
 export DATABASE_URL=${DATABASE_URL:-$(grep "^DATABASE_URL=" .env.local | cut -d= -f2- | tr -d # Ensure JWT_SECRET is set
 export JWT_SECRET=${JWT_SECRET:-$(grep "^JWT_SECRET=" .env.local | cut -d= -f2- | tr -d 

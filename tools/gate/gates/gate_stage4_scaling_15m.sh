@@ -26,6 +26,8 @@ PSQL="psql -v ON_ERROR_STOP=1 -X"
 TS="$(date +%Y%m%d_%H%M%S)"
 EVI_DIR="${ROOT_DIR}/docs/_evidence/stage4_scaling_15m_${TS}"
 mkdir -p "${EVI_DIR}"
+# [V3.1] Gate-led Evidence SSOT (Immediate Write)
+echo "${EVI_DIR}" > "${ROOT_DIR}/docs/_evidence/current_stage4_evidence_path.txt"
 
 # --- [V3.1] Mandatory Post-metrics Capture (Trap) ---
 BEST_EFFORT_METRICS_POST() {
@@ -216,7 +218,6 @@ while [ "${ELAPSED}" -lt "${MAX_WAIT}" ]; do
              fi
 
              # --- [V3.4] Final Artifacts & Summary Alignment ---
-             echo "${EVI_DIR}" > "${ROOT_DIR}/docs/_evidence/current_stage4_evidence_path.txt"
              
              cat <<EOF > "${EVI_DIR}/final_summary.json"
 {

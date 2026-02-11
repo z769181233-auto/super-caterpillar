@@ -50,7 +50,7 @@ ON CONFLICT (id) DO NOTHING;
 
 # Source
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO novel_sources(id, \"projectId\", \"rawText\", \"fileName\", \"createdAt\", \"updatedAt\")
+INSERT INTO novels(id, project_id, title, file_name, created_at, updated_at)
 VALUES ('src_${PROJ_ID}', '${PROJ_ID}', 'Dummy', 'gate14.txt', now(), now());
 " > /dev/null
 
@@ -68,8 +68,8 @@ VALUES ('${CHAP_ID}', '${VOL_ID}', 'src_${PROJ_ID}', 1, 'Gate Chapter', now(), n
 
 # Scene
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO novel_scenes(id, chapter_id, index, title, raw_text, created_at, updated_at)
-VALUES ('${SCENE_ID}', '${CHAP_ID}', 1, 'Gate Scene', 'Initial Text', now(), now());
+INSERT INTO scenes(id, chapter_id, scene_index, title, project_id, created_at, updated_at)
+VALUES ('${SCENE_ID}', '${CHAP_ID}', 1, 'Gate Scene', '${PROJ_ID}', now(), now());
 " > /dev/null
 
 echo "[GATE14] DB Hierarchy Seeded."
@@ -142,7 +142,7 @@ else
 fi
 
 # Scene Assertion
-VAL_SCENE=$(psql "$DATABASE_URL" -t -A -c "SELECT visual_density_score FROM novel_scenes WHERE id='${SCENE_ID}';")
+VAL_SCENE=$(psql "$DATABASE_URL" -t -A -c "SELECT visual_density_score FROM scenes WHERE id='${SCENE_ID}';")
 echo "Scene Score: $VAL_SCENE" | tee "$EVI/scene_assertion.txt"
 
 if [[ -n "$VAL_SCENE" && "$VAL_SCENE" != "null" ]]; then

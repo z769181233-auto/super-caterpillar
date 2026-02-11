@@ -37,7 +37,7 @@ export class ProjectService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   async create(createProjectDto: CreateProjectDto, ownerId: string, organizationId: string) {
     this.logger.log('PROJECT SERVICE CREATE CALLED');
@@ -721,11 +721,11 @@ export class ProjectService {
     // 清理缓存（需要获取 projectId）
     const projectId = isSeasonId
       ? (
-          await this.prisma.season.findUnique({
-            where: { id: projectIdOrSeasonId },
-            select: { projectId: true },
-          })
-        )?.projectId
+        await this.prisma.season.findUnique({
+          where: { id: projectIdOrSeasonId },
+          select: { projectId: true },
+        })
+      )?.projectId
       : projectIdOrSeasonId;
     if (projectId) {
       await this.sceneGraphService.invalidateProjectSceneGraph(projectId);
@@ -1373,26 +1373,32 @@ export class ProjectService {
     if (!project) throw new NotFoundException('Project not found');
 
     // 1. Stats & Real Data Fetching
-    const [seasons, episodes, scenes, shots, jobs, costAgg, auditLogs] = await Promise.all([
+    const [seasons, episodes, scenes, shots, runningJobs, costAgg, auditLogs] = await Promise.all([
       this.prisma.season.count({ where: { projectId } }),
-      this.prisma.episode.count({ where: { season: { projectId } } }),
-      this.prisma.scene.count({ where: { episode: { season: { projectId } } } }),
-      this.prisma.shot.count({ where: { scene: { episode: { season: { projectId } } } } }),
-      this.prisma.shotJob.findMany({
-        where: {
-          task: { projectId },
-          status: { in: ['RUNNING', 'PENDING', 'FAILED'] },
-        },
-        select: { id: true, type: true, status: true, workerId: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
+      this.prisma.episode.count({
+        where: { season: { projectId } },
       }),
-      // Real Cost: Sum of all billing events for this project
-      this.prisma.billingEvent.aggregate({
-        _sum: { creditsDelta: true },
+      this.prisma.scene.count({ where: { projectId } }),
+      this.prisma.shot.count({
         where: {
-          projectId,
+          scene: {
+            episode: {
+              season: {
+                projectId,
+              },
+            },
+          },
         },
+      }),
+      this.prisma.shotJob.findMany({
+        where: { projectId, status: { in: ['PENDING', 'RUNNING'] } },
+        include: { task: true },
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.costLedger.aggregate({
+        where: { projectId },
+        _sum: { totalCredits: true },
       }),
       // Real Audit Logs: Recent actions on this project
       this.prisma.auditLog.findMany({
@@ -1625,14 +1631,76 @@ export class ProjectService {
         links: { structureView: '', issuesView: '' },
       },
       jobs: {
-        running: jobs.map((j: any) => ({
-          id: j.id,
-          type: j.type,
-          status: j.status,
-          progressPct: 0, // Not in basic Job model, could invoke Redis or Task payload if needed
-          startedAt: j.createdAt.toISOString(),
-          workerId: j.workerId,
-        })),
+        running: await Promise.all(
+          runningJobs.map(async (j: any) => {
+            const taskPayload = j.task?.payload as any;
+            const isShredder = taskPayload?.mode === 'SHREDDER';
+
+            let currentStep: string | undefined = undefined;
+            let progressPct = 0;
+            let breakdown: any = undefined;
+
+            if (isShredder && j.taskId) {
+              const chunkStats = await this.prisma.shotJob.groupBy({
+                by: ['status'],
+                where: {
+                  taskId: j.taskId,
+                  type: 'NOVEL_CHUNK_PARSE',
+                },
+                _count: true,
+              });
+
+              let totalChunks = 0;
+              let succeededChunks = 0;
+              let failedChunks = 0;
+              let runningChunks = 0;
+
+              for (const stat of chunkStats) {
+                const count = stat._count;
+                totalChunks += count;
+                if (stat.status === 'SUCCEEDED') succeededChunks += count;
+                if (stat.status === 'FAILED') failedChunks += count;
+                if (stat.status === 'RUNNING') runningChunks += count;
+              }
+
+              // Calculate Step & Progress (Same as ContractStoryController)
+              if (j.status === 'PENDING' || j.status === 'RUNNING') {
+                currentStep = 'CE06_SCAN';
+                progressPct = 5;
+              } else {
+                currentStep = 'CE06_PARSING';
+                if (totalChunks > 0) {
+                  progressPct = Math.floor(10 + (succeededChunks / totalChunks) * 90);
+                } else {
+                  progressPct = 10;
+                }
+              }
+
+              breakdown = {
+                scanPct: j.status === 'SUCCEEDED' ? 100 : 5,
+                parsePct: totalChunks > 0 ? Math.floor((succeededChunks / totalChunks) * 100) : 0,
+                doneChunks: succeededChunks,
+                totalChunks,
+              };
+            } else {
+              // Legacy or Single Job
+              progressPct = j.status === 'SUCCEEDED' ? 100 : 50;
+              if (j.type === 'CE06_NOVEL_PARSING') currentStep = 'CE06_PARSING';
+              if (j.type === 'NOVEL_SCAN_TOC') currentStep = 'CE06_SCAN';
+            }
+
+            return {
+              id: j.id,
+              type: j.type,
+              status: j.status as any,
+              progressPct,
+              currentStep,
+              progressBreakdown: breakdown,
+              startedAt: j.createdAt.toISOString(),
+              workerId: j.workerId,
+            };
+          })
+        ),
         queuedCount: 0,
         failed: [],
       },
@@ -1642,7 +1710,7 @@ export class ProjectService {
         visual: 'OK',
       },
       cost: {
-        total: { money: Math.abs(costAgg._sum.creditsDelta || 0.0) },
+        total: { money: Math.abs(costAgg._sum?.totalCredits || 0.0) },
         last24h: { money: 0.0 }, // Pending implementation: filter by createdAt > now-24h
         currentRunEstimate: { money: 0.0 },
         alert: { level: 'OK' },

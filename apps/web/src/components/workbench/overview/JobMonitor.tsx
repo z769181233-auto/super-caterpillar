@@ -79,6 +79,14 @@ export function JobMonitor({ jobs }: { jobs: ProjectJobsSummaryDTO }) {
               </div>
               <span className="text-xs font-medium text-blue-700">{job.progressPct}%</span>
             </div>
+            <div className="mt-1 text-[10px] font-bold text-blue-300 uppercase">
+              {job.currentStep || ''}
+              {job.progressBreakdown && (
+                <span className="ml-2 text-blue-200">
+                  ({job.progressBreakdown.doneChunks}/{job.progressBreakdown.totalChunks} Chunks)
+                </span>
+              )}
+            </div>
             <div className="mt-2 text-xs text-blue-400 flex justify-between">
               <span>Worker: {job.workerId}</span>
               <span className="animate-pulse">Running</span>

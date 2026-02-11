@@ -65,7 +65,8 @@ async function main() {
   // 1. Generate Novel
   const novelPath = path.join(runDir, 'input_novel.txt');
   execSync(
-    `pnpm exec tsx tools/stress/p25/gen_novel_by_words.ts --words=${words} --out=${novelPath} --seed=${seed}`
+    `pnpm exec tsx tools/stress/p25/gen_novel_by_words.ts --words=${words} --out=${novelPath} --seed=${seed}`,
+    { stdio: 'inherit' }
   );
   const novelContent = fs.readFileSync(novelPath, 'utf-8');
 

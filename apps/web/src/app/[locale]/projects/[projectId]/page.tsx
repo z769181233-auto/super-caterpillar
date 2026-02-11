@@ -111,6 +111,25 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
+  // S3-D Helper Logic for Video Status
+  const checkHasVideo = (nodes: any[]): boolean => {
+    if (!nodes || !Array.isArray(nodes)) return false;
+    for (const node of nodes) {
+      if (node.type === 'SHOT' || node.type === 'shot') {
+        if (node.videoUrl) return true;
+        if (node.assets?.some((a: any) => a.type === 'VIDEO')) return true;
+      }
+      const children =
+        node.children || node.seasons || node.episodes || node.scenes || node.shots || [];
+      if (checkHasVideo(children)) return true;
+    }
+    return false;
+  };
+
+  const hasVideo = sceneGraph
+    ? checkHasVideo([sceneGraph.tree ? sceneGraph.tree : sceneGraph])
+    : false;
+
   // Polling for Analysis Status and Video Generation
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -299,29 +318,6 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
 
   // ========== 页面渲染逻辑 ==========
 
-  // Insert Helper Logic for Video Status
-  const checkHasVideo = (nodes: any[]): boolean => {
-    if (!nodes || !Array.isArray(nodes)) return false;
-    for (const node of nodes) {
-      if (node.type === 'SHOT' || node.type === 'shot') {
-        if (node.videoUrl) return true;
-        if (node.assets?.some((a: any) => a.type === 'VIDEO')) return true;
-      }
-      const children =
-        node.children || node.seasons || node.episodes || node.scenes || node.shots || [];
-      if (checkHasVideo(children)) return true;
-    }
-    return false;
-  };
-
-  // Main Component Body Update
-  // ...
-
-  // Computed Properties for Main Action FSM
-  // 1. Check for Video
-  const hasVideo = sceneGraph
-    ? checkHasVideo([sceneGraph.tree ? sceneGraph.tree : sceneGraph])
-    : false;
 
   // 2. Check for Running Video Jobs (In Memory / Polling)
   // We don't have direct access to jobs here unless we fetch them.
@@ -356,10 +352,10 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
   // Inject computed props into sceneGraph object for Dispatcher (hacky but effective)
   const projectWithStatus = sceneGraph
     ? {
-        ...sceneGraph,
-        hasVideo,
-        isVideoGenerating,
-      }
+      ...sceneGraph,
+      hasVideo,
+      isVideoGenerating,
+    }
     : null;
 
   // ...
