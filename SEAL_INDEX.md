@@ -142,7 +142,7 @@
 
 - **Status**: COMMERCIAL SEALED (Full Novel E2E)
 - **Primary Tag**: V3_1_COMMERCIAL_SEALED_20260211
-- **Evidence**: docs/_evidence/p25_1_full_3m_1770784468/E2E/
+- **Evidence**: docs/\_evidence/p25_1_full_3m_1770784468/E2E/
 - **Run ID**: 18
 - **Project ID**: `ea83491f-9d22-4158-8acf-c5de245a16ce`
 - **Scope**:
