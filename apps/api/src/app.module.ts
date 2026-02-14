@@ -48,6 +48,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CostModule } from './cost/cost.module';
 import { V3Module } from './v3/v3.module';
 import { IdentityModule } from './identity/identity.module';
+import { CharacterModule } from './character/character.module';
 import { env } from '@scu/config';
 import { StorageController } from './storage/storage.controller';
 import { LocalStorageService } from './storage/local-storage.service';
@@ -57,6 +58,7 @@ import { ApiSecurityGuard } from './security/api-security/api-security.guard';
 import { TraceMiddleware } from './observability/trace.middleware';
 import { OperationalGateGuard } from './common/guards/operational-gate.guard';
 import { BibleAliasController } from './bible/bible-alias.controller';
+import { EnvValidatorService } from './common/env-validator.service';
 
 // P0-4: 内部 Worker 启动开关已收拢至 packages/config/env.ts
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
@@ -120,7 +122,8 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     CostModule, // P0: Cost tracking & billing foundation
     AdminModule, // P1-2: Admin endpoints for gate scripts (GATE_MODE=1 only)
     V3Module, // V3.0 Contract Facade
-    IdentityModule, // P13-0: CE23 Identity Consistency
+    IdentityModule,
+    CharacterModule, // P13-0: CE23 Identity Consistency
     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS
       ? [OpsModule]
       : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
@@ -155,6 +158,10 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     // LocalStorageService,
     // SignedUrlService,
     // StorageAuthService,
+
+    // A4: 环境变量强制校验服务（P0级启动检查）
+    // @see docs/_specs/GO_LIVE_CHECKLIST_SSOT.md
+    EnvValidatorService,
   ],
 })
 export class AppModule implements NestModule {

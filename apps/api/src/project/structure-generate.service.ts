@@ -17,7 +17,7 @@ export class StructureGenerateService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly sceneGraphService: SceneGraphService
-  ) {}
+  ) { }
 
   /**
    * 生成剧集结构
@@ -41,8 +41,6 @@ export class StructureGenerateService {
               orderBy: { index: 'asc' },
             },
           },
-          orderBy: { createdAt: 'desc' },
-          take: 1, // 取最新的小说源
         },
         episodes: {
           include: {
@@ -58,10 +56,10 @@ export class StructureGenerateService {
     }
 
     this.logger.log(
-      `Found project: ${project.name}, novelSources count: ${project.novelSources?.length || 0}`
+      `Found project: ${project.name}, novelSource ID: ${project.novelSources?.id || 'none'}`
     );
 
-    const novelSource = (project as any).novelSources?.[0];
+    const novelSource = project.novelSources;
     if (!novelSource) {
       this.logger.error(`No novel source found for project: ${projectId}`);
       throw new NotFoundException('No novel source found for this project');
@@ -105,7 +103,7 @@ export class StructureGenerateService {
         // 使用 ProjectService 创建 Episode，确保组织隔离
         episode = await this.projectService.createEpisode(projectId, {
           index: chIdx + 1,
-          name: chapter.title,
+          name: chapter.title || `第 ${chapter.index} 章`,
         });
 
         // 更新 Episode 关联到 NovelChapter
@@ -129,7 +127,8 @@ export class StructureGenerateService {
       }
 
       // 按段落切分章节，生成 Scene 和 SceneDraft
-      const paragraphs = chapter.rawText.split(/\n\n+/).filter((p: string) => p.trim().length > 50);
+      const rawText = chapter.rawContent || '';
+      const paragraphs = rawText.split(/\n\n+/).filter((p: string) => p.trim().length > 50);
       const sceneCount = Math.min(3, Math.max(1, Math.ceil(paragraphs.length / 3)));
 
       for (let scIdx = 0; scIdx < sceneCount; scIdx++) {
@@ -150,8 +149,8 @@ export class StructureGenerateService {
           data: {
             chapterId: chapter.id,
             index: scIdx + 1,
-            title,
-            summary,
+            title: title || '',
+            summary: summary || '',
             location,
             status: 'DRAFT',
           },

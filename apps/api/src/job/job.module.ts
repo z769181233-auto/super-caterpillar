@@ -22,6 +22,7 @@ import { BillingModule } from '../billing/billing.module';
 import { CopyrightModule } from '../copyright/copyright.module';
 import { CapacityGateModule } from '../capacity/capacity-gate.module';
 import { JobWatchdogService } from './job-watchdog.service';
+import { JobWatchdogController } from './job-watchdog.controller';
 import { TextSafetyModule } from '../text-safety/text-safety.module';
 import { ShotDirectorModule } from '../shot-director/shot-director.module';
 import { CostModule } from '../cost/cost.module';
@@ -53,7 +54,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     PublishModule,
     forwardRef(() => OrchestratorModule), // Stage 3: Event-Driven DAG
   ],
-  controllers: [JobController, JobGenericController],
+  controllers: [JobController, JobGenericController, JobWatchdogController],
   providers: [
     JobService,
     // JobWorkerService removed to avoid dual instantiation (handled by JobWorkerModule)
@@ -64,6 +65,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
   ],
   exports: [JobService, JobReportFacade],
 })
-export class JobModule {}
+export class JobModule { }
 
 // 注意：JobController 中需要注入 AuditLogService，但 AuditLogModule 已经导入，应该可以正常工作

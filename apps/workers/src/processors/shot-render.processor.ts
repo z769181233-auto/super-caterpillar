@@ -60,7 +60,15 @@ export async function processShotRenderJob(
       throw new Error(`RENDER_ENGINE_FAIL: ${renderResult.error?.message}`);
     }
 
-    const { storageKey, sha256 } = renderResult.output;
+    const output = renderResult.output as any;
+    logger.log(`[ShotRender_HUB DEBUG] Raw Output: ${JSON.stringify(output)}`);
+    const storageKey = output.storageKey || output.asset?.uri || output.asset?.storageKey;
+    const sha256 = output.sha256 || output.asset?.sha256;
+    logger.log(`[ShotRender_HUB DEBUG] Extracted storageKey: ${storageKey}, sha256: ${sha256}`);
+
+    if (!storageKey) {
+      throw new Error(`RENDER_ENGINE_SUCCESS_BUT_NO_STORAGE_KEY: ${JSON.stringify(output)}`);
+    }
 
     // 4. Invoke CE23 Identity Consistency Check (if characterIds present)
     if (anchors.length > 0) {
@@ -88,12 +96,15 @@ export async function processShotRenderJob(
     }
 
     // 5. Success Persistence
+    const isVideo = (storageKey || '').match(/\.(mp4|mkv|mov|avi)$/i);
+    const assetType = isVideo ? AssetType.VIDEO : AssetType.IMAGE;
+
     const asset = await prisma.asset.upsert({
       where: {
         ownerType_ownerId_type: {
           ownerId: shot.id,
           ownerType: AssetOwnerType.SHOT,
-          type: AssetType.VIDEO, // P0-R5: Hardcode VIDEO for Pilot, or dynamic based on ext
+          type: assetType,
         },
       },
       update: { storageKey, checksum: sha256, status: 'GENERATED', createdByJobId: job.id },
@@ -101,7 +112,7 @@ export async function processShotRenderJob(
         projectId,
         ownerId: shot.id,
         ownerType: AssetOwnerType.SHOT,
-        type: AssetType.VIDEO,
+        type: assetType,
         storageKey,
         checksum: sha256,
         status: 'GENERATED',

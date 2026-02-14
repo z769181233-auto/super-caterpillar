@@ -1,0 +1,8 @@
+{
+  "effectType": "magic",
+  "lifetime": 5,
+  "bornCount": 5000,
+  "emitter": "point",
+  "gravity": 0.5,
+  "timestamp": "2026-02-14T06:33:45.254Z"
+}

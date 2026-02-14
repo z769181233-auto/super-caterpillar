@@ -42,5 +42,13 @@
   - [x] P6-1-2: 实现 Gate 脚本 `gate_billing_reconciliation.sh`
   - [x] P6-1-3: 实现负向测试 `gate_billing_negative.sh`
   - [x] P6-1-4: 封板 (Sealed with Checksums)
-- [ ] Week 1 引擎真化 (TTS, Shot Gen, Background, etc.)
-- [ ] P6-2 Error Matrix 故障注入与鲁棒性验证
+- [ ] **Phase 2: 质量与智性提升 (Quality & Intelligence - B Series)**
+  - [ ] **B1: 多 Agent 协作的小说深度分析**
+    - [ ] 设计 Agent 编排逻辑
+    - [ ] 实现角色分工 (Writer/Director/Auditor)
+  - [ ] **B2: 全局视觉风格锁定 (Style-Locking)**
+    - [ ] Project 模型字段扩展
+    - [ ] 增强 Visual Enrichment 继承逻辑
+  - [ ] **B3: 调度优化与资源感知**
+    - [ ] BullMQ 调优与 Worker 负载监控
+

@@ -22,6 +22,8 @@ export class CE04LocalAdapter implements EngineAdapter {
       // Transform common EngineInvokeInput to specific CE04Input
       const engineInput = {
         structured_text: input.payload?.structured_text || '',
+        style_prompt: input.payload?.style_prompt,
+        style_guide: input.payload?.style_guide,
         context: {
           ...input.context,
           projectId: input.context?.projectId || 'unknown',

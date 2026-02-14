@@ -177,6 +177,8 @@ export class ProjectService {
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
+        // A1修复：包含 novelSources
+        novelSources: true,
         // 影视工业标准：Season → Episode → Scene → Shot
         seasons: {
           select: {
@@ -452,7 +454,7 @@ export class ProjectService {
     // 2. Determine structureStatus
     // If seasons array is not empty -> 'READY'
     let structureStatus: 'EMPTY' | 'READY' = 'EMPTY';
-    if ((project as any).seasons && (project as any).seasons.length > 0) {
+    if (project.seasons && project.seasons.length > 0) {
       structureStatus = 'READY';
     }
 
@@ -1417,7 +1419,7 @@ export class ProjectService {
     ]);
 
     // 2. Flow Status Logic
-    const hasNovel = project.novelSources.length > 0;
+    const hasNovel = !!project.novelSources;
     const structureTask = project.tasks.find((t) => t.type === TaskTypeEnum.NOVEL_ANALYSIS);
     const structureStatus = structureTask?.status;
 

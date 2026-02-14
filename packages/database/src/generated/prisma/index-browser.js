@@ -167,7 +167,9 @@ exports.Prisma.ProjectScalarFieldEnum = {
   metadata: 'metadata',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  settingsJson: 'settingsJson'
+  settingsJson: 'settingsJson',
+  styleGuide: 'styleGuide',
+  stylePrompt: 'stylePrompt'
 };
 
 exports.Prisma.SeasonScalarFieldEnum = {
@@ -1015,6 +1017,38 @@ exports.Prisma.BillingLedgerScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.CharacterProfileScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  name: 'name',
+  nameEn: 'nameEn',
+  role: 'role',
+  description: 'description',
+  baseImageUrl: 'baseImageUrl',
+  basePrompt: 'basePrompt',
+  attributes: 'attributes',
+  timeline: 'timeline',
+  loraModelId: 'loraModelId',
+  loraTrainingStatus: 'loraTrainingStatus',
+  loraLastTrained: 'loraLastTrained',
+  totalShots: 'totalShots',
+  avgConsistencyScore: 'avgConsistencyScore',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CharacterAppearanceScalarFieldEnum = {
+  id: 'id',
+  characterId: 'characterId',
+  shotId: 'shotId',
+  renderedImageUrl: 'renderedImageUrl',
+  promptUsed: 'promptUsed',
+  consistencyScore: 'consistencyScore',
+  evaluatedAt: 'evaluatedAt',
+  usedForTraining: 'usedForTraining',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1375,7 +1409,9 @@ exports.Prisma.ModelName = {
   CharacterMemory: 'CharacterMemory',
   SceneMemory: 'SceneMemory',
   TranslationCache: 'TranslationCache',
-  BillingLedger: 'BillingLedger'
+  BillingLedger: 'BillingLedger',
+  CharacterProfile: 'CharacterProfile',
+  CharacterAppearance: 'CharacterAppearance'
 };
 
 /**

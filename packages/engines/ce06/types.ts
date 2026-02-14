@@ -35,6 +35,7 @@ export interface CE06NovelParsingInput {
   novelSourceId?: string;
   projectId?: string;
   traceId?: string;
+  multi_agent?: boolean;
   options?: any;
   context?: any;
   [k: string]: any;

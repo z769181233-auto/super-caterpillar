@@ -1,10 +1,11 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
 import { NlpBaseEngine } from '../nlp/nlp_base';
 import { NlpCache } from '../nlp/nlp_cache';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
+import { ce08RealEngine } from '@scu/engines-ce08';
 
 @Injectable()
 export class CE08CharacterArcAdapter extends NlpBaseEngine {
@@ -21,25 +22,29 @@ export class CE08CharacterArcAdapter extends NlpBaseEngine {
     }
 
     /**
-     * 实现具体的角色弧光分析逻辑 (REAL-STUB)
+     * 实现具体的角色弧光分析逻辑 - 升级为 AI 驱动
      */
     protected async processLogic(payload: any): Promise<any> {
-        const text = payload.text || '';
-        const traits: string[] = [];
+        const text = payload.text || payload.structured_text || '';
+        const characterName = payload.characterName || 'Unknown';
 
-        if (payload.characterName) {
-            if (text.toLowerCase().includes('decided') || text.toLowerCase().includes('realized')) {
-                traits.push('INTERNAL_GROWTH');
-            }
-            if (text.toLowerCase().includes('fought') || text.toLowerCase().includes('won') || text.toLowerCase().includes('lost')) {
-                traits.push('EXTERNAL_ACTION');
-            }
-        }
+        // 调用 AI 引擎分析角色弧光
+        const result = await ce08RealEngine({
+            character_name: characterName,
+            scenario_text: text,
+            previous_state: payload.previousState
+        });
 
         return {
-            character: payload.characterName || 'unknown',
-            progression: traits,
-            arc_status: traits.length > 0 ? 'DEVELOPING' : 'STATIC'
+            character: result.character_name,
+            archetype: result.archetype,
+            state: result.current_state,
+            markers: result.progression_markers,
+            arc_status: result.arc_status,
+            ai_description: result.description,
+            meta: {
+                engine: result.audit_trail.engine_version
+            }
         };
     }
 }

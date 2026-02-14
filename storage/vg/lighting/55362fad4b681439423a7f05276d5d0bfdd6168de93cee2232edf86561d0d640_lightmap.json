@@ -1,0 +1,20 @@
+{
+  "sceneId": "scene_001",
+  "quality": "production",
+  "timestamp": "2026-02-14T06:29:52.885Z",
+  "lights": [
+    {
+      "type": "point",
+      "intensity": 1,
+      "color": "#ffffff"
+    },
+    {
+      "type": "ambient",
+      "intensity": 0.3,
+      "color": "#4444ff"
+    }
+  ],
+  "globalIllumination": 0.5,
+  "ambientOcclusion": true,
+  "rayDepth": 2
+}

@@ -1,0 +1,732 @@
+{
+  "version": "1.0",
+  "keypoints": [
+    {
+      "id": "leftEyebrow",
+      "type": "curve"
+    },
+    {
+      "id": "rightEyebrow",
+      "type": "curve"
+    },
+    {
+      "id": "leftEye",
+      "type": "aperture"
+    },
+    {
+      "id": "rightEye",
+      "type": "aperture"
+    },
+    {
+      "id": "mouth",
+      "type": "curve"
+    },
+    {
+      "id": "cheeks",
+      "type": "position"
+    }
+  ],
+  "emotion": "surprised",
+  "intensity": 0.8,
+  "duration": 1,
+  "fps": 24,
+  "frameCount": 24,
+  "frames": [
+    {
+      "time": 0,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.043478260869565216,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.0026432152543765922,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.0026432152543765922,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.004405358757294321,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.004405358757294321,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.003083751130106024,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.08695652173913043,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.010257253225939017,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.010257253225939017,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.01709542204323169,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.01709542204323169,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.011966795430262184,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.13043478260869565,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.022368702227336237,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.022368702227336237,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.03728117037889373,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.03728117037889373,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.02609681926522561,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.17391304347826086,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.03850415057121723,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.03850415057121723,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.06417358428536205,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.06417358428536205,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.044921508999753425,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.21739130434782608,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.05819018657023095,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.05819018657023095,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.09698364428371825,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.09698364428371825,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.06788855099860278,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.2608695652173913,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.08095339853702638,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.08095339853702638,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.13492233089504396,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.13492233089504396,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.09444563162653076,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.30434782608695654,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.10632037478425249,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.10632037478425249,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.17720062464042086,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.17720062464042086,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.12404043724829457,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.34782608695652173,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.13381770362455822,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.13381770362455822,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.2230295060409304,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.2230295060409304,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.15612065422865126,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.391304347826087,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.16297197337059263,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.16297197337059263,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.27161995561765434,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.27161995561765434,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.19013396893235804,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.43478260869565216,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.19330977233500454,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.19330977233500454,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.3221829538916743,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.3221829538916743,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.22552806772417197,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.4782608695652174,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.22435768883044302,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.22435768883044302,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.3739294813840717,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.3739294813840717,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.2617506369688502,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.5217391304347826,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.255642311169557,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.255642311169557,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.4260705186159284,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.4260705186159284,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.2982493630311498,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.5652173913043478,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.2866902276649954,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.2866902276649954,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.47781704610832576,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.47781704610832576,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.334471932275828,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.6086956521739131,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.31702802662940743,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.31702802662940743,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.5283800443823458,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.5283800443823458,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.36986603106764204,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.6521739130434783,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.34618229637544173,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.34618229637544173,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.5769704939590696,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.5769704939590696,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.4038793457713487,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.6956521739130435,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.3736796252157475,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.3736796252157475,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.6227993753595792,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.6227993753595792,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.43595956275170544,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.7391304347826086,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.39904660146297355,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.39904660146297355,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.665077669104956,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.665077669104956,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.4655543683734691,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.782608695652174,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.4218098134297691,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.4218098134297691,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.7030163557162818,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.7030163557162818,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.4921114490013973,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.8260869565217391,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.4414958494287827,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.4414958494287827,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.7358264157146379,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.7358264157146379,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.5150784910002465,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.8695652173913043,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.4576312977726638,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.4576312977726638,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.7627188296211064,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.7627188296211064,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.5339031807347744,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.9130434782608695,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.4697427467740609,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.4697427467740609,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.7829045779567683,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.7829045779567683,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.5480332045697377,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 0.9565217391304348,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.47735678474562343,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.47735678474562343,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.7955946412427057,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.7955946412427057,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.556916248869894,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    },
+    {
+      "time": 1,
+      "keypoints": {
+        "leftEyebrow": {
+          "y": 0.48,
+          "curve": 0
+        },
+        "rightEyebrow": {
+          "y": 0.48,
+          "curve": 0
+        },
+        "leftEye": {
+          "aperture": 0.8,
+          "squint": 0
+        },
+        "rightEye": {
+          "aperture": 0.8,
+          "squint": 0
+        },
+        "mouth": {
+          "corners": 0,
+          "openness": 0.5599999999999999,
+          "curve": 0
+        },
+        "cheeks": {
+          "raise": 0
+        }
+      }
+    }
+  ]
+}

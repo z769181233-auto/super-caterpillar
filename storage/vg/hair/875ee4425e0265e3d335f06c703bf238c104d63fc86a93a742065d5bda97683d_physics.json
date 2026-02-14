@@ -1,0 +1,12 @@
+{
+  "characterId": "char_001",
+  "hairStyle": "long_straight",
+  "simulatedFrames": 120,
+  "collisionHits": 0,
+  "averageMotionVector": {
+    "x": 0.1,
+    "y": 0.05,
+    "z": 0.02
+  },
+  "timestamp": "2026-02-14T06:33:40.048Z"
+}

@@ -52,6 +52,8 @@ export class StoryService {
     isVerification?: boolean
   ) {
     // 1. 参数校验（DTO 已通过 class-validator）
+    // eslint-disable-next-line no-console
+    console.log('[StoryService DEBUG] parseStory dto:', JSON.stringify(dto).slice(0, 100));
     const projectId = dto.projectId;
     this.logger.log(`Parsing story for project ${projectId}, isVerification=${isVerification}`);
     if (!dto.rawText || dto.rawText.trim().length === 0) {

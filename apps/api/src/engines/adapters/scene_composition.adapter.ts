@@ -9,11 +9,14 @@ import * as path from 'path';
 import * as os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { sceneCompositionRealEngine } from '@scu/engines-scene-composition';
 
 const execAsync = promisify(exec);
 
 interface CompositionElement {
+    id: string; // Added id for AI tracking
     url: string;
+    description?: string; // Added description for AI context
     x?: number;
     y?: number;
     scale?: number;
@@ -49,7 +52,7 @@ export class SceneCompositionAdapter implements EngineAdapter {
         // 1. Calculate Cache Key (SHA256 of bg + elements)
         const inputStr = JSON.stringify({ bgUrl, elements });
         const inputHash = createHash('sha256').update(inputStr).digest('hex');
-        const cacheKey = `scene_comp:v1:${inputHash}`;
+        const cacheKey = `scene_comp:v2:${inputHash}`;
 
         // 2. Check Cache
         try {
@@ -71,19 +74,28 @@ export class SceneCompositionAdapter implements EngineAdapter {
         }
 
         try {
-            // 3. Perform Composition (FFmpeg)
-            const outputUrl = await this.composite(bgUrl, elements, inputHash);
+            // 3. AI Composition Decision
+            const aiResult = await sceneCompositionRealEngine({
+                scene_description: payload.scene_description || payload.text || 'Normal composition',
+                background_url: bgUrl,
+                elements: elements as any
+            });
+
+            // 4. Perform Composition (FFmpeg)
+            const outputUrl = await this.composite(bgUrl, aiResult.elements, inputHash);
 
             const output = {
                 url: outputUrl,
                 status: 'success',
-                layers: elements.length + 1
+                layers: elements.length + 1,
+                composition_mode: aiResult.composition_mode,
+                ai_description: aiResult.description
             };
 
-            // 4. Save Cache (7 days)
+            // 5. Save Cache (7 days)
             await this.redisService.setJson(cacheKey, output, 7 * 24 * 3600);
 
-            // 5. Audit & Cost
+            // 6. Audit & Cost
             await this.auditHelper(input, 'MISS', cacheKey);
             await this.recordCost(input, 1);
 
@@ -91,7 +103,8 @@ export class SceneCompositionAdapter implements EngineAdapter {
                 status: 'SUCCESS' as any,
                 output: {
                     ...output,
-                    source: 'render'
+                    source: 'render',
+                    ai_audit: aiResult.audit_trail.engine_version
                 }
             };
 

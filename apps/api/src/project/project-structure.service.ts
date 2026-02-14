@@ -23,7 +23,7 @@ export class ProjectStructureService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(forwardRef(() => ProjectService)) private readonly projectService: ProjectService
-  ) {}
+  ) { }
 
   /**
    * S3-C: Authoritative Project Structure Tree
@@ -55,7 +55,6 @@ export class ProjectStructureService {
         },
         novelSources: {
           // Fetch for sourceType determination
-          take: 1,
           select: { id: true },
         },
       },
@@ -81,7 +80,7 @@ export class ProjectStructureService {
     const isDemoName = project.name.includes('Demo') || project.name.includes('示例');
     // If no novel source and has demo name or ID -> DEMO
     if (
-      (!project.novelSources || project.novelSources.length === 0) &&
+      !project.novelSources &&
       (project.id === SMOKE_PROJECT_ID || isDemoName)
     ) {
       sourceType = 'DEMO';

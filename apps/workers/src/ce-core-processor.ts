@@ -1115,6 +1115,34 @@ export async function processShotRenderJob(
       },
     });
 
+    // [ORCHESTRATION] Stage 3: SHOT_RENDER Success -> Trigger VIDEO_RENDER for this scene
+    if (sceneId) {
+      try {
+        const shotJob = await prisma.shotJob.findUnique({
+          where: { id: jobId },
+          select: { organizationId: true },
+        });
+        await apiClient.createJob({
+          projectId,
+          organizationId: shotJob?.organizationId || 'system',
+          jobType: 'VIDEO_RENDER' as any,
+          priority: 10,
+          payload: {
+            traceId,
+            projectId,
+            sceneId,
+          },
+        });
+        logStructured('info', {
+          action: 'ORCHESTRATION_TRIGGER_VIDEO_RENDER',
+          jobId,
+          sceneId,
+        });
+      } catch (e: any) {
+        logStructured('warn', { action: 'ORCHESTRATION_FAIL_SHOT_TO_VIDEO', error: e.message });
+      }
+    }
+
     // 5. Billing (P0 Hotfix: Fixed)
     try {
       const costLedgerService = new CostLedgerService(apiClient, prisma);

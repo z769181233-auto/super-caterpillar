@@ -28,22 +28,19 @@ if (!ignoreEnvFile) {
   const envPath = path.join(root, '.env');
   const envLocalPath = path.join(root, '.env.local');
 
-  // P0-3: 显式禁止 override: true，确保 process.env 具有绝对最高优先级
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath, override: false });
-    // 注意：由于 override: false，如果不覆盖，DATABASE_URL 不会变
-    // 这里我们可以根据读取后的结果判断最终来源（仅用于日志）
+  // .env.local 具有最高优先级，先加载且允许覆盖（确保本地开发配置生效）
+  if (fs.existsSync(envLocalPath)) {
+    dotenv.config({ path: envLocalPath, override: true });
     if (!process.env.DATABASE_URL_SET_BY_SYSTEM) {
-      // 这是一个启发式判断，不改变逻辑
-      dbUrlSource = '.env file';
+      dbUrlSource = '.env.local file';
     }
   }
 
-  // .env.local 仅用于本地开发隔离
-  if (isDevelopment && !isCI && fs.existsSync(envLocalPath)) {
-    dotenv.config({ path: envLocalPath, override: false });
-    if (!process.env.DATABASE_URL_SET_BY_SYSTEM) {
-      dbUrlSource = '.env.local file';
+  // .env 作为基础配置（不覆盖已从 Shell 或 .env.local 加载的变量）
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath, override: false });
+    if (dbUrlSource === 'environment variable' && !process.env.DATABASE_URL_SET_BY_SYSTEM) {
+      dbUrlSource = '.env file';
     }
   }
 } else {

@@ -7,6 +7,7 @@ import { RedisService } from '../../redis/redis.service';
 import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
+import { vg05RealEngine } from '@scu/engines-vg05';
 
 @Injectable()
 export class VG05VFXCompositorAdapter extends VgBaseEngine {
@@ -23,18 +24,24 @@ export class VG05VFXCompositorAdapter extends VgBaseEngine {
     }
 
     /**
-     * 实现具体的 VFX 合成逻辑 (REAL-STUB)
-     * 使用 FFmpeg 滤镜叠加热噪声、暗角或调色特效
+     * 实现具体的 VFX 合成逻辑 - 升级为 AI 驱动
      */
     protected async processLogic(payload: any): Promise<any> {
         const sourceUrl = payload.sourceUrl || '';
-        const vfx = payload.vfxPreset || 'grain';
+        const sceneContext = payload.sceneContext || payload.text || 'Normal scene';
+
+        // 调用 AI 引擎推荐特效
+        const result = await vg05RealEngine({
+            scene_context: sceneContext,
+            pacing_score: payload.pacing_score
+        });
+
         const hash = this.generateCacheKey(payload).split(':').pop();
         const outputDir = join(process.cwd(), 'storage/vg/vfx');
         mkdirSync(outputDir, { recursive: true });
         const outputPath = join(outputDir, `${hash}.png`);
 
-        let sourcePath = sourceUrl.replace('file://', '');
+        const sourcePath = sourceUrl.replace('file://', '');
         let inputArg = '';
         if (!sourcePath || !existsSync(sourcePath)) {
             inputArg = `-f lavfi -i color=c=0x111111:s=512x512`;
@@ -42,18 +49,18 @@ export class VG05VFXCompositorAdapter extends VgBaseEngine {
             inputArg = `-i "${sourcePath}"`;
         }
 
-        // FFmpeg Logic: noise, vignette, or color transformation
-        let filter = 'noise=alls=15:allf=t+u';
-        if (vfx === 'vignette') filter = 'vignette=PI/4';
-        if (vfx === 'sepia') filter = 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131';
-        if (vfx === 'scanlines') filter = 'drawbox=y=ih/2:w=iw:h=1:color=black@0.5:t=fill'; // Mock scanline
-
-        const cmd = `ffmpeg -y ${inputArg} -vf "${filter}" -frames:v 1 "${outputPath}"`;
+        const cmd = `ffmpeg -y ${inputArg} -vf "${result.filter_string}" -frames:v 1 "${outputPath}"`;
         execSync(cmd, { stdio: 'ignore' });
 
         return {
             assetUrl: `file://${outputPath}`,
-            meta: { vfx, sourceUrl, format: 'png' }
+            meta: {
+                vfx: result.vfx_preset,
+                intensity: result.intensity,
+                sourceUrl,
+                format: 'png',
+                ai: result.audit_trail.engine_version
+            }
         };
     }
 }

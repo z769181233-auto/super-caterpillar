@@ -14,8 +14,11 @@ import { Request } from 'express';
  */
 
 type StoryParseDto = {
-  text: string;
+  text?: string;
+  rawText?: string;
+  raw_text?: string;
   projectId: string;
+  project_id?: string;
   title?: string;
   author?: string;
 };
@@ -37,7 +40,7 @@ export class BibleAliasController {
   constructor(
     private readonly storyService: StoryService,
     private readonly textService: TextService
-  ) {}
+  ) { }
 
   // ---------------------------------------------------------------------------
   // 1. Story Parse (Alias for CE06 Pipeline)
@@ -45,29 +48,36 @@ export class BibleAliasController {
 
   @Post('/_internal/story/parse')
   @RequireSignature()
-  async internalStoryParse(@Body() body: StoryParseDto, @Req() req: any) {
+  async internalStoryParse(@Body() body: any, @Req() req: any) {
     requireInternalEnabled();
     return this.handleStoryParse(body, req);
   }
 
   @Post('/story/parse')
   @RequireSignature()
-  async storyParse(@Body() body: StoryParseDto, @Req() req: any) {
+  async storyParse(@Body() body: any, @Req() req: any) {
     return this.handleStoryParse(body, req);
   }
 
-  private async handleStoryParse(body: StoryParseDto, req: any) {
-    // 映射别名字段 text -> rawText
+  private async handleStoryParse(body: any, req: any) {
+    // eslint-disable-next-line no-console
+    console.log('[BibleAlias DEBUG] handleStoryParse incoming body keys:', Object.keys(body));
+    // 映射所有可能的字段
+    const rawText = body.text || body.rawText || body.raw_text;
+    const projectId = body.projectId || body.project_id;
+    const title = body.title || body.name;
+    const author = body.author;
+
     const organizationId = req.user?.organizationId || req.apiKeyOwnerOrgId;
     const userId = req.user?.id || req.apiKeyOwnerUserId;
     const traceId = req.headers['x-request-id'] || req.headers['x-trace-id'];
 
     const result = await this.storyService.parseStory(
       {
-        rawText: body.text,
-        projectId: body.projectId,
-        title: body.title,
-        author: body.author,
+        rawText: rawText as string,
+        projectId: projectId as string,
+        title: title as string,
+        author: author as string,
       },
       userId,
       organizationId,

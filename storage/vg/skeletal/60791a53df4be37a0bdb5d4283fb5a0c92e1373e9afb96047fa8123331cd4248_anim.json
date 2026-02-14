@@ -1,0 +1,864 @@
+{
+  "version": "1.0",
+  "skeleton": {
+    "bones": [
+      {
+        "id": "root",
+        "parent": null,
+        "length": 0
+      },
+      {
+        "id": "spine",
+        "parent": "root",
+        "length": 80
+      },
+      {
+        "id": "head",
+        "parent": "spine",
+        "length": 40
+      },
+      {
+        "id": "leftArm",
+        "parent": "spine",
+        "length": 60
+      },
+      {
+        "id": "rightArm",
+        "parent": "spine",
+        "length": 60
+      },
+      {
+        "id": "leftLeg",
+        "parent": "root",
+        "length": 70
+      },
+      {
+        "id": "rightLeg",
+        "parent": "root",
+        "length": 70
+      }
+    ]
+  },
+  "action": "walk",
+  "duration": 2,
+  "fps": 24,
+  "frameCount": 48,
+  "frames": [
+    {
+      "time": 0,
+      "bones": {
+        "leftLeg": {
+          "rotation": 0
+        },
+        "rightLeg": {
+          "rotation": 3.67394039744206e-15
+        },
+        "leftArm": {
+          "rotation": 2.4492935982947065e-15
+        },
+        "rightArm": {
+          "rotation": 0
+        }
+      }
+    },
+    {
+      "time": 0.020833333333333332,
+      "bones": {
+        "leftLeg": {
+          "rotation": 7.764571353075622
+        },
+        "rightLeg": {
+          "rotation": -7.764571353075624
+        },
+        "leftArm": {
+          "rotation": -5.176380902050416
+        },
+        "rightArm": {
+          "rotation": 5.176380902050415
+        }
+      }
+    },
+    {
+      "time": 0.041666666666666664,
+      "bones": {
+        "leftLeg": {
+          "rotation": 14.999999999999998
+        },
+        "rightLeg": {
+          "rotation": -14.999999999999991
+        },
+        "leftArm": {
+          "rotation": -9.999999999999995
+        },
+        "rightArm": {
+          "rotation": 9.999999999999998
+        }
+      }
+    },
+    {
+      "time": 0.0625,
+      "bones": {
+        "leftLeg": {
+          "rotation": 21.213203435596423
+        },
+        "rightLeg": {
+          "rotation": -21.213203435596423
+        },
+        "leftArm": {
+          "rotation": -14.14213562373095
+        },
+        "rightArm": {
+          "rotation": 14.14213562373095
+        }
+      }
+    },
+    {
+      "time": 0.08333333333333333,
+      "bones": {
+        "leftLeg": {
+          "rotation": 25.980762113533157
+        },
+        "rightLeg": {
+          "rotation": -25.980762113533153
+        },
+        "leftArm": {
+          "rotation": -17.32050807568877
+        },
+        "rightArm": {
+          "rotation": 17.32050807568877
+        }
+      }
+    },
+    {
+      "time": 0.10416666666666667,
+      "bones": {
+        "leftLeg": {
+          "rotation": 28.97777478867205
+        },
+        "rightLeg": {
+          "rotation": -28.97777478867205
+        },
+        "leftArm": {
+          "rotation": -19.318516525781366
+        },
+        "rightArm": {
+          "rotation": 19.318516525781366
+        }
+      }
+    },
+    {
+      "time": 0.125,
+      "bones": {
+        "leftLeg": {
+          "rotation": 30
+        },
+        "rightLeg": {
+          "rotation": -30
+        },
+        "leftArm": {
+          "rotation": -20
+        },
+        "rightArm": {
+          "rotation": 20
+        }
+      }
+    },
+    {
+      "time": 0.14583333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": 28.97777478867205
+        },
+        "rightLeg": {
+          "rotation": -28.977774788672054
+        },
+        "leftArm": {
+          "rotation": -19.31851652578137
+        },
+        "rightArm": {
+          "rotation": 19.318516525781366
+        }
+      }
+    },
+    {
+      "time": 0.16666666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": 25.98076211353316
+        },
+        "rightLeg": {
+          "rotation": -25.98076211353317
+        },
+        "leftArm": {
+          "rotation": -17.32050807568878
+        },
+        "rightArm": {
+          "rotation": 17.320508075688775
+        }
+      }
+    },
+    {
+      "time": 0.1875,
+      "bones": {
+        "leftLeg": {
+          "rotation": 21.213203435596427
+        },
+        "rightLeg": {
+          "rotation": -21.21320343559643
+        },
+        "leftArm": {
+          "rotation": -14.142135623730955
+        },
+        "rightArm": {
+          "rotation": 14.142135623730951
+        }
+      }
+    },
+    {
+      "time": 0.20833333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": 14.999999999999998
+        },
+        "rightLeg": {
+          "rotation": -14.99999999999999
+        },
+        "leftArm": {
+          "rotation": -9.999999999999993
+        },
+        "rightArm": {
+          "rotation": 9.999999999999998
+        }
+      }
+    },
+    {
+      "time": 0.22916666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": 7.76457135307563
+        },
+        "rightLeg": {
+          "rotation": -7.76457135307562
+        },
+        "leftArm": {
+          "rotation": -5.176380902050414
+        },
+        "rightArm": {
+          "rotation": 5.17638090205042
+        }
+      }
+    },
+    {
+      "time": 0.25,
+      "bones": {
+        "leftLeg": {
+          "rotation": 3.67394039744206e-15
+        },
+        "rightLeg": {
+          "rotation": -7.34788079488412e-15
+        },
+        "leftArm": {
+          "rotation": -4.898587196589413e-15
+        },
+        "rightArm": {
+          "rotation": 2.4492935982947065e-15
+        }
+      }
+    },
+    {
+      "time": 0.2708333333333333,
+      "bones": {
+        "leftLeg": {
+          "rotation": -7.764571353075611
+        },
+        "rightLeg": {
+          "rotation": 7.764571353075607
+        },
+        "leftArm": {
+          "rotation": 5.176380902050405
+        },
+        "rightArm": {
+          "rotation": -5.176380902050407
+        }
+      }
+    },
+    {
+      "time": 0.2916666666666667,
+      "bones": {
+        "leftLeg": {
+          "rotation": -15.000000000000004
+        },
+        "rightLeg": {
+          "rotation": 15
+        },
+        "leftArm": {
+          "rotation": 10
+        },
+        "rightArm": {
+          "rotation": -10.000000000000002
+        }
+      }
+    },
+    {
+      "time": 0.3125,
+      "bones": {
+        "leftLeg": {
+          "rotation": -21.213203435596423
+        },
+        "rightLeg": {
+          "rotation": 21.21320343559642
+        },
+        "leftArm": {
+          "rotation": 14.142135623730947
+        },
+        "rightArm": {
+          "rotation": -14.14213562373095
+        }
+      }
+    },
+    {
+      "time": 0.3333333333333333,
+      "bones": {
+        "leftLeg": {
+          "rotation": -25.980762113533153
+        },
+        "rightLeg": {
+          "rotation": 25.980762113533153
+        },
+        "leftArm": {
+          "rotation": 17.320508075688767
+        },
+        "rightArm": {
+          "rotation": -17.32050807568877
+        }
+      }
+    },
+    {
+      "time": 0.3541666666666667,
+      "bones": {
+        "leftLeg": {
+          "rotation": -28.97777478867205
+        },
+        "rightLeg": {
+          "rotation": 28.97777478867205
+        },
+        "leftArm": {
+          "rotation": 19.318516525781366
+        },
+        "rightArm": {
+          "rotation": -19.318516525781366
+        }
+      }
+    },
+    {
+      "time": 0.375,
+      "bones": {
+        "leftLeg": {
+          "rotation": -30
+        },
+        "rightLeg": {
+          "rotation": 30
+        },
+        "leftArm": {
+          "rotation": 20
+        },
+        "rightArm": {
+          "rotation": -20
+        }
+      }
+    },
+    {
+      "time": 0.3958333333333333,
+      "bones": {
+        "leftLeg": {
+          "rotation": -28.977774788672054
+        },
+        "rightLeg": {
+          "rotation": 28.977774788672054
+        },
+        "leftArm": {
+          "rotation": 19.31851652578137
+        },
+        "rightArm": {
+          "rotation": -19.31851652578137
+        }
+      }
+    },
+    {
+      "time": 0.4166666666666667,
+      "bones": {
+        "leftLeg": {
+          "rotation": -25.980762113533157
+        },
+        "rightLeg": {
+          "rotation": 25.98076211353315
+        },
+        "leftArm": {
+          "rotation": 17.320508075688764
+        },
+        "rightArm": {
+          "rotation": -17.32050807568877
+        }
+      }
+    },
+    {
+      "time": 0.4375,
+      "bones": {
+        "leftLeg": {
+          "rotation": -21.21320343559643
+        },
+        "rightLeg": {
+          "rotation": 21.21320343559645
+        },
+        "leftArm": {
+          "rotation": 14.142135623730967
+        },
+        "rightArm": {
+          "rotation": -14.142135623730955
+        }
+      }
+    },
+    {
+      "time": 0.4583333333333333,
+      "bones": {
+        "leftLeg": {
+          "rotation": -15.000000000000014
+        },
+        "rightLeg": {
+          "rotation": 14.999999999999993
+        },
+        "leftArm": {
+          "rotation": 9.999999999999996
+        },
+        "rightArm": {
+          "rotation": -10.000000000000009
+        }
+      }
+    },
+    {
+      "time": 0.4791666666666667,
+      "bones": {
+        "leftLeg": {
+          "rotation": -7.76457135307562
+        },
+        "rightLeg": {
+          "rotation": 7.764571353075624
+        },
+        "leftArm": {
+          "rotation": 5.176380902050416
+        },
+        "rightArm": {
+          "rotation": -5.176380902050414
+        }
+      }
+    },
+    {
+      "time": 0.5,
+      "bones": {
+        "leftLeg": {
+          "rotation": -7.34788079488412e-15
+        },
+        "rightLeg": {
+          "rotation": 1.1021821192326178e-14
+        },
+        "leftArm": {
+          "rotation": 7.347880794884118e-15
+        },
+        "rightArm": {
+          "rotation": -4.898587196589413e-15
+        }
+      }
+    },
+    {
+      "time": 0.5208333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": 7.764571353075632
+        },
+        "rightLeg": {
+          "rotation": -7.764571353075656
+        },
+        "leftArm": {
+          "rotation": -5.176380902050437
+        },
+        "rightArm": {
+          "rotation": 5.176380902050422
+        }
+      }
+    },
+    {
+      "time": 0.5416666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": 14.999999999999979
+        },
+        "rightLeg": {
+          "rotation": -14.999999999999975
+        },
+        "leftArm": {
+          "rotation": -9.999999999999984
+        },
+        "rightArm": {
+          "rotation": 9.999999999999986
+        }
+      }
+    },
+    {
+      "time": 0.5625,
+      "bones": {
+        "leftLeg": {
+          "rotation": 21.21320343559642
+        },
+        "rightLeg": {
+          "rotation": -21.213203435596437
+        },
+        "leftArm": {
+          "rotation": -14.142135623730958
+        },
+        "rightArm": {
+          "rotation": 14.142135623730947
+        }
+      }
+    },
+    {
+      "time": 0.5833333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": 25.980762113533164
+        },
+        "rightLeg": {
+          "rotation": -25.98076211353316
+        },
+        "leftArm": {
+          "rotation": -17.320508075688775
+        },
+        "rightArm": {
+          "rotation": 17.320508075688778
+        }
+      }
+    },
+    {
+      "time": 0.6041666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": 28.977774788672043
+        },
+        "rightLeg": {
+          "rotation": -28.977774788672047
+        },
+        "leftArm": {
+          "rotation": -19.318516525781362
+        },
+        "rightArm": {
+          "rotation": 19.318516525781362
+        }
+      }
+    },
+    {
+      "time": 0.625,
+      "bones": {
+        "leftLeg": {
+          "rotation": 30
+        },
+        "rightLeg": {
+          "rotation": -30
+        },
+        "leftArm": {
+          "rotation": -20
+        },
+        "rightArm": {
+          "rotation": 20
+        }
+      }
+    },
+    {
+      "time": 0.6458333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": 28.977774788672054
+        },
+        "rightLeg": {
+          "rotation": -28.977774788672054
+        },
+        "leftArm": {
+          "rotation": -19.31851652578137
+        },
+        "rightArm": {
+          "rotation": 19.31851652578137
+        }
+      }
+    },
+    {
+      "time": 0.6666666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": 25.980762113533174
+        },
+        "rightLeg": {
+          "rotation": -25.980762113533174
+        },
+        "leftArm": {
+          "rotation": -17.32050807568878
+        },
+        "rightArm": {
+          "rotation": 17.32050807568878
+        }
+      }
+    },
+    {
+      "time": 0.6875,
+      "bones": {
+        "leftLeg": {
+          "rotation": 21.21320343559645
+        },
+        "rightLeg": {
+          "rotation": -21.213203435596455
+        },
+        "leftArm": {
+          "rotation": -14.142135623730969
+        },
+        "rightArm": {
+          "rotation": 14.142135623730967
+        }
+      }
+    },
+    {
+      "time": 0.7083333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": 14.999999999999993
+        },
+        "rightLeg": {
+          "rotation": -14.999999999999996
+        },
+        "leftArm": {
+          "rotation": -9.999999999999998
+        },
+        "rightArm": {
+          "rotation": 9.999999999999996
+        }
+      }
+    },
+    {
+      "time": 0.7291666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": 7.764571353075624
+        },
+        "rightLeg": {
+          "rotation": -7.764571353075629
+        },
+        "leftArm": {
+          "rotation": -5.176380902050419
+        },
+        "rightArm": {
+          "rotation": 5.176380902050416
+        }
+      }
+    },
+    {
+      "time": 0.75,
+      "bones": {
+        "leftLeg": {
+          "rotation": 1.1021821192326178e-14
+        },
+        "rightLeg": {
+          "rotation": -1.469576158976824e-14
+        },
+        "leftArm": {
+          "rotation": -9.797174393178826e-15
+        },
+        "rightArm": {
+          "rotation": 7.347880794884118e-15
+        }
+      }
+    },
+    {
+      "time": 0.7708333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": -7.7645713530756035
+        },
+        "rightLeg": {
+          "rotation": 7.764571353075601
+        },
+        "leftArm": {
+          "rotation": 5.176380902050401
+        },
+        "rightArm": {
+          "rotation": -5.176380902050402
+        }
+      }
+    },
+    {
+      "time": 0.7916666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": -14.999999999999975
+        },
+        "rightLeg": {
+          "rotation": 14.999999999999972
+        },
+        "leftArm": {
+          "rotation": 9.99999999999998
+        },
+        "rightArm": {
+          "rotation": -9.999999999999984
+        }
+      }
+    },
+    {
+      "time": 0.8125,
+      "bones": {
+        "leftLeg": {
+          "rotation": -21.213203435596437
+        },
+        "rightLeg": {
+          "rotation": 21.213203435596434
+        },
+        "leftArm": {
+          "rotation": 14.142135623730956
+        },
+        "rightArm": {
+          "rotation": -14.142135623730958
+        }
+      }
+    },
+    {
+      "time": 0.8333333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": -25.98076211353316
+        },
+        "rightLeg": {
+          "rotation": 25.98076211353316
+        },
+        "leftArm": {
+          "rotation": 17.320508075688775
+        },
+        "rightArm": {
+          "rotation": -17.320508075688775
+        }
+      }
+    },
+    {
+      "time": 0.8541666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": -28.977774788672047
+        },
+        "rightLeg": {
+          "rotation": 28.977774788672047
+        },
+        "leftArm": {
+          "rotation": 19.318516525781362
+        },
+        "rightArm": {
+          "rotation": -19.318516525781362
+        }
+      }
+    },
+    {
+      "time": 0.875,
+      "bones": {
+        "leftLeg": {
+          "rotation": -30
+        },
+        "rightLeg": {
+          "rotation": 30
+        },
+        "leftArm": {
+          "rotation": 20
+        },
+        "rightArm": {
+          "rotation": -20
+        }
+      }
+    },
+    {
+      "time": 0.8958333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": -28.977774788672054
+        },
+        "rightLeg": {
+          "rotation": 28.977774788672058
+        },
+        "leftArm": {
+          "rotation": 19.31851652578137
+        },
+        "rightArm": {
+          "rotation": -19.31851652578137
+        }
+      }
+    },
+    {
+      "time": 0.9166666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": -25.980762113533174
+        },
+        "rightLeg": {
+          "rotation": 25.980762113533178
+        },
+        "leftArm": {
+          "rotation": 17.320508075688785
+        },
+        "rightArm": {
+          "rotation": -17.32050807568878
+        }
+      }
+    },
+    {
+      "time": 0.9375,
+      "bones": {
+        "leftLeg": {
+          "rotation": -21.213203435596455
+        },
+        "rightLeg": {
+          "rotation": 21.21320343559646
+        },
+        "leftArm": {
+          "rotation": 14.142135623730972
+        },
+        "rightArm": {
+          "rotation": -14.142135623730969
+        }
+      }
+    },
+    {
+      "time": 0.9583333333333334,
+      "bones": {
+        "leftLeg": {
+          "rotation": -14.999999999999996
+        },
+        "rightLeg": {
+          "rotation": 15
+        },
+        "leftArm": {
+          "rotation": 10
+        },
+        "rightArm": {
+          "rotation": -9.999999999999998
+        }
+      }
+    },
+    {
+      "time": 0.9791666666666666,
+      "bones": {
+        "leftLeg": {
+          "rotation": -7.764571353075629
+        },
+        "rightLeg": {
+          "rotation": 7.764571353075632
+        },
+        "leftArm": {
+          "rotation": 5.176380902050422
+        },
+        "rightArm": {
+          "rotation": -5.176380902050419
+        }
+      }
+    }
+  ]
+}

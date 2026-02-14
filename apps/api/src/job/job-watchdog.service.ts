@@ -40,13 +40,26 @@ export class JobWatchdogService {
       const jobTimeoutThreshold = new Date(now.getTime() - this.jobTimeoutMs);
       const workerTimeoutThreshold = new Date(now.getTime() - this.workerHeartbeatTimeoutMs);
 
-      // 1. 查找长期 RUNNING 的 job
+      // 1. 查找长期 RUNNING 的 job（双重检查：updatedAt OR leaseUntil）
+      // A3 增强：添加 leaseUntil 超时检查
       const stuckJobs = await this.prisma.shotJob.findMany({
         where: {
           status: JobStatusEnum.RUNNING,
-          updatedAt: {
-            lt: jobTimeoutThreshold, // 超过超时时间未更新
-          },
+          OR: [
+            {
+              // 检查1：超过超时时间未更新
+              updatedAt: {
+                lt: jobTimeoutThreshold,
+              },
+            },
+            {
+              // 检查2：lease 已过期（A3新增）
+              leaseUntil: {
+                not: null,
+                lt: now,
+              },
+            },
+          ],
         },
         include: {
           worker: true,
@@ -90,7 +103,7 @@ export class JobWatchdogService {
               // 记录警告但不恢复（可能需要调整超时时间）
               this.logger.warn(
                 `[JobWatchdog] Job ${currentJob.id} is stuck but worker ${currentJob.worker?.workerId} is online. ` +
-                  `Consider increasing timeout or checking job execution.`
+                `Consider increasing timeout or checking job execution.`
               );
               return { action: 'ONLINE_SKIP' as const };
             }
@@ -99,15 +112,29 @@ export class JobWatchdogService {
             const newRetryCount = currentJob.retryCount + 1;
             const shouldFail = newRetryCount >= currentJob.maxRetry;
 
+            // A3增强：区分超时原因
+            const isLeaseExpired = currentJob.leaseUntil && currentJob.leaseUntil < now;
+            const isUpdateExpired = currentJob.updatedAt < jobTimeoutThreshold;
+
+            let timeoutReason = '';
+            if (isLeaseExpired && isUpdateExpired) {
+              timeoutReason = `lease expired (${currentJob.leaseUntil?.toISOString()}) and updatedAt timeout`;
+            } else if (isLeaseExpired) {
+              timeoutReason = `lease expired at ${currentJob.leaseUntil?.toISOString()}`;
+            } else {
+              timeoutReason = `updatedAt timeout (last update: ${currentJob.updatedAt.toISOString()})`;
+            }
+
             await tx.shotJob.update({
               where: { id: currentJob.id },
               data: {
                 status: shouldFail ? JobStatusEnum.FAILED : JobStatusEnum.RETRYING,
                 workerId: null, // 解除 worker 绑定
+                leaseUntil: null, // A3增强：清除过期的lease
                 retryCount: newRetryCount,
                 lastError: shouldFail
-                  ? `Job watchdog: Max retries exceeded after worker offline`
-                  : `Job watchdog recovery: Worker ${currentJob.workerId} appears offline (last heartbeat: ${currentJob.worker?.lastHeartbeat})`,
+                  ? `Job watchdog: Max retries exceeded after worker offline (${timeoutReason})`
+                  : `Job watchdog recovery: Worker ${currentJob.workerId} appears offline (${timeoutReason}, last heartbeat: ${currentJob.worker?.lastHeartbeat})`,
                 updatedAt: now,
               },
             });

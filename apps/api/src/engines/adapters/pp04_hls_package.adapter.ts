@@ -29,7 +29,7 @@ export class PP04HLSPackageAdapter extends PpBaseEngine {
         mkdirSync(outputDir, { recursive: true });
         const outputPath = join(outputDir, `index.m3u8`);
 
-        let sourcePath = sourceUrl.replace('file://', '');
+        const sourcePath = sourceUrl.replace('file://', '');
         let inputArg = '';
         if (!sourcePath || !existsSync(sourcePath)) {
             inputArg = `-f lavfi -i testsrc=d=5`;

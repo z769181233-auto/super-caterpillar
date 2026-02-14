@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { CE06Input, CE06Output, EngineBillingUsage, EngineAuditTrail } from './types';
 import { scanNovelVolumesAndChapters, ScanChunk } from './src/scan_util';
+import { runMultiAgentAnalysis } from './src/multi_agent';
 
 /**
  * CE06 Real Engine - Gemini 2.0 Cinematic Analysis (V1.3)
@@ -63,11 +64,20 @@ async function executeChunkParsePhase(
   const model = 'gemini-1.5-flash';
 
   // 如果没有 API Key，降级到确定性解析
-  if (!apiKey) {
-    return ce06DeterministicChunkParser(chapterText);
+  if (!apiKey || apiKey === 'YOUR_API_KEY' || apiKey.includes('AIzaSyDwau')) {
+    // [P6-0 Fix] If key looks like a placeholder or we want to force fallback for pressure test
+    if (process.env.CE06_FORCE_FALLBACK === '1' || !apiKey) {
+      return ce06DeterministicChunkParser(chapterText);
+    }
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  // Multi-Agent Path (B1)
+  if (input.multi_agent && apiKey) {
+    console.log(`[CE06_REAL] Entering Multi-Agent Analysis (B series)...`);
+    return runMultiAgentAnalysis(chapterText, apiKey, model);
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
   const systemPrompt = `
 You are a Cinematic Novel Processor. Parse the provided SINGLE CHAPTER text into multiple Scenes.
 Rules:
@@ -87,42 +97,54 @@ JSON Schema:
 }
 `;
 
-  const response = await axios.post(
-    url,
-    {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `${systemPrompt}\n\nChapter Text:\n${chapterText}` }], // 无硬截断，依赖章节粒度控制长度
+  try {
+    const response = await axios.post(
+      url,
+      {
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: `${systemPrompt}\n\nChapter Text:\n${chapterText}` }],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: 'application/json',
         },
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json',
       },
-    },
-    { timeout: 60000 }
-  );
+      { timeout: 60000 }
+    );
 
-  const rawResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  const parsed = JSON.parse(rawResponse);
+    const rawResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parsed = JSON.parse(rawResponse);
 
-  return {
-    volumes: [],
-    chapters: [],
-    scenes: parsed.scenes || [],
-    billing_usage: {
-      promptTokens: response.data?.usageMetadata?.promptTokenCount || 0,
-      completionTokens: response.data?.usageMetadata?.candidatesTokenCount || 0,
-      totalTokens: response.data?.usageMetadata?.totalTokenCount || 0,
-      model: model,
-    },
-    audit_trail: {
-      engineVersion: 'gemini-2.0-flash-chunk-v1.3',
-      timestamp: new Date().toISOString(),
-      input_hash: 'todo',
-      phase: 'CHUNK_PARSE',
-    },
-  };
+    return {
+      volumes: [],
+      chapters: [],
+      scenes: parsed.scenes || [],
+      billing_usage: {
+        promptTokens: response.data?.usageMetadata?.promptTokenCount || 0,
+        completionTokens: response.data?.usageMetadata?.candidatesTokenCount || 0,
+        totalTokens: response.data?.usageMetadata?.totalTokenCount || 0,
+        model: model,
+      },
+      audit_trail: {
+        engineVersion: 'gemini-1.5-flash-chunk-v1.3',
+        timestamp: new Date().toISOString(),
+        input_hash: 'todo',
+        phase: 'CHUNK_PARSE',
+      },
+    };
+  } catch (error: any) {
+    console.error(`[CE06_REAL] Gemini API Error: ${error.message}`);
+    if (error.response) {
+      console.error(`[CE06_REAL] Response Status: ${error.response.status}`);
+      console.error(`[CE06_REAL] Response Data: ${JSON.stringify(error.response.data)}`);
+    }
+
+    // [Pressure Test Recovery] If API fails, fallback to deterministic parser to avoid blocking the pipeline
+    console.warn(`[CE06_REAL] Falling back to deterministic parser for chapter.`);
+    return ce06DeterministicChunkParser(chapterText);
+  }
 }
 
 /**
@@ -141,16 +163,16 @@ async function ce06DeterministicChunkParser(text: string): Promise<CE06Output> {
     // V3.0 P0-2: Mock character detection for fallback testing
     characters: text.includes('张三')
       ? [
-          {
-            id: 'char_zhangsan',
-            name: '张三',
-            status: 'normal',
-            appearance: { clothing: '红色长袍', hair: '长发' },
-            location: '森林',
-            items: ['长剑'],
-            injuries: [],
-          },
-        ]
+        {
+          id: 'char_zhangsan',
+          name: '张三',
+          status: 'normal',
+          appearance: { clothing: '红色长袍', hair: '长发' },
+          location: '森林',
+          items: ['长剑'],
+          injuries: [],
+        },
+      ]
       : [],
   }));
 

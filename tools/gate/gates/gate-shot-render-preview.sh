@@ -150,12 +150,12 @@ run_pass() {
         if [ -z "$R_URL" ]; then log "❌ Shot URL empty"; exit 1; fi
         
         # Check Asset
-        ASSET_ROW=$(psql "$DATABASE_URL" -t -c "SELECT id, status, checksum FROM assets WHERE \"ownerId\"='$SHOT_ID' AND type='IMAGE';")
+        ASSET_ROW=$(psql "$DATABASE_URL" -t -c "SELECT id, status, type, checksum FROM assets WHERE \"ownerId\"='$SHOT_ID' LIMIT 1;")
         ASSET_STATUS=$(echo "$ASSET_ROW" | awk -F '|' '{print $2}' | xargs)
-        CHECKSUM=$(echo "$ASSET_ROW" | awk -F '|' '{print $3}' | xargs)
+        CHECKSUM=$(echo "$ASSET_ROW" | awk -F '|' '{print $4}' | xargs)
         
-        if [ "$ASSET_STATUS" != "GENERATED" ]; then log "❌ Asset Status: $ASSET_STATUS"; exit 1; fi
-        if [ -z "$CHECKSUM" ]; then log "❌ Asset Checksum empty"; exit 1; fi
+        if [ "$ASSET_STATUS" != "GENERATED" ]; then log "❌ Asset Status: $ASSET_STATUS (Expected GENERATED for Shot $SHOT_ID)"; exit 1; fi
+        if [ -z "$CHECKSUM" ]; then log "❌ Asset Checksum empty for Shot $SHOT_ID"; exit 1; fi
         
         # Verify URL Access (Internal API)
         # Use storage key from R_URL (which is storageKey)

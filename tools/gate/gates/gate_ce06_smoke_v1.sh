@@ -9,8 +9,18 @@ echo "===================================================="
 # Step 0: 清理旧的验证数据
 PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -c "
 DELETE FROM billing_ledgers WHERE \"traceId\" LIKE 'smoke-%' OR \"traceId\" = '5a51685b-e508-4ec6-b53d-bf428f4165f9';
-DELETE FROM novels WHERE project_id = 'smoke-proj';
-DELETE FROM projects WHERE id = 'smoke-proj';
+DELETE FROM billing_events WHERE project_id IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org');
+DELETE FROM cost_ledgers WHERE \"projectId\" IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org');
+DELETE FROM scenes WHERE \"episodeId\" IN (SELECT id FROM episodes WHERE \"projectId\" IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org'));
+DELETE FROM episodes WHERE \"projectId\" IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org');
+DELETE FROM seasons WHERE \"projectId\" IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org');
+DELETE FROM novel_chapters WHERE \"volume_id\" IN (SELECT id FROM novel_volumes WHERE project_id IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org'));
+DELETE FROM novel_volumes WHERE project_id IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org');
+DELETE FROM novels WHERE project_id IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org');
+DELETE FROM shot_jobs WHERE \"projectId\" IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org');
+DELETE FROM projects WHERE \"organizationId\" = 'smoke-org';
+DELETE FROM organization_members WHERE \"organizationId\" = 'smoke-org';
+DELETE FROM memberships WHERE \"organizationId\" = 'smoke-org';
 DELETE FROM organizations WHERE id = 'smoke-org';
 DELETE FROM \"users\" WHERE id = 'smoke-user';
 "
@@ -53,10 +63,10 @@ else
   echo "[Step 4] Triggering CE06 SCAN Job via SQL..."
   SQL_CMD="INSERT INTO shot_jobs (id, \"organizationId\", \"projectId\", type, status, payload, \"createdAt\", \"updatedAt\") 
   VALUES ('smoke-job-' || gen_random_uuid(), 'smoke-org', 'smoke-proj', 'CE06_NOVEL_PARSING', 'PENDING', 
-  '{\"phase\": \"CHUNK_PARSE\", \"charCount\": 95123, \"organizationId\": \"smoke-org\", \"projectId\": \"smoke-proj\", \"chapterId\": \"dummy\"}'::jsonb, 
+  '{\"phase\": \"SCAN\", \"raw_text\": \"第1季\n第1章\n这是测试小说内容。\", \"organizationId\": \"smoke-org\", \"projectId\": \"smoke-proj\"}'::jsonb, 
   NOW(), NOW()) RETURNING id;"
 
-  JOB_ID=$(PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -t -c "$SQL_CMD" | xargs)
+  JOB_ID=$(PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -t -c "$SQL_CMD" | xargs | awk '{print $1}')
   echo "Job ID: $JOB_ID"
 
   echo "[Step 5] Waiting for Worker to process and post billing (max 120s)..."

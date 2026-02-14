@@ -13,7 +13,7 @@ export class StoryController {
     private readonly storyService: StoryService,
     private readonly prisma: PrismaService,
     private readonly jobService: JobService
-  ) {}
+  ) { }
 
   /**
    * POST /api/story/parse
@@ -23,7 +23,7 @@ export class StoryController {
   @Post('parse')
   @UseGuards(JwtOrHmacGuard)
   async parseStory(@Body() body: any, @Req() req: any) {
-    const { raw_text, context, projectId: topProjectId, title, author } = body;
+    const { raw_text, rawText, context, projectId: topProjectId, projectId, title, author } = body;
 
     const organizationId = req.user?.organizationId || req.apiKeyOwnerOrgId;
     const userId = req.user?.id || req.apiKeyOwnerUserId;
@@ -32,8 +32,8 @@ export class StoryController {
     // Delegate to StoryService for Task & CE06 Job creation
     const result = await this.storyService.parseStory(
       {
-        projectId: context?.projectId || topProjectId,
-        rawText: raw_text,
+        projectId: context?.projectId || topProjectId || projectId,
+        rawText: raw_text || rawText,
         title: title || 'Direct Input',
         author: author || 'Direct Input',
       },

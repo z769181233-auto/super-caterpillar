@@ -48,6 +48,24 @@
 | `shot_render_router` | `SHOT_RENDER` | SEALED | YES | SR00 | `apps/api/src/engines/adapters/shot-render.router.adapter.ts` | `tools/gate/gates/gate-prod_slice_v1_real.sh` | `seal/p3_4_2_promote_pass2_20260201_235003` | 分发路由层 |
 | `ce05_conflict_detector` | `CE05_DIRECTOR_CONTROL` | SEALED | YES | CE05 | `apps/api/src/engines/adapters/ce05_conflict_detector.adapter.ts` | `tools/gate/gates/gate-ce05_m1_hard.sh` | `seal/gate41_ce05_promote_20260202_204746` | 剧情冲突检测 |
 | `ce14_narrative_climax` | `NOVEL_ANALYSIS` | SEALED | YES | CE14 | `apps/api/src/engines/adapters/ce14_narrative_climax.adapter.ts` | `tools/gate/gates/gate_ce14_climax.sh` | `seal/gate42_ce14_promote_20260202_213304` | 高潮与反转识别 |
+| `vg06_skeletal_animation` | `VG_RENDER` | SEALED | YES | VG06 | `apps/api/src/engines/adapters/vg06_skeletal_animation.adapter.ts` | `tools/gate/gates/gate-vg06-skeletal-animation.sh` | `seal/p0_vg06_skeletal_20260214` | 2D骨骼动画生成与绑定 |
+| `vg07_facial_expression` | `VG_RENDER` | SEALED | YES | VG07 | `apps/api/src/engines/adapters/vg07_facial_expression.adapter.ts` | `tools/gate/gates/gate-vg07-facial-expression.sh` | `seal/p0_vg07_facial_20260214` | 基于情感的面部表情生成 |
+| `ce15_multi_char_scene` | `NOVEL_ANALYSIS` | SEALED | YES | CE15 | `apps/api/src/engines/adapters/ce15_multi_char_scene.adapter.ts` | `tools/gate/gates/gate-ce15-multi-char-scene.sh` | `seal/p0_ce15_multi_char_20260214` | 多角色场景协调计划 |
+| `vg08_advanced_lighting` | `VG_RENDER` | SEALED | YES | VG08 | `apps/api/src/engines/adapters/vg08_advanced_lighting.adapter.ts` | `tools/gate/gates/gate-vg08-advanced-lighting.sh` | `seal/p0_vg08_lighting_20260214` | 基于物理的高级光照渲染 |
+| `vg09_hair_physics` | `VG_RENDER` | SEALED | YES | VG09 | `apps/api/src/engines/adapters/vg09_hair_physics.adapter.ts` | `tools/gate/gates/gate-vg09-hair-physics.sh` | `seal/p1_vg09_hair_20260214` | 头发物理模拟 |
+| `vg10_cloth_dynamics` | `VG_RENDER` | SEALED | YES | VG10 | `apps/api/src/engines/adapters/vg10_cloth_dynamics.adapter.ts` | `tools/gate/gates/gate-vg10-cloth-dynamics.sh` | `seal/p1_vg10_cloth_20260214` | 布料动力学模拟 |
+| `vg11_particle_effects` | `VG_RENDER` | SEALED | YES | VG11 | `apps/api/src/engines/adapters/vg11_particle_effects.adapter.ts` | `tools/gate/gates/gate-vg11-particle-effects.sh` | `seal/p1_vg11_vfx_20260214` | 粒子特效系统 |
+| `ce16_story_branch_coordinator` | `NOVEL_ANALYSIS` | SEALED | YES | CE16 | `apps/api/src/engines/adapters/ce16_story_branch_coordinator.adapter.ts` | `tools/gate/gates/gate-ce16-story-branch-coordinator.sh` | `seal/p1_ce16_story_20260214` | 故事分支协调 |
+| `ce17_cultural_consistency` | `NOVEL_ANALYSIS` | SEALED | YES | CE17 | `apps/api/src/engines/adapters/ce17_cultural_consistency.adapter.ts` | `tools/gate/gates/gate-ce17-cultural-consistency.sh` | `seal/p1_ce17_culture_20260214` | 文化一致性校验 |
+| `ce18_world_logic_validator` | `NOVEL_ANALYSIS` | SEALED | YES | CE18 | `apps/api/src/engines/adapters/ce18_world_logic_validator.adapter.ts` | `tools/gate/gates/gate-ce18-world-logic-validator.sh` | `seal/p1_ce18_logic_20260214` | 世界观逻辑验证 |
+| `au05_environmental_reverb` | `AU_RENDER` | SEALED | YES | AU05 | `apps/api/src/engines/adapters/au05_environmental_reverb.adapter.ts` | `tools/gate/gates/gate-au05-environmental-reverb.sh` | `seal/p1_au05_reverb_20260214` | 环境混响生成 |
+| `qc05_technical_compliance` | `QC_CHECK` | SEALED | YES | QC05 | `apps/api/src/engines/adapters/qc05_technical_compliance.adapter.ts` | `tools/gate/gates/gate-qc05-technical-compliance.sh` | `seal/p1_qc05_spec_20260214` | 技术规格合规性 QC |
+| `pp05_poster_gen` | `PP_RENDER` | SEALED | YES | PP05 | `apps/api/src/engines/adapters/pp05_poster_gen.adapter.ts` | `tools/gate/gates/gate-pp05-poster-gen.sh` | `seal/p1_pp05_poster_20260214` | 封面海报生成 |
+| `pp06_credits_gen` | `PP_RENDER` | SEALED | YES | PP06 | `apps/api/src/engines/adapters/pp06_credits_gen.adapter.ts` | `tools/gate/gates/gate-pp06-credits-gen.sh` | `seal/p1_pp06_credits_20260214` | 演职人员表生成 |
+| `au06_spatial_audio` | `AU_RENDER` | SEALED | YES | AU06 | `apps/api/src/engines/adapters/au06_spatial_audio.adapter.ts` | `tools/gate/gates/gate-au06-spatial-audio.sh` | `seal/p1_au06_spatial_20260214` | 空间音频映射 |
+| `qc06_flicker_detector` | `QC_CHECK` | SEALED | YES | QC06 | `apps/api/src/engines/adapters/qc06_flicker_detector.adapter.ts` | `tools/gate/gates/gate-qc06-flicker-detector.sh` | `seal/p1_qc06_flicker_20260214` | 画面闪烁检测 QC |
+| `ce19_story_summary_gen` | `NOVEL_ANALYSIS` | SEALED | YES | CE19 | `apps/api/src/engines/adapters/ce19_story_summary_gen.adapter.ts` | `tools/gate/gates/gate-ce19-story-summary-gen.sh` | `seal/p1_ce19_summary_20260214` | 故事大纲生成 |
+| `vg12_dynamic_lighting_rig` | `VG_RENDER` | SEALED | YES | VG12 | `apps/api/src/engines/adapters/vg12_dynamic_lighting_rig.adapter.ts` | `tools/gate/gates/gate-vg12-dynamic-lighting-rig.sh` | `seal/p1_vg12_rig_20260214` | 动态灯光组编排 |
 <!-- SSOT_TABLE:SEALED_END -->
 
 ## IN-PROGRESS ENGINES (开发中/验证中)
@@ -62,4 +80,20 @@
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 <!-- SSOT_TABLE:PLANNED_END -->
 
-> **Note**: 本矩阵共包含 42 个引擎入口。PLANNED 列表中的引擎尚未实施，禁止在 Registry 中注册或存在实现文件。
+> **Note**: 本矩阵共包含 60 个已封印引擎入口。PLANNED 列表中的引擎尚未实施。
+
+## MOCK ENGINE POLICY (Mock 引擎策略)
+
+为确保商业环境的可靠性，系统实施了严格的 Mock 引擎隔离策略：
+
+| 环境模式 (ENGINE_MODE) | Mock允许 | 行为说明 |
+| :--- | :--- | :--- |
+| `production` | ❌ 禁止 | 启动时严格检查，若发现注册了 Mock 适配器或使用 `mock` provider，抛出 `PRODUCTION_SAFETY_ERROR` 异常并终止启动。 |
+| `development` | ⚠️ 警告 | 允许 Mock 适配器注册，但在日志中输出警告信息。默认模式。 |
+| `test` | ✅ 允许 | 专用于 CI/CD 和 Gate 测试，允许使用所有 Mock 功能。 |
+
+### 已移除的 Mock 适配器
+- `ce11_shot_generator_mock`: 已被 `ce11_shot_generator_real` (Router) 全面取代，代码已物理删除。
+
+### 保留的 Mock 适配器
+- `MockEngineAdapter`: 通用 Mock 适配器，仅用于 `ENGINE_MODE!=production` 时的测试与验证。

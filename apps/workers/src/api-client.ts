@@ -129,8 +129,8 @@ export class ApiClient {
     body?: any,
     extraHeaders?: Record<string, string>
   ): Promise<ApiResponse<T>> {
-    process.stdout.write(util.format(`[Worker DEBUG] ApiClient request: ${method} ${path}`) + '\n');
     const url = `${this.baseURL}${path}`;
+    process.stdout.write(util.format('[ApiClient DEBUG] Full URL: %s', url) + '\n');
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -302,6 +302,12 @@ export class ApiClient {
     status?: string | any; // WorkerStatus enum
     tasksRunning?: number;
     temperature?: number;
+    // B3-2: 负载上报增强字段
+    cpuUsagePercent?: number;
+    memoryUsageMb?: number;
+    queueDepth?: number;
+    avgProcessingTimeMs?: number;
+    metadata?: Record<string, any>;
   }): Promise<{ workerId: string; status: string; lastHeartbeat: string }> {
     const { workerId, ...body } = params;
     process.stdout.write(
@@ -496,8 +502,9 @@ export class ApiClient {
         payload?: any;
         parentJobId?: string;
         traceId?: string;
+        priority?: number;
       },
-    dto?: { type?: string; jobType?: string; payload?: any; traceId?: string },
+    dto?: { type?: string; jobType?: string; payload?: any; traceId?: string; priority?: number },
     headers?: Record<string, string>
   ): Promise<any> {
     let url = '/api/jobs'; // 默认通用路径

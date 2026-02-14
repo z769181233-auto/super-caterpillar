@@ -49,13 +49,13 @@ model Organization {
   billingEvents     BillingEvent[]       @relation("BillingEventOrganization")
   costCenters       CostCenter[]         @relation("OrganizationCostCenters")
   memberships       Membership[]         @relation("OrganizationMemberships")
+  novelParseResults NovelParseResult[]   @relation("OrganizationNovelParseResults")
   members           OrganizationMember[] @relation("OrganizationMembers")
   owner             User                 @relation("OrganizationOwner", fields: [ownerId], references: [id])
   projects          Project[]            @relation("OrganizationProjects")
   shotJobs          ShotJob[]            @relation("OrganizationShotJobs")
   shots             Shot[]               @relation("OrganizationShots")
   subscriptions     Subscription[]       @relation("OrganizationSubscription")
-  novelParseResults NovelParseResult[]   @relation("OrganizationNovelParseResults")
 
   @@unique([ownerId, type])
   @@map("organizations")
@@ -90,21 +90,24 @@ model Project {
   tasks                  Task[]                  @relation("ProjectTasks")
   assets                 Asset[]                 @relation("ProjectAssets")
   billingEvents          BillingEvent[]          @relation("BillingEventProject")
+  characterProfiles      CharacterProfile[]
   costLedgers            CostLedger[]            @relation("ProjectCostLedgers")
   engineTasks            EngineTask[]            @relation("ProjectEngineTask")
   episodes               Episode[]               @relation("ProjectEpisodes")
   novelAnalysisJobs      NovelAnalysisJob[]      @relation("ProjectNovelAnalysisJobs")
   novelParseResults      NovelParseResult?       @relation("ProjectNovelParseResults")
-  novelSources           Novel[]                 @relation("ProjectNovelSources")
+  novelVolumes           NovelVolume[]           @relation("ProjectNovelVolumes")
+  novelSources           Novel?                  @relation("ProjectNovelSources")
   projectMembers         ProjectMember[]
   organization           Organization            @relation("OrganizationProjects", fields: [organizationId], references: [id])
   owner                  User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
+  publishedVideos        PublishedVideo[]        @relation("ProjectPublishedVideos")
   qualityMetrics         QualityMetrics[]        @relation("ProjectQualityMetrics")
   seasons                Season[]                @relation("ProjectSeasons")
   shotJobs               ShotJob[]               @relation("ProjectShotJobs")
   structureQualityReport StructureQualityReport? @relation("ProjectQualityReport")
-  novelVolumes           NovelVolume[]           @relation("ProjectNovelVolumes")
-  publishedVideos        PublishedVideo[]        @relation("ProjectPublishedVideos")
+  styleGuide             String?                 @map("style_guide")
+  stylePrompt            String?                 @map("style_prompt")
 
   @@map("projects")
 }
@@ -137,58 +140,44 @@ model Episode {
   chapter           NovelChapter?      @relation("ChapterEpisode", fields: [chapterId], references: [id])
   project           Project?           @relation("ProjectEpisodes", fields: [projectId], references: [id], onDelete: Cascade)
   season            Season             @relation("SeasonEpisodes", fields: [seasonId], references: [id], onDelete: Cascade)
+  publishedVideos   PublishedVideo[]   @relation("EpisodePublishedVideos")
   publishingReviews PublishingReview[] @relation("EpisodePublishingReview")
   scenes            Scene[]            @relation("EpisodeScenes")
   shotJobs          ShotJob[]          @relation("EpisodeShotJobs")
-  publishedVideos   PublishedVideo[]   @relation("EpisodePublishedVideos")
 
   @@map("episodes")
 }
 
 model Scene {
-  id         String  @id @default(uuid())
-  // V3.0: scenes table requires chapter_id
-  chapterId  String? @map("chapter_id")
-  episodeId  String?
-  sceneIndex Int     @map("scene_index") // V3.0: scene_index
-
-  // V3.0 Core Parsing Data
-  locationSlug    String?  @map("location_slug")
-  timeOfDay       String?  @map("time_of_day")
-  environmentTags String[] @map("environment_tags")
-
-  // V3.0 AI Expansion
-  // rawText            String?      @db.Text @map("raw_text") // REMOVED V3.0
-  enrichedText String? @map("enriched_text") @db.Text
-
-  // V3.0 State & Context
-  graphStateSnapshot Json?    @map("graph_state_snapshot")
-  visualDensityScore Decimal? @map("visual_density_score")
-  visualDensityMeta  Json?    @map("visual_density_meta")
-
-  status String? @default("PENDING") // PENDING, GENERATING_SHOTS, READY
-
-  // Legacy / Helper / Production fields
-  title          String?
-  summary        String?
-  sceneDraftId   String?          @unique
-  reviewStatus   ShotReviewStatus @default(DRAFT)
-  characters     Json?
-  projectId      String?          @map("project_id")
-  // index              Int?         // REMOVED V3.0
-  directingNotes String?          @map("directing_notes") @db.Text
-  shotType       String?          @default("MEDIUM_SHOT") @map("shot_type")
-  characterIds   Json?            @map("character_ids")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  chapter     NovelChapter? @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
-  engineTasks EngineTask[]  @relation("SceneEngineTask")
-  episode     Episode?      @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
-  sceneDraft  SceneDraft?   @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
-  shotJobs    ShotJob[]     @relation("SceneShotJobs")
-  shots       Shot[]        @relation("SceneShots")
+  id                 String           @id @default(uuid())
+  chapterId          String?          @map("chapter_id")
+  episodeId          String?
+  sceneIndex         Int              @map("scene_index")
+  locationSlug       String?          @map("location_slug")
+  timeOfDay          String?          @map("time_of_day")
+  environmentTags    String[]         @map("environment_tags")
+  enrichedText       String?          @map("enriched_text")
+  graphStateSnapshot Json?            @map("graph_state_snapshot")
+  visualDensityScore Decimal?         @map("visual_density_score")
+  visualDensityMeta  Json?            @map("visual_density_meta")
+  status             String?          @default("PENDING")
+  title              String?
+  summary            String?
+  sceneDraftId       String?          @unique
+  reviewStatus       ShotReviewStatus @default(DRAFT)
+  characters         Json?
+  projectId          String?          @map("project_id")
+  directingNotes     String?          @map("directing_notes")
+  shotType           String?          @default("MEDIUM_SHOT") @map("shot_type")
+  characterIds       Json?            @map("character_ids")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  engineTasks        EngineTask[]     @relation("SceneEngineTask")
+  chapter            NovelChapter?    @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
+  episode            Episode?         @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
+  sceneDraft         SceneDraft?      @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
+  shotJobs           ShotJob[]        @relation("SceneShotJobs")
+  shots              Shot[]           @relation("SceneShots")
 
   @@unique([chapterId, sceneIndex])
   @@index([projectId, sceneIndex])
@@ -196,60 +185,54 @@ model Scene {
 }
 
 model Shot {
-  id           String           @id @default(uuid())
-  sceneId      String
-  index        Int
-  title        String?
-  description  String?
-  reviewStatus ShotReviewStatus @default(DRAFT)
-  type         String
-
-  params            Json               @default("{}")
-  qualityScore      Json               @default("{}")
-  reviewedAt        DateTime?
-  durationSeconds   Int?
-  organizationId    String?
-  enrichedPrompt    String?
-  assets            Asset[]            @relation("ShotAssets")
-  engineTasks       EngineTask[]       @relation("ShotEngineTask")
-  publishingReviews PublishingReview[] @relation("ShotPublishingReview")
-  qualityScores     QualityScore[]     @relation("ShotQualityScore")
-  safetyResults     SafetyResult[]     @relation("ShotSafetyResult")
-  jobs              ShotJob[]          @relation("ShotJobs")
-  shotPlanning      ShotPlanning?      @relation("ShotPlanning")
-  organization      Organization?      @relation("OrganizationShots", fields: [organizationId], references: [id])
-  scene             Scene              @relation("SceneShots", fields: [sceneId], references: [id], onDelete: Cascade)
-
-  shotType       String? @map("shot_type")
-  cameraMovement String? @map("camera_movement")
-  cameraAngle    String? @map("camera_angle")
-
-  lightingPreset String? @map("lighting_preset")
-
-  // P2: Real Render Status & Output
-  renderStatus   ShotRenderStatus @default(PENDING) @map("render_status")
-  resultImageUrl String?          @map("result_image_url")
-  resultVideoUrl String?          @map("result_video_url")
-
-  // V3.0 Bible Alignment
-  visualPrompt       String?  @map("visual_prompt")
-  negativePrompt     String?  @map("negative_prompt")
-  actionDescription  String?  @map("action_description")
-  dialogueContent    String?  @map("dialogue_content")
-  soundFx            String?  @map("sound_fx")
-  assetBindings      Json?    @map("asset_bindings")
-  controlnetSettings Json?    @map("controlnet_settings")
-  durationSec        Decimal? @map("duration_sec")
+  id                   String                @id @default(uuid())
+  sceneId              String
+  index                Int
+  title                String?
+  description          String?
+  reviewStatus         ShotReviewStatus      @default(DRAFT)
+  type                 String
+  params               Json                  @default("{}")
+  qualityScore         Json                  @default("{}")
+  reviewedAt           DateTime?
+  durationSeconds      Int?
+  organizationId       String?
+  enrichedPrompt       String?
+  shotType             String?               @map("shot_type")
+  cameraMovement       String?               @map("camera_movement")
+  cameraAngle          String?               @map("camera_angle")
+  lightingPreset       String?               @map("lighting_preset")
+  renderStatus         ShotRenderStatus      @default(PENDING) @map("render_status")
+  resultImageUrl       String?               @map("result_image_url")
+  resultVideoUrl       String?               @map("result_video_url")
+  visualPrompt         String?               @map("visual_prompt")
+  negativePrompt       String?               @map("negative_prompt")
+  actionDescription    String?               @map("action_description")
+  dialogueContent      String?               @map("dialogue_content")
+  soundFx              String?               @map("sound_fx")
+  assetBindings        Json?                 @map("asset_bindings")
+  controlnetSettings   Json?                 @map("controlnet_settings")
+  durationSec          Decimal?              @map("duration_sec")
+  assets               Asset[]               @relation("ShotAssets")
+  characterAppearances CharacterAppearance[] @relation("ShotCharacterAppearances")
+  engineTasks          EngineTask[]          @relation("ShotEngineTask")
+  publishingReviews    PublishingReview[]    @relation("ShotPublishingReview")
+  qualityScores        QualityScore[]        @relation("ShotQualityScore")
+  safetyResults        SafetyResult[]        @relation("ShotSafetyResult")
+  jobs                 ShotJob[]             @relation("ShotJobs")
+  shotPlanning         ShotPlanning?         @relation("ShotPlanning")
+  organization         Organization?         @relation("OrganizationShots", fields: [organizationId], references: [id])
+  scene                Scene                 @relation("SceneShots", fields: [sceneId], references: [id], onDelete: Cascade)
 
   @@index([sceneId, index])
-  @@index([shotType, cameraMovement, cameraAngle, lightingPreset], name: "idx_shots_director_controls")
+  @@index([shotType, cameraMovement, cameraAngle, lightingPreset], map: "idx_shots_director_controls")
   @@map("shots")
 }
 
 model CharacterIdentityAnchor {
   id             String   @id @default(uuid())
   characterId    String
-  status         String   @default("PROCESSING") // READY, FAILED, PROCESSING
+  status         String   @default("PROCESSING")
   provider       String?
   seed           Int?
   viewKeyFront   String?
@@ -329,13 +312,12 @@ model EngineTask {
 }
 
 model Engine {
-  id          String @id @default(uuid())
-  engineKey   String @unique
-  adapterName String
-  adapterType String
-  mode        String @default("local") // local, http, mock
-  config      Json
-
+  id             String             @id @default(uuid())
+  engineKey      String             @unique
+  adapterName    String
+  adapterType    String
+  mode           String             @default("local")
+  config         Json
   enabled        Boolean            @default(true)
   version        String?
   defaultVersion String?
@@ -520,41 +502,39 @@ model WorkerJob {
 }
 
 model ShotJob {
-  id             String    @id @default(uuid())
-  organizationId String
-  projectId      String
-  episodeId      String?
-  sceneId        String?
-  shotId         String?
-  taskId         String?
-  workerId       String?
-  status         JobStatus @default(PENDING)
-  type           JobType
-  priority       Int       @default(0)
-  maxRetry       Int       @default(3)
-  retryCount     Int       @default(0)
-  attempts       Int       @default(0)
-  leaseUntil     DateTime? @map("lease_until")
-  lockedBy       String?   @map("locked_by")
-  payload        Json?
-  engineConfig   Json?
-  lastError      String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  traceId        String?
-  isVerification Boolean   @default(false) @map("is_verification")
-  dedupeKey      String?   @unique @map("dedupe_key")
-
-  // REAL ENGINE PROVENANCE (Week 2 Enhancement)
-  outputSha256   String? @map("output_sha256")
-  engineProvider String? @map("engine_provider")
-  engineRunId    String? @map("engine_run_id")
-  engineModel    String? @map("engine_model")
-
+  id                String            @id @default(uuid())
+  organizationId    String
+  projectId         String
+  episodeId         String?
+  sceneId           String?
+  shotId            String?
+  taskId            String?
+  workerId          String?
+  status            JobStatus         @default(PENDING)
+  type              JobType
+  priority          Int               @default(0)
+  maxRetry          Int               @default(3)
+  retryCount        Int               @default(0)
+  attempts          Int               @default(0)
+  leaseUntil        DateTime?         @map("lease_until")
+  lockedBy          String?           @map("locked_by")
+  payload           Json?
+  engineConfig      Json?
+  lastError         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  traceId           String?
+  isVerification    Boolean           @default(false) @map("is_verification")
+  dedupeKey         String?           @unique @map("dedupe_key")
+  outputSha256      String?           @map("output_sha256")
+  engineProvider    String?           @map("engine_provider")
+  engineRunId       String?           @map("engine_run_id")
+  engineModel       String?           @map("engine_model")
   result            Json?
   securityProcessed Boolean           @default(false)
   generatedAsset    Asset[]           @relation("JobGeneratedAsset")
   engineBinding     JobEngineBinding? @relation("JobEngineBinding")
+  artifacts         ShotJobArtifact[] @relation("ShotJobArtifacts")
   episode           Episode?          @relation("EpisodeShotJobs", fields: [episodeId], references: [id], onDelete: Cascade)
   organization      Organization      @relation("OrganizationShotJobs", fields: [organizationId], references: [id])
   project           Project           @relation("ProjectShotJobs", fields: [projectId], references: [id], onDelete: Cascade)
@@ -562,7 +542,6 @@ model ShotJob {
   shot              Shot?             @relation("ShotJobs", fields: [shotId], references: [id], onDelete: Cascade)
   task              Task?             @relation("TaskJobs", fields: [taskId], references: [id], onDelete: Cascade)
   worker            WorkerNode?       @relation("WorkerNodeShotJobs", fields: [workerId], references: [id])
-  artifacts         ShotJobArtifact[] @relation("ShotJobArtifacts")
 
   @@map("shot_jobs")
 }
@@ -570,13 +549,12 @@ model ShotJob {
 model ShotJobArtifact {
   id        String   @id @default(uuid())
   jobId     String   @map("job_id")
-  kind      String // SHOT_RENDER_OUTPUT_MP4, PROVENANCE_JSON, etc.
-  path      String // Relative or absolute path to artifact
-  sha256    String // SHA256 checksum
+  kind      String
+  path      String
+  sha256    String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  job ShotJob @relation("ShotJobArtifacts", fields: [jobId], references: [id], onDelete: Cascade)
+  job       ShotJob  @relation("ShotJobArtifacts", fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, kind])
   @@index([jobId])
@@ -600,8 +578,8 @@ model WorkerNode {
   updatedAt       DateTime         @updatedAt
   tasks           Task[]           @relation("TaskWorker")
   shotJobs        ShotJob[]        @relation("WorkerNodeShotJobs")
-  jobs            WorkerJob[]      @relation("WorkerNodeJobs")
   workerHeartbeat WorkerHeartbeat?
+  jobs            WorkerJob[]      @relation("WorkerNodeJobs")
 
   @@index([status])
   @@map("worker_nodes")
@@ -648,7 +626,7 @@ model TemplatePreset {
 }
 
 model QualityScore {
-  id                 String @id @default(uuid())
+  id                 String   @id @default(uuid())
   shotId             String
   visualDensityScore Float?
   consistencyScore   Float?
@@ -656,17 +634,13 @@ model QualityScore {
   clarityScore       Float?
   aestheticScore     Float?
   overallScore       Float
-
-  // P13-3: 质量信号与返工逻辑
-  attempt     Int     @default(1)
-  verdict     String  @default("PASS") // PASS, FAIL
-  signals     Json?   @default("{}")
-  reworkJobId String? @map("rework_job_id")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  shot Shot @relation("ShotQualityScore", fields: [shotId], references: [id], onDelete: Cascade)
+  attempt            Int      @default(1)
+  verdict            String   @default("PASS")
+  signals            Json?    @default("{}")
+  reworkJobId        String?  @map("rework_job_id")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  shot               Shot     @relation("ShotQualityScore", fields: [shotId], references: [id], onDelete: Cascade)
 
   @@index([shotId])
   @@map("quality_scores")
@@ -706,8 +680,6 @@ model BillingEvent {
   @@index([orgId, createdAt])
   @@map("billing_events")
 }
-
-// NovelParseResult updated further down
 
 model CostCenter {
   id             String       @id @default(uuid())
@@ -774,38 +746,29 @@ model OrganizationMember {
   @@map("organization_members")
 }
 
-// V3.0 Spec: novels
 model Novel {
-  id             String  @id @default(uuid())
-  projectId      String  @unique @map("project_id")
-  title          String  @map("title") // V3.0: title
-  author         String? @map("author") // V3.0: author
-  organizationId String? @map("organization_id")
+  id             String             @id @default(uuid())
+  projectId      String             @unique @map("project_id")
+  title          String             @map("title")
+  author         String?            @map("author")
+  organizationId String?            @map("organization_id")
+  rawFileUrl     String?            @map("raw_file_url")
+  totalTokens    BigInt?            @default(0) @map("total_tokens")
+  status         String?            @default("UPLOADING")
+  metadata       Json?
+  fileName       String?            @map("file_name")
+  fileSize       Int?               @map("file_size")
+  fileType       String?            @map("file_type")
+  characterCount Int?               @map("character_count")
+  chapterCount   Int?               @map("chapter_count")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  analysisJobs   NovelAnalysisJob[] @relation("NovelSourceAnalysisJobs")
+  chapters       NovelChapter[]     @relation("NovelSourceChapters")
+  volumes        NovelVolume[]      @relation("NovelSourceVolumes")
+  project        Project            @relation("ProjectNovelSources", fields: [projectId], references: [id], onDelete: Cascade)
 
-  // V3.0: raw_file_url
-  rawFileUrl String? @map("raw_file_url")
-
-  // V3.0 New Fields
-  totalTokens BigInt? @default(0) @map("total_tokens")
-  status      String? @default("UPLOADING") // UPLOADING, PARSING, PARSED, FAILED
-  metadata    Json?
-
-  // Legacy/Internal mappings (preserve for now or consolidate)
-  fileName       String? @map("file_name")
-  fileSize       Int?    @map("file_size")
-  fileType       String? @map("file_type")
-  characterCount Int?    @map("character_count")
-  chapterCount   Int?    @map("chapter_count")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  analysisJobs NovelAnalysisJob[] @relation("NovelSourceAnalysisJobs")
-  chapters     NovelChapter[]     @relation("NovelSourceChapters")
-  volumes      NovelVolume[]      @relation("NovelSourceVolumes")
-  project      Project            @relation("ProjectNovelSources", fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@index([projectId], name: "idx_novels_project")
+  @@index([projectId], map: "idx_novels_project")
   @@map("novels")
 }
 
@@ -960,44 +923,39 @@ model Character {
 }
 
 model NovelVolume {
-  id            String   @id @default(uuid())
-  projectId     String   @map("project_id")
-  novelSourceId String   @map("novel_source_id")
+  id            String         @id @default(uuid())
+  projectId     String         @map("project_id")
+  novelSourceId String         @map("novel_source_id")
   index         Int
   title         String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  project     Project        @relation("ProjectNovelVolumes", fields: [projectId], references: [id], onDelete: Cascade)
-  novelSource Novel          @relation("NovelSourceVolumes", fields: [novelSourceId], references: [id], onDelete: Cascade)
-  chapters    NovelChapter[] @relation("VolumeChapters")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  chapters      NovelChapter[] @relation("VolumeChapters")
+  novelSource   Novel          @relation("NovelSourceVolumes", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  project       Project        @relation("ProjectNovelVolumes", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, index])
   @@map("novel_volumes")
 }
 
 model NovelChapter {
-  id                 String   @id @default(uuid())
-  volumeId           String   @map("volume_id")
-  novelSourceId      String   @map("novel_source_id")
+  id                 String       @id @default(uuid())
+  volumeId           String       @map("volume_id")
+  novelSourceId      String       @map("novel_source_id")
   index              Int
   title              String?
-  rawContent         String?  @map("raw_content") @db.Text // V3.0: raw_content
-  summary            String?  @db.Text
-  isSystemControlled Boolean  @default(false) @map("is_system_controlled")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  // V3.0 增量对齐 P0-2: 向量检索能力
-  // summaryVector      Unsupported("vector")? @map("summary_vector")
-  visualDensityScore Decimal? @map("visual_density_score")
-  visualDensityMeta  Json?    @map("visual_density_meta")
-
-  volume      NovelVolume  @relation("VolumeChapters", fields: [volumeId], references: [id], onDelete: Cascade)
-  novelSource Novel        @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
-  scenes      Scene[]      @relation("ChapterNovelScenes")
-  episode     Episode?     @relation("ChapterEpisode")
-  sceneDrafts SceneDraft[] @relation("ChapterSceneDrafts")
+  rawContent         String?      @map("raw_content")
+  summary            String?
+  isSystemControlled Boolean      @default(false) @map("is_system_controlled")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  visualDensityScore Decimal?     @map("visual_density_score")
+  visualDensityMeta  Json?        @map("visual_density_meta")
+  episode            Episode?     @relation("ChapterEpisode")
+  novelSource        Novel        @relation("NovelSourceChapters", fields: [novelSourceId], references: [id], onDelete: Cascade)
+  volume             NovelVolume  @relation("VolumeChapters", fields: [volumeId], references: [id], onDelete: Cascade)
+  sceneDrafts        SceneDraft[] @relation("ChapterSceneDrafts")
+  scenes             Scene[]      @relation("ChapterNovelScenes")
 
   @@unique([volumeId, index])
   @@map("novel_chapters")
@@ -1028,19 +986,18 @@ model MemoryLongTerm {
 }
 
 model NovelParseResult {
-  id             String   @id @default(uuid())
-  projectId      String   @unique @map("project_id")
-  organizationId String   @map("organization_id")
-  idempotencyKey String   @unique @map("idempotency_key")
-  status         String   @default("PENDING")
-  parsingQuality Float?   @map("parsing_quality")
-  modelVersion   String?  @map("model_version")
-  rawOutput      Json?    @map("raw_output")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  project      Project      @relation("ProjectNovelParseResults", fields: [projectId], references: [id], onDelete: Cascade)
-  organization Organization @relation("OrganizationNovelParseResults", fields: [organizationId], references: [id])
+  id             String       @id @default(uuid())
+  projectId      String       @unique @map("project_id")
+  organizationId String       @map("organization_id")
+  idempotencyKey String       @unique @map("idempotency_key")
+  status         String       @default("PENDING")
+  parsingQuality Float?       @map("parsing_quality")
+  modelVersion   String?      @map("model_version")
+  rawOutput      Json?        @map("raw_output")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  organization   Organization @relation("OrganizationNovelParseResults", fields: [organizationId], references: [id])
+  project        Project      @relation("ProjectNovelParseResults", fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@map("novel_parse_results")
@@ -1126,32 +1083,25 @@ model Model {
 }
 
 model Asset {
-  id             String         @id @default(uuid())
+  id             String               @id @default(uuid())
   projectId      String
-  createdAt      DateTime       @default(now())
+  createdAt      DateTime             @default(now())
   checksum       String?
   createdByJobId String?
   ownerId        String
   ownerType      AssetOwnerType
-  status         AssetStatus    @default(GENERATED)
+  status         AssetStatus          @default(GENERATED)
   storageKey     String
   type           AssetType
   shotId         String?
-  shot           Shot?          @relation("ShotAssets", fields: [shotId], references: [id], onDelete: Cascade)
-  job            ShotJob?       @relation("JobGeneratedAsset", fields: [createdByJobId], references: [id])
-  project        Project        @relation("ProjectAssets", fields: [projectId], references: [id], onDelete: Cascade)
-
-  // Security Fields (DBSpec V1.1)
-  hlsPlaylistUrl String? @map("hls_playlist_url")
-  signedUrl      String? @map("signed_url")
-  watermarkMode  String? @map("watermark_mode")
-  fingerprintId  String? @map("fingerprint_id")
-
-  // Commercial Delivery Fields (Phase-B Alias for clarity if needed, but we keep existing mappings)
-  // The user requested: signed_url, hls_playlist_url, watermark_mode, fingerprint_id
-  // These are already mapped to the @map fields above.
-
+  hlsPlaylistUrl String?              @map("hls_playlist_url")
+  signedUrl      String?              @map("signed_url")
+  watermarkMode  String?              @map("watermark_mode")
+  fingerprintId  String?              @map("fingerprint_id")
+  job            ShotJob?             @relation("JobGeneratedAsset", fields: [createdByJobId], references: [id])
   fingerprint    SecurityFingerprint? @relation("AssetFingerprint", fields: [fingerprintId], references: [id])
+  project        Project              @relation("ProjectAssets", fields: [projectId], references: [id], onDelete: Cascade)
+  shot           Shot?                @relation("ShotAssets", fields: [shotId], references: [id], onDelete: Cascade)
   publishedVideo PublishedVideo?      @relation("AssetPublishedVideo")
 
   @@unique([ownerType, ownerId, type])
@@ -1216,6 +1166,189 @@ model CostLedger {
   @@index([jobId, attempt])
   @@index([createdAt])
   @@map("cost_ledgers")
+}
+
+model PublishedVideo {
+  id         String   @id @default(uuid())
+  projectId  String
+  episodeId  String
+  assetId    String   @unique
+  storageKey String
+  checksum   String
+  status     String   @default("PUBLISHED")
+  metadata   Json?    @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  asset      Asset    @relation("AssetPublishedVideo", fields: [assetId], references: [id], onDelete: Cascade)
+  episode    Episode  @relation("EpisodePublishedVideos", fields: [episodeId], references: [id], onDelete: Cascade)
+  project    Project  @relation("ProjectPublishedVideos", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("published_videos")
+}
+
+model BillingOutbox {
+  id          String    @id @default(uuid())
+  dedupeKey   String    @unique
+  payload     Json
+  status      String    @default("PENDING")
+  attempts    Int       @default(0)
+  lastError   String?
+  nextRetryAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("BillingOutbox")
+}
+
+model IdentityAnchor {
+  id               String              @id @default(uuid())
+  projectId        String              @map("project_id")
+  characterId      String              @map("character_id")
+  referenceAssetId String              @map("reference_asset_id")
+  identityHash     String              @map("identity_hash")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+  identityScores   ShotIdentityScore[] @relation("AnchorIdentityScores")
+
+  @@unique([projectId, characterId, identityHash])
+  @@index([projectId, characterId])
+  @@index([referenceAssetId])
+  @@map("identity_anchors")
+}
+
+model ShotIdentityScore {
+  id                String         @id @default(uuid())
+  shotId            String         @map("shot_id")
+  characterId       String         @map("character_id")
+  referenceAnchorId String         @map("reference_anchor_id")
+  targetAssetId     String         @map("target_asset_id")
+  identityScore     Float          @map("identity_score")
+  verdict           String
+  details           Json           @default("{}")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  identityAnchor    IdentityAnchor @relation("AnchorIdentityScores", fields: [referenceAnchorId], references: [id], onDelete: Cascade)
+
+  @@index([shotId])
+  @@index([referenceAnchorId])
+  @@index([characterId])
+  @@index([createdAt])
+  @@map("shot_identity_scores")
+}
+
+model ShotReworkDedupe {
+  id        String   @id @default(uuid())
+  reworkKey String   @unique @map("rework_key")
+  traceId   String?  @map("trace_id")
+  shotId    String   @map("shot_id")
+  attempt   Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("shot_rework_dedupe")
+}
+
+model CharacterMemory {
+  id          String   @id @default(uuid())
+  characterId String   @map("character_id")
+  sceneId     String   @map("scene_id")
+  memoryType  String   @map("memory_type")
+  content     String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([characterId, createdAt])
+  @@index([sceneId, createdAt])
+  @@map("character_memories")
+}
+
+model SceneMemory {
+  id         String   @id @default(uuid())
+  sceneId    String   @map("scene_id")
+  memoryType String   @map("memory_type")
+  content    String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([sceneId, createdAt])
+  @@map("scene_memories")
+}
+
+model TranslationCache {
+  id             String   @id @default(uuid())
+  organizationId String
+  projectId      String
+  provider       String
+  sourceLang     String
+  targetLang     String
+  inputHash      String
+  outputText     String
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, targetLang, inputHash, projectId], name: "provider_target_hash_project")
+  @@index([organizationId])
+  @@map("translation_cache")
+}
+
+model BillingLedger {
+  id          String   @id @default(uuid())
+  tenantId    String
+  traceId     String
+  itemType    String
+  itemId      String
+  chargeCode  String
+  amount      Int
+  currency    String   @default("CREDIT")
+  status      String
+  evidenceRef String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, traceId, itemType, itemId, chargeCode])
+  @@index([traceId])
+  @@index([status])
+  @@map("billing_ledgers")
+}
+
+model CharacterProfile {
+  id                  String                @id @default(cuid())
+  projectId           String
+  name                String
+  nameEn              String?
+  role                String?
+  description         String?
+  baseImageUrl        String?
+  basePrompt          String?
+  attributes          Json
+  timeline            Json?
+  loraModelId         String?
+  loraTrainingStatus  String?
+  loraLastTrained     DateTime?
+  totalShots          Int                   @default(0)
+  avgConsistencyScore Float?                @default(0)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  appearances         CharacterAppearance[] @relation("CharacterAppearances")
+  project             Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@map("character_profiles")
+}
+
+model CharacterAppearance {
+  id               String           @id @default(cuid())
+  characterId      String
+  shotId           String
+  renderedImageUrl String
+  promptUsed       String?
+  consistencyScore Float?
+  evaluatedAt      DateTime?
+  usedForTraining  Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  character        CharacterProfile @relation("CharacterAppearances", fields: [characterId], references: [id], onDelete: Cascade)
+  shot             Shot             @relation("ShotCharacterAppearances", fields: [shotId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, shotId])
+  @@index([characterId])
+  @@index([shotId])
+  @@map("character_appearances")
 }
 
 enum UserType {
@@ -1545,146 +1678,4 @@ enum AssetOwnerType {
   SCENE
   SHOT
   CHARACTER
-}
-
-model PublishedVideo {
-  id         String   @id @default(uuid())
-  projectId  String
-  episodeId  String
-  assetId    String   @unique
-  storageKey String
-  checksum   String
-  status     String   @default("PUBLISHED") // PUBLISHED, ARCHIVED
-  metadata   Json?    @default("{}")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  project Project @relation("ProjectPublishedVideos", fields: [projectId], references: [id], onDelete: Cascade)
-  episode Episode @relation("EpisodePublishedVideos", fields: [episodeId], references: [id], onDelete: Cascade)
-  asset   Asset   @relation("AssetPublishedVideo", fields: [assetId], references: [id], onDelete: Cascade)
-
-  @@map("published_videos")
-}
-
-model BillingOutbox {
-  id          String    @id @default(uuid())
-  dedupeKey   String    @unique
-  payload     Json
-  status      String    @default("PENDING") // PENDING, SENT, FAILED
-  attempts    Int       @default(0)
-  lastError   String?
-  nextRetryAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@map("BillingOutbox")
-}
-
-// P13-0 (CE23) Identity Consistency Models
-model IdentityAnchor {
-  id               String   @id @default(uuid())
-  projectId        String   @map("project_id")
-  characterId      String   @map("character_id")
-  referenceAssetId String   @map("reference_asset_id")
-  identityHash     String   @map("identity_hash")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-
-  identityScores ShotIdentityScore[] @relation("AnchorIdentityScores")
-
-  @@unique([projectId, characterId, identityHash])
-  @@index([projectId, characterId])
-  @@index([referenceAssetId])
-  @@map("identity_anchors")
-}
-
-model ShotIdentityScore {
-  id                String   @id @default(uuid())
-  shotId            String   @map("shot_id")
-  characterId       String   @map("character_id")
-  referenceAnchorId String   @map("reference_anchor_id")
-  targetAssetId     String   @map("target_asset_id")
-  identityScore     Float    @map("identity_score")
-  verdict           String // PASS, FAIL
-  details           Json     @default("{}")
-  createdAt         DateTime @default(now()) @map("created_at")
-
-  identityAnchor IdentityAnchor @relation("AnchorIdentityScores", fields: [referenceAnchorId], references: [id], onDelete: Cascade)
-
-  @@index([shotId])
-  @@index([referenceAnchorId])
-  @@index([characterId])
-  @@index([createdAt])
-  @@map("shot_identity_scores")
-}
-
-model ShotReworkDedupe {
-  id        String   @id @default(uuid())
-  reworkKey String   @unique @map("rework_key")
-  traceId   String?  @map("trace_id")
-  shotId    String   @map("shot_id")
-  attempt   Int
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@map("shot_rework_dedupe")
-}
-
-model CharacterMemory {
-  id          String   @id @default(uuid())
-  characterId String   @map("character_id")
-  sceneId     String   @map("scene_id")
-  memoryType  String   @map("memory_type")
-  content     String   @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@index([characterId, createdAt])
-  @@index([sceneId, createdAt])
-  @@map("character_memories")
-}
-
-model SceneMemory {
-  id         String   @id @default(uuid())
-  sceneId    String   @map("scene_id")
-  memoryType String   @map("memory_type")
-  content    String   @db.Text
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  @@index([sceneId, createdAt])
-  @@map("scene_memories")
-}
-
-model TranslationCache {
-  id             String   @id @default(uuid())
-  organizationId String
-  projectId      String
-  provider       String
-  sourceLang     String
-  targetLang     String
-  inputHash      String
-  outputText     String   @db.Text
-  createdAt      DateTime @default(now())
-
-  @@unique([provider, targetLang, inputHash, projectId], name: "provider_target_hash_project")
-  @@index([organizationId])
-  @@map("translation_cache")
-}
-
-model BillingLedger {
-  id          String   @id @default(uuid())
-  tenantId    String
-  traceId     String
-  itemType    String // JOB, STORAGE, API
-  itemId      String // JobId, AssetId
-  chargeCode  String // SKU
-  amount      Int
-  currency    String   @default("CREDIT")
-  status      String // PENDING, POSTED, REVERSED, FAILED
-  evidenceRef String? // Pointer to audit log or asset path
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([tenantId, traceId, itemType, itemId, chargeCode])
-  @@index([traceId])
-  @@index([status])
-  @@map("billing_ledgers")
 }

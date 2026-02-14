@@ -12,6 +12,11 @@ import { CE06EngineSelector } from '@scu/engines-ce06';
 import { CE06Input, CE06Output } from '@scu/engines-ce06';
 import { ApiClient } from './api-client';
 import * as util from 'util';
+import * as fs from 'fs';
+import { Readable } from 'stream';
+import { parseNovelStream } from './processors/stream-parser';
+import { ChunkProcessor, ChunkProgress, createEmptyProgress, serializeProgress, deserializeProgress, ChunkProgressDB } from './processors/chunk-processor';
+import { LLMBatchProcessor } from './processors/llm-batch-processor';
 import { hydrateShotWithDirectorControls } from './v3/utils/shot_field_extractor';
 
 /**
@@ -921,8 +926,8 @@ export async function applyAnalyzedStructureToDatabase(
   const result =
     prisma instanceof PrismaClient
       ? await (prisma as any).$transaction(executeInTransaction, {
-          timeout: 5 * 60 * 1000, // 5 minutes
-        })
+        timeout: 5 * 60 * 1000, // 5 minutes
+      })
       : await executeInTransaction(prisma);
 
   return result;
@@ -1145,6 +1150,168 @@ export function mapCE06OutputToProjectStructure(
 }
 
 /**
+ * B1: Chunk Processing Helper - processWithChunkMode
+ */
+
+/**
+ * B1.2: 保存 Checkpoint 到数据库
+ */
+async function saveCheckpoint(
+  prisma: PrismaClient,
+  jobId: string,
+  progress: ChunkProgress,
+  llmProvider: string,
+  llmModel: string
+): Promise<void> {
+  const progressDB = serializeProgress(progress, llmProvider, llmModel);
+
+  await prisma.shotJob.update({
+    where: { id: jobId },
+    data: {
+      result: {
+        chunkProgress: progressDB,
+      } as any,  // Store progress in result field
+    },
+  });
+}
+
+async function processWithChunkMode(
+  payload: any,
+  prisma: PrismaClient,
+  projectId: string,
+  jobId: string,
+  llmApiKey: string
+): Promise<AnalyzedProjectStructure> {
+  const contentStream = await getNovelContentStream(payload, prisma, projectId);
+
+  const chunkProcessor = new ChunkProcessor({ minSize: 2000, maxSize: 5000, targetSize: 3000 });
+  logStructured('info', { action: 'CHUNK_EXTRACTION_START', jobId, projectId });
+
+  const chunks = await chunkProcessor.extractChunks(contentStream);
+  logStructured('info', { action: 'CHUNK_EXTRACTION_COMPLETE', jobId, projectId, totalChunks: chunks.length });
+
+  // B1.2: 加载已有进度（断点续传）
+  const existingJob = await prisma.shotJob.findUnique({
+    where: { id: jobId },
+    select: { result: true },
+  });
+
+  const savedProgressData = (existingJob?.result as any)?.chunkProgress as ChunkProgressDB | undefined;
+  let progress: ChunkProgress;
+
+  if (savedProgressData && savedProgressData.completedChunkIds && savedProgressData.completedChunkIds.length > 0) {
+    progress = deserializeProgress(savedProgressData);
+    logStructured('info', {
+      action: 'CHUNK_RESUME_DETECTED',
+      jobId,
+      savedCompleted: progress.completedChunkIds.size,
+      savedFailed: progress.failedChunkIds.size,
+      totalChunks: chunks.length,
+    });
+  } else {
+    progress = createEmptyProgress(chunks.length);
+  }
+
+  const llmProvider = process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai';
+  const llmModel = llmProvider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : 'gpt-4-turbo-preview';
+
+  const llmProcessor = new LLMBatchProcessor({
+    provider: llmProvider as any,
+    model: llmModel,
+    apiKey: llmApiKey,
+    maxConcurrentRequests: 5,
+    maxRetries: 3,
+    retryDelay: 1000,
+  });
+
+  logStructured('info', { action: 'LLM_BATCH_PROCESSING_START', jobId, projectId, provider: llmProvider, model: llmModel, totalChunks: chunks.length });
+
+  // B1.2: processChunks 的第二个参数是 existingProgress
+  const processedChunks = await llmProcessor.processChunks(
+    chunks,
+    progress,  // 传递已有进度
+    async (currentProgress: ChunkProgress) => {  // onProgress 回调
+      // 每处理 10 个 Chunk 保存一次进度
+      if (currentProgress.processedChunks % 10 === 0) {
+        await saveCheckpoint(prisma, jobId, currentProgress, llmProvider, llmModel);
+        logStructured('info', {
+          action: 'CHECKPOINT_SAVED',
+          jobId,
+          processed: currentProgress.processedChunks,
+          total: currentProgress.totalChunks,
+          failed: currentProgress.failedChunks,
+        });
+      }
+    }
+  );
+
+  // 最终保存
+  await saveCheckpoint(prisma, jobId, progress, llmProvider, llmModel);
+  logStructured('info', { action: 'LLM_BATCH_PROCESSING_COMPLETE', jobId, projectId, totalProcessed: processedChunks.length });
+
+  return mergeChunksToStructure(processedChunks, chunks, projectId);
+}
+
+/**
+ * B1: Chunk Processing Helper - mergeChunksToStructure
+ */
+function mergeChunksToStructure(
+  processedChunks: Array<{ chunkId: string; structuredOutput: any }>,
+  originalChunks: Array<{ metadata: any }>,
+  projectId: string
+): AnalyzedProjectStructure {
+  const seasons: AnalyzedSeason[] = [];
+  let currentSeason: AnalyzedSeason | null = null;
+  let currentEpisode: AnalyzedEpisode | null = null;
+  let seasonIndex = 0, episodeIndex = 0, sceneIndex = 0, shotIndex = 0;
+
+  for (let i = 0; i < processedChunks.length; i++) {
+    const { structuredOutput } = processedChunks[i];
+    const { metadata } = originalChunks[i];
+
+    if (metadata.isChapterBoundary || !currentEpisode) {
+      episodeIndex = metadata.chapterIndex || episodeIndex + 1;
+      currentEpisode = { index: episodeIndex, title: metadata.chapterTitle || `第 ${episodeIndex} 章`, summary: '', scenes: [] };
+
+      if (!currentSeason) {
+        seasonIndex = 1;
+        currentSeason = { index: seasonIndex, title: `第 ${seasonIndex} 季`, summary: '', episodes: [] };
+        seasons.push(currentSeason);
+      }
+      currentSeason.episodes.push(currentEpisode);
+    }
+
+    if (structuredOutput?.scenes) {
+      for (const scene of structuredOutput.scenes) {
+        sceneIndex++;
+        currentEpisode!.scenes.push({
+          index: sceneIndex,
+          title: scene.title || `场景 ${sceneIndex}`,
+          summary: scene.summary || '',
+          shots: scene.shots?.map((shot: any) => ({
+            index: ++shotIndex,
+            title: shot.title || `镜头 ${shotIndex}`,
+            summary: shot.summary || '',
+            text: shot.text || '',
+          })) || [],
+        });
+      }
+    }
+  }
+
+  let episodesCount = 0, scenesCount = 0, shotsCount = 0;
+  for (const s of seasons) {
+    episodesCount += s.episodes.length;
+    for (const e of s.episodes) {
+      scenesCount += e.scenes.length;
+      for (const sc of e.scenes) shotsCount += sc.shots.length;
+    }
+  }
+
+  return { projectId, seasons, stats: { seasonsCount: seasons.length, episodesCount, scenesCount, shotsCount } };
+}
+
+/**
  * Worker 侧处理 NOVEL_ANALYSIS Job 的主入口。
  * 假设 Job.payload 里至少有 projectId 与 novelSourceId（二选一）。
  */
@@ -1170,80 +1337,63 @@ export async function processNovelAnalysisJob(
       throw new Error('NOVEL_ANALYZE_CHAPTER Job 缺少 projectId');
     }
 
-    // 找到原始小说文本
-    let novelSource: any | null = null;
-    let sourceText = payload.text || payload.sourceText;
-
-    if (!sourceText) {
-      if (payload.novelSourceId) {
-        novelSource = await prisma.novel.findUnique({
-          where: { id: payload.novelSourceId },
-        });
-        if (novelSource) {
-          const chapters = await prisma.novelChapter.findMany({
-            where: { novelSourceId: novelSource.id },
-            orderBy: { index: 'asc' },
-          });
-          sourceText = chapters.map((c) => c.rawContent || '').join('\n');
-        }
-      } else if (payload.chapterId) {
-        const chapter = await prisma.novelChapter.findUnique({
-          where: { id: payload.chapterId },
-        });
-        if (chapter) sourceText = chapter.rawContent || '';
-      } else {
-        // 没指定则取该项目最新的一条
-        novelSource = await prisma.novel.findFirst({
-          where: { projectId },
-          orderBy: { createdAt: 'desc' as const },
-        });
-        if (novelSource) {
-          const chapters = await prisma.novelChapter.findMany({
-            where: { novelSourceId: novelSource.id },
-            orderBy: { index: 'asc' },
-          });
-          sourceText = chapters.map((c) => c.rawContent || '').join('\n');
-        }
-      }
-    }
-
-    // RC1: Fail Fast Check (Deferred)
-    // Now we check if we have text from ANY source
-    if (!sourceText || typeof sourceText !== 'string' || sourceText.trim().length === 0) {
-      interface FailFastError extends Error {
-        blockingReason?: string;
-        nextAction?: string;
-      }
-      const error = new Error('Missing source text') as FailFastError;
-      error.blockingReason = 'NO_SOURCE_TEXT';
-      error.nextAction = 'PROVIDE_TEXT';
-      throw error;
-    }
-
-    // If novelSource was not explicitly found, and sourceText came from payload,
-    // we might still need a novelSource for logging or other purposes.
-    // However, the primary goal is to get rawText.
-    // If sourceText was resolved from payload.text/sourceText or chapter.rawText,
-    // novelSource might still be null, which is fine for rawText.
-    // The original check `if (!novelSource || !novelSource.rawText)` is now redundant
-    // because `sourceText` is guaranteed to be present if we reach here.
-    // We can directly use `sourceText` as `rawText`.
-
-    const rawText: string = sourceText as string;
-
-    // 记录解析开始日志
-    logStructured('info', {
-      action: 'NOVEL_ANALYSIS_START',
-      jobId,
-      projectId,
-      novelSourceId: novelSource?.id,
-      rawTextLength: rawText.length,
-    });
-
     const parseStartTime = Date.now();
+    let structure: AnalyzedProjectStructure;
 
-    // 解析
-    const structure = basicTextSegmentation(rawText, projectId);
+    // B1: Chunk Processing Mode (启用 LLM 批处理)
+    const enableChunkProcessing = process.env.ENABLE_CHUNK_PROCESSING === '1';
+    const llmApiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY;
+
+    if (enableChunkProcessing && llmApiKey) {
+      logStructured('info', {
+        action: 'NOVEL_ANALYSIS_CHUNK_MODE_START',
+        jobId,
+        projectId,
+      });
+
+      try {
+        structure = await processWithChunkMode(
+          payload,
+          prisma,
+          projectId,
+          jobId,
+          llmApiKey
+        );
+      } catch (err: any) {
+        logStructured('error', {
+          action: 'CHUNK_MODE_ERROR',
+          error: err.message,
+        });
+        // Fallback to stream mode
+        logStructured('warn', {
+          action: 'CHUNK_MODE_FALLBACK_TO_STREAM',
+          jobId,
+        });
+        const contentStream = await getNovelContentStream(payload, prisma, projectId);
+        structure = await parseNovelStream(contentStream, projectId);
+      }
+    } else {
+      // S3-B Refactor: Stream-based Parsing (传统模式)
+      try {
+        const contentStream = await getNovelContentStream(payload, prisma, projectId);
+        logStructured('info', {
+          action: 'NOVEL_ANALYSIS_STREAM_START',
+          jobId,
+          projectId,
+        });
+        structure = await parseNovelStream(contentStream, projectId);
+      } catch (err: any) {
+        // Fallback or rethrow?
+        // If stream fails, checking if it was a "Missing source" error
+        if (err.blockingReason === 'NO_SOURCE_TEXT') throw err;
+
+        // If it's a real error, rethrow
+        logStructured('error', { action: 'STREAM_PARSE_ERROR', error: err.message });
+        throw err;
+      }
+    }
+
+    // const structure = basicTextSegmentation(rawText, projectId); 
 
     const parseDuration = Date.now() - parseStartTime;
 
@@ -1316,7 +1466,7 @@ export async function processNovelAnalysisJob(
       // 计费失败不阻塞主流程
       process.stderr.write(
         util.format(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message) +
-          '\n'
+        '\n'
       );
     }
 
@@ -1339,4 +1489,83 @@ export async function processNovelAnalysisJob(
 
     throw error;
   }
+}
+
+/**
+ * Helper to get a Readable stream from various payload sources
+ */
+async function getNovelContentStream(payload: any, prisma: PrismaClient, projectId: string): Promise<Readable> {
+  // 1. Check for local file path (Primary for Large Files)
+  if (payload.filePath && fs.existsSync(payload.filePath)) {
+    return fs.createReadStream(payload.filePath, { encoding: 'utf8' });
+  }
+
+  // 2. Check for raw text in payload (Small files)
+  const rawText = payload.text || payload.sourceText;
+  if (rawText) {
+    return Readable.from([rawText]);
+  }
+
+  // 3. Check for DB sources (Novel Source / Chapter)
+  // Avoid loading all into memory! yield chunks.
+  if (payload.novelSourceId) {
+    const novelSource = await prisma.novel.findUnique({ where: { id: payload.novelSourceId } });
+    if (novelSource) {
+      async function* generateChapters() {
+        let skip = 0;
+        const take = 10;
+        while (true) {
+          const chapters = await prisma.novelChapter.findMany({
+            where: { novelSourceId: novelSource!.id },
+            orderBy: { index: 'asc' },
+            skip,
+            take,
+            select: { rawContent: true }
+          });
+          if (chapters.length === 0) break;
+          for (const c of chapters) {
+            if (c.rawContent) yield c.rawContent + '\n';
+          }
+          skip += take;
+        }
+      }
+      return Readable.from(generateChapters());
+    }
+  }
+
+  // Fallback: Check project's latest novel
+  const latestNovel = await prisma.novel.findFirst({
+    where: { projectId },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (latestNovel) {
+    async function* generateChapters() {
+      let skip = 0;
+      const take = 10;
+      while (true) {
+        const chapters = await prisma.novelChapter.findMany({
+          where: { novelSourceId: latestNovel!.id },
+          orderBy: { index: 'asc' },
+          skip,
+          take,
+          select: { rawContent: true }
+        });
+        if (chapters.length === 0) break;
+        for (const c of chapters) {
+          if (c.rawContent) yield c.rawContent + '\n';
+        }
+        skip += take;
+      }
+    }
+    return Readable.from(generateChapters());
+  }
+
+  interface FailFastError extends Error {
+    blockingReason?: string;
+    nextAction?: string;
+  }
+  const error = new Error('Missing source text') as FailFastError;
+  error.blockingReason = 'NO_SOURCE_TEXT';
+  error.nextAction = 'PROVIDE_TEXT';
+  throw error;
 }

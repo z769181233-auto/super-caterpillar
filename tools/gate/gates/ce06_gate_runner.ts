@@ -39,15 +39,19 @@ async function request(
   }
 
   const signature = computeSignature(API_KEY, API_SECRET, nonce, timestamp, body);
+  const contentSha256 = crypto.createHash('sha256').update(body).digest('hex');
 
   const headers = {
     'Content-Type': 'application/json',
     'X-Api-Key': API_KEY,
     'X-Nonce': nonce,
     'X-Timestamp': timestamp,
+    'X-Content-SHA256': contentSha256,
     'X-Signature': signature,
+    'X-Hmac-Version': '1.1',
   };
 
+  console.log(`DEBUG: Sending request to ${url}, body summary: ${body.substring(0, 100)}...`);
   const response = await fetch(url, {
     method,
     headers,
@@ -66,12 +70,18 @@ async function request(
 async function run() {
   console.log('🚀 Starting CE06 Commercial Gate Runner...');
 
-  // 1. 获取测试项目
-  const project = await prisma.project.findFirst({ orderBy: { createdAt: 'desc' } });
-  if (!project) throw new Error('No project found');
+  // 1. 获取测试项目 (优先选择 org-gate 组织下的项目)
+  const project = await prisma.project.findFirst({
+    where: { organization: { id: 'org-gate' } },
+    orderBy: { createdAt: 'desc' }
+  }) || await prisma.project.findFirst({ orderBy: { createdAt: 'desc' } });
 
+  if (!project) throw new Error('No project found');
+  console.log(`[Gate] Using project: ${project.id} (Name: ${project.name}, Org: ${project.organizationId})`);
+
+  const rawText = '第1卷：测试卷\n第1章：测试章节\n[场面：咖啡厅]\n主角走了进来。';
   const payload = {
-    raw_text: '第1卷：测试卷\n第1章：测试章节\n[场面：咖啡厅]\n主角走了进来。',
+    rawText,
     projectId: project.id,
     context: {
       parser_config: { mode: 'fast' },
@@ -81,10 +91,8 @@ async function run() {
   // --- TEST 1: Normal Request ---
   console.log('Test 1: Sending normal CE06 request...');
   const res1 = await request('POST', '/api/story/parse', payload);
-  console.log(`Response: HTTP ${res1.status}, code: ${res1.body.code || 'N/A'}`);
-
   if (res1.status !== 201 && res1.status !== 200) {
-    console.error('FAIL: Initial request failed');
+    console.error('FAIL: Initial request failed. Body:', JSON.stringify(res1.body, null, 2));
     process.exit(1);
   }
   const jobId = res1.body.data.jobId;
@@ -106,7 +114,7 @@ async function run() {
   console.log(`\nTest 3: Waiting for Job ${jobId} to succeed...`);
   let finished = false;
   let attempts = 0;
-  while (!finished && attempts < 20) {
+  while (!finished && attempts < 60) {
     const job = await prisma.shotJob.findUnique({ where: { id: jobId } });
     if (job?.status === 'SUCCEEDED') {
       console.log('✅ Job SUCCEEDED!');
@@ -128,9 +136,9 @@ async function run() {
 
   // --- TEST 4: DB Integrity ---
   console.log('\nTest 4: Checking DB Integrity (Volumes/Chapters/Scenes)...');
-  const scenes = await prisma.novelScene.findMany({
+  const scenes = await prisma.scene.findMany({
     where: { chapter: { novelSource: { projectId: project.id } } },
-    orderBy: { index: 'asc' },
+    orderBy: { sceneIndex: 'asc' },
   });
   console.log(`Found ${scenes.length} scenes in DB.`);
   if (scenes.length === 0) {
@@ -140,7 +148,7 @@ async function run() {
 
   // Check index continuity
   for (let i = 0; i < scenes.length; i++) {
-    if (scenes[i].index !== i + 1) {
+    if (scenes[i].sceneIndex !== i + 1) {
       console.warn(`WARN: Scene index gap detected at ${i + 1}`);
     }
   }

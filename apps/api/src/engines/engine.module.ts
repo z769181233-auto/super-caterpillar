@@ -17,9 +17,9 @@ import { VideoMergeLocalAdapter } from './adapters/video-merge.local.adapter';
 import { ShotRenderLocalAdapter } from './adapters/shot-render.local.adapter';
 import { ShotRenderReplicateAdapter } from './adapters/shot-render.replicate.adapter';
 import { ShotRenderComfyuiAdapter } from './adapters/shot-render.comfyui.adapter';
+import { ShotRenderMpsAdapter } from './adapters/shot-render.mps.adapter';
 import { ShotRenderRouterAdapter } from './adapters/shot-render.router.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
-import { CE11MockAdapter } from './adapters/ce11.mock.adapter';
 import { MockEngineAdapter } from '../engine/adapters/mock-engine.adapter';
 import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
 import { TranslationCloudAdapter } from './adapters/translation.cloud.adapter';
@@ -35,23 +35,41 @@ import { CE08CharacterArcAdapter } from './adapters/ce08_character_arc.adapter';
 import { CE12ThemeExtractorAdapter } from './adapters/ce12_theme_extractor.adapter';
 import { CE13PacingAnalyzerAdapter } from './adapters/ce13_pacing_analyzer.adapter';
 import { Ce14NarrativeClimaxAdapter } from './adapters/ce14_narrative_climax.adapter';
+import { CE15MultiCharSceneAdapter } from './adapters/ce15_multi_char_scene.adapter';
+import { CE16StoryBranchCoordinatorAdapter } from './adapters/ce16_story_branch_coordinator.adapter';
+import { CE17CulturalConsistencyAdapter } from './adapters/ce17_cultural_consistency.adapter';
+import { CE18WorldLogicValidatorAdapter } from './adapters/ce18_world_logic_validator.adapter';
+import { CE19StorySummaryGenAdapter } from './adapters/ce19_story_summary_gen.adapter';
 import { VG01BackgroundRenderAdapter } from './adapters/vg01_background_render.adapter';
 import { VG02CharacterRenderAdapter } from './adapters/vg02_character_render.adapter';
 import { VG03LightingEngineAdapter } from './adapters/vg03_lighting_engine.adapter';
 import { VG04CameraPathAdapter } from './adapters/vg04_camera_path.adapter';
 import { VG05VFXCompositorAdapter } from './adapters/vg05_vfx_compositor.adapter';
+import { VG06SkeletalAnimationAdapter } from './adapters/vg06_skeletal_animation.adapter';
+import { VG07FacialExpressionAdapter } from './adapters/vg07_facial_expression.adapter';
+import { VG08AdvancedLightingAdapter } from './adapters/vg08_advanced_lighting.adapter';
+import { VG09HairPhysicsAdapter } from './adapters/vg09_hair_physics.adapter';
+import { VG10ClothDynamicsAdapter } from './adapters/vg10_cloth_dynamics.adapter';
+import { VG11ParticleEffectsAdapter } from './adapters/vg11_particle_effects.adapter';
+import { VG12DynamicLightingRigAdapter } from './adapters/vg12_dynamic_lighting_rig.adapter';
 import { AU01VoiceTTSAdapter } from './adapters/au01_voice_tts.adapter';
 import { AU02BGMGenAdapter } from './adapters/au02_bgm_gen.adapter';
 import { AU03SFXGenAdapter } from './adapters/au03_sfx_gen.adapter';
 import { AU04AudioMixAdapter } from './adapters/au04_audio_mix.adapter';
+import { AU05EnvironmentalReverbAdapter } from './adapters/au05_environmental_reverb.adapter';
+import { AU06SpatialAudioAdapter } from './adapters/au06_spatial_audio.adapter';
 import { PP01VideoStitchAdapter } from './adapters/pp01_video_stitch.adapter';
 import { PP02SubtitleOverlayAdapter } from './adapters/pp02_subtitle_overlay.adapter';
 import { PP03WatermarkAdapter } from './adapters/pp03_watermark.adapter';
 import { PP04HLSPackageAdapter } from './adapters/pp04_hls_package.adapter';
+import { PP05PosterGenAdapter } from './adapters/pp05_poster_gen.adapter';
+import { PP06CreditsGenAdapter } from './adapters/pp06_credits_gen.adapter';
 import { QC01VisualFidelityAdapter } from './adapters/qc01_visual_fidelity.adapter';
 import { QC02NarrativeConsistencyAdapter } from './adapters/qc02_narrative_consistency.adapter';
 import { QC03IdentityContinuityAdapter } from './adapters/qc03_identity_continuity.adapter';
 import { QC04ComplianceScanAdapter } from './adapters/qc04_compliance_scan.adapter';
+import { QC05TechnicalComplianceAdapter } from './adapters/qc05_technical_compliance.adapter';
+import { QC06FlickerDetectorAdapter } from './adapters/qc06_flicker_detector.adapter';
 import { CE23IdentityLocalAdapter } from './adapters/ce23-identity.local.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -69,9 +87,10 @@ import { EngineHubModule } from '../engine-hub/engine-hub.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 import { AuditModule } from '../audit/audit.module';
 import { CostModule } from '../cost/cost.module';
+import { CharacterModule } from '../character/character.module';
 
 @Module({
-  imports: [PrismaModule, EngineAdminModule, AuditLogModule, AuditModule, CostModule, forwardRef(() => EngineHubModule)], // 修复 DI 缺失
+  imports: [PrismaModule, EngineAdminModule, AuditLogModule, AuditModule, CostModule, CharacterModule, forwardRef(() => EngineHubModule)], // 修复 DI 缺失
   controllers: [EngineController], // S3-C.1: 注册公开的引擎控制器
   providers: [
     EngineRegistry,
@@ -88,9 +107,9 @@ import { CostModule } from '../cost/cost.module';
     ShotRenderLocalAdapter,
     ShotRenderReplicateAdapter,
     ShotRenderComfyuiAdapter, // Registered
+    ShotRenderMpsAdapter,
     ShotRenderRouterAdapter,
     HttpEngineAdapter,
-    CE11MockAdapter,
     MockEngineAdapter,
     CE11ComfyUIAdapter,
     G5DialogueBindingAdapter, // G5-P0-1: Dialogue Binding Engine
@@ -110,23 +129,41 @@ import { CostModule } from '../cost/cost.module';
     CE12ThemeExtractorAdapter,
     CE13PacingAnalyzerAdapter,
     Ce14NarrativeClimaxAdapter,
+    CE15MultiCharSceneAdapter,
+    CE16StoryBranchCoordinatorAdapter,
+    CE17CulturalConsistencyAdapter,
+    CE18WorldLogicValidatorAdapter,
+    CE19StorySummaryGenAdapter,
     VG01BackgroundRenderAdapter,
     VG02CharacterRenderAdapter,
     VG03LightingEngineAdapter,
     VG04CameraPathAdapter,
     VG05VFXCompositorAdapter,
+    VG06SkeletalAnimationAdapter,
+    VG07FacialExpressionAdapter,
+    VG08AdvancedLightingAdapter,
+    VG09HairPhysicsAdapter,
+    VG10ClothDynamicsAdapter,
+    VG11ParticleEffectsAdapter,
+    VG12DynamicLightingRigAdapter,
     AU01VoiceTTSAdapter,
     AU02BGMGenAdapter,
     AU03SFXGenAdapter,
     AU04AudioMixAdapter,
+    AU05EnvironmentalReverbAdapter,
+    AU06SpatialAudioAdapter,
     PP01VideoStitchAdapter,
     PP02SubtitleOverlayAdapter,
     PP03WatermarkAdapter,
     PP04HLSPackageAdapter,
+    PP05PosterGenAdapter,
+    PP06CreditsGenAdapter,
     QC01VisualFidelityAdapter,
     QC02NarrativeConsistencyAdapter,
     QC03IdentityContinuityAdapter,
     QC04ComplianceScanAdapter,
+    QC05TechnicalComplianceAdapter,
+    QC06FlickerDetectorAdapter,
     CE23IdentityLocalAdapter,
   ],
   exports: [
@@ -143,23 +180,37 @@ import { CostModule } from '../cost/cost.module';
     CE12ThemeExtractorAdapter,
     CE13PacingAnalyzerAdapter,
     Ce14NarrativeClimaxAdapter,
+    CE15MultiCharSceneAdapter,
+    CE16StoryBranchCoordinatorAdapter,
+    CE17CulturalConsistencyAdapter,
+    CE18WorldLogicValidatorAdapter,
     VG01BackgroundRenderAdapter,
     VG02CharacterRenderAdapter,
     VG03LightingEngineAdapter,
     VG04CameraPathAdapter,
     VG05VFXCompositorAdapter,
+    VG06SkeletalAnimationAdapter,
+    VG07FacialExpressionAdapter,
+    VG08AdvancedLightingAdapter,
+    VG09HairPhysicsAdapter,
+    VG10ClothDynamicsAdapter,
+    VG11ParticleEffectsAdapter,
     AU01VoiceTTSAdapter,
     AU02BGMGenAdapter,
     AU03SFXGenAdapter,
     AU04AudioMixAdapter,
+    AU05EnvironmentalReverbAdapter,
     PP01VideoStitchAdapter,
     PP02SubtitleOverlayAdapter,
     PP03WatermarkAdapter,
     PP04HLSPackageAdapter,
+    PP05PosterGenAdapter,
     QC01VisualFidelityAdapter,
     QC02NarrativeConsistencyAdapter,
     QC03IdentityContinuityAdapter,
     QC04ComplianceScanAdapter,
+    QC05TechnicalComplianceAdapter,
+    QC06FlickerDetectorAdapter,
   ], // S4-B: 导出策略服务 + HTTP 适配器与配置服务
 })
 export class EngineModule implements OnModuleInit {
@@ -184,12 +235,12 @@ export class EngineModule implements OnModuleInit {
     private readonly shotRenderReplicateAdapter: ShotRenderReplicateAdapter,
     @Inject(ShotRenderComfyuiAdapter)
     private readonly shotRenderComfyuiAdapter: ShotRenderComfyuiAdapter, // Injected
+    @Inject(ShotRenderMpsAdapter)
+    private readonly shotRenderMpsAdapter: ShotRenderMpsAdapter,
     @Inject(ShotRenderRouterAdapter)
     private readonly shotRenderRouterAdapter: ShotRenderRouterAdapter,
     @Inject(HttpEngineAdapter)
     private readonly httpAdapter: HttpEngineAdapter,
-    @Inject(CE11MockAdapter)
-    private readonly ce11MockAdapter: CE11MockAdapter,
     @Inject(MockEngineAdapter)
     private readonly mockEngineAdapter: MockEngineAdapter,
     @Inject(CE11ComfyUIAdapter)
@@ -226,6 +277,16 @@ export class EngineModule implements OnModuleInit {
     private readonly ce13Adapter: CE13PacingAnalyzerAdapter,
     @Inject(Ce14NarrativeClimaxAdapter)
     private readonly ce14Adapter: Ce14NarrativeClimaxAdapter,
+    @Inject(CE15MultiCharSceneAdapter)
+    private readonly ce15Adapter: CE15MultiCharSceneAdapter,
+    @Inject(CE16StoryBranchCoordinatorAdapter)
+    private readonly ce16Adapter: CE16StoryBranchCoordinatorAdapter,
+    @Inject(CE17CulturalConsistencyAdapter)
+    private readonly ce17Adapter: CE17CulturalConsistencyAdapter,
+    @Inject(CE18WorldLogicValidatorAdapter)
+    private readonly ce18Adapter: CE18WorldLogicValidatorAdapter,
+    @Inject(CE19StorySummaryGenAdapter)
+    private readonly ce19Adapter: CE19StorySummaryGenAdapter,
     @Inject(VG01BackgroundRenderAdapter)
     private readonly vg01Adapter: VG01BackgroundRenderAdapter,
     @Inject(VG02CharacterRenderAdapter)
@@ -236,6 +297,19 @@ export class EngineModule implements OnModuleInit {
     private readonly vg04Adapter: VG04CameraPathAdapter,
     @Inject(VG05VFXCompositorAdapter)
     private readonly vg05Adapter: VG05VFXCompositorAdapter,
+    @Inject(VG06SkeletalAnimationAdapter)
+    private readonly vg06Adapter: VG06SkeletalAnimationAdapter,
+    private readonly vg07Adapter: VG07FacialExpressionAdapter,
+    @Inject(VG08AdvancedLightingAdapter)
+    private readonly vg08Adapter: VG08AdvancedLightingAdapter,
+    @Inject(VG09HairPhysicsAdapter)
+    private readonly vg09Adapter: VG09HairPhysicsAdapter,
+    @Inject(VG10ClothDynamicsAdapter)
+    private readonly vg10Adapter: VG10ClothDynamicsAdapter,
+    @Inject(VG11ParticleEffectsAdapter)
+    private readonly vg11Adapter: VG11ParticleEffectsAdapter,
+    @Inject(VG12DynamicLightingRigAdapter)
+    private readonly vg12Adapter: VG12DynamicLightingRigAdapter,
     @Inject(AU01VoiceTTSAdapter)
     private readonly au01Adapter: AU01VoiceTTSAdapter,
     @Inject(AU02BGMGenAdapter)
@@ -244,6 +318,10 @@ export class EngineModule implements OnModuleInit {
     private readonly au03Adapter: AU03SFXGenAdapter,
     @Inject(AU04AudioMixAdapter)
     private readonly au04Adapter: AU04AudioMixAdapter,
+    @Inject(AU05EnvironmentalReverbAdapter)
+    private readonly au05Adapter: AU05EnvironmentalReverbAdapter,
+    @Inject(AU06SpatialAudioAdapter)
+    private readonly au06Adapter: AU06SpatialAudioAdapter,
     @Inject(PP01VideoStitchAdapter)
     private readonly pp01Adapter: PP01VideoStitchAdapter,
     @Inject(PP02SubtitleOverlayAdapter)
@@ -252,6 +330,10 @@ export class EngineModule implements OnModuleInit {
     private readonly pp03Adapter: PP03WatermarkAdapter,
     @Inject(PP04HLSPackageAdapter)
     private readonly pp04Adapter: PP04HLSPackageAdapter,
+    @Inject(PP05PosterGenAdapter)
+    private readonly pp05Adapter: PP05PosterGenAdapter,
+    @Inject(PP06CreditsGenAdapter)
+    private readonly pp06Adapter: PP06CreditsGenAdapter,
     @Inject(QC01VisualFidelityAdapter)
     private readonly qc01Adapter: QC01VisualFidelityAdapter,
     @Inject(QC02NarrativeConsistencyAdapter)
@@ -260,6 +342,10 @@ export class EngineModule implements OnModuleInit {
     private readonly qc03Adapter: QC03IdentityContinuityAdapter,
     @Inject(QC04ComplianceScanAdapter)
     private readonly qc04Adapter: QC04ComplianceScanAdapter,
+    @Inject(QC05TechnicalComplianceAdapter)
+    private readonly qc05Adapter: QC05TechnicalComplianceAdapter,
+    @Inject(QC06FlickerDetectorAdapter)
+    private readonly qc06Adapter: QC06FlickerDetectorAdapter,
     @Inject(CE23IdentityLocalAdapter)
     private readonly ce23Adapter: CE23IdentityLocalAdapter
   ) { }
@@ -283,6 +369,9 @@ export class EngineModule implements OnModuleInit {
 
     // 注册 HttpEngineAdapter
     this.registry.register(this.httpAdapter);
+
+    // CE11 Real Registration (Base registration before alias)
+    this.registry.register(this.ce11ComfyUIAdapter);
 
     // [P1-B Fix] Register Aliases for CE components
     this.registry.register(this.ce06Adapter);
@@ -308,12 +397,12 @@ export class EngineModule implements OnModuleInit {
 
     // Keep individual adapters registered but not as primary alias
     this.registry.register(this.shotRenderReplicateAdapter);
-    this.registry.register(this.shotRenderComfyuiAdapter); // Registered
+    this.registry.register(this.shotRenderComfyuiAdapter);
+    this.registry.register(this.shotRenderMpsAdapter);
     this.registry.register(this.shotRenderAdapter);
 
     // P0-R2: Register Video Merge Adapter
     this.registry.register(this.videoMergeAdapter);
-    this.registry.register(this.ce11MockAdapter);
     this.registry.register(this.characterGenAdapter);
     this.registry.register(this.sceneCompositionAdapter);
     this.registry.register(this.emotionAnalysisAdapter);
@@ -323,10 +412,6 @@ export class EngineModule implements OnModuleInit {
     this.registry.registerAlias('ce02_identity_lock', this.ce23Adapter);
     this.registry.registerAlias('ce06_scan_toc', this.ce06Adapter);
     this.registry.registerAlias('ce06_chunk_parse', this.ce06Adapter);
-    this.registry.registerAlias('ce11_shot_generator_mock', this.ce11MockAdapter);
-
-    // CE11 Real Registration
-    this.registry.register(this.ce11ComfyUIAdapter);
 
     // G5-P0-1: Dialogue Binding Engine
     this.registry.register(this.g5DialogueBindingAdapter);
@@ -351,6 +436,15 @@ export class EngineModule implements OnModuleInit {
     // P2.2: Scene Composition Engine
     this.registry.register(this.sceneCompositionAdapter);
 
+    // P2.3: Emotion Analysis Engine
+    this.registry.register(this.emotionAnalysisAdapter);
+
+    // P2.4: Dialogue Optimization Engine
+    this.registry.register(this.dialogueOptimizationAdapter);
+
+    // P3: CE07 Memory Update
+    this.registry.register(this.ce07Adapter);
+
     // P3: CE01 Narrative Structure
     this.registry.register(this.ce01Adapter);
 
@@ -362,6 +456,11 @@ export class EngineModule implements OnModuleInit {
     this.registry.register(this.ce12Adapter);
     this.registry.register(this.ce13Adapter);
     this.registry.register(this.ce14Adapter);
+    this.registry.register(this.ce15Adapter); // P0: Multi-Char Scene Coordination
+    this.registry.register(this.ce16Adapter); // P1: Story Branch coordinator
+    this.registry.register(this.ce17Adapter); // P1: Cultural Consistency
+    this.registry.register(this.ce18Adapter); // P1: World Logic Validator
+    this.registry.register(this.ce19Adapter); // P1: Story Summary Generation
 
     // P3.2 Batch: VG Engines
     this.registry.register(this.vg01Adapter);
@@ -369,23 +468,39 @@ export class EngineModule implements OnModuleInit {
     this.registry.register(this.vg03Adapter);
     this.registry.register(this.vg04Adapter);
     this.registry.register(this.vg05Adapter);
+    this.registry.register(this.vg06Adapter); // P0: Skeletal Animation
+    this.registry.register(this.vg07Adapter); // P0: Facial Expression
+    this.registry.register(this.vg08Adapter); // P0: Advanced Lighting
+    this.registry.register(this.vg09Adapter); // P1: Hair Physics
+    this.registry.register(this.vg10Adapter); // P1: Cloth Dynamics
+    this.registry.register(this.vg11Adapter); // P1: Particle Effects (VFX)
+    this.registry.register(this.vg12Adapter); // P1: Dynamic Lighting Rig
 
     // P3.2 Batch: AU Engines
     this.registry.register(this.au01Adapter);
     this.registry.register(this.au02Adapter);
     this.registry.register(this.au03Adapter);
     this.registry.register(this.au04Adapter);
+    this.registry.register(this.au05Adapter); // P1: Environmental Reverb
+    this.registry.register(this.au06Adapter); // P1: Spatial Audio mapping
 
     // P3.2 Batch: PP Engines
     this.registry.register(this.pp01Adapter);
     this.registry.register(this.pp02Adapter);
     this.registry.register(this.pp03Adapter);
     this.registry.register(this.pp04Adapter);
+    this.registry.register(this.pp05Adapter); // P1: Poster Generation
+    this.registry.register(this.pp06Adapter); // P1: Credits Generation
 
     // P3.2 Batch: QC Engines
     this.registry.register(this.qc01Adapter);
     this.registry.register(this.qc02Adapter);
     this.registry.register(this.qc03Adapter);
     this.registry.register(this.qc04Adapter);
+    this.registry.register(this.qc05Adapter); // P1: Technical Compliance QC
+    this.registry.register(this.qc06Adapter); // P1: Flicker Detector QC
+
+    // P4: Identity Consistency
+    this.registry.register(this.ce23Adapter);
   }
 }

@@ -15,8 +15,27 @@ class AudioServiceStub {
     return { audioRealEnabled: true };
   }
   async generateAndMix(params: any) {
+    const { randomUUID } = require('crypto');
+    const mockAudioPath = path.resolve(`/tmp/mock_${randomUUID()}.wav`);
+    console.log(`[AudioServiceStub] Generating mock audio at ${mockAudioPath}...`);
+    const { spawnSync } = require('child_process');
+    const result = spawnSync('ffmpeg', [
+      '-f', 'lavfi',
+      '-i', 'anullsrc=r=44100:cl=stereo',
+      '-t', '5',
+      '-c:a', 'pcm_s16le',
+      '-y',
+      mockAudioPath
+    ]);
+    if (result.status !== 0) {
+      const errorMsg = result.stderr?.toString() || 'Unknown FFmpeg error';
+      console.error(`[AudioServiceStub] FFmpeg FAILED: ${errorMsg}`);
+      throw new Error(`FFmpeg failed to generate mock audio: ${errorMsg}`);
+    }
+    console.log(`[AudioServiceStub] Mock audio generated successfully.`);
+    const mockChecksum = require('crypto').createHash('sha256').update(mockAudioPath).digest('hex');
     return {
-      voice: { absPath: '/tmp/mock.wav', meta: { audioFileSha256: 'mock' } },
+      voice: { absPath: mockAudioPath, meta: { audioFileSha256: mockChecksum } },
       signals: { audio_mode: 'mock', audio_kill_switch: false }
     };
   }

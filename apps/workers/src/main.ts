@@ -4,12 +4,19 @@ import * as path from 'path';
 import './observability/stage4.metrics'; // P5-1: Register Stage4 metrics on startup
 
 // Load root .env (assuming CWD is apps/workers)
-const envPath = path.resolve(process.cwd(), '../../.env');
+const root = path.resolve(process.cwd(), '../../');
+const envPath = path.join(root, '.env');
+const envLocalPath = path.join(root, '.env.local');
+
+// Priority: .env.local > .env (respecting existing process.env)
+if (require('fs').existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath });
+}
 dotenv.config({ path: envPath });
 // Also try current dir just in case
 dotenv.config();
 
-console.log(`[Bootstrap] Loaded env from ${envPath}. STORAGE_ROOT=${process.env.STORAGE_ROOT}`);
+console.log(`[Bootstrap] Loaded env from ${root}. SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`);
 
 /**
  * Worker Bootstrap 入口

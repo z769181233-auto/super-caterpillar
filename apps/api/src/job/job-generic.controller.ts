@@ -31,7 +31,7 @@ export class JobGenericController {
     @Inject(JobService)
     private readonly jobService: JobService
     // private readonly capacityGateService: CapacityGateService
-  ) {}
+  ) { }
 
   @Post()
   async createGenericJob(
@@ -78,6 +78,7 @@ export class JobGenericController {
         traceId: createJobDto.traceId,
         isVerification: createJobDto.isVerification,
         dedupeKey: createJobDto.dedupeKey,
+        priority: createJobDto.priority,
         // taskId: undefined // Explicitly undefined to avoid parentJobId mapping
       });
 

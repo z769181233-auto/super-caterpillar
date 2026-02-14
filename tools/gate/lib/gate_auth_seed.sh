@@ -21,6 +21,7 @@ USER_ID="gate_user_p25_stable"
 USER_EMAIL="gate_p25@caterpillar.com"
 TS_SEED=$(date +%s)
 
+export ENGINE_MODE=${ENGINE_MODE:-test}
 export VALID_API_KEY_ID API_SECRET ORG_ID USER_ID
 
 # 3. Seed Database with Sequential Integrity
@@ -33,3 +34,21 @@ log "DB Seeding Complete. ORG_ID=$ORG_ID"
 echo "API_KEY=$VALID_API_KEY_ID"
 echo "API_SECRET=$API_SECRET"
 echo "ORG_ID=$ORG_ID"
+
+# 4. Export Common IDs (Seeded by init_api_key.ts or here)
+export PROJ_ID="00000000-0000-0000-0000-000000000001"
+export SEASON_ID="00000000-0000-0000-0000-000000000001"
+export EPISODE_ID="00000000-0000-0000-0000-000000000001"
+export SCENE_ID="00000000-0000-0000-0000-000000000001"
+
+# Ensure Season, Episode and Scene exist (Project is seeded by init_api_key.ts)
+# Season: id, projectId, index, title
+psql "$DATABASE_URL" -c "INSERT INTO seasons (id, \"projectId\", \"index\", title, \"updatedAt\") VALUES ('$SEASON_ID', '$PROJ_ID', 1, 'Smoke Season', NOW()) ON CONFLICT (id) DO NOTHING;" > /dev/null
+
+# Episode: id, projectId, seasonId, index, name
+psql "$DATABASE_URL" -c "INSERT INTO episodes (id, \"projectId\", \"seasonId\", \"index\", name) VALUES ('$EPISODE_ID', '$PROJ_ID', '$SEASON_ID', 1, 'Smoke Episode') ON CONFLICT (id) DO NOTHING;" > /dev/null
+
+# Scene: id, episodeId, project_id, scene_index
+psql "$DATABASE_URL" -c "INSERT INTO scenes (id, \"episodeId\", \"project_id\", \"scene_index\", \"updated_at\") VALUES ('$SCENE_ID', '$EPISODE_ID', '$PROJ_ID', 1, NOW()) ON CONFLICT (id) DO NOTHING;" > /dev/null
+
+log "Seeded Common IDs: PROJ=$PROJ_ID SEASON=$SEASON_ID EP=$EPISODE_ID SCENE=$SCENE_ID"

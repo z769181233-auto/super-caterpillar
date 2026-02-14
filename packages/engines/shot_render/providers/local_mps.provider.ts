@@ -111,12 +111,21 @@ export const localMpsProvider = {
       // P1: Normalize asset_path to be relative for audit trail
       let relativePath = meta.asset_path;
       try {
-        // packages/engines/shot_render/providers/ -> ../../../..
-        const root = path.resolve(__dirname, '../../../../..');
+        // Robust Root Finding (looking for pnpm-lock.yaml)
+        let root = path.resolve(__dirname);
+        const systemRoot = path.parse(root).root;
+        while (root !== systemRoot && !fs.existsSync(path.join(root, 'pnpm-lock.yaml'))) {
+          root = path.dirname(root);
+        }
+        if (root === systemRoot) {
+          // Fallback to process.cwd() or assume known depth if not found
+          root = path.resolve(__dirname, '../../../../..');
+        }
+
         relativePath = path.relative(root, meta.asset_path);
         // Convert to POSIX
         relativePath = relativePath.split(path.sep).join('/');
-      } catch (e) {}
+      } catch (e) { }
 
       return {
         bytes,

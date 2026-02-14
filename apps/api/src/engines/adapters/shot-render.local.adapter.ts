@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import * as crypto from 'crypto';
 
 const execAsync = promisify(exec);
 export class ShotRenderLocalAdapter implements EngineAdapter {
@@ -73,7 +74,14 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
         `"${absOutputPath}"`
       ].join(' ');
 
-      await execAsync(ffmpegCmd);
+      this.logger.log(`[ShotRenderLocal] Executing FFmpeg: ${ffmpegCmd}`);
+
+      await execAsync(ffmpegCmd, {
+        maxBuffer: 1024 * 1024 * 10, // 10MB Buffer
+        timeout: 60000 // 60s Timeout
+      });
+
+      this.logger.log(`[ShotRenderLocal] FFmpeg execution completed.`);
 
       // Validation 1: Size check
       const stats = fs.statSync(absOutputPath);
@@ -92,6 +100,10 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
 
       const storageKey = path.relative(storageRoot, absOutputPath);
 
+      // Compute SHA256 for the generated file
+      const fileBuffer = fs.readFileSync(absOutputPath);
+      const sha256 = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
       const result = {
         render_meta: {
           model: 'local-ffmpeg-hifi',
@@ -101,7 +113,8 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
         },
         audit_trail: {},
         storageKey: storageKey,
-        localPath: absOutputPath
+        localPath: absOutputPath,
+        sha256: sha256
       };
 
       // 增强审计轨迹以满足计费和 Gate 断言要求

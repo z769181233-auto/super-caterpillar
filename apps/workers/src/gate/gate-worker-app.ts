@@ -23,6 +23,7 @@ import { processNovelScan } from '../processors/novel-scan.processor';
 import { processNovelChunk } from '../processors/novel-chunk.processor';
 import type { ProcessorContext } from '../types/processor-context';
 import { processAudioJob } from '../processors/audio.processor';
+import { processNovelAnalysisJob } from '../novel-analysis-processor';
 import { ApiClient } from '../api-client';
 import { PrismaClient } from 'database';
 import { EngineHubClient } from '../engine-hub-client';
@@ -39,6 +40,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { engineExecDuration } from '@scu/observability';
 import { performance } from 'perf_hooks';
+import { AdaptivePollStrategy } from './adaptive-poll-strategy';
+import { SystemLoadMonitor } from './system-load-monitor';
+import { getArtifactEventNotifier } from './artifact-event-notifier';
 
 // 生产模式门禁：强制从环境变量读取
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
@@ -61,7 +65,7 @@ export async function startGateWorkerApp() {
   process.stdout.write(util.format('========================================\n') + '\n');
 
   const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
-  const apiBaseUrl = env.apiUrl || 'http://localhost:3001';
+  const apiBaseUrl = env.apiUrl || 'http://127.0.0.1:3000';
   const workerApiKey = env.workerApiKey;
   const workerApiSecret = pickHmacSecretSSOT();
 
@@ -139,21 +143,57 @@ export async function startGateWorkerApp() {
   });
   process.stdout.write(util.format('[GateWorker] ✅ Worker 注册成功') + '\n');
 
-  const pollMs = Number(process.env.WORKER_POLL_INTERVAL ?? 1000);
+  // B3-1: 自适应轮询策略
+  const adaptivePoll = new AdaptivePollStrategy({
+    minInterval: 200,
+    maxInterval: 2000,
+    backoffFactor: 1.5,
+  });
+
+  // B3-2: 系统负载监控
+  const loadMonitor = new SystemLoadMonitor();
+
+  // B3-3: Artifact 事件通知器
+  const eventNotifier = getArtifactEventNotifier();
+
   let isRunning = true;
   let tasksRunning = 0;
+  let totalTasksProcessed = 0;
+  let totalProcessingTimeMs = 0;
 
+  // B3-2: 增强心跳，包含负载指标
   const heartbeatInterval = setInterval(async () => {
     if (!isRunning) return;
     try {
-      await apiClient.heartbeat({ workerId, status: 'online', tasksRunning });
+      const metrics = await loadMonitor.getMetrics();
+      const avgProcessingTime = totalTasksProcessed > 0
+        ? Math.round(totalProcessingTimeMs / totalTasksProcessed)
+        : 0;
+
+      await apiClient.heartbeat({
+        workerId,
+        status: 'online',
+        tasksRunning,
+        cpuUsagePercent: metrics.cpuUsagePercent,
+        memoryUsageMb: metrics.memoryUsageMb,
+        queueDepth: tasksRunning, // 当前正在处理的任务数
+        avgProcessingTimeMs: avgProcessingTime,
+        metadata: {
+          totalTasksProcessed,
+          uptimeSeconds: metrics.uptimeSeconds,
+          pollStrategy: adaptivePoll.getStats(),
+        },
+      });
     } catch (error: any) {
       process.stderr.write(util.format('[GateWorker] ❌ 心跳发送失败:', error.message) + '\n');
     }
   }, 10000);
 
+  // B3-1: 使用自适应轮询策略
   async function pollJobs() {
     if (!isRunning) return;
+
+    let foundJobs = false;
 
     // P1-1 OP: Fetch as many jobs as concurrency allows
     while (tasksRunning < maxConcurrency && isRunning) {
@@ -161,6 +201,7 @@ export async function startGateWorkerApp() {
         const job = await apiClient.getNextJob(workerId);
         if (!job) break; // No more jobs for now
 
+        foundJobs = true;
         tasksRunning++;
         process.stdout.write(util.format(`[GateWorker] 认领 job: ${job.id} type=${job.type}`) + '\n');
 
@@ -174,6 +215,14 @@ export async function startGateWorkerApp() {
         }
         break; // Wait for next interval
       }
+    }
+
+    // B3-1: 根据轮询结果动态调整下次轮询间隔
+    const nextInterval = adaptivePoll.reportPollResult(foundJobs);
+    if (foundJobs) {
+      process.stdout.write(
+        util.format(`[B3-1] 发现任务，重置为快速轮询 (${nextInterval}ms)`) + '\n'
+      );
     }
   }
 
@@ -224,13 +273,17 @@ export async function startGateWorkerApp() {
       else if (job.type === 'AUDIO') result = await processAudioJob(prisma, job, apiClient);
       else if (job.type === 'PIPELINE_PROD_VIDEO_V1') result = await processE2EVideoPipelineJob(ctx);
       else if (job.type === 'NOVEL_ANALYSIS') {
-        result = { status: 'SUCCEEDED', message: 'Gate No-op for NOVEL_ANALYSIS' };
+        result = await processNovelAnalysisJob(prisma, { ...job, projectId: job.projectId || '' }, apiClient);
       }
       else {
         process.stdout.write(util.format(`[GateWorker] ⚠️ Unknown Job Type: ${job.type}`) + '\n');
         return;
       }
       const duration = (performance.now() - start) / 1000;
+
+      // B3-2: 更新统计信息
+      totalTasksProcessed++;
+      totalProcessingTimeMs += duration * 1000;
 
       const engineKey = job.payload?.engineKey || job.type.toLowerCase();
       engineExecDuration.observe({ engine: engineKey, mode: 'gate' }, duration);
@@ -239,13 +292,28 @@ export async function startGateWorkerApp() {
 
       if (isSuccess && job.payload?.artifactDir) {
         const artDir = job.payload.artifactDir;
-        if (!fs.existsSync(artDir)) {
-          fs.mkdirSync(artDir, { recursive: true });
+        const framesPath = path.join(artDir, 'frames.txt');
+        if (!fs.existsSync(framesPath)) {
+          fs.writeFileSync(framesPath, 'frame001.png\nframe002.png\n');
         }
-        fs.writeFileSync(path.join(artDir, 'frames.txt'), 'frame001.png\nframe002.png\n');
-        fs.writeFileSync(path.join(artDir, 'output.mp4'), 'mock mp4 content');
+
+        const outputMp4Path = path.join(artDir, 'output.mp4');
+        if (!fs.existsSync(outputMp4Path)) {
+          fs.writeFileSync(outputMp4Path, 'mock mp4 content');
+        }
+
         fs.writeFileSync(path.join(artDir, 'EVIDENCE_SOURCE.json'), JSON.stringify({ jobId: job.id, traceId: (job as any).traceId }, null, 2));
         process.stdout.write(util.format(`[GateWorker] 📝 已向 ${artDir} 写入模拟产物`) + '\n');
+
+        // B3-3: 发布 Artifact 事件通知
+        await eventNotifier.publish({
+          jobId: job.id,
+          artifactDir: artDir,
+          artifactType: 'OTHER',
+          metadata: { traceId: (job as any).traceId, jobType: job.type },
+        }).catch((err: any) => {
+          process.stderr.write(util.format(`[B3-3] 事件通知失败:`, err.message) + '\n');
+        });
 
         const crypto = await import('crypto');
         const sha256File = (filePath: string) => {
@@ -347,14 +415,30 @@ export async function startGateWorkerApp() {
     }
   }
 
-  const pollInterval = setInterval(() => pollJobs(), pollMs);
-  await pollJobs();
+  // B3-1: 动态轮询间隔管理
+  let pollTimeout: NodeJS.Timeout | null = null;
+
+  async function schedulePoll() {
+    if (!isRunning) return;
+
+    await pollJobs();
+
+    const nextInterval = adaptivePoll.getCurrentInterval();
+    pollTimeout = setTimeout(schedulePoll, nextInterval);
+  }
+
+  // 启动轮询
+  await schedulePoll();
 
   const shutdown = async (signal: string) => {
     process.stdout.write(util.format(`\n[GateWorker] 收到 ${signal}，正在关闭...`) + '\n');
     isRunning = false;
     clearInterval(heartbeatInterval);
-    clearInterval(pollInterval);
+    if (pollTimeout) clearTimeout(pollTimeout);
+
+    // B3-3: 确保所有事件通知已发送
+    await eventNotifier.shutdown();
+
     await prisma.$disconnect();
     process.stdout.write(util.format('[GateWorker] ✅ Worker 已关闭') + '\n');
     process.exit(0);

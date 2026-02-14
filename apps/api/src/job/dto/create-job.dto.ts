@@ -76,4 +76,7 @@ export class CreateJobDto {
   @IsOptional()
   @IsString()
   parentJobId?: string;
+
+  @IsOptional()
+  priority?: number;
 }

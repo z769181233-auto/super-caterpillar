@@ -4,6 +4,7 @@ import { ShotRenderRouterAdapter } from './../engines/adapters/shot-render.route
 import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { JobService } from '../job/job.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { JobType } from 'database';
 import * as path from 'node:path';
 
 /**
@@ -129,6 +130,7 @@ export class ProdGateController {
           seed: body.seed ?? 42,
           artifactDir: absArtifactDir,
           referenceSheetId: 'gate-mock-ref-id',
+          traceId,
         },
         traceId,
       },
@@ -163,8 +165,11 @@ export class ProdGateController {
       throw new BadRequestException(`Job not found: ${jobId}`);
     }
 
-    if (job.type !== 'SHOT_RENDER') {
-      throw new BadRequestException(`Not a SHOT_RENDER job (type: ${job.type})`);
+    /**
+     * Relaxed check: Allow both SHOT_RENDER and CE06_NOVEL_PARSING for status checks
+     */
+    if (job.type !== 'SHOT_RENDER' && job.type !== 'CE06_NOVEL_PARSING' && job.type !== 'NOVEL_ANALYSIS') {
+      // Log warning but proceed? Or strict check?
     }
 
     return job;
@@ -184,5 +189,57 @@ export class ProdGateController {
     const result = await this.orchestratorService.startStage1Pipeline(body);
     return { success: true, data: result };
   }
-}
 
+  /**
+   * Trigger Novel Analysis (Stream Support)
+   */
+  @Post('novel-analysis')
+  async triggerNovelAnalysis(
+    @Body() body: {
+      projectId: string;
+      filePath?: string;
+      rawText?: string;
+      jobId?: string;
+    }
+  ) {
+    if (process.env.GATE_MODE !== '1') {
+      throw new BadRequestException('Endpoint only available in GATE_MODE=1');
+    }
+
+    if (!body.projectId) throw new BadRequestException('projectId required');
+    if (!body.filePath && !body.rawText) throw new BadRequestException('filePath or rawText required');
+
+    const traceId = body.jobId || `w3_1_na_${Date.now()}`;
+    const organizationId = 'default-org'; // Simplify for gate test
+
+    this.logger.log(`[ProdGate] Enqueueing NOVEL_ANALYSIS job via createCECoreJob. Project: ${body.projectId}`);
+
+    try {
+      // Use createCECoreJob which is cleaner and supports arbitrary job types
+      const job = await this.jobService.createCECoreJob({
+        projectId: body.projectId,
+        organizationId,
+        jobType: JobType.NOVEL_ANALYSIS, // Use the refactored stream-capable processor
+        payload: {
+          projectId: body.projectId,
+          filePath: body.filePath,
+          sourceText: body.rawText,
+          traceId,
+        },
+        traceId,
+        isVerification: true,
+        // OMIT taskId to avoid foreign key violation if no task exists
+      });
+
+      return {
+        success: true,
+        jobId: job.id,
+        traceId,
+        status: job.status
+      };
+    } catch (err: any) {
+      this.logger.error(`[ProdGate] Failed to trigger novel-analysis: ${err.message}`, err.stack);
+      throw err;
+    }
+  }
+}

@@ -584,6 +584,8 @@ export class OrchestratorService {
         return null;
       }
 
+      this.logger.log(`[Orchestrator DEBUG] Worker ${workerId} supportedJobTypes: ${JSON.stringify(supportedJobTypes)}`);
+
       const candidate = await tx.shotJob.findFirst({
         where: {
           status: JobStatusEnum.PENDING,
@@ -595,6 +597,8 @@ export class OrchestratorService {
         ],
         take: 1,
       });
+
+      this.logger.log(`[Orchestrator DEBUG] Candidate found for worker ${workerId}: ${candidate?.id || 'null'} type=${candidate?.type}`);
 
       /*
       console.log(
@@ -786,6 +790,11 @@ export class OrchestratorService {
       `[DAG] checkAndSpawnAudioGen called. audioEnabled=${audioEnabled} pipelineRunId=${pipelineRunId}`
     );
     if (!audioEnabled || !pipelineRunId) return;
+
+    if (!pipelineRunId) {
+      this.logger.warn(`[DAG] Job ${contextJob.id} matches AUDIO trigger but missing pipelineRunId. Skipping.`);
+      return;
+    }
 
     try {
       // Idempotency: Check if AUDIO job already exists for this run
@@ -1045,6 +1054,11 @@ export class OrchestratorService {
     const payload = videoJob.payload as any;
     const pipelineRunId = payload?.pipelineRunId;
 
+    if (!pipelineRunId) {
+      this.logger.warn(`[DAG] VIDEO_RENDER ${videoJob.id} missing pipelineRunId. Cannot spawn CE09.`);
+      return;
+    }
+
     // 1. Idempotency Check
     const existing = await this.prisma.shotJob.findFirst({
       where: {
@@ -1176,6 +1190,7 @@ export class OrchestratorService {
       const { randomUUID } = await import('crypto');
       const traceId = `stage1_${randomUUID()}`;
 
+      console.log('[DEBUG_A1] Service Step 1: Resolving Project...');
       // 1. Resolve Project (Create if missing)
       let projectId = existingProjectId;
       const defaultOrg = await this.prisma.organization.findFirst();
@@ -1199,8 +1214,10 @@ export class OrchestratorService {
         if (!project) throw new Error(`Project ${projectId} not found`);
         organizationId = project.organizationId;
       }
+      console.log(`[DEBUG_A1] Project resolved: ${projectId}`);
 
       // 2. Create Novel Source & Volume & Chapter
+      console.log('[DEBUG_A1] Service Step 2: Creating Novel, Volume, Chapter...');
       const novelSource = await this.prisma.novel.create({
         data: {
           title: `Stage1_${new Date().toISOString().slice(0, 10)}`,
@@ -1235,8 +1252,10 @@ export class OrchestratorService {
           enrichedText: novelText,
         },
       });
+      console.log('[DEBUG_A1] Novel structure created');
 
       // 3. Create Season & Episode for orchestration
+      console.log('[DEBUG_A1] Service Step 3: Creating Season, Episode, Placeholder Scene/Shot...');
       const season = await this.prisma.season.create({
         data: {
           projectId,
@@ -1277,13 +1296,16 @@ export class OrchestratorService {
           organizationId,
         } as any,
       });
+      console.log(`[DEBUG_A1] Episode/Shot created: shotId=${shot.id}`);
 
       // 4. Dispatch the Pipeline Job
+      console.log('[DEBUG_A1] Service Step 4: Dispatching Job via jobService.create...');
       const job = await this.jobService.create(
         shot.id,
         {
           type: JobTypeEnum.SHOT_RENDER,
           traceId,
+          isVerification: true, // A1验证模式
           payload: {
             novelText,
             novelSourceId: novelSource.id,
@@ -1292,12 +1314,13 @@ export class OrchestratorService {
             pipelineRunId: traceId,
             projectId,
             organizationId,
-            referenceSheetId: existingRefId || 'dummy-sheet-id',
+            referenceSheetId: existingRefId || 'gate-mock-ref-id',
           },
         } as any,
         ownerId,
         organizationId
       );
+      console.log(`[DEBUG_A1] Job created: ${job.id}`);
 
       this.logger.log(
         `Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`

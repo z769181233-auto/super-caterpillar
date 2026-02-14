@@ -4,7 +4,9 @@ import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/share
 import { ShotRenderReplicateAdapter } from './shot-render.replicate.adapter';
 import { ShotRenderLocalAdapter } from './shot-render.local.adapter';
 import { ShotRenderComfyuiAdapter } from './shot-render.comfyui.adapter';
+import { ShotRenderMpsAdapter } from './shot-render.mps.adapter';
 import { MockEngineAdapter } from '../../engine/adapters/mock-engine.adapter';
+import { CharacterService } from '../../character/character.service';
 import { createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as fs from 'fs';
@@ -26,21 +28,29 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
   public readonly name = 'shot_render_router';
   private readonly logger = new Logger(ShotRenderRouterAdapter.name);
 
+  private adapters: { [key: string]: EngineAdapter }; // Added to hold adapters
+
   constructor(
     private readonly moduleRef: ModuleRef,
     private readonly prisma: PrismaService,
-    @Inject(ShotRenderReplicateAdapter)
-    private replicateAdapter: ShotRenderReplicateAdapter,
-    @Inject(ShotRenderLocalAdapter)
-    private localAdapter: ShotRenderLocalAdapter,
-    @Inject(ShotRenderComfyuiAdapter)
-    private comfyuiAdapter: ShotRenderComfyuiAdapter
+    private readonly replicateAdapter: ShotRenderReplicateAdapter,
+    private readonly comfyuiAdapter: ShotRenderComfyuiAdapter,
+    private readonly localAdapter: ShotRenderLocalAdapter,
+    private readonly mpsAdapter: ShotRenderMpsAdapter,
+    private readonly characterService: CharacterService
+  ) {
+    this.adapters = {
+      replicate: this.replicateAdapter,
+      comfyui: this.comfyuiAdapter,
+      local: this.localAdapter,
+      local_mps: this.mpsAdapter,
+    };
     // Note: MockEngineAdapter might not be provided in EngineModule's providers by default,
     // so we don't @Inject(MockEngineAdapter) here to avoid startup error if missing.
     // We resolve it lazily in onModuleInit or ensureDependencies.
     // If we want to inject it, we must ensure it's in EngineModule.
     // Since I can't easily edit EngineModule safely right now, I'll rely on lazy resolution via ModuleRef.
-  ) { }
+  }
 
   private mockAdapter: MockEngineAdapter | undefined; // Lazy loaded
 
@@ -49,27 +59,8 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
   }
 
   private ensureDependencies() {
-    if (!this.replicateAdapter) {
-      try {
-        this.replicateAdapter = this.moduleRef.get(ShotRenderReplicateAdapter, { strict: false });
-      } catch (e) {
-        /* silent fail */
-      }
-    }
-    if (!this.localAdapter) {
-      try {
-        this.localAdapter = this.moduleRef.get(ShotRenderLocalAdapter, { strict: false });
-      } catch (e) {
-        /* silent fail */
-      }
-    }
-    if (!this.comfyuiAdapter) {
-      try {
-        this.comfyuiAdapter = this.moduleRef.get(ShotRenderComfyuiAdapter, { strict: false });
-      } catch (e) {
-        /* silent fail */
-      }
-    }
+    // These should be resolved via ModuleRef ONLY if for some reason they aren't injected,
+    // but we'll remove the read-only assignments and rely on injection.
     if (!this.mockAdapter) {
       try {
         this.mockAdapter = this.moduleRef.get(MockEngineAdapter, { strict: false });
@@ -89,18 +80,72 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
 
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     this.ensureDependencies();
+
+    // B2.3: LoRA 自动挂载逻辑
+    await this.mountCharacterLora(input);
+
     // 1. Explicit provider selection
     const { provider, reason } = this.selectProvider();
     const adapter = this.getAdapter(provider);
 
-    if (!adapter) {
-      throw new Error(`Provider adapter for ${provider} not available.`);
-    }
-
     this.logger.log(`[ShotRenderRouter] Selected provider: ${provider} (reason: ${reason})`);
 
     // 2. Invoke selected adapter
-    const result = await adapter.invoke(input);
+    let result = await adapter.invoke(input);
+
+    // [MPS-ENRICHMENT-PHASE]
+    // If provider is local_mps/comfy and returns an image, but the pipeline expects a video (REAL mode typically does),
+    // we MUST enrich it to 2.5D video before continuing.
+    if (result.status === 'SUCCESS' && result.output) {
+      const output = result.output as any;
+      const isImage = (output.asset?.uri || '').match(/\.(png|webp|jpg|jpeg)$/i) || output.localPath?.match(/\.(png|webp|jpg|jpeg)$/i);
+
+      if (isImage) {
+        this.logger.log(`[ShotRenderRouter] Detected IMAGE output from ${provider}. Enriching to 2.5D Video via local FFmpeg...`);
+
+        const repoRoot = this.getRepoRoot();
+        const rawSource = output.localPath || output.asset?.uri;
+        const absSourcePath = path.isAbsolute(rawSource) ? rawSource : path.resolve(repoRoot, rawSource);
+
+        this.logger.log(`[ShotRenderRouter] Resolved absolute source path: ${absSourcePath}`);
+
+        // Prepare shim input for ShotRenderLocalAdapter
+        const shimInput: EngineInvokeInput = {
+          ...input,
+          payload: {
+            ...input.payload,
+            sourceImagePath: absSourcePath,
+          }
+        };
+
+        const enrichmentResult = await this.localAdapter.invoke(shimInput);
+
+        if (enrichmentResult.status === 'SUCCESS') {
+          this.logger.log(`[ShotRenderRouter] Enrichment SUCCESS: ${enrichmentResult.output?.localPath}`);
+          // Merge results: keep MPS metadata, but use FFmpeg video as the primary asset
+          const enrichedOutput = enrichmentResult.output as any;
+          result = {
+            ...result,
+            output: {
+              ...output,
+              asset: {
+                ...output.asset,
+                uri: enrichedOutput.storageKey || enrichedOutput.localPath,
+                sha256: enrichedOutput.sha256 || undefined, // LocalAdapter might not return SHA yet
+              },
+              localPath: enrichedOutput.localPath,
+              render_meta: {
+                ...output.render_meta,
+                enriched_by: 'shot_render_local',
+                video_duration: enrichedOutput.render_meta?.duration
+              }
+            }
+          };
+        } else {
+          this.logger.error(`[ShotRenderRouter] Enrichment FAILED: ${enrichmentResult.error?.message}. Falling back to image (Downstream may fail).`);
+        }
+      }
+    }
 
     // 3. Enhance audit_trail with selection metadata
     if (result.status === 'SUCCESS' && result.output) {
@@ -235,6 +280,17 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     return hash.update(buffer).digest('hex');
   }
 
+  private getRepoRoot(): string {
+    const repoRoot = process.env.SCU_REPO_ROOT || process.cwd();
+    // Heuristic for monorepo: apps/api -> root
+    if (repoRoot.endsWith('apps/api')) {
+      return path.resolve(repoRoot, '../../');
+    }
+    // If we're inside the repo but in a subfolder, walk up if needed
+    // For now, assume process.cwd() or SCU_REPO_ROOT is generally correct or solvable
+    return path.resolve(repoRoot);
+  }
+
   /**
    * Explicit provider selection logic (SSOT)
    *
@@ -245,13 +301,24 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
    * NO SILENT FALLBACK: If replicate selected but token missing, THROW.
    */
   private selectProvider(): {
-    provider: 'replicate' | 'local' | 'comfyui' | 'mock';
+    provider: 'replicate' | 'local' | 'comfyui' | 'mock' | 'local_mps';
     reason: string;
   } {
     const envProvider = (process.env.SHOT_RENDER_PROVIDER || 'replicate').toLowerCase();
+    const engineMode = process.env.ENGINE_MODE || 'development';
 
-    if (envProvider === 'local' || envProvider === 'local_mps') {
+    if (engineMode === 'production' && envProvider === 'mock') {
+      throw new Error(
+        'PRODUCTION_SAFETY_ERROR: SHOT_RENDER_PROVIDER=mock is not allowed in ENGINE_MODE=production'
+      );
+    }
+
+    if (envProvider === 'local') {
       return { provider: 'local', reason: `Explicit SHOT_RENDER_PROVIDER=${envProvider}` };
+    }
+
+    if (envProvider === 'local_mps') {
+      return { provider: 'local_mps', reason: `Explicit SHOT_RENDER_PROVIDER=${envProvider}` };
     }
 
     if (envProvider === 'comfyui') {
@@ -283,8 +350,68 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
       return this.comfyuiAdapter;
     } else if (provider === 'mock') {
       return this.mockAdapter!;
+    } else if (provider === 'local_mps') {
+      return this.mpsAdapter;
     } else {
       return this.localAdapter;
+    }
+  }
+
+  /**
+   * B2.3: LoRA 自动挂载逻辑
+   * 从 payload 提取 characterId，查询 CharacterProfile，
+   * 如果存在 loraModelId，则添加到渲染参数
+   */
+  private async mountCharacterLora(input: EngineInvokeInput): Promise<void> {
+    try {
+      const characterId = input.payload?.characterId as string | undefined;
+
+      if (!characterId) {
+        // 没有指定角色，跳过 LoRA 挂载
+        return;
+      }
+
+      this.logger.debug(`[ShotRenderRouter] Checking for LoRA for character: ${characterId}`);
+
+      const character = await this.characterService.findOne(characterId);
+
+      if (character?.loraModelId) {
+        this.logger.log(
+          `[ShotRenderRouter] Mounting LoRA for character "${character.name}": ${character.loraModelId}`
+        );
+
+        // 添加 LoRA 到 payload
+        if (!input.payload.loras) {
+          input.payload.loras = [];
+        }
+
+        // 检查是否已存在（避免重复）
+        const existingLora = input.payload.loras.find(
+          (lora: any) => lora.modelId === character.loraModelId
+        );
+
+        if (!existingLora) {
+          input.payload.loras.push({
+            modelId: character.loraModelId,
+            triggerWord: character.nameEn || character.name,
+            weight: 1.0,
+            source: 'character_auto_mount',
+          });
+
+          this.logger.log(
+            `[ShotRenderRouter] LoRA mounted successfully. Trigger word: "${character.nameEn || character.name}"`
+          );
+        } else {
+          this.logger.debug(`[ShotRenderRouter] LoRA already exists in payload, skipping`);
+        }
+      } else {
+        this.logger.debug(`[ShotRenderRouter] No LoRA found for character ${characterId}`);
+      }
+    } catch (error: any) {
+      // 非阻塞错误，记录后继续
+      this.logger.warn(
+        `[ShotRenderRouter] Failed to mount LoRA: ${error.message}. Continuing without LoRA.`
+      );
     }
   }
 }

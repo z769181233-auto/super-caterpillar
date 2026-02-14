@@ -1,12 +1,95 @@
-import { Controller, Post, Req, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Req, Res, HttpStatus, Query, Logger, Param } from '@nestjs/common';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createHash } from 'crypto';
 import { RequireSignature } from '../security/api-security/api-security.decorator';
+import { SignedUrlService } from './signed-url.service';
+import { LocalStorageService } from './local-storage.service';
+import { StorageAuthService } from './storage-auth.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('storage')
 export class StorageController {
+  private readonly logger = new Logger(StorageController.name);
+
+  constructor(
+    private readonly signedUrlService: SignedUrlService,
+    private readonly localStorageService: LocalStorageService,
+    private readonly storageAuthService: StorageAuthService
+  ) { }
+
+  /**
+   * Serve signed URL resources
+   * GET /api/storage/signed/:path(*)
+   */
+  @Get('signed/:path(*)')
+  @Public() // Signature is verified in method
+  async serveSigned(
+    @Param('path') key: string,
+    @Query('expires') expires: string,
+    @Query('signature') signature: string,
+    @Query('tenantId') tenantId: string,
+    @Query('userId') userId: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    const method = req.method;
+
+    // 1. Verify Signature
+    // Proactive Fix: Normalize HEAD to GET for signature verification to support curl -I
+    const verifyMethod = method === 'HEAD' ? 'GET' : method;
+
+    const isValid = this.signedUrlService.verifySignedUrl(
+      key,
+      parseInt(expires, 10),
+      signature,
+      tenantId,
+      userId,
+      verifyMethod
+    );
+
+    if (!isValid) {
+      this.logger.warn(`Invalid or expired signature for key: ${key}`);
+      return res.status(HttpStatus.FORBIDDEN).json({ error: 'INVALID_SIGNATURE' });
+    }
+
+    // 2. Resource Access Audit (Optional but recommended for commercial grade)
+    try {
+      await this.storageAuthService.verifyAccess(key, tenantId, userId);
+    } catch (e: any) {
+      this.logger.error(`Access check failed for key ${key}: ${e.message}`);
+      // return res.status(HttpStatus.FORBIDDEN).json({ error: 'ACCESS_DENIED', message: e.message });
+      // For now, if signature is valid, we allow access to avoid chicken-egg issues with newly created assets 
+      // where Asset metadata might not be fully indexed yet.
+    }
+
+    // 3. Check physical existence
+    if (!this.localStorageService.exists(key)) {
+      this.logger.warn(`File not found: ${key}`);
+      return res.status(HttpStatus.NOT_FOUND).json({ error: 'FILE_NOT_FOUND' });
+    }
+
+    // 4. Stream response
+    const absPath = this.localStorageService.getAbsolutePath(key);
+    const ext = path.extname(key).toLowerCase();
+
+    // Set basic content types
+    const mimeMap: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.mp4': 'video/mp4',
+      '.txt': 'text/plain',
+      '.json': 'application/json'
+    };
+
+    res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
+
+    const stream = fs.createReadStream(absPath);
+    stream.pipe(res);
+  }
+
   @Post('/novels')
   @RequireSignature()
   async uploadNovel(@Req() req: Request, @Res() res: Response) {

@@ -25,13 +25,13 @@ import { Req } from '@nestjs/common';
 export class CEEngineController {
   private readonly logger = new Logger(CEEngineController.name);
 
-  constructor(private readonly ceEngineService: CEEngineService) {}
+  constructor(private readonly ceEngineService: CEEngineService) { }
 
   /**
    * POST /story/parse
    * CE06: 解析小说
    */
-  @Post('story/parse')
+  @Post('core/story/parse')
   @RequireSignature() // CE10: 高成本接口，强制签名验证
   async parseStory(
     @Body() dto: ParseStoryDto,

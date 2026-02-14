@@ -47,7 +47,7 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
         // Keywords: happy/joy -> joy; sad/cry -> sadness; angry/mad -> anger
         const lower = text.toLowerCase();
         let primary = 'neutral';
-        let labels = ['neutral'];
+        const labels = ['neutral'];
         let intensity = 0.5;
         let reasons = ['default fallback'];
 

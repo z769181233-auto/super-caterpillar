@@ -1,5 +1,4 @@
-// Re-export existing CE04 implementations
-export * from '../real';
-export * from '../replay';
-export * from '../selector';
-export * from '../types';
+export * from './types';
+export { ce04Selector, CE04EngineSelector } from './selector';
+export { ce04ReplayEngine } from './replay';
+export { ce04RealEngine } from './real';

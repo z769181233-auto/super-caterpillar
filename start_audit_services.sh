@@ -41,6 +41,7 @@ echo -e "\n✅ API is up."
 echo "Starting Worker..."
 export NODE_OPTIONS="--max-old-space-size=4096"
 export WORKER_METRICS_PORT=3001
+export WORKER_POLL_INTERVAL=100
 pnpm -C apps/workers dev > logs/worker_audit.log 2>&1 &
 WORKER_PID=$!
 

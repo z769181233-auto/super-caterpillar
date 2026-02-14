@@ -48,27 +48,48 @@ async function main() {
     let expectedTotal = 0;
     const expectedByUnit: Record<string, number> = {};
 
-    // 针对 P6-1-5 验证：我们只对最新的这一个 Job 进行业务逻辑校验
-    const targetTraceId = '5a51685b-e508-4ec6-b53d-bf428f4165f9';
-    console.log(`\n[BUSINESS-VERIFY] Targeting TraceId: ${targetTraceId}`);
+    // 3. 查询 Ledger 实际扣费 (针对该特定 traceId)
+    // P6-1-5 BUSINESS Verification: 
+    // 自动寻找最新的 CE06 SUCCEEDED 任务，或者从 CLI 传入
+    let targetTraceId = args.find(arg => arg.startsWith('--jobId='))?.split('=')[1];
+
+    if (!targetTraceId) {
+        console.log('\n[Reconciler] No jobId provided via --jobId, searching for latest CE06_NOVEL_PARSING SUCCEEDED job...');
+        const latestJob = await prisma.shotJob.findFirst({
+            where: { type: 'CE06_NOVEL_PARSING', status: 'SUCCEEDED' },
+            orderBy: { createdAt: 'desc' }
+        });
+        if (latestJob) {
+            targetTraceId = latestJob.id;
+            console.log(`[Reconciler] Found latest job: ${targetTraceId}`);
+        }
+    }
+
+    if (!targetTraceId) {
+        console.error('❌ FAIL: No target jobId found.');
+        process.exit(1);
+    }
+
+    console.log(`\n[BUSINESS-VERIFY] Targeting JobId: ${targetTraceId}`);
 
     const targetJob = await prisma.shotJob.findUnique({
         where: { id: targetTraceId }
     });
 
     if (targetJob && targetJob.status === 'SUCCEEDED') {
-        // P6-1-5 BUSINESS Verification: 
-        // 对于 5a51... 这个 Job，我们知道它的对应字符数是 95123
-        const charCount = 95123;
+        const result = targetJob.result as any;
+        const charCount = result?.stats?.charCount || 0;
+        console.log(`[Reconciler] Detected charCount: ${charCount}`);
+
         // 期望口径：Math.ceil(charCount / 10000)
         expectedTotal = Math.ceil(charCount / 10000);
         expectedByUnit['CE06_NOVEL_PARSING'] = expectedTotal;
     }
 
-    console.log(`\n[Expected] Total: ${expectedTotal} credits (Mode: BUSINESS_UNIT_VERIFY, CharCount: 95123)`);
+    console.log(`\n[Expected] Total: ${expectedTotal} credits (Mode: BUSINESS_UNIT_VERIFY)`);
     console.log(JSON.stringify(expectedByUnit, null, 2));
 
-    // 3. 查询 Ledger 实际扣费 (针对该特定 traceId)
+    // 3. 查询 Ledger 实际扣费 (针对该特定 jobId)
     const ledgerEntries = await prisma.billingLedger.findMany({
         where: { traceId: targetTraceId, status: 'POSTED' }
     });

@@ -158,7 +158,7 @@ async function bootstrap() {
   );
 
   try {
-    // 强制绑定到 127.0.0.1（Gate 本地验证最稳）
+    // 强制绑定到 127.0.0.1（Gate 本地验证对 IPv4 最稳）
     await app.listen(port, '127.0.0.1');
 
     const addr: any = app.getHttpServer()?.address?.();

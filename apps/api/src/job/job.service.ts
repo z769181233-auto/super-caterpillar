@@ -25,6 +25,7 @@ import { QualityScoreService } from '../quality/quality-score.service';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
 import { JobEngineBindingService } from './job-engine-binding.service';
 import { BillingService } from '../billing/billing.service';
+import { FinancialSettlementService } from '../billing/financial-settlement.service';
 import { CopyrightService } from '../copyright/copyright.service';
 import { CapacityGateService } from '../capacity/capacity-gate.service';
 import { BudgetService } from '../billing/budget.service';
@@ -127,8 +128,10 @@ export class JobService {
     @Inject(forwardRef(() => StructureGenerateService))
     private readonly structureGenerateService?: StructureGenerateService,
     @Inject(forwardRef(() => OrchestratorService))
-    private readonly orchestratorService?: OrchestratorService
-  ) {}
+    private readonly orchestratorService?: OrchestratorService,
+    @Inject(FinancialSettlementService)
+    private readonly financialSettlementService?: FinancialSettlementService
+  ) { }
 
   async create(
     shotId: string,
@@ -387,12 +390,7 @@ export class JobService {
       );
       return job;
     } catch (err: any) {
-      // DEBUG: Log error to file
-      const fs = await import('fs');
-      const logPath =
-        'tools/job_create_error.log';
-      const msg = `[${new Date().toISOString()}] JobService.create FAILED:\n${err.message}\n${err.stack}\n----------------\n`;
-      fs.appendFileSync(logPath, msg);
+      this.logger.error(`JobService.create FAILED: ${err.message}`, err.stack);
       throw err;
     }
   }
@@ -607,8 +605,9 @@ export class JobService {
     traceId?: string;
     isVerification?: boolean;
     dedupeKey?: string;
+    priority?: number;
   }): Promise<any> {
-    const { projectId, organizationId, taskId, jobType, payload, isVerification, dedupeKey } =
+    const { projectId, organizationId, taskId, jobType, payload, isVerification, dedupeKey, priority } =
       params;
     let traceId = params.traceId;
 
@@ -747,18 +746,21 @@ export class JobService {
         });
       }
 
-      // 创建 CE Job（使用占位的 episode/scene/shot）
+      // 创建 CE Job（使用占位的 episode/scene/shot，但如果 payload 有真实 sceneId 则优先使用）
+      // Phase 4 Fix: VIDEO_RENDER 等任务需要真实 sceneId 来正确创建资产
+      const actualSceneId = payload.sceneId || scene.id;
+
       const job = await this.prisma.shotJob.create({
         data: {
           organizationId,
           projectId,
           episodeId: episode.id,
-          sceneId: scene.id,
+          sceneId: actualSceneId,
           shotId: shot.id,
           taskId,
           type: jobType,
           status: JobStatusEnum.PENDING,
-          priority: 0,
+          priority: priority ?? 0,
           maxRetry: 3,
           retryCount: 0,
           attempts: 0,
@@ -1184,15 +1186,13 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${
-          filterTypes.length > 0
-            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-            : Prisma.empty
+        ${filterTypes.length > 0
+          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+          : Prisma.empty
         }
-        ${
-          supportedEngines.length > 0
-            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-            : Prisma.empty
+        ${supportedEngines.length > 0
+          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+          : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10
@@ -1716,9 +1716,44 @@ export class JobService {
       if (
         !updatedJob.isVerification && // Skip billing for verification jobs
         (updatedJob.type === JobTypeEnum.VIDEO_RENDER ||
-          updatedJob.type === JobTypeEnum.SHOT_RENDER)
+          updatedJob.type === JobTypeEnum.SHOT_RENDER ||
+          updatedJob.type === JobTypeEnum.CE06_NOVEL_PARSING)
       ) {
         try {
+          // P6-1: Use Unified FinancialSettlementService for BillingLedger
+          if (this.financialSettlementService) {
+            let amount = 0;
+            let chargeCode = '';
+
+            if (updatedJob.type === JobTypeEnum.CE06_NOVEL_PARSING) {
+              const charCount = (updatedJob.result as any)?.stats?.charCount ||
+                (updatedJob.payload as any)?.charCount || 0;
+              amount = this.financialSettlementService.calculateCE06Cost(charCount);
+              if (amount === 0) amount = 1; // Minimum charge for success
+              chargeCode = 'SCAN_CHAR';
+            } else if (updatedJob.type === JobTypeEnum.SHOT_RENDER) {
+              amount = this.financialSettlementService.calculateShotRenderCost();
+              chargeCode = 'RENDER_CHAR';
+            } else if (updatedJob.type === JobTypeEnum.VIDEO_RENDER) {
+              amount = this.financialSettlementService.calculateVideoRenderCost();
+              chargeCode = 'VIDEO_CHAR';
+            }
+
+            if (amount > 0) {
+              await this.financialSettlementService.writeBillingLedger({
+                tenantId: updatedJob.organizationId,
+                traceId: updatedJob.id,
+                itemType: 'JOB',
+                itemId: updatedJob.id,
+                chargeCode,
+                amount,
+                status: 'POSTED',
+                evidenceRef: updatedJob.traceId || undefined,
+              });
+            }
+          }
+
+          // Legacy CostLedger (Keep for backwards compatibility during transition)
           const totalCost = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
           await this.prisma.costLedger.upsert({
             where: {
@@ -1752,7 +1787,7 @@ export class JobService {
           );
         } catch (costError: any) {
           this.logger.warn(
-            `[Job] Failed to record cost_ledger for job ${jobId}: ${costError?.message} `
+            `[Job] Failed to record billing logic for job ${jobId}: ${costError?.message} `
           );
         }
       }

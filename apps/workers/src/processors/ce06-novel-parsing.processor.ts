@@ -255,6 +255,12 @@ async function executeChunkParseJob(
   });
   if (!chapter) throw new Error(`Chapter ${chapterId} not found`);
 
+  // B2: 提取 Project 级别的全局 Style Prompt
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { stylePrompt: true, styleGuide: true },
+  });
+
   // V3.0 P0-2: 构建递归注入上下文
   const contextPrompt = await buildContext({
     prisma,
@@ -374,6 +380,8 @@ async function executeChunkParseJob(
         engineVersion: 'v1.0',
         payload: {
           structured_text: sc.raw_text || '',
+          style_prompt: project?.stylePrompt,
+          style_guide: project?.styleGuide,
           traceId,
           pipelineRunId,
           shotId: defaultShot.id,
