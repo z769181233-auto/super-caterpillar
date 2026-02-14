@@ -40,11 +40,6 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
       }
     }
 
-    if (!targetAssetId || !sourceStorageKey) {
-      throw new Error(
-        `[DEBUG_V3_RELOADED] MISSING_ASSET_OR_STORAGE_KEY: assetId=${targetAssetId}, shotId=${shotId}`
-      );
-    }
 
     // 2. Invoke EngineHub
     const secResult = await apiClient.invokeEngine({

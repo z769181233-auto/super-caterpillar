@@ -1,4 +1,5 @@
 import { PrismaClient, JobType, JobStatus } from 'database';
+import { config } from 'config';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as fsp from 'fs/promises';
@@ -41,7 +42,7 @@ export async function processNovelChunk(context: ProcessorContext) {
     // 1. Path Resolution
     let filePath = fileKey;
     if (!path.isAbsolute(filePath)) {
-      const storageRoot = process.env.STORAGE_ROOT || path.resolve(process.cwd(), '.data/storage');
+      const storageRoot = config.storageRoot;
       filePath = path.resolve(storageRoot, fileKey);
     }
 
@@ -301,7 +302,7 @@ export async function processNovelChunk(context: ProcessorContext) {
               where: { id: nsId },
               data: { status: 'COMPLETED' },
             })
-            .catch(() => {});
+            .catch(() => { });
         }
       } else {
         // Fire and forget update for background progress if not a milestone
@@ -310,7 +311,7 @@ export async function processNovelChunk(context: ProcessorContext) {
             where: { id: nsId },
             data: { processedChunks: { increment: 1 } },
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
 
@@ -334,7 +335,7 @@ export async function processNovelChunk(context: ProcessorContext) {
             error: `Chunk ${job.payload.episodeId} failed: ${e.message || String(e)}`,
           },
         })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     // Metrics: Failure

@@ -296,11 +296,11 @@ export async function startGateWorkerApp() {
           pl.sceneId ||
           (pl.shotId
             ? (
-                await prisma.shot.findUnique({
-                  where: { id: pl.shotId },
-                  select: { sceneId: true },
-                })
-              )?.sceneId
+              await prisma.shot.findUnique({
+                where: { id: pl.shotId },
+                select: { sceneId: true },
+              })
+            )?.sceneId
             : 'sc-placeholder');
 
         // Robust Repo Root Detection
@@ -309,10 +309,7 @@ export async function startGateWorkerApp() {
           repoRoot = path.dirname(repoRoot);
         }
 
-        const storageRoot =
-          process.env.GATE_MODE === '1'
-            ? path.join(repoRoot, '.runtime')
-            : process.env.STORAGE_ROOT || path.join(process.cwd(), '.data/storage');
+        const storageRoot = (env as any).storageRoot;
         const mockKey = 'videos/gate_mock.mp4';
         const mockPath = path.join(storageRoot, mockKey);
 
@@ -520,7 +517,7 @@ export async function startGateWorkerApp() {
         } catch (dbErr: any) {
           process.stderr.write(
             util.format(`[GateWorker] ⚠️ L3 DB write failed for job ${job.id}:`, dbErr.message) +
-              '\n'
+            '\n'
           );
         }
       }

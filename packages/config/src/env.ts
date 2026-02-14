@@ -14,12 +14,7 @@ const ignoreEnvFile = process.env.IGNORE_ENV_FILE === 'true';
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isCI = !!process.env.CI;
 
-// eslint-disable-next-line no-console
-process.stdout.write(
-  util.format(
-    `[Config] process.env.WORKER_OFFLINE_GRACE_MS: ${process.env.WORKER_OFFLINE_GRACE_MS}`
-  ) + '\n'
-);
+// Loaded via dotenv.config() logic below
 
 let dbUrlSource = 'environment variable';
 
@@ -50,16 +45,7 @@ if (!ignoreEnvFile) {
   );
 }
 
-// 判定标记，用于证据化
-if (!process.env.DATABASE_URL_SET_BY_SYSTEM) {
-  // eslint-disable-next-line no-console
-  process.stdout.write(util.format(`[Config] DATABASE_URL resolved from ${dbUrlSource}`) + '\n');
-} else {
-  // eslint-disable-next-line no-console
-  process.stdout.write(
-    util.format(`[Config] DATABASE_URL resolved from environment variable (System Override)`) + '\n'
-  );
-}
+// DATABASE_URL source tracking (silent)
 
 /**
  * 环境变量配置模块
@@ -90,7 +76,7 @@ function getEnvNumber(key: string, defaultValue?: number): number {
   return num;
 }
 
-console.log(`[CONFIG_DEBUG] JWT_SECRET_PRESENT=${!!process.env.JWT_SECRET}`);
+// JWT Secret Check (Silent)
 
 export const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 
@@ -241,8 +227,14 @@ export const env = {
   // WORKER_OFFLINE_GRACE_MS: Worker 判定离线的宽限期
   workerOfflineGraceMs: getEnvNumber('WORKER_OFFLINE_GRACE_MS', 180000), // 默认 3 分钟
 
-  // P16-2: Kill Switch for Quality Score Real/Shadow Mode
-  // Set to '1' to strictly disable all real/shadow scoring and side effects.
+  // P5-Fix: Robust STORAGE_ROOT (Relative to Absolute)
+  storageRoot: (() => {
+    const raw = (process.env.STORAGE_ROOT || '.runtime') as string;
+    if (path.isAbsolute(raw)) return raw;
+    // Resolve relative to project root (3 levels up from packages/config/src)
+    return path.resolve(__dirname, '../../..', raw);
+  })() as string,
+
   ce23RealForceDisable: process.env.CE23_REAL_FORCE_DISABLE === '1',
   orchV2AudioEnabled: process.env.ORCH_V2_AUDIO_ENABLED === '1' || true, // FORCED TRUE FOR L3 VERIFICATION
 };

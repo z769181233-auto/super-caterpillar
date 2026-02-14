@@ -4,6 +4,8 @@ import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
 import * as path from 'path';
 import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
+import { config } from 'config';
+import { ProcessorContext } from '../types/processor-context';
 
 export interface TimelineShot {
   shotId: string;
@@ -47,7 +49,6 @@ export interface TimelineData {
   audio?: AudioConfig;
 }
 
-import { ProcessorContext } from '../types/processor-context';
 
 /**
  * CE10: Timeline Composition Processor
@@ -198,14 +199,7 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     const framesTxtPath = path.join(process.cwd(), '.runtime', 'frames', shot.id, 'frames.txt');
 
     // Resolve Storage Root
-    let storageRoot: string;
-    if (process.env.REPO_ROOT) {
-      storageRoot = path.join(process.env.REPO_ROOT, '.data/storage');
-    } else if (process.env.STORAGE_ROOT) {
-      storageRoot = process.env.STORAGE_ROOT;
-    } else {
-      storageRoot = path.join(path.resolve(process.cwd(), '../../'), '.data/storage');
-    }
+    const storageRoot = config.storageRoot;
 
     if (shot.resultImageUrl) {
       const imageAbsPath = path.resolve(storageRoot, shot.resultImageUrl);
@@ -261,16 +255,16 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       tracks: [
         ...((job.payload as any).bgmStorageKey
           ? [
-              {
-                id: 'bgm',
-                type: 'music' as const,
-                storageKey: (job.payload as any).bgmStorageKey,
-                gain: (job.payload as any).bgmGain || 0.5,
-                loop: (job.payload as any).bgmMode === 'loop',
-                ducking: { target: 'dialogue', gain: 0.2 },
-                truncate: 'shortest' as const,
-              },
-            ]
+            {
+              id: 'bgm',
+              type: 'music' as const,
+              storageKey: (job.payload as any).bgmStorageKey,
+              gain: (job.payload as any).bgmGain || 0.5,
+              loop: (job.payload as any).bgmMode === 'loop',
+              ducking: { target: 'dialogue', gain: 0.2 },
+              truncate: 'shortest' as const,
+            },
+          ]
           : []),
         ...scene.shots
           .map((s) => {

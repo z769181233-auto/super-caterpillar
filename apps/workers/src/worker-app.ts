@@ -241,11 +241,7 @@ const loadMonitor = new SystemLoadMonitor();
 // [P6-0 Fix] Instantiate LocalStorageAdapter for Worker
 import { LocalStorageAdapter } from '@scu/storage';
 import * as path from 'path';
-const storageRoot =
-  process.env.STORAGE_ROOT ||
-  (process.env.REPO_ROOT
-    ? path.join(process.env.REPO_ROOT, '.data/storage')
-    : path.join(process.cwd(), '.data/storage'));
+const storageRoot = (appConfig as any).storageRoot;
 const localStorageAdapter = new LocalStorageAdapter(storageRoot);
 
 /**
@@ -265,7 +261,7 @@ async function registerWorker(): Promise<void> {
   if (!env.workerApiKey || !env.workerApiSecret) {
     process.stdout.write(
       util.format('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!') +
-        '\n'
+      '\n'
     );
     process.stdout.write(
       util.format('[Worker] ⚠️  Worker will not be able to authenticate with API server.') + '\n'
@@ -284,7 +280,7 @@ async function registerWorker(): Promise<void> {
     );
     process.stdout.write(
       util.format(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`) +
-        '\n'
+      '\n'
     );
 
     // Test DB Connection
@@ -310,21 +306,21 @@ async function registerWorker(): Promise<void> {
       rawEngines.length > 0
         ? rawEngines
         : [
-            'default_novel_analysis',
-            'ce06_novel_parsing',
-            'ce03_visual_density',
-            'ce04_visual_enrichment',
-            'ce04_sdxl',
-            'tts_standard',
-            'video_render',
-            'shot_render',
-            'real_shot_render',
-            'stage1_orchestrator',
-            'timeline_render',
-            'ce09_media_security',
-            'ce_pipeline',
-            'ce11_timeline_preview',
-          ];
+          'default_novel_analysis',
+          'ce06_novel_parsing',
+          'ce03_visual_density',
+          'ce04_visual_enrichment',
+          'ce04_sdxl',
+          'tts_standard',
+          'video_render',
+          'shot_render',
+          'real_shot_render',
+          'stage1_orchestrator',
+          'timeline_render',
+          'ce09_media_security',
+          'ce_pipeline',
+          'ce11_timeline_preview',
+        ];
 
     // P1: Production Scrubbing - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
@@ -417,21 +413,21 @@ async function sendHeartbeat(): Promise<void> {
       rawEngines.length > 0
         ? rawEngines
         : [
-            'default_novel_analysis',
-            'ce06_novel_parsing',
-            'ce03_visual_density',
-            'ce04_visual_enrichment',
-            'ce04_sdxl',
-            'tts_standard',
-            'video_render',
-            'shot_render',
-            'stage1_orchestrator',
-            'timeline_render',
-            'ce09_media_security',
-            'ce_pipeline',
-            'ce11_timeline_preview',
-            'ce09_real_watermark',
-          ];
+          'default_novel_analysis',
+          'ce06_novel_parsing',
+          'ce03_visual_density',
+          'ce04_visual_enrichment',
+          'ce04_sdxl',
+          'tts_standard',
+          'video_render',
+          'shot_render',
+          'stage1_orchestrator',
+          'timeline_render',
+          'ce09_media_security',
+          'ce_pipeline',
+          'ce11_timeline_preview',
+          'ce09_real_watermark',
+        ];
 
     // P1: Production Scrubbing (Heartbeat Sync) - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
@@ -937,7 +933,7 @@ export async function startWorkerApp() {
     process.stdout.write(util.format(`[Worker] Job 轮询间隔: Adaptive (Min 200ms)`) + '\n');
     process.stdout.write(
       util.format(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`) +
-        '\n'
+      '\n'
     );
 
     // 优雅退出处理

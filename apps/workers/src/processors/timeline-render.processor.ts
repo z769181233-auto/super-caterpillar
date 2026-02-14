@@ -6,6 +6,7 @@ import { promises as fsp } from 'fs';
 import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
 import * as crypto from 'crypto';
 import { spawn } from 'child_process';
+import { config } from 'config';
 import { TimelineData } from './timeline-compose.processor';
 
 import { ProcessorContext } from '../types/processor-context';
@@ -23,14 +24,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   const traceId = job.traceId || `trace-${Date.now()}`;
   const projectId = job.projectId || (job.payload as any)?.projectId;
 
-  let storageRoot: string;
-  if (process.env.REPO_ROOT) {
-    storageRoot = path.join(process.env.REPO_ROOT, '.data/storage');
-  } else if (process.env.STORAGE_ROOT) {
-    storageRoot = process.env.STORAGE_ROOT;
-  } else {
-    storageRoot = path.join(path.resolve(process.cwd(), '../../'), '.data/storage');
-  }
+  const storageRoot = config.storageRoot;
 
   if (!projectId) {
     throw new Error(`[TimelineRender] [${traceId}] Missing projectId in job ${job.id}`);

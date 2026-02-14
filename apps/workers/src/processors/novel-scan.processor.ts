@@ -1,4 +1,5 @@
 import { PrismaClient, JobType, JobStatus } from 'database';
+import { config } from 'config';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as fsp from 'fs/promises';
@@ -48,13 +49,13 @@ export async function processNovelScan(context: ProcessorContext) {
           where: { id: job.payload.novelSourceId },
           data: { status: 'SCANNING' },
         })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     // 1. Path Resolution
     let filePath = fileKey;
     if (!path.isAbsolute(filePath)) {
-      const storageRoot = process.env.STORAGE_ROOT || path.resolve(process.cwd(), '.data/storage');
+      const storageRoot = config.storageRoot;
       filePath = path.resolve(storageRoot, fileKey);
     }
 
@@ -192,7 +193,7 @@ export async function processNovelScan(context: ProcessorContext) {
       if (durationSec > 0) {
         stage4ThroughputBps.set({ type: job.type }, stats.size / durationSec);
       }
-    } catch {}
+    } catch { }
 
     return { status: 'SUCCEEDED', message: `Dispatched ${episodes.length} chunk jobs.` };
   } catch (e: any) {
@@ -206,7 +207,7 @@ export async function processNovelScan(context: ProcessorContext) {
             error: e.message || String(e),
           },
         })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     // Metrics: Failure

@@ -9,6 +9,7 @@ import { fileExists, ensureDir } from '../../../packages/shared/fs_async';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ChildProcess } from 'child_process';
 import * as util from 'util';
+import { config } from 'config';
 
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 const activeProcesses = new Set<ChildProcess>();
@@ -20,7 +21,7 @@ export function cleanupVideoRenderProcesses() {
   for (const cp of activeProcesses) {
     try {
       cp.kill('SIGKILL');
-    } catch (e) {}
+    } catch (e) { }
   }
   activeProcesses.clear();
 }
@@ -48,14 +49,7 @@ export async function processVideoRenderJob(
   const pipelineRunId = payload.pipelineRunId;
 
   // 1. Root & Storage Resolver
-  let storageRoot: string;
-  if (process.env.REPO_ROOT) {
-    storageRoot = path.join(process.env.REPO_ROOT, '.data/storage');
-  } else if (process.env.STORAGE_ROOT) {
-    storageRoot = process.env.STORAGE_ROOT;
-  } else {
-    storageRoot = path.join(path.resolve(process.cwd(), '../../'), '.data/storage');
-  }
+  const storageRoot = config.storageRoot;
   const storage = new LocalStorageAdapter(storageRoot);
 
   // 2. Shot Ownership & Approval Gate
@@ -358,7 +352,7 @@ export async function processVideoRenderJob(
         latencyMs: latency,
         auditTrail: { sizeBytes, checksum, frames: frameKeys.length, hls: hlsPlaylistUrl },
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // 7.1 ffprobe evidence (fs only, Unified Root)
     const ffprobeKey = `${videoKey}.ffprobe.json`;

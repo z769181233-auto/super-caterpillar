@@ -1,8 +1,10 @@
 import { AssetOwnerType, AssetType } from 'database';
+import { config } from 'config';
 import * as path from 'path';
 import { promises as fsp } from 'fs';
 import { spawn } from 'child_process';
 import { ProcessorContext } from '../types/processor-context';
+
 import { ensureDir, fileExists } from '../../../../packages/shared/fs_async';
 
 export interface EpisodeRenderPayload {
@@ -54,11 +56,7 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
   const sceneVideoPaths: string[] = [];
   const missingScenes: string[] = [];
 
-  const storageRoot =
-    process.env.STORAGE_ROOT ||
-    (process.env.REPO_ROOT
-      ? path.join(process.env.REPO_ROOT, '.data/storage')
-      : path.join(process.cwd(), '.data/storage'));
+  const storageRoot = config.storageRoot;
 
   for (const scene of scenes) {
     const asset = assetMap.get(scene.id);
