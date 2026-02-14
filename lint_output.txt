@@ -1,0 +1,1861 @@
+
+> api@1.0.0 lint /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+> eslint "{src,apps,libs,test}/**/*.ts" --ignore-pattern "src/scripts/**" --fix
+
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/admin/admin.controller.ts
+  42:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  62:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/admin/monitoring.service.ts
+  30:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/admin/prod-gate.controller.ts
+  240:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/app.module.ts
+   1:38  warning  'RequestMethod' is defined but never used                @typescript-eslint/no-unused-vars
+  14:10  warning  'JobWorkerModule' is defined but never used              @typescript-eslint/no-unused-vars
+  53:10  warning  'StorageController' is defined but never used            @typescript-eslint/no-unused-vars
+  54:10  warning  'LocalStorageService' is defined but never used          @typescript-eslint/no-unused-vars
+  55:10  warning  'SignedUrlService' is defined but never used             @typescript-eslint/no-unused-vars
+  56:10  warning  'StorageAuthService' is defined but never used           @typescript-eslint/no-unused-vars
+  64:7   warning  'JOB_WORKER_ENABLED' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  64:36  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/asset/asset-delivery.controller.ts
+  5:3  warning  'Query' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/asset/asset.controller.ts
+   1:22  warning  'Get' is defined but never used           @typescript-eslint/no-unused-vars
+  54:78  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/asset/asset.service.ts
+  101:39  warning  'userId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audio/audio.service.ts
+    7:3   warning  'AudioSynthesisInput' is defined but never used                                                                                                                @typescript-eslint/no-unused-vars
+   25:22  warning  Unexpected any. Specify a different type                                                                                                                       @typescript-eslint/no-explicit-any
+   25:36  warning  Unexpected any. Specify a different type                                                                                                                       @typescript-eslint/no-explicit-any
+   40:27  warning  Unexpected any. Specify a different type                                                                                                                       @typescript-eslint/no-explicit-any
+   64:39  warning  Unexpected any. Specify a different type                                                                                                                       @typescript-eslint/no-explicit-any
+  114:35  warning  Unexpected any. Specify a different type                                                                                                                       @typescript-eslint/no-explicit-any
+  228:7   error    Include a description after the "@ts-expect-error" directive to explain why the @ts-expect-error is necessary. The description must be 3 characters or longer  @typescript-eslint/ban-ts-comment
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audio/providers/bgm-library.provider.ts
+   35:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   38:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audio/providers/bgm-library.registry.ts
+  12:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audio/providers/real-tts.provider.ts
+  3:13  warning  'path' is defined but never used        @typescript-eslint/no-unused-vars
+  9:10  warning  'sha256File' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audit-insight/audit-insight.dto.ts
+   1:10  warning  'IsString' is defined but never used      @typescript-eslint/no-unused-vars
+   1:20  warning  'IsOptional' is defined but never used    @typescript-eslint/no-unused-vars
+  16:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  35:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audit-insight/audit-insight.module.ts
+  2:10  warning  'PrismaModule' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audit-insight/audit-insight.service.ts
+   67:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   84:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  144:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  206:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  219:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  270:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  329:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  374:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  375:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  440:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  495:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  510:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  512:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  516:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audit-log/audit-log.controller.ts
+  21:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audit-log/audit-log.service.ts
+   34:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   40:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:16  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  116:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  122:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audit/audit.interceptor.ts
+  15:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/audit/audit.service.ts
+  15:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  35:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/auth.controller.ts
+  1:44  warning  'Inject' is defined but never used      @typescript-eslint/no-unused-vars
+  6:10  warning  'RefreshDto' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/auth.service.ts
+   29:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/guards/budget.guard.ts
+  76:38  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  76:83  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  79:11  warning  'timestamp' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  96:30  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/guards/jwt-or-hmac.guard.ts
+  35:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  76:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/guards/quota.guard.ts
+  71:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:90  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/guards/timestamp-nonce.guard.ts
+   4:10  warning  'IS_PUBLIC_KEY' is defined but never used  @typescript-eslint/no-unused-vars
+  25:24  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/hmac/api-key.service.ts
+   79:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   94:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  119:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  162:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  172:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  180:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/hmac/hmac-auth.guard.ts
+    5:3   warning  'BadRequestException' is defined but never used   @typescript-eslint/no-unused-vars
+   10:10  warning  'Request' is defined but never used               @typescript-eslint/no-unused-vars
+   54:21  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+   60:42  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+   62:21  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+   71:21  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+   89:35  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  104:11  warning  'hmacVersion' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  136:23  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  157:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  228:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  229:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  230:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  231:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  232:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  233:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  234:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  235:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  241:19  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  244:21  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  258:21  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  259:21  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  271:87  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  275:21  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  295:32  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/hmac/hmac-auth.service.ts
+   2:10  warning  'Request' is defined but never used       @typescript-eslint/no-unused-vars
+  41:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/jwt.strategy.ts
+   4:10  warning  'Request' is defined but never used        @typescript-eslint/no-unused-vars
+  15:10  warning  'ConfigService' is defined but never used  @typescript-eslint/no-unused-vars
+  24:19  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/nonce.service.ts
+   66:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/bible/bible-alias.controller.ts
+   16:6   warning  'StoryParseDto' is defined but never used  @typescript-eslint/no-unused-vars
+   51:42  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   51:59  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   58:34  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   58:51  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   62:40  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   62:50  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  106:69  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  113:61  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  118:26  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  119:36  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  119:73  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/billing/billing-ledger-writer.ts
+   3:13  warning  'fs' is defined but never used            @typescript-eslint/no-unused-vars
+  41:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/billing/billing-settlement.service.ts
+  135:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  177:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  180:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  195:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/billing/billing.controller.ts
+   7:3   warning  'UnauthorizedException' is defined but never used  @typescript-eslint/no-unused-vars
+  78:31  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/billing/billing.service.enhanced.ts
+  244:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  269:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  277:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  301:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/billing/billing.service.ts
+  193:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  218:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  226:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  250:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/billing/budget.service.ts
+  19:5   warning  'projectId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  62:21  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/billing/financial-settlement.service.ts
+  56:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/capacity/capacity-gate.service.ts
+  1:30  warning  'BadRequestException' is defined but never used  @typescript-eslint/no-unused-vars
+  1:51  warning  'HttpException' is defined but never used        @typescript-eslint/no-unused-vars
+  1:66  warning  'HttpStatus' is defined but never used           @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/ce-engine/ce-engine.controller.ts
+   10:10  warning  'ApiSecurityGuard' is defined but never used  @typescript-eslint/no-unused-vars
+   42:30  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   74:30  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  111:30  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/ce-pipeline/ce-dag-orchestrator.service.ts
+  207:62  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  230:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  231:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  252:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/ce-pipeline/ce-dag.controller.ts
+  28:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/character/character.dto.ts
+  38:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  78:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  83:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/character/character.service.ts
+    1:76  warning  'forwardRef' is defined but never used    @typescript-eslint/no-unused-vars
+   25:87  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   34:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   55:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  124:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  332:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/character/lora-training.service.ts
+  104:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  140:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  160:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/common/filters/all-exceptions.filter.ts
+   12:10  warning  'AuditActions' is defined but never used  @typescript-eslint/no-unused-vars
+   32:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   34:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   62:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   66:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/common/filters/http-exception.filter.ts
+  34:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/common/http/http-client.ts
+  14:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/common/interceptors/hmac-signature.interceptor.ts
+  11:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/common/interceptors/logging.interceptor.ts
+  9:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/common/utils/sensitive-data-masker.ts
+  21:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/common/utils/signature-path.utils.ts
+  19:7  warning  'INTERNAL_HMAC_ONLY_PREFIX' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/cost/cost-ledger.service.ts
+   26:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/cost/cost-limit.service.ts
+  135:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  215:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  222:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  226:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/cost/cost.controller.ts
+  17:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine-admin/engine-admin.controller.ts
+  31:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine-admin/engine-admin.service.ts
+    8:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   14:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:11  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   29:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   38:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   40:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   50:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   93:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   94:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  122:92  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  169:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  180:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  185:89  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  190:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  197:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine-hub/engine-descriptor.interface.ts
+  33:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine-hub/engine-hub.controller.ts
+   7:3   warning  'ForbiddenException' is defined but never used  @typescript-eslint/no-unused-vars
+  36:25  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  37:70  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  38:32  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  39:77  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  53:17  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine-hub/engine-hub.module.ts
+  12:10  warning  'EngineRegistry' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine-hub/engine-invoker-hub.service.ts
+   16:10  warning  'createHash' is defined but never used               @typescript-eslint/no-unused-vars
+   50:16  warning  'e' is defined but never used                        @typescript-eslint/no-unused-vars
+   57:16  warning  'e' is defined but never used                        @typescript-eslint/no-unused-vars
+   64:16  warning  'e' is defined but never used                        @typescript-eslint/no-unused-vars
+   71:16  warning  'e' is defined but never used                        @typescript-eslint/no-unused-vars
+   78:16  warning  'e' is defined but never used                        @typescript-eslint/no-unused-vars
+  125:40  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  128:40  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  261:47  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  265:15  warning  'idempotencyKey' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  330:29  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  351:60  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  351:94  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine-profile/engine-profile.service.spec.ts
+   95:76  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:76  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine-profile/engine-profile.service.ts
+   30:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   39:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   68:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:17  warning  'key' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  129:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine/adapters/ce11.comfyui.adapter.ts
+    1:30  warning  'InternalServerErrorException' is defined but never used  @typescript-eslint/no-unused-vars
+   22:20  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   23:10  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   28:17  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   79:13  warning  'randomSeed' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  110:17  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  144:47  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  178:35  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  178:78  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  184:40  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  184:54  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  216:16  warning  'e' is defined but never used                             @typescript-eslint/no-unused-vars
+  229:33  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  229:47  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  268:16  warning  'e' is defined but never used                             @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine/adapters/http-engine.adapter.ts
+   15:3   warning  'EngineInvokeStatus' is defined but never used  @typescript-eslint/no-unused-vars
+   27:10  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   34:20  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   39:15  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  110:86  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  115:21  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  127:55  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  151:67  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  197:18  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  244:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  245:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  247:20  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  309:32  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  333:29  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  365:32  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  392:32  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  418:27  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  437:21  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  440:35  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  458:18  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  477:12  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  499:32  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  528:34  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  555:34  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  581:29  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  607:27  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine/engine-config-store.service.ts
+   34:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   38:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   39:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   48:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   59:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   68:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   69:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   82:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:84  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  142:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  154:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  155:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine/engine-registry.service.ts
+   22:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   56:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   62:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   93:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  151:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  318:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine/engine-routing.service.ts
+  6:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine/engine-strategy.service.ts
+  20:18  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  49:14  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  51:5   warning  'context' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engine/engine.controller.ts
+  22:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/__tests__/shot_preview.spec.ts
+  23:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/au01_voice_tts.adapter.ts
+  25:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/au02_bgm_gen.adapter.ts
+  25:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/au03_sfx_gen.adapter.ts
+  25:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/au04_audio_mix.adapter.ts
+  25:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/au05_environmental_reverb.adapter.ts
+  57:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/au06_spatial_audio.adapter.ts
+  56:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/audio-bgm.local.adapter.ts
+   31:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/audio-tts.local.adapter.ts
+   31:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce01_narrative_structure.adapter.ts
+   1:30  warning  'forwardRef' is defined but never used    @typescript-eslint/no-unused-vars
+  27:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce03.local.adapter.ts
+  34:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce04.local.adapter.ts
+  36:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce05_conflict_detector.adapter.ts
+  26:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce06.local.adapter.ts
+  44:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce07_memory_update.local.adapter.ts
+    6:5   warning  'EngineInvokeStatus' is defined but never used  @typescript-eslint/no-unused-vars
+  125:38  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  141:25  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  144:37  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce08_character_arc.adapter.ts
+   1:30  warning  'Logger' is defined but never used        @typescript-eslint/no-unused-vars
+  27:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce09-security.local.adapter.ts
+   29:85  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  117:14  warning  'outStat' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  120:30  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  134:21  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  137:29  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce12_theme_extractor.adapter.ts
+  26:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce13_pacing_analyzer.adapter.ts
+  26:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce14_narrative_climax.adapter.ts
+  26:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:83  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce15_multi_char_scene.adapter.ts
+  54:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce16_story_branch_coordinator.adapter.ts
+  51:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce17_cultural_consistency.adapter.ts
+  57:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce18_world_logic_validator.adapter.ts
+  56:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce19_story_summary_gen.adapter.ts
+  61:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/ce23-identity.local.adapter.ts
+   32:78  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/character-visual.local.adapter.ts
+  25:26  warning  'projectId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  25:78  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/character_gen.adapter.ts
+   48:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:25   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  140:113  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  155:86   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:40   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/dialogue_optimization.adapter.ts
+   29:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   42:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/emotion_analysis.adapter.ts
+   27:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   40:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/g5-asset-layering-resolver.adapter.ts
+  38:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/g5-dialogue-binding.adapter.ts
+  57:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/g5-semantic-motion-mapper.adapter.ts
+  45:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/novel-analysis.local.adapter.NEW.ts
+  17:3   warning  'EngineInvokeStatus' is defined but never used  @typescript-eslint/no-unused-vars
+  53:28  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/pp01_video_stitch.adapter.ts
+   9:21  warning  'existsSync' is defined but never used    @typescript-eslint/no-unused-vars
+  25:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/pp02_subtitle_overlay.adapter.ts
+  25:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/pp03_watermark.adapter.ts
+  25:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/pp04_hls_package.adapter.ts
+  25:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/pp05_poster_gen.adapter.ts
+  50:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  66:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/pp06_credits_gen.adapter.ts
+  50:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  66:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/qc01_visual_fidelity.adapter.ts
+  29:43   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  29:48   warning  'input' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  29:146  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  29:161  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  50:57   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  98:23   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/qc02_narrative_consistency.adapter.ts
+  25:43   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  25:48   warning  'input' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  25:146  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  25:161  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/qc03_identity_continuity.adapter.ts
+  25:43   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  25:48   warning  'input' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  25:146  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  25:161  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/qc04_compliance_scan.adapter.ts
+  25:43   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  25:48   warning  'input' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  25:146  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  25:161  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/qc05_technical_compliance.adapter.ts
+  59:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/qc06_flicker_detector.adapter.ts
+  56:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/scene_composition.adapter.ts
+   47:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:39   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:25   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  210:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  217:113  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  232:86   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  242:40   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/shot-render.comfyui.adapter.ts
+   79:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/shot-render.local.adapter.ts
+    1:10  warning  'Injectable' is defined but never used        @typescript-eslint/no-unused-vars
+   30:13  warning  'shotId' is assigned a value but never used   @typescript-eslint/no-unused-vars
+   31:13  warning  'traceId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  122:32  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  127:30  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  130:21  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  133:29  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/shot-render.mps.adapter.ts
+  62:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  91:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  94:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/shot-render.replicate.adapter.ts
+   70:14  warning  'modelName' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  121:30  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  155:21  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  158:29  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  177:57  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/shot-render.router.adapter.ts
+    1:30  warning  'Inject' is defined but never used        @typescript-eslint/no-unused-vars
+   67:16  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  100:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  178:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  216:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  262:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  390:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  410:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/shot_preview.fast.adapter.ts
+   64:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   66:39   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:49   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  122:25   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  130:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:112  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:86   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  170:44   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/style-transfer.replicate.adapter.ts
+   27:15   warning  't0' is assigned a value but never used                                  @typescript-eslint/no-unused-vars
+   47:42   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   95:38   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  102:25   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  109:37   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  118:36   warning  'style' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  130:113  warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  145:86   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  155:40   warning  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/translation.cloud.adapter.ts
+   55:42   warning  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+   95:38   warning  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  103:25   warning  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  110:37   warning  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  119:87   warning  'key' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  129:113  warning  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  149:86   warning  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  160:44   warning  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg01_background_render.adapter.ts
+  29:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg02_character_render.adapter.ts
+  28:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg03_lighting_engine.adapter.ts
+  29:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg04_camera_path.adapter.ts
+  28:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg05_vfx_compositor.adapter.ts
+  29:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg06_skeletal_animation.adapter.ts
+   50:43  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+   50:57  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  105:8   warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  146:19  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  148:9   warning  'layered' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  149:8   warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  150:22  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  153:15  warning  'lerp' is assigned a value but never used                                  @typescript-eslint/no-unused-vars
+  174:17  error    Unexpected lexical declaration in case block                               no-case-declarations
+  219:24  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  230:18  warning  'error' is defined but never used                                          @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg07_facial_expression.adapter.ts
+   52:43  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   52:57  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  107:8   warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  147:49  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  148:43  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  205:51  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  205:87  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  206:23  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  210:63  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  230:17  error    Unexpected lexical declaration in case block  no-case-declarations
+  231:17  error    Unexpected lexical declaration in case block  no-case-declarations
+  245:25  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  266:18  warning  'error' is defined but never used             @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg08_advanced_lighting.adapter.ts
+  46:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  84:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  93:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg09_hair_physics.adapter.ts
+  41:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg10_cloth_dynamics.adapter.ts
+  40:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  85:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg11_particle_effects.adapter.ts
+  40:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  84:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/adapters/vg12_dynamic_lighting_rig.adapter.ts
+  40:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:18  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/base/au_base.engine.ts
+   17:24   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:24   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:41   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:54   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   68:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:46   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:113  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:128  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:79   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:40   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/base/pp_base.engine.ts
+   17:24   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:24   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:41   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:54   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   68:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:46   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:113  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:128  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:79   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:40   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/base/qc_base.engine.ts
+   17:24   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   22:24   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   48:41   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:54   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   69:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:46   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:149  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:164  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:79   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:40   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/base/vg_base.engine.ts
+   17:24   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:24   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   56:41   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:54   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   80:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:21   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  130:46   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  130:113  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  130:128  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:79   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:40   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/engine-router.service.ts
+  5:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/engine.module.ts
+  365:16  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/g5-subengine-hub.service.ts
+   3:10  warning  'EngineInvokeStatus' is defined but never used  @typescript-eslint/no-unused-vars
+   4:13  warning  'path' is defined but never used                @typescript-eslint/no-unused-vars
+  23:12  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  24:17  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/nlp/__tests__/nlp_base.spec.ts
+   2:10  warning  'NlpCache' is defined but never used           @typescript-eslint/no-unused-vars
+   3:10  warning  'AuditService' is defined but never used       @typescript-eslint/no-unused-vars
+   4:10  warning  'CostLedgerService' is defined but never used  @typescript-eslint/no-unused-vars
+   8:24  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+   8:36  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+   8:47  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  11:25  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  11:39  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  14:43  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  14:57  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  21:20  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  22:20  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  23:19  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/nlp/nlp_base.ts
+   41:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   51:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:86  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/nlp/nlp_cache.ts
+  14:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/engines/nlp/nlp_output_schema.ts
+   8:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/feature-flag/feature-flag.service.ts
+  129:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/health/health.controller.ts
+   40:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+   48:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/identity/identity-consistency.service.ts
+   25:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   51:72  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   71:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:66  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/identity/identity.controller.ts
+  21:38  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  22:13  warning  'projectId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/dto/create-job.dto.ts
+  55:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  63:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/dto/report-job.dto.ts
+  10:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job-engine-binding.service.ts
+  113:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job-generic.controller.ts
+   8:3   warning  'Logger' is defined but never used               @typescript-eslint/no-unused-vars
+  19:10  warning  'CapacityGateService' is defined but never used  @typescript-eslint/no-unused-vars
+  41:17  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  42:14  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  93:21  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job-processor.interface.ts
+  10:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job-report.facade.ts
+   91:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  190:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  195:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  203:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  220:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  250:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  258:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  331:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  364:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job-watchdog.controller.ts
+  1:33  warning  'UseGuards' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job-watchdog.service.ts
+   4:21  warning  'JobType' is defined but never used       @typescript-eslint/no-unused-vars
+  21:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job-worker.service.ts
+    9:23  warning  'JobStatusEnum' is defined but never used  @typescript-eslint/no-unused-vars
+   26:17  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   28:63  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   87:15  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  110:33  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  128:56  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  129:58  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  135:21  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job.controller.ts
+   13:3   warning  'ForbiddenException' is defined but never used  @typescript-eslint/no-unused-vars
+   61:54  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   62:40  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   83:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   84:23  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   86:50  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   90:20  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   93:40  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   94:40  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  104:35  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  105:35  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  110:39  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  143:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  161:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  176:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  197:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  217:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  238:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  255:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  273:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  290:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  312:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  329:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  356:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  358:34  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  361:39  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  401:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  403:34  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  404:31  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  405:35  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  406:39  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  442:78  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  443:39  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  462:62  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  464:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  465:39  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  487:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job.module.ts
+   6:10  warning  'JobWorkerService' is defined but never used             @typescript-eslint/no-unused-vars
+  33:7   warning  'JOB_WORKER_ENABLED' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  33:36  warning  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job.retry.ts
+  68:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  77:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  95:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/job/job.service.ts
+     1:13  warning  'util' is defined but never used                           @typescript-eslint/no-unused-vars
+    50:3   warning  'assertTransition' is defined but never used               @typescript-eslint/no-unused-vars
+    51:3   warning  'isClaimableStatus' is defined but never used              @typescript-eslint/no-unused-vars
+    58:6   warning  'TaskStatusType' is defined but never used                 @typescript-eslint/no-unused-vars
+    59:6   warning  'TaskTypeType' is defined but never used                   @typescript-eslint/no-unused-vars
+   159:72  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   169:49  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   279:25  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   368:23  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   392:19  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   418:68  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   421:11  warning  'traceId' is assigned a value but never used               @typescript-eslint/no-unused-vars
+   454:20  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   604:14  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   609:15  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   785:59  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   786:19  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   816:7   warning  'userId' is assigned a value but never used                @typescript-eslint/no-unused-vars
+   906:34  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+   988:14  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1130:79  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1138:39  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1139:38  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1155:58  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1183:45  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1211:22  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1222:74  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1229:44  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1249:9   warning  'targetOrganizationId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  1250:9   warning  'targetEngineKey' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  1268:46  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1346:14  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1485:38  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1486:26  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1486:62  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1487:26  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1487:66  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1491:63  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1492:46  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1542:47  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1543:42  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1571:19  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1675:45  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1679:35  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1695:21  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1729:55  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1730:40  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1788:29  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1804:45  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1820:21  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1929:28  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  1929:63  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2008:48  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2009:44  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2010:46  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2012:13  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2017:44  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2024:43  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2039:43  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2113:16  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2243:50  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2251:25  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2258:21  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2271:25  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2402:18  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2485:44  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2504:36  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2534:20  warning  'error' is defined but never used                          @typescript-eslint/no-unused-vars
+  2575:58  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2577:38  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2592:48  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2592:68  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2594:38  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2601:48  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2630:18  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2678:21  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  2715:40  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3019:27  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3060:21  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3078:57  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3092:46  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3093:25  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3108:77  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3122:46  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3123:25  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3150:22  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3151:23  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3156:38  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3161:32  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3166:38  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3166:70  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3173:34  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3177:34  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3179:54  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3183:34  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3186:36  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3188:58  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3196:21  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3266:44  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3276:47  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3308:44  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3341:33  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3346:44  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3386:43  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3438:21  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3473:45  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3483:38  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3501:15  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3572:37  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3637:17  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3682:67  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3683:37  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  3797:19  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/main.ts
+  126:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  170:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  188:17  warning  '_' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/memory/memory.controller.ts
+  41:88  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  53:85  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:92  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  68:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/memory/memory.service.ts
+  97:92  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/novel-import/file-parser.service.ts
+    4:13  warning  'path' is defined but never used                @typescript-eslint/no-unused-vars
+   26:29  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   56:7   warning  'lastIndex' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  207:16  warning  'utf8Error' is defined but never used           @typescript-eslint/no-unused-vars
+  212:18  warning  'gbkError' is defined but never used            @typescript-eslint/no-unused-vars
+  226:14  warning  'error' is defined but never used               @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/novel-import/novel-analysis-processor.service.ts
+  17:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/novel-import/novel-import.controller.ts
+   13:3   warning  'ConflictException' is defined but never used    @typescript-eslint/no-unused-vars
+   36:15  warning  'TaskTypeEnum' is defined but never used         @typescript-eslint/no-unused-vars
+   37:17  warning  'TaskStatusEnum' is defined but never used       @typescript-eslint/no-unused-vars
+   40:10  warning  'NovelAnalysisStatus' is defined but never used  @typescript-eslint/no-unused-vars
+   51:10  warning  'OrchestratorService' is defined but never used  @typescript-eslint/no-unused-vars
+   53:10  warning  'ApiSecurityGuard' is defined but never used     @typescript-eslint/no-unused-vars
+  317:47  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  372:21  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  480:45  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  556:45  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/novel-import/novel-import.service.ts
+    4:3   warning  'ForbiddenException' is defined but never used  @typescript-eslint/no-unused-vars
+  167:16  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  320:14  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  328:35  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  350:35  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/observability/trace.middleware.ts
+  12:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/ops/ops-metrics.service.ts
+   89:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/orchestrator/hooks/production-flow.hook.ts
+    5:19  warning  'JobStatus' is defined but never used         @typescript-eslint/no-unused-vars
+    5:30  warning  'AssetType' is defined but never used         @typescript-eslint/no-unused-vars
+   27:33  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   46:46  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   50:36  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   99:19  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  107:51  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  110:36  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  113:47  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  146:14  warning  'e' is defined but never used                 @typescript-eslint/no-unused-vars
+  146:17  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  151:50  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  158:36  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  168:38  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  169:41  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  172:15  warning  'project' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/orchestrator/hooks/stage1-verification.hook.ts
+   32:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/orchestrator/orchestrator.controller.ts
+  16:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/orchestrator/orchestrator.service.ts
+     4:10  warning  'ApiSecurityModule' is defined but never used                             @typescript-eslint/no-unused-vars
+     5:10  warning  'ProjectModule' is defined but never used                                 @typescript-eslint/no-unused-vars
+     6:10  warning  'NovelImportModule' is defined but never used                             @typescript-eslint/no-unused-vars
+    16:3   warning  'Prisma' is defined but never used                                        @typescript-eslint/no-unused-vars
+   168:53  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   248:23  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   308:54  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   342:54  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   392:11  warning  'onlineWorkers' is assigned a value but never used                        @typescript-eslint/no-unused-vars
+   453:13  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   578:56  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   592:44  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   682:44  warning  'result' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   682:52  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   723:39  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   734:58  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   738:51  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   747:53  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   762:56  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   784:51  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   785:34  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   786:43  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   833:14  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   837:17  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   845:62  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   850:45  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   888:21  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   908:15  warning  'result' is assigned a value but never used                               @typescript-eslint/no-unused-vars
+   908:44  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   924:31  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   925:32  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   926:32  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   954:12  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   956:17  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   957:17  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   985:24  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   986:25  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+   987:25  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1037:14  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1045:17  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1053:45  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1054:41  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1075:11  warning  'start' is assigned a value but never used                                @typescript-eslint/no-unused-vars
+  1078:39  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1107:14  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1112:17  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1209:16  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1226:14  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1244:14  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1264:14  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1274:14  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1297:14  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1319:14  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  1336:17  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/organization/organization.controller.ts
+  23:80  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  55:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/organization/organization.service.ts
+  12:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:82  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:78  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/permission/permission.service.ts
+    8:3   warning  'ProjectPermissions' is defined but never used                                    @typescript-eslint/no-unused-vars
+   62:57  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+   83:53  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+  155:48  warning  'organizationId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  174:45  warning  'organizationId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/pipeline/pipeline.controller.ts
+  17:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/pipeline/pipeline.service.ts
+   13:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   41:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   59:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   83:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   88:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  190:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:89  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  242:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/prisma/prisma-audit.interceptor.ts
+   4:10  warning  'PrismaService' is defined but never used                                 @typescript-eslint/no-unused-vars
+  15:71  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  43:44  warning  'params' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  43:53  warning  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/prisma/prisma.service.ts
+  22:16  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/dto/create-episode.dto.ts
+  1:58  warning  'Max' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/dto/create-scene.dto.ts
+  20:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/dto/create-season.dto.ts
+  1:47  warning  'Max' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/dto/create-shot.dto.ts
+  33:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/dto/update-shot.dto.ts
+  1:50  warning  'IsDateString' is defined but never used  @typescript-eslint/no-unused-vars
+  6:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/guards/project-ownership.guard.ts
+  9:15  warning  'context' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project-structure.service.ts
+    6:3   warning  'ForbiddenException' is defined but never used  @typescript-eslint/no-unused-vars
+  145:69  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  149:85  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  155:80  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  161:76  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  165:54  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project.controller.ts
+   22:10  warning  'JwtAuthGuard' is defined but never used          @typescript-eslint/no-unused-vars
+   30:17  warning  'TaskStatusEnum' is defined but never used        @typescript-eslint/no-unused-vars
+   72:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  102:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  131:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  141:34  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  169:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  187:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  208:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  230:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  252:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  278:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  304:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  327:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  346:21  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  366:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  383:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  415:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  449:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  483:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  517:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  549:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  572:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  607:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  625:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  644:16  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  666:22  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  671:14  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  693:15  warning  'requestInfo' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  694:15  warning  'apiKeyId' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  694:38  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  715:46  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project.service.ts
+     9:3   warning  'forwardRef' is defined but never used              @typescript-eslint/no-unused-vars
+    22:10  warning  'CreateSeasonDto' is defined but never used         @typescript-eslint/no-unused-vars
+    27:3   warning  'ProjectFlowDTO' is defined but never used          @typescript-eslint/no-unused-vars
+    28:3   warning  'ProjectFlowStepDTO' is defined but never used      @typescript-eslint/no-unused-vars
+    29:3   warning  'BlockReasonCode' is defined but never used         @typescript-eslint/no-unused-vars
+   121:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   133:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   162:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   333:38  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   334:35  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   347:13  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   359:38  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   359:53  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   373:33  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   374:13  warning  'hasAssets' is assigned a value but never used      @typescript-eslint/no-unused-vars
+   401:33  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   425:50  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   427:47  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   435:60  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   485:20  warning  '_' is assigned a value but never used              @typescript-eslint/no-unused-vars
+   548:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   565:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   585:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   600:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   608:87  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   686:15  warning  'project' is assigned a value but never used        @typescript-eslint/no-unused-vars
+   790:25  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   949:36  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   950:42  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1084:25  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1088:50  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1137:18  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1181:18  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1237:7   warning  'status' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  1238:7   warning  'reviewStatus' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  1247:18  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1337:47  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1343:53  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1427:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1449:26  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1479:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1486:21  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1493:22  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1500:22  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1507:23  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1517:21  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1597:45  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1637:37  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1638:52  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1643:28  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1664:47  warning  'failedChunks' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  1665:48  warning  'runningChunks' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  1697:35  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1710:40  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  1768:18  warning  'e' is defined but never used                       @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/scene-graph.service.ts
+   71:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   88:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  161:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  176:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  185:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/structure-generate.service.ts
+   26:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   72:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/publish/published-video.controller.ts
+   1:34  warning  'UseGuards' is defined but never used       @typescript-eslint/no-unused-vars
+   3:10  warning  'JwtOrHmacGuard' is defined but never used  @typescript-eslint/no-unused-vars
+  17:18  warning  Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/publish/published-video.service.ts
+  35:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/quality/quality-backfill.sweeper.ts
+   97:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/quality/quality-gate.controller.ts
+  1:42  warning  'UseGuards' is defined but never used         @typescript-eslint/no-unused-vars
+  3:10  warning  'ApiSecurityGuard' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/quality/quality-metrics.writer.ts
+   31:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   50:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/quality/quality-score.service.ts
+   47:26  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+   57:81  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+   97:21  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  132:19  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  172:20  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  281:26  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  286:46  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  292:19  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  310:14  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  379:17  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  412:14  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  416:17  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  443:10  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  470:33  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  472:38  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  483:31  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  486:38  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  488:42  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  490:51  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  501:31  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  504:38  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  506:42  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  508:51  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  522:10  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  523:5   warning  'adapter' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  527:38  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  529:42  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  531:55  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/rate-limit/rate-limit.guard.ts
+  17:50  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  26:11  warning  'response' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  27:11  warning  'request' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  50:19  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/redis/redis.service.ts
+    3:15  warning  'RedisClientType' is defined but never used  @typescript-eslint/no-unused-vars
+   52:21  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+   65:23  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+   88:21  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  109:21  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  126:21  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  135:21  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  143:21  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  152:37  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  156:21  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/seasons/seasons.service.ts
+  28:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/security/api-security/api-security.guard.ts
+    1:53  warning  'HttpException' is defined but never used  @typescript-eslint/no-unused-vars
+    3:10  warning  'Request' is defined but never used        @typescript-eslint/no-unused-vars
+  172:17  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/security/api-security/api-security.service.ts
+    5:3   warning  'HttpException' is defined but never used          @typescript-eslint/no-unused-vars
+    6:3   warning  'UnauthorizedException' is defined but never used  @typescript-eslint/no-unused-vars
+   20:10  warning  'buildHmacError' is defined but never used         @typescript-eslint/no-unused-vars
+   74:24  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  289:16  warning  'e' is defined but never used                      @typescript-eslint/no-unused-vars
+  589:40  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/security/api-security/api-security.spec.ts
+  14:7  warning  'auditLogService' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/security/api-security/api-security.types.ts
+  16:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/security/api-security/secret-encryption.service.ts
+   3:10  warning  'env' is defined but never used           @typescript-eslint/no-unused-vars
+  41:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  96:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/shot-director/director-solver.service.ts
+  17:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/shot-director/shot-director.controller.ts
+  31:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:78  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/stage4/stage4.service.ts
+   63:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  197:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  208:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  218:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/storage/storage-auth.service.ts
+  5:3  warning  'ForbiddenException' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/storage/storage.controller.ts
+   60:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  140:73  error    Empty block statement                     no-empty
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/story/story.controller.ts
+   3:10  warning  'ApiSecurityService' is defined but never used  @typescript-eslint/no-unused-vars
+   5:13  warning  'crypto' is defined but never used              @typescript-eslint/no-unused-vars
+   6:10  warning  'JobType' is defined but never used             @typescript-eslint/no-unused-vars
+   6:19  warning  'PrismaClient' is defined but never used        @typescript-eslint/no-unused-vars
+  25:34  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  25:51  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/task/engine-task.service.ts
+   11:30  warning  'NotFoundException' is defined but never used  @typescript-eslint/no-unused-vars
+   15:47  warning  'JobStatusEnum' is defined but never used      @typescript-eslint/no-unused-vars
+   62:58  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+   89:18  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  126:60  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  152:34  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  152:44  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  155:41  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  163:43  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  232:32  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/task/task-graph.controller.spec.ts
+  19:7  warning  'taskGraphService' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  20:7  warning  'prismaService' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  21:7  warning  'jobService' is assigned a value but never used        @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/task/task-graph.controller.ts
+   64:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:70  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:86  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  144:58  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  144:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/task/task-graph.service.ts
+  10:30  warning  'NotFoundException' is defined but never used  @typescript-eslint/no-unused-vars
+  61:58  warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/task/task.module.ts
+  9:10  warning  'QualityScoreService' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/task/task.service.ts
+   1:22  warning  'NotFoundException' is defined but never used    @typescript-eslint/no-unused-vars
+   1:41  warning  'BadRequestException' is defined but never used  @typescript-eslint/no-unused-vars
+   4:10  warning  'Prisma' is defined but never used               @typescript-eslint/no-unused-vars
+  29:15  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  83:15  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  85:14  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/text-safety/text-safety.service.ts
+  210:16  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/text/text.controller.ts
+  39:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  66:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/timeline/timeline.controller.ts
+  23:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/user/user.controller.ts
+  22:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  81:68  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/user/user.service.ts
+   8:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/v3/asset-receipt-resolver.service.ts
+  111:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/v3/contract-shot.controller.ts
+  5:3  warning  'Inject' is defined but never used                        @typescript-eslint/no-unused-vars
+  7:3  warning  'InternalServerErrorException' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/v3/contract-story.controller.ts
+    7:3   warning  'Inject' is defined but never used                  @typescript-eslint/no-unused-vars
+   72:17  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   94:46  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  122:40  warning  'runningChunks' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/worker/dto/heartbeat.dto.ts
+   1:10  warning  'IsString' is defined but never used      @typescript-eslint/no-unused-vars
+  22:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/worker/worker-alias.controller.ts
+   45:14  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   47:34  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   87:14  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   89:34  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  120:14  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  134:34  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  135:11  warning  'nonce' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  135:31  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  136:11  warning  'signature' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  136:35  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  137:11  warning  'hmacTimestamp' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  137:39  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/worker/worker.controller.ts
+   44:14  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   46:34  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   87:14  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   89:34  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  139:14  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  180:34  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  181:11  warning  'nonce' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  181:31  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  182:11  warning  'signature' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  182:35  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  183:11  warning  'hmacTimestamp' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  183:39  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/worker/worker.service.ts
+   41:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   61:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  209:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  219:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  220:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  226:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  227:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  264:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  308:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  412:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  447:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  462:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  470:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/test/contract/hmac-nonce.e2e-spec.ts
+  120:13  warning  'firstResponse' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/test/contract/jobs-state-machine.e2e-spec.ts
+  333:16  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/test/g5_sealing.ts
+  5:13  warning  'path' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/test/hmac-security.e2e-spec.ts
+  105:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  194:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  232:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/test/stage4-flow.e2e-spec.ts
+   16:12  warning  Unexpected any. Specify a different type                             @typescript-eslint/no-explicit-any
+  163:19  warning  'e' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 1377 problems (5 errors, 1372 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.

@@ -224,12 +224,13 @@ export class VG07FacialExpressionAdapter extends VgBaseEngine {
             case 'instant':
                 return t < 0.1 ? 0 : 1;
 
-            case 'elastic':
+            case 'elastic': {
                 // 弹性效果
                 if (t === 0 || t === 1) return t;
                 const p = 0.3;
                 const s = p / 4;
-                return Math.pow(2, -10 * t) * Math.sin((t - s) * (2 * Math.PI) / p) + 1;
+                return Math.pow(2, -10 * t) * Math.sin(((t - s) * (2 * Math.PI)) / p) + 1;
+            }
 
             case 'smooth':
             default:

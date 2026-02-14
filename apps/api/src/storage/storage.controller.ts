@@ -137,7 +137,11 @@ export class StorageController {
     req.pipe(out);
 
     const cleanup = () => {
-      try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch { }
+      try {
+        if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+      } catch {
+        /* ignore error */
+      }
     };
 
     out.on('error', (e) => {

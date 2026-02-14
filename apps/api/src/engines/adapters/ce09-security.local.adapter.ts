@@ -3,7 +3,6 @@ import {
   EngineAdapter,
   EngineInvokeInput,
   EngineInvokeResult,
-  EngineInvokeStatus,
 } from '@scu/shared-types';
 import { execAsync } from '../../../../../packages/shared/os_exec';
 import { safeJoin } from '../../../../../packages/shared/fs_safe';
@@ -118,7 +117,7 @@ export class CE09SecurityLocalAdapter implements EngineAdapter {
       const [outStat, hash] = await Promise.all([fsp.stat(outPath), sha256File(outPath)]);
 
       return {
-        status: EngineInvokeStatus.SUCCESS,
+        status: 'SUCCESS' as any,
         output: {
           storageKey: outRelative,
           hlsPlaylistKey: hlsPlaylistRelative,
@@ -135,7 +134,7 @@ export class CE09SecurityLocalAdapter implements EngineAdapter {
     } catch (error: any) {
       this.logger.error(`[SECURITY_FAIL] ${error.message}`);
       return {
-        status: EngineInvokeStatus.FAILED,
+        status: 'FAILED' as any,
         error: { code: 'CE09_SECURITY_FAIL', message: error.message },
       };
     }

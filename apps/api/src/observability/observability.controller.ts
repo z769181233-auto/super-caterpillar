@@ -13,13 +13,13 @@ export class ObservabilityController {
     private readonly health: HealthCheckService,
     private readonly memory: MemoryHealthIndicator,
     private readonly prisma: PrismaService
-  ) {}
+  ) { }
 
   @Get()
   @HealthCheck()
   check() {
     return this.health.check([
-      () => this.memory.checkHeap('memory_heap', 150 * 1024 * 1024),
+      () => this.memory.checkHeap('memory_heap', 512 * 1024 * 1024),
       async () => {
         try {
           await this.prisma.$queryRaw`SELECT 1`;

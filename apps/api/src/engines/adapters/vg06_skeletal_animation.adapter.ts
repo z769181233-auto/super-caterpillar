@@ -170,7 +170,7 @@ export class VG06SkeletalAnimationAdapter extends VgBaseEngine {
                 frame.bones.spine = { rotation: Math.sin(t * Math.PI * 8) * 5 };
                 break;
 
-            case 'jump':
+            case 'jump': {
                 const jumpPhase = t < 0.5 ? t * 2 : 2 - t * 2; // 抛物线
                 frame.bones.leftLeg = { rotation: -45 * jumpPhase };
                 frame.bones.rightLeg = { rotation: -45 * jumpPhase };
@@ -178,6 +178,7 @@ export class VG06SkeletalAnimationAdapter extends VgBaseEngine {
                 frame.bones.rightArm = { rotation: 60 * jumpPhase };
                 frame.bones.root = { y: -50 * Math.sin(t * Math.PI) };
                 break;
+            }
 
             case 'wave':
                 frame.bones.rightArm = { rotation: 90 + Math.sin(t * Math.PI * 4) * 30 };

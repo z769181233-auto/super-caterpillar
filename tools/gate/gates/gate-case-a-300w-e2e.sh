@@ -14,7 +14,7 @@ echo "════════════════════════�
 # Phase 0: 环境准备
 # ====================================================================
 
-EVID_DIR="./evidence/case_a_300w_$(date +%Y%m%d_%H%M%S)"
+EVID_DIR="$(pwd)/evidence/case_a_300w_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$EVID_DIR"
 LOG_FILE="$EVID_DIR/00_EXECUTION_LOG.txt"
 

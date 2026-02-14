@@ -11,6 +11,7 @@ import { ModuleRef } from '@nestjs/core';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter.NEW';
 import { CE06LocalAdapter } from './adapters/ce06.local.adapter';
+import { CE09SecurityLocalAdapter } from './adapters/ce09-security.local.adapter';
 import { CE03LocalAdapter } from './adapters/ce03.local.adapter';
 import { CE04LocalAdapter } from './adapters/ce04.local.adapter';
 import { VideoMergeLocalAdapter } from './adapters/video-merge.local.adapter';
@@ -122,6 +123,7 @@ import { CharacterModule } from '../character/character.module';
     SceneCompositionAdapter,
     EmotionAnalysisAdapter,
     DialogueOptimizationAdapter,
+    CE09SecurityLocalAdapter,
     CE07MemoryUpdateAdapter,
     CE01NarrativeStructureAdapter,
     CE05ConflictDetectorAdapter,
@@ -205,6 +207,7 @@ import { CharacterModule } from '../character/character.module';
     PP03WatermarkAdapter,
     PP04HLSPackageAdapter,
     PP05PosterGenAdapter,
+    CE09SecurityLocalAdapter,
     QC01VisualFidelityAdapter,
     QC02NarrativeConsistencyAdapter,
     QC03IdentityContinuityAdapter,
@@ -283,6 +286,8 @@ export class EngineModule implements OnModuleInit {
     private readonly ce16Adapter: CE16StoryBranchCoordinatorAdapter,
     @Inject(CE17CulturalConsistencyAdapter)
     private readonly ce17Adapter: CE17CulturalConsistencyAdapter,
+    @Inject(CE09SecurityLocalAdapter)
+    private readonly ce09Adapter: CE09SecurityLocalAdapter,
     @Inject(CE18WorldLogicValidatorAdapter)
     private readonly ce18Adapter: CE18WorldLogicValidatorAdapter,
     @Inject(CE19StorySummaryGenAdapter)
@@ -441,6 +446,9 @@ export class EngineModule implements OnModuleInit {
 
     // P2.4: Dialogue Optimization Engine
     this.registry.register(this.dialogueOptimizationAdapter);
+
+    // P2.5: Media Security Compliance
+    this.registry.register(this.ce09Adapter);
 
     // P3: CE07 Memory Update
     this.registry.register(this.ce07Adapter);

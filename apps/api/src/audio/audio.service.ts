@@ -225,7 +225,7 @@ export class AudioService {
       mixed: { absPath: outPath, sha256: mixedSha },
       signals,
       // P18-3: Also return BGM if needed for separate persistence
-      // @ts-expect-error
+      // @ts-expect-error: Legacy return type mismatch in P18 loop
       bgm,
     };
   }
