@@ -53,12 +53,15 @@ async function run() {
                 params: { characterIds: [charId] },
                 scene: { episode: { season: { project: { id: projectId } } } },
                 organization: { id: 'org-consist' },
+                sceneId: 'scene-consist',
               }),
+              update: async () => ({ id: currentShotId }),
             };
           }
           if (prop === 'asset') {
             return {
-              upsert: async () => ({ id: 'asset-' + currentShotId }), // Mocked ID
+              upsert: async () => ({ id: 'asset-' + currentShotId }),
+              update: async () => ({ id: 'asset-' + currentShotId }),
               findUnique: async () => null,
             };
           }
@@ -87,15 +90,44 @@ async function run() {
     const mockApi = new MockApiClient();
     // Dynamic request mock
     (mockApi as any).request = async (method: string, url: string, data: any) => {
-      if (url.includes('engine/invoke')) {
+      const isInvoke = url.includes('engine/invoke');
+      if (isInvoke) {
+        const engineKey = (data as any).engineKey;
+        // Manual Audit Logging for Consistency Check
+        const currentJobId = (data as any).context?.jobId;
+        if (currentJobId) {
+          await prisma.auditLog.create({
+            data: {
+              action: 'ENGINE_INVOKE',
+              resourceType: 'ENGINE',
+              resourceId: engineKey,
+              details: {
+                jobId: currentJobId,
+                identity: (data as any).context?.identity,
+              },
+            },
+          });
+        }
+
+        if (engineKey === 'ce23_identity_consistency') {
+          return {
+            success: true,
+            data: {
+              status: 'SUCCESS',
+              output: { is_consistent: true, identity_score: 0.99 },
+            },
+          };
+        }
         return {
           success: true,
           data: {
-            success: true,
+            status: 'SUCCESS',
             output: {
               asset: { uri: path.resolve(process.cwd(), 'apps/workers/.runtime/mock_render.png') },
               render_meta: { engine: 'mock' },
               audit_trail: { providerSelected: 'mock' },
+              storageKey: 'mock_render.png',
+              sha256: 'mock_hash',
             },
           },
         };

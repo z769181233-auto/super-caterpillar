@@ -151,7 +151,7 @@ async function executeScanJob(
   // 写入 Novel 表（用于审计）
   await prisma.novel.update({
     where: { id: novelSource.id },
-    data: { characterCount: totalCharCount }
+    data: { characterCount: totalCharCount },
   });
 
   // [P6-0 Fix] Race Condition: Collect jobs inside TX, dispatch AFTER TX commit.
@@ -471,7 +471,9 @@ async function executeChunkParseJob(
   const amount = Math.ceil(charCount / 10000);
 
   if (amount > 0) {
-    logger.log(`[BILLING] Job ${job.id} SUCCEEDED, charCount: ${charCount}, posting charge for ${amount} credits`);
+    logger.log(
+      `[BILLING] Job ${job.id} SUCCEEDED, charCount: ${charCount}, posting charge for ${amount} credits`
+    );
     try {
       const tenantId = 'default'; // 默认租户
 

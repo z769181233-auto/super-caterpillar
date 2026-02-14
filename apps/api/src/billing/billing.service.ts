@@ -53,31 +53,24 @@ export class BillingService {
     );
 
     return this.prisma.$transaction(async (tx) => {
-      // Atomic Update: Decrement credits ONLY if sufficient
-      // We use updateMany to allow filtering by credits >= amount
-      const result = await tx.organization.updateMany({
-        where: {
-          id: organizationId,
-          credits: { gte: amount },
-        },
-        data: {
-          credits: { decrement: amount },
-        },
-      });
+      // A5: Atomic Update with Row-Level Lock
+      // Use raw SQL to ensure FOR UPDATE skip locked or strict locking
+      // although Prisma's transaction with updateMany is decent,
+      // explicit check-then-update in transaction is safer for billing events.
+      const orgs: any[] =
+        await tx.$queryRaw`SELECT id, credits FROM "Organization" WHERE id = ${organizationId} FOR UPDATE`;
+      const org = orgs[0];
 
-      if (result.count === 0) {
-        // If update failed, check if it was because org missing or funds missing
-        const org = await tx.organization.findUnique({ where: { id: organizationId } });
-
-        if (!org) throw new NotFoundException('Organization not found');
-
-        this.logger.warn(
-          `Insufficient credits for Org ${organizationId}. Required: ${amount}, Available: ${org.credits}`
-        );
+      if (!org || org.credits < amount) {
         throw new ForbiddenException(
-          `Insufficient credits to start job. Required: ${amount} credits. (Available: ${org.credits})`
+          `Insufficient credits to start job. Required: ${amount} credits. (Available: ${org?.credits || 0})`
         );
       }
+
+      await tx.organization.update({
+        where: { id: organizationId },
+        data: { credits: { decrement: amount } },
+      });
 
       // 3. Record Billing Event (Ledger)
       // Ensure userId exists to avoid P2003 FK violation (e.g. if userId is an ApiKey ID)

@@ -15,7 +15,7 @@ import { createHmac, randomBytes, createHash } from 'crypto';
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) { }
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   /**
    * 记录审计日志
@@ -86,7 +86,10 @@ export class AuditLogService {
       ].join('|');
 
       const secret = process.env.AUDIT_SIGNING_SECRET;
-      const recordSignature = createHmac('sha256', secret || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR')
+      const recordSignature = createHmac(
+        'sha256',
+        secret || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR'
+      )
         .update(signBase)
         .digest('hex');
 

@@ -17,7 +17,7 @@ export class StructureGenerateService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly sceneGraphService: SceneGraphService
-  ) { }
+  ) {}
 
   /**
    * 生成剧集结构

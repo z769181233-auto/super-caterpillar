@@ -47,14 +47,36 @@ export class AdminController {
 
   // POST /admin/jobs/enqueue-test {projectId, jobType, payload}
   @Post('jobs/enqueue-test')
-  async enqueueTest(@Body() body: { projectId: string; jobType: string; payload?: any }) {
-    const { projectId, jobType, payload } = body;
+  async enqueueTest(
+    @Body()
+    body: {
+      projectId: string;
+      jobType: string;
+      payload?: any;
+      organizationId?: string;
+      priority?: number;
+    }
+  ) {
+    const { projectId, jobType, payload, organizationId, priority } = body;
     if (!projectId || !jobType) return { ok: false, error: 'projectId and jobType required' };
+
+    let finalOrgId = organizationId;
+    if (!finalOrgId) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { organizationId: true },
+      });
+      finalOrgId = project?.organizationId;
+    }
+    if (!finalOrgId)
+      return { ok: false, error: 'organizationId required or not found via project' };
 
     // 这里直接创建一个 PENDING job,JobService 领取时将做 quota check 并显式 BLOCKED
     const job = await this.prisma.shotJob.create({
       data: {
         projectId,
+        organizationId: finalOrgId,
+        priority: priority ?? 0,
         status: 'PENDING',
         type: jobType as any,
         payload: (payload ?? {}) as any,
@@ -73,5 +95,69 @@ export class AdminController {
   ) {
     const result = await this.orchestratorService.startStage1Pipeline(body);
     return { success: true, data: result };
+  }
+
+  // POST /admin/trigger/stage4/scan {storageKey, projectId, organizationId}
+  @Post('trigger/stage4/scan')
+  async triggerStage4Scan(
+    @Body() body: { storageKey: string; projectId: string; organizationId: string }
+  ) {
+    const { storageKey, projectId, organizationId } = body;
+    if (!storageKey || !projectId || !organizationId) {
+      return { ok: false, error: 'storageKey, projectId and organizationId required' };
+    }
+
+    // 1. 确保用户存在 (用于 ownerId)
+    const dummyUserId = 'case-c-stress-user';
+    await this.prisma.user.upsert({
+      where: { id: dummyUserId },
+      update: {},
+      create: {
+        id: dummyUserId,
+        email: 'case-c-stress@test.local',
+        passwordHash: '$2b$10$dummyhash',
+      },
+    });
+
+    // 2. 确保组织存在
+    await this.prisma.organization.upsert({
+      where: { id: organizationId },
+      update: {},
+      create: {
+        id: organizationId,
+        name: 'Case C Stress Organization',
+        ownerId: dummyUserId,
+      },
+    });
+
+    // 3. 确保项目存在
+    await this.prisma.project.upsert({
+      where: { id: projectId },
+      update: {},
+      create: {
+        id: projectId,
+        name: 'Case C Stress Project',
+        organizationId,
+        ownerId: dummyUserId,
+        status: 'in_progress',
+      },
+    });
+
+    const job = await this.prisma.shotJob.create({
+      data: {
+        organizationId,
+        projectId,
+        type: 'NOVEL_SCAN_TOC',
+        status: 'PENDING',
+        priority: 100,
+        payload: {
+          projectId,
+          fileKey: storageKey,
+          isVerification: true,
+        },
+      } as any,
+    });
+
+    return { ok: true, jobId: job.id, projectId };
   }
 }

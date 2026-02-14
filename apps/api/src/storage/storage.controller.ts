@@ -17,7 +17,7 @@ export class StorageController {
     private readonly signedUrlService: SignedUrlService,
     private readonly localStorageService: LocalStorageService,
     private readonly storageAuthService: StorageAuthService
-  ) { }
+  ) {}
 
   /**
    * Serve signed URL resources
@@ -60,7 +60,7 @@ export class StorageController {
     } catch (e: any) {
       this.logger.error(`Access check failed for key ${key}: ${e.message}`);
       // return res.status(HttpStatus.FORBIDDEN).json({ error: 'ACCESS_DENIED', message: e.message });
-      // For now, if signature is valid, we allow access to avoid chicken-egg issues with newly created assets 
+      // For now, if signature is valid, we allow access to avoid chicken-egg issues with newly created assets
       // where Asset metadata might not be fully indexed yet.
     }
 
@@ -81,7 +81,7 @@ export class StorageController {
       '.jpeg': 'image/jpeg',
       '.mp4': 'video/mp4',
       '.txt': 'text/plain',
-      '.json': 'application/json'
+      '.json': 'application/json',
     };
 
     res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
@@ -120,11 +120,16 @@ export class StorageController {
     if (fs.existsSync(finalPath)) {
       const st = fs.statSync(finalPath);
       if (st.size === len) {
-        return res.status(HttpStatus.OK).json({ storageKey: finalRel, sha256: headerSha.toLowerCase(), size: len, exists: true });
+        return res
+          .status(HttpStatus.OK)
+          .json({ storageKey: finalRel, sha256: headerSha.toLowerCase(), size: len, exists: true });
       }
     }
 
-    const tmpPath = path.resolve(storageRoot, `novels/.tmp/${headerSha}.${process.pid}.${Date.now()}.tmp`);
+    const tmpPath = path.resolve(
+      storageRoot,
+      `novels/.tmp/${headerSha}.${process.pid}.${Date.now()}.tmp`
+    );
     const out = fs.createWriteStream(tmpPath, { flags: 'wx' });
     const hash = createHash('sha256');
     let bytes = 0;
@@ -146,7 +151,9 @@ export class StorageController {
 
     out.on('error', (e) => {
       cleanup();
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'WRITE_FAIL', message: String(e) });
+      return res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json({ error: 'WRITE_FAIL', message: String(e) });
     });
 
     out.on('finish', () => {
@@ -158,15 +165,19 @@ export class StorageController {
           expected: headerSha.toLowerCase(),
           computed,
           expectedBytes: len,
-          receivedBytes: bytes
+          receivedBytes: bytes,
         });
       }
       try {
         fs.renameSync(tmpPath, finalPath);
-        return res.status(HttpStatus.OK).json({ storageKey: finalRel, sha256: computed, size: bytes, exists: false });
+        return res
+          .status(HttpStatus.OK)
+          .json({ storageKey: finalRel, sha256: computed, size: bytes, exists: false });
       } catch (err) {
         cleanup();
-        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'RENAME_FAIL', message: String(err) });
+        return res
+          .status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .json({ error: 'RENAME_FAIL', message: String(err) });
       }
     });
   }

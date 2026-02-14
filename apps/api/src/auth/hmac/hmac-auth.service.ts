@@ -12,7 +12,7 @@ export class HmacAuthService {
   constructor(
     @Inject(forwardRef(() => ApiSecurityService))
     private readonly apiSecurity: ApiSecurityService
-  ) { }
+  ) {}
 
   /**
    * 验证 HMAC 签名
@@ -26,7 +26,13 @@ export class HmacAuthService {
     nonceArg: string,
     timestampArg: string,
     signatureArg: string,
-    debug?: { ip?: string; ua?: string; workerId?: string; contentSha256?: string; hmacVersion?: string }
+    debug?: {
+      ip?: string;
+      ua?: string;
+      workerId?: string;
+      contentSha256?: string;
+      hmacVersion?: string;
+    }
   ) {
     // 委托调用 ApiSecurityService
     const result = await this.apiSecurity.verifySignature({

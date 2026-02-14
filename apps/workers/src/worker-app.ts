@@ -16,15 +16,89 @@ import { env, config as appConfig } from '@scu/config';
 // 生产模式门禁：强制从环境变量读取
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 
+import * as os from 'os';
+import { AdaptivePollStrategy } from './gate/adaptive-poll-strategy';
+import { SystemLoadMonitor, LoadMetrics } from './gate/system-load-monitor';
+
+interface RuntimeConfig {
+  jobMaxInFlight: number;
+  nodeMaxOldSpaceMb: number;
+  jobWaveSize: number;
+  throttled: boolean;
+  reason: string;
+  metrics?: LoadMetrics;
+}
+
 /**
  * 运行时 Profile 配置 (内联版 - 解决 P1-B Gate 跨包导入死结)
+ * P6-2-1: 动态并发调优 - 基于系统负载动态调整并发上限
  */
-export function getRuntimeConfig() {
+export async function getRuntimeConfig(loadMonitor?: SystemLoadMonitor): Promise<RuntimeConfig> {
   const isSafeMode = process.env.SAFE_MODE === '1' || process.env.SAFE_MODE === 'true';
+  const baseMaxInFlight = (env as any).jobMaxInFlight || 10;
+
+  // 如果是安全模式，强制极低并发
+  if (isSafeMode) {
+    return {
+      jobMaxInFlight: 2,
+      nodeMaxOldSpaceMb: 4096,
+      jobWaveSize: 1,
+      throttled: true,
+      reason: 'SAFE_MODE',
+    };
+  }
+
+  // 计算系统负载 (Better metrics with loadMonitor)
+  let metrics: Partial<LoadMetrics> = {};
+  if (loadMonitor) {
+    metrics = await loadMonitor.getMetrics();
+  }
+
+  const cpus = os.cpus().length;
+  // If metrics.cpuUsagePercent is available, use it (percent / 100 * cpus) to approximate loadAvg metric scale,
+  // OR just use os.loadavg() as fallback.
+  // Note: cpuUsagePercent is 0-100 (overall). loadAvg is run queue length.
+  // To keep existing logic `loadAvg > cpus * 0.8`, we should probably stick to os.loadavg() unless we change the condition.
+  // But let's use the new metrics if available to be "Resource Aware".
+  // Actually, cpuUsagePercent is more direct.
+  // Let's fallback to os.loadavg() if metrics fails.
+  const loadAvg =
+    metrics.cpuUsagePercent !== undefined
+      ? (metrics.cpuUsagePercent / 100) * cpus
+      : os.loadavg()[0];
+
+  const freeMem =
+    metrics.memoryUsageMb !== undefined
+      ? metrics.totalMemoryMb! - metrics.memoryUsageMb
+      : os.freemem() / 1024 / 1024;
+
+  let jobMaxInFlight = baseMaxInFlight;
+  let jobWaveSize = (env as any).jobWaveSize || 5;
+  let throttled = false;
+  let reason = '';
+
+  // 负载压力保护
+  if (loadAvg > cpus * 0.8) {
+    jobMaxInFlight = Math.max(1, Math.floor(baseMaxInFlight * 0.5));
+    jobWaveSize = Math.max(1, Math.floor(jobWaveSize * 0.5));
+    throttled = true;
+    reason = `HIGH_LOAD(${loadAvg.toFixed(2)})`;
+  }
+
+  if (freeMem < 512) {
+    jobMaxInFlight = 1;
+    jobWaveSize = 1;
+    throttled = true;
+    reason = `LOW_MEM(${Math.round(freeMem)}MB)`;
+  }
+
   return {
-    jobMaxInFlight: isSafeMode ? 2 : (env as any).jobMaxInFlight || 10,
-    nodeMaxOldSpaceMb: isSafeMode ? 4096 : (env as any).nodeMaxOldSpaceMb || 2048,
-    jobWaveSize: isSafeMode ? 1 : (env as any).jobWaveSize || 5,
+    jobMaxInFlight,
+    nodeMaxOldSpaceMb: (env as any).nodeMaxOldSpaceMb || 2048,
+    jobWaveSize,
+    throttled,
+    reason,
+    metrics: { ...metrics, loadAvg, freeMem, cpus } as any,
   };
 }
 
@@ -67,6 +141,7 @@ import { processIdentityLockJob } from './processors/ce02-identity-lock.processo
 import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.processor';
 import { processCE02VisualDensityJob } from './processors/ce02-visual-density.processor';
 import { processAudioJob } from './processors/audio.processor';
+import { processEpisodeRenderJob } from './processors/episode-render.processor';
 import { ProcessorContext } from './types/processor-context';
 
 const prisma = new PrismaClient({
@@ -118,7 +193,12 @@ const apiSecretFromCli = readArg('apiSecret');
  */
 const apiBaseUrl = apiUrlFromCli || env.apiUrl || 'http://127.0.0.1:3000';
 const workerApiKey = apiKeyFromCli || env.workerApiKey;
-const workerApiSecret = apiSecretFromCli || process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET || 'dev-secret';
+const workerApiSecret =
+  apiSecretFromCli ||
+  process.env.HMAC_SECRET_KEY ||
+  process.env.API_SECRET_KEY ||
+  process.env.WORKER_API_SECRET ||
+  'dev-secret';
 
 process.stdout.write(
   util.format(
@@ -139,6 +219,7 @@ const apiClient = new ApiClient(
 
 let isRunning = false;
 let tasksRunning = 0;
+let lastThrottledState: boolean | undefined = undefined; // P6-2-1: For state change detection
 
 // 创建 EngineAdapterClient 实例（Worker 端使用，保留用于向后兼容）
 const engineAdapterClient = new EngineAdapterClient(prisma);
@@ -147,11 +228,24 @@ const engineAdapterClient = new EngineAdapterClient(prisma);
 // 创建 EngineHubClient 实例（Stage2: 使用新的统一接口）
 const engineHubClient = new EngineHubClient(apiClient);
 
+// B3-1: Adaptive Poll (Stage 2)
+const adaptivePoll = new AdaptivePollStrategy({
+  minInterval: 200,
+  maxInterval: (env as any).workerPollInterval || 2000,
+  backoffFactor: 1.5,
+});
+
+// B3-2: System Load Monitor (Stage 2)
+const loadMonitor = new SystemLoadMonitor();
+
 // [P6-0 Fix] Instantiate LocalStorageAdapter for Worker
 import { LocalStorageAdapter } from '@scu/storage';
 import * as path from 'path';
-const storageRoot = process.env.STORAGE_ROOT ||
-  (process.env.REPO_ROOT ? path.join(process.env.REPO_ROOT, '.data/storage') : path.join(process.cwd(), '.data/storage'));
+const storageRoot =
+  process.env.STORAGE_ROOT ||
+  (process.env.REPO_ROOT
+    ? path.join(process.env.REPO_ROOT, '.data/storage')
+    : path.join(process.cwd(), '.data/storage'));
 const localStorageAdapter = new LocalStorageAdapter(storageRoot);
 
 /**
@@ -171,7 +265,7 @@ async function registerWorker(): Promise<void> {
   if (!env.workerApiKey || !env.workerApiSecret) {
     process.stdout.write(
       util.format('[Worker] ⚠️  WARNING: WORKER_API_KEY or WORKER_API_SECRET not configured!') +
-      '\n'
+        '\n'
     );
     process.stdout.write(
       util.format('[Worker] ⚠️  Worker will not be able to authenticate with API server.') + '\n'
@@ -190,7 +284,7 @@ async function registerWorker(): Promise<void> {
     );
     process.stdout.write(
       util.format(`[Worker] DB URL: ${process.env.DATABASE_URL?.replace(/:[^:]+@/, ':***@')}`) +
-      '\n'
+        '\n'
     );
 
     // Test DB Connection
@@ -216,21 +310,21 @@ async function registerWorker(): Promise<void> {
       rawEngines.length > 0
         ? rawEngines
         : [
-          'default_novel_analysis',
-          'ce06_novel_parsing',
-          'ce03_visual_density',
-          'ce04_visual_enrichment',
-          'ce04_sdxl',
-          'tts_standard',
-          'video_render',
-          'shot_render',
-          'real_shot_render',
-          'stage1_orchestrator',
-          'timeline_render',
-          'ce09_media_security',
-          'ce_pipeline',
-          'ce11_timeline_preview',
-        ];
+            'default_novel_analysis',
+            'ce06_novel_parsing',
+            'ce03_visual_density',
+            'ce04_visual_enrichment',
+            'ce04_sdxl',
+            'tts_standard',
+            'video_render',
+            'shot_render',
+            'real_shot_render',
+            'stage1_orchestrator',
+            'timeline_render',
+            'ce09_media_security',
+            'ce_pipeline',
+            'ce11_timeline_preview',
+          ];
 
     // P1: Production Scrubbing - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
@@ -265,6 +359,7 @@ async function registerWorker(): Promise<void> {
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW',
+      'EPISODE_RENDER',
       'CE11_SHOT_GENERATOR',
       'PIPELINE_PROD_VIDEO_V1', // Exec 1: New Prod Pipeline
       'AUDIO',
@@ -322,21 +417,21 @@ async function sendHeartbeat(): Promise<void> {
       rawEngines.length > 0
         ? rawEngines
         : [
-          'default_novel_analysis',
-          'ce06_novel_parsing',
-          'ce03_visual_density',
-          'ce04_visual_enrichment',
-          'ce04_sdxl',
-          'tts_standard',
-          'video_render',
-          'shot_render',
-          'stage1_orchestrator',
-          'timeline_render',
-          'ce09_media_security',
-          'ce_pipeline',
-          'ce11_timeline_preview',
-          'ce09_real_watermark',
-        ];
+            'default_novel_analysis',
+            'ce06_novel_parsing',
+            'ce03_visual_density',
+            'ce04_visual_enrichment',
+            'ce04_sdxl',
+            'tts_standard',
+            'video_render',
+            'shot_render',
+            'stage1_orchestrator',
+            'timeline_render',
+            'ce09_media_security',
+            'ce_pipeline',
+            'ce11_timeline_preview',
+            'ce09_real_watermark',
+          ];
 
     // P1: Production Scrubbing (Heartbeat Sync) - STRICT ENFORCEMENT
     if (PRODUCTION_MODE) {
@@ -364,6 +459,7 @@ async function sendHeartbeat(): Promise<void> {
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW',
+      'EPISODE_RENDER',
       'PIPELINE_PROD_VIDEO_V1',
     ];
 
@@ -480,28 +576,32 @@ async function handleEngineResultAndReport(
 
           // P6-1-5: 调用 BillingLedgerWriter（幂等）
           // Note: writeBillingLedger 暂通过直接 DB 写入（无需跨包导入）
-          await prisma.billingLedger.create({
-            data: {
-              tenantId,
-              traceId: job.id,
-              itemType: 'JOB',
-              itemId: job.id,
-              chargeCode: 'SCAN_CHAR',
-              amount,
-              currency: 'CREDIT',
-              status: 'POSTED',
-              evidenceRef: `job:${job.id}`
-            }
-          }).catch((err: any) => {
-            if (err.code === 'P2002') {
-              // Unique constraint - 幂等，已存在
-              console.log(`[Billing] ℹ️  Ledger entry already exists (idempotent): ${job.id}`);
-            } else {
-              throw err;
-            }
-          });
+          await prisma.billingLedger
+            .create({
+              data: {
+                tenantId,
+                traceId: job.id,
+                itemType: 'JOB',
+                itemId: job.id,
+                chargeCode: 'SCAN_CHAR',
+                amount,
+                currency: 'CREDIT',
+                status: 'POSTED',
+                evidenceRef: `job:${job.id}`,
+              },
+            })
+            .catch((err: any) => {
+              if (err.code === 'P2002') {
+                // Unique constraint - 幂等，已存在
+                console.log(`[Billing] ℹ️  Ledger entry already exists (idempotent): ${job.id}`);
+              } else {
+                throw err;
+              }
+            });
 
-          console.log(`[Billing] ✅ CE06 Job ${job.id}: charCount=${charCount}, amount=${amount} credits POSTED`);
+          console.log(
+            `[Billing] ✅ CE06 Job ${job.id}: charCount=${charCount}, amount=${amount} credits POSTED`
+          );
         }
       } catch (err) {
         console.error(`[Billing] ❌ Failed to write ledger for Job ${job.id}:`, err);
@@ -587,6 +687,8 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
         return processTimelineRenderJob({ prisma, job: job as any, apiClient });
       } else if (job.type === 'TIMELINE_PREVIEW') {
         return processTimelinePreviewJob({ prisma, job: job as any, apiClient });
+      } else if (job.type === 'EPISODE_RENDER') {
+        return processEpisodeRenderJob({ prisma, job: job as any, apiClient });
       } else if (job.type === 'CE02_VISUAL_DENSITY') {
         const context: ProcessorContext = {
           prisma,
@@ -678,61 +780,75 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
 
 /**
  * 轮询并处理 Job
+ * @returns true if any job was found and processed, false otherwise
  */
-async function pollAndProcessJobs(): Promise<void> {
+async function pollAndProcessJobs(): Promise<boolean> {
   // P1-1: 尊重本地并发上限与波次限制
-  const runtimeConfig = getRuntimeConfig();
-  const { jobMaxInFlight } = runtimeConfig as any;
+  const runtimeConfig = await getRuntimeConfig(loadMonitor);
+  const { jobMaxInFlight } = runtimeConfig;
   const jobWaveSize = (appConfig as any).jobWaveSize;
 
-  // P1-B 审计留痕：输出运行时 Profile
-  if (isRunning) {
-    // 仅在轮询激活时输出一次
-  }
-  // 强制输出一次用于 Gate 捕获
-  if (tasksRunning === 0) {
-    process.stdout.write(util.format(`[WorkerRuntime] ${JSON.stringify(runtimeConfig)}`) + '\n');
+  // P6-2-1: 审计与调优日志
+  if (lastThrottledState !== runtimeConfig.throttled) {
+    lastThrottledState = runtimeConfig.throttled;
+    process.stdout.write(
+      util.format(
+        `[WorkerRuntime] Concurrency state changed. Throttled: ${runtimeConfig.throttled}, Reason: ${runtimeConfig.reason || 'NONE'}, JobMax: ${runtimeConfig.jobMaxInFlight}`
+      ) + '\n'
+    );
   }
 
-  if (tasksRunning >= (runtimeConfig as any).jobMaxInFlight) {
+  if (tasksRunning === 0) {
+    // 静默状态下输出完整快照
+    if ((env as any).isDevelopment) {
+      // process.stdout.write(util.format(`[Worker] Idle poll... Tasks: 0/${jobMaxInFlight}`) + '\n');
+    }
+  }
+
+  if (tasksRunning >= runtimeConfig.jobMaxInFlight) {
     if ((env as any).isDevelopment) {
     }
-    return;
+    return false;
   }
 
   // 计算本波次还能领多少（尊重 EngineLimiter 全局令牌）
-  let remainingSlots = ((runtimeConfig as any).jobMaxInFlight || 10) - tasksRunning;
+  let remainingSlots = jobMaxInFlight - tasksRunning;
+
+  if (runtimeConfig.throttled) {
+    // 如果被节流，强制更严格的限制
+    remainingSlots = Math.min(remainingSlots, 2);
+  }
+
   if ((env as any).concurrencyLimiterEnabled) {
     const localAvailable = (engineLimiter as any).getStats().global.available;
     remainingSlots = Math.min(remainingSlots, localAvailable);
   }
   const currentWaveLimit = Math.min(jobWaveSize, remainingSlots);
 
-  if (currentWaveLimit <= 0) return;
+  if (currentWaveLimit <= 0) return false;
+
+  let anyJobFound = false;
 
   for (let i = 0; i < currentWaveLimit; i++) {
     try {
-      process.stdout.write(
-        util.format(
-          `[WORKER_LOOP] Attempting to lease job (wave ${i + 1}/${currentWaveLimit})...`
-        ) + '\n'
-      );
+      // Quiet poll logs unless debugging
+      // process.stdout.write(...)
       const job = await apiClient.getNextJob(workerId);
 
       if (job) {
         process.stdout.write(
           util.format(`[WORKER_LOOP] ✅ Leased job: ${job.id} (${job.type})`) + '\n'
         );
+        anyJobFound = true;
+
         // S2-ORCH-BASE: Must ACK to transition to RUNNING
         try {
           await apiClient.ackJob(job.id, workerId);
         } catch (ackError) {
           process.stderr.write(util.format(`[Worker] ❌ ACK Job Failed:`, ackError) + '\n');
-          // Skip processing if Ack fails?
-          // If we claimed it, we should own it.
         }
 
-        // 异步处理 Job，不阻塞轮询 (Stage P1-1: 切换到 Executor)
+        // 异步处理 Job，不阻塞轮询
         processJobWithExecutor(job).catch((error) => {
           process.stderr.write(
             util.format(`[Worker] ❌ processJobWithExecutor 异常:`, error) + '\n'
@@ -747,6 +863,7 @@ async function pollAndProcessJobs(): Promise<void> {
       break;
     }
   }
+  return anyJobFound;
 }
 
 /**
@@ -795,30 +912,32 @@ export async function startWorkerApp() {
       }
     }, 5000);
 
-    // 启动 Job 轮询循环
-    setInterval(() => {
-      process.stdout.write(
-        util.format(`[Probe] R=${isRunning} E=${env.jobWorkerEnabled} (FORCED)`) + '\n'
-      );
-      if (isRunning && (env.jobWorkerEnabled || true)) {
-        pollAndProcessJobs();
+    // 启动 Job 轮询循环 (B3-1: Adaptive Polling)
+    const runPollLoop = async () => {
+      if (!isRunning) return;
+
+      if (env.jobWorkerEnabled || true) {
+        const foundJobs = await pollAndProcessJobs();
+        const nextInterval = adaptivePoll.reportPollResult(foundJobs);
+
+        // Dynamic logging for debugging B3
+        // process.stdout.write(util.format(`[Adaptive] Next poll in ${nextInterval}ms`) + '\n');
+
+        setTimeout(runPollLoop, nextInterval);
+      } else {
+        setTimeout(runPollLoop, env.workerPollInterval);
       }
-    }, env.workerPollInterval);
+    };
 
-    // 立即发送一次心跳
-    await sendHeartbeat();
-
-    // 立即开始轮询（如果启用）
-    if (env.jobWorkerEnabled) {
-      await pollAndProcessJobs();
-    }
+    // 立即开始轮询
+    runPollLoop();
 
     process.stdout.write(util.format('\n[Worker] ✅ Worker 启动成功') + '\n');
     process.stdout.write(util.format(`[Worker] 心跳间隔: 5 秒`) + '\n');
-    process.stdout.write(util.format(`[Worker] Job 轮询间隔: ${env.workerPollInterval}ms`) + '\n');
+    process.stdout.write(util.format(`[Worker] Job 轮询间隔: Adaptive (Min 200ms)`) + '\n');
     process.stdout.write(
       util.format(`[Worker] Job Worker 启用状态: ${env.jobWorkerEnabled ? '已启用' : '已禁用'}\n`) +
-      '\n'
+        '\n'
     );
 
     // 优雅退出处理

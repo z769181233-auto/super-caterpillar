@@ -130,7 +130,7 @@ export async function processE2EVideoPipelineJob(
             existingCE06Job: existingCE06.id,
           },
         })
-        .catch(() => { });
+        .catch(() => {});
 
       return {
         status: 'SPAWNED_CE06', // 逻辑上已成功
@@ -202,7 +202,7 @@ export async function processE2EVideoPipelineJob(
             missingFields,
           },
         })
-        .catch(() => { });
+        .catch(() => {});
       throw new Error(errMsg);
     }
 
@@ -217,7 +217,8 @@ export async function processE2EVideoPipelineJob(
         payload: {
           projectId,
           novelSourceId: payload.novelSourceId,
-          raw_text: payload.raw_text || payload.sourceText || `GATE_MOCK_PROD_SLICE_TEXT_${Date.now()}`,
+          raw_text:
+            payload.raw_text || payload.sourceText || `GATE_MOCK_PROD_SLICE_TEXT_${Date.now()}`,
           pipelineRunId,
           rootJobId: jobId,
         },
@@ -248,7 +249,7 @@ export async function processE2EVideoPipelineJob(
           ce06JobId: newCE06.id,
         },
       })
-      .catch(() => { });
+      .catch(() => {});
 
     // Return success immediately (Non-blocking)
     return {
@@ -286,7 +287,7 @@ export async function processE2EVideoPipelineJob(
           action: 'pipeline.e2e_video.fail',
         },
       })
-      .catch(() => { });
+      .catch(() => {});
 
     throw error;
   }

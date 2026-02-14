@@ -6,7 +6,13 @@ import { ProcessorContext } from '../types/processor-context';
 import { fileExists } from '../../../../packages/shared/fs_async';
 import { basicTextSegmentation } from '../novel-analysis-processor';
 import { hydrateShotWithDirectorControls } from '../v3/utils/shot_field_extractor';
-import { ensureDefaultMetrics, stage4JobsTotal, stage4FailedJobs, stage4DurationSeconds, stage4PeakRssMb } from '../observability/stage4.metrics';
+import {
+  ensureDefaultMetrics,
+  stage4JobsTotal,
+  stage4FailedJobs,
+  stage4DurationSeconds,
+  stage4PeakRssMb,
+} from '../observability/stage4.metrics';
 
 export async function processNovelChunk(context: ProcessorContext) {
   ensureDefaultMetrics();
@@ -20,12 +26,12 @@ export async function processNovelChunk(context: ProcessorContext) {
   }
 
   const { prisma, job } = context;
-  const { projectId, episodeId, startByte, endByte } = job.payload;
+  const { projectId, episodeId, startByte, endByte, isVerification } = job.payload;
   const fileKey = job.payload.fileKey || job.payload.filePath;
   // job.data was used in scan, here unified to payload
 
   try {
-    stage4JobsTotal.inc({ type: job.type, status: "RUNNING" }, 1);
+    stage4JobsTotal.inc({ type: job.type, status: 'RUNNING' }, 1);
     sampleRss();
 
     console.log(
@@ -34,6 +40,11 @@ export async function processNovelChunk(context: ProcessorContext) {
 
     // 1. Path Resolution
     let filePath = fileKey;
+    if (!path.isAbsolute(filePath)) {
+      const storageRoot = process.env.STORAGE_ROOT || path.resolve(process.cwd(), '.data/storage');
+      filePath = path.resolve(storageRoot, fileKey);
+    }
+
     if (!(await fileExists(filePath))) {
       throw new Error(`[NovelChunk] Source file not found: ${filePath}`);
     }
@@ -42,26 +53,57 @@ export async function processNovelChunk(context: ProcessorContext) {
     const chunkText = await readChunk(filePath, startByte, endByte);
     sampleRss();
 
-    // 1. Analyze (Reuse existing logic but for specific chunk)
-    // 注意：basicTextSegmentation 默认生成 ProjectStructure.
-    // 我们需要 hack 一下：它会生成 1个 Season, 1个 Episode。
-    // 我们只需要其中的 Scenes/Shots，然后 attach 到 现有的 episodeId。
+    let analyzedScenes: any[] = [];
 
-    // 调用 "Legacy Logic" 来分析这段文本
-    // 假设 chunkText 是一章的内容
-    const structure = basicTextSegmentation(chunkText, projectId);
+    // P6-2-2-4: Multi-Agent Collaboration (Phase 2: B1)
+    const useDeepAnalysis =
+      process.env.USE_MULTI_AGENT === 'true' || process.env.USE_MULTI_AGENT === '1';
 
-    // 2. 提取 Scenes/Shots
-    // basicTextSegmentation 可能会根据 "第X章" 分 Episode。
-    // 如果 chunkText 包含标题，它会生成 struct.seasons[0].episodes[0]
-    // 我们需要把这些 Scenes 挂载到目标 episodeId 下
+    if (useDeepAnalysis) {
+      console.log(`[NovelChunk] Using Deep Multi-Agent Analysis for Episode ${episodeId}...`);
 
-    const analyzedScenes: any[] = [];
-    if (structure.seasons.length > 0 && structure.seasons[0].episodes.length > 0) {
-      // Flatten scenes from all parsed episodes (usually 1)
-      structure.seasons[0].episodes.forEach((ep) => {
-        analyzedScenes.push(...ep.scenes);
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { stylePrompt: true, styleGuide: true },
       });
+
+      const contextPrompt = {
+        projectId,
+        traceId: job.id,
+        rawText: chunkText,
+        chapterTitle: `Chapter ${episodeId}`, // Simplified fallback
+        chapterIndex: parseInt(episodeId, 10),
+        previousResults: {
+          [(await import('../agents')).AgentRole.WRITER]: {
+            projectStylePrompt: project?.stylePrompt,
+            projectStyleGuide: project?.styleGuide,
+          },
+        } as any,
+        organizationId: job.organizationId as string,
+      };
+
+      try {
+        const result = await (await import('../agents')).runMultiAgentAnalysis(contextPrompt);
+        analyzedScenes = result.scenes || [];
+      } catch (err: any) {
+        console.error(
+          `[NovelChunk] Multi-Agent failed: ${err.message}. Falling back to basic segmentation.`
+        );
+        const structure = basicTextSegmentation(chunkText, projectId);
+        if (structure.seasons.length > 0 && structure.seasons[0].episodes.length > 0) {
+          structure.seasons[0].episodes.forEach((ep) => {
+            analyzedScenes.push(...ep.scenes);
+          });
+        }
+      }
+    } else {
+      // Legacy Logic: Basic Regex-based segmentation
+      const structure = basicTextSegmentation(chunkText, projectId);
+      if (structure.seasons.length > 0 && structure.seasons[0].episodes.length > 0) {
+        structure.seasons[0].episodes.forEach((ep) => {
+          analyzedScenes.push(...ep.scenes);
+        });
+      }
     }
 
     if (analyzedScenes.length === 0) {
@@ -70,7 +112,7 @@ export async function processNovelChunk(context: ProcessorContext) {
       const durationSec = (Date.now() - t0) / 1000;
       stage4DurationSeconds.observe({ type: job.type }, durationSec);
       stage4PeakRssMb.set({ type: job.type }, peakRssMb);
-      stage4JobsTotal.inc({ type: job.type, status: "SUCCEEDED" }, 1);
+      stage4JobsTotal.inc({ type: job.type, status: 'SUCCEEDED' }, 1);
       return { status: 'SUCCEEDED', message: 'No scenes found' };
     }
 
@@ -110,16 +152,27 @@ export async function processNovelChunk(context: ProcessorContext) {
         if (scene.shots.length > 0) {
           await tx.shot.createMany({
             data: scene.shots.map((shot: any, shIdx: number) => {
-              const shotParams = { sourceText: shot.text };
+              const shotParams = {
+                sourceText: shot.text,
+                ...(shot.visualParams || {}),
+              };
+
+              // B1 Map: Visual Agent params to DB Columns
+              const visual = shot.visualParams || {};
+
               return hydrateShotWithDirectorControls(
                 {
                   organizationId: job.organizationId as string,
                   sceneId: dbScene.id,
                   index: shIdx + 1,
-                  title: shot.title,
+                  title: shot.title || `Shot ${shIdx + 1}`,
                   description: shot.summary || shot.text.slice(0, 50),
                   type: 'novel_chunk',
                   params: shotParams,
+                  // DB Field mapping
+                  shotType: visual.shotType || 'MEDIUM_SHOT',
+                  cameraMovement: visual.cameraMovement || 'STATIC',
+                  lightingPreset: visual.lightingPreset || 'NATURAL',
                 },
                 shotParams
               );
@@ -127,19 +180,49 @@ export async function processNovelChunk(context: ProcessorContext) {
           });
         }
       }
+
+      // 4. Billing Ledger (Scale Mode: 10k chars = 1 credit) - Idempotent
+      const credits = Math.ceil((endByte - startByte) / 10000);
+      if (credits > 0) {
+        await tx.billingLedger.upsert({
+          where: {
+            tenantId_traceId_itemType_itemId_chargeCode: {
+              tenantId: job.organizationId as string,
+              traceId: job.id,
+              itemType: 'NOVEL_CHUNK',
+              itemId: episodeId,
+              chargeCode: 'PARSING_FEE',
+            },
+          },
+          update: {},
+          create: {
+            tenantId: job.organizationId as string,
+            traceId: job.id,
+            itemType: 'NOVEL_CHUNK',
+            itemId: episodeId,
+            chargeCode: 'PARSING_FEE',
+            amount: credits,
+            status: 'POSTED',
+            evidenceRef: `chars:${endByte - startByte}`,
+          },
+        });
+      }
     });
 
-    console.log(`[NovelChunk] Success. Imported ${analyzedScenes.length} scenes. Transaction Committed.`);
+    console.log(
+      `[NovelChunk] Success. Imported ${analyzedScenes.length} scenes. Transaction Committed.`
+    );
 
     // Cascade Trigger: Stage 5 (Shot Planning)
     // Immediately trigger Shot Generator for created scenes to maximize parallelism (Shredder Mode)
     if (createdSceneIds.length > 0) {
-      const isVerification = job.isVerification;
       // P5-3: Explicit Engine Key Routing
       // If verification, stick to mock. If production, use real engine.
-      const targetEngineKey = isVerification ? 'ce11_shot_generator_mock' : 'ce11_shot_generator_real';
+      const targetEngineKey = isVerification
+        ? 'ce11_shot_generator_mock'
+        : 'ce11_shot_generator_real';
 
-      const cascadeJobs = createdSceneIds.map((sceneId) => ({
+      const cascadeJobs = createdSceneIds.map((sceneId, idx) => ({
         type: JobType.CE11_SHOT_GENERATOR,
         status: JobStatus.PENDING,
         projectId,
@@ -148,6 +231,8 @@ export async function processNovelChunk(context: ProcessorContext) {
         taskId: job.taskId, // CRITICAL: Propagate Aggregate Task ID
         traceId: job.traceId || job.payload?.traceId,
         isVerification,
+        // P6-2-2-1: Trigger Throttling - Lower priority than scan, add idx jitter
+        priority: 5 + (idx % 5),
         payload: {
           novelSceneId: sceneId,
           projectId,
@@ -157,6 +242,9 @@ export async function processNovelChunk(context: ProcessorContext) {
         },
       }));
 
+      if (cascadeJobs.length > 0) {
+        console.log(`[Cascade DEBUG] Example job priority: ${cascadeJobs[0].priority}`);
+      }
       await prisma.shotJob.createMany({
         data: cascadeJobs as any,
       });
@@ -170,17 +258,91 @@ export async function processNovelChunk(context: ProcessorContext) {
     const durationSec = (Date.now() - t0) / 1000;
     stage4DurationSeconds.observe({ type: job.type }, durationSec);
     stage4PeakRssMb.set({ type: job.type }, peakRssMb);
-    stage4JobsTotal.inc({ type: job.type, status: "SUCCEEDED" }, 1);
+    stage4JobsTotal.inc({ type: job.type, status: 'SUCCEEDED' }, 1);
 
-    return { status: 'SUCCEEDED', message: `Imported ${analyzedScenes.length} scenes` };
+    const resultStats = {
+      charCount: endByte - startByte,
+      sceneCount: analyzedScenes.length,
+    };
 
+    // 5. Update NovelSource Progress (P6-2-2-2: Debounced Progress Update)
+    // For 15M scale (4000+ chunks), DB IOPS is expensive.
+    // Optimization: Only update DB every ~20 chunks OR if it's likely the end.
+    const nsId = job.payload.novelSourceId;
+    if (nsId) {
+      // Deterministic batching: update if (episodeId % 20 === 0)
+      // Note: episodeId is usually 1-indexed string or number
+      const epIdx = parseInt(job.payload.episodeId || '0', 10);
+      const isBatchMilestone = epIdx % 20 === 0;
+
+      // We also check totalChapters to ensure the very last one triggers completion
+      const nsMeta = await prisma.novelSource.findUnique({
+        where: { id: nsId },
+        select: { totalChapters: true, processedChunks: true },
+      });
+
+      const isLastChunk = nsMeta && nsMeta.processedChunks + 1 >= nsMeta.totalChapters;
+      const shouldUpdateDB = isBatchMilestone || isLastChunk || isVerification;
+
+      if (shouldUpdateDB) {
+        const ns = await prisma.novelSource
+          .update({
+            where: { id: nsId },
+            data: {
+              processedChunks: { increment: 1 },
+            },
+            select: { processedChunks: true, totalChapters: true },
+          })
+          .catch(() => null);
+
+        if (ns && ns.processedChunks >= ns.totalChapters) {
+          await prisma.novelSource
+            .update({
+              where: { id: nsId },
+              data: { status: 'COMPLETED' },
+            })
+            .catch(() => {});
+        }
+      } else {
+        // Fire and forget update for background progress if not a milestone
+        prisma.novelSource
+          .update({
+            where: { id: nsId },
+            data: { processedChunks: { increment: 1 } },
+          })
+          .catch(() => {});
+      }
+    }
+
+    return {
+      status: 'SUCCEEDED',
+      message: `Imported ${analyzedScenes.length} scenes`,
+      stats: resultStats,
+    };
   } catch (e: any) {
+    // 6. Fail-Safe NovelSource status update
+    if (job.payload.novelSourceId) {
+      // Only fail if it's a "fatal" chunk error?
+      // For now, if ANY chunk fails, we mark the whole source as potentially compromised or just log error.
+      // Given the Shredder scale, we might want to continue other chunks.
+      // But we should at least record the last error.
+      await prisma.novelSource
+        .update({
+          where: { id: job.payload.novelSourceId },
+          data: {
+            // status: 'FAILED', // Don't set to FAILED immediately to allow other chunks to proceed
+            error: `Chunk ${job.payload.episodeId} failed: ${e.message || String(e)}`,
+          },
+        })
+        .catch(() => {});
+    }
+
     // Metrics: Failure
     const durationSec = (Date.now() - t0) / 1000;
     stage4DurationSeconds.observe({ type: job.type }, durationSec);
     stage4PeakRssMb.set({ type: job.type }, peakRssMb);
-    stage4JobsTotal.inc({ type: job.type, status: "FAILED" }, 1);
-    stage4FailedJobs.inc({ type: job.type, reason: (e?.name || "Error") }, 1);
+    stage4JobsTotal.inc({ type: job.type, status: 'FAILED' }, 1);
+    stage4FailedJobs.inc({ type: job.type, reason: e?.name || 'Error' }, 1);
     throw e;
   }
 }

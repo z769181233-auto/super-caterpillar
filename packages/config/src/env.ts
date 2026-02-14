@@ -90,9 +90,7 @@ function getEnvNumber(key: string, defaultValue?: number): number {
   return num;
 }
 
-console.log(
-  `[CONFIG_DEBUG] JWT_SECRET_PRESENT=${!!process.env.JWT_SECRET}`
-);
+console.log(`[CONFIG_DEBUG] JWT_SECRET_PRESENT=${!!process.env.JWT_SECRET}`);
 
 export const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 
@@ -250,15 +248,45 @@ export const env = {
 };
 
 /**
+ * [A4] Environment Integrity Guard
+ * 启动时强制校验必需的环境变量，缺失则抛出异常并阻止启动。
+ */
+export function validateRequiredEnvs() {
+  const isProd = process.env.NODE_ENV === 'production';
+  const requiredKeys = ['DATABASE_URL', 'JWT_SECRET', 'REDIS_URL'];
+
+  if (isProd) {
+    requiredKeys.push('REPLICATE_API_TOKEN');
+  }
+
+  const missing = requiredKeys.filter((key) => !process.env[key]);
+
+  // 检查 HMAC Secret
+  try {
+    pickHmacSecretSSOT();
+  } catch (e) {
+    missing.push('HMAC_SECRET_KEY');
+  }
+
+  if (missing.length > 0) {
+    const errorMsg = `[FATAL] Missing required environment variables: ${missing.join(', ')}`;
+    // eslint-disable-next-line no-console
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  // eslint-disable-next-line no-console
+  console.log('[Config] Environment Integrity Check: PASS ✅');
+}
+
+/**
  * P0-1: HMAC Secret SSOT (Single Source of Truth)
  * 统一变量名与加载优先级，禁止代码硬编码。
  * 优先级：HMAC_SECRET_KEY > API_SECRET_KEY > WORKER_API_SECRET
  */
 export function pickHmacSecretSSOT(): string {
   const v =
-    process.env.HMAC_SECRET_KEY ||
-    process.env.API_SECRET_KEY ||
-    process.env.WORKER_API_SECRET;
+    process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET;
 
   if (!v) {
     throw new Error('HMAC_SECRET_MISSING: Please set HMAC_SECRET_KEY in environment or .env.local');

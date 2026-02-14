@@ -3,7 +3,7 @@ import { LLMClient } from '@scu/shared';
 
 /**
  * 视觉增强引擎 - 增强版 (AI + 模板)
- * 
+ *
  * CE04 的目标是将原始文本转化为更具描述性、画面感的 Prompt。
  */
 export async function ce04RealEngine(input: CE04Input): Promise<CE04Output> {
@@ -63,7 +63,7 @@ export async function ce04RealEngine(input: CE04Input): Promise<CE04Output> {
           style: result.prompt_parts?.style,
           lighting: result.prompt_parts?.lighting,
           composition: result.prompt_parts?.composition,
-          ...result.prompt_parts
+          ...result.prompt_parts,
         },
         metadata: {
           engine_version: `real-v2-ai-${model}`,
@@ -73,10 +73,12 @@ export async function ce04RealEngine(input: CE04Input): Promise<CE04Output> {
           engine_version: `real-v2-ai-${model}`,
           timestamp: new Date().toISOString(),
         },
-        billing_usage: response.usage ? {
-          ...response.usage,
-          model
-        } : undefined,
+        billing_usage: response.usage
+          ? {
+              ...response.usage,
+              model,
+            }
+          : undefined,
       };
     } catch (error: any) {
       console.warn(`[CE04] AI Enrichment failed, falling back to template logic: ${error.message}`);

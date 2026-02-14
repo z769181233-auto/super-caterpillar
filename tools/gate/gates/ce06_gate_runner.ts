@@ -71,13 +71,16 @@ async function run() {
   console.log('🚀 Starting CE06 Commercial Gate Runner...');
 
   // 1. 获取测试项目 (优先选择 org-gate 组织下的项目)
-  const project = await prisma.project.findFirst({
-    where: { organization: { id: 'org-gate' } },
-    orderBy: { createdAt: 'desc' }
-  }) || await prisma.project.findFirst({ orderBy: { createdAt: 'desc' } });
+  const project =
+    (await prisma.project.findFirst({
+      where: { organization: { id: 'org-gate' } },
+      orderBy: { createdAt: 'desc' },
+    })) || (await prisma.project.findFirst({ orderBy: { createdAt: 'desc' } }));
 
   if (!project) throw new Error('No project found');
-  console.log(`[Gate] Using project: ${project.id} (Name: ${project.name}, Org: ${project.organizationId})`);
+  console.log(
+    `[Gate] Using project: ${project.id} (Name: ${project.name}, Org: ${project.organizationId})`
+  );
 
   const rawText = '第1卷：测试卷\n第1章：测试章节\n[场面：咖啡厅]\n主角走了进来。';
   const payload = {

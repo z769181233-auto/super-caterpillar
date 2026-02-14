@@ -53,7 +53,7 @@ echo "📡 [1/7] API 健康检查..."
 HEALTH=$(curl -s "${API_URL}/health")
 echo "$HEALTH" | jq . | tee "$EVIDENCE_DIR/01_health_check.json"
 
-if ! echo "$HEALTH" | jq -e '.status == "ok"' >/dev/null 2>&1; then
+if ! echo "$HEALTH" | jq -e '.ok == true or .status == "ok"' >/dev/null 2>&1; then
   echo "❌ 失败：API 服务未就绪"
   exit 1
 fi

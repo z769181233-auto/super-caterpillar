@@ -16,12 +16,13 @@ const writeStream = fs.createWriteStream(outputPath);
 for (let i = 1; i <= episodeCount; i++) {
   writeStream.write(`第${i}集\n`);
   let currentLength = 0;
-  const content = "这是一个测试段落，用于填充小说内容以达到1500万字的负载。我们需要确保系统在极端压力下依然稳定。我们希望通过这个测试，验证 StreamScan 架构的零内存炸弹特性，并观察系统在处理超大文本时的并发表现。\n";
+  const content =
+    '这是一个测试段落，用于填充小说内容以达到1500万字的负载。我们需要确保系统在极端压力下依然稳定。我们希望通过这个测试，验证 StreamScan 架构的零内存炸弹特性，并观察系统在处理超大文本时的并发表现。\n';
   while (currentLength < charsPerEpisode) {
     writeStream.write(content);
     currentLength += content.length;
   }
-  writeStream.write("\n\n");
+  writeStream.write('\n\n');
 }
 
 writeStream.on('finish', () => {

@@ -4,11 +4,11 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
-  Logger,
   Inject,
   forwardRef,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { getTraceId } from '@scu/observability';
@@ -33,7 +33,6 @@ import { CapacityExceededException, CapacityErrorCode } from '../common/errors/c
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { PublishedVideoService } from '../publish/published-video.service';
-import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { UnprocessableEntityException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
@@ -127,11 +126,9 @@ export class JobService {
     private readonly sceneGraphService?: SceneGraphService,
     @Inject(forwardRef(() => StructureGenerateService))
     private readonly structureGenerateService?: StructureGenerateService,
-    @Inject(forwardRef(() => OrchestratorService))
-    private readonly orchestratorService?: OrchestratorService,
     @Inject(FinancialSettlementService)
     private readonly financialSettlementService?: FinancialSettlementService
-  ) { }
+  ) {}
 
   async create(
     shotId: string,
@@ -607,8 +604,16 @@ export class JobService {
     dedupeKey?: string;
     priority?: number;
   }): Promise<any> {
-    const { projectId, organizationId, taskId, jobType, payload, isVerification, dedupeKey, priority } =
-      params;
+    const {
+      projectId,
+      organizationId,
+      taskId,
+      jobType,
+      payload,
+      isVerification,
+      dedupeKey,
+      priority,
+    } = params;
     let traceId = params.traceId;
 
     // 0. Guardrails (P10-3)
@@ -1186,13 +1191,15 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${filterTypes.length > 0
-          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-          : Prisma.empty
+        ${
+          filterTypes.length > 0
+            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+            : Prisma.empty
         }
-        ${supportedEngines.length > 0
-          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-          : Prisma.empty
+        ${
+          supportedEngines.length > 0
+            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+            : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10
@@ -1643,9 +1650,8 @@ export class JobService {
       }
 
       // Stage 3: Event-Driven DAG Trigger (SHOT_RENDER -> VIDEO_RENDER)
-      if (this.orchestratorService) {
-        await this.orchestratorService.handleJobCompletion(updatedJob.id, result);
-      }
+      // Removed direct call to orchestratorService to break circular dependency.
+      // Orchestrator now listens to 'job.succeeded' event emitted below.
 
       // Verification Hook Trigger: Emit event for decoupled validation logic
       console.log(
@@ -1726,8 +1732,10 @@ export class JobService {
             let chargeCode = '';
 
             if (updatedJob.type === JobTypeEnum.CE06_NOVEL_PARSING) {
-              const charCount = (updatedJob.result as any)?.stats?.charCount ||
-                (updatedJob.payload as any)?.charCount || 0;
+              const charCount =
+                (updatedJob.result as any)?.stats?.charCount ||
+                (updatedJob.payload as any)?.charCount ||
+                0;
               amount = this.financialSettlementService.calculateCE06Cost(charCount);
               if (amount === 0) amount = 1; // Minimum charge for success
               chargeCode = 'SCAN_CHAR';

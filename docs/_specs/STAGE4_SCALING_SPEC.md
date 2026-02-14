@@ -80,7 +80,6 @@ enum JobType {
 - **Throughput**: ~193 KB/s (Single Worker)
 - **Reliability**: Idempotent DB writes, Zero OOM.
 
-
 ---
 
 ## 3. Migration Plan

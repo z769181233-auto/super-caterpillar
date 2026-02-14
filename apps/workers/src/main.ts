@@ -16,7 +16,9 @@ dotenv.config({ path: envPath });
 // Also try current dir just in case
 dotenv.config();
 
-console.log(`[Bootstrap] Loaded env from ${root}. SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`);
+console.log(
+  `[Bootstrap] Loaded env from ${root}. SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`
+);
 
 /**
  * Worker Bootstrap 入口
@@ -94,13 +96,13 @@ async function boot() {
       } else {
         process.stderr.write(
           util.format('[Bootstrap] Production mode: Continuing with WARNING (jobs will fail)') +
-          '\n'
+            '\n'
         );
       }
     } else {
       process.stdout.write(
         util.format('[Bootstrap] ✅ DMMF Self-Check PASSED: All required Shot fields present') +
-        '\n'
+          '\n'
       );
     }
 

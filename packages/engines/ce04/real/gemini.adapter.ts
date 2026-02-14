@@ -1,4 +1,4 @@
-import { CE04Input, CE04Output, EngineBillingUsage } from '../types';
+import { CE04Input, CE04Output, EngineBillingUsage } from '../src/types';
 import * as crypto from 'crypto';
 
 /**

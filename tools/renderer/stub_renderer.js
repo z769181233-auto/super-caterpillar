@@ -8,8 +8,7 @@ const { execSync } = require('child_process');
  */
 
 // Use generated background if exists
-const MOCK_BG =
-  'ancient_chinese_mansion_bg_jpg_1769609041912.png';
+const MOCK_BG = 'ancient_chinese_mansion_bg_jpg_1769609041912.png';
 
 function renderStub(planPath, rawOutputMp4, eviDir) {
   const plan = JSON.parse(fs.readFileSync(planPath, 'utf8'));

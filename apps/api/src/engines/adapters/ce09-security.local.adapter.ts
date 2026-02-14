@@ -1,9 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  EngineAdapter,
-  EngineInvokeInput,
-  EngineInvokeResult,
-} from '@scu/shared-types';
+import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
 import { execAsync } from '../../../../../packages/shared/os_exec';
 import { safeJoin } from '../../../../../packages/shared/fs_safe';
 import { sha256File } from '../../../../../packages/shared/hash';

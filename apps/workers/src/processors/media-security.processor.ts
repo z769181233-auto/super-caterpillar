@@ -18,8 +18,13 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     let targetAssetId = assetId;
     let sourceStorageKey = videoAssetStorageKey;
 
-    // 1. Resolve Asset
-    if (!targetAssetId && shotId) {
+    // 1. Resolve Asset & Storage Key
+    if (targetAssetId && !sourceStorageKey) {
+      const asset = await prisma.asset.findUnique({ where: { id: targetAssetId } });
+      if (asset) {
+        sourceStorageKey = asset.storageKey;
+      }
+    } else if (!targetAssetId && shotId) {
       const asset = await prisma.asset.findUnique({
         where: {
           ownerType_ownerId_type: {
@@ -36,7 +41,9 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     }
 
     if (!targetAssetId || !sourceStorageKey) {
-      throw new Error('MISSING_ASSET_OR_STORAGE_KEY');
+      throw new Error(
+        `[DEBUG_V3_RELOADED] MISSING_ASSET_OR_STORAGE_KEY: assetId=${targetAssetId}, shotId=${shotId}`
+      );
     }
 
     // 2. Invoke EngineHub
@@ -51,8 +58,8 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
       context: { ...job.context, jobId: job.id, traceId: job.payload.traceId },
     });
 
-    if (secResult.status !== 'SUCCESS') {
-      throw new Error(`SECURITY_ENGINE_FAIL: ${secResult.error?.message}`);
+    if (!secResult.success) {
+      throw new Error(`SECURITY_ENGINE_FAIL: ${secResult.error?.message || 'Unknown error'}`);
     }
 
     const { storageKey, hlsPlaylistKey, screenshotKey, framemd5Key, sha256 } = secResult.output;

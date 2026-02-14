@@ -6,7 +6,7 @@ import { Stage1PipelinePayload } from '@scu/shared-types';
 @Controller('orchestrator')
 @UseGuards(JwtOrHmacGuard)
 export class OrchestratorController {
-  constructor(private readonly orchestratorService: OrchestratorService) { }
+  constructor(private readonly orchestratorService: OrchestratorService) {}
 
   /**
    * 手动触发调度
@@ -45,12 +45,15 @@ export class OrchestratorController {
    */
   @Post('pipeline/stage1')
   async startStage1Pipeline(@Body() body: Stage1PipelinePayload): Promise<any> {
-    console.log('[DEBUG_A1] Received Stage 1 Pipeline Request:', JSON.stringify({
-      hasNovelText: !!body.novelText,
-      novelTextLen: body.novelText?.length,
-      projectId: body.projectId,
-      pipelineRunId: body.pipelineRunId
-    }));
+    console.log(
+      '[DEBUG_A1] Received Stage 1 Pipeline Request:',
+      JSON.stringify({
+        hasNovelText: !!body.novelText,
+        novelTextLen: body.novelText?.length,
+        projectId: body.projectId,
+        pipelineRunId: body.pipelineRunId,
+      })
+    );
 
     // A1修复：正确映射DTO参数到Service方法
     try {

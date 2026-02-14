@@ -4,14 +4,14 @@ import { StringDecoder } from 'string_decoder';
 export interface ScanResult {
   title: string;
   startByte: number; // Absolute byte offset in file (inclusive)
-  endByte: number;   // Absolute byte offset of the last byte of this chapter (exclusive of next chapter start)
+  endByte: number; // Absolute byte offset of the last byte of this chapter (exclusive of next chapter start)
 }
 
 /**
  * Stage 4 "The Shredder" Stream Scanner
  * Scans a file for chapter titles and returns exact byte ranges.
  * Uses strict byte tracking to allow random-access reading in Worker.
- * 
+ *
  * Logic:
  * 1. Read file in chunks.
  * 2. Decode to UTF-8 strings (handling multi-byte char boundaries).
@@ -37,9 +37,9 @@ export async function streamScanFile(
   // Regex for Chapter Headers
   // Matches "第N章" or similar patterns.
   // Note: We trim the line before checking, but byte calculation uses strict raw line.
-  // Regex for Chapter Headers
   // Matches "第N章", "第N卷", "第N回", "Chapter N", etc.
-  const chapterPattern = /^(第\s*[0-9一二三四五六七八九十百千]+\s*[章节回卷集篇]|Chapter\s*[0-9]+|Section\s*[0-9]+)/i;
+  const chapterPattern =
+    /^(第\s*[0-9一二三四五六七八九十百千万零]+\s*[章节回卷集篇]|Chapter\s*[0-9]+|Section\s*[0-9]+)/i;
 
   for await (const chunk of stream) {
     // Decode chunk to string, handling incomplete multibyte sequences
@@ -71,7 +71,7 @@ export async function streamScanFile(
           const ep: ScanResult = {
             title: currentChapterTitle,
             startByte: currentChapterStartByte,
-            endByte: prevChapterEndByte // Exclusive end (start of next)
+            endByte: prevChapterEndByte, // Exclusive end (start of next)
           };
           episodes.push(ep);
           if (onChapterFound) onChapterFound(ep);
@@ -117,7 +117,11 @@ export async function streamScanFile(
       if (chapterPattern.test(trimmed)) {
         const prevChapterEndByte = absoluteByteOffset;
         if (prevChapterEndByte > currentChapterStartByte) {
-          const ep = { title: currentChapterTitle, startByte: currentChapterStartByte, endByte: prevChapterEndByte };
+          const ep = {
+            title: currentChapterTitle,
+            startByte: currentChapterStartByte,
+            endByte: prevChapterEndByte,
+          };
           episodes.push(ep);
           if (onChapterFound) onChapterFound(ep);
         }
@@ -139,7 +143,11 @@ export async function streamScanFile(
         // Close previous
         const prevChapterEndByte = absoluteByteOffset;
         if (prevChapterEndByte > currentChapterStartByte) {
-          const ep = { title: currentChapterTitle, startByte: currentChapterStartByte, endByte: prevChapterEndByte };
+          const ep = {
+            title: currentChapterTitle,
+            startByte: currentChapterStartByte,
+            endByte: prevChapterEndByte,
+          };
           episodes.push(ep);
           if (onChapterFound) onChapterFound(ep);
         }
@@ -156,7 +164,7 @@ export async function streamScanFile(
     const ep: ScanResult = {
       title: currentChapterTitle,
       startByte: currentChapterStartByte,
-      endByte: absoluteByteOffset
+      endByte: absoluteByteOffset,
     };
     episodes.push(ep);
     if (onChapterFound) onChapterFound(ep);

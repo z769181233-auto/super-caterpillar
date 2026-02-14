@@ -33,7 +33,9 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
       const sceneId = input.context?.sceneId;
 
       if (!projectId || !sceneId) {
-        throw new Error(`[ShotRenderLocal] Missing Identity: projectId=${projectId}, sceneId=${sceneId}. Cannot persist asset safely.`);
+        throw new Error(
+          `[ShotRenderLocal] Missing Identity: projectId=${projectId}, sceneId=${sceneId}. Cannot persist asset safely.`
+        );
       }
 
       const storageRoot = path.resolve(process.env.STORAGE_ROOT || '.data/storage');
@@ -71,14 +73,14 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
         `-t 5`,
         `-c:v libx264 -pix_fmt yuv420p -crf 18 -preset slow`,
         `-c:a aac -b:a 192k`,
-        `"${absOutputPath}"`
+        `"${absOutputPath}"`,
       ].join(' ');
 
       this.logger.log(`[ShotRenderLocal] Executing FFmpeg: ${ffmpegCmd}`);
 
       await execAsync(ffmpegCmd, {
         maxBuffer: 1024 * 1024 * 10, // 10MB Buffer
-        timeout: 60000 // 60s Timeout
+        timeout: 60000, // 60s Timeout
       });
 
       this.logger.log(`[ShotRenderLocal] FFmpeg execution completed.`);
@@ -86,7 +88,9 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
       // Validation 1: Size check
       const stats = fs.statSync(absOutputPath);
       if (stats.size < 10000) {
-        throw new Error(`[ShotRenderLocal] Rendered video is too small (${stats.size} bytes). Likely corrupted.`);
+        throw new Error(
+          `[ShotRenderLocal] Rendered video is too small (${stats.size} bytes). Likely corrupted.`
+        );
       }
 
       // Validation 2: Black frame detection
@@ -109,12 +113,12 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
           model: 'local-ffmpeg-hifi',
           duration: 5,
           width: 1920,
-          height: 1080
+          height: 1080,
         },
         audit_trail: {},
         storageKey: storageKey,
         localPath: absOutputPath,
-        sha256: sha256
+        sha256: sha256,
       };
 
       // 增强审计轨迹以满足计费和 Gate 断言要求

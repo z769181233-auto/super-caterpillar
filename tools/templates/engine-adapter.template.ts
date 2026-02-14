@@ -6,8 +6,8 @@
  * - Emit auditable metadata for evidence
  */
 export class EngineAdapterTemplate {
-    async run(input: any): Promise<any> {
-        // TODO: implement
-        return { status: "PASS", meta: {} };
-    }
+  async run(input: any): Promise<any> {
+    // TODO: implement
+    return { status: 'PASS', meta: {} };
+  }
 }

@@ -186,7 +186,7 @@ Error: P3009
 
 ```
 
-> super-caterpillar-universe@1.0.0 typecheck 
+> super-caterpillar-universe@1.0.0 typecheck
 > turbo run typecheck
 
 turbo 2.6.3

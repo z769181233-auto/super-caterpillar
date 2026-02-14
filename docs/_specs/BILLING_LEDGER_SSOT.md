@@ -13,11 +13,11 @@
 
 ## 2. 计费模型 (Cost Model)
 
-| Item Type | Work Unit | Charge Code | Unit Price (Mock) | Data Source |
-| :--- | :--- | :--- | :--- | :--- |
-| `JOB` | `CE06_NOVEL_PARSING` | `SCAN_CHAR` | 1 credit / 10k chars | `Job.payload.charCount` |
-| `JOB` | `SHOT_RENDER` | `RENDER_SEC` | 5 credits / sec | `Asset.metadata.duration` |
-| `JOB` | `COMFY_GEN` | `IMAGE_GEN` | 10 credits / image | `Asset(Type=IMAGE).count` |
+| Item Type | Work Unit            | Charge Code  | Unit Price (Mock)    | Data Source               |
+| :-------- | :------------------- | :----------- | :------------------- | :------------------------ |
+| `JOB`     | `CE06_NOVEL_PARSING` | `SCAN_CHAR`  | 1 credit / 10k chars | `Job.payload.charCount`   |
+| `JOB`     | `SHOT_RENDER`        | `RENDER_SEC` | 5 credits / sec      | `Asset.metadata.duration` |
+| `JOB`     | `COMFY_GEN`          | `IMAGE_GEN`  | 10 credits / image   | `Asset(Type=IMAGE).count` |
 
 ## 3. 数据库 Schema 规范
 

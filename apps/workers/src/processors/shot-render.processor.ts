@@ -42,7 +42,9 @@ export async function processShotRenderJob(
     });
 
     // Debug Logs for S-3 Fix
-    logger.log(`[ShotRender_HUB DEBUG] projectId=${projectId}, sceneId=${shot.sceneId}, shotId=${shotId}`);
+    logger.log(
+      `[ShotRender_HUB DEBUG] projectId=${projectId}, sceneId=${shot.sceneId}, shotId=${shotId}`
+    );
 
     // 3. Invoke SHOT_RENDER Engine
     const renderResult = await apiClient.invokeEngine({
@@ -53,7 +55,13 @@ export async function processShotRenderJob(
         projectId,
         traceId,
       },
-      context: { ...job.context, jobId: job.id, traceId, identity: { anchors, mode: 'required' }, sceneId: shot.sceneId },
+      context: {
+        ...job.context,
+        jobId: job.id,
+        traceId,
+        identity: { anchors, mode: 'required' },
+        sceneId: shot.sceneId,
+      },
     });
 
     if (renderResult.status !== 'SUCCESS') {
@@ -146,8 +154,12 @@ export async function processShotRenderJob(
     const path = await import('node:path');
     const repoRoot = process.env.SCU_REPO_ROOT || process.cwd();
     const artifactDirAbs = payload.artifactDir
-      ? (path.isAbsolute(payload.artifactDir) ? payload.artifactDir : path.resolve(repoRoot, payload.artifactDir))
-      : (process.env.ARTIFACT_DIR ? path.resolve(process.env.ARTIFACT_DIR) : undefined);
+      ? path.isAbsolute(payload.artifactDir)
+        ? payload.artifactDir
+        : path.resolve(repoRoot, payload.artifactDir)
+      : process.env.ARTIFACT_DIR
+        ? path.resolve(process.env.ARTIFACT_DIR)
+        : undefined;
 
     if (artifactDirAbs) {
       // Safety check: must be inside docs/_evidence
@@ -181,7 +193,7 @@ export async function processShotRenderJob(
     logger.error(`[ShotRender_HUB] Failed: ${error.message}`);
     await prisma.shot
       .update({ where: { id: shotId }, data: { renderStatus: 'FAILED' } })
-      .catch(() => { });
+      .catch(() => {});
     return { status: 'FAILED', error: error.message };
   }
 }

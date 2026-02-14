@@ -13,10 +13,14 @@ if (!targetDir || !fs.existsSync(targetDir)) {
   process.exit(1);
 }
 
-const files = fs.readdirSync(targetDir).filter(f => !f.startsWith('.') && f !== 'EVIDENCE_INDEX.json' && f !== 'EVIDENCE_INDEX.checksums');
+const files = fs
+  .readdirSync(targetDir)
+  .filter(
+    (f) => !f.startsWith('.') && f !== 'EVIDENCE_INDEX.json' && f !== 'EVIDENCE_INDEX.checksums'
+  );
 const index = {
   timestamp: new Date().toISOString(),
-  files: []
+  files: [],
 };
 
 let checksums = '';
@@ -31,7 +35,7 @@ for (const file of files) {
   index.files.push({
     name: file,
     sha256: hash,
-    size: content.length
+    size: content.length,
   });
 
   checksums += `${hash}  ${file}\n`;

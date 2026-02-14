@@ -30,7 +30,7 @@ export class StoryService {
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
     private readonly novelImportService: NovelImportService
-  ) { }
+  ) {}
 
   /**
    * 解析小说（CE06）
@@ -84,7 +84,9 @@ export class StoryService {
 
     // [Stage 4] Shredder 分流逻辑
     if (dto.rawText.length > SHREDDER_THRESHOLD) {
-      this.logger.log(`[Stage 4] Text length ${dto.rawText.length} exceeds threshold ${SHREDDER_THRESHOLD}, bypassing monolithic parsing.`);
+      this.logger.log(
+        `[Stage 4] Text length ${dto.rawText.length} exceeds threshold ${SHREDDER_THRESHOLD}, bypassing monolithic parsing.`
+      );
 
       // 1. 确保 Novel 记录存在
       let novel = await this.prisma.novel.findFirst({ where: { projectId } });

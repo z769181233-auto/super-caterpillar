@@ -2,7 +2,7 @@ name: Stage4 Nightly 3M Baseline Gate (Required)
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 jobs:
@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
       - name: Install
         run: corepack enable && pnpm -v && pnpm i --frozen-lockfile
@@ -26,12 +26,12 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           HMAC_SECRET_KEY: ${{ secrets.HMAC_SECRET_KEY }}
           WORKER_API_KEY: ${{ secrets.WORKER_API_KEY }}
-          MIN_CHUNK_JOBS: "5"
-          MAX_FAILED_JOBS: "0"
+          MIN_CHUNK_JOBS: '5'
+          MAX_FAILED_JOBS: '0'
         run: |
           # P6-0 Harden: Enforce strict failure and audit summary
           set -euo pipefail
-          
+
           # [EXECUTION] Gate script now manages its own evidence directory
           bash tools/gate/gates/gate_stage4_scaling_15m.sh | tee run_gate.log
 
@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
           EVI="$(cat docs/_evidence/current_stage4_evidence_path.txt)"
-          
+
           # Pass path to next steps via GITHUB_OUTPUT (lint fix)
           echo "EVI_PATH=$EVI" >> "$GITHUB_OUTPUT"
 
@@ -61,7 +61,7 @@ jobs:
             echo "❌ CRITICAL: final_summary.json not found." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          
+
           if ! grep -q '"status"[[:space:]]*:[[:space:]]*"PASS"' "$EVI/final_summary.json"; then
             echo "❌ CRITICAL: 3M Baseline FAILED. Blocking Release." >> "$GITHUB_STEP_SUMMARY"
             exit 1

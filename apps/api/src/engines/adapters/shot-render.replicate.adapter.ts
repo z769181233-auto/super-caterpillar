@@ -66,7 +66,8 @@ export class ShotRenderReplicateAdapter implements EngineAdapter {
       );
 
       // 1. Call Replicate SDXL (Using predictions.create for ID)
-      const model = 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b';
+      const model =
+        'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b';
       const [modelName, modelVersion] = model.split(':');
 
       const prediction = await this.getReplicate().predictions.create({

@@ -5,9 +5,9 @@ import { LoraTrainingService } from './lora-training.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [CharacterController],
-    providers: [CharacterService, LoraTrainingService],
-    exports: [CharacterService, LoraTrainingService],
+  imports: [PrismaModule],
+  controllers: [CharacterController],
+  providers: [CharacterService, LoraTrainingService],
+  exports: [CharacterService, LoraTrainingService],
 })
-export class CharacterModule { }
+export class CharacterModule {}

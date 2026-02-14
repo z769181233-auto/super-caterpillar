@@ -89,9 +89,19 @@ import { AuditLogModule } from '../audit-log/audit-log.module';
 import { AuditModule } from '../audit/audit.module';
 import { CostModule } from '../cost/cost.module';
 import { CharacterModule } from '../character/character.module';
+import { AudioModule } from '../audio/audio.module';
 
 @Module({
-  imports: [PrismaModule, EngineAdminModule, AuditLogModule, AuditModule, CostModule, CharacterModule, forwardRef(() => EngineHubModule)], // 修复 DI 缺失
+  imports: [
+    PrismaModule,
+    EngineAdminModule,
+    AuditLogModule,
+    AuditModule,
+    CostModule,
+    CharacterModule,
+    forwardRef(() => EngineHubModule),
+    AudioModule,
+  ], // 修复 DI 缺失
   controllers: [EngineController], // S3-C.1: 注册公开的引擎控制器
   providers: [
     EngineRegistry,
@@ -353,7 +363,7 @@ export class EngineModule implements OnModuleInit {
     private readonly qc06Adapter: QC06FlickerDetectorAdapter,
     @Inject(CE23IdentityLocalAdapter)
     private readonly ce23Adapter: CE23IdentityLocalAdapter
-  ) { }
+  ) {}
 
   onModuleInit() {
     if (!this.registry) {

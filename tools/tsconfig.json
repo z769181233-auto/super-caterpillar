@@ -1,25 +1,15 @@
 {
-    "extends": "../tsconfig.json",
-    "compilerOptions": {
-        "outDir": "../dist/tools",
-        "rootDir": "..",
-        "baseUrl": "..",
-        "paths": {
-            "database": [
-                "packages/database/src"
-            ],
-            "@scu/shared-types": [
-                "packages/shared-types/src"
-            ],
-            "@scu/engines/*": [
-                "packages/engines/*"
-            ],
-            "@scu/api/*": [
-                "apps/api/src/*"
-            ]
-        }
-    },
-    "include": [
-        "**/*"
-    ]
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../dist/tools",
+    "rootDir": "..",
+    "baseUrl": "..",
+    "paths": {
+      "database": ["packages/database/src"],
+      "@scu/shared-types": ["packages/shared-types/src"],
+      "@scu/engines/*": ["packages/engines/*"],
+      "@scu/api/*": ["apps/api/src/*"]
+    }
+  },
+  "include": ["**/*"]
 }

@@ -163,16 +163,16 @@ async function ce06DeterministicChunkParser(text: string): Promise<CE06Output> {
     // V3.0 P0-2: Mock character detection for fallback testing
     characters: text.includes('张三')
       ? [
-        {
-          id: 'char_zhangsan',
-          name: '张三',
-          status: 'normal',
-          appearance: { clothing: '红色长袍', hair: '长发' },
-          location: '森林',
-          items: ['长剑'],
-          injuries: [],
-        },
-      ]
+          {
+            id: 'char_zhangsan',
+            name: '张三',
+            status: 'normal',
+            appearance: { clothing: '红色长袍', hair: '长发' },
+            location: '森林',
+            items: ['长剑'],
+            injuries: [],
+          },
+        ]
       : [],
   }));
 

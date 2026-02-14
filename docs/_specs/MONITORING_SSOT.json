@@ -1,62 +1,62 @@
 {
-    "version": 3,
-    "description": "Super Caterpillar Commercial Monitor SSOT - P11 Hardened",
-    "services": [
+  "version": 3,
+  "description": "Super Caterpillar Commercial Monitor SSOT - P11 Hardened",
+  "services": [
+    {
+      "name": "api",
+      "slos": [
         {
-            "name": "api",
-            "slos": [
-                {
-                    "sli": "http_request_latency_p95_ms",
-                    "target": 1500,
-                    "severity": "P1",
-                    "metric_source": "prom:http_request_duration_seconds",
-                    "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh"
-                },
-                {
-                    "sli": "http_5xx_rate_pct",
-                    "target": 0.1,
-                    "severity": "P0",
-                    "metric_source": "prom:http_requests_total{status=~'5..'}",
-                    "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh"
-                }
-            ]
+          "sli": "http_request_latency_p95_ms",
+          "target": 1500,
+          "severity": "P1",
+          "metric_source": "prom:http_request_duration_seconds",
+          "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh"
         },
         {
-            "name": "worker",
-            "slos": [
-                {
-                    "sli": "job_queue_lag_sec",
-                    "target": 15,
-                    "severity": "P0",
-                    "metric_source": "prom:scu_job_queue_seconds",
-                    "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh",
-                    "note": "Commercial Redline: 15s"
-                },
-                {
-                    "sli": "job_fail_rate_pct",
-                    "target": 0.1,
-                    "severity": "P0",
-                    "metric_source": "admin:metrics:jobs_failed / jobs_total",
-                    "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh",
-                    "note": "Zero-failure proximity target"
-                },
-                {
-                    "sli": "job_throughput_bps",
-                    "target": 250000,
-                    "severity": "P1",
-                    "metric_source": "prom:scu_stage4_throughput_bps",
-                    "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh",
-                    "note": "250KB/s baseline for 15M characters"
-                },
-                {
-                    "sli": "financial_idempotency",
-                    "target": 0,
-                    "severity": "P0",
-                    "metric_source": "admin:metrics:ledger_dups",
-                    "evidence_anchor": "tools/ops/dashboard.sh",
-                    "note": "Must be 0. Checked by (jobId, attempt) in cost_ledgers"
-                }
-            ]
+          "sli": "http_5xx_rate_pct",
+          "target": 0.1,
+          "severity": "P0",
+          "metric_source": "prom:http_requests_total{status=~'5..'}",
+          "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh"
         }
-    ]
+      ]
+    },
+    {
+      "name": "worker",
+      "slos": [
+        {
+          "sli": "job_queue_lag_sec",
+          "target": 15,
+          "severity": "P0",
+          "metric_source": "prom:scu_job_queue_seconds",
+          "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh",
+          "note": "Commercial Redline: 15s"
+        },
+        {
+          "sli": "job_fail_rate_pct",
+          "target": 0.1,
+          "severity": "P0",
+          "metric_source": "admin:metrics:jobs_failed / jobs_total",
+          "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh",
+          "note": "Zero-failure proximity target"
+        },
+        {
+          "sli": "job_throughput_bps",
+          "target": 250000,
+          "severity": "P1",
+          "metric_source": "prom:scu_stage4_throughput_bps",
+          "evidence_anchor": "tools/gate/gates/gate_stage4_scaling_15m.sh",
+          "note": "250KB/s baseline for 15M characters"
+        },
+        {
+          "sli": "financial_idempotency",
+          "target": 0,
+          "severity": "P0",
+          "metric_source": "admin:metrics:ledger_dups",
+          "evidence_anchor": "tools/ops/dashboard.sh",
+          "note": "Must be 0. Checked by (jobId, attempt) in cost_ledgers"
+        }
+      ]
+    }
+  ]
 }

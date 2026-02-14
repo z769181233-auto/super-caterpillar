@@ -40,7 +40,7 @@ export class BibleAliasController {
   constructor(
     private readonly storyService: StoryService,
     private readonly textService: TextService
-  ) { }
+  ) {}
 
   // ---------------------------------------------------------------------------
   // 1. Story Parse (Alias for CE06 Pipeline)

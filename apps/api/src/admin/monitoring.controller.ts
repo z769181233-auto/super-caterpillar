@@ -6,18 +6,18 @@ import { registry } from '@scu/observability';
 @Controller('admin/metrics')
 @UseGuards(JwtOrHmacGuard)
 export class MonitoringController {
-    constructor(private readonly monitoringService: MonitoringService) { }
+  constructor(private readonly monitoringService: MonitoringService) {}
 
-    @Get('p1')
-    async getP1Metrics() {
-        return this.monitoringService.getP1Metrics();
-    }
+  @Get('p1')
+  async getP1Metrics() {
+    return this.monitoringService.getP1Metrics();
+  }
 }
 
 @Controller()
 export class PublicMetricsController {
-    @Get('metrics')
-    async getPrometheusMetrics() {
-        return registry.metrics();
-    }
+  @Get('metrics')
+  async getPrometheusMetrics() {
+    return registry.metrics();
+  }
 }

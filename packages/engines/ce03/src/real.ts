@@ -3,7 +3,7 @@ import { LLMClient } from '@scu/shared';
 
 /**
  * 视觉密度评分引擎 - 增强版 (AI + 关键词)
- * 
+ *
  * CE03 的目标是评估文本的"视觉丰富度"，以便决定该镜头是否需要更高级的配置。
  */
 export async function ce03RealEngine(input: CE03Input): Promise<CE03Output> {
@@ -67,10 +67,12 @@ export async function ce03RealEngine(input: CE03Input): Promise<CE03Output> {
           timestamp: new Date().toISOString(),
           input_hash: undefined,
         },
-        billing_usage: response.usage ? {
-          ...response.usage,
-          model
-        } : undefined,
+        billing_usage: response.usage
+          ? {
+              ...response.usage,
+              model,
+            }
+          : undefined,
       };
     } catch (error: any) {
       console.warn(`[CE03] AI Scoring failed, falling back to keyword logic: ${error.message}`);
@@ -80,8 +82,36 @@ export async function ce03RealEngine(input: CE03Input): Promise<CE03Output> {
   // 2. 兜底逻辑：关键词匹配 (Keyword-based Fallback)
   const words = text.split(/\s+/);
   const visualWords = [
-    '看见', '光', '暗', '红', '黑', '白', '蓝', '绿', '脸', '眼睛', '天空', '道路', '房间', '窗', '门', '手', '血',
-    'light', 'shadow', 'dark', 'bright', 'dim', 'red', 'blue', 'green', 'face', 'eye', 'sky', 'room', 'window',
+    '看见',
+    '光',
+    '暗',
+    '红',
+    '黑',
+    '白',
+    '蓝',
+    '绿',
+    '脸',
+    '眼睛',
+    '天空',
+    '道路',
+    '房间',
+    '窗',
+    '门',
+    '手',
+    '血',
+    'light',
+    'shadow',
+    'dark',
+    'bright',
+    'dim',
+    'red',
+    'blue',
+    'green',
+    'face',
+    'eye',
+    'sky',
+    'room',
+    'window',
   ];
 
   let visualCount = 0;

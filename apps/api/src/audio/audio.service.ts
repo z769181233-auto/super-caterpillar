@@ -37,6 +37,7 @@ export type AudioGenerateRequest = {
 export type AudioGenerateResult = {
   voice: AudioSynthesisOutput;
   mixed?: { absPath: string; sha256: string };
+  bgm?: AudioSynthesisOutput;
   signals: Record<string, any>; // audit payload for later DB persistence
 };
 
@@ -225,8 +226,21 @@ export class AudioService {
       mixed: { absPath: outPath, sha256: mixedSha },
       signals,
       // P18-3: Also return BGM if needed for separate persistence
-      // @ts-expect-error: Legacy return type mismatch in P18 loop
       bgm,
     };
+  }
+
+  async generateBgm(req: AudioGenerateRequest): Promise<AudioSynthesisOutput> {
+    const project = req.projectSettings ?? {};
+    const bgmSeed = req.bgmSeed ?? req.text;
+    const libOverride = process.env.AUDIO_BGM_LIBRARY_ID_OVERRIDE;
+    const libRequested = libOverride || project.audioBgmLibraryId || 'bgm_lib_v1';
+
+    return this.bgmProvider.synthesize({
+      text: bgmSeed,
+      seed: bgmSeed,
+      libraryId: libRequested,
+      preview: req.preview,
+    });
   }
 }

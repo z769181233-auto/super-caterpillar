@@ -4,10 +4,7 @@
   "threshold": 0.85,
   "continuityScore": 0,
   "passed": false,
-  "reasons": [
-    "Missing characterId",
-    "Identity score 0 below threshold 0.85"
-  ],
+  "reasons": ["Missing characterId", "Identity score 0 below threshold 0.85"],
   "checks": {
     "faceIdConsistency": "MISMATCH",
     "featureLock": "ACTIVE"

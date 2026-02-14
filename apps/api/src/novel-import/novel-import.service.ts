@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProjectService } from '../project/project.service';
 import { NovelAnalysisProcessorService } from './novel-analysis-processor.service';
 import { randomUUID } from 'crypto';
+import * as fs from 'fs';
 
 /**
  * 小说分析结果结构（为未来接入 LLM 预留）
@@ -37,7 +38,7 @@ export class NovelImportService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly analysisProcessor: NovelAnalysisProcessorService
-  ) { }
+  ) {}
 
   /**
    * 分析单个章节
@@ -309,7 +310,7 @@ export class NovelImportService {
    * 适用于 100万字以上的长篇小说
    */
   async triggerShredderWorkflow(
-    novelSourceId: string,
+    novelSourceId: string, // Unused old ID or to be mapped
     projectId: string,
     organizationId: string,
     userId: string,
@@ -318,9 +319,33 @@ export class NovelImportService {
     traceId?: string,
     isVerification?: boolean
   ): Promise<any> {
-    this.logger.log(`[Stage 4] Triggering Shredder workflow for Novel: ${novelSourceId} (${projectId})`);
+    this.logger.log(`[Stage 4] Triggering Shredder workflow for Novel: ${title} (${projectId})`);
 
-    // 1. 创建 Task (类型为 NOVEL_ANALYSIS，符合现有架构)
+    const stats = await fs.promises.stat(filePath).catch(() => ({ size: 0 }));
+
+    // 1. 创建 NovelSource 记录 (新模型)
+    const novelSource = await this.prisma.novelSource.upsert({
+      where: { projectId },
+      update: {
+        fileKey: filePath,
+        fileName: title,
+        fileSize: stats.size,
+        status: 'PENDING',
+        error: null,
+        totalChapters: 0,
+        processedChunks: 0,
+      },
+      create: {
+        projectId,
+        organizationId,
+        fileKey: filePath,
+        fileName: title,
+        fileSize: stats.size,
+        status: 'PENDING',
+      },
+    });
+
+    // 2. 创建 Task (类型为 NOVEL_ANALYSIS，符合现有架构)
     const task = await this.prisma.task.create({
       data: {
         organizationId,
@@ -329,7 +354,7 @@ export class NovelImportService {
         status: 'PENDING',
         traceId: traceId || `tr_shredder_${randomUUID()}`,
         payload: {
-          novelSourceId,
+          novelSourceId: novelSource.id,
           projectId,
           mode: 'SHREDDER', // 标记为分片模式
           isVerification: !!isVerification,
@@ -337,22 +362,18 @@ export class NovelImportService {
       },
     });
 
-    // 2. 创建 NOVEL_SCAN_TOC Job
-    // 使用 createCECoreJob 确保符合 Job 系统规范（带占位层级）
+    // 3. 创建 NOVEL_SCAN_TOC Job
     const job = await this.prisma.shotJob.create({
       data: {
         organizationId,
         projectId,
-        // 下面这几个 ID 在 createCECoreJob 中是自动创建占位的，
-        // 这里为了简单，我们直接手动模拟 Job 系统的“带占位”创建
-        // 后续 Scan 任务会创建真实的 Season/Episode
         taskId: task.id,
         type: 'NOVEL_SCAN_TOC' as any,
         status: 'PENDING',
-        priority: 10, // 高优先级，因为是根任务
+        priority: 100, // 高优先级，因为是根任务
         maxRetry: 3,
         payload: {
-          novelSourceId,
+          novelSourceId: novelSource.id,
           projectId,
           organizationId,
           userId,
@@ -369,6 +390,7 @@ export class NovelImportService {
     return {
       jobId: job.id,
       taskId: task.id,
+      novelSourceId: novelSource.id,
     };
   }
 

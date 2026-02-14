@@ -23,7 +23,7 @@ export class ProdGateController {
     private readonly orchestratorService: OrchestratorService,
     private readonly jobService: JobService,
     private readonly db: PrismaService
-  ) { }
+  ) {}
 
   /**
    * Assert artifactDir is within allowed evidence directory
@@ -35,9 +35,7 @@ export class ProdGateController {
       repoRoot = path.resolve(repoRoot, '../../');
     }
 
-    const abs = path.isAbsolute(artifactDir)
-      ? artifactDir
-      : path.resolve(repoRoot, artifactDir);
+    const abs = path.isAbsolute(artifactDir) ? artifactDir : path.resolve(repoRoot, artifactDir);
 
     const allowedBase = path.resolve(repoRoot, 'docs/_evidence');
 
@@ -47,7 +45,9 @@ export class ProdGateController {
     this.logger.log(`[PathDebug] startsWith: ${abs.startsWith(allowedBase + path.sep)}`);
 
     if (!abs.startsWith(allowedBase + path.sep)) {
-      throw new BadRequestException(`artifactDir out of allowed base: ${abs} (Base: ${allowedBase})`);
+      throw new BadRequestException(
+        `artifactDir out of allowed base: ${abs} (Base: ${allowedBase})`
+      );
     }
     return abs;
   }
@@ -58,7 +58,8 @@ export class ProdGateController {
    */
   @Post('shot-render')
   async triggerShotRender(
-    @Body() body: {
+    @Body()
+    body: {
       shotId: string;
       artifactDir: string;
       prompt?: string;
@@ -87,14 +88,14 @@ export class ProdGateController {
               include: {
                 season: {
                   include: {
-                    project: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    project: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!shot || !shot.scene?.episode?.season?.project) {
@@ -109,7 +110,7 @@ export class ProdGateController {
     // Find a valid user in this organization to satisfy ownership/billing checks in JobService
     const member = await this.db.organizationMember.findFirst({
       where: { organizationId: organizationId },
-      select: { userId: true }
+      select: { userId: true },
     });
 
     const userId = member?.userId || 'system';
@@ -168,7 +169,11 @@ export class ProdGateController {
     /**
      * Relaxed check: Allow both SHOT_RENDER and CE06_NOVEL_PARSING for status checks
      */
-    if (job.type !== 'SHOT_RENDER' && job.type !== 'CE06_NOVEL_PARSING' && job.type !== 'NOVEL_ANALYSIS') {
+    if (
+      job.type !== 'SHOT_RENDER' &&
+      job.type !== 'CE06_NOVEL_PARSING' &&
+      job.type !== 'NOVEL_ANALYSIS'
+    ) {
       // Log warning but proceed? Or strict check?
     }
 
@@ -195,24 +200,22 @@ export class ProdGateController {
    */
   @Post('novel-analysis')
   async triggerNovelAnalysis(
-    @Body() body: {
-      projectId: string;
-      filePath?: string;
-      rawText?: string;
-      jobId?: string;
-    }
+    @Body() body: { projectId: string; filePath?: string; rawText?: string; jobId?: string }
   ) {
     if (process.env.GATE_MODE !== '1') {
       throw new BadRequestException('Endpoint only available in GATE_MODE=1');
     }
 
     if (!body.projectId) throw new BadRequestException('projectId required');
-    if (!body.filePath && !body.rawText) throw new BadRequestException('filePath or rawText required');
+    if (!body.filePath && !body.rawText)
+      throw new BadRequestException('filePath or rawText required');
 
     const traceId = body.jobId || `w3_1_na_${Date.now()}`;
     const organizationId = 'default-org'; // Simplify for gate test
 
-    this.logger.log(`[ProdGate] Enqueueing NOVEL_ANALYSIS job via createCECoreJob. Project: ${body.projectId}`);
+    this.logger.log(
+      `[ProdGate] Enqueueing NOVEL_ANALYSIS job via createCECoreJob. Project: ${body.projectId}`
+    );
 
     try {
       // Use createCECoreJob which is cleaner and supports arbitrary job types
@@ -235,7 +238,7 @@ export class ProdGateController {
         success: true,
         jobId: job.id,
         traceId,
-        status: job.status
+        status: job.status,
       };
     } catch (err: any) {
       this.logger.error(`[ProdGate] Failed to trigger novel-analysis: ${err.message}`, err.stack);

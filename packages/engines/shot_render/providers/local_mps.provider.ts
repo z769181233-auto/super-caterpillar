@@ -125,7 +125,7 @@ export const localMpsProvider = {
         relativePath = path.relative(root, meta.asset_path);
         // Convert to POSIX
         relativePath = relativePath.split(path.sep).join('/');
-      } catch (e) { }
+      } catch (e) {}
 
       return {
         bytes,

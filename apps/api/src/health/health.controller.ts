@@ -9,7 +9,7 @@ export class HealthController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService?: RedisService
-  ) { }
+  ) {}
 
   @Get('/health')
   health() {
@@ -106,7 +106,7 @@ export class HealthController {
       const axios = (await import('axios')).default;
       const workerResp = await axios.get(`http://127.0.0.1:${workerMetricsPort}/metrics`, {
         timeout: 500,
-        validateStatus: (status) => status === 200
+        validateStatus: (status) => status === 200,
       });
       workerMetrics = '\n\n# --- Worker Metrics ---\n' + workerResp.data;
     } catch (e) {

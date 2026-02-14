@@ -15,8 +15,8 @@ export type ProcessorContext = {
   apiClient: ApiClient;
   workerId?: string;
 
-  /** 
-   * [P6-0 Fix] Storage Adapter for resolving novelRef locally 
+  /**
+   * [P6-0 Fix] Storage Adapter for resolving novelRef locally
    */
   localStorage?: LocalStorageAdapter;
 };

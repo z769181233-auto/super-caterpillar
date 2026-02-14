@@ -98,14 +98,20 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     // we MUST enrich it to 2.5D video before continuing.
     if (result.status === 'SUCCESS' && result.output) {
       const output = result.output as any;
-      const isImage = (output.asset?.uri || '').match(/\.(png|webp|jpg|jpeg)$/i) || output.localPath?.match(/\.(png|webp|jpg|jpeg)$/i);
+      const isImage =
+        (output.asset?.uri || '').match(/\.(png|webp|jpg|jpeg)$/i) ||
+        output.localPath?.match(/\.(png|webp|jpg|jpeg)$/i);
 
       if (isImage) {
-        this.logger.log(`[ShotRenderRouter] Detected IMAGE output from ${provider}. Enriching to 2.5D Video via local FFmpeg...`);
+        this.logger.log(
+          `[ShotRenderRouter] Detected IMAGE output from ${provider}. Enriching to 2.5D Video via local FFmpeg...`
+        );
 
         const repoRoot = this.getRepoRoot();
         const rawSource = output.localPath || output.asset?.uri;
-        const absSourcePath = path.isAbsolute(rawSource) ? rawSource : path.resolve(repoRoot, rawSource);
+        const absSourcePath = path.isAbsolute(rawSource)
+          ? rawSource
+          : path.resolve(repoRoot, rawSource);
 
         this.logger.log(`[ShotRenderRouter] Resolved absolute source path: ${absSourcePath}`);
 
@@ -115,13 +121,15 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
           payload: {
             ...input.payload,
             sourceImagePath: absSourcePath,
-          }
+          },
         };
 
         const enrichmentResult = await this.localAdapter.invoke(shimInput);
 
         if (enrichmentResult.status === 'SUCCESS') {
-          this.logger.log(`[ShotRenderRouter] Enrichment SUCCESS: ${enrichmentResult.output?.localPath}`);
+          this.logger.log(
+            `[ShotRenderRouter] Enrichment SUCCESS: ${enrichmentResult.output?.localPath}`
+          );
           // Merge results: keep MPS metadata, but use FFmpeg video as the primary asset
           const enrichedOutput = enrichmentResult.output as any;
           result = {
@@ -137,12 +145,14 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
               render_meta: {
                 ...output.render_meta,
                 enriched_by: 'shot_render_local',
-                video_duration: enrichedOutput.render_meta?.duration
-              }
-            }
+                video_duration: enrichedOutput.render_meta?.duration,
+              },
+            },
           };
         } else {
-          this.logger.error(`[ShotRenderRouter] Enrichment FAILED: ${enrichmentResult.error?.message}. Falling back to image (Downstream may fail).`);
+          this.logger.error(
+            `[ShotRenderRouter] Enrichment FAILED: ${enrichmentResult.error?.message}. Falling back to image (Downstream may fail).`
+          );
         }
       }
     }
@@ -188,12 +198,15 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
 
     const localPath = asset.uri || asset.storageKey;
     if (!localPath || !fs.existsSync(localPath)) {
-      this.logger.warn(`[ShotRenderRouter] Local artifact not found at ${localPath}, skipping provenance kit.`);
+      this.logger.warn(
+        `[ShotRenderRouter] Local artifact not found at ${localPath}, skipping provenance kit.`
+      );
       return;
     }
 
     // Determine artifact directory (Evidence Artifacts)
-    const artifactsDir = process.env.SSOT_ARTIFACTS_DIR || path.join(process.cwd(), 'docs/_evidence/week2_artifacts');
+    const artifactsDir =
+      process.env.SSOT_ARTIFACTS_DIR || path.join(process.cwd(), 'docs/_evidence/week2_artifacts');
     if (!fs.existsSync(artifactsDir)) {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }
@@ -211,9 +224,15 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     const bytes = fs.statSync(targetMp4).size;
     let duration = renderMeta.duration_s || 2.0;
     try {
-      const durStr = execSync(`ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "${targetMp4}"`).toString().trim();
+      const durStr = execSync(
+        `ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "${targetMp4}"`
+      )
+        .toString()
+        .trim();
       duration = parseFloat(durStr);
-    } catch (e) { /* fallback */ }
+    } catch (e) {
+      /* fallback */
+    }
 
     const adapterVer = process.env.GIT_SHA || 'f9a6c0dc173a3309972e52597a2409733895412f';
 
@@ -255,7 +274,9 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     const provSha = createHash('sha256').update(fs.readFileSync(targetProv)).digest('hex');
     fs.writeFileSync(targetProvSha, provSha);
 
-    this.logger.log(`[ShotRenderRouter] Provenance kit generated for job ${jobId} in ${artifactsDir}`);
+    this.logger.log(
+      `[ShotRenderRouter] Provenance kit generated for job ${jobId} in ${artifactsDir}`
+    );
 
     // Update DB (Nullable fields added in Phase W2-1)
     try {

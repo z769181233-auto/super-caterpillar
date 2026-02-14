@@ -62,13 +62,13 @@ jobs:
           export NODE_ENV=staging
           nohup pnpm --filter api start > api.log 2>&1 &
           echo $! > api.pid
-          
+
           # Start Worker (Ensure ENV parity with Gate)
           export NODE_ENV=staging
           export API_URL="http://localhost:3000"
           nohup pnpm --filter worker start > worker.log 2>&1 &
           echo $! > worker.pid
-          
+
           # Wait for API health
           echo "Waiting for API..."
           timeout 60 bash -c 'until curl -s http://localhost:3000/health; do sleep 2; done'
@@ -82,7 +82,7 @@ jobs:
           GATE_ENV_MODE: ci
           API_URL: http://localhost:3000
           DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
-          P6_2: "1" # Explicitly enable P6-2
+          P6_2: '1' # Explicitly enable P6-2
 
       - name: Upload Evidence Artifact
         if: always()

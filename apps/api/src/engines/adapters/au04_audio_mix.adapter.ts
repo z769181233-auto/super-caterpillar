@@ -10,47 +10,47 @@ import { mkdirSync, existsSync } from 'fs';
 
 @Injectable()
 export class AU04AudioMixAdapter extends AuBaseEngine {
-    constructor(
-        @Inject(RedisService) redis: RedisService,
-        @Inject(AuditService) audit: AuditService,
-        @Inject(CostLedgerService) cost: CostLedgerService
-    ) {
-        super('au04_audio_mix', redis, audit, cost);
+  constructor(
+    @Inject(RedisService) redis: RedisService,
+    @Inject(AuditService) audit: AuditService,
+    @Inject(CostLedgerService) cost: CostLedgerService
+  ) {
+    super('au04_audio_mix', redis, audit, cost);
+  }
+
+  async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
+    return this.execute(input, input.payload);
+  }
+
+  protected async processLogic(payload: any): Promise<any> {
+    const tracks = payload.tracks || [];
+    const hash = this.generateCacheKey(payload).split(':').pop();
+    const outputDir = join(process.cwd(), 'storage/au/mix');
+    mkdirSync(outputDir, { recursive: true });
+    const outputPath = join(outputDir, `${hash}.wav`);
+
+    // FFmpeg: amix
+    let inputs = '';
+    let count = 0;
+    for (const t of tracks) {
+      const p = t.url.replace('file://', '');
+      if (existsSync(p)) {
+        inputs += `-i "${p}" `;
+        count++;
+      }
     }
 
-    async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
-        return this.execute(input, input.payload);
+    if (count === 0) {
+      inputs = '-f lavfi -i "sine=f=440:d=1"';
+      count = 1;
     }
 
-    protected async processLogic(payload: any): Promise<any> {
-        const tracks = payload.tracks || [];
-        const hash = this.generateCacheKey(payload).split(':').pop();
-        const outputDir = join(process.cwd(), 'storage/au/mix');
-        mkdirSync(outputDir, { recursive: true });
-        const outputPath = join(outputDir, `${hash}.wav`);
+    const cmd = `ffmpeg -y ${inputs} -filter_complex amix=inputs=${count} "${outputPath}"`;
+    execSync(cmd, { stdio: 'ignore' });
 
-        // FFmpeg: amix
-        let inputs = '';
-        let count = 0;
-        for (const t of tracks) {
-            const p = t.url.replace('file://', '');
-            if (existsSync(p)) {
-                inputs += `-i "${p}" `;
-                count++;
-            }
-        }
-
-        if (count === 0) {
-            inputs = '-f lavfi -i "sine=f=440:d=1"';
-            count = 1;
-        }
-
-        const cmd = `ffmpeg -y ${inputs} -filter_complex amix=inputs=${count} "${outputPath}"`;
-        execSync(cmd, { stdio: 'ignore' });
-
-        return {
-            assetUrl: `file://${outputPath}`,
-            meta: { tracks_count: count, format: 'wav' }
-        };
-    }
+    return {
+      assetUrl: `file://${outputPath}`,
+      meta: { tracks_count: count, format: 'wav' },
+    };
+  }
 }

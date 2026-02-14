@@ -21,7 +21,7 @@ export class ContractStoryController {
     private readonly storyService: StoryService,
     private readonly prisma: PrismaService,
     private readonly assetResolver: AssetReceiptResolverService
-  ) { }
+  ) {}
 
   @Post('parse')
   async parseStory(
@@ -37,7 +37,9 @@ export class ContractStoryController {
       is_verification?: boolean;
     }
   ) {
-    this.logger.log(`[V3] parseStory called for project ${body.project_id}, is_verification=${body.is_verification}`);
+    this.logger.log(
+      `[V3] parseStory called for project ${body.project_id}, is_verification=${body.is_verification}`
+    );
 
     // Lookup Project to get OrgId if not provided
     const project = await this.prisma.project.findUnique({ where: { id: body.project_id } });
@@ -136,7 +138,6 @@ export class ContractStoryController {
         if (stat.status === 'SUCCEEDED') succeededShotJobs += count;
         if (stat.status === 'FAILED') failedShotJobs += count;
       }
-
     }
 
     // 1. Map Status

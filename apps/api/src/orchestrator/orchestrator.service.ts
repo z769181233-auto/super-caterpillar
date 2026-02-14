@@ -1,12 +1,12 @@
 import * as fs from 'fs';
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { OnEvent } from '@nestjs/event-emitter';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
 import { ProjectModule } from '../project/project.module';
 import { NovelImportModule } from '../novel-import/novel-import.module';
 import { PublishedVideoService } from '../publish/published-video.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WorkerService } from '../worker/worker.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { TaskService } from '../task/task.service';
 import { JobService } from '../job/job.service';
@@ -18,6 +18,7 @@ import {
   JobType as JobTypeEnum,
   TaskType as TaskTypeEnum,
   TaskStatus as TaskStatusEnum,
+  WorkerStatus,
 } from 'database';
 import { assertTransition, transitionJobStatusAdmin } from '../job/job.rules';
 
@@ -31,8 +32,6 @@ export class OrchestratorService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => WorkerService))
-    private readonly workerService: WorkerService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
     @Inject(TaskService)
@@ -43,7 +42,12 @@ export class OrchestratorService {
     private readonly engineRegistry: EngineRegistry,
     @Inject(PublishedVideoService)
     private readonly publishedVideoService: PublishedVideoService
-  ) { }
+  ) {}
+
+  // P6-2-2-1: Dispatch Rate Limiting (Anti-Cascade Flood)
+  private dispatchHistory: Map<string, number[]> = new Map();
+  private readonly CASCADE_LIMIT = 100; // max 100 jobs per 10s per worker node
+  private readonly CASCADE_WINDOW = 10000;
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
@@ -69,7 +73,7 @@ export class OrchestratorService {
     this.logger.log(`Running automated recovery task... (Grace: ${scuEnv.workerOfflineGraceMs}ms)`);
 
     // Stage2-B: 1. 标记超时的 Worker 为 DEAD 并回收 Job
-    const offlineCount = await this.workerService.markOfflineWorkers();
+    const offlineCount = await this.markOfflineWorkersInternal();
     if (offlineCount > 0) {
       this.logger.log(`Marked ${offlineCount} workers as offline (dead)`);
     }
@@ -389,7 +393,11 @@ export class OrchestratorService {
     ]);
 
     // 2. Worker 状态统计
-    const onlineWorkers = await this.workerService.getOnlineWorkers();
+    const onlineWorkers = await this.prisma.workerNode.findMany({
+      where: {
+        status: { in: ['online', 'idle', 'busy'] },
+      },
+    });
     const allWorkers = await this.prisma.workerNode.findMany({});
 
     const workerStats = {
@@ -555,6 +563,20 @@ export class OrchestratorService {
       return null;
     }
 
+    // P6-2-2-1: Cascade Throttling Check
+    const now = Date.now();
+    let history = this.dispatchHistory.get(workerId) || [];
+    history = history.filter((t) => now - t < this.CASCADE_WINDOW);
+
+    if (history.length >= this.CASCADE_LIMIT) {
+      this.logger.warn(
+        `[Orchestrator] Worker ${workerId} hit dispatch limit (${history.length}/${this.CASCADE_LIMIT}). Throttling.`
+      );
+      return null; // Force worker to wait/backoff
+    }
+
+    this.dispatchHistory.set(workerId, history);
+
     // 2. Atomic Claim via Transaction
     const dispatchedJob = await this.prisma.$transaction(async (tx) => {
       // 2.0 Recovery: Check if worker already has a DISPATCHED job (e.g. restart/crash recovery)
@@ -584,7 +606,9 @@ export class OrchestratorService {
         return null;
       }
 
-      this.logger.log(`[Orchestrator DEBUG] Worker ${workerId} supportedJobTypes: ${JSON.stringify(supportedJobTypes)}`);
+      this.logger.log(
+        `[Orchestrator DEBUG] Worker ${workerId} supportedJobTypes: ${JSON.stringify(supportedJobTypes)}`
+      );
 
       const candidate = await tx.shotJob.findFirst({
         where: {
@@ -598,7 +622,9 @@ export class OrchestratorService {
         take: 1,
       });
 
-      this.logger.log(`[Orchestrator DEBUG] Candidate found for worker ${workerId}: ${candidate?.id || 'null'} type=${candidate?.type}`);
+      this.logger.log(
+        `[Orchestrator DEBUG] Candidate found for worker ${workerId}: ${candidate?.id || 'null'} type=${candidate?.type}`
+      );
 
       /*
       console.log(
@@ -644,6 +670,11 @@ export class OrchestratorService {
       return null;
     }
 
+    // P6-2-2-1: Update dispatch history for rate limiting
+    const currentHistory = this.dispatchHistory.get(workerId) || [];
+    currentHistory.push(Date.now());
+    this.dispatchHistory.set(workerId, currentHistory);
+
     // 结构化日志：JOB_CLAIMED
     this.logger.log(
       JSON.stringify({
@@ -672,6 +703,18 @@ export class OrchestratorService {
     });
 
     return dispatchedJob;
+  }
+
+  /**
+   * Stage 3: Event-Driven DAG Trigger
+   * Triggered by 'job.succeeded' event from JobService.
+   */
+  @OnEvent('job.succeeded')
+  async handleJobSucceededEvent(job: any) {
+    this.logger.log(`[Orchestrator] Received job.succeeded event for job ${job.id}`);
+    // Extract result from payload or metadata if needed,
+    // but the actual DAG logic in handleJobCompletion will fetch the latest job state.
+    await this.handleJobCompletion(job.id, job.result || {});
   }
 
   /**
@@ -751,7 +794,7 @@ export class OrchestratorService {
           sceneId: completedChildJob.sceneId,
           rootJobId: rootJob.id,
           pipelineRunId,
-        }
+        },
       });
     } else if (completedChildJob.type === JobTypeEnum.CE03_VISUAL_DENSITY) {
       this.logger.log(`[V1-ORCH] CE03 done for Root=${rootJobId}. Spawning CE04...`);
@@ -766,13 +809,13 @@ export class OrchestratorService {
           sceneId: completedChildJob.sceneId,
           rootJobId: rootJob.id,
           pipelineRunId,
-        }
+        },
       });
     } else if (completedChildJob.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
       this.logger.log(`[V1-ORCH] CE04 done for Root=${rootJobId}. Chain Complete.`);
       await this.prisma.shotJob.update({
         where: { id: rootJobId },
-        data: { status: JobStatusEnum.SUCCEEDED }
+        data: { status: JobStatusEnum.SUCCEEDED },
       });
     }
   }
@@ -792,7 +835,9 @@ export class OrchestratorService {
     if (!audioEnabled || !pipelineRunId) return;
 
     if (!pipelineRunId) {
-      this.logger.warn(`[DAG] Job ${contextJob.id} matches AUDIO trigger but missing pipelineRunId. Skipping.`);
+      this.logger.warn(
+        `[DAG] Job ${contextJob.id} matches AUDIO trigger but missing pipelineRunId. Skipping.`
+      );
       return;
     }
 
@@ -1055,7 +1100,9 @@ export class OrchestratorService {
     const pipelineRunId = payload?.pipelineRunId;
 
     if (!pipelineRunId) {
-      this.logger.warn(`[DAG] VIDEO_RENDER ${videoJob.id} missing pipelineRunId. Cannot spawn CE09.`);
+      this.logger.warn(
+        `[DAG] VIDEO_RENDER ${videoJob.id} missing pipelineRunId. Cannot spawn CE09.`
+      );
       return;
     }
 
@@ -1342,5 +1389,128 @@ export class OrchestratorService {
       });
       throw e;
     }
+  }
+
+  /**
+   * Stage2-B: 基于 WorkerHeartbeat 的超时检测
+   * 标记超时的 Worker 为 OFFLINE（Dead）
+   * 参考《调度系统设计书_V1.0》§3.3：Worker 状态判断（Dead = 心跳超时）
+   */
+  private async markOfflineWorkersInternal(): Promise<number> {
+    const { env: scuEnv } = await import('@scu/config');
+    const { workerOfflineGraceMs } = scuEnv;
+    const timeoutThreshold = new Date(Date.now() - workerOfflineGraceMs);
+
+    this.logger.log(
+      `[Recovery] Checking for dead workers... threshold: ${timeoutThreshold.toISOString()}, grace: ${workerOfflineGraceMs}ms`
+    );
+
+    // 1. 获取所有心跳超时的 Worker 并标记为 DEAD
+    const timedOutHeartbeats = await this.prisma.workerHeartbeat.findMany({
+      where: {
+        lastSeenAt: {
+          lt: timeoutThreshold,
+        },
+        status: {
+          not: 'DEAD',
+        },
+      },
+    });
+
+    if (timedOutHeartbeats.length > 0) {
+      const idsToMark = timedOutHeartbeats.map((h) => h.workerId);
+      this.logger.warn(
+        `[Recovery] Marking ${idsToMark.length} workers as DEAD: ${idsToMark.join(', ')}`
+      );
+
+      await this.prisma.workerHeartbeat.updateMany({
+        where: { workerId: { in: idsToMark } },
+        data: { status: 'DEAD' },
+      });
+      await this.prisma.workerNode.updateMany({
+        where: { workerId: { in: idsToMark } },
+        data: { status: 'offline' },
+      });
+    }
+
+    // 统一回收入口(商业级:三重断言 + 事务 + 审计)
+    const reclaimedCount = await this.reclaimJobsFromDeadWorkersInternal();
+    if (reclaimedCount > 0) {
+      this.logger.warn(
+        `[OrchestratorService] Reclaimed ${reclaimedCount} jobs from dead workers (internal).`
+      );
+    }
+    return reclaimedCount;
+  }
+
+  /**
+   * P1-2: HA Failover - 商业级回收:三重断言 + 事务 + 审计
+   * 返回 reclaimed job 数量
+   */
+  private async reclaimJobsFromDeadWorkersInternal(): Promise<number> {
+    const deadWorkerIds = await this.getDeadWorkerIdsInternal();
+    if (deadWorkerIds.length === 0) return 0;
+
+    const now = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const orphaned = await tx.shotJob.findMany({
+        where: {
+          status: 'RUNNING',
+          lockedBy: { in: deadWorkerIds },
+          leaseUntil: { lte: now },
+        },
+        select: { id: true, projectId: true, lockedBy: true },
+      });
+
+      if (orphaned.length === 0) return 0;
+
+      // 批量回到 PENDING
+      await tx.shotJob.updateMany({
+        where: { id: { in: orphaned.map((j) => j.id) } },
+        data: {
+          status: JobStatusEnum.PENDING,
+          workerId: null,
+          lockedBy: null,
+          leaseUntil: null,
+          lastError: 'reclaimed: dead worker (internal)',
+        },
+      });
+
+      // 审计
+      for (const j of orphaned) {
+        if (j.projectId) {
+          const project = await tx.project.findUnique({
+            where: { id: j.projectId },
+            select: { organizationId: true },
+          });
+          if (project) {
+            await tx.auditLog.create({
+              data: {
+                action: 'JOB_RECLAIMED_FROM_DEAD_WORKER',
+                resourceType: 'shot_job',
+                resourceId: j.id,
+                orgId: project.organizationId,
+                details: { deadWorkerId: j.lockedBy, projectId: j.projectId },
+                createdAt: new Date(),
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.warn(
+        `Reclaimed ${orphaned.length} jobs from ${deadWorkerIds.length} dead workers`
+      );
+      return orphaned.length;
+    });
+  }
+
+  private async getDeadWorkerIdsInternal(): Promise<string[]> {
+    const rows = await this.prisma.workerHeartbeat.findMany({
+      where: { status: 'DEAD' },
+      select: { workerId: true },
+    });
+    return rows.map((r) => r.workerId);
   }
 }

@@ -5,11 +5,18 @@ import { AppModule } from './app.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import { env } from '@scu/config';
+import { env, validateRequiredEnvs } from '@scu/config';
 import { json, urlencoded } from 'express';
 import * as util from 'util';
 
 async function bootstrap() {
+  // A4: Environment Integrity Guard
+  try {
+    validateRequiredEnvs();
+  } catch (e) {
+    process.exit(1);
+  }
+
   // 诊断环境变量加载情况
   process.stdout.write(
     util.format(
@@ -192,7 +199,7 @@ async function bootstrap() {
           hasStorageController = true;
           process.stdout.write(
             util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
-            '\n'
+              '\n'
           );
         }
       }

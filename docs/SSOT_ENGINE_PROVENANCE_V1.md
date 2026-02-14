@@ -8,12 +8,12 @@
 
 所有产物必须位于证据目录的 `artifacts/` 下，命名必须遵循：
 
-| 文件名 | 说明 | 必选 |
-| :--- | :--- | :--- |
-| `shot_render_output.mp4` | 真实引擎生成的 MP4 视频 | 是 |
-| `shot_render_output.mp4.sha256` | 视频内容的 SHA256 校验和 | 是 |
-| `shot_render_output.provenance.json` | 溯源元数据 | 是 |
-| `shot_render_output.provenance.json.sha256` | Provenance 文件的 SHA256 校验和 | 是 |
+| 文件名                                      | 说明                            | 必选 |
+| :------------------------------------------ | :------------------------------ | :--- |
+| `shot_render_output.mp4`                    | 真实引擎生成的 MP4 视频         | 是   |
+| `shot_render_output.mp4.sha256`             | 视频内容的 SHA256 校验和        | 是   |
+| `shot_render_output.provenance.json`        | 溯源元数据                      | 是   |
+| `shot_render_output.provenance.json.sha256` | Provenance 文件的 SHA256 校验和 | 是   |
 
 ## 2. Provenance JSON Schema
 
@@ -54,18 +54,22 @@
 ## 3. 核验规范 (Verification)
 
 ### 3.1 一致性断言
+
 - `(现场 mp4 sha) == (provenance.artifact.sha256)`
 - `(现场 mp4 sha) == (mp4.sha256 文件内容)`
 - `(provenance.json sha) == (provenance.json.sha256 内容)`
 
 ### 3.2 溯源性断言
+
 - `producer.mode` 必须为 `REAL_ENGINE`。
 - `engine_run_id` 必须为第三方引擎提供商（Provider）的真实运行 ID。
 
 ### 3.3 数据库绑定
+
 - `job.job_id` 在 `db.job_table` 中必须存在且状态为 `SUCCEEDED`。
 - 数据库字段值必须与 Provenance 及现场产物 SHA256 完全对齐。
 
 ## 4. 禁止事项
+
 - ❌ **禁止 Surrogate**: 任何 `producer.mode != REAL_ENGINE` 的产物均无法通过 Week 2 封板。
 - ❌ **禁止占位符**: `engine_run_id` 为空或为 mock ID 的产物将被拒收。

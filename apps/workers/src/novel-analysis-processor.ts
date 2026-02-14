@@ -15,7 +15,14 @@ import * as util from 'util';
 import * as fs from 'fs';
 import { Readable } from 'stream';
 import { parseNovelStream } from './processors/stream-parser';
-import { ChunkProcessor, ChunkProgress, createEmptyProgress, serializeProgress, deserializeProgress, ChunkProgressDB } from './processors/chunk-processor';
+import {
+  ChunkProcessor,
+  ChunkProgress,
+  createEmptyProgress,
+  serializeProgress,
+  deserializeProgress,
+  ChunkProgressDB,
+} from './processors/chunk-processor';
 import { LLMBatchProcessor } from './processors/llm-batch-processor';
 import { hydrateShotWithDirectorControls } from './v3/utils/shot_field_extractor';
 
@@ -926,8 +933,8 @@ export async function applyAnalyzedStructureToDatabase(
   const result =
     prisma instanceof PrismaClient
       ? await (prisma as any).$transaction(executeInTransaction, {
-        timeout: 5 * 60 * 1000, // 5 minutes
-      })
+          timeout: 5 * 60 * 1000, // 5 minutes
+        })
       : await executeInTransaction(prisma);
 
   return result;
@@ -1170,7 +1177,7 @@ async function saveCheckpoint(
     data: {
       result: {
         chunkProgress: progressDB,
-      } as any,  // Store progress in result field
+      } as any, // Store progress in result field
     },
   });
 }
@@ -1188,7 +1195,12 @@ async function processWithChunkMode(
   logStructured('info', { action: 'CHUNK_EXTRACTION_START', jobId, projectId });
 
   const chunks = await chunkProcessor.extractChunks(contentStream);
-  logStructured('info', { action: 'CHUNK_EXTRACTION_COMPLETE', jobId, projectId, totalChunks: chunks.length });
+  logStructured('info', {
+    action: 'CHUNK_EXTRACTION_COMPLETE',
+    jobId,
+    projectId,
+    totalChunks: chunks.length,
+  });
 
   // B1.2: 加载已有进度（断点续传）
   const existingJob = await prisma.shotJob.findUnique({
@@ -1196,10 +1208,16 @@ async function processWithChunkMode(
     select: { result: true },
   });
 
-  const savedProgressData = (existingJob?.result as any)?.chunkProgress as ChunkProgressDB | undefined;
+  const savedProgressData = (existingJob?.result as any)?.chunkProgress as
+    | ChunkProgressDB
+    | undefined;
   let progress: ChunkProgress;
 
-  if (savedProgressData && savedProgressData.completedChunkIds && savedProgressData.completedChunkIds.length > 0) {
+  if (
+    savedProgressData &&
+    savedProgressData.completedChunkIds &&
+    savedProgressData.completedChunkIds.length > 0
+  ) {
     progress = deserializeProgress(savedProgressData);
     logStructured('info', {
       action: 'CHUNK_RESUME_DETECTED',
@@ -1213,7 +1231,8 @@ async function processWithChunkMode(
   }
 
   const llmProvider = process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai';
-  const llmModel = llmProvider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : 'gpt-4-turbo-preview';
+  const llmModel =
+    llmProvider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : 'gpt-4-turbo-preview';
 
   const llmProcessor = new LLMBatchProcessor({
     provider: llmProvider as any,
@@ -1224,13 +1243,21 @@ async function processWithChunkMode(
     retryDelay: 1000,
   });
 
-  logStructured('info', { action: 'LLM_BATCH_PROCESSING_START', jobId, projectId, provider: llmProvider, model: llmModel, totalChunks: chunks.length });
+  logStructured('info', {
+    action: 'LLM_BATCH_PROCESSING_START',
+    jobId,
+    projectId,
+    provider: llmProvider,
+    model: llmModel,
+    totalChunks: chunks.length,
+  });
 
   // B1.2: processChunks 的第二个参数是 existingProgress
   const processedChunks = await llmProcessor.processChunks(
     chunks,
-    progress,  // 传递已有进度
-    async (currentProgress: ChunkProgress) => {  // onProgress 回调
+    progress, // 传递已有进度
+    async (currentProgress: ChunkProgress) => {
+      // onProgress 回调
       // 每处理 10 个 Chunk 保存一次进度
       if (currentProgress.processedChunks % 10 === 0) {
         await saveCheckpoint(prisma, jobId, currentProgress, llmProvider, llmModel);
@@ -1247,7 +1274,12 @@ async function processWithChunkMode(
 
   // 最终保存
   await saveCheckpoint(prisma, jobId, progress, llmProvider, llmModel);
-  logStructured('info', { action: 'LLM_BATCH_PROCESSING_COMPLETE', jobId, projectId, totalProcessed: processedChunks.length });
+  logStructured('info', {
+    action: 'LLM_BATCH_PROCESSING_COMPLETE',
+    jobId,
+    projectId,
+    totalProcessed: processedChunks.length,
+  });
 
   return mergeChunksToStructure(processedChunks, chunks, projectId);
 }
@@ -1263,7 +1295,10 @@ function mergeChunksToStructure(
   const seasons: AnalyzedSeason[] = [];
   let currentSeason: AnalyzedSeason | null = null;
   let currentEpisode: AnalyzedEpisode | null = null;
-  let seasonIndex = 0, episodeIndex = 0, sceneIndex = 0, shotIndex = 0;
+  let seasonIndex = 0,
+    episodeIndex = 0,
+    sceneIndex = 0,
+    shotIndex = 0;
 
   for (let i = 0; i < processedChunks.length; i++) {
     const { structuredOutput } = processedChunks[i];
@@ -1271,11 +1306,21 @@ function mergeChunksToStructure(
 
     if (metadata.isChapterBoundary || !currentEpisode) {
       episodeIndex = metadata.chapterIndex || episodeIndex + 1;
-      currentEpisode = { index: episodeIndex, title: metadata.chapterTitle || `第 ${episodeIndex} 章`, summary: '', scenes: [] };
+      currentEpisode = {
+        index: episodeIndex,
+        title: metadata.chapterTitle || `第 ${episodeIndex} 章`,
+        summary: '',
+        scenes: [],
+      };
 
       if (!currentSeason) {
         seasonIndex = 1;
-        currentSeason = { index: seasonIndex, title: `第 ${seasonIndex} 季`, summary: '', episodes: [] };
+        currentSeason = {
+          index: seasonIndex,
+          title: `第 ${seasonIndex} 季`,
+          summary: '',
+          episodes: [],
+        };
         seasons.push(currentSeason);
       }
       currentSeason.episodes.push(currentEpisode);
@@ -1288,18 +1333,21 @@ function mergeChunksToStructure(
           index: sceneIndex,
           title: scene.title || `场景 ${sceneIndex}`,
           summary: scene.summary || '',
-          shots: scene.shots?.map((shot: any) => ({
-            index: ++shotIndex,
-            title: shot.title || `镜头 ${shotIndex}`,
-            summary: shot.summary || '',
-            text: shot.text || '',
-          })) || [],
+          shots:
+            scene.shots?.map((shot: any) => ({
+              index: ++shotIndex,
+              title: shot.title || `镜头 ${shotIndex}`,
+              summary: shot.summary || '',
+              text: shot.text || '',
+            })) || [],
         });
       }
     }
   }
 
-  let episodesCount = 0, scenesCount = 0, shotsCount = 0;
+  let episodesCount = 0,
+    scenesCount = 0,
+    shotsCount = 0;
   for (const s of seasons) {
     episodesCount += s.episodes.length;
     for (const e of s.episodes) {
@@ -1308,7 +1356,11 @@ function mergeChunksToStructure(
     }
   }
 
-  return { projectId, seasons, stats: { seasonsCount: seasons.length, episodesCount, scenesCount, shotsCount } };
+  return {
+    projectId,
+    seasons,
+    stats: { seasonsCount: seasons.length, episodesCount, scenesCount, shotsCount },
+  };
 }
 
 /**
@@ -1352,13 +1404,7 @@ export async function processNovelAnalysisJob(
       });
 
       try {
-        structure = await processWithChunkMode(
-          payload,
-          prisma,
-          projectId,
-          jobId,
-          llmApiKey
-        );
+        structure = await processWithChunkMode(payload, prisma, projectId, jobId, llmApiKey);
       } catch (err: any) {
         logStructured('error', {
           action: 'CHUNK_MODE_ERROR',
@@ -1393,7 +1439,7 @@ export async function processNovelAnalysisJob(
       }
     }
 
-    // const structure = basicTextSegmentation(rawText, projectId); 
+    // const structure = basicTextSegmentation(rawText, projectId);
 
     const parseDuration = Date.now() - parseStartTime;
 
@@ -1466,7 +1512,7 @@ export async function processNovelAnalysisJob(
       // 计费失败不阻塞主流程
       process.stderr.write(
         util.format(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message) +
-        '\n'
+          '\n'
       );
     }
 
@@ -1494,7 +1540,11 @@ export async function processNovelAnalysisJob(
 /**
  * Helper to get a Readable stream from various payload sources
  */
-async function getNovelContentStream(payload: any, prisma: PrismaClient, projectId: string): Promise<Readable> {
+async function getNovelContentStream(
+  payload: any,
+  prisma: PrismaClient,
+  projectId: string
+): Promise<Readable> {
   // 1. Check for local file path (Primary for Large Files)
   if (payload.filePath && fs.existsSync(payload.filePath)) {
     return fs.createReadStream(payload.filePath, { encoding: 'utf8' });
@@ -1520,7 +1570,7 @@ async function getNovelContentStream(payload: any, prisma: PrismaClient, project
             orderBy: { index: 'asc' },
             skip,
             take,
-            select: { rawContent: true }
+            select: { rawContent: true },
           });
           if (chapters.length === 0) break;
           for (const c of chapters) {
@@ -1548,7 +1598,7 @@ async function getNovelContentStream(payload: any, prisma: PrismaClient, project
           orderBy: { index: 'asc' },
           skip,
           take,
-          select: { rawContent: true }
+          select: { rawContent: true },
         });
         if (chapters.length === 0) break;
         for (const c of chapters) {

@@ -10,32 +10,32 @@ import { mkdirSync } from 'fs';
 
 @Injectable()
 export class AU03SFXGenAdapter extends AuBaseEngine {
-    constructor(
-        @Inject(RedisService) redis: RedisService,
-        @Inject(AuditService) audit: AuditService,
-        @Inject(CostLedgerService) cost: CostLedgerService
-    ) {
-        super('au03_sfx_gen', redis, audit, cost);
-    }
+  constructor(
+    @Inject(RedisService) redis: RedisService,
+    @Inject(AuditService) audit: AuditService,
+    @Inject(CostLedgerService) cost: CostLedgerService
+  ) {
+    super('au03_sfx_gen', redis, audit, cost);
+  }
 
-    async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
-        return this.execute(input, input.payload);
-    }
+  async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
+    return this.execute(input, input.payload);
+  }
 
-    protected async processLogic(payload: any): Promise<any> {
-        const desc = payload.description || 'impact';
-        const hash = this.generateCacheKey(payload).split(':').pop();
-        const outputDir = join(process.cwd(), 'storage/au/sfx');
-        mkdirSync(outputDir, { recursive: true });
-        const outputPath = join(outputDir, `${hash}.wav`);
+  protected async processLogic(payload: any): Promise<any> {
+    const desc = payload.description || 'impact';
+    const hash = this.generateCacheKey(payload).split(':').pop();
+    const outputDir = join(process.cwd(), 'storage/au/sfx');
+    mkdirSync(outputDir, { recursive: true });
+    const outputPath = join(outputDir, `${hash}.wav`);
 
-        // FFmpeg: 生成噪声模拟音效
-        const cmd = `ffmpeg -y -f lavfi -i "anoisesrc=d=1:c=white" "${outputPath}"`;
-        execSync(cmd, { stdio: 'ignore' });
+    // FFmpeg: 生成噪声模拟音效
+    const cmd = `ffmpeg -y -f lavfi -i "anoisesrc=d=1:c=white" "${outputPath}"`;
+    execSync(cmd, { stdio: 'ignore' });
 
-        return {
-            assetUrl: `file://${outputPath}`,
-            meta: { description: desc, format: 'wav', duration: 1 }
-        };
-    }
+    return {
+      assetUrl: `file://${outputPath}`,
+      meta: { description: desc, format: 'wav', duration: 1 },
+    };
+  }
 }

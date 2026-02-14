@@ -13,4 +13,4 @@ import { NovelImportModule } from '../novel-import/novel-import.module';
   providers: [StoryService],
   exports: [StoryService],
 })
-export class StoryModule { }
+export class StoryModule {}

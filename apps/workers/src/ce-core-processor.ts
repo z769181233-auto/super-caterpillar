@@ -802,14 +802,17 @@ export async function processCE04Job(
         let realImagePath = result.assets?.image;
         if (!realImagePath || !(await fileExists(realImagePath))) {
           if (PRODUCTION_MODE) {
-            throw new Error(`[CE04] PRODUCTION_MODE prohibits dummy fallback. Key asset missing: ${realImagePath}`);
+            throw new Error(
+              `[CE04] PRODUCTION_MODE prohibits dummy fallback. Key asset missing: ${realImagePath}`
+            );
           }
           console.warn(`[CE04] Key asset not found (using dummy): ${realImagePath}`);
           realImagePath = dummyLocalImage;
         }
 
+        const repoRoot = path.resolve(process.cwd(), '../../');
         for (const shot of shots) {
-          const framesDir = path.join(process.cwd(), '.runtime', 'frames', shot.id);
+          const framesDir = path.join(repoRoot, '.runtime', 'frames', shot.id);
           if (!(await fileExists(framesDir))) await ensureDir(framesDir);
           const framesTxtPath = path.join(framesDir, 'frames.txt');
 
@@ -885,7 +888,7 @@ export async function processCE04Job(
         latencyMs: duration,
         auditTrail: result.audit_trail,
       })
-      .catch(() => { });
+      .catch(() => {});
 
     return result;
   } catch (error: any) {
@@ -930,7 +933,7 @@ export async function processShotRenderJob(
   // [Phase S Fix] Always fetch shot to get sceneId for orchestration
   const shotCore = await prisma.shot.findUnique({
     where: { id: shotId },
-    include: { scene: true }
+    include: { scene: true },
   });
   if (!shotCore) throw new Error(`Shot ${shotId} not found`);
   const sceneId = shotCore.sceneId;
@@ -1011,7 +1014,8 @@ export async function processShotRenderJob(
     }
 
     // [Phase T] S1: Inject Real Image Source
-    const framesTxt = path.join(process.cwd(), '.runtime', 'frames', shotId, 'frames.txt');
+    const repoRoot = path.resolve(process.cwd(), '../../');
+    const framesTxt = path.join(repoRoot, '.runtime', 'frames', shotId, 'frames.txt');
     let sourceImagePath: string | null = null;
     if (await fileExists(framesTxt)) {
       const txt = await fsp.readFile(framesTxt, 'utf8');
@@ -1028,9 +1032,15 @@ export async function processShotRenderJob(
 
     if (!sourceImagePath) {
       if (PRODUCTION_MODE) {
-        throw new Error(`[SHOT_RENDER] NO_SOURCE_IMAGE: frames.txt missing or empty/invalid for shotId=${shotId}`);
+        throw new Error(
+          `[SHOT_RENDER] NO_SOURCE_IMAGE: frames.txt missing or empty/invalid for shotId=${shotId}`
+        );
       }
-      logStructured('warn', { action: 'SHOT_RENDER_NO_IMAGE', msg: 'Using placeholder (Non-Production)', shotId });
+      logStructured('warn', {
+        action: 'SHOT_RENDER_NO_IMAGE',
+        msg: 'Using placeholder (Non-Production)',
+        shotId,
+      });
     } else {
       logStructured('info', { action: 'SHOT_RENDER_IMAGE_FOUND', sourceImagePath });
     }
@@ -1197,7 +1207,7 @@ export async function processShotRenderJob(
         resourceId: asset.id,
         resourceType: 'asset',
       })
-      .catch(() => { });
+      .catch(() => {});
 
     return {
       status: 'SUCCEEDED',
@@ -1376,9 +1386,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-        summary: previousMemory.summary || '',
-        character_states: (previousMemory.characterStates as any) || {},
-      }
+          summary: previousMemory.summary || '',
+          character_states: (previousMemory.characterStates as any) || {},
+        }
       : undefined,
     context: {
       projectId,

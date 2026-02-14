@@ -25,7 +25,7 @@ import { Req } from '@nestjs/common';
 export class CEEngineController {
   private readonly logger = new Logger(CEEngineController.name);
 
-  constructor(private readonly ceEngineService: CEEngineService) { }
+  constructor(private readonly ceEngineService: CEEngineService) {}
 
   /**
    * POST /story/parse

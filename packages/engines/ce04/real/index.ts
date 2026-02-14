@@ -1,6 +1,6 @@
-import { CE04Input, CE04Output } from '../types';
+import { CE04Input, CE04Output } from '../src/types';
 import { runCE04Gemini } from './gemini.adapter';
-import { ce04RealEngine as realStub } from '../real';
+import { ce04RealEngine as realStub } from '../src/real';
 
 /**
  * P1-A: CE04 Real Engine Selector

@@ -41,7 +41,7 @@ export class HmacAuthGuard implements CanActivate {
     private readonly auditLogService: AuditLogService,
     @Inject(forwardRef(() => NonceService))
     private readonly nonceService: NonceService
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithApiSecurity>();

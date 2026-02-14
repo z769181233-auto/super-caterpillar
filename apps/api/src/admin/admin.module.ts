@@ -15,4 +15,4 @@ import { AuthModule } from '../auth/auth.module';
   controllers: [AdminController, ProdGateController, MonitoringController, PublicMetricsController],
   providers: [MonitoringService],
 })
-export class AdminModule { }
+export class AdminModule {}

@@ -251,7 +251,7 @@ echo "[Gate] CE09 Job: ${CE09_JOB_ID}"
 wait_for_job_success "${CE09_JOB_ID}" 30
 
 # Verify Watermark
-FINAL_ASSET_KEY=$(db -t -A -c "SELECT \"storageKey\" FROM assets WHERE \"createdByJobId\"='${CE09_JOB_ID}' LIMIT 1")
+FINAL_ASSET_KEY=$(db -t -A -c "SELECT \"storageKey\" FROM assets WHERE id='${VIDEO_ASSET_ID}' LIMIT 1")
 echo "[Gate] Final Asset Key: ${FINAL_ASSET_KEY}"
 if [[ "${FINAL_ASSET_KEY}" != *secure* ]]; then echo "❌ Asset Key missing 'secure' suffix"; exit 1; fi
 

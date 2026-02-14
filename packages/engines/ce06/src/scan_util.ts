@@ -14,8 +14,10 @@ export interface ScanChunk {
  */
 export function scanNovelVolumesAndChapters(fullText: string): ScanChunk[] {
   // 正则匹配：卷、章 (要求在行首或全文首)
-  const volumeRegex = /(?:(?:\n|^)\s*第\s*([一二三四五六七八九十0-9]+)\s*[卷册])|(?:(?:\n|^)\s*Volume\s*(\d+))/gi;
-  const chapterRegex = /(?:(?:\n|^)\s*第\s*([一二三四五六七八九十0-9\.]+)\s*[章节回])|(?:(?:\n|^)\s*Chapter\s*(\d+))/gi;
+  const volumeRegex =
+    /(?:(?:\n|^)\s*第\s*([一二三四五六七八九十0-9]+)\s*[卷册])|(?:(?:\n|^)\s*Volume\s*(\d+))/gi;
+  const chapterRegex =
+    /(?:(?:\n|^)\s*第\s*([一二三四五六七八九十0-9\.]+)\s*[章节回])|(?:(?:\n|^)\s*Chapter\s*(\d+))/gi;
 
   const chunks: ScanChunk[] = [];
 

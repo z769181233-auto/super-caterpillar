@@ -7,40 +7,6 @@ import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
 import * as crypto from 'crypto';
 import { spawn } from 'child_process';
 import { TimelineData } from './timeline-compose.processor';
-import { generateWav } from '../lib/audio/mock-wav';
-// S3.4 Stage 5 Fix: Use internal stub for AudioService to avoid cross-app dependency leakage
-class AudioServiceStub {
-  constructor(private ctx: any) { }
-  async resolveProjectSettings(prisma: any, projectId: string) {
-    return { audioRealEnabled: true };
-  }
-  async generateAndMix(params: any) {
-    const { randomUUID } = require('crypto');
-    const mockAudioPath = path.resolve(`/tmp/mock_${randomUUID()}.wav`);
-    console.log(`[AudioServiceStub] Generating mock audio at ${mockAudioPath}...`);
-    const { spawnSync } = require('child_process');
-    const result = spawnSync('ffmpeg', [
-      '-f', 'lavfi',
-      '-i', 'anullsrc=r=44100:cl=stereo',
-      '-t', '5',
-      '-c:a', 'pcm_s16le',
-      '-y',
-      mockAudioPath
-    ]);
-    if (result.status !== 0) {
-      const errorMsg = result.stderr?.toString() || 'Unknown FFmpeg error';
-      console.error(`[AudioServiceStub] FFmpeg FAILED: ${errorMsg}`);
-      throw new Error(`FFmpeg failed to generate mock audio: ${errorMsg}`);
-    }
-    console.log(`[AudioServiceStub] Mock audio generated successfully.`);
-    const mockChecksum = require('crypto').createHash('sha256').update(mockAudioPath).digest('hex');
-    return {
-      voice: { absPath: mockAudioPath, meta: { audioFileSha256: mockChecksum } },
-      signals: { audio_mode: 'mock', audio_kill_switch: false }
-    };
-  }
-}
-const AudioService = AudioServiceStub as any;
 
 import { ProcessorContext } from '../types/processor-context';
 
@@ -140,13 +106,15 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     try {
       const sourceAsset = await prisma.asset.findFirst({
         where: { ownerId: shot.shotId, ownerType: AssetOwnerType.SHOT, type: AssetType.VIDEO }, // Ensure VIDEO
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       });
 
       if (sourceAsset && sourceAsset.storageKey) {
         const sourcePath = path.resolve(storageRoot, sourceAsset.storageKey);
         if (await fileExists(sourcePath)) {
-          process.stderr.write(`[TimelineRender] High-Fidelity Pass-through: Using source ${sourcePath}\n`);
+          process.stderr.write(
+            `[TimelineRender] High-Fidelity Pass-through: Using source ${sourcePath}\n`
+          );
           await fsp.copyFile(sourcePath, shotOutputPath);
           shotMp4Paths.push(shotOutputPath);
           continue; // Success -> Next Shot
@@ -156,7 +124,9 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         }
       } else {
         // [Phase T] Ban Fallback
-        throw new Error(`[TimelineRender] No VIDEO source asset found for shotId=${shot.shotId}. Legacy fallback is BANNED.`);
+        throw new Error(
+          `[TimelineRender] No VIDEO source asset found for shotId=${shot.shotId}. Legacy fallback is BANNED.`
+        );
       }
     } catch (e: any) {
       throw new Error(`[TimelineRender] Critical Failure in Source Asset Resolution: ${e.message}`);
@@ -211,59 +181,62 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   }
 
   // P18-1: Instantiate AudioService and Resolve Routing
-  const audioService = new AudioService({
-    incrementAudioVendorCall: () => { },
-    incrementAudioCacheHit: () => { },
-    incrementAudioCacheMiss: () => { },
-    incrementAudioPreview: () => { },
-  } as any);
-  const audioSettings = await audioService.resolveProjectSettings(prisma, projectId);
+  // S3.4 Stage 5 Fix: Replaced local AudioServiceStub with EngineHub calls (AU01/AU02)
   const killOn = process.env.AUDIO_REAL_FORCE_DISABLE === '1';
 
   // P22-0 Fix: Extract preview parameters from payload
   const payloadForAudio = job.payload as any;
   const preview = payloadForAudio?.preview === true;
-  const previewCapMs = Number(payloadForAudio?.previewCapMs ?? 3000);
+  // const previewCapMs = Number(payloadForAudio?.previewCapMs ?? 3000);
 
   // P13-2: 确定性 storageKey 规则 (We keep these for DB persistence)
   const ttsStorageKey = `audio/tts/${traceId}__${sceneId}.wav`;
   const bgmStorageKey = `audio/bgm/${traceId}__${sceneId}.wav`;
 
   // Determine if we should generate
-  // In P18-1, we ALWAYS attempt routing unless explicitly disabled
   const shouldGenerate =
     sceneId &&
     (process.env.GATE_MODE === '1' ||
       process.env.AUDIO_MINLOOP_SYNC === '1' ||
-      audioSettings.audioRealEnabled);
+      // For Phase 5, we default to TRUE if not explicitly disabled, relying on EngineHub to handle logic
+      killOn !== true);
 
   let ttsAsset: any = null;
   let bgmAsset: any = null;
 
   if (shouldGenerate && sceneId) {
     console.log(
-      `[TimelineRender] Routing to AudioService: projectId=${projectId}, sceneId=${sceneId}, ks=${killOn}, preview=${preview}`
+      `[TimelineRender] Routing to EngineHub (AU01/AU02): projectId=${projectId}, sceneId=${sceneId}, ks=${killOn}, preview=${preview}`
     );
 
-    // P22-0: Force Audio settings for E2E consistency
-    const forcedSettings = {
-      ...audioSettings,
-      audioBgmEnabled: true,
-      audioMixerEnabled: true,
-    };
-
-    // 1. Generate Voice (TTS)
-    const audioRes = await audioService.generateAndMix({
-      text: `${traceId}:${sceneId}:AUDIO_TTS`, // Legacy seedKey as text
-      bgmSeed: payloadForAudio?.bgmSeed ?? `${traceId}:${sceneId}:AUDIO_BGM`,
-      preview,
-      previewCapMs,
-      projectSettings: forcedSettings,
+    // 1. Generate Voice (TTS) via AU01
+    const ttsText = `${traceId}:${sceneId}:AUDIO_TTS`;
+    const ttsRes = await apiClient.invokeEngine({
+      engineKey: 'au01_voice_tts',
+      payload: {
+        text: ttsText,
+        preview,
+        projectId,
+        traceId,
+        sceneId,
+      },
+      context: { ...job.context, jobId: job.id, traceId },
     });
+
+    if (ttsRes.status !== 'SUCCESS') {
+      throw new Error(`AU01_TTS_FAIL: ${ttsRes.error?.message}`);
+    }
+
+    const ttsSourcePath = ttsRes.output.assetUrl.replace('file://', '');
+    const ttsSha = ttsRes.output.meta.audioFileSha256 || 'unknown-sha';
+
+    if (!(await fileExists(ttsSourcePath))) {
+      throw new Error(`AU01 returned path but file missing: ${ttsSourcePath}`);
+    }
 
     const ttsAbsPath = path.join(storageRoot, ttsStorageKey);
     await ensureDir(path.dirname(ttsAbsPath));
-    await fsp.copyFile(audioRes.voice.absPath, ttsAbsPath);
+    await fsp.copyFile(ttsSourcePath, ttsAbsPath);
 
     // Persist TTS Asset
     ttsAsset = await prisma.asset.upsert({
@@ -275,7 +248,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         },
       },
       update: {
-        checksum: audioRes.voice.meta.audioFileSha256,
+        checksum: ttsSha,
         status: 'GENERATED',
         storageKey: ttsStorageKey,
       },
@@ -285,22 +258,42 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         ownerType: AssetOwnerType.SCENE,
         type: 'AUDIO_TTS' as any,
         storageKey: ttsStorageKey,
-        checksum: audioRes.voice.meta.audioFileSha256,
+        checksum: ttsSha,
         status: 'GENERATED',
       },
     });
 
-    // 2. Handle BGM
+    // 2. Handle BGM via AU02
     // AudioService for P18-0 uses a separate internal synthesis for BGM.
-    // To get BGM as a separate asset key, we call it again with mixer disabled to isolation.
-    const bgmRes = await audioService.generateAndMix({
-      text: `BGM|${traceId}:${sceneId}:AUDIO_BGM`,
-      projectSettings: { ...audioSettings, audioMixerEnabled: false },
+    const bgmSeed = payloadForAudio?.bgmSeed ?? `${traceId}:${sceneId}:AUDIO_BGM`;
+
+    const bgmRes = await apiClient.invokeEngine({
+      engineKey: 'au02_bgm_gen',
+      payload: {
+        seed: bgmSeed,
+        style: bgmSeed, // Use seed as style/text
+        preview,
+        projectId,
+        traceId,
+        sceneId,
+      },
+      context: { ...job.context, jobId: job.id, traceId },
     });
+
+    if (bgmRes.status !== 'SUCCESS') {
+      throw new Error(`AU02_BGM_FAIL: ${bgmRes.error?.message}`);
+    }
+
+    const bgmSourcePath = bgmRes.output.assetUrl.replace('file://', '');
+    const bgmSha = bgmRes.output.meta.audioFileSha256 || 'unknown-sha';
+
+    if (!(await fileExists(bgmSourcePath))) {
+      throw new Error(`AU02 returned path but file missing: ${bgmSourcePath}`);
+    }
 
     const bgmAbsPath = path.join(storageRoot, bgmStorageKey);
     await ensureDir(path.dirname(bgmAbsPath));
-    await fsp.copyFile(bgmRes.voice.absPath, bgmAbsPath);
+    await fsp.copyFile(bgmSourcePath, bgmAbsPath);
 
     bgmAsset = await prisma.asset.upsert({
       where: {
@@ -311,7 +304,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         },
       },
       update: {
-        checksum: bgmRes.voice.meta.audioFileSha256,
+        checksum: bgmSha,
         status: 'GENERATED',
         storageKey: bgmStorageKey,
       },
@@ -321,13 +314,13 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         ownerType: AssetOwnerType.SCENE,
         type: 'AUDIO_BGM' as any,
         storageKey: bgmStorageKey,
-        checksum: bgmRes.voice.meta.audioFileSha256,
+        checksum: bgmSha,
         status: 'GENERATED',
       },
     });
 
     console.log(
-      `[TimelineRender] Audio prepared via AudioService. Mode=${audioRes.signals.audio_mode}, KS=${audioRes.signals.audio_kill_switch}`
+      `[TimelineRender] Audio prepared via EngineHub (AU01/AU02). TTS=${ttsSha}, BGM=${bgmSha}`
     );
   }
 
@@ -511,9 +504,12 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
       'libx264',
       '-pix_fmt',
       'yuv420p',
-      '-crf', '18',
-      '-preset', 'slow',
-      '-b:v', '4M',
+      '-crf',
+      '18',
+      '-preset',
+      'slow',
+      '-b:v',
+      '4M',
       '-r',
       fps.toString(),
       '-y',

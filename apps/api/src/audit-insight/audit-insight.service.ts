@@ -21,7 +21,7 @@ export class AuditInsightService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly signedUrlService: SignedUrlService
-  ) { }
+  ) {}
 
   async getNovelInsight(novelSourceId: string): Promise<NovelInsightResponse> {
     // 1. Find Project by Novel
@@ -219,12 +219,12 @@ export class AuditInsightService {
     const mapJob = (j: any): AuditJobSummaryDto | null =>
       j
         ? {
-          jobId: j.id,
-          traceId: j.traceId || '',
-          status: j.status,
-          createdAtIso: j.createdAt.toISOString(),
-          workerId: j.workerId || 'UNKNOWN',
-        }
+            jobId: j.id,
+            traceId: j.traceId || '',
+            status: j.status,
+            createdAtIso: j.createdAt.toISOString(),
+            workerId: j.workerId || 'UNKNOWN',
+          }
         : null;
 
     // 3. Fetch Metrics (Precise Binding)
@@ -361,12 +361,12 @@ export class AuditInsightService {
     let videoAsset:
       | undefined
       | {
-        status: string;
-        secureUrl?: string;
-        jobId?: string;
-        assetId?: string;
-        storageKey?: string;
-      };
+          status: string;
+          secureUrl?: string;
+          jobId?: string;
+          assetId?: string;
+          storageKey?: string;
+        };
 
     // Step 6A: Resolve shotId (must be derived from reliable context)
     // Prefer explicit shotId from VIDEO_RENDER job payload if present, else from CE04 payload, else latest shot in this project.

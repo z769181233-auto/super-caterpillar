@@ -4,122 +4,122 @@ import { IsString, IsOptional, IsObject, IsNumber, IsBoolean } from 'class-valid
  * 创建角色档案 DTO
  */
 export class CreateCharacterDto {
-    @IsString()
-    name: string;
+  @IsString()
+  name: string;
 
-    @IsOptional()
-    @IsString()
-    nameEn?: string;
+  @IsOptional()
+  @IsString()
+  nameEn?: string;
 
-    @IsOptional()
-    @IsString()
-    role?: string;
+  @IsOptional()
+  @IsString()
+  role?: string;
 
-    @IsOptional()
-    @IsString()
-    description?: string;
+  @IsOptional()
+  @IsString()
+  description?: string;
 
-    @IsOptional()
-    @IsString()
-    baseImageUrl?: string;
+  @IsOptional()
+  @IsString()
+  baseImageUrl?: string;
 
-    @IsOptional()
-    @IsString()
-    basePrompt?: string;
+  @IsOptional()
+  @IsString()
+  basePrompt?: string;
 
-    @IsObject()
-    attributes: {
-        age?: number;
-        gender?: string;
-        ethnicity?: string;
-        clothing?: string;
-        hairstyle?: string;
-        accessories?: string[];
-        [key: string]: any;
-    };
+  @IsObject()
+  attributes: {
+    age?: number;
+    gender?: string;
+    ethnicity?: string;
+    clothing?: string;
+    hairstyle?: string;
+    accessories?: string[];
+    [key: string]: any;
+  };
 
-    @IsOptional()
-    timeline?: Array<{
-        episodeId: string;
-        changes: Record<string, any>;
-    }>;
+  @IsOptional()
+  timeline?: Array<{
+    episodeId: string;
+    changes: Record<string, any>;
+  }>;
 }
 
 /**
  * 更新角色档案 DTO
  */
 export class UpdateCharacterDto {
-    @IsOptional()
-    @IsString()
-    name?: string;
+  @IsOptional()
+  @IsString()
+  name?: string;
 
-    @IsOptional()
-    @IsString()
-    nameEn?: string;
+  @IsOptional()
+  @IsString()
+  nameEn?: string;
 
-    @IsOptional()
-    @IsString()
-    role?: string;
+  @IsOptional()
+  @IsString()
+  role?: string;
 
-    @IsOptional()
-    @IsString()
-    description?: string;
+  @IsOptional()
+  @IsString()
+  description?: string;
 
-    @IsOptional()
-    @IsString()
-    baseImageUrl?: string;
+  @IsOptional()
+  @IsString()
+  baseImageUrl?: string;
 
-    @IsOptional()
-    @IsString()
-    basePrompt?: string;
+  @IsOptional()
+  @IsString()
+  basePrompt?: string;
 
-    @IsOptional()
-    @IsObject()
-    attributes?: Record<string, any>;
+  @IsOptional()
+  @IsObject()
+  attributes?: Record<string, any>;
 
-    @IsOptional()
-    timeline?: Array<{
-        episodeId: string;
-        changes: Record<string, any>;
-    }>;
+  @IsOptional()
+  timeline?: Array<{
+    episodeId: string;
+    changes: Record<string, any>;
+  }>;
 
-    @IsOptional()
-    @IsString()
-    loraModelId?: string;
+  @IsOptional()
+  @IsString()
+  loraModelId?: string;
 
-    @IsOptional()
-    @IsString()
-    loraTrainingStatus?: string;
+  @IsOptional()
+  @IsString()
+  loraTrainingStatus?: string;
 }
 
 /**
  * 记录角色出现 DTO
  */
 export class RecordAppearanceDto {
-    @IsString()
-    shotId: string;
+  @IsString()
+  shotId: string;
 
-    @IsString()
-    renderedImageUrl: string;
+  @IsString()
+  renderedImageUrl: string;
 
-    @IsOptional()
-    @IsString()
-    promptUsed?: string;
+  @IsOptional()
+  @IsString()
+  promptUsed?: string;
 
-    @IsOptional()
-    @IsNumber()
-    consistencyScore?: number;
+  @IsOptional()
+  @IsNumber()
+  consistencyScore?: number;
 }
 
 /**
  * 触发 LoRA 训练 DTO
  */
 export class TrainLoraDto {
-    @IsOptional()
-    @IsNumber()
-    minConsistencyScore?: number;
+  @IsOptional()
+  @IsNumber()
+  minConsistencyScore?: number;
 
-    @IsOptional()
-    @IsBoolean()
-    forceRetrain?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  forceRetrain?: boolean;
 }

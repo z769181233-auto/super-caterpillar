@@ -7,15 +7,7 @@ import { StorageAuthService } from './storage-auth.service';
 @Global()
 @Module({
   controllers: [StorageController],
-  providers: [
-    LocalStorageService,
-    SignedUrlService,
-    StorageAuthService,
-  ],
-  exports: [
-    LocalStorageService,
-    SignedUrlService,
-    StorageAuthService,
-  ],
+  providers: [LocalStorageService, SignedUrlService, StorageAuthService],
+  exports: [LocalStorageService, SignedUrlService, StorageAuthService],
 })
-export class StorageModule { }
+export class StorageModule {}

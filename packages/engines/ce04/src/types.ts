@@ -1,7 +1,7 @@
 export interface CE04Input {
   structured_text: string; // Scene or Shot text
-  style_prompt?: string;   // Global style bias
-  style_guide?: string;    // Style reference notes
+  style_prompt?: string; // Global style bias
+  style_guide?: string; // Style reference notes
   context?: {
     projectId: string;
     [key: string]: any;

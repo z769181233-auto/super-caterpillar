@@ -31,7 +31,7 @@ export class JobGenericController {
     @Inject(JobService)
     private readonly jobService: JobService
     // private readonly capacityGateService: CapacityGateService
-  ) { }
+  ) {}
 
   @Post()
   async createGenericJob(

@@ -157,6 +157,21 @@ exports.Prisma.MembershipScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.NovelSourceScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  organizationId: 'organizationId',
+  fileKey: 'fileKey',
+  fileName: 'fileName',
+  fileSize: 'fileSize',
+  status: 'status',
+  totalChapters: 'totalChapters',
+  processedChunks: 'processedChunks',
+  error: 'error',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.ProjectScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -1106,6 +1121,14 @@ exports.MembershipRole = exports.$Enums.MembershipRole = {
   VIEWER: 'VIEWER'
 };
 
+exports.NovelSourceStatus = exports.$Enums.NovelSourceStatus = {
+  PENDING: 'PENDING',
+  SCANNING: 'SCANNING',
+  PARSING: 'PARSING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED'
+};
+
 exports.ProjectStatus = exports.$Enums.ProjectStatus = {
   in_progress: 'in_progress',
   completed: 'completed'
@@ -1213,6 +1236,7 @@ exports.JobType = exports.$Enums.JobType = {
   PIPELINE_TIMELINE_COMPOSE: 'PIPELINE_TIMELINE_COMPOSE',
   TIMELINE_RENDER: 'TIMELINE_RENDER',
   TIMELINE_PREVIEW: 'TIMELINE_PREVIEW',
+  EPISODE_RENDER: 'EPISODE_RENDER',
   PIPELINE_PROD_VIDEO_V1: 'PIPELINE_PROD_VIDEO_V1',
   CE11_SHOT_GENERATOR: 'CE11_SHOT_GENERATOR',
   AUDIO: 'AUDIO',
@@ -1346,6 +1370,7 @@ exports.Prisma.ModelName = {
   User: 'User',
   Organization: 'Organization',
   Membership: 'Membership',
+  NovelSource: 'NovelSource',
   Project: 'Project',
   Season: 'Season',
   Episode: 'Episode',

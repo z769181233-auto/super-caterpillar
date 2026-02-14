@@ -98,23 +98,31 @@ export class JobWatchdogService {
             const workerIsOnline =
               currentJob.worker && currentJob.worker.lastHeartbeat >= workerTimeoutThreshold;
 
-            if (workerIsOnline) {
-              // Worker 在线但 job 超时，可能是 job 执行时间过长
-              // 记录警告但不恢复（可能需要调整超时时间）
-              this.logger.warn(
-                `[JobWatchdog] Job ${currentJob.id} is stuck but worker ${currentJob.worker?.workerId} is online. ` +
-                `Consider increasing timeout or checking job execution.`
+            // A3增强：提前判断租约与更新状态
+            const isLeaseExpired = currentJob.leaseUntil && currentJob.leaseUntil < now;
+            const isUpdateExpired = currentJob.updatedAt < jobTimeoutThreshold;
+
+            if (workerIsOnline && !isLeaseExpired) {
+              // Worker 在线且 lease 未过期，可能只是由于 jobTimeoutMs 设置较短导致的“误报”
+              // 我们保持现状，不做强制干预
+              this.logger.debug(
+                `[JobWatchdog] Job ${currentJob.id} is pending recovery but worker ${currentJob.worker?.workerId} is online and lease is valid.`
               );
               return { action: 'ONLINE_SKIP' as const };
+            }
+
+            if (workerIsOnline && isLeaseExpired) {
+              // A3 关键增强：Worker 虽然在线（有心跳），但任务租约已过期
+              // 这通常意味着任务在 Worker 内部挂起或丢失，必须强制回收
+              this.logger.warn(
+                `[JobWatchdog] FORCED RECOVERY: Job ${currentJob.id} lease expired but worker ${currentJob.worker?.workerId} is still online. ` +
+                  `Marking as RETRYING to break the hang.`
+              );
             }
 
             // 3. Worker 离线，恢复 job 到 RETRYING 状态（原子操作）
             const newRetryCount = currentJob.retryCount + 1;
             const shouldFail = newRetryCount >= currentJob.maxRetry;
-
-            // A3增强：区分超时原因
-            const isLeaseExpired = currentJob.leaseUntil && currentJob.leaseUntil < now;
-            const isUpdateExpired = currentJob.updatedAt < jobTimeoutThreshold;
 
             let timeoutReason = '';
             if (isLeaseExpired && isUpdateExpired) {

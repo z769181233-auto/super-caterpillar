@@ -1,11 +1,6 @@
 {
   "version": "1.0.0",
-  "required_dirs": [
-    "docs/_specs",
-    "docs/_specs/governance",
-    "docs/_evidence",
-    "tools/gate/gates"
-  ],
+  "required_dirs": ["docs/_specs", "docs/_specs/governance", "docs/_evidence", "tools/gate/gates"],
   "required_files": [
     "docs/_specs/governance/ENGINEERING_GOVERNANCE_POST_SEALED.md",
     "docs/_specs/governance/gov_post_sealed.config.json",
@@ -28,22 +23,13 @@
     "root": "docs/_evidence",
     "run_dir_prefix": "post_sealed_governance",
     "dir_regex": ".+",
-    "required_artifacts": [
-      "RUN_LOG.txt",
-      "SUMMARY.json",
-      "EVIDENCE_INDEX.json"
-    ]
+    "required_artifacts": ["RUN_LOG.txt", "SUMMARY.json", "EVIDENCE_INDEX.json"]
   },
   "gate_shell": {
     "glob": "tools/gate/gates/*.sh",
     "required_shebang": null,
     "required_contains": [],
-    "forbidden_regex": [
-      "\\beval\\b",
-      "`",
-      "source\\s*<\\(",
-      "curl\\s+[^|]+\\|\\s*(bash|sh)"
-    ]
+    "forbidden_regex": ["\\beval\\b", "`", "source\\s*<\\(", "curl\\s+[^|]+\\|\\s*(bash|sh)"]
   },
   "psql_dq": {
     "tag": "gate",

@@ -163,12 +163,14 @@ Pilot 已成功跑通 CE06 解析并完成了角色三处图生成。
 **SSOT Indices**: [SEAL_INDEX.md](SEAL_INDEX.md) + [docs/SEAL_INDEX.md](docs/SEAL_INDEX.md) (synced)
 
 ### What is closed
+
 - ✅ Zero hardcoded local paths (`/Users/...`) and zero `file:[///]` protocol references across repo + DB. `file:[///]` is permitted in docs as masked text only.
 - ✅ All SSOT evidence links are repo-relative and portable across CI/dev machines.
 - ✅ Governance audit scripts are config-driven via `gov_post_sealed.config.json`.
 - ✅ Sealing tag is pushed to remote origin and can be reproduced via `git fetch --tags`.
 
 ### How to re-verify (copy-paste)
+
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 
@@ -186,6 +188,7 @@ cat "docs/_evidence/stage4_scaling_15m_20260208_175418/final_summary.json" | rg 
 ```
 
 ### Evidence completeness checklist (Phase 6 V3.1)
+
 - [x] **metrics_pre.txt + metrics_post.txt** (+ trap best-effort)
 - [x] **rss_trace.jsonl** (swarm scope) + **final_summary.json** includes peakSwarmRssMb
 - [x] **monitor.log** includes multi-signal delta assertion outcome

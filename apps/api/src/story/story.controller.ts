@@ -13,7 +13,7 @@ export class StoryController {
     private readonly storyService: StoryService,
     private readonly prisma: PrismaService,
     private readonly jobService: JobService
-  ) { }
+  ) {}
 
   /**
    * POST /api/story/parse

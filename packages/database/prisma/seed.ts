@@ -358,9 +358,7 @@ async function main() {
     process.env.HMAC_SECRET_KEY || process.env.WORKER_API_SECRET || process.env.API_SECRET_KEY;
 
   if (!hmacSecret) {
-    throw new Error(
-      'SEED_HMAC_SECRET_MISSING: set HMAC_SECRET_KEY for seeding worker secret'
-    );
+    throw new Error('SEED_HMAC_SECRET_MISSING: set HMAC_SECRET_KEY for seeding worker secret');
   }
 
   await prisma.apiKey.upsert({

@@ -20,14 +20,13 @@ import { ProductionFlowHook } from './hooks/production-flow.hook';
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => WorkerModule),
     AuditLogModule,
     TaskModule,
     AuthModule,
-    forwardRef(() => JobModule), // Stage 3: Circular dependency with JobModule
-    EngineModule, // S3-C.1: 导入 EngineModule 以使用 EngineRegistry
-    ApiSecurityModule, // 提供 ApiSecurityGuard 给 JwtOrHmacGuard
-    forwardRef(() => ProjectModule), // Stage 3: Circular dependency via JobModule
+    forwardRef(() => JobModule),
+    EngineModule,
+    ApiSecurityModule,
+    forwardRef(() => ProjectModule),
     NovelImportModule,
     PublishModule,
   ],

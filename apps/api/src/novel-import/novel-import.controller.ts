@@ -243,7 +243,7 @@ export class NovelImportController {
           data: {
             jobId: result.jobId,
             taskId: result.taskId,
-            novelSourceId: novelSource.id,
+            novelSourceId: result.novelSourceId,
             mode: 'SHREDDER',
           },
           message: 'Massive novel detected, Shredder scanning started',
@@ -274,7 +274,9 @@ export class NovelImportController {
           author,
           characterCount: parsed.characterCount,
           chapterCount: parsed.chapterCount,
-          metadata: parsed.metadata ? JSON.parse(JSON.stringify(parsed.metadata)) : novelSource.metadata,
+          metadata: parsed.metadata
+            ? JSON.parse(JSON.stringify(parsed.metadata))
+            : novelSource.metadata,
         },
       });
 
@@ -370,7 +372,7 @@ export class NovelImportController {
         timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
-      if (filePath) await fs.unlink(filePath).catch(() => { });
+      if (filePath) await fs.unlink(filePath).catch(() => {});
       if (error instanceof UnprocessableEntityException) throw error;
       throw new BadRequestException(error.message || 'Import failed');
     }
@@ -395,7 +397,9 @@ export class NovelImportController {
 
     // P0-S4: Massive Text Guard (Shredder)
     if (rawText.length > this.SHREDDER_THRESHOLD_CHARACTERS) {
-      this.logger.log(`[Stage 4] Large text import detected (${rawText.length} chars), offloading to Shredder.`);
+      this.logger.log(
+        `[Stage 4] Large text import detected (${rawText.length} chars), offloading to Shredder.`
+      );
 
       const tempFileName = `direct-import-${Date.now()}.txt`;
       const tempPath = path.join(this.uploadDir, tempFileName);
@@ -424,13 +428,23 @@ export class NovelImportController {
 
       return {
         success: true,
-        data: { jobId: result.jobId, taskId: result.taskId, novelSourceId: novelSource.id, mode: 'SHREDDER' },
+        data: {
+          jobId: result.jobId,
+          taskId: result.taskId,
+          novelSourceId: result.novelSourceId,
+          mode: 'SHREDDER',
+        },
         message: 'Massive text detected, Shredder scanning started',
       };
     }
 
     // 普通文本导入路径
-    await this.performSafetyCheck(rawText, { projectId, userId: user.userId, organizationId, traceId });
+    await this.performSafetyCheck(rawText, {
+      projectId,
+      userId: user.userId,
+      organizationId,
+      traceId,
+    });
 
     const novelSource = await this.prisma.novel.create({
       data: {
@@ -497,7 +511,12 @@ export class NovelImportController {
 
     return {
       success: true,
-      data: { jobId: job.id, taskId: task.id, novelSourceId: novelSource.id, chapterCount: chapters.length },
+      data: {
+        jobId: job.id,
+        taskId: task.id,
+        novelSourceId: novelSource.id,
+        chapterCount: chapters.length,
+      },
       message: 'Novel imported, analysis job created',
     };
   }
@@ -522,6 +541,40 @@ export class NovelImportController {
       data: { jobs },
       requestId: randomUUID(),
       timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('status')
+  async getStatus(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: { userId: string },
+    @CurrentOrganization() organizationId: string | null
+  ) {
+    if (!organizationId) throw new ForbiddenException('No organization context');
+    await this.projectService.checkOwnership(projectId, user.userId);
+
+    const novelSource = await this.prisma.novelSource.findUnique({
+      where: { projectId },
+    });
+
+    if (!novelSource) {
+      throw new NotFoundException('找不到小说源或尚未开始分片导入');
+    }
+
+    return {
+      success: true,
+      data: {
+        id: novelSource.id,
+        status: novelSource.status,
+        totalChapters: novelSource.totalChapters,
+        processedChunks: novelSource.processedChunks,
+        progress:
+          novelSource.totalChapters > 0
+            ? novelSource.processedChunks / novelSource.totalChapters
+            : 0,
+        error: novelSource.error,
+        updatedAt: novelSource.updatedAt,
+      },
     };
   }
 

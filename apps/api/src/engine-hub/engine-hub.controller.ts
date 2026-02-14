@@ -32,11 +32,15 @@ export class EngineHubController {
     const jobId = req.metadata?.jobId;
     // P6-0: Physical trace with minimal overhead
     process.stdout.write(`\n!!! [15M-TRACE-ENTRY] JobId: ${jobId} !!!\n`);
-    console.error(`!!! [15M-DEBUG] JobId: ${jobId} Entry. Keys: ${Object.keys(req.payload || {}).join(',')}`);
+    console.error(
+      `!!! [15M-DEBUG] JobId: ${jobId} Entry. Keys: ${Object.keys(req.payload || {}).join(',')}`
+    );
     if ((req.payload as any)?.raw_text) {
       console.error(`!!! [15M-DEBUG] raw_text len: ${(req.payload as any).raw_text.length}`);
     } else if ((req.payload as any)?.structured_text) {
-      console.error(`!!! [15M-DEBUG] structured_text len: ${(req.payload as any).structured_text.length}`);
+      console.error(
+        `!!! [15M-DEBUG] structured_text len: ${(req.payload as any).structured_text.length}`
+      );
     } else {
       console.error(`!!! [15M-DEBUG] NO TEXT FOUND IN PAYLOAD`);
     }

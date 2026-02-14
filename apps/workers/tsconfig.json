@@ -7,55 +7,25 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "typeRoots": [
-      "./node_modules/@types",
-      "../../node_modules/@types",
-      "./src/types"
-    ],
-    "types": [
-      "node"
-    ],
+    "typeRoots": ["./node_modules/@types", "../../node_modules/@types", "./src/types"],
+    "types": ["node"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "baseUrl": ".",
     "paths": {
-      "config": [
-        "../../packages/config/src"
-      ],
-      "@scu/config": [
-        "../../packages/config/src"
-      ],
-      "database": [
-        "../../packages/database/src"
-      ],
-      "@scu/shared-types": [
-        "../../packages/shared-types/src"
-      ],
-      "@scu/engines/*": [
-        "../../packages/engines/*"
-      ],
-      "@scu/billing/*": [
-        "../../packages/billing/*"
-      ],
-      "@scu/observability": [
-        "../../packages/observability/src"
-      ],
-      "@scu/api/*": [
-        "../../apps/api/src/*"
-      ]
+      "config": ["../../packages/config/src"],
+      "@scu/config": ["../../packages/config/src"],
+      "database": ["../../packages/database/src"],
+      "@scu/shared-types": ["../../packages/shared-types/src"],
+      "@scu/engines/*": ["../../packages/engines/*"],
+      "@scu/billing/*": ["../../packages/billing/*"],
+      "@scu/observability": ["../../packages/observability/src"],
+      "@scu/api/*": ["../../apps/api/src/*"]
     }
   },
   "ts-node": {
-    "require": [
-      "tsconfig-paths/register"
-    ]
+    "require": ["tsconfig-paths/register"]
   },
-  "include": [
-    "src/**/*",
-    "../../packages/engines/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*", "../../packages/engines/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

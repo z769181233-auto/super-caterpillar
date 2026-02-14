@@ -8,34 +8,43 @@ import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
 
+import { AudioService } from '../../audio/audio.service';
+
 @Injectable()
 export class AU01VoiceTTSAdapter extends AuBaseEngine {
-    constructor(
-        @Inject(RedisService) redis: RedisService,
-        @Inject(AuditService) audit: AuditService,
-        @Inject(CostLedgerService) cost: CostLedgerService
-    ) {
-        super('au01_voice_tts', redis, audit, cost);
-    }
+  constructor(
+    @Inject(RedisService) redis: RedisService,
+    @Inject(AuditService) audit: AuditService,
+    @Inject(CostLedgerService) cost: CostLedgerService,
+    private readonly audioService: AudioService
+  ) {
+    super('au01_voice_tts', redis, audit, cost);
+  }
 
-    async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
-        return this.execute(input, input.payload);
-    }
+  async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
+    return this.execute(input, input.payload);
+  }
 
-    protected async processLogic(payload: any): Promise<any> {
-        const text = payload.text || 'hello';
-        const hash = this.generateCacheKey(payload).split(':').pop();
-        const outputDir = join(process.cwd(), 'storage/au/tts');
-        mkdirSync(outputDir, { recursive: true });
-        const outputPath = join(outputDir, `${hash}.wav`);
+  protected async processLogic(payload: any): Promise<any> {
+    const text = payload.text || 'hello';
 
-        // FFmpeg: 生成正弦波音频作为占位
-        const cmd = `ffmpeg -y -f lavfi -i "sine=f=440:d=2" "${outputPath}"`;
-        execSync(cmd, { stdio: 'ignore' });
+    // Use AudioService for real/stub generation logic
+    const result = await this.audioService.generateAndMix({
+      text,
+      projectSettings: {
+        audioRealEnabled: true, // Default to real if configured
+        audioBgmEnabled: false,
+      },
+      preview: payload.preview === true,
+    });
 
-        return {
-            assetUrl: `file://${outputPath}`,
-            meta: { text, format: 'wav', duration: 2 }
-        };
-    }
+    return {
+      assetUrl: `file://${result.voice.absPath}`,
+      meta: {
+        ...result.voice.meta,
+        text,
+        format: 'wav',
+      },
+    };
+  }
 }

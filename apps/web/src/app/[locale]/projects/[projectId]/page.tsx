@@ -318,7 +318,6 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
 
   // ========== 页面渲染逻辑 ==========
 
-
   // 2. Check for Running Video Jobs (In Memory / Polling)
   // We don't have direct access to jobs here unless we fetch them.
   // Constraint: No backend changes.
@@ -352,10 +351,10 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
   // Inject computed props into sceneGraph object for Dispatcher (hacky but effective)
   const projectWithStatus = sceneGraph
     ? {
-      ...sceneGraph,
-      hasVideo,
-      isVideoGenerating,
-    }
+        ...sceneGraph,
+        hasVideo,
+        isVideoGenerating,
+      }
     : null;
 
   // ...

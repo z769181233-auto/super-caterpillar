@@ -65,6 +65,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
   ],
   exports: [JobService, JobReportFacade],
 })
-export class JobModule { }
+export class JobModule {}
 
 // 注意：JobController 中需要注入 AuditLogService，但 AuditLogModule 已经导入，应该可以正常工作

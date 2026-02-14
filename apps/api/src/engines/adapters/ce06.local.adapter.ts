@@ -13,9 +13,7 @@ export class CE06LocalAdapter implements EngineAdapter {
   public readonly name = 'ce06_novel_parsing';
   private readonly logger = new Logger(CE06LocalAdapter.name);
 
-  constructor(
-    private readonly localStorage: LocalStorageService
-  ) { }
+  constructor(private readonly localStorage: LocalStorageService) {}
 
   supports(engineKey: string): boolean {
     return engineKey === 'ce06_novel_parsing';
