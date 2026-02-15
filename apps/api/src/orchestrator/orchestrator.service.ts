@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
@@ -31,35 +31,20 @@ export class OrchestratorService {
   private readonly logger = new Logger(OrchestratorService.name);
 
   constructor(
-    @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(AuditLogService)
+    private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
-    @Inject(TaskService)
     private readonly taskService: TaskService,
-    @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
-    @Inject(EngineRegistry)
     private readonly engineRegistry: EngineRegistry,
-    @Inject(PublishedVideoService)
     private readonly publishedVideoService: PublishedVideoService
-  ) {}
-
-  // P6-2-2-1: Dispatch Rate Limiting (Anti-Cascade Flood)
-  private dispatchHistory: Map<string, number[]> = new Map();
-  private readonly CASCADE_LIMIT = 100; // max 100 jobs per 10s per worker node
-  private readonly CASCADE_WINDOW = 10000;
+  ) { }
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
    * 注意：此方法已废弃，改为使用 Worker 主动拉取模式（dispatchNextJobForWorker）
    * 保留此方法仅用于兼容，实际调度由 Worker 主动调用 dispatchNextJobForWorker
-   *
-   * 参考《调度系统设计书_V1.0》第 3.1~3.5 章：统一使用安全的 Job 领取逻辑
-   * 参考《调度系统设计书_V1.0》第 5 章：故障恢复机制
    */
   async dispatch() {
-    // Deprecated: use scheduleRecovery() for background tasks
-    // and worker pull model for job dispatching
     return this.scheduleRecovery();
   }
 
@@ -67,10 +52,10 @@ export class OrchestratorService {
    * P1-1: Automated Fault Recovery
    * Runs every 5 seconds to cleanup dead workers and recover jobs.
    */
-  @Cron(CronExpression.EVERY_5_SECONDS)
+  @Cron(CronExpression.EVERY_MINUTE)
   async scheduleRecovery() {
     const { env: scuEnv } = await import('@scu/config');
-    this.logger.log(`Running automated recovery task... (Grace: ${scuEnv.workerOfflineGraceMs}ms)`);
+    // this.logger.log(`Running automated recovery task... (Grace: ${scuEnv.workerOfflineGraceMs}ms)`);
 
     // Stage2-B: 1. 标记超时的 Worker 为 DEAD 并回收 Job
     const offlineCount = await this.markOfflineWorkersInternal();
@@ -79,7 +64,6 @@ export class OrchestratorService {
     }
 
     // Stage2-B: 2. 故障恢复：处理 DEAD Worker 的 DISPATCHED 和 RUNNING Job
-    // 参考调度系统设计书 §5.3：Worker 异常退出时的 Job 恢复
     const recoveredCount = await this.recoverJobsFromOfflineWorkers();
     if (recoveredCount > 0) {
       this.logger.log(`Recovered ${recoveredCount} jobs from offline workers`);
@@ -110,37 +94,22 @@ export class OrchestratorService {
       })
     );
 
-    // 注意：不再主动分配 Job，改为 Worker 主动拉取模式
-    // 这样可以避免"先查后改"的竞态问题，统一使用 JobService.getAndMarkNextPendingJob
-    // 实际调度由 Worker 通过 POST /workers/:workerId/jobs/next 主动拉取
-
     return {
       pending: pendingJobsCount,
-      dispatched: 0, // 不再主动分配
-      skipped: 0,
-      errors: 0,
+      dispatched: 0,
       recovered: recoveredCount,
       retryReady: retryReadyCount,
-      message:
-        'Job dispatch is now handled by worker pull model. Workers should call dispatchNextJobForWorker.',
+      message: 'Job dispatch is now handled by worker pull model.',
     };
   }
 
   /**
    * 故障恢复：处理 offline Worker 的 RUNNING Job
-   * 参考《调度系统设计书_V1.0》§5.3：Worker 异常退出时的 Job 恢复
-   *
-   * 策略：
-   * - 扫描所有 status=RUNNING && worker.status=offline 的 Job
-   * - 将这些 Job 标记为可重试（调用 JobService.markJobFailedAndMaybeRetry）
-   * - 如果已达到最大重试次数，标记为 FAILED
    */
   private async recoverJobsFromOfflineWorkers(): Promise<number> {
-    // Stage2-B: 基于 WorkerHeartbeat 模型查找 DEAD worker
     const HEARTBEAT_TTL_SECONDS = parseInt(process.env.HEARTBEAT_TTL_SECONDS || '30', 10);
     const timeoutThreshold = new Date(Date.now() - HEARTBEAT_TTL_SECONDS * 3 * 1000);
 
-    // 查找所有 status=DEAD 的 WorkerHeartbeat
     const deadHeartbeats = await this.prisma.workerHeartbeat.findMany({
       where: {
         status: 'DEAD',
@@ -259,7 +228,6 @@ export class OrchestratorService {
       const workerId = deadWorkerIds[0] || 'unknown';
       const lastSeenAt =
         deadHeartbeats.find((h) => h.workerId === workerId)?.lastSeenAt || new Date();
-      const HEARTBEAT_TTL_SECONDS = parseInt(process.env.HEARTBEAT_TTL_SECONDS || '30', 10);
 
       await this.auditLogService.record({
         action: 'WORKER_DEAD_RECOVERY',
@@ -545,170 +513,9 @@ export class OrchestratorService {
   }
 
   /**
-   * Worker 拉取下一个待处理的 Job（原子派工版）
-   * STAGE-2 S2-ORCH-BASE: 原子 Claim 实现
-   *
-   * @param workerId 业务 Worker ID (String)
-   * @returns 领取到的 Job，如果没有可用的 Job 则返回 null
-   */
-  async dispatchNextJobForWorker(workerId: string) {
-    // 1. Resolve WorkerNode (String -> UUID)
-    const workerNode = await this.prisma.workerNode.findUnique({
-      where: { workerId },
-      include: { shotJobs: { where: { status: JobStatusEnum.RUNNING } } },
-    });
-
-    if (!workerNode) {
-      this.logger.warn(`[Orchestrator] Worker not found for dispatch: ${workerId}`);
-      return null;
-    }
-
-    // P6-2-2-1: Cascade Throttling Check
-    const now = Date.now();
-    let history = this.dispatchHistory.get(workerId) || [];
-    history = history.filter((t) => now - t < this.CASCADE_WINDOW);
-
-    if (history.length >= this.CASCADE_LIMIT) {
-      this.logger.warn(
-        `[Orchestrator] Worker ${workerId} hit dispatch limit (${history.length}/${this.CASCADE_LIMIT}). Throttling.`
-      );
-      return null; // Force worker to wait/backoff
-    }
-
-    this.dispatchHistory.set(workerId, history);
-
-    // 2. Atomic Claim via Transaction
-    const dispatchedJob = await this.prisma.$transaction(async (tx) => {
-      // 2.0 Recovery: Check if worker already has a DISPATCHED job (e.g. restart/crash recovery)
-      // This is CRITICAL for idempotency and robust worker restarts
-      const existingJob = await tx.shotJob.findFirst({
-        where: {
-          workerId: workerNode.id,
-          status: JobStatusEnum.DISPATCHED,
-        },
-      });
-
-      if (existingJob) {
-        this.logger.log(
-          `[Orchestrator] Recovering existing job ${existingJob.id} for worker ${workerId}`
-        );
-        return existingJob;
-      }
-
-      // 2.1 Find one candidate PENDING job
-      // S3.1: Capability Filtering - 数据库级过滤
-      const capabilities = (workerNode.capabilities as any) || {};
-      const supportedJobTypes = (capabilities.supportedJobTypes as string[]) || [];
-
-      // 如果 Worker 没有声明支持任何类型，则直接返回 null
-      if (supportedJobTypes.length === 0) {
-        this.logger.warn(`[Orchestrator] Worker ${workerId} has no supportedJobTypes defined.`);
-        return null;
-      }
-
-      this.logger.log(
-        `[Orchestrator DEBUG] Worker ${workerId} supportedJobTypes: ${JSON.stringify(supportedJobTypes)}`
-      );
-
-      const candidate = await tx.shotJob.findFirst({
-        where: {
-          status: JobStatusEnum.PENDING,
-          type: { in: supportedJobTypes as any }, // 断言过滤
-        },
-        orderBy: [
-          { priority: 'desc' }, // 门禁任务通常设置更高优先级
-          { createdAt: 'asc' },
-        ],
-        take: 1,
-      });
-
-      this.logger.log(
-        `[Orchestrator DEBUG] Candidate found for worker ${workerId}: ${candidate?.id || 'null'} type=${candidate?.type}`
-      );
-
-      /*
-      console.log(
-        `[Orchestrator_DEBUG] Candidate for ${workerId}: ${candidate ? candidate.id : 'NONE'}. SupportedTypes: ${JSON.stringify(supportedJobTypes)}`
-      );
-      */
-
-      if (!candidate) {
-        this.logger.warn(`[Orchestrator] No PENDING job found for dispatch.`);
-        return null;
-      }
-      this.logger.log(`[Orchestrator] Found candidate job: ${candidate.id}`);
-
-      // 2.2 Atomic Update (Optimistic Concurrency Control)
-      // 使用 updateMany + where status=PENDING 确保只有一个人能抢到
-      const updateResult = await tx.shotJob.updateMany({
-        where: {
-          id: candidate.id,
-          status: JobStatusEnum.PENDING, // Key Assertion
-        },
-        data: {
-          status: JobStatusEnum.DISPATCHED,
-          workerId: workerNode.id, // Store UUID, not string
-        },
-      });
-
-      if (updateResult.count === 0) {
-        // Race condition: Job was claimed by another worker
-        this.logger.warn(
-          `[Orchestrator] Race condition: Job ${candidate.id} claimed by another worker`
-        );
-        return null;
-      }
-
-      // 2.3 Fetch full job details to return
-      return await tx.shotJob.findUnique({
-        where: { id: candidate.id },
-      });
-    });
-
-    if (!dispatchedJob) {
-      this.logger.warn(`[Orchestrator] Dispatch returned null. WorkerId=${workerId}`);
-      return null;
-    }
-
-    // P6-2-2-1: Update dispatch history for rate limiting
-    const currentHistory = this.dispatchHistory.get(workerId) || [];
-    currentHistory.push(Date.now());
-    this.dispatchHistory.set(workerId, currentHistory);
-
-    // 结构化日志：JOB_CLAIMED
-    this.logger.log(
-      JSON.stringify({
-        event: 'JOB_CLAIMED',
-        jobId: dispatchedJob.id,
-        workerId, // Log business ID for readability
-        workerNodeId: workerNode.id,
-        jobType: dispatchedJob.type,
-        taskId: dispatchedJob.taskId || null,
-        status: 'DISPATCHED',
-        timestamp: new Date().toISOString(),
-      })
-    );
-
-    // 记录审计日志
-    await this.auditLogService.record({
-      action: 'JOB_DISPATCHED',
-      resourceType: 'job',
-      resourceId: dispatchedJob.id,
-      details: {
-        workerId: workerId,
-        nodeId: workerNode.id,
-        jobType: dispatchedJob.type,
-        taskId: dispatchedJob.taskId,
-      },
-    });
-
-    return dispatchedJob;
-  }
-
-  /**
    * Stage 3: Event-Driven DAG Trigger
-   * Triggered by 'job.succeeded' event from JobService.
-   */
+ * Triggered by 'job.succeeded' event from JobService.
+ */
   @OnEvent('job.succeeded')
   async handleJobSucceededEvent(job: any) {
     this.logger.log(`[Orchestrator] Received job.succeeded event for job ${job.id}`);
@@ -782,20 +589,31 @@ export class OrchestratorService {
     const pipelineRunId = payload.pipelineRunId;
 
     if (completedChildJob.type === JobTypeEnum.CE06_NOVEL_PARSING) {
-      this.logger.log(`[V1-ORCH] CE06 done for Root=${rootJobId}. Spawning CE03...`);
-      await this.jobService.createCECoreJob({
-        projectId: rootJob.projectId,
-        organizationId: rootJob.organizationId,
-        taskId: rootJob.taskId || undefined,
-        jobType: JobTypeEnum.CE03_VISUAL_DENSITY as any,
-        traceId: rootJob.traceId || undefined,
-        payload: {
+      const chapterId = payload.chapterId || payload.payload?.chapterId;
+      if (!chapterId) {
+        this.logger.error(`[V1-ORCH] CE06 done but no chapterId in payload ${completedChildJob.id}`);
+        return;
+      }
+      const scenes = await this.prisma.scene.findMany({ where: { chapterId } });
+      this.logger.log(
+        `[V1-ORCH] CE06 done for Root=${rootJobId}. Spawning CE03 for ${scenes.length} scenes...`
+      );
+
+      for (const scene of scenes) {
+        await this.jobService.createCECoreJob({
           projectId: rootJob.projectId,
-          sceneId: completedChildJob.sceneId,
-          rootJobId: rootJob.id,
-          pipelineRunId,
-        },
-      });
+          organizationId: rootJob.organizationId,
+          taskId: rootJob.taskId || undefined,
+          jobType: JobTypeEnum.CE03_VISUAL_DENSITY as any,
+          traceId: rootJob.traceId || undefined,
+          payload: {
+            projectId: rootJob.projectId,
+            sceneId: scene.id,
+            rootJobId: rootJob.id,
+            pipelineRunId,
+          },
+        });
+      }
     } else if (completedChildJob.type === JobTypeEnum.CE03_VISUAL_DENSITY) {
       this.logger.log(`[V1-ORCH] CE03 done for Root=${rootJobId}. Spawning CE04...`);
       await this.jobService.createCECoreJob({
@@ -812,7 +630,38 @@ export class OrchestratorService {
         },
       });
     } else if (completedChildJob.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
-      this.logger.log(`[V1-ORCH] CE04 done for Root=${rootJobId}. Chain Complete.`);
+      const sceneId = payload.sceneId;
+      if (!sceneId) {
+        this.logger.error(`[V1-ORCH] CE04 done but no sceneId in payload ${completedChildJob.id}`);
+        return;
+      }
+      const shots = await this.prisma.shot.findMany({ where: { sceneId } });
+
+      this.logger.log(
+        `[V1-ORCH] CE04 done for Root=${rootJobId}. Spawning SHOT_RENDER for ${shots.length} shots...`
+      );
+
+      for (const shot of shots) {
+        await this.jobService.create(
+          shot.id,
+          {
+            type: JobTypeEnum.SHOT_RENDER,
+            payload: {
+              projectId: rootJob.projectId,
+              sceneId,
+              rootJobId: rootJob.id,
+              pipelineRunId,
+              engineKey: 'real_shot_render',
+              referenceSheetId: (rootJob.payload as any)?.referenceSheetId,
+            },
+            traceId: rootJob.traceId || undefined,
+          } as any,
+          'system-orch',
+          rootJob.organizationId
+        );
+      }
+    } else if (completedChildJob.type === JobTypeEnum.CE09_MEDIA_SECURITY) {
+      this.logger.log(`[V1-ORCH] CE09 done for Root=${rootJobId}. Chain Complete.`);
       await this.prisma.shotJob.update({
         where: { id: rootJobId },
         data: { status: JobStatusEnum.SUCCEEDED },
@@ -1078,6 +927,7 @@ export class OrchestratorService {
             publish: true, // Worker handles publishing (with dedupe_key idempotency)
             traceId: contextJob.traceId,
             isVerification, // 也在 payload 中携带，便于 Worker 识别
+            rootJobId: (contextJob.payload as any)?.rootJobId, // Propagate for V1 chain
           },
         } as any,
         'system-dag', // triggered by system
@@ -1123,8 +973,8 @@ export class OrchestratorService {
     // Wait for result to be persisted if needed? No, handleJobCompletion fetched job, but did it fetch result?
     // job.result is JSON.
     const result = videoJob.result as any;
-    const assetId = result?.output?.assetId;
-    const storageKey = result?.output?.storageKey;
+    const assetId = result?.assetId || result?.output?.assetId;
+    const storageKey = result?.storageKey || result?.output?.storageKey;
 
     if (!assetId || !storageKey) {
       this.logger.error(
@@ -1150,6 +1000,7 @@ export class OrchestratorService {
             videoAssetStorageKey: storageKey,
             traceId: videoJob.traceId,
             engineKey: 'ce09_security_real',
+            rootJobId: (payload as any)?.rootJobId, // Propagate for V1 chain
           },
         } as any,
         'system-dag', // triggered by system
@@ -1301,20 +1152,13 @@ export class OrchestratorService {
       });
       console.log('[DEBUG_A1] Novel structure created');
 
-      // 3. Create Season & Episode for orchestration
-      console.log('[DEBUG_A1] Service Step 3: Creating Season, Episode, Placeholder Scene/Shot...');
-      const season = await this.prisma.season.create({
-        data: {
-          projectId,
-          index: 1,
-          title: 'Season 1',
-        } as any,
-      });
-
+      // 3. Create Episode for orchestration
+      // [Audit] Removed Season layer per V1.1 Production Spec
+      // Schema has been updated to allow seasonId to be null
       const episode = await this.prisma.episode.create({
         data: {
           projectId,
-          seasonId: season.id,
+          seasonId: null,
           index: 1,
           name: 'Chapter 1',
           chapterId: chapter.id,

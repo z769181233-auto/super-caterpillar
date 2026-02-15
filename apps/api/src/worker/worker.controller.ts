@@ -8,7 +8,6 @@ import {
   Req,
   NotFoundException,
   Inject,
-  forwardRef,
   Logger,
 } from '@nestjs/common';
 import { WorkerService } from './worker.service';
@@ -18,19 +17,14 @@ import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Request } from 'express';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { OrchestratorService } from '../orchestrator/orchestrator.service';
-
 @Controller('workers')
 @UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
 export class WorkerController {
   constructor(
-    @Inject(forwardRef(() => WorkerService))
     private readonly workerService: WorkerService,
-    @Inject(forwardRef(() => OrchestratorService))
-    private readonly orchestratorService: OrchestratorService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   /**
    * Worker 注册
@@ -152,8 +146,8 @@ export class WorkerController {
       );
     }
 
-    // 通过调度器获取下一条待处理的 Job（最小闭环版）
-    const job = await this.orchestratorService.dispatchNextJobForWorker(workerId);
+    // 通过 WorkerService 获取下一条待处理的 Job（解构后的入口）
+    const job = await this.workerService.dispatchNextJobForWorker(workerId);
 
     // 结构化日志：WORKER_JOBS_NEXT_RESULT
     // const logger = new Logger(WorkerController.name); // Removed redeclaration
@@ -204,14 +198,15 @@ export class WorkerController {
         id: job.id,
         type: job.type,
         payload: job.payload,
+        engineKey: (job as any).engineBinding?.engineKey || (job.payload as any)?.engineKey,
         taskId: job.taskId,
         shotId: job.shotId,
         projectId: job.projectId,
-        episodeId: job.episodeId, // Added
-        sceneId: job.sceneId, // Added
-        organizationId: job.organizationId, // Added
+        episodeId: job.episodeId,
+        sceneId: job.sceneId,
+        organizationId: job.organizationId,
         traceId: job.traceId,
-        isVerification: job.isVerification, // Added for Gate Mode identification
+        isVerification: job.isVerification,
         createdAt: job.createdAt,
       },
     };

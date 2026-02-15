@@ -1,1 +1,0 @@
--rw-r--r--@ 1 adam  staff   1.3G  2  4 06:35 api_startup.log

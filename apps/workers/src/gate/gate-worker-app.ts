@@ -68,7 +68,7 @@ export async function startGateWorkerApp() {
   process.stdout.write(util.format('========================================\n') + '\n');
 
   const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
-  const apiBaseUrl = env.apiUrl || 'http://127.0.0.1:3000';
+  const apiBaseUrl = (env.apiUrl || 'http://127.0.0.1:3000').replace('localhost', '127.0.0.1');
   const workerApiKey = env.workerApiKey;
   const workerApiSecret = pickHmacSecretSSOT();
 
@@ -97,55 +97,75 @@ export async function startGateWorkerApp() {
   billingDispatcher.start(30000);
 
   // 注册 Worker
-  const maxConcurrency = parseInt(process.env.WORKER_MAX_CONCURRENCY || '1', 10);
+  const maxConcurrencyEnv = parseInt(process.env.WORKER_MAX_CONCURRENCY || '5', 10);
+  const maxConcurrency = Math.min(maxConcurrencyEnv, 5); // Cap at 5 for stability
   process.stdout.write(
     util.format(`[GateWorker] 正在注册 Worker 节点 (maxConcurrency=${maxConcurrency})...`) + '\n'
   );
 
-  await apiClient.registerWorker({
-    workerId: workerId,
-    name: workerId,
-    capabilities: {
-      supportedJobTypes: [
-        'SHOT_RENDER',
-        'PIPELINE_E2E_VIDEO',
-        'CE06_NOVEL_PARSING',
-        'CE03_VISUAL_DENSITY',
-        'CE04_VISUAL_ENRICHMENT',
-        'CE02_VISUAL_DENSITY',
-        'VIDEO_RENDER',
-        'CE09_MEDIA_SECURITY',
-        'PIPELINE_TIMELINE_COMPOSE',
-        'TIMELINE_RENDER',
-        'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
-        'NOVEL_SCAN_TOC',
-        'NOVEL_CHUNK_PARSE',
-        'CE11_SHOT_GENERATOR',
-        'AUDIO',
-        'PIPELINE_PROD_VIDEO_V1',
-        'EPISODE_RENDER',
-        'NOVEL_ANALYSIS',
-      ],
-      supportedModels: [],
-      supportedEngines: [
-        'gate_noop',
-        'pipeline_orchestrator',
-        'ce06_novel_parsing',
-        'ce03_visual_density',
-        'ce04_visual_enrichment',
-        'ce02_visual_density',
-        'stage1_orchestrator',
-        'video_merge',
-        'default_shot_render',
-        'ce09_security_real',
-        'ce11_shot_generator_mock',
-        'timeline_render',
-        'audio_engine',
-      ],
-      maxBatchSize: maxConcurrency,
-    },
-  });
-  process.stdout.write(util.format('[GateWorker] ✅ Worker 注册成功') + '\n');
+  let registered = false;
+  let attempts = 0;
+  let isRunning = true;
+
+  while (!registered && isRunning) {
+    try {
+      attempts++;
+      await apiClient.registerWorker({
+        workerId: workerId,
+        name: workerId,
+        capabilities: {
+          supportedJobTypes: [
+            'SHOT_RENDER',
+            'PIPELINE_E2E_VIDEO',
+            'CE06_NOVEL_PARSING',
+            'CE03_VISUAL_DENSITY',
+            'CE04_VISUAL_ENRICHMENT',
+            'CE02_VISUAL_DENSITY',
+            'VIDEO_RENDER',
+            'CE09_MEDIA_SECURITY',
+            'PIPELINE_TIMELINE_COMPOSE',
+            'TIMELINE_RENDER',
+            'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
+            'NOVEL_SCAN_TOC',
+            'NOVEL_CHUNK_PARSE',
+            'CE11_SHOT_GENERATOR',
+            'AUDIO',
+            'PIPELINE_PROD_VIDEO_V1',
+            'EPISODE_RENDER',
+            'NOVEL_ANALYSIS',
+          ],
+          supportedModels: [],
+          supportedEngines: [
+            'gate_noop',
+            'pipeline_orchestrator',
+            'ce06_novel_parsing',
+            'ce03_visual_density',
+            'ce04_visual_enrichment',
+            'ce02_visual_density',
+            'stage1_orchestrator',
+            'video_merge',
+            'default_shot_render',
+            'ce09_security_real',
+            'ce11_shot_generator_mock',
+            'timeline_render',
+            'audio_engine',
+            'fusion',
+          ],
+          maxBatchSize: maxConcurrency,
+        },
+      });
+      registered = true;
+      process.stdout.write(util.format('[GateWorker] ✅ Worker 注册成功') + '\n');
+    } catch (e: any) {
+      process.stderr.write(
+        util.format(`[GateWorker] ❌ Worker 注册失败 (attempt ${attempts}):`, e.message) + '\n'
+      );
+      if (isRunning) {
+        process.stdout.write(util.format('[GateWorker] 5秒后重试...') + '\n');
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
+    }
+  }
 
   // B3-1: 自适应轮询策略
   const adaptivePoll = new AdaptivePollStrategy({
@@ -160,7 +180,6 @@ export async function startGateWorkerApp() {
   // B3-3: Artifact 事件通知器
   const eventNotifier = getArtifactEventNotifier();
 
-  let isRunning = true;
   let tasksRunning = 0;
   let totalTasksProcessed = 0;
   let totalProcessingTimeMs = 0;
@@ -472,13 +491,13 @@ export async function startGateWorkerApp() {
           job: {
             job_id: job.id,
           },
-          shot_id: (job as any).shotId ?? job.payload?.shotId ?? null,
+          shotId: (job as any).shotId ?? job.payload?.shotId ?? null,
           artifact: {
             filename: 'shot_render_output.mp4',
             sha256: mp4Sha,
           },
           artifact_dir: artDir,
-          output_sha256: mp4Sha,
+          outputSha256: mp4Sha,
           generated_at: new Date().toISOString(),
         };
         fs.writeFileSync(provPath, JSON.stringify(provObj, null, 2));

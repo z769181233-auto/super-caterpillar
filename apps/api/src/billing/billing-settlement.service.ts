@@ -10,7 +10,7 @@ export class BillingSettlementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   /**
    * P1-C Settlement Engine
@@ -24,10 +24,10 @@ export class BillingSettlementService {
     // Audit Start
     await this.recordAudit(null, projectId, 'billing.settle.start', { runId }, runId);
 
-    const ledgers = await this.prisma.costLedger.findMany({
+    const ledgers = await this.prisma.billingLedger.findMany({
       where: {
-        projectId,
-        billingStatus: 'PENDING',
+        tenantId: projectId,
+        status: 'PENDING',
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -47,30 +47,21 @@ export class BillingSettlementService {
         await this.prisma.$transaction(
           async (tx) => {
             // 1. Idempotency Guard (Power Root)
-            const exists = await tx.billingEvent.findUnique({
-              where: { costLedgerId: l.id },
-            });
-
-            if (exists) {
-              this.logger.warn(
-                `[P1-C] Ledger ${l.id} already has BillingEvent ${exists.id}. Marking as BILLED.`
-              );
-              await tx.costLedger.update({
-                where: { id: l.id },
-                data: { billingStatus: 'BILLED', billingEventId: exists.id, billedAt: new Date() },
-              });
+            // In V3.0 BillingLedger is the source, but we still check BillingEvent if needed
+            // Actually, for settlement, we just move status PENDING -> POSTED
+            const ledger = await tx.billingLedger.findUnique({ where: { id: l.id } });
+            if (ledger?.status === 'POSTED') {
               return;
             }
 
             // 2. Critical Context Validation
-            if (!l.orgId) throw new Error('MISSING_ORG_ID');
-            const costToCharge = l.totalCredits || 0;
+            if (!l.tenantId) throw new Error('MISSING_TENANT_ID');
+            const costToCharge = l.amount / 100; // Int to Credits
 
             // 3. Row-Level Locking on Credits (Atomicity)
-            // We use raw SQL to ensure SELECT FOR UPDATE behavior
-            await tx.$executeRaw`SELECT id FROM organizations WHERE id = ${l.orgId} FOR UPDATE`;
+            await tx.$executeRaw`SELECT id FROM organizations WHERE id = ${l.tenantId} FOR UPDATE`;
 
-            const org = await tx.organization.findUnique({ where: { id: l.orgId } });
+            const org = await tx.organization.findUnique({ where: { id: l.tenantId } });
             if (!org) throw new Error('ORG_NOT_FOUND');
 
             if (org.credits < costToCharge) {
@@ -82,15 +73,15 @@ export class BillingSettlementService {
             await tx.billingEvent.create({
               data: {
                 id: eventId,
-                costLedgerId: l.id,
-                projectId: l.projectId,
-                orgId: l.orgId!,
-                userId: l.userId || undefined,
+                projectId: l.tenantId,
+                orgId: l.tenantId,
+                userId: undefined, // Or extract from metadata if needed
                 type: 'CONSUME',
-                creditsDelta: costToCharge,
+                creditsDelta: -costToCharge, // Negative for consumption
                 metadata: {
-                  jobId: l.jobId,
-                  jobType: l.jobType,
+                  ledgerId: l.id,
+                  itemType: l.itemType,
+                  itemId: l.itemId,
                   traceId: l.traceId,
                   settleRunId: runId,
                 },
@@ -99,17 +90,15 @@ export class BillingSettlementService {
 
             // 5. Deduct Balance
             await tx.organization.update({
-              where: { id: l.orgId },
+              where: { id: l.tenantId },
               data: { credits: { decrement: costToCharge } },
             });
 
             // 6. Seal Ledger Status
-            await tx.costLedger.update({
+            await tx.billingLedger.update({
               where: { id: l.id },
               data: {
-                billingStatus: 'BILLED',
-                billingEventId: eventId,
-                billedAt: new Date(),
+                status: 'POSTED',
               },
             });
 
@@ -118,10 +107,10 @@ export class BillingSettlementService {
             // Item-Level Audit
             await this.recordAudit(
               null,
-              l.orgId,
+              l.tenantId,
               'billing.settle.item.billed',
               {
-                costLedgerId: l.id,
+                ledgerId: l.id,
                 billingEventId: eventId,
                 creditsDelta: costToCharge,
               },
@@ -138,10 +127,10 @@ export class BillingSettlementService {
 
         if (e.message === 'INSUFFICIENT_CREDITS') {
           // Record failure reason for visibility
-          await this.prisma.costLedger
+          await this.prisma.billingLedger
             .update({
               where: { id: l.id },
-              data: { billingStatus: 'FAILED', billingError: e.message },
+              data: { status: 'FAILED' },
             })
             .catch(() => null);
         }

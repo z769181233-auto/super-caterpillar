@@ -18,7 +18,7 @@ async function check() {
   if (binding.engineKey !== 'video_merge') {
     process.stderr.write(
       util.format('❌ FAIL: Engine Key mismatch. Expected video_merge, got ' + binding.engineKey) +
-        '\n'
+      '\n'
     );
     process.exit(1);
   }
@@ -27,17 +27,17 @@ async function check() {
 
   // Check Billing
   // We expect some billing records with this traceId
-  const billing = await prisma.costLedger.findFirst({
+  const billing = await prisma.billingLedger.findFirst({
     where: {
       traceId: 'trace-gate-p0r2-1767943887809',
     },
   });
 
   if (billing) {
-    process.stdout.write(util.format('✅ PASS: CostLedger found') + '\n');
+    process.stdout.write(util.format('✅ PASS: BillingLedger found') + '\n');
   } else {
     process.stdout.write(
-      util.format('⚠️ WARNING: CostLedger not found immediately (might be async)') + '\n'
+      util.format('⚠️ WARNING: BillingLedger not found immediately (might be async)') + '\n'
     );
   }
 

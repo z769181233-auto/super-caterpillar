@@ -1,9 +1,0 @@
-====================================================
-P6-1 BILLING LEDGER NEGATIVE TESTS
-====================================================
-[Test 1] Attempting Duplicate Billing Entry...
-✅ PASS: Duplicate billing blocked by unique constraint.
-[Test 2] Attempting Negative Amount...
-✅ PASS: Negative amount blocked.
-
-✅ P6-1 NEGATIVE TESTS PASSED

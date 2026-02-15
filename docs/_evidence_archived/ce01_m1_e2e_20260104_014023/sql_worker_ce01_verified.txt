@@ -1,6 +1,0 @@
-Pager usage is off.
-   workerId   |                                      supportedJobTypes                                      
---------------+---------------------------------------------------------------------------------------------
- local-worker | {CE06_NOVEL_PARSING,CE03_VISUAL_DENSITY,CE04_VISUAL_ENRICHMENT,VIDEO_RENDER,NOVEL_ANALYSIS}
-(1 row)
-

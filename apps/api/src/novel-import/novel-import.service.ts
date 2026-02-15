@@ -12,20 +12,17 @@ import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 
 /**
- * 小说分析结果结构（为未来接入 LLM 预留）
+ * 小说分析结果结构
  */
 interface OutlineResult {
-  seasons: Array<{
+  episodes: Array<{
     name: string;
-    episodes: Array<{
-      name: string;
-      scenes: Array<{
-        summary: string;
-        shots: Array<{
-          title: string;
-          description: string;
-          type: string;
-        }>;
+    scenes: Array<{
+      summary: string;
+      shots: Array<{
+        title: string;
+        description: string;
+        type: string;
       }>;
     }>;
   }>;
@@ -38,7 +35,7 @@ export class NovelImportService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly analysisProcessor: NovelAnalysisProcessorService
-  ) {}
+  ) { }
 
   /**
    * 分析单个章节
@@ -51,7 +48,7 @@ export class NovelImportService {
    * 分析小说并生成结构
    * 1. 保存章节原文到 NovelChapter
    * 2. 为每章生成初始 SceneDraft（纯规则版）
-   * 3. 创建 Season/Episode/Scene 结构
+   * 3. 创建 Episode/Scene 结构（移除 Season 层）
    */
   async analyzeNovelAndGenerateStructure(
     novelSourceId: string,
@@ -110,7 +107,6 @@ export class NovelImportService {
       });
 
       // 为每章生成初始 SceneDraft（纯规则版，先不接 LLM）
-      // 每章先生成 1 个 SceneDraft
       const sceneDraft = await this.prisma.sceneDraft.create({
         data: {
           chapterId: chapter.id,
@@ -136,18 +132,17 @@ export class NovelImportService {
         data: { sceneDraftId: sceneDraft.id },
       });
 
-      // 按段落切分生成 Shots（Stage-1 规则）
+      // 按段落切分生成 Shots
       const paragraphs = chapter.rawText.split(/\n\n+/).filter((p) => p.trim().length > 10);
       this.logger.log(`Segmenting chapter into ${paragraphs.length} paragraphs/shots...`);
 
       const shotsData = [];
-      // MVP: 限制每章最多 10 个镜头，防止过长
       const maxShots = Math.min(paragraphs.length, 10);
 
       for (let shIdx = 0; shIdx < maxShots; shIdx++) {
         const paragraph = paragraphs[shIdx].trim();
         const shotParams = {
-          prompt: paragraph.substring(0, 800), // 控制提示词长度
+          prompt: paragraph.substring(0, 800),
           aspect_ratio: '16:9',
           seed: Math.floor(Math.random() * 1000000),
           engine_params: {
@@ -176,7 +171,6 @@ export class NovelImportService {
         });
       }
 
-      // 记录段落切分证据 (Snapshot)
       this.logger.log(
         `[Stage-1 Evidence] Generated structure for Episode ${episode.id} with ${shotsData.length} shots.`
       );
@@ -189,7 +183,7 @@ export class NovelImportService {
    */
   private async callLLMForOutlineWithChapters(
     chapters: Array<{ title: string; content: string }>,
-    title?: string
+    _title?: string
   ): Promise<OutlineResult> {
     const episodes = [];
 
@@ -197,7 +191,6 @@ export class NovelImportService {
       const chapter = chapters[epIdx];
       const scenes = [];
 
-      // 每个章节按段落切分为场景（简单实现，未来用 LLM）
       const paragraphs = chapter.content.split(/\n\n+/).filter((p) => p.trim().length > 50);
       const sceneCount = Math.min(3, Math.max(1, Math.ceil(paragraphs.length / 3)));
 
@@ -207,7 +200,6 @@ export class NovelImportService {
         const sceneParagraphs = paragraphs.slice(startIdx, endIdx);
         const sceneText = sceneParagraphs.join('\n\n');
 
-        // 每个场景生成 3-5 个 Shot（根据内容长度）
         const shots = [];
         const shotCount = Math.min(5, Math.max(3, Math.ceil(sceneText.length / 500)));
 
@@ -235,25 +227,14 @@ export class NovelImportService {
       });
     }
 
-    return {
-      seasons: [
-        {
-          name: title || '第一季',
-          episodes,
-        },
-      ],
-    };
+    return { episodes };
   }
 
   /**
    * 调用 LLM 生成大纲（占位实现）
-   * 未来替换为真实的大模型 API 调用
    */
-  private async callLLMForOutline(rawText: string, title?: string): Promise<OutlineResult> {
-    // 占位实现：按 \n\n 分段
+  private async callLLMForOutline(rawText: string, _title?: string): Promise<OutlineResult> {
     const paragraphs = rawText.split(/\n\n+/).filter((p) => p.trim().length > 0);
-
-    // 取前 3 段作为 Episode，每段生成 3 个 Scene，每个 Scene 5 个 Shot
     const episodes = [];
     const maxEpisodes = Math.min(3, paragraphs.length);
 
@@ -261,7 +242,6 @@ export class NovelImportService {
       const paragraph = paragraphs[epIdx] || '';
       const scenes = [];
 
-      // 每个 Episode 生成 3 个 Scene
       for (let scIdx = 0; scIdx < 3; scIdx++) {
         const sceneText = paragraph.substring(
           Math.floor((paragraph.length / 3) * scIdx),
@@ -269,7 +249,6 @@ export class NovelImportService {
         );
 
         const shots = [];
-        // 每个 Scene 生成 5 个 Shot
         for (let shIdx = 0; shIdx < 5; shIdx++) {
           const shotText = sceneText.substring(
             Math.floor((sceneText.length / 5) * shIdx),
@@ -295,14 +274,7 @@ export class NovelImportService {
       });
     }
 
-    return {
-      seasons: [
-        {
-          name: title || '第一季',
-          episodes,
-        },
-      ],
-    };
+    return { episodes };
   }
 
   /**

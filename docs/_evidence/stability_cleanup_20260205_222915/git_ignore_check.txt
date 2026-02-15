@@ -1,2 +1,0 @@
-Git ignore check:
-.gitignore:99:logs/	logs/test.log

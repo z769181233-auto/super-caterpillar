@@ -217,7 +217,7 @@ export async function processE2EVideoPipelineJob(
         payload: {
           projectId,
           novelSourceId: payload.novelSourceId,
-          raw_text:
+          rawText:
             payload.raw_text || payload.sourceText || `GATE_MOCK_PROD_SLICE_TEXT_${Date.now()}`,
           pipelineRunId,
           rootJobId: jobId,

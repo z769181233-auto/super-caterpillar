@@ -61,7 +61,7 @@ export class CE01ProtocolAdapter {
 
       return {
         // Map 'text_chunk' -> 'raw_text' (for Processor Logic) AND 'structured_text' (for consistency)
-        raw_text: textChunk,
+        rawText: textChunk,
         structured_text: textChunk,
 
         // Map 'prev_context' -> 'context_injection.prev_context' (Production Field)

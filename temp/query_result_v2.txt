@@ -1,9 +1,0 @@
-                       id                       |  status   | output_sha256 | engine_provider 
-------------------------------------------------+-----------+---------------+-----------------
- smoke-job-181eeb05-857d-40bd-8118-8b700f0a3c4f | FAILED    |               | 
- smoke-neg-1770300359                           | SUCCEEDED |               | 
- smoke-neg-e449326d-af11-40f9-8da1-938fb36cb7c5 | SUCCEEDED |               | 
- smoke-job-1d241b39-1ced-42c1-8af5-f5ade8cc2cdd | SUCCEEDED |               | 
- 5a51685b-e508-4ec6-b53d-bf428f4165f9           | SUCCEEDED |               | 
-(5 rows)
-

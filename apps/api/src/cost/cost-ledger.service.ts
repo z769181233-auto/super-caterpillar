@@ -33,7 +33,7 @@ export class CostLedgerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly billingService: BillingService
-  ) {}
+  ) { }
 
   /**
    * 从Worker事件记录成本到账本
@@ -51,68 +51,49 @@ export class CostLedgerService {
       throw new Error(`INVALID_COST_AMOUNT=${e.costAmount}`);
     }
 
-    // 验证数量 (P0 Hotfix: Allow 0 for 0-cost audit trailing)
-    if (!Number.isFinite(e.quantity) || e.quantity < 0) {
-      throw new Error(`INVALID_QUANTITY=${e.quantity}`);
-    }
-
     const attemptNum = e.attempt ?? 0;
 
-    // P1-1 商业级基线：强制校验 Job 状态，仅 SUCCEEDED 允许计费
+    // P1-1 商业级基线：强制校验 Job 状态
     const job = await this.prisma.shotJob.findUnique({
       where: { id: e.jobId },
-      select: { id: true, status: true, attempts: true, type: true, organizationId: true },
+      select: { id: true, status: true, attempts: true, type: true, organizationId: true, traceId: true },
     });
 
     if (!job) {
       throw new Error(`BILLING_REJECTED_JOB_NOT_FOUND jobId=${e.jobId}`);
     }
 
-    // ✅ 仅成功任务允许计费 (P0 Hotfix: Allow RUNNING for worker-side billing)
+    // ✅ 仅成功或运行中任务允许计费
     if (job.status !== 'SUCCEEDED' && job.status !== 'RUNNING') {
       throw new Error(`BILLING_REJECTED_JOB_NOT_SUCCEEDED status=${job.status} jobId=${e.jobId}`);
     }
 
-    // 验证 attempt 合法性：不允许 attempt > job.attempts 或 < 0
-    if (!Number.isInteger(attemptNum) || attemptNum < 0) {
-      throw new Error(`INVALID_ATTEMPT=${attemptNum}`);
-    }
-    if (attemptNum > (job.attempts ?? 0)) {
-      throw new Error(
-        `BILLING_REJECTED_ATTEMPT_GT_JOB attempts=${job.attempts} attempt=${attemptNum} jobId=${e.jobId}`
-      );
-    }
-
-    const data: Prisma.CostLedgerCreateInput = {
-      user: { connect: { id: e.userId } },
-      project: { connect: { id: e.projectId } },
-      jobId: e.jobId,
-      jobType: e.jobType,
-      engineKey: e.engineKey,
-      attempt: attemptNum,
-      costAmount: e.costAmount,
-      currency: 'USD', // ✅ SSOT 统一
-      billingUnit: e.billingUnit,
-      quantity: e.quantity,
-      metadata: e.metadata ?? undefined,
+    // V3.0 Align: Mapping to BillingLedger Schema
+    const ledgerData: Prisma.BillingLedgerCreateInput = {
+      tenantId: job.organizationId || e.userId,
+      traceId: job.traceId || e.jobId,
+      itemType: e.jobType,
+      itemId: e.jobId,
+      chargeCode: e.engineKey || e.jobType,
+      amount: Math.round(e.costAmount * 100), // Convert to base units (e.g. cents or credits * 100)
+      currency: 'CREDIT',
+      status: 'POSTED',
+      evidenceRef: `job:${e.jobId}:${attemptNum}`,
     };
 
-    // ✅ 幂等: 同一 (jobId, attempt) 只记一次
+    // ✅ 幂等: 基于 BillingLedger 的唯一索引 (tenantId, traceId, itemType, itemId, chargeCode)
     try {
       return await this.prisma.$transaction(async (tx) => {
-        // 1. Create Ledger Record
-        const ledger = await tx.costLedger.create({ data });
+        // 1. Create Billing Ledger Record (V3.0 SSOT)
+        const ledger = await tx.billingLedger.create({ data: ledgerData });
 
-        // 2. Consume Credits (Atomically within the same transaction if possible)
-        // Note: BillingService uses its own transaction, but NestJS PrismaService
-        // usually handles nested transactions via the same client if designed so.
-        // Here we call it directly.
+        // 2. Consume Credits (Atomically)
         await this.billingService.consumeCredits(
           e.projectId,
           e.userId,
           job.organizationId || 'missing',
           e.costAmount,
-          `COST_EVENT:${e.jobType}`,
+          `BILLING_V3:${e.jobType}`,
           e.jobId
         );
 
@@ -121,10 +102,14 @@ export class CostLedgerService {
     } catch (err: any) {
       // Prisma unique conflict: P2002
       if (err?.code === 'P2002') {
-        this.logger.warn(`COST_LEDGER_DEDUPED=1 jobId=${e.jobId} attempt=${attemptNum}`);
-        // 返回既有记录作为幂等成功
-        const existing = await this.prisma.costLedger.findUnique({
-          where: { jobId_attempt: { jobId: e.jobId, attempt: attemptNum } },
+        this.logger.warn(`BILLING_LEDGER_DEDUPED=1 jobId=${e.jobId} traceId=${ledgerData.traceId}`);
+        const existing = await this.prisma.billingLedger.findFirst({
+          where: {
+            tenantId: ledgerData.tenantId,
+            traceId: ledgerData.traceId,
+            itemId: ledgerData.itemId,
+            chargeCode: ledgerData.chargeCode
+          },
         });
         if (existing) return existing;
       }
@@ -136,8 +121,8 @@ export class CostLedgerService {
    * 查询项目的所有成本记录
    */
   async getProjectCosts(projectId: string) {
-    return this.prisma.costLedger.findMany({
-      where: { projectId },
+    return this.prisma.billingLedger.findMany({
+      where: { tenantId: projectId }, // Assuming tenantId maps to org/project in this context
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -146,15 +131,15 @@ export class CostLedgerService {
    * 获取项目成本汇总
    */
   async getProjectCostSummary(projectId: string) {
-    const rows = await this.prisma.costLedger.findMany({
-      where: { projectId },
+    const rows = await this.prisma.billingLedger.findMany({
+      where: { tenantId: projectId },
     });
-    const total = rows.reduce((s, r) => s + r.costAmount, 0);
+    const total = rows.reduce((s, r) => s + (r.amount / 100), 0);
 
     return {
       projectId,
       total,
-      currency: 'USD',
+      currency: 'CREDIT',
       itemCount: rows.length,
     };
   }
@@ -167,12 +152,12 @@ export class CostLedgerService {
 
     const byType = costs.reduce(
       (acc, cost) => {
-        const type = cost.jobType || 'UNKNOWN';
+        const type = cost.itemType || 'UNKNOWN';
         if (!acc[type]) {
           acc[type] = { count: 0, total: 0 };
         }
         acc[type].count++;
-        acc[type].total += cost.costAmount;
+        acc[type].total += (cost.amount / 100);
         return acc;
       },
       {} as Record<string, { count: number; total: number }>

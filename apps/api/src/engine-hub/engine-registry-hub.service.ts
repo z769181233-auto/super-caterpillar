@@ -4,15 +4,15 @@ import { SemanticEnhancementLocalAdapter } from './adapters/semantic-enhancement
 import { ShotPlanningLocalAdapter } from './adapters/shot-planning.local-adapter';
 import { StructureQALocalAdapter } from './adapters/structure-qa.local-adapter';
 import { NovelAnalysisLocalAdapter } from '../engines/adapters/novel-analysis.local.adapter.NEW';
-import { CE06LocalAdapter } from '../engines/adapters/ce06.local.adapter';
-import { CE03LocalAdapter } from '../engines/adapters/ce03.local.adapter';
-import { CE04LocalAdapter } from '../engines/adapters/ce04.local.adapter';
-import { VideoMergeLocalAdapter } from '../engines/adapters/video-merge.local.adapter';
+import { CE06LocalAdapter } from '../engines/adapters/ce06_novel_parsing.adapter';
+import { CE03LocalAdapter } from '../engines/adapters/ce03_visual_density.adapter';
+import { CE04LocalAdapter } from '../engines/adapters/ce04_visual_enrichment.adapter';
+import { VideoMergeLocalAdapter } from '../engines/adapters/video_merge.adapter';
 import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
 import { AudioTTSLocalAdapter } from '../engines/adapters/audio-tts.local.adapter';
 import { AudioBGMLocalAdapter } from '../engines/adapters/audio-bgm.local.adapter';
-import { CE23IdentityLocalAdapter } from '../engines/adapters/ce23-identity.local.adapter';
-import { CE09SecurityLocalAdapter } from '../engines/adapters/ce09-security.local.adapter';
+import { CE23IdentityLocalAdapter } from '../engines/adapters/ce23_identity_lock.adapter';
+import { CE09SecurityLocalAdapter } from '../engines/adapters/ce09_security.adapter';
 import { CharacterVisualLocalAdapter } from '../engines/adapters/character-visual.local.adapter';
 
 /**

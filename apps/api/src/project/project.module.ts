@@ -21,7 +21,7 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   imports: [
     UserModule,
     PrismaModule,
-    forwardRef(() => JobModule),
+    JobModule,
     PermissionModule,
     TaskModule,
     AuthModule,
@@ -40,4 +40,4 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   ],
   exports: [ProjectService, ProjectStructureService, StructureGenerateService, SceneGraphService],
 })
-export class ProjectModule {}
+export class ProjectModule { }

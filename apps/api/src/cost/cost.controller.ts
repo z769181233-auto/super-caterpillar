@@ -25,7 +25,7 @@ class CostEventDto implements RecordCostEventParams {
 @Controller('internal/events')
 @RequireSignature() // P0-2: HMAC Guard 全局保护
 export class InternalEventsController {
-  constructor(private readonly costLedger: CostLedgerService) {}
+  constructor(private readonly costLedger: CostLedgerService) { }
 
   /**
    * HMAC 健康检查接口（仅 HMAC，不需要 JWT）
@@ -53,7 +53,7 @@ export class InternalEventsController {
   async recordCost(@Body() dto: CostEventDto) {
     try {
       const row = await this.costLedger.recordFromEvent(dto);
-      return { ok: true, id: row.id, deduplicated: row.timestamp < new Date(Date.now() - 1000) };
+      return { ok: true, id: row.id, deduplicated: row.createdAt.getTime() < Date.now() - 1000 };
     } catch (e: any) {
       const msg = String(e?.message ?? e);
       // P1-1: 将计费拒绝错误映射为 400 而非 500
@@ -71,7 +71,7 @@ export class InternalEventsController {
  */
 @Controller('projects/:projectId/costs')
 export class CostController {
-  constructor(private readonly costLedgerService: CostLedgerService) {}
+  constructor(private readonly costLedgerService: CostLedgerService) { }
 
   /**
    * 获取项目的所有成本记录(分页TODO)

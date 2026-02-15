@@ -20,7 +20,7 @@ export const PIPELINE_PROD_VIDEO_V1 = {
     },
     {
       id: 'step_4_shot_render',
-      engineKey: 'shot_render_real', // Explicit Key for Real SD
+      engineKey: 'real_shot_render', // Correct Key for Real SD
       next: ['step_5_video_render'],
     },
     {
@@ -30,7 +30,7 @@ export const PIPELINE_PROD_VIDEO_V1 = {
     },
     {
       id: 'step_6_media_security',
-      engineKey: 'ce09_real_watermark',
+      engineKey: 'ce09_security_real', // Correct Key for Real Watermark
       next: [], // End
     },
   ],

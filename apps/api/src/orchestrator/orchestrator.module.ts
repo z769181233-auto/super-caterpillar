@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { OrchestratorController } from './orchestrator.controller';
 import { OrchestratorMonitorController } from './orchestrator-monitor.controller';
 import { OrchestratorService } from './orchestrator.service';
@@ -16,6 +16,7 @@ import { PublishModule } from '../publish/publish.module';
 
 import { Stage1VerificationHook } from './hooks/stage1-verification.hook';
 import { ProductionFlowHook } from './hooks/production-flow.hook';
+import { WorkerAliasController } from './worker-alias.controller';
 
 @Module({
   imports: [
@@ -23,15 +24,16 @@ import { ProductionFlowHook } from './hooks/production-flow.hook';
     AuditLogModule,
     TaskModule,
     AuthModule,
-    forwardRef(() => JobModule),
+    JobModule,
     EngineModule,
     ApiSecurityModule,
-    forwardRef(() => ProjectModule),
+    ProjectModule,
     NovelImportModule,
     PublishModule,
+    WorkerModule,
   ],
-  controllers: [OrchestratorController, OrchestratorMonitorController],
+  controllers: [OrchestratorController, OrchestratorMonitorController, WorkerAliasController],
   providers: [OrchestratorService, Stage1VerificationHook, ProductionFlowHook],
   exports: [OrchestratorService],
 })
-export class OrchestratorModule {}
+export class OrchestratorModule { }

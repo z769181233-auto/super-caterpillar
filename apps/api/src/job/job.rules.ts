@@ -140,8 +140,8 @@ export function transitionJobStatusAdmin(
     workerId?: string;
   }
 ): void {
-  // 管理性操作只允许转换到 FAILED
-  if (to !== JobStatus.FAILED) {
+  // 管理性操作只允许转换到 FAILED 或 PENDING (用于故障恢复)
+  if (to !== JobStatus.FAILED && to !== JobStatus.PENDING) {
     throw new BadRequestException({
       code: 'JOB_STATE_VIOLATION',
       message: `Administrative transition only allows transition to FAILED, not ${to}`,

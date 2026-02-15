@@ -1,2 +1,0 @@
-PROJECT_ID=proj-m2-c15de52b
-IDENTITY_KEY=idkey-c15de52b

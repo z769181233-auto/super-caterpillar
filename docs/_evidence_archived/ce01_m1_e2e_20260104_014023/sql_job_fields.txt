@@ -1,6 +1,0 @@
-Pager usage is off.
-                  id                  | status  |       jobType        |      engineKey       | organizationId  | priority |        createdAt        | workerId | attempts | maxRetry |                         traceId                         
---------------------------------------+---------+----------------------+----------------------+-----------------+----------+-------------------------+----------+----------+----------+---------------------------------------------------------
- a53aff4d-bbcd-437a-bfa7-2d239845a14b | PENDING | CE01_REFERENCE_SHEET | ce01_reference_sheet | seed-core04-org |        0 | 2026-01-04 03:45:06.573 |          |        0 |        3 | ce01_a80b6dd9-6a9d-4f8c-a780-708d7723b21e_1767498306529
-(1 row)
-

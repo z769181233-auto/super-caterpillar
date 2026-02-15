@@ -57,15 +57,17 @@ async function main() {
   });
 
   // 4) 创建 ledger(只 1 条,保证不重复)
-  await prisma.costLedger.create({
+  await prisma.billingLedger.create({
     data: {
-      projectId: project.id,
-      jobId: job.id,
-      jobType: 'CE03_VISUAL_DENSITY' as any,
-      cost: 1,
-      createdAt: now,
-      metadata: { seed: true },
-    } as any,
+      tenantId: org.id,
+      traceId: job.id,
+      itemType: 'shot_render',
+      itemId: job.id,
+      chargeCode: 'ce03_visual_density',
+      amount: 100, // 1 credit * 100
+      status: 'POSTED',
+      evidenceRef: 'seed',
+    },
   });
 
   process.stdout.write(util.format(`PROJECT_ID=${project.id}`) + '\n');

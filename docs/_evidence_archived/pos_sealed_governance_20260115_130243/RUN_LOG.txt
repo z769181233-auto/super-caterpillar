@@ -1,3 +1,0 @@
-[POST_SEALED][INFO] RunDir=docs/_evidence/post_sealed_governance_20260115_130243
-[POST_SEALED][INFO] Self-audit OK
-[STRUCTURE][FAIL] Illegal evidence dir name: docs/_evidence/HEALTH_20260111_100002 (regex=^[a-z0-9]+(_[a-z0-9]+)*_[0-9]{8}_[0-9]{6}$)

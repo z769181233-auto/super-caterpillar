@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, Param, Logger, BadRequestException } from '@nestjs/common';
 import { EngineRegistry } from '../engine/engine-registry.service';
-import { ShotRenderRouterAdapter } from './../engines/adapters/shot-render.router.adapter';
+import { ShotRenderRouterAdapter } from './../engines/adapters/shot_render_router.adapter';
 import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { JobService } from '../job/job.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,7 +23,7 @@ export class ProdGateController {
     private readonly orchestratorService: OrchestratorService,
     private readonly jobService: JobService,
     private readonly db: PrismaService
-  ) {}
+  ) { }
 
   /**
    * Assert artifactDir is within allowed evidence directory

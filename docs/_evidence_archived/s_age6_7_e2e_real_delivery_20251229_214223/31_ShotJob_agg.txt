@@ -1,5 +1,0 @@
--[ RECORD 1 ]----------
-type   | NOVEL_ANALYSIS
-status | PENDING
-n      | 1
-

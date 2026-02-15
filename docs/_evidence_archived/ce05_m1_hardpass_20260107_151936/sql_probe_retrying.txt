@@ -1,1 +1,0 @@
-Status=RETRYING Attempts=1 LastError=Simulated failure for CE05_DIRECTOR_CONTROL_GATE_FAIL_ONCE

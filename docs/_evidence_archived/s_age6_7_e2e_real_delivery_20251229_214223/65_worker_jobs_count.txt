@@ -1,3 +1,0 @@
--[ RECORD 1 ]-+--
-n_worker_jobs | 0
-

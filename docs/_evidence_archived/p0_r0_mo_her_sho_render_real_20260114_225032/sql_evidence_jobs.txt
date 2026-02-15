@@ -1,3 +1,0 @@
-PROVIDER=local_mps
-ASSET_URI=apps/api/apps/workers/.runtime/assets/undefined_42_fc78bd3c6a35.png
-FILE_SIZE=    6145

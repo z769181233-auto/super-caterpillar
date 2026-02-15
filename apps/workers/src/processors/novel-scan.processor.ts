@@ -70,19 +70,27 @@ export async function processNovelScan(context: ProcessorContext) {
 
     console.log(`[NovelScan] Scanned ${episodes.length} episodes via Stream.`);
 
-    // 2.1 Update NovelSource (Stats)
+    // 2.1 Update NovelSource & Novel (Stats)
     const nsId = job.payload.novelSourceId;
     if (nsId) {
-      await prisma.novelSource
-        .update({
+      await Promise.all([
+        prisma.novelSource.update({
           where: { id: nsId },
           data: {
-            status: 'PARSING',
+            status: 'PARSING' as any,
             totalChapters: episodes.length,
             processedChunks: 0,
           },
-        })
-        .catch((e) => console.error(`[NovelScan] Failed to update NovelSource ${nsId}`, e));
+        }),
+        // SSSOT Sync: Update Novel (API/Frontend Model)
+        prisma.novel.update({
+          where: { projectId },
+          data: {
+            status: 'PARSING',
+            chapterCount: episodes.length,
+          },
+        }).catch(() => null), // Novel might not exist for some legacy projects
+      ]).catch((e) => console.error(`[NovelScan] Failed to sync Novel/Source ${nsId}`, e));
     }
 
     // 3. Create Season (Single Transaction) - Idempotent

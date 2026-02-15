@@ -237,6 +237,7 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
 
     // Scan outputs for text
     let foundText = '';
+    this.logger.log(`[CE11_DEBUG] Parsing outputs keys: ${Object.keys(outputs).join(',')}`);
     for (const nodeId in outputs) {
       const out = outputs[nodeId];
       if (out.text && Array.isArray(out.text)) {
@@ -244,7 +245,11 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
       }
       if (out.json && Array.isArray(out.json)) {
         // Best case
-        return { shots: out.json[0] as CE11Shot[] };
+        const jsonShots = out.json[0] as CE11Shot[];
+        if (jsonShots && jsonShots.length > 0) {
+          return { shots: jsonShots };
+        }
+        // If empty, continue scanning or fall through
       }
     }
 
@@ -256,7 +261,7 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
         if (json.shots) shots = json.shots;
         else if (Array.isArray(json)) shots = json;
 
-        if (shots) {
+        if (shots && shots.length > 0) {
           // Normalize and strip "Mock" templates if they exist in the text node
           shots.forEach((s) => {
             if (s.visual_prompt.includes('Mock Real Output:')) {
@@ -266,11 +271,12 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
           return { shots };
         }
       } catch (e) {
-        // Not JSON
+        // Not JSON or empty shots, fall through to fallback
       }
     }
 
     // If no valid JSON output found, fallback to "Derived from Input"
+    this.logger.warn(`[CE11_DEBUG] No valid shots found in JSON/Text output. Triggering fallback logic.`);
     // User Requirement: "Generate structure from prompt but must be strongly related to input"
     const sceneDesc = payload.scene_description || 'cinematic scene';
     const coreDesc = sceneDesc.length > 60 ? sceneDesc.substring(0, 60) + '...' : sceneDesc;

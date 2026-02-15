@@ -22,8 +22,8 @@ import {
 export class ProjectStructureService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => ProjectService)) private readonly projectService: ProjectService
-  ) {}
+    private readonly projectService: ProjectService
+  ) { }
 
   /**
    * S3-C: Authoritative Project Structure Tree
@@ -86,31 +86,26 @@ export class ProjectStructureService {
     // Determine structureStatus
     let structureStatus: 'EMPTY' | 'READY' = 'EMPTY';
 
-    // 4. Fetch Hierarchy (Efficient Single Query)
-    const seasons = await this.prisma.season.findMany({
+    // 4. Fetch Hierarchy (Efficient Single Query) - Directly via Project
+    const episodes = await this.prisma.episode.findMany({
       where: { projectId },
       include: {
-        episodes: {
+        scenes: {
           include: {
-            scenes: {
+            shots: {
               include: {
-                shots: {
-                  include: {
-                    assets: true, // Stage 8: Include assets
-                  },
-                  orderBy: { index: 'asc' },
-                },
+                assets: true,
               },
-              orderBy: { sceneIndex: 'asc' },
+              orderBy: { index: 'asc' },
             },
           },
-          orderBy: { index: 'asc' },
+          orderBy: { sceneIndex: 'asc' },
         },
       },
       orderBy: { index: 'asc' },
     });
 
-    if (seasons.length > 0) {
+    if (episodes.length > 0) {
       structureStatus = 'READY';
     }
 
@@ -139,78 +134,60 @@ export class ProjectStructureService {
 
     let defaultSelection: ProjectStructureTree['defaultSelection'] = null;
 
-    const tree: ProjectStructureSeasonNode[] = seasons.map((season: any) => {
-      // Auto-select first season if nothing selected
-      if (!defaultSelection) defaultSelection = { nodeId: season.id, nodeType: 'season' };
+    const tree: any[] = episodes.map((episode: any) => {
+      episodesCount++;
+      // Auto-select first episode if nothing selected
+      if (!defaultSelection) defaultSelection = { nodeId: episode.id, nodeType: 'episode' };
 
-      const episodes: ProjectStructureEpisodeNode[] = season.episodes.map((episode: any) => {
-        episodesCount++;
-        if (defaultSelection?.nodeType === 'season' && defaultSelection.nodeId === season.id) {
-          defaultSelection = { nodeId: episode.id, nodeType: 'episode' };
+      const scenes: ProjectStructureSceneNode[] = episode.scenes.map((scene: any) => {
+        scenesCount++;
+        if (defaultSelection?.nodeType === 'episode' && defaultSelection.nodeId === episode.id) {
+          defaultSelection = { nodeId: scene.id, nodeType: 'scene' };
         }
 
-        const scenes: ProjectStructureSceneNode[] = episode.scenes.map((scene: any) => {
-          scenesCount++;
-          if (defaultSelection?.nodeType === 'episode' && defaultSelection.nodeId === episode.id) {
-            defaultSelection = { nodeId: scene.id, nodeType: 'scene' };
+        const shots: ProjectStructureShotNode[] = scene.shots.map((shot: any) => {
+          shotsCount++;
+
+          const videoAsset = shot.assets?.find((a: any) => a.type === 'VIDEO');
+          let videoUrl = null;
+          if (videoAsset) {
+            videoUrl = videoAsset.storageKey;
           }
 
-          const shots: ProjectStructureShotNode[] = scene.shots.map((shot: any) => {
-            shotsCount++;
-
-            // Stage 8: Map assets to videoUrl
-            const videoAsset = shot.assets?.find((a: any) => a.type === 'VIDEO');
-            let videoUrl = null;
-            if (videoAsset) {
-              // MVP: Assume storageKey is URL if it starts with http, else prepend local serve path
-              // But simplified logic: assume storageKey is valid for now, usually pre-signed or public
-              videoUrl = videoAsset.storageKey;
-            }
-
-            return {
-              type: 'shot',
-              id: shot.id,
-              index: shot.index,
-              title: shot.title,
-              description: shot.description,
-              shotType: shot.type,
-              params: shot.params,
-              qualityScore: shot.qualityScore,
-              videoUrl,
-              assets: shot.assets,
-            };
-          });
-
           return {
-            type: 'scene',
-            id: scene.id,
-            index: scene.sceneIndex,
-            title: scene.title,
-            summary: scene.summary,
-            visualDensityScore: scene.visualDensityScore,
-            enrichedText: scene.enrichedText,
-            shots,
+            type: 'shot',
+            id: shot.id,
+            index: shot.index,
+            title: shot.title,
+            description: shot.description,
+            shotType: shot.type,
+            params: shot.params,
+            qualityScore: shot.qualityScore,
+            videoUrl,
+            assets: shot.assets,
           };
         });
 
         return {
-          type: 'episode',
-          id: episode.id,
-          index: episode.index,
-          name: episode.name,
-          summary: episode.summary,
-          scenes,
+          type: 'scene',
+          id: scene.id,
+          index: scene.sceneIndex,
+          title: scene.title,
+          summary: scene.summary,
+          visualDensityScore: scene.visualDensityScore,
+          enrichedText: scene.enrichedText,
+          shots,
         };
       });
 
       return {
-        type: 'season',
-        id: season.id,
-        index: season.index,
-        title: season.title,
-        summary: season.description,
-        episodes,
-      };
+        type: 'episode',
+        id: episode.id,
+        index: episode.index,
+        name: episode.name,
+        summary: episode.summary,
+        scenes,
+      } as ProjectStructureEpisodeNode;
     });
 
     return {
@@ -223,7 +200,7 @@ export class ProjectStructureService {
       structureStatus,
       tree,
       counts: {
-        seasons: seasons.length,
+        seasons: 0,
         episodes: episodesCount,
         scenes: scenesCount,
         shots: shotsCount,

@@ -21,24 +21,24 @@ async function main() {
   const start = new Date(mustEnv('PERIOD_START'));
   const end = new Date(mustEnv('PERIOD_END'));
 
-  const ledgers = await prisma.costLedger.findMany({
+  const ledgers = await prisma.billingLedger.findMany({
     where: {
-      projectId,
+      tenantId: projectId,
       createdAt: { gte: start, lte: end },
     },
     select: {
-      jobId: true,
-      jobType: true,
-      cost: true,
+      itemId: true,
+      itemType: true,
+      amount: true,
       createdAt: true,
     },
   });
 
   const normalized = ledgers
     .map((l) => ({
-      jobId: l.jobId,
-      jobType: String(l.jobType),
-      cost: Number(l.cost),
+      jobId: l.itemId,
+      jobType: String(l.itemType),
+      cost: Number(l.amount) / 100, // Amount to Credits
       createdAt: l.createdAt.toISOString(),
     }))
     .sort((a, b) => {

@@ -92,7 +92,7 @@ async function createOrGetTestUser(
   }
 
   // 确保用户有组织成员关系
-  const membership = await prisma.membership.findUnique({
+  let membership = await prisma.membership.findUnique({
     where: {
       userId_organizationId: {
         userId: user.id,
@@ -102,17 +102,17 @@ async function createOrGetTestUser(
   });
 
   if (!membership) {
-    await prisma.membership.create({
+    membership = await prisma.membership.create({
       data: {
         userId: user.id,
         organizationId: organization.id,
-        role: MembershipRole.Owner,
+        role: MembershipRole.OWNER,
       },
     });
   }
 
   process.stdout.write(
-    util.format(`[E2E] ✅ 用户 ID: ${user.id}, 组织 ID: ${organization.id}`) + '\n'
+    util.format(`[E2E] ✅ 用户 ID: ${user.id}, organization ID: ${organization.id}`) + '\n'
   );
   return { userId: user.id, organizationId: organization.id };
 }
@@ -162,18 +162,19 @@ async function importNovel(
   // 读取测试小说文件
   const novelText = await fs.readFile(TEST_NOVEL_FILE, 'utf-8');
 
-  // 创建 Novel
-  const novelSource = await prisma.novelSource.create({
+  // 创建 Novel (SSOT: schema.prisma line 784)
+  const novel = await (prisma.novel as any).create({
     data: {
       projectId,
       title: '测试小说',
-      rawText: novelText,
+      author: 'E2E Author',
+      organizationId,
       characterCount: novelText.length,
       fileType: 'txt',
     },
   });
 
-  process.stdout.write(util.format(`[E2E] ✅ Novel ID: ${novelSource.id}`) + '\n');
+  process.stdout.write(util.format(`[E2E] ✅ Novel ID: ${novel.id}`) + '\n');
 
   // 解析章节
   const chapterPattern =
@@ -198,38 +199,36 @@ async function importNovel(
 
   process.stdout.write(util.format(`[E2E] 解析到 ${chapters.length} 个章节`) + '\n');
 
-  // 保存章节
+  // 需要一个 Volume
+  const volume = await (prisma.novelVolume as any).create({
+    data: {
+      projectId,
+      novelSourceId: novel.id,
+      index: 1,
+      title: 'Volume 1',
+    }
+  });
+
+  // 保存章节 (SSOT: schema.prisma line 976)
   const savedChapters = [];
   for (let i = 0; i < chapters.length; i++) {
     const chapter = chapters[i];
     const savedChapter = await prisma.novelChapter.create({
       data: {
-        novelSourceId: novelSource.id,
-        orderIndex: i + 1,
+        novelSourceId: novel.id,
+        volumeId: volume.id,
+        index: i + 1,
         title: chapter.title,
-        rawText: chapter.content,
-        characterCount: chapter.content.length,
+        rawContent: chapter.content,
       },
     });
     savedChapters.push(savedChapter);
   }
 
-  // 创建 Season / Episode / Scene / Shot（用于挂载 Job）
-  const season = await prisma.season.upsert({
-    where: { projectId_index: { projectId, index: 1 } },
-    update: {},
-    create: {
-      projectId,
-      index: 1,
-      title: 'Season 1',
-      description: 'E2E season',
-      metadata: {},
-    },
-  });
-
+  // 创建 Episode / Scene / Shot（用于挂载 Job，直接关联 Project，移除 Season 层）
   const episode = await prisma.episode.create({
     data: {
-      seasonId: season.id,
+      seasonId: null as any,
       projectId,
       index: 1,
       name: 'Episode 1',
@@ -240,7 +239,8 @@ async function importNovel(
   const scene = await prisma.scene.create({
     data: {
       episodeId: episode.id,
-      index: 1,
+      projectId,
+      sceneIndex: 1, // V3.0 compliance
       title: 'Scene 1',
       summary: 'E2E scene',
     },
@@ -263,7 +263,7 @@ async function importNovel(
   const task = await taskService.create({
     type: TaskType.NOVEL_ANALYSIS,
     payload: {
-      novelSourceId: novelSource.id,
+      novelSourceId: novel.id,
       chapterIds: savedChapters.map((ch) => ch.id),
       shotId: shot.id,
     },
@@ -298,7 +298,7 @@ async function importNovel(
   }
 
   process.stdout.write(util.format(`[E2E] ✅ 创建了 ${jobIds.length} 个 Job`) + '\n');
-  return { novelSourceId: novelSource.id, taskId: task.id, jobIds };
+  return { novelSourceId: novel.id, taskId: task.id, jobIds };
 }
 
 async function triggerOrchestrator(app: any): Promise<void> {
@@ -358,7 +358,7 @@ async function waitJobsHandledByRealWorker(
     process.stdout.write(
       util.format(
         `[E2E] Job 状态: PENDING=${pending}, RUNNING=${running}, ` +
-          `SUCCEEDED=${succeeded}, FAILED=${failed}, RETRYING=${retrying}`
+        `SUCCEEDED=${succeeded}, FAILED=${failed}, RETRYING=${retrying}`
       ) + '\n'
     );
 
@@ -446,7 +446,7 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
   firstScene.shots.slice(0, 5).forEach((shot, index) => {
     process.stdout.write(
       util.format(`[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`) +
-        '\n'
+      '\n'
     );
   });
   if (firstScene.shots.length > 5) {

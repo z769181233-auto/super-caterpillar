@@ -1,5 +1,7 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException, ForbiddenException, Inject } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
+import { PrismaService } from '../prisma/prisma.service';
+import { EngineConfigStoreService } from '../engine/engine-config-store.service';
 
 interface InvokeParams {
   adapter: EngineAdapter;
@@ -25,8 +27,35 @@ export class EngineInvokerService {
   private readonly FAILURE_THRESHOLD = 5;
   private readonly RECOVERY_TIMEOUT_MS = 300000; // 5 minutes
 
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(EngineConfigStoreService) private readonly engineConfigStore: EngineConfigStoreService
+  ) { }
+
   async invoke({ adapter, input, engineKey }: InvokeParams): Promise<EngineInvokeResult> {
     const state = this.getCircuitState(engineKey);
+
+    // 1. Audit Check (V3.0 P0 Fix: Billing Enforcer)
+    // 强制校验 ledger_required 引擎是否已先行创建账本
+    const engineSpec = this.engineConfigStore.getJsonConfig(engineKey);
+    if (engineSpec?.ledger_required === true || engineSpec?.ledger_required === 'YES') {
+      const traceId = input.context?.traceId || input.payload?.traceId || (input as any).jobId;
+      if (!traceId) {
+        throw new ForbiddenException(`[BillingGuard] Engine ${engineKey} requires a valid traceId/jobId for ledger auditing.`);
+      }
+
+      const ledger = await this.prisma.billingLedger.findFirst({
+        where: { traceId: String(traceId) },
+        select: { id: true }
+      });
+
+      if (!ledger) {
+        this.logger.error(`[BillingGuard] ABORTING: Engine ${engineKey} is ledger_required but NO ledger entry found for traceId ${traceId}.`);
+        throw new ForbiddenException(
+          `[BillingGuard] Unauthorized usage of premium engine ${engineKey}. Ledger record must be created BEFORE invocation.`
+        );
+      }
+    }
 
     // 1. 检查熔断状态
     if (state.status === 'OPEN') {

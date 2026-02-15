@@ -37,7 +37,7 @@ export class ProjectService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
 
   async create(createProjectDto: CreateProjectDto, ownerId: string, organizationId: string) {
     this.logger.log('PROJECT SERVICE CREATE CALLED');
@@ -671,49 +671,28 @@ export class ProjectService {
         return tx.episode.create({
           data: {
             seasonId: projectIdOrSeasonId,
-            projectId: season.projectId, // 保留 projectId 用于向下兼容
+            projectId: season.projectId,
             index: createEpisodeDto.index,
             name:
               createEpisodeDto.name ||
               createEpisodeDto.title ||
-              `Episode ${createEpisodeDto.index}`, // Episode 使用 name 字段
+              `Episode ${createEpisodeDto.index}`,
             summary: createEpisodeDto.summary,
           },
         });
       } else {
-        // 向后兼容：直接通过 Project 创建
-        // 注意：schema 要求 seasonId 必填，所以需要先找到或创建默认 Season
+        // V3.0: 直接关联 Project，移除 Season 层
         const project = await this.findById(projectIdOrSeasonId);
-
-        // 查找或创建默认 Season（index=0）
-        let defaultSeason = await tx.season.findFirst({
-          where: {
-            projectId: projectIdOrSeasonId,
-            index: 0,
-          },
-        });
-
-        if (!defaultSeason) {
-          // 创建默认 Season
-          defaultSeason = await tx.season.create({
-            data: {
-              projectId: projectIdOrSeasonId,
-              index: 0,
-              title: '默认季',
-              description: '自动创建的默认季（向后兼容）',
-            },
-          });
-        }
 
         return tx.episode.create({
           data: {
-            seasonId: defaultSeason.id,
+            seasonId: null as any, // [Audit] Removed Season layer
             projectId: projectIdOrSeasonId,
             index: createEpisodeDto.index,
             name:
               createEpisodeDto.name ||
               createEpisodeDto.title ||
-              `Episode ${createEpisodeDto.index}`, // Episode 使用 name 字段
+              `Episode ${createEpisodeDto.index}`,
             summary: createEpisodeDto.summary,
           },
         });
@@ -723,11 +702,11 @@ export class ProjectService {
     // 清理缓存（需要获取 projectId）
     const projectId = isSeasonId
       ? (
-          await this.prisma.season.findUnique({
-            where: { id: projectIdOrSeasonId },
-            select: { projectId: true },
-          })
-        )?.projectId
+        await this.prisma.season.findUnique({
+          where: { id: projectIdOrSeasonId },
+          select: { projectId: true },
+        })
+      )?.projectId
       : projectIdOrSeasonId;
     if (projectId) {
       await this.sceneGraphService.invalidateProjectSceneGraph(projectId);
@@ -1398,9 +1377,9 @@ export class ProjectService {
         take: 10,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.costLedger.aggregate({
-        where: { projectId },
-        _sum: { totalCredits: true },
+      this.prisma.billingLedger.aggregate({
+        where: { tenantId: projectId },
+        _sum: { amount: true },
       }),
       // Real Audit Logs: Recent actions on this project
       this.prisma.auditLog.findMany({
@@ -1712,7 +1691,7 @@ export class ProjectService {
         visual: 'OK',
       },
       cost: {
-        total: { money: Math.abs(costAgg._sum?.totalCredits || 0.0) },
+        total: { money: Math.abs((costAgg._sum?.amount || 0.0) / 100) },
         last24h: { money: 0.0 }, // Pending implementation: filter by createdAt > now-24h
         currentRunEstimate: { money: 0.0 },
         alert: { level: 'OK' },

@@ -1,2 +1,0 @@
-[23:58:13] [P7-HEALTH-GREEN] healthcheck url=https://www.google.com timeout=10s interval=1s
-[23:58:13] [P7-HEALTH-GREEN] PASS

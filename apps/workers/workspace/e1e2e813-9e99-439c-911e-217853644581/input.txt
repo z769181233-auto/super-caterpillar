@@ -1,5 +1,0 @@
-file 'apps/workers/workspace/e1e2e813-9e99-439c-911e-217853644581/dummy_frame1_png.png'
-duration 2
-file 'apps/workers/workspace/e1e2e813-9e99-439c-911e-217853644581/dummy_frame2_png.png'
-duration 2
-file 'apps/workers/workspace/e1e2e813-9e99-439c-911e-217853644581/dummy_frame2_png.png'

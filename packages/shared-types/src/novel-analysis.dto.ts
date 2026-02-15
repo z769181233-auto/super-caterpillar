@@ -2,9 +2,13 @@
 
 export interface AnalyzedShot {
   index: number; // 镜头序号，从 1 开始
-  title: string; // 镜头标题（可用一句话概括）
-  summary: string; // 镜头简介
-  text: string; // 镜头原始文本
+  title?: string; // 镜头标题
+  summary?: string; // 镜头简介
+  text?: string; // 原始文本
+  shotType?: string; // [V3.0] 镜头类型 (close_up, wide等)
+  emotion?: string; // [V3.0] 情绪描述
+  novelQuote?: string; // [V3.0] 小说原句锚点
+  durationSec?: number; // [V3.0] 镜头时长
 }
 
 export interface AnalyzedScene {
@@ -30,7 +34,8 @@ export interface AnalyzedSeason {
 
 export interface AnalyzedProjectStructure {
   projectId: string;
-  seasons: AnalyzedSeason[];
+  seasons?: AnalyzedSeason[]; // [Deprecated] For V1.1 backward compatibility
+  episodes: AnalyzedEpisode[]; // [V3.0] Flat structure: Project -> Episode
   stats: {
     seasonsCount: number;
     episodesCount: number;

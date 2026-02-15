@@ -4,7 +4,6 @@ import {
   BadRequestException,
   Logger,
   Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -25,9 +24,13 @@ export class WorkerService {
     private readonly prisma: PrismaService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
-    @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService
-  ) {}
+  ) { }
+
+  // P6-2-2-1: Dispatch Rate Limiting (Anti-Cascade Flood)
+  private dispatchHistory: Map<string, number[]> = new Map();
+  private readonly CASCADE_LIMIT = 100; // max 100 jobs per 10s per worker node
+  private readonly CASCADE_WINDOW = 10000;
 
   /**
    * 注册或更新 Worker
@@ -620,5 +623,151 @@ export class WorkerService {
       );
       return orphaned.length;
     });
+  }
+
+  /**
+   * Worker 拉取下一个待处理的 Job（原子派工版）
+   * STAGE-2 S2-ORCH-BASE: 原子 Claim 实现
+   *
+   * @param workerId 业务 Worker ID (String)
+   * @returns 领取到的 Job，如果没有可用的 Job 则返回 null
+   */
+  async dispatchNextJobForWorker(workerId: string) {
+    // 1. Resolve WorkerNode (String -> UUID)
+    try {
+      const workerNode = await this.prisma.workerNode.findUnique({
+        where: { workerId },
+        include: { shotJobs: { where: { status: JobStatus.RUNNING } } },
+      });
+
+      if (!workerNode) {
+        this.logger.warn(`[WorkerService] Worker not found for dispatch: ${workerId}`);
+        return null;
+      }
+
+
+      // P6-2-2-1: Cascade Throttling Check
+      const now = Date.now();
+      let history = this.dispatchHistory.get(workerId) || [];
+      history = history.filter((t) => now - t < this.CASCADE_WINDOW);
+
+      if (history.length >= this.CASCADE_LIMIT) {
+        this.logger.warn(
+          `[WorkerService] Worker ${workerId} hit dispatch limit (${history.length}/${this.CASCADE_LIMIT}). Throttling.`
+        );
+        return null; // Force worker to wait/backoff
+      }
+
+      this.dispatchHistory.set(workerId, history);
+
+      // 2. Atomic Claim via Transaction
+      const dispatchedJob = await this.prisma.$transaction(async (tx) => {
+        // 2.0 Recovery: Check if worker already has a DISPATCHED job (e.g. restart/crash recovery)
+        const existingJob = await tx.shotJob.findFirst({
+          where: {
+            workerId: workerNode.id,
+            status: JobStatus.DISPATCHED,
+          },
+        });
+
+        if (existingJob) {
+          this.logger.log(
+            `[WorkerService] Recovering existing job ${existingJob.id} for worker ${workerId}`
+          );
+          return existingJob;
+        }
+
+        // 2.1 Find one candidate PENDING job
+        const capabilities = (workerNode.capabilities as any) || {};
+        const supportedJobTypes = (capabilities.supportedJobTypes as string[]) || [];
+
+        if (supportedJobTypes.length === 0) {
+          this.logger.warn(`[WorkerService] Worker ${workerId} has no supportedJobTypes defined.`);
+          return null;
+        }
+
+        const candidate = await tx.shotJob.findFirst({
+          where: {
+            status: JobStatus.PENDING,
+            type: { in: supportedJobTypes as any },
+          },
+          orderBy: [
+            { priority: 'desc' },
+            { createdAt: 'asc' },
+          ],
+          take: 1,
+        });
+
+        if (!candidate) {
+          return null;
+        }
+
+        // 2.2 Atomic Update
+        const updateResult = await tx.shotJob.updateMany({
+          where: {
+            id: candidate.id,
+            status: JobStatus.PENDING,
+          },
+          data: {
+            status: JobStatus.DISPATCHED,
+            workerId: workerNode.id,
+          },
+        });
+
+        if (updateResult.count === 0) {
+          return null;
+        }
+
+        // 2.3 Fetch full job details with engine binding
+        return await tx.shotJob.findUnique({
+          where: { id: candidate.id },
+          include: { engineBinding: true },
+        });
+      });
+
+      if (!dispatchedJob) {
+        return null;
+      }
+
+      // P6-2-2-1: Update dispatch history
+      const currentHistory = this.dispatchHistory.get(workerId) || [];
+      currentHistory.push(Date.now());
+      this.dispatchHistory.set(workerId, currentHistory);
+
+      // 结构化日志：JOB_CLAIMED
+      this.logger.log(
+        JSON.stringify({
+          event: 'JOB_CLAIMED',
+          jobId: dispatchedJob.id,
+          workerId,
+          workerNodeId: workerNode.id,
+          jobType: dispatchedJob.type,
+          taskId: dispatchedJob.taskId || null,
+          status: 'DISPATCHED',
+          timestamp: new Date().toISOString(),
+        })
+      );
+
+      // 记录审计日志
+      await this.auditLogService.record({
+        action: 'JOB_DISPATCHED',
+        resourceType: 'job',
+        resourceId: dispatchedJob.id,
+        details: {
+          workerId,
+          nodeId: workerNode.id,
+          jobType: dispatchedJob.type,
+          taskId: dispatchedJob.taskId,
+        },
+      });
+
+      return dispatchedJob;
+    } catch (error) {
+      this.logger.error(
+        `[WorkerService] dispatchNextJobForWorker CRITICAL ERROR: ${error}`,
+        (error as any)?.stack
+      );
+      throw error;
+    }
   }
 }

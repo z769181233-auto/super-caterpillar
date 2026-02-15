@@ -1,9 +1,0 @@
-Pager usage is off.
-                  id                  |  status  |       jobType        |      engineKey       | organizationId  | priority | workerId | attempts | maxRetry |        createdAt        |        updatedAt        |                                               lasterror_800                                               
---------------------------------------+----------+----------------------+----------------------+-----------------+----------+----------+----------+----------+-------------------------+-------------------------+-----------------------------------------------------------------------------------------------------------
- a53aff4d-bbcd-437a-bfa7-2d239845a14b | RETRYING | CE01_REFERENCE_SHEET | ce01_reference_sheet | seed-core04-org |        0 |          |        1 |        3 | 2026-01-04 03:45:06.573 | 2026-01-04 04:08:53.671 | Unsupported job type: CE01_REFERENCE_SHEET                                                               +
-                                      |          |                      |                      |                 |          |          |          |          |                         |                         | Error: Unsupported job type: CE01_REFERENCE_SHEET                                                        +
-                                      |          |                      |                      |                 |          |          |          |          |                         |                         |     at processJob (apps/workers/src/main.ts:538:11)+
-                                      |          |                      |                      |                 |          |          |          |          |                         |                         |     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-(1 row)
-

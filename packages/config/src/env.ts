@@ -237,6 +237,9 @@ export const env = {
 
   ce23RealForceDisable: process.env.CE23_REAL_FORCE_DISABLE === '1',
   orchV2AudioEnabled: process.env.ORCH_V2_AUDIO_ENABLED === '1' || true, // FORCED TRUE FOR L3 VERIFICATION
+
+  // Repository Root (Calculated)
+  repoRoot: path.resolve(__dirname, '../../..'),
 };
 
 /**

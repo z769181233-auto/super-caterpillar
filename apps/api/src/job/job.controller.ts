@@ -54,7 +54,7 @@ export class JobController {
     private readonly auditLogService: AuditLogService,
     @Inject(CapacityGateService)
     private readonly capacityGateService: CapacityGateService
-  ) {}
+  ) { }
 
   @Get('debug-key/:key')
   @Public()
@@ -133,6 +133,48 @@ export class JobController {
       requestId: randomUUID(),
       timestamp: new Date().toISOString(),
     };
+  }
+
+  /**
+   * P1-4: 通用 Project-level Job 创建接口
+   * POST /api/jobs
+   * 支持 CE06, CE07 等不需要 ShotId 的任务
+   */
+  @Post('jobs')
+  @UseGuards(QuotaGuard, BudgetGuard)
+  async createProjectJob(
+    @Body() createJobDto: CreateJobDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string,
+    @Req() req: Request
+  ): Promise<any> {
+    const u = (req as any).user;
+    const effectiveUserId = u?.userId || (req as any).apiKeyId || 'system-worker';
+
+    if (createJobDto.projectId) {
+      // 适配 JobType
+      const jobType = createJobDto.type || (createJobDto.jobType as any);
+
+      const job = await this.jobService.createCECoreJob({
+        projectId: createJobDto.projectId,
+        organizationId,
+        jobType: jobType as any,
+        payload: createJobDto.payload || {},
+        traceId: createJobDto.traceId,
+        dedupeKey: createJobDto.dedupeKey,
+        priority: createJobDto.priority,
+        isVerification: createJobDto.isVerification,
+      });
+
+      return {
+        success: true,
+        data: job,
+        requestId: randomUUID(),
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    throw new BadRequestException('Project ID is required for project-level jobs (POST /api/jobs)');
   }
 
   @Get('shots/:shotId/jobs')

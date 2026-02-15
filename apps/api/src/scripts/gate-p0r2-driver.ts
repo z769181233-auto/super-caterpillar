@@ -112,44 +112,35 @@ async function main() {
     });
   }
 
-  // Novel Source (required for CE06)
-  process.stdout.write(util.format('--- DRIVER: UPSERT novelSource ---') + '\n');
-  await prisma.novelSource.upsert({
-    where: { id: TEST_NOVEL_SOURCE_ID },
+  // Novel Source (required for CE06) - SSOT: schema.prisma line 784
+  process.stdout.write(util.format('--- DRIVER: UPSERT novel ---') + '\n');
+  await (prisma.novel as any).upsert({
+    where: { projectId: project.id },
     update: {},
     create: {
-      id: TEST_NOVEL_SOURCE_ID,
       projectId: project.id,
-      rawText: 'A dark night in the cyberpunk city.',
+      title: 'Gate P0-R2 Novel',
+      author: 'Gate System',
+      organizationId: org.id,
       fileName: 'test.txt',
       fileSize: 100,
-      // importedAt removed, likely not in schema or auto-handled
     },
   });
 
-  // Scene & Shot
+  // Episode & Scene & Shot
   process.stdout.write(
-    util.format('--- DRIVER: Creating Hierarchy (Season/Ep/Scene/Shot) ---') + '\n'
+    util.format('--- DRIVER: Creating Hierarchy (Ep/Scene/Shot) ---') + '\n'
   );
-  // Need to handle potential existing hierarchy to avoid unique constraints if run multiple times?
-  // Since we don't clear generic hierarchy, we might fail if unique index exists?
-  // Upsert is safer. But create is fine if we use random IDs or delete first.
-  // We use fixed IDs.
-  // Let's use Upsert or check existence.
-  // Actually, for Seasons/Episodes/Scene/Shot, better to cleanup first or use Upsert.
-  // I will use Upsert for robustness.
 
-  const season = await prisma.season.create({
-    data: { projectId: project.id, index: 1, title: 'S1' },
-  });
   const episode = await prisma.episode.create({
-    data: { seasonId: season.id, projectId: project.id, index: 1, name: 'E1' },
+    data: { seasonId: null, projectId: project.id, index: 1, name: 'E1' },
   });
   const scene = await prisma.scene.create({
     data: {
       id: TEST_SCENE_ID,
       episodeId: episode.id,
-      index: 1,
+      projectId: project.id,
+      sceneIndex: 1, // V3.0
       title: 'Scene 1',
       summary: 'A dark night.',
     },

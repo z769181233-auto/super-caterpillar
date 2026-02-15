@@ -1,7 +1,0 @@
-[1] evidence dir exists
-[2] evidence_index exists
-[3] metrics endpoint reachable
-[4] histogram buckets present (duration)
-[5] unauthorized admin metrics must fail (401/403)
-PASS: unauthorized status = 401
-ALL PASS

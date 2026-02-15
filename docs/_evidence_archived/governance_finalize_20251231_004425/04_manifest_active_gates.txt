@@ -1,1 +1,0 @@
-6:  "active_gates": [

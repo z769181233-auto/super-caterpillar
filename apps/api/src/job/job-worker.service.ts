@@ -3,8 +3,6 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   Logger,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { JobStatus as JobStatusEnum } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
@@ -18,14 +16,14 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
   private isProcessing = false;
 
   constructor(
-    @Inject(forwardRef(() => PrismaService)) private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => JobService)) private readonly jobService: JobService
-  ) {}
+    private readonly prisma: PrismaService,
+    private readonly jobService: JobService
+  ) { }
 
   async onModuleInit() {
     if ((env as any).enableInternalJobWorker) {
       this.logger.log(
-        `Job Worker enabled, starting with interval ${(env as any).jobWorkerInterval}ms`
+        `Job Worker enabled, starting with interval ${(env as any).jobWorkerInterval} ms`
       );
 
       // P0-4: 自动注册或更新内置 Worker 节点信息，确保 getAndMarkNextPendingJob 能领到任务
@@ -122,12 +120,12 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      this.logger.log(`[P0-4] Internal worker claimed ${claimedJobs.length} jobs atomically.`);
+      this.logger.log(`[P0 - 4] Internal worker claimed ${claimedJobs.length} jobs atomically.`);
 
       // 并发处理已领取的 Jobs
       const processingPromises = claimedJobs.map((job: any) =>
         this.jobService.processJob(job.id).catch((error: any) => {
-          this.logger.error(`Failed to process job ${job.id}:`, error);
+          this.logger.error(`Failed to process job ${job.id}: `, error);
         })
       );
 

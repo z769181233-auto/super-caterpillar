@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
 import { RedisService } from '../../redis/redis.service';
-import { ShotRenderRouterAdapter } from './shot-render.router.adapter';
+import { ShotRenderRouterAdapter } from './shot_render_router.adapter';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { createHash } from 'crypto';
@@ -31,7 +31,7 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
     private readonly shotRenderRouter: ShotRenderRouterAdapter,
     private readonly auditService: AuditService,
     private readonly costLedgerService: CostLedgerService
-  ) {}
+  ) { }
 
   supports(engineKey: string): boolean {
     return engineKey === 'shot_preview';

@@ -1,4 +1,4 @@
-import { CE07MemoryUpdateAdapter, CE07MemoryInput } from '../ce07_memory_update.local.adapter';
+import { CE07MemoryUpdateAdapter, CE07MemoryInput } from '../ce07_memory_update.adapter';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditService } from '../../../audit/audit.service';
 import { CostLedgerService } from '../../../cost/cost-ledger.service';
@@ -64,9 +64,9 @@ describe('ce07_memory_update integration', () => {
   });
 
   afterAll(async () => {
-    if (projectId) await prisma.project.delete({ where: { id: projectId } }).catch(() => {});
-    if (orgId) await prisma.organization.delete({ where: { id: orgId } }).catch(() => {});
-    if (userId) await prisma.user.delete({ where: { id: userId } }).catch(() => {});
+    if (projectId) await prisma.project.delete({ where: { id: projectId } }).catch(() => { });
+    if (orgId) await prisma.organization.delete({ where: { id: orgId } }).catch(() => { });
+    if (userId) await prisma.user.delete({ where: { id: userId } }).catch(() => { });
     await prisma.$disconnect();
   });
 
@@ -148,11 +148,11 @@ describe('ce07_memory_update integration', () => {
     });
     expect(audit).toBeTruthy();
 
-    // Verify CostLedger
-    const ledgerByJob = await prisma.costLedger.findFirst({
-      where: { jobId: jobId },
+    // Verify BillingLedger
+    const ledgerByJob = await prisma.billingLedger.findFirst({
+      where: { itemId: jobId },
     });
     expect(ledgerByJob).toBeTruthy();
-    expect(ledgerByJob?.engineKey).toBe('ce07_memory_update');
+    expect(ledgerByJob?.chargeCode).toBe('ce07_memory_update');
   });
 });

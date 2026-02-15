@@ -58,18 +58,42 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
 
       this.logger.log(`[ShotRenderLocal] Rendering 2.5D Motion from: ${sourceImagePath}`);
 
-      // Generate 2.5D Video (Zoom/Pan) from Image
-      // -loop 1: Loop image input
-      // vf: Scale to 1080p, Pad to fit, Zoompan for 5s (d=150 @ 30fps)
-      // -b:v 6M: High Bitrate
-      // Generate 2.5D Video (Zoom/Pan) from Image
-      // Quality Pass: -crf 18 -preset slow for high-fidelity composition
+      // Multi-Motion Engine (V1.0)
+      const motion = (input.payload.cameraMovement || 'ZOOM_IN').toUpperCase();
+      let zoompanFilter = '';
+
+      switch (motion) {
+        case 'ZOOM_OUT':
+          // Start at 1.15 and zoom out to 1.0 (centered)
+          zoompanFilter = `zoompan=z='max(1.15-on*0.001,1.0)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=150:s=1920x1080:fps=30`;
+          break;
+        case 'PAN_LEFT':
+          // Static zoom + Pan from right to center
+          zoompanFilter = `zoompan=z=1.15:x='(iw-iw/zoom)*(1-on/150)':y='ih/2-(ih/zoom/2)':d=150:s=1920x1080:fps=30`;
+          break;
+        case 'PAN_RIGHT':
+          // Static zoom + Pan from left to center
+          zoompanFilter = `zoompan=z=1.15:x='(iw-iw/zoom)*(on/150)':y='ih/2-(ih/zoom/2)':d=150:s=1920x1080:fps=30`;
+          break;
+        case 'TILT_UP':
+          // Static zoom + Tilt from down to center
+          zoompanFilter = `zoompan=z=1.15:x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(1-on/150)':d=150:s=1920x1080:fps=30`;
+          break;
+        case 'TILT_DOWN':
+          // Static zoom + Tilt from up to center
+          zoompanFilter = `zoompan=z=1.15:x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(on/150)':d=150:s=1920x1080:fps=30`;
+          break;
+        default:
+          // Default ZOOM_IN: Start at 1.0, zoom in to 1.15
+          zoompanFilter = `zoompan=z='min(zoom+0.0015,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=150:s=1920x1080:fps=30`;
+      }
+
       const ffmpegCmd = [
         `ffmpeg -hide_banner -y`,
         `-loop 1 -i "${sourceImagePath}"`,
         `-f lavfi -i "anullsrc=r=44100:cl=stereo"`,
         `-shortest`,
-        `-vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0015,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=150:s=1920x1080:fps=30"`,
+        `-vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,${zoompanFilter}"`,
         `-t 5`,
         `-c:v libx264 -pix_fmt yuv420p -crf 18 -preset slow`,
         `-c:a aac -b:a 192k`,

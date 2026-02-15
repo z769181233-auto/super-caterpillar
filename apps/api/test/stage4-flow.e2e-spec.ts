@@ -31,7 +31,7 @@ describe('Stage 4 Flow (E2E)', () => {
 
     // 1. Setup Test User (Admin) & Organization
     const email = `e2e-stage4-${Date.now()}@test.com`;
-    const user = await prisma.user.create({
+    const user = await prisma.users.create({
       data: {
         email,
         passwordHash: 'mock_hash',
@@ -42,7 +42,7 @@ describe('Stage 4 Flow (E2E)', () => {
     userId = user.id;
 
     // Create Organization for context
-    org = await prisma.organization.create({
+    org = await prisma.organizations.create({
       data: {
         name: 'E2E Org',
         ownerId: user.id,
@@ -50,7 +50,7 @@ describe('Stage 4 Flow (E2E)', () => {
     });
 
     // Link User to Org
-    await prisma.membership.create({
+    await prisma.memberships.create({
       data: {
         userId: user.id,
         organizationId: org.id,
@@ -59,7 +59,7 @@ describe('Stage 4 Flow (E2E)', () => {
     });
 
     // Update User default org
-    await prisma.user.update({
+    await prisma.users.update({
       where: { id: user.id },
       data: { defaultOrganizationId: org.id },
     });
@@ -70,7 +70,7 @@ describe('Stage 4 Flow (E2E)', () => {
 
     // Ensure perms exist
     for (const key of sysPerms) {
-      await prisma.permission.upsert({
+      await prisma.permissions.upsert({
         where: { key },
         create: { key, scope: 'system' },
         update: { scope: 'system' },
@@ -78,14 +78,14 @@ describe('Stage 4 Flow (E2E)', () => {
     }
 
     // Ensure 'admin' role exists
-    const adminRole = await prisma.role.upsert({
+    const adminRole = await prisma.roles.upsert({
       where: { name: 'admin' },
       create: { name: 'admin', level: 100 },
       update: {},
     });
 
     // Ensure 'OWNER' role exists (for Project Membership)
-    const ownerRole = await prisma.role.upsert({
+    const ownerRole = await prisma.roles.upsert({
       where: { name: 'OWNER' },
       create: { name: 'OWNER', level: 100 },
       update: {},
@@ -93,9 +93,9 @@ describe('Stage 4 Flow (E2E)', () => {
 
     // Assign system perms to admin
     for (const key of sysPerms) {
-      const p = await prisma.permission.findUnique({ where: { key } });
+      const p = await prisma.permissions.findUnique({ where: { key } });
       if (p) {
-        await prisma.rolePermission.upsert({
+        await prisma.role_permissions.upsert({
           where: {
             roleId_permissionId: { roleId: adminRole.id, permissionId: p.id },
           },
@@ -116,14 +116,14 @@ describe('Stage 4 Flow (E2E)', () => {
     ];
 
     for (const key of projPerms) {
-      const p = await prisma.permission.upsert({
+      const p = await prisma.permissions.upsert({
         where: { key },
         create: { key, scope: 'project' },
         update: { scope: 'project' },
       });
 
       // Assign to OWNER
-      await prisma.rolePermission.upsert({
+      await prisma.role_permissions.upsert({
         where: {
           roleId_permissionId: { roleId: ownerRole.id, permissionId: p.id },
         },
@@ -133,7 +133,7 @@ describe('Stage 4 Flow (E2E)', () => {
       // Also Assign to ADMIN? (If we want Admin to have project scope perms?
       // But Admin is not member. So getProjectPerms won't pick it up anyway unless logic changes.
       // But for safety, assign it.)
-      await prisma.rolePermission.upsert({
+      await prisma.role_permissions.upsert({
         where: {
           roleId_permissionId: { roleId: adminRole.id, permissionId: p.id },
         },
@@ -152,15 +152,15 @@ describe('Stage 4 Flow (E2E)', () => {
     // Cleanup
     if (userId) {
       // Optional: db teardown
-      await prisma.user
+      await prisma.users
         .delete({ where: { id: userId } })
-        .catch((e) => process.stdout.write(util.format('Failed to cleanup user', e) + '\n'));
+        .catch((e: any) => process.stdout.write(util.format('Failed to cleanup user', e) + '\n'));
       // Deleting user usually cascades to org/memberships if cascade delete is set up,
       // but manual cleanup of org might be safer if not.
       if (org) {
-        await prisma.organization
+        await prisma.organizations
           .delete({ where: { id: org.id } })
-          .catch((e) => process.stdout.write(util.format('Failed to cleanup org', org.id) + '\n'));
+          .catch((e: any) => process.stdout.write(util.format('Failed to cleanup org', org.id) + '\n'));
       }
     }
     await app.close();
@@ -186,9 +186,9 @@ describe('Stage 4 Flow (E2E)', () => {
     try {
       // 1.5 Manually Ensure Membership (in case ProjectService didn't link RBAC correctly)
       // Find OWNER role
-      const ownerRole = await prisma.role.findUnique({ where: { name: 'OWNER' } });
+      const ownerRole = await prisma.roles.findUnique({ where: { name: 'OWNER' } });
       if (ownerRole) {
-        await prisma.projectMember.upsert({
+        await prisma.project_members.upsert({
           where: {
             userId_projectId: { userId, projectId },
           },
@@ -223,7 +223,7 @@ describe('Stage 4 Flow (E2E)', () => {
         .expect(201);
 
       const sceneId = createSceneRes.body.data.id;
-      expect(sceneId).toBeDefined();
+      expect(episodeId).toBeDefined();
 
       // 4. Trigger Semantic Enhancement (The Step that failed before)
       // Using the simplified route we configured
@@ -247,9 +247,9 @@ describe('Stage 4 Flow (E2E)', () => {
     } finally {
       // Cleanup Project - Always delete the project to avoid pollution
       if (projectId) {
-        await prisma.project
+        await prisma.projects
           .delete({ where: { id: projectId } })
-          .catch((e) => process.stderr.write(util.format('Cleanup failed', e) + '\n'));
+          .catch((e: any) => process.stderr.write(util.format('Cleanup failed', e) + '\n'));
       }
     }
   }, 60000); // Increased timeout to 60s for LLM interactions

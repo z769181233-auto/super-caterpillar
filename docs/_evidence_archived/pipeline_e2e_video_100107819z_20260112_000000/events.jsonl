@@ -1,6 +1,0 @@
-{"ts":"2026-01-12T10:01:07.821Z","type":"verify_start","startTime":"2026-01-12T10:01:07.821Z"}
-{"ts":"2026-01-12T10:01:07.846Z","type":"data_setup_complete","projectId":"8161ec29-df8e-49a6-9bc9-d7c883a34e60","apiKey":"ak_test_78435bd6-9637-44c7-afe2-377ee227dd27"}
-{"ts":"2026-01-12T10:01:07.907Z","type":"pipeline_triggered","jobId":"1ba65c50-7200-4059-8834-28366a38e038","traceId":"ce_pipeline_edf3091d-d173-433a-a727-3bab068935f5"}
-{"ts":"2026-01-12T10:01:31.950Z","type":"TIMELINE_RENDER","error":"[FFmpeg Stage1_Shot_21403123-f4f0-4e0a-9279-942a0921e28f] Exited with code 183. Output: 6.  1.100\n[concat @ 0x157f04430] Impossible to open 'apps/workers/apps/workers/workspace/0a658576-3bbe-4c4a-a92a-f415e95d5715/dummy_frame1_png.png'\n[in#0 @ 0x157f041c0] Error opening input: Invalid data found when processing input\nError opening input file apps/workers/.runtime/frames/21403123-f4f0-4e0a-9279-942a0921e28f/frames.txt.\nError opening input files: Invalid data found when processing input\n"}
-{"ts":"2026-01-12T10:01:31.950Z","type":"verify_error","message":"Pipeline logic failure at TIMELINE_RENDER","status":"FAIL_LOGIC"}
-{"ts":"2026-01-12T10:01:31.950Z","type":"verify_end","status":"FAIL_LOGIC","endTime":"2026-01-12T10:01:31.950Z"}

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { CE06Output, EngineBillingUsage } from '../types';
 
 /**
@@ -8,114 +8,92 @@ import { CE06Output, EngineBillingUsage } from '../types';
 export async function runMultiAgentAnalysis(
   chapterText: string,
   apiKey: string,
-  model: string = 'gemini-1.5-flash'
+  modelName: string = 'gemini-1.5-flash'
 ): Promise<CE06Output> {
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+  });
+
+  const safetySettings = [
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  ];
+
   const billing: EngineBillingUsage = {
     promptTokens: 0,
     completionTokens: 0,
     totalTokens: 0,
-    model: model,
+    model: modelName,
   };
 
   try {
-    // 1. SCREENWRITER AGENT: Focuses on plot structure and scene partitioning
-    const draftResult = await callAgent(
-      apiKey,
-      model,
-      'Screenwriter Agent',
-      `You are an expert Screenwriter. 
-       Task: Split the provided chapter into logical cinematic scenes.
-       Rule: Every scene must have a unique title and capture a continuous action in one location.`,
-      `Chapter Text:\n${chapterText}`,
-      '{"scenes": [{"title": "...", "raw_text": "..."}]}'
-    );
-    updateBilling(billing, draftResult.usage);
+    // 1. SCREENWRITER AGENT
+    const draftPrompt = `Role: Screenwriter Agent\nTask: Split the provided chapter into logical cinematic scenes. Rule: Every scene must have a unique title and capture a continuous action in one location.\nYour output MUST follow this JSON schema:\n{"scenes": [{"title": "...", "raw_text": "..."}]}\n\nInput:\nChapter Text:\n${chapterText}`;
+    const draftResult = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: draftPrompt }] }],
+      // @ts-ignore
+      generationConfig: { responseMimeType: 'application/json' },
+      safetySettings,
+    });
+    const draftData = JSON.parse(draftResult.response.text());
+    // @ts-ignore
+    updateBilling(billing, draftResult.response.usageMetadata);
 
-    const scenes = draftResult.data.scenes || [];
+    const scenes = draftData.scenes || [];
     console.log(`[CE06_MULTI_AGENT] Screenwriter Agent produced ${scenes.length} scenes.`);
 
-    // 2. DIRECTOR AGENT: Focuses on visual atmosphere and character appearance
-    const visualResult = await callAgent(
-      apiKey,
-      model,
-      'Director Agent',
-      `You are a Film Director. 
-       Task: Enrich the visual descriptions for each scene.
-       Focus: Lighting, camera angles, color palette, and character visual states.
-       Requirement: Use "enriched_text" for cinematics and "visual_density_score" (0.0-1.0).`,
-      `Scenes to process:\n${JSON.stringify(scenes)}`,
-      '{"scenes": [{"title": "...", "raw_text": "...", "enriched_text": "...", "visual_density_score": 0.8, "characters": [{"name": "...", "appearance": "..."}]}]}'
-    );
-    updateBilling(billing, visualResult.usage);
+    // 2. DIRECTOR AGENT
+    const visualPrompt = `Role: Director Agent\nTask: Enrich the visual descriptions for each scene. Focus: Lighting, camera angles, color palette, and character visual states. Constraint: You MUST provide "visual_prompt", "camera_movement", and "action_description" for EVERY scene. Requirement: Characters MUST contain "id", "name", and detailed "appearance" (clothing, hair).\nYour output MUST follow this JSON schema:\n{"scenes": [{"title": "...", "raw_text": "...", "visual_prompt": "cinematic photography of...", "camera_movement": "pan left", "action_description": "walking...", "visual_density_score": 0.8, "characters": [{"name": "...", "appearance": {"clothing": "...", "hair": "..."}}]}]}\n\nInput:\nScenes to process:\n${JSON.stringify(scenes)}`;
+    const visualResult = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: visualPrompt }] }],
+      // @ts-ignore
+      generationConfig: { responseMimeType: 'application/json' },
+      safetySettings,
+    });
+    const visualData = JSON.parse(visualResult.response.text());
+    // @ts-ignore
+    updateBilling(billing, visualResult.response.usageMetadata);
 
-    // 3. AUDITOR AGENT: Final quality check
-    const auditResult = await callAgent(
-      apiKey,
-      model,
-      'Auditor Agent',
-      `You are a Quality Auditor.
-       Task: Review the scenes for consistency and character identity preservation.
-       Rule: Ensure no character description contradicts earlier scenes. Fix any JSON formatting issues.`,
-      `Full Scenes Output:\n${JSON.stringify(visualResult.data.scenes)}`,
-      '{"scenes": [{"title": "...", "raw_text": "...", "enriched_text": "...", "visual_density_score": 0.8, "characters": [...]}]}'
-    );
-    updateBilling(billing, auditResult.usage);
+    // 3. AUDITOR AGENT
+    const auditPrompt = `Role: Auditor Agent\nTask: Review the scenes for consistency and character identity preservation. Rule: Ensure no character description contradicts earlier scenes. Fix any JSON formatting issues. Check: Make sure visual_prompt and camera_movement are present and high quality.\nYour output MUST follow this JSON schema:\n{"scenes": [{"title": "...", "raw_text": "...", "visual_prompt": "...", "camera_movement": "...", "action_description": "...", "visual_density_score": 0.8, "characters": [...]}]}\n\nInput:\nFull Scenes Output:\n${JSON.stringify(visualData.scenes)}`;
+    const auditResult = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: auditPrompt }] }],
+      // @ts-ignore
+      generationConfig: { responseMimeType: 'application/json' },
+      safetySettings,
+    });
+    const auditData = JSON.parse(auditResult.response.text());
+    // @ts-ignore
+    updateBilling(billing, auditResult.response.usageMetadata);
 
     return {
       volumes: [],
       chapters: [],
-      scenes: auditResult.data.scenes || [],
+      scenes: auditData.scenes || [],
       billing_usage: billing,
       audit_trail: {
-        engineVersion: 'ce06-multi-agent-v1.4.1',
+        engineVersion: 'ce06-multi-agent-v1.5.0-sdk',
         timestamp: new Date().toISOString(),
         agents: ['Screenwriter', 'Director', 'Auditor'],
         agent_sequence: 'DRAFT -> VISUAL -> AUDIT',
       },
     };
   } catch (error: any) {
-    console.error(`[CE06_MULTI_AGENT] Error: ${error.message}`);
+    console.error(`[CE06_MULTI_AGENT] SDK Error: ${error.message}`);
     throw error;
   }
 }
 
-async function callAgent(
-  apiKey: string,
-  model: string,
-  role: string,
-  systemPrompt: string,
-  userMessage: string,
-  jsonSchema: string
-) {
-  const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
-  const fullPrompt = `Role: ${role}\n${systemPrompt}\n\nYour output MUST follow this JSON schema:\n${jsonSchema}\n\nInput:\n${userMessage}`;
-
-  const response = await axios.post(
-    url,
-    {
-      contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-      generationConfig: { responseMimeType: 'application/json' },
-    },
-    { timeout: 90000 }
-  );
-
-  const rawText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  const data = JSON.parse(rawText);
-
-  return {
-    data,
-    usage: {
-      promptTokens: response.data?.usageMetadata?.promptTokenCount || 0,
-      completionTokens: response.data?.usageMetadata?.candidatesTokenCount || 0,
-    },
-  };
-}
-
 function updateBilling(
   total: EngineBillingUsage,
-  delta: { promptTokens: number; completionTokens: number }
+  metadata?: any
 ) {
-  total.promptTokens += delta.promptTokens;
-  total.completionTokens += delta.completionTokens;
-  total.totalTokens += delta.promptTokens + delta.completionTokens;
+  if (metadata) {
+    total.promptTokens += metadata.promptTokenCount || 0;
+    total.completionTokens += metadata.candidatesTokenCount || 0;
+    total.totalTokens += metadata.totalTokenCount || 0;
+  }
 }

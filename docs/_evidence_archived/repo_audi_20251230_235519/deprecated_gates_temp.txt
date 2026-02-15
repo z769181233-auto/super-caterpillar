@@ -1,2 +1,0 @@
-tools/gate/gates/gate-stage6_11_dispatch_revive.sh
-tools/gate/gates/gate-stage6_12_hardening.sh

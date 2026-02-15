@@ -279,9 +279,9 @@ export class BillingService {
   }) {
     const { projectId, status, jobType, from, to, page = 1, pageSize = 20 } = params;
     const where: any = {};
-    if (projectId) where.projectId = projectId;
-    if (status) where.billingStatus = status;
-    if (jobType) where.jobType = jobType;
+    if (projectId) where.tenantId = projectId;
+    if (status) where.status = status;
+    if (jobType) where.itemType = jobType;
     if (from || to) {
       where.createdAt = {};
       if (from) where.createdAt.gte = from;
@@ -289,13 +289,13 @@ export class BillingService {
     }
 
     const [items, total] = await Promise.all([
-      this.prisma.costLedger.findMany({
+      this.prisma.billingLedger.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      this.prisma.costLedger.count({ where }),
+      this.prisma.billingLedger.count({ where }),
     ]);
 
     return { items, total, page, pageSize };
@@ -324,9 +324,9 @@ export class BillingService {
 
   async getReconcileStatus(projectId: string) {
     const [ledgerSum, eventSum, billingEventsCount, billedLedgerCount] = await Promise.all([
-      this.prisma.costLedger.aggregate({
-        where: { projectId, billingStatus: 'BILLED' },
-        _sum: { totalCredits: true },
+      this.prisma.billingLedger.aggregate({
+        where: { tenantId: projectId, status: 'POSTED' },
+        _sum: { amount: true },
       }),
       this.prisma.billingEvent.aggregate({
         where: { projectId },
@@ -335,12 +335,12 @@ export class BillingService {
       this.prisma.billingEvent.count({
         where: { projectId },
       }),
-      this.prisma.costLedger.count({
-        where: { projectId, billingStatus: 'BILLED' },
+      this.prisma.billingLedger.count({
+        where: { tenantId: projectId, status: 'POSTED' },
       }),
     ]);
 
-    const sumLedger = Number(ledgerSum._sum?.totalCredits || 0);
+    const sumLedger = Number((ledgerSum._sum?.amount || 0) / 100);
     const sumEvent = Math.abs(Number(eventSum._sum?.creditsDelta || 0));
 
     const drift = Math.abs(sumLedger - sumEvent);

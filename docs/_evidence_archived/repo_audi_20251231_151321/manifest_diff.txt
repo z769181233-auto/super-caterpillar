@@ -1,3 +1,0 @@
-MANIFEST_DRIFT_DETECTED
-Active gates diff: {'tools/gate/gates/gate-92_hc3_baseline_required.sh', 'tools/gate/gates/gate-91_release_artifact_audit.sh'}
-Deprecated gates diff: {'tools/gate/_deprecated/gate-91_release_artifact_audit.sh'}

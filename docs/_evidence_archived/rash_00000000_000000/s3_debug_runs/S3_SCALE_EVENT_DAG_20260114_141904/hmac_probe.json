@@ -1,2 +1,0 @@
-{"success":false,"error":{"code":"4003","message":"Invalid signature"},"requestId":"f27776a7-1b5b-4816-955f-aea7db51146a","timestamp":"2026-01-14T07:19:15.406Z","path":"/api/orchestrator/pipeline/stage1","method":"POST"}
-HTTP_CODE:400

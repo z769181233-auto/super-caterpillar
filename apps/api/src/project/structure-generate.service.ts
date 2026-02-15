@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectService } from './project.service';
 import { SceneGraphService } from './scene-graph.service';
@@ -17,7 +18,7 @@ export class StructureGenerateService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly sceneGraphService: SceneGraphService
-  ) {}
+  ) { }
 
   /**
    * 生成剧集结构
@@ -213,65 +214,52 @@ export class StructureGenerateService {
    * @param structure 解析后的项目结构
    */
   async applyAnalyzedStructureToDatabase(structure: AnalyzedProjectStructure): Promise<void> {
-    const { projectId, seasons } = structure;
+    const { projectId, seasons, episodes } = structure;
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. 删除该 project 现有的 seasons
-      // 注意：由于 schema 中已设置 onDelete: Cascade，删除 Season 会自动级联删除 Episode/Scene/Shot
-      // 但为了确保数据一致性，显式删除所有层级
-      await tx.season.deleteMany({
+      // V3.0: 我们不再删除 Season，而是清理该项目下所有旧的 Episode (级联清理 Scene/Shot)
+      await tx.episode.deleteMany({
         where: { projectId },
       });
 
-      // 2. 重新批量创建 Season / Episode / Scene / Shot
-      for (const seasonData of seasons) {
-        const season = await tx.season.create({
+      const itemsToProcess = (episodes && episodes.length > 0)
+        ? episodes
+        : (seasons?.flatMap(s => s.episodes) || []);
+
+      for (const episodeData of itemsToProcess) {
+        const episode = await tx.episode.create({
           data: {
             projectId,
-            index: seasonData.index,
-            title: seasonData.title,
-            description: seasonData.summary || undefined,
-            metadata: {},
+            seasonId: null as any,
+            index: episodeData.index,
+            name: episodeData.title,
+            summary: episodeData.summary || undefined,
           },
         });
 
-        for (const episodeData of seasonData.episodes) {
-          const episode = await tx.episode.create({
+        for (const sceneData of episodeData.scenes) {
+          const scene = await tx.scene.create({
             data: {
-              seasonId: season.id,
+              episodeId: episode.id,
               projectId,
-              index: episodeData.index,
-              name: episodeData.title,
-              summary: episodeData.summary || undefined,
+              sceneIndex: sceneData.index,
+              title: sceneData.title,
+              summary: sceneData.summary || undefined,
             },
           });
 
-          for (const sceneData of episodeData.scenes) {
-            const scene = await tx.scene.create({
-              data: {
-                episodeId: episode.id,
-                projectId,
-                sceneIndex: sceneData.index,
-                title: sceneData.title,
-                summary: sceneData.summary || undefined,
-              },
+          if (sceneData.shots && sceneData.shots.length > 0) {
+            await tx.shot.createMany({
+              data: sceneData.shots.map(shotData => ({
+                sceneId: scene.id,
+                index: shotData.index,
+                title: shotData.title || null,
+                description: shotData.summary || shotData.text?.substring(0, 200) || null,
+                type: 'novel_analysis',
+                params: { sourceText: shotData.text } as any,
+                qualityScore: {} as any,
+              })),
             });
-
-            for (const shotData of sceneData.shots) {
-              await tx.shot.create({
-                data: {
-                  sceneId: scene.id,
-                  index: shotData.index,
-                  title: shotData.title || `Shot ${shotData.index}`,
-                  description: shotData.summary || shotData.text.substring(0, 200), // 使用 summary 字段
-                  type: 'novel_analysis',
-                  params: {
-                    sourceText: shotData.text.substring(0, 500), // 保存前500字符作为参考
-                  },
-                  qualityScore: {},
-                },
-              });
-            }
           }
         }
       }
@@ -279,5 +267,47 @@ export class StructureGenerateService {
 
     // 清理缓存
     await this.sceneGraphService.invalidateProjectSceneGraph(projectId);
+  }
+
+  /**
+   * Event Listener: CE06 Novel Parsing Succeeded
+   */
+  @OnEvent('job.ce06_succeeded', { async: true })
+  async handleCE06Completed(payload: { projectId: string; result: any }) {
+    const { projectId, result } = payload;
+    const items = result?.data?.seasons || result?.data?.volumes || result?.data?.episodes || [];
+
+    if (items.length === 0) {
+      this.logger.warn(`[Event] CE06 succeeded but no structure found for project ${projectId}`);
+      return;
+    }
+
+    // 构造三层扁平架构 DTO
+    const episodes = (result?.data?.episodes)
+      ? result.data.episodes
+      : (result?.data?.seasons || result?.data?.volumes || []).flatMap((s: any) => s.episodes || []);
+
+    this.logger.log(`[Event] Applying CE06 structure to DB for project ${projectId} (Found ${episodes.length} episodes)`);
+    try {
+      await this.applyAnalyzedStructureToDatabase({
+        projectId,
+        episodes: episodes as any,
+        statis: { // NOTE: Field name in legacy might be 'stats', aligned with DTO
+          seasonsCount: 0,
+          episodesCount: episodes.length,
+          scenesCount: 0,
+          shotsCount: 0,
+        } as any,
+        stats: {
+          seasonsCount: 0,
+          episodesCount: episodes.length,
+          scenesCount: 0,
+          shotsCount: 0,
+        }
+      } as any);
+      this.logger.log(`[Event] Successfully applied CE06 structure for project ${projectId}`);
+    } catch (error: any) {
+      this.logger.error(`[Event] Failed to apply CE06 structure: ${error.message}`);
+    }
   }
 }

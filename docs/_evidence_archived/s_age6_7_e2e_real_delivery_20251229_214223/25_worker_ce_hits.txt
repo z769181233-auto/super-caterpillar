@@ -1,1 +1,0 @@
-27:[Worker HMAC] POST /api/workers/register nonce=211aa18e... timestamp=1767019355623 bodyString={"workerId":"local-worker","name":"local-worker","capabilities":{"tags":["CE06_PARSE","CE03_DENSITY","CE04_ENRICH"],"supportedModels":[],"maxBatchSize":1},"supportedJobTypes":["CE06_NOVEL_PARSING","CE03_VISUAL_DENSITY","CE04_VISUAL_ENRICHMENT","NOVEL_ANALYSIS"]}

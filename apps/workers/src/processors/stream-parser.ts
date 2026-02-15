@@ -194,6 +194,7 @@ export async function parseNovelStream(
   return {
     projectId,
     seasons,
+    episodes: [], // Stream parser currently only supports Season-based hierarchy
     stats: {
       seasonsCount,
       episodesCount,

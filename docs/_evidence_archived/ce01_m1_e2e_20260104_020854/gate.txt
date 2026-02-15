@@ -1,2 +1,0 @@
-=== GATE: CE01 Reference Sheet M1 Verification ===
-❌ [1/5] FAILED: No recent characters have reference sheets.

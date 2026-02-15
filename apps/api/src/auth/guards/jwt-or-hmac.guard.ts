@@ -26,7 +26,7 @@ export class JwtOrHmacGuard implements CanActivate {
     @Inject(forwardRef(() => JwtAuthGuard)) private readonly jwtAuthGuard: JwtAuthGuard,
     @Inject(forwardRef(() => HmacAuthGuard)) private readonly hmacAuthGuard: HmacAuthGuard,
     @Inject(Reflector) private readonly reflector: Reflector
-  ) {}
+  ) { }
 
   /**
    * P0-SEC: 大小写不敏感的 Header 读取
@@ -72,6 +72,15 @@ export class JwtOrHmacGuard implements CanActivate {
     }
 
     const req = context.switchToHttp().getRequest();
+
+    // P1-1: 门禁模式旁路（仅限测试环境）
+    if (process.env.GATE_MODE === '1' || process.env.GATE_MODE === 'test') {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('SECURITY_MISCONFIG: GATE_MODE must never be enabled in production');
+      }
+      return true;
+    }
+
     const dbg = process.env.HMAC_DEBUG === '1';
     const dlog = (obj: any) => {
       if (!dbg) return;

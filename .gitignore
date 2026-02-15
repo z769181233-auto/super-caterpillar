@@ -74,56 +74,79 @@ tmp_*.json
 tmp/
 **/*.wav
 
-# Ingest & Bench Evidence (Heavy 14GB+)
-docs/_bench/
+# Project Root Garbage Shield
+/*.sh
+/*.txt
+/*.log
+/*.json
+!package.json
+!tsconfig.json
+!turbo.json
+!pnpm-workspace.yaml
+!pnpm-lock.yaml
+!SEAL_INDEX.md
+!README.md
+!VERSION
+!CURSOR_MUST_READ.md
+!PHASE0_AUDIT_REPORT.md
+!ENGINE_MATRIX_SSOT.md
+!TASK_MATRIX_SSOT.md
+!V3_COLLECTIVE_AUDIT.md
+!NO_VERIFY_JUSTIFICATION.md
+!RISK_SUMMARY.md
+!docker-compose.yml
+
+# ============================
+# Heavy Data & Temporary Shield (Global Recursive)
+# ============================
+node_modules/
+.vscode/
+.idea/
+.DS_Store
+dist/
+.next/
+build/
+.turbo/
+brain/
+outputs/
+datasets/
 workspace/
+evidence/
 .runtime/
-tools/deploy/p7_secrets.local.env
-tools/ops/p8_secrets.local.env
-tools/ops/p8_secrets.local.env
-
-# Governance Hardening (Post-Sealing)
-/tmp_pgvector/
-/PROMOTION_INDEX.json
-
-# --- Stability governance ---
+.temp/
+.evidence/
+.gate/
 logs/
-*.pid
-.api.log
-.worker.log
-api_startup.log
-api_direct.log
-
-# ============================
-# Evidence vs Release Hygiene (SSOT)
-# ============================
-
-# Default: ignore logs & outs everywhere (Release Surface)
 *.log
+*.txt
+*.json
 *.out
+*.pid
+**/*.sh
+**/*.env
+!package.json
+!tsconfig.json
+!tsconfig*.json
+!turbo.json
+!pnpm-workspace.yaml
+!pnpm-lock.yaml
+!SEAL_INDEX.md
+!README.md
+!tools/**/*.sh
 
-# Evidence roots must be traversable
-!docs/_evidence/
-!docs/_evidence/**/
-!docs/_evidence_archived/
-!docs/_evidence_archived/**/
+# Documentation Surface
+/docs/_evidence/
+/docs/_evidence_archived/
+/docs/_bench/
+/docs/_evidence/_trash/
+!docs/_specs/
+!docs/*.md
 
-# Evidence surface: allow audit logs/outs as artifacts
-!docs/_evidence/**/*.log
-!docs/_evidence/**/*.out
-!docs/_evidence_archived/**/*.log
-!docs/_evidence_archived/**/*.out
-
-# Evidence surface: still ban noisy runtime logs (keep audit snapshots only)
-# Evidence surface: DEFAULT IGNORE ALL
-docs/_evidence/
-docs/_evidence_archived/
-
-# Whitelist: Core indexes and summaries (Force add these if not picked up)
-!docs/_evidence/**/EVIDENCE_INDEX.md
-!docs/_evidence/**/final_summary.json
-!docs/_evidence/**/job_summary_final.json
-!docs/_evidence/**/audit_coverage_final.json
-!docs/_evidence/**/l3_sample_manifest.json
-
-# Whitelist: Keep specific pinned evidence folders if they are already tracked (Git will respect tracked files)
+# Generation Artifacts
+/packages/database/src/generated/
+/packages/database/prisma/migrations/
+storage/
+videos/
+*.bak
+test-*.ts
+docs/_specs/jianlai/

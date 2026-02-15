@@ -1,11 +1,9 @@
-import * as util from 'util';
 import {
   Injectable,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
   Inject,
-  forwardRef,
   HttpException,
   HttpStatus,
   Logger,
@@ -13,7 +11,6 @@ import {
 import { randomUUID } from 'crypto';
 import { getTraceId } from '@scu/observability';
 import { PrismaService } from '../prisma/prisma.service';
-import { ProjectService } from '../project/project.service';
 import { TaskService } from '../task/task.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditActions } from '../audit/audit.constants';
@@ -97,8 +94,6 @@ export class JobService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => ProjectService))
-    private readonly projectService: ProjectService,
     @Inject(TaskService) private readonly taskService: TaskService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry,
@@ -122,13 +117,51 @@ export class JobService {
     private readonly publishedVideoService: PublishedVideoService,
     @Inject(EventEmitter2)
     private readonly eventEmitter: EventEmitter2,
-    @Inject(forwardRef(() => SceneGraphService))
-    private readonly sceneGraphService?: SceneGraphService,
-    @Inject(forwardRef(() => StructureGenerateService))
-    private readonly structureGenerateService?: StructureGenerateService,
     @Inject(FinancialSettlementService)
     private readonly financialSettlementService?: FinancialSettlementService
-  ) {}
+  ) { }
+
+  /**
+   * Localized Check Shot Ownership (Breaking cycle with ProjectService)
+   */
+  private async checkShotOwnership(shotId: string, userId: string, organizationId: string) {
+    const shot = await this.prisma.shot.findUnique({
+      where: { id: shotId },
+      include: {
+        scene: {
+          include: {
+            episode: {
+              include: {
+                project: true,
+                season: {
+                  include: {
+                    project: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!shot) {
+      throw new NotFoundException('Shot not found');
+    }
+
+    // 获取 project（支持 Season 和 Project 两种结构）
+    const shotProject = shot.scene.episode?.project ?? shot.scene.episode?.season?.project;
+    if (!shotProject) {
+      throw new NotFoundException(`Project not found for shot ${shotId}`);
+    }
+
+    // Studio v0.7: 检查组织权限
+    if (shotProject.organizationId !== organizationId) {
+      throw new ForbiddenException('You do not have permission to access this shot');
+    }
+
+    return shot;
+  }
 
   async create(
     shotId: string,
@@ -137,6 +170,7 @@ export class JobService {
     organizationId: string,
     taskId?: string
   ) {
+    console.log(`[JobService.create] DEBUG START: type=${createJobDto.type} shotId=${shotId} orgId=${organizationId}`);
     try {
       // 0. dedupeKey 幂等检查（商业级强幂等，防止重复创建）
       if (createJobDto.dedupeKey) {
@@ -192,7 +226,7 @@ export class JobService {
         }
       }
 
-      const shot = await this.projectService.checkShotOwnership(shotId, userId, organizationId);
+      const shot = await this.checkShotOwnership(shotId, userId, organizationId);
       if (!shot) throw new NotFoundException('Shot not found');
 
       const shotWithHierarchy = await this.prisma.shot.findUnique({
@@ -202,6 +236,7 @@ export class JobService {
             include: {
               episode: {
                 include: {
+                  project: true, // V3.0: Direct link
                   season: { include: { project: true } },
                 },
               },
@@ -211,7 +246,7 @@ export class JobService {
       });
       const scene = shotWithHierarchy?.scene;
       const episode = scene?.episode;
-      const project = episode?.season?.project;
+      const project = episode?.project ?? episode?.season?.project;
 
       if (!scene || !episode || !project) {
         throw new NotFoundException('Shot hierarchy is incomplete');
@@ -429,24 +464,6 @@ export class JobService {
 
     // 如果没有提供 shot/scene/episode，则为小说分析创建最小占位结构
     if (!shotId) {
-      // Season（如果不存在则创建默认 Season 1）
-      let season = await this.prisma.season.findFirst({
-        where: { projectId },
-        orderBy: { index: 'asc' },
-      });
-
-      if (!season) {
-        season = await this.prisma.season.create({
-          data: {
-            projectId,
-            index: 1,
-            title: 'Season 1',
-            description: 'Auto generated for novel analysis',
-            metadata: {},
-          },
-        });
-      }
-
       // Episode（按 chapterId 去重，避免重复创建）
       let episode: any = null;
       if (chapterId) {
@@ -457,10 +474,11 @@ export class JobService {
 
       if (!episode) {
         const episodeIndex =
-          (await this.prisma.episode.count({ where: { seasonId: season.id } })) + 1;
+          (await this.prisma.episode.count({ where: { projectId } })) + 1;
         episode = await this.prisma.episode.create({
           data: {
-            seasonId: season.id,
+            projectId,
+            seasonId: null as any, // [Audit] Removed Season layer, bypass strict TS
             chapterId: chapterId,
             index: episodeIndex,
             name: `Episode ${episodeIndex}`,
@@ -475,7 +493,6 @@ export class JobService {
         data: {
           episodeId: episode.id,
           projectId,
-          // index: 9999, // REMOVED V3.0
           sceneIndex: 9999,
           title: `Job Placeholder Scene`,
           summary: 'Auto generated for novel analysis',
@@ -487,12 +504,11 @@ export class JobService {
       const shot = await this.prisma.shot.create({
         data: {
           sceneId: scene.id,
-          index: 9999, // Use system index to prevent sync deletion
+          index: 9999,
           title: `Job Placeholder Shot`,
           description: 'Auto generated for novel analysis',
           type: 'novel_analysis',
           params: {},
-          qualityScore: {},
           organizationId,
         },
       });
@@ -504,20 +520,24 @@ export class JobService {
       include: {
         scene: {
           include: {
-            episode: { include: { season: { include: { project: true } } } },
+            episode: {
+              include: {
+                project: true, // V3.0: Direct link
+                season: { include: { project: true } },
+              },
+            },
           },
         },
       },
     });
     const scene = shot?.scene;
     const episode = scene?.episode;
-    const project = episode?.season?.project;
+    const project = episode?.project ?? episode?.season?.project;
     if (!scene || !episode || !project) {
       throw new NotFoundException('Shot hierarchy is incomplete');
     }
 
-    // Stage3-A: 在事务中创建 Job 并绑定 Engine（确保原子性，与 create() 一致）
-    // 绑定之前不要对外返回 job，绑定失败必须保证 job 不可领取
+    // Stage3-A: 在事务中创建 Job 并绑定 Engine
     const job = await this.prisma.$transaction(async (tx) => {
       // 1. 创建 Job
       const createdJob = await tx.shotJob.create({
@@ -537,22 +557,22 @@ export class JobService {
           payload: createJobDto.payload ?? {},
           engineConfig: createJobDto.engineConfig ?? {},
           isVerification: createJobDto.isVerification || false,
+          traceId,
           dedupeKey: createJobDto.dedupeKey,
         },
       });
 
-      // 2. 绑定 Engine（在同一个事务中）
+      // 2. 绑定 Engine
       const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
         JobTypeEnum.NOVEL_ANALYSIS
       );
       if (!engineSelection) {
-        // 如果没有可用 Engine，事务会自动回滚 Job 创建
         throw new BadRequestException(
           `No engine available for job type: ${JobTypeEnum.NOVEL_ANALYSIS}`
         );
       }
 
-      // 3. 创建 Engine Binding（在同一个事务中）
+      // 3. 创建 Engine Binding
       await tx.jobEngineBinding.create({
         data: {
           jobId: createdJob.id,
@@ -567,9 +587,6 @@ export class JobService {
         },
       });
 
-      this.logger.log(
-        `Auto-bound engine ${engineSelection.engineKey} to NOVEL_ANALYSIS job ${createdJob.id}`
-      );
       return createdJob;
     });
 
@@ -616,21 +633,16 @@ export class JobService {
     } = params;
     let traceId = params.traceId;
 
-    // 0. Guardrails (P10-3)
-    // 0.1 Idempotency Check
+    // 0. Guardrails
     if (dedupeKey) {
       const existing = await this.prisma.shotJob.findUnique({
         where: { dedupeKey },
       });
       if (existing) {
-        this.logger.log(
-          `[JobService] createCECoreJob: Idempotency hit for ${dedupeKey}, returning existing job ${existing.id}`
-        );
         return existing;
       }
     }
 
-    // 0.2 Budget Guard
     const budgetStatus = await this.budgetService.getBudgetStatus(organizationId, projectId);
     if (budgetStatus.level === 'BLOCK_ALL_CONSUME') {
       throw new BadRequestException(
@@ -638,12 +650,11 @@ export class JobService {
       );
     }
 
-    // 0.3 Capacity Gate (Concurrency)
     const capacity = await this.capacityGateService.checkJobCapacity(jobType, organizationId);
     if (!capacity.allowed) {
       throw new HttpException(
         {
-          statusCode: HttpStatus.TOO_MANY_REQUESTS, // 429
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
           message: capacity.reason || 'Capacity Exceeded',
           errorCode: capacity.errorCode,
         },
@@ -651,62 +662,35 @@ export class JobService {
       );
     }
 
-    // 0.4 Pipeline Timeout Injection (Metadata)
     if (payload && typeof payload === 'object') {
       payload._metadata = {
         ...payload._metadata,
-        pipeline_timeout_ms: 1800000, // 30 minutes default
+        pipeline_timeout_ms: 1800000,
         created_at: new Date().toISOString(),
       };
     }
 
     try {
       if (!traceId && taskId) {
-        // Stage13-Final: 从 Task 获取 Pipeline 级 traceId
         const task = await this.prisma.task.findUnique({
           where: { id: taskId },
           select: { traceId: true },
         });
-
-        if (task) {
-          traceId = task.traceId ?? undefined;
-        }
+        if (task) traceId = task.traceId ?? undefined;
       }
 
-      if (!traceId) {
-        // 如果没有传入 traceId 且无法从 Task 获取，生成一个新的
-        traceId = `tr_ce01_${randomUUID()}`;
-      }
-
-      // CE Job 需要占位的 episode/scene/shot（因为 ShotJob 要求这些字段必填）
-      // 创建或获取占位结构
-      let season = await this.prisma.season.findFirst({
-        where: { projectId },
-        orderBy: { index: 'asc' },
-      });
-
-      if (!season) {
-        season = await this.prisma.season.create({
-          data: {
-            projectId,
-            index: 1,
-            title: 'Season 1',
-            description: 'Auto generated for CE Core Layer',
-            metadata: {},
-          },
-        });
-      }
+      if (!traceId) traceId = `tr_ce01_${randomUUID()}`;
 
       let episode = await this.prisma.episode.findFirst({
-        where: { seasonId: season.id },
+        where: { projectId },
         orderBy: { index: 'asc' },
       });
 
       if (!episode) {
         episode = await this.prisma.episode.create({
           data: {
-            seasonId: season.id,
             projectId,
+            seasonId: null as any, // [Audit] Removed Season layer
             index: 1,
             name: 'Episode 1',
             summary: 'Auto generated for CE Core Layer',
@@ -716,7 +700,7 @@ export class JobService {
 
       let scene = await this.prisma.scene.findFirst({
         where: { episodeId: episode.id },
-        orderBy: { sceneIndex: 'asc' }, // V3.0: sceneIndex
+        orderBy: { sceneIndex: 'asc' },
       });
 
       if (!scene) {
@@ -724,7 +708,6 @@ export class JobService {
           data: {
             episodeId: episode.id,
             projectId,
-            // index: payload.sceneIndex || 1, // REMOVED V3.0
             sceneIndex: payload.sceneIndex || 1,
             title: payload.sceneTitle || 'Auto Scene',
             summary: payload.sceneDescription || 'Auto generated for CE Core Layer',
@@ -751,8 +734,6 @@ export class JobService {
         });
       }
 
-      // 创建 CE Job（使用占位的 episode/scene/shot，但如果 payload 有真实 sceneId 则优先使用）
-      // Phase 4 Fix: VIDEO_RENDER 等任务需要真实 sceneId 来正确创建资产
       const actualSceneId = payload.sceneId || scene.id;
 
       const job = await this.prisma.shotJob.create({
@@ -771,7 +752,7 @@ export class JobService {
           attempts: 0,
           payload: payload ?? {},
           engineConfig: payload.engineConfig ?? {},
-          traceId, // Stage13-Final: 使用 Pipeline 级 traceId
+          traceId,
           isVerification: isVerification || false,
           dedupeKey: dedupeKey,
         },
@@ -786,10 +767,7 @@ export class JobService {
 
       return job;
     } catch (error) {
-      this.logger.error(
-        `[JobService] createCECoreJob FAILED: ${(error as any).message}`,
-        (error as any).stack
-      );
+      this.logger.error(`[JobService] createCECoreJob FAILED: ${(error as any).message}`, (error as any).stack);
       throw error;
     }
   }
@@ -1191,15 +1169,13 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${
-          filterTypes.length > 0
-            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-            : Prisma.empty
+        ${filterTypes.length > 0
+          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+          : Prisma.empty
         }
-        ${
-          supportedEngines.length > 0
-            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-            : Prisma.empty
+        ${supportedEngines.length > 0
+          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+          : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10
@@ -1705,16 +1681,12 @@ export class JobService {
           );
         }
 
-        // 清除 SceneGraph 缓存，确保前端能获取最新结构
-        if (this.sceneGraphService && job.projectId) {
-          try {
-            await this.sceneGraphService.invalidateProjectSceneGraph(job.projectId);
-          } catch (cacheError) {
-            // 缓存清除失败不影响主流程
-            this.logger.warn(
-              `Failed to invalidate SceneGraph cache for project ${job.projectId}: ${cacheError} `
-            );
-          }
+        // 清除 SceneGraph 缓存，确保前端能获取最新结构 - Now via Event Driver
+        if (job.projectId) {
+          this.eventEmitter.emit('project.structure_changed', {
+            projectId: job.projectId,
+            context: 'NOVEL_ANALYSIS_COMPLETED',
+          });
         }
       }
 
@@ -1761,38 +1733,6 @@ export class JobService {
             }
           }
 
-          // Legacy CostLedger (Keep for backwards compatibility during transition)
-          const totalCost = updatedJob.type === JobTypeEnum.VIDEO_RENDER ? 10 : 1;
-          await this.prisma.costLedger.upsert({
-            where: {
-              jobId_attempt: {
-                jobId: updatedJob.id,
-                attempt: updatedJob.attempts,
-              },
-            },
-            create: {
-              projectId: updatedJob.projectId,
-              userId: userId || 'system',
-              jobId: updatedJob.id,
-              jobType: updatedJob.type,
-              attempt: updatedJob.attempts,
-              totalCost,
-              totalCredits: totalCost, // P1-C strictly uses this for reconciliation
-              unitCost: 0,
-              costType: 'AI_RENDER',
-              quantity: 1,
-              orgId: updatedJob.organizationId,
-              traceId: updatedJob.traceId || `trace-${updatedJob.id}`,
-            },
-            update: {
-              // Idempotent: no-op on duplicate
-              totalCost,
-              totalCredits: totalCost,
-            },
-          });
-          this.logger.log(
-            `[Job] Recorded cost_ledger for ${updatedJob.type} job ${updatedJob.id}: ${totalCost} `
-          );
         } catch (costError: any) {
           this.logger.warn(
             `[Job] Failed to record billing logic for job ${jobId}: ${costError?.message} `
@@ -2285,7 +2225,7 @@ export class JobService {
 
   async findByShotId(shotId: string, userId: string, organizationId: string) {
     // Studio v0.7: 检查权限（包含组织检查）
-    await this.projectService.checkShotOwnership(shotId, userId, organizationId);
+    await this.checkShotOwnership(shotId, userId, organizationId);
 
     return this.prisma.shotJob.findMany({
       where: {
@@ -3153,58 +3093,34 @@ export class JobService {
       where: { id: job.taskId || '' },
     });
 
+    // P5-4: Pipeline Continuity Patch
+    // Allow CE11_SHOT_GENERATOR to proceed even if parent Link (taskId) is missing
+    // This handles the case where upstream NOVEL_SCAN jobs were created without tasks
+    const isOrphanedCE11 = !task && job.type === JobTypeEnum.CE11_SHOT_GENERATOR;
+
     if (
-      !task ||
-      ((task.type as any) !== TaskTypeEnum.CE_CORE_PIPELINE &&
-        (task.type as any) !== 'PIPELINE_E2E_VIDEO')
+      !isOrphanedCE11 &&
+      (!task ||
+        ((task.type as any) !== TaskTypeEnum.CE_CORE_PIPELINE &&
+          (task.type as any) !== 'PIPELINE_E2E_VIDEO'))
     ) {
       return;
     }
 
-    const payload = (task.payload as any) || {};
-    const pipeline = payload.pipeline || [];
+    const payload = (task?.payload as any) || {};
+    // Default pipeline for orphaned CE11: Video Render -> Security
+    const pipeline = payload.pipeline || (isOrphanedCE11 ? ['VIDEO_RENDER', 'CE09_MEDIA_SECURITY'] : []);
 
     if (job.type === JobTypeEnum.CE06_NOVEL_PARSING) {
-      // Stage-3: CE06 真实层级落库 (Phase 1)
-      if (result && (result as any).data && this.structureGenerateService) {
+      // Stage-3: CE06 真实层级落库 (Phase 1) - Now via Event Driver
+      if (result && (result as any).data) {
         this.logger.log(
-          `[Stage-3] CE06 SUCCEEDED, applying structure to DB for project ${job.projectId}`
+          `[Stage-3] CE06 SUCCEEDED, emitting event for project structure sync: ${job.projectId}`
         );
-        try {
-          const seasons = (result as any).data.seasons || (result as any).data.volumes || [];
-          await this.structureGenerateService.applyAnalyzedStructureToDatabase({
-            projectId: job.projectId!,
-            seasons,
-            stats: {
-              seasonsCount: seasons.length,
-              episodesCount: seasons.reduce(
-                (acc: number, s: any) => acc + (s.episodes?.length || 0),
-                0
-              ),
-              scenesCount: seasons.reduce(
-                (acc: number, s: any) =>
-                  acc +
-                  (s.episodes?.reduce((a: number, e: any) => a + (e.scenes?.length || 0), 0) || 0),
-                0
-              ),
-              shotsCount: seasons.reduce(
-                (acc: number, s: any) =>
-                  acc +
-                  (s.episodes?.reduce(
-                    (a: number, e: any) =>
-                      a +
-                      (e.scenes?.reduce((sh: number, sc: any) => sh + (sc.shots?.length || 0), 0) ||
-                        0),
-                    0
-                  ) || 0),
-                0
-              ),
-            },
-          });
-        } catch (e: any) {
-          this.logger.error(`[Stage-3] Failed to apply structure to DB: ${e.message}`);
-          // 落库失败不应完全阻断 DAG，但会造成下游任务因找不到结构而 Fail-fast 或 fallback
-        }
+        this.eventEmitter.emit('job.ce06_succeeded', {
+          projectId: job.projectId,
+          result: result,
+        });
       }
 
       // CE06 完成，触发 CE03
@@ -3252,7 +3168,7 @@ export class JobService {
           action: 'CE_DAG_TRANSITION',
           resourceType: 'job',
           resourceId: job.id,
-          traceId: job.traceId || task.traceId || undefined,
+          traceId: job.traceId || task?.traceId || undefined,
           details: {
             from: 'CE04_VISUAL_ENRICHMENT',
             to: 'PIPELINE_TIMELINE_COMPOSE',
@@ -3263,7 +3179,7 @@ export class JobService {
         await this.createCECoreJob({
           projectId: job.projectId!,
           organizationId: job.organizationId!,
-          taskId: job.taskId!,
+          taskId: job.taskId || undefined, // TaskId might be undefined for orphaned jobs
           jobType: JobTypeEnum.PIPELINE_TIMELINE_COMPOSE,
           payload: {
             projectId: job.projectId!,
@@ -3277,6 +3193,39 @@ export class JobService {
         this.logger.log(
           `CE04 completed, triggered PIPELINE_TIMELINE_COMPOSE for project ${job.projectId}`
         );
+      }
+    } else if (job.type === JobTypeEnum.CE11_SHOT_GENERATOR) {
+      // CE11 Completed -> Trigger VIDEO_RENDER for each shot
+      // Bible V3.0: Shot Gen -> Video Render
+      if (pipeline.includes('VIDEO_RENDER') || pipeline.includes('VIDEO_EXPORT')) {
+        const resultData = (result as any)?.output || {};
+        const createdShots = resultData.shots || [];
+
+        this.logger.log(
+          `CE11 completed for job ${job.id}. Triggering VIDEO_RENDER for ${createdShots.length} shots.`
+        );
+
+        for (const shot of createdShots) {
+          // Create VIDEO_RENDER job for each shot
+          // Ensure we pass traceId and other metadata
+          await this.createCECoreJob({
+            projectId: job.projectId!,
+            organizationId: job.organizationId!,
+            taskId: job.taskId || undefined,
+            jobType: JobTypeEnum.VIDEO_RENDER,
+            payload: {
+              projectId: job.projectId,
+              sceneId: job.sceneId,
+              shotId: shot.id,
+              engineKey: 'kling_video_gen_v1', // Default to Kling/Video Gen? Or retrieve from config?
+              // For now using a generic key or relying on worker routing defaults
+              prompt: shot.visual_prompt || shot.prompt, // Pass prompt clearly
+              duration: shot.duration || 5,
+              originalJobId: job.id,
+              pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
+            },
+          });
+        }
       }
     } else if (job.type === JobTypeEnum.PIPELINE_TIMELINE_COMPOSE) {
       // 编排完成，进入正式渲染环节
@@ -3293,7 +3242,7 @@ export class JobService {
           action: 'CE_DAG_TRANSITION',
           resourceType: 'job',
           resourceId: job.id,
-          traceId: job.traceId || task.traceId || undefined,
+          traceId: job.traceId || task?.traceId || undefined,
           details: {
             from: 'PIPELINE_TIMELINE_COMPOSE',
             to: 'TIMELINE_RENDER',
@@ -3331,7 +3280,7 @@ export class JobService {
           action: 'CE_DAG_TRANSITION',
           resourceType: 'job',
           resourceId: job.id,
-          traceId: job.traceId || task.traceId || undefined,
+          traceId: job.traceId || task?.traceId || undefined,
           details: {
             from: 'TIMELINE_RENDER',
             to: 'CE09_MEDIA_SECURITY',
@@ -3352,7 +3301,7 @@ export class JobService {
             previousJobId: job.id,
             previousJobResult: result,
             pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
-            traceId: job.traceId || task.traceId || undefined,
+            traceId: job.traceId || task?.traceId || undefined,
           },
         });
         this.logger.log(`TIMELINE_RENDER completed, triggered CE09 for project ${job.projectId}`);

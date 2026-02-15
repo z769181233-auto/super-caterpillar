@@ -1,3 +1,0 @@
-{"ts":"2026-01-12T08:33:48.274Z","type":"verify_start","startTime":"2026-01-12T08:33:48.274Z"}
-{"ts":"2026-01-12T08:33:48.304Z","type":"data_setup_complete","projectId":"9af004ed-0c91-42f0-b087-9980616bf328","apiKey":"ak_test_d2241d21-4f1b-4217-9730-08f1f6cedc4d"}
-{"ts":"2026-01-12T08:33:48.364Z","type":"pipeline_triggered","jobId":"88526ce0-04f5-44bf-bc52-c9925fe11d41","traceId":"ce_pipeline_792cb682-2fd6-4511-9142-d077b36f8d5c"}

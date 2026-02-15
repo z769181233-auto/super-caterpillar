@@ -56,6 +56,7 @@ export class EngineHubController {
       return { success: true, data: result };
     } catch (e: any) {
       process.stdout.write(`!!! [15M-TRACE-CRASH] JobId: ${jobId} ERROR: ${e.message} !!!\n`);
+      console.error(`!!! [15M-STACK] JobId: ${jobId}`, e);
       throw e;
     }
   }

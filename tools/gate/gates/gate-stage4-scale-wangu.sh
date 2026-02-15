@@ -9,7 +9,7 @@ set -e
 
 # Config
 PROJECT_ID="proj_wangu_$(date +%s)"
-FILE_KEY="uploads/wangu_shendi_15m.txt"
+FILE_KEY="docs/_specs/万古神帝.txt"
 ABS_FILE_PATH="$(pwd)/$FILE_KEY"
 DB_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 

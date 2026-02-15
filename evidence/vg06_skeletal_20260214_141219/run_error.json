@@ -1,5 +1,0 @@
-{
-  "message": "Cannot POST /api/engine-hub/invoke",
-  "error": "Not Found",
-  "statusCode": 404
-}

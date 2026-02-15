@@ -1,2 +1,0 @@
-{"message":"Internal server error"}
-HTTP_CODE:500

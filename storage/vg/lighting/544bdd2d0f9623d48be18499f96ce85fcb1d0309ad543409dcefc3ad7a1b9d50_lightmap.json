@@ -1,9 +1,0 @@
-{
-  "sceneId": "scene_002",
-  "quality": "ultra",
-  "timestamp": "2026-02-14T06:29:53.040Z",
-  "lights": [],
-  "globalIllumination": 0.8,
-  "ambientOcclusion": true,
-  "rayDepth": 4
-}

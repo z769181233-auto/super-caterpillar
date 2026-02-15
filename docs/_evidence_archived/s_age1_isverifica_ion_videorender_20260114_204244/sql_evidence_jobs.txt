@@ -1,9 +1,0 @@
-              type              | is_verification |  status   |                  id                  
---------------------------------+-----------------+-----------+--------------------------------------
- PIPELINE_STAGE1_NOVEL_TO_VIDEO | f               | SUCCEEDED | cbbcde5f-0e11-4b83-aadd-82c92a861df6
- SHOT_RENDER                    | t               | SUCCEEDED | d881456f-3676-44b6-8e8f-8b1d4688aaa4
- SHOT_RENDER                    | t               | SUCCEEDED | d7837c8e-7727-4cc4-a7bb-c98044772356
- SHOT_RENDER                    | t               | SUCCEEDED | 273533f2-c694-4d5d-8e91-7120f16d89da
- VIDEO_RENDER                   | t               | SUCCEEDED | daaf4c70-ac09-4126-9b86-4cf9c4c5c55e
-(5 rows)
-

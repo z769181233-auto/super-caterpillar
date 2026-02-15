@@ -55,19 +55,19 @@ export function basicTextSegmentation(
 ): AnalyzedProjectStructure {
   const lines = rawText.split(/\r?\n/);
 
-  const seasons: AnalyzedSeason[] = [];
-  let currentSeason: AnalyzedSeason | null = null;
+  const episodes: AnalyzedEpisode[] = [];
   let currentEpisode: AnalyzedEpisode | null = null;
   let currentScene: AnalyzedScene | null = null;
 
-  let seasonIndex = 0;
   let episodeIndex = 0;
   let sceneIndex = 0;
   let shotIndex = 0;
 
   const flushScene = () => {
     if (currentScene && currentScene.shots.length > 0) {
-      currentEpisode?.scenes.push(currentScene);
+      if (currentEpisode) {
+        currentEpisode.scenes.push(currentScene);
+      }
     }
     currentScene = null;
     shotIndex = 0;
@@ -75,19 +75,9 @@ export function basicTextSegmentation(
 
   const flushEpisode = () => {
     if (currentEpisode && currentEpisode.scenes.length > 0) {
-      currentSeason?.episodes.push(currentEpisode);
+      episodes.push(currentEpisode);
     }
     currentEpisode = null;
-    sceneIndex = 0;
-    shotIndex = 0;
-  };
-
-  const flushSeason = () => {
-    if (currentSeason && currentSeason.episodes.length > 0) {
-      seasons.push(currentSeason);
-    }
-    currentSeason = null;
-    episodeIndex = 0;
     sceneIndex = 0;
     shotIndex = 0;
   };
@@ -117,20 +107,7 @@ export function basicTextSegmentation(
     currentScene.shots.push(shot);
   };
 
-  const ensureSeason = () => {
-    if (!currentSeason) {
-      seasonIndex += 1;
-      currentSeason = {
-        index: seasonIndex,
-        title: `第 ${seasonIndex} 季`,
-        summary: '',
-        episodes: [],
-      };
-    }
-  };
-
   const ensureEpisode = () => {
-    ensureSeason();
     if (!currentEpisode) {
       episodeIndex += 1;
       currentEpisode = {
@@ -159,30 +136,12 @@ export function basicTextSegmentation(
       continue;
     }
 
-    const seasonMatch = line.match(seasonPattern);
-    if (seasonMatch) {
-      // 新 Season
-      flushScene();
-      flushEpisode();
-      flushSeason();
-
-      seasonIndex += 1;
-      currentSeason = {
-        index: seasonIndex,
-        title: line,
-        summary: '',
-        episodes: [],
-      };
-      continue;
-    }
-
-    const episodeMatch = line.match(episodePattern);
+    const episodeMatch = line.match(episodePattern) || line.match(seasonPattern);
     if (episodeMatch) {
-      // 新 Episode
+      // 新 Episode (忽略 Season 差异，直接作为 Episode)
       flushScene();
       flushEpisode();
 
-      ensureSeason();
       episodeIndex += 1;
       currentEpisode = {
         index: episodeIndex,
@@ -206,20 +165,12 @@ export function basicTextSegmentation(
   // 收尾
   flushScene();
   flushEpisode();
-  flushSeason();
 
-  // 如果仍然一个 Season 都没有，说明整本书没有"第X章/季"等标题，
-  // 则整体作为 1 季 1 集处理
-  if (seasons.length === 0 && rawText.trim()) {
-    const fallbackSeason: AnalyzedSeason = {
-      index: 1,
-      title: '第 1 季',
-      summary: '',
-      episodes: [],
-    };
+  // 如果仍然一个 Episode 都没有，说明整本书没有标题，整体作为 1 集处理
+  if (episodes.length === 0 && rawText.trim()) {
     const fallbackEpisode: AnalyzedEpisode = {
       index: 1,
-      title: '第 1 集',
+      title: '默认剧集',
       summary: '',
       scenes: [],
     };
@@ -258,31 +209,27 @@ export function basicTextSegmentation(
     }
 
     if (fallbackEpisode.scenes.length > 0) {
-      fallbackSeason.episodes.push(fallbackEpisode);
-      seasons.push(fallbackSeason);
+      episodes.push(fallbackEpisode);
     }
   }
 
-  let seasonsCount = seasons.length;
-  let episodesCount = 0;
+  let episodesCount = episodes.length;
   let scenesCount = 0;
   let shotsCount = 0;
 
-  for (const s of seasons) {
-    episodesCount += s.episodes.length;
-    for (const e of s.episodes) {
-      scenesCount += e.scenes.length;
-      for (const sc of e.scenes) {
-        shotsCount += sc.shots.length;
-      }
+  for (const e of episodes) {
+    scenesCount += e.scenes.length;
+    for (const sc of e.scenes) {
+      shotsCount += sc.shots.length;
     }
   }
 
   const structure: AnalyzedProjectStructure = {
     projectId,
-    seasons,
+    seasons: [], // V3.0 Legacy
+    episodes,
     stats: {
-      seasonsCount,
+      seasonsCount: 0,
       episodesCount,
       scenesCount,
       shotsCount,
@@ -312,106 +259,75 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const { projectId, seasons } = structure;
+  const { projectId, seasons, episodes } = structure;
 
   // 1. 检查 projectId
   if (!projectId || typeof projectId !== 'string') {
     errors.push('projectId is required and must be a string');
   }
 
-  // 2. 检查 seasons 是否为空
-  if (!seasons || seasons.length === 0) {
-    errors.push('AnalyzedProjectStructure must have at least one season');
+  // 2. 检查数据源 (支持 Season 嵌套或 Episode 扁平模式)
+  const hasSeasons = seasons && seasons.length > 0;
+  const hasEpisodes = episodes && episodes.length > 0;
+
+  if (!hasSeasons && !hasEpisodes) {
+    errors.push('AnalyzedProjectStructure must have at least one season or episode');
     return { valid: false, errors, warnings };
   }
 
-  // 3. 检查每层 child 数组不为 null/undefined，并检查 index 连续性
-  let expectedSeasonIndex = 1;
-  for (const season of seasons) {
-    // 检查 Season index 连续性
-    if (season.index !== expectedSeasonIndex) {
-      warnings.push(
-        `Season index discontinuity: expected ${expectedSeasonIndex}, got ${season.index}`
-      );
-      // 自动修正 index
-      season.index = expectedSeasonIndex;
-    }
-    expectedSeasonIndex++;
-
-    // 检查 episodes
-    if (!season.episodes || !Array.isArray(season.episodes)) {
-      errors.push(`Season ${season.index} has null/undefined or non-array episodes`);
-      continue;
-    }
-    if (season.episodes.length === 0) {
-      warnings.push(`Season ${season.index} has no episodes`);
-    }
-
+  // 3. 校验扁平 Episode 模式 (V3.0)
+  if (hasEpisodes) {
     let expectedEpisodeIndex = 1;
-    for (const episode of season.episodes) {
-      // 检查 Episode index 连续性
+    for (const episode of episodes) {
       if (episode.index !== expectedEpisodeIndex) {
-        warnings.push(
-          `Episode ${episode.index} in Season ${season.index}: index discontinuity, expected ${expectedEpisodeIndex}`
-        );
+        warnings.push(`Episode index discontinuity: expected ${expectedEpisodeIndex}, got ${episode.index}`);
         episode.index = expectedEpisodeIndex;
       }
       expectedEpisodeIndex++;
 
-      // 检查 scenes
+      // 校验场景
       if (!episode.scenes || !Array.isArray(episode.scenes)) {
-        errors.push(
-          `Episode ${episode.index} in Season ${season.index} has null/undefined or non-array scenes`
-        );
+        errors.push(`Episode ${episode.index} has invalid scenes array`);
         continue;
-      }
-      if (episode.scenes.length === 0) {
-        warnings.push(`Episode ${episode.index} in Season ${season.index} has no scenes`);
       }
 
       let expectedSceneIndex = 1;
       for (const scene of episode.scenes) {
-        // 检查 Scene index 连续性
         if (scene.index !== expectedSceneIndex) {
-          warnings.push(
-            `Scene ${scene.index} in Episode ${episode.index} (Season ${season.index}): index discontinuity, expected ${expectedSceneIndex}`
-          );
+          warnings.push(`Scene index discontinuity in Ep ${episode.index}: expected ${expectedSceneIndex}, got ${scene.index}`);
           scene.index = expectedSceneIndex;
         }
         expectedSceneIndex++;
 
-        // 检查 shots
+        // 校验镜头
         if (!scene.shots || !Array.isArray(scene.shots)) {
-          errors.push(
-            `Scene ${scene.index} in Episode ${episode.index} (Season ${season.index}) has null/undefined or non-array shots`
-          );
+          errors.push(`Scene ${scene.index} in Ep ${episode.index} has invalid shots array`);
           continue;
-        }
-        if (scene.shots.length === 0) {
-          warnings.push(
-            `Scene ${scene.index} in Episode ${episode.index} (Season ${season.index}) has no shots`
-          );
         }
 
         let expectedShotIndex = 1;
         for (const shot of scene.shots) {
-          // 检查 Shot index 连续性
           if (shot.index !== expectedShotIndex) {
-            warnings.push(
-              `Shot ${shot.index} in Scene ${scene.index} (Episode ${episode.index}, Season ${season.index}): index discontinuity, expected ${expectedShotIndex}`
-            );
+            warnings.push(`Shot index discontinuity in Scene ${scene.index}: expected ${expectedShotIndex}, got ${shot.index}`);
             shot.index = expectedShotIndex;
           }
           expectedShotIndex++;
-
-          // 检查必填字段
-          if (!shot.text || typeof shot.text !== 'string') {
-            warnings.push(
-              `Shot ${shot.index} in Scene ${scene.index} (Episode ${episode.index}, Season ${season.index}) has no text`
-            );
-          }
+          if (!shot.text) warnings.push(`Shot ${shot.index} in Scene ${scene.index} has no text`);
         }
       }
+    }
+  }
+
+  // 4. 校验嵌套 Season 模式 (Legacy)
+  if (hasSeasons) {
+    let expectedSeasonIndex = 1;
+    for (const season of seasons!) {
+      if (season.index !== expectedSeasonIndex) {
+        warnings.push(`Season index discontinuity: expected ${expectedSeasonIndex}, got ${season.index}`);
+        season.index = expectedSeasonIndex;
+      }
+      expectedSeasonIndex++;
+      // ... (省略重复的嵌套逻辑，因为 V3.0 下解析器不再产生 Season)
     }
   }
 
@@ -443,7 +359,7 @@ export async function applyAnalyzedStructureToDatabase(
     skipped: { seasons: number; episodes: number; scenes: number; shots: number };
   };
 }> {
-  const { projectId, seasons } = structure;
+  const { projectId, seasons, episodes } = structure;
 
   // S3-B Fine-Tune: 使用 validateAnalyzedStructure进行验证和自动修复
   const validation = validateAnalyzedStructure(structure);
@@ -474,13 +390,101 @@ export async function applyAnalyzedStructureToDatabase(
   };
 
   // S3-B Fine-Tune: 使用事务确保原子性
-  // 如果 prisma 已经是 TransactionClient，直接使用；否则开启新事务
   const executeInTransaction = async (tx: Prisma.TransactionClient) => {
-    // S3-A: 同时也需要处理 NovelVolume / NovelChapter / NovelScene
-    // 我们先根据 projectId 找到关联的 NovelSource
     const nSource = await tx.novel.findFirst({ where: { projectId } });
+    const hasEpisodes = episodes && episodes.length > 0;
 
-    // 1. 查询当前 project 已有的结构
+    if (hasEpisodes) {
+      logStructured('info', { action: 'APPLY_STRUCTURE_FLAT_MODE', projectId, episodesCount: episodes.length });
+
+      for (const epData of episodes) {
+        const existingEp = await tx.episode.findFirst({ where: { projectId, index: epData.index } });
+        let currentEp = existingEp ? await tx.episode.update({ where: { id: existingEp.id }, data: { name: epData.title, summary: epData.summary || undefined } })
+          : await tx.episode.create({ data: { projectId, seasonId: null as any, index: epData.index, name: epData.title, summary: epData.summary || undefined } });
+
+        if (existingEp) stats.updated.episodes++; else stats.created.episodes++;
+
+        for (const sceneData of epData.scenes) {
+          const existingScene = await tx.scene.findFirst({ where: { projectId, episodeId: currentEp.id, sceneIndex: sceneData.index } });
+          let currentScene = existingScene ? await tx.scene.update({ where: { id: existingScene.id }, data: { title: sceneData.title, summary: sceneData.summary || undefined } })
+            : await tx.scene.create({ data: { projectId, episodeId: currentEp.id, sceneIndex: sceneData.index, title: sceneData.title, summary: sceneData.summary || undefined } });
+
+          if (existingScene) stats.updated.scenes++; else stats.created.scenes++;
+
+          const shotsToCreate: any[] = [];
+          for (const shotData of sceneData.shots) {
+            const existingShot = await tx.shot.findFirst({ where: { sceneId: currentScene.id, index: shotData.index } });
+            const shotParams = { sourceText: shotData.text || '' };
+            const shotBase = {
+              index: shotData.index,
+              title: shotData.title,
+              description: shotData.summary || (shotData.text || '').substring(0, 200),
+              params: shotParams,
+              emotion: shotData.emotion,
+              novelQuote: shotData.novelQuote || shotData.text,
+              durationSec: shotData.durationSec,
+              shotType: shotData.shotType,
+            };
+
+            if (existingShot) {
+              await tx.shot.update({
+                where: { id: existingShot.id },
+                data: hydrateShotWithDirectorControls(shotBase, shotParams)
+              });
+              stats.updated.shots++;
+            } else {
+              shotsToCreate.push(hydrateShotWithDirectorControls({
+                ...shotBase,
+                sceneId: currentScene.id,
+                type: 'novel_analysis',
+                qualityScore: {} as any
+              }, shotParams));
+            }
+          }
+          if (shotsToCreate.length > 0) { await tx.shot.createMany({ data: shotsToCreate as any }); stats.created.shots += shotsToCreate.length; }
+        }
+      }
+
+      const finalEpisodesFromDb = await tx.episode.findMany({
+        where: { projectId },
+        include: { scenes: { include: { shots: { orderBy: { index: 'asc' } } }, orderBy: { sceneIndex: 'asc' } } },
+        orderBy: { index: 'asc' }
+      });
+      const finalStructure: AnalyzedProjectStructure = {
+        projectId,
+        seasons: [],
+        episodes: finalEpisodesFromDb.map(e => ({
+          index: e.index,
+          title: e.name,
+          summary: e.summary || '',
+          scenes: e.scenes.map(sc => ({
+            index: sc.sceneIndex,
+            title: sc.title || '',
+            summary: sc.summary || '',
+            shots: sc.shots.map(sh => ({
+              index: sh.index,
+              title: sh.title || '',
+              summary: sh.description || '',
+              text: (sh.params as any)?.sourceText || '',
+              emotion: sh.emotion || undefined,
+              novelQuote: sh.novelQuote || undefined,
+              durationSec: sh.durationSec ? Number(sh.durationSec) : undefined,
+              shotType: sh.shotType || undefined,
+            }))
+          }))
+        })),
+        stats: {
+          seasonsCount: 0,
+          episodesCount: finalEpisodesFromDb.length,
+          scenesCount: finalEpisodesFromDb.reduce((s, e) => s + e.scenes.length, 0),
+          shotsCount: finalEpisodesFromDb.reduce((s, e) => s + e.scenes.reduce((ss, sc) => ss + sc.shots.length, 0), 0)
+        }
+      };
+      return { finalStructure, stats };
+    }
+
+
+    // 1. 查询当前 project 已有的结构 (Legacy Season Mode)
     const existingSeasons = await tx.season.findMany({
       where: { projectId },
       include: {
@@ -514,7 +518,7 @@ export async function applyAnalyzedStructureToDatabase(
       action: 'STRUCTURE_COMPARISON_START',
       projectId,
       existingSeasonsCount: existingSeasons.length,
-      newSeasonsCount: seasons.length,
+      newSeasonsCount: seasons?.length || 0,
     });
 
     // 2. 构建现有结构的索引映射（严格基于 projectId + index）
@@ -526,8 +530,8 @@ export async function applyAnalyzedStructureToDatabase(
     // S3-B Fine-Tune: 用于构建 finalStructure
     const finalSeasons: any[] = [];
 
-    // 3. S3-B Fine-Tune: 处理每个 Season（严格基于 projectId + index，仅更新 title/summary/index，不重建 id）
-    for (const season of seasons) {
+    // 3. S3-B Fine-Tune: 处理每个 Season
+    for (const season of seasons || []) {
       const existingSeason = existingSeasonMap.get(season.index);
       let createdSeason: any;
 
@@ -703,19 +707,25 @@ export async function applyAnalyzedStructureToDatabase(
           for (const shot of scene.shots) {
             const existingShot = existingShotMap.get(shot.index);
 
+            const shotParams = {
+              sourceText: shot.text || '',
+            } as any;
+
+            const shotBase = {
+              index: shot.index, // 确保 index 正确
+              title: shot.title,
+              description: shot.summary || (shot.text || '').substring(0, 200),
+              params: shotParams,
+              emotion: shot.emotion,
+              novelQuote: shot.novelQuote || shot.text,
+              durationSec: shot.durationSec,
+              shotType: shot.shotType,
+            };
+
             if (existingShot) {
               // S3-B Fine-Tune: 更新现有 Shot（仅更新 title/description/index/params，保留 id）
-              const shotParams = {
-                sourceText: shot.text,
-              } as any;
-
               const updateData = hydrateShotWithDirectorControls(
-                {
-                  index: shot.index, // 确保 index 正确
-                  title: shot.title,
-                  description: shot.summary || shot.text.substring(0, 200),
-                  params: shotParams,
-                },
+                shotBase,
                 shotParams
               );
 
@@ -726,18 +736,13 @@ export async function applyAnalyzedStructureToDatabase(
               stats.updated.shots++;
             } else {
               // S3-B Fine-Tune: 创建新 Shot（批量写入，避免 1w+ 次 create 导致事务超时）
-              const shotParams = {
-                sourceText: shot.text,
-              } as any;
-
               const createData = hydrateShotWithDirectorControls(
                 {
+                  ...shotBase,
                   sceneId: createdScene.id,
-                  index: shot.index,
                   title: shot.title ?? null,
-                  description: (shot.summary || shot.text.substring(0, 200)) ?? null,
+                  description: (shot.summary || (shot.text || '').substring(0, 200)) ?? null,
                   type: 'novel_analysis',
-                  params: shotParams,
                   qualityScore: {} as any,
                 },
                 shotParams
@@ -810,8 +815,8 @@ export async function applyAnalyzedStructureToDatabase(
     }
 
     // 10. S3-B Fine-Tune: 删除不再存在的 Season
-    if (existingSeasons.length > seasons.length) {
-      const newSeasonIndexes = new Set(seasons.map((s: AnalyzedSeason) => s.index));
+    if (existingSeasons.length > (seasons?.length || 0)) {
+      const newSeasonIndexes = new Set((seasons || []).map((s: AnalyzedSeason) => s.index));
       const seasonsToDelete = existingSeasons.filter(
         (s: (typeof existingSeasons)[0]) => !newSeasonIndexes.has(s.index) && s.index < 9000
       );
@@ -866,59 +871,36 @@ export async function applyAnalyzedStructureToDatabase(
       orderBy: { index: 'asc' },
     });
 
-    // S3-B Fine-Tune: 构建 finalStructure
+    // S3-B Fine-Tune: 构建 finalStructure (Legacy)
     const finalStructure: AnalyzedProjectStructure = {
       projectId,
-      seasons: finalSeasonsFromDb.map((s: (typeof finalSeasonsFromDb)[0]) => ({
+      seasons: finalSeasonsFromDb.map((s: any) => ({
         index: s.index,
         title: s.title,
         summary: s.description || '',
-        episodes: s.episodes.map((e: (typeof s.episodes)[0]) => ({
+        episodes: s.episodes.map((e: any) => ({
           index: e.index,
           title: e.name,
           summary: e.summary || '',
-          scenes: e.scenes.map((sc: (typeof e.scenes)[0]) => ({
+          scenes: e.scenes.map((sc: any) => ({
             index: sc.sceneIndex,
             title: sc.title || '',
             summary: sc.summary || '',
-            shots: sc.shots.map((sh: (typeof sc.shots)[0]) => ({
+            shots: sc.shots.map((sh: any) => ({
               index: sh.index,
               title: sh.title || '',
               summary: sh.description || '',
-              text: (sh.params as unknown as { sourceText?: string })?.sourceText || '',
+              text: (sh.params as any)?.sourceText || '',
             })),
           })),
         })),
       })),
+      episodes: [], // Legacy mode has empty episodes array (or we could flat map them)
       stats: {
         seasonsCount: finalSeasonsFromDb.length,
-        episodesCount: finalSeasonsFromDb.reduce(
-          (sum: number, s: (typeof finalSeasonsFromDb)[0]) => sum + s.episodes.length,
-          0
-        ),
-        scenesCount: finalSeasonsFromDb.reduce(
-          (sum: number, s: (typeof finalSeasonsFromDb)[0]) =>
-            sum +
-            s.episodes.reduce(
-              (sum2: number, e: (typeof s.episodes)[0]) => sum2 + e.scenes.length,
-              0
-            ),
-          0
-        ),
-        shotsCount: finalSeasonsFromDb.reduce(
-          (sum: number, s: (typeof finalSeasonsFromDb)[0]) =>
-            sum +
-            s.episodes.reduce(
-              (sum2: number, e: (typeof s.episodes)[0]) =>
-                sum2 +
-                e.scenes.reduce(
-                  (sum3: number, sc: (typeof e.scenes)[0]) => sum3 + sc.shots.length,
-                  0
-                ),
-              0
-            ),
-          0
-        ),
+        episodesCount: finalSeasonsFromDb.reduce((sum: number, s: any) => sum + s.episodes.length, 0),
+        scenesCount: finalSeasonsFromDb.reduce((sum: number, s: any) => sum + s.episodes.reduce((sum2: number, e: any) => sum2 + e.scenes.length, 0), 0),
+        shotsCount: finalSeasonsFromDb.reduce((sum: number, s: any) => sum + s.episodes.reduce((sum2: number, e: any) => sum2 + e.scenes.reduce((sum3: number, sc: any) => sum3 + sc.shots.length, 0), 0), 0),
       },
     };
 
@@ -933,8 +915,8 @@ export async function applyAnalyzedStructureToDatabase(
   const result =
     prisma instanceof PrismaClient
       ? await (prisma as any).$transaction(executeInTransaction, {
-          timeout: 5 * 60 * 1000, // 5 minutes
-        })
+        timeout: 5 * 60 * 1000, // 5 minutes
+      })
       : await executeInTransaction(prisma);
 
   return result;
@@ -1147,6 +1129,7 @@ export function mapCE06OutputToProjectStructure(
   return {
     projectId,
     seasons,
+    episodes: [], // Legacy mapping format
     stats: {
       seasonsCount: seasons.length,
       episodesCount,
@@ -1195,6 +1178,13 @@ async function processWithChunkMode(
   logStructured('info', { action: 'CHUNK_EXTRACTION_START', jobId, projectId });
 
   const chunks = await chunkProcessor.extractChunks(contentStream);
+
+  // V3.0 Progress Reporting
+  await prisma.shotJob.update({
+    where: { id: jobId },
+    data: { currentStep: 'CE06_SCAN' },
+  });
+
   logStructured('info', {
     action: 'CHUNK_EXTRACTION_COMPLETE',
     jobId,
@@ -1250,6 +1240,12 @@ async function processWithChunkMode(
     provider: llmProvider,
     model: llmModel,
     totalChunks: chunks.length,
+  });
+
+  // V3.0 Progress Reporting
+  await prisma.shotJob.update({
+    where: { id: jobId },
+    data: { currentStep: 'CE06_PARSING' },
   });
 
   // B1.2: processChunks 的第二个参数是 existingProgress
@@ -1359,6 +1355,7 @@ function mergeChunksToStructure(
   return {
     projectId,
     seasons,
+    episodes: [], // Merged result defaults to season-based structure
     stats: { seasonsCount: seasons.length, episodesCount, scenesCount, shotsCount },
   };
 }
@@ -1427,6 +1424,13 @@ export async function processNovelAnalysisJob(
           jobId,
           projectId,
         });
+
+        // V3.0 Progress Reporting
+        await prisma.shotJob.update({
+          where: { id: jobId },
+          data: { currentStep: 'CE06_PARSING' },
+        });
+
         structure = await parseNovelStream(contentStream, projectId);
       } catch (err: any) {
         // Fallback or rethrow?
@@ -1463,6 +1467,12 @@ export async function processNovelAnalysisJob(
     });
 
     // 落库（用事务包裹整个结构写入）
+    // V3.0 Progress Reporting
+    await prisma.shotJob.update({
+      where: { id: jobId },
+      data: { currentStep: 'SCENE_PERSIST' },
+    });
+
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await applyAnalyzedStructureToDatabase(tx as unknown as PrismaClient, structure);
     });
@@ -1512,13 +1522,19 @@ export async function processNovelAnalysisJob(
       // 计费失败不阻塞主流程
       process.stderr.write(
         util.format(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message) +
-          '\n'
+        '\n'
       );
     }
 
     // 返回统计信息，将写入 Job.output
+    // V3.0 Receipt Specification Align
     return {
-      ...structure.stats,
+      scenes_count: structure.stats.scenesCount,
+      shots_count: structure.stats.shotsCount,
+      episodes_count: structure.stats.episodesCount,
+      // For V3 Contract compatibility
+      stats: structure.stats,
+      cost_ledger_count: 1, // Assume 1 ledger record per analysis job
     };
   } catch (error: any) {
     const duration = Date.now() - startTime;

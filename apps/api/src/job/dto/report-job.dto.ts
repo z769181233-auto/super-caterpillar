@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsObject, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsObject, IsString, IsInt } from 'class-validator';
 import { JobStatus } from 'database';
 
 export class ReportJobDto {
@@ -13,10 +13,13 @@ export class ReportJobDto {
   @IsOptional()
   errorMessage?: string;
 
-  @IsObject()
   @IsOptional()
   metrics?: any;
 
+  @IsInt()
   @IsOptional()
   attempts?: number;
+
+  @IsOptional()
+  context?: any;
 }

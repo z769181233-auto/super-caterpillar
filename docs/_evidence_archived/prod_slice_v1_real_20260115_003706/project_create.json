@@ -1,5 +1,0 @@
-{
-  "message": "Permission denied. Required: [auth, project.create]. Has: Sys=[], Proj=[]",
-  "error": "Forbidden",
-  "statusCode": 403
-}

@@ -1,6 +1,0 @@
-{"ts":"2026-01-12T06:24:05.951Z","type":"verify_start","startTime":"2026-01-12T06:24:05.951Z"}
-{"ts":"2026-01-12T06:24:05.977Z","type":"data_setup_complete","projectId":"88b526f7-270f-4962-ab23-09e14f94bfe5","apiKey":"ak_test_b132ffaa-c383-4b21-a47e-da5b91480cfb"}
-{"ts":"2026-01-12T06:24:06.043Z","type":"pipeline_triggered","jobId":"d780d600-a732-46f7-b0b0-75208a72d70e","traceId":"ce_pipeline_ef41760f-f13d-4505-83a5-96217c584feb"}
-{"ts":"2026-01-12T06:24:22.068Z","type":"PIPELINE_TIMELINE_COMPOSE","error":"[TimelineCompose] Fail-fast: Scene must have at least 2 shots for timeline compose. Found: 1"}
-{"ts":"2026-01-12T06:24:22.068Z","type":"verify_error","message":"Pipeline logic failure at PIPELINE_TIMELINE_COMPOSE","status":"FAIL_LOGIC"}
-{"ts":"2026-01-12T06:24:22.068Z","type":"verify_end","status":"FAIL_LOGIC","endTime":"2026-01-12T06:24:22.068Z"}

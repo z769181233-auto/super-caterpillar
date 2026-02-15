@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JobController } from './job.controller';
 import { JobGenericController } from './job-generic.controller';
@@ -36,7 +36,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
   imports: [
     ConfigModule,
     PrismaModule,
-    forwardRef(() => ProjectModule), // ProjectModule 包含 SceneGraphService
     PermissionModule,
     TaskModule, // 导入 TaskModule 以使用 QualityScoreService
     AuthModule,
@@ -52,7 +51,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     ShotDirectorModule, // P0-3: 提供 DirectorConstraintSolverService
     CostModule,
     PublishModule,
-    forwardRef(() => OrchestratorModule), // Stage 3: Event-Driven DAG
   ],
   controllers: [JobController, JobGenericController, JobWatchdogController],
   providers: [
@@ -65,6 +63,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
   ],
   exports: [JobService, JobReportFacade],
 })
-export class JobModule {}
+export class JobModule { }
 
 // 注意：JobController 中需要注入 AuditLogService，但 AuditLogModule 已经导入，应该可以正常工作

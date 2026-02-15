@@ -1,9 +1,0 @@
-{
-    "phase": "D-FIX-V4",
-    "timestamp": "2026-01-27T21:30:00Z",
-    "sampleShotSpecPath": "E0001_full.shot.json",
-    "sampleShotSpecSha256": "88a592a5a9c3ac74f13b3f9ab1e1ea472e815de636585da739c0891a109e529b",
-    "script_spec_ssot_sha256": "a3dc720ed76e65ee8230c5070661d6706d3f543252e8fef6211756038f66a282",
-    "asset_registry_ssot_sha256": "c4744968ef07b40ee13fcd5c990b761655e53935bee779c52ab27abd32a1a4c5",
-    "render_map_sha256": "8bc76607d2a48996be264004e7c385b3c1ef92067dbfe6da14657677ddb15087"
-}

@@ -42,7 +42,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { StorageModule } from './storage/storage.module';
-import { SeasonsModule } from './seasons/seasons.module';
+
 import { FeatureFlagModule } from './feature-flag/feature-flag.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CostModule } from './cost/cost.module';
@@ -118,7 +118,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     QualityModule, // 质量指标写入模块（QualityMetricsWriter）
     HealthModule, // 健康检查端点（/health, /ping, /metrics）
     StorageModule, // Stage 8: Local Storage Module
-    SeasonsModule, // 补齐 Seasons API (Smoke Test Fix)
+
     CostModule, // P0: Cost tracking & billing foundation
     AdminModule, // P1-2: Admin endpoints for gate scripts (GATE_MODE=1 only)
     V3Module, // V3.0 Contract Facade

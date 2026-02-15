@@ -23,8 +23,8 @@ export interface CharacterState {
 
 export interface GraphStateSnapshot {
   characters: CharacterState[];
-  scene_index: number;
-  chapter_id: string;
+  sceneIndex: number;
+  chapterId: string;
 }
 
 /**
@@ -87,7 +87,7 @@ export async function updateCharacterStates(params: {
       chapterId,
       characterStates: {
         characters: characterStates,
-        updated_at: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       } as any,
     },
   });

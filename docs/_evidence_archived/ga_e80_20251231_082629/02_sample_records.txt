@@ -1,7 +1,0 @@
-                  id                  | kind | name |        traceId        | value |                                    payload                                     
---------------------------------------+------+------+-----------------------+-------+--------------------------------------------------------------------------------
- 590d21c3-fd0f-494f-95a4-4be1800b46a4 | COST | GPU  | test-trace-1767144379 |  3600 | {"orgId": "test-org-001", "projectId": "test-project-001", "modelFactor": 1.0}
- 10dd7859-ed66-4b6d-9150-54964f11e225 | COST | GPU  | test-trace-1767144354 |  3600 | {"orgId": "test-org-001", "projectId": "test-project-001", "modelFactor": 1.0}
- 282bc571-48f4-4b74-9995-7460c0660b09 | COST | GPU  | test-trace-1767144337 |  3600 | {"orgId": "test-org-001", "projectId": "test-project-001", "modelFactor": 1.0}
-(3 rows)
-

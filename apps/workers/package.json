@@ -8,6 +8,7 @@
     "start": "node dist/apps/workers/src/main.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "5.22.0",
     "@scu/billing": "workspace:*",
     "@scu/config": "workspace:*",

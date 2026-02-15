@@ -8,30 +8,43 @@ import { AnalyzedProjectStructure } from '../novel-analysis.dto';
 /**
  * 标准引擎调用入参（对所有引擎通用）
  */
-export interface EngineInvocationRequest<TInput = unknown> {
+import { IsString, IsOptional, Allow } from 'class-validator';
+
+/**
+ * 标准引擎调用入参（对所有引擎通用）
+ */
+export class EngineInvocationRequest<TInput = unknown> {
   /**
    * 引擎标识（如 "novel_analysis", "image_generation"）
    */
-  engineKey: string;
+  @IsString()
+  engineKey!: string;
 
   /**
    * 引擎版本（如 "v1" / "default"）
    */
+  @IsOptional()
+  @IsString()
   engineVersion?: string;
 
   /**
    * Job 类型（可选，用于推断默认引擎）
    */
+  @IsOptional()
+  @IsString()
   jobType?: string;
 
   /**
    * 具体业务输入
    */
-  payload: TInput;
+  @Allow()
+  payload!: TInput;
 
   /**
    * 元数据（任务上下文信息）
    */
+  @IsOptional()
+  @Allow()
   metadata?: {
     taskId?: string;
     jobId?: string;
@@ -43,6 +56,12 @@ export interface EngineInvocationRequest<TInput = unknown> {
     traceId?: string;
     [key: string]: unknown;
   };
+  /**
+   * 上下文信息（由 Worker 传递，用于追踪）
+   */
+  @IsOptional()
+  @Allow()
+  context?: any;
 }
 
 /**

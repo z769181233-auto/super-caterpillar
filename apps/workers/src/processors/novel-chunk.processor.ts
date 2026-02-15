@@ -91,20 +91,12 @@ export async function processNovelChunk(context: ProcessorContext) {
           `[NovelChunk] Multi-Agent failed: ${err.message}. Falling back to basic segmentation.`
         );
         const structure = basicTextSegmentation(chunkText, projectId);
-        if (structure.seasons.length > 0 && structure.seasons[0].episodes.length > 0) {
-          structure.seasons[0].episodes.forEach((ep) => {
-            analyzedScenes.push(...ep.scenes);
-          });
-        }
+        analyzedScenes = structure.episodes.flatMap(ep => ep.scenes);
       }
     } else {
       // Legacy Logic: Basic Regex-based segmentation
       const structure = basicTextSegmentation(chunkText, projectId);
-      if (structure.seasons.length > 0 && structure.seasons[0].episodes.length > 0) {
-        structure.seasons[0].episodes.forEach((ep) => {
-          analyzedScenes.push(...ep.scenes);
-        });
-      }
+      analyzedScenes = structure.episodes.flatMap(ep => ep.scenes);
     }
 
     if (analyzedScenes.length === 0) {
@@ -208,7 +200,7 @@ export async function processNovelChunk(context: ProcessorContext) {
           },
         });
       }
-    });
+    }, { timeout: 60000 });
 
     console.log(
       `[NovelChunk] Success. Imported ${analyzedScenes.length} scenes. Transaction Committed.`
@@ -287,26 +279,38 @@ export async function processNovelChunk(context: ProcessorContext) {
 
       if (shouldUpdateDB) {
         const ns = await prisma.novelSource
-          .update({
+          .findUnique({
             where: { id: nsId },
-            data: {
-              processedChunks: { increment: 1 },
-            },
             select: { processedChunks: true, totalChapters: true },
           })
           .catch(() => null);
 
-        if (ns && ns.processedChunks >= ns.totalChapters) {
-          await prisma.novelSource
-            .update({
-              where: { id: nsId },
-              data: { status: 'COMPLETED' },
-            })
-            .catch(() => { });
+        if (ns) {
+          await prisma.novelSource.update({
+            where: { id: nsId },
+            data: {
+              processedChunks: { increment: 1 },
+            },
+          }).catch((e) => {
+            console.error(`[NovelChunk] Failed to increment processedChunks for ${nsId}:`, e.message);
+          });
+
+          if (ns.processedChunks + 1 >= ns.totalChapters) {
+            await Promise.all([
+              prisma.novelSource.update({
+                where: { id: nsId },
+                data: { status: 'COMPLETED' as any },
+              }).catch(() => null),
+              prisma.novel.update({
+                where: { projectId },
+                data: { status: 'COMPLETED' },
+              }).catch(() => null),
+            ]).catch(() => { });
+          }
         }
       } else {
         // Fire and forget update for background progress if not a milestone
-        prisma.novelSource
+        await prisma.novelSource
           .update({
             where: { id: nsId },
             data: { processedChunks: { increment: 1 } },

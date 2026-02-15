@@ -1,9 +1,0 @@
-SHOT_ASSET_URI=apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
-SHOT_ASSET_KEY=apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png
-ROOT_DIR=
-RESOLVED_BY=NONE
-CANDIDATES:
- - apps/workers/.runtime/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png [MISS]
- - .runtime/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png [MISS]
- - .data/storage/apps/workers/.runtime/assets/undefined_12345_95b84c85198a.png [MISS]
-RESOLVED=

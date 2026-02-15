@@ -1,3 +1,0 @@
- ERR_PNPM_NO_SCRIPT  Missing script: deadcode:manifest
-
-Command "deadcode:manifest" not found.

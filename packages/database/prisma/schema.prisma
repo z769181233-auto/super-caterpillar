@@ -23,7 +23,6 @@ model User {
   apiKeys               ApiKey[]             @relation("UserApiKeys")
   auditLogs             AuditLog[]           @relation("UserAuditLogs")
   billingEvents         BillingEvent[]       @relation("BillingEventUser")
-  costLedgers           CostLedger[]         @relation("UserCostLedgers")
   memberships           Membership[]         @relation("UserMemberships")
   organizationMembers   OrganizationMember[] @relation("UserOrganizationMember")
   ownedOrganizations    Organization[]       @relation("OrganizationOwner")
@@ -57,7 +56,7 @@ model Organization {
   shots             Shot[]               @relation("OrganizationShots")
   subscriptions     Subscription[]       @relation("OrganizationSubscription")
 
-  novelSources      NovelSource[]        @relation("OrganizationNovelSources")
+  novelSources NovelSource[] @relation("OrganizationNovelSources")
 
   @@unique([ownerId, type])
   @@map("organizations")
@@ -79,27 +78,27 @@ model Membership {
 }
 
 model NovelSource {
-  id              String   @id @default(uuid())
-  projectId       String   @unique
-  organizationId  String
-  
-  fileKey         String   // Storage key
-  fileName        String
-  fileSize        Int      // Bytes
-  
-  status          NovelSourceStatus @default(PENDING)
-  
-  totalChapters   Int      @default(0)
-  processedChunks Int      @default(0)
-  
-  error           String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  project         Project  @relation(fields: [projectId], references: [id])
-  organization    Organization @relation("OrganizationNovelSources", fields: [organizationId], references: [id])
-  
+  id             String @id @default(uuid())
+  projectId      String @unique
+  organizationId String
+
+  fileKey  String // Storage key
+  fileName String
+  fileSize Int // Bytes
+
+  status NovelSourceStatus @default(PENDING)
+
+  totalChapters   Int @default(0)
+  processedChunks Int @default(0)
+
+  error String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project      Project      @relation(fields: [projectId], references: [id])
+  organization Organization @relation("OrganizationNovelSources", fields: [organizationId], references: [id])
+
   @@map("novel_sources")
 }
 
@@ -110,6 +109,7 @@ enum NovelSourceStatus {
   COMPLETED
   FAILED
 }
+
 model Project {
   id                     String                  @id @default(uuid())
   name                   String
@@ -125,14 +125,13 @@ model Project {
   assets                 Asset[]                 @relation("ProjectAssets")
   billingEvents          BillingEvent[]          @relation("BillingEventProject")
   characterProfiles      CharacterProfile[]
-  costLedgers            CostLedger[]            @relation("ProjectCostLedgers")
   engineTasks            EngineTask[]            @relation("ProjectEngineTask")
   episodes               Episode[]               @relation("ProjectEpisodes")
   novelAnalysisJobs      NovelAnalysisJob[]      @relation("ProjectNovelAnalysisJobs")
   novelParseResults      NovelParseResult?       @relation("ProjectNovelParseResults")
   novelVolumes           NovelVolume[]           @relation("ProjectNovelVolumes")
-  novelSource           NovelSource?
-  novelSources          Novel?                  @relation("ProjectNovelSources")
+  novelSource            NovelSource?
+  novelSources           Novel?                  @relation("ProjectNovelSources")
   projectMembers         ProjectMember[]
   organization           Organization            @relation("OrganizationProjects", fields: [organizationId], references: [id])
   owner                  User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
@@ -166,7 +165,7 @@ model Season {
 
 model Episode {
   id                String             @id @default(uuid())
-  seasonId          String
+  seasonId          String?
   projectId         String?
   index             Int
   name              String
@@ -174,7 +173,7 @@ model Episode {
   chapterId         String?            @unique
   chapter           NovelChapter?      @relation("ChapterEpisode", fields: [chapterId], references: [id])
   project           Project?           @relation("ProjectEpisodes", fields: [projectId], references: [id], onDelete: Cascade)
-  season            Season             @relation("SeasonEpisodes", fields: [seasonId], references: [id], onDelete: Cascade)
+  season            Season?            @relation("SeasonEpisodes", fields: [seasonId], references: [id], onDelete: Cascade)
   publishedVideos   PublishedVideo[]   @relation("EpisodePublishedVideos")
   publishingReviews PublishingReview[] @relation("EpisodePublishingReview")
   scenes            Scene[]            @relation("EpisodeScenes")
@@ -248,6 +247,8 @@ model Shot {
   assetBindings        Json?                 @map("asset_bindings")
   controlnetSettings   Json?                 @map("controlnet_settings")
   durationSec          Decimal?              @map("duration_sec")
+  emotion              String?               @map("emotion")
+  novelQuote           String?               @map("novel_quote")
   assets               Asset[]               @relation("ShotAssets")
   characterAppearances CharacterAppearance[] @relation("ShotCharacterAppearances")
   engineTasks          EngineTask[]          @relation("ShotEngineTask")
@@ -508,6 +509,7 @@ model Task {
   output         Json?
   traceId        String?
   workerId       String?
+  currentStep    String?      @map("current_step")
   isVerification Boolean      @default(false) @map("is_verification")
   dedupeKey      String?      @unique @map("dedupe_key")
   organization   Organization @relation("OrganizationTasks", fields: [organizationId], references: [id])
@@ -577,6 +579,7 @@ model ShotJob {
   shot              Shot?             @relation("ShotJobs", fields: [shotId], references: [id], onDelete: Cascade)
   task              Task?             @relation("TaskJobs", fields: [taskId], references: [id], onDelete: Cascade)
   worker            WorkerNode?       @relation("WorkerNodeShotJobs", fields: [workerId], references: [id])
+  currentStep       String?           @map("current_step")
 
   @@map("shot_jobs")
 }
@@ -697,7 +700,6 @@ model SafetyResult {
 
 model BillingEvent {
   id           String       @id @default(uuid())
-  costLedgerId String?      @unique @map("cost_ledger_id")
   projectId    String       @map("project_id")
   orgId        String       @map("org_id")
   userId       String?      @map("user_id")
@@ -706,7 +708,6 @@ model BillingEvent {
   currency     String       @default("USD")
   metadata     Json?
   createdAt    DateTime     @default(now()) @map("created_at")
-  costLedger   CostLedger?  @relation("LedgerToEvent", fields: [costLedgerId], references: [id])
   organization Organization @relation("BillingEventOrganization", fields: [orgId], references: [id])
   project      Project      @relation("BillingEventProject", fields: [projectId], references: [id])
   user         User?        @relation("BillingEventUser", fields: [userId], references: [id])
@@ -746,6 +747,26 @@ model Subscription {
   @@index([userId])
   @@index([organizationId])
   @@map("subscriptions")
+}
+
+model BillingLedger {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  traceId     String   @map("trace_id") // JobId or RequestId
+  itemType    String   @map("item_type") // JOB, STORAGE, API
+  itemId      String   @map("item_id") // JobId, AssetId
+  chargeCode  String   @map("charge_code") // SKU
+  amount      Int      @map("amount")
+  currency    String   @default("CREDIT") @map("currency")
+  status      String   @map("status") // PENDING, POSTED, REVERSED, FAILED
+  evidenceRef String?  @map("evidence_ref") // Pointer to audit log or asset path
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, traceId, itemType, itemId, chargeCode])
+  @@index([traceId])
+  @@index([status])
+  @@map("billing_ledgers")
 }
 
 model PublishingReview {
@@ -1164,45 +1185,6 @@ model TextSafetyResult {
   @@map("text_safety_results")
 }
 
-model CostLedger {
-  id              String        @id @default(uuid())
-  userId          String?
-  projectId       String
-  jobId           String
-  jobType         String
-  engineKey       String?
-  attempt         Int           @default(0)
-  costAmount      Float         @default(0.0)
-  currency        String        @default("USD")
-  billingUnit     String?
-  quantity        Float         @default(0.0)
-  metadata        Json?
-  createdAt       DateTime      @default(now()) @map("created_at")
-  traceId         String?
-  orgId           String?
-  totalCost       Float?
-  costType        String?
-  unitCost        Float?
-  modelName       String?
-  totalCredits    Float?
-  unitCostCredits Float?
-  timestamp       DateTime      @default(now())
-  billingStatus   BillingStatus @default(PENDING) @map("billing_status")
-  billingEventId  String?       @map("billing_event_id")
-  billedAt        DateTime?     @map("billed_at")
-  billingError    String?       @map("billing_error")
-  billingEvent    BillingEvent? @relation("LedgerToEvent")
-  project         Project       @relation("ProjectCostLedgers", fields: [projectId], references: [id])
-  user            User?         @relation("UserCostLedgers", fields: [userId], references: [id])
-
-  @@unique([jobId, attempt])
-  @@index([projectId, billingStatus])
-  @@index([projectId])
-  @@index([jobId, attempt])
-  @@index([createdAt])
-  @@map("cost_ledgers")
-}
-
 model PublishedVideo {
   id         String   @id @default(uuid())
   projectId  String
@@ -1319,26 +1301,6 @@ model TranslationCache {
   @@unique([provider, targetLang, inputHash, projectId], name: "provider_target_hash_project")
   @@index([organizationId])
   @@map("translation_cache")
-}
-
-model BillingLedger {
-  id          String   @id @default(uuid())
-  tenantId    String
-  traceId     String
-  itemType    String
-  itemId      String
-  chargeCode  String
-  amount      Int
-  currency    String   @default("CREDIT")
-  status      String
-  evidenceRef String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([tenantId, traceId, itemType, itemId, chargeCode])
-  @@index([traceId])
-  @@index([status])
-  @@map("billing_ledgers")
 }
 
 model CharacterProfile {

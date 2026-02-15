@@ -8,17 +8,17 @@ describe('novel-analysis-processor', () => {
       const scanOutput: any = {
         volumes: [
           {
-            volume_index: 1,
+            volumeIndex: 1,
             volume_title: 'Volume 1',
-            chapter_index: 1,
+            chapterIndex: 1,
             chapter_title: 'Chapter 1',
             start_line: 0,
             end_line: 10,
           },
           {
-            volume_index: 1,
+            volumeIndex: 1,
             volume_title: 'Volume 1',
-            chapter_index: 2,
+            chapterIndex: 2,
             chapter_title: 'Chapter 2',
             start_line: 11,
             end_line: 20,
@@ -28,12 +28,12 @@ describe('novel-analysis-processor', () => {
 
       const result = mapCE06OutputToProjectStructure('test-proj', scanOutput as CE06Output);
 
-      expect(result.seasons.length).toBe(1);
-      expect(result.seasons[0].index).toBe(1);
-      expect(result.seasons[0].title).toBe('Volume 1');
-      expect(result.seasons[0].episodes.length).toBe(2);
-      expect(result.seasons[0].episodes[0].title).toBe('Chapter 1');
-      expect(result.seasons[0].episodes[1].title).toBe('Chapter 2');
+      expect(result.seasons!.length).toBe(1);
+      expect(result.seasons![0].index).toBe(1);
+      expect(result.seasons![0].title).toBe('Volume 1');
+      expect(result.seasons![0].episodes.length).toBe(2);
+      expect(result.seasons![0].episodes[0].title).toBe('Chapter 1');
+      expect(result.seasons![0].episodes[1].title).toBe('Chapter 2');
     });
 
     it('should correctly map ALREADY structured volumes (idempotent/legacy)', () => {
@@ -51,10 +51,10 @@ describe('novel-analysis-processor', () => {
         ],
       };
       const result = mapCE06OutputToProjectStructure('test-proj', legacyOutput as CE06Output);
-      expect(result.seasons.length).toBe(1);
-      expect(result.seasons[0].title).toContain('Legacy Volume');
-      expect(result.seasons[0].episodes.length).toBe(1);
-      expect(result.seasons[0].episodes[0].title).toContain('Legacy Chapter');
+      expect(result.seasons!.length).toBe(1);
+      expect(result.seasons![0].title).toContain('Legacy Volume');
+      expect(result.seasons![0].episodes.length).toBe(1);
+      expect(result.seasons![0].episodes[0].title).toContain('Legacy Chapter');
     });
 
     it('should prioritize seasons if present (V1.1)', () => {
@@ -72,11 +72,11 @@ describe('novel-analysis-processor', () => {
             ],
           },
         ],
-        volumes: [{ volume_index: 1, volume_title: 'Ignored Volume' }],
+        volumes: [{ volumeIndex: 1, volume_title: 'Ignored Volume' }],
       };
       const result = mapCE06OutputToProjectStructure('test-proj', v11Output as CE06Output);
-      expect(result.seasons.length).toBe(1);
-      expect(result.seasons[0].title).toBe('V1.1 Season');
+      expect(result.seasons!.length).toBe(1);
+      expect(result.seasons![0].title).toBe('V1.1 Season');
     });
   });
 });

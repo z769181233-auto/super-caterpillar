@@ -1,8 +1,0 @@
-{
-  "success": false,
-  "error": { "code": "4004", "message": "Nonce replay detected" },
-  "requestId": "ab7b39d1-273a-48c8-895f-8f5671e73842",
-  "timestamp": "2026-01-13T00:49:58.619Z",
-  "path": "/api/timeline/preview",
-  "method": "POST"
-}

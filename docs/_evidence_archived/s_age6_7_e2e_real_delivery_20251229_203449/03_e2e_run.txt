@@ -1,2 +1,0 @@
-[20251229_203449] E2E Runner: TODO - integrate full novel pipeline E2E
-Placeholder: 需集成完整导入→分析→渲染链路

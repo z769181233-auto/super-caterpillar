@@ -1,8 +1,0 @@
-=== Stage-15 Studio CE01/CE02 E2E Evidence ===
-EVID_DIR: docs/_evidence/stage15_studio_20260101_071344
-[PASS] Typecheck: Codebase is type-safe
-[PASS] Web Build: 0 errors (Clean App Router export)
-[PASS] E2E Smoke: CE01/CE02 write-then-read consistency verified
-[PASS] Security: x-request-id injected + JWT/HMAC separation enforced
-API Client: x-request-id coverage 100% on GET/POST
-Audit: Shot token inheritance verified in DB

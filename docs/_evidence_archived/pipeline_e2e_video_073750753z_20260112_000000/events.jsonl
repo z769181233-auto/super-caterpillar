@@ -1,6 +1,0 @@
-{"ts":"2026-01-12T07:37:50.756Z","type":"verify_start","startTime":"2026-01-12T07:37:50.756Z"}
-{"ts":"2026-01-12T07:37:50.794Z","type":"data_setup_complete","projectId":"07052765-e130-4548-95d6-4a939389242e","apiKey":"ak_test_60e8d91c-8e7b-4306-aa13-3d35bea78a09"}
-{"ts":"2026-01-12T07:37:50.861Z","type":"pipeline_triggered","jobId":"8a0f2d94-0e13-4993-8e04-812b6ec7d311","traceId":"ce_pipeline_4df807fc-f106-41e3-aa0b-32fb776aca54"}
-{"ts":"2026-01-12T07:38:10.898Z","type":"TIMELINE_RENDER","error":"[TimelineRender] Fail-fast: frames.txt not found for shotId=305c956a-fc70-4aa0-815e-ddd04586a1b9 at .runtime/frames/305c956a-fc70-4aa0-815e-ddd04586a1b9/frames.txt"}
-{"ts":"2026-01-12T07:38:10.898Z","type":"verify_error","message":"Pipeline logic failure at TIMELINE_RENDER","status":"FAIL_LOGIC"}
-{"ts":"2026-01-12T07:38:10.898Z","type":"verify_end","status":"FAIL_LOGIC","endTime":"2026-01-12T07:38:10.898Z"}

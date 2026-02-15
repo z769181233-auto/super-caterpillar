@@ -70,21 +70,103 @@ export class QC01VisualFidelityAdapter extends QcBaseEngine implements EngineAda
         reasons.push('Codec unidentified');
       }
 
-      // Generate report
+      // 0. Prepare Metadata & Paths
       const hash = createHash('sha256')
         .update(JSON.stringify(payload))
         .digest('hex')
         .substring(0, 16);
       const outputDir = join(process.cwd(), 'storage/qc/visual');
-      mkdirSync(outputDir, { recursive: true });
       const reportPath = join(outputDir, `qc01_${hash}.json`);
+      mkdirSync(outputDir, { recursive: true });
 
+      // 2. G5 Sharpness Analysis (Laplacian Variance)
+      const frameDir = join(outputDir, `frames_${hash}`);
+      let sharpnessMetrics = { p50: 0, p10: 0, scores: [] as number[] };
+
+      try {
+        if (duration > 0) {
+          mkdirSync(frameDir, { recursive: true });
+
+          // Extract 30 frames
+          await execAsync(
+            `ffmpeg -y -i "${filePath}" -vf "fps=30/${duration}" -vframes 30 "${join(frameDir, 'frame_%03d.jpg')}"`
+          );
+
+          const frameFiles = (await promisify(require('fs').readdir)(frameDir))
+            .filter((f: string) => f.endsWith('.jpg'))
+            .map((f: string) => join(frameDir, f));
+
+          if (frameFiles.length > 0) {
+            const sharp = require('sharp');
+            const scores: number[] = [];
+
+            // Laplacian Kernel
+            const kernel = {
+              width: 3,
+              height: 3,
+              kernel: [0, 1, 0, 1, -4, 1, 0, 1, 0]
+            };
+
+            for (const frame of frameFiles) {
+              const { data, info } = await sharp(frame)
+                .grayscale()
+                .raw() // Get raw pixel data
+                .toBuffer({ resolveWithObject: true });
+
+              const width = info.width;
+              const height = info.height;
+
+              // Apply Laplacian Convolution & Calculate Variance manually for performance/control
+              // Or use sharp's convolve? Sharp's convolve returns an image.
+              // Let's use sharp's convolve then stats.
+
+              const stats = await sharp(frame)
+                .grayscale()
+                .convolve(kernel)
+                .stats();
+
+              // Variance = stdev^2. Sharp stats returns stdev.
+              // Channel 0 is the grayscale channel.
+              const stdev = stats.channels[0].stdev;
+              const variance = stdev * stdev;
+              scores.push(variance);
+            }
+
+            scores.sort((a, b) => a - b);
+            const p50 = scores[Math.floor(scores.length * 0.5)] || 0;
+            const p10 = scores[Math.floor(scores.length * 0.1)] || 0;
+
+            sharpnessMetrics = { p50, p10, scores };
+
+            // Cleanup frames
+            await Promise.all(frameFiles.map((f: string) => promisify(require('fs').unlink)(f)));
+            await promisify(require('fs').rmdir)(frameDir);
+          }
+        }
+      } catch (e: any) {
+        this.logger.warn(`[QC01] Sharpness analysis failed: ${e.message}`);
+        reasons.push(`Sharpness check failed: ${e.message}`);
+      }
+
+      // G5 Gate Logic
+      if (sharpnessMetrics.p50 < 360) {
+        score -= 40; // Heavy penalty
+        reasons.push(`Low Sharpness (P50=${sharpnessMetrics.p50.toFixed(1)} < 360)`);
+      }
+      if (sharpnessMetrics.p10 < 300) {
+        score -= 10;
+        reasons.push(`Inconsistent Sharpness (P10=${sharpnessMetrics.p10.toFixed(1)} < 300)`);
+      }
+
+      // Generate report
       const report = {
         score,
         checks: {
           resolution: `${width}x${height}`,
           codec,
           duration: `${duration}s`,
+          sharpness_p50: sharpnessMetrics.p50,
+          sharpness_p10: sharpnessMetrics.p10,
           integrity: score >= 80 ? 'Verified' : 'Degraded',
         },
         reasons,
@@ -96,7 +178,7 @@ export class QC01VisualFidelityAdapter extends QcBaseEngine implements EngineAda
       return {
         status: score >= 80 ? 'PASS' : score >= 60 ? 'WARN' : 'FAIL',
         reportUrl: `file://${reportPath}`,
-        metrics: { score, reasons },
+        metrics: { score, reasons, sharpness: sharpnessMetrics },
       };
     } catch (err: any) {
       // ffprobe failed - file might not exist or be corrupt

@@ -10,16 +10,17 @@ import { Module, OnModuleInit, Logger, Inject, forwardRef } from '@nestjs/common
 import { ModuleRef } from '@nestjs/core';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter.NEW';
-import { CE06LocalAdapter } from './adapters/ce06.local.adapter';
-import { CE09SecurityLocalAdapter } from './adapters/ce09-security.local.adapter';
-import { CE03LocalAdapter } from './adapters/ce03.local.adapter';
-import { CE04LocalAdapter } from './adapters/ce04.local.adapter';
-import { VideoMergeLocalAdapter } from './adapters/video-merge.local.adapter';
+import { CE06LocalAdapter } from './adapters/ce06_novel_parsing.adapter';
+import { CE09SecurityLocalAdapter } from './adapters/ce09_security.adapter';
+import { CE03LocalAdapter } from './adapters/ce03_visual_density.adapter';
+import { CE04LocalAdapter } from './adapters/ce04_visual_enrichment.adapter';
+import { VideoMergeLocalAdapter } from './adapters/video_merge.adapter';
 import { ShotRenderLocalAdapter } from './adapters/shot-render.local.adapter';
 import { ShotRenderReplicateAdapter } from './adapters/shot-render.replicate.adapter';
 import { ShotRenderComfyuiAdapter } from './adapters/shot-render.comfyui.adapter';
 import { ShotRenderMpsAdapter } from './adapters/shot-render.mps.adapter';
-import { ShotRenderRouterAdapter } from './adapters/shot-render.router.adapter';
+import { ShotRenderRouterAdapter } from './adapters/shot_render_router.adapter';
+import { FusionAdapter } from './adapters/fusion.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
 import { MockEngineAdapter } from '../engine/adapters/mock-engine.adapter';
 import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
@@ -29,7 +30,7 @@ import { CharacterGenAdapter } from './adapters/character_gen.adapter';
 import { SceneCompositionAdapter } from './adapters/scene_composition.adapter';
 import { EmotionAnalysisAdapter } from './adapters/emotion_analysis.adapter';
 import { DialogueOptimizationAdapter } from './adapters/dialogue_optimization.adapter';
-import { CE07MemoryUpdateAdapter } from './adapters/ce07_memory_update.local.adapter';
+import { CE07MemoryUpdateAdapter } from './adapters/ce07_memory_update.adapter';
 import { CE01NarrativeStructureAdapter } from './adapters/ce01_narrative_structure.adapter';
 import { CE05ConflictDetectorAdapter } from './adapters/ce05_conflict_detector.adapter';
 import { CE08CharacterArcAdapter } from './adapters/ce08_character_arc.adapter';
@@ -71,7 +72,7 @@ import { QC03IdentityContinuityAdapter } from './adapters/qc03_identity_continui
 import { QC04ComplianceScanAdapter } from './adapters/qc04_compliance_scan.adapter';
 import { QC05TechnicalComplianceAdapter } from './adapters/qc05_technical_compliance.adapter';
 import { QC06FlickerDetectorAdapter } from './adapters/qc06_flicker_detector.adapter';
-import { CE23IdentityLocalAdapter } from './adapters/ce23-identity.local.adapter';
+import { CE23IdentityLocalAdapter } from './adapters/ce23_identity_lock.adapter';
 import { EngineConfigService } from '../config/engine.config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -90,6 +91,7 @@ import { AuditModule } from '../audit/audit.module';
 import { CostModule } from '../cost/cost.module';
 import { CharacterModule } from '../character/character.module';
 import { AudioModule } from '../audio/audio.module';
+import { AudioTTSLocalAdapter } from './adapters/audio-tts.local.adapter';
 
 @Module({
   imports: [
@@ -120,6 +122,7 @@ import { AudioModule } from '../audio/audio.module';
     ShotRenderComfyuiAdapter, // Registered
     ShotRenderMpsAdapter,
     ShotRenderRouterAdapter,
+    FusionAdapter,
     HttpEngineAdapter,
     MockEngineAdapter,
     CE11ComfyUIAdapter,
@@ -177,6 +180,7 @@ import { AudioModule } from '../audio/audio.module';
     QC05TechnicalComplianceAdapter,
     QC06FlickerDetectorAdapter,
     CE23IdentityLocalAdapter,
+    AudioTTSLocalAdapter,
   ],
   exports: [
     EngineRegistry,
@@ -185,6 +189,7 @@ import { AudioModule } from '../audio/audio.module';
     EngineConfigService,
     HttpEngineAdapter,
     ShotRenderRouterAdapter,
+    FusionAdapter,
     G5SubengineHubService,
     CE01NarrativeStructureAdapter,
     CE05ConflictDetectorAdapter,
@@ -223,7 +228,12 @@ import { AudioModule } from '../audio/audio.module';
     QC03IdentityContinuityAdapter,
     QC04ComplianceScanAdapter,
     QC05TechnicalComplianceAdapter,
+    CE06LocalAdapter,
+    CE03LocalAdapter,
+    CE04LocalAdapter,
+    NovelAnalysisLocalAdapter,
     QC06FlickerDetectorAdapter,
+    AudioTTSLocalAdapter,
   ], // S4-B: 导出策略服务 + HTTP 适配器与配置服务
 })
 export class EngineModule implements OnModuleInit {
@@ -252,6 +262,8 @@ export class EngineModule implements OnModuleInit {
     private readonly shotRenderMpsAdapter: ShotRenderMpsAdapter,
     @Inject(ShotRenderRouterAdapter)
     private readonly shotRenderRouterAdapter: ShotRenderRouterAdapter,
+    @Inject(FusionAdapter)
+    private readonly fusionAdapter: FusionAdapter,
     @Inject(HttpEngineAdapter)
     private readonly httpAdapter: HttpEngineAdapter,
     @Inject(MockEngineAdapter)
@@ -314,6 +326,7 @@ export class EngineModule implements OnModuleInit {
     private readonly vg05Adapter: VG05VFXCompositorAdapter,
     @Inject(VG06SkeletalAnimationAdapter)
     private readonly vg06Adapter: VG06SkeletalAnimationAdapter,
+    @Inject(VG07FacialExpressionAdapter)
     private readonly vg07Adapter: VG07FacialExpressionAdapter,
     @Inject(VG08AdvancedLightingAdapter)
     private readonly vg08Adapter: VG08AdvancedLightingAdapter,
@@ -362,8 +375,10 @@ export class EngineModule implements OnModuleInit {
     @Inject(QC06FlickerDetectorAdapter)
     private readonly qc06Adapter: QC06FlickerDetectorAdapter,
     @Inject(CE23IdentityLocalAdapter)
-    private readonly ce23Adapter: CE23IdentityLocalAdapter
-  ) {}
+    private readonly ce23Adapter: CE23IdentityLocalAdapter,
+    @Inject(AudioTTSLocalAdapter)
+    private readonly audioTTSAdapter: AudioTTSLocalAdapter
+  ) { }
 
   onModuleInit() {
     if (!this.registry) {
@@ -399,7 +414,8 @@ export class EngineModule implements OnModuleInit {
     this.registry.registerAlias('video_merge', this.videoMergeAdapter);
     this.registry.registerAlias('ce10_timeline_compose', this.ce04Adapter); // Mapping to enrichment for now
     this.registry.registerAlias('ce11_timeline_preview', this.ce04Adapter);
-    this.registry.registerAlias('ce11_shot_generator_real', this.shotRenderRouterAdapter);
+    this.registry.registerAlias('ce11_shot_generator_real', this.ce11ComfyUIAdapter);
+    this.registry.registerAlias('ce11_shot_generator_mock', this.mockEngineAdapter);
     this.registry.registerAlias('ce23_identity_consistency', this.ce23Adapter);
     this.registry.registerAlias('g5_video_render', this.shotRenderRouterAdapter);
 
@@ -409,6 +425,11 @@ export class EngineModule implements OnModuleInit {
     this.registry.registerAlias('shot_render', this.shotRenderRouterAdapter);
     this.registry.registerAlias('real_shot_render', this.shotRenderRouterAdapter);
     this.registry.registerAlias('default_shot_render', this.shotRenderRouterAdapter);
+
+    // Fusion Engine Registration
+    this.registry.register(this.fusionAdapter);
+    this.registry.registerAlias('fusion', this.fusionAdapter);
+    this.registry.registerAlias('ce11_fusion_real', this.fusionAdapter);
 
     // Keep individual adapters registered but not as primary alias
     this.registry.register(this.shotRenderReplicateAdapter);
@@ -520,5 +541,8 @@ export class EngineModule implements OnModuleInit {
 
     // P4: Identity Consistency
     this.registry.register(this.ce23Adapter);
+
+    // Audio TTS Local
+    this.registry.register(this.audioTTSAdapter);
   }
 }

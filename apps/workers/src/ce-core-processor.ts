@@ -764,7 +764,7 @@ export async function processCE04Job(
     logStructured('info', {
       action: 'CE04_ENGINE_RESULT',
       jobId,
-      asset: result.assets?.image,
+      asset: result.asset?.image,
     });
 
     // 3. 落库 QualityMetrics (Keep Legacy)
@@ -778,7 +778,7 @@ export async function processCE04Job(
         metadata: {
           enrichedPrompt: structuredText,
           billingUsage: engineResult.metrics?.usage,
-          generatedAsset: result.assets?.image,
+          generatedAsset: result.asset?.image,
         } as any,
       },
     });
@@ -799,7 +799,7 @@ export async function processCE04Job(
           where: { sceneId },
         });
 
-        let realImagePath = result.assets?.image;
+        let realImagePath = result.asset?.image;
         if (!realImagePath || !(await fileExists(realImagePath))) {
           if (PRODUCTION_MODE) {
             throw new Error(
@@ -888,7 +888,7 @@ export async function processCE04Job(
         latencyMs: duration,
         auditTrail: result.audit_trail,
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return result;
   } catch (error: any) {
@@ -1085,14 +1085,14 @@ export async function processShotRenderJob(
         ownerId: shotId,
         type: 'VIDEO', // Force VIDEO for Pilot
         status: 'GENERATED',
-        storageKey: result.asset.uri,
-        checksum: result.asset.sha256,
+        storageKey: result.asset?.uri || result.storageKey || result.localPath,
+        checksum: result.asset?.sha256 || result.sha256,
         createdByJobId: jobId,
       },
       update: {
         status: 'GENERATED',
-        storageKey: result.asset.uri,
-        checksum: result.asset.sha256,
+        storageKey: result.asset?.uri || result.storageKey || result.localPath,
+        checksum: result.asset?.sha256 || result.sha256,
         createdByJobId: jobId,
       },
     });
@@ -1106,8 +1106,8 @@ export async function processShotRenderJob(
         traceId,
         visualDensityScore: 0.95,
         metadata: {
-          ...result.render_meta,
-          assetUri: result.asset.uri,
+          ...(result.render_meta || {}),
+          assetUri: result.asset?.uri || result.storageKey || result.localPath,
           auditTrail: result.audit_trail,
           billingUsage: engineResult.metrics?.usage,
         } as any,
@@ -1120,8 +1120,8 @@ export async function processShotRenderJob(
       where: { id: shotId },
       data: {
         renderStatus: 'COMPLETED',
-        resultImageUrl: result.asset.uri,
-        resultVideoUrl: result.asset.videoUri ?? null,
+        resultImageUrl: result.asset?.uri || result.storageKey || result.localPath,
+        resultVideoUrl: result.asset?.videoUri || result.asset?.uri || result.storageKey || result.localPath || null,
       },
     });
 
@@ -1207,16 +1207,16 @@ export async function processShotRenderJob(
         resourceId: asset.id,
         resourceType: 'asset',
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return {
       status: 'SUCCEEDED',
       output: {
         assetId: asset.id,
-        storageKey: result.asset.uri,
+        storageKey: result.asset?.uri || result.storageKey || result.localPath,
       },
       assetId: asset.id,
-      secureUrl: result.asset.uri,
+      secureUrl: result.asset?.uri || result.storageKey || result.localPath,
     };
   } catch (error: any) {
     logStructured('error', {
@@ -1386,9 +1386,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-          summary: previousMemory.summary || '',
-          character_states: (previousMemory.characterStates as any) || {},
-        }
+        summary: previousMemory.summary || '',
+        character_states: (previousMemory.characterStates as any) || {},
+      }
       : undefined,
     context: {
       projectId,

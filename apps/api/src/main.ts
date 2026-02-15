@@ -8,6 +8,17 @@ import helmet from 'helmet';
 import { env, validateRequiredEnvs } from '@scu/config';
 import { json, urlencoded } from 'express';
 import * as util from 'util';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Force load .env.local for Production Real Engine keys
+const repoRoot = path.resolve(process.cwd(), '../../');
+const envLocalPath = path.join(repoRoot, '.env.local');
+if (require('fs').existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath });
+  console.log('[Bootstrap] Loaded .env.local');
+}
+
 
 async function bootstrap() {
   // A4: Environment Integrity Guard
@@ -199,7 +210,7 @@ async function bootstrap() {
           hasStorageController = true;
           process.stdout.write(
             util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
-              '\n'
+            '\n'
           );
         }
       }

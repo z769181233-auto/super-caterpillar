@@ -1,4 +1,0 @@
-
-> database@1.0.0 build packages/database
-> tsc -p tsconfig.json && cp -r src/generated dist/
-

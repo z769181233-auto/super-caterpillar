@@ -1,2 +1,0 @@
--rw-r--r--@ 1 adam  staff   156B  2  5 22:31 .cursorignore
--rw-r--r--@ 1 adam  staff   1.5K  2  5 22:31 .gitignore

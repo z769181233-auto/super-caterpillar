@@ -1,6 +1,0 @@
-[Monitor] Time:0s | Jobs: Total=1 Succ=0 Fail=0 Pen=1 Run=0 | SwarmRSS:1471MB
-[Monitor] Time:5s | Jobs: Total=9 Succ=2 Fail=0 Pen=6 Run=1 | SwarmRSS:1591MB
-[Monitor] Time:10s | Jobs: Total=9 Succ=5 Fail=0 Pen=4 Run=0 | SwarmRSS:1144MB
-[Monitor] Time:15s | Jobs: Total=9 Succ=8 Fail=0 Pen=1 Run=0 | SwarmRSS:1451MB
-[Monitor] Time:20s | Jobs: Total=9 Succ=9 Fail=0 Pen=0 Run=0 | SwarmRSS:754MB
-Audit: pre_any=72 post_any=90 pre_hist=4 post_hist=5

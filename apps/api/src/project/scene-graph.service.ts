@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectSceneGraph, SeasonNode, EpisodeNode, SceneNode, ShotNode } from '@scu/shared-types';
 import { SceneGraphCache } from './scene-graph.cache';
@@ -9,10 +10,24 @@ import { SceneGraphCache } from './scene-graph.cache';
  */
 @Injectable()
 export class SceneGraphService {
+  private readonly logger = new Logger(SceneGraphService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: SceneGraphCache
-  ) {}
+  ) { }
+
+  /**
+   * Event Listener: Project Structure Changed
+   * Triggered by ProjectController or JobService
+   */
+  @OnEvent('project.structure_changed', { async: true })
+  async handleStructureChanged(payload: { projectId: string; context?: string }) {
+    this.logger.log(
+      `[Event] Invalidating SceneGraph cache for project ${payload.projectId} (Context: ${payload.context || 'generic'})`
+    );
+    await this.invalidateProjectSceneGraph(payload.projectId);
+  }
 
   /**
    * 获取项目的完整 SceneGraph
@@ -42,21 +57,16 @@ export class SceneGraphService {
             updatedAt: true,
           },
         },
-        // 影视工业标准：Season → Episode → Scene → Shot
-        seasons: {
+        // V3.0: 直接映射 Episode -> Scene -> Shot
+        episodes: {
           include: {
-            episodes: {
+            scenes: {
               include: {
-                scenes: {
-                  include: {
-                    shots: {
-                      orderBy: { index: 'asc' },
-                    },
-                  },
-                  orderBy: { sceneIndex: 'asc' },
+                shots: {
+                  orderBy: { index: 'asc' },
                 },
               },
-              orderBy: { index: 'asc' },
+              orderBy: { sceneIndex: 'asc' },
             },
           },
           orderBy: { index: 'asc' },
@@ -100,13 +110,10 @@ export class SceneGraphService {
       projectStatus: project.status,
       analysisStatus,
       analysisUpdatedAt,
-      seasons: projectData.seasons.map((season: any) => this.mapSeasonToNode(season)),
-      episodes:
-        (project as any).episodes?.length > 0
-          ? (project as any).episodes.map((episode: any) =>
-              this.mapEpisodeToNode(episode, project.id)
-            )
-          : undefined,
+      seasons: [], // V3.0: Empty for now
+      episodes: projectData.episodes.map((episode: any) =>
+        this.mapEpisodeToNode(episode, project.id)
+      ),
     };
 
     // 5. 写入缓存

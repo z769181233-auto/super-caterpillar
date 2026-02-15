@@ -1,6 +1,0 @@
-[Monitor] Time:0s | Jobs: Total=1 Succ=0 Fail=0 Pen=1 Run=0 | RSS:1512MB
-[Monitor] Time:5s | Jobs: Total=9 Succ=2 Fail=0 Pen=6 Run=1 | RSS:1669MB
-[Monitor] Time:10s | Jobs: Total=9 Succ=5 Fail=0 Pen=4 Run=0 | RSS:1598MB
-[Monitor] Time:15s | Jobs: Total=9 Succ=8 Fail=0 Pen=1 Run=0 | RSS:1468MB
-[Monitor] Time:20s | Jobs: Total=9 Succ=9 Fail=0 Pen=0 Run=0 | RSS:1258MB
-Audit: PRE_TOTAL=27, POST_TOTAL=36

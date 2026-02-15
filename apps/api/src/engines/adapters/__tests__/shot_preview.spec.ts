@@ -1,6 +1,6 @@
 import { ShotPreviewFastAdapter } from '../shot_preview.fast.adapter';
 import { RedisService } from '../../../redis/redis.service';
-import { ShotRenderRouterAdapter } from '../shot-render.router.adapter';
+import { ShotRenderRouterAdapter } from '../shot_render_router.adapter';
 
 describe('ShotPreviewFastAdapter', () => {
   let adapter: ShotPreviewFastAdapter;

@@ -37,7 +37,7 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
     throw new Error(`[EpisodeRender] No scenes found for episodeId=${episodeId}`);
   }
 
-  // 2. Manual Asset Fetch (Schema lacks Scene.assets relation)
+  // 2. Manual Asset Fetch (Schema lacks Scene.asset relation)
   const sceneIds = scenes.map((s) => s.id);
   const videoAssets = await prisma.asset.findMany({
     where: {

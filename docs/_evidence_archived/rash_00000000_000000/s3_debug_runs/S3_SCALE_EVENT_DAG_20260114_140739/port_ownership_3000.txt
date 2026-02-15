@@ -1,8 +1,0 @@
-[whoami] adam
-[pwd] 
-[API_URL] http://127.0.0.1:3000
-[API_PID] 56571
----- lsof :3000 LISTEN ----
----- ps API_PID ----
-  PID  PPID ELAPSED COMMAND
-56571 56305   00:00 node dist/main

@@ -1,7 +1,0 @@
-Sat Dec 13 19:52:20 +07 2025
-=== Process/Port Listen ===
-COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
-node    95824 adam   22u  IPv6 0x3ed36a66b09225fc      0t0  TCP *:hbci (LISTEN)
-
-=== Timestamp ===
-Sat Dec 13 19:52:21 +07 2025

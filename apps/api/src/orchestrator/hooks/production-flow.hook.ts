@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { JobService } from '../../job/job.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -18,10 +18,9 @@ export class ProductionFlowHook {
   private readonly logger = new Logger(ProductionFlowHook.name);
 
   constructor(
-    @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
     private readonly prisma: PrismaService
-  ) {}
+  ) { }
 
   @OnEvent('job.succeeded')
   async handleJobSucceeded(evt: any) {

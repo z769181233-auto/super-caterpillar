@@ -1,8 +1,0 @@
-{
-  "success": false,
-  "error": { "code": "4003", "message": "Invalid signature" },
-  "requestId": "d7b32d97-b185-48fd-afef-53a7b3160c7f",
-  "timestamp": "2026-01-13T16:10:16.445Z",
-  "path": "/api/orchestrator/pipeline/stage1",
-  "method": "POST"
-}

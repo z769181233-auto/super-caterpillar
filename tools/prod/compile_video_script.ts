@@ -36,10 +36,14 @@ async function main() {
   // 2. Fetch Scenes & Shots
   // V3.0: Ordered by sceneIndex
   const scenes = await prisma.scene.findMany({
-    where: { projectId: projectId }, // or episode.projectId
+    where: {
+      projectId: projectId,
+      status: 'PENDING'
+    },
     orderBy: { sceneIndex: 'asc' },
     include: {
       shots: {
+        where: { renderStatus: 'PENDING' },
         orderBy: { index: 'asc' },
       },
     },

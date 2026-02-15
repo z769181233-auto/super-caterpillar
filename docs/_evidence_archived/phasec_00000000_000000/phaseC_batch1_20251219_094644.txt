@@ -1,3 +1,0 @@
-DEP-003 | Code / 前端组件 | apps/web/src/components/_legacy/studio/* | P2 | Phase B/C
-DEP-010 | Test / Backup E2E | apps/api_tests_backup/ | P1 | Phase B/C
-DEP-020 | Script / 调试工具 | tools/headless-worker.ts | P1 | Phase B/C
