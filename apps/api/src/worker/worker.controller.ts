@@ -9,7 +9,9 @@ import {
   NotFoundException,
   Inject,
   Logger,
+  forwardRef,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { WorkerService } from './worker.service';
 import { RegisterWorkerDto } from './dto/register-worker.dto';
 import { HeartbeatDto } from './dto/heartbeat.dto';
@@ -17,14 +19,19 @@ import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Request } from 'express';
 import { AuditLogService } from '../audit-log/audit-log.service';
+
 @Controller('workers')
 @UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
 export class WorkerController {
   constructor(
-    private readonly workerService: WorkerService,
+    private readonly moduleRef: ModuleRef,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
   ) { }
+
+  private get workerService(): WorkerService {
+    return this.moduleRef.get(WorkerService, { strict: false });
+  }
 
   /**
    * Worker 注册

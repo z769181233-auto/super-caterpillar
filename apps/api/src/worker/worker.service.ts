@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
   Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -24,6 +25,7 @@ export class WorkerService {
     private readonly prisma: PrismaService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService,
+    @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService
   ) { }
 
@@ -633,6 +635,7 @@ export class WorkerService {
    * @returns 领取到的 Job，如果没有可用的 Job 则返回 null
    */
   async dispatchNextJobForWorker(workerId: string) {
+    console.log(`[XXX_DEBUG] WorkerService.dispatchNextJobForWorker called for ${workerId}`);
     // 1. Resolve WorkerNode (String -> UUID)
     try {
       const workerNode = await this.prisma.workerNode.findUnique({
@@ -686,6 +689,17 @@ export class WorkerService {
           return null;
         }
 
+        console.log(`[WorkerService] DEBUG: Searching PENDING jobs for ${workerId}. Types: ${supportedJobTypes.join(',')}`);
+
+        // DEBUG: Count pending jobs of these types
+        const pendingCount = await tx.shotJob.count({
+          where: {
+            status: JobStatus.PENDING,
+            type: { in: supportedJobTypes as any },
+          }
+        });
+        console.log(`[WorkerService] DEBUG_X: Found ${pendingCount} PENDING jobs matching worker types ${supportedJobTypes.join(',')}`);
+
         const candidate = await tx.shotJob.findFirst({
           where: {
             status: JobStatus.PENDING,
@@ -699,8 +713,11 @@ export class WorkerService {
         });
 
         if (!candidate) {
+          console.log(`[WorkerService] DEBUG: No candidate job found for ${workerId}`);
           return null;
         }
+
+        console.log(`[WorkerService] DEBUG: Found candidate job ${candidate.id} (${candidate.type}). Attempting atomic update.`);
 
         // 2.2 Atomic Update
         const updateResult = await tx.shotJob.updateMany({
@@ -713,6 +730,8 @@ export class WorkerService {
             workerId: workerNode.id,
           },
         });
+
+        console.log(`[WorkerService] DEBUG: Atomic update result count: ${updateResult.count}`);
 
         if (updateResult.count === 0) {
           return null;

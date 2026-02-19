@@ -3,7 +3,7 @@ import { ApiClient } from '../api-client';
 import { CostLedgerService } from '../billing/cost-ledger.service';
 import { ProcessorContext } from '../types/processor-context';
 import { ComfyUIClient } from '../../../../tools/prod/comfyui_client';
-import { config } from 'config';
+import { config } from '@scu/config';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -64,7 +64,7 @@ export async function processCE04VisualEnrichmentJob(
     const buffer = await comfy.generateImage(template);
 
     // Save to .data/storage/keyframes
-    const storageRoot = config.storageRoot;
+    const storageRoot = (config as any).storageRoot || (process.env.STORAGE_ROOT || '.runtime');
     const keyframeDir = path.join(storageRoot, 'keyframes', projectId, shotId);
     if (!fs.existsSync(keyframeDir)) fs.mkdirSync(keyframeDir, { recursive: true });
 

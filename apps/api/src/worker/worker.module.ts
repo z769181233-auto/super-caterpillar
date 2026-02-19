@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { WorkerController } from './worker.controller';
 import { WorkerMonitorController } from './worker-monitor.controller';
 import { WorkerService } from './worker.service';
@@ -13,7 +13,7 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
     PrismaModule,
     AuditLogModule,
     AuthModule,
-    JobModule,
+    forwardRef(() => JobModule),
     ApiSecurityModule, // 提供 ApiSecurityGuard 给 JwtOrHmacGuard
   ],
   controllers: [WorkerController, WorkerMonitorController],

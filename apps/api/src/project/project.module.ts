@@ -21,7 +21,7 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   imports: [
     UserModule,
     PrismaModule,
-    JobModule,
+    forwardRef(() => JobModule),
     PermissionModule,
     TaskModule,
     AuthModule,

@@ -9,10 +9,24 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {
   httpRequest,
-  ComfyUIResponse,
-  ComfyUIHistory,
   COMFYUI_BASE_URL,
 } from '@scu/engines-shot-render';
+
+interface ComfyUIResponse {
+  prompt_id: string;
+  number?: number;
+  node_errors?: any;
+}
+
+interface ComfyUIHistory {
+  [key: string]: {
+    outputs: any;
+    status: {
+      completed: boolean;
+      messages: any[];
+    };
+  };
+}
 
 interface CE11Shot {
   index: number;

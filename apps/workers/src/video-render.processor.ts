@@ -9,7 +9,7 @@ import { fileExists, ensureDir } from '../../../packages/shared/fs_async';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ChildProcess } from 'child_process';
 import * as util from 'util';
-import { config } from 'config';
+import { config } from '@scu/config';
 
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 const activeProcesses = new Set<ChildProcess>();
@@ -49,7 +49,7 @@ export async function processVideoRenderJob(
   const pipelineRunId = payload.pipelineRunId;
 
   // 1. Root & Storage Resolver
-  const storageRoot = config.storageRoot;
+  const storageRoot = (config as any).storageRoot;
   const storage = new LocalStorageAdapter(storageRoot);
 
   // 2. Shot Ownership & Approval Gate

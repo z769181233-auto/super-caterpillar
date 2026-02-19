@@ -51,11 +51,14 @@ export class ShotRenderComfyuiAdapter implements EngineAdapter {
         `[ShotRenderComfyui] Generating image for prompt: ${prompt.substring(0, 50)}...`
       );
 
-      // 1. Call ComfyUI Provider
+      // 1. Call ComfyUI Provider with dynamic Graph Injection
       const result = await comfyuiProvider.render(prompt, {
         width: 1024,
         height: 1024,
         seed,
+        checkpoint: input.payload.checkpoint || 'sdxl_guoman_v4.safetensors',
+        loras: input.payload.loras || [],
+        negativePrompt: input.payload.negative_prompt,
       });
 
       // 2. Write to .runtime/assets

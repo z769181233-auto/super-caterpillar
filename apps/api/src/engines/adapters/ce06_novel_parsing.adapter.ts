@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import { ce06RealEngine } from '../../../../../packages/engines/ce06';
+import { ce06Selector } from '../../../../../packages/engines/ce06';
 
 import { LocalStorageService } from '../../storage/local-storage.service';
 
@@ -40,18 +40,22 @@ export class CE06LocalAdapter implements EngineAdapter {
         model = 'gemini-flash-latest';
       }
 
-      const output = await ce06RealEngine({
+      const output = await ce06Selector({
         ...payload,
         model,
         traceId: input.context?.traceId,
         projectId: input.context?.projectId,
       } as any);
 
+      if (!output) {
+        throw new Error('CE06 Engine returned null output');
+      }
+
       return {
         status: 'SUCCESS' as any,
         output,
         metrics: {
-          tokens: output.billing_usage.totalTokens,
+          tokens: output.billing_usage ? output.billing_usage.totalTokens : 0,
           latencyMs: output.latency_ms || 0,
         },
       };

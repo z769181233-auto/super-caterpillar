@@ -51,6 +51,12 @@
       ],
       "@scu/observability": [
         "../../packages/observability/src"
+      ],
+      "@scu/config": [
+        "../../packages/config/src"
+      ],
+      "config": [
+        "../../packages/config/src"
       ]
     }
   },

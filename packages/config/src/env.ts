@@ -80,7 +80,67 @@ function getEnvNumber(key: string, defaultValue?: number): number {
 
 export const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 
-export const env = {
+export interface AppConfig {
+  productionMode: boolean;
+  nodeEnv: string;
+  isDevelopment: boolean;
+  isProduction: boolean;
+  workerHeartbeatTimeoutMs: number;
+  jobWatchdogEnabled: boolean;
+  jobWatchdogTimeoutMs: number;
+  databaseUrl: string;
+  redisUrl: string;
+  apiPort: number;
+  apiHost: string;
+  apiUrl: string;
+  jwtSecret: string;
+  jwtExpiresIn: string;
+  jwtRefreshSecret: string;
+  jwtRefreshExpiresIn: string;
+  appName: string;
+  appVersion: string;
+  frontendUrl: string;
+  bcryptSaltRounds: number;
+  enableInternalJobWorker: boolean;
+  jobWorkerInterval: number;
+  jobWorkerBatchSize: number;
+  workerApiKey?: string;
+  workerApiSecret?: string;
+  workerId: string;
+  workerName: string;
+  workerPollInterval: number;
+  jobWorkerEnabled: boolean;
+  engineDefault: string;
+  engineRealHttpBaseUrl: string;
+  HMAC_TIMESTAMP_WINDOW: number;
+  HMAC_SIGNATURE_ALGORITHM: string;
+  concurrencyLimiterEnabled: boolean;
+  apiBackpressureEnabled: boolean;
+  execTimeoutEnabled: boolean;
+  retryPolicyEnabled: boolean;
+  maxInFlightTotal: number;
+  maxInFlightTenant: number;
+  getEngineConcurrency: (engineKey: string) => number;
+  apiQueuePendingLimit: number;
+  apiQueueRunningLimit: number;
+  apiRetryAfterSeconds: number;
+  getEngineTimeoutSeconds: (engineKey: string) => number;
+  retryMaxAttempts: number;
+  retryBaseMs: number;
+  retryMaxMs: number;
+  retryJitter: boolean;
+  jobMaxInFlight: number;
+  jobWaveSize: number;
+  jobBackpressureThreshold: number;
+  jobLeaseTtlMs: number;
+  workerOfflineGraceMs: number;
+  storageRoot: string;
+  ce23RealForceDisable: boolean;
+  orchV2AudioEnabled: boolean;
+  repoRoot: string;
+}
+
+export const env: AppConfig = {
   // Production Mode Flag
   productionMode: PRODUCTION_MODE,
 
@@ -185,47 +245,47 @@ export const env = {
     return Number(process.env[envKey] ?? '2');
   },
 
-  // 背压阈值
+  // 背壓閾值
   apiQueuePendingLimit: getEnvNumber('API_QUEUE_PENDING_LIMIT', 100),
   apiQueueRunningLimit: getEnvNumber('API_QUEUE_RUNNING_LIMIT', 50),
   apiRetryAfterSeconds: getEnvNumber('API_RETRY_AFTER_SECONDS', 15),
 
-  // 超时控制 (按 engineKey)
+  // 超時控制 (按 engineKey)
   getEngineTimeoutSeconds: (engineKey: string): number => {
     const envKey = `TIMEOUT_SECONDS_${engineKey.toUpperCase()}`;
     const defaultVal = engineKey === 'shot_render' ? 120 : engineKey === 'video_merge' ? 60 : 180;
     return Number(process.env[envKey] ?? defaultVal);
   },
 
-  // 重试策略
+  // 重試策略
   retryMaxAttempts: getEnvNumber('RETRY_MAX_ATTEMPTS', 3),
   retryBaseMs: getEnvNumber('RETRY_BASE_MS', 500),
   retryMaxMs: getEnvNumber('RETRY_MAX_MS', 5000),
   retryJitter: process.env.RETRY_JITTER !== 'false',
 
-  // JOB_MAX_IN_FLIGHT: 全局或单 Worker 最大并发限制
+  // JOB_MAX_IN_FLIGHT: 全局或單 Worker 最大併發限制
   jobMaxInFlight: (() => {
     const val = getEnvNumber('JOB_MAX_IN_FLIGHT', 10);
     if (val < 1) throw new Error('JOB_MAX_IN_FLIGHT must be >= 1');
     return val;
   })(),
-  // JOB_WAVE_SIZE: 任务触发/认领波次大小
+  // JOB_WAVE_SIZE: 任務觸發/認領波次大小
   jobWaveSize: (() => {
     const val = getEnvNumber('JOB_WAVE_SIZE', 5);
     if (val < 1) throw new Error('JOB_WAVE_SIZE must be >= 1');
     return val;
   })(),
-  // JOB_BACKPRESSURE_THRESHOLD: 背压触发阈值（in-flight / max）
+  // JOB_BACKPRESSURE_THRESHOLD: 背壓觸發閾值（in-flight / max）
   jobBackpressureThreshold: (() => {
     const val = parseFloat(getEnv('JOB_BACKPRESSURE_THRESHOLD', '0.8'));
     if (isNaN(val) || val <= 0 || val > 1)
       throw new Error('JOB_BACKPRESSURE_THRESHOLD must be between (0, 1]');
     return val;
   })(),
-  // JOB_LEASE_TTL_MS: 任务租约时长（毫秒），超时可被回收
-  jobLeaseTtlMs: getEnvNumber('JOB_LEASE_TTL_MS', 120000), // 默认 2 分钟
-  // WORKER_OFFLINE_GRACE_MS: Worker 判定离线的宽限期
-  workerOfflineGraceMs: getEnvNumber('WORKER_OFFLINE_GRACE_MS', 180000), // 默认 3 分钟
+  // JOB_LEASE_TTL_MS: 任務租約時長（毫秒），超時可被回收
+  jobLeaseTtlMs: getEnvNumber('JOB_LEASE_TTL_MS', 120000), // 默認 2 分鐘
+  // WORKER_OFFLINE_GRACE_MS: Worker 判定離線的寬限期
+  workerOfflineGraceMs: getEnvNumber('WORKER_OFFLINE_GRACE_MS', 180000), // 默認 3 分鐘
 
   // P5-Fix: Robust STORAGE_ROOT (Relative to Absolute)
   storageRoot: (() => {

@@ -750,7 +750,7 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
     });
 
     // 处理回执
-    if (result.success) {
+    if (result.success || (result as any).status === 'SPAWNED_CE06') {
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'SUCCEEDED',

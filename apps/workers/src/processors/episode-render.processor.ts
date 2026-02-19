@@ -1,5 +1,5 @@
 import { AssetOwnerType, AssetType } from 'database';
-import { config } from 'config';
+import { config } from '@scu/config';
 import * as path from 'path';
 import { promises as fsp } from 'fs';
 import { spawn } from 'child_process';
@@ -56,7 +56,7 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
   const sceneVideoPaths: string[] = [];
   const missingScenes: string[] = [];
 
-  const storageRoot = config.storageRoot;
+  const storageRoot = (config as any).storageRoot;
 
   for (const scene of scenes) {
     const asset = assetMap.get(scene.id);

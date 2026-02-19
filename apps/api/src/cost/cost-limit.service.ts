@@ -200,8 +200,8 @@ export class CostLimitService implements OnModuleInit {
       },
     });
 
-    let imageCount = 0;
-    let gpuSeconds = 0;
+    const imageCount = 0;
+    const gpuSeconds = 0;
     let totalCost = 0;
 
     for (const ledger of ledgers) {

@@ -33,6 +33,7 @@ export interface E2EVideoPipelinePayload {
 }
 
 export interface E2EVideoPipelineOutput {
+  success: boolean;
   status: string;
   pipelineRunId: string;
   spawned: {
@@ -130,9 +131,10 @@ export async function processE2EVideoPipelineJob(
             existingCE06Job: existingCE06.id,
           },
         })
-        .catch(() => {});
+        .catch(() => { });
 
       return {
+        success: true,
         status: 'SPAWNED_CE06', // 逻辑上已成功
         pipelineRunId,
         spawned: {
@@ -202,7 +204,7 @@ export async function processE2EVideoPipelineJob(
             missingFields,
           },
         })
-        .catch(() => {});
+        .catch(() => { });
       throw new Error(errMsg);
     }
 
@@ -249,18 +251,11 @@ export async function processE2EVideoPipelineJob(
           ce06JobId: newCE06.id,
         },
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // Return success immediately (Non-blocking)
     return {
-      status: 'SPAWNED_CE06',
-      pipelineRunId,
-      spawned: {
-        ce06JobId: newCE06.id,
-      },
-    };
-
-    return {
+      success: true,
       status: 'SPAWNED_CE06',
       pipelineRunId,
       spawned: {
@@ -287,7 +282,7 @@ export async function processE2EVideoPipelineJob(
           action: 'pipeline.e2e_video.fail',
         },
       })
-      .catch(() => {});
+      .catch(() => { });
 
     throw error;
   }

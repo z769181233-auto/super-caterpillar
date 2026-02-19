@@ -66,7 +66,7 @@ async function executeScanJob(
   const { prisma, apiClient, localStorage } = context;
   const logger = context.logger || console;
   const payload = job.payload || {};
-  let rawText = payload.raw_text || payload.sourceText;
+  let rawText = payload.raw_text || payload.sourceText || payload.rawText;
   const traceId = payload.traceId || job.id;
 
   // [P6-0 Fix] Support novelRef (Storage Reference)
@@ -191,10 +191,12 @@ async function executeScanJob(
         payload: {
           phase: 'CHUNK_PARSE',
           chapterId: chapter.id,
-          rawText: rawText.substring(chunk.start_offset, chunk.end_offset), // extract from loaded rawText
+          raw_text: rawText.substring(chunk.start_offset, chunk.end_offset), // extract from loaded rawText
+          rawText: rawText.substring(chunk.start_offset, chunk.end_offset), // P6-0 Fix: Backwards compatibility
           traceId,
           projectId,
           pipelineRunId: job.payload?.pipelineRunId,
+          rootJobId: job.payload?.rootJobId || job.id, // Propagate rootJobId for Orchestrator chain
           charCount: totalCharCount, // P6-1-5: 传递 charCount 用于计费
         },
         parentJobId: job.id,
@@ -227,7 +229,7 @@ async function executeChunkParseJob(
   const logger = context.logger || console;
   const payload = job.payload || {};
   const chapterId = payload.chapterId;
-  const chapterText = payload.raw_text;
+  const chapterText = payload.raw_text || payload.rawText;
   const traceId = payload.traceId || job.id;
   const pipelineRunId = job.payload?.pipelineRunId || payload.pipelineRunId;
   logger.log(

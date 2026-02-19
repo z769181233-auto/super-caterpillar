@@ -34,7 +34,7 @@ export class FusionAdapter implements EngineAdapter {
         this.logger.log(`[FusionAdapter] Starting Fusion Generation for Shot ${shotId}`);
 
         try {
-            // @ts-ignore
+            // @ts-expect-error: config.repoRoot is dynamic property from @scu/config
             const repoRoot = config.repoRoot;
             const scriptPath = path.join(repoRoot, 'apps/fusion-engine/scripts/e2e_inference.py');
             const outputPath = path.join(config.storageRoot, `outputs/fusion_${shotId}.mp4`);

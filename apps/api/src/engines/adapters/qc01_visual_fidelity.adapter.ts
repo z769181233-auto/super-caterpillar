@@ -6,9 +6,10 @@ import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, readdir, unlink, rmdir } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
+import sharp from 'sharp';
 
 const execAsync = promisify(exec);
 
@@ -92,12 +93,11 @@ export class QC01VisualFidelityAdapter extends QcBaseEngine implements EngineAda
             `ffmpeg -y -i "${filePath}" -vf "fps=30/${duration}" -vframes 30 "${join(frameDir, 'frame_%03d.jpg')}"`
           );
 
-          const frameFiles = (await promisify(require('fs').readdir)(frameDir))
+          const frameFiles = (await promisify(readdir)(frameDir))
             .filter((f: string) => f.endsWith('.jpg'))
             .map((f: string) => join(frameDir, f));
 
           if (frameFiles.length > 0) {
-            const sharp = require('sharp');
             const scores: number[] = [];
 
             // Laplacian Kernel
@@ -139,8 +139,8 @@ export class QC01VisualFidelityAdapter extends QcBaseEngine implements EngineAda
             sharpnessMetrics = { p50, p10, scores };
 
             // Cleanup frames
-            await Promise.all(frameFiles.map((f: string) => promisify(require('fs').unlink)(f)));
-            await promisify(require('fs').rmdir)(frameDir);
+            await Promise.all(frameFiles.map((f: string) => promisify(unlink)(f)));
+            await promisify(rmdir)(frameDir);
           }
         }
       } catch (e: any) {

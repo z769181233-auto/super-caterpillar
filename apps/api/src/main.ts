@@ -10,11 +10,12 @@ import { json, urlencoded } from 'express';
 import * as util from 'util';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // Force load .env.local for Production Real Engine keys
-const repoRoot = path.resolve(process.cwd(), '../../');
+const repoRoot = path.resolve(__dirname, '../../../');
 const envLocalPath = path.join(repoRoot, '.env.local');
-if (require('fs').existsSync(envLocalPath)) {
+if (fs.existsSync(envLocalPath)) {
   dotenv.config({ path: envLocalPath });
   console.log('[Bootstrap] Loaded .env.local');
 }

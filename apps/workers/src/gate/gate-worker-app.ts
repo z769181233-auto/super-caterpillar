@@ -412,7 +412,10 @@ export async function startGateWorkerApp() {
       engineExecDuration.observe({ engine: engineKey, mode: 'gate' }, duration);
 
       const isSuccess =
-        result.status === 'SUCCEEDED' || result.success === true || result.ok === true;
+        result.status === 'SUCCEEDED' ||
+        result.status === 'SPAWNED_CE06' ||
+        result.success === true ||
+        result.ok === true;
 
       if (isSuccess && job.payload?.artifactDir) {
         const artDir = job.payload.artifactDir;

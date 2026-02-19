@@ -113,6 +113,7 @@ export class WorkerAliasController {
         @CurrentUser() user: { userId: string },
         @Req() request: Request
     ): Promise<any> {
+        console.log(`[XXX_DEBUG] WorkerAliasController.getNextJob called for ${workerId}`);
         const job = await this.workerService.dispatchNextJobForWorker(workerId);
 
         if (!job) {

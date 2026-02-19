@@ -20,32 +20,22 @@ export interface RenderResult {
   gpuSeconds: number;
 }
 
-export interface ComfyUIResponse {
-  prompt_id: string;
-  number: number;
-  node_errors: any;
+export interface LoraConfig {
+  modelId: string;
+  weightModel: number;
+  weightClip: number;
 }
 
-export interface ComfyUIHistory {
-  [prompt_id: string]: {
-    outputs: {
-      [node_id: string]: {
-        images?: Array<{
-          filename: string;
-          subfolder: string;
-          type: string;
-        }>;
-        // Text/JSON output support
-        text?: string[];
-        json?: any[];
-      };
-    };
-    status: {
-      status_str: 'success' | 'failed';
-      completed: boolean;
-      messages: any[];
-    };
-  };
+export interface ComfyUIOptions {
+  width?: number;
+  height?: number;
+  seed?: number;
+  checkpoint?: string;
+  loras?: LoraConfig[];
+  negativePrompt?: string;
+  samplerName?: string;
+  steps?: number;
+  cfg?: number;
 }
 
 export const COMFYUI_BASE_URL = process.env.COMFYUI_BASE_URL || 'http://127.0.0.1:8188';
@@ -87,31 +77,76 @@ async function downloadImage(filename: string, subfolder: string, type: string):
   });
 }
 
+/**
+ * Dynamic ComfyUI Graph Builder
+ * Injects LoRA nodes between CheckpointLoader and CLIP/KSampler if needed.
+ */
+function buildGraph(promptText: string, options: ComfyUIOptions, template: any) {
+  const graph = JSON.parse(JSON.stringify(template));
+  const seed = options.seed || Math.floor(Math.random() * 1000000000);
+
+  // 1. Basic Params
+  if (graph['3']) { // KSampler
+    graph['3'].inputs.seed = seed;
+    graph['3'].inputs.steps = options.steps || 20;
+    graph['3'].inputs.cfg = options.cfg || 7;
+    if (options.samplerName) graph['3'].inputs.sampler_name = options.samplerName;
+  }
+  if (graph['6']) graph['6'].inputs.text = promptText; // Positive
+  if (graph['7']) graph['7'].inputs.text = options.negativePrompt || 'text, watermark, blurry, low quality'; // Negative
+  if (graph['5']) { // Latent
+    graph['5'].inputs.width = options.width || 1024;
+    graph['5'].inputs.height = options.height || 1024;
+  }
+  if (graph['4'] && options.checkpoint) { // Checkpoint
+    graph['4'].inputs.ckpt_name = options.checkpoint;
+  }
+
+  // 2. Dynamic LoRA Injection
+  // We need to chain LoRA nodes.
+  // Original path: Checkpoint(4) -> KSampler(3).model + CLIP(CLIPLoader 10 or Checkpoint 4) -> CLIPTextEncode(6,7)
+
+  if (options.loras && options.loras.length > 0) {
+    let lastModelNode = '4';
+    let lastClipNode = '10'; // In sdxl template, CLIP comes from Node 10 or 4
+
+    options.loras.forEach((lora, index) => {
+      const loraNodeId = `lora_${index}`;
+      graph[loraNodeId] = {
+        inputs: {
+          lora_name: lora.modelId,
+          strength_model: lora.weightModel || 1.0,
+          strength_clip: lora.weightClip || 1.0,
+          model: [lastModelNode, 0],
+          clip: [lastClipNode, 0],
+        },
+        class_type: 'LoraLoader',
+        _meta: { title: `LoRA ${lora.modelId}` }
+      };
+      lastModelNode = loraNodeId;
+      lastClipNode = loraNodeId;
+    });
+
+    // Remap KSampler and CLIPTextEncode to the last LoRA node
+    if (graph['3']) graph['3'].inputs.model = [lastModelNode, 0];
+    if (graph['6']) graph['6'].inputs.clip = [lastClipNode, 0];
+    if (graph['7']) graph['7'].inputs.clip = [lastClipNode, 0];
+  }
+
+  return graph;
+}
+
 export async function renderWithComfyUI(
   promptText: string,
-  options: {
-    width?: number;
-    height?: number;
-    seed?: number;
-    templateName?: string;
-  } = {}
+  options: ComfyUIOptions = {}
 ): Promise<RenderResult> {
   const seed = options.seed || Math.floor(Math.random() * 1000000000);
 
   // 1. Load Template
-  const templateName = options.templateName || 'comfyui_text2img_sdxl.json';
+  const templateName = 'comfyui_text2img_sdxl.json';
   const candidates = [
     path.join(__dirname, 'templates', templateName),
-    // Fallback for Monorepo execution (Worker -> Packages)
-    path.join(
-      process.cwd(),
-      '../../packages/engines/shot_render/providers/templates',
-      templateName
-    ),
-    // Fallback for API execution
     path.join(process.cwd(), 'packages/engines/shot_render/providers/templates', templateName),
-    // Absolute path fallback
-    'packages/engines/shot_render/providers/templates/comfyui_text2img_sdxl.json',
   ];
 
   let templatePath = '';
@@ -122,25 +157,11 @@ export async function renderWithComfyUI(
     }
   }
 
-  if (!templatePath) {
-    throw new Error(`ComfyUI template not found. Searched: ${candidates.join(', ')}`);
-  }
-  const prompt = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
+  if (!templatePath) throw new Error(`ComfyUI template not found.`);
+  const template = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
 
-  // 2. Inject Params
-  // Node 3: KSampler (seed)
-  if (prompt['3'] && prompt['3'].inputs) {
-    prompt['3'].inputs.seed = seed;
-  }
-  // Node 6: CLIPTextEncode (Positive Prompt)
-  if (prompt['6'] && prompt['6'].inputs) {
-    prompt['6'].inputs.text = promptText;
-  }
-  // Node 5: EmptyLatentImage (Width/Height)
-  if (prompt['5'] && prompt['5'].inputs) {
-    prompt['5'].inputs.width = options.width || 1024;
-    prompt['5'].inputs.height = options.height || 1024;
-  }
+  // 2. Build Dynamic Graph
+  const prompt = buildGraph(promptText, options, template);
 
   // 3. Queue Prompt
   const promptBody = JSON.stringify({ prompt });
@@ -156,52 +177,34 @@ export async function renderWithComfyUI(
     promptBody
   );
 
-  const queueData: ComfyUIResponse = JSON.parse(queueRes);
+  const queueData = JSON.parse(queueRes);
   const promptId = queueData.prompt_id;
+  if (!promptId) throw new Error('Failed to queue prompt to ComfyUI');
 
-  if (!promptId) {
-    throw new Error('Failed to queue prompt to ComfyUI');
-  }
-
-  // 4. Poll History (Max 60s)
-  let history: ComfyUIHistory[string] | null = null;
+  // 4. Poll History
+  let history: any = null;
   const startTime = Date.now();
-
   for (let i = 0; i < 60; i++) {
-    try {
-      const historyRes = await httpRequest(`${COMFYUI_BASE_URL}/history/${promptId}`, {
-        method: 'GET',
-      });
-      const historyData: ComfyUIHistory = JSON.parse(historyRes);
-
-      if (historyData[promptId] && historyData[promptId].status.completed) {
-        history = historyData[promptId];
-        break;
-      }
-    } catch (e) {
-      // Ignore poll errors
+    const historyRes = await httpRequest(`${COMFYUI_BASE_URL}/history/${promptId}`, { method: 'GET' });
+    const historyData = JSON.parse(historyRes);
+    if (historyData[promptId] && historyData[promptId].status.completed) {
+      history = historyData[promptId];
+      break;
     }
     await new Promise((r) => setTimeout(r, 1000));
   }
 
-  if (!history) {
-    throw new Error('ComfyUI generation timed out');
-  }
+  if (!history) throw new Error('ComfyUI generation timed out');
 
-  // 5. Get Images
-  // Find "Save Image" node output (Node 9)
+  // 5. Get Images (Assuming Node 9 is SaveImage)
   const outputs = history.outputs['9'];
   if (!outputs || !outputs.images || outputs.images.length === 0) {
-    throw new Error('No output image found in ComfyUI history');
+    throw new Error('No output image found');
   }
 
   const imageBuffers: Buffer[] = [];
-  for (const outputImage of outputs.images) {
-    const buffer = await downloadImage(
-      outputImage.filename,
-      outputImage.subfolder,
-      outputImage.type
-    );
+  for (const img of outputs.images) {
+    const buffer = await downloadImage(img.filename, img.subfolder, img.type);
     imageBuffers.push(buffer);
   }
 
@@ -212,7 +215,7 @@ export async function renderWithComfyUI(
     width: options.width || 1024,
     height: options.height || 1024,
     seed,
-    model: 'sdxl-turbo-comfyui',
+    model: options.checkpoint || 'sdxl-turbo-comfyui',
     gpuSeconds: (Date.now() - startTime) / 1000,
   };
 }
@@ -221,11 +224,7 @@ export const comfyuiProvider = {
   key: 'comfyui' as const,
   async render(
     prompt: string,
-    options?: {
-      width?: number;
-      height?: number;
-      seed?: number;
-    }
+    options?: ComfyUIOptions
   ): Promise<RenderResult> {
     return renderWithComfyUI(prompt, options);
   },

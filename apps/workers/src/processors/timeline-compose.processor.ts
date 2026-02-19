@@ -4,7 +4,7 @@ import { fileExists, ensureDir } from '../../../../packages/shared/fs_async';
 import * as path from 'path';
 import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
-import { config } from 'config';
+import { config } from '@scu/config';
 import { ProcessorContext } from '../types/processor-context';
 
 export interface TimelineShot {
@@ -199,7 +199,7 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     const framesTxtPath = path.join(process.cwd(), '.runtime', 'frames', shot.id, 'frames.txt');
 
     // Resolve Storage Root
-    const storageRoot = config.storageRoot;
+    const storageRoot = (config as any).storageRoot;
 
     if (shot.resultImageUrl) {
       const imageAbsPath = path.resolve(storageRoot, shot.resultImageUrl);

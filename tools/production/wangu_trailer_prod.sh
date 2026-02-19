@@ -27,6 +27,8 @@ echo "[Prod] Checking User & Org..."
 db -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ('user-wangu-prod', 'wangu-prod@test.com', 'hash', 'Pro', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 db -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ('org-wangu-prod', 'Wangu Prod Org', 'wangu-prod', 'user-wangu-prod', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 db -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ('om-wangu-prod', 'org-wangu-prod', 'user-wangu-prod', 'OWNER', NOW(), NOW()) ON CONFLICT (\"userId\", \"organizationId\") DO NOTHING;"
+# Inject Credits for Production Test
+db -c "UPDATE organizations SET credits = 999999 WHERE id = 'org-wangu-prod';"
 
 # 2. Create Project
 echo "[Prod] Creating Project..."

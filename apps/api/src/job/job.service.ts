@@ -150,7 +150,16 @@ export class JobService {
     }
 
     // 获取 project（支持 Season 和 Project 两种结构）
-    const shotProject = shot.scene.episode?.project ?? shot.scene.episode?.season?.project;
+    const scene = (shot as any).scene;
+    let shotProject = scene?.episode?.project ?? scene?.episode?.season?.project;
+
+    // V3.0 Fallback: 如果没有通过 Episode 找到 Project，尝试直接通过 scene.projectId 查找
+    if (!shotProject && scene?.projectId) {
+      shotProject = await this.prisma.project.findUnique({
+        where: { id: scene.projectId },
+      });
+    }
+
     if (!shotProject) {
       throw new NotFoundException(`Project not found for shot ${shotId}`);
     }

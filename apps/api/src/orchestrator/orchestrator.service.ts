@@ -590,29 +590,41 @@ export class OrchestratorService {
 
     if (completedChildJob.type === JobTypeEnum.CE06_NOVEL_PARSING) {
       const chapterId = payload.chapterId || payload.payload?.chapterId;
-      if (!chapterId) {
-        this.logger.error(`[V1-ORCH] CE06 done but no chapterId in payload ${completedChildJob.id}`);
-        return;
+      let scenes = [];
+      if (chapterId) {
+        scenes = await this.prisma.scene.findMany({ where: { chapterId } });
+        this.logger.log(`[V1-ORCH] CE06 done for Chapter=${chapterId}. Found ${scenes.length} scenes.`);
+      } else {
+        this.logger.warn(`[V1-ORCH] CE06 done but no chapterId in payload ${completedChildJob.id}. Falling back to Project=${rootJob.projectId}`);
+        scenes = await this.prisma.scene.findMany({ where: { projectId: rootJob.projectId } });
+        this.logger.log(`[V1-ORCH] Found ${scenes.length} scenes for Project=${rootJob.projectId}.`);
       }
-      const scenes = await this.prisma.scene.findMany({ where: { chapterId } });
-      this.logger.log(
-        `[V1-ORCH] CE06 done for Root=${rootJobId}. Spawning CE03 for ${scenes.length} scenes...`
-      );
 
       for (const scene of scenes) {
-        await this.jobService.createCECoreJob({
-          projectId: rootJob.projectId,
-          organizationId: rootJob.organizationId,
-          taskId: rootJob.taskId || undefined,
-          jobType: JobTypeEnum.CE03_VISUAL_DENSITY as any,
-          traceId: rootJob.traceId || undefined,
-          payload: {
-            projectId: rootJob.projectId,
-            sceneId: scene.id,
-            rootJobId: rootJob.id,
-            pipelineRunId,
-          },
-        });
+        // V1-ORCH: Because CE03/CE04 are now internal to CE06 in V1,
+        // we directly spawn SHOT_RENDER for all shots in this chapter.
+        const shots = await this.prisma.shot.findMany({ where: { sceneId: scene.id } });
+        this.logger.log(`[V1-ORCH] CE06 chunk parse done. Spawning ${shots.length} SHOT_RENDER for scene ${scene.id}...`);
+
+        for (const shot of shots) {
+          await this.jobService.create(
+            shot.id,
+            {
+              type: JobTypeEnum.SHOT_RENDER,
+              payload: {
+                projectId: rootJob.projectId,
+                sceneId: scene.id,
+                rootJobId: rootJob.id,
+                pipelineRunId,
+                engineKey: 'real_shot_render',
+                referenceSheetId: (rootJob.payload as any)?.referenceSheetId,
+              },
+              traceId: rootJob.traceId || undefined,
+            } as any,
+            'system-orch',
+            rootJob.organizationId || 'org_dev_0000000000000000'
+          );
+        }
       }
     } else if (completedChildJob.type === JobTypeEnum.CE03_VISUAL_DENSITY) {
       this.logger.log(`[V1-ORCH] CE03 done for Root=${rootJobId}. Spawning CE04...`);

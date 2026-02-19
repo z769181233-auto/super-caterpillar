@@ -1,5 +1,5 @@
 import { PrismaClient, JobType, JobStatus } from 'database';
-import { config } from 'config';
+import { config } from '@scu/config';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as fsp from 'fs/promises';
@@ -55,7 +55,7 @@ export async function processNovelScan(context: ProcessorContext) {
     // 1. Path Resolution
     let filePath = fileKey;
     if (!path.isAbsolute(filePath)) {
-      const storageRoot = config.storageRoot;
+      const storageRoot = (config as any).storageRoot;
       filePath = path.resolve(storageRoot, fileKey);
     }
 

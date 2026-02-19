@@ -103,6 +103,7 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     const { provider, reason } = this.selectProvider();
     const adapter = this.getAdapter(provider);
 
+    this.logger.log(`[ShotRenderRouter] [DEBUG] process.env.SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`);
     this.logger.log(`[ShotRenderRouter] Selected provider: ${provider} (reason: ${reason})`);
 
     // [STELLAR-ESTHETIC-ORCHESTRATION]
@@ -128,6 +129,20 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     // Final Style Wrapping with Coordination Insights
     input.payload.prompt = `${finalPrompt}, ${GUOMAN_STYLE}`;
     input.payload.negative_prompt = input.payload.negative_prompt || NEGATIVE;
+
+    // B2.4: Asset Anchor - Fetch Fixed Seed from DB if it exists (Stored in Attributes)
+    if (characterId && this.characterService) {
+      const character = await this.characterService.findOne(characterId);
+      const attrs = (character?.attributes || {}) as any;
+      if (attrs.fixed_seed) {
+        input.payload.seed = parseInt(attrs.fixed_seed);
+        this.logger.log(`[ShotRenderRouter] Locked SEED ${input.payload.seed} for character ${character?.name}`);
+      }
+      // Inject Checkpoint if specified in attributes
+      if (attrs.preferred_checkpoint) {
+        input.payload.checkpoint = attrs.preferred_checkpoint;
+      }
+    }
 
     // Pass-through metadata for enrichment
     input.payload.cameraMovement = input.payload.cameraMovement || input.context?.cameraMovement || aestheticResult.suggestedCamera;
