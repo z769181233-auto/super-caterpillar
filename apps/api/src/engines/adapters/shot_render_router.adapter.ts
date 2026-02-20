@@ -388,7 +388,7 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     provider: 'replicate' | 'local' | 'comfyui' | 'mock' | 'local_mps' | 'fusion';
     reason: string;
   } {
-    const envProvider = (process.env.SHOT_RENDER_PROVIDER || 'replicate').toLowerCase();
+    const envProvider = (process.env.SHOT_RENDER_PROVIDER || 'replicate').toLowerCase() as any;
     const engineMode = process.env.ENGINE_MODE || 'development';
 
     if (engineMode === 'production' && envProvider === 'mock') {

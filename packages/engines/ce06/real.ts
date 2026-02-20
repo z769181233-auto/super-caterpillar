@@ -56,8 +56,8 @@ async function executeChunkParsePhase(
   console.log(`[CE06_REAL_DIAGNOSTIC] ${new Date().toISOString()} - Original Model: ${modelName}`);
 
   if (modelName === 'gemini-1.5-flash') {
-    modelName = 'gemini-flash-latest';
-    console.log(`[CE06_REAL_DIAGNOSTIC] Mapped to: ${modelName}`);
+    // modelName = 'gemini-flash-latest';
+    // console.log(`[CE06_REAL_DIAGNOSTIC] Mapped to: ${modelName}`);
   }
 
   const systemPrompt = `You are a professional Screenwriter. Split the following chapter into scenes for a movie production. For each scene, capture the location, characters, and key actions.

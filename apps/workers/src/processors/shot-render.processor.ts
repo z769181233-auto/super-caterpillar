@@ -142,7 +142,8 @@ export async function processShotRenderJob(
         payload: {
           pipelineRunId,
           traceId,
-          frames: [storageKey],
+          shotId: shot.id,
+          frameKeys: [storageKey],
           projectId,
           sceneId: shot.sceneId,
           episodeId: shot.scene?.episodeId,
@@ -193,7 +194,7 @@ export async function processShotRenderJob(
     logger.error(`[ShotRender_HUB] Failed: ${error.message}`);
     await prisma.shot
       .update({ where: { id: shotId }, data: { renderStatus: 'FAILED' } })
-      .catch(() => {});
+      .catch(() => { });
     return { status: 'FAILED', error: error.message };
   }
 }

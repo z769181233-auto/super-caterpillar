@@ -198,6 +198,7 @@ async function executeScanJob(
           pipelineRunId: job.payload?.pipelineRunId,
           rootJobId: job.payload?.rootJobId || job.id, // Propagate rootJobId for Orchestrator chain
           charCount: totalCharCount, // P6-1-5: 传递 charCount 用于计费
+          model: 'gemini-2.0-flash', // Bypass gemini-1.5-flash quota using stable 2.0
         },
         parentJobId: job.id,
       });
@@ -294,6 +295,7 @@ async function executeChunkParseJob(
         short_term_memory: contextPrompt.shortTermMemory,
         entity_states: contextPrompt.entityStates,
       },
+      model: payload.model, // Passthrough model
     },
     metadata: {
       traceId,
@@ -366,6 +368,7 @@ async function executeChunkParseJob(
           traceId,
           pipelineRunId,
           shotId: defaultShot.id,
+          model: payload.model, // Passthrough model
         },
         metadata: { traceId, sceneId: scene.id, shotId: defaultShot.id },
       });
@@ -387,6 +390,7 @@ async function executeChunkParseJob(
           traceId,
           pipelineRunId,
           shotId: defaultShot.id,
+          model: payload.model, // Passthrough model
         },
         metadata: { traceId, sceneId: scene.id, shotId: defaultShot.id },
       });
