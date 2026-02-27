@@ -63,6 +63,7 @@ export async function markRetryOrFail(
   tx: Prisma.TransactionClient,
   job: {
     id: string;
+    projectId: string;
     retryCount: number;
     maxRetry: number;
     payload: any;
@@ -89,7 +90,7 @@ export async function markRetryOrFail(
   const status = computation.shouldFail ? JobStatus.FAILED : JobStatus.RETRYING;
 
   await tx.shotJob.update({
-    where: { id: job.id },
+    where: { id: job.id, status: JobStatus.RUNNING }, // P3-A: Enforce running origin
     data: {
       status,
       payload: payload as any,
@@ -100,6 +101,26 @@ export async function markRetryOrFail(
       lockedBy: null, // P1-1: 清除锁定标记
     },
   });
+
+  // P3-A: Dual State Machine Physical Binding - RELEASED
+  try {
+    await tx.billingLedger.create({
+      data: {
+        jobId: job.id,
+        projectId: job.projectId,
+        billingState: 'RELEASED',
+        amount: 1n,
+        idempotencyKey: `${job.id}_RELEASED`,
+      }
+    });
+  } catch (e: any) {
+    if (e.code === 'P2002') {
+      // Idempotency hit, ignore
+      console.warn(`[JobRetry] Billing idempotency hit: ${job.id}_RELEASED already exists`);
+    } else {
+      throw e;
+    }
+  }
 
   return {
     status,

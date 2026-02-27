@@ -17,48 +17,14 @@ export interface BillingEntry {
 export class FinancialSettlementService {
   private readonly logger = new Logger(FinancialSettlementService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
-   * P6-1-5: 幂等计费写入器
-   * 基于 (tenantId, traceId, itemType, itemId, chargeCode) 唯一约束确保幂等
+   * @deprecated P3-A: Billing Ledger is now strictly managed by atomic Job State Transitions.
+   * This non-transactional method is disabled.
    */
   async writeBillingLedger(entry: BillingEntry): Promise<void> {
-    try {
-      await this.prisma.billingLedger.upsert({
-        where: {
-          tenantId_traceId_itemType_itemId_chargeCode: {
-            tenantId: entry.tenantId,
-            traceId: entry.traceId,
-            itemType: entry.itemType,
-            itemId: entry.itemId,
-            chargeCode: entry.chargeCode,
-          },
-        },
-        create: {
-          tenantId: entry.tenantId,
-          traceId: entry.traceId,
-          itemType: entry.itemType,
-          itemId: entry.itemId,
-          chargeCode: entry.chargeCode,
-          amount: entry.amount,
-          currency: entry.currency || 'CREDIT',
-          status: entry.status,
-          evidenceRef: entry.evidenceRef,
-        },
-        update: {
-          // 幂等：如果已存在且是终态，则不再修改金额，但可以更新状态或凭证
-          status: entry.status,
-          evidenceRef: entry.evidenceRef,
-        },
-      });
-      this.logger.log(
-        `[FinancialSettlement] ✅ Ledger sync: ${entry.traceId} | ${entry.amount} ${entry.currency}`
-      );
-    } catch (error: any) {
-      this.logger.error(`[FinancialSettlement] ❌ Error writing ledger:`, error);
-      throw error;
-    }
+    this.logger.debug(`[FinancialSettlement] Ignored obsolete legacy ledger write for ${entry.traceId}`);
   }
 
   /**

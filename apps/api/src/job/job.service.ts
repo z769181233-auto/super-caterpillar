@@ -1486,31 +1486,33 @@ export class JobService {
             ? { ...currentPayload, result: resultForPayload }
             : currentPayload;
 
-        updatedJob = (await this.prisma.shotJob.update({
-          where: { id: jobId },
-          data: {
-            status: JobStatusEnum.SUCCEEDED,
-            payload: updatedPayload ?? undefined,
-            result: result ?? undefined,
-            attempts: job.attempts, // attempts 只在领取时递增，不在此处递增
-            retryCount: job.retryCount,
-            lastError: null,
-            // workerId: null, // Keep workerId for history
-            securityProcessed:
-              job.type === JobTypeEnum.CE09_MEDIA_SECURITY ? true : job.securityProcessed,
-          },
-          include: {
-            task: true,
-            worker: true,
-            shot: {
-              include: {
-                scene: {
-                  include: {
-                    episode: {
-                      include: {
-                        season: {
-                          include: {
-                            project: true,
+        updatedJob = (await this.prisma.$transaction(async (tx) => {
+          const uJob = await tx.shotJob.update({
+            where: { id: jobId, status: JobStatusEnum.RUNNING }, // P3-A: enforce running origin
+            data: {
+              status: JobStatusEnum.SUCCEEDED,
+              payload: updatedPayload ?? undefined,
+              result: result ?? undefined,
+              attempts: job.attempts, // attempts 只在领取时递增，不在此处递增
+              retryCount: job.retryCount,
+              lastError: null,
+              // workerId: null, // Keep workerId for history
+              securityProcessed:
+                job.type === JobTypeEnum.CE09_MEDIA_SECURITY ? true : job.securityProcessed,
+            },
+            include: {
+              task: true,
+              worker: true,
+              shot: {
+                include: {
+                  scene: {
+                    include: {
+                      episode: {
+                        include: {
+                          season: {
+                            include: {
+                              project: true,
+                            },
                           },
                         },
                       },
@@ -1519,7 +1521,28 @@ export class JobService {
                 },
               },
             },
-          },
+          });
+
+          // P3-A: Dual State Machine Physical Binding - COMMITTED
+          try {
+            await tx.billingLedger.create({
+              data: {
+                jobId: uJob.id,
+                projectId: uJob.projectId,
+                billingState: 'COMMITTED',
+                amount: 1n,
+                idempotencyKey: `${uJob.id}_COMMITTED`,
+              }
+            });
+          } catch (e: any) {
+            if (e.code === 'P2002') {
+              this.logger.warn(`[JobService] Billing idempotency hit: ${uJob.id}_COMMITTED already exists`);
+            } else {
+              throw e;
+            }
+          }
+
+          return uJob;
         })) as ShotJobWithShotHierarchy;
 
         if (process.env.NODE_ENV === 'development') {
@@ -1699,55 +1722,7 @@ export class JobService {
         }
       }
 
-      // P0-2: Record cost to ledger for billable jobs (idempotent)
-      if (
-        !updatedJob.isVerification && // Skip billing for verification jobs
-        (updatedJob.type === JobTypeEnum.VIDEO_RENDER ||
-          updatedJob.type === JobTypeEnum.SHOT_RENDER ||
-          updatedJob.type === JobTypeEnum.CE06_NOVEL_PARSING)
-      ) {
-        try {
-          // P6-1: Use Unified FinancialSettlementService for BillingLedger
-          if (this.financialSettlementService) {
-            let amount = 0;
-            let chargeCode = '';
 
-            if (updatedJob.type === JobTypeEnum.CE06_NOVEL_PARSING) {
-              const charCount =
-                (updatedJob.result as any)?.stats?.charCount ||
-                (updatedJob.payload as any)?.charCount ||
-                0;
-              amount = this.financialSettlementService.calculateCE06Cost(charCount);
-              if (amount === 0) amount = 1; // Minimum charge for success
-              chargeCode = 'SCAN_CHAR';
-            } else if (updatedJob.type === JobTypeEnum.SHOT_RENDER) {
-              amount = this.financialSettlementService.calculateShotRenderCost();
-              chargeCode = 'RENDER_CHAR';
-            } else if (updatedJob.type === JobTypeEnum.VIDEO_RENDER) {
-              amount = this.financialSettlementService.calculateVideoRenderCost();
-              chargeCode = 'VIDEO_CHAR';
-            }
-
-            if (amount > 0) {
-              await this.financialSettlementService.writeBillingLedger({
-                tenantId: updatedJob.organizationId,
-                traceId: updatedJob.id,
-                itemType: 'JOB',
-                itemId: updatedJob.id,
-                chargeCode,
-                amount,
-                status: 'POSTED',
-                evidenceRef: updatedJob.traceId || undefined,
-              });
-            }
-          }
-
-        } catch (costError: any) {
-          this.logger.warn(
-            `[Job] Failed to record billing logic for job ${jobId}: ${costError?.message} `
-          );
-        }
-      }
 
       return updatedJob;
     } else {

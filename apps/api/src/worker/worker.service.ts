@@ -737,6 +737,25 @@ export class WorkerService {
           return null;
         }
 
+        // P3-A: Dual State Machine Physical Binding - RESERVED
+        try {
+          await tx.billingLedger.create({
+            data: {
+              jobId: candidate.id,
+              projectId: candidate.projectId,
+              billingState: 'RESERVED',
+              amount: 1n,
+              idempotencyKey: `${candidate.id}_RESERVED`,
+            }
+          });
+        } catch (e: any) {
+          if (e.code === 'P2002') {
+            this.logger.warn(`[WorkerService] Billing idempotency hit: ${candidate.id}_RESERVED already exists`);
+          } else {
+            throw e; // Abort transaction
+          }
+        }
+
         // 2.3 Fetch full job details with engine binding
         const jobWithBinding = await tx.shotJob.findUnique({
           where: { id: candidate.id },

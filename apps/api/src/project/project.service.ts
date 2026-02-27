@@ -1378,7 +1378,7 @@ export class ProjectService {
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.billingLedger.aggregate({
-        where: { tenantId: projectId },
+        where: { projectId: projectId },
         _sum: { amount: true },
       }),
       // Real Audit Logs: Recent actions on this project
@@ -1691,7 +1691,7 @@ export class ProjectService {
         visual: 'OK',
       },
       cost: {
-        total: { money: Math.abs((costAgg._sum?.amount || 0.0) / 100) },
+        total: { money: Math.abs(Number(costAgg._sum?.amount || 0n) / 100) },
         last24h: { money: 0.0 }, // Pending implementation: filter by createdAt > now-24h
         currentRunEstimate: { money: 0.0 },
         alert: { level: 'OK' },

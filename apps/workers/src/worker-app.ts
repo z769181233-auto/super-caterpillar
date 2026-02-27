@@ -574,36 +574,8 @@ async function handleEngineResultAndReport(
         const charCount = job.payload?.charCount || job.payload?.totalTokens || 0;
         if (charCount > 0) {
           const amount = Math.ceil(charCount / 10000); // SCAN_CHAR 口径
-          const tenantId = job.payload?.organizationId || 'default-org';
-
-          // P6-1-5: 调用 BillingLedgerWriter（幂等）
-          // Note: writeBillingLedger 暂通过直接 DB 写入（无需跨包导入）
-          await prisma.billingLedger
-            .create({
-              data: {
-                tenantId,
-                traceId: job.id,
-                itemType: 'JOB',
-                itemId: job.id,
-                chargeCode: 'SCAN_CHAR',
-                amount,
-                currency: 'CREDIT',
-                status: 'POSTED',
-                evidenceRef: `job:${job.id}`,
-              },
-            })
-            .catch((err: any) => {
-              if (err.code === 'P2002') {
-                // Unique constraint - 幂等，已存在
-                console.log(`[Billing] ℹ️  Ledger entry already exists (idempotent): ${job.id}`);
-              } else {
-                throw err;
-              }
-            });
-
-          console.log(
-            `[Billing] ✅ CE06 Job ${job.id}: charCount=${charCount}, amount=${amount} credits POSTED`
-          );
+          // P3-A: Billing Ledger creation is handled atomically by API updating Job to SUCCEEDED.
+          console.log(`[Billing] Job ${job.id} will be billed ${amount} credits by the API layer.`);
         }
       } catch (err) {
         console.error(`[Billing] ❌ Failed to write ledger for Job ${job.id}:`, err);

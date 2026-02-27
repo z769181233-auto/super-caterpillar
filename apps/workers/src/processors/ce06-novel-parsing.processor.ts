@@ -478,44 +478,8 @@ async function executeChunkParseJob(
 
   if (amount > 0) {
     logger.log(
-      `[BILLING] Job ${job.id} SUCCEEDED, charCount: ${charCount}, posting charge for ${amount} credits`
+      `[BILLING] Job ${job.id} SUCCEEDED, charCount: ${charCount}, estimated charge for ${amount} credits (Deferred to API layer)`
     );
-    try {
-      const tenantId = 'default'; // 默认租户
-
-      // 幂等性检查：使用复合唯一键
-      const existing = await prisma.billingLedger.findUnique({
-        where: {
-          tenantId_traceId_itemType_itemId_chargeCode: {
-            tenantId,
-            traceId: job.id,
-            itemType: 'JOB',
-            itemId: job.id,
-            chargeCode: 'SCAN_CHAR',
-          },
-        },
-      });
-
-      if (existing) {
-        logger.log(`[BILLING] Charge already posted for Job ${job.id}, skipping`);
-      } else {
-        await prisma.billingLedger.create({
-          data: {
-            tenantId,
-            traceId: job.id,
-            itemType: 'JOB',
-            itemId: job.id,
-            chargeCode: 'SCAN_CHAR',
-            amount: amount, // 以 credits 为单位
-            status: 'POSTED',
-          },
-        });
-        logger.log(`[BILLING] Posted charge for Job ${job.id}: ${amount} credits`);
-      }
-    } catch (error: any) {
-      logger.error(`[BILLING] Failed to post charge for Job ${job.id}:`, error.message);
-      // 不阻塞 Job 完成，仅记录错误
-    }
   }
 
   return { status: 'SUCCEEDED' };

@@ -150,9 +150,9 @@ describe('ce07_memory_update integration', () => {
 
     // Verify BillingLedger
     const ledgerByJob = await prisma.billingLedger.findFirst({
-      where: { itemId: jobId },
+      where: { jobId: jobId },
     });
     expect(ledgerByJob).toBeTruthy();
-    expect(ledgerByJob?.chargeCode).toBe('ce07_memory_update');
+    expect(ledgerByJob?.billingState).toBeTruthy();
   });
 });

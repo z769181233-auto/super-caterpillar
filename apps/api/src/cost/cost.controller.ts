@@ -52,8 +52,8 @@ export class InternalEventsController {
   @Post('cost-ledger')
   async recordCost(@Body() dto: CostEventDto) {
     try {
-      const row = await this.costLedger.recordFromEvent(dto);
-      return { ok: true, id: row.id, deduplicated: row.createdAt.getTime() < Date.now() - 1000 };
+      const result = await this.costLedger.recordFromEvent(dto);
+      return { ok: true, deduplicated: result.deduped, amountDeducted: result.amountDeducted };
     } catch (e: any) {
       const msg = String(e?.message ?? e);
       // P1-1: 将计费拒绝错误映射为 400 而非 500

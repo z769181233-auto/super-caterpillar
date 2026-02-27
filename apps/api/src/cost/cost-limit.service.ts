@@ -143,30 +143,10 @@ export class CostLimitService implements OnModuleInit {
       costUsd: costUsd,
     });
 
-    // 2. Persist to BillingLedger using [tenantId, traceId, itemType, itemId, chargeCode] for idempotency
-    try {
-      await this.prisma.billingLedger.create({
-        data: {
-          tenantId: projectId,
-          traceId: jobId,
-          itemType: params.jobType || 'SHOT_RENDER',
-          itemId: jobId,
-          chargeCode: params.engineKey,
-          amount: Math.round(costUsd * 100), // Credits * 100
-          status: 'POSTED',
-          evidenceRef: `attempt:${attempt}`,
-          updatedAt: new Date(),
-        },
-      });
-    } catch (error: any) {
-      if (error.code === 'P2002') {
-        this.logger.warn(
-          `[CostLimit] Skipping duplicate ledger entry (idempotency): ${jobId}:${attempt}`
-        );
-        return;
-      }
-      throw error;
-    }
+    // 2. Persist to BillingLedger is removed as P3-A strictly manages ledger via Job Transitions
+    this.logger.log(
+      `[CostLimit] Job ${jobId} used ${costUsd} USD. Ledger update deferred to Job Status Transition.`
+    );
   }
 
   /**
@@ -196,7 +176,7 @@ export class CostLimitService implements OnModuleInit {
     // Query BillingLedger for this job
     const ledgers = await this.prisma.billingLedger.findMany({
       where: {
-        traceId: jobId,
+        jobId: jobId,
       },
     });
 
@@ -205,12 +185,10 @@ export class CostLimitService implements OnModuleInit {
     let totalCost = 0;
 
     for (const ledger of ledgers) {
-      // Sum cost (amount is credits * 100)
-      totalCost += (ledger.amount || 0) / 100;
+      // Sum cost (amount is BigInt representing credits * 100)
+      totalCost += Number(ledger.amount || 0n) / 100;
 
-      // Note: for V3.0 simple fix, image count and gpu seconds tracking 
-      // is simplified or can be extracted from status/metadata if needed.
-      // For now, we prioritize totalCost aggregate to unblock build.
+      // Note: mapping simplified for P3-A
     }
 
     return { imageCount, gpuSeconds, totalCost };

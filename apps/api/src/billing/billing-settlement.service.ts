@@ -26,8 +26,8 @@ export class BillingSettlementService {
 
     const ledgers = await this.prisma.billingLedger.findMany({
       where: {
-        tenantId: projectId,
-        status: 'PENDING',
+        projectId: projectId,
+        billingState: 'COMMITTED',
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -48,20 +48,24 @@ export class BillingSettlementService {
           async (tx) => {
             // 1. Idempotency Guard (Power Root)
             // In V3.0 BillingLedger is the source, but we still check BillingEvent if needed
-            // Actually, for settlement, we just move status PENDING -> POSTED
+            // P3-A: Billing Ledger uses 'COMMITTED' via Job Engine, not 'POSTED' or 'PENDING'
             const ledger = await tx.billingLedger.findUnique({ where: { id: l.id } });
-            if (ledger?.status === 'POSTED') {
+            if (ledger?.billingState !== 'COMMITTED') {
               return;
             }
 
             // 2. Critical Context Validation
-            if (!l.tenantId) throw new Error('MISSING_TENANT_ID');
-            const costToCharge = l.amount / 100; // Int to Credits
+            if (!l.projectId) throw new Error('MISSING_PROJECT_ID');
+            const costToCharge = Number(l.amount) / 100; // Int to Credits
+
+            // Helper: Find Org
+            const proj = await tx.project.findUnique({ where: { id: l.projectId } });
+            const orgId = proj?.organizationId || l.projectId;
 
             // 3. Row-Level Locking on Credits (Atomicity)
-            await tx.$executeRaw`SELECT id FROM organizations WHERE id = ${l.tenantId} FOR UPDATE`;
+            await tx.$executeRaw`SELECT id FROM organizations WHERE id = ${orgId} FOR UPDATE`;
 
-            const org = await tx.organization.findUnique({ where: { id: l.tenantId } });
+            const org = await tx.organization.findUnique({ where: { id: orgId } });
             if (!org) throw new Error('ORG_NOT_FOUND');
 
             if (org.credits < costToCharge) {
@@ -73,16 +77,15 @@ export class BillingSettlementService {
             await tx.billingEvent.create({
               data: {
                 id: eventId,
-                projectId: l.tenantId,
-                orgId: l.tenantId,
+                projectId: l.projectId,
+                orgId: orgId,
                 userId: undefined, // Or extract from metadata if needed
                 type: 'CONSUME',
                 creditsDelta: -costToCharge, // Negative for consumption
                 metadata: {
                   ledgerId: l.id,
-                  itemType: l.itemType,
-                  itemId: l.itemId,
-                  traceId: l.traceId,
+                  itemId: l.jobId,
+                  traceId: l.jobId,
                   settleRunId: runId,
                 },
               },
@@ -90,31 +93,26 @@ export class BillingSettlementService {
 
             // 5. Deduct Balance
             await tx.organization.update({
-              where: { id: l.tenantId },
+              where: { id: orgId },
               data: { credits: { decrement: costToCharge } },
             });
 
-            // 6. Seal Ledger Status
-            await tx.billingLedger.update({
-              where: { id: l.id },
-              data: {
-                status: 'POSTED',
-              },
-            });
+            // 6. Seal Ledger Status - No-Op in P3-A since 'COMMITTED' is final in Ledger
+            // (Previously it set status: 'POSTED')
 
             processedCount++;
 
             // Item-Level Audit
             await this.recordAudit(
               null,
-              l.tenantId,
+              l.projectId,
               'billing.settle.item.billed',
               {
                 ledgerId: l.id,
                 billingEventId: eventId,
                 creditsDelta: costToCharge,
               },
-              l.traceId || runId
+              l.jobId || runId
             );
           },
           {
@@ -130,7 +128,7 @@ export class BillingSettlementService {
           await this.prisma.billingLedger
             .update({
               where: { id: l.id },
-              data: { status: 'FAILED' },
+              data: { billingState: 'RELEASED' }, // Substitute for FAILED
             })
             .catch(() => null);
         }

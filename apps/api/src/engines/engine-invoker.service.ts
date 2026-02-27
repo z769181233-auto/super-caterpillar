@@ -45,7 +45,7 @@ export class EngineInvokerService {
       }
 
       const ledger = await this.prisma.billingLedger.findFirst({
-        where: { traceId: String(traceId) },
+        where: { jobId: String(traceId) },
         select: { id: true }
       });
 

@@ -325,7 +325,7 @@ export class BillingService {
   async getReconcileStatus(projectId: string) {
     const [ledgerSum, eventSum, billingEventsCount, billedLedgerCount] = await Promise.all([
       this.prisma.billingLedger.aggregate({
-        where: { tenantId: projectId, status: 'POSTED' },
+        where: { projectId: projectId, billingState: 'COMMITTED' },
         _sum: { amount: true },
       }),
       this.prisma.billingEvent.aggregate({
@@ -336,11 +336,11 @@ export class BillingService {
         where: { projectId },
       }),
       this.prisma.billingLedger.count({
-        where: { tenantId: projectId, status: 'POSTED' },
+        where: { projectId: projectId, billingState: 'COMMITTED' },
       }),
     ]);
 
-    const sumLedger = Number((ledgerSum._sum?.amount || 0) / 100);
+    const sumLedger = Number(ledgerSum._sum?.amount || 0n) / 100;
     const sumEvent = Math.abs(Number(eventSum._sum?.creditsDelta || 0));
 
     const drift = Math.abs(sumLedger - sumEvent);

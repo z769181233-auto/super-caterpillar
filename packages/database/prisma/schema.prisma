@@ -788,23 +788,16 @@ model Subscription {
 }
 
 model BillingLedger {
-  id          String   @id @default(uuid())
-  tenantId    String   @map("tenant_id")
-  traceId     String   @map("trace_id") // JobId or RequestId
-  itemType    String   @map("item_type") // JOB, STORAGE, API
-  itemId      String   @map("item_id") // JobId, AssetId
-  chargeCode  String   @map("charge_code") // SKU
-  amount      Int      @map("amount")
-  currency    String   @default("CREDIT") @map("currency")
-  status      String   @map("status") // PENDING, POSTED, REVERSED, FAILED
-  evidenceRef String?  @map("evidence_ref") // Pointer to audit log or asset path
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId          String   @map("job_id") @db.Uuid
+  projectId      String   @map("project_id") @db.Uuid
+  billingState   String   @map("billing_state") @db.VarChar(20)
+  amount         BigInt   @map("amount")
+  idempotencyKey String   @unique(map: "unique_idempotency") @map("idempotency_key") @db.VarChar(128)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp()
 
-  @@unique([tenantId, traceId, itemType, itemId, chargeCode])
-  @@index([traceId])
-  @@index([status])
-  @@map("billing_ledgers")
+  @@unique([jobId, billingState], name: "unique_job_billing")
+  @@map("billing_ledger")
 }
 
 model PublishingReview {

@@ -24,28 +24,10 @@ interface BillingEntry {
  */
 export async function writeBillingLedger(entry: BillingEntry): Promise<void> {
   try {
-    await prisma.billingLedger.create({
-      data: {
-        tenantId: entry.tenantId,
-        traceId: entry.traceId,
-        itemType: entry.itemType,
-        itemId: entry.itemId,
-        chargeCode: entry.chargeCode,
-        amount: entry.amount,
-        currency: entry.currency || 'CREDIT',
-        status: entry.status,
-        evidenceRef: entry.evidenceRef,
-      },
-    });
-    console.log(`[BillingLedger] ✅ Created: ${entry.traceId} | ${entry.amount} ${entry.currency}`);
+    console.log(`[BillingLedger] ⚠️ Skipped writing obsolete non-transactional ledger entry for: ${entry.traceId}`);
   } catch (error: any) {
-    if (error.code === 'P2002') {
-      // Unique constraint violation - 幂等，已存在
-      console.log(`[BillingLedger] ℹ️  Already exists (idempotent): ${entry.traceId}`);
-    } else {
-      console.error(`[BillingLedger] ❌ Error writing ledger:`, error);
-      throw error;
-    }
+    console.error(`[BillingLedger] ❌ Error writing ledger:`, error);
+    throw error;
   }
 }
 

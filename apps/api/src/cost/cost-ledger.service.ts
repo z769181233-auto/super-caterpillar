@@ -68,53 +68,20 @@ export class CostLedgerService {
       throw new Error(`BILLING_REJECTED_JOB_NOT_SUCCEEDED status=${job.status} jobId=${e.jobId}`);
     }
 
-    // V3.0 Align: Mapping to BillingLedger Schema
-    const ledgerData: Prisma.BillingLedgerCreateInput = {
-      tenantId: job.organizationId || e.userId,
-      traceId: job.traceId || e.jobId,
-      itemType: e.jobType,
-      itemId: e.jobId,
-      chargeCode: e.engineKey || e.jobType,
-      amount: Math.round(e.costAmount * 100), // Convert to base units (e.g. cents or credits * 100)
-      currency: 'CREDIT',
-      status: 'POSTED',
-      evidenceRef: `job:${e.jobId}:${attemptNum}`,
-    };
+    // P3-A: Billing Ledger is strictly managed by Job State Transitions.
+    // RecordFromEvent ONLY deducts credits functionally but does NOT write Ledger 
+    // to avoid violating UNIQUE(job_id, billing_state).
 
-    // ✅ 幂等: 基于 BillingLedger 的唯一索引 (tenantId, traceId, itemType, itemId, chargeCode)
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        // 1. Create Billing Ledger Record (V3.0 SSOT)
-        const ledger = await tx.billingLedger.create({ data: ledgerData });
+    await this.billingService.consumeCredits(
+      e.projectId,
+      e.userId,
+      job.organizationId || 'missing',
+      e.costAmount,
+      `BILLING_V3:${e.jobType}`,
+      e.jobId
+    );
 
-        // 2. Consume Credits (Atomically)
-        await this.billingService.consumeCredits(
-          e.projectId,
-          e.userId,
-          job.organizationId || 'missing',
-          e.costAmount,
-          `BILLING_V3:${e.jobType}`,
-          e.jobId
-        );
-
-        return ledger;
-      });
-    } catch (err: any) {
-      // Prisma unique conflict: P2002
-      if (err?.code === 'P2002') {
-        this.logger.warn(`BILLING_LEDGER_DEDUPED=1 jobId=${e.jobId} traceId=${ledgerData.traceId}`);
-        const existing = await this.prisma.billingLedger.findFirst({
-          where: {
-            tenantId: ledgerData.tenantId,
-            traceId: ledgerData.traceId,
-            itemId: ledgerData.itemId,
-            chargeCode: ledgerData.chargeCode
-          },
-        });
-        if (existing) return existing;
-      }
-      throw err;
-    }
+    return { deduped: false, amountDeducted: e.costAmount };
   }
 
   /**
@@ -122,7 +89,7 @@ export class CostLedgerService {
    */
   async getProjectCosts(projectId: string) {
     return this.prisma.billingLedger.findMany({
-      where: { tenantId: projectId }, // Assuming tenantId maps to org/project in this context
+      where: { projectId: projectId },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -132,9 +99,10 @@ export class CostLedgerService {
    */
   async getProjectCostSummary(projectId: string) {
     const rows = await this.prisma.billingLedger.findMany({
-      where: { tenantId: projectId },
+      where: { projectId: projectId },
     });
-    const total = rows.reduce((s, r) => s + (r.amount / 100), 0);
+    // amount is BigInt, cast to Number for legacy API response
+    const total = rows.reduce((s, r) => s + (Number(r.amount) / 100), 0);
 
     return {
       projectId,
@@ -152,12 +120,12 @@ export class CostLedgerService {
 
     const byType = costs.reduce(
       (acc, cost) => {
-        const type = cost.itemType || 'UNKNOWN';
+        const type = cost.billingState || 'UNKNOWN';
         if (!acc[type]) {
           acc[type] = { count: 0, total: 0 };
         }
         acc[type].count++;
-        acc[type].total += (cost.amount / 100);
+        acc[type].total += (Number(cost.amount) / 100);
         return acc;
       },
       {} as Record<string, { count: number; total: number }>
