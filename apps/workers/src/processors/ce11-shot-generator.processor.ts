@@ -265,12 +265,30 @@ export async function processCE11ShotGeneratorJob(
         },
       }));
 
-      await (prisma as any).shotJob.createMany({
-        data: renderJobs,
-      });
+      // Create with bindings to satisfy PRODUCTION_MODE requirements
+      const BATCH = 20;
+      for (let i = 0; i < renderJobs.length; i += BATCH) {
+        const batchJobs = renderJobs.slice(i, i + BATCH);
+        await Promise.all(
+          batchJobs.map((jobData) =>
+            prisma.shotJob.create({
+              data: {
+                ...jobData,
+                engineBinding: {
+                  create: {
+                    engineKey: 'ce07_fusion_sdxl',
+                    engine: { connect: { engineKey: 'ce07_fusion_sdxl' } },
+                    status: 'BOUND',
+                  },
+                },
+              } as any,
+            })
+          )
+        );
+      }
 
       logger.log(
-        `[CE11] Cascaded ${renderJobs.length} SHOT_RENDER jobs for scene ${novelSceneId}`
+        `[CE11] Cascaded ${renderJobs.length} SHOT_RENDER jobs with bindings for scene ${novelSceneId}`
       );
     }
 

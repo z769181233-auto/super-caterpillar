@@ -91,322 +91,39 @@ export async function processCE06Job(
     });
     const organizationId = shotJob?.organizationId || 'system';
 
-    // 1. 获取输入数据
-    let rawText = (job as any).payload?.sourceText || (job as any).payload?.text;
-    let novelSourceId: string | undefined = (job as any).payload?.novelSourceId;
+    // P0 Fix: DO NOT JOIN! DO NOT READ ALL!
+    // Instead, trigger the SCAN phase.
+    console.log(`[CE06] 🚀 Shredder Mode Active for Project ${projectId}`);
 
-    if (!rawText) {
-      const novelSource = await prisma.novel.findFirst({
-        where: { projectId },
-        orderBy: { createdAt: 'desc' },
-      });
-      if (novelSource) {
-        // Fetch chapters
-        const chapters = await prisma.novelChapter.findMany({
-          where: { novelSourceId: novelSource.id },
-          orderBy: { index: 'asc' },
-        });
-        rawText = chapters.map((c) => c.rawContent || '').join('\n');
-        novelSourceId = novelSource.id;
+    // 1. Ensure NovelSource exists
+    let novelSourceId = (job.payload as any).novelSourceId ?? undefined;
+    const novel = await prisma.novel.findFirst({ where: { projectId } });
+
+    // 2. Spawn NOVEL_SCAN_TOC Job
+    const scanJob = await prisma.shotJob.create({
+      data: {
+        organizationId, // From early fetch at line 92
+        projectId,
+        type: 'NOVEL_SCAN_TOC' as any,
+        status: 'PENDING',
+        payload: {
+          projectId,
+          novelSourceId,
+          fileKey: (job.payload as any).fileKey || novel?.rawFileUrl,
+          engineVersion: (job.payload as any).engineVersion || 'ce06-v3',
+        },
+        taskId: job.taskId,
+        traceId: (job as any).traceId,
       }
-    }
-
-    if (!rawText) {
-      throw new Error('Novel source not found or rawText is empty');
-    }
-
-    const input: CE06NovelParsingInput = {
-      structured_text: rawText,
-      context: {
-        projectId,
-        novelSourceId,
-      },
-    };
-
-    // 调用 CE06 Engine
-    const engineReq: EngineInvocationRequest<CE06NovelParsingInput> = {
-      engineKey: 'ce06_novel_parsing',
-      engineVersion: 'default',
-      payload: input,
-      metadata: {
-        jobId,
-        projectId,
-        traceId,
-      },
-    };
-
-    const engineResult = await engineClient.invoke<CE06NovelParsingInput, CE06NovelParsingOutput>(
-      engineReq
-    );
-
-    if (!engineResult.success || !engineResult.output) {
-      throw new Error(engineResult.error?.message || 'CE06 engine execution failed');
-    }
-
-    const result = engineResult.output;
-
-    // 3. 落库
-    const parserVer = (result as any).audit_trail?.engine_version || 'v1.1';
-    const textHash = createHash('sha256').update(rawText).digest('hex');
-    const idempotencyKey = createHash('sha256')
-      .update(`${projectId}${textHash}${parserVer}`)
-      .digest('hex');
-
-    await prisma.novelParseResult.upsert({
-      where: { projectId },
-      create: {
-        idempotencyKey,
-        projectId,
-        organizationId: organizationId,
-        status: 'COMPLETED',
-        parsingQuality: result.parsing_quality || 1.0,
-        rawOutput: result.volumes as any,
-        modelVersion: parserVer,
-      },
-      update: {
-        status: 'COMPLETED',
-        parsingQuality: result.parsing_quality || 1.0,
-        rawOutput: result.volumes as any,
-        updatedAt: new Date(),
-      },
     });
 
-    // 3.1 映射到层级结构并落库 (Season/Episode/Scene/Shot)
-    // 这是 P1 能力闭环的关键：让物理引擎的产物进入业务主表
-    const structure = mapCE06OutputToProjectStructure(projectId, result);
-    await applyAnalyzedStructureToDatabase(prisma, structure);
-
-    // [ORCHESTRATION] Stage 3: CE06 Success -> Trigger CE03 for all scenes
-    try {
-      // 2-step lookup to avoid relation naming guess
-      const chapters = await prisma.novelChapter.findMany({
-        where: { novelSource: { projectId } },
-        select: { id: true },
-      });
-      logStructured('info', { action: 'ORCHESTRATION_DEBUG_CHAPTERS', count: chapters.length });
-
-      // [P0 FIX] Deterministic ID Binding: Map Scene -> CinemaScene via indices
-      // 1. Fetch all Scenes (select chapterId manually to avoid relation issues)
-      const allNovelScenes = await prisma.scene.findMany({
-        where: {
-          chapterId: { in: chapters.map((c) => c.id) },
-        },
-        select: {
-          id: true,
-          sceneIndex: true, // V3.0: index -> sceneIndex
-          chapterId: true, // Fetch FK directly
-        },
-      });
-      logStructured('info', { action: 'ORCHESTRATION_DEBUG_SCENES', count: allNovelScenes.length });
-
-      // 1b. Fetch related NovelChapters (Manual Join)
-      // Note: allNovelScenes type has sceneIndex now.
-      const relatedChapters = await prisma.novelChapter.findMany({
-        where: { id: { in: allNovelScenes.map((ns) => ns.chapterId!) } }, // Ensure non-null
-        select: { id: true, index: true },
-      });
-      const chapterOrderMap = new Map<string, number>();
-      for (const rc of relatedChapters) chapterOrderMap.set(rc.id, rc.index);
-
-      // 2. Fetch all Cinema Structure (Scenes + Shots) for mapping
-      const cinemaStructure = await prisma.scene.findMany({
-        where: { episode: { projectId } },
-        select: {
-          id: true,
-          sceneIndex: true, // V3.0: index -> sceneIndex
-          episodeId: true,
-          episode: { select: { index: true } },
-          shots: { select: { id: true }, orderBy: { index: 'asc' }, take: 1 },
-        },
-      });
-
-      // 3. Build Lookup Map
-      const cinemaMap = new Map<string, (typeof cinemaStructure)[0]>();
-      for (const cs of cinemaStructure) {
-        const key = `${cs.episode!.index}_${cs.sceneIndex}`;
-        cinemaMap.set(key, cs);
-      }
-
-      if (allNovelScenes.length > 0) {
-        logStructured('info', {
-          action: 'ORCHESTRATION_TRIGGER_CE03',
-          projectId,
-          sceneCount: allNovelScenes.length,
-        });
-
-        const ce03Jobs = allNovelScenes
-          .map((ns) => {
-            const index = chapterOrderMap.get(ns.chapterId!);
-            // If index is missing (impossible due to FK), fallback
-            const mapKey = index !== undefined ? `${index}_${ns.sceneIndex}` : `fail_${ns.id}`;
-            const targetScene = cinemaMap.get(mapKey);
-
-            if (!targetScene || !targetScene.shots || targetScene.shots.length === 0) {
-              // Ensure shots property handled
-              const defaultShot = cinemaStructure.find((s) => s.shots.length > 0);
-              if (defaultShot) {
-                logStructured('warn', {
-                  action: 'CE03_BINDING_FALLBACK',
-                  reason: targetScene ? 'No Shots' : 'Scene Not Found',
-                  novelSceneId: ns.id,
-                  mapKey,
-                });
-                return {
-                  projectId,
-                  type: 'CE03_VISUAL_DENSITY',
-                  status: 'PENDING',
-                  payload: { novelSceneId: ns.id },
-                  organizationId: organizationId,
-                  traceId: traceId,
-                  episodeId: defaultShot.episodeId,
-                  sceneId: defaultShot.id,
-                  shotId: defaultShot.shots[0].id,
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                };
-              }
-              logStructured('error', { action: 'CE03_SKIP_NO_CINEMA_STRUCTURE', sceneId: ns.id });
-              return null;
-            }
-
-            return {
-              projectId,
-              type: 'CE03_VISUAL_DENSITY',
-              status: 'PENDING',
-              payload: { novelSceneId: ns.id },
-              organizationId: organizationId,
-              traceId: traceId,
-              episodeId: targetScene.episodeId,
-              sceneId: targetScene.id,
-              shotId: targetScene.shots[0].id,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-          })
-          .filter((item) => item !== null);
-
-        if (ce03Jobs.length > 0) {
-          await prisma.shotJob.createMany({
-            data: ce03Jobs as any,
-          });
-        }
-      }
-    } catch (orchError: any) {
-      // Fallback: If novelChapter relation fails, try raw query or log
-      logStructured('error', {
-        action: 'ORCHESTRATION_FAIL_CE06_TO_CE03',
-        error: orchError.message,
-      });
-    }
-
-    // 3.2 记录计费 (Stage-3-B)
-    try {
-      const costLedgerService = new CostLedgerService(apiClient, prisma);
-      const project = await prisma.project.findUnique({
-        where: { id: projectId },
-        select: { ownerId: true },
-      });
-      const userId = project?.ownerId || 'system';
-
-      if (organizationId && (result as any).billing_usage) {
-        await costLedgerService.recordCE06Billing({
-          jobId,
-          jobType: 'CE06_NOVEL_PARSING',
-          traceId,
-          projectId,
-          userId,
-          orgId: organizationId,
-          attempt: (job as any).attempts ?? 1,
-          engineKey: 'ce06_novel_parsing',
-          billingUsage: (result as any).billing_usage,
-        });
-      } else {
-        logStructured('warn', {
-          action: 'CE06_BILLING_SKIPPED',
-          jobId,
-          reason: !organizationId ? 'Missing organizationId' : 'Missing billing_usage',
-        });
-      }
-    } catch (billingError: any) {
-      logStructured('error', {
-        action: 'CE06_BILLING_FAILED',
-        jobId,
-        error: billingError?.message,
-      });
-      throw billingError;
-    }
-
-    const duration = Date.now() - jobStartTime;
-
-    // 计算 input/output hash
-    const inputHash = hashData(input);
-    const outputHash = hashData(result);
-
-    // 上报审计日志
-    try {
-      await apiClient.postAuditLog({
-        traceId,
-        projectId,
-        jobId,
-        jobType: 'CE06_NOVEL_PARSING',
-        engineKey: 'ce06_novel_parsing',
-        status: 'SUCCESS',
-        inputHash,
-        outputHash,
-        latencyMs: duration,
-        cost: 0, // 占位，后续接入成本体系
-        auditTrail: result.audit_trail || { message: 'missing' },
-      });
-    } catch (auditError: any) {
-      // 审计上报失败不影响主流程
-      logStructured('warn', {
-        action: 'CE06_AUDIT_FAILED',
-        jobId,
-        error: auditError?.message || 'Unknown error',
-      });
-    }
-
-    logStructured('info', {
-      action: 'CE06_JOB_SUCCESS',
-      jobId,
-      projectId,
-      durationMs: duration,
-      parsingQuality: result.parsing_quality,
-    });
-
-    return result;
+    return {
+      status: 'SPAWNED_SCAN',
+      message: 'Triggered NOVEL_SCAN_TOC for streaming pipeline',
+      scanJobId: scanJob.id
+    } as any;
   } catch (error: any) {
-    const duration = Date.now() - jobStartTime;
-
-    // 上报失败审计日志
-    try {
-      await apiClient.postAuditLog({
-        traceId,
-        projectId,
-        jobId,
-        jobType: 'CE06_NOVEL_PARSING',
-        engineKey: 'ce06_novel_parsing',
-        status: 'FAILED',
-        latencyMs: duration,
-        errorMessage: error?.message || 'Unknown error',
-      });
-    } catch (auditError: any) {
-      // 审计上报失败不影响主流程
-      logStructured('warn', {
-        action: 'CE06_AUDIT_FAILED',
-        jobId,
-        error: auditError?.message || 'Unknown error',
-      });
-    }
-
-    logStructured('error', {
-      action: 'CE06_JOB_FAILED',
-      jobId,
-      projectId,
-      error: error?.message || 'Unknown error',
-      durationMs: duration,
-    });
-
+    console.error(`[CE06] ❌ processCE06Job failed: ${error.message}`);
     throw error;
   }
 }

@@ -21,6 +21,7 @@ import { processTimelineRenderJob } from '../processors/timeline-render.processo
 import { processStage1OrchestratorJob } from '../processors/stage1-orchestrator.processor';
 import { processNovelScan } from '../processors/novel-scan.processor';
 import { processNovelChunk } from '../processors/novel-chunk.processor';
+import { processNovelReduce } from '../processors/novel-reduce.processor';
 import type { ProcessorContext } from '../types/processor-context';
 import { processAudioJob } from '../processors/audio.processor';
 import { processNovelAnalysisJob } from '../novel-analysis-processor';
@@ -133,6 +134,7 @@ export async function startGateWorkerApp() {
             'PIPELINE_PROD_VIDEO_V1',
             'EPISODE_RENDER',
             'NOVEL_ANALYSIS',
+            'NOVEL_REDUCE_AGGREGATE',
           ],
           supportedModels: [],
           supportedEngines: [
@@ -150,6 +152,7 @@ export async function startGateWorkerApp() {
             'timeline_render',
             'audio_engine',
             'fusion',
+            'ce06_novel_aggregator',
           ],
           maxBatchSize: maxConcurrency,
         },
@@ -398,6 +401,8 @@ export async function startGateWorkerApp() {
       } else if (job.type === 'EPISODE_RENDER') {
         const { processEpisodeRenderJob } = await import('../processors/episode-render.processor');
         result = await processEpisodeRenderJob(ctx);
+      } else if (job.type === 'NOVEL_REDUCE_AGGREGATE') {
+        result = await processNovelReduce(ctx);
       } else {
         process.stdout.write(util.format(`[GateWorker] ⚠️ Unknown Job Type: ${job.type}`) + '\n');
         return;

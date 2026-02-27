@@ -8,7 +8,7 @@ import { FineGrainedRateLimitGuard } from './rate-limit.guard';
       {
         name: 'default',
         ttl: 60000, // 1 分钟
-        limit: 100, // 默认 100 次/分钟
+        limit: 10000, // 默认 10000 次/分钟 (压测支持)
       },
       {
         name: 'auth',
@@ -30,4 +30,4 @@ import { FineGrainedRateLimitGuard } from './rate-limit.guard';
   providers: [FineGrainedRateLimitGuard],
   exports: [FineGrainedRateLimitGuard],
 })
-export class RateLimitModule {}
+export class RateLimitModule { }

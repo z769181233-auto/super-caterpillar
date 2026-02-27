@@ -24,7 +24,7 @@ import { WorkerAliasController } from './worker-alias.controller';
     AuditLogModule,
     TaskModule,
     AuthModule,
-    forwardRef(() => JobModule),
+    JobModule,
     EngineModule,
     ApiSecurityModule,
     forwardRef(() => ProjectModule),

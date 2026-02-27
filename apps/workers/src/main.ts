@@ -129,6 +129,13 @@ async function boot() {
     startMetricsServer(parseInt(process.env.WORKER_METRICS_PORT, 10));
   }
 
+  if (process.env.STRESS_TEST_LOG_PATH) {
+    const { MemoryLogger } = await import('./utils/memory_logger');
+    const logger = new MemoryLogger('15M-STRESS', process.env.STRESS_TEST_LOG_PATH);
+    logger.start(1000);
+    process.stdout.write(util.format('[Bootstrap] 🚀 MemoryLogger started. Path: %s', process.env.STRESS_TEST_LOG_PATH) + '\n');
+  }
+
   if (isGate) {
     if (process.env.NODE_ENV === 'production') {
       // Allow for Stage verification
@@ -144,7 +151,6 @@ async function boot() {
     return;
   }
 
-  process.stdout.write(util.format('[Bootstrap] Normal mode, loading full Worker...') + '\n');
 
   const mod = await import('./worker-app');
   await mod.startWorkerApp();

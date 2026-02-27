@@ -99,7 +99,45 @@ model NovelSource {
   project      Project      @relation(fields: [projectId], references: [id])
   organization Organization @relation("OrganizationNovelSources", fields: [organizationId], references: [id])
 
+  ingestRuns NovelIngestRun[] @relation("SourceIngestRuns")
+
   @@map("novel_sources")
+}
+
+model NovelIngestRun {
+  id             String   @id @default(uuid())
+  projectId      String
+  organizationId String
+  novelSourceId  String
+  manifestHash   String
+  engineVersion  String
+  status         String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  novelSource NovelSource  @relation("SourceIngestRuns", fields: [novelSourceId], references: [id])
+  chunks      NovelChunk[] @relation("RunChunks")
+
+  @@map("novel_ingest_runs")
+}
+
+model NovelChunk {
+  id             String   @id @default(uuid())
+  ingestRunId    String
+  chunkId        String   @unique // Deterministic key: runId + vol + ch
+  volNo          Int?     @map("vol_no")
+  chNo           Int?     @map("ch_no")
+  offsetStart    Int      @map("offset_start")
+  offsetEnd      Int      @map("offset_end")
+  sha256         String
+  status         String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  artifactUrl    String?  @map("artifact_url") // Pointing to JSON in storage
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  ingestRun NovelIngestRun @relation("RunChunks", fields: [ingestRunId], references: [id], onDelete: Cascade)
+
+  @@map("novel_chunks")
 }
 
 enum NovelSourceStatus {
@@ -1454,6 +1492,7 @@ enum JobType {
   CE06_NOVEL_PARSING
   NOVEL_SCAN_TOC
   NOVEL_CHUNK_PARSE
+  NOVEL_REDUCE_AGGREGATE
   CE02_VISUAL_DENSITY
   CE03_VISUAL_DENSITY
   CE04_VISUAL_ENRICHMENT

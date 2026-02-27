@@ -14,7 +14,7 @@ import { ApiClient } from './api-client';
  * 提供统一的引擎调用接口，使用 EngineInvocationRequest/Result
  */
 export class EngineHubClient {
-  constructor(private readonly apiClient: ApiClient) {}
+  constructor(private readonly apiClient: ApiClient) { }
 
   /**
    * 调用引擎
@@ -27,10 +27,27 @@ export class EngineHubClient {
     const started = Date.now();
 
     try {
+      // P1: Production Block Gate
+      const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
+      let targetEngineKey = req.engineKey;
+
+      if (PRODUCTION_MODE) {
+        // P1 Hard Requirement: NO SILENT REDIRECTS allowed in production.
+        // Aliases like 'ce06-v3' must be blocked if we want full determinism.
+        const ALIASES = ['ce06-v3', 'ce06', 'default_novel_parsing', 'ce03-v1', 'ce03', 'shot_render', 'ce11_shot_generator_mock'];
+
+        const isAlias = ALIASES.includes(targetEngineKey);
+        const PROHIBITED_PATTERNS = ['mock_', 'gate_', 'default_', 'test_'];
+        const isProhibited = PROHIBITED_PATTERNS.some(p => targetEngineKey.startsWith(p));
+
+        if (isAlias || isProhibited) {
+          throw new Error(`[P1-GATE] Security Violation: Prohibited engine or alias '${targetEngineKey}' blocked in Production mode. Explicit engine keys required.`);
+        }
+      }
+
       // 远程化核心逻辑：将请求转发至 API 侧的母引擎入口
-      // 映射参数以符合 API /_internal/engine/invoke 端点预期
       const payload = {
-        engineKey: req.engineKey,
+        engineKey: targetEngineKey,
         engineVersion: req.engineVersion,
         payload: req.payload,
         metadata: {
@@ -38,17 +55,6 @@ export class EngineHubClient {
           traceId: req.metadata?.traceId || `worker-remote-${Date.now()}`,
         },
       };
-
-      // 注意：ApiClient 尚未提供通用的 post 方法用于普通请求，这里需要手动调用私有 request
-      // 或者使用现有的针对端点封装的方法。鉴于 Spec 要求“最佳方案”，我们直接使用 ApiClient 的能力。
-
-      // 直接通过 ApiClient 的私有 request 发起调用 (由于 request 是私有的，我们通过 ApiClient 公开一个 invoke 方法或直接在该类中处理)
-      // 为简化实现并符合 Spec，我们假设 ApiClient 已具备基础请求能力。
-
-      // 实际开发：ApiClient 中并未导出通用的 request，但 postAuditLog 使用了 request('POST', '/api/audit/logs', payload)
-      // 我们通过反射或在该类中模拟逻辑。
-
-      // 这里的“最佳方案”指令要求的是内容整体替换。
 
       const response = await (this.apiClient as any).request(
         'POST',

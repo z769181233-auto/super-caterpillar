@@ -738,10 +738,47 @@ export class WorkerService {
         }
 
         // 2.3 Fetch full job details with engine binding
-        return await tx.shotJob.findUnique({
+        const jobWithBinding = await tx.shotJob.findUnique({
           where: { id: candidate.id },
-          include: { engineBinding: true },
+          include: { engineBinding: { include: { engine: true } } },
         });
+
+        // P1-GATE: [Strict] Dispatch-time Double Check
+        // 如果开启了 PRODUCTION_MODE，但 Job 缺失有效绑定或绑定了非生产引擎，则标记为 FAILED 并阻断
+        const { PRODUCTION_MODE: isProd } = await import('@scu/config');
+        if (isProd) {
+          const binding = jobWithBinding?.engineBinding;
+          if (!binding) {
+            this.logger.error(`[P1-GATE] Dispatch blocked for Job ${jobWithBinding?.id}: Missing EngineBinding in PRODUCTION.`);
+            await tx.shotJob.update({
+              where: { id: jobWithBinding?.id },
+              data: {
+                status: JobStatus.FAILED,
+                lastError: `PRODUCTION_MODE_DISPATCH_BLOCK: Missing EngineBinding. Illegal DB injection detected.`,
+              }
+            });
+            return null;
+          }
+
+          const engine = binding.engine;
+          const engineKey = binding.engineKey;
+          const isStub = !engine || engine.mode !== 'http';
+          const isDefault = engineKey.startsWith('default_') || (engine && engine.code.startsWith('default_'));
+
+          if (isStub || isDefault) {
+            this.logger.error(`[P1-GATE] Dispatch blocked for Job ${jobWithBinding.id}: Engine ${engineKey} is not allowed in production.`);
+            await tx.shotJob.update({
+              where: { id: jobWithBinding.id },
+              data: {
+                status: JobStatus.FAILED,
+                lastError: `PRODUCTION_MODE_DISPATCH_BLOCK: Engine ${engineKey} is stub/mock/default`
+              }
+            });
+            return null;
+          }
+        }
+
+        return jobWithBinding;
       });
 
       if (!dispatchedJob) {

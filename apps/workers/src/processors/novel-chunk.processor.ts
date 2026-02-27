@@ -27,22 +27,27 @@ export async function processNovelChunk(context: ProcessorContext) {
   }
 
   const { prisma, job } = context;
-  const { projectId, episodeId, startByte, endByte, isVerification } = job.payload;
+  const { projectId, chunkId: dbChunkId, startByte, endByte, isVerification, ingestRunId } = job.payload;
   const fileKey = job.payload.fileKey || job.payload.filePath;
-  // job.data was used in scan, here unified to payload
 
   try {
     stage4JobsTotal.inc({ type: job.type, status: 'RUNNING' }, 1);
     sampleRss();
 
+    // 1. Update Chunk Status to PROCESSING
+    await prisma.novelChunk.update({
+      where: { id: dbChunkId },
+      data: { status: 'PROCESSING' }
+    });
+
     console.log(
-      `[NovelChunk] Parsing Project ${projectId}, Episode ${episodeId}, Bytes ${startByte}-${endByte}`
+      `[NovelChunk] Parsing Project ${projectId}, Chunk ${dbChunkId}, Bytes ${startByte}-${endByte}`
     );
 
-    // 1. Path Resolution
+    // 2. Path Resolution
     let filePath = fileKey;
     if (!path.isAbsolute(filePath)) {
-      const storageRoot = (config as any).storageRoot;
+      const storageRoot = (config as any).storageRoot || '/tmp/storage';
       filePath = path.resolve(storageRoot, fileKey);
     }
 
@@ -50,19 +55,18 @@ export async function processNovelChunk(context: ProcessorContext) {
       throw new Error(`[NovelChunk] Source file not found: ${filePath}`);
     }
 
-    // 2. Stream Slice (0-Memory-Bomb) using Bytes
+    // 3. Stream Slice
     const chunkText = await readChunk(filePath, startByte, endByte);
     sampleRss();
 
     let analyzedScenes: any[] = [];
 
-    // P6-2-2-4: Multi-Agent Collaboration (Phase 2: B1)
+    // P6-2-2-4: Multi-Agent Collaboration
     const useDeepAnalysis =
       process.env.USE_MULTI_AGENT === 'true' || process.env.USE_MULTI_AGENT === '1';
 
     if (useDeepAnalysis) {
-      console.log(`[NovelChunk] Using Deep Multi-Agent Analysis for Episode ${episodeId}...`);
-
+      console.log(`[NovelChunk] Using Deep Multi-Agent Analysis for chunk ${dbChunkId}...`);
       const project = await prisma.project.findUnique({
         where: { id: projectId },
         select: { stylePrompt: true, styleGuide: true },
@@ -72,8 +76,8 @@ export async function processNovelChunk(context: ProcessorContext) {
         projectId,
         traceId: job.id,
         rawText: chunkText,
-        chapterTitle: `Chapter ${episodeId}`, // Simplified fallback
-        chapterIndex: parseInt(episodeId, 10),
+        chapterTitle: job.payload.title || `Chunk ${dbChunkId}`,
+        chapterIndex: 0, // Not strictly needed for MAP
         previousResults: {
           [(await import('../agents')).AgentRole.WRITER]: {
             projectStylePrompt: project?.stylePrompt,
@@ -87,242 +91,97 @@ export async function processNovelChunk(context: ProcessorContext) {
         const result = await (await import('../agents')).runMultiAgentAnalysis(contextPrompt);
         analyzedScenes = result.scenes || [];
       } catch (err: any) {
-        console.error(
-          `[NovelChunk] Multi-Agent failed: ${err.message}. Falling back to basic segmentation.`
-        );
+        console.error(`[NovelChunk] Multi-Agent failed: ${err.message}. Falling back.`);
         const structure = basicTextSegmentation(chunkText, projectId);
         analyzedScenes = structure.episodes.flatMap(ep => ep.scenes);
       }
     } else {
-      // Legacy Logic: Basic Regex-based segmentation
       const structure = basicTextSegmentation(chunkText, projectId);
       analyzedScenes = structure.episodes.flatMap(ep => ep.scenes);
     }
 
-    if (analyzedScenes.length === 0) {
-      console.warn(`[NovelChunk] No scenes found in chunk.`);
-      // Even if no scenes, it is technically a success (empty chunk)
-      const durationSec = (Date.now() - t0) / 1000;
-      stage4DurationSeconds.observe({ type: job.type }, durationSec);
-      stage4PeakRssMb.set({ type: job.type }, peakRssMb);
-      stage4JobsTotal.inc({ type: job.type, status: 'SUCCEEDED' }, 1);
-      return { status: 'SUCCEEDED', message: 'No scenes found' };
+    // 4. Save Artifact (MAP Product)
+    const storageRoot = (config as any).storageRoot || '/tmp/storage';
+    const artifactDir = path.join(storageRoot, 'artifacts', 'chunks', ingestRunId);
+    if (!fs.existsSync(artifactDir)) {
+      await fsp.mkdir(artifactDir, { recursive: true });
     }
+    const artifactPath = path.join(artifactDir, `${dbChunkId}.json`);
+    await fsp.writeFile(artifactPath, JSON.stringify({
+      chunkId: dbChunkId,
+      projectId,
+      startByte,
+      endByte,
+      scenes: analyzedScenes,
+    }, null, 2));
 
-    // 3. Write to DB (Transactional for this Episode only)
-    const createdSceneIds: string[] = [];
+    const relativeArtifactUrl = path.relative(storageRoot, artifactPath);
 
-    await prisma.$transaction(async (tx) => {
-      // Clear existing scenes for this episode (Idempotency)
-      // NOT DELETE ALL, because "Chunk" usually maps 1:1 to Episode in our scan logic.
-      // But if multiple chunks map to one Episode, we shouldn't delete.
-      // Our Scan logic: 1 Episode = 1 Chunk. So SAFE to delete existing scenes.
-
-      // Find existing scenes
-      const oldScenes = await tx.scene.findMany({ where: { episodeId }, select: { id: true } });
-      const oldSceneIds = oldScenes.map((s) => s.id);
-
-      // Delete shots
-      if (oldSceneIds.length > 0) {
-        await tx.shot.deleteMany({ where: { sceneId: { in: oldSceneIds } } });
-        await tx.scene.deleteMany({ where: { episodeId } });
+    // 5. Update Chunk Status to COMPLETED
+    await prisma.novelChunk.update({
+      where: { id: dbChunkId },
+      data: {
+        status: 'COMPLETED',
+        artifactUrl: relativeArtifactUrl,
       }
+    });
 
-      // Insert new Scenes & Shots
-      for (const [sIdx, scene] of analyzedScenes.entries()) {
-        const dbScene = await tx.scene.create({
-          data: {
-            projectId,
-            episodeId,
-            sceneIndex: sIdx + 1,
-            title: scene.title || `场景 ${sIdx + 1}`,
-            summary: scene.description || scene.summary || '',
-            enrichedText: scene.shots.map((s: any) => s.text).join('\n'),
-          },
-        });
-        createdSceneIds.push(dbScene.id);
-
-        if (scene.shots.length > 0) {
-          await tx.shot.createMany({
-            data: scene.shots.map((shot: any, shIdx: number) => {
-              const shotParams = {
-                sourceText: shot.text,
-                ...(shot.visualParams || {}),
-              };
-
-              // B1 Map: Visual Agent params to DB Columns
-              const visual = shot.visualParams || {};
-
-              return hydrateShotWithDirectorControls(
-                {
-                  organizationId: job.organizationId as string,
-                  sceneId: dbScene.id,
-                  index: shIdx + 1,
-                  title: shot.title || `Shot ${shIdx + 1}`,
-                  description: shot.summary || shot.text.slice(0, 50),
-                  type: 'novel_chunk',
-                  params: shotParams,
-                  // DB Field mapping
-                  shotType: visual.shotType || 'MEDIUM_SHOT',
-                  cameraMovement: visual.cameraMovement || 'STATIC',
-                  lightingPreset: visual.lightingPreset || 'NATURAL',
-                },
-                shotParams
-              );
-            }),
-          });
-        }
-      }
-
-      // 4. Billing Ledger (Scale Mode: 10k chars = 1 credit) - Idempotent
-      const credits = Math.ceil((endByte - startByte) / 10000);
-      if (credits > 0) {
-        await tx.billingLedger.upsert({
-          where: {
-            tenantId_traceId_itemType_itemId_chargeCode: {
-              tenantId: job.organizationId as string,
-              traceId: job.id,
-              itemType: 'NOVEL_CHUNK',
-              itemId: episodeId,
-              chargeCode: 'PARSING_FEE',
-            },
-          },
-          update: {},
-          create: {
-            tenantId: job.organizationId as string,
-            traceId: job.id,
-            itemType: 'NOVEL_CHUNK',
-            itemId: episodeId,
-            chargeCode: 'PARSING_FEE',
-            amount: credits,
-            status: 'POSTED',
-            evidenceRef: `chars:${endByte - startByte}`,
-          },
-        });
-      }
-    }, { timeout: 60000 });
-
-    console.log(
-      `[NovelChunk] Success. Imported ${analyzedScenes.length} scenes. Transaction Committed.`
-    );
-
-    // Cascade Trigger: Stage 5 (Shot Planning)
-    // Immediately trigger Shot Generator for created scenes to maximize parallelism (Shredder Mode)
-    if (createdSceneIds.length > 0) {
-      // P5-3: Explicit Engine Key Routing
-      // If verification, stick to mock. If production, use real engine.
-      const targetEngineKey = isVerification
-        ? 'ce11_shot_generator_mock'
-        : 'ce11_shot_generator_real';
-
-      const cascadeJobs = createdSceneIds.map((sceneId, idx) => ({
-        type: JobType.CE11_SHOT_GENERATOR,
-        status: JobStatus.PENDING,
-        projectId,
-        organizationId: job.organizationId,
-        workerId: null,
-        taskId: job.taskId, // CRITICAL: Propagate Aggregate Task ID
-        traceId: job.traceId || job.payload?.traceId,
-        isVerification,
-        // P6-2-2-1: Trigger Throttling - Lower priority than scan, add idx jitter
-        priority: 5 + (idx % 5),
-        payload: {
-          novelSceneId: sceneId,
-          projectId,
-          traceId: job.traceId || job.payload?.traceId,
-          engineKey: targetEngineKey,
-          isVerification, // Redundant but safe
-        },
-      }));
-
-      if (cascadeJobs.length > 0) {
-        console.log(`[Cascade DEBUG] Example job priority: ${cascadeJobs[0].priority}`);
-      }
-      await prisma.shotJob.createMany({
-        data: cascadeJobs as any,
+    // 6. Progress and Aggregator Trigger
+    const nsId = job.payload.novelSourceId;
+    if (nsId) {
+      // Atomic increment and check
+      const ns = await prisma.novelSource.update({
+        where: { id: nsId },
+        data: { processedChunks: { increment: 1 } },
+        select: { processedChunks: true, totalChapters: true }
       });
 
-      console.log(
-        `[Cascade] Triggered ${cascadeJobs.length} CE11_SHOT_GENERATOR jobs for taskId=${job.taskId}`
-      );
+      console.log(`[NovelChunk] Progress: ${ns.processedChunks}/${ns.totalChapters} for source ${nsId}`);
+
+      if (ns.processedChunks >= ns.totalChapters) {
+        console.log(`[NovelChunk] 🏁 All chunks completed for run ${ingestRunId}. Triggering REDUCE phase.`);
+
+        await prisma.novelIngestRun.update({
+          where: { id: ingestRunId },
+          data: { status: 'COMPLETED' } // Or 'AGGREGATING'
+        });
+
+        // Trigger NOVEL_REDUCE_AGGREGATE
+        await prisma.shotJob.create({
+          data: {
+            organizationId: job.organizationId as string,
+            projectId,
+            type: 'NOVEL_REDUCE_AGGREGATE' as any,
+            status: 'PENDING',
+            payload: {
+              projectId,
+              ingestRunId,
+              novelSourceId: nsId,
+              isVerification,
+            },
+            taskId: job.taskId,
+            traceId: job.traceId,
+            engineBinding: {
+              create: {
+                engineKey: 'ce06_novel_aggregator',
+                engine: { connect: { engineKey: 'ce06_novel_aggregator' } },
+                status: 'BOUND',
+              }
+            }
+          }
+        });
+      }
     }
 
-    // Metrics: Success
     const durationSec = (Date.now() - t0) / 1000;
     stage4DurationSeconds.observe({ type: job.type }, durationSec);
     stage4PeakRssMb.set({ type: job.type }, peakRssMb);
     stage4JobsTotal.inc({ type: job.type, status: 'SUCCEEDED' }, 1);
 
-    const resultStats = {
-      charCount: endByte - startByte,
-      sceneCount: analyzedScenes.length,
-    };
-
-    // 5. Update NovelSource Progress (P6-2-2-2: Debounced Progress Update)
-    // For 15M scale (4000+ chunks), DB IOPS is expensive.
-    // Optimization: Only update DB every ~20 chunks OR if it's likely the end.
-    const nsId = job.payload.novelSourceId;
-    if (nsId) {
-      // Deterministic batching: update if (episodeId % 20 === 0)
-      // Note: episodeId is usually 1-indexed string or number
-      const epIdx = parseInt(job.payload.episodeId || '0', 10);
-      const isBatchMilestone = epIdx % 20 === 0;
-
-      // We also check totalChapters to ensure the very last one triggers completion
-      const nsMeta = await prisma.novelSource.findUnique({
-        where: { id: nsId },
-        select: { totalChapters: true, processedChunks: true },
-      });
-
-      const isLastChunk = nsMeta && nsMeta.processedChunks + 1 >= nsMeta.totalChapters;
-      const shouldUpdateDB = isBatchMilestone || isLastChunk || isVerification;
-
-      if (shouldUpdateDB) {
-        const ns = await prisma.novelSource
-          .findUnique({
-            where: { id: nsId },
-            select: { processedChunks: true, totalChapters: true },
-          })
-          .catch(() => null);
-
-        if (ns) {
-          await prisma.novelSource.update({
-            where: { id: nsId },
-            data: {
-              processedChunks: { increment: 1 },
-            },
-          }).catch((e) => {
-            console.error(`[NovelChunk] Failed to increment processedChunks for ${nsId}:`, e.message);
-          });
-
-          if (ns.processedChunks + 1 >= ns.totalChapters) {
-            await Promise.all([
-              prisma.novelSource.update({
-                where: { id: nsId },
-                data: { status: 'COMPLETED' as any },
-              }).catch(() => null),
-              prisma.novel.update({
-                where: { projectId },
-                data: { status: 'COMPLETED' },
-              }).catch(() => null),
-            ]).catch(() => { });
-          }
-        }
-      } else {
-        // Fire and forget update for background progress if not a milestone
-        await prisma.novelSource
-          .update({
-            where: { id: nsId },
-            data: { processedChunks: { increment: 1 } },
-          })
-          .catch(() => { });
-      }
-    }
-
     return {
       status: 'SUCCEEDED',
-      message: `Imported ${analyzedScenes.length} scenes`,
-      stats: resultStats,
+      message: `MAP completed for chunk ${dbChunkId}. Artifact saved.`,
+      artifactUrl: relativeArtifactUrl
     };
   } catch (e: any) {
     // 6. Fail-Safe NovelSource status update

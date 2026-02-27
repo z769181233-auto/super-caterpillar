@@ -13,7 +13,7 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
     PrismaModule,
     AuditLogModule,
     AuthModule,
-    forwardRef(() => JobModule),
+    JobModule,
     ApiSecurityModule, // 提供 ApiSecurityGuard 给 JwtOrHmacGuard
   ],
   controllers: [WorkerController, WorkerMonitorController],

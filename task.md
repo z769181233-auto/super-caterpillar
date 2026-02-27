@@ -17,6 +17,18 @@
 - [x] **P3. Timeline 高质量合成**
   - [x] 确保 `TimelineCompose` 只引用真实 VIDEO 资产
   - [x] 固定 `TimelineRender` 生产级编码参数 (1080p, crf 18, 4M)
+  - [x] P0：CE06 千万字导入内存封板验证 <!-- id: 1 -->
+- [x] P1：引擎 Alias 生产级安全矩阵审计 <!-- id: 2 -->
+- [x] P2：高并发数据库锁与 Orphan Chunk 审计 <!-- id: 3 -->
+- [x] P0-P2 FINAL SEAL：工业级封板实装 <!-- id: 4 -->
+- [x] 处理 26+ 项挂起任务 (NOVEL_REDUCE_AGGREGATE) <!-- id: 5 -->
+- [x] P1: 生产模式引擎 Alias 全维度穿透测试
+  - [x] API 侧注入 P1 Gate (EngineBinding 校验)
+  - [x] 产出 `alias_attack_matrix.md` (包括 REST/DB/Env 攻击向量测试)
+- [x] P2: 3-Worker 并发压测与 DB 锁审计
+  - [x] 修复 Worker 启动项与数据库 Seed 环境
+  - [x] 产出 `db_lock_metrics.csv` (行级锁等待时长统计)
+  - [x] 产出 `orphan_chunk_check.sql` 验证结果
 
 - [x] **P4. 门禁与非占位符校验**
   - [x] 编写 `tools/gate_non_placeholder_video.sh`

@@ -18,6 +18,7 @@ import { EngineStrategyService } from './engine-strategy.service';
 export class EngineRegistry {
   private readonly logger = new Logger(EngineRegistry.name);
   private adapters: Map<string, EngineAdapter> = new Map();
+  private aliasedKeys: Map<string, string> = new Map(); // S4-P1: Track alias replacements
   private defaultEngineKey: string;
   private jsonConfigMap: Map<string, any> = new Map();
 
@@ -118,6 +119,7 @@ export class EngineRegistry {
    */
   registerAlias(alias: string, adapter: EngineAdapter): void {
     this.ensureAdapters().set(alias, adapter);
+    this.aliasedKeys.set(alias, adapter.name); // S4-P1: Store original mapping
     this.safeLog(`Registered engine adapter alias: ${alias} -> ${adapter.name}`);
   }
 
@@ -313,6 +315,32 @@ export class EngineRegistry {
     }
 
     const finalEngineKey = routingResult.engineKey || baseEngineKey || this.defaultEngineKey;
+
+    // S4-P1: Production Alias Blocking Assert
+    const productionCriticalEngines = [
+      'ce10_timeline_preview',
+      'ce11_shot_generator_real',
+      'shot_render',
+      'real_shot_render',
+      'video_merge',
+    ];
+    const isProductionJob =
+      input.context?.stage === 'production' ||
+      input.payload?.metadata?.stage === 'production' ||
+      input.payload?.stage === 'production' ||
+      PRODUCTION_MODE;
+
+    const originalKey = this.aliasedKeys.get(finalEngineKey);
+    if (isProductionJob && originalKey && productionCriticalEngines.includes(finalEngineKey)) {
+      if (originalKey !== finalEngineKey) {
+        this.logger.error(
+          `[P1_BLOCKER] Production Engine Risk: ${finalEngineKey} is aliased to ${originalKey}. Blocked.`
+        );
+        throw new Error(
+          `PRODUCTION_PATH_ASSERT_FAILED: Engine ${finalEngineKey} is an alias and cannot be used in production.`
+        );
+      }
+    }
 
     // 3) 合成 payload：如果路由层给出了 resolvedVersion 且 payload 里没有 engineVersion，则补上
     const nextPayload: any = {

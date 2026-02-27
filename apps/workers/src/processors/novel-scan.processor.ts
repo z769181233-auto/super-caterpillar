@@ -41,6 +41,11 @@ export async function processNovelScan(context: ProcessorContext) {
     stage4JobsTotal.inc({ type: job.type, status: 'RUNNING' }, 1);
     sampleRss();
 
+    const engine = await prisma.engine.findFirst({ where: { engineKey: 'ce06_novel_parsing' } });
+    if (!engine) {
+      throw new Error('[NovelScan] ce06_novel_parsing engine not found in DB.');
+    }
+
     console.log(`[NovelScan] Starting Scan for Project ${projectId}, File: ${fileKey}`);
 
     if (job.payload.novelSourceId) {
@@ -64,54 +69,37 @@ export async function processNovelScan(context: ProcessorContext) {
     }
 
     // 2. Stream Scan
-    // Logic extracted to packages/ingest/stream_scan.ts
     const episodes = await streamScanFile(filePath);
     sampleRss();
 
     console.log(`[NovelScan] Scanned ${episodes.length} episodes via Stream.`);
 
-    // 2.1 Update NovelSource & Novel (Stats)
-    const nsId = job.payload.novelSourceId;
-    if (nsId) {
-      await Promise.all([
-        prisma.novelSource.update({
-          where: { id: nsId },
-          data: {
-            status: 'PARSING' as any,
-            totalChapters: episodes.length,
-            processedChunks: 0,
-          },
-        }),
-        // SSSOT Sync: Update Novel (API/Frontend Model)
-        prisma.novel.update({
-          where: { projectId },
-          data: {
-            status: 'PARSING',
-            chapterCount: episodes.length,
-          },
-        }).catch(() => null), // Novel might not exist for some legacy projects
-      ]).catch((e) => console.error(`[NovelScan] Failed to sync Novel/Source ${nsId}`, e));
-    }
-
-    // 3. Create Season (Single Transaction) - Idempotent
-    const season = await prisma.season.upsert({
-      where: {
-        projectId_index: {
-          projectId,
-          index: 1,
-        },
-      },
-      update: {},
-      create: {
+    // 2.1 Create NovelIngestRun (Versioned SSOT)
+    const ingestRun = await prisma.novelIngestRun.create({
+      data: {
         projectId,
-        index: 1,
-        title: '第一季',
-        description: 'Auto-scanned from upload',
+        organizationId: job.organizationId as string,
+        novelSourceId: job.payload.novelSourceId,
+        manifestHash: job.payload.manifestHash || 'v1',
+        engineVersion: job.payload.engineVersion || 'ce06-v3',
+        status: 'PROCESSING',
       },
     });
 
-    // 4. Batch Create Episodes & Jobs (Small Transactions)
-    // Batch size 50 to keep transaction time low and prevent lock contention
+    // 2.2 Update NovelSource Stats
+    const nsId = job.payload.novelSourceId;
+    if (nsId) {
+      await prisma.novelSource.update({
+        where: { id: nsId },
+        data: {
+          status: 'PARSING' as any,
+          totalChapters: episodes.length,
+          processedChunks: 0,
+        },
+      }).catch(() => { });
+    }
+
+    // 4. Batch Create NovelChunks & Jobs
     const BATCH_SIZE = 50;
     let processedCount = 0;
 
@@ -120,47 +108,37 @@ export async function processNovelScan(context: ProcessorContext) {
 
       await prisma.$transaction(
         async (tx) => {
-          // Use efficient createMany if possible?
-          // Prisma createMany doesn't return IDs easily for dependent records (Jobs).
-          // So we have to loop or use query raw?
-          // For 50 items, loop await is acceptable if inside tx.
-
           for (const [idx, ep] of batch.entries()) {
             const globalIndex = i + idx + 1;
 
-            // A. DB Insert Episode
-            const dbEp = await tx.episode.create({
+            // A. Create NovelChunk Record
+            const dbChunk = await tx.novelChunk.create({
               data: {
-                seasonId: season.id,
-                projectId,
-                index: globalIndex,
-                name: ep.title,
-                summary: `Bytes ${ep.startByte}-${ep.endByte}`,
+                ingestRunId: ingestRun.id,
+                chunkId: `${ingestRun.id}_${globalIndex}`, // Idempotent key
+                chNo: globalIndex,
+                volNo: 1, // Default volume
+                offsetStart: ep.startByte,
+                offsetEnd: ep.endByte,
+                sha256: '', // Optional: placeholder for content hash
+                status: 'PENDING',
               },
             });
 
-            // B. Construct Job Payload with Byte Ranges
+            // B. Dispatch Job
             const jobPayload = {
               projectId,
-              fileKey: fileKey,
+              fileKey,
+              chunkId: dbChunk.id, // Primary key of NovelChunk
+              ingestRunId: ingestRun.id,
               startByte: ep.startByte,
               endByte: ep.endByte,
-              episodeId: dbEp.id,
               title: ep.title,
-              novelSourceId: nsId, // Pass the parent ID
+              novelSourceId: nsId,
               isVerification: !!isVerification,
             };
 
-            // [HARDENING] Payload Size Assert
-            const payloadSize = Buffer.byteLength(JSON.stringify(jobPayload));
-            if (payloadSize > 16 * 1024) {
-              throw new Error(
-                `[NovelScan] Payload Size Violation: ${payloadSize} bytes > 16KB limit.`
-              );
-            }
-
-            // C. Create Job
-            await tx.shotJob.create({
+            const newJob = await tx.shotJob.create({
               data: {
                 organizationId: job.organizationId as string,
                 projectId,
@@ -169,41 +147,42 @@ export async function processNovelScan(context: ProcessorContext) {
                 priority: 10,
                 payload: jobPayload,
                 taskId: job.taskId,
-                episodeId: dbEp.id,
                 isVerification: !!isVerification,
               },
             });
+
+            await tx.jobEngineBinding.create({
+              data: {
+                jobId: newJob.id,
+                engineId: engine.id,
+                engineKey: engine.engineKey,
+                status: 'BOUND',
+              }
+            });
           }
         },
-        { timeout: 10000 }
-      ); // 10s timeout for batch of 50
+        { timeout: 15000 }
+      );
 
       processedCount += batch.length;
       if (processedCount % 500 === 0) {
-        console.log(
-          `[NovelScan] Progress: ${processedCount}/${episodes.length} episodes processed.`
-        );
+        console.log(`[NovelScan] Progress: ${processedCount}/${episodes.length} chunks created.`);
         sampleRss();
       }
     }
 
-    console.log(`[NovelScan] Fan-out complete. Dispatched ${episodes.length} chunk jobs.`);
+    console.log(`[NovelScan] Fan-out complete. Dispatched ${episodes.length} chunks.`);
 
-    // Metrics: Success
+    // 5. Success Tracking
     const durationSec = (Date.now() - t0) / 1000;
     stage4DurationSeconds.observe({ type: job.type }, durationSec);
     stage4PeakRssMb.set({ type: job.type }, peakRssMb);
     stage4JobsTotal.inc({ type: job.type, status: 'SUCCEEDED' }, 1);
 
-    // Best-effort throughput (Total bytes / duration)
-    try {
-      const stats = await fsp.stat(filePath);
-      if (durationSec > 0) {
-        stage4ThroughputBps.set({ type: job.type }, stats.size / durationSec);
-      }
-    } catch { }
-
-    return { status: 'SUCCEEDED', message: `Dispatched ${episodes.length} chunk jobs.` };
+    return {
+      status: 'SUCCEEDED',
+      message: `Dispatched ${episodes.length} chunks for ingestRun ${ingestRun.id}`,
+    };
   } catch (e: any) {
     // 6. Fail-Safe NovelSource status update
     if (job.payload.novelSourceId) {

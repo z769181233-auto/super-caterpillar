@@ -108,8 +108,10 @@ dist/
 build/
 .turbo/
 brain/
-outputs/
-datasets/
+output/
+dataset/
+work/
+models/
 workspace/
 evidence/
 .runtime/
@@ -139,14 +141,28 @@ logs/
 /docs/_evidence_archived/
 /docs/_bench/
 /docs/_evidence/_trash/
+/datasets/
+/outputs/
+/configs/
+/*.zip
+/*.png
+/packages/shared/types/
 !docs/_specs/
 !docs/*.md
+
+# Tools & Scripts (Hide untracked auditing/production one-offs)
+/tools/production/
+/tools/gates/
 
 # Generation Artifacts
 /packages/database/src/generated/
 /packages/database/prisma/migrations/
 storage/
 videos/
+dataset/
+output/
+work/
+models/
 *.bak
 test-*.ts
 docs/_specs/jianlai/

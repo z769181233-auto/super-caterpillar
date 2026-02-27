@@ -137,11 +137,15 @@ import { processMediaSecurityJob } from './processors/media-security.processor';
 import { processStage1OrchestratorJob } from './processors/stage1-orchestrator.processor';
 import { processNovelScan } from './processors/novel-scan.processor';
 import { processNovelChunk } from './processors/novel-chunk.processor';
+import { processNovelReduce } from './processors/novel-reduce.processor';
+import { processEpisodeRenderJob } from './processors/episode-render.processor';
 import { processIdentityLockJob } from './processors/ce02-identity-lock.processor';
 import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.processor';
 import { processCE02VisualDensityJob } from './processors/ce02-visual-density.processor';
 import { processAudioJob } from './processors/audio.processor';
-import { processEpisodeRenderJob } from './processors/episode-render.processor';
+import { LocalStorageAdapter } from '@scu/storage';
+import * as fs from 'fs';
+import * as path from 'path';
 import { ProcessorContext } from './types/processor-context';
 
 const prisma = new PrismaClient({
@@ -239,8 +243,6 @@ const adaptivePoll = new AdaptivePollStrategy({
 const loadMonitor = new SystemLoadMonitor();
 
 // [P6-0 Fix] Instantiate LocalStorageAdapter for Worker
-import { LocalStorageAdapter } from '@scu/storage';
-import * as path from 'path';
 const storageRoot = (appConfig as any).storageRoot;
 const localStorageAdapter = new LocalStorageAdapter(storageRoot);
 
@@ -320,6 +322,7 @@ async function registerWorker(): Promise<void> {
           'ce09_media_security',
           'ce_pipeline',
           'ce11_timeline_preview',
+          'ce06_novel_aggregator',
         ];
 
     // P1: Production Scrubbing - STRICT ENFORCEMENT
@@ -352,6 +355,7 @@ async function registerWorker(): Promise<void> {
       JobType.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
       JobType.NOVEL_SCAN_TOC,
       JobType.NOVEL_CHUNK_PARSE,
+      JobType.NOVEL_REDUCE_AGGREGATE,
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW',
@@ -359,7 +363,7 @@ async function registerWorker(): Promise<void> {
       'CE11_SHOT_GENERATOR',
       'PIPELINE_PROD_VIDEO_V1', // Exec 1: New Prod Pipeline
       'AUDIO',
-    ];
+    ].filter(Boolean) as JobType[];
 
     // Registration Retry Loop
     let registered = false;
@@ -427,6 +431,7 @@ async function sendHeartbeat(): Promise<void> {
           'ce_pipeline',
           'ce11_timeline_preview',
           'ce09_real_watermark',
+          'ce06_novel_aggregator',
         ];
 
     // P1: Production Scrubbing (Heartbeat Sync) - STRICT ENFORCEMENT
@@ -452,12 +457,13 @@ async function sendHeartbeat(): Promise<void> {
       JobType.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
       JobType.NOVEL_SCAN_TOC,
       JobType.NOVEL_CHUNK_PARSE,
+      JobType.NOVEL_REDUCE_AGGREGATE,
       'PIPELINE_TIMELINE_COMPOSE',
       'TIMELINE_RENDER',
       'TIMELINE_PREVIEW',
       'EPISODE_RENDER',
       'PIPELINE_PROD_VIDEO_V1',
-    ];
+    ].filter(Boolean) as JobType[];
 
     await apiClient.heartbeat({
       workerId: workerId,
@@ -702,6 +708,9 @@ async function processJobWithExecutor(job: JobFromApi): Promise<void> {
       } else if (job.type === 'NOVEL_CHUNK_PARSE') {
         // @ts-ignore
         return processNovelChunk({ prisma, job: job as any, apiClient, workerId });
+      } else if (job.type === 'NOVEL_REDUCE_AGGREGATE') {
+        // @ts-ignore
+        return processNovelReduce({ prisma, job: job as any, apiClient, workerId });
       } else if (job.type === 'CE06_NOVEL_PARSING') {
         const context: ProcessorContext = {
           prisma,
@@ -924,6 +933,32 @@ export async function startWorkerApp() {
         setTimeout(runPollLoop, env.workerPollInterval);
       }
     };
+
+    // FINAL SEAL: Memory Profiler for 15M stress test
+    const startMemoryProfiler = () => {
+      const logDir = '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_evidence/ce06_streaming';
+      const logPath = path.join(logDir, 'memory_profile_15m.csv');
+
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+
+      if (!fs.existsSync(logPath)) {
+        fs.writeFileSync(logPath, 'timestamp,rss_mb,heap_used_mb,external_mb\n');
+      }
+
+      setInterval(() => {
+        const mem = process.memoryUsage();
+        const row = `${new Date().toISOString()},${(mem.rss / 1024 / 1024).toFixed(2)},${(mem.heapUsed / 1024 / 1024).toFixed(2)},${(mem.external / 1024 / 1024).toFixed(2)}\n`;
+        fs.appendFileSync(logPath, row);
+      }, 1000);
+
+      process.stdout.write(util.format(`[SEAL-AUDIT] Memory profiler started. Logging to ${logPath}`) + '\n');
+    };
+
+    if (process.env.ENABLE_MEMORY_PROFILE === '1') {
+      startMemoryProfiler();
+    }
 
     // 立即开始轮询
     runPollLoop();
