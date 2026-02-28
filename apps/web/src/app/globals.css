@@ -4,48 +4,28 @@
    ========================================= */
 
 :root {
-  /* --- Palette: High-End Cinematic --- */
-  /* Backgrounds: Deep Obsidian */
-  --hsl-bg-deep: 240, 5%, 8%;
-  /* #131315 - Rich Black/Gunmetal */
-  --hsl-bg-surface: 240, 5%, 14%;
-  /* #222225 - Matte Surface */
+  /* --- Palette: Luxury Black-Gold (Old Money) --- */
+  --bg-main: #121417;
+  --bg-panel: #181B20;
 
-  /* Primary Accents: Cinematic Amber (Luxury/Warmth) */
-  --hsl-primary: 35, 90%, 55%;
-  /* #f5a623 - Amber/Gold */
-  --hsl-primary-glow: 35, 100%, 65%;
-  /* #ffbf4d - Soft Gold Glow */
+  --gold-primary: #C6A85E;
+  --gold-muted: #9E8445;
 
-  /* Brand Colors (Unified with Primary for consistency) */
-  --hsl-brand: 35, 90%, 55%;
-  --hsl-brand-glow: 35, 100%, 65%;
+  --hsl-bg-deep: 220, 12%, 8%;
+  /* Fallback for deep segments */
+  --hsl-text-main: 0, 0%, 90%;
+  --hsl-text-muted: 220, 5%, 55%;
 
-  /* Secondary Accents: Metallic Silver (High-tech but subtle) */
-  --hsl-secondary: 210, 10%, 60%;
-  /* #8f96a3 - Slate Silver */
-  --hsl-secondary-glow: 210, 20%, 80%;
-  /* #cdd4e0 - Bright Silver */
+  /* Status & Accents */
+  --hsl-success: 145, 40%, 45%;
+  --hsl-error: 0, 60%, 55%;
 
-  /* Text Colors */
-  --hsl-text-main: 0, 0%, 95%;
-  /* #f2f2f2 - Off-white */
-  --hsl-text-muted: 240, 4%, 60%;
-  /* #969699 - Metallic Grey */
-
-  /* Status Colors (Sophisticated) */
-  --hsl-success: 145, 60%, 45%;
-  /* Deep Emerald */
-  --hsl-error: 0, 70%, 60%;
-  /* Soft Red */
-  --hsl-warning: 35, 90%, 55%;
-  /* Amber */
-
-  /* --- Glassmorphism --- */
-  --glass-bg: hsla(var(--hsl-bg-surface), 0.6);
-  --glass-border: hsla(210, 40%, 98%, 0.1);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --backdrop-blur: 16px;
+  /* --- Glassmorphism (Minimalist/Luxury) --- */
+  --glass-bg: #181B20;
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-shadow: none;
+  --backdrop-blur: 0px;
+  /* Luxury is matte, not necessarily blurry/glassy */
 
   /* --- Spacing System --- */
   --space-1: 0.25rem;
@@ -55,15 +35,41 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-12: 3rem;
+  --space-20: 5rem;
 
   /* --- Radius --- */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
   --radius-full: 9999px;
 
   /* --- Transitions --- */
-  --ease-spring: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* =========================================
+   LIGHT THEME: CREATIVE STUDIO
+   ========================================= */
+/* Cleanup old light theme and redundant classes */
+.theme-studio-light {
+  display: none !important;
+}
+
+/* 
+   Overrides for .theme-studio-light 
+   Ensuring text-gradient and borders don't look out of place
+*/
+.theme-studio-light .text-gradient {
+  background: linear-gradient(135deg, hsl(35, 90%, 45%), hsl(25, 80%, 40%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.theme-studio-light .glass-panel:hover {
+  border-color: hsla(var(--hsl-primary), 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+  /* Softer shadow */
 }
 
 /* =========================================
@@ -79,8 +85,8 @@ html,
 body {
   height: 100%;
   width: 100%;
-  background-color: hsl(var(--hsl-bg-deep));
-  color: hsl(var(--hsl-text-main));
+  background-color: var(--bg-main);
+  color: var(--hsl-text-main);
   font-family:
     'Inter',
     system-ui,

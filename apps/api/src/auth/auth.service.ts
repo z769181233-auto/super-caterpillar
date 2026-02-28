@@ -23,7 +23,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     @Inject(JwtService)
     private readonly jwtService: JwtService
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto) {
     const { email, password, userType = 'individual' as any } = registerDto;
@@ -49,7 +49,7 @@ export class AuthService {
           passwordHash,
           userType,
           role: UserRole.creator, // 统一 lowercase
-          tier: 'Free',
+          tier: 'Basic',
           quota: {
             remainingTokens: 1000,
             computeSeconds: 3600,

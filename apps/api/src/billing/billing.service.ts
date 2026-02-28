@@ -1,5 +1,7 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, Inject, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class BillingService {
@@ -303,6 +305,79 @@ export class BillingService {
       billedLedgerCount,
       billingEventsCount,
       timestamp: new Date(),
+    };
+  }
+
+  /**
+   * P4-A: GPU ROI & Metrics Analytics (STRICT SSOT MODE)
+   * Reads exclusively from P4-A DATA sealing outputs. Rejecting any theoretical fallback.
+   */
+  async getGpuRoiAnalytics(params: { timeWindowHours: number }) {
+    const { timeWindowHours } = params;
+
+    const probeBaselinePath = path.join(process.cwd(), 'tools', 'probes', 'p4_real_cost_baseline.json');
+    const probeLogPath = path.join(process.cwd(), 'p4_gpu_cost_measure_result.log');
+
+    if (!fs.existsSync(probeBaselinePath) || !fs.existsSync(probeLogPath)) {
+      throw new BadRequestException(`[P4-A.SEAL BLOCKED] Missing physical baseline or log. Data probes uncompleted.`);
+    }
+
+    const baseline = JSON.parse(fs.readFileSync(probeBaselinePath, 'utf8'));
+    const pLog = JSON.parse(fs.readFileSync(probeLogPath, 'utf8'));
+
+    const realCostPerImage = baseline.realCostPerImage;
+    const predictTime = pLog.predict_time?.avg;
+    const totalTime = pLog.total_time?.avg;
+
+    if (!realCostPerImage || !predictTime || !totalTime) {
+      throw new BadRequestException(`[P4-A.SEAL BLOCKED] Missing vital fields in baseline or log.`);
+    }
+
+    const since = new Date(Date.now() - timeWindowHours * 3600 * 1000);
+
+    const completedJobs = await this.prisma.shotJob.count({
+      where: {
+        status: { in: ['SUCCEEDED', 'DONE'] as any },
+        updatedAt: { gte: since },
+      },
+    });
+
+    const pendingJobsCount = await this.prisma.shotJob.count({
+      where: { status: 'PENDING' },
+    });
+
+    // Derive Metrics from SSOT variables
+    const pricePerImage = 0.024; // Representative unit PRO plan assumed price
+
+    const throughput_cap_per_worker = 3600 / totalTime;
+    const gpu_efficiency = predictTime / totalTime;
+    const queue_delay_ratio = (totalTime - predictTime) / totalTime;
+    const gross_margin_per_image = pricePerImage - realCostPerImage;
+
+    const projectedTimeframeCost = completedJobs * realCostPerImage;
+    const projectedTimeframeRevenue = completedJobs * pricePerImage;
+
+    return {
+      timeWindowHours,
+      completedJobs,
+      pendingJobsCount,
+      financials: {
+        realCostPerImage,
+        pricePerImage,
+        gross_margin_per_image,
+        projectedTimeframeRevenue,
+        projectedTimeframeCost,
+        projectedGrossProfit: projectedTimeframeRevenue - projectedTimeframeCost,
+      },
+      gpuMetrics: {
+        predictTime,
+        totalTime,
+        throughput_cap_per_worker,
+        gpu_efficiency,
+        queue_delay_ratio,
+        isHealthy: gross_margin_per_image > 0 && queue_delay_ratio < 0.3
+      },
+      sealStatus: 'P4-A_SEALED_STRICT_MODE'
     };
   }
 }

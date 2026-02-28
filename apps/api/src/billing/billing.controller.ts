@@ -21,7 +21,7 @@ export class BillingController {
   constructor(
     private readonly billingService: BillingService,
     private readonly billingSettlementService: BillingSettlementService
-  ) {}
+  ) { }
 
   @Post('subscribe')
   async subscribe(@CurrentUser() user: AuthenticatedUser, @Body('planId') planId: string) {
@@ -111,5 +111,14 @@ export class BillingController {
     if (!organizationId) throw new BadRequestException('Organization context missing');
     if (!projectId) throw new BadRequestException('projectId is required');
     return this.billingService.getReconcileStatus(projectId);
+  }
+
+  @Get('analytics/gpu-roi')
+  async getGpuRoiAnalytics(
+    @Query('timeWindowHours') timeWindowHours?: string
+  ) {
+    return this.billingService.getGpuRoiAnalytics({
+      timeWindowHours: Number(timeWindowHours || 24)
+    });
   }
 }

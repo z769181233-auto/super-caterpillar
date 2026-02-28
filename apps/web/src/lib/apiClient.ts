@@ -434,7 +434,7 @@ export const projectApi = {
       }
     );
     if (!res.ok) {
-      const err = new Error(`重新运行质量决策失败: ${res.status}`) as Error & {
+      const err = new Error(`重新运行 quality 决策失败: ${res.status}`) as Error & {
         statusCode?: number;
       };
       err.statusCode = res.status;
@@ -443,6 +443,29 @@ export const projectApi = {
     const json = await res.json();
     return json.data || json;
   },
+};
+
+export const scriptBuildApi = {
+  async getOutline(buildId: string, customHeaders?: HeadersInit) {
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/builds/${buildId}/outline`, {
+      credentials: 'include',
+      headers: customHeaders,
+      cache: 'no-store',
+      next: { revalidate: 0 }
+    });
+    if (!res.ok) throw new Error(`Failed to fetch build outline: ${res.status}`);
+    const json = await res.json();
+    return json.data || json;
+  },
+
+  async getShotSource(shotId: string, context: number = 400) {
+    const res = await fetchWithAuth(`${API_BASE_URL}/api/shots/${shotId}/source?context=${context}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(`Failed to fetch shot source: ${res.status}`);
+    const json = await res.json();
+    return json.data || json;
+  }
 };
 
 // User API

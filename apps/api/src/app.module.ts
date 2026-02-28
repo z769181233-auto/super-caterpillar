@@ -49,6 +49,7 @@ import { CostModule } from './cost/cost.module';
 import { V3Module } from './v3/v3.module';
 import { IdentityModule } from './identity/identity.module';
 import { CharacterModule } from './character/character.module';
+import { ScriptBuildModule } from './script-build/script-build.module';
 import { env } from '@scu/config';
 import { StorageController } from './storage/storage.controller';
 import { LocalStorageService } from './storage/local-storage.service';
@@ -124,6 +125,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     V3Module, // V3.0 Contract Facade
     IdentityModule,
     CharacterModule, // P13-0: CE23 Identity Consistency
+    ScriptBuildModule,
     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS
       ? [OpsModule]
       : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）

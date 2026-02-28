@@ -691,17 +691,127 @@ export class WorkerService {
 
         console.log(`[WorkerService] DEBUG: Searching PENDING jobs for ${workerId}. Types: ${supportedJobTypes.join(',')}`);
 
-        // DEBUG: Count pending jobs of these types
-        const pendingCount = await tx.shotJob.count({
+        // P4-A: Multi-Tier Weighted Round Robin (WRR) & Atomic Concurrency Limit check
+        // 1. Fetch organizations with PENDING jobs
+        const pendingOrgs = await tx.shotJob.groupBy({
+          by: ['organizationId'],
           where: {
             status: JobStatus.PENDING,
             type: { in: supportedJobTypes as any },
+          },
+          _count: true,
+        });
+
+        if (pendingOrgs.length === 0) {
+          return null;
+        }
+
+        const orgIds = pendingOrgs.map(o => o.organizationId);
+
+        // 2. Fetch Organization's owner's plan details
+        const orgDetails = await tx.organization.findMany({
+          where: { id: { in: orgIds } },
+          select: {
+            id: true,
+            owner: {
+              select: {
+                UserSubscription: {
+                  where: { status: 'ACTIVE' },
+                  select: {
+                    plan: {
+                      select: { priorityWeight: true, burstConcurrencyLimit: true }
+                    }
+                  }
+                }
+              }
+            }
           }
         });
-        console.log(`[WorkerService] DEBUG_X: Found ${pendingCount} PENDING jobs matching worker types ${supportedJobTypes.join(',')}`);
 
+        interface CandidateOrg {
+          orgId: string;
+          pendingCount: number;
+          weight: number;
+          maxConc: number;
+        }
+
+        let pool: CandidateOrg[] = orgDetails.map(org => {
+          const plan = org.owner?.UserSubscription?.plan;
+          return {
+            orgId: org.id,
+            pendingCount: pendingOrgs.find(p => p.organizationId === org.id)?._count || 0,
+            weight: plan?.priorityWeight || 1,
+            maxConc: plan?.burstConcurrencyLimit || 1
+          };
+        });
+
+        let selectedOrgId: string | null = null;
+
+        // 3. Strict transactional WRR loop with pessimistic lock
+        while (pool.length > 0) {
+          // Quick dirty check to prune clearly loaded orgs and calculate effective weights
+          const dirtyRunningCounts = await tx.shotJob.groupBy({
+            by: ['organizationId'],
+            where: { organizationId: { in: pool.map(p => p.orgId) }, status: { in: [JobStatus.DISPATCHED, JobStatus.RUNNING] } },
+            _count: true
+          });
+
+          let totalWeight = 0;
+          for (const c of pool) {
+            const rc = dirtyRunningCounts.find(r => r.organizationId === c.orgId)?._count || 0;
+            const remaining = Math.max(0, c.maxConc - rc);
+            // Effective Weight = Priority * min(Queue Length, Remaining Capacity)
+            const effectiveWeight = c.weight * Math.min(c.pendingCount, remaining);
+            (c as any)._effectiveWeight = effectiveWeight;
+            totalWeight += effectiveWeight;
+          }
+
+          if (totalWeight <= 0) {
+            break; // all orgs throttled
+          }
+
+          // Weighted random pick
+          let randomWeight = Math.random() * totalWeight;
+          let candidateId = pool[0].orgId;
+          for (const c of pool) {
+            randomWeight -= (c as any)._effectiveWeight;
+            if (randomWeight <= 0) {
+              candidateId = c.orgId;
+              break;
+            }
+          }
+
+          // 4. ATOMIC CHECK: Pessimistic Row Lock (FOR UPDATE)
+          // Prevents concurrent worker instances from double-dipping and breaching burstConcurrencyLimit
+          await tx.$queryRaw`SELECT id FROM "organizations" WHERE id = ${candidateId} FOR UPDATE`;
+
+          // Re-fetch absolutely verified running count inside lock
+          const actualRunning = await tx.shotJob.count({
+            where: {
+              organizationId: candidateId,
+              status: { in: [JobStatus.DISPATCHED, JobStatus.RUNNING] }
+            }
+          });
+
+          const maxConc = pool.find(p => p.orgId === candidateId)?.maxConc || 1;
+
+          if (actualRunning < maxConc) {
+            selectedOrgId = candidateId;
+            break; // Lock acquired and validated. Proceed to dispatch.
+          } else {
+            // Burst limit breached in race condition. Prune from pool and retry WRR.
+            pool = pool.filter(p => p.orgId !== candidateId);
+          }
+        }
+
+        if (!selectedOrgId) {
+          return null; // Wait for concurrent jobs to finish
+        }
+
+        // 6. Fetch the oldest/highest priority job for THIS selected organization
         const candidate = await tx.shotJob.findFirst({
           where: {
+            organizationId: selectedOrgId,
             status: JobStatus.PENDING,
             type: { in: supportedJobTypes as any },
           },
@@ -717,7 +827,7 @@ export class WorkerService {
           return null;
         }
 
-        console.log(`[WorkerService] DEBUG: Found candidate job ${candidate.id} (${candidate.type}). Attempting atomic update.`);
+        console.log(`[WorkerService] DEBUG: Found candidate job ${candidate.id} (${candidate.type}). Atomic update via WRR.`);
 
         // 2.2 Atomic Update
         const updateResult = await tx.shotJob.updateMany({
