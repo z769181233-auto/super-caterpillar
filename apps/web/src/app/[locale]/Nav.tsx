@@ -6,7 +6,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { UserNav } from '@/components/UserNav';
 
 import { useRouter, usePathname } from 'next/navigation';
-import { Button } from '@/components/_legacy/ui/Button';
+import { Button } from '@/components/ui/Button';
 
 export function Nav() {
   const t = useTranslations('Index');
@@ -15,6 +15,11 @@ export function Nav() {
 
   // Determine if we are on the homepage (root or root locale path)
   const isHome = pathname === '/' || /^\/(en|zh)$/.test(pathname);
+
+  // Studio route handler: hide global nav to allow StudioShell to take over the full header
+  if (pathname.includes('/builds/')) {
+    return null;
+  }
 
   return (
     <header
@@ -72,7 +77,7 @@ export function Nav() {
             <Button
               size="sm"
               variant="primary"
-              onClick={() => router.push('/studio')}
+              onClick={() => router.push('/projects')}
               className="ml-4"
             >
               {t('nav.enterStudio')}

@@ -24,6 +24,11 @@ export type BuildSummary = {
         rulesVersion: string; // 如 "RULES(v0)"
         dataSource: string;   // 如 "RULE-ENGINE"
     };
+
+    // --- P7.2: 后端稳定审计字段（优先用于 AuditBadges，缺失 = null = unknown）---
+    isStructured?: boolean | null;   // 已完成结构化分析（无则 null）
+    auditStatus?: 'AUDITED' | 'PENDING' | 'FAILED' | null;   // 审计状态机
+    sealStatus?: 'SEALED' | 'UNSEALED' | null;               // 封印/可修改状态
 };
 
 export type ScriptNode =
@@ -31,15 +36,22 @@ export type ScriptNode =
     | { type: "scene"; id: string; index: number; title: string; summary?: string; children: ScriptNode[] }
     | { type: "shot"; id: string; index: number; title: string; summary?: string; byteStart?: number; byteEnd?: number };
 
+export type ShotRevision = {
+    id: string;          // 改为 id 以对齐组件习惯
+    parentShotId: string;
+    text: string;
+    reason?: string;     // 显化修订原因
+    type: "TENSION_ENHANCE" | "STYLE_UPGRADE";
+    createdAt: string;
+    author: "AI-CATERPILLAR";
+};
+
 export type ShotReaderPayload = {
     shotId: string;
     title: string;
     summary?: string;
-
-    // 阅读器正文（给创作者看）
     text: string;
-
-    // 证据字段（进抽屉）
+    revisions?: ShotRevision[];
     evidence?: {
         auditId?: string;
         hashChainId?: string;
@@ -47,6 +59,7 @@ export type ShotReaderPayload = {
         globalHash?: string;
         byteStart?: number;
         byteEnd?: number;
+        fingerprint?: string; // 补全指纹字段
     };
 };
 
@@ -55,6 +68,11 @@ export type EmotionalFrame = {
     tensionScore: number; // 0-100
     emotionType: "NEUTRAL" | "HIGH_TENSION" | "SAD" | "JOY" | "FEAR" | "ANGER";
     summary?: string;
+    diagnostics?: {
+        reasonSummary: string;
+        dialogueRatio: number;      // 0-100
+        actionVerbDensity: number;  // 0-100
+    };
 };
 
 export type InsightsPayload = {
@@ -63,5 +81,24 @@ export type InsightsPayload = {
     pacing?: { beats: number; intensityHint?: string };
 
     // L1: 情绪与冲突曲线
-    curve?: EmotionalFrame[];
+    frames?: EmotionalFrame[]; // 重命名为 frames
+};
+
+// 显化 UI 状态类型
+export type EvidenceState = {
+    open: boolean;
+    build?: {
+        buildId: string;
+        auditId?: string;
+        hashChainId?: string;
+        globalHash?: string;
+        auditConfig?: BuildSummary["auditConfig"];
+    };
+    shot?: {
+        shotId: string;
+        title: string;
+        fingerprint?: string;
+        byteStart?: number;
+        byteEnd?: number;
+    };
 };

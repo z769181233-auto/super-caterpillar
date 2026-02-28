@@ -1,45 +1,40 @@
-import React from 'react';
+import React, { InputHTMLAttributes } from 'react';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  error?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({ label, className = '', ...props }) => {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', width: '100%' }}>
-      {label && (
-        <label
-          style={{
-            fontSize: '0.875rem',
-            color: 'hsl(var(--hsl-text-muted))',
-            fontWeight: 500,
-          }}
-        >
-          {label}
-        </label>
-      )}
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, error, style, ...props }, ref) => {
+    return (
       <input
-        className={`glass-input ${className}`}
+        ref={ref}
+        className={className}
         style={{
-          padding: '0.8rem 1rem',
-          borderRadius: 'var(--radius-md)',
-          background: 'hsla(var(--hsl-bg-surface), 0.5)',
-          border: '1px solid var(--glass-border)',
-          color: 'hsl(var(--hsl-text-main))',
+          width: '100%',
+          padding: '0.75rem 1rem',
           fontSize: '1rem',
+          borderRadius: 'var(--r-md)',
+          background: 'var(--bg-panel)',
+          color: 'var(--text-primary)',
+          border: '1px solid',
+          borderColor: error ? 'var(--text-secondary)' : 'var(--border-subtle)', // Avoid red hardcode, use subtle text color as error border indicator beforehand
           outline: 'none',
           transition: 'all 0.2s ease',
+          ...style,
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = 'hsl(var(--hsl-primary))';
-          e.currentTarget.style.boxShadow = '0 0 0 2px hsla(var(--hsl-primary), 0.2)';
+          e.target.style.borderColor = 'var(--gold-weak)';
+          e.target.style.boxShadow = '0 0 0 2px var(--gold-weak)';
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = 'var(--glass-border)';
-          e.currentTarget.style.boxShadow = 'none';
+          e.target.style.borderColor = error ? 'var(--text-secondary)' : 'var(--border-subtle)';
+          e.target.style.boxShadow = 'none';
         }}
         {...props}
       />
-    </div>
-  );
-};
+    );
+  }
+);
+
+Input.displayName = 'Input';

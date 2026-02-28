@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "next lint",
-    "lint:strict": "eslint \"src/components/**/*.{ts,tsx}\" \"src/app/**/tasks/**/*.{ts,tsx}\" \"src/app/**/login/**/*.{ts,tsx}\" \"src/app/**/projects/**/pipeline/**/*.{ts,tsx}\" --ignore-pattern \"**/_legacy/**\" --ignore-pattern \"**/tasks/**/graph/**\" --max-warnings=0",
+    "lint:i18n": "node ../../scripts/i18n/no-hardcode-check.mjs",
+    "lint:e2e-seal": "node scripts/e2e-seal-check.mjs",
+    "lint:strict": "eslint \"src/components/**/*.{ts,tsx}\" ...",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
@@ -21,7 +23,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.71.1",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",
@@ -31,6 +34,7 @@
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.0.4",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "playwright": "^1.58.2",
     "typescript": "^5.3.0"
   }
 }

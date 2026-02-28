@@ -4,7 +4,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 
 const intlMiddleware = createIntlMiddleware({
   // A list of all locales that are supported
-  locales: ['en', 'zh'],
+  locales: ['en', 'zh', 'vi'],
 
   // Used when no locale matches
   defaultLocale: 'en',
@@ -13,7 +13,7 @@ const intlMiddleware = createIntlMiddleware({
   localePrefix: 'as-needed',
 });
 
-function pickLocale(req: NextRequest): 'zh' | 'en' {
+function pickLocale(req: NextRequest): 'zh' | 'en' | 'vi' {
   // 1) cookie 优先（按你们项目实际 cookie 名，如果没有就删掉这一段）
   const raw = req.cookies.get('NEXT_LOCALE')?.value || req.cookies.get('locale')?.value || '';
 
@@ -21,11 +21,13 @@ function pickLocale(req: NextRequest): 'zh' | 'en' {
 
   // accept zh, zh-cn, zh-tw, etc.
   if (norm === 'zh' || norm.startsWith('zh-')) return 'zh';
+  if (norm === 'vi' || norm.startsWith('vi-')) return 'vi';
   if (norm === 'en' || norm.startsWith('en-')) return 'en';
 
   // 2) Accept-Language
   const al = (req.headers.get('accept-language') || '').toLowerCase();
   if (al.includes('zh')) return 'zh';
+  if (al.includes('vi')) return 'vi';
   return 'en';
 }
 
@@ -41,17 +43,25 @@ export default function middleware(req: NextRequest) {
   }
 
   // Define protected routes (workbenches)
-  // Matches /en/projects, /zh/projects, /projects, /en/tasks...
-  const isProtected = /^\/((zh|en)\/)?(projects|tasks)(\/|$)/.test(pathname);
+  // Matches /en/projects, /zh/projects, /vi/projects, /projects, /en/tasks...
+  const isProtected = /^\/((zh|en|vi)\/)?(projects|tasks)(\/|$)/.test(pathname);
 
   if (isProtected) {
     // Check for token in cookies (User specified 'accessToken')
-    const token = req.cookies.get('accessToken')?.value || req.cookies.get('auth_token')?.value;
+    let token = req.cookies.get('accessToken')?.value || req.cookies.get('auth_token')?.value;
+
+    // --- [E2E SEAL] Bypass Mechanism Gate ---
+    // Make absolutely sure this cannot be triggered in production or normal dev modes
+    if (token === '__E2E_MOCK_PASS__') {
+      if (process.env.E2E_MODE !== '1' || process.env.NODE_ENV !== 'test') {
+        token = undefined; // Force invalidation
+      }
+    }
 
     if (!token) {
       // Create redirect URL to login
       // Extract locale or default to 'en'
-      const match = pathname.match(/^\/(zh|en)(\/|$)/);
+      const match = pathname.match(/^\/(zh|en|vi)(\/|$)/);
       const locale = match ? match[1] : 'en';
 
       const loginUrl = new URL(`/${locale}/login`, req.url);

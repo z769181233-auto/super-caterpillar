@@ -1,180 +1,222 @@
 // apps/web/src/features/studio/components/InsightsPanel.tsx
 "use client";
 
-import React from "react";
+import React, { useCallback } from "react";
 import { InsightsPayload } from "../types";
+import { dict } from "../../../i18n/dict";
+import { useStudioUiStore } from "../state/studioUiStore";
+import { mapFramesToCurvePoints } from "../state/tensionCurveMapper";
 
-export function InsightsPanel(props: {
+type TTable = typeof dict["zh"];
+type TFunc = <K extends keyof TTable>(key: K, vars?: Record<string, string | number>) => string;
+
+export type InsightsPanelProps = {
     insights: InsightsPayload;
-    onSelectShot?: (id: string) => void;
-    auditConfig?: any;
-}) {
-    const top = props.insights.topCharacters || [];
-    const curve = props.insights.curve || [];
-    const [hoveredShot, setHoveredShot] = React.useState<any>(null);
+    onSelectShot: (shotId: string) => void;
+    auditConfig: {
+        tensionLow: number;
+        tensionHigh: number;
+        rulesVersion: string;
+        dataSource: string;
+    };
+    t: TFunc;
+};
 
-    const low = props.auditConfig?.tensionLow || 35;
-    const high = props.auditConfig?.tensionHigh || 80;
+export function InsightsPanel({ insights, onSelectShot, auditConfig, t }: InsightsPanelProps) {
+    // P6.2: subscribe to store for activeShotId + action
+    const activeShotId = useStudioUiStore(s => s.activeShotId);
+    const setActiveShot = useStudioUiStore(s => s.setActiveShot);
+    const clearSyncSource = useStudioUiStore(s => s.clearSyncSource);
 
-    return (
-        <div className="card" style={{ height: 'calc(100vh - 350px)', overflowY: 'auto' }}>
-            <div className="panelHeader">
-                <div className="panelTitle">剧本洞察 (Insights)</div>
-                <div className="pill" style={{ opacity: 0.8 }}>DATA: {props.auditConfig?.dataSource || 'RULES(v0)'}</div>
-            </div>
+    // P6.2.1: Curve click → Primary path (强制定位)
+    const handleCurvePointClick = useCallback((shotId: string) => {
+        // 1. 设置来源为 'curve'，激活闸门防止 Reader 滚动反向回调
+        setActiveShot(shotId, 'curve');
+        // 2. 通知上层（StudioShell）加载该 Shot 的内容
+        onSelectShot(shotId);
+        // 3. 释放闸门（让下次滚动可以正常响应）
+        setTimeout(() => clearSyncSource(), 120);
+    }, [setActiveShot, onSelectShot, clearSyncSource]);
 
-            <div className="panelBody" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                {/* L1: 情绪与冲突曲线可视化 */}
-                <section style={{ position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>张力趋势 (Tension Curve)</div>
-                        <div style={{ fontSize: 9, opacity: 0.4 }}>RULES VERSION: {props.auditConfig?.rulesVersion}</div>
-                    </div>
+    const renderTension = () => {
+        const frames = insights.frames;
+        if (!frames || frames.length === 0) return null;
 
-                    <div style={{
-                        height: 120,
-                        background: 'rgba(0,0,0,0.2)',
-                        borderRadius: 8,
+        // P6.2.4: 使用 mapper 建立显式 shotId 绑定，不用数组下标
+        const curvePoints = mapFramesToCurvePoints(frames, 12);
+        const collapseCount = curvePoints.filter(p => p.isCollapse).length;
+
+        return (
+            <div className="card studio-panel" style={{ padding: 12, marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div className="panelTitle" style={{ fontSize: 11, opacity: 0.8 }}>{t("tensionCurve").split(" (")[0]}</div>
+                </div>
+
+                <div
+                    style={{
+                        height: 100,
                         position: 'relative',
-                        padding: '10px 0',
-                        cursor: 'crosshair'
-                    }}>
-                        <EmotionalCurveView
-                            data={curve}
-                            low={low}
-                            high={high}
-                            onPointClick={(d) => props.onSelectShot?.(d.shotId)}
-                            onPointHover={setHoveredShot}
+                        padding: '10px 4px',
+                        background: 'rgba(0,0,0,0.15)',
+                        borderRadius: 8,
+                        overflow: 'hidden'
+                    }}
+                >
+                    <svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="none" style={{ display: 'block' }}>
+                        <defs>
+                            <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="var(--gold-primary)" stopOpacity="0.3" />
+                                <stop offset="100%" stopColor="var(--gold-primary)" stopOpacity="0" />
+                            </linearGradient>
+                        </defs>
+                        {/* Area Fill */}
+                        <path
+                            d={`M 0 100 ${curvePoints.map(p => `L ${p.x} ${p.y}`).join(' ')} L 100 100 Z`}
+                            fill="url(#lineGrad)"
                         />
+                        {/* Main Line */}
+                        <path
+                            d={`M ${curvePoints.map(p => `${p.x} ${p.y}`).join(' L ')}`}
+                            fill="none"
+                            stroke="var(--gold-primary)"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                        {/* Interaction Dots — P6.2: activeShotId 高亮 */}
+                        {curvePoints.map((point) => {
+                            const isActive = point.shotId === activeShotId;
+                            return (
+                                <circle
+                                    key={point.shotId}  // 使用 shotId 作为 key，而不是 array index
+                                    cx={`${point.x}`}
+                                    cy={`${point.y}`}
+                                    r={isActive ? "3" : (point.isCollapse ? "1.5" : "1")}
+                                    fill={isActive ? "var(--gold-primary)" : (point.isCollapse ? "#ef4444" : "var(--gold-primary)")}
+                                    stroke={isActive ? "rgba(255,255,255,0.8)" : "none"}
+                                    strokeWidth={isActive ? "0.5" : "0"}
+                                    opacity={isActive ? 1 : (point.isCollapse ? 1 : 0.7)}
+                                    onClick={() => handleCurvePointClick(point.shotId)}
+                                    style={{ cursor: 'pointer', transition: 'r 0.15s, opacity 0.15s' }}
+                                />
+                            );
+                        })}
+                    </svg>
+                </div>
 
-                        {/* 必需件 B: AI 诊断 Tooltip */}
-                        {hoveredShot && (
-                            <div style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: '50%',
-                                transform: 'translateX(-50%) translateY(-110%)',
-                                width: 200,
-                                background: 'var(--bg-card)',
-                                border: '1px solid var(--gold)',
-                                borderRadius: 8,
-                                padding: 12,
-                                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                                zIndex: 100,
-                                pointerEvents: 'none'
+                {collapseCount > 0 && (
+                    <div style={{ marginTop: 10, fontSize: 11, color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: 9, background: '#ef4444' }} />
+                        <span>{t("collapseCount", { n: collapseCount })}</span>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // P6.3.1: Roles Collapse - 订阅 store，支持自动策略 + 手动 override
+    const rolesCollapsed = useStudioUiStore(s => s.rolesCollapsed);
+    const rolesCollapseMode = useStudioUiStore(s => s.rolesCollapseMode);
+    const setRolesCollapsed = useStudioUiStore(s => s.setRolesCollapsed);
+
+    // 角色权重数据（实际项目中来自 insights.topCharacters，此处使用模拟数据结构）
+    const characters = insights.topCharacters && insights.topCharacters.length > 0
+        ? insights.topCharacters.map(c => ({ name: c.name, pct: Math.min(100, Math.round((c.count / (insights.topCharacters[0]?.count || 1)) * 65)) }))
+        : [
+            { name: "张若尘", pct: 65 },
+            { name: "池瑶", pct: 25 },
+            { name: "小黑", pct: 10 }
+        ];
+
+    // 自动折叠策略：角色数 > 6 且用户未手动干预时自动折叠
+    React.useEffect(() => {
+        if (rolesCollapseMode === 'auto') {
+            setRolesCollapsed(characters.length > 6, 'auto');
+        }
+    }, [characters.length, rolesCollapseMode, setRolesCollapsed]);
+
+    const handleToggleRoles = () => {
+        // 用户手动 toggle，置为 manual 模式，后续不再被自动策略覆盖
+        setRolesCollapsed(!rolesCollapsed, 'manual');
+    };
+
+    const renderRoles = () => {
+        const top2 = characters.slice(0, 2);
+        const extraCount = characters.length - 2;
+
+        return (
+            <div className="card studio-panel" style={{ padding: 12 }}>
+                {/* 折叠头：标题 + 展开/收起按钮 */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: rolesCollapsed ? 0 : 16 }}>
+                    <div className="panelTitle" style={{ fontSize: 11, opacity: 0.8 }}>
+                        {t("rolesTitle")}
+                    </div>
+                    <button
+                        onClick={handleToggleRoles}
+                        style={{
+                            background: 'none',
+                            border: '1px solid var(--line-separator)',
+                            borderRadius: 4,
+                            padding: '2px 8px',
+                            fontSize: 10,
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            transition: 'border-color 0.15s, color 0.15s',
+                        }}
+                        onMouseEnter={e => { (e.target as HTMLElement).style.borderColor = 'var(--gold-primary)'; (e.target as HTMLElement).style.color = 'var(--gold-primary)'; }}
+                        onMouseLeave={e => { (e.target as HTMLElement).style.borderColor = 'var(--line-separator)'; (e.target as HTMLElement).style.color = 'var(--text-muted)'; }}
+                    >
+                        {rolesCollapsed ? t("showMore") : t("showLess")}
+                    </button>
+                </div>
+
+                {/* 折叠态：Top2 + +N 汇总 */}
+                {rolesCollapsed && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingTop: 8 }}>
+                        {top2.map(c => (
+                            <span key={c.name} style={{
+                                fontSize: 10,
+                                padding: '2px 8px',
+                                borderRadius: 10,
+                                background: 'var(--gold-tint-10)',
+                                border: '1px solid var(--gold-primary)',
+                                color: 'var(--gold-primary)',
                             }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', marginBottom: 8 }}>AI 节奏分析: {hoveredShot.tensionScore} pts</div>
-                                <div style={{ fontSize: 11, lineHeight: 1.5, marginBottom: 10 }}>{hoveredShot.diagnostics?.reasonSummary}</div>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <DiagPill label="对话" val={`${hoveredShot.diagnostics?.dialogueRatio}%`} />
-                                    <DiagPill label="动作" val={`${hoveredShot.diagnostics?.actionVerbDensity}%`} />
-                                </div>
-                            </div>
+                                {c.name} <span style={{ opacity: 0.7 }}>{c.pct}%</span>
+                            </span>
+                        ))}
+                        {extraCount > 0 && (
+                            <span style={{ fontSize: 10, color: 'var(--text-muted)', opacity: 0.7 }}>
+                                +{extraCount}
+                            </span>
                         )}
                     </div>
+                )}
 
-                    <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted)' }}>
-                        <span>开场</span>
-                        <span style={{ color: curve.some(d => d.tensionScore < low) ? '#ff4d4f' : 'inherit' }}>
-                            检测到 {curve.filter(d => d.tensionScore < low).length} 处节奏塌陷区
-                        </span>
-                        <span>高潮</span>
-                    </div>
-                </section>
-
-                <section>
-                    <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>角色权重分布</div>
-                    {top.slice(0, 5).map((c) => (
-                        <div
-                            key={c.name}
-                            className="insightItem"
-                            style={{
-                                border: "1px solid rgba(255,255,255,0.06)",
-                                borderRadius: 12,
-                                padding: "8px 12px",
-                                background: "rgba(255,255,255,0.015)",
-                                marginBottom: 6
-                            }}
-                        >
-                            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.88)", fontWeight: 600 }}>{c.name}</div>
-                            <div style={{ marginTop: 4, fontSize: 11, color: "var(--muted)" }}>
-                                权重评分：{(c.count / 10).toFixed(1)}%
+                {/* 展开态：完整列表 */}
+                {!rolesCollapsed && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {characters.map(char => (
+                            <div key={char.name}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
+                                    <span>{char.name}</span>
+                                    <span className="gold-text">{char.pct}%</span>
+                                </div>
+                                <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: `${char.pct}%`, background: 'var(--gold-primary)', transition: 'width 0.3s' }} />
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </section>
+                        ))}
+                    </div>
+                )}
             </div>
-        </div>
-    );
-}
-
-function DiagPill({ label, val }: { label: string; val: string }) {
-    return (
-        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, fontSize: 9 }}>
-            <span style={{ opacity: 0.5 }}>{label}</span> <span style={{ color: 'var(--gold)' }}>{val}</span>
-        </div>
-    );
-}
-
-function EmotionalCurveView({ data, low, high, onPointClick, onPointHover }: { data: any[]; low: number; high: number; onPointClick: (d: any) => void; onPointHover: (d: any | null) => void }) {
-    if (!data.length) return null;
-
-    const width = 260;
-    const height = 100;
-
-    const points = data.map((d, i) => ({
-        x: (i / (data.length - 1)) * width,
-        y: height - (d.tensionScore / 100) * height,
-        data: d
-    }));
-
-    const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+        );
+    };
 
     return (
-        <svg
-            width="100%" height="100%"
-            viewBox={`0 0 ${width} ${height}`}
-            preserveAspectRatio="none"
-            onMouseLeave={() => onPointHover(null)}
-        >
-            <path
-                d={`${pathData} L ${width} ${height} L 0 ${height} Z`}
-                fill="url(#curveGradient)"
-                opacity="0.2"
-            />
-
-            <defs>
-                <linearGradient id="curveGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="var(--gold)" stopOpacity="0" />
-                </linearGradient>
-            </defs>
-
-            <path
-                d={pathData}
-                fill="none"
-                stroke="var(--gold)"
-                strokeWidth="1.5"
-                opacity="0.6"
-            />
-
-            {points.map((p, i) => {
-                const isCollapse = p.data.tensionScore < low;
-                const isPeak = p.data.tensionScore > high;
-
-                return (
-                    <circle
-                        key={i}
-                        cx={p.x}
-                        cy={p.y}
-                        r={isCollapse || isPeak ? 4 : 2}
-                        fill={isCollapse ? "#ff4d4f" : isPeak ? "var(--gold)" : "rgba(255,255,255,0.3)"}
-                        style={{ cursor: 'pointer', transition: 'r 0.2s' }}
-                        onClick={() => onPointClick(p.data)}
-                        onMouseEnter={() => onPointHover(p.data)}
-                    />
-                );
-            })}
-        </svg>
+        <div style={{ height: 'calc(100vh - 350px)', overflowY: 'auto' }} className="scroll-thin">
+            {renderTension()}
+            {renderRoles()}
+        </div>
     );
 }

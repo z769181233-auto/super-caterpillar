@@ -1,20 +1,56 @@
 /* =========================================
-   DEEP SPACE DESIGN SYSTEM
-   Theme: Sci-Fi / Cyber / Glassmorphism
+   [SSOT] Super Caterpillar Design Tokens v1.0
    ========================================= */
-
 :root {
-  /* --- Palette: Luxury Black-Gold (Old Money) --- */
-  --bg-main: #121417;
-  --bg-panel: #181B20;
+  /* --- Backgrounds --- */
+  --bg-root: #08090b;
+  /* Deepest black for main app background */
+  --bg-surface: #0b0d10;
+  /* Main surface (formerly studio --bg-base) */
+  --bg-panel: #12151a;
+  /* Elevated panels (formerly studio --bg-panel) */
+  --bg-card: rgba(255, 255, 255, 0.03);
+  /* Subtle card backgrounds */
 
-  --gold-primary: #C6A85E;
-  --gold-muted: #9E8445;
+  /* --- Brand / Gold (Luxury) --- */
+  --gold: #c8a45d;
+  /* Primary Brand Gold */
+  --gold-primary: #c8a45d;
+  /* Studio active gold mapped here */
+  --gold-hover: #dec084;
+  /* Hover state for gold */
+  --gold-weak: rgba(200, 164, 93, 0.25);
+  /* Muted gold for borders/subtle text */
+  --gold-tint-05: rgba(245, 158, 11, 0.05);
+  /* Ultra-subtle gold tint — used for active node backgrounds */
+  --gold-tint-10: rgba(245, 158, 11, 0.10);
+  /* Light gold tint — used for hover states over gold accents */
+  --on-gold: #0b0d10;
+  /* Text color strictly used when background is gold */
 
-  --hsl-bg-deep: 220, 12%, 8%;
-  /* Fallback for deep segments */
-  --hsl-text-main: 0, 0%, 90%;
-  --hsl-text-muted: 220, 5%, 55%;
+  /* --- Text Hierarchy --- */
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.72);
+  --text-muted: rgba(255, 255, 255, 0.58);
+
+  /* --- Borders & Geometry --- */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --line-separator: rgba(255, 255, 255, 0.04);
+
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-full: 9999px;
+
+  /* --- Shadows --- */
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* --- Legacy mappings for smooth transition --- */
+  --bg-main: var(--bg-surface);
+  --hsl-text-main: 0, 0%, 92%;
+  --hsl-text-muted: 220, 5%, 58%;
 
   /* Status & Accents */
   --hsl-success: 145, 40%, 45%;
