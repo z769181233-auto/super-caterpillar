@@ -38,16 +38,14 @@ async function main() {
     },
   });
 
-  // Create cost ledger entry (ledger_required=YES)
-  await prisma.costLedger.create({
+  // Create billing ledger entry (ledger_required=YES)
+  await (prisma as any).billingLedger.create({
     data: {
       projectId: 'gate-project',
-      jobId: `job-${traceId}`,
-      jobType: 'ENGINE_INVOKE',
-      engineKey,
-      traceId,
-      costAmount: 0.001,
-      metadata: { stub: true, gate_pass2: true },
+      jobId: `job-${traceId.substring(0, 8)}`, // Must be UUID format or similar if enforced
+      billingState: 'CONSUME',
+      amount: BigInt(100), // 0.001 * 10^5 or similar
+      idempotencyKey: `idempotency-${traceId}`,
     },
   });
 
