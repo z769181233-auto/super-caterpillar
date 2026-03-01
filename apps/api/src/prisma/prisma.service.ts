@@ -40,7 +40,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    await this.$connect();
+    try {
+      await this.$connect();
+    } catch (e) {
+      this.logger.warn(`[PrismaService] Failed to connect to DB at startup (likely due to MOCK_DATABASE_URL on Railway): ${e}`);
+    }
   }
 
   async onModuleDestroy() {
