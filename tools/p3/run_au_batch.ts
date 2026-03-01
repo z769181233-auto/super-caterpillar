@@ -11,6 +11,7 @@ import { AU04AudioMixAdapter } from '../../apps/api/src/engines/adapters/au04_au
 async function main() {
   const prisma = new PrismaService();
   const redis = new RedisService();
+  process.env.AUDIO_REAL_FORCE_DISABLE = '1'; // Force stub mode for gate
   await redis.onModuleInit();
   const billing = new BillingService(prisma);
   const cost = new CostLedgerService(prisma, billing);
