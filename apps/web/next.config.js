@@ -4,7 +4,10 @@ const withNextIntl = require('next-intl/plugin')();
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['database', '@scu/shared-types'],
-  output: 'standalone',
+  output: 'export',
+  images: {
+    unoptimized: true
+  },
 
   async rewrites() {
     return [

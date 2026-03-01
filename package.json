@@ -46,7 +46,11 @@
     "gate:audit": "bash tools/audit/run_full_audit_v3.sh",
     "gate:risk": "bash tools/audit/run_risk_pack_v1.sh",
     "gate:health": "bash tools/health/run_health_pack.sh",
-    "gate:commercial": "bash tools/gate/run_commercial_seal.sh"
+    "gate:commercial": "bash tools/gate/run_commercial_seal.sh",
+    "build:web:cf": "turbo run build --filter=web"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "devDependencies": {
     "@google/generative-ai": "^0.24.1",

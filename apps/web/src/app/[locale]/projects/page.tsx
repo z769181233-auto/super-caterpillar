@@ -1,6 +1,5 @@
-import React from 'react';
-import { ProjectsDashboard } from '@/features/projects/ProjectsDashboard';
+import { ProjectsGridPage } from '@/features/projects/ProjectsGridPage';
 
 export default function ProjectsPage() {
-  return <ProjectsDashboard />;
+  return <ProjectsGridPage />;
 }
