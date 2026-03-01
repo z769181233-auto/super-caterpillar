@@ -5,7 +5,6 @@ import { CostLedgerService } from '../../apps/api/src/cost/cost-ledger.service';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { CE01NarrativeStructureAdapter } from '../../apps/api/src/engines/adapters/ce01_narrative_structure.adapter';
 
-import { CE07MemoryUpdateAdapter } from '../../apps/api/src/engines/adapters/ce07_memory_update.local.adapter';
 import { BillingService } from '../../apps/api/src/billing/billing.service';
 
 async function main() {
