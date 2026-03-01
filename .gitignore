@@ -52,7 +52,7 @@ logs/
 *.gz
 *.zst
 
-# Heavy Storage (Non-Code Assets)
+# Heavy Storage (Non-Code Assets - FULL IGNORE)
 dataset/
 **/dataset/
 datasets/
@@ -63,8 +63,8 @@ brain/
 **/brain/
 evidence/
 **/evidence/
-docs/_evidence/
-docs/_specs/
+docs/
+**/docs/
 storage/
 **/storage/
 .data/
