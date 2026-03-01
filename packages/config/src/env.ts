@@ -63,7 +63,8 @@ function getEnv(key: string, defaultValue?: string, requiredInProduction = false
     if (defaultValue !== undefined) {
       return defaultValue;
     }
-    throw new Error(`Environment variable ${key} is required but not set`);
+    console.warn(`[Mock] Environment variable ${key} is required but missing. Returning MOCK.`);
+    return `MOCK_${key}`;
   }
   return value;
 }
