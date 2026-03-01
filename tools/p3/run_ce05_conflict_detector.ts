@@ -10,9 +10,9 @@ const prisma = new PrismaClient();
 async function main() {
   const engineKey = 'ce05_conflict_detector';
   const traceId = `ce05_trace_${Date.now()}`;
-  const userId = 'user-gate';
-  const projectId = 'gate-project';
-  const orgId = 'gate-org';
+  const userId = '00000000-0000-0000-0000-000000000001';
+  const projectId = '00000000-0000-0000-0000-000000000002';
+  const orgId = '00000000-0000-0000-0000-000000000003';
   console.log(`Running ${engineKey}...`);
   console.log(`TraceID: ${traceId}`);
 
@@ -48,8 +48,8 @@ async function main() {
   // Create billing ledger entry (ledger_required=YES)
   await (prisma as any).billingLedger.create({
     data: {
-      projectId: 'gate-project',
-      jobId: `job-${traceId.substring(0, 8)}`, // Must be UUID format or similar if enforced
+      projectId: projectId, // Now a valid UUID
+      jobId: '00000000-0000-0000-0000-000000000004', // Valid UUID
       billingState: 'CONSUME',
       amount: BigInt(100), // 0.001 * 10^5 or similar
       idempotencyKey: `idempotency-${traceId}`,
