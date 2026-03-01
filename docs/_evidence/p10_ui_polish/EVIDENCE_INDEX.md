@@ -5,34 +5,34 @@
 ## 1. Projects (列表页)
 - **完成度**: 100% ✅
 - **门禁日志**: [gate_ui_completeness_20260301_133054.txt](./gate_ui_completeness_20260301_133054.txt)
-- **截图目录**: [docs/_evidence/p10_ui_polish/screens/projects/](./screens/projects/)
+- **截图目录**: [screens/projects/](./screens/projects/)
 
 ## 2. ProjectDetail (详情页)
 - **完成度**: 100% ✅
 - **门禁日志**: [gate_ui_completeness_20260301_133407.txt](./gate_ui_completeness_20260301_133407.txt)
-- **截图目录**: [docs/_evidence/p10_ui_polish/screens/project_detail/](./screens/project_detail/)
+- **截图目录**: [screens/project_detail/](./screens/project_detail/)
 
 ## 3. StudioShell (工作室)
 - **完成度**: 100% ✅
 - **门禁日志**: [gate_ui_completeness_20260301_133916.txt](./gate_ui_completeness_20260301_133916.txt)
-- **截图目录**: [docs/_evidence/p10_ui_polish/screens/studio/](./screens/studio/)
+- **截图目录**: [screens/studio/](./screens/studio/)
 
 ## 4. JobMonitor (任务监控)
 - **完成度**: 100% ✅
 - **门禁日志**: [gate_ui_completeness_jobs_final.txt](./gate_ui_completeness_jobs_final.txt)
-- **截图目录**: [docs/_evidence/p10_ui_polish/screens/jobs/](./screens/jobs/)
+- **截图目录**: [screens/jobs/](./screens/jobs/)
 - **SSOT Diff**: [UI_MAP.md](../../ui/UI_MAP.md) / [UI_STATE_MATRIX.md](../../ui/UI_STATE_MATRIX.md)
 
 ## 5. SystemMonitor (系统监控)
 - **完成度**: 100% ✅
 - **门禁日志**: [gate_ui_completeness_monitor_final.txt](./gate_ui_completeness_monitor_final.txt)
-- **截图目录**: [docs/_evidence/p10_ui_polish/screens/monitor/](./screens/monitor/)
+- **截图目录**: [screens/monitor/](./screens/monitor/)
 - **SSOT Diff**: [UI_MAP.md](../../ui/UI_MAP.md) / [UI_STATE_MATRIX.md](../../ui/UI_STATE_MATRIX.md)
 
 ## 6. UserSettings (用户设置)
 - **完成度**: 100% ✅
 - **门禁日志**: [gate_ui_completeness_settings_final.txt](./gate_ui_completeness_settings_final.txt)
-- **截图目录**: [docs/_evidence/p10_ui_polish/screens/settings/](./screens/settings/)
+- **截图目录**: [screens/settings/](./screens/settings/)
 - **SSOT Diff**: [UI_MAP.md](../../ui/UI_MAP.md) / [UI_STATE_MATRIX.md](../../ui/UI_STATE_MATRIX.md)
 
 ---
