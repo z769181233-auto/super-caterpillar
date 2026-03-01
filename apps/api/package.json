@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "pnpm -w --filter \"@scu/storage\" --filter \"@scu/engines-ce03\" --filter \"@scu/engines-ce04\" --filter \"@scu/engines-ce08\" --filter \"@scu/engines-scene-composition\" --filter \"@scu/engines-vg03\" --filter \"@scu/engines-vg04\" --filter \"@scu/engines-vg05\" --filter \"@scu/engines-video-merge\" --filter \"@scu/engines-ce06\" --filter \"@scu/engines-shot-render\" --filter \"@scu/shared-types\" --filter \"@scu/config\" build && nest build",
+    "build": "pnpm --filter \"@scu/storage\" --filter \"@scu/engines-ce03\" --filter \"@scu/engines-ce04\" --filter \"@scu/engines-ce08\" --filter \"@scu/engines-scene-composition\" --filter \"@scu/engines-vg03\" --filter \"@scu/engines-vg04\" --filter \"@scu/engines-vg05\" --filter \"@scu/engines-video-merge\" --filter \"@scu/engines-ce06\" --filter \"@scu/engines-shot-render\" --filter \"@scu/shared-types\" --filter \"@scu/config\" build && nest build",
     "start": "node dist/main",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --ignore-pattern \"src/scripts/**\" --fix",
