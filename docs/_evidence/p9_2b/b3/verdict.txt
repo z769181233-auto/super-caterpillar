@@ -1,7 +1,8 @@
 api_health_url=https://api-production-4e28.up.railway.app/api/health
 api_health_http_code=200
+api_mode=stub
 api_health_body_nonempty=true
 api_health_body_is_html=false
 pages_root_url=https://web-production-22956.up.railway.app/
 pages_root_http_code=200
-timestamp_utc=2026-03-01T12:23:23Z
+timestamp_utc=2026-03-01T12:38:18Z

@@ -1,0 +1,11 @@
+Starting Container
+
+> api@1.0.0 start /app/apps/api
+> node dist/main
+
+[Mock] Environment variable DATABASE_URL is required in PRODUCTION but missing. Returning MOCK.
+[Mock] Environment variable REDIS_URL is required in PRODUCTION but missing. Returning MOCK.
+[Mock] Environment variable JWT_SECRET is required but missing. Returning MOCK.
+[Mock] Environment variable JWT_REFRESH_SECRET is required but missing. Returning MOCK.
+[DEBUG] SHOT_RENDER_PROVIDER env: undefined
+🚀 API Minimal Stub Server is running on: http://0.0.0.0:8080
