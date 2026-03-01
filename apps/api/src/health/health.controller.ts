@@ -9,16 +9,35 @@ export class HealthController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService?: RedisService
-  ) {}
+  ) { }
 
   @Get('/health')
   health() {
-    return { ok: true, service: 'api', ts: new Date().toISOString() };
+    const isStub = process.env.P9_B3_STUB_MODE === '1';
+    return {
+      ok: true,
+      service: 'api',
+      mode: isStub ? 'stub' : 'real',
+      stub: isStub ? 1 : 0,
+      missing_envs: (process as any).missingEnvs || [],
+      gate_mode: Number(process.env.GATE_MODE) || 0,
+      ts: new Date().toISOString()
+    };
   }
 
   @Get('/api/health')
   apiHealth() {
-    return { ok: true, service: 'api', status: 'ok', ts: new Date().toISOString() };
+    const isStub = process.env.P9_B3_STUB_MODE === '1';
+    return {
+      ok: true,
+      service: 'api',
+      status: 'ok',
+      mode: isStub ? 'stub' : 'real',
+      stub: isStub ? 1 : 0,
+      missing_envs: (process as any).missingEnvs || [],
+      gate_mode: Number(process.env.GATE_MODE) || 0,
+      ts: new Date().toISOString()
+    };
   }
 
   @Get('/health/live')
