@@ -76,7 +76,7 @@ echo ""
 echo "[Phase 2] 测试数据准备..."
 
 # 使用现有测试小说
-TEST_NOVEL="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/out/FULL_E2E/input_novel.txt"
+TEST_NOVEL="$(git rev-parse --show-toplevel)/out/FULL_E2E/input_novel.txt"
 
 if [ ! -f "$TEST_NOVEL" ]; then
   echo "❌ 测试小说文件不存在: $TEST_NOVEL"

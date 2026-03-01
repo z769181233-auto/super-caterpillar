@@ -24,7 +24,7 @@ if [ -f .env.local ]; then
 fi
 
 echo "[Step 1] 准备测试数据..."
-TEST_NOVEL="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/out/FULL_E2E/input_novel.txt"
+TEST_NOVEL="$(git rev-parse --show-toplevel)/out/FULL_E2E/input_novel.txt"
 TRUNCATED_NOVEL="$EVID_DIR/input_novel_3M.txt"
 head -c 3000000 "$TEST_NOVEL" > "$TRUNCATED_NOVEL"
 CHAR_COUNT=$(wc -m < "$TRUNCATED_NOVEL")
