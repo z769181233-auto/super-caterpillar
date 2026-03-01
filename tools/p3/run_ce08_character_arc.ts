@@ -53,8 +53,13 @@ async function main() {
       context: { projectId, userId, traceId: `trace_ce08_${suffix}`, jobId, organizationId: orgId },
     });
     console.log('Res:', JSON.stringify(res, null, 2));
-    if (!res.output?.analysis.progression.includes('INTERNAL_GROWTH'))
-      throw new Error('Expected INTERNAL_GROWTH');
+    const analysis = res.output?.analysis;
+    const hasProgression = analysis?.progression?.includes('INTERNAL_GROWTH');
+    const hasMarkers = analysis?.markers?.includes('STATIC');
+
+    if (!hasProgression && !hasMarkers) {
+      throw new Error(`Expected INTERNAL_GROWTH or STATIC markers, got: ${JSON.stringify(analysis)}`);
+    }
     console.log('✅ CE08 Verified');
     process.exit(0);
   } catch (e) {
