@@ -20,7 +20,7 @@ async function main() {
   await (prisma as any).user.upsert({
     where: { id: userId },
     update: {},
-    create: { id: userId, email: 'gate@scu', passwordHash: 'mock' },
+    create: { id: userId, email: `gate_${Date.now()}@scu`, passwordHash: 'mock' },
   });
 
   // Ensure Project and Org exist (for CostLedger foreign keys)
