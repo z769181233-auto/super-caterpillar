@@ -4,7 +4,7 @@ set -euo pipefail
 # A4 任务验证脚本：环境变量强制校验
 # 验证 EnvValidatorService 是否正确拦截缺失的 P0 变量
 
-PROJECT_ROOT="/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar"
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
 EVIDENCE_DIR="$PROJECT_ROOT/docs/_evidence/a4_env_validator_$(date +%Y%m%d_%H%M%S)"
 
 mkdir -p "$EVIDENCE_DIR"
