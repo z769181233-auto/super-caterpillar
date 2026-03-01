@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "ts-node -r tsconfig-paths/register src/main.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm --filter @scu/observability build && pnpm --filter @scu/shared build && pnpm --filter @scu/engines-ce03 build && pnpm --filter @scu/engines-ce04 build && pnpm --filter @scu/engines-ce06 build && pnpm --filter @scu/engines-shot-render build && pnpm --filter @scu/engines-video-merge build && pnpm --filter @scu/storage build && tsc -p tsconfig.json",
     "start": "node dist/apps/workers/src/main.js"
   },
   "dependencies": {

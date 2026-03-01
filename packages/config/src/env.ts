@@ -310,6 +310,7 @@ export const env: AppConfig = {
  */
 export function validateRequiredEnvs() {
   const isProd = process.env.NODE_ENV === 'production';
+  const isStubMode = process.env.P9_B3_STUB_MODE === '1';
   const requiredKeys = ['DATABASE_URL', 'JWT_SECRET', 'REDIS_URL'];
 
   if (isProd) {
@@ -326,17 +327,29 @@ export function validateRequiredEnvs() {
   }
 
   if (missing.length > 0) {
-    const errorMsg = `[WARN] Missing required environment variables: ${missing.join(', ')}. Mocking them to keep the service alive for probes.`;
+    const errorMsg = `[CONFIG_ERROR] Missing required environment variables: ${missing.join(', ')}`;
+
+    if (isProd && !isStubMode) {
+      // 商业级严格口径：生产环境且未显式开启 Stub 模式，必须失败退出
+      // eslint-disable-next-line no-console
+      console.error(`${errorMsg}. Service will exit to prevent inconsistent state.`);
+      process.exit(1);
+    }
+
+    // 仅在显式开启 P9_B3_STUB_MODE 或非生产环境下进行 Mock 注入
     // eslint-disable-next-line no-console
-    console.warn(errorMsg);
-    // DO NOT THROW, just inject dummy to prevent later crash
+    console.warn(`[WARN] ${errorMsg}. Mocking them as P9_B3_STUB_MODE=${isStubMode}.`);
     missing.forEach(k => {
       process.env[k] = `MOCK_${k}`;
     });
-  }
 
-  // eslint-disable-next-line no-console
-  console.log('[Config] Environment Integrity Check: PASS ✅');
+    // 挂载缺失列表供 Stub Server 读取
+    (process as any).missingEnvs = missing;
+  } else {
+    // eslint-disable-next-line no-console
+    console.log('[Config] Environment Integrity Check: PASS ✅');
+    (process as any).missingEnvs = [];
+  }
 }
 
 /**

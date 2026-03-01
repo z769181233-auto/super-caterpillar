@@ -21,28 +21,46 @@ if (fs.existsSync(envLocalPath)) {
 }
 
 async function bootstrap() {
-  if (process.env.RAILWAY_ENVIRONMENT && !process.env.DATABASE_URL) {
-    // Ultra-minimal stub for Railway P9.2B validation when environment is empty
+  const isStubMode = process.env.P9_B3_STUB_MODE === '1';
+
+  // A4: Environment Integrity Guard
+  try {
+    validateRequiredEnvs();
+  } catch (e) {
+    if (!isStubMode) {
+      console.error('[FATAL] Environment validation failed. Service will exit.');
+      process.exit(1);
+    }
+  }
+
+  // B.3 Hardening: 如果开启了 Stub 模式且检测到环境变量缺失，则进入 Stub 模式
+  const missingEnvs = (process as any).missingEnvs || [];
+  if (isStubMode && missingEnvs.length > 0) {
     const port = Number(process.env.PORT) || 3000;
     const http = require('http');
     const server = http.createServer((req: any, res: any) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       if (req.url?.includes('health')) {
-        res.end(JSON.stringify({ ok: true, stub: true, service: 'api', status: 'ok', ts: new Date().toISOString() }));
+        res.end(JSON.stringify({
+          status: 'ok',
+          mode: 'stub',
+          service: 'api',
+          missing_envs: missingEnvs,
+          ts: new Date().toISOString(),
+          p9_b3_gate: 'active'
+        }));
       } else {
-        res.end(JSON.stringify({ message: 'Super Caterpillar Universe API (Railway minimal stub)' }));
+        res.end(JSON.stringify({
+          message: 'Super Caterpillar Universe API (B.3 Hardened Stub Mode)',
+          mode: 'stub'
+        }));
       }
     });
     server.listen(port, '0.0.0.0', () => {
-      console.log(`🚀 API Minimal Stub Server is running on: http://0.0.0.0:${port}`);
+      console.warn(`⚠️  API is running in STUB MODE (P9_B3_STUB_MODE=1) on port ${port}`);
+      console.warn(`⚠️  Missing Envs: ${missingEnvs.join(', ')}`);
     });
     return;
-  }
-  // A4: Environment Integrity Guard
-  try {
-    validateRequiredEnvs();
-  } catch (e) {
-    process.exit(1);
   }
 
   // 诊断环境变量加载情况
