@@ -1,2 +1,0 @@
-# id_type	id	package	reason	owner	expires_at	mitigation
-advisory	1112653	next	temporary waive for drill continuity	security-owner	2026-02-15	pin version + monitor upstream fix

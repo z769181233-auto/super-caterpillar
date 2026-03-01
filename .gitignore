@@ -1,14 +1,70 @@
-node_modules
-.next
-dist
-build
-coverage
+# Common & Monorepo
+node_modules/
+**/node_modules/
+.next/
+**/ .next/
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+coverage/
+**/coverage/
+.turbo/
+**/.turbo/
+
+# OS & Environment
+.DS_Store
 .env
 .env.*
-.DS_Store
+*.local
+.nvmrc
 
-# GitHub Actions (disabled for deploy push)
-.github/workflows/
+# Root Logs & PIDs
+*.log
+*.log*
+*.pid
+trigger_output.log
+worker.log
+api.log
 
-# GitHub Actions (disabled for deploy push)
+# Large Binaries & Archives
+*.zip
+*.tar
+*.gz
+*.zst
+
+# Storage & Data (Managed separately)
+storage/
+.data/
+artifacts/
+assets/
+novels/
+outputs/
+videos/
+uploads/
+temp/
+tmp/
+.tmp/
+.runtime/
+.gate/
+.evidence/
+.githooks/
+.husky/_/
+
+# Pointers & Stubs
+te_pointer.txt
+unet_pointer.txt
+vae_pointer.txt
+shots.csv
+*pointer.txt
+
+# IDE
+.vscode/
+.idea/
+.cursorignore
+.editorconfig
+
+# GitHub Actions (Disabled for deploy push)
 .github/workflows/
