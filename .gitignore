@@ -36,15 +36,33 @@ coverage/
 .gate/
 **/.gate/
 
-# Root Logs & PIDs
+# Root Logs, PIDs & Temp Txt
 *.log
 *.log*
 *.pid
+*.txt
+*.txt*
+*.md
+!README.md
+!task.md
+!PHASE0_AUDIT_REPORT.md
+!implementation_plan.md
 trigger_output.log
 worker.log
 api.log
 logs/
 **/logs/
+
+# Health Reports & Audit
+HEALTH_*/
+**/HEALTH_*/
+PHASE*_AUDIT_REPORT.md
+RISK_SUMMARY.md
+SEAL_INDEX.md
+EVIDENCE_INDEX.md
+CURSOR_MUST_READ.md
+ENGINE_MATRIX_SSOT.md
+NO_VERIFY_JUSTIFICATION.md
 
 # Large Binaries & Archives
 *.zip
