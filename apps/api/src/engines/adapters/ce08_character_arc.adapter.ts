@@ -29,11 +29,11 @@ export class CE08CharacterArcAdapter extends NlpBaseEngine {
     const characterName = payload.characterName || 'Unknown';
 
     // 调用 AI 引擎分析角色弧光
-    const result = await ce08RealEngine({
+    const result = await ce08RealEngine.run({
       character_name: characterName,
       scenario_text: text,
       previous_state: payload.previousState,
-    });
+    }) as any;
 
     return {
       character: result.character_name,

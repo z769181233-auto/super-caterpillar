@@ -31,7 +31,7 @@ export class SceneCompositionAdapter implements EngineAdapter {
     private readonly redisService: RedisService,
     private readonly auditService: AuditService,
     private readonly costLedgerService: CostLedgerService
-  ) {}
+  ) { }
 
   supports(engineKey: string): boolean {
     return engineKey === 'scene_composition';
@@ -75,11 +75,11 @@ export class SceneCompositionAdapter implements EngineAdapter {
 
     try {
       // 3. AI Composition Decision
-      const aiResult = await sceneCompositionRealEngine({
+      const aiResult = await sceneCompositionRealEngine.run({
         scene_description: payload.scene_description || payload.text || 'Normal composition',
         background_url: bgUrl,
         elements: elements as any,
-      });
+      }) as any;
 
       // 4. Perform Composition (FFmpeg)
       const outputUrl = await this.composite(bgUrl, aiResult.elements, inputHash);

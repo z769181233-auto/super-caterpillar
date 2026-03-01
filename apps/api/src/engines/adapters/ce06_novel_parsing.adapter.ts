@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
-import { ce06Selector } from '../../../../../packages/engines/ce06';
+import { ce06Selector } from '@scu/engines-ce06';
 
 import { LocalStorageService } from '../../storage/local-storage.service';
 
@@ -13,7 +13,7 @@ export class CE06LocalAdapter implements EngineAdapter {
   public readonly name = 'ce06_novel_parsing';
   private readonly logger = new Logger(CE06LocalAdapter.name);
 
-  constructor(private readonly localStorage: LocalStorageService) {}
+  constructor(private readonly localStorage: LocalStorageService) { }
 
   supports(engineKey: string): boolean {
     return engineKey === 'ce06_novel_parsing';

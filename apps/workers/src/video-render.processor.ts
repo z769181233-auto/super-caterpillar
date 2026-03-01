@@ -21,7 +21,7 @@ export function cleanupVideoRenderProcesses() {
   for (const cp of activeProcesses) {
     try {
       cp.kill('SIGKILL');
-    } catch (e) {}
+    } catch (e) { }
   }
   activeProcesses.clear();
 }
@@ -162,7 +162,7 @@ export async function processVideoRenderJob(
       // Concat Mode
       const listFilePath = path.join(workspaceDir, 'input.txt');
       const resolvedList = await Promise.all(frameKeys.map((k) => resolveAssetPath(k)));
-      let listContent = resolvedList.map((abs) => `file '${abs}'\nduration 1.0`).join('\n');
+      let listContent = resolvedList.map((abs: string) => `file '${abs}'\nduration 1.0`).join('\n');
       listContent += `\nfile '${resolvedList[resolvedList.length - 1]}'`;
       await fsp.writeFile(listFilePath, listContent);
 
@@ -352,7 +352,7 @@ export async function processVideoRenderJob(
         latencyMs: latency,
         auditTrail: { sizeBytes, checksum, frames: frameKeys.length, hls: hlsPlaylistUrl },
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // 7.1 ffprobe evidence (fs only, Unified Root)
     const ffprobeKey = `${videoKey}.ffprobe.json`;

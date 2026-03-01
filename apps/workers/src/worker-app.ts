@@ -127,7 +127,7 @@ const apiClient = new ApiClient(apiBaseUrl, workerApiKey, workerApiSecret, worke
 
 let isRunning = false;
 let tasksRunning = 0;
-const localStorageAdapter = new LocalStorageAdapter(appConfig.storageRoot);
+const localStorageAdapter = new LocalStorageAdapter((appConfig as any).storageRoot);
 
 async function processJobWithExecutor(job: any): Promise<void> {
   tasksRunning++;
@@ -161,7 +161,7 @@ async function processJobWithExecutor(job: any): Promise<void> {
   }
 }
 
-async function main() {
+export async function startWorkerApp() {
   await prisma.$connect();
   jobExecutor = new JobExecutor(apiClient);
 
@@ -193,7 +193,7 @@ async function main() {
   setInterval(async () => {
     try {
       await apiClient.heartbeat({ workerId, tasksRunning });
-    } catch (e) {}
+    } catch (e) { }
   }, 10000);
 
   while (isRunning) {
@@ -206,5 +206,3 @@ async function main() {
     await new Promise((r) => setTimeout(r, 2000));
   }
 }
-
-main().catch(console.error);

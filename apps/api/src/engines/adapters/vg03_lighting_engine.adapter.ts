@@ -31,10 +31,10 @@ export class VG03LightingEngineAdapter extends VgBaseEngine {
     const moodDescription = payload.moodDescription || payload.text || 'Neutral lighting';
 
     // 调用 AI 引擎计算光效
-    const result = await vg03RealEngine({
+    const result = await vg03RealEngine.run({
       mood_description: moodDescription,
       lighting_preset: payload.lightingPreset,
-    });
+    }) as any;
 
     const hash = this.generateCacheKey(payload).split(':').pop();
     const outputDir = join(process.cwd(), 'storage/vg/lighting');

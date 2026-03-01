@@ -31,13 +31,13 @@ export class VG04CameraPathAdapter extends VgBaseEngine {
     const fps = payload.fps || 24;
 
     // 调用 AI 引擎计算路径
-    const result = await vg04RealEngine({
+    const result = await vg04RealEngine.run({
       shot_description: shotDescription,
       duration,
       fps,
       pacing_score: payload.pacing_score,
       emotional_intensity: payload.emotional_intensity,
-    });
+    }) as any;
 
     const hash = this.generateCacheKey(payload).split(':').pop();
     const outputDir = join(process.cwd(), 'storage/vg/path');

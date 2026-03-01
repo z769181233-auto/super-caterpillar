@@ -5,7 +5,7 @@ import {
   EngineInvokeResult,
   EngineInvokeStatus,
 } from '@scu/shared-types';
-import { videoMergeRealEngine } from '../../../../../packages/engines/video_merge';
+import { videoMergeRealEngine } from '@scu/engines-video-merge';
 
 /**
  * CE02 -> VIDEO_RENDER (video_merge) Adapter

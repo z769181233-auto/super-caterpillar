@@ -31,10 +31,10 @@ export class VG05VFXCompositorAdapter extends VgBaseEngine {
     const sceneContext = payload.sceneContext || payload.text || 'Normal scene';
 
     // 调用 AI 引擎推荐特效
-    const result = await vg05RealEngine({
+    const result = await vg05RealEngine.run({
       scene_context: sceneContext,
       pacing_score: payload.pacing_score,
-    });
+    }) as any;
 
     const hash = this.generateCacheKey(payload).split(':').pop();
     const outputDir = join(process.cwd(), 'storage/vg/vfx');
