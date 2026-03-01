@@ -16,6 +16,7 @@ coverage/
 
 # OS & Environment
 .DS_Store
+**/.DS_Store
 .env
 .env.*
 *.local
@@ -27,10 +28,15 @@ coverage/
 .prettierrc.json
 .husky/
 .temp/
+**/.temp/
 .tmp/
+**/.tmp/
 .runtime/
+**/.runtime/
 .gate/
+**/.gate/
 .evidence/
+**/.evidence/
 
 # Root Logs & PIDs
 *.log
@@ -48,15 +54,25 @@ api.log
 
 # Storage & Data (Managed separately)
 storage/
+**/storage/
 .data/
+**/.data/
 artifacts/
+**/artifacts/
 assets/
+**/assets/
 novels/
+**/novels/
 outputs/
+**/outputs/
 videos/
+**/videos/
 uploads/
+**/uploads/
 temp/
+**/temp/
 tmp/
+**/tmp/
 .githooks/
 
 # Pointers & Stubs
