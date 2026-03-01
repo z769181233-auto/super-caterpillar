@@ -46,12 +46,13 @@ async function main() {
   });
 
   // Create billing ledger entry (ledger_required=YES)
+  const uniqueJobId = `00000000-0000-0000-0000-${Date.now().toString().padEnd(12, '0').substring(0, 12)}`;
   await (prisma as any).billingLedger.create({
     data: {
-      projectId: projectId, // Now a valid UUID
-      jobId: '00000000-0000-0000-0000-000000000004', // Valid UUID
+      projectId: projectId,
+      jobId: uniqueJobId,
       billingState: 'CONSUME',
-      amount: BigInt(100), // 0.001 * 10^5 or similar
+      amount: BigInt(100),
       idempotencyKey: `idempotency-${traceId}`,
     },
   });
