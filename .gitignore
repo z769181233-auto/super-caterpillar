@@ -35,8 +35,6 @@ coverage/
 **/.runtime/
 .gate/
 **/.gate/
-.evidence/
-**/.evidence/
 
 # Root Logs & PIDs
 *.log
@@ -45,6 +43,8 @@ coverage/
 trigger_output.log
 worker.log
 api.log
+logs/
+**/logs/
 
 # Large Binaries & Archives
 *.zip
@@ -52,7 +52,19 @@ api.log
 *.gz
 *.zst
 
-# Storage & Data (Managed separately)
+# Heavy Storage (Non-Code Assets)
+dataset/
+**/dataset/
+datasets/
+**/datasets/
+models/
+**/models/
+brain/
+**/brain/
+evidence/
+**/evidence/
+docs/_evidence/
+docs/_specs/
 storage/
 **/storage/
 .data/
@@ -74,6 +86,8 @@ temp/
 tmp/
 **/tmp/
 .githooks/
+.evidence/
+**/.evidence/
 
 # Pointers & Stubs
 te_pointer.txt
