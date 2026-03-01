@@ -2,7 +2,7 @@
 node_modules/
 **/node_modules/
 .next/
-**/ .next/
+**/.next/
 dist/
 **/dist/
 build/
@@ -20,6 +20,17 @@ coverage/
 .env.*
 *.local
 .nvmrc
+.cursorignore
+.editorconfig
+.eslintrc.json
+.prettierignore
+.prettierrc.json
+.husky/
+.temp/
+.tmp/
+.runtime/
+.gate/
+.evidence/
 
 # Root Logs & PIDs
 *.log
@@ -46,12 +57,7 @@ videos/
 uploads/
 temp/
 tmp/
-.tmp/
-.runtime/
-.gate/
-.evidence/
 .githooks/
-.husky/_/
 
 # Pointers & Stubs
 te_pointer.txt
@@ -63,8 +69,6 @@ shots.csv
 # IDE
 .vscode/
 .idea/
-.cursorignore
-.editorconfig
 
 # GitHub Actions (Disabled for deploy push)
 .github/workflows/
