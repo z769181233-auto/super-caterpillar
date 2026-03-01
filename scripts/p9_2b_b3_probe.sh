@@ -72,9 +72,16 @@ if [[ -n "${API_BODY_SAMPLE//[[:space:]]/}" ]]; then API_BODY_NONEMPTY="true"; f
 API_BODY_IS_HTML="false"
 if echo "$API_BODY_SAMPLE" | grep -qi "<html"; then API_BODY_IS_HTML="true"; fi
 
+# Detect API Mode
+API_MODE="real"
+if grep -q '"mode":"stub"' "$EVD_DIR/api_health_body_head2k.txt"; then
+  API_MODE="stub"
+fi
+
 {
   echo "api_health_url=$API_HEALTH_URL"
   echo "api_health_http_code=$API_CODE"
+  echo "api_mode=$API_MODE"
   echo "api_health_body_nonempty=$API_BODY_NONEMPTY"
   echo "api_health_body_is_html=$API_BODY_IS_HTML"
   echo "pages_root_url=${PAGES_PUBLIC_URL}/"

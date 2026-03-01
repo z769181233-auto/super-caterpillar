@@ -1,0 +1,61 @@
+.                                        |  WARN  Unsupported engine: wanted: {"node":"20.x"} (current: {"node":"v24.3.0","pnpm":"9.1.0"})
+Scope: 26 of 27 workspace projects
+packages/config build$ tsc
+packages/database build$ tsc -p tsconfig.json && cp -r src/generated dist/
+packages/billing build$ tsup index.ts model-price-table.ts --format cjs --dts --clean
+packages/engines-ce03 build$ tsc -p tsconfig.json
+packages/billing build: CLI Building entry: index.ts, model-price-table.ts
+packages/billing build: CLI Using tsconfig: tsconfig.json
+packages/billing build: CLI tsup v8.5.1
+packages/billing build: CLI Target: es2020
+packages/billing build: CLI Cleaning output folder
+packages/billing build: CJS Build start
+packages/billing build: CJS dist/model-price-table.js 2.21 KB
+packages/billing build: CJS dist/index.js             2.19 KB
+packages/billing build: CJS ⚡️ Build success in 66ms
+packages/billing build: DTS Build start
+packages/config build: Done
+packages/engines-ce04 build$ tsc -p tsconfig.json
+packages/engines-ce03 build: Done
+packages/engines-ce04-sdxl build$ tsup src/index.ts --format cjs --dts --clean
+packages/engines-ce04-sdxl build: CLI Building entry: src/index.ts
+packages/engines-ce04-sdxl build: CLI Using tsconfig: tsconfig.json
+packages/engines-ce04-sdxl build: CLI tsup v8.5.1
+packages/engines-ce04-sdxl build: CLI Target: es2020
+packages/engines-ce04-sdxl build: CLI Cleaning output folder
+packages/engines-ce04-sdxl build: CJS Build start
+packages/engines-ce04-sdxl build: CJS dist/index.js 1.13 KB
+packages/engines-ce04-sdxl build: CJS ⚡️ Build success in 42ms
+packages/billing build: DTS ⚡️ Build success in 709ms
+packages/billing build: DTS dist/model-price-table.d.ts 1000.00 B
+packages/billing build: DTS dist/index.d.ts             112.00 B
+packages/billing build: Done
+packages/engines-ce06 build$ tsup src/index.ts --format cjs --dts --clean
+packages/engines-ce04-sdxl build: DTS Build start
+packages/database build: Done
+packages/engines-ce04 build: Done
+packages/engines-ce08 build$ tsc -p tsconfig.json
+packages/engines-scene-composition build$ tsc -p tsconfig.json
+packages/engines-ce06 build: CLI Building entry: src/index.ts
+packages/engines-ce06 build: CLI Using tsconfig: tsconfig.json
+packages/engines-ce06 build: CLI tsup v8.5.1
+packages/engines-ce06 build: CLI Target: es2020
+packages/engines-ce06 build: CLI Cleaning output folder
+packages/engines-ce06 build: CJS Build start
+packages/engines-ce06 build: CJS dist/index.js 13.58 KB
+packages/engines-ce06 build: CJS ⚡️ Build success in 26ms
+packages/engines-ce06 build: DTS Build start
+packages/engines-ce04-sdxl build: src/index.ts(1,39): error TS2307: Cannot find module '@scu/engines-ce03' or its corresponding type declarations.
+packages/engines-ce04-sdxl build: Error: error occurred in dts build
+packages/engines-ce04-sdxl build:     at Worker.<anonymous> (/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/tsup@8.5.1_@swc+core@1.15.5_jiti@2.6.1_postcss@8.4.31_tsx@4.21.0_typescript@5.9.3_yaml@2.8.2/node_modules/tsup/dist/index.js:1545:26)
+packages/engines-ce04-sdxl build:     at Worker.emit (node:events:507:28)
+packages/engines-ce04-sdxl build:     at MessagePort.<anonymous> (node:internal/worker:268:53)
+packages/engines-ce04-sdxl build:     at [nodejs.internal.kHybridDispatch] (node:internal/event_target:827:20)
+packages/engines-ce04-sdxl build:     at MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)
+packages/engines-ce04-sdxl build: DTS Build error
+packages/engines-ce04-sdxl build: Failed
+/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/engines-ce04-sdxl:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @scu/engines-ce04-sdxl@0.0.0 build: `tsup src/index.ts --format cjs --dts --clean`
+Exit status 1
+ WARN   Local package.json exists, but node_modules missing, did you mean to install?
+packages/engines-shot-render build$ tsup src/index.ts --format cjs --dts --clean
