@@ -3,7 +3,7 @@ import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/share
 import * as fs from 'fs';
 import { createHash } from 'crypto';
 import * as path from 'path';
-import { comfyuiProvider } from '@scu/engines-shot-render/providers/comfyui.provider';
+import { comfyuiProvider } from '@scu/engines-shot-render';
 
 /**
  * Shot Render ComfyUI Adapter (REAL - Local)
