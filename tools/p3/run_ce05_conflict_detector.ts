@@ -10,17 +10,24 @@ const prisma = new PrismaClient();
 async function main() {
   const engineKey = 'ce05_conflict_detector';
   const traceId = `ce05_trace_${Date.now()}`;
+  const userId = 'user-gate';
   const projectId = 'gate-project';
   const orgId = 'gate-org';
-
   console.log(`Running ${engineKey}...`);
   console.log(`TraceID: ${traceId}`);
+
+  // Ensure User exists for FK
+  await (prisma as any).user.upsert({
+    where: { id: userId },
+    update: {},
+    create: { id: userId, email: 'gate@scu', passwordHash: 'mock' },
+  });
 
   // Ensure Project and Org exist (for CostLedger foreign keys)
   await prisma.organization.upsert({
     where: { id: orgId },
     update: {},
-    create: { id: orgId, name: 'Gate Org', ownerId: 'user-gate' },
+    create: { id: orgId, name: 'Gate Org', ownerId: userId },
   });
   await prisma.project.upsert({
     where: { id: projectId },
