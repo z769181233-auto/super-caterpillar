@@ -20,6 +20,15 @@ if (fs.existsSync(envLocalPath)) {
   console.log('[Bootstrap] Loaded .env.local');
 }
 
+process.on('uncaughtException', (e) => {
+  process.stderr.write(`[CRASH] uncaughtException: ${e?.message} ${e?.stack}\n`);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  process.stderr.write(`[CRASH] unhandledRejection: ${JSON.stringify(reason)}\n`);
+  process.exit(1);
+});
+
 async function bootstrap() {
   const isStubMode = process.env.P9_B3_STUB_MODE === '1';
 
@@ -77,7 +86,7 @@ async function bootstrap() {
   );
 
   const app = await NestFactory.create(AppModule, {
-    bufferLogs: true,
+    bufferLogs: false,
     rawBody: true,
   });
   app.useLogger(app.get(Logger));
