@@ -1,0 +1,9 @@
+{
+  "engineKey": "tts_standard",
+  "billingMode": "per_character",
+  "baseCost": 0.0,
+  "currency": "USD",
+  "factors": {
+    "characters": 0.000015
+  }
+}

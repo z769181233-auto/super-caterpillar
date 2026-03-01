@@ -1,0 +1,79 @@
+{
+    "scenes": [
+        {
+            "title": "重生后的噩梦 (Nightmare of Rebirth)",
+            "raw_text": "张若尘大吼一声，想向前一扑，压得鎏金铸造的床榻“咯吱”一声，猛然坐了起来。发现只是一个梦，张若尘才长长吐出一口气...",
+            "visual_prompt": "Cinematic shot of a pale young man waking up gasping in a golden bed, ancient Chinese palace interior, dim moonlight filtered through silk curtains, sweat on his forehead.",
+            "camera_movement": "PUSH IN to CLOSE UP on Zhang Ruochen's face.",
+            "action_description": "Zhang Ruochen wakes up from a deep nightmare, sitting up abruptly.",
+            "visual_density_score": 0.7,
+            "characters": [
+                {
+                    "name": "张若尘",
+                    "appearance": {
+                        "clothing": "white silk nightgown",
+                        "hair": "messy long black hair"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "林妃的关怀 (Lin Fei's Concern)",
+            "raw_text": "一个身体柔弱的宫装美妇人，从外面推门走进来...尘儿，你又做噩梦了？眼前这个美妇人，是云武郡王的王妃，也是张若尘的娘亲，林妃。",
+            "visual_prompt": "A gentle woman in elegant red-hooded mink fur cloak entering a dimly lit ancient room, holding a lantern, worried expression.",
+            "camera_movement": "WIDE SHOT to MEDIUM SHOT.",
+            "action_description": "Lin Fei enters the room and sits by the bed, touching Zhang Ruochen's forehead.",
+            "visual_density_score": 0.6,
+            "characters": [
+                {
+                    "name": "林妃",
+                    "appearance": {
+                        "clothing": "red mink fur cloak, elegant palace dress",
+                        "hair": "neatly tied hair with simple jade pin"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "八王子的欺凌 (8th Prince's Bullying)",
+            "raw_text": "八王子穿着一身金缕衣，腰上缠着一根玉石带...一个奴婢也敢挡本王子的路，真是找死。",
+            "visual_prompt": "An arrogant young man in golden embroidered robes and jade belt, followed by muscular armored guards, pushing past a maid in a courtyard.",
+            "camera_movement": "LOW ANGLE following the 8th Prince's stride.",
+            "action_description": "The 8th Prince invades the palace, arrogantly demanding Zhang Ruochen and his mother leave.",
+            "visual_density_score": 0.9,
+            "characters": [
+                {
+                    "name": "八王子",
+                    "appearance": {
+                        "clothing": "golden robes, jade belt",
+                        "hair": "high ponytail with golden crown"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "雪夜搬迁 (Move in the Snowy Night)",
+            "raw_text": "林妃和参扶着张若尘，一步步走出玉漱宫...夜以深，寒风萧瑟。坐在冰冷的石凳上面，张若尘瘦弱的身上裹着一件外衣...",
+            "visual_prompt": "A weak young man supported by his mother, walking away from a grand palace into the dark snowy night, cold wind blowing snow.",
+            "camera_movement": "LONG SHOT, high contrast between the lit palace and the dark snowy path.",
+            "action_description": "Zhang Ruochen and Lin Fei leave their home, carrying minimal belongings into the cold.",
+            "visual_density_score": 0.8,
+            "characters": [
+                {
+                    "name": "张若尘",
+                    "appearance": {
+                        "clothing": "thin outer cloak over nightgown",
+                        "hair": "disheveled"
+                    }
+                },
+                {
+                    "name": "林妃",
+                    "appearance": {
+                        "clothing": "red cloak",
+                        "hair": "slightly messy from wind"
+                    }
+                }
+            ]
+        }
+    ]
+}

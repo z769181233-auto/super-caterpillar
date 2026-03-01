@@ -1,0 +1,36 @@
+# P2-A Style LoRA Training Configuration (V2.1 - Mistoon Style Lock)
+# Strategy: Cooperative Learning with Mistoon_Anime (Toon-Prior)
+
+# 1. Model & Paths
+pretrained_model_name_or_path: "models/mistoon-anime-v2" # Local Snaphot Deployment
+train_data_dir: "dataset/jianlai_style/images"
+caption_dir: "dataset/jianlai_style/captions"
+output_dir: "output/lora_style_jianlai3d_v2_mistoon"
+
+# 2. Network Constants
+rank: 32
+alpha: 16
+network_module: "networks.lora"
+
+# 3. Learning Rate & Scheduler
+learning_rate: 8.0e-5
+unet_lr: 8.0e-5
+text_encoder_lr: 0 # Freeze Text Encoder to avoid base semantic drift
+lr_scheduler: "cosine_with_restarts"
+lr_warmup_steps: 200
+
+# 4. Training Specs
+resolution: 512
+train_batch_size: 1
+gradient_accumulation_steps: 2 # Simulate Batch Size 2
+max_train_steps: 1500 # Gate@1500 Milestone
+offset_noise: 0.05
+optimizer_type: "AdamW"
+mixed_precision: "no"
+
+# 5. Validation & Save
+sample_prompts_file: "dataset/chenpingan_lora/sample_prompts_v7_locked.txt"
+sample_steps: 250 # Judicial-grade frequency
+save_model_every_n_steps: 250
+save_precision: "fp16"
+save_n_max_epochs: 5
