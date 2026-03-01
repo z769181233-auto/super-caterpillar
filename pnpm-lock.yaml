@@ -594,7 +594,11 @@ importers:
 
   packages/engines-vg05: {}
 
-  packages/engines-video-merge: {}
+  packages/engines-video-merge:
+    dependencies:
+      '@scu/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/engines/tts_standard: {}
 

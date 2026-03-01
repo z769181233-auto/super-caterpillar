@@ -1,5 +1,5 @@
-import { execAsync } from '../../../shared/os_exec';
-import { sha256File } from '../../../shared/hash';
+import { execAsync } from '@scu/shared';
+import { sha256File } from '@scu/shared';
 import * as fs from 'fs';
 import { promises as fsp } from 'fs';
 import * as path from 'path';
