@@ -1,211 +1,280 @@
 #!/usr/bin/env node
 /**
- * P8.1 全量回归矩阵脚本
- * 覆盖 P7.1 中定义的 13 条回归用例
- * 
- * 环境变量:
- *   E2E_BASE_URL  — 目标服务地址 (默认 http://localhost:3001)
- *   E2E_PROJECT_ID — Studio 测试用项目 ID (默认 test-e2e-project)
- *   E2E_BUILD_ID   — Studio 测试用构建 ID (默认 test-build-001)
- *   E2E_OUT_DIR   — 截图输出目录 (默认 docs/_evidence/p8_release/screens)
+ * P8/P9 全量回归矩阵脚本 v5（严格门禁 + PASS/FAIL/SKIP 三态 + E2E_STRICT）
  *
- * 用法:
- *   E2E_MODE=1 node scripts/e2e/screenshot_p7_regression.mjs
+ * 状态定义：
+ *   PASS  — goto 成功 + selector 存在 + 截图完成
+ *   FAIL  — goto 成功但 selector/断言失败
+ *   SKIP  — 前置 goto 网络失败（TLS/超时）→ 依赖用例链式 SKIP
+ *
+ * 门禁规则：
+ *   E2E_STRICT=1（staging 必须设）：FAIL>0 || SKIP>0 → exit 1
+ *   E2E_STRICT 未设（localhost 可用）：仅 FAIL>0 → exit 1
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// ── 环境变量（全部从 env 读取，禁止硬编码）────────────────────────────
+// ── 环境变量 ──────────────────────────────────────────────────────────────
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3001';
 const PROJECT_ID = process.env.E2E_PROJECT_ID || 'test-e2e-project';
 const BUILD_ID = process.env.E2E_BUILD_ID || 'test-build-001';
 const OUT_DIR = path.resolve(
     process.cwd(),
-    process.env.E2E_OUT_DIR || 'docs/_evidence/p8_release/screens'
+    process.env.E2E_OUT_DIR || 'docs/_evidence/p9_release/p9_1_staging/screens'
 );
+const RESULT_FILE = path.join(OUT_DIR, '..', 'regression_result.json');
+const IS_STAGING = BASE_URL.startsWith('https://');
 
-// ── E2E 安全门（不允许在生产模式直接跑）────────────────────────────────
 if (process.env.NODE_ENV === 'production' && !process.env.CI) {
-    console.error('[E2E] 禁止在生产环境执行回归脚本。请设置 E2E_MODE=1 或 CI=true。');
+    console.error('[E2E-GATE] 禁止在生产环境执行。设置 E2E_MODE=1 或 CI=true。');
     process.exit(1);
 }
 process.env.E2E_MODE = '1';
-
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
-const RESULTS = [];
+// ── 结果注册表（预填，默认 FAIL）──────────────────────────────────────────
+const ALL_IDS = ['r01', 'r02a', 'r02b', 'r02c', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10', 'r11', 'r11b', 'r12', 'r13'];
+const REG = Object.fromEntries(ALL_IDS.map(id => [id, { id, label: '', status: 'FAIL', url: '', error: null, skipReason: null, screenshot: null }]));
 
+const startedAt = new Date().toISOString();
+const STUDIO = `${BASE_URL}/zh/projects/${PROJECT_ID}/studio/${BUILD_ID}`;
+
+// ── 工具函数 ──────────────────────────────────────────────────────────────
+function setPass(id, label, url, screenshot) {
+    const r = REG[id];
+    r.status = 'PASS'; r.label = label; r.url = url; r.screenshot = screenshot; r.error = null;
+    console.log(`  ✅ ${id.padEnd(5)} ${label}`);
+}
+function setFail(id, label, url, err) {
+    const r = REG[id];
+    r.status = 'FAIL'; r.label = label; r.url = url; r.error = err;
+    console.log(`  ❌ ${id.padEnd(5)} ${label} — ${String(err).slice(0, 150)}`);
+}
+function setSkip(id, label, reason) {
+    const r = REG[id];
+    r.status = 'SKIP'; r.label = label; r.skipReason = reason;
+    console.log(`  ⏭️  ${id.padEnd(5)} ${label} [SKIP: ${reason}]`);
+}
+async function saveSnap(page, id, tag) {
+    const file = path.join(OUT_DIR, `${id}_${tag}.png`);
+    await page.screenshot({ path: file }).catch(() => { });
+    return path.basename(file);
+}
+
+/**
+ * 导航 + selector 断言 + 截图
+ * 成功: PASS; 导航失败: returns false (→ 调用方决定 FAIL/SKIP); 断言失败: FAIL
+ */
+async function goAssert(page, id, label, url, selector, opts = {}) {
+    try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: opts.timeout || 45000 });
+        // 验证页面确实在目标 origin
+        const landed = page.url();
+        if (!landed.startsWith(BASE_URL) && !landed.includes('login')) {
+            throw Object.assign(new Error(`页面离开 BASE_URL，当前: ${landed}`), { isNetworkFail: true });
+        }
+        if (selector) await page.waitForSelector(selector, { timeout: opts.selectorTimeout || 20000 });
+        await page.waitForTimeout(opts.settle || 800);
+        const snap = await saveSnap(page, id, label);
+        setPass(id, label, url, snap);
+        return true;
+    } catch (err) {
+        const isNetwork = err.isNetworkFail || String(err.message).match(/ERR_SSL|ERR_NAME|ERR_CONNECTION|TIMEOUT|net::/i);
+        const snap = await saveSnap(page, id, `${label}_FAIL`);
+        REG[id].screenshot = snap;
+        if (isNetwork) {
+            setSkip(id, label, `NETWORK_FAIL: ${String(err.message).slice(0, 120)}`);
+            return false; // 调用方按 SKIP 处理
+        }
+        setFail(id, label, url, err.message);
+        return null; // FAIL（不是网络，是断言失败）
+    }
+}
+
+// ── 主流程 ────────────────────────────────────────────────────────────────
 async function run() {
     const browser = await chromium.launch({ headless: true });
     const ctx = await browser.newContext({
+        ignoreHTTPSErrors: IS_STAGING, // 绕过证书信任问题（不能绕过握手失败）
         viewport: { width: 1440, height: 900 },
         locale: 'zh-CN',
     });
-
-    // E2E mock-pass cookie（只在测试环境有效）
     await ctx.addCookies([
         { name: 'accessToken', value: 'mock-pass', domain: new URL(BASE_URL).hostname, path: '/' },
     ]);
-
     const page = await ctx.newPage();
+    page.setDefaultNavigationTimeout(45000);
+    page.setDefaultTimeout(30000);
 
-    // ── 工具函数 ──────────────────────────────────────────────────────────
-    async function snap(id, label) {
-        const file = path.join(OUT_DIR, `${id}_${label}.png`);
-        await page.screenshot({ path: file, fullPage: false });
-        console.log(`[SNAP] ${id} → ${path.basename(file)}`);
-        RESULTS.push({ id, label, file: path.basename(file), status: 'PASS' });
+    // ── R01: Landing ─────────────────────────────────────────────────────
+    console.log('\n── R01: Landing ─────────────────────────────────');
+    const r01ok = await goAssert(page, 'r01', 'landing_zh', `${BASE_URL}/zh`, 'body');
+
+    // ── R02: Login 三语（R01 失败则全部 SKIP）─────────────────────────────
+    console.log('\n── R02: Login 三语 ──────────────────────────────');
+    for (const [sid, locale] of [['r02a', 'zh'], ['r02b', 'en'], ['r02c', 'vi']]) {
+        if (r01ok === false) { setSkip(sid, `login_${locale}`, 'PREREQ_R01_SKIP'); continue; }
+        await goAssert(page, sid, `login_${locale}`, `${BASE_URL}/${locale}/login`,
+            'form, input[type="email"], input[type="text"], input[name="email"]');
     }
 
-    async function safeGo(url, waitMs = 2000) {
+    // ── R03: 未鉴权跳转（独立 context，R01 失败则 SKIP）────────────────────
+    console.log('\n── R03: 未鉴权跳转 ──────────────────────────────');
+    if (r01ok === false) {
+        setSkip('r03', 'auth_redirect', 'PREREQ_R01_SKIP');
+    } else {
+        const noCtx = await browser.newContext({ ignoreHTTPSErrors: IS_STAGING, viewport: { width: 1440, height: 900 } });
+        const noPage = await noCtx.newPage();
+        noPage.setDefaultNavigationTimeout(45000);
         try {
-            await page.goto(url, { timeout: 15000, waitUntil: 'networkidle' });
-            await page.waitForTimeout(waitMs);
+            await noPage.goto(`${BASE_URL}/zh/projects`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+            await noPage.waitForTimeout(1000);
+            const cur = noPage.url();
+            if (!cur.includes('login') && !cur.includes('from=')) throw new Error(`未跳转 login，当前: ${cur}`);
+            const snap = await saveSnap(noPage, 'r03', 'auth_redirect');
+            setPass('r03', 'auth_redirect', cur, snap);
         } catch (e) {
-            console.warn(`[WARN] goto ${url} timed out, continuing...`);
+            const isNet = String(e.message).match(/ERR_SSL|ERR_NAME|ERR_CONNECTION|net::/i);
+            const snap = await saveSnap(noPage, 'r03', 'auth_redirect_FAIL');
+            REG['r03'].screenshot = snap;
+            if (isNet) setSkip('r03', 'auth_redirect', `NETWORK_FAIL: ${e.message.slice(0, 120)}`);
+            else setFail('r03', 'auth_redirect', '', e.message);
+        }
+        await noCtx.close();
+    }
+
+    // ── R04: Projects 列表 ────────────────────────────────────────────────
+    console.log('\n── R04: Projects 列表 ───────────────────────────');
+    const r04ok = await goAssert(page, 'r04', 'projects_list', `${BASE_URL}/zh/projects`, 'body');
+
+    // ── R05: ProjectDetail Overview ───────────────────────────────────────
+    console.log('\n── R05: ProjectDetail ───────────────────────────');
+    const r05ok = await goAssert(page, 'r05', 'project_detail_overview',
+        `${BASE_URL}/zh/projects/${PROJECT_ID}`, 'body');
+
+    // ── R06/R07: ProjectDetail 标签（依赖 R05）────────────────────────────
+    console.log('\n── R06/R07: ProjectDetail 标签 ──────────────────');
+    for (const [id, label, keyword] of [['r06', 'builds', '构建'], ['r07', 'evidence', '证据']]) {
+        if (r05ok === false) { setSkip(id, label, 'PREREQ_R05_SKIP'); continue; }
+        try {
+            const tab = page.locator(`button:has-text("${keyword}"), [data-tab]`).first();
+            if (await tab.count() > 0) { await tab.click(); await page.waitForTimeout(700); }
+            // 断言：页面仍在 ProjectDetail 范围
+            const cur = page.url();
+            if (!cur.includes(PROJECT_ID)) throw new Error(`离开 ProjectDetail，当前: ${cur}`);
+            const snap = await saveSnap(page, id, label);
+            setPass(id, label, cur, snap);
+        } catch (e) { setFail(id, label, page.url(), e.message); }
+    }
+
+    // ── R08: Studio AutoFocus ─────────────────────────────────────────────
+    console.log('\n── R08: Studio AutoFocus ────────────────────────');
+    const r08ok = await goAssert(page, 'r08', 'studio_autofocus', STUDIO,
+        '.treeItem, [class*="treeItem"], .workspace, body');
+
+    // ── R09: Scene → Shot（依赖 R08）─────────────────────────────────────
+    console.log('\n── R09: Scene → Shot ────────────────────────────');
+    if (r08ok === false) {
+        setSkip('r09', 'studio_scene_to_shot', 'PREREQ_R08_SKIP');
+    } else {
+        try {
+            // 前置断言：必须在 Studio 页
+            if (!page.url().includes(PROJECT_ID)) throw new Error('页面不在 Studio');
+            const node = page.locator('.treeItem').nth(1);
+            if (await node.count() > 0) { await node.click(); await page.waitForTimeout(1000); }
+            const snap = await saveSnap(page, 'r09', 'studio_scene_shot');
+            setPass('r09', 'studio_scene_to_shot', STUDIO, snap);
+        } catch (e) { setFail('r09', 'studio_scene_to_shot', STUDIO, e.message); }
+    }
+
+    // ── R10: 曲线点击 → 同步（依赖 R08）──────────────────────────────────
+    console.log('\n── R10: 曲线同步 ────────────────────────────────');
+    if (r08ok === false) {
+        setSkip('r10', 'studio_curve_sync', 'PREREQ_R08_SKIP');
+    } else {
+        try {
+            if (!page.url().includes(PROJECT_ID)) throw new Error('页面不在 Studio');
+            const c = page.locator('svg circle').first();
+            if (await c.count() > 0) { await c.click({ force: true }); await page.waitForTimeout(1000); }
+            const snap = await saveSnap(page, 'r10', 'studio_curve');
+            setPass('r10', 'studio_curve_sync', STUDIO, snap);
+        } catch (e) { setFail('r10', 'studio_curve_sync', STUDIO, e.message); }
+    }
+
+    // ── R11: 角色折叠持久化（依赖 R08）────────────────────────────────────
+    console.log('\n── R11: 角色折叠持久化 ──────────────────────────');
+    if (r08ok === false) {
+        setSkip('r11', 'roles_collapsed', 'PREREQ_R08_SKIP');
+        setSkip('r11b', 'roles_after_reload', 'PREREQ_R08_SKIP');
+    } else {
+        try {
+            if (!page.url().includes(PROJECT_ID)) throw new Error('页面不在 Studio');
+            const btn = page.locator('button').filter({ hasText: /展开|收起|Mở|Thu/ }).first();
+            if (await btn.count() > 0) { await btn.click(); await page.waitForTimeout(600); }
+            const s1 = await saveSnap(page, 'r11', 'roles_collapsed');
+            setPass('r11', 'roles_collapsed', STUDIO, s1);
+            // P9.1-FIX: 用 domcontentloaded，不用 networkidle
+            await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+            await page.waitForTimeout(1200);
+            const s2 = await saveSnap(page, 'r11b', 'roles_after_reload');
+            setPass('r11b', 'roles_after_reload', STUDIO, s2);
+        } catch (e) {
+            setFail('r11', 'roles_collapsed', STUDIO, e.message);
+            setFail('r11b', 'roles_after_reload', STUDIO, e.message);
         }
     }
 
-    // ────────────────────────────────────────────────────────────────────
-    // R01: Landing 首页
-    // ────────────────────────────────────────────────────────────────────
-    console.log('\n── R01: Landing 首页 ─────────────────────────────');
-    await safeGo(`${BASE_URL}/zh`);
-    await snap('r01', 'landing_zh');
-
-    // ────────────────────────────────────────────────────────────────────
-    // R02: Auth 登录三语快照
-    // ────────────────────────────────────────────────────────────────────
-    console.log('\n── R02: Auth 登录三语 ────────────────────────────');
-    for (const locale of ['zh', 'en', 'vi']) {
-        await safeGo(`${BASE_URL}/${locale}/login`);
-        await snap('r02', `login_${locale}`);
-    }
-
-    // ────────────────────────────────────────────────────────────────────
-    // R03: 未鉴权跳转 /projects → /login?from=...
-    // ────────────────────────────────────────────────────────────────────
-    console.log('\n── R03: 未鉴权跳转 ───────────────────────────────');
-    const noAuthCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    const noAuthPage = await noAuthCtx.newPage();
-    await noAuthPage.goto(`${BASE_URL}/zh/projects`, { timeout: 10000, waitUntil: 'networkidle' }).catch(() => { });
-    await noAuthPage.waitForTimeout(1500);
-    const url03 = noAuthPage.url();
-    const redirected = url03.includes('login') || url03.includes('from=');
-    console.log(`[R03] url=${url03} redirected=${redirected}`);
-    await noAuthPage.screenshot({ path: path.join(OUT_DIR, 'r03_auth_redirect.png') });
-    RESULTS.push({ id: 'r03', label: 'auth_redirect', file: 'r03_auth_redirect.png', status: redirected ? 'PASS' : 'WARN' });
-    await noAuthCtx.close();
-
-    // ────────────────────────────────────────────────────────────────────
-    // R04~R07: Projects 列表 + Project Detail 三标签
-    // ────────────────────────────────────────────────────────────────────
-    console.log('\n── R04: Projects 列表 ────────────────────────────');
-    await safeGo(`${BASE_URL}/zh/projects`);
-    await snap('r04', 'projects_list');
-
-    console.log('\n── R05~R07: ProjectDetail 三标签 ────────────────');
-    await safeGo(`${BASE_URL}/zh/projects/${PROJECT_ID}`);
-    await snap('r05', 'project_detail_overview');
-
-    // 点击 Builds tab（如存在）
-    const buildsTab = page.locator('[data-tab="builds"], button:has-text("构建"), button:has-text("Builds")').first();
-    if (await buildsTab.count() > 0) {
-        await buildsTab.click();
-        await page.waitForTimeout(1000);
-        await snap('r06', 'project_detail_builds');
+    // ── R12/R13: AuditBadges（依赖 Studio 可达）──────────────────────────
+    console.log('\n── R12/R13: AuditBadges ─────────────────────────');
+    if (r08ok === false) {
+        setSkip('r12', 'studio_audit_badges_zh', 'PREREQ_R08_SKIP');
+        setSkip('r13', 'studio_audit_badges_en', 'PREREQ_R08_SKIP');
     } else {
-        console.log('[R06] builds tab not found, skipping click');
-        await snap('r06', 'project_detail_builds_fallback');
+        await goAssert(page, 'r12', 'studio_audit_badges_zh', STUDIO, 'body');
+        await goAssert(page, 'r13', 'studio_audit_badges_en',
+            `${BASE_URL}/en/projects/${PROJECT_ID}/studio/${BUILD_ID}`, 'body');
     }
 
-    const evidenceTab = page.locator('[data-tab="evidence"], button:has-text("证据"), button:has-text("Evidence")').first();
-    if (await evidenceTab.count() > 0) {
-        await evidenceTab.click();
-        await page.waitForTimeout(1000);
-        await snap('r07', 'project_detail_evidence');
-    } else {
-        await snap('r07', 'project_detail_evidence_fallback');
-    }
-
-    // ────────────────────────────────────────────────────────────────────
-    // R08~R13: Studio P6 核心路径
-    // ────────────────────────────────────────────────────────────────────
-    const STUDIO_URL = `${BASE_URL}/zh/projects/${PROJECT_ID}/studio/${BUILD_ID}`;
-
-    console.log('\n── R08: Studio AutoFocus ────────────────────────');
-    await safeGo(STUDIO_URL, 3000);
-    await snap('r08', 'studio_autofocus');
-
-    console.log('\n── R09: 大纲点击 Scene → Shot 跳转 ─────────────');
-    // 点击第一个 scene 节点
-    const sceneNode = page.locator('.treeItem').nth(1);
-    if (await sceneNode.count() > 0) {
-        await sceneNode.click();
-        await page.waitForTimeout(1200);
-    }
-    await snap('r09', 'studio_scene_to_shot');
-
-    console.log('\n── R10: 曲线点击 → Reader+Outline 同步 ─────────');
-    // 点击 SVG 曲线上的第一个 circle
-    const curveCircle = page.locator('svg circle').first();
-    if (await curveCircle.count() > 0) {
-        await curveCircle.click({ force: true });
-        await page.waitForTimeout(1500);
-    }
-    await snap('r10', 'studio_curve_sync');
-
-    console.log('\n── R11: 角色折叠 auto/manual 持久化 ────────────');
-    // 点击折叠/展开按钮（toggle），然后刷新验证持久化
-    const rolesToggle = page.locator('button').filter({ hasText: /展开|收起|Mở|Thu/ }).first();
-    if (await rolesToggle.count() > 0) {
-        await rolesToggle.click();
-        await page.waitForTimeout(800);
-    }
-    await snap('r11', 'studio_roles_collapsed');
-    await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForTimeout(2000);
-    await snap('r11b', 'studio_roles_after_reload');
-
-    console.log('\n── R12: AuditBadges unknown 态 ──────────────────');
-    // 回到 Studio 首屏截图徽章
-    await safeGo(STUDIO_URL, 2500);
-    await snap('r12', 'studio_audit_badges');
-
-    console.log('\n── R13: AuditBadges en 语种 ──────────────────────');
-    await safeGo(`${BASE_URL}/en/projects/${PROJECT_ID}/studio/${BUILD_ID}`, 2500);
-    await snap('r13', 'studio_audit_badges_en');
-
-    // ────────────────────────────────────────────────────────────────────
-    // 汇总输出
-    // ────────────────────────────────────────────────────────────────────
     await browser.close();
 
+    // ── 汇总 + 落盘 ────────────────────────────────────────────────────
+    const results = Object.values(REG);
+    const pass = results.filter(r => r.status === 'PASS').length;
+    const fail = results.filter(r => r.status === 'FAIL').length;
+    const skip = results.filter(r => r.status === 'SKIP').length;
+    const total = results.length;
+    const strict = process.env.E2E_STRICT === '1';
+    // 严格门禁：E2E_STRICT=1 时 SKIP>0 也算失败（staging 不允许任何 SKIP）
+    const exitCode = (fail > 0 || (strict && skip > 0)) ? 1 : 0;
+
+    const out = { baseUrl: BASE_URL, strict, startedAt, endedAt: new Date().toISOString(), exitCode, total, pass, fail, skip, results };
+    fs.writeFileSync(RESULT_FILE, JSON.stringify(out, null, 2));
+
     console.log('\n══════════════════════════════════════════════════');
-    console.log('P8.1 回归矩阵结果');
+    console.log(`P8/P9 回归矩阵   exit=${exitCode}  PASS:${pass}  FAIL:${fail}  SKIP:${skip}  TOTAL:${total}${strict ? ' [STRICT]' : ''}`);
+    if (fail > 0 || skip > 0) {
+        results.filter(r => r.status !== 'PASS').forEach(r =>
+            console.log(`  ${r.status === 'SKIP' ? '⏭️ ' : '❌'} ${r.id.padEnd(5)} ${r.label}: ${r.skipReason || r.error || ''}`.slice(0, 200))
+        );
+    }
     console.log('══════════════════════════════════════════════════');
-    RESULTS.forEach(r => {
-        const icon = r.status === 'PASS' ? '✅' : '⚠️';
-        console.log(`${icon} ${r.id.padEnd(4)} ${r.label}`);
-    });
-    const warns = RESULTS.filter(r => r.status !== 'PASS').length;
-    console.log(`\n截图总数: ${RESULTS.length} | WARN: ${warns}`);
-    console.log(`截图目录: ${OUT_DIR}`);
+    console.log(`截图目录:  ${OUT_DIR}`);
+    console.log(`结果 JSON: ${RESULT_FILE}`);
 
-    // 写结果 JSON 供后续证据文档引用
-    const resultPath = path.join(OUT_DIR, '..', 'regression_result.json');
-    fs.writeFileSync(resultPath, JSON.stringify({
-        timestamp: new Date().toISOString(),
-        results: RESULTS,
-        summary: { total: RESULTS.length, warns }
-    }, null, 2));
-    console.log(`结果 JSON: ${resultPath}`);
-
-    process.exit(warns > 0 ? 1 : 0);
+    process.exit(exitCode);
 }
 
 run().catch(err => {
-    console.error('[FATAL]', err);
-    process.exit(1);
+    console.error('[UNCAUGHT]', err);
+    const results = Object.values(REG);
+    fs.writeFileSync(RESULT_FILE, JSON.stringify({
+        baseUrl: BASE_URL, startedAt, endedAt: new Date().toISOString(),
+        exitCode: 127, total: results.length,
+        pass: results.filter(r => r.status === 'PASS').length,
+        fail: results.filter(r => r.status === 'FAIL').length,
+        skip: results.filter(r => r.status === 'SKIP').length,
+        results,
+    }, null, 2));
+    process.exit(127);
 });
