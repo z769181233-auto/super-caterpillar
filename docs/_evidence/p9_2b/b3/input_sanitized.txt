@@ -1,0 +1,3 @@
+API_PUBLIC_URL=https://api-production-4e28.up.railway.app
+PAGES_PUBLIC_URL=https://web-production-22956.up.railway.app
+HEALTH_PATH=/api/health
