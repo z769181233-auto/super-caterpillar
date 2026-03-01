@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "pnpm --filter \"@scu/shared-types\" --filter database build && next build",
-    "start": "next start -p 3001",
+    "start": "npx --yes serve@latest out -l tcp://0.0.0.0:${PORT:-3001}",
     "lint": "next lint",
     "lint:i18n": "node ../../scripts/i18n/no-hardcode-check.mjs",
     "lint:e2e-seal": "node scripts/e2e-seal-check.mjs",

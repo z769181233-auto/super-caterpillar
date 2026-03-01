@@ -176,8 +176,8 @@ async function bootstrap() {
   );
 
   try {
-    // 强制绑定到 127.0.0.1（Gate 本地验证对 IPv4 最稳）
-    await app.listen(port, '127.0.0.1');
+    // 强制绑定到 0.0.0.0（兼容 Docker 和本地验证）
+    await app.listen(port, '0.0.0.0');
 
     const addr: any = app.getHttpServer()?.address?.();
     process.stdout.write(
@@ -210,7 +210,7 @@ async function bootstrap() {
           hasStorageController = true;
           process.stdout.write(
             util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
-              '\n'
+            '\n'
           );
         }
       }
