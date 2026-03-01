@@ -31,36 +31,37 @@ async function boot() {
   const isDev = process.env.NODE_ENV !== 'production';
   const shouldEnforceDMMF = isGate || isDev;
 
+  let databaseModule: any = null;
+
   try {
     process.stdout.write(util.format('[Bootstrap] Prisma Client DMMF Self-Check...') + '\n');
     process.stdout.write(util.format('[Bootstrap]   process.cwd() = %s', process.cwd()) + '\n');
 
-    let prismaClientPath = '';
-    try {
-      prismaClientPath = require.resolve('@prisma/client');
-      process.stdout.write(
-        util.format('[Bootstrap]   @prisma/client resolved to: %s', prismaClientPath) + '\n'
-      );
-    } catch (e) {
-      process.stdout.write(
-        util.format('[Bootstrap]   @prisma/client resolve failed: %s', (e as Error).message) + '\n'
-      );
+    // 尝试多种路径加载 database
+    const tryPaths = [
+      'database',
+      path.resolve(process.cwd(), 'node_modules/database'),
+      path.resolve(process.cwd(), '../../node_modules/database'),
+      path.resolve(__dirname, '../node_modules/database'),
+      path.resolve(__dirname, '../../node_modules/database'),
+      path.resolve(__dirname, '../../../../node_modules/database'),
+    ];
+
+    for (const p of tryPaths) {
+      try {
+        databaseModule = await import(p);
+        process.stdout.write(util.format('[Bootstrap]   ✅ database loaded from: %s', p) + '\n');
+        break;
+      } catch (e) {
+        // Continue searching
+      }
     }
 
-    let databasePath = '';
-    try {
-      databasePath = require.resolve('database');
-      process.stdout.write(
-        util.format('[Bootstrap]   database resolved to: %s', databasePath) + '\n'
-      );
-    } catch (e) {
-      process.stdout.write(
-        util.format('[Bootstrap]   database resolve failed: %s', (e as Error).message) + '\n'
-      );
+    if (!databaseModule) {
+      throw new Error('Could not resolve database module from any known path');
     }
 
-    // Import Prisma and check DMMF
-    const { PrismaClient } = await import('database');
+    const { PrismaClient } = databaseModule;
     const prisma = new PrismaClient();
     const dmmf = (prisma as any).constructor.dmmf || (PrismaClient as any).dmmf;
 
@@ -86,23 +87,10 @@ async function boot() {
     if (missingFields.length > 0) {
       const errorMsg = `[Bootstrap] ❌ DMMF Self-Check FAILED: Shot model missing fields: ${missingFields.join(', ')}`;
       process.stderr.write(util.format(errorMsg) + '\n');
-
-      if (shouldEnforceDMMF) {
-        process.stderr.write(
-          util.format(
-            '[Bootstrap] Gate/Dev mode: Continuing with WARNING (SHOT_RENDER jobs will fail if schema mismatch)'
-          ) + '\n'
-        );
-      } else {
-        process.stderr.write(
-          util.format('[Bootstrap] Production mode: Continuing with WARNING (jobs will fail)') +
-            '\n'
-        );
-      }
     } else {
       process.stdout.write(
         util.format('[Bootstrap] ✅ DMMF Self-Check PASSED: All required Shot fields present') +
-          '\n'
+        '\n'
       );
     }
 
@@ -110,44 +98,34 @@ async function boot() {
   } catch (error: any) {
     const errorMsg = `[Bootstrap] ❌ DMMF Self-Check ERROR: ${error.message}`;
     process.stderr.write(util.format(errorMsg) + '\n');
-
-    if (shouldEnforceDMMF) {
-      process.stderr.write(
-        util.format(
-          '[Bootstrap] Gate/Dev mode: Continuing with WARNING (CE06/other jobs may still work)'
-        ) + '\n'
-      );
-    } else {
-      process.stderr.write(
-        util.format('[Bootstrap] Production mode: Continuing with WARNING') + '\n'
-      );
-    }
   }
 
   if (process.env.WORKER_METRICS_PORT) {
-    const { startMetricsServer } = await import('./metrics-server');
-    startMetricsServer(parseInt(process.env.WORKER_METRICS_PORT, 10));
+    try {
+      const { startMetricsServer } = await import('./metrics-server');
+      startMetricsServer(parseInt(process.env.WORKER_METRICS_PORT, 10));
+    } catch (e) {
+      process.stderr.write(util.format('[Bootstrap] Metrics Server failed: %s', (e as Error).message) + '\n');
+    }
   }
 
   if (process.env.STRESS_TEST_LOG_PATH) {
-    const { MemoryLogger } = await import('./utils/memory_logger');
-    const logger = new MemoryLogger('15M-STRESS', process.env.STRESS_TEST_LOG_PATH);
-    logger.start(1000);
-    process.stdout.write(
-      util.format(
-        '[Bootstrap] 🚀 MemoryLogger started. Path: %s',
-        process.env.STRESS_TEST_LOG_PATH
-      ) + '\n'
-    );
+    try {
+      const { MemoryLogger } = await import('./utils/memory_logger');
+      const logger = new MemoryLogger('15M-STRESS', process.env.STRESS_TEST_LOG_PATH);
+      logger.start(1000);
+      process.stdout.write(
+        util.format(
+          '[Bootstrap] 🚀 MemoryLogger started. Path: %s',
+          process.env.STRESS_TEST_LOG_PATH
+        ) + '\n'
+      );
+    } catch (e) {
+      process.stderr.write(util.format('[Bootstrap] MemoryLogger failed: %s', (e as Error).message) + '\n');
+    }
   }
 
   if (isGate) {
-    if (process.env.NODE_ENV === 'production') {
-      // Allow for Stage verification
-      process.stdout.write(
-        util.format('[Bootstrap] WARN: Running GATE_MODE in PRODUCTION environment') + '\n'
-      );
-    }
     process.stdout.write(
       util.format('[Bootstrap] GATE_MODE detected, loading Gate Worker...') + '\n'
     );
