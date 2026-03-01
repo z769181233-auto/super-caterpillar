@@ -1,4 +1,10 @@
-import { Injectable, Logger, ServiceUnavailableException, ForbiddenException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+  ForbiddenException,
+  Inject,
+} from '@nestjs/common';
 import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
@@ -30,7 +36,7 @@ export class EngineInvokerService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(EngineConfigStoreService) private readonly engineConfigStore: EngineConfigStoreService
-  ) { }
+  ) {}
 
   async invoke({ adapter, input, engineKey }: InvokeParams): Promise<EngineInvokeResult> {
     const state = this.getCircuitState(engineKey);
@@ -41,16 +47,20 @@ export class EngineInvokerService {
     if (engineSpec?.ledger_required === true || engineSpec?.ledger_required === 'YES') {
       const traceId = input.context?.traceId || input.payload?.traceId || (input as any).jobId;
       if (!traceId) {
-        throw new ForbiddenException(`[BillingGuard] Engine ${engineKey} requires a valid traceId/jobId for ledger auditing.`);
+        throw new ForbiddenException(
+          `[BillingGuard] Engine ${engineKey} requires a valid traceId/jobId for ledger auditing.`
+        );
       }
 
       const ledger = await this.prisma.billingLedger.findFirst({
         where: { jobId: String(traceId) },
-        select: { id: true }
+        select: { id: true },
       });
 
       if (!ledger) {
-        this.logger.error(`[BillingGuard] ABORTING: Engine ${engineKey} is ledger_required but NO ledger entry found for traceId ${traceId}.`);
+        this.logger.error(
+          `[BillingGuard] ABORTING: Engine ${engineKey} is ledger_required but NO ledger entry found for traceId ${traceId}.`
+        );
         throw new ForbiddenException(
           `[BillingGuard] Unauthorized usage of premium engine ${engineKey}. Ledger record must be created BEFORE invocation.`
         );

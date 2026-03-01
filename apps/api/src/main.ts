@@ -20,7 +20,6 @@ if (fs.existsSync(envLocalPath)) {
   console.log('[Bootstrap] Loaded .env.local');
 }
 
-
 async function bootstrap() {
   // A4: Environment Integrity Guard
   try {
@@ -211,7 +210,7 @@ async function bootstrap() {
           hasStorageController = true;
           process.stdout.write(
             util.format(`[P0_EVIDENCE] Found StorageController in module: ${mod.metatype?.name}`) +
-            '\n'
+              '\n'
           );
         }
       }

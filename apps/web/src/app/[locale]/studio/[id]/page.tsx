@@ -1,10 +1,8 @@
 import React from 'react';
-import { StudioShellPage } from "@/features/studio/pages/StudioShellPage";
+import { StudioShellPage } from '@/features/studio/pages/StudioShellPage';
 
 export function generateStaticParams() {
-    return [
-        { id: 'demo' }
-    ];
+  return [{ id: 'demo' }];
 }
 
 /**
@@ -12,5 +10,5 @@ export function generateStaticParams() {
  * 显式建立 /studio/[id] 验证入口。
  */
 export default function StudioPage() {
-    return <StudioShellPage />;
+  return <StudioShellPage />;
 }

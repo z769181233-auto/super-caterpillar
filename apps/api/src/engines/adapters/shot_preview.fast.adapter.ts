@@ -31,7 +31,7 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
     private readonly shotRenderRouter: ShotRenderRouterAdapter,
     private readonly auditService: AuditService,
     private readonly costLedgerService: CostLedgerService
-  ) { }
+  ) {}
 
   supports(engineKey: string): boolean {
     return engineKey === 'shot_preview';

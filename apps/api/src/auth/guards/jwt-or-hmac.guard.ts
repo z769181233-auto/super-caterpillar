@@ -26,7 +26,7 @@ export class JwtOrHmacGuard implements CanActivate {
     @Inject(forwardRef(() => JwtAuthGuard)) private readonly jwtAuthGuard: JwtAuthGuard,
     @Inject(forwardRef(() => HmacAuthGuard)) private readonly hmacAuthGuard: HmacAuthGuard,
     @Inject(Reflector) private readonly reflector: Reflector
-  ) { }
+  ) {}
 
   /**
    * P0-SEC: 大小写不敏感的 Header 读取

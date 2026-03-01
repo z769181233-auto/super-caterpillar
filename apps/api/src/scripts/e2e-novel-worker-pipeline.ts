@@ -206,7 +206,7 @@ async function importNovel(
       novelSourceId: novel.id,
       index: 1,
       title: 'Volume 1',
-    }
+    },
   });
 
   // 保存章节 (SSOT: schema.prisma line 976)
@@ -358,7 +358,7 @@ async function waitJobsHandledByRealWorker(
     process.stdout.write(
       util.format(
         `[E2E] Job 状态: PENDING=${pending}, RUNNING=${running}, ` +
-        `SUCCEEDED=${succeeded}, FAILED=${failed}, RETRYING=${retrying}`
+          `SUCCEEDED=${succeeded}, FAILED=${failed}, RETRYING=${retrying}`
       ) + '\n'
     );
 
@@ -446,7 +446,7 @@ async function verifyStructure(prisma: PrismaService, projectId: string): Promis
   firstScene.shots.slice(0, 5).forEach((shot, index) => {
     process.stdout.write(
       util.format(`[E2E]   Shot ${index + 1}: ${shot.title || '未命名'} (type: ${shot.type})`) +
-      '\n'
+        '\n'
     );
   });
   if (firstScene.shots.length > 5) {

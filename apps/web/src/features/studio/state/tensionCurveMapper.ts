@@ -6,11 +6,11 @@
 import { EmotionalFrame } from '../types';
 
 export type CurvePoint = {
-    shotId: string;           // 显式绑定 —— 不允许用 index 推算
-    x: number;               // 0~100 in SVG viewBox space
-    y: number;               // 0~100 in SVG viewBox space (inverted: 0=top)
-    tensionScore: number;    // 0~100
-    isCollapse: boolean;     // true if the shot has diagnostics
+  shotId: string; // 显式绑定 —— 不允许用 index 推算
+  x: number; // 0~100 in SVG viewBox space
+  y: number; // 0~100 in SVG viewBox space (inverted: 0=top)
+  tensionScore: number; // 0~100
+  isCollapse: boolean; // true if the shot has diagnostics
 };
 
 /**
@@ -18,21 +18,18 @@ export type CurvePoint = {
  * 采样算法：均匀步长（最多 maxPoints 个点）。
  * 每个点携带 shotId，禁止在调用方通过 index 反查 shotId。
  */
-export function mapFramesToCurvePoints(
-    frames: EmotionalFrame[],
-    maxPoints = 12
-): CurvePoint[] {
-    if (!frames || frames.length === 0) return [];
+export function mapFramesToCurvePoints(frames: EmotionalFrame[], maxPoints = 12): CurvePoint[] {
+  if (!frames || frames.length === 0) return [];
 
-    const step = Math.max(1, Math.floor(frames.length / maxPoints));
-    const sampled = frames.filter((_, i) => i % step === 0).slice(0, maxPoints);
-    const total = sampled.length;
+  const step = Math.max(1, Math.floor(frames.length / maxPoints));
+  const sampled = frames.filter((_, i) => i % step === 0).slice(0, maxPoints);
+  const total = sampled.length;
 
-    return sampled.map((frame, i) => ({
-        shotId: frame.shotId,           // 显式绑定
-        x: total > 1 ? (i / (total - 1)) * 100 : 50,
-        y: 100 - (frame.tensionScore * 0.8), // invert so high = top
-        tensionScore: frame.tensionScore,
-        isCollapse: !!frame.diagnostics,
-    }));
+  return sampled.map((frame, i) => ({
+    shotId: frame.shotId, // 显式绑定
+    x: total > 1 ? (i / (total - 1)) * 100 : 50,
+    y: 100 - frame.tensionScore * 0.8, // invert so high = top
+    tensionScore: frame.tensionScore,
+    isCollapse: !!frame.diagnostics,
+  }));
 }

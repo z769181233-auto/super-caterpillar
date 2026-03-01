@@ -23,7 +23,7 @@
   /* Muted gold for borders/subtle text */
   --gold-tint-05: rgba(245, 158, 11, 0.05);
   /* Ultra-subtle gold tint — used for active node backgrounds */
-  --gold-tint-10: rgba(245, 158, 11, 0.10);
+  --gold-tint-10: rgba(245, 158, 11, 0.1);
   /* Light gold tint — used for hover states over gold accents */
   --on-gold: #0b0d10;
   /* Text color strictly used when background is gold */
@@ -57,7 +57,7 @@
   --hsl-error: 0, 60%, 55%;
 
   /* --- Glassmorphism (Minimalist/Luxury) --- */
-  --glass-bg: #181B20;
+  --glass-bg: #181b20;
   --glass-border: rgba(255, 255, 255, 0.05);
   --glass-shadow: none;
   --backdrop-blur: 0px;

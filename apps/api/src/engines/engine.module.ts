@@ -378,7 +378,7 @@ export class EngineModule implements OnModuleInit {
     private readonly ce23Adapter: CE23IdentityLocalAdapter,
     @Inject(AudioTTSLocalAdapter)
     private readonly audioTTSAdapter: AudioTTSLocalAdapter
-  ) { }
+  ) {}
 
   onModuleInit() {
     if (!this.registry) {

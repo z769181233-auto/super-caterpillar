@@ -45,8 +45,14 @@ export async function getRuntimeConfig(loadMonitor?: SystemLoadMonitor): Promise
   }
 
   const cpus = os.cpus().length;
-  const loadAvg = metrics.cpuUsagePercent !== undefined ? (metrics.cpuUsagePercent / 100) * cpus : os.loadavg()[0];
-  const freeMem = metrics.memoryUsageMb !== undefined ? metrics.totalMemoryMb! - metrics.memoryUsageMb : os.freemem() / 1024 / 1024;
+  const loadAvg =
+    metrics.cpuUsagePercent !== undefined
+      ? (metrics.cpuUsagePercent / 100) * cpus
+      : os.loadavg()[0];
+  const freeMem =
+    metrics.memoryUsageMb !== undefined
+      ? metrics.totalMemoryMb! - metrics.memoryUsageMb
+      : os.freemem() / 1024 / 1024;
 
   let jobMaxInFlight = baseMaxInFlight;
   let jobWaveSize = (env as any).jobWaveSize || 5;
@@ -84,11 +90,11 @@ import {
   processScriptOutlineJob,
   processSceneSplitJob,
   processShotSplitJob,
-  processContinuityAuditJob
+  processContinuityAuditJob,
 } from './processors/script-structure.processor';
 import {
   processCharacterCardsJob,
-  processAssetListJob
+  processAssetListJob,
 } from './processors/asset-extraction.processor';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ProcessorContext } from './types/processor-context';
@@ -110,7 +116,10 @@ function readArg(name: string): string | undefined {
 }
 
 const workerId = readArg('workerId') || process.env.WORKER_ID || env.workerId;
-const apiBaseUrl = (readArg('apiUrl') || env.apiUrl || 'http://127.0.0.1:3000').replace(/\/api\/?$/, '');
+const apiBaseUrl = (readArg('apiUrl') || env.apiUrl || 'http://127.0.0.1:3000').replace(
+  /\/api\/?$/,
+  ''
+);
 const workerApiKey = readArg('apiKey') || env.workerApiKey;
 const workerApiSecret = process.env.API_SECRET_KEY || env.workerApiSecret || 'dev-secret';
 
@@ -123,22 +132,27 @@ const localStorageAdapter = new LocalStorageAdapter(appConfig.storageRoot);
 async function processJobWithExecutor(job: any): Promise<void> {
   tasksRunning++;
   try {
-    const result = await jobExecutor.execute(job.id, job.engineKey || 'real', job.createdAt, async () => {
-      const ctx: ProcessorContext = { prisma, job, apiClient, localStorage: localStorageAdapter };
-      if (job.type === 'CE06_SCRIPT_OUTLINE') return processScriptOutlineJob(ctx);
-      if (job.type === 'CE11_SCENE_SPLIT') return processSceneSplitJob(ctx);
-      if (job.type === 'CE12_SHOT_SPLIT') return processShotSplitJob(ctx);
-      if (job.type === 'CE99_CONTINUITY_AUDIT') return processContinuityAuditJob(ctx);
-      if (job.type === 'CE13_CHARACTER_CARDS') return processCharacterCardsJob(ctx);
-      if (job.type === 'CE14_ASSET_LIST') return processAssetListJob(ctx);
-      throw new Error(`Unsupported job type: ${job.type}`);
-    });
+    const result = await jobExecutor.execute(
+      job.id,
+      job.engineKey || 'real',
+      job.createdAt,
+      async () => {
+        const ctx: ProcessorContext = { prisma, job, apiClient, localStorage: localStorageAdapter };
+        if (job.type === 'CE06_SCRIPT_OUTLINE') return processScriptOutlineJob(ctx);
+        if (job.type === 'CE11_SCENE_SPLIT') return processSceneSplitJob(ctx);
+        if (job.type === 'CE12_SHOT_SPLIT') return processShotSplitJob(ctx);
+        if (job.type === 'CE99_CONTINUITY_AUDIT') return processContinuityAuditJob(ctx);
+        if (job.type === 'CE13_CHARACTER_CARDS') return processCharacterCardsJob(ctx);
+        if (job.type === 'CE14_ASSET_LIST') return processAssetListJob(ctx);
+        throw new Error(`Unsupported job type: ${job.type}`);
+      }
+    );
 
     await apiClient.reportJobResult({
       jobId: job.id,
       status: result.success ? 'SUCCEEDED' : 'FAILED',
       result: result.output,
-      error: result.error
+      error: result.error,
     });
   } catch (error: any) {
     console.error(`[Worker] Job ${job.id} execution failed:`, error.message);
@@ -163,10 +177,10 @@ async function main() {
           'CE12_SHOT_SPLIT',
           'CE99_CONTINUITY_AUDIT',
           'CE13_CHARACTER_CARDS',
-          'CE14_ASSET_LIST'
+          'CE14_ASSET_LIST',
         ],
-        supportedEngines: ['real']
-      }
+        supportedEngines: ['real'],
+      },
     });
   } catch (e: any) {
     console.warn(`[Worker] Registration failed: ${e.message}`);
@@ -179,7 +193,7 @@ async function main() {
   setInterval(async () => {
     try {
       await apiClient.heartbeat({ workerId, tasksRunning });
-    } catch (e) { }
+    } catch (e) {}
   }, 10000);
 
   while (isRunning) {
@@ -189,7 +203,7 @@ async function main() {
       await apiClient.ackJob(job.id, workerId);
       processJobWithExecutor(job).catch(console.error);
     }
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
   }
 }
 

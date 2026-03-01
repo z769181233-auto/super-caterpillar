@@ -104,7 +104,7 @@ export class QC01VisualFidelityAdapter extends QcBaseEngine implements EngineAda
             const kernel = {
               width: 3,
               height: 3,
-              kernel: [0, 1, 0, 1, -4, 1, 0, 1, 0]
+              kernel: [0, 1, 0, 1, -4, 1, 0, 1, 0],
             };
 
             for (const frame of frameFiles) {
@@ -120,10 +120,7 @@ export class QC01VisualFidelityAdapter extends QcBaseEngine implements EngineAda
               // Or use sharp's convolve? Sharp's convolve returns an image.
               // Let's use sharp's convolve then stats.
 
-              const stats = await sharp(frame)
-                .grayscale()
-                .convolve(kernel)
-                .stats();
+              const stats = await sharp(frame).grayscale().convolve(kernel).stats();
 
               // Variance = stdev^2. Sharp stats returns stdev.
               // Channel 0 is the grayscale channel.

@@ -23,7 +23,7 @@ export class ProjectStructureService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     private readonly projectService: ProjectService
-  ) { }
+  ) {}
 
   /**
    * S3-C: Authoritative Project Structure Tree

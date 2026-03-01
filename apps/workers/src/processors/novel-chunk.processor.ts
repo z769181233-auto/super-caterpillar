@@ -27,7 +27,14 @@ export async function processNovelChunk(context: ProcessorContext) {
   }
 
   const { prisma, job } = context;
-  const { projectId, chunkId: dbChunkId, startByte, endByte, isVerification, ingestRunId } = job.payload;
+  const {
+    projectId,
+    chunkId: dbChunkId,
+    startByte,
+    endByte,
+    isVerification,
+    ingestRunId,
+  } = job.payload;
   const fileKey = job.payload.fileKey || job.payload.filePath;
 
   try {
@@ -37,7 +44,7 @@ export async function processNovelChunk(context: ProcessorContext) {
     // 1. Update Chunk Status to PROCESSING
     await prisma.novelChunk.update({
       where: { id: dbChunkId },
-      data: { status: 'PROCESSING' }
+      data: { status: 'PROCESSING' },
     });
 
     console.log(
@@ -93,11 +100,11 @@ export async function processNovelChunk(context: ProcessorContext) {
       } catch (err: any) {
         console.error(`[NovelChunk] Multi-Agent failed: ${err.message}. Falling back.`);
         const structure = basicTextSegmentation(chunkText, projectId);
-        analyzedScenes = structure.episodes.flatMap(ep => ep.scenes);
+        analyzedScenes = structure.episodes.flatMap((ep) => ep.scenes);
       }
     } else {
       const structure = basicTextSegmentation(chunkText, projectId);
-      analyzedScenes = structure.episodes.flatMap(ep => ep.scenes);
+      analyzedScenes = structure.episodes.flatMap((ep) => ep.scenes);
     }
 
     // 4. Save Artifact (MAP Product)
@@ -107,13 +114,20 @@ export async function processNovelChunk(context: ProcessorContext) {
       await fsp.mkdir(artifactDir, { recursive: true });
     }
     const artifactPath = path.join(artifactDir, `${dbChunkId}.json`);
-    await fsp.writeFile(artifactPath, JSON.stringify({
-      chunkId: dbChunkId,
-      projectId,
-      startByte,
-      endByte,
-      scenes: analyzedScenes,
-    }, null, 2));
+    await fsp.writeFile(
+      artifactPath,
+      JSON.stringify(
+        {
+          chunkId: dbChunkId,
+          projectId,
+          startByte,
+          endByte,
+          scenes: analyzedScenes,
+        },
+        null,
+        2
+      )
+    );
 
     const relativeArtifactUrl = path.relative(storageRoot, artifactPath);
 
@@ -123,7 +137,7 @@ export async function processNovelChunk(context: ProcessorContext) {
       data: {
         status: 'COMPLETED',
         artifactUrl: relativeArtifactUrl,
-      }
+      },
     });
 
     // 6. Progress and Aggregator Trigger
@@ -133,17 +147,21 @@ export async function processNovelChunk(context: ProcessorContext) {
       const ns = await prisma.novelSource.update({
         where: { id: nsId },
         data: { processedChunks: { increment: 1 } },
-        select: { processedChunks: true, totalChapters: true }
+        select: { processedChunks: true, totalChapters: true },
       });
 
-      console.log(`[NovelChunk] Progress: ${ns.processedChunks}/${ns.totalChapters} for source ${nsId}`);
+      console.log(
+        `[NovelChunk] Progress: ${ns.processedChunks}/${ns.totalChapters} for source ${nsId}`
+      );
 
       if (ns.processedChunks >= ns.totalChapters) {
-        console.log(`[NovelChunk] 🏁 All chunks completed for run ${ingestRunId}. Triggering REDUCE phase.`);
+        console.log(
+          `[NovelChunk] 🏁 All chunks completed for run ${ingestRunId}. Triggering REDUCE phase.`
+        );
 
         await prisma.novelIngestRun.update({
           where: { id: ingestRunId },
-          data: { status: 'COMPLETED' } // Or 'AGGREGATING'
+          data: { status: 'COMPLETED' }, // Or 'AGGREGATING'
         });
 
         // Trigger NOVEL_REDUCE_AGGREGATE
@@ -166,9 +184,9 @@ export async function processNovelChunk(context: ProcessorContext) {
                 engineKey: 'ce06_novel_aggregator',
                 engine: { connect: { engineKey: 'ce06_novel_aggregator' } },
                 status: 'BOUND',
-              }
-            }
-          }
+              },
+            },
+          },
         });
       }
     }
@@ -181,7 +199,7 @@ export async function processNovelChunk(context: ProcessorContext) {
     return {
       status: 'SUCCEEDED',
       message: `MAP completed for chunk ${dbChunkId}. Artifact saved.`,
-      artifactUrl: relativeArtifactUrl
+      artifactUrl: relativeArtifactUrl,
     };
   } catch (e: any) {
     // 6. Fail-Safe NovelSource status update
@@ -198,7 +216,7 @@ export async function processNovelChunk(context: ProcessorContext) {
             error: `Chunk ${job.payload.episodeId} failed: ${e.message || String(e)}`,
           },
         })
-        .catch(() => { });
+        .catch(() => {});
     }
 
     // Metrics: Failure

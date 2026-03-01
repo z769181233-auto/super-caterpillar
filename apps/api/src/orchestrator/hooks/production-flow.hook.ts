@@ -20,7 +20,7 @@ export class ProductionFlowHook {
   constructor(
     private readonly jobService: JobService,
     private readonly prisma: PrismaService
-  ) { }
+  ) {}
 
   @OnEvent('job.succeeded')
   async handleJobSucceeded(evt: any) {

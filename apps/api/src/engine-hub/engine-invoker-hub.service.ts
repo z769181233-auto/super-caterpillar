@@ -328,7 +328,10 @@ export class EngineInvokerHubService implements OnModuleInit {
       return finalResult;
     } catch (e: unknown) {
       const errorObj = e as any;
-      this.logger.error(`[EngineInvokerHubService] Failed invoking ${req.engineKey}: ${errorObj?.message}`, errorObj?.stack);
+      this.logger.error(
+        `[EngineInvokerHubService] Failed invoking ${req.engineKey}: ${errorObj?.message}`,
+        errorObj?.stack
+      );
       const result: EngineInvocationResult<TOutput> = {
         success: false,
         selectedEngineKey: req.engineKey,

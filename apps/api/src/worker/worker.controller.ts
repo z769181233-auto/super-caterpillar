@@ -27,7 +27,7 @@ export class WorkerController {
     private readonly moduleRef: ModuleRef,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   private get workerService(): WorkerService {
     return this.moduleRef.get(WorkerService, { strict: false });

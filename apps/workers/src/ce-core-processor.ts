@@ -114,13 +114,13 @@ export async function processCE06Job(
         },
         taskId: job.taskId,
         traceId: (job as any).traceId,
-      }
+      },
     });
 
     return {
       status: 'SPAWNED_SCAN',
       message: 'Triggered NOVEL_SCAN_TOC for streaming pipeline',
-      scanJobId: scanJob.id
+      scanJobId: scanJob.id,
     } as any;
   } catch (error: any) {
     console.error(`[CE06] ❌ processCE06Job failed: ${error.message}`);
@@ -605,7 +605,7 @@ export async function processCE04Job(
         latencyMs: duration,
         auditTrail: result.audit_trail,
       })
-      .catch(() => { });
+      .catch(() => {});
 
     return result;
   } catch (error: any) {
@@ -838,7 +838,12 @@ export async function processShotRenderJob(
       data: {
         renderStatus: 'COMPLETED',
         resultImageUrl: result.asset?.uri || result.storageKey || result.localPath,
-        resultVideoUrl: result.asset?.videoUri || result.asset?.uri || result.storageKey || result.localPath || null,
+        resultVideoUrl:
+          result.asset?.videoUri ||
+          result.asset?.uri ||
+          result.storageKey ||
+          result.localPath ||
+          null,
       },
     });
 
@@ -924,7 +929,7 @@ export async function processShotRenderJob(
         resourceId: asset.id,
         resourceType: 'asset',
       })
-      .catch(() => { });
+      .catch(() => {});
 
     return {
       status: 'SUCCEEDED',
@@ -1103,9 +1108,9 @@ export async function processCE07Job(
     current_text: currentText,
     previous_memory: previousMemory
       ? {
-        summary: previousMemory.summary || '',
-        character_states: (previousMemory.characterStates as any) || {},
-      }
+          summary: previousMemory.summary || '',
+          character_states: (previousMemory.characterStates as any) || {},
+        }
       : undefined,
     context: {
       projectId,

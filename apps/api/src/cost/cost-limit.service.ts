@@ -25,7 +25,7 @@ export class CostLimitService implements OnModuleInit {
     @Inject(PrismaService)
     private prisma: PrismaService,
     private readonly moduleRef: ModuleRef
-  ) { }
+  ) {}
 
   async onModuleInit() {
     if (!this.prisma) {

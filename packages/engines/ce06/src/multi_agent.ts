@@ -18,8 +18,14 @@ export async function runMultiAgentAnalysis(
   const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    {
+      category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
   ];
 
   const billing: EngineBillingUsage = {
@@ -87,10 +93,7 @@ export async function runMultiAgentAnalysis(
   }
 }
 
-function updateBilling(
-  total: EngineBillingUsage,
-  metadata?: any
-) {
+function updateBilling(total: EngineBillingUsage, metadata?: any) {
   if (metadata) {
     total.promptTokens += metadata.promptTokenCount || 0;
     total.completionTokens += metadata.candidatesTokenCount || 0;

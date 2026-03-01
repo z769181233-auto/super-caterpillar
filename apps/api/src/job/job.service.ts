@@ -119,7 +119,7 @@ export class JobService {
     private readonly eventEmitter: EventEmitter2,
     @Inject(FinancialSettlementService)
     private readonly financialSettlementService?: FinancialSettlementService
-  ) { }
+  ) {}
 
   /**
    * Localized Check Shot Ownership (Breaking cycle with ProjectService)
@@ -179,7 +179,9 @@ export class JobService {
     organizationId: string,
     taskId?: string
   ) {
-    console.log(`[JobService.create] DEBUG START: type=${createJobDto.type} shotId=${shotId} orgId=${organizationId}`);
+    console.log(
+      `[JobService.create] DEBUG START: type=${createJobDto.type} shotId=${shotId} orgId=${organizationId}`
+    );
     try {
       // 0. dedupeKey 幂等检查（商业级强幂等，防止重复创建）
       if (createJobDto.dedupeKey) {
@@ -482,8 +484,7 @@ export class JobService {
       }
 
       if (!episode) {
-        const episodeIndex =
-          (await this.prisma.episode.count({ where: { projectId } })) + 1;
+        const episodeIndex = (await this.prisma.episode.count({ where: { projectId } })) + 1;
         episode = await this.prisma.episode.create({
           data: {
             projectId,
@@ -776,7 +777,10 @@ export class JobService {
 
       return job;
     } catch (error) {
-      this.logger.error(`[JobService] createCECoreJob FAILED: ${(error as any).message}`, (error as any).stack);
+      this.logger.error(
+        `[JobService] createCECoreJob FAILED: ${(error as any).message}`,
+        (error as any).stack
+      );
       throw error;
     }
   }
@@ -1178,13 +1182,15 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${filterTypes.length > 0
-          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-          : Prisma.empty
+        ${
+          filterTypes.length > 0
+            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+            : Prisma.empty
         }
-        ${supportedEngines.length > 0
-          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-          : Prisma.empty
+        ${
+          supportedEngines.length > 0
+            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+            : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10
@@ -1532,11 +1538,13 @@ export class JobService {
                 billingState: 'COMMITTED',
                 amount: 1n,
                 idempotencyKey: `${uJob.id}_COMMITTED`,
-              }
+              },
             });
           } catch (e: any) {
             if (e.code === 'P2002') {
-              this.logger.warn(`[JobService] Billing idempotency hit: ${uJob.id}_COMMITTED already exists`);
+              this.logger.warn(
+                `[JobService] Billing idempotency hit: ${uJob.id}_COMMITTED already exists`
+              );
             } else {
               throw e;
             }
@@ -1721,8 +1729,6 @@ export class JobService {
           });
         }
       }
-
-
 
       return updatedJob;
     } else {
@@ -3093,7 +3099,8 @@ export class JobService {
 
     const payload = (task?.payload as any) || {};
     // Default pipeline for orphaned CE11: Video Render -> Security
-    const pipeline = payload.pipeline || (isOrphanedCE11 ? ['VIDEO_RENDER', 'CE09_MEDIA_SECURITY'] : []);
+    const pipeline =
+      payload.pipeline || (isOrphanedCE11 ? ['VIDEO_RENDER', 'CE09_MEDIA_SECURITY'] : []);
 
     if (job.type === JobTypeEnum.CE06_NOVEL_PARSING) {
       // Stage-3: CE06 真实层级落库 (Phase 1) - Now via Event Driver

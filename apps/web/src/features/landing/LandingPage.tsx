@@ -8,12 +8,12 @@ import { ProofStrip } from './ProofStrip';
 import { SecondaryLinks } from './SecondaryLinks';
 
 export function LandingPage() {
-    return (
-        <MarketingLayout>
-            <HeroSection />
-            <ProofStrip />
-            <FeatureGrid />
-            <SecondaryLinks />
-        </MarketingLayout>
-    );
+  return (
+    <MarketingLayout>
+      <HeroSection />
+      <ProofStrip />
+      <FeatureGrid />
+      <SecondaryLinks />
+    </MarketingLayout>
+  );
 }

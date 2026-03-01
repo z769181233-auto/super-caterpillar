@@ -58,7 +58,9 @@ async function main() {
     const hasMarkers = analysis?.markers?.includes('STATIC');
 
     if (!hasProgression && !hasMarkers) {
-      throw new Error(`Expected INTERNAL_GROWTH or STATIC markers, got: ${JSON.stringify(analysis)}`);
+      throw new Error(
+        `Expected INTERNAL_GROWTH or STATIC markers, got: ${JSON.stringify(analysis)}`
+      );
     }
     console.log('✅ CE08 Verified');
     process.exit(0);

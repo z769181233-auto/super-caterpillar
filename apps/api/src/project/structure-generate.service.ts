@@ -18,7 +18,7 @@ export class StructureGenerateService {
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
     private readonly sceneGraphService: SceneGraphService
-  ) { }
+  ) {}
 
   /**
    * 生成剧集结构
@@ -222,9 +222,8 @@ export class StructureGenerateService {
         where: { projectId },
       });
 
-      const itemsToProcess = (episodes && episodes.length > 0)
-        ? episodes
-        : (seasons?.flatMap(s => s.episodes) || []);
+      const itemsToProcess =
+        episodes && episodes.length > 0 ? episodes : seasons?.flatMap((s) => s.episodes) || [];
 
       for (const episodeData of itemsToProcess) {
         const episode = await tx.episode.create({
@@ -250,7 +249,7 @@ export class StructureGenerateService {
 
           if (sceneData.shots && sceneData.shots.length > 0) {
             await tx.shot.createMany({
-              data: sceneData.shots.map(shotData => ({
+              data: sceneData.shots.map((shotData) => ({
                 sceneId: scene.id,
                 index: shotData.index,
                 title: shotData.title || null,
@@ -283,16 +282,21 @@ export class StructureGenerateService {
     }
 
     // 构造三层扁平架构 DTO
-    const episodes = (result?.data?.episodes)
+    const episodes = result?.data?.episodes
       ? result.data.episodes
-      : (result?.data?.seasons || result?.data?.volumes || []).flatMap((s: any) => s.episodes || []);
+      : (result?.data?.seasons || result?.data?.volumes || []).flatMap(
+          (s: any) => s.episodes || []
+        );
 
-    this.logger.log(`[Event] Applying CE06 structure to DB for project ${projectId} (Found ${episodes.length} episodes)`);
+    this.logger.log(
+      `[Event] Applying CE06 structure to DB for project ${projectId} (Found ${episodes.length} episodes)`
+    );
     try {
       await this.applyAnalyzedStructureToDatabase({
         projectId,
         episodes: episodes as any,
-        statis: { // NOTE: Field name in legacy might be 'stats', aligned with DTO
+        statis: {
+          // NOTE: Field name in legacy might be 'stats', aligned with DTO
           seasonsCount: 0,
           episodesCount: episodes.length,
           scenesCount: 0,
@@ -303,7 +307,7 @@ export class StructureGenerateService {
           episodesCount: episodes.length,
           scenesCount: 0,
           shotsCount: 0,
-        }
+        },
       } as any);
       this.logger.log(`[Event] Successfully applied CE06 structure for project ${projectId}`);
     } catch (error: any) {

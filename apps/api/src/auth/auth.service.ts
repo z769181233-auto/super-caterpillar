@@ -23,7 +23,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     @Inject(JwtService)
     private readonly jwtService: JwtService
-  ) { }
+  ) {}
 
   async register(registerDto: RegisterDto) {
     const { email, password, userType = 'individual' as any } = registerDto;

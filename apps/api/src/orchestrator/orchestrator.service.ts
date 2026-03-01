@@ -37,7 +37,7 @@ export class OrchestratorService {
     private readonly jobService: JobService,
     private readonly engineRegistry: EngineRegistry,
     private readonly publishedVideoService: PublishedVideoService
-  ) { }
+  ) {}
 
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
@@ -514,8 +514,8 @@ export class OrchestratorService {
 
   /**
    * Stage 3: Event-Driven DAG Trigger
- * Triggered by 'job.succeeded' event from JobService.
- */
+   * Triggered by 'job.succeeded' event from JobService.
+   */
   @OnEvent('job.succeeded')
   async handleJobSucceededEvent(job: any) {
     this.logger.log(`[Orchestrator] Received job.succeeded event for job ${job.id}`);
@@ -593,18 +593,26 @@ export class OrchestratorService {
       let scenes = [];
       if (chapterId) {
         scenes = await this.prisma.scene.findMany({ where: { chapterId } });
-        this.logger.log(`[V1-ORCH] CE06 done for Chapter=${chapterId}. Found ${scenes.length} scenes.`);
+        this.logger.log(
+          `[V1-ORCH] CE06 done for Chapter=${chapterId}. Found ${scenes.length} scenes.`
+        );
       } else {
-        this.logger.warn(`[V1-ORCH] CE06 done but no chapterId in payload ${completedChildJob.id}. Falling back to Project=${rootJob.projectId}`);
+        this.logger.warn(
+          `[V1-ORCH] CE06 done but no chapterId in payload ${completedChildJob.id}. Falling back to Project=${rootJob.projectId}`
+        );
         scenes = await this.prisma.scene.findMany({ where: { projectId: rootJob.projectId } });
-        this.logger.log(`[V1-ORCH] Found ${scenes.length} scenes for Project=${rootJob.projectId}.`);
+        this.logger.log(
+          `[V1-ORCH] Found ${scenes.length} scenes for Project=${rootJob.projectId}.`
+        );
       }
 
       for (const scene of scenes) {
         // V1-ORCH: Because CE03/CE04 are now internal to CE06 in V1,
         // we directly spawn SHOT_RENDER for all shots in this chapter.
         const shots = await this.prisma.shot.findMany({ where: { sceneId: scene.id } });
-        this.logger.log(`[V1-ORCH] CE06 chunk parse done. Spawning ${shots.length} SHOT_RENDER for scene ${scene.id}...`);
+        this.logger.log(
+          `[V1-ORCH] CE06 chunk parse done. Spawning ${shots.length} SHOT_RENDER for scene ${scene.id}...`
+        );
 
         for (const shot of shots) {
           await this.jobService.create(

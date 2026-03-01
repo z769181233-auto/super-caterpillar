@@ -40,4 +40,4 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
   ],
   exports: [ProjectService, ProjectStructureService, StructureGenerateService, SceneGraphService],
 })
-export class ProjectModule { }
+export class ProjectModule {}

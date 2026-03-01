@@ -27,7 +27,7 @@ export class WorkerService {
     private readonly auditLogService: AuditLogService,
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService
-  ) { }
+  ) {}
 
   // P6-2-2-1: Dispatch Rate Limiting (Anti-Cascade Flood)
   private dispatchHistory: Map<string, number[]> = new Map();
@@ -648,7 +648,6 @@ export class WorkerService {
         return null;
       }
 
-
       // P6-2-2-1: Cascade Throttling Check
       const now = Date.now();
       let history = this.dispatchHistory.get(workerId) || [];
@@ -689,7 +688,9 @@ export class WorkerService {
           return null;
         }
 
-        console.log(`[WorkerService] DEBUG: Searching PENDING jobs for ${workerId}. Types: ${supportedJobTypes.join(',')}`);
+        console.log(
+          `[WorkerService] DEBUG: Searching PENDING jobs for ${workerId}. Types: ${supportedJobTypes.join(',')}`
+        );
 
         // P4-A: Multi-Tier Weighted Round Robin (WRR) & Atomic Concurrency Limit check
         // 1. Fetch organizations with PENDING jobs
@@ -706,7 +707,7 @@ export class WorkerService {
           return null;
         }
 
-        const orgIds = pendingOrgs.map(o => o.organizationId);
+        const orgIds = pendingOrgs.map((o) => o.organizationId);
 
         // 2. Fetch Organization's owner's plan details
         const orgDetails = await tx.organization.findMany({
@@ -719,13 +720,13 @@ export class WorkerService {
                   where: { status: 'ACTIVE' },
                   select: {
                     plan: {
-                      select: { priorityWeight: true, burstConcurrencyLimit: true }
-                    }
-                  }
-                }
-              }
-            }
-          }
+                      select: { priorityWeight: true, burstConcurrencyLimit: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
         });
 
         interface CandidateOrg {
@@ -735,13 +736,13 @@ export class WorkerService {
           maxConc: number;
         }
 
-        let pool: CandidateOrg[] = orgDetails.map(org => {
+        let pool: CandidateOrg[] = orgDetails.map((org) => {
           const plan = org.owner?.UserSubscription?.plan;
           return {
             orgId: org.id,
-            pendingCount: pendingOrgs.find(p => p.organizationId === org.id)?._count || 0,
+            pendingCount: pendingOrgs.find((p) => p.organizationId === org.id)?._count || 0,
             weight: plan?.priorityWeight || 1,
-            maxConc: plan?.burstConcurrencyLimit || 1
+            maxConc: plan?.burstConcurrencyLimit || 1,
           };
         });
 
@@ -752,13 +753,16 @@ export class WorkerService {
           // Quick dirty check to prune clearly loaded orgs and calculate effective weights
           const dirtyRunningCounts = await tx.shotJob.groupBy({
             by: ['organizationId'],
-            where: { organizationId: { in: pool.map(p => p.orgId) }, status: { in: [JobStatus.DISPATCHED, JobStatus.RUNNING] } },
-            _count: true
+            where: {
+              organizationId: { in: pool.map((p) => p.orgId) },
+              status: { in: [JobStatus.DISPATCHED, JobStatus.RUNNING] },
+            },
+            _count: true,
           });
 
           let totalWeight = 0;
           for (const c of pool) {
-            const rc = dirtyRunningCounts.find(r => r.organizationId === c.orgId)?._count || 0;
+            const rc = dirtyRunningCounts.find((r) => r.organizationId === c.orgId)?._count || 0;
             const remaining = Math.max(0, c.maxConc - rc);
             // Effective Weight = Priority * min(Queue Length, Remaining Capacity)
             const effectiveWeight = c.weight * Math.min(c.pendingCount, remaining);
@@ -789,18 +793,18 @@ export class WorkerService {
           const actualRunning = await tx.shotJob.count({
             where: {
               organizationId: candidateId,
-              status: { in: [JobStatus.DISPATCHED, JobStatus.RUNNING] }
-            }
+              status: { in: [JobStatus.DISPATCHED, JobStatus.RUNNING] },
+            },
           });
 
-          const maxConc = pool.find(p => p.orgId === candidateId)?.maxConc || 1;
+          const maxConc = pool.find((p) => p.orgId === candidateId)?.maxConc || 1;
 
           if (actualRunning < maxConc) {
             selectedOrgId = candidateId;
             break; // Lock acquired and validated. Proceed to dispatch.
           } else {
             // Burst limit breached in race condition. Prune from pool and retry WRR.
-            pool = pool.filter(p => p.orgId !== candidateId);
+            pool = pool.filter((p) => p.orgId !== candidateId);
           }
         }
 
@@ -815,10 +819,7 @@ export class WorkerService {
             status: JobStatus.PENDING,
             type: { in: supportedJobTypes as any },
           },
-          orderBy: [
-            { priority: 'desc' },
-            { createdAt: 'asc' },
-          ],
+          orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
           take: 1,
         });
 
@@ -827,7 +828,9 @@ export class WorkerService {
           return null;
         }
 
-        console.log(`[WorkerService] DEBUG: Found candidate job ${candidate.id} (${candidate.type}). Atomic update via WRR.`);
+        console.log(
+          `[WorkerService] DEBUG: Found candidate job ${candidate.id} (${candidate.type}). Atomic update via WRR.`
+        );
 
         // 2.2 Atomic Update
         const updateResult = await tx.shotJob.updateMany({
@@ -856,11 +859,13 @@ export class WorkerService {
               billingState: 'RESERVED',
               amount: 1n,
               idempotencyKey: `${candidate.id}_RESERVED`,
-            }
+            },
           });
         } catch (e: any) {
           if (e.code === 'P2002') {
-            this.logger.warn(`[WorkerService] Billing idempotency hit: ${candidate.id}_RESERVED already exists`);
+            this.logger.warn(
+              `[WorkerService] Billing idempotency hit: ${candidate.id}_RESERVED already exists`
+            );
           } else {
             throw e; // Abort transaction
           }
@@ -878,13 +883,15 @@ export class WorkerService {
         if (isProd) {
           const binding = jobWithBinding?.engineBinding;
           if (!binding) {
-            this.logger.error(`[P1-GATE] Dispatch blocked for Job ${jobWithBinding?.id}: Missing EngineBinding in PRODUCTION.`);
+            this.logger.error(
+              `[P1-GATE] Dispatch blocked for Job ${jobWithBinding?.id}: Missing EngineBinding in PRODUCTION.`
+            );
             await tx.shotJob.update({
               where: { id: jobWithBinding?.id },
               data: {
                 status: JobStatus.FAILED,
                 lastError: `PRODUCTION_MODE_DISPATCH_BLOCK: Missing EngineBinding. Illegal DB injection detected.`,
-              }
+              },
             });
             return null;
           }
@@ -892,16 +899,19 @@ export class WorkerService {
           const engine = binding.engine;
           const engineKey = binding.engineKey;
           const isStub = !engine || engine.mode !== 'http';
-          const isDefault = engineKey.startsWith('default_') || (engine && engine.code.startsWith('default_'));
+          const isDefault =
+            engineKey.startsWith('default_') || (engine && engine.code.startsWith('default_'));
 
           if (isStub || isDefault) {
-            this.logger.error(`[P1-GATE] Dispatch blocked for Job ${jobWithBinding.id}: Engine ${engineKey} is not allowed in production.`);
+            this.logger.error(
+              `[P1-GATE] Dispatch blocked for Job ${jobWithBinding.id}: Engine ${engineKey} is not allowed in production.`
+            );
             await tx.shotJob.update({
               where: { id: jobWithBinding.id },
               data: {
                 status: JobStatus.FAILED,
-                lastError: `PRODUCTION_MODE_DISPATCH_BLOCK: Engine ${engineKey} is stub/mock/default`
-              }
+                lastError: `PRODUCTION_MODE_DISPATCH_BLOCK: Engine ${engineKey} is stub/mock/default`,
+              },
             });
             return null;
           }

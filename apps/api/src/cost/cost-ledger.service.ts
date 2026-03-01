@@ -33,7 +33,7 @@ export class CostLedgerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly billingService: BillingService
-  ) { }
+  ) {}
 
   /**
    * 从Worker事件记录成本到账本
@@ -56,7 +56,14 @@ export class CostLedgerService {
     // P1-1 商业级基线：强制校验 Job 状态
     const job = await this.prisma.shotJob.findUnique({
       where: { id: e.jobId },
-      select: { id: true, status: true, attempts: true, type: true, organizationId: true, traceId: true },
+      select: {
+        id: true,
+        status: true,
+        attempts: true,
+        type: true,
+        organizationId: true,
+        traceId: true,
+      },
     });
 
     if (!job) {
@@ -69,7 +76,7 @@ export class CostLedgerService {
     }
 
     // P3-A: Billing Ledger is strictly managed by Job State Transitions.
-    // RecordFromEvent ONLY deducts credits functionally but does NOT write Ledger 
+    // RecordFromEvent ONLY deducts credits functionally but does NOT write Ledger
     // to avoid violating UNIQUE(job_id, billing_state).
 
     await this.billingService.consumeCredits(
@@ -102,7 +109,7 @@ export class CostLedgerService {
       where: { projectId: projectId },
     });
     // amount is BigInt, cast to Number for legacy API response
-    const total = rows.reduce((s, r) => s + (Number(r.amount) / 100), 0);
+    const total = rows.reduce((s, r) => s + Number(r.amount) / 100, 0);
 
     return {
       projectId,
@@ -125,7 +132,7 @@ export class CostLedgerService {
           acc[type] = { count: 0, total: 0 };
         }
         acc[type].count++;
-        acc[type].total += (Number(cost.amount) / 100);
+        acc[type].total += Number(cost.amount) / 100;
         return acc;
       },
       {} as Record<string, { count: number; total: number }>

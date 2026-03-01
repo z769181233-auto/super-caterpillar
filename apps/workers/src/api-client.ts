@@ -393,7 +393,7 @@ export class ApiClient {
     result?: any;
     errorMessage?: string; // Correct parameter name
     error?: any; // internal input
-    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number;[key: string]: any };
+    metrics?: { durationMs?: number; tokensUsed?: number; cost?: number; [key: string]: any };
     retryable?: boolean;
   }): Promise<any> {
     const requestBody: any = {
@@ -496,14 +496,14 @@ export class ApiClient {
     shotIdOrDto:
       | string
       | {
-        jobType: string;
-        projectId: string;
-        organizationId: string;
-        payload?: any;
-        parentJobId?: string;
-        traceId?: string;
-        priority?: number;
-      },
+          jobType: string;
+          projectId: string;
+          organizationId: string;
+          payload?: any;
+          parentJobId?: string;
+          traceId?: string;
+          priority?: number;
+        },
     dto?: { type?: string; jobType?: string; payload?: any; traceId?: string; priority?: number },
     headers?: Record<string, string>
   ): Promise<any> {

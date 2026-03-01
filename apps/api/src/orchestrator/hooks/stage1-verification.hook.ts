@@ -21,7 +21,7 @@ export class Stage1VerificationHook {
   constructor(
     private readonly jobService: JobService,
     private readonly prisma: PrismaService
-  ) { }
+  ) {}
 
   /**
    * 监听作业成功事件

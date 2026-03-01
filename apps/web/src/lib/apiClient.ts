@@ -451,7 +451,7 @@ export const scriptBuildApi = {
       credentials: 'include',
       headers: customHeaders,
       cache: 'no-store',
-      next: { revalidate: 0 }
+      next: { revalidate: 0 },
     });
     if (!res.ok) throw new Error(`Failed to fetch build outline: ${res.status}`);
     const json = await res.json();
@@ -459,13 +459,16 @@ export const scriptBuildApi = {
   },
 
   async getShotSource(shotId: string, context: number = 400) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/shots/${shotId}/source?context=${context}`, {
-      credentials: 'include',
-    });
+    const res = await fetchWithAuth(
+      `${API_BASE_URL}/api/shots/${shotId}/source?context=${context}`,
+      {
+        credentials: 'include',
+      }
+    );
     if (!res.ok) throw new Error(`Failed to fetch shot source: ${res.status}`);
     const json = await res.json();
     return json.data || json;
-  }
+  },
 };
 
 // User API

@@ -34,3 +34,9 @@ A release is eligible only if:
 
 - No secrets in release notes or evidence
 - Evidence must be checksummed and indexed
+
+## 5. Preview Restrictions (Redline)
+
+> [!IMPORTANT]
+> **Pages 预览环境局限性声明**:  
+> Pages 预览 (v.s. Static Export) 只能证明 UI、路由及前端状态矩阵的连通性。它**严禁**作为 API、Worker、计费链路或审计链完整性的验证依据。任何涉及后端的逻辑漏洞必须在 P9.2B (Staging/Production) 真实环境下闭环。

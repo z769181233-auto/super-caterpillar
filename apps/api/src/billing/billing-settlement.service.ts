@@ -10,7 +10,7 @@ export class BillingSettlementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   /**
    * P1-C Settlement Engine

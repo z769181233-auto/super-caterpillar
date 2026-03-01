@@ -198,7 +198,10 @@ export async function processIdentityLockJob(ctx: {
       }
 
       // 3. Asset Migration & Validation
-      const generatedRelPath = engineResult.output.asset?.uri || engineResult.output.storageKey || engineResult.output.localPath; // e.g. apps/workers/.runtime/assets/xxx.png
+      const generatedRelPath =
+        engineResult.output.asset?.uri ||
+        engineResult.output.storageKey ||
+        engineResult.output.localPath; // e.g. apps/workers/.runtime/assets/xxx.png
       const sourceAbsPath = resolveAbsolutePath(generatedRelPath);
 
       const targetFilename = `${view}.png`;

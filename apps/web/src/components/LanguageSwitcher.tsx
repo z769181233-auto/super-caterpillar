@@ -51,9 +51,15 @@ export default function LanguageSwitcher() {
         outline: 'none',
       }}
     >
-      <option style={{ color: 'var(--on-gold)' }} value="en">EN</option>
-      <option style={{ color: 'var(--on-gold)' }} value="zh">ZH</option>
-      <option style={{ color: 'var(--on-gold)' }} value="vi">VI</option>
+      <option style={{ color: 'var(--on-gold)' }} value="en">
+        EN
+      </option>
+      <option style={{ color: 'var(--on-gold)' }} value="zh">
+        ZH
+      </option>
+      <option style={{ color: 'var(--on-gold)' }} value="vi">
+        VI
+      </option>
     </select>
   );
 }

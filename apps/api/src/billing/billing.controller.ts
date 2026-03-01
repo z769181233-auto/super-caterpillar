@@ -21,7 +21,7 @@ export class BillingController {
   constructor(
     private readonly billingService: BillingService,
     private readonly billingSettlementService: BillingSettlementService
-  ) { }
+  ) {}
 
   @Post('subscribe')
   async subscribe(@CurrentUser() user: AuthenticatedUser, @Body('planId') planId: string) {
@@ -114,11 +114,9 @@ export class BillingController {
   }
 
   @Get('analytics/gpu-roi')
-  async getGpuRoiAnalytics(
-    @Query('timeWindowHours') timeWindowHours?: string
-  ) {
+  async getGpuRoiAnalytics(@Query('timeWindowHours') timeWindowHours?: string) {
     return this.billingService.getGpuRoiAnalytics({
-      timeWindowHours: Number(timeWindowHours || 24)
+      timeWindowHours: Number(timeWindowHours || 24),
     });
   }
 }

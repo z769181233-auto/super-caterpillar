@@ -64,7 +64,7 @@ export async function processCE04VisualEnrichmentJob(
     const buffer = await comfy.generateImage(template);
 
     // Save to .data/storage/keyframes
-    const storageRoot = (config as any).storageRoot || (process.env.STORAGE_ROOT || '.runtime');
+    const storageRoot = (config as any).storageRoot || process.env.STORAGE_ROOT || '.runtime';
     const keyframeDir = path.join(storageRoot, 'keyframes', projectId, shotId);
     if (!fs.existsSync(keyframeDir)) fs.mkdirSync(keyframeDir, { recursive: true });
 

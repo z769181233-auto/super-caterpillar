@@ -18,7 +18,7 @@ async function check() {
   if (binding.engineKey !== 'video_merge') {
     process.stderr.write(
       util.format('❌ FAIL: Engine Key mismatch. Expected video_merge, got ' + binding.engineKey) +
-      '\n'
+        '\n'
     );
     process.exit(1);
   }

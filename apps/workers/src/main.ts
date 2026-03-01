@@ -96,13 +96,13 @@ async function boot() {
       } else {
         process.stderr.write(
           util.format('[Bootstrap] Production mode: Continuing with WARNING (jobs will fail)') +
-          '\n'
+            '\n'
         );
       }
     } else {
       process.stdout.write(
         util.format('[Bootstrap] ✅ DMMF Self-Check PASSED: All required Shot fields present') +
-        '\n'
+          '\n'
       );
     }
 
@@ -133,7 +133,12 @@ async function boot() {
     const { MemoryLogger } = await import('./utils/memory_logger');
     const logger = new MemoryLogger('15M-STRESS', process.env.STRESS_TEST_LOG_PATH);
     logger.start(1000);
-    process.stdout.write(util.format('[Bootstrap] 🚀 MemoryLogger started. Path: %s', process.env.STRESS_TEST_LOG_PATH) + '\n');
+    process.stdout.write(
+      util.format(
+        '[Bootstrap] 🚀 MemoryLogger started. Path: %s',
+        process.env.STRESS_TEST_LOG_PATH
+      ) + '\n'
+    );
   }
 
   if (isGate) {
@@ -150,7 +155,6 @@ async function boot() {
     await mod.startGateWorkerApp();
     return;
   }
-
 
   const mod = await import('./worker-app');
   await mod.startWorkerApp();

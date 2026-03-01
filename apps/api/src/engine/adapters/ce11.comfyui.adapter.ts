@@ -7,10 +7,7 @@ import {
 } from '@scu/shared-types';
 import * as path from 'path';
 import * as fs from 'fs';
-import {
-  httpRequest,
-  COMFYUI_BASE_URL,
-} from '@scu/engines-shot-render';
+import { httpRequest, COMFYUI_BASE_URL } from '@scu/engines-shot-render';
 
 interface ComfyUIResponse {
   prompt_id: string;
@@ -290,7 +287,9 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
     }
 
     // If no valid JSON output found, fallback to "Derived from Input"
-    this.logger.warn(`[CE11_DEBUG] No valid shots found in JSON/Text output. Triggering fallback logic.`);
+    this.logger.warn(
+      `[CE11_DEBUG] No valid shots found in JSON/Text output. Triggering fallback logic.`
+    );
     // User Requirement: "Generate structure from prompt but must be strongly related to input"
     const sceneDesc = payload.scene_description || 'cinematic scene';
     const coreDesc = sceneDesc.length > 60 ? sceneDesc.substring(0, 60) + '...' : sceneDesc;

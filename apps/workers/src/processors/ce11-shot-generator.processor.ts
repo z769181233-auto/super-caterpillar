@@ -91,7 +91,7 @@ export async function processCE11ShotGeneratorJob(
           traceId,
           seed: payload.seed,
           projectId: resolveProjectId, // [FIX] Added for downstream enrichment
-          sceneId: novelSceneId,       // [FIX] Added for downstream enrichment
+          sceneId: novelSceneId, // [FIX] Added for downstream enrichment
         },
         metadata: {
           traceId,

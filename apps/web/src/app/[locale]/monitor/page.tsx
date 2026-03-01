@@ -1,7 +1,7 @@
-'use client';
+import { SystemMonitorPage } from '@/features/monitor/pages/SystemMonitorPage';
+import { setRequestLocale } from 'next-intl/server';
 
-import { SystemMonitorPage } from "@/features/monitor/pages/SystemMonitorPage";
-
-export default function MonitorIndexPage() {
-    return <SystemMonitorPage />;
+export default function MonitorIndexPage({ params: { locale } }: { params: { locale: string } }) {
+  setRequestLocale(locale);
+  return <SystemMonitorPage />;
 }

@@ -318,11 +318,11 @@ export async function startGateWorkerApp() {
           pl.sceneId ||
           (pl.shotId
             ? (
-              await prisma.shot.findUnique({
-                where: { id: pl.shotId },
-                select: { sceneId: true },
-              })
-            )?.sceneId
+                await prisma.shot.findUnique({
+                  where: { id: pl.shotId },
+                  select: { sceneId: true },
+                })
+              )?.sceneId
             : 'sc-placeholder');
 
         // Robust Repo Root Detection
@@ -544,7 +544,7 @@ export async function startGateWorkerApp() {
         } catch (dbErr: any) {
           process.stderr.write(
             util.format(`[GateWorker] ⚠️ L3 DB write failed for job ${job.id}:`, dbErr.message) +
-            '\n'
+              '\n'
           );
         }
       }

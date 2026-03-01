@@ -36,4 +36,4 @@ import { WorkerAliasController } from './worker-alias.controller';
   providers: [OrchestratorService, Stage1VerificationHook, ProductionFlowHook],
   exports: [OrchestratorService],
 })
-export class OrchestratorModule { }
+export class OrchestratorModule {}

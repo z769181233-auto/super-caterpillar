@@ -38,7 +38,7 @@ async function main() {
   const scenes = await prisma.scene.findMany({
     where: {
       projectId: projectId,
-      status: 'PENDING'
+      status: 'PENDING',
     },
     orderBy: { sceneIndex: 'asc' },
     include: {

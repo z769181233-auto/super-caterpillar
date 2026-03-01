@@ -54,7 +54,7 @@ export class JobController {
     private readonly auditLogService: AuditLogService,
     @Inject(CapacityGateService)
     private readonly capacityGateService: CapacityGateService
-  ) { }
+  ) {}
 
   @Get('debug-key/:key')
   @Public()

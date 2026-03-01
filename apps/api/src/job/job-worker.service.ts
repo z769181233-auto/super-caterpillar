@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  OnModuleInit,
-  OnModuleDestroy,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { JobStatus as JobStatusEnum } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobService } from './job.service';
@@ -18,7 +13,7 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobService: JobService
-  ) { }
+  ) {}
 
   async onModuleInit() {
     if ((env as any).enableInternalJobWorker) {

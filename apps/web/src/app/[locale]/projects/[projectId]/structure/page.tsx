@@ -1,5 +1,11 @@
 import { redirect } from 'next/navigation';
 
+export function generateStaticParams() {
+  return [
+    { projectId: 'demo' }
+  ];
+}
+
 interface Props {
   params: {
     locale: string;

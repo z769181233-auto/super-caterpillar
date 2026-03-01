@@ -18,7 +18,7 @@ export class QuotaGuard implements CanActivate {
     private readonly billingService: BillingService,
     @Inject(AuditLogService)
     private readonly auditLogService: AuditLogService
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();

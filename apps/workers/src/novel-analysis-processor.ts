@@ -280,7 +280,9 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
     let expectedEpisodeIndex = 1;
     for (const episode of episodes) {
       if (episode.index !== expectedEpisodeIndex) {
-        warnings.push(`Episode index discontinuity: expected ${expectedEpisodeIndex}, got ${episode.index}`);
+        warnings.push(
+          `Episode index discontinuity: expected ${expectedEpisodeIndex}, got ${episode.index}`
+        );
         episode.index = expectedEpisodeIndex;
       }
       expectedEpisodeIndex++;
@@ -294,7 +296,9 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
       let expectedSceneIndex = 1;
       for (const scene of episode.scenes) {
         if (scene.index !== expectedSceneIndex) {
-          warnings.push(`Scene index discontinuity in Ep ${episode.index}: expected ${expectedSceneIndex}, got ${scene.index}`);
+          warnings.push(
+            `Scene index discontinuity in Ep ${episode.index}: expected ${expectedSceneIndex}, got ${scene.index}`
+          );
           scene.index = expectedSceneIndex;
         }
         expectedSceneIndex++;
@@ -308,7 +312,9 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
         let expectedShotIndex = 1;
         for (const shot of scene.shots) {
           if (shot.index !== expectedShotIndex) {
-            warnings.push(`Shot index discontinuity in Scene ${scene.index}: expected ${expectedShotIndex}, got ${shot.index}`);
+            warnings.push(
+              `Shot index discontinuity in Scene ${scene.index}: expected ${expectedShotIndex}, got ${shot.index}`
+            );
             shot.index = expectedShotIndex;
           }
           expectedShotIndex++;
@@ -323,7 +329,9 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
     let expectedSeasonIndex = 1;
     for (const season of seasons!) {
       if (season.index !== expectedSeasonIndex) {
-        warnings.push(`Season index discontinuity: expected ${expectedSeasonIndex}, got ${season.index}`);
+        warnings.push(
+          `Season index discontinuity: expected ${expectedSeasonIndex}, got ${season.index}`
+        );
         season.index = expectedSeasonIndex;
       }
       expectedSeasonIndex++;
@@ -395,25 +403,61 @@ export async function applyAnalyzedStructureToDatabase(
     const hasEpisodes = episodes && episodes.length > 0;
 
     if (hasEpisodes) {
-      logStructured('info', { action: 'APPLY_STRUCTURE_FLAT_MODE', projectId, episodesCount: episodes.length });
+      logStructured('info', {
+        action: 'APPLY_STRUCTURE_FLAT_MODE',
+        projectId,
+        episodesCount: episodes.length,
+      });
 
       for (const epData of episodes) {
-        const existingEp = await tx.episode.findFirst({ where: { projectId, index: epData.index } });
-        let currentEp = existingEp ? await tx.episode.update({ where: { id: existingEp.id }, data: { name: epData.title, summary: epData.summary || undefined } })
-          : await tx.episode.create({ data: { projectId, seasonId: null as any, index: epData.index, name: epData.title, summary: epData.summary || undefined } });
+        const existingEp = await tx.episode.findFirst({
+          where: { projectId, index: epData.index },
+        });
+        let currentEp = existingEp
+          ? await tx.episode.update({
+              where: { id: existingEp.id },
+              data: { name: epData.title, summary: epData.summary || undefined },
+            })
+          : await tx.episode.create({
+              data: {
+                projectId,
+                seasonId: null as any,
+                index: epData.index,
+                name: epData.title,
+                summary: epData.summary || undefined,
+              },
+            });
 
-        if (existingEp) stats.updated.episodes++; else stats.created.episodes++;
+        if (existingEp) stats.updated.episodes++;
+        else stats.created.episodes++;
 
         for (const sceneData of epData.scenes) {
-          const existingScene = await tx.scene.findFirst({ where: { projectId, episodeId: currentEp.id, sceneIndex: sceneData.index } });
-          let currentScene = existingScene ? await tx.scene.update({ where: { id: existingScene.id }, data: { title: sceneData.title, summary: sceneData.summary || undefined } })
-            : await tx.scene.create({ data: { projectId, episodeId: currentEp.id, sceneIndex: sceneData.index, title: sceneData.title, summary: sceneData.summary || undefined } });
+          const existingScene = await tx.scene.findFirst({
+            where: { projectId, episodeId: currentEp.id, sceneIndex: sceneData.index },
+          });
+          let currentScene = existingScene
+            ? await tx.scene.update({
+                where: { id: existingScene.id },
+                data: { title: sceneData.title, summary: sceneData.summary || undefined },
+              })
+            : await tx.scene.create({
+                data: {
+                  projectId,
+                  episodeId: currentEp.id,
+                  sceneIndex: sceneData.index,
+                  title: sceneData.title,
+                  summary: sceneData.summary || undefined,
+                },
+              });
 
-          if (existingScene) stats.updated.scenes++; else stats.created.scenes++;
+          if (existingScene) stats.updated.scenes++;
+          else stats.created.scenes++;
 
           const shotsToCreate: any[] = [];
           for (const shotData of sceneData.shots) {
-            const existingShot = await tx.shot.findFirst({ where: { sceneId: currentScene.id, index: shotData.index } });
+            const existingShot = await tx.shot.findFirst({
+              where: { sceneId: currentScene.id, index: shotData.index },
+            });
             const shotParams = { sourceText: shotData.text || '' };
             const shotBase = {
               index: shotData.index,
@@ -429,39 +473,52 @@ export async function applyAnalyzedStructureToDatabase(
             if (existingShot) {
               await tx.shot.update({
                 where: { id: existingShot.id },
-                data: hydrateShotWithDirectorControls(shotBase, shotParams)
+                data: hydrateShotWithDirectorControls(shotBase, shotParams),
               });
               stats.updated.shots++;
             } else {
-              shotsToCreate.push(hydrateShotWithDirectorControls({
-                ...shotBase,
-                sceneId: currentScene.id,
-                type: 'novel_analysis',
-                qualityScore: {} as any
-              }, shotParams));
+              shotsToCreate.push(
+                hydrateShotWithDirectorControls(
+                  {
+                    ...shotBase,
+                    sceneId: currentScene.id,
+                    type: 'novel_analysis',
+                    qualityScore: {} as any,
+                  },
+                  shotParams
+                )
+              );
             }
           }
-          if (shotsToCreate.length > 0) { await tx.shot.createMany({ data: shotsToCreate as any }); stats.created.shots += shotsToCreate.length; }
+          if (shotsToCreate.length > 0) {
+            await tx.shot.createMany({ data: shotsToCreate as any });
+            stats.created.shots += shotsToCreate.length;
+          }
         }
       }
 
       const finalEpisodesFromDb = await tx.episode.findMany({
         where: { projectId },
-        include: { scenes: { include: { shots: { orderBy: { index: 'asc' } } }, orderBy: { sceneIndex: 'asc' } } },
-        orderBy: { index: 'asc' }
+        include: {
+          scenes: {
+            include: { shots: { orderBy: { index: 'asc' } } },
+            orderBy: { sceneIndex: 'asc' },
+          },
+        },
+        orderBy: { index: 'asc' },
       });
       const finalStructure: AnalyzedProjectStructure = {
         projectId,
         seasons: [],
-        episodes: finalEpisodesFromDb.map(e => ({
+        episodes: finalEpisodesFromDb.map((e) => ({
           index: e.index,
           title: e.name,
           summary: e.summary || '',
-          scenes: e.scenes.map(sc => ({
+          scenes: e.scenes.map((sc) => ({
             index: sc.sceneIndex,
             title: sc.title || '',
             summary: sc.summary || '',
-            shots: sc.shots.map(sh => ({
+            shots: sc.shots.map((sh) => ({
               index: sh.index,
               title: sh.title || '',
               summary: sh.description || '',
@@ -470,19 +527,21 @@ export async function applyAnalyzedStructureToDatabase(
               novelQuote: sh.novelQuote || undefined,
               durationSec: sh.durationSec ? Number(sh.durationSec) : undefined,
               shotType: sh.shotType || undefined,
-            }))
-          }))
+            })),
+          })),
         })),
         stats: {
           seasonsCount: 0,
           episodesCount: finalEpisodesFromDb.length,
           scenesCount: finalEpisodesFromDb.reduce((s, e) => s + e.scenes.length, 0),
-          shotsCount: finalEpisodesFromDb.reduce((s, e) => s + e.scenes.reduce((ss, sc) => ss + sc.shots.length, 0), 0)
-        }
+          shotsCount: finalEpisodesFromDb.reduce(
+            (s, e) => s + e.scenes.reduce((ss, sc) => ss + sc.shots.length, 0),
+            0
+          ),
+        },
       };
       return { finalStructure, stats };
     }
-
 
     // 1. 查询当前 project 已有的结构 (Legacy Season Mode)
     const existingSeasons = await tx.season.findMany({
@@ -724,10 +783,7 @@ export async function applyAnalyzedStructureToDatabase(
 
             if (existingShot) {
               // S3-B Fine-Tune: 更新现有 Shot（仅更新 title/description/index/params，保留 id）
-              const updateData = hydrateShotWithDirectorControls(
-                shotBase,
-                shotParams
-              );
+              const updateData = hydrateShotWithDirectorControls(shotBase, shotParams);
 
               await tx.shot.update({
                 where: { id: existingShot.id },
@@ -898,9 +954,25 @@ export async function applyAnalyzedStructureToDatabase(
       episodes: [], // Legacy mode has empty episodes array (or we could flat map them)
       stats: {
         seasonsCount: finalSeasonsFromDb.length,
-        episodesCount: finalSeasonsFromDb.reduce((sum: number, s: any) => sum + s.episodes.length, 0),
-        scenesCount: finalSeasonsFromDb.reduce((sum: number, s: any) => sum + s.episodes.reduce((sum2: number, e: any) => sum2 + e.scenes.length, 0), 0),
-        shotsCount: finalSeasonsFromDb.reduce((sum: number, s: any) => sum + s.episodes.reduce((sum2: number, e: any) => sum2 + e.scenes.reduce((sum3: number, sc: any) => sum3 + sc.shots.length, 0), 0), 0),
+        episodesCount: finalSeasonsFromDb.reduce(
+          (sum: number, s: any) => sum + s.episodes.length,
+          0
+        ),
+        scenesCount: finalSeasonsFromDb.reduce(
+          (sum: number, s: any) =>
+            sum + s.episodes.reduce((sum2: number, e: any) => sum2 + e.scenes.length, 0),
+          0
+        ),
+        shotsCount: finalSeasonsFromDb.reduce(
+          (sum: number, s: any) =>
+            sum +
+            s.episodes.reduce(
+              (sum2: number, e: any) =>
+                sum2 + e.scenes.reduce((sum3: number, sc: any) => sum3 + sc.shots.length, 0),
+              0
+            ),
+          0
+        ),
       },
     };
 
@@ -915,8 +987,8 @@ export async function applyAnalyzedStructureToDatabase(
   const result =
     prisma instanceof PrismaClient
       ? await (prisma as any).$transaction(executeInTransaction, {
-        timeout: 5 * 60 * 1000, // 5 minutes
-      })
+          timeout: 5 * 60 * 1000, // 5 minutes
+        })
       : await executeInTransaction(prisma);
 
   return result;
@@ -1522,7 +1594,7 @@ export async function processNovelAnalysisJob(
       // 计费失败不阻塞主流程
       process.stderr.write(
         util.format(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message) +
-        '\n'
+          '\n'
       );
     }
 

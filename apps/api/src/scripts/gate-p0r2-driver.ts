@@ -128,9 +128,7 @@ async function main() {
   });
 
   // Episode & Scene & Shot
-  process.stdout.write(
-    util.format('--- DRIVER: Creating Hierarchy (Ep/Scene/Shot) ---') + '\n'
-  );
+  process.stdout.write(util.format('--- DRIVER: Creating Hierarchy (Ep/Scene/Shot) ---') + '\n');
 
   const episode = await prisma.episode.create({
     data: { seasonId: null, projectId: project.id, index: 1, name: 'E1' },

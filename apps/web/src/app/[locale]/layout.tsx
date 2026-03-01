@@ -1,13 +1,10 @@
+import { setRequestLocale } from 'next-intl/server';
 import { Inter, Outfit } from 'next/font/google';
 
 import { getTranslations } from 'next-intl/server';
 
 export function generateStaticParams() {
-  return [
-    { locale: 'en' },
-    { locale: 'zh' },
-    { locale: 'vi' }
-  ];
+  return [{ locale: 'en' }, { locale: 'zh' }, { locale: 'vi' }];
 }
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
@@ -21,7 +18,7 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 import '../globals.css';
 
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages } from 'next-intl/server';
+import { getMessages } from 'next-intl/server';
 import { Nav } from './Nav'; // Moving client-side nav to separate component to use useTranslations
 import UnauthorizedRedirectProvider from '@/components/auth/UnauthorizedRedirectProvider';
 
@@ -29,14 +26,21 @@ import UnauthorizedRedirectProvider from '@/components/auth/UnauthorizedRedirect
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await getLocale();
-  const messages = await getMessages();
+export default async function RootLayout({
+  children,
+  params: { locale },
+}: {
+  children: React.ReactNode;
+  params: { locale: string };
+}) {
+  // Static export requirement: cache the locale for server-side functions
+  setRequestLocale(locale);
+  const messages = await getMessages({ locale });
 
   return (
     <html lang={locale} className={`${inter.variable} ${outfit.variable}`}>
       <body>
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider messages={messages} locale={locale}>
           <UnauthorizedRedirectProvider />
           <Nav />
           <main className="container animate-fade-in">{children}</main>

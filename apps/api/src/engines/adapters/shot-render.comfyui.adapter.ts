@@ -27,9 +27,7 @@ export class ShotRenderComfyuiAdapter implements EngineAdapter {
   }
 
   supports(engineKey: string): boolean {
-    return (
-      engineKey === 'shot_render_comfyui'
-    );
+    return engineKey === 'shot_render_comfyui';
   }
 
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {

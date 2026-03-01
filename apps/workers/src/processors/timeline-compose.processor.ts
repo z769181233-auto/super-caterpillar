@@ -49,7 +49,6 @@ export interface TimelineData {
   audio?: AudioConfig;
 }
 
-
 /**
  * CE10: Timeline Composition Processor
  * 职责：DB 溯源查询 Scene -> Shots，编排确定的 timeline.json，确立全链路渲染参数。
@@ -255,16 +254,16 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       tracks: [
         ...((job.payload as any).bgmStorageKey
           ? [
-            {
-              id: 'bgm',
-              type: 'music' as const,
-              storageKey: (job.payload as any).bgmStorageKey,
-              gain: (job.payload as any).bgmGain || 0.5,
-              loop: (job.payload as any).bgmMode === 'loop',
-              ducking: { target: 'dialogue', gain: 0.2 },
-              truncate: 'shortest' as const,
-            },
-          ]
+              {
+                id: 'bgm',
+                type: 'music' as const,
+                storageKey: (job.payload as any).bgmStorageKey,
+                gain: (job.payload as any).bgmGain || 0.5,
+                loop: (job.payload as any).bgmMode === 'loop',
+                ducking: { target: 'dialogue', gain: 0.2 },
+                truncate: 'shortest' as const,
+              },
+            ]
           : []),
         ...scene.shots
           .map((s) => {

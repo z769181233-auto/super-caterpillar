@@ -1,7 +1,7 @@
 'use client';
 
-import { JobMonitorPage } from "@/features/jobs/pages/JobMonitorPage";
+import { JobMonitorPage } from '@/features/jobs/pages/JobMonitorPage';
 
 export default function JobsIndexPage() {
-    return <JobMonitorPage />;
+  return <JobMonitorPage />;
 }

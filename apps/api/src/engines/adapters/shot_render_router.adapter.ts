@@ -42,7 +42,7 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     private readonly mpsAdapter: ShotRenderMpsAdapter,
     private readonly fusionAdapter: FusionAdapter,
     private readonly lightingAdapter: VG08AdvancedLightingAdapter,
-    private readonly pacingAdapter: CE13PacingAnalyzerAdapter,
+    private readonly pacingAdapter: CE13PacingAnalyzerAdapter
   ) {
     this.adapters = {
       replicate: this.replicateAdapter,
@@ -103,14 +103,17 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     const { provider, reason } = this.selectProvider();
     const adapter = this.getAdapter(provider);
 
-    this.logger.log(`[ShotRenderRouter] [DEBUG] process.env.SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`);
+    this.logger.log(
+      `[ShotRenderRouter] [DEBUG] process.env.SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`
+    );
     this.logger.log(`[ShotRenderRouter] Selected provider: ${provider} (reason: ${reason})`);
 
     // [STELLAR-ESTHETIC-ORCHESTRATION]
     // V18.0: Stellar Command - Coordinate Pacing, Lighting, and Visual Style
     const aestheticResult = await this.coordinateStellarAesthetics(input);
     const GUOMAN_STYLE = aestheticResult.enrichedStyle;
-    const NEGATIVE = '2D, illustration, drawing, sketch, painting, flat color, ink, watercolor, lines, blurry, grainy, scenery, background artifacts, distorted anatomy, plastic skin, low poly, cartoonish, low resolution';
+    const NEGATIVE =
+      '2D, illustration, drawing, sketch, painting, flat color, ink, watercolor, lines, blurry, grainy, scenery, background artifacts, distorted anatomy, plastic skin, low poly, cartoonish, low resolution';
 
     let finalPrompt = input.payload.prompt || '';
     const characterId = input.payload.characterId as string | undefined;
@@ -136,7 +139,9 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
       const attrs = (character?.attributes || {}) as any;
       if (attrs.fixed_seed) {
         input.payload.seed = parseInt(attrs.fixed_seed);
-        this.logger.log(`[ShotRenderRouter] Locked SEED ${input.payload.seed} for character ${character?.name}`);
+        this.logger.log(
+          `[ShotRenderRouter] Locked SEED ${input.payload.seed} for character ${character?.name}`
+        );
       }
       // Inject Checkpoint if specified in attributes
       if (attrs.preferred_checkpoint) {
@@ -145,7 +150,10 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     }
 
     // Pass-through metadata for enrichment
-    input.payload.cameraMovement = input.payload.cameraMovement || input.context?.cameraMovement || aestheticResult.suggestedCamera;
+    input.payload.cameraMovement =
+      input.payload.cameraMovement ||
+      input.context?.cameraMovement ||
+      aestheticResult.suggestedCamera;
     input.payload.shotType = input.payload.shotType || input.context?.shotType;
 
     // 2. Invoke selected adapter
@@ -486,10 +494,12 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
 
     // 4. 汇总工业级提示词 (Style Aggregation)
     // 对标《凡人》《眷思量》
-    let style = '(Masterpiece 3D CGI:2.2), (Perfect World aesthetic:2.0), (Unreal Engine 5.4 Cinematic Render:1.8), (High-end Chinese Animation style:1.8), (Subsurface Scattering skin:1.7), (Cinematic Rim Lighting:1.6), (Volumetric God Rays:1.5)';
+    let style =
+      '(Masterpiece 3D CGI:2.2), (Perfect World aesthetic:2.0), (Unreal Engine 5.4 Cinematic Render:1.8), (High-end Chinese Animation style:1.8), (Subsurface Scattering skin:1.7), (Cinematic Rim Lighting:1.6), (Volumetric God Rays:1.5)';
 
     if (tension === 'HIGH') {
-      style += ', dramatic high-contrast lighting, sharp shadows, intense atmosphere, high-octane 3D rendering';
+      style +=
+        ', dramatic high-contrast lighting, sharp shadows, intense atmosphere, high-octane 3D rendering';
     } else {
       style += ', soft cinematic bloom, ethereal atmosphere, realistic materials';
     }
@@ -497,9 +507,11 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     // LoRA 库选择 (对标 LoRA Library 需求)
     const loraStyle = input.payload.desiredStyle || 'Style_FanRen'; // Default to Realistic
     if (loraStyle === 'Style_Arcane') {
-      style += ', (Painting-like texture:1.5), (Arcane oil painting style:1.8), coarse brush strokes, stylized shading';
+      style +=
+        ', (Painting-like texture:1.5), (Arcane oil painting style:1.8), coarse brush strokes, stylized shading';
     } else if (loraStyle === 'Style_Ink') {
-      style += ', (Traditional Chinese ink wash style:1.8), (Water ink particles:1.5), flowing lines, ethereal smoke';
+      style +=
+        ', (Traditional Chinese ink wash style:1.8), (Water ink particles:1.5), flowing lines, ethereal smoke';
     } else {
       style += ', (Photorealistic 3D character:1.6), (Unreal Engine 5 quality:1.8)';
     }
@@ -523,7 +535,9 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
 
       this.logger.debug(`[ShotRenderRouter] Checking for LoRA for character: ${characterId}`);
 
-      const character = this.characterService ? await this.characterService.findOne(characterId) : null;
+      const character = this.characterService
+        ? await this.characterService.findOne(characterId)
+        : null;
 
       if (character?.loraModelId) {
         this.logger.log(

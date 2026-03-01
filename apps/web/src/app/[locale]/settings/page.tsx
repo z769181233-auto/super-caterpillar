@@ -1,7 +1,7 @@
-'use client';
+import { UserSettingsPage } from '@/features/settings/pages/UserSettingsPage';
+import { setRequestLocale } from 'next-intl/server';
 
-import { UserSettingsPage } from "@/features/settings/pages/UserSettingsPage";
-
-export default function SettingsIndexPage() {
-    return <UserSettingsPage />;
+export default function SettingsIndexPage({ params: { locale } }: { params: { locale: string } }) {
+  setRequestLocale(locale);
+  return <UserSettingsPage />;
 }

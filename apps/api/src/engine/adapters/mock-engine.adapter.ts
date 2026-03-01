@@ -32,7 +32,8 @@ export class MockEngineAdapter implements EngineAdapter {
     // Stage 8: Enhanced Mock to return videoUrl for VIDEO_RENDER jobs
     const isVideoJob = input.jobType === 'VIDEO_RENDER';
     const isShotJob = input.jobType === 'SHOT_RENDER';
-    const isCE11Job = input.jobType === 'CE11_SHOT_GENERATOR' || input.engineKey === 'ce11_shot_generator_mock';
+    const isCE11Job =
+      input.jobType === 'CE11_SHOT_GENERATOR' || input.engineKey === 'ce11_shot_generator_mock';
 
     if (isCE11Job) {
       return {
@@ -44,18 +45,18 @@ export class MockEngineAdapter implements EngineAdapter {
               camera_movement: 'STATIC',
               visual_prompt: 'Mock Shot 1: A scene from the novel',
               action_description: 'Character stands still',
-              duration_sec: 3.0
+              duration_sec: 3.0,
             },
             {
               shot_type: 'CLOSE_UP',
               camera_movement: 'ZOOM_IN',
               visual_prompt: 'Mock Shot 2: Detailed face',
               action_description: 'Character smiles',
-              duration_sec: 3.0
-            }
+              duration_sec: 3.0,
+            },
           ],
-          billing_usage: { model: 'mock-ce11', cost: 0 }
-        }
+          billing_usage: { model: 'mock-ce11', cost: 0 },
+        },
       };
     }
 

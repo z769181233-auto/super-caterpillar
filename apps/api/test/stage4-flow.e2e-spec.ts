@@ -160,7 +160,9 @@ describe('Stage 4 Flow (E2E)', () => {
       if (org) {
         await prisma.organizations
           .delete({ where: { id: org.id } })
-          .catch((e: any) => process.stdout.write(util.format('Failed to cleanup org', org.id) + '\n'));
+          .catch((e: any) =>
+            process.stdout.write(util.format('Failed to cleanup org', org.id) + '\n')
+          );
       }
     }
     await app.close();

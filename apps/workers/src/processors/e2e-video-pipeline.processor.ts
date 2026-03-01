@@ -131,7 +131,7 @@ export async function processE2EVideoPipelineJob(
             existingCE06Job: existingCE06.id,
           },
         })
-        .catch(() => { });
+        .catch(() => {});
 
       return {
         success: true,
@@ -204,7 +204,7 @@ export async function processE2EVideoPipelineJob(
             missingFields,
           },
         })
-        .catch(() => { });
+        .catch(() => {});
       throw new Error(errMsg);
     }
 
@@ -251,7 +251,7 @@ export async function processE2EVideoPipelineJob(
           ce06JobId: newCE06.id,
         },
       })
-      .catch(() => { });
+      .catch(() => {});
 
     // Return success immediately (Non-blocking)
     return {
@@ -282,7 +282,7 @@ export async function processE2EVideoPipelineJob(
           action: 'pipeline.e2e_video.fail',
         },
       })
-      .catch(() => { });
+      .catch(() => {});
 
     throw error;
   }

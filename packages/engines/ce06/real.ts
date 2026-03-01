@@ -7,10 +7,7 @@ import { scanNovelVolumesAndChapters as scanVolumes } from './src/scan_util';
  * Real Implementation of CE06 Novel Parsing Engine
  * V1.5.1: SDK Support + Multi-Agent Orchestration
  */
-export async function executeCE06Real(
-  input: CE06Input,
-  apiKey: string
-): Promise<CE06Output> {
+export async function executeCE06Real(input: CE06Input, apiKey: string): Promise<CE06Output> {
   return ce06RealEngine(input, apiKey);
 }
 
@@ -30,7 +27,7 @@ export const ce06RealEngine = async (input: CE06Input, apiKey?: string): Promise
     }
     return executeChunkParsePhase(input, key);
   }
-}
+};
 
 async function executeScanPhase(input: CE06Input): Promise<CE06Output> {
   const volumes = scanVolumes(input.structured_text);
@@ -47,10 +44,7 @@ async function executeScanPhase(input: CE06Input): Promise<CE06Output> {
   };
 }
 
-async function executeChunkParsePhase(
-  input: CE06Input,
-  apiKey: string
-): Promise<CE06Output> {
+async function executeChunkParsePhase(input: CE06Input, apiKey: string): Promise<CE06Output> {
   const chapterText = input.structured_text;
   let modelName = input.model || 'gemini-1.5-flash';
   console.log(`[CE06_REAL_DIAGNOSTIC] ${new Date().toISOString()} - Original Model: ${modelName}`);
@@ -65,20 +59,37 @@ Your output MUST be a JSON object with a "scenes" array. Each scene MUST have "t
 
   const genAI = new GoogleGenerativeAI(apiKey);
   // @ts-ignore - v1beta options might not be in older types
-  const model = genAI.getGenerativeModel({
-    model: modelName,
-  }, { apiVersion: 'v1beta' });
+  const model = genAI.getGenerativeModel(
+    {
+      model: modelName,
+    },
+    { apiVersion: 'v1beta' }
+  );
 
   try {
     const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nChapter Text:\n${chapterText}` }] }],
+      contents: [
+        { role: 'user', parts: [{ text: `${systemPrompt}\n\nChapter Text:\n${chapterText}` }] },
+      ],
       // @ts-ignore
       generationConfig: { responseMimeType: 'application/json' },
       safetySettings: [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
       ],
     });
 

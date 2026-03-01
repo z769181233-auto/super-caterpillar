@@ -194,7 +194,7 @@ export async function processShotRenderJob(
     logger.error(`[ShotRender_HUB] Failed: ${error.message}`);
     await prisma.shot
       .update({ where: { id: shotId }, data: { renderStatus: 'FAILED' } })
-      .catch(() => { });
+      .catch(() => {});
     return { status: 'FAILED', error: error.message };
   }
 }

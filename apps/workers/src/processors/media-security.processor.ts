@@ -40,7 +40,6 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
       }
     }
 
-
     // 2. Invoke EngineHub
     const secResult = await apiClient.invokeEngine({
       engineKey: 'ce09_security',

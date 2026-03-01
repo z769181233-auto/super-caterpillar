@@ -1,4 +1,11 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, Inject, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -7,7 +14,7 @@ import * as path from 'path';
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) { }
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   /**
    * Get available credits for an organization.
@@ -315,11 +322,18 @@ export class BillingService {
   async getGpuRoiAnalytics(params: { timeWindowHours: number }) {
     const { timeWindowHours } = params;
 
-    const probeBaselinePath = path.join(process.cwd(), 'tools', 'probes', 'p4_real_cost_baseline.json');
+    const probeBaselinePath = path.join(
+      process.cwd(),
+      'tools',
+      'probes',
+      'p4_real_cost_baseline.json'
+    );
     const probeLogPath = path.join(process.cwd(), 'p4_gpu_cost_measure_result.log');
 
     if (!fs.existsSync(probeBaselinePath) || !fs.existsSync(probeLogPath)) {
-      throw new BadRequestException(`[P4-A.SEAL BLOCKED] Missing physical baseline or log. Data probes uncompleted.`);
+      throw new BadRequestException(
+        `[P4-A.SEAL BLOCKED] Missing physical baseline or log. Data probes uncompleted.`
+      );
     }
 
     const baseline = JSON.parse(fs.readFileSync(probeBaselinePath, 'utf8'));
@@ -375,9 +389,9 @@ export class BillingService {
         throughput_cap_per_worker,
         gpu_efficiency,
         queue_delay_ratio,
-        isHealthy: gross_margin_per_image > 0 && queue_delay_ratio < 0.3
+        isHealthy: gross_margin_per_image > 0 && queue_delay_ratio < 0.3,
       },
-      sealStatus: 'P4-A_SEALED_STRICT_MODE'
+      sealStatus: 'P4-A_SEALED_STRICT_MODE',
     };
   }
 }

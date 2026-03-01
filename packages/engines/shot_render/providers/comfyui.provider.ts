@@ -86,19 +86,23 @@ function buildGraph(promptText: string, options: ComfyUIOptions, template: any) 
   const seed = options.seed || Math.floor(Math.random() * 1000000000);
 
   // 1. Basic Params
-  if (graph['3']) { // KSampler
+  if (graph['3']) {
+    // KSampler
     graph['3'].inputs.seed = seed;
     graph['3'].inputs.steps = options.steps || 20;
     graph['3'].inputs.cfg = options.cfg || 7;
     if (options.samplerName) graph['3'].inputs.sampler_name = options.samplerName;
   }
   if (graph['6']) graph['6'].inputs.text = promptText; // Positive
-  if (graph['7']) graph['7'].inputs.text = options.negativePrompt || 'text, watermark, blurry, low quality'; // Negative
-  if (graph['5']) { // Latent
+  if (graph['7'])
+    graph['7'].inputs.text = options.negativePrompt || 'text, watermark, blurry, low quality'; // Negative
+  if (graph['5']) {
+    // Latent
     graph['5'].inputs.width = options.width || 1024;
     graph['5'].inputs.height = options.height || 1024;
   }
-  if (graph['4'] && options.checkpoint) { // Checkpoint
+  if (graph['4'] && options.checkpoint) {
+    // Checkpoint
     graph['4'].inputs.ckpt_name = options.checkpoint;
   }
 
@@ -121,7 +125,7 @@ function buildGraph(promptText: string, options: ComfyUIOptions, template: any) 
           clip: [lastClipNode, 0],
         },
         class_type: 'LoraLoader',
-        _meta: { title: `LoRA ${lora.modelId}` }
+        _meta: { title: `LoRA ${lora.modelId}` },
       };
       lastModelNode = loraNodeId;
       lastClipNode = loraNodeId;
@@ -185,7 +189,9 @@ export async function renderWithComfyUI(
   let history: any = null;
   const startTime = Date.now();
   for (let i = 0; i < 60; i++) {
-    const historyRes = await httpRequest(`${COMFYUI_BASE_URL}/history/${promptId}`, { method: 'GET' });
+    const historyRes = await httpRequest(`${COMFYUI_BASE_URL}/history/${promptId}`, {
+      method: 'GET',
+    });
     const historyData = JSON.parse(historyRes);
     if (historyData[promptId] && historyData[promptId].status.completed) {
       history = historyData[promptId];
@@ -222,10 +228,7 @@ export async function renderWithComfyUI(
 
 export const comfyuiProvider = {
   key: 'comfyui' as const,
-  async render(
-    prompt: string,
-    options?: ComfyUIOptions
-  ): Promise<RenderResult> {
+  async render(prompt: string, options?: ComfyUIOptions): Promise<RenderResult> {
     return renderWithComfyUI(prompt, options);
   },
 };

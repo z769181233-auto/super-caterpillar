@@ -21,7 +21,7 @@ export function cleanupVideoRenderProcesses() {
   for (const cp of activeProcesses) {
     try {
       cp.kill('SIGKILL');
-    } catch (e) { }
+    } catch (e) {}
   }
   activeProcesses.clear();
 }
@@ -352,7 +352,7 @@ export async function processVideoRenderJob(
         latencyMs: latency,
         auditTrail: { sizeBytes, checksum, frames: frameKeys.length, hls: hlsPlaylistUrl },
       })
-      .catch(() => { });
+      .catch(() => {});
 
     // 7.1 ffprobe evidence (fs only, Unified Root)
     const ffprobeKey = `${videoKey}.ffprobe.json`;

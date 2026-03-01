@@ -111,7 +111,7 @@ export async function markRetryOrFail(
         billingState: 'RELEASED',
         amount: 1n,
         idempotencyKey: `${job.id}_RELEASED`,
-      }
+      },
     });
   } catch (e: any) {
     if (e.code === 'P2002') {

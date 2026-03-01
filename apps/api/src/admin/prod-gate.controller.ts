@@ -23,7 +23,7 @@ export class ProdGateController {
     private readonly orchestratorService: OrchestratorService,
     private readonly jobService: JobService,
     private readonly db: PrismaService
-  ) { }
+  ) {}
 
   /**
    * Assert artifactDir is within allowed evidence directory

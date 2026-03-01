@@ -14,7 +14,7 @@ import { ApiClient } from './api-client';
  * 提供统一的引擎调用接口，使用 EngineInvocationRequest/Result
  */
 export class EngineHubClient {
-  constructor(private readonly apiClient: ApiClient) { }
+  constructor(private readonly apiClient: ApiClient) {}
 
   /**
    * 调用引擎
@@ -34,14 +34,24 @@ export class EngineHubClient {
       if (PRODUCTION_MODE) {
         // P1 Hard Requirement: NO SILENT REDIRECTS allowed in production.
         // Aliases like 'ce06-v3' must be blocked if we want full determinism.
-        const ALIASES = ['ce06-v3', 'ce06', 'default_novel_parsing', 'ce03-v1', 'ce03', 'shot_render', 'ce11_shot_generator_mock'];
+        const ALIASES = [
+          'ce06-v3',
+          'ce06',
+          'default_novel_parsing',
+          'ce03-v1',
+          'ce03',
+          'shot_render',
+          'ce11_shot_generator_mock',
+        ];
 
         const isAlias = ALIASES.includes(targetEngineKey);
         const PROHIBITED_PATTERNS = ['mock_', 'gate_', 'default_', 'test_'];
-        const isProhibited = PROHIBITED_PATTERNS.some(p => targetEngineKey.startsWith(p));
+        const isProhibited = PROHIBITED_PATTERNS.some((p) => targetEngineKey.startsWith(p));
 
         if (isAlias || isProhibited) {
-          throw new Error(`[P1-GATE] Security Violation: Prohibited engine or alias '${targetEngineKey}' blocked in Production mode. Explicit engine keys required.`);
+          throw new Error(
+            `[P1-GATE] Security Violation: Prohibited engine or alias '${targetEngineKey}' blocked in Production mode. Explicit engine keys required.`
+          );
         }
       }
 

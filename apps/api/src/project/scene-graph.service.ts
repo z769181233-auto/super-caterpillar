@@ -15,7 +15,7 @@ export class SceneGraphService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: SceneGraphCache
-  ) { }
+  ) {}
 
   /**
    * Event Listener: Project Structure Changed

@@ -24,7 +24,9 @@ interface BillingEntry {
  */
 export async function writeBillingLedger(entry: BillingEntry): Promise<void> {
   try {
-    console.log(`[BillingLedger] ⚠️ Skipped writing obsolete non-transactional ledger entry for: ${entry.traceId}`);
+    console.log(
+      `[BillingLedger] ⚠️ Skipped writing obsolete non-transactional ledger entry for: ${entry.traceId}`
+    );
   } catch (error: any) {
     console.error(`[BillingLedger] ❌ Error writing ledger:`, error);
     throw error;

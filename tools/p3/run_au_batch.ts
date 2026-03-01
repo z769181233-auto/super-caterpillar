@@ -17,8 +17,12 @@ async function main() {
   const cost = new CostLedgerService(prisma, billing);
   const audit = new AuditService(prisma);
 
-  const metrics = new (require('../../apps/api/src/ops/ops-metrics.service').OpsMetricsService)(prisma);
-  const audioService = new (require('../../apps/api/src/audio/audio.service').AudioService)(metrics);
+  const metrics = new (require('../../apps/api/src/ops/ops-metrics.service').OpsMetricsService)(
+    prisma
+  );
+  const audioService = new (require('../../apps/api/src/audio/audio.service').AudioService)(
+    metrics
+  );
 
   const au01 = new AU01VoiceTTSAdapter(redis, audit, cost, audioService);
   const au02 = new AU02BGMGenAdapter(redis, audit, cost, audioService);

@@ -1,11 +1,9 @@
-import { StudioShellPage } from "@/features/studio/pages/StudioShellPage";
+import { StudioShellPage } from '@/features/studio/pages/StudioShellPage';
 
 export function generateStaticParams() {
-    return [
-        { id: 'demo' }
-    ];
+  return [{ id: 'demo' }];
 }
 
 export default function ScriptBuildPage() {
-    return <StudioShellPage />;
+  return <StudioShellPage />;
 }

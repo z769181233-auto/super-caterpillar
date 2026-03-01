@@ -17,14 +17,16 @@ export interface BillingEntry {
 export class FinancialSettlementService {
   private readonly logger = new Logger(FinancialSettlementService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * @deprecated P3-A: Billing Ledger is now strictly managed by atomic Job State Transitions.
    * This non-transactional method is disabled.
    */
   async writeBillingLedger(entry: BillingEntry): Promise<void> {
-    this.logger.debug(`[FinancialSettlement] Ignored obsolete legacy ledger write for ${entry.traceId}`);
+    this.logger.debug(
+      `[FinancialSettlement] Ignored obsolete legacy ledger write for ${entry.traceId}`
+    );
   }
 
   /**

@@ -54,7 +54,7 @@ export async function processNovelScan(context: ProcessorContext) {
           where: { id: job.payload.novelSourceId },
           data: { status: 'SCANNING' },
         })
-        .catch(() => { });
+        .catch(() => {});
     }
 
     // 1. Path Resolution
@@ -89,14 +89,16 @@ export async function processNovelScan(context: ProcessorContext) {
     // 2.2 Update NovelSource Stats
     const nsId = job.payload.novelSourceId;
     if (nsId) {
-      await prisma.novelSource.update({
-        where: { id: nsId },
-        data: {
-          status: 'PARSING' as any,
-          totalChapters: episodes.length,
-          processedChunks: 0,
-        },
-      }).catch(() => { });
+      await prisma.novelSource
+        .update({
+          where: { id: nsId },
+          data: {
+            status: 'PARSING' as any,
+            totalChapters: episodes.length,
+            processedChunks: 0,
+          },
+        })
+        .catch(() => {});
     }
 
     // 4. Batch Create NovelChunks & Jobs
@@ -157,7 +159,7 @@ export async function processNovelScan(context: ProcessorContext) {
                 engineId: engine.id,
                 engineKey: engine.engineKey,
                 status: 'BOUND',
-              }
+              },
             });
           }
         },
@@ -194,7 +196,7 @@ export async function processNovelScan(context: ProcessorContext) {
             error: e.message || String(e),
           },
         })
-        .catch(() => { });
+        .catch(() => {});
     }
 
     // Metrics: Failure
