@@ -30,13 +30,13 @@ export class EnvValidatorService implements OnModuleInit {
   private readonly PRODUCTION_RULES = [
     {
       key: 'ALLOW_DATABASE_DESTRUCTIVE_CLEAN',
-      expectedValue: 'false',
+      expectedValues: ['false'],
       description: '生产环境必须禁用数据库破坏性清理',
     },
     {
       key: 'GATE_MODE',
-      expectedValue: '0',
-      description: '生产环境必须显式设置 GATE_MODE=0',
+      expectedValues: ['0', '1'],
+      description: '生产环境必须显式设置 GATE_MODE=0 或 1',
     },
   ] as const;
 
@@ -53,9 +53,9 @@ export class EnvValidatorService implements OnModuleInit {
       if (!value || value.trim() === '') {
         errors.push(
           `❌ P0 环境变量缺失: ${varName}\n` +
-            `   描述: ${this.getVarDescription(varName)}\n` +
-            `   影响: 系统无法启动\n` +
-            `   修复: 在 .env.local 中设置 ${varName}`
+          `   描述: ${this.getVarDescription(varName)}\n` +
+          `   影响: 系统无法启动\n` +
+          `   修复: 在 .env.local 中设置 ${varName}`
         );
       } else {
         this.logger.log(`✅ [P0] ${varName}: 已配置 (${this.maskSensitive(varName, value)})`);
@@ -69,9 +69,9 @@ export class EnvValidatorService implements OnModuleInit {
       if (!value || value.trim() === '') {
         warnings.push(
           `⚠️  P1 环境变量未配置: ${varName}\n` +
-            `   描述: ${this.getVarDescription(varName)}\n` +
-            `   影响: 使用默认值\n` +
-            `   建议: 在 .env.local 中显式设置`
+          `   描述: ${this.getVarDescription(varName)}\n` +
+          `   影响: 使用默认值\n` +
+          `   建议: 在 .env.local 中显式设置`
         );
       } else {
         this.logger.log(`✅ [P1] ${varName}: ${value}`);
@@ -85,15 +85,15 @@ export class EnvValidatorService implements OnModuleInit {
       this.logger.warn('🚨 [PRODUCTION MODE] 执行生产环境安全校验...');
 
       for (const rule of this.PRODUCTION_RULES) {
-        const value = process.env[rule.key];
+        const value = process.env[rule.key] || '';
 
-        if (value !== rule.expectedValue) {
+        if (!(rule.expectedValues as readonly string[]).includes(value)) {
           errors.push(
             `❌ 生产环境安全规则违规: ${rule.key}\n` +
-              `   要求值: ${rule.expectedValue}\n` +
-              `   实际值: ${value || '(未设置)'}\n` +
-              `   原因: ${rule.description}\n` +
-              `   修复: 在 .env.local 中设置 ${rule.key}=${rule.expectedValue}`
+            `   要求值: ${rule.expectedValues.join(' 或 ')}\n` +
+            `   实际值: ${value || '(未设置)'}\n` +
+            `   原因: ${rule.description}\n` +
+            `   修复: 在 .env.local 中设置 ${rule.key}=${rule.expectedValues[0]}`
           );
         } else {
           this.logger.log(`✅ [PROD_RULE] ${rule.key}=${value} ✓`);
