@@ -1,0 +1,284 @@
+{
+  "Index": {
+    "title": "Super Caterpillar Studio",
+    "navTitle": "Super Caterpillar Studio",
+    "nav": {
+      "enterStudio": "Enter Studio",
+      "process": "Process",
+      "features": "Capabilities",
+      "platform": "Platform",
+      "copilot": "AI Assistant",
+      "projects": "Projects",
+      "walkthrough": "Walkthroughs",
+      "evidence": "Evidence Index"
+    },
+    "hero": {
+      "title": "Turn Novels into Scalable Animation.",
+      "subtitle": "Use a complete AI industrial system, not scattered tools.",
+      "description": "Super Caterpillar converts text content into deliverable, controllable, and scalable animations\nthrough multi-engine collaboration, structured assets, and automated production workflows.",
+      "ctaPrimary": "Enter Studio",
+      "ctaSecondary": "View Full Process"
+    },
+    "value": {
+      "title": "Not Just an AI Tool\nA Complete Animation Production Line",
+      "cards": {
+        "v1": {
+          "title": "Structured Production",
+          "desc": "Novels, characters, and world views dismantled into computable production structures."
+        },
+        "v2": {
+          "title": "Quality & Consistency",
+          "desc": "Auto QA, logic verification, and visual consistency mechanisms ensure stable delivery."
+        },
+        "v3": {
+          "title": "Controllable Cost",
+          "desc": "Real-time visibility, predictability, and optimization of GPU/Model/Task costs."
+        }
+      }
+    },
+    "process": {
+      "title": "From Story to Film\nFully Automated Production Flow",
+      "steps": {
+        "s1": {
+          "title": "01 Import & Analysis",
+          "desc": "AI deeply understands text, dismantling plot, characters, and world-view elements."
+        },
+        "s2": {
+          "title": "02 Script & Semantics",
+          "desc": "Auto-converts to standard production scripts, building an executable semantic space."
+        },
+        "s3": {
+          "title": "03 Shot & Lens Planning",
+          "desc": "Precisely plans shot size, movement, and composition to form renderable shot structures."
+        },
+        "s4": {
+          "title": "04 Asset Generation",
+          "desc": "Multi-engine batch generation of consistent assets into the reusable asset library."
+        },
+        "s5": {
+          "title": "05 Batch Video Generation",
+          "desc": "Clustered rendering and task scheduling for efficient animation clip generation."
+        },
+        "s6": {
+          "title": "06 Compositing & Export",
+          "desc": "Smart editing and post-processing to output the final deliverable film."
+        }
+      }
+    },
+    "capabilities": {
+      "title": "Six Core Capabilities for Industrial Animation",
+      "cards": {
+        "c1": {
+          "title": "Visual Scene Graph",
+          "desc": "Intuitively present plot structure, relationships, and scene links to master complex narratives."
+        },
+        "c2": {
+          "title": "Intelligent QA",
+          "desc": "System automatically identifies and blocks logic/visual errors without manual frame-by-frame checks."
+        },
+        "c3": {
+          "title": "Multi-tier Management",
+          "desc": "Supports Organization/Project/Scene layering, adapted for large team collaboration and permissions."
+        },
+        "c4": {
+          "title": "Multi-Engine Routing",
+          "desc": "Automatically selects the \"most cost-effective and usable\" solution to maximize unit output."
+        },
+        "c5": {
+          "title": "Enterprise Security",
+          "desc": "Full IP control, traceability, and commercial viability, eliminating copyright and compliance risks."
+        },
+        "c6": {
+          "title": "Cost & Efficiency",
+          "desc": "Real-time monitoring of every bit of compute usage to eliminate budget black holes."
+        }
+      }
+    },
+    "platform": {
+      "title": "An Expandable AI Animation Platform",
+      "subtitle": "All models, assets, and production tasks\nare unified and orchestrated by the Engine system.",
+      "cards": {
+        "p1": {
+          "title": "Engine Universe",
+          "desc": "Core Scheduler: Unifies generation, analysis, repair, and evaluation engines for cross-model collaboration."
+        },
+        "p2": {
+          "title": "Model Universe",
+          "desc": "Resource Pool: Replaceable, routable models supporting private fine-tuning and style customization."
+        },
+        "p3": {
+          "title": "Asset Universe",
+          "desc": "Digital Asset Repository: Reusable character, scene, and style assets supporting long-term, cross-project production."
+        }
+      }
+    },
+    "entry": {
+      "viewSolution": "View Solution",
+      "cards": {
+        "e1": {
+          "title": "Creators",
+          "desc": "Zero-threshold: Turn stories into animation."
+        },
+        "e2": {
+          "title": "Studios",
+          "desc": "Batch production, collaboration, quality & cost control."
+        },
+        "e3": {
+          "title": "Enterprise",
+          "desc": "Privatization, copyright security & industrial auditing."
+        }
+      }
+    },
+    "footerCTA": {
+      "title": "Ready to Enter the AI Animation Industrial Age?",
+      "primary": "Enter Studio",
+      "secondary": "Contact Us"
+    }
+  },
+  "Common": {
+    "loading": "Loading system resources...",
+    "retry": "Retry connection",
+    "empty": "No records found in this sector"
+  },
+  "Projects": {
+    "title": "Projects",
+    "subtitle": "Manage your cinematic universe productions",
+    "newProject": "+ New Project",
+    "createModalTitle": "Create New Project",
+    "createModalName": "Project Name *",
+    "createModalNamePlaceholder": "e.g. Cyberpunk 2077 Origins",
+    "createModalDesc": "Description",
+    "createModalDescPlaceholder": "Brief synopsis of your masterpiece...",
+    "createButton": "Create Universe",
+    "creatingButton": "Creating...",
+    "emptyTitle": "No projects yet",
+    "emptyDesc": "Start your journey by creating your first project.",
+    "searchPlaceholder": "Search projects...",
+    "empty": {
+      "title": "No Projects Yet",
+      "desc": "Start your first creative journey",
+      "ctaImport": "Import Novel",
+      "ctaCreate": "Create Project"
+    },
+    "aside": {
+      "recentActivity": "Recent Activity",
+      "systemStatus": "System Status",
+      "quickLinks": "Quick Links"
+    },
+    "card": {
+      "latestBuild": "Latest Build",
+      "updated": "Updated"
+    },
+    "openStudio": "Workbench",
+    "stats": {
+      "seasons": "Seasons",
+      "scenes": "Scenes",
+      "shots": "Shots"
+    },
+    "status": {
+      "READY": "Ready",
+      "RUNNING": "Running",
+      "ERROR": "Error",
+      "DONE": "Done",
+      "audited": "Structured (AUDITED)",
+      "sealed": "Assets Sealed (SEALED)"
+    },
+    "time": {
+      "justNow": "Updated just now",
+      "hoursAgo": "Updated {hours}h ago",
+      "daysAgo": "Updated {days}d ago"
+    },
+    "Analysis": {
+      "updated": "Updated: {time}",
+      "job": "Job: {id}",
+      "import": "Import Novel",
+      "analyzing": "Analyzing...",
+      "start": "Start Analysis",
+      "structure": "Gen Structure",
+      "refresh": "Refresh",
+      "status": "AI is reading the novel and breaking down the structure. Please wait... Results will appear automatically.",
+      "viewJob": "View Progress",
+      "viewAllJobs": "View All Background Jobs"
+    },
+    "Detail": {
+      "selectNode": "Please select a node to view details",
+      "season": "Season {index}",
+      "episode": "Episode {index}",
+      "scene": "Scene {index}",
+      "shot": "Shot {index}",
+      "title": "Title",
+      "desc": "Description",
+      "summary": "Summary",
+      "episodes": "Episodes",
+      "scenes": "Scenes",
+      "shots": "Shots",
+      "params": "Params",
+      "type": "Type",
+      "generateVideo": "Generate Video",
+      "submitting": "Submitting...",
+      "statusTitle": "Analysis Status",
+      "viewAll": "View All Jobs",
+      "unknown": "Unknown Node Type",
+      "noDesc": "(No description)",
+      "noSummary": "(No summary)"
+    }
+  },
+  "ProjectDetail": {
+    "navOverview": "Overview",
+    "navBuilds": "Builds",
+    "navEvidence": "Evidence",
+    "ctaOpenStudio": "Open Studio",
+    "ctaImportNovel": "Import Novel",
+    "ctaExportEvidence": "Export Evidence Suite",
+    "ctaExportCsv": "Export CSV",
+    "statsBuilds": "Total Builds",
+    "statsAudited": "Audit Status",
+    "statsUpdated": "Last Updated",
+    "sectionRecentBuilds": "Recent Builds",
+    "sectionAuditMetering": "Audit & Metering"
+  },
+  "Landing": {
+    "title": "Industrial-Grade AI Animation Pipeline",
+    "subtitle": "Convert novels, worldviews, and characters into manageable and scalable batch video assets.",
+    "ctaPrimary": "Enter Studio",
+    "ctaSecondary": "View Projects",
+    "feature1": {
+      "title": "SSOT Audit & Structuring",
+      "desc": "Based on a single source of truth configuration, scripts are no longer weak text, but strong data foundations."
+    },
+    "feature2": {
+      "title": "Multi-Engine Orchestrator",
+      "desc": "Automatically schedule text/image/video cluster engines, making production streamlined and seamless."
+    },
+    "feature3": {
+      "title": "Evidence Chain & Traceability",
+      "desc": "All generation actions are bound to physical hashes and snapshot audit records, preventing accidental tampering."
+    },
+    "proof": {
+      "audited": "Script Deeply Audited (AUDITED)",
+      "sealed": "Renderings Sealed (SEALED)",
+      "i18n": "Tri-lingual Consistency (I18N READY)",
+      "ssot": "Design Token Source (TOKEN SSOT)"
+    },
+    "footer": {
+      "docs": "System Documentation",
+      "walkthrough": "Test Checklists",
+      "evidence": "Evidence Warehouse"
+    }
+  },
+  "Auth": {
+    "titleLogin": "Identity Verification",
+    "titleRegister": "Join Crew",
+    "emailLabel": "Engineer Email",
+    "passwordLabel": "Access Key",
+    "submitLogin": "Access Studio",
+    "submitRegister": "Submit Registration",
+    "loading": "Verifying...",
+    "errorInvalid": "Credentials invalid or corrupted",
+    "errorNetwork": "System Gateway not responding",
+    "backToLanding": "Return to Gateway",
+    "footerPrivacy": "Privacy Protocol",
+    "footerTerms": "Service Agreement"
+  },
+  "studioBrand": "Super Caterpillar Studio"
+}

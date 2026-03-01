@@ -1,0 +1,317 @@
+{
+  "Index": {
+    "title": "Super Caterpillar Studio",
+    "navTitle": "Super Caterpillar Studio",
+    "nav": {
+      "enterStudio": "Vào Bàn làm việc",
+      "process": "Quy trình",
+      "features": "Tính năng",
+      "platform": "Nền tảng",
+      "copilot": "Trợ lý AI",
+      "projects": "Dự án",
+      "studio": "Studio",
+      "assets": "Tài sản"
+    },
+    "hero": {
+      "title": "Biến Tiểu Thuyết Thành Hoạt Hình Mở Rộng.",
+      "subtitle": "Sử dụng hệ thống công nghiệp AI hoàn chỉnh.",
+      "description": "Super Caterpillar chuyển đổi nội dung văn bản thành hình ảnh động có thể giao, kiểm soát và mở rộng.",
+      "ctaPrimary": "Vào Bàn làm việc",
+      "ctaSecondary": "Xem quy trình đầy đủ"
+    },
+    "value": {
+      "title": "Không Chỉ Là AI\nMột Dây Chuyền Sản Xuất Hoạt Hình",
+      "cards": {
+        "v1": {
+          "title": "Sản Xuất Có Cấu Trúc",
+          "desc": "Tiểu thuyết, nhân vật được phân rã thành cấu trúc sản xuất."
+        },
+        "v2": {
+          "title": "Chất Lượng & Nhất Quán",
+          "desc": "Tự động QA và đảm bảo giao sản phẩm ổn định."
+        },
+        "v3": {
+          "title": "Kiểm Soát Chi Phí",
+          "desc": "Tối ưu hóa và dự đoán chi phí theo thời gian thực."
+        }
+      }
+    },
+    "process": {
+      "title": "Từ Câu Chuyện Đến Phim",
+      "steps": {
+        "s1": {
+          "title": "01 Nhập & Phân Tích",
+          "desc": "AI hiểu sâu xa văn bản và cốt truyện."
+        },
+        "s2": {
+          "title": "02 Kịch Bản & Ngữ Nghĩa",
+          "desc": "Tự động chuyển thành kịch bản sản xuất chuẩn."
+        },
+        "s3": {
+          "title": "03 Lập Kế Hoạch Góc Máy",
+          "desc": "Lên lộ trình cho khung hình có thể render."
+        },
+        "s4": {
+          "title": "04 Tạo Tài Sản",
+          "desc": "Hệ thống hàng loạt tạo tài sản đồng nhất."
+        },
+        "s5": {
+          "title": "05 Tạo Video Hàng Loạt",
+          "desc": "Cluster render tạo clip mượt mà."
+        },
+        "s6": {
+          "title": "06 Hậu Kỳ & Xuất File",
+          "desc": "Chỉnh sửa thông minh để xuất bản cuối cùng."
+        }
+      }
+    },
+    "capabilities": {
+      "title": "Sáu Tính Năng Cốt Lõi Cho Hoạt Hình",
+      "cards": {
+        "c1": {
+          "title": "Biểu Đồ Cảnh Báo",
+          "desc": "Hiển thị trực quan cốt truyện."
+        },
+        "c2": {
+          "title": "QA Thông Minh",
+          "desc": "Hệ thống tự động phát hiện lỗi."
+        },
+        "c3": {
+          "title": "Quản Lý Đa Cấp",
+          "desc": "Hỗ trợ ủy quyền cho đội ngũ lớn."
+        },
+        "c4": {
+          "title": "Định Tuyến Đa Công Cụ",
+          "desc": "Lựa chọn phương án tối ưu nhất."
+        },
+        "c5": {
+          "title": "Bảo Mật Doanh Nghiệp",
+          "desc": "Bảo vệ IP toàn diện và truy xuất nguồn gốc."
+        },
+        "c6": {
+          "title": "Trung Tâm Chi Phí",
+          "desc": "Theo dõi từng chi phí điện toán."
+        }
+      }
+    },
+    "platform": {
+      "title": "Một Nền Tảng Hoạt Hình AI Mở Rộng",
+      "subtitle": "Mọi quy trình được điều phối tại một nơi.",
+      "cards": {
+        "p1": {
+          "title": "Vũ trụ Công cụ",
+          "desc": "Bộ điều phối cốt lõi giữa các engine AI."
+        },
+        "p2": {
+          "title": "Vũ trụ Mô hình",
+          "desc": "Kho tài nguyên đa mô hình."
+        },
+        "p3": {
+          "title": "Vũ trụ Tài sản",
+          "desc": "Kho tài sản kỹ thuật số tái sử dụng."
+        }
+      }
+    },
+    "entry": {
+      "viewSolution": "Xem Giải Pháp",
+      "cards": {
+        "e1": {
+          "title": "Nhà Sáng Tạo",
+          "desc": "Biến câu chuyện thành hoạt hình dễ dàng."
+        },
+        "e2": {
+          "title": "Studio",
+          "desc": "Quản lý và kiểm soát chất lượng."
+        },
+        "e3": {
+          "title": "Doanh Nghiệp",
+          "desc": "Bảo vệ bản quyền & kiểm toán công nghiệp."
+        }
+      }
+    },
+    "footerCTA": {
+      "title": "Bạn đã sẵn sàng bước vào Kỷ Nguyên Hoạt Hình AI?",
+      "primary": "Vào Bàn làm việc",
+      "secondary": "Liên hệ chúng tôi"
+    }
+  },
+  "Common": {
+    "loading": "Đang tải tài nguyên hệ thống...",
+    "retry": "Thử lại kết nối",
+    "empty": "Không tìm thấy hồ sơ nào"
+  },
+  "Projects": {
+    "title": "Dự án",
+    "subtitle": "Quản lý dự án của bạn",
+    "newProject": "+ Dự án mới",
+    "createModalTitle": "Tạo Dự án Mới",
+    "createModalName": "Tên Dự án *",
+    "createModalNamePlaceholder": "VD: Cyberpunk 2077 Origins",
+    "createModalDesc": "Mô tả",
+    "createModalDescPlaceholder": "Tóm tắt ngắn gọn kiệt tác của bạn...",
+    "createButton": "Tạo Vũ Trụ",
+    "creatingButton": "Đang tạo...",
+    "emptyTitle": "Chưa có dự án nào",
+    "emptyDesc": "Hành trình sáng tạo bắt đầu từ dự án đầu tiên.",
+    "openStudio": "Bàn làm việc",
+    "stats": {
+      "seasons": "Mùa",
+      "scenes": "Cảnh",
+      "shots": "Cảnh Shot"
+    },
+    "status": {
+      "READY": "Sẵn sàng",
+      "RUNNING": "Đang chạy",
+      "ERROR": "Lỗi",
+      "DONE": "Hoàn thành"
+    },
+    "time": {
+      "justNow": "Vừa cập nhật",
+      "hoursAgo": "Cập nhật {hours} giờ trước",
+      "daysAgo": "Cập nhật {days} ngày trước"
+    },
+    "Analysis": {
+      "updated": "Đã cập nhật: {time}",
+      "job": "Công việc: {id}",
+      "import": "Nhập tiểu thuyết",
+      "analyzing": "Đang phân tích...",
+      "start": "Bắt đầu Phân tích",
+      "structure": "Tạo Cấu Trúc",
+      "refresh": "Làm mới",
+      "status": "AI đang phân tích câu chuyện...",
+      "viewJob": "Tiến trình",
+      "viewAllJobs": "Xem các tác vụ đang chạy"
+    },
+    "Detail": {
+      "selectNode": "Chọn để xem chi tiết",
+      "season": "Mùa {index}",
+      "episode": "Tập {index}",
+      "scene": "Cảnh {index}",
+      "shot": "Cảnh Shot {index}",
+      "title": "Tiêu đề",
+      "desc": "Mô tả",
+      "summary": "Tóm tắt",
+      "episodes": "Tập",
+      "scenes": "Cảnh",
+      "shots": "Cảnh Shot",
+      "params": "Tham số",
+      "type": "Loại",
+      "generateVideo": "Tạo Video",
+      "submitting": "Đang gửi...",
+      "statusTitle": "Trạng thái Phân tích",
+      "viewAll": "Xem tất cả tác vụ",
+      "unknown": "Loại Nút Không Xác Định",
+      "noDesc": "(Không có mô tả)",
+      "noSummary": "(Không có tóm tắt)"
+    }
+  },
+  "Landing": {
+    "title": "Dây chuyền sản xuất Hoạt hình AI Công nghiệp",
+    "subtitle": "Biến tiểu thuyết, thế giới quan và nhân vật thành tài sản video có thể quản lý và mở rộng.",
+    "ctaPrimary": "Vào Không gian làm việc",
+    "ctaSecondary": "Dự án",
+    "feature1": {
+      "title": "Kiểm toán & Cấu trúc SSOT",
+      "desc": "Dựa trên một nguồn sự thật duy nhất, kịch bản trở thành dữ liệu có cấu trúc."
+    },
+    "feature2": {
+      "title": "Quy trình làm việc Đa công cụ",
+      "desc": "Tự động điều phối các công cụ LLM/SD/Video thành một dây chuyền sản xuất liền mạch."
+    },
+    "feature3": {
+      "title": "Chuỗi bằng chứng & Khả năng truy xuất",
+      "desc": "Tất cả các hành động đều được liên kết với hash vật lý và ảnh chụp nhanh để chống giả mạo."
+    },
+    "proof": {
+      "audited": "Kịch bản đã được kiểm toán (AUDITED)",
+      "sealed": "Kết xuất đã niêm phong (SEALED)",
+      "i18n": "Kiểm soát i18n mạnh mẽ (I18N READY)",
+      "ssot": "Thiết kế Token SSOT"
+    },
+    "footer": {
+      "docs": "Tài liệu hệ thống",
+      "walkthrough": "Hướng dẫn",
+      "evidence": "Chỉ mục Bằng chứng"
+    }
+  },
+  "Auth": {
+    "titleLogin": "Xác Minh Danh Tính",
+    "titleRegister": "Tham Gia Đội Ngũ",
+    "emailLabel": "Email Kỹ Sư",
+    "passwordLabel": "Khóa Truy Cập",
+    "submitLogin": "Vào Bàn Làm Việc",
+    "submitRegister": "Gửi Đăng Ký",
+    "loading": "Đang xác minh...",
+    "errorInvalid": "Thông tin xác thực không hợp lệ hoặc bị hỏng",
+    "errorNetwork": "Cổng Hệ Thống Không Phản Hồi",
+    "backToLanding": "Quay Lại Cổng Công Nghiệp",
+    "footerPrivacy": "Hiệp Ước Bảo Mật",
+    "footerTerms": "Điều Khoản Dịch Vụ"
+  },
+  "ProjectDetail": {
+    "navOverview": "Tổng quan",
+    "navBuilds": "Các bản dựng",
+    "navEvidence": "Bằng chứng",
+    "ctaOpenStudio": "Vào Bàn Làm Việc",
+    "ctaImportNovel": "Nhập tiểu thuyết",
+    "ctaExportEvidence": "Xuất bộ Bằng chứng",
+    "ctaExportCsv": "Xuất dữ liệu CSV",
+    "statsBuilds": "Tổng Số Bản Dựng",
+    "statsAudited": "Trạng thái Kiểm toán",
+    "statsUpdated": "Cập nhật Lần cuối",
+    "sectionRecentBuilds": "Cài đặt Gần đây",
+    "sectionAuditMetering": "Kiểm toán & Thanh toán"
+  },
+  "studioBrand": "Super Caterpillar Studio",
+  "evidence": "Bằng chứng",
+  "exportCsv": "Xuất CSV",
+  "kpiEpisodes": "Tập",
+  "kpiEpisodeHint": "Tập ngữ nghĩa do AI tạo",
+  "kpiScenes": "Cảnh",
+  "kpiSceneHint": "Đơn vị tiến triển cốt truyện",
+  "kpiShots": "Cảnh Shot",
+  "kpiShotHint": "Sẵn sàng bàn giao quay phim",
+  "kpiCharacters": "Nhân Vật",
+  "kpiCharHint": "Tích lũy tài sản",
+  "navProcess": "Quy trình",
+  "navFeatures": "Tính năng",
+  "navPlatform": "Nền tảng",
+  "evidenceTitle": "Vết Tích Mã Nguồn Gốc (Bằng chứng Kiểm toán Không Thể Chối Cãi)",
+  "evidenceSubtitle": "Đã ghi nhận toàn bộ nguồn của bản dựng. Có thể dùng cho pháp lý.",
+  "globalCredential": "Bằng Chứng Bản Dựng Toàn Cầu",
+  "auditInfo": "Thông tin Kiểm toán Cấp Cơ Chế",
+  "auditPlaceholder": "Chọn một cảnh Shot bên trái để trích xuất bằng chứng mã nguồn",
+  "revisionActive": "Sửa đổi",
+  "aiEngineRewrite": "Ghi đè Engine AI",
+  "originalText": "Văn bản gốc",
+  "revert": "Hoàn tác",
+  "applyHighlight": "Áp dụng Điểm nổi bật",
+  "tensionCurve": "Biểu Đồ Căng Thẳng",
+  "characterWeight": "Phân Bố Trọng Số Nhân Vật",
+  "searchPlaceholder": "Tìm kiếm...",
+  "themeToggle": "Giao diện",
+  "rolesTitle": "Phân Bổ Trọng Số Nhân Vật",
+  "showMore": "Mở rộng",
+  "showLess": "Thu gọn",
+  "collapseCount": "Phát hiện {n} điểm nhịp điệu sụp đổ",
+  "badgeStructured": "Đã cấu trúc",
+  "badgeAudited": "Kiểm toán cấp CN",
+  "badgeUnknown": "Không xác định",
+  "outline": "Đại cương kịch bản",
+  "readerStage": "Sân khấu đọc",
+  "insightsTitle": "Phân tích kịch bản",
+  "rulesEngine": "Công cụ quy tắc",
+  "emptyHint": "Chọn cảnh shot từ mục lục hoặc biểu đồ",
+  "episode": "Tập {n}",
+  "scene": "Cảnh {n}",
+  "shot": "Shot {n}",
+  "auditTitle": "Bằng chứng & Kiểm toán",
+  "fingerprint": "Dấu vân tay vật lý (Shot)",
+  "verified": "ĐÃ XÁC MINH TÍNH XÁC THỰC DỮ LIỆU",
+  "verifiedDesc": "Đã được xác minh bởi Caterpillar Core AI. CID đã khóa.",
+  "close": "Đóng",
+  "aiEngine": "✨ Công cụ AI sáng tạo",
+  "tensionEnhance": "Tăng cường xung đột",
+  "original": "Văn bản gốc",
+  "revision": "Phiên bản sửa đổi"
+}

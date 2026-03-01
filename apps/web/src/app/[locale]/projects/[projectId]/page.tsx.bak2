@@ -1,0 +1,693 @@
+'use client';
+
+import { useEffect, useState, useMemo } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { projectApi, novelImportApi } from '@/lib/apiClient';
+import { extractApiErrorMessage } from '@/lib/handleApiError';
+import Link from 'next/link';
+import ShotEditor from '@/components/ShotEditor';
+import StudioTree from '@/components/project/StudioTree';
+import ContentList from '@/components/project/ContentList';
+import DetailPanel from '@/components/project/DetailPanel';
+import AnalysisStatusPanel from '@/components/project/AnalysisStatusPanel';
+
+interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  status?: string;
+  episodes?: Episode[];
+  seasons?: Season[]; // 影视工业标准：Season 结构
+  analysisStatus?: 'NOT_ANALYZED' | 'ANALYZING' | 'ANALYZED' | 'FAILED';
+  analysisUpdatedAt?: string | null;
+}
+
+interface Season {
+  id: string;
+  index: number;
+  title: string;
+  description?: string;
+  metadata?: any;
+  episodes?: Episode[];
+}
+
+interface Episode {
+  id: string;
+  index: number;
+  title: string; // 影视工业标准
+  name?: string; // 向后兼容
+  summary?: string;
+  chapter?: {
+    id: string;
+    title: string;
+    orderIndex: number;
+    sceneDrafts?: SceneDraft[];
+  };
+  scenes?: Scene[];
+}
+
+interface Scene {
+  id: string;
+  index: number;
+  title?: string;
+  summary?: string;
+  characters?: any;
+  location?: string;
+  sceneDraft?: SceneDraft;
+  shots?: Shot[];
+}
+
+interface SceneDraft {
+  id: string;
+  orderIndex: number;
+  title?: string;
+  summary?: string;
+  characters?: any;
+  location?: string;
+  status: 'DRAFT' | 'ANALYZED' | 'FINALIZED';
+  analysisResult?: {
+    method?: string;
+    timestamp?: string;
+    scenes?: any[];
+  };
+}
+
+interface Shot {
+  id: string;
+  index: number;
+  type?: string; // 改为可选，兼容不同来源的数据
+  status: string;
+  title?: string;
+  description?: string;
+  dialogue?: string;
+  prompt?: string;
+  reviewStatus?: string;
+  reviewNote?: string;
+  previewUrl?: string;
+  generatedAt?: string;
+  reviewedAt?: string;
+}
+
+export default function ProjectDetailPage() {
+  // ========== 所有 Hooks 必须集中在这里（在任何条件 return 之前）==========
+  
+  const router = useRouter();
+  const params = useParams();
+  const projectId = params.projectId as string;
+
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedNode, setSelectedNode] = useState<{ type: 'season' | 'episode' | 'scene' | 'shot'; id: string; data?: any } | null>(null);
+  
+  // 向后兼容：保留旧的选中状态
+  const [selectedEpisode, setSelectedEpisode] = useState<string | null>(null);
+  const [selectedScene, setSelectedScene] = useState<string | null>(null);
+  const [selectedShot, setSelectedShot] = useState<Shot | null>(null);
+  
+  // 统一的错误和加载状态
+  const [error, setError] = useState<string | null>(null);
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+
+  const [showCreateEpisode, setShowCreateEpisode] = useState(false);
+  const [showCreateScene, setShowCreateScene] = useState(false);
+  const [showCreateShot, setShowCreateShot] = useState(false);
+
+  const [formData, setFormData] = useState({
+    episodeIndex: 1,
+    episodeName: '',
+    sceneIndex: 1,
+    sceneSummary: '',
+    shotIndex: 1,
+    shotType: 'close_up',
+  });
+
+  // 兼容处理：支持 episodes 和 seasons[*].episodes 两种结构
+  // 必须在所有条件 return 之前调用
+  const normalizedEpisodes = useMemo(() => {
+    if (!project) return [];
+    if (project.episodes?.length) {
+      return project.episodes;
+    }
+    if (project.seasons?.length) {
+      return project.seasons.flatMap((s: Season) => s.episodes ?? []);
+    }
+    return [];
+  }, [project?.episodes, project?.seasons]);
+
+  // 根据选中节点获取对应数据
+  const contentData = useMemo(() => {
+    if (!selectedNode || !project) return { episodes: [], scenes: [], shots: [] };
+    
+    if (selectedNode.type === 'season' && selectedNode.data) {
+      return { episodes: selectedNode.data.episodes || [] };
+    }
+    
+    if (selectedNode.type === 'episode' && selectedNode.data) {
+      return { scenes: selectedNode.data.scenes || [] };
+    }
+    
+    if (selectedNode.type === 'scene' && selectedNode.data) {
+      return { shots: selectedNode.data.shots || [] };
+    }
+    
+    return { episodes: [], scenes: [], shots: [] };
+  }, [selectedNode, project]);
+
+  // 定义 loadProject 函数（在 useEffect 之前）
+  const loadProject = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await projectApi.getProjectTree(projectId);
+      setProject(data);
+      
+      // 兼容处理：支持 episodes 和 seasons[*].episodes 两种结构
+      const normalizedEpisodes = data.episodes?.length 
+        ? data.episodes 
+        : (data.seasons?.flatMap((s: Season) => s.episodes ?? []) ?? []);
+      
+      // 影视工业标准：优先选择 Season 1 的第一个 Episode
+      if (data.seasons && data.seasons.length > 0 && data.seasons[0].episodes && data.seasons[0].episodes.length > 0) {
+        const firstEpisode = data.seasons[0].episodes[0];
+        setSelectedNode({ type: 'season', id: data.seasons[0].id, data: data.seasons[0] });
+        setSelectedEpisode(firstEpisode.id);
+        if (firstEpisode.scenes && firstEpisode.scenes.length > 0) {
+          setSelectedScene(firstEpisode.scenes[0].id);
+          if (firstEpisode.scenes[0].shots && firstEpisode.scenes[0].shots.length > 0) {
+            setSelectedShot(firstEpisode.scenes[0].shots[0]);
+          }
+        }
+      } else if (normalizedEpisodes.length > 0) {
+        // 向后兼容：选择第一个 Episode
+        setSelectedEpisode(normalizedEpisodes[0].id);
+        if (normalizedEpisodes[0].scenes && normalizedEpisodes[0].scenes.length > 0) {
+          setSelectedScene(normalizedEpisodes[0].scenes[0].id);
+        }
+      }
+    } catch (err: any) {
+      if (err.statusCode === 401) {
+        router.push('/login');
+      } else {
+        setError(err.message || '加载项目失败');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 在 loadProject 定义之后调用 useEffect
+  useEffect(() => {
+    loadProject();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  /**
+   * 统一的异步操作包装函数
+   * @param key 操作标识（用于 loadingKey）
+   * @param fn 异步操作函数
+   */
+  const wrap = async (key: string, fn: () => Promise<void>) => {
+    setLoadingKey(key);
+    setError(null);
+    try {
+      await fn();
+    } catch (err: any) {
+      const errorMessage = extractApiErrorMessage(err, '操作失败，请稍后重试');
+      setError(errorMessage);
+    } finally {
+      setLoadingKey(null);
+    }
+  };
+
+  // Studio v0.8: 分析整本小说
+  const handleAnalyzeProject = () => {
+    wrap('analyzeProject', async () => {
+      await novelImportApi.analyzeNovel(projectId);
+      // 等待2秒后刷新数据
+      setTimeout(() => {
+        loadProject();
+      }, 2000);
+    });
+  };
+
+  // Studio v0.8: 分析单章
+  const handleAnalyzeChapter = (chapterId: string) => {
+    wrap(`analyzeChapter-${chapterId}`, async () => {
+      await novelImportApi.analyzeNovel(projectId, chapterId);
+      // 等待2秒后刷新数据
+      setTimeout(() => {
+        loadProject();
+      }, 2000);
+    });
+  };
+
+  // Studio v0.8: 生成剧集结构
+  const handleGenerateStructure = () => {
+    if (!projectId) {
+      setError('项目ID不存在');
+      return;
+    }
+    
+    wrap('generateStructure', async () => {
+      await projectApi.generateStructure(projectId);
+      // 刷新项目数据
+      await loadProject();
+    });
+  };
+
+  const handleCreateEpisode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await projectApi.createEpisode(projectId, formData.episodeIndex, formData.episodeName);
+      await loadProject();
+      setShowCreateEpisode(false);
+      setFormData({ ...formData, episodeIndex: formData.episodeIndex + 1, episodeName: '' });
+    } catch (err: any) {
+      setError(err.message || '创建 Episode 失败');
+    }
+  };
+
+  const handleCreateScene = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEpisode) return;
+    try {
+      await projectApi.createScene(selectedEpisode, formData.sceneIndex, formData.sceneSummary || undefined);
+      await loadProject();
+      setShowCreateScene(false);
+      setFormData({ ...formData, sceneIndex: formData.sceneIndex + 1, sceneSummary: '' });
+    } catch (err: any) {
+      setError(err.message || '创建 Scene 失败');
+    }
+  };
+
+  const handleCreateShot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedScene) return;
+    try {
+      await projectApi.createShot(selectedScene, formData.shotIndex, formData.shotType, {});
+      await loadProject();
+      setShowCreateShot(false);
+      setFormData({ ...formData, shotIndex: formData.shotIndex + 1 });
+    } catch (err: any) {
+      setError(err.message || '创建 Shot 失败');
+    }
+  };
+
+  // ========== 从这里开始才允许写条件分支和 return ==========
+
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <div>加载中...</div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div style={{ padding: '2rem' }}>
+        <div>项目不存在</div>
+      </div>
+    );
+  }
+
+  // 计算派生数据（必须在所有条件 return 之后，但在使用之前）
+  const selectedEpisodeData = normalizedEpisodes.find((e) => e.id === selectedEpisode);
+  const selectedSceneData = selectedEpisodeData?.scenes?.find((s: Scene) => s.id === selectedScene);
+
+  // 如果没有 Episode/Scene/Shot 数据，显示导入提示
+  const hasData = normalizedEpisodes.length > 0;
+
+  if (!hasData) {
+    return (
+      <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '2rem' }}>
+          <Link
+            href="/projects"
+            style={{
+              display: 'inline-block',
+              padding: '0.5rem 1rem',
+              backgroundColor: '#f0f0f0',
+              borderRadius: '4px',
+              textDecoration: 'none',
+              color: '#333',
+              marginBottom: '1rem',
+            }}
+          >
+            ← 返回项目列表
+          </Link>
+          <h2 style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>{project.name}</h2>
+          {project.description && (
+            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8125rem', color: '#666' }}>
+              {project.description}
+            </p>
+          )}
+        </div>
+        <div
+          style={{
+            padding: '3rem 2rem',
+            textAlign: 'center',
+            backgroundColor: '#fafafa',
+            borderRadius: '8px',
+            border: '1px solid #e0e0e0',
+          }}
+        >
+          <h3 style={{ marginBottom: '1rem', color: '#666' }}>项目结构为空</h3>
+          <p style={{ marginBottom: '2rem', color: '#999' }}>
+            请先导入小说，然后点击「一键生成剧集结构」按钮生成 Episode / Scene / Shot 结构。
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link
+              href={`/projects/${projectId}/import-novel`}
+              style={{
+                display: 'inline-block',
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#0070f3',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: '4px',
+                fontSize: '1rem',
+              }}
+            >
+              导入小说
+            </Link>
+            <button
+              onClick={handleGenerateStructure}
+              disabled={loadingKey === 'generateStructure'}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: loadingKey === 'generateStructure' ? '#ccc' : '#9c27b0',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: loadingKey === 'generateStructure' ? 'not-allowed' : 'pointer',
+                fontSize: '1rem',
+              }}
+            >
+              {loadingKey === 'generateStructure' ? '正在生成结构…' : '生成项目结构'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
+      {/* 左侧项目列表导航 */}
+      <div
+        style={{
+          width: '240px',
+          borderRight: '1px solid #e0e0e0',
+          backgroundColor: '#fafafa',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div style={{ padding: '1rem', borderBottom: '1px solid #e0e0e0', overflowY: 'auto' }}>
+          <div style={{ marginBottom: '1rem' }}>
+            <Link
+              href="/projects"
+              style={{
+                display: 'inline-block',
+                padding: '0.5rem 1rem',
+                backgroundColor: '#f0f0f0',
+                borderRadius: '4px',
+                textDecoration: 'none',
+                color: '#333',
+                marginBottom: '0.5rem',
+              }}
+            >
+              ← 返回项目列表
+            </Link>
+          </div>
+          
+          <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem', fontWeight: 600 }}>{project.name}</h2>
+          {project.description && (
+            <p style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', color: '#666' }}>
+              {project.description}
+            </p>
+          )}
+
+          {/* 分析状态面板 */}
+          <div style={{ marginBottom: '1rem' }}>
+            <AnalysisStatusPanel
+              analysisStatus={project.analysisStatus}
+              analysisUpdatedAt={project.analysisUpdatedAt}
+              onRetry={handleAnalyzeProject}
+              loading={loadingKey === 'analyzeProject'}
+            />
+          </div>
+
+          {/* 操作按钮 */}
+          <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <Link
+              href={`/projects/${projectId}/import-novel`}
+              style={{
+                display: 'block',
+                padding: '0.5rem 1rem',
+                backgroundColor: '#0070f3',
+                borderRadius: '4px',
+                textDecoration: 'none',
+                color: 'white',
+                fontSize: '0.875rem',
+                textAlign: 'center',
+              }}
+            >
+              导入小说
+            </Link>
+            <button
+              onClick={handleGenerateStructure}
+              disabled={loadingKey === 'generateStructure'}
+              style={{
+                width: '100%',
+                padding: '0.5rem 1rem',
+                backgroundColor: loadingKey === 'generateStructure' ? '#ccc' : '#9c27b0',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: loadingKey === 'generateStructure' ? 'not-allowed' : 'pointer',
+                fontSize: '0.875rem',
+              }}
+            >
+              {loadingKey === 'generateStructure' ? '正在生成结构…' : '生成项目结构'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 右侧主内容区 */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {error && (
+          <div
+            style={{
+              margin: '1rem',
+              padding: '0.75rem',
+              backgroundColor: '#fee',
+              color: '#c33',
+              borderRadius: '6px',
+              fontSize: '0.875rem',
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* 影视工业标准：三栏布局 - StudioTree / ContentList / DetailPanel */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {/* 左侧：StudioTree - Season → Episode → Scene → Shot */}
+          <div style={{ flex: '0 0 350px', borderRight: '1px solid #e0e0e0', backgroundColor: 'white', overflowY: 'auto', padding: '1rem' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: 600 }}>项目结构</h3>
+            {(project.seasons && project.seasons.length > 0) || normalizedEpisodes.length > 0 ? (
+              <StudioTree
+                seasons={project.seasons}
+                episodes={normalizedEpisodes.length > 0 && (!project.seasons || project.seasons.length === 0) ? normalizedEpisodes : undefined}
+                onSelectNode={(node) => {
+                  setSelectedNode(node);
+                  // 向后兼容：更新旧的选中状态
+                  if (node.type === 'episode') {
+                    setSelectedEpisode(node.id);
+                  } else if (node.type === 'scene') {
+                    setSelectedScene(node.id);
+                  } else if (node.type === 'shot') {
+                    setSelectedShot(node.data);
+                  }
+                }}
+                selectedNode={selectedNode}
+              />
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#999' }}>
+                <p>当前项目尚未进行小说结构分析</p>
+                <Link
+                  href={`/projects/${projectId}/import-novel`}
+                  style={{
+                    display: 'inline-block',
+                    marginTop: '1rem',
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#0070f3',
+                    color: 'white',
+                    textDecoration: 'none',
+                    borderRadius: '4px',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  立即分析
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* 中间：ContentList - 根据选中节点显示内容 */}
+          <div style={{ flex: '0 0 500px', borderRight: '1px solid #e0e0e0', backgroundColor: 'white', overflowY: 'auto' }}>
+            <ContentList
+              selectedNode={selectedNode}
+              data={contentData}
+              onSelectNode={(node) => {
+                setSelectedNode(node);
+                // 向后兼容
+                if (node.type === 'episode') {
+                  setSelectedEpisode(node.id);
+                } else if (node.type === 'scene') {
+                  setSelectedScene(node.id);
+                } else if (node.type === 'shot') {
+                  setSelectedShot(node.data);
+                }
+              }}
+            />
+          </div>
+
+          {/* 右侧：DetailPanel - 显示节点详情 */}
+          <div style={{ flex: 1, backgroundColor: 'white', overflowY: 'auto' }}>
+            <DetailPanel selectedNode={selectedNode} />
+          </div>
+        </div>
+
+        {/* 统一的错误提示 */}
+        {error && (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: '2rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              maxWidth: '600px',
+              width: '90%',
+              padding: '1rem',
+              backgroundColor: '#fee',
+              border: '1px solid #fcc',
+              borderRadius: '8px',
+              color: '#c00',
+              fontSize: '0.875rem',
+              zIndex: 1000,
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>操作失败</div>
+            <div>{error}</div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 向后兼容代码已移除，如需恢复请参考 git 历史
+  // 向后兼容：Scene/Shot 详情面板（已由 DetailPanel 替代，已禁用，不会执行）
+  // 注释掉以避免语法错误，如需启用请取消注释
+  /*
+  if (false) {
+    return (
+      <div style={{ width: '400px', borderLeft: '1px solid #e0e0e0', backgroundColor: 'white', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            {selectedScene && selectedSceneData && (
+              <div style={{ padding: '1rem', borderBottom: '1px solid #e0e0e0' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: 600 }}>
+                  Scene {selectedSceneData.index} 详情
+                </h3>
+                {selectedSceneData.title && (
+                  <div style={{ marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
+                    {selectedSceneData.title}
+                  </div>
+                )}
+                {selectedSceneData.summary && (
+                  <div style={{ marginBottom: '0.5rem', fontSize: '0.8125rem', color: '#666', lineHeight: '1.5' }}>
+                    {selectedSceneData.summary}
+                  </div>
+                )}
+                {selectedSceneData.location && (
+                  <div style={{ marginBottom: '0.5rem', fontSize: '0.8125rem', color: '#666' }}>
+                    📍 地点: {selectedSceneData.location}
+                  </div>
+                )}
+                {selectedSceneData.characters && Array.isArray(selectedSceneData.characters) && selectedSceneData.characters.length > 0 && (
+                  <div style={{ marginBottom: '0.5rem', fontSize: '0.8125rem', color: '#666' }}>
+                    👥 角色: {selectedSceneData.characters.map((c: any) => c.name || c).join(', ')}
+                  </div>
+                )}
+                
+                {/* Studio v0.8: SceneDraft 详情 */}
+                {selectedSceneData.sceneDraft && (
+                  <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f9f9f9', borderRadius: '6px', border: '1px solid #e0e0e0' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.5rem', color: '#666' }}>
+                      场景草稿 (SceneDraft)
+                    </div>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <span style={{ 
+                        display: 'inline-block',
+                        padding: '0.25rem 0.5rem', 
+                        borderRadius: '4px', 
+                        fontSize: '0.7rem',
+                        backgroundColor: selectedSceneData.sceneDraft.status === 'ANALYZED' ? '#d4edda' : selectedSceneData.sceneDraft.status === 'FINALIZED' ? '#cce5ff' : '#fff3cd',
+                        color: selectedSceneData.sceneDraft.status === 'ANALYZED' ? '#155724' : selectedSceneData.sceneDraft.status === 'FINALIZED' ? '#004085' : '#856404',
+                      }}>
+                        {selectedSceneData.sceneDraft.status === 'ANALYZED' ? '已分析' : selectedSceneData.sceneDraft.status === 'FINALIZED' ? '已确认' : '草稿'}
+                      </span>
+                    </div>
+                    {selectedSceneData.sceneDraft.title && (
+                      <div style={{ marginBottom: '0.5rem', fontSize: '0.8125rem', fontWeight: 500 }}>
+                        {selectedSceneData.sceneDraft.title}
+                      </div>
+                    )}
+                    {selectedSceneData.sceneDraft.summary && (
+                      <div style={{ marginBottom: '0.5rem', fontSize: '0.75rem', color: '#666', lineHeight: '1.4' }}>
+                        {selectedSceneData.sceneDraft.summary}
+                      </div>
+                    )}
+                    {selectedSceneData.sceneDraft.location && (
+                      <div style={{ marginBottom: '0.5rem', fontSize: '0.75rem', color: '#666' }}>
+                        📍 {selectedSceneData.sceneDraft.location}
+                      </div>
+                    )}
+                    {selectedSceneData.sceneDraft.analysisResult && (
+                      <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: 'white', borderRadius: '4px', fontSize: '0.7rem', color: '#666' }}>
+                        <div style={{ marginBottom: '0.25rem' }}>
+                          <strong>分析方法:</strong> {selectedSceneData.sceneDraft.analysisResult.method || '未知'}
+                        </div>
+                        {selectedSceneData.sceneDraft.analysisResult.timestamp && (
+                          <div>
+                            <strong>分析时间:</strong> {new Date(selectedSceneData.sceneDraft.analysisResult.timestamp).toLocaleString('zh-CN')}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            {selectedShot && (
+              <div style={{ flex: 1 }}>
+                <ShotEditor shot={selectedShot as any} onUpdate={loadProject} />
+              </div>
+            )}
+            {!selectedShot && !selectedScene && (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#999', fontSize: '0.875rem' }}>
+                请选择一个 Scene 或 Shot 查看详情
+              </div>
+            )}
+          </div>
+        );
+  }
+  */
+
+  // 默认返回 null（不应该到达这里）
+  return null;
+}
+

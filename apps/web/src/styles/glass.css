@@ -1,0 +1,35 @@
+/* =========================================
+   [P10] Glassmorphism Layers System
+   ========================================= */
+
+/* glass-0: Base Panels (Subtle Blur) — Best for secondary sidebars */
+.glass-0 {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* glass-1: Main Workspace (Medium Blur + Depth) — Best for main cards/containers */
+.glass-1 {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* glass-2: Modal/Floating (Heavy Blur + Highlight) — Best for overlays/tooltips */
+.glass-2 {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Glow Accent (Premium Highlight) */
+.glass-glow-gold {
+  border-image-source: linear-gradient(135deg, var(--gold-primary), transparent, var(--gold-weak));
+  border-image-slice: 1;
+}

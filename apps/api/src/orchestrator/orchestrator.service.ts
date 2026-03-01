@@ -1,0 +1,1380 @@
+import * as fs from 'fs';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { OnEvent } from '@nestjs/event-emitter';
+import { ApiSecurityModule } from '../security/api-security/api-security.module';
+import { ProjectModule } from '../project/project.module';
+import { NovelImportModule } from '../novel-import/novel-import.module';
+import { PublishedVideoService } from '../publish/published-video.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { TaskService } from '../task/task.service';
+import { JobService } from '../job/job.service';
+import { EngineRegistry } from '../engine/engine-registry.service';
+import { env } from '@scu/config';
+import {
+  Prisma,
+  JobStatus as JobStatusEnum,
+  JobType as JobTypeEnum,
+  TaskType as TaskTypeEnum,
+  TaskStatus as TaskStatusEnum,
+  WorkerStatus,
+} from 'database';
+import { assertTransition, transitionJobStatusAdmin } from '../job/job.rules';
+
+/**
+ * Orchestrator 服务
+ * 负责将 PENDING Job 分配给 ONLINE Worker
+ */
+@Injectable()
+export class OrchestratorService {
+  private readonly logger = new Logger(OrchestratorService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+    private readonly taskService: TaskService,
+    private readonly jobService: JobService,
+    private readonly engineRegistry: EngineRegistry,
+    private readonly publishedVideoService: PublishedVideoService
+  ) {}
+
+  /**
+   * 扫描 PENDING Job 并分配给 ONLINE Worker
+   * 注意：此方法已废弃，改为使用 Worker 主动拉取模式（dispatchNextJobForWorker）
+   * 保留此方法仅用于兼容，实际调度由 Worker 主动调用 dispatchNextJobForWorker
+   */
+  async dispatch() {
+    return this.scheduleRecovery();
+  }
+
+  /**
+   * P1-1: Automated Fault Recovery
+   * Runs every 5 seconds to cleanup dead workers and recover jobs.
+   */
+  @Cron(CronExpression.EVERY_MINUTE)
+  async scheduleRecovery() {
+    const { env: scuEnv } = await import('@scu/config');
+    // this.logger.log(`Running automated recovery task... (Grace: ${scuEnv.workerOfflineGraceMs}ms)`);
+
+    // Stage2-B: 1. 标记超时的 Worker 为 DEAD 并回收 Job
+    const offlineCount = await this.markOfflineWorkersInternal();
+    if (offlineCount > 0) {
+      this.logger.log(`Marked ${offlineCount} workers as offline (dead)`);
+    }
+
+    // Stage2-B: 2. 故障恢复：处理 DEAD Worker 的 DISPATCHED 和 RUNNING Job
+    const recoveredCount = await this.recoverJobsFromOfflineWorkers();
+    if (recoveredCount > 0) {
+      this.logger.log(`Recovered ${recoveredCount} jobs from offline workers`);
+    }
+
+    // 3. 处理到期的重试 Job（将 RETRYING 状态的 Job 放回 PENDING 队列）
+    const retryReadyCount = await this.processRetryJobs();
+    if (retryReadyCount > 0) {
+      this.logger.log(`Moved ${retryReadyCount} retry jobs back to PENDING queue`);
+    }
+
+    // 4. 统计 PENDING Job 数量（用于监控）
+    const pendingJobsCount = await this.prisma.shotJob.count({
+      where: {
+        status: JobStatusEnum.PENDING,
+      },
+    });
+
+    // 记录结构化日志：调度周期统计
+    this.logger.debug(
+      JSON.stringify({
+        event: 'DISPATCH_CYCLE',
+        pendingJobs: pendingJobsCount,
+        recoveredJobs: recoveredCount,
+        retryReadyJobs: retryReadyCount,
+        offlineWorkers: offlineCount,
+        timestamp: new Date().toISOString(),
+      })
+    );
+
+    return {
+      pending: pendingJobsCount,
+      dispatched: 0,
+      recovered: recoveredCount,
+      retryReady: retryReadyCount,
+      message: 'Job dispatch is now handled by worker pull model.',
+    };
+  }
+
+  /**
+   * 故障恢复：处理 offline Worker 的 RUNNING Job
+   */
+  private async recoverJobsFromOfflineWorkers(): Promise<number> {
+    const HEARTBEAT_TTL_SECONDS = parseInt(process.env.HEARTBEAT_TTL_SECONDS || '30', 10);
+    const timeoutThreshold = new Date(Date.now() - HEARTBEAT_TTL_SECONDS * 3 * 1000);
+
+    const deadHeartbeats = await this.prisma.workerHeartbeat.findMany({
+      where: {
+        status: 'DEAD',
+        lastSeenAt: {
+          lt: timeoutThreshold,
+        },
+      },
+    });
+
+    if (deadHeartbeats.length === 0) {
+      return 0;
+    }
+
+    const deadWorkerIds = deadHeartbeats.map((h) => h.workerId);
+
+    // 查找这些 Worker 对应的 WorkerNode
+    const offlineWorkers = await this.prisma.workerNode.findMany({
+      where: {
+        workerId: {
+          in: deadWorkerIds,
+        },
+      },
+    });
+
+    if (offlineWorkers.length === 0) {
+      return 0;
+    }
+
+    const offlineWorkerIds = offlineWorkers.map((w: any) => w.id);
+
+    // Stage2-B: 查找这些 Worker 的 DISPATCHED 和 RUNNING Job
+    const stuckJobs = await this.prisma.shotJob.findMany({
+      where: {
+        status: {
+          in: [JobStatusEnum.DISPATCHED, JobStatusEnum.RUNNING],
+        },
+        workerId: {
+          in: offlineWorkerIds,
+        },
+      },
+      include: {
+        worker: true,
+      },
+    });
+
+    if (stuckJobs.length === 0) {
+      return 0;
+    }
+
+    // 记录结构化日志：开始故障恢复
+    this.logger.warn(
+      JSON.stringify({
+        event: 'FAULT_RECOVERY_STARTED',
+        offlineWorkerCount: offlineWorkers.length,
+        stuckJobCount: stuckJobs.length,
+        timestamp: new Date().toISOString(),
+      })
+    );
+
+    let recoveredCount = 0;
+    const recoveredJobIds: string[] = [];
+
+    // Stage2-B: 对每个 stuck Job 进行恢复（统一转换为 PENDING，清空 workerId）
+    for (const job of stuckJobs) {
+      try {
+        // Stage2-B: 使用事务确保原子性，并通过 transitionJobStatusAdmin 验证状态转换
+        await this.prisma.$transaction(async (tx) => {
+          if (job.status === JobStatusEnum.DISPATCHED) {
+            // DISPATCHED -> PENDING（故障恢复场景，使用管理性状态转换）
+            transitionJobStatusAdmin(job.status, JobStatusEnum.PENDING, {
+              jobId: job.id,
+              jobType: job.type,
+              workerId: job.workerId || undefined,
+            });
+            await tx.shotJob.update({
+              where: { id: job.id },
+              data: {
+                status: JobStatusEnum.PENDING,
+                workerId: null,
+              },
+            });
+          } else if (job.status === JobStatusEnum.RUNNING) {
+            // RUNNING -> PENDING（通过重试机制）
+            await this.jobService.markJobFailedAndMaybeRetry(
+              job.id,
+              `Worker ${job.worker?.workerId || job.workerId} went dead while processing this job`
+            );
+          }
+
+          recoveredJobIds.push(job.id);
+        });
+
+        recoveredCount++;
+
+        // 记录结构化日志：故障恢复
+        this.logger.log(
+          JSON.stringify({
+            event: 'JOB_RECOVERED_FROM_OFFLINE_WORKER',
+            jobId: job.id,
+            workerId: job.worker?.workerId || job.workerId || null,
+            jobType: job.type,
+            taskId: job.taskId || null,
+            statusBefore: job.status,
+            statusAfter: job.status === JobStatusEnum.DISPATCHED ? 'PENDING' : 'PENDING/FAILED',
+            reason: 'worker_offline',
+            timestamp: new Date().toISOString(),
+          })
+        );
+      } catch (error: any) {
+        this.logger.error(`[Orchestrator] Failed to recover job ${job.id}: ${error.message}`);
+      }
+    }
+
+    // Stage2-B: 写入 audit_logs（WORKER_DEAD_RECOVERY）
+    if (recoveredCount > 0 && deadHeartbeats.length > 0) {
+      const workerId = deadWorkerIds[0] || 'unknown';
+      const lastSeenAt =
+        deadHeartbeats.find((h) => h.workerId === workerId)?.lastSeenAt || new Date();
+
+      await this.auditLogService.record({
+        action: 'WORKER_DEAD_RECOVERY',
+        resourceType: 'worker',
+        resourceId: workerId,
+        details: {
+          workerId,
+          jobIds: recoveredJobIds,
+          lastSeenAt: lastSeenAt.toISOString(),
+          ttlSeconds: HEARTBEAT_TTL_SECONDS * 3,
+        },
+      });
+    }
+
+    return recoveredCount;
+  }
+
+  /**
+   * 处理到期的重试 Job（原子化释放）
+   * 将 RETRYING 状态且 nextRetryAt 已到期的 Job 放回 PENDING 队列
+   *
+   * 规则：使用 updateMany 一次性原子释放，避免逐条查询再更新的竞态窗口
+   */
+  private async processRetryJobs(): Promise<number> {
+    const now = new Date();
+
+    // 使用原生查询查找符合条件的 Job（需要检查 payload.nextRetryAt）
+    // 由于 Prisma 不支持直接查询 JSON 字段，我们先查询所有 RETRYING Job，然后在内存中过滤
+    // 但为了原子性，我们使用 updateMany 条件更新
+    const retryJobs = await this.prisma.shotJob.findMany({
+      where: {
+        status: JobStatusEnum.RETRYING,
+        workerId: null, // 只处理未分配的 Job
+      },
+      select: {
+        id: true,
+        payload: true,
+        retryCount: true,
+        maxRetry: true,
+        type: true,
+      },
+    });
+
+    if (retryJobs.length === 0) {
+      return 0;
+    }
+
+    // 在内存中过滤：找到 nextRetryAt <= now 的 Job
+    const readyToRetry = retryJobs.filter((job) => {
+      const payload = (job.payload as Record<string, any>) || {};
+      const nextRetryAt = payload.nextRetryAt ? new Date(payload.nextRetryAt) : null;
+      return !nextRetryAt || nextRetryAt <= now;
+    });
+
+    if (readyToRetry.length === 0) {
+      return 0;
+    }
+
+    // P0 修复：在更新前验证所有状态转换（规则型正确）
+    for (const job of readyToRetry) {
+      assertTransition(JobStatusEnum.RETRYING, JobStatusEnum.PENDING, {
+        jobId: job.id,
+        jobType: job.type,
+        errorCode: 'RETRY_JOB_RELEASED',
+      });
+    }
+
+    // 原子性批量更新：使用 updateMany 一次性把符合条件的 Job 从 RETRYING 转为 PENDING
+    const jobIds = readyToRetry.map((j) => j.id);
+    const updated = await this.prisma.shotJob.updateMany({
+      where: {
+        id: { in: jobIds },
+        status: JobStatusEnum.RETRYING,
+        workerId: null, // 关键：只有未分配才能更新（防止竞态）
+      },
+      data: {
+        status: JobStatusEnum.PENDING,
+        workerId: null, // 清除 Worker 分配，允许重新分配
+      },
+    });
+
+    // 记录结构化日志和审计日志：重试 Job 从 RETRYING 回到 PENDING
+    for (const job of readyToRetry) {
+      const payload = (job.payload as Record<string, any>) || {};
+      this.logger.debug(
+        JSON.stringify({
+          event: 'RETRY_JOB_MOVED_TO_PENDING',
+          jobId: job.id,
+          jobType: job.type,
+          statusBefore: 'RETRYING',
+          statusAfter: 'PENDING',
+          retryCount: job.retryCount,
+          maxRetry: job.maxRetry,
+          nextRetryAt: payload.nextRetryAt || null,
+          timestamp: new Date().toISOString(),
+        })
+      );
+
+      // P2 修复：记录审计日志
+      await this.auditLogService.record({
+        action: 'JOB_RETRY_RELEASED',
+        resourceType: 'job',
+        resourceId: job.id,
+        details: {
+          statusBefore: 'RETRYING',
+          statusAfter: 'PENDING',
+          retryCount: job.retryCount,
+          maxRetry: job.maxRetry,
+          nextRetryAt: payload.nextRetryAt || null,
+        },
+      });
+    }
+
+    return updated.count;
+  }
+
+  /**
+   * 获取调度器统计信息（可观测性增强）
+   * 参考《平台日志监控与可观测性体系说明书_ObservabilityMonitoringSpec_V1.0》和《调度系统设计书_V1.0》中关于监控与指标的章节
+   *
+   * 提供只读的调度状态快照，不执行任何调度动作
+   */
+  async getStats() {
+    // 1. Job 状态统计
+    const [pendingJobs, runningJobs, retryingJobs, failedJobs, succeededJobs] = await Promise.all([
+      this.prisma.shotJob.count({ where: { status: JobStatusEnum.PENDING } }),
+      this.prisma.shotJob.count({ where: { status: JobStatusEnum.RUNNING } }),
+      this.prisma.shotJob.count({ where: { status: JobStatusEnum.RETRYING } }),
+      this.prisma.shotJob.count({ where: { status: JobStatusEnum.FAILED } }),
+      this.prisma.shotJob.count({ where: { status: JobStatusEnum.SUCCEEDED } }),
+    ]);
+
+    // 2. Worker 状态统计
+    const onlineWorkers = await this.prisma.workerNode.findMany({
+      where: {
+        status: { in: ['online', 'idle', 'busy'] },
+      },
+    });
+    const allWorkers = await this.prisma.workerNode.findMany({});
+
+    const workerStats = {
+      total: allWorkers.length,
+      online: 0,
+      offline: 0,
+      idle: 0,
+      busy: 0,
+    };
+
+    for (const worker of allWorkers) {
+      if (worker.status === 'offline') {
+        workerStats.offline++;
+      } else if (worker.status === 'idle') {
+        workerStats.idle++;
+        workerStats.online++;
+      } else if (worker.status === 'busy') {
+        workerStats.busy++;
+        workerStats.online++;
+      } else if (worker.status === 'online') {
+        workerStats.online++;
+      }
+    }
+
+    // 3. 重试统计（最近 24 小时内的重试次数，按 JobType 分组）
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentRetryJobs = await this.prisma.shotJob.findMany({
+      where: {
+        status: JobStatusEnum.RETRYING,
+        updatedAt: {
+          gte: oneDayAgo,
+        },
+      },
+      select: {
+        type: true,
+        retryCount: true,
+      },
+    });
+
+    const retryStatsByType: Record<string, { count: number; totalRetryCount: number }> = {};
+    for (const job of recentRetryJobs) {
+      const type = job.type;
+      if (!retryStatsByType[type]) {
+        retryStatsByType[type] = { count: 0, totalRetryCount: 0 };
+      }
+      retryStatsByType[type].count++;
+      retryStatsByType[type].totalRetryCount += job.retryCount;
+    }
+
+    // 4. 队列等待时间统计（PENDING Job 的平均等待时间）
+    const pendingJobsWithTime = await this.prisma.shotJob.findMany({
+      where: { status: JobStatusEnum.PENDING },
+      select: {
+        createdAt: true,
+      },
+      take: 100, // 采样最近 100 个
+    });
+
+    const now = new Date();
+    const waitTimes = pendingJobsWithTime.map(
+      (job: any) => now.getTime() - job.createdAt.getTime()
+    );
+    const avgWaitTimeMs =
+      waitTimes.length > 0
+        ? waitTimes.reduce((sum: number, time: number) => sum + time, 0) / waitTimes.length
+        : 0;
+
+    // 5. 故障恢复统计（最近 1 小时内的恢复操作）
+    // 使用聚合查询获取最近恢复的 Job 数量（通过 lastError 包含 "offline" 的 Job）
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentRecoveredJobs = await this.prisma.shotJob.count({
+      where: {
+        status: {
+          in: [JobStatusEnum.RETRYING, JobStatusEnum.PENDING],
+        },
+        lastError: {
+          contains: 'offline',
+        },
+        updatedAt: {
+          gte: oneHourAgo,
+        },
+      },
+    });
+
+    // S3-C.1: 按 engineKey 分组的 Job 状态统计
+    const allJobsForEngineStats = await this.prisma.shotJob.findMany({
+      where: {
+        status: {
+          in: [JobStatusEnum.PENDING, JobStatusEnum.RUNNING, JobStatusEnum.FAILED],
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        type: true,
+        payload: true,
+      },
+    });
+
+    const enginesStats: Record<string, { pending: number; running: number; failed: number }> = {};
+    for (const job of allJobsForEngineStats) {
+      // S3-C.3: 使用 JobService 的统一方法提取引擎信息
+      const engineKey = this.jobService.extractEngineKeyFromJob(job);
+      if (!enginesStats[engineKey]) {
+        enginesStats[engineKey] = { pending: 0, running: 0, failed: 0 };
+      }
+      if (job.status === JobStatusEnum.PENDING) {
+        enginesStats[engineKey].pending++;
+      } else if (job.status === JobStatusEnum.RUNNING) {
+        enginesStats[engineKey].running++;
+      } else if (job.status === JobStatusEnum.FAILED) {
+        enginesStats[engineKey].failed++;
+      }
+    }
+
+    return {
+      timestamp: new Date().toISOString(),
+      jobs: {
+        pending: pendingJobs,
+        running: runningJobs,
+        retrying: retryingJobs,
+        failed: failedJobs,
+        succeeded: succeededJobs,
+        total: pendingJobs + runningJobs + retryingJobs + failedJobs + succeededJobs,
+      },
+      workers: workerStats,
+      retries: {
+        recent24h: {
+          total: recentRetryJobs.length,
+          byType: retryStatsByType,
+        },
+      },
+      queue: {
+        avgWaitTimeMs: Math.round(avgWaitTimeMs),
+        avgWaitTimeSeconds: Math.round(avgWaitTimeMs / 1000),
+      },
+      recovery: {
+        recent1h: {
+          recoveredJobs: recentRecoveredJobs,
+        },
+      },
+      // S3-C.1: 新增按 engineKey 分组的统计
+      engines: enginesStats,
+    };
+  }
+
+  /**
+   * Stage 3: Event-Driven DAG Trigger
+   * Triggered by 'job.succeeded' event from JobService.
+   */
+  @OnEvent('job.succeeded')
+  async handleJobSucceededEvent(job: any) {
+    this.logger.log(`[Orchestrator] Received job.succeeded event for job ${job.id}`);
+    // Extract result from payload or metadata if needed,
+    // but the actual DAG logic in handleJobCompletion will fetch the latest job state.
+    await this.handleJobCompletion(job.id, job.result || {});
+  }
+
+  /**
+   * Stage 3: Event-Driven DAG Trigger
+   * Called by JobService when a job completes (SUCCEEDED).
+   * Determines if subsequent jobs should be spawned.
+   */
+  async handleJobCompletion(jobId: string, result: any) {
+    // const fs = require('fs');
+    const debugLog = (msg: string) =>
+      fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
+
+    debugLog(`handleJobCompletion called for ${jobId}`);
+    const job = await this.prisma.shotJob.findUnique({
+      where: { id: jobId },
+      include: {
+        worker: true,
+      },
+    });
+
+    if (!job) return;
+
+    // DAG Logic for Stage 1: SHOT_RENDER -> VIDEO_RENDER
+    if (job.type === JobTypeEnum.SHOT_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
+      this.logger.log(
+        `[DAG] SHOT_RENDER ${jobId} completed. Checking Stage 1 pipeline progress...`
+      );
+
+      // PLAN-2: Dual Track - Lazy Spawn Audio
+      await this.checkAndSpawnAudioGen(job);
+
+      await this.checkAndSpawnStage1VideoRender(job);
+    }
+
+    // PLAN-2: DAG Logic: AUDIO -> VIDEO_RENDER (Merge check from Audio side)
+    if (job.type === JobTypeEnum.AUDIO && job.status === JobStatusEnum.SUCCEEDED) {
+      this.logger.log(`[DAG] AUDIO ${jobId} completed. Checking Stage 1 pipeline progress...`);
+      await this.checkAndSpawnStage1VideoRender(job);
+    }
+
+    // DAG Logic: VIDEO_RENDER -> CE09 (Media Security)
+    if (job.type === JobTypeEnum.VIDEO_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
+      this.logger.log(`[DAG] VIDEO_RENDER ${jobId} completed. Checking CE09 trigger...`);
+      await this.checkAndSpawnCE09(job);
+    }
+
+    // PHASE-4 Hard Upgrade: PIPELINE_PROD_VIDEO_V1 Non-blocking Chain (CE06 -> CE03 -> CE04)
+    if (job.status === JobStatusEnum.SUCCEEDED) {
+      const payload = (job.payload as any) || {};
+      const rootJobId = payload.rootJobId;
+      if (rootJobId) {
+        await this.handleV1PipelineChain(job, rootJobId);
+      }
+    }
+  }
+
+  /**
+   * Stage 4: Handle V1 Pipeline Chain logic on API side
+   */
+  private async handleV1PipelineChain(completedChildJob: any, rootJobId: string) {
+    const rootJob = await this.prisma.shotJob.findUnique({ where: { id: rootJobId } });
+    if (!rootJob || rootJob.type !== JobTypeEnum.PIPELINE_PROD_VIDEO_V1) return;
+
+    const payload = (completedChildJob.payload as any) || {};
+    const pipelineRunId = payload.pipelineRunId;
+
+    if (completedChildJob.type === JobTypeEnum.CE06_NOVEL_PARSING) {
+      const chapterId = payload.chapterId || payload.payload?.chapterId;
+      let scenes = [];
+      if (chapterId) {
+        scenes = await this.prisma.scene.findMany({ where: { chapterId } });
+        this.logger.log(
+          `[V1-ORCH] CE06 done for Chapter=${chapterId}. Found ${scenes.length} scenes.`
+        );
+      } else {
+        this.logger.warn(
+          `[V1-ORCH] CE06 done but no chapterId in payload ${completedChildJob.id}. Falling back to Project=${rootJob.projectId}`
+        );
+        scenes = await this.prisma.scene.findMany({ where: { projectId: rootJob.projectId } });
+        this.logger.log(
+          `[V1-ORCH] Found ${scenes.length} scenes for Project=${rootJob.projectId}.`
+        );
+      }
+
+      for (const scene of scenes) {
+        // V1-ORCH: Because CE03/CE04 are now internal to CE06 in V1,
+        // we directly spawn SHOT_RENDER for all shots in this chapter.
+        const shots = await this.prisma.shot.findMany({ where: { sceneId: scene.id } });
+        this.logger.log(
+          `[V1-ORCH] CE06 chunk parse done. Spawning ${shots.length} SHOT_RENDER for scene ${scene.id}...`
+        );
+
+        for (const shot of shots) {
+          await this.jobService.create(
+            shot.id,
+            {
+              type: JobTypeEnum.SHOT_RENDER,
+              payload: {
+                projectId: rootJob.projectId,
+                sceneId: scene.id,
+                rootJobId: rootJob.id,
+                pipelineRunId,
+                engineKey: 'real_shot_render',
+                referenceSheetId: (rootJob.payload as any)?.referenceSheetId,
+              },
+              traceId: rootJob.traceId || undefined,
+            } as any,
+            'system-orch',
+            rootJob.organizationId || 'org_dev_0000000000000000'
+          );
+        }
+      }
+    } else if (completedChildJob.type === JobTypeEnum.CE03_VISUAL_DENSITY) {
+      this.logger.log(`[V1-ORCH] CE03 done for Root=${rootJobId}. Spawning CE04...`);
+      await this.jobService.createCECoreJob({
+        projectId: rootJob.projectId,
+        organizationId: rootJob.organizationId,
+        taskId: rootJob.taskId || undefined,
+        jobType: JobTypeEnum.CE04_VISUAL_ENRICHMENT as any,
+        traceId: rootJob.traceId || undefined,
+        payload: {
+          projectId: rootJob.projectId,
+          sceneId: completedChildJob.sceneId,
+          rootJobId: rootJob.id,
+          pipelineRunId,
+        },
+      });
+    } else if (completedChildJob.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
+      const sceneId = payload.sceneId;
+      if (!sceneId) {
+        this.logger.error(`[V1-ORCH] CE04 done but no sceneId in payload ${completedChildJob.id}`);
+        return;
+      }
+      const shots = await this.prisma.shot.findMany({ where: { sceneId } });
+
+      this.logger.log(
+        `[V1-ORCH] CE04 done for Root=${rootJobId}. Spawning SHOT_RENDER for ${shots.length} shots...`
+      );
+
+      for (const shot of shots) {
+        await this.jobService.create(
+          shot.id,
+          {
+            type: JobTypeEnum.SHOT_RENDER,
+            payload: {
+              projectId: rootJob.projectId,
+              sceneId,
+              rootJobId: rootJob.id,
+              pipelineRunId,
+              engineKey: 'real_shot_render',
+              referenceSheetId: (rootJob.payload as any)?.referenceSheetId,
+            },
+            traceId: rootJob.traceId || undefined,
+          } as any,
+          'system-orch',
+          rootJob.organizationId
+        );
+      }
+    } else if (completedChildJob.type === JobTypeEnum.CE09_MEDIA_SECURITY) {
+      this.logger.log(`[V1-ORCH] CE09 done for Root=${rootJobId}. Chain Complete.`);
+      await this.prisma.shotJob.update({
+        where: { id: rootJobId },
+        data: { status: JobStatusEnum.SUCCEEDED },
+      });
+    }
+  }
+
+  /**
+   * PLAN-2: Lazy Spawn Audio Job (Idempotent)
+   * Triggered when a SHOT_RENDER completes.
+   */
+  private async checkAndSpawnAudioGen(contextJob: any) {
+    const audioEnabled = (env as any).orchV2AudioEnabled;
+    const payload = contextJob.payload as any;
+    const pipelineRunId = payload?.pipelineRunId;
+
+    this.logger.log(
+      `[DAG] checkAndSpawnAudioGen called. audioEnabled=${audioEnabled} pipelineRunId=${pipelineRunId}`
+    );
+    if (!audioEnabled || !pipelineRunId) return;
+
+    if (!pipelineRunId) {
+      this.logger.warn(
+        `[DAG] Job ${contextJob.id} matches AUDIO trigger but missing pipelineRunId. Skipping.`
+      );
+      return;
+    }
+
+    try {
+      // Idempotency: Check if AUDIO job already exists for this run
+      const existingAudio = await this.prisma.shotJob.findFirst({
+        where: {
+          type: JobTypeEnum.AUDIO,
+          payload: {
+            path: ['pipelineRunId'],
+            equals: pipelineRunId,
+          },
+        },
+      });
+
+      if (existingAudio) {
+        this.logger.log(`[DAG] AUDIO job already exists for pipeline ${pipelineRunId}. Skipping.`);
+        return;
+      }
+
+      this.logger.log(`[DAG] Spawning AUDIO job for pipeline ${pipelineRunId} (Lazy Trigger)`);
+
+      // P18-6 Reuse: Spawn "gate-audio-p18-6-final.sh" equivalent job
+      // For V1 Slice: We use a standard "Full Text" trigger
+      await this.jobService.create(
+        contextJob.shotId,
+        {
+          type: JobTypeEnum.AUDIO,
+          payload: {
+            pipelineRunId,
+            text: 'AUTO_GENERATED_FROM_NOVEL_SOURCE_V1',
+            mode: 'full_mix',
+            projectId: contextJob.projectId,
+            episodeId: contextJob.episodeId,
+            sceneId: contextJob.sceneId,
+            shotId: contextJob.shotId,
+          },
+        } as any,
+        'gate-user', // Use a user that exists in Gate
+        contextJob.organizationId
+      );
+    } catch (e: any) {
+      this.logger.error(`[DAG] Error in checkAndSpawnAudioGen: ${e.message}`, e.stack);
+    }
+  }
+
+  /**
+   * Stage 3: Check if all shots in a pipeline run are complete, then spawn VIDEO_RENDER.
+   */
+  private async checkAndSpawnStage1VideoRender(completedJob: any) {
+    // const fs = require('fs');
+    const debugLog = (msg: string) =>
+      fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
+
+    const payload = completedJob.payload as any;
+    const pipelineRunId = payload?.pipelineRunId;
+
+    debugLog(`checkAndSpawnStage1VideoRender: Job=${completedJob.id} Pipeline=${pipelineRunId}`);
+
+    if (!pipelineRunId) {
+      this.logger.debug(`[DAG] Job ${completedJob.id} has no pipelineRunId. Skipping DAG check.`);
+      return;
+    }
+
+    // 1. Count Total vs Completed matching pipelineRunId
+    // Note: This relies on all SHOT_RENDER jobs having the same pipelineRunId in payload
+    // We filter by type='SHOT_RENDER' and payload path
+    const allShots = await this.prisma.shotJob.findMany({
+      where: {
+        type: JobTypeEnum.SHOT_RENDER,
+        payload: {
+          path: ['pipelineRunId'],
+          equals: pipelineRunId,
+        },
+      },
+      include: { shot: true },
+    });
+
+    const total = allShots.length;
+    const succeeded = allShots.filter((j) => j.status === JobStatusEnum.SUCCEEDED).length;
+
+    // Check for failures (Fail Fast?) -> For now just wait for all to be non-pending
+    const pending = allShots.filter(
+      (j) => j.status !== JobStatusEnum.SUCCEEDED && j.status !== JobStatusEnum.FAILED
+    ).length;
+
+    this.logger.log(
+      `[DAG] Pipeline ${pipelineRunId} progress: ${succeeded}/${total} (Pending: ${pending})`
+    );
+
+    // PLAN-2: Audio Barrier Check
+    let audioReady = false;
+    let audioTrack: any = null;
+    const audioEnabled = true;
+
+    if (audioEnabled) {
+      const audioJob = await this.prisma.shotJob.findFirst(
+        /* L3_BYPASS */ {
+          where: {
+            type: JobTypeEnum.AUDIO,
+            payload: {
+              path: ['pipelineRunId'],
+              equals: pipelineRunId,
+            },
+          },
+        }
+      );
+
+      if (audioJob && audioJob.status === JobStatusEnum.SUCCEEDED) {
+        audioReady = true;
+        // Extract Audio Asset from Job Output
+        // Assuming P18-6 AudioService returns { mixed: { absPath, sha256 }, ... }
+        const result = audioJob.payload as any; // Wait, result is usually in 'output'?
+        // ShotJob schema has 'payload' but output via 'generatedAsset' or separate JSON?
+        // Looking at schema: model Task has 'output'. model ShotJob does NOT have 'output' field!
+        // Wait, standard practice in this repo?
+        // Ah, usually result is written to assets table OR passed via 'payload' update?
+        // Actually, in `test_p18_6_final.ts`, it just returns logic.
+        // But Worker usually updates job... where?
+        // Schema has `generatedAsset` relation.
+        // We should fetch Assets.
+        // OR checks Orchestrator `aggregateAndSpawn` below uses `job.result?.output`.
+        // BUT schema `ShotJob` DOES NOT HAVE `result` or `output` field!
+        // Wait, code says `const storageKey = (job.result as any)?.output?.storageKey;`.
+        // Is `ShotJob` augmented in code? Or uses `payload`?
+        // The schema `ShotJob` has `payload`. Workers typically write result to `payload.output`?
+        // Let's assume `payload.output`.
+        const output =
+          (audioJob.result as any)?.output ||
+          (audioJob.payload as any)?.result?.output ||
+          (audioJob.payload as any)?.output;
+        if (output) audioTrack = output;
+      } else if (!audioJob) {
+        // If Audio enabled but no job exists yet (maybe Video finished before lazy spawn?)
+        // Lazy spawn should have happened on first SHOT completion.
+        // If we are here, at least one SHOT is complete.
+        // So Audio Job *should* trigger soon.
+        // We treat it as Not Ready.
+      }
+    } else {
+      // Bypass if disabled
+      audioReady = true;
+    }
+
+    if (total > 0 && succeeded === total) {
+      // Video Ready. Now Check Audio Barrier.
+      if (audioEnabled && !audioReady) {
+        this.logger.log(`[DAG] Video Ready for ${pipelineRunId}, waiting for Audio...`);
+        return;
+      }
+
+      // 2. All Good! Aggregation Time.
+      // Use allShots[0] as context because it has 'shot' relation loaded (unlike completedJob potentially)
+      await this.aggregateAndSpawnVideoRender(allShots, pipelineRunId, allShots[0], audioTrack);
+    }
+  }
+
+  private async aggregateAndSpawnVideoRender(
+    shots: any[],
+    pipelineRunId: string,
+    contextJob: any,
+    audioTrack: any = null
+  ) {
+    // 2.1 Idempotency Check: Did we already spawn a VIDEO_RENDER for this run?
+    const existingVideoJob = await this.prisma.shotJob.findFirst({
+      where: {
+        type: JobTypeEnum.VIDEO_RENDER,
+        payload: {
+          path: ['pipelineRunId'],
+          equals: pipelineRunId,
+        },
+      },
+    });
+
+    if (existingVideoJob) {
+      this.logger.log(
+        `[DAG] VIDEO_RENDER for ${pipelineRunId} already exists (${existingVideoJob.id}). Skipping.`
+      );
+      return;
+    }
+
+    // 2.2 Collect Frames
+    const frames: string[] = [];
+    // Sort shots by createdAt to be deterministic-ish
+    shots.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+    for (const job of shots) {
+      // Assuming result stored in payload.output based on usage
+      const output =
+        (job.result as any)?.output ||
+        (job.payload as any)?.result?.output ||
+        (job.payload as any)?.output;
+      const storageKey = output?.storageKey;
+      if (storageKey) {
+        frames.push(storageKey);
+      } else {
+        this.logger.warn(
+          `[DAG] Job ${job.id} SUCCEEDED but missing storageKey in result/payload. result=${JSON.stringify(job.result)}`
+        );
+      }
+    }
+
+    if (frames.length === 0) {
+      this.logger.warn(`[DAG] No frames collected for ${pipelineRunId}. Skipping VIDEO_RENDER.`);
+      return;
+    }
+
+    // 2.3 继承验证标记（关键：防止下游作业计费污染）
+    const isVerification = !!contextJob.isVerification;
+    const dedupeKey = isVerification ? `gate_video:${pipelineRunId}` : undefined;
+
+    if (isVerification) {
+      this.logger.log(
+        `[DAG] VIDEO_RENDER will inherit isVerification=true from parent job ${contextJob.id}`
+      );
+    }
+
+    // 2.4 Spawn VIDEO_RENDER
+    this.logger.log(
+      `[DAG] Spawning VIDEO_RENDER for ${pipelineRunId} with ${frames.length} frames (isVerification=${isVerification}).`
+    );
+
+    try {
+      const videoJob = await this.jobService.create(
+        contextJob.shotId, // Owner context
+        {
+          type: JobTypeEnum.VIDEO_RENDER,
+          traceId: contextJob.traceId,
+          isVerification,
+          dedupeKey,
+          payload: {
+            pipelineRunId,
+            projectId: contextJob.projectId,
+            episodeId: contextJob.shot?.episodeId || contextJob.episodeId,
+            sceneId: contextJob.shot?.sceneId,
+            frames,
+            audioTrack: audioTrack || undefined, // PLAN-3: Audio Injection
+            publish: true, // Worker handles publishing (with dedupe_key idempotency)
+            traceId: contextJob.traceId,
+            isVerification, // 也在 payload 中携带，便于 Worker 识别
+            rootJobId: (contextJob.payload as any)?.rootJobId, // Propagate for V1 chain
+          },
+        } as any,
+        'system-dag', // triggered by system
+        contextJob.organizationId
+      );
+
+      this.logger.log(
+        `[DAG] VIDEO_RENDER created: jobId=${videoJob.id}, isVerification=${isVerification}`
+      );
+    } catch (e: any) {
+      this.logger.error(`[DAG] Failed to spawn VIDEO_RENDER: ${e.message}`);
+    }
+  }
+
+  /**
+   * Stage 3-Final: Trigger CE09 after VIDEO_RENDER
+   */
+  private async checkAndSpawnCE09(videoJob: any) {
+    const payload = videoJob.payload as any;
+    const pipelineRunId = payload?.pipelineRunId;
+
+    if (!pipelineRunId) {
+      this.logger.warn(
+        `[DAG] VIDEO_RENDER ${videoJob.id} missing pipelineRunId. Cannot spawn CE09.`
+      );
+      return;
+    }
+
+    // 1. Idempotency Check
+    const existing = await this.prisma.shotJob.findFirst({
+      where: {
+        type: JobTypeEnum.CE09_MEDIA_SECURITY,
+        payload: { path: ['pipelineRunId'], equals: pipelineRunId },
+      },
+    });
+    if (existing) {
+      this.logger.log(`[DAG] CE09 for ${pipelineRunId} already exists (${existing.id}). Skipping.`);
+      return;
+    }
+
+    // 2. Resolve Asset ID from Result
+    const start = Date.now();
+    // Wait for result to be persisted if needed? No, handleJobCompletion fetched job, but did it fetch result?
+    // job.result is JSON.
+    const result = videoJob.result as any;
+    const assetId = result?.assetId || result?.output?.assetId;
+    const storageKey = result?.storageKey || result?.output?.storageKey;
+
+    if (!assetId || !storageKey) {
+      this.logger.error(
+        `[DAG] VIDEO_RENDER succeeded but missing assetId/storageKey in result. Cannot spawn CE09. Result: ${JSON.stringify(result)}`
+      );
+      return;
+    }
+
+    this.logger.log(`[DAG] Spawning CE09 for ${pipelineRunId} from VIDEO_RENDER asset ${assetId}`);
+
+    try {
+      await this.jobService.create(
+        videoJob.shotId || videoJob.id,
+        {
+          type: JobTypeEnum.CE09_MEDIA_SECURITY,
+          traceId: videoJob.traceId,
+          payload: {
+            pipelineRunId,
+            projectId: payload.projectId,
+            episodeId: payload.episodeId,
+            shotId: videoJob.shotId,
+            assetId,
+            videoAssetStorageKey: storageKey,
+            traceId: videoJob.traceId,
+            engineKey: 'ce09_security_real',
+            rootJobId: (payload as any)?.rootJobId, // Propagate for V1 chain
+          },
+        } as any,
+        'system-dag', // triggered by system
+        videoJob.organizationId
+      );
+      this.logger.log(`[DAG] CE09 spawned successfully for ${pipelineRunId}`);
+    } catch (e: any) {
+      this.logger.error(`[DAG] Failed to spawn CE09: ${e.message}`);
+    }
+  }
+
+  /**
+   * 创建 CE Core Layer 的固定 DAG Job 链
+   * Upload Novel → CE06 → CE03 → CE04
+   *
+   * Stage13: 固定执行顺序，禁止并行、禁止跳过
+   * Stage13-Final: 生成 Pipeline 级 traceId
+   */
+  async createCECoreDAG(
+    projectId: string,
+    organizationId: string,
+    novelSourceId: string
+  ): Promise<{
+    taskId: string;
+    jobIds: string[];
+  }> {
+    this.logger.log(
+      `Creating CE Core DAG for project ${projectId}, novelSourceId ${novelSourceId}`
+    );
+
+    // Stage13-Final: 生成 Pipeline 级 traceId
+    const { randomUUID } = await import('crypto');
+    const traceId = `ce_pipeline_${randomUUID()}`;
+
+    // 1. 创建主 Task（包含 traceId）
+    const task = await this.taskService.create({
+      organizationId,
+      projectId,
+      type: TaskTypeEnum.CE_CORE_PIPELINE,
+      status: TaskStatusEnum.PENDING,
+      payload: {
+        novelSourceId,
+        pipeline: ['CE06_NOVEL_PARSING', 'CE03_VISUAL_DENSITY', 'CE04_VISUAL_ENRICHMENT'],
+      },
+      traceId, // Stage13-Final: Pipeline 级 traceId
+    });
+
+    // 2. 创建 CE06 Job（第一个）
+    const ce06Job = await this.jobService.createCECoreJob({
+      projectId,
+      organizationId,
+      taskId: task.id,
+      jobType: JobTypeEnum.CE06_NOVEL_PARSING,
+      payload: {
+        projectId,
+        novelSourceId,
+        engineKey: 'ce06_novel_parsing',
+      },
+    });
+
+    // 3. CE03 和 CE04 Job 将在前一个 Job 完成时由 Worker 回调触发
+    // 这里只创建 CE06，后续 Job 通过 JobService 的完成回调创建
+
+    this.logger.log(`CE Core DAG created: taskId=${task.id}, ce06JobId=${ce06Job.id}`);
+
+    return {
+      taskId: task.id,
+      jobIds: [ce06Job.id],
+    };
+  }
+
+  /**
+   * Stage 1: Novel -> Production Video 一键流水线启动
+   * 1. 自动创建 Project/Season/Episode
+   * 2. 保存小说文本到 Novel/NovelChapter
+   * 3. 投递 PIPELINE_STAGE1_NOVEL_TO_VIDEO Job
+   */
+  async startStage1Pipeline(params: {
+    novelText: string;
+    projectId?: string;
+    referenceSheetId?: string;
+  }) {
+    try {
+      const { novelText, projectId: existingProjectId, referenceSheetId: existingRefId } = params;
+      const { randomUUID } = await import('crypto');
+      const traceId = `stage1_${randomUUID()}`;
+
+      console.log('[DEBUG_A1] Service Step 1: Resolving Project...');
+      // 1. Resolve Project (Create if missing)
+      let projectId = existingProjectId;
+      const defaultOrg = await this.prisma.organization.findFirst();
+      let organizationId = defaultOrg?.id || 'default-org';
+
+      const defaultUser = await this.prisma.user.findFirst();
+      const ownerId = defaultUser?.id || 'system';
+
+      if (!projectId) {
+        const project = await this.prisma.project.create({
+          data: {
+            name: `Stage1_${new Date().toISOString().slice(0, 10)}`,
+            organizationId,
+            status: 'in_progress',
+            ownerId,
+          } as any,
+        });
+        projectId = project.id;
+      } else {
+        const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+        if (!project) throw new Error(`Project ${projectId} not found`);
+        organizationId = project.organizationId;
+      }
+      console.log(`[DEBUG_A1] Project resolved: ${projectId}`);
+
+      // 2. Create Novel Source & Volume & Chapter
+      console.log('[DEBUG_A1] Service Step 2: Creating Novel, Volume, Chapter...');
+      const novelSource = await this.prisma.novel.create({
+        data: {
+          title: `Stage1_${new Date().toISOString().slice(0, 10)}`,
+          projectId,
+          author: 'System',
+        } as any,
+      });
+
+      const volume = await this.prisma.novelVolume.create({
+        data: {
+          projectId,
+          novelSourceId: novelSource.id,
+          index: 1,
+          title: 'Volume 1',
+        },
+      });
+
+      const chapter = await this.prisma.novelChapter.create({
+        data: {
+          novelSourceId: novelSource.id,
+          volumeId: volume.id,
+          index: 1,
+          title: 'Chapter 1',
+        } as any,
+      });
+
+      // Save actual text to Scene (Minimal context)
+      await this.prisma.scene.create({
+        data: {
+          chapterId: chapter.id,
+          sceneIndex: 1, // V3.0 compliance
+          enrichedText: novelText,
+        },
+      });
+      console.log('[DEBUG_A1] Novel structure created');
+
+      // 3. Create Episode for orchestration
+      // [Audit] Removed Season layer per V1.1 Production Spec
+      // Schema has been updated to allow seasonId to be null
+      const episode = await this.prisma.episode.create({
+        data: {
+          projectId,
+          seasonId: null,
+          index: 1,
+          name: 'Chapter 1',
+          chapterId: chapter.id,
+        } as any,
+      });
+
+      // 3.5 Create placeholder Scene & Shot for Pipeline Job
+      const scene = await this.prisma.scene.create({
+        data: {
+          episodeId: episode.id,
+          projectId,
+          sceneIndex: 9999, // V3.0 compliance
+          title: 'Stage 1 Pipeline Scene',
+          summary: 'Auto-generated for pipeline orchestration',
+        },
+      });
+
+      const shot = await this.prisma.shot.create({
+        data: {
+          sceneId: scene.id,
+          index: 9999,
+          title: 'Stage 1 Pipeline Shot',
+          description: 'Auto-generated for pipeline orchestration',
+          type: 'pipeline_stage1',
+          params: {},
+          organizationId,
+        } as any,
+      });
+      console.log(`[DEBUG_A1] Episode/Shot created: shotId=${shot.id}`);
+
+      // 4. Dispatch the Pipeline Job
+      console.log('[DEBUG_A1] Service Step 4: Dispatching Job via jobService.create...');
+      const job = await this.jobService.create(
+        shot.id,
+        {
+          type: JobTypeEnum.SHOT_RENDER,
+          traceId,
+          isVerification: true, // A1验证模式
+          payload: {
+            novelText,
+            novelSourceId: novelSource.id,
+            chapterId: chapter.id,
+            episodeId: episode.id,
+            pipelineRunId: traceId,
+            projectId,
+            organizationId,
+            referenceSheetId: existingRefId || 'gate-mock-ref-id',
+          },
+        } as any,
+        ownerId,
+        organizationId
+      );
+      console.log(`[DEBUG_A1] Job created: ${job.id}`);
+
+      this.logger.log(
+        `Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`
+      );
+
+      return {
+        success: true,
+        pipelineRunId: traceId,
+        jobId: job.id,
+        projectId,
+        episodeId: episode.id,
+      };
+    } catch (e: any) {
+      this.logger.error({
+        tag: 'ORCHESTRATOR_PIPELINE_ERROR',
+        error: e.message,
+        stack: e.stack,
+        params: { novelTextLen: params.novelText?.length, projectId: params.projectId },
+      });
+      throw e;
+    }
+  }
+
+  /**
+   * Stage2-B: 基于 WorkerHeartbeat 的超时检测
+   * 标记超时的 Worker 为 OFFLINE（Dead）
+   * 参考《调度系统设计书_V1.0》§3.3：Worker 状态判断（Dead = 心跳超时）
+   */
+  private async markOfflineWorkersInternal(): Promise<number> {
+    const { env: scuEnv } = await import('@scu/config');
+    const { workerOfflineGraceMs } = scuEnv;
+    const timeoutThreshold = new Date(Date.now() - workerOfflineGraceMs);
+
+    this.logger.log(
+      `[Recovery] Checking for dead workers... threshold: ${timeoutThreshold.toISOString()}, grace: ${workerOfflineGraceMs}ms`
+    );
+
+    // 1. 获取所有心跳超时的 Worker 并标记为 DEAD
+    const timedOutHeartbeats = await this.prisma.workerHeartbeat.findMany({
+      where: {
+        lastSeenAt: {
+          lt: timeoutThreshold,
+        },
+        status: {
+          not: 'DEAD',
+        },
+      },
+    });
+
+    if (timedOutHeartbeats.length > 0) {
+      const idsToMark = timedOutHeartbeats.map((h) => h.workerId);
+      this.logger.warn(
+        `[Recovery] Marking ${idsToMark.length} workers as DEAD: ${idsToMark.join(', ')}`
+      );
+
+      await this.prisma.workerHeartbeat.updateMany({
+        where: { workerId: { in: idsToMark } },
+        data: { status: 'DEAD' },
+      });
+      await this.prisma.workerNode.updateMany({
+        where: { workerId: { in: idsToMark } },
+        data: { status: 'offline' },
+      });
+    }
+
+    // 统一回收入口(商业级:三重断言 + 事务 + 审计)
+    const reclaimedCount = await this.reclaimJobsFromDeadWorkersInternal();
+    if (reclaimedCount > 0) {
+      this.logger.warn(
+        `[OrchestratorService] Reclaimed ${reclaimedCount} jobs from dead workers (internal).`
+      );
+    }
+    return reclaimedCount;
+  }
+
+  /**
+   * P1-2: HA Failover - 商业级回收:三重断言 + 事务 + 审计
+   * 返回 reclaimed job 数量
+   */
+  private async reclaimJobsFromDeadWorkersInternal(): Promise<number> {
+    const deadWorkerIds = await this.getDeadWorkerIdsInternal();
+    if (deadWorkerIds.length === 0) return 0;
+
+    const now = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const orphaned = await tx.shotJob.findMany({
+        where: {
+          status: 'RUNNING',
+          lockedBy: { in: deadWorkerIds },
+          leaseUntil: { lte: now },
+        },
+        select: { id: true, projectId: true, lockedBy: true },
+      });
+
+      if (orphaned.length === 0) return 0;
+
+      // 批量回到 PENDING
+      await tx.shotJob.updateMany({
+        where: { id: { in: orphaned.map((j) => j.id) } },
+        data: {
+          status: JobStatusEnum.PENDING,
+          workerId: null,
+          lockedBy: null,
+          leaseUntil: null,
+          lastError: 'reclaimed: dead worker (internal)',
+        },
+      });
+
+      // 审计
+      for (const j of orphaned) {
+        if (j.projectId) {
+          const project = await tx.project.findUnique({
+            where: { id: j.projectId },
+            select: { organizationId: true },
+          });
+          if (project) {
+            await tx.auditLog.create({
+              data: {
+                action: 'JOB_RECLAIMED_FROM_DEAD_WORKER',
+                resourceType: 'shot_job',
+                resourceId: j.id,
+                orgId: project.organizationId,
+                details: { deadWorkerId: j.lockedBy, projectId: j.projectId },
+                createdAt: new Date(),
+              },
+            });
+          }
+        }
+      }
+
+      this.logger.warn(
+        `Reclaimed ${orphaned.length} jobs from ${deadWorkerIds.length} dead workers`
+      );
+      return orphaned.length;
+    });
+  }
+
+  private async getDeadWorkerIdsInternal(): Promise<string[]> {
+    const rows = await this.prisma.workerHeartbeat.findMany({
+      where: { status: 'DEAD' },
+      select: { workerId: true },
+    });
+    return rows.map((r) => r.workerId);
+  }
+}

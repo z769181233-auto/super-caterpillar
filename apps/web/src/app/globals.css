@@ -1,0 +1,381 @@
+/* =========================================
+   [SSOT] Super Caterpillar Design Tokens v1.0
+   ========================================= */
+:root {
+  /* --- Backgrounds --- */
+  --bg-root: #08090b;
+  /* Deepest black for main app background */
+  --bg-surface: #0b0d10;
+  /* Main surface (formerly studio --bg-base) */
+  --bg-panel: #12151a;
+  /* Elevated panels (formerly studio --bg-panel) */
+  --bg-card: rgba(255, 255, 255, 0.03);
+  /* Subtle card backgrounds */
+
+  /* --- Brand / Gold (Luxury) --- */
+  --gold: #c8a45d;
+  /* Primary Brand Gold */
+  --gold-primary: #c8a45d;
+  /* Studio active gold mapped here */
+  --gold-hover: #dec084;
+  /* Hover state for gold */
+  --gold-weak: rgba(200, 164, 93, 0.25);
+  /* Muted gold for borders/subtle text */
+  --gold-tint-05: rgba(245, 158, 11, 0.05);
+  /* Ultra-subtle gold tint — used for active node backgrounds */
+  --gold-tint-10: rgba(245, 158, 11, 0.1);
+  /* Light gold tint — used for hover states over gold accents */
+  --on-gold: #0b0d10;
+  /* Text color strictly used when background is gold */
+
+  /* --- Text Hierarchy --- */
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.72);
+  --text-muted: rgba(255, 255, 255, 0.58);
+
+  /* --- Borders & Geometry --- */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --line-separator: rgba(255, 255, 255, 0.04);
+
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-full: 9999px;
+
+  /* --- Shadows --- */
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* --- Legacy mappings for smooth transition --- */
+  --bg-main: var(--bg-surface);
+  --hsl-text-main: 0, 0%, 92%;
+  --hsl-text-muted: 220, 5%, 58%;
+
+  /* Status & Accents */
+  --hsl-success: 145, 40%, 45%;
+  --hsl-error: 0, 60%, 55%;
+
+  /* --- Glassmorphism (Minimalist/Luxury) --- */
+  --glass-bg: #181b20;
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-shadow: none;
+  --backdrop-blur: 0px;
+  /* Luxury is matte, not necessarily blurry/glassy */
+
+  /* --- Spacing System --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-20: 5rem;
+
+  /* --- Radius --- */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+
+  /* --- Transitions --- */
+  --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* =========================================
+   LIGHT THEME: CREATIVE STUDIO
+   ========================================= */
+/* Cleanup old light theme and redundant classes */
+.theme-studio-light {
+  display: none !important;
+}
+
+/* 
+   Overrides for .theme-studio-light 
+   Ensuring text-gradient and borders don't look out of place
+*/
+.theme-studio-light .text-gradient {
+  background: linear-gradient(135deg, hsl(35, 90%, 45%), hsl(25, 80%, 40%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.theme-studio-light .glass-panel:hover {
+  border-color: hsla(var(--hsl-primary), 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+  /* Softer shadow */
+}
+
+/* =========================================
+   RESET & BASE
+   ========================================= */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  background-color: var(--bg-main);
+  color: var(--hsl-text-main);
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  letter-spacing: 0.02em;
+  /* High-end tracking */
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s var(--ease-spring);
+}
+
+a:hover {
+  color: hsl(var(--hsl-primary-glow));
+  text-shadow: 0 0 8px hsla(var(--hsl-primary-glow), 0.6);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+/* =========================================
+   UTILITIES
+   ========================================= */
+
+/* Typography */
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Outfit', sans-serif;
+  /* Headings use stylized font */
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.text-gradient {
+  /* Sophisticated Gold to Silver Gradient */
+  background: linear-gradient(135deg, hsl(var(--hsl-primary)), hsl(var(--hsl-secondary)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-neon {
+  /* Subtle Cinematic Glow */
+  color: hsl(var(--hsl-primary-glow));
+  text-shadow: 0 0 15px hsla(var(--hsl-primary), 0.3);
+}
+
+/* Glass Panels */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--backdrop-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-lg);
+}
+
+.glass-panel:hover {
+  border-color: hsla(var(--hsl-primary), 0.3);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Layout */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s var(--ease-spring) forwards;
+}
+
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 5px hsla(var(--hsl-primary), 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 20px hsla(var(--hsl-primary), 0.6);
+  }
+
+  100% {
+    box-shadow: 0 0 5px hsla(var(--hsl-primary), 0.2);
+  }
+}
+
+.animate-glow {
+  animation: glowPulse 3s infinite;
+}
+
+@keyframes rotateSlow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: rotateSlow 20s linear infinite;
+}
+
+/* Starfield Background */
+.starfield {
+  background: radial-gradient(circle at center, #1b1b1e 0%, #000000 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.starfield::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0, 0, 0, 0)),
+    radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0, 0, 0, 0)),
+    radial-gradient(2px 2px at 50px 160px, #ffffff, rgba(0, 0, 0, 0)),
+    radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0, 0, 0, 0)),
+    radial-gradient(2px 2px at 130px 80px, #ffffff, rgba(0, 0, 0, 0));
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  opacity: 0.3;
+  animation: rotateSlow 100s linear infinite;
+  z-index: 0;
+}
+
+/* =========================================
+   COMPONENTS
+   ========================================= */
+
+/* Button Base */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: all 0.3s var(--ease-spring);
+  cursor: pointer;
+  gap: 0.5rem;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* Button Variants */
+.btn-primary {
+  background: hsl(var(--hsl-primary));
+  color: #fff;
+  box-shadow: 0 0 10px hsla(var(--hsl-primary), 0.4);
+}
+
+.btn-primary:hover {
+  background: hsl(var(--hsl-primary-glow));
+  box-shadow: 0 0 20px hsla(var(--hsl-primary), 0.6);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.btn-secondary {
+  background: hsl(var(--hsl-secondary));
+  color: #fff;
+  box-shadow: 0 0 10px hsla(var(--hsl-secondary), 0.4);
+}
+
+.btn-secondary:hover {
+  background: hsl(var(--hsl-secondary-glow));
+  box-shadow: 0 0 20px hsla(var(--hsl-secondary), 0.6);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: hsl(var(--hsl-text-muted));
+  border: 1px solid hsla(var(--hsl-text-main), 0.2);
+}
+
+.btn-ghost:hover {
+  background: hsla(255, 255, 255, 0.05);
+  color: hsl(var(--hsl-text-main));
+  border-color: hsl(var(--hsl-text-main));
+}
+
+.btn-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--backdrop-blur));
+  border: 1px solid var(--glass-border);
+  color: hsl(var(--hsl-text-main));
+}
+
+.btn-glass:hover {
+  background: hsla(var(--hsl-bg-surface), 0.8);
+  border-color: hsl(var(--hsl-primary));
+}
+
+/* Button Sizes */
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.875rem;
+}
+
+.btn-md {
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+}
+
+.btn-lg {
+  padding: 0.8rem 1.6rem;
+  font-size: 1.125rem;
+}

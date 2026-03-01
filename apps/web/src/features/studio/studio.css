@@ -1,0 +1,325 @@
+/* apps/web/src/features/studio/studio.css */
+
+:root {
+  /* Brand */
+  --bg-root: #0f1114;
+  --bg-surface: #14171b;
+  --bg-card: #171b20;
+
+  --line: rgba(255, 255, 255, 0.06);
+  --muted: rgba(255, 255, 255, 0.55);
+  --text: rgba(255, 255, 255, 0.92);
+
+  /* Gold (matte) */
+  --gold: #c6a85e;
+  --gold-weak: rgba(198, 168, 94, 0.18);
+
+  /* Radius / shadow */
+  --r-xl: 18px;
+  --r-lg: 14px;
+
+  --shadow-soft: 0 14px 40px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 10px 26px rgba(0, 0, 0, 0.28);
+
+  /* Typography */
+  --font-ui:
+    ui-sans-serif, system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  --font-reading: ui-serif, 'Source Han Serif SC', 'Songti SC', 'STSong', serif;
+
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-24: 24px;
+
+  --lh-tight: 1.2;
+  --lh-ui: 1.45;
+  --lh-reading: 1.85;
+}
+
+.studioRoot {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 700px at 20% 0%, rgba(198, 168, 94, 0.06), transparent 55%),
+    radial-gradient(1200px 700px at 80% 30%, rgba(255, 255, 255, 0.03), transparent 60%),
+    var(--bg-root);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(to bottom, rgba(15, 17, 20, 0.92), rgba(15, 17, 20, 0.7));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.topBarInner {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-14);
+  letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.brandDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #ffd98a, var(--gold));
+  box-shadow: 0 0 0 4px rgba(198, 168, 94, 0.1);
+}
+
+.titleBlock {
+  text-align: center;
+}
+
+.title {
+  font-size: var(--fs-24);
+  letter-spacing: 0.6px;
+  font-weight: 650;
+}
+
+.subtitle {
+  margin-top: 4px;
+  font-size: var(--fs-13);
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: rgba(198, 168, 94, 0.35);
+}
+
+.btnPrimary {
+  border-color: rgba(198, 168, 94, 0.45);
+  background: rgba(198, 168, 94, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.main {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.card {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.kpiCard {
+  padding: 14px 14px;
+}
+
+.kpiLabel {
+  font-size: var(--fs-12);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.kpiValue {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.kpiHint {
+  margin-top: 8px;
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 40% 45% 15%;
+  gap: 12px;
+  min-height: 560px;
+}
+
+.panelHeader {
+  padding: 12px 12px 10px 12px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panelTitle {
+  font-size: var(--fs-13);
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.panelBody {
+  padding: 10px 12px 12px 12px;
+}
+
+.searchInput {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.18);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+  font-size: var(--fs-13);
+}
+
+.searchInput:focus {
+  border-color: rgba(198, 168, 94, 0.35);
+  box-shadow: 0 0 0 4px rgba(198, 168, 94, 0.1);
+}
+
+.treeList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.treeItem {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 10px;
+  cursor: pointer;
+}
+
+.treeItem:hover {
+  border-color: rgba(198, 168, 94, 0.22);
+  background: rgba(198, 168, 94, 0.06);
+}
+
+.treeItemActive {
+  border-color: rgba(198, 168, 94, 0.38);
+  background: rgba(198, 168, 94, 0.08);
+}
+
+.treeMeta {
+  font-size: var(--fs-12);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.treeTitle {
+  margin-top: 4px;
+  font-size: var(--fs-14);
+  line-height: var(--lh-ui);
+}
+
+.reader {
+  font-family: var(--font-reading);
+}
+
+.readerTitle {
+  font-family: var(--font-ui);
+  font-size: var(--fs-16);
+  font-weight: 650;
+}
+
+.readerText {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: var(--lh-reading);
+  color: rgba(255, 255, 255, 0.86);
+  white-space: pre-wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(198, 168, 94, 0.35);
+  background: rgba(198, 168, 94, 0.1);
+  padding: 6px 10px;
+  font-size: var(--fs-12);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.drawerMask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 40;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: min(520px, 92vw);
+  background: linear-gradient(to bottom, rgba(23, 27, 32, 0.98), rgba(20, 23, 27, 0.96));
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 50;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+}
+
+.drawerHeader {
+  padding: 16px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  padding: 10px 16px;
+}
+
+.kvKey {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: var(--fs-12);
+}
+
+.kvVal {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: var(--fs-12);
+  color: rgba(255, 255, 255, 0.88);
+  word-break: break-all;
+}
