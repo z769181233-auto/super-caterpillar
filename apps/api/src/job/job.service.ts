@@ -119,7 +119,7 @@ export class JobService {
     private readonly eventEmitter: EventEmitter2,
     @Inject(FinancialSettlementService)
     private readonly financialSettlementService?: FinancialSettlementService
-  ) {}
+  ) { }
 
   /**
    * Localized Check Shot Ownership (Breaking cycle with ProjectService)
@@ -1182,15 +1182,13 @@ export class JobService {
         LEFT JOIN "job_engine_bindings" jeb ON jeb."jobId" = j.id
         WHERE j.status = 'PENDING'
         AND (j.lease_until IS NULL OR j.lease_until < NOW())
-        ${
-          filterTypes.length > 0
-            ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
-            : Prisma.empty
+        ${filterTypes.length > 0
+          ? Prisma.sql`AND j."type"::text IN (${Prisma.join(filterTypes)})`
+          : Prisma.empty
         }
-        ${
-          supportedEngines.length > 0
-            ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
-            : Prisma.empty
+        ${supportedEngines.length > 0
+          ? Prisma.sql`AND (jeb."engineKey" IS NULL OR jeb."engineKey" IN (${Prisma.join(supportedEngines)}))`
+          : Prisma.empty
         }
         ORDER BY j.priority DESC, j."createdAt" ASC
         LIMIT 10
@@ -2281,7 +2279,7 @@ export class JobService {
     // Studio v0.7: 检查组织权限
     // 检查组织权限：支持 Season 和 Project 两种结构
     if (job.shot) {
-      const project = job.shot.scene.episode?.season?.project;
+      const project = job.shot.scene.episode?.season?.project || job.shot.scene.episode?.project;
       if (!project || project.organizationId !== organizationId) {
         this.logger.warn(
           `[DEBUG] Project Org Mismatch.Proj Org = ${project?.organizationId}, Request Org = ${organizationId} `
