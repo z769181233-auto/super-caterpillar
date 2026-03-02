@@ -31,11 +31,48 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         });
       }
 
-      // P0 风险整治证据：打印最终生效的 DATABASE_URL
-      const dbUrl = process.env.DATABASE_URL || 'unknown';
-      const masked = dbUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:***@');
+      // Old P0 evidence replaced by P1-1 URL Audit
+    }
+
+    // P1-1 DB URL Source Audit
+    const dbUrl = process.env.DATABASE_URL;
+    const mockUrl = process.env.MOCK_DATABASE_URL;
+    const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
+
+    let source = 'fallback/missing';
+    let activeUrl = 'unknown';
+
+    if (dbUrl) {
+      source = 'DATABASE_URL';
+      activeUrl = dbUrl;
+    } else if (mockUrl) {
+      source = 'MOCK_DATABASE_URL';
+      activeUrl = mockUrl;
+    }
+
+    if (isProd && source !== 'DATABASE_URL') {
+      const errMsg = `[P1-1] FATAL: DATABASE_URL is missing or using fallback/mock in production. Fail-fast triggered.`;
       // eslint-disable-next-line no-console
-      this.logger.log(`[P0_EVIDENCE] Active DATABASE_URL: ${masked}`);
+      console.error(errMsg);
+      throw new Error(errMsg);
+    }
+
+    try {
+      if (activeUrl && activeUrl !== 'unknown') {
+        const parsed = new URL(activeUrl);
+        const host = parsed.hostname;
+        const port = parsed.port || '5432';
+        const db = parsed.pathname.substring(1);
+        const auditMsg = `[DB_URL_AUDIT] source=${source} host=${host} port=${port} db=${db}`;
+        // eslint-disable-next-line no-console
+        console.log(auditMsg);
+        this.logger.log(auditMsg);
+      }
+    } catch (e) {
+      const auditMsg = `[DB_URL_AUDIT] source=${source} unparseable_url`;
+      // eslint-disable-next-line no-console
+      console.log(auditMsg);
+      this.logger.log(auditMsg);
     }
   }
 
@@ -43,7 +80,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     try {
       await this.$connect();
     } catch (e) {
-      this.logger.warn(`[PrismaService] Failed to connect to DB at startup (likely due to MOCK_DATABASE_URL on Railway): ${e}`);
+      this.logger.warn(`[PrismaService] Failed to connect to DB at startup: ${e}`);
     }
   }
 

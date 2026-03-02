@@ -61,6 +61,42 @@ async function boot() {
       throw new Error('Could not resolve database module from any known path');
     }
 
+    // P1-1 DB URL Source Audit
+    const dbUrl = process.env.DATABASE_URL;
+    const mockUrl = process.env.MOCK_DATABASE_URL;
+    const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
+
+    let source = 'fallback/missing';
+    let activeUrl = 'unknown';
+
+    if (dbUrl) {
+      source = 'DATABASE_URL';
+      activeUrl = dbUrl;
+    } else if (mockUrl) {
+      source = 'MOCK_DATABASE_URL';
+      activeUrl = mockUrl;
+    }
+
+    if (isProd && source !== 'DATABASE_URL') {
+      const errMsg = `[P1-1] FATAL: DATABASE_URL is missing or using fallback/mock in production. Fail-fast triggered.`;
+      process.stderr.write(util.format(errMsg) + '\\n');
+      throw new Error(errMsg);
+    }
+
+    try {
+      if (activeUrl && activeUrl !== 'unknown') {
+        const parsed = new URL(activeUrl);
+        const host = parsed.hostname;
+        const port = parsed.port || '5432';
+        const db = parsed.pathname.substring(1);
+        const auditMsg = `[DB_URL_AUDIT] source=${source} | host=${host} | port=${port} | db=${db}`;
+        process.stdout.write(util.format(auditMsg) + '\\n');
+      }
+    } catch (e) {
+      const auditMsg = `[DB_URL_AUDIT] source=${source} | unparseable_url`;
+      process.stdout.write(util.format(auditMsg) + '\\n');
+    }
+
     const { PrismaClient } = databaseModule;
     const prisma = new PrismaClient();
     const dmmf = (prisma as any).constructor.dmmf || (PrismaClient as any).dmmf;

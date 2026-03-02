@@ -23,7 +23,7 @@ export class ProdGateController {
     private readonly orchestratorService: OrchestratorService,
     private readonly jobService: JobService,
     private readonly db: PrismaService
-  ) {}
+  ) { }
 
   /**
    * Assert artifactDir is within allowed evidence directory
@@ -50,6 +50,80 @@ export class ProdGateController {
       );
     }
     return abs;
+  }
+
+  /**
+   * P1-3 Network Self-Check (DNS, TCP, PG)
+   */
+  @Get('network-check')
+  async networkCheck() {
+    if (process.env.GATE_MODE !== '1') {
+      throw new BadRequestException('Endpoint only available in GATE_MODE=1');
+    }
+
+    const dns = require('dns');
+    const net = require('net');
+
+    const checkDns = (hostname: string) => {
+      return new Promise((resolve) => {
+        dns.lookup(hostname, (err: any, address: string) => {
+          resolve({ success: !err, address, error: err?.message });
+        });
+      });
+    };
+
+    const checkTcp = (hostname: string, port: number) => {
+      return new Promise((resolve) => {
+        const start = Date.now();
+        const socket = new net.Socket();
+        socket.setTimeout(5000);
+        socket.connect(port, hostname, () => {
+          socket.destroy();
+          resolve({ success: true, durationMs: Date.now() - start });
+        });
+        socket.on('error', (err: any) => {
+          resolve({ success: false, error: err.message });
+        });
+        socket.on('timeout', () => {
+          socket.destroy();
+          resolve({ success: false, error: 'TIMEOUT' });
+        });
+      });
+    };
+
+    const checkPg = async () => {
+      try {
+        const res = await this.db.$queryRawUnsafe('SELECT 1 as "ok"');
+        return { success: true, result: res };
+      } catch (err: any) {
+        return { success: false, error: err.message, code: err.code };
+      }
+    };
+
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      return { error: 'DATABASE_URL missing' };
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(dbUrl);
+    } catch (e) {
+      return { error: 'Unparseable url' };
+    }
+
+    const host = parsed.hostname;
+    const port = parseInt(parsed.port || '5432', 10);
+
+    const dnsRes = await checkDns(host);
+    const tcpRes = await checkTcp(host, port);
+    const pgRes = await checkPg();
+
+    return {
+      dns: dnsRes,
+      tcp: tcpRes,
+      pg: pgRes
+    };
   }
 
   /**
