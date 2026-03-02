@@ -116,12 +116,29 @@ function readArg(name: string): string | undefined {
 }
 
 const workerId = readArg('workerId') || process.env.WORKER_ID || env.workerId;
-const apiBaseUrl = (readArg('apiUrl') || env.apiUrl || 'http://127.0.0.1:3000').replace(
+
+const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
+
+let apiBaseUrl = (readArg('apiUrl') || env.apiUrl || process.env.API_BASE_URL || 'http://api:3000').replace(
   /\/api\/?$/,
   ''
-);
+).replace('localhost', '127.0.0.1');
+
+if (isProd && apiBaseUrl.includes('127.0.0.1')) {
+  const errMsg = `[P1-FAIL-FAST] FATAL: Defaulting to 127.0.0.1 is not allowed in production Worker. Provide API_BASE_URL.`;
+  console.error(errMsg);
+  throw new Error(errMsg);
+}
+
 const workerApiKey = readArg('apiKey') || env.workerApiKey;
-const workerApiSecret = process.env.API_SECRET_KEY || env.workerApiSecret || 'dev-secret';
+const workerSecret = process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET || env.workerApiSecret;
+
+if (!workerSecret && isProd) {
+  const errMsg = '[P1-FAIL-FAST] FATAL: WORKER_API_SECRET missing in production. Refusing to start.';
+  console.error(errMsg);
+  throw new Error(errMsg);
+}
+const workerApiSecret = workerSecret || 'dev-secret';
 
 const apiClient = new ApiClient(apiBaseUrl, workerApiKey, workerApiSecret, workerId);
 

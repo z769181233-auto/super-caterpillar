@@ -35,8 +35,15 @@ import * as os from 'os';
 function pickHmacSecretSSOT(): string {
   const v =
     process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET;
-  if (!v) throw new Error('HMAC_SECRET_MISSING: Please set HMAC_SECRET_KEY in environment');
-  return v;
+
+  if (!v) {
+    if (process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1') {
+      const errMsg = '[P1-FAIL-FAST] FATAL: WORKER_API_SECRET missing in production. Refusing to start.';
+      process.stderr.write(errMsg + '\\n');
+      throw new Error(errMsg);
+    }
+  }
+  return v || 'dev-secret';
 }
 import * as util from 'util';
 import { BillingOutboxDispatcher } from '../billing/outbox-dispatcher.service';
@@ -69,7 +76,17 @@ export async function startGateWorkerApp() {
   process.stdout.write(util.format('========================================\n') + '\n');
 
   const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
-  const apiBaseUrl = (env.apiUrl || 'http://127.0.0.1:3000').replace('localhost', '127.0.0.1');
+  const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
+
+  let apiBaseUrl = (env.apiUrl || process.env.API_BASE_URL || 'http://api:3000').replace('localhost', '127.0.0.1');
+
+  // P1-1: 强制生产环境 API_BASE_URL Fail-fast
+  if (isProd && apiBaseUrl.includes('127.0.0.1')) {
+    const errMsg = `[P1-FAIL-FAST] FATAL: Defaulting to 127.0.0.1 is not allowed in production Worker. Provide API_BASE_URL.`;
+    process.stderr.write(errMsg + '\\n');
+    throw new Error(errMsg);
+  }
+
   const workerApiKey = env.workerApiKey;
   const workerApiSecret = pickHmacSecretSSOT();
 
@@ -318,11 +335,11 @@ export async function startGateWorkerApp() {
           pl.sceneId ||
           (pl.shotId
             ? (
-                await prisma.shot.findUnique({
-                  where: { id: pl.shotId },
-                  select: { sceneId: true },
-                })
-              )?.sceneId
+              await prisma.shot.findUnique({
+                where: { id: pl.shotId },
+                select: { sceneId: true },
+              })
+            )?.sceneId
             : 'sc-placeholder');
 
         // Robust Repo Root Detection
@@ -544,7 +561,7 @@ export async function startGateWorkerApp() {
         } catch (dbErr: any) {
           process.stderr.write(
             util.format(`[GateWorker] ⚠️ L3 DB write failed for job ${job.id}:`, dbErr.message) +
-              '\n'
+            '\n'
           );
         }
       }
