@@ -37,7 +37,29 @@ export class ProjectService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) {}
+  ) { }
+
+  private async resolveProjectForEpisode(
+    episode: any | null | undefined
+  ): Promise<{ id: string; organizationId: string; ownerId: string; name: string; settingsJson?: any;[key: string]: any } | null> {
+    if (!episode) return null;
+
+    const seasonProject = episode?.season?.project;
+    if (seasonProject?.id && seasonProject?.organizationId) {
+      return seasonProject;
+    }
+
+    const projectId = episode?.projectId;
+    if (!projectId) return null;
+
+    return (this.prisma.project.findUnique({
+      where: { id: projectId },
+    }) as any);
+  }
+
+
+
+
 
   async create(createProjectDto: CreateProjectDto, ownerId: string, organizationId: string) {
     this.logger.log('PROJECT SERVICE CREATE CALLED');
@@ -702,11 +724,11 @@ export class ProjectService {
     // 清理缓存（需要获取 projectId）
     const projectId = isSeasonId
       ? (
-          await this.prisma.season.findUnique({
-            where: { id: projectIdOrSeasonId },
-            select: { projectId: true },
-          })
-        )?.projectId
+        await this.prisma.season.findUnique({
+          where: { id: projectIdOrSeasonId },
+          select: { projectId: true },
+        })
+      )?.projectId
       : projectIdOrSeasonId;
     if (projectId) {
       await this.sceneGraphService.invalidateProjectSceneGraph(projectId);
@@ -838,7 +860,7 @@ export class ProjectService {
     }
 
     // 获取 project
-    const project = scene.episode?.project;
+    const project = await this.resolveProjectForEpisode(scene.episode);
     if (!project) {
       throw new NotFoundException(`Project not found for scene ${sceneId}`);
     }
@@ -907,9 +929,10 @@ export class ProjectService {
       }
 
       // Studio v0.7: 如果未传入 organizationId，从 Project 推导
+      const episodeProject = await this.resolveProjectForEpisode(scene.episode);
       const finalOrganizationId =
         organizationId ||
-        scene.episode?.project?.organizationId ||
+        episodeProject?.organizationId ||
         scene.episode?.season?.project?.organizationId;
 
       if (!finalOrganizationId) {
@@ -977,7 +1000,7 @@ export class ProjectService {
     }
 
     // 获取 project（支持 Season 和 Project 两种结构）
-    const shotProject = shot.scene.episode?.project ?? shot.scene.episode?.season?.project;
+    const shotProject = await this.resolveProjectForEpisode(shot.scene.episode);
     if (!shotProject) {
       throw new NotFoundException(`Project not found for shot ${shotId}`);
     }
@@ -1013,7 +1036,7 @@ export class ProjectService {
     }
 
     // 获取 project
-    const shotProject = shot.scene.episode?.project;
+    const shotProject = await this.resolveProjectForEpisode(shot.scene.episode);
     if (!shotProject) {
       throw new NotFoundException(`Project not found for shot ${id}`);
     }
@@ -1054,7 +1077,7 @@ export class ProjectService {
       }
 
       // Studio v0.7: 检查组织权限
-      const shotProject = shot.scene.episode?.project || shot.scene.episode?.season?.project;
+      const shotProject = await this.resolveProjectForEpisode(shot.scene.episode);
       if (!shotProject || shotProject.organizationId !== organizationId) {
         throw new ForbiddenException('You do not have permission to update this shot');
       }
@@ -1314,7 +1337,7 @@ export class ProjectService {
 
     // Studio v0.7: 过滤掉不属于当前组织的 Shots
     const filteredShots = shots.filter((shot: any) => {
-      const shotProject = shot.scene.episode?.project;
+      const shotProject = (shot.scene.episode as any)?.project;
       return shotProject?.organizationId === organizationId;
     });
 
@@ -1326,8 +1349,8 @@ export class ProjectService {
       title: shot.title,
       description: shot.description,
       reviewedAt: shot.reviewedAt,
-      projectId: shot.scene.episode?.project?.id,
-      projectName: shot.scene.episode?.project?.name,
+      projectId: (shot.scene.episode as any)?.project?.id,
+      projectName: (shot.scene.episode as any)?.project?.name,
       episodeId: shot.scene.episode?.id,
       episodeName: shot.scene.episode?.name,
       sceneId: shot.scene.id,

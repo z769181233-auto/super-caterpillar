@@ -24,7 +24,7 @@ export class QualityScoreService {
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
     private readonly identityService: IdentityConsistencyService
-  ) {}
+  ) { }
 
   /**
    * P13-3: 执行分镜质量评分
@@ -54,7 +54,7 @@ export class QualityScoreService {
       where: { id: shotId },
       include: { scene: { include: { episode: { include: { project: true } } } } },
     });
-    const settings = (shotForSettings?.scene?.episode?.project?.settingsJson as any) || {};
+    const settings = ((shotForSettings?.scene?.episode as any)?.project?.settingsJson as any) || {};
 
     // P16-2.0: Kill Switch (Highest Priority)
     // CE23_REAL_FORCE_DISABLE=1 -> Disable Real & Shadow globally

@@ -121,6 +121,34 @@ export class JobService {
     private readonly financialSettlementService?: FinancialSettlementService
   ) { }
 
+  private async resolveProjectForEpisode(
+    episode: any | null | undefined
+  ): Promise<{ id: string; organizationId: string;[key: string]: any } | null> {
+    if (!episode) return null;
+
+    // Season -> Project 优先（此处通常已经 include 到）
+    const seasonProject = episode?.season?.project;
+    if (seasonProject?.id && seasonProject?.organizationId) {
+      return {
+        id: seasonProject.id,
+        organizationId: seasonProject.organizationId,
+        ...seasonProject,
+      };
+    }
+
+    // Episode.projectId 兜底
+    const projectId = episode?.projectId;
+    if (!projectId) return null;
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, organizationId: true, name: true, settingsJson: true },
+    });
+
+    return project;
+  }
+
+
   /**
    * Localized Check Shot Ownership (Breaking cycle with ProjectService)
    */
@@ -151,7 +179,7 @@ export class JobService {
 
     // 获取 project（支持 Season 和 Project 两种结构）
     const scene = (shot as any).scene;
-    let shotProject = scene?.episode?.project ?? scene?.episode?.season?.project;
+    let shotProject = await this.resolveProjectForEpisode(scene?.episode);
 
     // V3.0 Fallback: 如果没有通过 Episode 找到 Project，尝试直接通过 scene.projectId 查找
     if (!shotProject && scene?.projectId) {
@@ -257,7 +285,7 @@ export class JobService {
       });
       const scene = shotWithHierarchy?.scene;
       const episode = scene?.episode;
-      const project = episode?.project ?? episode?.season?.project;
+      const project = await this.resolveProjectForEpisode(episode);
 
       if (!scene || !episode || !project) {
         throw new NotFoundException('Shot hierarchy is incomplete');
@@ -542,7 +570,7 @@ export class JobService {
     });
     const scene = shot?.scene;
     const episode = scene?.episode;
-    const project = episode?.project ?? episode?.season?.project;
+    const project = await this.resolveProjectForEpisode(episode);
     if (!scene || !episode || !project) {
       throw new NotFoundException('Shot hierarchy is incomplete');
     }
@@ -2281,15 +2309,7 @@ export class JobService {
     if (job.shot) {
       const episode = job.shot.scene.episode;
 
-      let project = episode?.season?.project ?? null;
-
-      // 兼容“Episode 直接挂 ProjectId，但未 include project relation”的结构
-      if (!project && episode?.projectId) {
-        project = (await this.prisma.project.findUnique({
-          where: { id: episode.projectId },
-          select: { id: true, organizationId: true },
-        })) as any;
-      }
+      const project = await this.resolveProjectForEpisode(episode);
 
       if (!project || project.organizationId !== organizationId) {
         this.logger.warn(

@@ -12,7 +12,7 @@ export class IdentityConsistencyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: LocalStorageService
-  ) {}
+  ) { }
 
   /**
    * P15-0: Score routing based on Feature Flag
@@ -48,7 +48,7 @@ export class IdentityConsistencyService {
           },
         },
       });
-      const settings = (shot?.scene?.episode?.project?.settingsJson as any) || {};
+      const settings = ((shot?.scene?.episode as any)?.project?.settingsJson as any) || {};
       realEnabled = !!settings.ce23RealEnabled;
     }
 
