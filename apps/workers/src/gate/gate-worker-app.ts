@@ -78,14 +78,12 @@ export async function startGateWorkerApp() {
   const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
   const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
 
-  let apiBaseUrl = (env.apiUrl || process.env.API_BASE_URL || 'http://api:3000').replace('localhost', '127.0.0.1');
-
-  // P1-1: 强制生产环境 API_BASE_URL Fail-fast
-  if (isProd && apiBaseUrl.includes('127.0.0.1')) {
-    const errMsg = `[P1-FAIL-FAST] FATAL: Defaulting to 127.0.0.1 is not allowed in production Worker. Provide API_BASE_URL.`;
-    process.stderr.write(errMsg + '\\n');
-    throw new Error(errMsg);
+  console.log('API_BASE_URL:', process.env.API_BASE_URL);
+  const baseUrl = process.env.API_BASE_URL;
+  if (!baseUrl) {
+    throw new Error('API_BASE_URL is required in production');
   }
+  let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
   const workerApiKey = env.workerApiKey;
   const workerApiSecret = pickHmacSecretSSOT();

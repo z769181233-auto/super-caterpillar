@@ -14,7 +14,12 @@
 import { createHmac, randomBytes, createHash } from 'crypto';
 import * as util from 'util';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
+console.log('API_BASE_URL:', process.env.API_BASE_URL);
+const baseUrl = process.env.API_BASE_URL;
+if (!baseUrl) {
+  throw new Error('API_BASE_URL is required in production');
+}
+const API_BASE_URL = baseUrl;
 const API_KEY = process.env.API_KEY || '';
 const API_SECRET = process.env.API_SECRET || '';
 const WORKER_ID = process.env.WORKER_ID || 'minimal-worker-001';
@@ -152,7 +157,7 @@ async function reportJobSucceeded(jobId: string, output: any): Promise<void> {
     });
     process.stdout.write(
       util.format(`[${new Date().toISOString()}] ✅ Job ${jobId} reported as SUCCEEDED:`, result) +
-        '\n'
+      '\n'
     );
   } catch (error: any) {
     process.stderr.write(

@@ -119,16 +119,12 @@ const workerId = readArg('workerId') || process.env.WORKER_ID || env.workerId;
 
 const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
 
-let apiBaseUrl = (readArg('apiUrl') || env.apiUrl || process.env.API_BASE_URL || 'http://api:3000').replace(
-  /\/api\/?$/,
-  ''
-).replace('localhost', '127.0.0.1');
-
-if (isProd && apiBaseUrl.includes('127.0.0.1')) {
-  const errMsg = `[P1-FAIL-FAST] FATAL: Defaulting to 127.0.0.1 is not allowed in production Worker. Provide API_BASE_URL.`;
-  console.error(errMsg);
-  throw new Error(errMsg);
+console.log('API_BASE_URL:', process.env.API_BASE_URL);
+const baseUrl = process.env.API_BASE_URL;
+if (!baseUrl) {
+  throw new Error('API_BASE_URL is required in production');
 }
+let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
 const workerApiKey = readArg('apiKey') || env.workerApiKey;
 const workerSecret = process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET || env.workerApiSecret;
