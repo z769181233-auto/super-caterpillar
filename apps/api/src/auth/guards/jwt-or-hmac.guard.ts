@@ -73,11 +73,8 @@ export class JwtOrHmacGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest();
 
-    // P1-1: 门禁模式旁路（仅限测试环境）
-    if (process.env.GATE_MODE === '1' || process.env.GATE_MODE === 'test') {
-      // Allow Stage Validation with GATE_MODE=1 in production
-      return true;
-    }
+    // [P1-FIX] Removed GATE_MODE bypass. All access MUST resolve identity via JWT or HMAC,
+    // otherwise downstream guards like PermissionsGuard will hard-crash with 403 user identity missing.
 
     const dbg = process.env.HMAC_DEBUG === '1';
     const dlog = (obj: any) => {

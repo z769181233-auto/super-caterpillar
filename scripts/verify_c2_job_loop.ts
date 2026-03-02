@@ -38,11 +38,23 @@ async function runJobLoop() {
         body: JSON.stringify({ email, password: 'Password123!', name: 'C2 Test User' })
     });
 
-    const cookies = registerRes.headers.get('set-cookie');
+    const registerData = await registerRes.json();
+    console.log('[DEBUG] Register API Response:', registerData);
+
+    // Fetch API combines multiple Set-Cookie headers into one comma-separated string
+    const cookiesObj = registerRes.headers.get('set-cookie');
     let accessToken = '';
-    if (cookies) {
-        const match = cookies.match(/accessToken=([^;]+)/);
-        if (match) accessToken = match[1];
+    console.log('[DEBUG] Raw set-cookie string:', cookiesObj);
+
+    if (cookiesObj) {
+        const match = cookiesObj.match(/accessToken=([^;]+)/);
+        if (match) {
+            accessToken = match[1];
+        }
+    }
+
+    if (!accessToken) {
+        throw new Error('Failed to extract accessToken from Set-Cookie headers in Register phase.');
     }
 
     if (!accessToken) {
@@ -54,7 +66,8 @@ async function runJobLoop() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Cookie': `accessToken=${accessToken}`
+            'Cookie': `accessToken=${accessToken}`,
+            'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({ name: 'C2 Job Loop Project' })
     });
@@ -74,7 +87,8 @@ async function runJobLoop() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Cookie': `accessToken=${accessToken}`
+            'Cookie': `accessToken=${accessToken}`,
+            'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify(jobPayload)
     });
@@ -93,7 +107,10 @@ async function runJobLoop() {
 
     while (maxRetries > 0) {
         const statusRes = await fetch(`${API_URL}/api/jobs/${jobId}`, {
-            headers: { 'Cookie': `accessToken=${accessToken}` }
+            headers: {
+                'Cookie': `accessToken=${accessToken}`,
+                'Authorization': `Bearer ${accessToken}`
+            }
         });
         const statusData = await statusRes.json();
         jobInfo = statusData.data;
