@@ -170,9 +170,9 @@ async function runJobLoop() {
         const execSync = require('child_process').execSync;
         console.log('[6/6] Fetching real worker logs for Job ID', jobId);
         const rawLogs = execSync('railway logs --service "@scu/worker" -n 250', { encoding: 'utf8' });
-        const jobLogs = rawLogs.split('\\n').filter(line => line.includes(jobId)).join('\\n');
+        const jobLogs = rawLogs.split('\\n').filter((line: string) => line.includes(jobId)).join('\\n');
         fs.writeFileSync(path.join(EVIDENCE_DIR, `worker_log_job_${jobId}.txt`), jobLogs || 'No logs found in last 250 lines');
-    } catch (err) {
+    } catch (err: any) {
         fs.writeFileSync(path.join(EVIDENCE_DIR, `worker_log_job_${jobId}.txt`), 'Failed to fetch logs: ' + err.message);
     }
 
@@ -249,7 +249,7 @@ async function main() {
 
         await runJobLoop();
         console.log('\n✅ All C2 Steps Completed Successfully!');
-    } catch (err) {
+    } catch (err: any) {
         console.error('❌ Failed:', err);
         process.exit(1);
     }
