@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "axios": "^1.6.0"
+    "axios": "^1.13.5"
   },
   "scripts": {
     "build": "tsup src/index.ts --format cjs --dts --clean"
