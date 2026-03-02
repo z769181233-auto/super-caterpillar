@@ -78,7 +78,8 @@ export async function startGateWorkerApp() {
   const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
   const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
 
-  console.log('API_BASE_URL:', process.env.API_BASE_URL);
+  console.log('API_BASE_URL(raw)=', JSON.stringify(process.env.API_BASE_URL));
+  if (process.env.API_BASE_URL?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
   const baseUrl = process.env.API_BASE_URL;
   if (!baseUrl) {
     throw new Error('API_BASE_URL is required in production');
