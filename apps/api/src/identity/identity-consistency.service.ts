@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LocalStorageService } from '../storage/local-storage.service';
 import { ppv64FromImage, cosine } from './ppv64';
 import { nodeSharpDecoder } from './image-decoder';
+import { ProjectResolver } from '../common/project-resolver';
 
 @Injectable()
 export class IdentityConsistencyService {
@@ -11,7 +12,8 @@ export class IdentityConsistencyService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly storage: LocalStorageService
+    private readonly storage: LocalStorageService,
+    private readonly projectResolver: ProjectResolver
   ) { }
 
   /**
@@ -34,21 +36,20 @@ export class IdentityConsistencyService {
 
     let realEnabled = false;
     if (shotId) {
-      const shot = await this.prisma.shot.findUnique({
+      const shotData = await this.prisma.shot.findUnique({
         where: { id: shotId },
         include: {
           scene: {
             include: {
-              episode: {
-                include: {
-                  project: true,
-                },
-              },
+              episode: true,
             },
           },
         },
       });
-      const settings = ((shot?.scene?.episode as any)?.project?.settingsJson as any) || {};
+      const projectWithSettings = await this.projectResolver.resolveProjectNeedSettings(
+        shotData?.scene?.episode
+      );
+      const settings = (projectWithSettings?.settingsJson as any) || {};
       realEnabled = !!settings.ce23RealEnabled;
     }
 

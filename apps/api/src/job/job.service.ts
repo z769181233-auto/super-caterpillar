@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TaskService } from '../task/task.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditActions } from '../audit/audit.constants';
+import { ProjectResolver } from '../common/project-resolver';
 import { SceneGraphService } from '../project/scene-graph.service';
 import { StructureGenerateService } from '../project/structure-generate.service';
 import { CreateJobDto } from './dto/create-job.dto';
@@ -118,35 +119,11 @@ export class JobService {
     @Inject(EventEmitter2)
     private readonly eventEmitter: EventEmitter2,
     @Inject(FinancialSettlementService)
-    private readonly financialSettlementService?: FinancialSettlementService
+    private readonly financialSettlementService: FinancialSettlementService,
+    private readonly projectResolver: ProjectResolver
   ) { }
 
-  private async resolveProjectForEpisode(
-    episode: any | null | undefined
-  ): Promise<{ id: string; organizationId: string;[key: string]: any } | null> {
-    if (!episode) return null;
 
-    // Season -> Project 优先（此处通常已经 include 到）
-    const seasonProject = episode?.season?.project;
-    if (seasonProject?.id && seasonProject?.organizationId) {
-      return {
-        id: seasonProject.id,
-        organizationId: seasonProject.organizationId,
-        ...seasonProject,
-      };
-    }
-
-    // Episode.projectId 兜底
-    const projectId = episode?.projectId;
-    if (!projectId) return null;
-
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      select: { id: true, organizationId: true, name: true, settingsJson: true },
-    });
-
-    return project;
-  }
 
 
   /**
@@ -179,7 +156,7 @@ export class JobService {
 
     // 获取 project（支持 Season 和 Project 两种结构）
     const scene = (shot as any).scene;
-    let shotProject = await this.resolveProjectForEpisode(scene?.episode);
+    let shotProject = await this.projectResolver.resolveProjectAuthOnly(scene?.episode);
 
     // V3.0 Fallback: 如果没有通过 Episode 找到 Project，尝试直接通过 scene.projectId 查找
     if (!shotProject && scene?.projectId) {
@@ -285,7 +262,7 @@ export class JobService {
       });
       const scene = shotWithHierarchy?.scene;
       const episode = scene?.episode;
-      const project = await this.resolveProjectForEpisode(episode);
+      const project = await this.projectResolver.resolveProjectAuthOnly(episode);
 
       if (!scene || !episode || !project) {
         throw new NotFoundException('Shot hierarchy is incomplete');
@@ -570,7 +547,7 @@ export class JobService {
     });
     const scene = shot?.scene;
     const episode = scene?.episode;
-    const project = await this.resolveProjectForEpisode(episode);
+    const project = await this.projectResolver.resolveProjectAuthOnly(episode);
     if (!scene || !episode || !project) {
       throw new NotFoundException('Shot hierarchy is incomplete');
     }
@@ -2309,7 +2286,7 @@ export class JobService {
     if (job.shot) {
       const episode = job.shot.scene.episode;
 
-      const project = await this.resolveProjectForEpisode(episode);
+      const project = await this.projectResolver.resolveProjectAuthOnly(episode);
 
       if (!project || project.organizationId !== organizationId) {
         this.logger.warn(

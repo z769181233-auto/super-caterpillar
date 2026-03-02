@@ -17,6 +17,8 @@ import { AuditModule } from '../audit/audit.module';
 import { RedisModule } from '../redis/redis.module';
 import { ApiSecurityModule } from '../security/api-security/api-security.module';
 
+import { ProjectResolver } from '../common/project-resolver';
+
 @Module({
   imports: [
     UserModule,
@@ -37,7 +39,14 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
     StructureGenerateService,
     SceneGraphService,
     SceneGraphCache,
+    ProjectResolver,
   ],
-  exports: [ProjectService, ProjectStructureService, StructureGenerateService, SceneGraphService],
+  exports: [
+    ProjectService,
+    ProjectStructureService,
+    StructureGenerateService,
+    SceneGraphService,
+    ProjectResolver,
+  ],
 })
-export class ProjectModule {}
+export class ProjectModule { }

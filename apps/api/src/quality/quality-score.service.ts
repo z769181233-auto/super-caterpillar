@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JobService } from '../job/job.service';
 import { forwardRef, Inject } from '@nestjs/common';
 import { IdentityConsistencyService } from '../identity/identity-consistency.service';
+import { ProjectResolver } from '../common/project-resolver';
 
 @Injectable()
 export class QualityScoreService {
@@ -23,7 +24,8 @@ export class QualityScoreService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
-    private readonly identityService: IdentityConsistencyService
+    private readonly identityService: IdentityConsistencyService,
+    private readonly projectResolver: ProjectResolver
   ) { }
 
   /**
@@ -52,9 +54,12 @@ export class QualityScoreService {
     // 获取项目级 Feature Flags
     const shotForSettings = await this.prisma.shot.findUnique({
       where: { id: shotId },
-      include: { scene: { include: { episode: { include: { project: true } } } } },
+      include: { scene: { include: { episode: true } } },
     });
-    const settings = ((shotForSettings?.scene?.episode as any)?.project?.settingsJson as any) || {};
+    const projectWithSettings = await this.projectResolver.resolveProjectNeedSettings(
+      shotForSettings?.scene?.episode
+    );
+    const settings = (projectWithSettings?.settingsJson as any) || {};
 
     // P16-2.0: Kill Switch (Highest Priority)
     // CE23_REAL_FORCE_DISABLE=1 -> Disable Real & Shadow globally

@@ -29,6 +29,8 @@ import {
   BlockReasonCode,
 } from '@scu/shared-types';
 
+import { ProjectResolver } from '../common/project-resolver';
+
 @Injectable()
 export class ProjectService {
   private readonly logger = new Logger(ProjectService.name);
@@ -36,26 +38,11 @@ export class ProjectService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
-    @Inject(AuditLogService) private readonly auditLogService: AuditLogService
+    @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
+    private readonly projectResolver: ProjectResolver
   ) { }
 
-  private async resolveProjectForEpisode(
-    episode: any | null | undefined
-  ): Promise<{ id: string; organizationId: string; ownerId: string; name: string; settingsJson?: any;[key: string]: any } | null> {
-    if (!episode) return null;
 
-    const seasonProject = episode?.season?.project;
-    if (seasonProject?.id && seasonProject?.organizationId) {
-      return seasonProject;
-    }
-
-    const projectId = episode?.projectId;
-    if (!projectId) return null;
-
-    return (this.prisma.project.findUnique({
-      where: { id: projectId },
-    }) as any);
-  }
 
 
 
@@ -860,7 +847,7 @@ export class ProjectService {
     }
 
     // 获取 project
-    const project = await this.resolveProjectForEpisode(scene.episode);
+    const project = await this.projectResolver.resolveProjectAuthOnly(scene.episode);
     if (!project) {
       throw new NotFoundException(`Project not found for scene ${sceneId}`);
     }
@@ -929,7 +916,7 @@ export class ProjectService {
       }
 
       // Studio v0.7: 如果未传入 organizationId，从 Project 推导
-      const episodeProject = await this.resolveProjectForEpisode(scene.episode);
+      const episodeProject = await this.projectResolver.resolveProjectAuthOnly(scene.episode);
       const finalOrganizationId =
         organizationId ||
         episodeProject?.organizationId ||
@@ -1000,7 +987,7 @@ export class ProjectService {
     }
 
     // 获取 project（支持 Season 和 Project 两种结构）
-    const shotProject = await this.resolveProjectForEpisode(shot.scene.episode);
+    const shotProject = await this.projectResolver.resolveProjectAuthOnly(shot.scene.episode);
     if (!shotProject) {
       throw new NotFoundException(`Project not found for shot ${shotId}`);
     }
@@ -1036,7 +1023,7 @@ export class ProjectService {
     }
 
     // 获取 project
-    const shotProject = await this.resolveProjectForEpisode(shot.scene.episode);
+    const shotProject = await this.projectResolver.resolveProjectAuthOnly(shot.scene.episode);
     if (!shotProject) {
       throw new NotFoundException(`Project not found for shot ${id}`);
     }
@@ -1077,7 +1064,7 @@ export class ProjectService {
       }
 
       // Studio v0.7: 检查组织权限
-      const shotProject = await this.resolveProjectForEpisode(shot.scene.episode);
+      const shotProject = await this.projectResolver.resolveProjectAuthOnly(shot.scene.episode);
       if (!shotProject || shotProject.organizationId !== organizationId) {
         throw new ForbiddenException('You do not have permission to update this shot');
       }
@@ -1337,25 +1324,29 @@ export class ProjectService {
 
     // Studio v0.7: 过滤掉不属于当前组织的 Shots
     const filteredShots = shots.filter((shot: any) => {
-      const shotProject = (shot.scene.episode as any)?.project;
+      const shotProject = shot.scene.episode?.project;
       return shotProject?.organizationId === organizationId;
     });
 
     // 格式化返回数据
-    const formattedShots = filteredShots.map((shot: any) => ({
-      id: shot.id,
-      index: shot.index,
-      type: shot.type,
-      title: shot.title,
-      description: shot.description,
-      reviewedAt: shot.reviewedAt,
-      projectId: (shot.scene.episode as any)?.project?.id,
-      projectName: (shot.scene.episode as any)?.project?.name,
-      episodeId: shot.scene.episode?.id,
-      episodeName: shot.scene.episode?.name,
-      sceneId: shot.scene.id,
-      sceneIndex: shot.scene.sceneIndex,
-    }));
+    const formattedShots = filteredShots.map((shot: any) => {
+      const ep = shot.scene?.episode;
+      const proj = ep?.project;
+      return {
+        id: shot.id,
+        index: shot.index,
+        type: shot.type,
+        title: shot.title,
+        description: shot.description,
+        reviewedAt: shot.reviewedAt,
+        projectId: proj?.id,
+        projectName: proj?.name,
+        episodeId: ep?.id,
+        episodeName: ep?.name,
+        sceneId: shot.scene?.id,
+        sceneIndex: shot.scene?.sceneIndex,
+      };
+    });
 
     return {
       shots: formattedShots,
