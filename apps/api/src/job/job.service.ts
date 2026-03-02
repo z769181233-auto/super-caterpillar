@@ -2279,12 +2279,23 @@ export class JobService {
     // Studio v0.7: 检查组织权限
     // 检查组织权限：支持 Season 和 Project 两种结构
     if (job.shot) {
-      const project = job.shot.scene.episode?.season?.project || job.shot.scene.episode?.project;
+      const episode = job.shot.scene.episode;
+
+      let project = episode?.season?.project ?? null;
+
+      // 兼容“Episode 直接挂 ProjectId，但未 include project relation”的结构
+      if (!project && episode?.projectId) {
+        project = (await this.prisma.project.findUnique({
+          where: { id: episode.projectId },
+          select: { id: true, organizationId: true },
+        })) as any;
+      }
+
       if (!project || project.organizationId !== organizationId) {
         this.logger.warn(
-          `[DEBUG] Project Org Mismatch.Proj Org = ${project?.organizationId}, Request Org = ${organizationId} `
+          `[DEBUG] Project Org Mismatch.Proj Org = ${project?.organizationId}, Request Org = ${organizationId}`
         );
-        throw new ForbiddenException('You do not have permission to access this job');
+        throw new ForbiddenException('Organization mismatch');
       }
     } else {
       // 如果没有关联 Shot，直接检查项目组织 (NOVEL_SCAN_TOC 等任务)
