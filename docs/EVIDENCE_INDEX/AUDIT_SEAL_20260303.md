@@ -3,8 +3,8 @@
 This document serves as the "Commercial Grade Audit Seal" for the Super Caterpillar project. It anchors all evidence of runtime locking, historical secret redaction, and API hardening.
 
 ## Sealed SHA (Single Source of Truth)
-- **FINAL_SHA**: `e64e0fe435ba99f12e1d30502d2919319e30516e`
-- **Verification**: [final_anchor_quartet.txt](file:///Users/adam/Desktop/adam/%E6%AF%9B%E6%AF%9B%E8%99%AB%E5%AE%87%E5%AE%99/Super%20Caterpillar/docs/_evidence/security/20260303_release_verification/final_anchor_quartet.txt) proves Tag == HEAD == `e64e0fe4`.
+- **FINAL_SHA**: `29766a9910cdd7d96e6e002d10c6bc52b33a8962`
+- **Verification**: [final_anchor_quartet.txt](file:///Users/adam/Desktop/adam/%E6%AF%9B%E6%AF%9B%E8%99%AB%E5%AE%87%E5%AE%99/Super%20Caterpillar/docs/_evidence/security/20260303_release_verification/final_anchor_quartet.txt) proves Tag == HEAD == `29766a99`.
 
 ## R1: Release Anchor & Self-Consistency
 - **Status**: ✅ SEALED
@@ -25,7 +25,7 @@ This document serves as the "Commercial Grade Audit Seal" for the Super Caterpil
 - **Directory**: [docs/_evidence/p9_2b/c2_hardened_cleanup/prod_verification/](file:///Users/adam/Desktop/adam/%E6%AF%9B%E6%AF%9B%E8%99%AB%E5%AE%87%E5%AE%99/Super%20Caterpillar/docs/_evidence/p9_2b/c2_hardened_cleanup/prod_verification/)
 - **Missing Evidence**: 
   - `railway_deploy_success.png`: (Action Required: Human to place)
-  - `railway_deploy_sha.png`: (Action Required: Human to place, must match `e64e0fe4`)
+  - `railway_deploy_sha.png`: (Action Required: Human to place, must match `29766a99`)
 
 ## R4: Reoccurrence Defense (Required Check)
 - **Status**: ⚠️ PENDING EXTERNAL SCREENSHOTS
@@ -37,6 +37,6 @@ This document serves as the "Commercial Grade Audit Seal" for the Super Caterpil
 ---
 **Final Verdict**: R1/R2 已 SEALED；R3/R4 以外部平台截图补齐后方可 SEALED（见证据目录）。泄露串物理蒸发 0-hit；封板锚点已对齐至 `e64e0fe4`；全案进入“审计锁死”状态。
 
-**Sealed SHA**: `e64e0fe435ba99f12e1d30502d2919319e30516e`
+**Sealed SHA**: `29766a9910cdd7d96e6e002d10c6bc52b33a8962`
 **Audit Completed & Signed by Antigravity AI**
 *Final Seal Updated on: 2026-03-04T18:55:00+07:00*

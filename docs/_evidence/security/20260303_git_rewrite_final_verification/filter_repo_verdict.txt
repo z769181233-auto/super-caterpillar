@@ -1,0 +1,12 @@
+REWRITE_SUCCESS
+commit e86a5ecf91f88d5cd47aaa92d88a0d423f5176c7
+Author: Audit Bot <audit@scu.com>
+Date:   Sun Feb 15 18:29:19 2026 +0800
+
+    chore: V3.0 spec alignment and workspace hygiene cleanup
+
+commit 3609866ceba7dfffa1198a3a8b6c5f6f38db6140
+Author: Audit Bot <audit@scu.com>
+Date:   Sun Feb 8 17:20:02 2026 +0700
+
+    Phase5: final audit fix - RSS definition, pinned path, and PID alignment

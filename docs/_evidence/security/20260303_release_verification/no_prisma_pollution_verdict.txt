@@ -1,0 +1,28 @@
+== git status ==
+ M apps/fusion-engine
+?? finalize_audit.sh
+?? temp_audit.sh
+
+== tracked prisma generated files (should be empty) ==
+packages/database/src/generated/prisma/default.d.ts
+packages/database/src/generated/prisma/default.js
+packages/database/src/generated/prisma/edge.d.ts
+packages/database/src/generated/prisma/edge.js
+packages/database/src/generated/prisma/index-browser.js
+packages/database/src/generated/prisma/index.d.ts
+packages/database/src/generated/prisma/index.js
+packages/database/src/generated/prisma/libquery_engine-darwin-arm64.dylib.node
+packages/database/src/generated/prisma/package.json
+packages/database/src/generated/prisma/runtime/edge-esm.js
+packages/database/src/generated/prisma/runtime/edge.js
+packages/database/src/generated/prisma/runtime/index-browser.d.ts
+packages/database/src/generated/prisma/runtime/index-browser.js
+packages/database/src/generated/prisma/runtime/library.d.ts
+packages/database/src/generated/prisma/runtime/library.js
+packages/database/src/generated/prisma/runtime/react-native.js
+packages/database/src/generated/prisma/runtime/wasm.js
+packages/database/src/generated/prisma/schema.prisma
+packages/database/src/generated/prisma/wasm.d.ts
+packages/database/src/generated/prisma/wasm.js
+
+== .gitignore relevant lines ==
