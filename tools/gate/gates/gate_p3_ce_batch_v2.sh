@@ -13,6 +13,10 @@ echo "=== Gate P3: CE Batch V2 (Narrative/Conflict/Arc/Theme/Pacing) ===" | tee 
   echo "GIT_SHA=$(git rev-parse HEAD)"
 } > "$EVI/env_snapshot.txt"
 
+# Ensure Gate DB Availability
+bash tools/dev/ensure_gate_postgres.sh || true
+export DATABASE_URL="${DATABASE_URL:-postgresql://scu:scu@localhost:5433/scu?schema=public}"
+
 # Run All CE P3 Runners
 RUNNERS=("ce01_narrative_structure" "ce05_conflict_detector" "ce08_character_arc" "ce12_theme_extractor" "ce13_pacing_analyzer")
 
