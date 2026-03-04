@@ -24,13 +24,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # pnpm audit：作为快速门禁
       - name: pnpm audit
         run: pnpm audit --prod
 
-      # OSV：更贴近 GitHub Advisory / CVE 生态
-      - name: osv-scanner
-        uses: google/osv-scanner-action@v1.8.0
+      - name: OSV scan
+        uses: google/osv-scanner-action@v2.3.3
         with:
           scan-args: |-
             -r

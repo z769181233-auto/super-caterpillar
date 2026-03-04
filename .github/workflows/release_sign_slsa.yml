@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write   # 关键：OIDC 给 cosign / provenance
+  id-token: write
   actions: read
 
 jobs:
@@ -29,7 +29,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo build --cache-dir=.turbo
 
-      # 这里按你们实际制品调整：比如打包 dist/
       - name: Create release artifact
         run: |
           tar -czf dist.tgz dist || mkdir dist && tar -czf dist.tgz dist
@@ -49,15 +48,18 @@ jobs:
             dist.tgz.sha256
           retention-days: 30
 
-  sign_and_provenance:
+  # cosign 签名
+  sign_artifact:
     needs: build_package
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: release-artifact
 
-      # cosign OIDC keyless signing
       - name: Install cosign
         uses: sigstore/cosign-installer@v3.6.0
 
@@ -76,8 +78,13 @@ jobs:
             dist.tgz.crt
           retention-days: 30
 
-      # SLSA provenance
-      - name: Generate SLSA provenance
-        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
-        with:
-          base64-subjects: ${{ format('dist.tgz:{0}', needs.build_package.outputs.dist_sha256) }}
+  # SLSA Provenance (Reusable Workflow)
+  provenance:
+    needs: build_package
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: ${{ format('dist.tgz:{0}', needs.build_package.outputs.dist_sha256) }}

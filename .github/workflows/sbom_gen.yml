@@ -22,15 +22,15 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm -w install --frozen-lockfile
 
-      # 生成 CycloneDX SBOM
+      # 使用 CycloneDX 官方工具生成 SBOM (CycloneDX 1.6)
       - name: Generate SBOM (CycloneDX)
         run: |
           pnpm -w add -D @cyclonedx/cyclonedx-npm
           node ./node_modules/.bin/cyclonedx-npm --output-file sbom.cdx.json --output-format JSON
 
-      # 校验
+      # 执行审计级校验 (CLI Validate)
       - name: Validate SBOM
         run: |
           npm i -g @cyclonedx/cyclonedx-cli
