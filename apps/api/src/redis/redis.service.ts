@@ -84,7 +84,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      return await this.client!.get(key);
+      const value = await this.client!.get(key);
+      return value === null ? null : (typeof value === 'string' ? value : (value as any).toString());
     } catch (error: any) {
       this.logger.warn(`Redis GET failed for key ${key}: ${error.message}`);
       return null;
