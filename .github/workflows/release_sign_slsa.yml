@@ -1,0 +1,83 @@
+name: release-sign-slsa
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write   # 关键：OIDC 给 cosign / provenance
+  actions: read
+
+jobs:
+  build_package:
+    runs-on: ubuntu-latest
+    outputs:
+      dist_sha256: ${{ steps.hash.outputs.dist_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo build --cache-dir=.turbo
+
+      # 这里按你们实际制品调整：比如打包 dist/
+      - name: Create release artifact
+        run: |
+          tar -czf dist.tgz dist || mkdir dist && tar -czf dist.tgz dist
+          ls -la
+
+      - name: Hash artifact
+        id: hash
+        run: |
+          sha256sum dist.tgz | awk '{print $1}' > dist.tgz.sha256
+          echo "dist_sha256=$(cat dist.tgz.sha256)" >> $GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-artifact
+          path: |
+            dist.tgz
+            dist.tgz.sha256
+          retention-days: 30
+
+  sign_and_provenance:
+    needs: build_package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-artifact
+
+      # cosign OIDC keyless signing
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3.6.0
+
+      - name: Sign artifact (keyless)
+        run: |
+          cosign sign-blob --yes \
+            --output-signature dist.tgz.sig \
+            --output-certificate dist.tgz.crt \
+            dist.tgz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signatures
+          path: |
+            dist.tgz.sig
+            dist.tgz.crt
+          retention-days: 30
+
+      # SLSA provenance
+      - name: Generate SLSA provenance
+        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+        with:
+          base64-subjects: ${{ format('dist.tgz:{0}', needs.build_package.outputs.dist_sha256) }}

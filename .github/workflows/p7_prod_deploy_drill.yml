@@ -1,0 +1,51 @@
+name: p7-prod-deploy-drill
+
+on:
+  workflow_dispatch:
+
+jobs:
+  p7-prod-deploy-drill:
+    runs-on: ubuntu-latest
+
+    # Deployment environment secrets would be injected here
+    # environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Run P7 production deployment drill
+        env:
+          EVI_OVERRIDE: /tmp/p7_prod_deploy_drill_evidence
+
+          # Commands (store as secrets to avoid leaking)
+          P7_DEPLOY_BLUE_CMD: ${{ secrets.P7_DEPLOY_BLUE_CMD }}
+          P7_DEPLOY_GREEN_CMD: ${{ secrets.P7_DEPLOY_GREEN_CMD }}
+          P7_CUTOVER_TO_GREEN_CMD: ${{ secrets.P7_CUTOVER_TO_GREEN_CMD }}
+          P7_ROLLBACK_TO_BLUE_CMD: ${{ secrets.P7_ROLLBACK_TO_BLUE_CMD }}
+
+          # Healthcheck URLs (can be secrets or vars; secrets recommended)
+          P7_HEALTHCHECK_URL_BLUE: ${{ secrets.P7_HEALTHCHECK_URL_BLUE }}
+          P7_HEALTHCHECK_URL_GREEN: ${{ secrets.P7_HEALTHCHECK_URL_GREEN }}
+          P7_HEALTHCHECK_URL_LIVE: ${{ secrets.P7_HEALTHCHECK_URL_LIVE }}
+
+          # Optional tuning
+          P7_HEALTH_TIMEOUT_SEC: '180'
+          P7_HEALTH_INTERVAL_SEC: '3'
+        run: |
+          bash tools/run_p7_prod_deploy_drill.sh
+
+      - name: Upload P7 evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: p7_prod_deploy_drill_evidence
+          path: /tmp/p7_prod_deploy_drill_evidence
+          if-no-files-found: error

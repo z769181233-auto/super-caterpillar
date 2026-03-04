@@ -1,0 +1,43 @@
+name: sbom
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # 生成 CycloneDX SBOM
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          pnpm -w add -D @cyclonedx/cyclonedx-npm
+          node ./node_modules/.bin/cyclonedx-npm --output-file sbom.cdx.json --output-format JSON
+
+      # 校验
+      - name: Validate SBOM
+        run: |
+          npm i -g @cyclonedx/cyclonedx-cli
+          cyclonedx validate --input-file sbom.cdx.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom.cdx.json
+          retention-days: 30
