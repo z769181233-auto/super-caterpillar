@@ -1,0 +1,4 @@
+HEAD_SHA=dfb55a52ba6e784edb6b64f27ae700c5d879acaa
+TAG_SHA=dfb55a52ba6e784edb6b64f27ae700c5d879acaa
+REMOTE_MAIN_SHA=dfb55a52ba6e784edb6b64f27ae700c5d879acaa
+VERDICT_head_eq_tag=YES
