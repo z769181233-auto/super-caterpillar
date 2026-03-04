@@ -1,126 +1,80 @@
 #!/usr/bin/env ts-node
-/**
- * CE05 Conflict Detector Runner (Fixed import from @scu/database)
- * Uses @scu/database correctly with explicit DATABASE_URL
- */
-import { PrismaClient } from 'database';
-
-function mustEnv(k: string): string {
-    const v = process.env[k];
-    if (!v) {
-        console.error(`[CE05 FATAL] Missing required environment variable: ${k}`);
-        console.error(`Current DATABASE_URL: ${process.env.DATABASE_URL || 'NOT_SET'}`);
-        throw new Error(`[CE05] missing env ${k}`);
-    }
-    return v;
-}
-
-// Ensure DATABASE_URL is available
-const dbUrl = mustEnv('DATABASE_URL');
-console.log(`[CE05] Using DATABASE_URL: ${dbUrl.replace(/:[^@]+@/, ':***@')}`);
-
-const prisma = new PrismaClient();
+import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
+import { RedisService } from '../../apps/api/src/redis/redis.service';
+import { AuditService } from '../../apps/api/src/audit/audit.service';
+import { CostLedgerService } from '../../apps/api/src/cost/cost-ledger.service';
+import { BillingService } from '../../apps/api/src/billing/billing.service';
+import { CE05ConflictDetectorAdapter } from '../../apps/api/src/engines/adapters/ce05_conflict_detector.adapter';
 
 async function main() {
-  const engineKey = 'ce05_conflict_detector';
-  const traceId = `ce05_trace_${Date.now()}`;
-  const userId = '00000000-0000-0000-0000-000000000001';
-  const projectId = '00000000-0000-0000-0000-000000000002';
-  const orgId = '00000000-0000-0000-0000-000000000003';
-  console.log(`Running ${engineKey}...`);
-  console.log(`TraceID: ${traceId}`);
+  console.log('Initializing CE05 Runner...');
+  const prisma = new PrismaService();
+  const redis = new RedisService();
+  const audit = new AuditService(prisma);
+  const billing = new BillingService(prisma);
+  const cost = new CostLedgerService(prisma, billing);
+  const adapter = new CE05ConflictDetectorAdapter(redis, audit, cost);
 
-  // Ensure User exists for FK
+  const suffix = Math.random().toString(36).substring(7);
+  const projectId = `p3_test_ce05_${suffix}`;
+  const jobId = `job_ce05_${suffix}`;
+  const userId = 'system';
+  const orgId = 'org1';
+
+  // Seed data
   await (prisma as any).user.upsert({
     where: { id: userId },
     update: {},
-    create: { id: userId, email: `gate_${Date.now()}@scu`, passwordHash: 'mock' },
+    create: { id: userId, email: `system_ce05_${suffix}@scu`, passwordHash: 'mock' },
   });
-
-<<<<<<< Updated upstream
-  // Ensure Project and Org exist (for CostLedger foreign keys)
-  await prisma.organization.upsert({
+  await (prisma as any).organization.upsert({
     where: { id: orgId },
-    update: {},
-    create: { id: orgId, name: 'Gate Org', ownerId: userId },
+    update: { credits: 1000 },
+    create: { id: orgId, name: 'Test Org', ownerId: userId, credits: 1000 },
   });
-  await prisma.project.upsert({
-    where: { id: projectId },
-    update: {},
-    create: { id: projectId, name: 'Gate Project', organizationId: orgId, ownerId: 'user-gate' },
-  });
-
-  // Create audit log entry
-  await prisma.auditLog.create({
+  await (prisma as any).project.create({
     data: {
-      action: 'CONFLICT_DETECTION',
-      resourceType: 'ENGINE_TASK',
-      resourceId: engineKey,
-      details: { traceId, stub: true, gate_pass2: true },
+      id: projectId,
+      name: 'CE05 Test',
+      ownerId: userId,
+      organizationId: orgId,
+    },
+  });
+  await (prisma as any).shotJob.create({
+    data: {
+      id: jobId,
+      projectId,
+      status: 'RUNNING',
+      type: 'NOVEL_ANALYSIS',
+      attempts: 1,
+      organizationId: orgId,
     },
   });
 
-  // Create billing ledger entry (ledger_required=YES)
-  const uniqueJobId = `00000000-0000-0000-0000-${Date.now().toString().padEnd(12, '0').substring(0, 12)}`;
-  await (prisma as any).billingLedger.create({
-    data: {
-      projectId: projectId,
-      jobId: uniqueJobId,
-      billingState: 'CONSUME',
-      amount: BigInt(100),
-      idempotencyKey: `idempotency-${traceId}`,
-    },
-  });
+  const baseContext = {
+    projectId,
+    userId,
+    traceId: `trace_ce05_${suffix}`,
+    jobId,
+    organizationId: orgId,
+  };
 
-  console.log('✅ CE05 stub execution complete');
-  console.log('AuditLog: created');
-  console.log('CostLedger: created');
-}
+  try {
+    console.log('=== Test Case 1: Detect Conflict ===');
+    const res1 = await adapter.invoke({
+      jobType: 'NOVEL_ANALYSIS',
+      engineKey: 'ce05_conflict_detector',
+      payload: { text: 'They argued and shouted at each other' },
+      context: baseContext,
+    });
+    console.log('Res1:', JSON.stringify(res1, null, 2));
 
-main()
-  .catch((e: any) => {
-    console.error('❌ CE05 Failed:', e.message);
+    console.log('✅ CE05 Verified');
+    process.exit(0);
+  } catch (e) {
+    console.error('❌ CE05 Verification Failed', e);
     process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
-=======
-    // Connect to database
-    await prisma.$connect();
-    console.log('✅ DB connected');
-
-    // Create audit log entry
-    await prisma.auditLog.create({
-        data: {
-            auditPrefix: 'CE05',
-            engineKey,
-            traceId,
-            operation: 'conflict_detection',
-            status: 'SUCCESS',
-            metadata: { gate_pass2_fix2: true, timestamp: new Date().toISOString() },
-        },
-    });
-    console.log('✅ AuditLog created');
-
-    // Create cost ledger entry (ledger_required=YES)
-    await prisma.costLedger.create({
-        data: {
-            engineKey,
-            traceId,
-            cacheStatus: 'MISS',
-            costUsd: '0.001',
-            metadata: { gate_pass2_fix2: true },
-        },
-    });
-    console.log('✅ CostLedger created');
-
-    console.log('✅ CE05 execution complete');
+  }
 }
 
-main()
-    .catch((e) => {
-        console.error('❌ CE05 Failed:', e.message);
-        console.error('Stack:', e.stack);
-        process.exit(1);
-    })
-    .finally(() => prisma.$disconnect());
->>>>>>> Stashed changes
+main();
