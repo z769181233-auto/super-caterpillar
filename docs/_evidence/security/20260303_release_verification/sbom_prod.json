@@ -1,0 +1,238 @@
+[
+  {
+    "name": "super-caterpillar-universe",
+    "version": "1.0.0",
+    "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar",
+    "private": true,
+    "dependencies": {
+      "@formatjs/icu-messageformat-parser": {
+        "from": "@formatjs/icu-messageformat-parser",
+        "version": "3.5.1",
+        "resolved": "https://registry.npmjs.org/@formatjs/icu-messageformat-parser/-/icu-messageformat-parser-3.5.1.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@formatjs+icu-messageformat-parser@3.5.1/node_modules/@formatjs/icu-messageformat-parser"
+      },
+      "dotenv": {
+        "from": "dotenv",
+        "version": "17.3.1",
+        "resolved": "https://registry.npmjs.org/dotenv/-/dotenv-17.3.1.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/dotenv@17.3.1/node_modules/dotenv"
+      },
+      "express": {
+        "from": "express",
+        "version": "5.2.1",
+        "resolved": "https://registry.npmjs.org/express/-/express-5.2.1.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/express@5.2.1/node_modules/express"
+      },
+      "jszip": {
+        "from": "jszip",
+        "version": "3.10.1",
+        "resolved": "https://registry.npmjs.org/jszip/-/jszip-3.10.1.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/jszip@3.10.1/node_modules/jszip"
+      },
+      "mammoth": {
+        "from": "mammoth",
+        "version": "1.11.0",
+        "resolved": "https://registry.npmjs.org/mammoth/-/mammoth-1.11.0.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/mammoth@1.11.0/node_modules/mammoth"
+      },
+      "pg": {
+        "from": "pg",
+        "version": "8.19.0",
+        "resolved": "https://registry.npmjs.org/pg/-/pg-8.19.0.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/pg@8.19.0/node_modules/pg"
+      },
+      "prom-client": {
+        "from": "prom-client",
+        "version": "15.1.3",
+        "resolved": "https://registry.npmjs.org/prom-client/-/prom-client-15.1.3.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prom-client@15.1.3/node_modules/prom-client"
+      },
+      "replicate": {
+        "from": "replicate",
+        "version": "1.4.0",
+        "resolved": "https://registry.npmjs.org/replicate/-/replicate-1.4.0.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/replicate@1.4.0/node_modules/replicate"
+      },
+      "sharp": {
+        "from": "sharp",
+        "version": "0.34.5",
+        "resolved": "https://registry.npmjs.org/sharp/-/sharp-0.34.5.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/sharp@0.34.5/node_modules/sharp"
+      },
+      "xmlbuilder2": {
+        "from": "xmlbuilder2",
+        "version": "4.0.3",
+        "resolved": "https://registry.npmjs.org/xmlbuilder2/-/xmlbuilder2-4.0.3.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/xmlbuilder2@4.0.3/node_modules/xmlbuilder2"
+      },
+      "zod": {
+        "from": "zod",
+        "version": "4.3.6",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.3.6.tgz",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/zod@4.3.6/node_modules/zod"
+      }
+    },
+    "unsavedDependencies": {
+      "eslint": {
+        "from": "eslint",
+        "version": "link:node_modules/.pnpm/eslint@10.0.2_jiti@2.6.1/node_modules/eslint",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint@10.0.2_jiti@2.6.1/node_modules/eslint"
+      },
+      "eslint-config-next": {
+        "from": "eslint-config-next",
+        "version": "link:node_modules/.pnpm/eslint-config-next@16.1.6_@typescript-eslint+parser@8.56.1_eslint@10.0.2_jiti@2.6.1__typescri_elddax262r7ph75fjvax2pybwe/node_modules/eslint-config-next",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-config-next@16.1.6_@typescript-eslint+parser@8.56.1_eslint@10.0.2_jiti@2.6.1__typescri_elddax262r7ph75fjvax2pybwe/node_modules/eslint-config-next"
+      },
+      "eslint-config-prettier": {
+        "from": "eslint-config-prettier",
+        "version": "link:node_modules/.pnpm/eslint-config-prettier@10.1.8_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-config-prettier",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-config-prettier@10.1.8_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-config-prettier"
+      },
+      "eslint-import-resolver-node": {
+        "from": "eslint-import-resolver-node",
+        "version": "link:node_modules/.pnpm/eslint-import-resolver-node@0.3.9/node_modules/eslint-import-resolver-node",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-import-resolver-node@0.3.9/node_modules/eslint-import-resolver-node"
+      },
+      "eslint-import-resolver-typescript": {
+        "from": "eslint-import-resolver-typescript",
+        "version": "link:node_modules/.pnpm/eslint-import-resolver-typescript@3.10.1_eslint-plugin-import@2.32.0_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-import-resolver-typescript",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-import-resolver-typescript@3.10.1_eslint-plugin-import@2.32.0_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-import-resolver-typescript"
+      },
+      "eslint-module-utils": {
+        "from": "eslint-module-utils",
+        "version": "link:node_modules/.pnpm/eslint-module-utils@2.12.1_@typescript-eslint+parser@8.56.1_eslint@10.0.2_jiti@2.6.1__typescr_end5msaydfokmntrhd3axda3si/node_modules/eslint-module-utils",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-module-utils@2.12.1_@typescript-eslint+parser@8.56.1_eslint@10.0.2_jiti@2.6.1__typescr_end5msaydfokmntrhd3axda3si/node_modules/eslint-module-utils"
+      },
+      "eslint-plugin-import": {
+        "from": "eslint-plugin-import",
+        "version": "link:node_modules/.pnpm/eslint-plugin-import@2.32.0_@typescript-eslint+parser@8.56.1_eslint@10.0.2_jiti@2.6.1__typesc_3jiuqim7p6tiilpb3u35d22sbq/node_modules/eslint-plugin-import",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-plugin-import@2.32.0_@typescript-eslint+parser@8.56.1_eslint@10.0.2_jiti@2.6.1__typesc_3jiuqim7p6tiilpb3u35d22sbq/node_modules/eslint-plugin-import"
+      },
+      "eslint-plugin-jsx-a11y": {
+        "from": "eslint-plugin-jsx-a11y",
+        "version": "link:node_modules/.pnpm/eslint-plugin-jsx-a11y@6.10.2_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-plugin-jsx-a11y",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-plugin-jsx-a11y@6.10.2_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-plugin-jsx-a11y"
+      },
+      "eslint-plugin-prettier": {
+        "from": "eslint-plugin-prettier",
+        "version": "link:node_modules/.pnpm/eslint-plugin-prettier@5.5.5_@types+eslint@9.6.1_eslint-config-prettier@10.1.8_eslint@10.0.2__hvce42sclin5vwxtslommm3lla/node_modules/eslint-plugin-prettier",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-plugin-prettier@5.5.5_@types+eslint@9.6.1_eslint-config-prettier@10.1.8_eslint@10.0.2__hvce42sclin5vwxtslommm3lla/node_modules/eslint-plugin-prettier"
+      },
+      "eslint-plugin-react": {
+        "from": "eslint-plugin-react",
+        "version": "link:node_modules/.pnpm/eslint-plugin-react@7.37.5_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-plugin-react",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-plugin-react@7.37.5_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-plugin-react"
+      },
+      "eslint-plugin-react-hooks": {
+        "from": "eslint-plugin-react-hooks",
+        "version": "link:node_modules/.pnpm/eslint-plugin-react-hooks@7.0.1_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-plugin-react-hooks",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-plugin-react-hooks@7.0.1_eslint@10.0.2_jiti@2.6.1_/node_modules/eslint-plugin-react-hooks"
+      },
+      "eslint-scope": {
+        "from": "eslint-scope",
+        "version": "link:node_modules/.pnpm/eslint-scope@9.1.1/node_modules/eslint-scope",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-scope@9.1.1/node_modules/eslint-scope"
+      },
+      "eslint-visitor-keys": {
+        "from": "eslint-visitor-keys",
+        "version": "link:node_modules/.pnpm/eslint-visitor-keys@5.0.1/node_modules/eslint-visitor-keys",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/eslint-visitor-keys@5.0.1/node_modules/eslint-visitor-keys"
+      },
+      "prettier-linter-helpers": {
+        "from": "prettier-linter-helpers",
+        "version": "link:node_modules/.pnpm/prettier-linter-helpers@1.0.1/node_modules/prettier-linter-helpers",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/prettier-linter-helpers@1.0.1/node_modules/prettier-linter-helpers"
+      },
+      "typescript-eslint": {
+        "from": "typescript-eslint",
+        "version": "link:node_modules/.pnpm/typescript-eslint@8.56.1_eslint@10.0.2_jiti@2.6.1__typescript@5.9.3/node_modules/typescript-eslint",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/typescript-eslint@8.56.1_eslint@10.0.2_jiti@2.6.1__typescript@5.9.3/node_modules/typescript-eslint"
+      },
+      "@eslint-community/eslint-utils": {
+        "from": "@eslint-community/eslint-utils",
+        "version": "link:node_modules/.pnpm/@eslint-community+eslint-utils@4.9.1_eslint@10.0.2_jiti@2.6.1_/node_modules/@eslint-community/eslint-utils",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@eslint-community+eslint-utils@4.9.1_eslint@10.0.2_jiti@2.6.1_/node_modules/@eslint-community/eslint-utils"
+      },
+      "@eslint-community/regexpp": {
+        "from": "@eslint-community/regexpp",
+        "version": "link:node_modules/.pnpm/@eslint-community+regexpp@4.12.2/node_modules/@eslint-community/regexpp",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@eslint-community+regexpp@4.12.2/node_modules/@eslint-community/regexpp"
+      },
+      "@eslint/config-array": {
+        "from": "@eslint/config-array",
+        "version": "link:node_modules/.pnpm/@eslint+config-array@0.23.2/node_modules/@eslint/config-array",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@eslint+config-array@0.23.2/node_modules/@eslint/config-array"
+      },
+      "@eslint/config-helpers": {
+        "from": "@eslint/config-helpers",
+        "version": "link:node_modules/.pnpm/@eslint+config-helpers@0.5.2/node_modules/@eslint/config-helpers",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@eslint+config-helpers@0.5.2/node_modules/@eslint/config-helpers"
+      },
+      "@eslint/core": {
+        "from": "@eslint/core",
+        "version": "link:node_modules/.pnpm/@eslint+core@1.1.0/node_modules/@eslint/core",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@eslint+core@1.1.0/node_modules/@eslint/core"
+      },
+      "@eslint/object-schema": {
+        "from": "@eslint/object-schema",
+        "version": "link:node_modules/.pnpm/@eslint+object-schema@3.0.2/node_modules/@eslint/object-schema",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@eslint+object-schema@3.0.2/node_modules/@eslint/object-schema"
+      },
+      "@eslint/plugin-kit": {
+        "from": "@eslint/plugin-kit",
+        "version": "link:node_modules/.pnpm/@eslint+plugin-kit@0.6.0/node_modules/@eslint/plugin-kit",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@eslint+plugin-kit@0.6.0/node_modules/@eslint/plugin-kit"
+      },
+      "@next/eslint-plugin-next": {
+        "from": "@next/eslint-plugin-next",
+        "version": "link:node_modules/.pnpm/@next+eslint-plugin-next@16.1.6/node_modules/@next/eslint-plugin-next",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@next+eslint-plugin-next@16.1.6/node_modules/@next/eslint-plugin-next"
+      },
+      "@types/eslint": {
+        "from": "@types/eslint",
+        "version": "link:node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint"
+      },
+      "@types/eslint-scope": {
+        "from": "@types/eslint-scope",
+        "version": "link:node_modules/.pnpm/@types+eslint-scope@3.7.7/node_modules/@types/eslint-scope",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@types+eslint-scope@3.7.7/node_modules/@types/eslint-scope"
+      },
+      "@typescript-eslint/project-service": {
+        "from": "@typescript-eslint/project-service",
+        "version": "link:node_modules/.pnpm/@typescript-eslint+project-service@8.56.1_typescript@5.9.3/node_modules/@typescript-eslint/project-service",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@typescript-eslint+project-service@8.56.1_typescript@5.9.3/node_modules/@typescript-eslint/project-service"
+      },
+      "@typescript-eslint/scope-manager": {
+        "from": "@typescript-eslint/scope-manager",
+        "version": "link:node_modules/.pnpm/@typescript-eslint+scope-manager@8.56.1/node_modules/@typescript-eslint/scope-manager",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@typescript-eslint+scope-manager@8.56.1/node_modules/@typescript-eslint/scope-manager"
+      },
+      "@typescript-eslint/tsconfig-utils": {
+        "from": "@typescript-eslint/tsconfig-utils",
+        "version": "link:node_modules/.pnpm/@typescript-eslint+tsconfig-utils@8.56.1_typescript@5.9.3/node_modules/@typescript-eslint/tsconfig-utils",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@typescript-eslint+tsconfig-utils@8.56.1_typescript@5.9.3/node_modules/@typescript-eslint/tsconfig-utils"
+      },
+      "@typescript-eslint/type-utils": {
+        "from": "@typescript-eslint/type-utils",
+        "version": "link:node_modules/.pnpm/@typescript-eslint+type-utils@8.56.1_eslint@10.0.2_jiti@2.6.1__typescript@5.9.3/node_modules/@typescript-eslint/type-utils",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@typescript-eslint+type-utils@8.56.1_eslint@10.0.2_jiti@2.6.1__typescript@5.9.3/node_modules/@typescript-eslint/type-utils"
+      },
+      "@typescript-eslint/types": {
+        "from": "@typescript-eslint/types",
+        "version": "link:node_modules/.pnpm/@typescript-eslint+types@8.56.1/node_modules/@typescript-eslint/types",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@typescript-eslint+types@8.56.1/node_modules/@typescript-eslint/types"
+      },
+      "@typescript-eslint/utils": {
+        "from": "@typescript-eslint/utils",
+        "version": "link:node_modules/.pnpm/@typescript-eslint+utils@8.56.1_eslint@10.0.2_jiti@2.6.1__typescript@5.9.3/node_modules/@typescript-eslint/utils",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@typescript-eslint+utils@8.56.1_eslint@10.0.2_jiti@2.6.1__typescript@5.9.3/node_modules/@typescript-eslint/utils"
+      },
+      "@typescript-eslint/visitor-keys": {
+        "from": "@typescript-eslint/visitor-keys",
+        "version": "link:node_modules/.pnpm/@typescript-eslint+visitor-keys@8.56.1/node_modules/@typescript-eslint/visitor-keys",
+        "path": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/node_modules/.pnpm/@typescript-eslint+visitor-keys@8.56.1/node_modules/@typescript-eslint/visitor-keys"
+      }
+    }
+  }
+]
