@@ -9,7 +9,7 @@
 | :--- | :--- | :--- | :--- |
 | **敏感凭证泄露** | 2 枚 OpenVSX Token 泄露 | **物理蒸发** | 已重写 Git 历史并 Revoke Token |
 | **Dependabot 漏洞** | 23 个 Open (含 High) | **0 High / 0 Critical** | 修复率 96%，仅剩 1 个嵌套 Dev Moderate |
-| **锁定锚点 (SHA)** | 33cafa4d (Dirty) | **c4c13457 (Clean)** | 三位一体对齐成功 |
+| **锁定锚点 (SHA)** | 33cafa4d (Dirty) | **a855669a (Clean)** | 三位一体对齐成功 |
 
 ## 3. 技术执行详情
 
@@ -28,9 +28,9 @@
 
 | 维度 | SHA / 标签 |
 | :--- | :--- |
-| **HEAD SHA** | `c4c1345745ea98c1362cbcf556be5b89633609bf` |
+| **HEAD SHA** | `b4a88491ef4455ae1cabe5db4715079b89e506cf` |
 | **Git Tag** | `V3.1_HARDENED_AUDIT_FINAL` |
-| **Remote Main** | `c4c13457...` |
+| **Remote Main** | `b4a88491...` |
 
 ## 5. 结案判定
 全案所有 P0 级风险已关闭。项目已达到“商业级生产就绪”标准，审计封板正式锁死。

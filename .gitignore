@@ -119,3 +119,6 @@ shots.csv
 
 # GitHub Actions (Disabled for deploy push)
 .github/workflows/
+
+# audit: ignore prisma generated artifacts
+packages/database/src/generated/prisma/
