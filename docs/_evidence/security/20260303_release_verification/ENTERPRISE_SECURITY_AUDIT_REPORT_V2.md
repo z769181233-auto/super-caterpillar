@@ -16,6 +16,7 @@
 | **GHSA-9qr9-h5gf-34mp** | next (Next.js RCE) | **Critical** | 15.1.9+ | ✅ 升级至 15.5.10 |
 | **GHSA-f82v-jwr5-mffw** | next (Auth Bypass) | **Critical** | 15.2.3+ | ✅ 升级至 15.5.10 |
 | **GHSA-67rr-84xm-4c7r** | next (DoS) | **High** | 15.1.8+ | ✅ 升级至 15.5.10 |
+| **GHSA-74p2-v8fh-98g3** | axios (SSRF) | **High** | 1.8.2+ | ✅ 升级至 1.8.2 |
 | **GHSA-w7fw-mjwx-w883** | qs (DoS) | **High** | 6.14.2+ | ✅ 升级至 6.14.2 |
 | **GHSA-xxjr-mmjv-4gpg** | lodash (Proto-Pollution) | **Moderate** | 4.17.23+ | ✅ 强制 Override 升级 |
 | **GHSA-r354-f388-2fhh** | hono (IP Spoofing) | **Moderate** | 4.11.7+ | ✅ 升级至 4.11.10 |
@@ -30,9 +31,9 @@
 
 | 维度 | SHA / 标签 |
 | :--- | :--- |
-| **FINAL HEAD SHA** | `a855669a2b6a55cae972457bf0f4288ad8985773` |
+| **FINAL HEAD SHA** | `79a935cbb4c1308974d938ad6377d7ae156a5c6b` |
 | **Audit Tag** | `V3.1_HARDENED_AUDIT_FINAL` |
-| **Security Status** | **0 Known Vulnerabilities (A+ / SOC2 Ready)** |
+| **Security Status** | **0 Known Vulnerabilities (A+ / Commercial Grade)** |
 
 ## 5. 审计结论 (Verdict)
 项目代码库现已达到“企业级审计合规”标准。建议立即执行 V3.1 正式发布。
