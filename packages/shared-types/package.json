@@ -8,6 +8,6 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "class-validator": "^0.14.0"
+    "class-validator": "^0.15.1"
   }
 }

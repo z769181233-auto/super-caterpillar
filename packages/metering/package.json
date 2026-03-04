@@ -5,6 +5,6 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "database": "*"
+    "database": "^0.0.2"
   }
 }
