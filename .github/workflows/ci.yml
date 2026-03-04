@@ -43,8 +43,13 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Install (frozen)
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies (ignore-scripts)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Generate Prisma Client (explicit)
+        run: pnpm --filter database prisma:generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
       - name: Turbo build
         run: pnpm turbo run build --cache-dir=.turbo --continue

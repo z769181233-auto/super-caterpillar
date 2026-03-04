@@ -27,19 +27,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v3
         with:
           version: 9
+          run_install: false
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies (ignore-scripts)
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Generate Prisma Client
+      - name: Generate Prisma Client (explicit)
         run: pnpm --filter database prisma:generate
         env:
           DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
