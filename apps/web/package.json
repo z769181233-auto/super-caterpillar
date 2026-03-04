@@ -18,7 +18,7 @@
     "@scu/shared-types": "workspace:*",
     "@tanstack/react-virtual": "^3.13.19",
     "database": "workspace:*",
-    "next": "16.1.6",
+    "next": "15.5.10",
     "next-intl": "^4.8.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
