@@ -46,8 +46,8 @@ jobs:
       - name: Install dependencies (ignore-scripts)
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Generate Prisma Client (explicit)
-        run: pnpm --filter database prisma:generate
+      - name: Generate Prisma Client (npx explicit)
+        run: npx prisma generate --schema=./packages/database/prisma/schema.prisma
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
 
