@@ -46,10 +46,16 @@ jobs:
       - name: Install dependencies (ignore-scripts)
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Debug Prisma Schema
+        run: |
+          ls -R packages/database/prisma/
+          cat packages/database/prisma/schema.prisma | head -n 20
+
       - name: Generate Prisma Client (npx explicit)
-        run: npx prisma generate --schema=./packages/database/prisma/schema.prisma
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+        run: |
+          # 强制指定 DATABASE_URL 并使用 npx 绝对路径。认识。
+          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/testdb"
+          npx prisma generate --schema=./packages/database/prisma/schema.prisma
 
       - name: Turbo build
         run: pnpm turbo run build --cache-dir=.turbo --continue
