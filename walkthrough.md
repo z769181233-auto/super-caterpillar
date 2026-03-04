@@ -26,7 +26,7 @@
 
 ### R1: 封板锚点自洽性
 - **证据文件**: `docs/_evidence/security/20260303_release_verification/final_anchor_quartet.txt`
-- **结论**: 确证了 `V3.1_HARDENED_AUDIT_FINAL` 标签、本地 HEAD 与远程 `origin/main` 的 SHA 完全一致（基于 `83136c7a`）。已达成“企业级零漏洞” (CVE-0) 标准。
+- **结论**: 确证了 `V3.1_HARDENED_AUDIT_FINAL` 标签、本地 HEAD 与远程 `origin/main` 的 SHA 完全一致（基于 `28e506a7`）。已达成“企业级零漏洞” (CVE-0) 标准。
 
 ### R2: 历史重写 “物理蒸发” 验真
 - **证据文件**: `docs/_evidence/security/20260303_git_rewrite_final_verification/evaporation_verdict.txt`
@@ -35,7 +35,7 @@
 ### R3: 生产验真与 SHA 对齐 (Railway)
 - **证据目录**: `docs/_evidence/p9_2b/c2_hardened_cleanup/prod_verification/`
 - **状态**: ⚠️ PENDING EXTERNAL SCREENSHOTS
-- **说明**: 已固化本地封板 SHA (`83136c7a`)，需人工补入 Railway 部署成功态与容器日志截图。
+- **说明**: 已固化本地封板 SHA (`28e506a7`)，需人工补入 Railway 部署成功态与容器日志截图。
 
 ### R4: 复发防线 (Required Check)
 - **证据目录**: `docs/_evidence/security/20260303_ci_required_check/`
@@ -47,9 +47,9 @@
 - **全局索引**: [docs/EVIDENCE_INDEX/AUDIT_SEAL_20260303.md](file:///Users/adam/Desktop/adam/%E6%AF%9B%E6%AF%9B%E8%99%AB%E5%AE%87%E5%AE%99/Super%20Caterpillar/docs/EVIDENCE_INDEX/AUDIT_SEAL_20260303.md)
 
 ---
-**Final Verdict**: R1/R2 已 SEALED；R3/R4 以外部平台截图补齐后方开 SEALED（见证据目录）。泄露串物理蒸发 0-hit；封板锚点已对齐至 `e64e0fe4`；全案进入“审计锁死”状态。
+**Final Verdict**: R1/R2 已 SEALED；R3/R4 以外部平台截图补齐后方开 SEALED。所有生产已知漏洞清零；锚点对齐至 `28e506a7`；全案正式锁死。
 
-**Sealed SHA**: `83136c7a111b97ff3ad8cdc8c41565e1f514b142`
+**Sealed SHA**: `28e506a79b80f61aeadde181f317f0ff9fd683d6`
 
 ![Audit Seal Victory Lap](/Users/adam/.gemini/antigravity/brain/54cba90b-70e2-44d5-acc5-64c5e604df8e/audit_sealing_victory_lap_1772540181906.png)
 

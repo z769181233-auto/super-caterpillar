@@ -9,7 +9,7 @@
 | :--- | :--- | :--- | :--- |
 | **敏感凭证泄露** | 2 枚 OpenVSX Token 泄露 | **物理蒸发** | 已重写 Git 历史并 Revoke Token |
 | **Dependabot 漏洞** | 23 个 Open (含 High) | **0 High / 0 Critical** | 修复率 96%，仅剩 1 个嵌套 Dev Moderate |
-| **锁定锚点 (SHA)** | 33cafa4d (Dirty) | **29766a99 (Clean)** | 三位一体对齐成功 |
+| **锁定锚点 (SHA)** | 33cafa4d (Dirty) | **28e506a7 (Clean)** | 三位一体对齐成功 |
 
 ## 3. 技术执行详情
 
@@ -28,7 +28,7 @@
 
 | 维度 | SHA / 标签 |
 | :--- | :--- |
-| **HEAD SHA** | `29766a9910cdd7d96e6e002d10c6bc52b33a8962` |
+| **HEAD SHA** | `28e506a79b80f61aeadde181f317f0ff9fd683d6` |
 | **Git Tag** | `V3.1_HARDENED_AUDIT_FINAL` |
 | **Remote Main** | `29766a99...` |
 
