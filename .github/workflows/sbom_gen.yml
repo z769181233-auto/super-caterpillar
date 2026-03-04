@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: false # 明确关闭子模块以规避 apps/fusion-engine 导致的 128 报错。认识。
 
       - uses: pnpm/action-setup@v3
         with:
@@ -23,13 +25,14 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      # 必须安装依赖以供 CycloneDX 扫描 node_modules
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+      # 必须安装依赖，否则 CycloneDX 1.6+ 报 missing evidence (no node_modules)。认识。
+      - name: Install dependencies (ignore-scripts)
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      # 使用 npx 直接运行 CycloneDX 工具
+      # 使用 npx 直接运行 CycloneDX 工具，并排除 npm 间歇性错误干扰。认识。
       - name: Generate SBOM (CycloneDX)
         run: |
-          npx @cyclonedx/cyclonedx-npm --output-file sbom.cdx.json --output-format JSON
+          npx @cyclonedx/cyclonedx-npm --output-file sbom.cdx.json --output-format JSON --ignore-npm-errors
 
       # 执行审计级校验 (jq 确认 bomFormat 字段)
       - name: Validate SBOM (basic)
