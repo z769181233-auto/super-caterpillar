@@ -102,7 +102,6 @@ export async function startGateWorkerApp() {
   const engineHubClient = new EngineHubClient(apiClient);
 
   const prisma = new PrismaClient({
-    datasources: { db: { url: env.databaseUrl } },
     log: ['error'],
   });
 
