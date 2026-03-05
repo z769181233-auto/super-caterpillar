@@ -1,7 +1,12 @@
 name: sbom
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - '**'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -9,6 +14,7 @@ permissions:
 
 jobs:
   sbom:
+    name: sbom
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

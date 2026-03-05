@@ -2,15 +2,19 @@ name: required-p6-release-readiness
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - '**'
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
-  p6-release-readiness:
+  required-p6-release-readiness:
+    name: required-p6-release-readiness
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -28,7 +32,7 @@ jobs:
           - 5432:5432
     env:
       DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
-      PRISMA_SKIP_POSTINSTALL_GENERATE: "1"
+      PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
     steps:
       - uses: actions/checkout@v4
 

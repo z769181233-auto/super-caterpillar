@@ -2,13 +2,16 @@ name: Required Check / Launch Gates
 
 on:
   push:
-    branches: [main, develop]
+    branches:
+      - main
+      - '**'
   pull_request:
-    branches: [main, develop]
+    branches:
+      - main
 
 jobs:
   launch-gates-required:
-    name: Launch Gates (CI Mode)
+    name: launch-gates-required
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -25,7 +28,7 @@ jobs:
         ports:
           - 5432:5432
     env:
-      PRISMA_SKIP_POSTINSTALL_GENERATE: "1"
+      PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
     steps:
       - uses: actions/checkout@v4
 

@@ -1,18 +1,24 @@
 name: ci
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
+      - '**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci
   cancel-in-progress: true
 
 jobs:
-  build_test:
+  ci:
+    name: ci
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -30,7 +36,7 @@ jobs:
           --health-retries=5
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
-      PRISMA_SKIP_POSTINSTALL_GENERATE: "1"
+      PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
     steps:
       - uses: actions/checkout@v4
 
