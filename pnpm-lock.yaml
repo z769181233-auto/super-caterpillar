@@ -569,7 +569,11 @@ importers:
 
   packages/engines-ce04: {}
 
-  packages/engines-ce04-sdxl: {}
+  packages/engines-ce04-sdxl:
+    dependencies:
+      '@scu/engines-ce03':
+        specifier: workspace:*
+        version: link:../engines-ce03
 
   packages/engines-ce06:
     dependencies:

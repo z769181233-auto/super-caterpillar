@@ -1,5 +1,4 @@
-module.exports = {
-  earlyAdopterAction: true,
+export default {
   datasource: {
     url: process.env.DATABASE_URL,
   },
