@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "tsc -p tsconfig.json",
+    "build": "nest build",
     "start": "node -r tsconfig-paths/register dist/main",
     "start:prod": "node -r tsconfig-paths/register dist/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --ignore-pattern \"src/scripts/**\" --fix",
