@@ -3,7 +3,7 @@ import { processCE11ShotGeneratorJob } from '../../../apps/workers/src/processor
 import { ApiClient } from '../../../apps/workers/src/api-client';
 
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   const jobId = process.argv[2];
   const workerId = process.argv[3];
   const job = await prisma.shotJob.findUnique({ where: { id: jobId } });

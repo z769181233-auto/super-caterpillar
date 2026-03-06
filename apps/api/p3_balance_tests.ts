@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function runTests() {
   const rootDir = __dirname + '/../../';

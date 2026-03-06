@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   console.log('Checking keys on prisma client...');
   const keys = Object.keys(prisma);
   console.log('Keys:', keys);

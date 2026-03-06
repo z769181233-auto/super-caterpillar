@@ -1,7 +1,7 @@
 // @ts-ignore
 const { PrismaClient } = require('database');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const projectId = process.argv[2];
 
 async function main() {

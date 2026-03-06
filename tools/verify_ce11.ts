@@ -2,7 +2,7 @@ import { PrismaClient, JobStatus, JobType, AssetOwnerType, AssetType } from 'dat
 import path from 'path';
 import fs from 'fs';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const orgId = 'org_s4_11';

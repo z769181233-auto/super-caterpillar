@@ -9,7 +9,7 @@ const envLocalPath = path.join(process.cwd(), '.env.local');
 dotenv.config({ path: envLocalPath, override: true });
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 interface P6Context {
   evidenceDir: string;

@@ -1,6 +1,6 @@
 import { PrismaClient, UserRole } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function promote() {
   const email = 'admin@example.com';

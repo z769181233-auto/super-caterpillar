@@ -6,7 +6,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    super();
+    super({});
     // 开发/测试环境：诊断 Prisma Client 来源和模型
     if (process.env.NODE_ENV !== 'production') {
       try {

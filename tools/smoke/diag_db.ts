@@ -35,7 +35,7 @@ async function getPrisma(): Promise<PrismaClient> {
       );
     }
   }
-  return new PrismaClient();
+  return new PrismaClient({});
 }
 
 async function main() {

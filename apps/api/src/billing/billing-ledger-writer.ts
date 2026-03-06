@@ -2,7 +2,7 @@
 import { PrismaClient } from 'database';
 import * as fs from 'fs';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 interface BillingEntry {
   tenantId: string;

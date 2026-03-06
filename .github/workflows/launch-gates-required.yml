@@ -32,6 +32,7 @@ jobs:
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
       PRISMA_CLIENT_ENGINE_TYPE: 'library'
       PGPASSWORD: 'password'
+      PGHOST: '127.0.0.1'
     steps:
       - uses: actions/checkout@v4
 
@@ -55,14 +56,14 @@ jobs:
 
       - name: Inject Physical .env for Prisma
         run: |
-          echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/scu" > packages/database/.env
+          echo "DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/scu" > packages/database/.env
 
       - name: Generate Prisma Client (npx explicit)
         run: |
           rm -rf packages/database/src/generated
           npx prisma generate --schema=./packages/database/prisma/schema.prisma
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
+          DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
 
       - name: Build Database Package (Force)
         run: |
@@ -72,7 +73,7 @@ jobs:
         run: |
           npx prisma db push --schema=./packages/database/prisma/schema.prisma
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
+          DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
 
       - name: Build Services
         run: |
@@ -83,18 +84,18 @@ jobs:
           mkdir -p .data/logs .data/pids
 
           # Start API
-          export DATABASE_URL="postgresql://postgres:password@localhost:5432/scu"
+          export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
           export PORT=3000
           export API_PORT=3000
           export NODE_ENV=staging
           export JWT_SECRET="dummy-secret-for-ci"
-          export REDIS_URL="redis://localhost:6379"
+          export REDIS_URL="redis://127.0.0.1:6379"
           nohup pnpm --filter api start > .data/logs/api.log 2>&1 &
           echo $! > .data/pids/api.pid
 
           # Start Worker
           export NODE_ENV=staging
-          export API_URL="http://localhost:3000"
+          export API_URL="http://127.0.0.1:3000"
           export WORKER_PORT=3001
           nohup pnpm --filter worker start > .data/logs/worker.log 2>&1 &
           echo $! > .data/pids/worker.pid
@@ -110,14 +111,18 @@ jobs:
             sleep 2
           done
 
+          # Debug Startup
+          echo "--- Last 50 lines of API log ---"
+          cat .data/logs/api.log | tail -n 50 || echo "API log missing"
+
       - name: Run Launch Gates (CI Mode + P6-2)
         run: |
           # CI Mode triggers Local-like subset strictly
           bash tools/gate/run_launch_gates.sh
         env:
           GATE_ENV_MODE: ci
-          API_URL: http://localhost:3000
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
+          API_URL: http://127.0.0.1:3000
+          DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
           P6_2: '1' # Explicitly enable P6-2
 
       - name: Upload Evidence Artifact

@@ -15,7 +15,7 @@ Object.assign(process.env, {
   DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/scu',
 });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const apiClient = new ApiClient('http://localhost:3000', 'test-key', 'test-secret', 'local-worker');
 
 async function main() {

@@ -11,7 +11,7 @@ if (process.env.ALLOW_DB_PATCH !== '1') {
   process.exit(1);
 }
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   // Step 1: Create enum

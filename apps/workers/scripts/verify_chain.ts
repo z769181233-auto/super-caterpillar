@@ -46,7 +46,7 @@ class MockApiClient extends ApiClient {
 }
 
 async function verifyChain() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   const apiClient = new MockApiClient('http://mock');
   const engineClient = new MockEngineHubClient(apiClient);
 

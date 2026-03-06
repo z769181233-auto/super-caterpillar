@@ -4,7 +4,7 @@ import { spawnSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const apiClient = new ApiClient(
   'http://127.0.0.1:3000',
   'dev-worker-key',

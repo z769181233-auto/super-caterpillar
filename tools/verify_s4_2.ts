@@ -10,7 +10,7 @@ if (process.env.NODE_ENV !== 'development' && process.env.CI) {
 }
 
 import { PrismaClient } from '../packages/database';
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('Connecting to DB...');

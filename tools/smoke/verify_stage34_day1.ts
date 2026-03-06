@@ -5,7 +5,7 @@
 
 import { PrismaClient } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('=== Stage 34 Day 1: 数据完整性检查 ===\n');
