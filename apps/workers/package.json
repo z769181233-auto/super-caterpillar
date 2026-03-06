@@ -21,6 +21,7 @@
     "@scu/router": "workspace:*",
     "@scu/shared-types": "workspace:*",
     "@scu/storage": "workspace:^",
+    "@scu/shared": "workspace:*",
     "axios": "^1.13.6",
     "database": "workspace:*",
     "prom-client": "^15.1.3",

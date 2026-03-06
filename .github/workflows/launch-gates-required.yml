@@ -72,21 +72,31 @@ jobs:
         run: |
           # Start API
           export DATABASE_URL="postgresql://postgres:password@localhost:5432/scu"
+          export PORT=3000
           export API_PORT=3000
           export NODE_ENV=staging
+          export JWT_SECRET="dummy-secret-for-ci"
+          export REDIS_URL="redis://localhost:6379"
           nohup pnpm --filter api start > api.log 2>&1 &
           echo $! > api.pid
 
           # Start Worker (Ensure ENV parity with Gate)
           export NODE_ENV=staging
           export API_URL="http://localhost:3000"
+          export WORKER_PORT=3001
           nohup pnpm --filter worker start > worker.log 2>&1 &
           echo $! > worker.pid
 
           # Wait for API health
-          echo "Waiting for API..."
-          timeout 60 bash -c 'until curl -s http://localhost:3000/health; do sleep 2; done'
-          echo "API is ready."
+          echo "Waiting for API on port 3000..."
+          for i in $(seq 1 30); do
+            if curl -s http://127.0.0.1:3000/health; then
+              echo "API is ready."
+              break
+            fi
+            echo "Waiting... $i/30"
+            sleep 2
+          done
 
       - name: Run Launch Gates (CI Mode + P6-2)
         run: |
