@@ -27,7 +27,7 @@ command -v curl >/dev/null 2>&1 || { log "❌ curl required"; exit 1; }
 command -v jq >/dev/null 2>&1 || { log "❌ jq required"; exit 1; }
 command -v ffprobe >/dev/null 2>&1 || { log "❌ ffprobe required"; exit 1; }
 
-DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
+DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@127.0.0.1:5432/scu"}
 API_URL=${API_URL:-"http://localhost:3000"}
 
 # 2. 数据库准备

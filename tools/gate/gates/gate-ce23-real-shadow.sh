@@ -27,7 +27,7 @@ pkill -f "node.*apps/api" || true
 sleep 1
 
 export API_URL="http://localhost:3000"
-export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
+export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@127.0.0.1:5432/scu"}
 export GATE_MODE=1
 export QUALITY_HOOK_SYNC_FOR_GATE=1
 export NODE_ENV=development

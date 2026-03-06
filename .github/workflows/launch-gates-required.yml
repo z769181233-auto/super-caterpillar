@@ -50,7 +50,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg postgresql-client
 
       - name: Install dependencies (ignore-scripts)
         run: pnpm install --frozen-lockfile --ignore-scripts
@@ -77,11 +77,24 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
 
+      - name: Rigid DB Seeding (Fallback)
+        run: |
+          echo "Seeding user-gate and gate-org via psql..."
+          psql "postgresql://postgres:password@127.0.0.1:5432/scu" -c "
+            INSERT INTO \"User\" (id, email, \"passwordHash\", role) 
+            VALUES ('user-gate', 'gate@example.com', 'dummy-hash', 'ADMIN')
+            ON CONFLICT (id) DO NOTHING;
+            
+            INSERT INTO \"organizations\" (id, name, \"ownerId\")
+            VALUES ('gate-org', 'Gate Organization', 'user-gate')
+            ON CONFLICT (id) DO NOTHING;
+          "
+
       - name: Build Services
         run: |
           pnpm turbo build --filter=api --filter=@scu/worker --no-cache
-          # Verify structure (tsc in Monorepo root often nests dist)
-          ls -l apps/api/dist/apps/api/src/main.js || (echo "ERROR: nested main.js not found, checking alternatives..." && ls -R apps/api/dist)
+          # Verify structure
+          ls -l apps/api/dist/apps/api/src/main.js || (echo "ERROR: apps/api/dist/main.js not found" && ls -R apps/api/dist && exit 1)
 
       - name: Start Services (Background)
         run: |

@@ -7,7 +7,7 @@ IFS=$'
 # GATE 14: CE02 Visual Density Integration
 # Goal: Verify Bible V3.0 CE02 Protocol (text -> score, breakdown, verdict) maps to Production DB (chapters/scenes).
 
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/scu}"
 TS="$(date +%Y%m%d_%H%M%S)"
 EVI="docs/_evidence/gate14_ce02_${TS}"
 mkdir -p "$EVI"

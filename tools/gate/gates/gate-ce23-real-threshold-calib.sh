@@ -14,7 +14,7 @@ mkdir -p "$EVIDENCE_DIR"
 exec > >(tee "$EVIDENCE_DIR/GATE_RUN.log") 2>&1
 
 API_URL="http://localhost:3000"
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
 
 log() { echo "[CALIB] $(date +%H:%M:%S) $1"; }
 log "Starting P16-1 Threshold Calibration Gate..."

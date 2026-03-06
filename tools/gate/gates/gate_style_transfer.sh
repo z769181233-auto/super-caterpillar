@@ -19,7 +19,7 @@ RUNNER="tools/engine/run_style_transfer.ts"
 cd "$(dirname "$0")/../../.."
 
 if [ -z "${DATABASE_URL:-}" ]; then
-  export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+  export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
 fi
 
 echo "=== Gate Style Transfer: Provider Pluggable & No-Key Fail ===" | tee "$EVI/style_gate.log"

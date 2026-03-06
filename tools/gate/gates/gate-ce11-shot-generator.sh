@@ -7,7 +7,7 @@ IFS=$'
 # GATE 15: CE11 Shot Generator Integration
 # Goal: Verify Bible V3.0 CE11 Protocol (sceneId -> shots) maps to Production DB (shots table).
 
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/scu}"
 TS="$(date +%Y%m%d_%H%M%S)"
 EVI="docs/_evidence/gate15_ce11_${TS}"
 mkdir -p "$EVI"

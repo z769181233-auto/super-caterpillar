@@ -7,7 +7,7 @@ IFS=$'
 # GATE 13: CE01 Protocol Alignment
 # Goal: Verify Bible V3.0 Protocol (text_chunk, prev_context) maps to Production DB (novel_scenes) without data loss.
 
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/scu}"
 TS="$(date +%Y%m%d_%H%M%S)"
 EVI="docs/_evidence/gate13_ce01_${TS}"
 mkdir -p "$EVI"

@@ -26,7 +26,7 @@ fi
 export JWT_SECRET="${JWT_SECRET:-gate-test-jwt-secret-p0r0}"
 export AUDIT_SIGNING_SECRET="${AUDIT_SIGNING_SECRET:-gate-test-audit-secret-p0r0}"
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_SECRET}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/scu}"
 export API_PORT=3020
 export ASSET_STORAGE_DIR="$(pwd)/apps/workers/.runtime/assets_gate_p0r0"
 export LOG_LEVEL="debug"
@@ -217,7 +217,7 @@ fi
 export JWT_SECRET="${JWT_SECRET:-gate-test-jwt-secret-p0r0}"
 export AUDIT_SIGNING_SECRET="${AUDIT_SIGNING_SECRET:-gate-test-audit-secret-p0r0}"
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_SECRET}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/scu}"
 export API_PORT=3020
 export ASSET_STORAGE_DIR="$(pwd)/apps/workers/.runtime/assets_gate_p0r0"
 export LOG_LEVEL="debug"
@@ -408,7 +408,7 @@ fi
 export JWT_SECRET="${JWT_SECRET:-gate-test-jwt-secret-p0r0}"
 export AUDIT_SIGNING_SECRET="${AUDIT_SIGNING_SECRET:-gate-test-audit-secret-p0r0}"
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_SECRET}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/scu}"
 export API_PORT=3020
 export ASSET_STORAGE_DIR="$(pwd)/apps/workers/.runtime/assets_gate_p0r0"
 export LOG_LEVEL="debug"
@@ -599,7 +599,7 @@ fi
 export JWT_SECRET="${JWT_SECRET:-gate-test-jwt-secret-p0r0}"
 export AUDIT_SIGNING_SECRET="${AUDIT_SIGNING_SECRET:-gate-test-audit-secret-p0r0}"
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_SECRET}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/scu}"
 export API_PORT=3020
 export ASSET_STORAGE_DIR="$(pwd)/apps/workers/.runtime/assets_gate_p0r0"
 export LOG_LEVEL="debug"

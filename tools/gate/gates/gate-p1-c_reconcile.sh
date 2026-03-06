@@ -18,13 +18,13 @@ echo "--- [GATE] $GATE_NAME START ---"
 
 # Ensure DATABASE_URL is set
 if [ -z "$DATABASE_URL" ]; then
-    export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+    export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
 fi
 
 # 1. Start API in background if not running
 if ! lsof -i:3000 > /dev/null; then
     echo "Starting API..."
-    export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
+    export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@127.0.0.1:5432/scu"}
     export API_PORT=3000
     export JWT_SECRET=test-secret
     export JWT_REFRESH_SECRET=test-refresh-secret
@@ -166,13 +166,13 @@ echo "--- [GATE] $GATE_NAME START ---"
 
 # Ensure DATABASE_URL is set
 if [ -z "$DATABASE_URL" ]; then
-    export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+    export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
 fi
 
 # 1. Start API in background if not running
 if ! lsof -i:3000 > /dev/null; then
     echo "Starting API..."
-    export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
+    export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@127.0.0.1:5432/scu"}
     export API_PORT=3000
     export JWT_SECRET=test-secret
     export JWT_REFRESH_SECRET=test-refresh-secret
@@ -314,13 +314,13 @@ echo "--- [GATE] $GATE_NAME START ---"
 
 # Ensure DATABASE_URL is set
 if [ -z "$DATABASE_URL" ]; then
-    export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+    export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
 fi
 
 # 1. Start API in background if not running
 if ! lsof -i:3000 > /dev/null; then
     echo "Starting API..."
-    export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
+    export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@127.0.0.1:5432/scu"}
     export API_PORT=3000
     export JWT_SECRET=test-secret
     export JWT_REFRESH_SECRET=test-refresh-secret
@@ -462,13 +462,13 @@ echo "--- [GATE] $GATE_NAME START ---"
 
 # Ensure DATABASE_URL is set
 if [ -z "$DATABASE_URL" ]; then
-    export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+    export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
 fi
 
 # 1. Start API in background if not running
 if ! lsof -i:3000 > /dev/null; then
     echo "Starting API..."
-    export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
+    export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@127.0.0.1:5432/scu"}
     export API_PORT=3000
     export JWT_SECRET=test-secret
     export JWT_REFRESH_SECRET=test-refresh-secret
