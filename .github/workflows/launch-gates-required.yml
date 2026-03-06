@@ -30,6 +30,7 @@ jobs:
           - 5432:5432
     env:
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
+      PRISMA_CLIENT_ENGINE_TYPE: 'library'
     steps:
       - uses: actions/checkout@v4
 
@@ -57,6 +58,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
 
+      - name: Build Database Package (Force)
+        run: |
+          pnpm --filter database build
+
       - name: Push DB Schema
         run: |
           npx prisma db push --schema=./packages/database/prisma/schema.prisma
@@ -65,7 +70,7 @@ jobs:
 
       - name: Build Services
         run: |
-          pnpm turbo build --filter=api --filter=@scu/worker
+          pnpm turbo build --filter=api --filter=@scu/worker --no-cache
 
       - name: Start Services (Background)
         run: |
