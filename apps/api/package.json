@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "pnpm --filter database --filter \"@scu/storage\" --filter \"@scu/engines-ce03\" --filter \"@scu/engines-ce04\" --filter \"@scu/engines-ce08\" --filter \"@scu/engines-scene-composition\" --filter \"@scu/engines-vg03\" --filter \"@scu/engines-vg04\" --filter \"@scu/engines-vg05\" --filter \"@scu/engines-video-merge\" --filter \"@scu/engines-ce06\" --filter \"@scu/engines-shot-render\" --filter \"@scu/shared-types\" --filter \"@scu/config\" --filter \"@scu/observability\" --filter \"@scu/shared\" --filter \"@scu/engines-ce13\" build && nest build --tsc",
-    "start": "node dist/main",
-    "start:prod": "node dist/main",
+    "start": "node dist/apps/api/src/main",
+    "start:prod": "node dist/apps/api/src/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --ignore-pattern \"src/scripts/**\" --fix",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest",

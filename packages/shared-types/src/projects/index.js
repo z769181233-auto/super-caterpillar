@@ -14,16 +14,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-__exportStar(require("./auth.dto"), exports);
-__exportStar(require("./worker.dto"), exports);
-__exportStar(require("./user.dto"), exports);
-__exportStar(require("./novel-analysis.dto"), exports);
-__exportStar(require("./scene-graph"), exports);
-__exportStar(require("./engines"), exports);
-__exportStar(require("./tasks"), exports);
-__exportStar(require("./quality"), exports);
-__exportStar(require("./jobs"), exports);
-__exportStar(require("./engine-profile"), exports);
-__exportStar(require("./projects"), exports);
-__exportStar(require("./workbench/project-overview.dto"), exports);
+__exportStar(require("./project-structure.dto"), exports);
 //# sourceMappingURL=index.js.map
