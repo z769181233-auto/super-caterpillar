@@ -24,40 +24,40 @@
         "src/*"
       ],
       "@scu/shared-types": [
-        "../../packages/shared-types/src"
+        "../../packages/shared-types/dist"
       ],
       "database": [
-        "../../packages/database/src"
+        "../../packages/database/dist"
       ],
       "@scu/engines-shot-render": [
-        "../../packages/engines/shot_render/src"
+        "../../packages/engines/shot_render/dist"
       ],
       "@scu/engines-ce03": [
-        "../../packages/engines/ce03/src"
+        "../../packages/engines/ce03/dist"
       ],
       "@scu/engines-ce04": [
-        "../../packages/engines/ce04/src"
+        "../../packages/engines/ce04/dist"
       ],
       "@scu/engines-ce06": [
-        "../../packages/engines/ce06/src"
+        "../../packages/engines/ce06/dist"
       ],
       "@scu/engines-video-merge": [
-        "../../packages/engines/video_merge/src"
+        "../../packages/engines/video_merge/dist"
       ],
       "@scu/engines/*": [
-        "../../packages/engines/*"
+        "../../packages/engines/*/dist"
       ],
       "@scu/billing/*": [
-        "../../packages/billing/*"
+        "../../packages/billing/*/dist"
       ],
       "@scu/observability": [
-        "../../packages/observability/src"
+        "../../packages/observability/dist"
       ],
       "@scu/config": [
-        "../../packages/config/src"
+        "../../packages/config/dist"
       ],
       "config": [
-        "../../packages/config/src"
+        "../../packages/config/dist"
       ]
     }
   },
