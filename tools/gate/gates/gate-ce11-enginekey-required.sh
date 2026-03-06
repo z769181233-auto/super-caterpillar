@@ -29,7 +29,7 @@ log_message "Project: $PROJECT_ID | Trace: $TRACE_ID"
 # Test Token (Generated via tools/gate/scripts/s2-gen-token.ts with .env default secret)
 TEST_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3JfbW9ja19wNV8wMSIsImVtYWlsIjoibW9jay1zMkBleGFtcGxlLmNvbSIsInRpZXIiOiJGcmVlIiwiaWF0IjoxNzY4NzkwNzcyLCJleHAiOjE3Njg3OTQzNzJ9.xeBD1rCzRY-ow2MGInML9yVsv36QYSu3BosDkUR1824"
 
-DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@127.0.0.1:5432/scu"}
+DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:password@127.0.0.1:5432/scu"}
 
 # 2. Case A: Production Traffic (No Verification) - Should FAIL without engineKey
 log_message "CASE A: Production Traffic (Implicit Mock Attempt)"

@@ -40,10 +40,10 @@ echo "===================================================="
 
 # 0. 准备数据
 echo "[Step 0] Seeding Database..."
-psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -c "INSERT INTO users (id, email, \"passwordHash\", \"userType\", role, tier, \"createdAt\", \"updatedAt\") VALUES ('${USER_ID}', '${USER_ID}@scu.com', 'hash', 'individual', 'ADMIN', 'Pro', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
-psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -c "INSERT INTO organizations (id, name, \"ownerId\", credits, type, \"createdAt\", \"updatedAt\") VALUES ('${ORG_ID}', 'Gate Org', '${USER_ID}', 1000000, 'personal', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
-psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\") VALUES ('${PROJECT_ID}', 'Stage 5 Shredder Test', '${USER_ID}', '${ORG_ID}', 'in_progress', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
-psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -c "INSERT INTO organization_members (id, \"userId\", \"organizationId\", role, \"createdAt\", \"updatedAt\") VALUES ('om-${PROJECT_ID}', '${USER_ID}', '${ORG_ID}', 'ADMIN', NOW(), NOW()) ON CONFLICT (\"userId\", \"organizationId\") DO NOTHING;"
+psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -c "INSERT INTO users (id, email, \"passwordHash\", \"userType\", role, tier, \"createdAt\", \"updatedAt\") VALUES ('${USER_ID}', '${USER_ID}@scu.com', 'hash', 'individual', 'ADMIN', 'Pro', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -c "INSERT INTO organizations (id, name, \"ownerId\", credits, type, \"createdAt\", \"updatedAt\") VALUES ('${ORG_ID}', 'Gate Org', '${USER_ID}', 1000000, 'personal', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\") VALUES ('${PROJECT_ID}', 'Stage 5 Shredder Test', '${USER_ID}', '${ORG_ID}', 'in_progress', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -c "INSERT INTO organization_members (id, \"userId\", \"organizationId\", role, \"createdAt\", \"updatedAt\") VALUES ('om-${PROJECT_ID}', '${USER_ID}', '${ORG_ID}', 'ADMIN', NOW(), NOW()) ON CONFLICT (\"userId\", \"organizationId\") DO NOTHING;"
 
 # 1. 构造 JSON Body
 echo "[Step 1] Constructing JSON Body..."
@@ -100,7 +100,7 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
   STEP=$(echo "$STATUS_RES" | jq -r '.current_step')
   
   # DB Stats check
-  STATS=$(psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -t -A -c "
+  STATS=$(psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -t -A -c "
     SELECT 
       (SELECT count(*) FROM shot_jobs WHERE \"projectId\"='${PROJECT_ID}' AND type='NOVEL_CHUNK_PARSE') as chunks,
       (SELECT count(*) FROM shot_jobs WHERE \"projectId\"='${PROJECT_ID}' AND type='CE11_SHOT_GENERATOR') as plans,
@@ -131,7 +131,7 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
     fi
 
     # Check one record for correctness
-    SAMPLE=$(psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -t -A -c "SELECT data->>'shotType' FROM shot_plannings WHERE \"shotId\" IN (SELECT id FROM shots WHERE \"sceneId\" IN (SELECT id FROM scenes WHERE \"project_id\"='${PROJECT_ID}')) LIMIT 1")
+    SAMPLE=$(psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -t -A -c "SELECT data->>'shotType' FROM shot_plannings WHERE \"shotId\" IN (SELECT id FROM shots WHERE \"sceneId\" IN (SELECT id FROM scenes WHERE \"project_id\"='${PROJECT_ID}')) LIMIT 1")
     if [ -z "$SAMPLE" ]; then
        echo "❌ ShotPlanning data field missing shotType"
        exit 1

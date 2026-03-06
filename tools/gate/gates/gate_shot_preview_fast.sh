@@ -16,7 +16,7 @@ RUNNER="tools/engine/run_preview.ts"
 cd "$(dirname "$0")/../../.."
 
 if [ -z "${DATABASE_URL:-}" ]; then
-  export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
+  export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 fi
 
 echo "=== Gate Shot Preview: Real File Gen & Cache ===" | tee "$EVI/gate.log"

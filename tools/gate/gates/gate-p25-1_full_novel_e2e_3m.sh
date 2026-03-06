@@ -50,7 +50,7 @@ export API_SECRET=$(echo "$SEED_OUTPUT" | grep "API_SECRET=" | cut -d'=' -f2)
 export ORG_ID=$(echo "$SEED_OUTPUT" | grep "ORG_ID=" | cut -d'=' -f2)
 
 # Global DB URL for all tools
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5433/scu"
+export DATABASE_URL="postgresql://postgres:password@localhost:5433/scu"
 
 # Remove CR characters if present (important for some environments)
 VALID_API_KEY_ID=$(echo "$VALID_API_KEY_ID" | tr -d '\r')
@@ -63,7 +63,7 @@ export GATE_MODE=1
 # Disable worker heartbeat to avoid P2021 error (table missing)
 # Force port 5433
 PORT=3000 BIBLE_INTERNAL_ALIAS_ENABLED=1 DISABLE_WORKER_HEARTBEAT=1 \
-DATABASE_URL="postgresql://postgres:postgres@localhost:5433/scu" \
+DATABASE_URL="postgresql://postgres:password@localhost:5433/scu" \
 NODE_ENV=development pnpm --filter ./apps/api dev > "$API_LOG" 2>&1 &
 API_PID=$!
 

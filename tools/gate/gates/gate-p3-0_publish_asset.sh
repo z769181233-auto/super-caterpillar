@@ -21,7 +21,7 @@ ffmpeg -y -f lavfi -i color=c=red:s=512x512:d=1 -pix_fmt yuv420p "$CLIP1" > /dev
 ffmpeg -y -f lavfi -i color=c=green:s=512x512:d=1 -pix_fmt yuv420p "$CLIP2" > /dev/null 2>&1
 
 # 2. Context Initialization (Mock Project/Shot)
-export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 
 # Fetch existing or create smoke entities
 VALID_ORG_ID=$(psql "$DATABASE_URL" -t -c "SELECT id FROM organizations LIMIT 1;" | xargs)

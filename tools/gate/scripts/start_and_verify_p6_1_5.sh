@@ -4,7 +4,7 @@
 set -euo pipefail
 
 export REPO_ROOT="$(pwd)"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5433/scu"
+export DATABASE_URL="postgresql://postgres:password@localhost:5433/scu"
 
 echo "========================================="
 echo "P6-1-5 启动服务并验证计费闭环"

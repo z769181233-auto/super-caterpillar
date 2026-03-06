@@ -14,7 +14,7 @@ if [ -f .env.local ]; then
   set -a; source .env.local; set +a
 fi
 
-DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:5432/scu}"
+DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 # 1) Setup Context
 TEST_ORG_ID="org_multi_agent_$TS"

@@ -19,7 +19,7 @@ RUNNER="tools/engine/run_character_gen.ts"
 cd "$(dirname "$0")/../../.."
 
 if [ -z "${DATABASE_URL:-}" ]; then
-  export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
+  export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 fi
 
 echo "=== Gate Character Gen: Provider Pluggable & No-Key Fail ===" | tee "$EVI/char_gate.log"

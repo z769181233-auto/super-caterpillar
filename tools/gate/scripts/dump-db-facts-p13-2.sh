@@ -3,7 +3,7 @@
 set -e
 
 EVIDENCE_DIR=${EVIDENCE_DIR:-"docs/_evidence/P13_2_AUDIO_GATE_PASS"}
-DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@127.0.0.1:5432/scu"}
+DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:password@127.0.0.1:5432/scu"}
 
 mkdir -p "$EVIDENCE_DIR"
 

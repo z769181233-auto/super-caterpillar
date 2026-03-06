@@ -446,7 +446,7 @@ else
     if [ -d "$PROJECT_ROOT/packages/database" ]; then
       (cd "$PROJECT_ROOT/packages/database" && pnpm prisma:generate >/dev/null)
     fi
-    export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+    export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
     pnpm -w exec tsx "$PROJECT_ROOT/tools/gate/scripts/ensure_gate3_data.ts"
 
     # 测试 1: 直接访问必须 404
@@ -1087,7 +1087,7 @@ ENGINE_PROVENANCE_OUTPUT="$TEMP_DIR/engine_provenance.txt"
 if [[ "${ENGINE_REAL:-0}" == "1" ]]; then
     echo "Engine Provenance Check enabled (ENGINE_REAL=1)"
     EVIDENCE_DIR="$EVI_DIR" \
-    DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}" \
+    DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}" \
     bash tools/gate/gates/gate_engine_provenance.sh > "$ENGINE_PROVENANCE_OUTPUT" 2>&1 || {
         echo -e "  ${RED}❌ Gate 18 failed (Provenance Audit)${NC}"
         ENGINE_PROVENANCE_PASSED=false

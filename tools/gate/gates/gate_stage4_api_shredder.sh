@@ -19,10 +19,10 @@ echo "===================================================="
 
 # 0. 准备数据 (确保用户、项目和组织存在)
 echo "[Step 0] Seeding Database..."
-psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -c "INSERT INTO users (id, email, \"passwordHash\", \"userType\", role, tier, \"createdAt\", \"updatedAt\") VALUES ('${USER_ID}', '${USER_ID}@scu.com', 'hash', 'individual', 'ADMIN', 'Pro', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
-psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -c "INSERT INTO organizations (id, name, \"ownerId\", credits, type, \"createdAt\", \"updatedAt\") VALUES ('${ORG_ID}', 'Gate Org', '${USER_ID}', 1000000, 'personal', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
-psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\") VALUES ('${PROJECT_ID}', 'API Shredder Test', '${USER_ID}', '${ORG_ID}', 'in_progress', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
-psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -c "INSERT INTO organization_members (id, \"userId\", \"organizationId\", role, \"createdAt\", \"updatedAt\") VALUES ('om-${PROJECT_ID}', '${USER_ID}', '${ORG_ID}', 'ADMIN', NOW(), NOW()) ON CONFLICT (\"userId\", \"organizationId\") DO NOTHING;"
+psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -c "INSERT INTO users (id, email, \"passwordHash\", \"userType\", role, tier, \"createdAt\", \"updatedAt\") VALUES ('${USER_ID}', '${USER_ID}@scu.com', 'hash', 'individual', 'ADMIN', 'Pro', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -c "INSERT INTO organizations (id, name, \"ownerId\", credits, type, \"createdAt\", \"updatedAt\") VALUES ('${ORG_ID}', 'Gate Org', '${USER_ID}', 1000000, 'personal', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\") VALUES ('${PROJECT_ID}', 'API Shredder Test', '${USER_ID}', '${ORG_ID}', 'in_progress', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -c "INSERT INTO organization_members (id, \"userId\", \"organizationId\", role, \"createdAt\", \"updatedAt\") VALUES ('om-${PROJECT_ID}', '${USER_ID}', '${ORG_ID}', 'ADMIN', NOW(), NOW()) ON CONFLICT (\"userId\", \"organizationId\") DO NOTHING;"
 
 # 1. 构造 JSON Body
 echo "[Step 1] Constructing JSON Body (15M Chars)..."
@@ -77,14 +77,14 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
   STATUS=$(echo "$STATUS_RES" | jq -r '.status')
   PROGRESS=$(echo "$STATUS_RES" | jq -r '.progress')
   STEP=$(echo "$STATUS_RES" | jq -r '.current_step')
-  TOTAL_CHUNKS=$(psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -t -A -c "SELECT count(*) FROM shot_jobs WHERE \"projectId\"='${PROJECT_ID}' AND type='NOVEL_CHUNK_PARSE'")
-  DONE_CHUNKS=$(psql -d "postgresql://postgres:postgres@127.0.0.1:5433/scu" -t -A -c "SELECT count(*) FROM shot_jobs WHERE \"projectId\"='${PROJECT_ID}' AND type='NOVEL_CHUNK_PARSE' AND status='SUCCEEDED'")
+  TOTAL_CHUNKS=$(psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -t -A -c "SELECT count(*) FROM shot_jobs WHERE \"projectId\"='${PROJECT_ID}' AND type='NOVEL_CHUNK_PARSE'")
+  DONE_CHUNKS=$(psql -d "postgresql://postgres:password@127.0.0.1:5433/scu" -t -A -c "SELECT count(*) FROM shot_jobs WHERE \"projectId\"='${PROJECT_ID}' AND type='NOVEL_CHUNK_PARSE' AND status='SUCCEEDED'")
   
   echo "Time: ${ELAPSED}s | Status: ${STATUS} | Progress: ${PROGRESS}% | Step: ${STEP} | Chunks: ${DONE_CHUNKS}/${TOTAL_CHUNKS}"
   
   if [ "$STATUS" == "SUCCEEDED" ]; then
     echo "✅ API Shredder Test PASSED"
-    # psql -d "postgresql://postgres:postgres@127.0.0.1:5434/scu" -c "SELECT title, \"sceneIndex\" FROM scenes WHERE \"projectId\"='${PROJECT_ID}' ORDER BY \"sceneIndex\" LIMIT 10;"
+    # psql -d "postgresql://postgres:password@127.0.0.1:5434/scu" -c "SELECT title, \"sceneIndex\" FROM scenes WHERE \"projectId\"='${PROJECT_ID}' ORDER BY \"sceneIndex\" LIMIT 10;"
     exit 0
   fi
   

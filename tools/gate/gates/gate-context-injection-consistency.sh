@@ -13,7 +13,7 @@ mkdir -p "$EVI"
 echo "[GATE] $GATE_NAME - START" | tee "$EVI/GATE_RUN.log"
 echo "[EVI] $EVI" | tee -a "$EVI/GATE_RUN.log"
 
-export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/scu"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 
 # ----------------------------
 # 0) Schema probe (no guessing)

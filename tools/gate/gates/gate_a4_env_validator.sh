@@ -52,7 +52,7 @@ echo ""
 echo "📋 [测试2/4] 验证缺少 API_SECRET_KEY 时拒绝启动..."
 
 cat > .env.local.test <<EOF
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/scu
+DATABASE_URL=postgresql://postgres:password@localhost:5433/scu
 NODE_ENV=development
 EOF
 
@@ -70,7 +70,7 @@ echo ""
 echo "📋 [测试3/4] 验证生产环境安全规则..."
 
 cat > .env.local.test <<EOF
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/scu
+DATABASE_URL=postgresql://postgres:password@localhost:5433/scu
 API_SECRET_KEY=production_secret_key_example
 NODE_ENV=production
 ALLOW_DATABASE_DESTRUCTIVE_CLEAN=true
