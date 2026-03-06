@@ -20,8 +20,12 @@ describe('ShotPreviewFastAdapter', () => {
     } as unknown as ShotRenderRouterAdapter;
 
     // Mock Audit and Cost services
-    const auditService = {} as any;
-    const costLedgerService = {} as any;
+    const auditService = {
+      log: jest.fn().mockResolvedValue(undefined),
+    } as any;
+    const costLedgerService = {
+      recordFromEvent: jest.fn().mockResolvedValue(undefined),
+    } as any;
 
     adapter = new ShotPreviewFastAdapter(
       redisService,
@@ -52,7 +56,10 @@ describe('ShotPreviewFastAdapter', () => {
     (redisService.getJson as jest.Mock).mockResolvedValue(null);
     (routerAdapter.invoke as jest.Mock).mockResolvedValue({
       status: 'SUCCESS', // Enum removed, using string
-      output: { result: 'image' },
+      output: {
+        result: 'image',
+        url: 'http://localhost:3000/mock-preview.png' // Add URL to pass schema check
+      },
     });
 
     const result = await adapter.invoke({

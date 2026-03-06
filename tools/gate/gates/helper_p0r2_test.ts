@@ -28,14 +28,19 @@ async function testThreads() {
   if (!fs.default.existsSync(tmpFramesDir)) fs.default.mkdirSync(tmpFramesDir, { recursive: true });
 
   // Generate valid mock PNGs using ffmpeg if possible, else dummy
-  console.log('Generating valid mock PNG frames...');
+  console.log('Generating valid mock PNG frames via ffmpeg...');
+  const { spawnSync } = await import('child_process');
   for (let i = 0; i < 3; i++) {
     const p = path.join(tmpFramesDir, `f${i}.png`);
-    try {
-      require('child_process').execSync(`ffmpeg -y -f lavfi -i color=c=red:s=64x64 -frames:v 1 ${p}`);
-    } catch (e) {
-      console.warn('ffmpeg failed to generate mock frame, falling back to dummy data');
-      fs.default.writeFileSync(p, 'dummy_data_not_a_real_png_but_hey');
+    const res = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', 'color=c=red:s=64x64', '-frames:v', '1', p]);
+    if (res.status !== 0 || !fs.default.existsSync(p)) {
+      console.warn(`[WARN] ffmpeg failed to generate ${p}, status=${res.status}, error=${res.stderr?.toString()}`);
+      // Minimal valid 64x64 Red PNG (Base64)
+      const red64x64png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5gMGEQkS6n9MvAAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLm3EAAAAFUlEQVRo3u3BAQ0AAADCoPdPbQ43oAAAAAAAAAD6GzYmAAHrRdz6AAAAAElFTkSuQmCC', 'base64');
+      fs.default.writeFileSync(p, red64x64png);
+      console.log(`[PASS] Hardcoded valid PNG for ${p}`);
+    } else {
+      console.log(`[PASS] FFmpeg generated PNG for ${p}`);
     }
   }
 

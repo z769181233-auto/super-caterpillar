@@ -27,6 +27,7 @@ describe('ApiSecurityService', () => {
     process.env.API_KEY_MASTER_KEY_B64 = testMasterKey;
 
     const mockPrismaService = {
+      $disconnect: jest.fn().mockResolvedValue(undefined),
       apiKey: {
         findUnique: jest.fn(),
         update: jest.fn().mockResolvedValue({}),

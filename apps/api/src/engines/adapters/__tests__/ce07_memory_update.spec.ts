@@ -23,6 +23,9 @@ describe('ce07_memory_update integration', () => {
   let projectId: string;
 
   beforeAll(async () => {
+    // Force inject DATABASE_URL for CI compatibility (matching ci.yml postgres service)
+    process.env.DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:5432/testdb';
+
     prisma = new PrismaService();
     await prisma.$connect();
 
@@ -64,9 +67,9 @@ describe('ce07_memory_update integration', () => {
   });
 
   afterAll(async () => {
-    if (projectId) await prisma.project.delete({ where: { id: projectId } }).catch(() => {});
-    if (orgId) await prisma.organization.delete({ where: { id: orgId } }).catch(() => {});
-    if (userId) await prisma.user.delete({ where: { id: userId } }).catch(() => {});
+    if (projectId) await prisma.project.delete({ where: { id: projectId } }).catch(() => { });
+    if (orgId) await prisma.organization.delete({ where: { id: orgId } }).catch(() => { });
+    if (userId) await prisma.user.delete({ where: { id: userId } }).catch(() => { });
     await prisma.$disconnect();
   });
 
