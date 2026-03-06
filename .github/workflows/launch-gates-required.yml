@@ -30,7 +30,6 @@ jobs:
           - 5432:5432
     env:
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
-      PRISMA_CLIENT_ENGINE_TYPE: 'binary'
     steps:
       - uses: actions/checkout@v4
 
@@ -54,14 +53,12 @@ jobs:
       - name: Generate Prisma Client (npx explicit)
         run: |
           rm -rf packages/database/src/generated
-          export PRISMA_CLIENT_ENGINE_TYPE=binary
           npx prisma generate --schema=./packages/database/prisma/schema.prisma
         env:
           DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
 
       - name: Push DB Schema
         run: |
-          export PRISMA_CLIENT_ENGINE_TYPE=binary
           npx prisma db push --schema=./packages/database/prisma/schema.prisma
         env:
           DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
@@ -81,7 +78,6 @@ jobs:
           export NODE_ENV=staging
           export JWT_SECRET="dummy-secret-for-ci"
           export REDIS_URL="redis://localhost:6379"
-          export PRISMA_CLIENT_ENGINE_TYPE=binary
           nohup pnpm --filter api start > .data/logs/api.log 2>&1 &
           echo $! > .data/pids/api.pid
 
@@ -89,7 +85,6 @@ jobs:
           export NODE_ENV=staging
           export API_URL="http://localhost:3000"
           export WORKER_PORT=3001
-          export PRISMA_CLIENT_ENGINE_TYPE=binary
           nohup pnpm --filter worker start > .data/logs/worker.log 2>&1 &
           echo $! > .data/pids/worker.pid
 
@@ -121,5 +116,5 @@ jobs:
           name: gate-evidence-report
           path: |
             docs/_evidence/run_launch_gates_*
-            api.log
-            worker.log
+            .data/logs/api.log
+            .data/logs/worker.log
