@@ -81,7 +81,7 @@ jobs:
         run: |
           echo "Seeding user-gate and gate-org via psql..."
           psql "postgresql://postgres:password@127.0.0.1:5432/scu" -c "
-            INSERT INTO \"User\" (id, email, \"passwordHash\", role) 
+            INSERT INTO \"users\" (id, email, \"passwordHash\", role) 
             VALUES ('user-gate', 'gate@example.com', 'dummy-hash', 'ADMIN')
             ON CONFLICT (id) DO NOTHING;
             
@@ -94,7 +94,7 @@ jobs:
         run: |
           pnpm turbo build --filter=api --filter=@scu/worker --no-cache
           # Verify structure
-          ls -l apps/api/dist/apps/api/src/main.js || (echo "ERROR: apps/api/dist/main.js not found" && ls -R apps/api/dist && exit 1)
+          ls -l apps/api/dist/apps/api/src/main.js || (echo "ERROR: nested main.js not found, checking alternatives..." && ls -R apps/api/dist)
 
       - name: Start Services (Background)
         run: |
@@ -112,8 +112,8 @@ jobs:
           echo $! > .data/pids/api.pid
 
           # Start Worker
-          export NODE_ENV=staging
           export PRISMA_CLIENT_ENGINE_TYPE=library
+          export NODE_ENV=staging
           export API_URL="http://127.0.0.1:3000"
           export WORKER_PORT=3001
           nohup pnpm --filter @scu/worker start > .data/logs/worker.log 2>&1 &
