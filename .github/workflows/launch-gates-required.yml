@@ -31,6 +31,7 @@ jobs:
     env:
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
       PRISMA_CLIENT_ENGINE_TYPE: 'library'
+      PGPASSWORD: 'password'
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +44,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
       - name: Install dependencies (ignore-scripts)
         run: pnpm install --frozen-lockfile --ignore-scripts

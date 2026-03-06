@@ -3,7 +3,7 @@
  * 在数据库中创建或更新 smoke 测试所需的 API Key
  */
 
-import { PrismaClient } from 'database';
+import { PrismaClient } from '../../packages/database/src/generated/prisma';
 
 // Force smoke test to use correct port (env var takes priority if set by CI)
 process.env.DATABASE_URL =
@@ -45,6 +45,24 @@ async function main() {
     console.error('❌ Database not ready, cannot initialize API Key');
     process.exit(1);
   }
+
+  // PRE-REQUISITE: Ensure 'user-gate' exists for downstream gates
+  console.log('--- [INIT] Ensuring pre-requisite users exist ---');
+  try {
+    await prisma.user.upsert({
+      where: { id: 'user-gate' },
+      update: {},
+      create: {
+        id: 'user-gate',
+        email: 'gate-tester@example.com',
+        passwordHash: 'dummy-hash-for-gate',
+      },
+    });
+    console.log('✅ User "user-gate" is ready.');
+  } catch (err: any) {
+    console.warn('⚠️  Failed to ensure user-gate (might already exist or schema differ):', err.message);
+  }
+
   const apiKey = process.env.API_KEY || 'scu_smoke_key';
   const apiSecret = process.env.API_SECRET || 'scu_smoke_secret';
 
