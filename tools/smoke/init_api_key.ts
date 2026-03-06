@@ -6,9 +6,12 @@
 import { PrismaClient } from 'database';
 
 // Force smoke test to use correct port
-process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5434/scu';
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5434/scu';
 
-const prisma = new PrismaClient({});
+const prisma = new PrismaClient({
+  datasourceUrl: process.env.DATABASE_URL,
+});
 
 // NOTE: dev/test smoke only: we store raw secret into secretHash to match dev/test resolver behavior.
 // Do NOT use this approach in production.
@@ -256,7 +259,7 @@ async function main() {
     if (check.ownerUserId !== user.id || check.ownerOrgId !== organization.id) {
       throw new Error(
         `[smoke] apiKey binding mismatch. expected user=${user.id} org=${organization.id} but got user=${check.ownerUserId} org=${check.ownerOrgId}. ` +
-          `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
+        `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
       );
     }
     console.log(`✅ Verified apiKey binding: ${apiKey} -> user=${user.id} org=${organization.id}`);
