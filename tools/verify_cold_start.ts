@@ -29,7 +29,7 @@ async function main() {
   // Get base DATABASE_URL
   const originalUrl =
     process.env.DATABASE_URL ||
-    'postgresql://postgres:postgres@localhost:5432/super_caterpillar_dev';
+    'postgresql://postgres:password@127.0.0.1:5432/super_caterpillar_dev';
   const baseUrl = originalUrl.replace(/\/[^/]*$/, '');
   const verifyUrl = `${baseUrl}/${VERIFY_DB_NAME}`;
 

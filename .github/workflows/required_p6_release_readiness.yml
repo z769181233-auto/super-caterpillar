@@ -31,7 +31,7 @@ jobs:
         ports:
           - 5432:5432
     env:
-      DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
+      DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
 
       - name: Inject Physical .env for Prisma
         run: |
-          echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/scu" > packages/database/.env
+          echo "DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/scu" > packages/database/.env
 
       - name: Generate Prisma Client (npx explicit)
         run: |
@@ -59,7 +59,7 @@ jobs:
           export PRISMA_CLIENT_ENGINE_TYPE=binary
           npx prisma generate --schema=./packages/database/prisma/schema.prisma
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/scu
+          DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
 
       - name: Build Database Package
         run: pnpm --filter database build

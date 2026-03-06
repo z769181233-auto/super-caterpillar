@@ -79,7 +79,7 @@ jobs:
 
       - name: Rigid DB Seeding (Fallback)
         run: |
-          echo "Seeding user-gate and gate-org via psql..."
+          echo "Seeding user-gate, gate-org and api-key via psql..."
           psql "postgresql://postgres:password@127.0.0.1:5432/scu" -c "
             INSERT INTO \"users\" (id, email, \"passwordHash\", role, \"createdAt\", \"updatedAt\") 
             VALUES ('user-gate', 'gate@example.com', 'dummy-hash', 'ADMIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -87,6 +87,10 @@ jobs:
             
             INSERT INTO \"organizations\" (id, name, \"ownerId\", \"createdAt\", \"updatedAt\")
             VALUES ('gate-org', 'Gate Organization', 'user-gate', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (id) DO NOTHING;
+            
+            INSERT INTO \"api_keys\" (id, key, \"ownerOrgId\", \"ownerUserId\", \"createdAt\", \"updatedAt\")
+            VALUES ('api_key_gate', 'scu_gate_dummy_key', 'gate-org', 'user-gate', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (id) DO NOTHING;
           "
 

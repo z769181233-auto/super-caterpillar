@@ -7,7 +7,7 @@ export ORCHESTRATOR_ENABLED=true
 export JOB_WORKER_ENABLED=false
 export HEARTBEAT_TTL_SECONDS=10
 export STORAGE_ROOT="${REPO_ROOT}/.data/storage"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu?schema=public}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu?schema=public}"
 export API_BASE_URL="${API_BASE_URL:-http://localhost:3000}"
 export API_URL="${API_URL:-$API_BASE_URL}"
 

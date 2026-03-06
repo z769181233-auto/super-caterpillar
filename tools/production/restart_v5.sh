@@ -9,7 +9,7 @@ EP_ID="ep-wangu_ep1_v5"
 SC_ID="sc-wangu_ep1_v5"
 SH_ID="sh-wangu_ep1_v5"
 N_ID="n-wangu_ep1_v5"
-DATABASE_URL="postgresql://postgres:postgres@localhost:5434/scu"
+DATABASE_URL="postgresql://postgres:password@localhost:5434/scu"
 
 echo "Check Project..."
 psql "${DATABASE_URL}" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\") VALUES ('${PROJECT_ID}', '萬古神帝 - 第一集 (V5 旗艦)', 'user-wangu-prod', 'org-wangu-prod', 'in_progress', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"

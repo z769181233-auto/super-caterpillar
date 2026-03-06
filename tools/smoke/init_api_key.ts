@@ -7,7 +7,7 @@ import { PrismaClient } from 'database';
 
 // Force smoke test to use correct port (env var takes priority if set by CI)
 process.env.DATABASE_URL =
-  process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5434/scu';
+  process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5434/scu';
 
 const prisma = new PrismaClient({});
 

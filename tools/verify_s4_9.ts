@@ -12,7 +12,7 @@ Object.assign(process.env, {
   NODE_ENV: 'development',
   GATE_MODE: '1',
   RENDER_ENGINE: 'ffmpeg',
-  DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/scu',
+  DATABASE_URL: 'postgresql://postgres:password@127.0.0.1:5432/scu',
 });
 
 const prisma = new PrismaClient({});

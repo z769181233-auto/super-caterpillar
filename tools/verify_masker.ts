@@ -19,6 +19,6 @@ console.log('Masked:', JSON.stringify(maskSensitiveData(testData), null, 2));
 
 console.log('\n--- Testing maskSensitiveString ---');
 const testStr =
-  'Error: Failed to connect to postgres://admin:very_secret_pass@localhost:5432/db. Reason: Invalid api_key=sk_test_999988887777 and token: abcdef123456789. Also check secret="mypassword"';
+  'Error: Failed to connect to postgres://admin:very_secret_pass@127.0.0.1:5432/db. Reason: Invalid api_key=sk_test_999988887777 and token: abcdef123456789. Also check secret="mypassword"';
 console.log('Original:', testStr);
 console.log('Masked:', maskSensitiveString(testStr));

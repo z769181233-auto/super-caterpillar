@@ -8,7 +8,7 @@ echo "🚀 Starting E2E Vertical Slice Verification (RC1)..."
 
 # Config
 export API_BASE_URL="${API_BASE_URL:-http://localhost:3000/api}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu?schema=public}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu?schema=public}"
 export WORKER_API_KEY="${WORKER_API_KEY:-ak_e2e_test_key_001}"
 export WORKER_API_SECRET="${WORKER_API_SECRET:-sk_e2e_test_secret_001_plain_text}"
 
@@ -18,7 +18,7 @@ echo "WORKER_API_KEY=$WORKER_API_KEY"
 
 # Dependency checks
 if ! nc -z localhost 5432; then
-  echo "❌ DB not reachable at localhost:5432"
+  echo "❌ DB not reachable at 127.0.0.1:5432"
   exit 1
 fi
 
