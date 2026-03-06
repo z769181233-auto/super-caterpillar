@@ -22,8 +22,22 @@ async function testThreads() {
   const path = await import('path');
 
   const runtimeDir = 'apps/workers/.runtime/assets_gate_p0r2';
+  const tmpFramesDir = '.tmp/p0r2_frames';
   process.env.ASSET_STORAGE_DIR = runtimeDir;
   if (!fs.default.existsSync(runtimeDir)) fs.default.mkdirSync(runtimeDir, { recursive: true });
+  if (!fs.default.existsSync(tmpFramesDir)) fs.default.mkdirSync(tmpFramesDir, { recursive: true });
+
+  // Generate valid mock PNGs using ffmpeg if possible, else dummy
+  console.log('Generating valid mock PNG frames...');
+  for (let i = 0; i < 3; i++) {
+    const p = path.join(tmpFramesDir, `f${i}.png`);
+    try {
+      require('child_process').execSync(`ffmpeg -y -f lavfi -i color=c=red:s=64x64 -frames:v 1 ${p}`);
+    } catch (e) {
+      console.warn('ffmpeg failed to generate mock frame, falling back to dummy data');
+      fs.default.writeFileSync(p, 'dummy_data_not_a_real_png_but_hey');
+    }
+  }
 
   // default threads
   delete process.env.FFMPEG_THREADS;

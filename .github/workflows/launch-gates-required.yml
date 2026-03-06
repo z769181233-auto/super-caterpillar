@@ -79,7 +79,7 @@ jobs:
 
       - name: Rigid DB Seeding (Fallback)
         run: |
-          echo "Seeding user-gate, gate-org and api-key via psql..."
+          echo "Seeding user-gate, gate-org and ak_smoke_test_key_v1 via psql..."
           psql "postgresql://postgres:password@127.0.0.1:5432/scu" -c "
             INSERT INTO \"users\" (id, email, \"passwordHash\", role, \"createdAt\", \"updatedAt\") 
             VALUES ('user-gate', 'gate@example.com', 'dummy-hash', 'ADMIN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -89,8 +89,8 @@ jobs:
             VALUES ('gate-org', 'Gate Organization', 'user-gate', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (id) DO NOTHING;
             
-            INSERT INTO \"api_keys\" (id, key, \"ownerOrgId\", \"ownerUserId\", \"createdAt\", \"updatedAt\")
-            VALUES ('api_key_gate', 'scu_gate_dummy_key', 'gate-org', 'user-gate', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO \"api_keys\" (id, key, \"ownerOrgId\", \"ownerUserId\", name, status, \"createdAt\", \"updatedAt\")
+            VALUES ('api_key_gate', 'ak_smoke_test_key_v1', 'gate-org', 'user-gate', 'Smoke Gate Key', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (id) DO NOTHING;
           "
 
@@ -147,6 +147,7 @@ jobs:
           API_URL: http://127.0.0.1:3000
           DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
           PRISMA_CLIENT_ENGINE_TYPE: library
+          API_KEY: ak_smoke_test_key_v1
           P6_2: '1' # Explicitly enable P6-2
 
       - name: Upload Evidence Artifact

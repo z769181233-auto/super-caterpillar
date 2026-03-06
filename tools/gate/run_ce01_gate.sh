@@ -34,7 +34,7 @@ if [ -f "apps/api/.env.bak" ]; then
   echo "   WORKER_API_KEY=${WORKER_API_KEY:0:20}..."
 else
   echo "❌ 未找到 .env.bak，使用默认凭证"
-  export WORKER_API_KEY="ak_worker_dev_0000000000000000"
+  export WORKER_API_KEY="ak_smoke_test_key_v1"
   export WORKER_API_SECRET="super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678"
 fi
 echo ""

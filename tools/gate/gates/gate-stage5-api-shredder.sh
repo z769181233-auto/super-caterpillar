@@ -30,7 +30,7 @@ fi
 PROJECT_ID="gate-stage5-shredder-$(date +%s)"
 ORG_ID="org-gate"
 USER_ID="pilot-api"
-API_KEY="ak_worker_dev_0000000000000000"
+API_KEY="ak_smoke_test_key_v1"
 API_SECRET="sk_worker_dev_1234567890123456"
 
 echo "===================================================="
