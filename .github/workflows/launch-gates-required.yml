@@ -66,8 +66,7 @@ jobs:
 
       - name: Build Services
         run: |
-          pnpm --filter api build
-          pnpm --filter worker build
+          pnpm turbo build --filter=api --filter=worker
 
       - name: Start Services (Background)
         run: |

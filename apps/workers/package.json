@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "ts-node -r tsconfig-paths/register src/main.ts",
-    "build": "pnpm --filter database prisma:generate && tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
     "start": "ts-node -r tsconfig-paths/register src/main.ts"
   },
   "dependencies": {
