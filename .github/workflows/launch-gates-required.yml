@@ -72,6 +72,8 @@ jobs:
 
       - name: Start Services (Background)
         run: |
+          mkdir -p .data/logs .data/pids
+
           # Start API
           export DATABASE_URL="postgresql://postgres:password@localhost:5432/scu"
           export PORT=3000
@@ -80,16 +82,16 @@ jobs:
           export JWT_SECRET="dummy-secret-for-ci"
           export REDIS_URL="redis://localhost:6379"
           export PRISMA_CLIENT_ENGINE_TYPE=binary
-          nohup pnpm --filter api start > api.log 2>&1 &
-          echo $! > api.pid
+          nohup pnpm --filter api start > .data/logs/api.log 2>&1 &
+          echo $! > .data/pids/api.pid
 
-          # Start Worker (Ensure ENV parity with Gate)
+          # Start Worker
           export NODE_ENV=staging
           export API_URL="http://localhost:3000"
           export WORKER_PORT=3001
           export PRISMA_CLIENT_ENGINE_TYPE=binary
-          nohup pnpm --filter worker start > worker.log 2>&1 &
-          echo $! > worker.pid
+          nohup pnpm --filter worker start > .data/logs/worker.log 2>&1 &
+          echo $! > .data/pids/worker.pid
 
           # Wait for API health
           echo "Waiting for API on port 3000..."
