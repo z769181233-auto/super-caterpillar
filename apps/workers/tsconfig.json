@@ -3,32 +3,68 @@
     "target": "ES2020",
     "module": "commonjs",
     "outDir": "dist",
+    "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types", "../../node_modules/@types", "./src/types"],
-    "types": ["node"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types",
+      "./src/types"
+    ],
+    "types": [
+      "node"
+    ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "baseUrl": ".",
     "paths": {
-      "config": ["../../packages/config/dist"],
-      "@scu/config": ["../../packages/config/dist"],
-      "database": ["../../packages/database/dist"],
-      "@scu/shared-types": ["../../packages/shared-types/dist"],
-      "@scu/engines/*": ["../../packages/engines/*/dist"],
-      "@scu/engines-ce03": ["../../packages/engines-ce03/dist"],
-      "@scu/engines-ce04": ["../../packages/engines-ce04/dist"],
-      "@scu/storage": ["../../packages/storage/dist"],
-      "@scu/billing/*": ["../../packages/billing/*/dist"],
-      "@scu/observability": ["../../packages/observability/dist"],
-      "@scu/api/*": ["../../apps/api/src/*"]
+      "config": [
+        "../../packages/config/dist"
+      ],
+      "@scu/config": [
+        "../../packages/config/dist"
+      ],
+      "database": [
+        "../../packages/database/dist"
+      ],
+      "@scu/shared-types": [
+        "../../packages/shared-types/dist"
+      ],
+      "@scu/engines/*": [
+        "../../packages/engines/*/dist"
+      ],
+      "@scu/engines-ce03": [
+        "../../packages/engines-ce03/dist"
+      ],
+      "@scu/engines-ce04": [
+        "../../packages/engines-ce04/dist"
+      ],
+      "@scu/storage": [
+        "../../packages/storage/dist"
+      ],
+      "@scu/billing/*": [
+        "../../packages/billing/*/dist"
+      ],
+      "@scu/observability": [
+        "../../packages/observability/dist"
+      ],
+      "@scu/api/*": [
+        "../../apps/api/src/*"
+      ]
     }
   },
   "ts-node": {
-    "require": ["tsconfig-paths/register"]
+    "require": [
+      "tsconfig-paths/register"
+    ]
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

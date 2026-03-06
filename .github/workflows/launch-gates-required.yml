@@ -31,6 +31,7 @@ jobs:
     env:
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
       PRISMA_CLIENT_ENGINE_TYPE: 'library'
+      PRISMA_CLI_QUERY_ENGINE_TYPE: 'library'
       PGPASSWORD: 'password'
       PGHOST: '127.0.0.1'
     steps:
@@ -64,6 +65,7 @@ jobs:
           npx prisma generate --schema=./packages/database/prisma/schema.prisma
         env:
           DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
+          PRISMA_CLI_QUERY_ENGINE_TYPE: library
 
       - name: Build Database Package (Force)
         run: |
@@ -78,6 +80,8 @@ jobs:
       - name: Build Services
         run: |
           pnpm turbo build --filter=api --filter=@scu/worker --no-cache
+          # Verify structure
+          ls -l apps/api/dist/main.js || (echo "ERROR: apps/api/dist/main.js not found" && ls -R apps/api/dist && exit 1)
 
       - name: Start Services (Background)
         run: |
@@ -97,20 +101,20 @@ jobs:
           export NODE_ENV=staging
           export API_URL="http://127.0.0.1:3000"
           export WORKER_PORT=3001
-          nohup pnpm --filter worker start > .data/logs/worker.log 2>&1 &
+          nohup pnpm --filter @scu/worker start > .data/logs/worker.log 2>&1 &
           echo $! > .data/pids/worker.pid
 
           # Wait for API health
           echo "Waiting for API on port 3000..."
-          for i in $(seq 1 30); do
+          for i in $(seq 1 45); do
             if curl -s http://127.0.0.1:3000/health; then
               echo "API is ready."
               break
             fi
-            echo "Waiting... $i/30"
+            echo "Waiting... $i/45"
             sleep 2
           done
-
+          
           # Debug Startup
           echo "--- Last 50 lines of API log ---"
           cat .data/logs/api.log | tail -n 50 || echo "API log missing"

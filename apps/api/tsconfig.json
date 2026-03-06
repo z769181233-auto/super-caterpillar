@@ -10,6 +10,7 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
+    "rootDir": "src",
     "allowJs": true,
     "baseUrl": "./",
     "incremental": true,
@@ -20,21 +21,54 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["src/*"],
-      "database": ["../../packages/database/dist"],
-      "@scu/shared-types": ["../../packages/shared-types/dist"],
-      "@scu/engines-shot-render": ["../../packages/engines/shot_render/dist"],
-      "@scu/engines-ce03": ["../../packages/engines/ce03/dist"],
-      "@scu/engines-ce04": ["../../packages/engines/ce04/dist"],
-      "@scu/engines-ce06": ["../../packages/engines/ce06/dist"],
-      "@scu/engines-video-merge": ["../../packages/engines/video_merge/dist"],
-      "@scu/engines/*": ["../../packages/engines/*/dist"],
-      "@scu/billing/*": ["../../packages/billing/*/dist"],
-      "@scu/observability": ["../../packages/observability/dist"],
-      "@scu/config": ["../../packages/config/dist"],
-      "config": ["../../packages/config/dist"]
+      "@/*": [
+        "src/*"
+      ],
+      "database": [
+        "../../packages/database/dist"
+      ],
+      "@scu/shared-types": [
+        "../../packages/shared-types/dist"
+      ],
+      "@scu/engines-shot-render": [
+        "../../packages/engines/shot_render/dist"
+      ],
+      "@scu/engines-ce03": [
+        "../../packages/engines/ce03/dist"
+      ],
+      "@scu/engines-ce04": [
+        "../../packages/engines/ce04/dist"
+      ],
+      "@scu/engines-ce06": [
+        "../../packages/engines/ce06/dist"
+      ],
+      "@scu/engines-video-merge": [
+        "../../packages/engines/video_merge/dist"
+      ],
+      "@scu/engines/*": [
+        "../../packages/engines/*/dist"
+      ],
+      "@scu/billing/*": [
+        "../../packages/billing/*/dist"
+      ],
+      "@scu/observability": [
+        "../../packages/observability/dist"
+      ],
+      "@scu/config": [
+        "../../packages/config/dist"
+      ],
+      "config": [
+        "../../packages/config/dist"
+      ]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test/**/*", "src/scripts/**/*"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test/**/*",
+    "src/scripts/**/*"
+  ]
 }
