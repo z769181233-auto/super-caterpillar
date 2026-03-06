@@ -77,6 +77,7 @@ jobs:
           export NODE_ENV=staging
           export JWT_SECRET="dummy-secret-for-ci"
           export REDIS_URL="redis://localhost:6379"
+          export PRISMA_CLIENT_ENGINE_TYPE=binary
           nohup pnpm --filter api start > api.log 2>&1 &
           echo $! > api.pid
 
@@ -84,6 +85,7 @@ jobs:
           export NODE_ENV=staging
           export API_URL="http://localhost:3000"
           export WORKER_PORT=3001
+          export PRISMA_CLIENT_ENGINE_TYPE=binary
           nohup pnpm --filter worker start > worker.log 2>&1 &
           echo $! > worker.pid
 
