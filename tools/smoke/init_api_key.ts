@@ -3,7 +3,7 @@
  * 在数据库中创建或更新 smoke 测试所需的 API Key
  */
 
-import { PrismaClient } from '../../packages/database/src/generated/prisma';
+import { PrismaClient } from 'database';
 
 // Force smoke test to use correct port (env var takes priority if set by CI)
 process.env.DATABASE_URL =
