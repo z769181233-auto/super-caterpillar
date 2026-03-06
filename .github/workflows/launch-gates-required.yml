@@ -13,6 +13,7 @@ jobs:
   launch-gates-required:
     name: launch-gates-required
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:15
@@ -29,6 +30,7 @@ jobs:
           - 5432:5432
     env:
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
+      PRISMA_CLIENT_ENGINE_TYPE: 'binary'
     steps:
       - uses: actions/checkout@v4
 

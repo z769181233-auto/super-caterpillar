@@ -37,6 +37,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
+      PRISMA_CLIENT_ENGINE_TYPE: 'binary'
     steps:
       - uses: actions/checkout@v4
 
