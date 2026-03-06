@@ -4,7 +4,7 @@ dotenv.config({ path: '../../../../gate.env' }); // Adjust path if running from 
 import { PrismaClient } from 'database';
 import * as util from 'util';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   process.stdout.write(util.format('Checking Seed Data...') + '\n');

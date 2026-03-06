@@ -8,7 +8,7 @@ import { PrismaClient } from 'database';
 // Force smoke test to use correct port
 process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5434/scu';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 // NOTE: dev/test smoke only: we store raw secret into secretHash to match dev/test resolver behavior.
 // Do NOT use this approach in production.

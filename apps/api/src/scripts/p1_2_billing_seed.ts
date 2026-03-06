@@ -2,7 +2,7 @@
 import { PrismaClient } from 'database';
 import * as util from 'util';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 function iso(d: Date) {
   return d.toISOString();
