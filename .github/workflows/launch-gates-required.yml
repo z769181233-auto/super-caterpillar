@@ -111,6 +111,8 @@ jobs:
           export API_PORT=3000
           export NODE_ENV=staging
           export JWT_SECRET="dummy-secret-for-ci"
+          export API_SECRET_KEY="dummy-api-secret-key-for-ci-32chars-min"
+          export HMAC_SECRET_KEY="dummy-hmac-secret-key-for-ci-32chars-min"
           export REDIS_URL="redis://127.0.0.1:6379"
           nohup pnpm --filter api start > .data/logs/api.log 2>&1 &
           echo $! > .data/pids/api.pid
