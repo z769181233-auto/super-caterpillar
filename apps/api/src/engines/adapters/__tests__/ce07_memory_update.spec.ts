@@ -117,11 +117,11 @@ describe('ce07_memory_update integration (Mocked)', () => {
     // Verify DB calls
     expect(prisma.characterMemory.create).toHaveBeenCalled();
     expect(prisma.sceneMemory.create).toHaveBeenCalled();
-    expect(prisma.auditLog.create).toHaveBeenCalled();
+    expect(auditService.log).toHaveBeenCalled();
     expect(prisma.$transaction).toHaveBeenCalled();
 
     // Verify Billing Service call (called via CostLedgerService)
-    expect(mockBillingService.consumeCredits).toHaveBeenCalled();
+    expect(costLedgerService.recordFromEvent).toHaveBeenCalled();
 
     // Verification queries
     const cm = await prisma.characterMemory.findFirst({ where: { characterId: charId } });
