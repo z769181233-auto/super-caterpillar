@@ -17,13 +17,13 @@ export class StorageController {
     private readonly signedUrlService: SignedUrlService,
     private readonly localStorageService: LocalStorageService,
     private readonly storageAuthService: StorageAuthService
-  ) {}
+  ) { }
 
   /**
    * Serve signed URL resources
    * GET /api/storage/signed/:path(*)
    */
-  @Get('signed/:path(*)')
+  @Get('signed/*path')
   @Public() // Signature is verified in method
   async serveSigned(
     @Param('path') key: string,

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LocalStorageService } from '../storage/local-storage.service';
@@ -11,8 +11,9 @@ export class IdentityConsistencyService {
   private readonly logger = new Logger(IdentityConsistencyService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
     private readonly storage: LocalStorageService,
+    @Inject(forwardRef(() => ProjectResolver))
     private readonly projectResolver: ProjectResolver
   ) { }
 

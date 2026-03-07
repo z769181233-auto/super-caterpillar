@@ -25,6 +25,7 @@ export class QualityScoreService {
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService,
     private readonly identityService: IdentityConsistencyService,
+    @Inject(forwardRef(() => ProjectResolver))
     private readonly projectResolver: ProjectResolver
   ) { }
 

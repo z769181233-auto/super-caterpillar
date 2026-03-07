@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
   Inject,
+  forwardRef,
   HttpException,
   HttpStatus,
   Logger,
@@ -95,10 +96,10 @@ export class JobService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(TaskService) private readonly taskService: TaskService,
+    @Inject(forwardRef(() => TaskService)) private readonly taskService: TaskService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry,
-    @Inject(QualityScoreService)
+    @Inject(forwardRef(() => QualityScoreService))
     private readonly qualityScoreService: QualityScoreService,
     @Inject(EngineConfigStoreService)
     private readonly engineConfigStore: EngineConfigStoreService,
@@ -120,6 +121,7 @@ export class JobService {
     private readonly eventEmitter: EventEmitter2,
     @Inject(FinancialSettlementService)
     private readonly financialSettlementService: FinancialSettlementService,
+    @Inject(forwardRef(() => ProjectResolver))
     private readonly projectResolver: ProjectResolver
   ) { }
 
