@@ -20,6 +20,16 @@ export class StorageController {
   ) { }
 
   /**
+   * Diagnostic probe for gate-keeping
+   * GET /api/storage/__probe
+   */
+  @Get('__probe')
+  @Public()
+  probe() {
+    return 'StorageController';
+  }
+
+  /**
    * Serve signed URL resources
    * GET /api/storage/signed/:path(*)
    */
