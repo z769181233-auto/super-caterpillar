@@ -12,6 +12,14 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentOrganization } from '../auth/decorators/current-organization.decorator';
 import { AuthenticatedUser } from '@scu/shared-types';
 
+function normalizeStorageKey(keyDef: any): string {
+  if (!keyDef) return '';
+  if (Array.isArray(keyDef)) {
+    return keyDef.join('/');
+  }
+  return String(keyDef).replace(/^\/+/, '');
+}
+
 @Controller('storage')
 export class StorageController {
   private readonly logger = new Logger(StorageController.name);
@@ -38,10 +46,11 @@ export class StorageController {
    */
   @Get('sign/*path')
   async signUrl(
-    @Param('path') key: string,
+    @Param('path') rawKey: any,
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() orgId: string
   ) {
+    const key = normalizeStorageKey(rawKey);
     const { url, expiresAt } = this.signedUrlService.generateSignedUrl({
       key,
       tenantId: orgId || 'system-gate',
@@ -57,7 +66,7 @@ export class StorageController {
   @Get('signed/*path')
   @Public() // Signature is verified in method
   async serveSigned(
-    @Param('path') key: string,
+    @Param('path') rawKey: any,
     @Query('expires') expires: string,
     @Query('signature') signature: string,
     @Query('tenantId') tenantId: string,
@@ -65,6 +74,7 @@ export class StorageController {
     @Req() req: Request,
     @Res() res: Response
   ) {
+    const key = normalizeStorageKey(rawKey);
     const method = req.method;
 
     // 1. Verify Signature
