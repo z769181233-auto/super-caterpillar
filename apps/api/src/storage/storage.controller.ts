@@ -36,7 +36,7 @@ export class StorageController {
    * Generate signed URL for a storage key
    * GET /api/storage/sign/*path
    */
-  @Get('sign/:path*')
+  @Get('sign/*path')
   async signUrl(
     @Param('path') key: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -54,7 +54,7 @@ export class StorageController {
    * Serve signed URL resources
    * GET /api/storage/signed/:path(*)
    */
-  @Get('signed/:path*')
+  @Get('signed/*path')
   @Public() // Signature is verified in method
   async serveSigned(
     @Param('path') key: string,
