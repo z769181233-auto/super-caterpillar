@@ -8,6 +8,9 @@ import { SignedUrlService } from './signed-url.service';
 import { LocalStorageService } from './local-storage.service';
 import { StorageAuthService } from './storage-auth.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CurrentOrganization } from '../auth/decorators/current-organization.decorator';
+import { AuthenticatedUser } from '@scu/shared-types';
 
 @Controller('storage')
 export class StorageController {
@@ -27,6 +30,24 @@ export class StorageController {
   @Public()
   probe() {
     return 'StorageController';
+  }
+
+  /**
+   * Generate signed URL for a storage key
+   * GET /api/storage/sign/*path
+   */
+  @Get('sign/*path')
+  async signUrl(
+    @Param('path') key: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() orgId: string
+  ) {
+    const { url, expiresAt } = this.signedUrlService.generateSignedUrl({
+      key,
+      tenantId: orgId || 'system-gate',
+      userId: user?.userId || 'system-gate-user',
+    });
+    return { url, expiresAt };
   }
 
   /**
