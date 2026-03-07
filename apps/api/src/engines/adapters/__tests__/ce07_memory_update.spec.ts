@@ -73,8 +73,8 @@ describe('ce07_memory_update integration (Mocked)', () => {
     };
 
     // Setup deps
-    auditService = new AuditService(prisma);
-    costLedgerService = new CostLedgerService(prisma, mockBillingService);
+    auditService = { log: jest.fn().mockResolvedValue(undefined) } as any;
+    costLedgerService = { recordFromEvent: jest.fn().mockResolvedValue(undefined) } as any;
     adapter = new CE07MemoryUpdateAdapter(prisma, auditService, costLedgerService);
   });
 

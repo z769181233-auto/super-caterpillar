@@ -37,6 +37,9 @@ jobs:
       DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/testdb
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
       PRISMA_CLIENT_ENGINE_TYPE: 'binary'
+      JWT_SECRET: 'ci-secret-for-test'
+      JWT_REFRESH_SECRET: 'ci-refresh-secret-for-test'
+      SHOT_RENDER_PROVIDER: 'mock'
     steps:
       - uses: actions/checkout@v4
 
