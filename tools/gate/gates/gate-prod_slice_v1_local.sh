@@ -114,7 +114,7 @@ wait_for_job_success() {
 
 # Seed DB User/Org
 echo "[Gate] Seeding Test User & Org..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Free$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Basic$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ($gate$org-gate$gate$, $gate$Gate Org$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ($gate$mem-gate$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, $gate$OWNER$gate$, NOW(), NOW()) ON CONFLICT (\"organizationId\", \"userId\") DO NOTHING;"
 
@@ -604,7 +604,7 @@ wait_for_job_success() {
 
 # Seed DB User/Org
 echo "[Gate] Seeding Test User & Org..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Free$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Basic$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ($gate$org-gate$gate$, $gate$Gate Org$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ($gate$mem-gate$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, $gate$OWNER$gate$, NOW(), NOW()) ON CONFLICT (\"organizationId\", \"userId\") DO NOTHING;"
 
@@ -1094,7 +1094,7 @@ wait_for_job_success() {
 
 # Seed DB User/Org
 echo "[Gate] Seeding Test User & Org..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Free$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Basic$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ($gate$org-gate$gate$, $gate$Gate Org$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ($gate$mem-gate$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, $gate$OWNER$gate$, NOW(), NOW()) ON CONFLICT (\"organizationId\", \"userId\") DO NOTHING;"
 
@@ -1584,7 +1584,7 @@ wait_for_job_success() {
 
 # Seed DB User/Org
 echo "[Gate] Seeding Test User & Org..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Free$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Basic$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ($gate$org-gate$gate$, $gate$Gate Org$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ($gate$mem-gate$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, $gate$OWNER$gate$, NOW(), NOW()) ON CONFLICT (\"organizationId\", \"userId\") DO NOTHING;"
 

@@ -32,7 +32,7 @@ echo "[GATE15] Seeding DB Hierarchy..."
 # User & Project
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO users(id, email, \"passwordHash\", \"userType\", role, tier, quota, \"defaultOrganizationId\", \"createdAt\", \"updatedAt\")
-VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Free', NULL, NULL, now(), now())
+VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Basic', NULL, NULL, now(), now())
 ON CONFLICT (id) DO NOTHING;
 INSERT INTO organizations(id, name, \"ownerId\", \"createdAt\", \"updatedAt\")
 VALUES ('${ORG_ID}', 'Gate Org', 'user-gate', now(), now())

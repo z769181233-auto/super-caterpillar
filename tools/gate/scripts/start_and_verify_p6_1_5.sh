@@ -56,10 +56,10 @@ for i in $(seq 1 60); do
 done
 echo ""
 
-# 5. 查询 billing_ledgers 状态
+# 5. 查询 billing_ledger 状态
 echo "[5/6] 查询 Billing Ledgers..."
 POSTED_COUNT=$(PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -t -c \
-  "SELECT COUNT(*) FROM billing_ledgers WHERE status='POSTED';" | xargs)
+  "SELECT COUNT(*) FROM billing_ledger WHERE status='POSTED';" | xargs)
 
 echo "Posted Count: $POSTED_COUNT"
 echo ""
@@ -70,7 +70,7 @@ if [ "$POSTED_COUNT" -gt 0 ]; then
   echo "最新 10 条记录："
   PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -c \
     "SELECT \"traceId\", \"chargeCode\", amount, \"createdAt\"
-     FROM billing_ledgers
+     FROM billing_ledger
      WHERE status='POSTED'
      ORDER BY \"createdAt\" DESC
      LIMIT 10;"

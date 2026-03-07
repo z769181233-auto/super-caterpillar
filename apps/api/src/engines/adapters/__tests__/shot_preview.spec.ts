@@ -1,3 +1,9 @@
+// Environment injections for CI/Standalone tests
+process.env.DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:5432/testdb';
+process.env.JWT_SECRET = 'test-secret';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
+process.env.REDIS_URL = 'redis://127.0.0.1:6379';
+
 import { ShotPreviewFastAdapter } from '../shot_preview.fast.adapter';
 import { RedisService } from '../../../redis/redis.service';
 import { ShotRenderRouterAdapter } from '../shot_render_router.adapter';

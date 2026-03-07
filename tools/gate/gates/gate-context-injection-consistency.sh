@@ -70,8 +70,8 @@ INSERT INTO projects (id, name, "ownerId", "organizationId", status, "createdAt"
 VALUES ('$TEST_PROJECT_ID', 'Context Injection Test', '$USER_ID', '$TEST_ORG_ID', 'in_progress', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
 
 -- NovelSource
-INSERT INTO novel_sources (id, "projectId", "novelTitle", "rawText", "createdAt", "updatedAt")
-VALUES ('$TEST_SOURCE_ID', '$TEST_PROJECT_ID', '角色状态一致性测试小说', '测试文本', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
+INSERT INTO novel_sources (id, "projectId", "rawText", "createdAt", "updatedAt")
+VALUES ('$TEST_SOURCE_ID', '$TEST_PROJECT_ID', '测试文本', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
 
 -- Volume (Use project_id / novel_source_id variants)
 INSERT INTO novel_volumes (id, "project_id", "novel_source_id", index, title, "created_at", "updated_at")

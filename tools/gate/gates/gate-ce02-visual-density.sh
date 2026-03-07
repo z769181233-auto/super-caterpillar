@@ -41,7 +41,7 @@ echo "[GATE14] Seeding DB Hierarchy..."
 # User & Project
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO users(id, email, \"passwordHash\", \"userType\", role, tier, quota, \"defaultOrganizationId\", \"createdAt\", \"updatedAt\")
-VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Free', '{}'::jsonb, '${ORG_ID}', now(), now())
+VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Basic', '{}'::jsonb, '${ORG_ID}', now(), now())
 ON CONFLICT (id) DO NOTHING;
 INSERT INTO projects(id, name, description, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\")
 VALUES ('${PROJ_ID}', 'gate14-ce02', 'gate14 verification', 'user-gate', '${ORG_ID}', 'in_progress', now(), now())

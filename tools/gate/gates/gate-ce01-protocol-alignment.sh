@@ -35,7 +35,7 @@ cat "$EVI/ce01_input.json"
 # Ensure User exists
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO users(id, email, \"passwordHash\", \"userType\", role, tier, quota, \"defaultOrganizationId\", \"createdAt\", \"updatedAt\")
-VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Free', '{}'::jsonb, '${ORG_ID}', now(), now())
+VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Basic', '{}'::jsonb, '${ORG_ID}', now(), now())
 ON CONFLICT (id) DO NOTHING;
 " > "$EVI/db_seed_user.txt" 2>&1 || (echo "User Seed Failed:"; cat "$EVI/db_seed_user.txt"; exit 1)
 

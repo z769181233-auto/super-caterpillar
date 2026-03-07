@@ -61,7 +61,7 @@ The caterpillar looked up at the stars. It began to float. Close up of its glowi
 
 # 创建 NovelSource/Volume/Chapter (为了数据完整性)
 SOURCE_ID="source_$TS"
-psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, \"projectId\", \"novelTitle\", \"novelAuthor\", \"rawText\", \"createdAt\", \"updatedAt\") VALUES ('$SOURCE_ID', '$PROJ_ID', 'P4 E2E Novel', 'Antigravity', '$(echo "$NOVEL_TEXT" | sed "s/'/''/g")', NOW(), NOW());" > /dev/null
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, \"projectId\", \"rawText\", \"createdAt\", \"updatedAt\") VALUES ('$SOURCE_ID', '$PROJ_ID', '$(echo "$NOVEL_TEXT" | sed "s/'/''/g")', NOW(), NOW());" > /dev/null
 
 VOL_ID="vol_$TS"
 psql "$DATABASE_URL" -c "INSERT INTO novel_volumes (id, project_id, novel_source_id, index, title, updated_at) VALUES ('$VOL_ID', '$PROJ_ID', '$SOURCE_ID', 1, 'Volume 1', NOW());" > /dev/null
