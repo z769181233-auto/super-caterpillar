@@ -36,7 +36,7 @@ export class StorageController {
    * Generate signed URL for a storage key
    * GET /api/storage/sign/*path
    */
-  @Get('sign/*path')
+  @Get('sign/:path*')
   async signUrl(
     @Param('path') key: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -54,7 +54,7 @@ export class StorageController {
    * Serve signed URL resources
    * GET /api/storage/signed/:path(*)
    */
-  @Get('signed/*path')
+  @Get('signed/:path*')
   @Public() // Signature is verified in method
   async serveSigned(
     @Param('path') key: string,
@@ -103,22 +103,10 @@ export class StorageController {
 
     // 4. Stream response
     const absPath = this.localStorageService.getAbsolutePath(key);
-    const ext = path.extname(key).toLowerCase();
 
-    // Set basic content types
-    const mimeMap: Record<string, string> = {
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.mp4': 'video/mp4',
-      '.txt': 'text/plain',
-      '.json': 'application/json',
-    };
-
-    res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
-
-    const stream = fs.createReadStream(absPath);
-    stream.pipe(res);
+    // P8 Fix: Use res.sendFile to automatically support Range headers (206 Partial Content)
+    // and standard headers like ETag, Content-Length, etc.
+    return res.sendFile(absPath);
   }
 
   @Post('/novels')
