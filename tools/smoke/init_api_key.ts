@@ -135,11 +135,13 @@ async function main() {
       update: {
         name: smokeOrgName,
         ownerId: user.id,
+        credits: 999999, // Ensure enough credits for VIDEO_RENDER Gate
       },
       create: {
         name: smokeOrgName,
         slug: smokeOrgSlug,
         ownerId: user.id,
+        credits: 999999,
       },
     });
 
