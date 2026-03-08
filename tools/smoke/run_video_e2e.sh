@@ -29,13 +29,13 @@ E2E_SEED_ONLY="${E2E_SEED_ONLY:-0}"
 rm -rf "$STORAGE_ROOT/temp/seed"
 mkdir -p "$STORAGE_ROOT"
 
-# Ensure API Key exists (using default scu_smoke_key)
+# Ensure API Key exists
 echo "[0/4] Initializing API Key..."
 npx tsx tools/smoke/init_api_key.ts
 
 # Set Env for Trigger Script (Align with init_api_key.ts defaults)
-export API_KEY="scu_smoke_key"
-export API_SECRET="scu_smoke_secret"
+export API_KEY="${API_KEY:-ak_smoke_test_key_v1}"
+export API_SECRET="${API_SECRET:-scu_smoke_secret}"
 
 wait_for_2xx() {
   local url="$1"
@@ -168,7 +168,7 @@ mkdir -p "$(dirname "$WORKER_LOG_FILE")"
   DATABASE_URL="${DATABASE_URL:-}" \
   API_BASE_URL="${API_BASE_URL:-http://localhost:3000}" \
   API_URL="${API_URL:-http://localhost:3000}" \
-  WORKER_API_KEY="${WORKER_API_KEY:-scu_smoke_key}" \
+  WORKER_API_KEY="${WORKER_API_KEY:-ak_smoke_test_key_v1}" \
   WORKER_API_SECRET="${WORKER_API_SECRET:-scu_smoke_secret}" \
   pnpm dev
 ) > "$WORKER_LOG_FILE" 2>&1 &

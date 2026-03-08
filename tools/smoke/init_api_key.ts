@@ -63,7 +63,7 @@ async function main() {
     console.warn('⚠️  Failed to ensure user-gate (might already exist or schema differ):', err.message);
   }
 
-  const apiKey = process.env.API_KEY || 'scu_smoke_key';
+  const apiKey = process.env.API_KEY || 'ak_smoke_test_key_v1';
   const apiSecret = process.env.API_SECRET || 'scu_smoke_secret';
 
   // Smoke 默认种子数据（可通过环境变量覆盖）
