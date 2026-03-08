@@ -20,9 +20,11 @@ else
 fi
 
 # 2) 生成大文件（512MB）
-echo "Generating 512MB test file at $TMP..." | tee -a "$LOG"
+echo "[DEBUG] Generating 512MB test file at $TMP..." | tee -a "$LOG"
 rm -f "$TMP"
-dd if=/dev/zero of="$TMP" bs=1m count=512 2>/dev/null
+echo "[DEBUG] Executing dd command..." | tee -a "$LOG"
+dd if=/dev/zero of="$TMP" bs=1048576 count=512 2>/dev/null
+echo "[DEBUG] dd command finished. Checking file existence..." | tee -a "$LOG"
 
 # 3) 运行内存检查脚本
 echo "Running memory check..." | tee -a "$LOG"
