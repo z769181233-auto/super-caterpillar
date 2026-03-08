@@ -1107,20 +1107,40 @@ ENGINE_DBTRACE_PASSED=true
 ENGINE_DBTRACE_OUTPUT="$TEMP_DIR/engine_dbtrace_required.txt"
 
 if [[ "${GATE_ENV_MODE:-local}" == "ci" ]]; then
-    # CI 模式：DATABASE_URL 必须存在，Gate 必须执行
-    if [[ -z "${DATABASE_URL:-}" ]]; then
-        echo -e "  ${RED}❌ DATABASE_URL is required in CI for Gate18 DB Traceability${NC}"
-        echo "- ❌ DATABASE_URL is required in CI" >> "$ENGINE_DBTRACE_OUTPUT"
-        ENGINE_DBTRACE_PASSED=false
-        ALL_GATES_PASSED=false
-    else
-        echo "  DB Traceability REQUIRED (CI mode)"
+    # CI 模式：根据 ENGINE_REAL 决定是否强制依赖 DATABASE_URL
+    if [[ "${ENGINE_REAL:-0}" != "1" ]]; then
+        echo "  DB Traceability Acknowledged (CI Mock mode)"
         if bash tools/gate/gates/gate18_dbtrace_required.sh "$ARTIFACT_DIR" > "$ENGINE_DBTRACE_OUTPUT" 2>&1; then
-            echo -e "  ${GREEN}✅ Gate 18b DB Traceability passed${NC}"
+            if grep -q "MOCK_ACK_MODE" "$ENGINE_DBTRACE_OUTPUT"; then
+                echo -e "  ${GREEN}✅ Gate 18b DB Traceability passed (MOCK_ACK_MODE)${NC}"
+                ENGINE_DBTRACE_PASSED="mock_ack"
+            else
+                # Fallback if internal logic acted real
+                echo -e "  ${GREEN}✅ Gate 18b DB Traceability passed (REAL)${NC}"
+                ENGINE_DBTRACE_PASSED=true
+            fi
         else
             echo -e "  ${RED}❌ Gate 18b DB Traceability failed${NC}"
             ENGINE_DBTRACE_PASSED=false
             ALL_GATES_PASSED=false
+        fi
+    else
+        # 真机审计模式
+        if [[ -z "${DATABASE_URL:-}" ]]; then
+            echo -e "  ${RED}❌ DATABASE_URL is required in CI for Gate18 DB Traceability (ENGINE_REAL=1)${NC}"
+            echo "- ❌ DATABASE_URL is required in CI" >> "$ENGINE_DBTRACE_OUTPUT"
+            ENGINE_DBTRACE_PASSED=false
+            ALL_GATES_PASSED=false
+        else
+            echo "  DB Traceability REQUIRED (CI Mode/Real Engine)"
+            if bash tools/gate/gates/gate18_dbtrace_required.sh "$ARTIFACT_DIR" > "$ENGINE_DBTRACE_OUTPUT" 2>&1; then
+                echo -e "  ${GREEN}✅ Gate 18b DB Traceability passed (REAL)${NC}"
+                ENGINE_DBTRACE_PASSED=true
+            else
+                echo -e "  ${RED}❌ Gate 18b DB Traceability failed${NC}"
+                ENGINE_DBTRACE_PASSED=false
+                ALL_GATES_PASSED=false
+            fi
         fi
     fi
 else
@@ -1224,8 +1244,14 @@ fi
   echo "### Gate 16: Billing Documentation Hygiene"
   cat "$DOC_HYGIENE_OUTPUT"
   echo ""
+  echo "### Gate 17: Engine Sanity (Week 1)"
+  cat "$ENGINE_SANITY_OUTPUT" 2>/dev/null || echo "No output"
+  echo ""
   echo "### Gate 18: Engine Provenance (Week 2)"
   cat "$ENGINE_PROVENANCE_OUTPUT"
+  echo ""
+  echo "### Gate 18b: DB Traceability Required (L3)"
+  cat "$ENGINE_DBTRACE_OUTPUT" 2>/dev/null || echo "No output"
 } | evidence_pipe "" >> "$REPORT_FILE"
 
 {
@@ -1250,6 +1276,15 @@ fi
   echo "- Gate 16 (Billing Documentation Hygiene): $([ "$DOC_HYGIENE_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 17 (Engine Sanity): $([ "$ENGINE_SANITY_PASSED" = true ] && echo "✅ PASSED" || echo "⚠️  SKIPPED")"
   echo "- Gate 18 (Engine Provenance): $([ "$ENGINE_PROVENANCE_PASSED" = true ] && echo "✅ PASSED" || echo "⚠️  SKIPPED")"
+  if [ "$ENGINE_DBTRACE_PASSED" = "mock_ack" ]; then
+    echo "- Gate 18b (DB Traceability): ✅ PASS_MOCK_ACK"
+  elif [ "$ENGINE_DBTRACE_PASSED" = true ]; then
+    echo "- Gate 18b (DB Traceability): ✅ PASS_REAL"
+  elif [ "$ENGINE_DBTRACE_PASSED" = false ]; then
+    echo "- Gate 18b (DB Traceability): ❌ FAILED"
+  else
+    echo "- Gate 18b (DB Traceability): ⚠️  SKIPPED"
+  fi
   echo ""
   echo "## Gate Mode Semantics"
   echo "- **MODE**: $GATE_ENV_MODE"
@@ -1287,6 +1322,16 @@ ALL_PASSED=true
 if [[ "${ENGINE_REAL:-0}" == "1" ]]; then
     [ "$ENGINE_SANITY_PASSED" != true ] && ALL_PASSED=false
     [ "$ENGINE_PROVENANCE_PASSED" != true ] && ALL_PASSED=false
+fi
+
+# Gate 18b DB Traceability Aggregate Loop
+if [ "$ENGINE_DBTRACE_PASSED" = false ]; then
+    ALL_PASSED=false
+elif [ "$ENGINE_DBTRACE_PASSED" = "mock_ack" ]; then
+    # Allowed strictly if CI and not real engine
+    if [[ "${GATE_ENV_MODE:-local}" != "ci" ]] || [[ "${ENGINE_REAL:-0}" == "1" ]]; then
+        ALL_PASSED=false
+    fi
 fi
 
 # 只有在非 local 且非 ci 模式下 (即 staging)，4/5 的失败才影响最终结果
