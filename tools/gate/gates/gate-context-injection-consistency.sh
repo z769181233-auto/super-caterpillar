@@ -13,7 +13,7 @@ mkdir -p "$EVI"
 echo "[GATE] $GATE_NAME - START" | tee "$EVI/GATE_RUN.log"
 echo "[EVI] $EVI" | tee -a "$EVI/GATE_RUN.log"
 
-export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5434/scu"
 
 # ----------------------------
 # 0) Schema probe (no guessing)
@@ -42,63 +42,33 @@ fi
 echo "[GATE] Using scene table: $SCENE_TABLE" | tee -a "$EVI/GATE_RUN.log"
 
 # ----------------------------
-# 1) Create minimal project context (essential for context injection)
+# 1) Create minimal project context via V3 Fixture Helper
 # ----------------------------
 CHAPTER_1_TEXT="第一章：张三身穿红色长袍，手持长剑，站在森林边缘。他的长发在风中铺扬，腰间挂着一块玉佩。"
 CHAPTER_2_TEXT="第二章：张三继续前行，他的红袍在风中铺扬。长剑依然握在手中，森林深处传来声响。"
 
-TEST_ORG_ID="org_context_test_$TS"
-TEST_PROJECT_ID="proj_context_test_$TS"
-TEST_NOVEL_ID="novel_ctx_$TS"
-TEST_SOURCE_ID="source_ctx_$TS"
-TEST_VOL_ID="vol_ctx_$TS"
-TEST_CHAPTER_1_ID="chapter_ctx_1_$TS"
-TEST_CHAPTER_2_ID="chapter_ctx_2_$TS"
+echo "[GATE] Invoking V3 Fixture Helper..." | tee -a "$EVI/GATE_RUN.log"
+# Use the helper to create V3.0 compatible entities
+# Ensure we pass the original chapter content to keep business logic consistent
+SEED_JSON=$(CHAP1_CONTENT="$CHAPTER_1_TEXT" CHAP2_CONTENT="$CHAPTER_2_TEXT" DATABASE_URL="$DATABASE_URL" npx tsx tools/gate/scripts/seed_v3_novel_fixture.ts)
+echo "$SEED_JSON" >> "$EVI/GATE_RUN.log"
 
-# Find any user id to satisfy FK
-USER_ID="$(psql "$DATABASE_URL" -tAc "select id from users limit 1;" | tr -d '[:space:]')"
-if [ -z "$USER_ID" ]; then
-  echo "[GATE] FAIL - No user found in users table" | tee -a "$EVI/GATE_RUN.log"
+TEST_ORG_ID=$(echo "$SEED_JSON" | jq -r .orgId)
+TEST_PROJECT_ID=$(echo "$SEED_JSON" | jq -r .projId)
+TEST_NOVEL_ID=$(echo "$SEED_JSON" | jq -r .novelId)
+TEST_SOURCE_ID=$(echo "$SEED_JSON" | jq -r .sourceId)
+TEST_VOL_ID=$(echo "$SEED_JSON" | jq -r .volId)
+TEST_CHAPTER_1_ID=$(echo "$SEED_JSON" | jq -r .chapter1Id)
+TEST_CHAPTER_2_ID=$(echo "$SEED_JSON" | jq -r .chapter2Id)
+USER_ID=$(echo "$SEED_JSON" | jq -r .userId)
+
+if [ -z "$TEST_CHAPTER_1_ID" ] || [ "$TEST_CHAPTER_1_ID" == "null" ]; then
+  echo "[GATE] FAIL - Seed failed or returned invalid JSON" | tee -a "$EVI/GATE_RUN.log"
+  echo "Seed output: $SEED_JSON" >> "$EVI/GATE_RUN.log"
   exit 1
 fi
 
-echo "[GATE] Creating full project hierarchy (hierarchical fix)..." | tee -a "$EVI/GATE_RUN.log"
-
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<SQL | tee -a "$EVI/GATE_RUN.log"
--- Org
-INSERT INTO organizations (id, name, "ownerId", "createdAt", "updatedAt")
-VALUES ('$TEST_ORG_ID', 'Context Test Org', '$USER_ID', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
-
--- Project
-INSERT INTO projects (id, name, "ownerId", "organizationId", status, "createdAt", "updatedAt")
-VALUES ('$TEST_PROJECT_ID', 'Context Injection Test', '$USER_ID', '$TEST_ORG_ID', 'in_progress', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
-
--- Novel
-INSERT INTO novels (id, project_id, title, "organization_id", status, "created_at", "updated_at")
-VALUES ('$TEST_NOVEL_ID', '$TEST_PROJECT_ID', 'Context Test Novel', '$TEST_ORG_ID', 'READY', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
-
--- NovelSource
-INSERT INTO novel_sources (id, "projectId", "organizationId", "fileKey", "fileName", "fileSize", status, "createdAt", "updatedAt")
-VALUES ('$TEST_SOURCE_ID', '$TEST_PROJECT_ID', '$TEST_ORG_ID', 'dummy_key', 'dummy.txt', 1024, 'PENDING', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
-
--- Volume (Use project_id / novel_source_id variants)
-INSERT INTO novel_volumes (id, "project_id", "novel_source_id", index, title, "created_at", "updated_at")
-VALUES ('$TEST_VOL_ID', '$TEST_PROJECT_ID', '$TEST_NOVEL_ID', 1, '第一卷', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
-
---# Chapters (Essential for Processor to lookup)
-INSERT INTO novel_chapters (id, "volume_id", "novel_source_id", index, title, summary, raw_content, "created_at", "updated_at")
-VALUES 
-  ('$TEST_CHAPTER_1_ID', '$TEST_VOL_ID', '$TEST_NOVEL_ID', 1, '第一章', '张三初次登场', '$CHAPTER_1_TEXT', NOW(), NOW()),
-  ('$TEST_CHAPTER_2_ID', '$TEST_VOL_ID', '$TEST_NOVEL_ID', 2, '第二章', '张三继续前行', '$CHAPTER_2_TEXT', NOW(), NOW())
-ON CONFLICT (id) DO NOTHING;
-
--- V3.0 P0-2: Inject a dummy vector for Chapter 1 to test Long-term memory retrieval
--- [DEPRECATED] summary_vector has been moved or removed in current schema.
--- Skipping manual vector injection as it conflicts with current DB contract.
--- UPDATE novel_chapters 
--- SET summary_vector = array_fill(0.1, ARRAY[1536])::vector 
--- WHERE id = '$TEST_CHAPTER_1_ID';
-SQL
+echo "[GATE] Seeded V3 Entities for Pilot: Org=$TEST_ORG_ID, Proj=$TEST_PROJECT_ID, Novel=$TEST_NOVEL_ID" | tee -a "$EVI/GATE_RUN.log"
 
 # ----------------------------
 # 2) Create two CE06 parsing jobs in shot_jobs (with TOP-LEVEL traceId)
@@ -115,10 +85,10 @@ INSERT INTO shot_jobs
   (id, "organizationId", "projectId", type, status, priority, payload, "traceId", "createdAt", "updatedAt")
 VALUES
   ('$JOB_1_ID', '$TEST_ORG_ID', '$TEST_PROJECT_ID', '$JOB_TYPE', 'PENDING', 0,
-   jsonb_build_object('phase','CHUNK_PARSE','traceId','trace_ctx_1','chapterId','$TEST_CHAPTER_1_ID','raw_text', \$CH1\$${CHAPTER_1_TEXT}\$CH1\$),
+   jsonb_build_object('phase','CHUNK_PARSE','traceId','trace_ctx_1','chapterId','$TEST_CHAPTER_1_ID','rawText', \$CH1\$${CHAPTER_1_TEXT}\$CH1\$),
    'trace_ctx_1', NOW(), NOW()),
   ('$JOB_2_ID', '$TEST_ORG_ID', '$TEST_PROJECT_ID', '$JOB_TYPE', 'PENDING', 0,
-   jsonb_build_object('phase','CHUNK_PARSE','traceId','trace_ctx_2','chapterId','$TEST_CHAPTER_2_ID','raw_text', \$CH2\$${CHAPTER_2_TEXT}\$CH2\$),
+   jsonb_build_object('phase','CHUNK_PARSE','traceId','trace_ctx_2','chapterId','$TEST_CHAPTER_2_ID','rawText', \$CH2\$${CHAPTER_2_TEXT}\$CH2\$),
    'trace_ctx_2', NOW(), NOW());
 SQL
 
@@ -179,6 +149,9 @@ FROM (
   LIMIT 20
 ) t;
 " | tee "$EVI/GRAPH_STATE_SNAPSHOT.json" | tee -a "$EVI/GATE_RUN.log"
+
+echo "[GATE] Snapshot Preview:" | tee -a "$EVI/GATE_RUN.log"
+cat "$EVI/GRAPH_STATE_SNAPSHOT.json" | jq -c '.[].graph_state_snapshot.characters[].name' | tee -a "$EVI/GATE_RUN.log" || true
 
 # ----------------------------
 # 5) Python assertion

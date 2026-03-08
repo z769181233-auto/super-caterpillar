@@ -120,3 +120,4 @@ shots.csv
 
 # audit: ignore prisma generated artifacts
 packages/database/src/generated/prisma/
+.pnpm-store
