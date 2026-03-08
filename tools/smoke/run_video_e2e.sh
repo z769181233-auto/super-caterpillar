@@ -162,6 +162,7 @@ mkdir -p "$(dirname "$WORKER_LOG_FILE")"
 (
   cd apps/workers && \
   JOB_WORKER_ENABLED=true \
+  GATE_MODE=1 \
   JWT_SECRET="${JWT_SECRET:-}" \
   JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-}" \
   REDIS_URL="${REDIS_URL:-}" \
