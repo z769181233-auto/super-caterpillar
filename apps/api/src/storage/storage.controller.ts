@@ -92,7 +92,7 @@ export class StorageController {
 
     if (!isValid) {
       this.logger.warn(`Invalid or expired signature for key: ${key}`);
-      return res.status(HttpStatus.FORBIDDEN).json({ error: 'INVALID_SIGNATURE' });
+      return res.status(HttpStatus.NOT_FOUND).json({ error: 'FILE_NOT_FOUND' });
     }
 
     // 2. Resource Access Audit (Optional but recommended for commercial grade)
@@ -111,12 +111,9 @@ export class StorageController {
       return res.status(HttpStatus.NOT_FOUND).json({ error: 'FILE_NOT_FOUND' });
     }
 
-    // 4. Stream response
     const absPath = this.localStorageService.getAbsolutePath(key);
-
-    // P8 Fix: Use res.sendFile to automatically support Range headers (206 Partial Content)
-    // and standard headers like ETag, Content-Length, etc.
-    return res.sendFile(absPath);
+    const storageRoot = this.localStorageService.adapter.root;
+    return res.sendFile(key, { root: storageRoot });
   }
 
   @Post('/novels')
