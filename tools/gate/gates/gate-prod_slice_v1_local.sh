@@ -45,7 +45,7 @@ echo "[Gate] RUN_TS: ${RUN_TS}"
 
 export GATE_MODE=1
 export PRODUCTION_MODE=1
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export JWT_SECRET="${JWT_SECRET:-f0f4cb55a02a5bf2b2e9cbb273daf87991ad426e3ea68cf90cf394027c6ac23c9140290dce913869d9241aa675335d27}"
 
 PROJECT_ID="prod_slice_v1_local_${TS}"
@@ -114,7 +114,7 @@ wait_for_job_success() {
 
 # Seed DB User/Org
 echo "[Gate] Seeding Test User & Org..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Free$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Basic$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ($gate$org-gate$gate$, $gate$Gate Org$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ($gate$mem-gate$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, $gate$OWNER$gate$, NOW(), NOW()) ON CONFLICT (\"organizationId\", \"userId\") DO NOTHING;"
 
@@ -535,7 +535,7 @@ echo "[Gate] RUN_TS: ${RUN_TS}"
 
 export GATE_MODE=1
 export PRODUCTION_MODE=1
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export JWT_SECRET="${JWT_SECRET:-f0f4cb55a02a5bf2b2e9cbb273daf87991ad426e3ea68cf90cf394027c6ac23c9140290dce913869d9241aa675335d27}"
 
 PROJECT_ID="prod_slice_v1_local_${TS}"
@@ -604,7 +604,7 @@ wait_for_job_success() {
 
 # Seed DB User/Org
 echo "[Gate] Seeding Test User & Org..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Free$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Basic$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ($gate$org-gate$gate$, $gate$Gate Org$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ($gate$mem-gate$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, $gate$OWNER$gate$, NOW(), NOW()) ON CONFLICT (\"organizationId\", \"userId\") DO NOTHING;"
 
@@ -1025,7 +1025,7 @@ echo "[Gate] RUN_TS: ${RUN_TS}"
 
 export GATE_MODE=1
 export PRODUCTION_MODE=1
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export JWT_SECRET="${JWT_SECRET:-f0f4cb55a02a5bf2b2e9cbb273daf87991ad426e3ea68cf90cf394027c6ac23c9140290dce913869d9241aa675335d27}"
 
 PROJECT_ID="prod_slice_v1_local_${TS}"
@@ -1094,7 +1094,7 @@ wait_for_job_success() {
 
 # Seed DB User/Org
 echo "[Gate] Seeding Test User & Org..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Free$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Basic$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ($gate$org-gate$gate$, $gate$Gate Org$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ($gate$mem-gate$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, $gate$OWNER$gate$, NOW(), NOW()) ON CONFLICT (\"organizationId\", \"userId\") DO NOTHING;"
 
@@ -1515,7 +1515,7 @@ echo "[Gate] RUN_TS: ${RUN_TS}"
 
 export GATE_MODE=1
 export PRODUCTION_MODE=1
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export JWT_SECRET="${JWT_SECRET:-f0f4cb55a02a5bf2b2e9cbb273daf87991ad426e3ea68cf90cf394027c6ac23c9140290dce913869d9241aa675335d27}"
 
 PROJECT_ID="prod_slice_v1_local_${TS}"
@@ -1584,7 +1584,7 @@ wait_for_job_success() {
 
 # Seed DB User/Org
 echo "[Gate] Seeding Test User & Org..."
-psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Free$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
+psql -d "${DATABASE_URL}" -c "INSERT INTO users (id, email, \"passwordHash\", tier, \"createdAt\", \"updatedAt\") VALUES ($gate$user-gate$gate$, $gate$gate@test.com$gate$, $gate$dummy_hash$gate$, $gate$Basic$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organizations (id, name, slug, \"ownerId\", \"createdAt\", \"updatedAt\") VALUES ($gate$org-gate$gate$, $gate$Gate Org$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;"
 psql -d "${DATABASE_URL}" -c "INSERT INTO organization_members (id, \"organizationId\", \"userId\", role, \"createdAt\", \"updatedAt\") VALUES ($gate$mem-gate$gate$, $gate$org-gate$gate$, $gate$user-gate$gate$, $gate$OWNER$gate$, NOW(), NOW()) ON CONFLICT (\"organizationId\", \"userId\") DO NOTHING;"
 

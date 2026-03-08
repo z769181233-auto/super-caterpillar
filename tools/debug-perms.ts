@@ -1,7 +1,7 @@
 import { PrismaClient } from 'database';
 require('dotenv').config();
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const ownerId = 'f95b0304-58d7-4b75-b65e-7899b2c0dc51'; // Admin User

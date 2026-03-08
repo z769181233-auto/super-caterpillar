@@ -15,7 +15,7 @@ IFS=$'
 PROJECT_ID="proj_stage4_3m_$(date +%s)"
 FILE_KEY="uploads/mock_novel_stage4_3m.txt"
 ABS_FILE_PATH="$(pwd)/$FILE_KEY"
-DB_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+DB_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 echo "=================================================="
 echo "GATE: Stage 4 Scale 3M (The Shredder)"

@@ -2,9 +2,7 @@
 import { PrismaClient } from 'database';
 import * as fs from 'fs';
 
-const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.DATABASE_URL } },
-});
+const prisma = new PrismaClient({});
 
 interface BillingEntry {
   tenantId: string;

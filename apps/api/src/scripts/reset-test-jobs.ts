@@ -5,7 +5,7 @@ import * as util from 'util';
  * 将所有 NOVEL_ANALYSIS Job 重置为 PENDING 并清空 workerId
  */
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
 
   const result = await prisma.shotJob.updateMany({
     where: { type: 'NOVEL_ANALYSIS' as any },

@@ -1,7 +1,7 @@
 import { PrismaClient } from 'database';
 import { randomUUID } from 'crypto';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const S2_USER_ID = 's2-test-user-' + Date.now();

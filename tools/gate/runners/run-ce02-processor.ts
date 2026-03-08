@@ -19,7 +19,7 @@ class MockApiClient extends ApiClient {
 }
 
 async function run() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   console.log('[Gate] Connected to DB');
 
   const projectId = 'proj-gate-ce02-' + Date.now();

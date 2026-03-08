@@ -5,7 +5,7 @@ import * as path from 'path';
 // Load .env
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function check() {
   console.log('PRODUCTION_MODE env:', process.env.PRODUCTION_MODE);

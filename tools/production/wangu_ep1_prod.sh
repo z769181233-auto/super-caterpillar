@@ -11,7 +11,7 @@ PROJECT_ID="wangu_ep1_v5"
 TRACE_ID="trace_wangu_ep1_$(date +"%Y%m%d_%H%M%S")"
 NOVEL_SOURCE_PATH="docs/_specs/wangu_ep1_source.txt"
 # 默认使用 5434 端口 (Production/Dev environment)
-DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5434/scu}"
+DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@localhost:5434/scu}"
 
 echo "=================================================="
 echo "STARTING WANGU EPISODE 1 PRODUCTION"

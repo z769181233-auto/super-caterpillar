@@ -5,7 +5,7 @@ cd "$(dirname "$0")/../.."
 
 
 # Define the target database URL explicitly for the reset process
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu?schema=public"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu?schema=public"
 export JWT_SECRET="smoke_jwt_secret_dev_only_change_me"
 export REDIS_URL="redis://localhost:6379"
 

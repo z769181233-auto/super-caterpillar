@@ -37,7 +37,7 @@ done
 RUNNER_SCRIPT="$ASSET_STORAGE_DIR/run_engine.ts"
 
 cat > "$RUNNER_SCRIPT" << 'EOF'
-import { videoMergeRealEngine, VideoMergeInput } from '../../../../packages/engines/video_merge/src';
+import { videoMergeRealEngine, VideoMergeInput } from '../../../../packages/engines-video-merge/src';
 import * as path from 'path';
 import * as fs from 'fs';
 

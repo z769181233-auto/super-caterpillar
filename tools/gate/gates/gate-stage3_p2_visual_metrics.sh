@@ -20,7 +20,7 @@ mkdir -p "$EVID_DIR"
 log() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$EVID_DIR/gate.log"; }
 
 API_URL="http://localhost:3001"
-WORKER_API_KEY="${WORKER_API_KEY:-ak_worker_dev_0000000000000000}"
+WORKER_API_KEY="${WORKER_API_KEY:-ak_smoke_test_key_v1}"
 
 log "🚀 [P2_VISUAL] Starting Gate Verification (RUN_ID: $RUN_ID)..."
 
@@ -217,7 +217,7 @@ mkdir -p "$EVID_DIR"
 log() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$EVID_DIR/gate.log"; }
 
 API_URL="http://localhost:3001"
-WORKER_API_KEY="${WORKER_API_KEY:-ak_worker_dev_0000000000000000}"
+WORKER_API_KEY="${WORKER_API_KEY:-ak_smoke_test_key_v1}"
 
 log "🚀 [P2_VISUAL] Starting Gate Verification (RUN_ID: $RUN_ID)..."
 
@@ -414,7 +414,7 @@ mkdir -p "$EVID_DIR"
 log() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$EVID_DIR/gate.log"; }
 
 API_URL="http://localhost:3001"
-WORKER_API_KEY="${WORKER_API_KEY:-ak_worker_dev_0000000000000000}"
+WORKER_API_KEY="${WORKER_API_KEY:-ak_smoke_test_key_v1}"
 
 log "🚀 [P2_VISUAL] Starting Gate Verification (RUN_ID: $RUN_ID)..."
 
@@ -611,7 +611,7 @@ mkdir -p "$EVID_DIR"
 log() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$EVID_DIR/gate.log"; }
 
 API_URL="http://localhost:3001"
-WORKER_API_KEY="${WORKER_API_KEY:-ak_worker_dev_0000000000000000}"
+WORKER_API_KEY="${WORKER_API_KEY:-ak_smoke_test_key_v1}"
 
 log "🚀 [P2_VISUAL] Starting Gate Verification (RUN_ID: $RUN_ID)..."
 

@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import * as path from 'path';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 const STORY_PATH = '/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/_specs/万古神帝.txt';
 const PROJECT_ID = 'proj_15m_seal_001';

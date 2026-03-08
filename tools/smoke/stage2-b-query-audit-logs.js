@@ -1,7 +1,7 @@
 // Stage2-B 查询 audit_logs
 const { PrismaClient } = require('../../packages/database/src/generated/prisma');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const jobId = process.argv[2];

@@ -49,7 +49,7 @@ trap "kill $MONITOR_PID || true; echo ']' >> '${PERF_LOG}'" EXIT
 
 # 2. 准备执行
 export NODE_OPTIONS="--max-old-space-size=2048"
-DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5433/scu}"
+DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@localhost:5433/scu}"
 PROJECT_ID="bench-15m-$(date +%s)"
 TRACE_ID="trace-${PROJECT_ID}"
 START_TIME=$(date +%s)

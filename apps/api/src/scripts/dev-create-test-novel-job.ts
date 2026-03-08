@@ -7,7 +7,7 @@ import * as util from 'util';
  *   pnpm --filter ./apps/api dev:create-test-novel-job
  */
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
 
   // 1) 确保有用户
   const email = 'dev+worker@test.local';

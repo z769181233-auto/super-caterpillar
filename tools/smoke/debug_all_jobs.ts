@@ -1,6 +1,6 @@
 import { PrismaClient } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('--- Checking All Jobs ---');

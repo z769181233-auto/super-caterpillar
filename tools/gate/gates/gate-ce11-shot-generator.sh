@@ -7,7 +7,7 @@ IFS=$'
 # GATE 15: CE11 Shot Generator Integration
 # Goal: Verify Bible V3.0 CE11 Protocol (sceneId -> shots) maps to Production DB (shots table).
 
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 TS="$(date +%Y%m%d_%H%M%S)"
 EVI="docs/_evidence/gate15_ce11_${TS}"
 mkdir -p "$EVI"
@@ -32,7 +32,7 @@ echo "[GATE15] Seeding DB Hierarchy..."
 # User & Project
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO users(id, email, \"passwordHash\", \"userType\", role, tier, quota, \"defaultOrganizationId\", \"createdAt\", \"updatedAt\")
-VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Free', NULL, NULL, now(), now())
+VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Basic', NULL, NULL, now(), now())
 ON CONFLICT (id) DO NOTHING;
 INSERT INTO organizations(id, name, \"ownerId\", \"createdAt\", \"updatedAt\")
 VALUES ('${ORG_ID}', 'Gate Org', 'user-gate', now(), now())

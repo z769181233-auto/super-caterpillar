@@ -17,7 +17,7 @@ export GATE_MODE=1
 export PRODUCTION_MODE=1
 export VERIFICATION_COST_CAP_USD=1
 export SHOT_RENDER_PROVIDER="${SHOT_RENDER_PROVIDER:-local}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 API_BASE="${API_BASE:-http://127.0.0.1:3000}"
 
@@ -123,7 +123,7 @@ fi
 
 # 2) SQL assertions
 echo "[SQL] Verifying Shotted Job and Zero Ledger..."
-DB_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+DB_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 # Assertion A: Job state is SUCCESS (via engine-hub)
 # Note: Since itPROVIDER=$(echo "${RESP}" | jq -r ASSET_URI=$(echo "${RESP}" | jq -r 
@@ -195,7 +195,7 @@ export GATE_MODE=1
 export PRODUCTION_MODE=1
 export VERIFICATION_COST_CAP_USD=1
 export SHOT_RENDER_PROVIDER="${SHOT_RENDER_PROVIDER:-local}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 API_BASE="${API_BASE:-http://127.0.0.1:3000}"
 
@@ -301,7 +301,7 @@ fi
 
 # 2) SQL assertions
 echo "[SQL] Verifying Shotted Job and Zero Ledger..."
-DB_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+DB_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 # Assertion A: Job state is SUCCESS (via engine-hub)
 # Note: Since itPROVIDER=$(echo "${RESP}" | jq -r ASSET_URI=$(echo "${RESP}" | jq -r 
@@ -373,7 +373,7 @@ export GATE_MODE=1
 export PRODUCTION_MODE=1
 export VERIFICATION_COST_CAP_USD=1
 export SHOT_RENDER_PROVIDER="${SHOT_RENDER_PROVIDER:-local}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 API_BASE="${API_BASE:-http://127.0.0.1:3000}"
 
@@ -479,7 +479,7 @@ fi
 
 # 2) SQL assertions
 echo "[SQL] Verifying Shotted Job and Zero Ledger..."
-DB_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+DB_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 # Assertion A: Job state is SUCCESS (via engine-hub)
 # Note: Since itPROVIDER=$(echo "${RESP}" | jq -r ASSET_URI=$(echo "${RESP}" | jq -r 
@@ -551,7 +551,7 @@ export GATE_MODE=1
 export PRODUCTION_MODE=1
 export VERIFICATION_COST_CAP_USD=1
 export SHOT_RENDER_PROVIDER="${SHOT_RENDER_PROVIDER:-local}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 API_BASE="${API_BASE:-http://127.0.0.1:3000}"
 
@@ -657,7 +657,7 @@ fi
 
 # 2) SQL assertions
 echo "[SQL] Verifying Shotted Job and Zero Ledger..."
-DB_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+DB_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 # Assertion A: Job state is SUCCESS (via engine-hub)
 # Note: Since itPROVIDER=$(echo "${RESP}" | jq -r ASSET_URI=$(echo "${RESP}" | jq -r 

@@ -23,7 +23,7 @@ fi
 
 # Environment setup (use existing secrets from caller)
 export API_PORT=3001
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export JWT_SECRET="${JWT_SECRET}"  # Ensure JWT_SECRET is exported to API subprocess
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_SECRET}"
 export REDIS_URL="${REDIS_URL:-redis://localhost:6379}"
@@ -174,7 +174,7 @@ fi
 
 # Environment setup (use existing secrets from caller)
 export API_PORT=3001
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export JWT_SECRET="${JWT_SECRET}"  # Ensure JWT_SECRET is exported to API subprocess
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_SECRET}"
 export REDIS_URL="${REDIS_URL:-redis://localhost:6379}"
@@ -325,7 +325,7 @@ fi
 
 # Environment setup (use existing secrets from caller)
 export API_PORT=3001
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export JWT_SECRET="${JWT_SECRET}"  # Ensure JWT_SECRET is exported to API subprocess
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_SECRET}"
 export REDIS_URL="${REDIS_URL:-redis://localhost:6379}"
@@ -476,7 +476,7 @@ fi
 
 # Environment setup (use existing secrets from caller)
 export API_PORT=3001
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export JWT_SECRET="${JWT_SECRET}"  # Ensure JWT_SECRET is exported to API subprocess
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_SECRET}"
 export REDIS_URL="${REDIS_URL:-redis://localhost:6379}"

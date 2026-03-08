@@ -15,7 +15,7 @@ set -a
 source .env.local 2>/dev/null || true
 set +a
 export NODE_ENV="development"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 # export GATE_MODE="1" # Use Normal Mode for real processing
 export LOG_LEVEL="info"
 export JWT_SECRET="dev-jwt-secret"
@@ -132,7 +132,7 @@ set -a
 source .env.local 2>/dev/null || true
 set +a
 export NODE_ENV="development"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 # export GATE_MODE="1" # Use Normal Mode for real processing
 export LOG_LEVEL="info"
 export JWT_SECRET="dev-jwt-secret"
@@ -249,7 +249,7 @@ set -a
 source .env.local 2>/dev/null || true
 set +a
 export NODE_ENV="development"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 # export GATE_MODE="1" # Use Normal Mode for real processing
 export LOG_LEVEL="info"
 export JWT_SECRET="dev-jwt-secret"
@@ -366,7 +366,7 @@ set -a
 source .env.local 2>/dev/null || true
 set +a
 export NODE_ENV="development"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 # export GATE_MODE="1" # Use Normal Mode for real processing
 export LOG_LEVEL="info"
 export JWT_SECRET="dev-jwt-secret"

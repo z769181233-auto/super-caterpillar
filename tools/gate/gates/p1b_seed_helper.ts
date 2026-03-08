@@ -1,6 +1,6 @@
 import { PrismaClient } from '../../../packages/database/src/generated/prisma';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const args = process.argv.slice(2);

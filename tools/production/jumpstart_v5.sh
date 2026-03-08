@@ -4,13 +4,13 @@ set -euo pipefail
 # jumpstart_v5.sh
 PROJECT_ID="wangu_ep1_v5"
 ORG_ID="org-wangu-prod"
-TRACE_ID=$(psql -At -c "SELECT \"traceId\" FROM shot_jobs WHERE id = 'job-pipe-wangu_ep1_v5';" postgresql://postgres:postgres@localhost:5434/scu)
+TRACE_ID=$(psql -At -c "SELECT \"traceId\" FROM shot_jobs WHERE id = 'job-pipe-wangu_ep1_v5';" postgresql://postgres:password@localhost:5434/scu)
 N_ID="n-wangu_ep1_v5"
 EP_ID="ep-wangu_ep1_v5"
 SC_ID="sc-wangu_ep1_v5"
 SH_ID="sh-wangu_ep1_v5"
 ROOT_JOB_ID="job-pipe-wangu_ep1_v5"
-DATABASE_URL="postgresql://postgres:postgres@localhost:5434/scu"
+DATABASE_URL="postgresql://postgres:password@localhost:5434/scu"
 
 echo "Using TraceID: $TRACE_ID"
 

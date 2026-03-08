@@ -20,7 +20,7 @@ SOURCE_MP4="$EVI_DIR/source.mp4"
 ffmpeg -y -f lavfi -i color=c=yellow:s=512x512:d=2 -pix_fmt yuv420p "$SOURCE_MP4" > /dev/null 2>&1
 
 # Seed project & asset
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 PROJECT_ID="proj_security_$TIMESTAMP"
 VALID_USER_ID=$(psql "$DATABASE_URL" -t -c "SELECT id FROM users LIMIT 1;" | xargs)
 VALID_ORG_ID=$(psql "$DATABASE_URL" -t -c "SELECT id FROM organizations LIMIT 1;" | xargs)

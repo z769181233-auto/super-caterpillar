@@ -79,6 +79,8 @@ export const localFfmpegProvider = {
 
     const timeoutMs = Number(process.env.VIDEO_MERGE_TIMEOUT_MS) || 300000;
 
+    console.log(`[local_ffmpeg] video_merge_spawn jobId=${jobId} timeoutMs=${timeoutMs} ffmpeg_threads=${threads}`);
+
     // 3. Execution (Async)
     const res = await execAsync('ffmpeg', args, { timeoutMs });
     if (res.code !== 0) throw new Error(`FFmpeg merge failed: ${res.stderr}`);

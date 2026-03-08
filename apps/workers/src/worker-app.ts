@@ -100,7 +100,6 @@ import { LocalStorageAdapter } from '@scu/storage';
 import { ProcessorContext } from './types/processor-context';
 
 const prisma = new PrismaClient({
-  datasources: { db: { url: env.databaseUrl } },
   log: env.isDevelopment ? ['error', 'warn'] : ['error'],
 });
 

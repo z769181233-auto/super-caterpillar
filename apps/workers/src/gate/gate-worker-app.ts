@@ -102,7 +102,6 @@ export async function startGateWorkerApp() {
   const engineHubClient = new EngineHubClient(apiClient);
 
   const prisma = new PrismaClient({
-    datasources: { db: { url: env.databaseUrl } },
     log: ['error'],
   });
 
@@ -390,7 +389,7 @@ export async function startGateWorkerApp() {
             },
           });
         }
-        result = { status: 'SUCCEEDED', output: { storageKey: mockKey } };
+        result = { status: 'SUCCEEDED', videoKey: mockKey, output: { storageKey: mockKey } };
       } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE')
         result = await processTimelineComposeJob(ctx);
       else if (job.type === 'TIMELINE_RENDER') result = await processTimelineRenderJob(ctx);

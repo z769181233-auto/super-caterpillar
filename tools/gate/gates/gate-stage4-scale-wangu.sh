@@ -11,7 +11,7 @@ set -e
 PROJECT_ID="proj_wangu_$(date +%s)"
 FILE_KEY="docs/_specs/万古神帝.txt"
 ABS_FILE_PATH="$(pwd)/$FILE_KEY"
-DB_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+DB_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 echo "=================================================="
 echo "GATE: Stage 4 Scale REAL NOVEL (万古神帝)"

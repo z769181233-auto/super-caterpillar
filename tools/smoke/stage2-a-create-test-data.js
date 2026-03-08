@@ -1,7 +1,7 @@
 // Stage2-A 创建测试数据脚本
 const { PrismaClient } = require('../../packages/database/src/generated/prisma');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   try {

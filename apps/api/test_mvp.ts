@@ -1,7 +1,7 @@
 import * as jwt from 'jsonwebtoken';
 import { PrismaClient } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const secret = process.env.JWT_SECRET || 'v1_scu_jwt_secret_998877665544332211_dev_only';
 
 async function verifyAPI() {

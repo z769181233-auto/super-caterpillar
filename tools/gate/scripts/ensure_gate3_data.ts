@@ -1,7 +1,7 @@
 // @ts-ignore
 import { PrismaClient } from '../../../packages/database/src/index';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const TEST_STORAGE_KEY = process.env.TEST_STORAGE_KEY;
 
 if (!TEST_STORAGE_KEY) {

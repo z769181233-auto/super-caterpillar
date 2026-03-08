@@ -98,7 +98,7 @@ async function boot() {
     }
 
     const { PrismaClient } = databaseModule;
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient({});
     const dmmf = (prisma as any).constructor.dmmf || (PrismaClient as any).dmmf;
 
     if (!dmmf || !dmmf.datamodel || !dmmf.datamodel.models) {

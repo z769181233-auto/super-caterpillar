@@ -10,7 +10,7 @@ if [ -f .env ]; then
   export $(grep -v '^#' .env | xargs)
 fi
 
-DATABASE_URL="${DATABASE_URL:-postgresql://localhost:5432/super_caterpillar}"
+DATABASE_URL="${DATABASE_URL:-postgresql://127.0.0.1:5432/super_caterpillar}"
 
 echo "=== Stage2-A 运行时验证 ==="
 echo ""

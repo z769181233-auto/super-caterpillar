@@ -1,7 +1,7 @@
 import { PrismaClient } from '../packages/database';
 async function main() {
   console.error('Starting DB Debug...');
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   try {
     const shotCount = await prisma.shot.count();
     const sceneCount = await prisma.scene.count();
