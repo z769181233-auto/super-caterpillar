@@ -621,6 +621,9 @@ elif [ -f "$PROJECT_ROOT/tools/smoke/run_video_e2e.sh" ]; then
     else
         echo -e "  ${RED}❌ Video E2E test failed${NC}"
         echo "- ❌ Video E2E test failed" >> "$VIDEO_E2E_OUTPUT"
+        echo "  --- Output Start ---"
+        cat "$VIDEO_E2E_OUTPUT"
+        echo "  --- Output End ---"
         VIDEO_E2E_PASSED=false
     fi
 else
