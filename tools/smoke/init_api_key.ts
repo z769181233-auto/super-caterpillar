@@ -241,7 +241,7 @@ async function main() {
     const engines = [
       { code: 'default_novel_analysis', name: 'Default Novel Analysis', type: 'local' },
       { code: 'default_shot_render', name: 'Default Shot Render', type: 'local' },
-      { code: 'default_video_render', name: 'Default Video Render', type: 'local' },
+      { code: 'video_merge', name: 'Video Merge (FFmpeg Real)', type: 'local' },
     ];
 
     for (const eng of engines) {
@@ -262,6 +262,20 @@ async function main() {
       });
     }
     console.log('✅ Default engines seeded.');
+
+    // --- SSOT GUARDRAIL: Verify canonical engine mapping for Gate 4 ---
+    console.log('   [GUARD] Verifying SSOT Alignment for VIDEO_RENDER...');
+    const CANONICAL_VIDEO_ENGINE = 'video_merge';
+    const videoEngine = await prisma.engine.findUnique({
+      where: { code: CANONICAL_VIDEO_ENGINE },
+    });
+
+    if (!videoEngine || !videoEngine.isActive || !videoEngine.enabled) {
+      console.error(`❌ SSOT FAILURE: Canonical engine '${CANONICAL_VIDEO_ENGINE}' is missing or disabled.`);
+      console.error(`   API EngineRegistry expects '${CANONICAL_VIDEO_ENGINE}' for VIDEO_RENDER jobs.`);
+      process.exit(1);
+    }
+    console.log(`✅ SSOT ASSERT PASSED: Engine '${CANONICAL_VIDEO_ENGINE}' is ready.`);
 
     // --- HARD ASSERT: verify binding in DB is exactly what we expect ---
     const check = await prisma.apiKey.findUnique({

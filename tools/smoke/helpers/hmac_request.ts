@@ -41,12 +41,9 @@ function generateSignature(
   secret: string,
   apiKey: string
 ): string {
-  const contentHash = crypto
-    .createHash('sha256')
-    .update(body || '')
-    .digest('hex');
-  // Unified with ApiSecurityService v2 spec
-  const stringToSign = `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${contentHash}\n`;
+  // Balanced with ApiSecurityService.ts buildCanonicalStringV2 (Strict APISpec V1.1)
+  // Format: {API_KEY}{NONCE}{TIMESTAMP}{BODY}
+  const stringToSign = `${apiKey}${nonce}${timestamp}${body || ''}`;
   return crypto.createHmac('sha256', secret).update(stringToSign).digest('hex');
 }
 

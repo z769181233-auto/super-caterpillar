@@ -389,7 +389,7 @@ export async function startGateWorkerApp() {
             },
           });
         }
-        result = { status: 'SUCCEEDED', output: { storageKey: mockKey } };
+        result = { status: 'SUCCEEDED', videoKey: mockKey, output: { storageKey: mockKey } };
       } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE')
         result = await processTimelineComposeJob(ctx);
       else if (job.type === 'TIMELINE_RENDER') result = await processTimelineRenderJob(ctx);

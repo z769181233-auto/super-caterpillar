@@ -33,7 +33,7 @@ mkdir -p "$STORAGE_ROOT"
 echo "[0/4] Initializing API Key..."
 npx tsx tools/smoke/init_api_key.ts
 
-# Set Env for Trigger Script
+# Set Env for Trigger Script (Align with init_api_key.ts defaults)
 export API_KEY="scu_smoke_key"
 export API_SECRET="scu_smoke_secret"
 
@@ -212,7 +212,7 @@ fi
 
 echo "Job SUCCEEDED!"
 # Parse Result
-RESULT=$(echo "$JOB_RESULT" | jq -r .payload.result)
+RESULT=$(echo "$JOB_RESULT" | jq -r .result)
 VIDEO_KEY=$(echo "$RESULT" | jq -r .videoKey)
 
 echo "Video Key: $VIDEO_KEY"

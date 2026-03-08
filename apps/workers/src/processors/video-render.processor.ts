@@ -6,7 +6,10 @@ import { ProcessorContext } from '../types/processor-context';
 export interface VideoRenderProcessorResult {
   status: 'SUCCEEDED' | 'FAILED';
   output?: any;
+  videoKey?: string;
+  assetId?: string;
   error?: string;
+  [key: string]: any;
 }
 
 /**
@@ -107,6 +110,7 @@ export async function processVideoRenderJob(
 
     return {
       status: 'SUCCEEDED',
+      videoKey: storageKey,
       output: { assetId: asset.id, storageKey },
     };
   } catch (error: any) {
