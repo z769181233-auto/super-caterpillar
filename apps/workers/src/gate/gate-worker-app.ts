@@ -149,7 +149,6 @@ export async function startGateWorkerApp() {
             'PIPELINE_PROD_VIDEO_V1',
             'EPISODE_RENDER',
             'NOVEL_ANALYSIS',
-            'NOVEL_REDUCE_AGGREGATE',
           ],
           supportedModels: [],
           supportedEngines: [
@@ -416,8 +415,6 @@ export async function startGateWorkerApp() {
       } else if (job.type === 'EPISODE_RENDER') {
         const { processEpisodeRenderJob } = await import('../processors/episode-render.processor');
         result = await processEpisodeRenderJob(ctx);
-      } else if (job.type === 'NOVEL_REDUCE_AGGREGATE') {
-        result = await processNovelReduce(ctx);
       } else {
         process.stdout.write(util.format(`[GateWorker] ⚠️ Unknown Job Type: ${job.type}`) + '\n');
         return;

@@ -27,6 +27,9 @@ import { TextSafetyModule } from '../text-safety/text-safety.module';
 import { ShotDirectorModule } from '../shot-director/shot-director.module';
 import { CostModule } from '../cost/cost.module';
 import { env } from '@scu/config';
+import { JobAuthOpsService } from './job-auth-ops.service';
+import { JobCreationOpsService } from './job-creation-ops.service';
+import { JobUpdateOpsService } from './job-update-ops.service';
 
 // P1 修复：统一使用 packages/config，避免 split-brain
 const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
@@ -60,6 +63,9 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     JobReportFacade, // Facade 层
     JobEngineBindingService, // Stage3-A: Job-Engine 绑定服务
     JobWatchdogService, // P1 修复：僵尸任务自愈服务
+    JobAuthOpsService, // Tactical Slimming: Auth Ops
+    JobCreationOpsService, // Tactical Slimming: Creation Ops
+    JobUpdateOpsService, // Tactical Slimming: Update Ops
   ],
   exports: [JobService, JobReportFacade],
 })

@@ -66,7 +66,7 @@ VALUES (
 
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"rawText\", \"updatedAt\")
+INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"updatedAt\")
 VALUES (
 
 
@@ -219,7 +219,7 @@ VALUES (
 
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"rawText\", \"updatedAt\")
+INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"updatedAt\")
 VALUES (
 
 
@@ -372,7 +372,7 @@ VALUES (
 
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"rawText\", \"updatedAt\")
+INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"updatedAt\")
 VALUES (
 
 
@@ -525,7 +525,7 @@ VALUES (
 
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"rawText\", \"updatedAt\")
+INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"updatedAt\")
 VALUES (
 
 

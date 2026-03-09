@@ -48,8 +48,8 @@ ON CONFLICT (id) DO NOTHING;
 
 # Ensure Novel Source exists
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO novel_sources(id, \"projectId\", \"rawText\", \"fileName\", \"createdAt\", \"updatedAt\")
-VALUES ('src_${PROJ_ID}', '${PROJ_ID}', 'Dummy Content for Gate 13', 'gate13_dummy.txt', now(), now())
+INSERT INTO novel_sources(id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"createdAt\", \"updatedAt\")
+VALUES ('src_${PROJ_ID}', '${PROJ_ID}', '${ORG_ID}', 'gate13/${PROJ_ID}/dummy.txt', 'gate13_dummy.txt', 1024, now(), now())
 ON CONFLICT (id) DO NOTHING;
 " > "$EVI/db_seed_source.txt" 2>&1 || (echo "NovelSource Seed Failed:"; cat "$EVI/db_seed_source.txt"; exit 1)
 

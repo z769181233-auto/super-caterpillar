@@ -15,7 +15,10 @@ export class TaskService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) {}
+  ) {
+    console.log('[DEBUG_BOOT] TaskService constructor start');
+    console.log('[DEBUG_BOOT] TaskService constructor end');
+  }
 
   /**
    * 创建 Task

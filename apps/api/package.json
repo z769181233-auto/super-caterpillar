@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "nest start --watch",
-    "build": "tsc -p tsconfig.json",
-    "start": "node -r tsconfig-paths/register dist/apps/api/src/main",
+    "dev": "API_BASE_URL=http://localhost:3000 node -r tsconfig-paths/register dist/apps/api/src/main.js",
+    "build": "tsc -p tsconfig.json && ln -sf apps/api/src/main.js dist/main.js",
+    "start": "node -r tsconfig-paths/register dist/apps/api/src/main.js",
     "start:prod": "node -r tsconfig-paths/register dist/apps/api/src/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --ignore-pattern \"src/scripts/**\" --fix",
     "typecheck": "tsc -p tsconfig.json --noEmit",

@@ -136,7 +136,7 @@ invoke_engine() {
 }
 
 # Setup NovelScene structure (Idempotent)
-psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, \"projectId\", \"rawText\", \"updatedAt\") VALUES ('src_$TS_ID', '$PROJECT_ID', 'Raw', NOW()) ON CONFLICT (id) DO NOTHING;" > /dev/null
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"updatedAt\") VALUES ('src_$TS_ID', '$PROJECT_ID', '$ORG_ID', 'gate15/$PROJECT_ID/raw.txt', 'raw.txt', 1024, NOW()) ON CONFLICT (id) DO NOTHING;" > /dev/null
 psql "$DATABASE_URL" -c "INSERT INTO novel_volumes (id, project_id, novel_source_id, index, title, updated_at) VALUES ('vol_$TS_ID', '$PROJECT_ID', 'src_$TS_ID', 1, 'Vol 1', NOW()) ON CONFLICT (id) DO NOTHING;" > /dev/null
 psql "$DATABASE_URL" -c "INSERT INTO novel_chapters (id, volume_id, novel_source_id, index, title, updated_at) VALUES ('ch_$TS_ID', 'vol_$TS_ID', 'src_$TS_ID', 1, 'Ch 1', NOW()) ON CONFLICT (id) DO NOTHING;" > /dev/null
 psql "$DATABASE_URL" -c "INSERT INTO novel_scenes (id, chapter_id, project_id, index, raw_text, enriched_text, updated_at) VALUES ('scene_ce11_val', 'ch_$TS_ID', '$PROJECT_ID', 1, 'Raw scene', 'Enriched scene with $SCENE_TAG', NOW()) ON CONFLICT (id) DO NOTHING;" > /dev/null

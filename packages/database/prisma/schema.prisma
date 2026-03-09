@@ -17,7 +17,7 @@ model User {
   avatar                String?
   userType              UserType             @default(individual)
   role                  UserRole             @default(viewer)
-  tier                  UserTier             @default(Basic)
+  tier                  UserTier             @default(Free)
   quota                 Json?
   defaultOrganizationId String?
   createdAt             DateTime             @default(now())
@@ -59,6 +59,7 @@ model Organization {
   shots             Shot[]               @relation("OrganizationShots")
   subscriptions     Subscription[]       @relation("OrganizationSubscription")
   usageRecords      UsageRecord[]        @relation("OrganizationUsageRecords")
+  novelIngestRuns   NovelIngestRun[]     @relation("OrganizationNovelIngestRuns")
 
   novelSources NovelSource[] @relation("OrganizationNovelSources")
 
@@ -103,45 +104,7 @@ model NovelSource {
   project      Project      @relation(fields: [projectId], references: [id])
   organization Organization @relation("OrganizationNovelSources", fields: [organizationId], references: [id])
 
-  ingestRuns NovelIngestRun[] @relation("SourceIngestRuns")
-
   @@map("novel_sources")
-}
-
-model NovelIngestRun {
-  id             String   @id @default(uuid())
-  projectId      String
-  organizationId String
-  novelSourceId  String
-  manifestHash   String
-  engineVersion  String
-  status         String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  novelSource NovelSource  @relation("SourceIngestRuns", fields: [novelSourceId], references: [id])
-  chunks      NovelChunk[] @relation("RunChunks")
-
-  @@map("novel_ingest_runs")
-}
-
-model NovelChunk {
-  id          String   @id @default(uuid())
-  ingestRunId String
-  chunkId     String   @unique // Deterministic key: runId + vol + ch
-  volNo       Int?     @map("vol_no")
-  chNo        Int?     @map("ch_no")
-  offsetStart Int      @map("offset_start")
-  offsetEnd   Int      @map("offset_end")
-  sha256      String
-  status      String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
-  artifactUrl String?  @map("artifact_url") // Pointing to JSON in storage
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  ingestRun NovelIngestRun @relation("RunChunks", fields: [ingestRunId], references: [id], onDelete: Cascade)
-
-  @@map("novel_chunks")
 }
 
 enum NovelSourceStatus {
@@ -177,6 +140,7 @@ model Project {
   projectMembers         ProjectMember[]
   organization           Organization            @relation("OrganizationProjects", fields: [organizationId], references: [id])
   owner                  User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
+  novelIngestRuns        NovelIngestRun[]        @relation("ProjectNovelIngestRuns")
   publishedVideos        PublishedVideo[]        @relation("ProjectPublishedVideos")
   qualityMetrics         QualityMetrics[]        @relation("ProjectQualityMetrics")
   seasons                Season[]                @relation("ProjectSeasons")
@@ -189,9 +153,10 @@ model Project {
   Location               Location[]
   Prop                   Prop[]
   Outfit                 Outfit[]
-
+  StorySource            StorySource[]
   @@map("projects")
 }
+
 
 model Season {
   id          String    @id @default(uuid())
@@ -214,8 +179,6 @@ model Episode {
   id                String             @id @default(uuid())
   seasonId          String?
   projectId         String?
-  buildId           String?            @map("build_id")
-  sourceRefId       String?            @unique @map("source_ref_id")
   index             Int
   name              String
   summary           String?
@@ -224,14 +187,15 @@ model Episode {
   chapter           NovelChapter?      @relation("ChapterEpisode", fields: [chapterId], references: [id])
   project           Project?           @relation("ProjectEpisodes", fields: [projectId], references: [id], onDelete: Cascade)
   season            Season?            @relation("SeasonEpisodes", fields: [seasonId], references: [id], onDelete: Cascade)
-  scriptBuild       ScriptBuild?       @relation(fields: [buildId], references: [id])
-  sourceRef         StorySourceRef?    @relation(fields: [sourceRefId], references: [id])
   publishedVideos   PublishedVideo[]   @relation("EpisodePublishedVideos")
   publishingReviews PublishingReview[] @relation("EpisodePublishingReview")
   scenes            Scene[]            @relation("EpisodeScenes")
   shotJobs          ShotJob[]          @relation("EpisodeShotJobs")
+  buildId           String?            @map("build_id")
+  sourceRefId       String?            @unique @map("source_ref_id")
+  sourceRef         StorySourceRef?    @relation(fields: [sourceRefId], references: [id])
 
-  @@unique([projectId, index, buildId])
+  @@unique([projectId, index])
   @@map("episodes")
 }
 
@@ -239,8 +203,6 @@ model Scene {
   id                 String           @id @default(uuid())
   chapterId          String?          @map("chapter_id")
   episodeId          String?
-  buildId            String?          @map("build_id")
-  sourceRefId        String?          @unique @map("source_ref_id")
   sceneIndex         Int              @map("scene_index")
   locationSlug       String?          @map("location_slug")
   timeOfDay          String?          @map("time_of_day")
@@ -259,21 +221,21 @@ model Scene {
   directingNotes     String?          @map("directing_notes")
   shotType           String?          @default("MEDIUM_SHOT") @map("shot_type")
   characterIds       Json?            @map("character_ids")
-  entryStateJson     Json?            @map("entry_state_json")
-  exitStateJson      Json?            @map("exit_state_json")
   createdAt          DateTime         @default(now()) @map("created_at")
+
   updatedAt          DateTime         @updatedAt @map("updated_at")
   engineTasks        EngineTask[]     @relation("SceneEngineTask")
   chapter            NovelChapter?    @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
   episode            Episode?         @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
-  scriptBuild        ScriptBuild?     @relation(fields: [buildId], references: [id])
-  sourceRef          StorySourceRef?  @relation(fields: [sourceRefId], references: [id])
   sceneDraft         SceneDraft?      @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
   shotJobs           ShotJob[]        @relation("SceneShotJobs")
   shots              Shot[]           @relation("SceneShots")
+  buildId            String?          @map("build_id")
+  sourceRefId        String?          @unique @map("source_ref_id")
+  sourceRef          StorySourceRef?  @relation(fields: [sourceRefId], references: [id])
 
   @@unique([chapterId, sceneIndex])
-  @@unique([episodeId, sceneIndex, buildId])
+  @@unique([episodeId, sceneIndex])
   @@index([projectId, sceneIndex])
   @@map("scenes")
 }
@@ -281,14 +243,11 @@ model Scene {
 model Shot {
   id                   String                @id @default(uuid())
   sceneId              String
-  buildId              String?               @map("build_id")
-  sourceRefId          String?               @unique @map("source_ref_id")
   index                Int
   title                String?
-  content              String?               // Added for script content
   description          String?               // Existing
-  visualDescription    String?               // Added for visual prompting
   reviewStatus         ShotReviewStatus      @default(DRAFT)
+
   type                 String
   params               Json                  @default("{}")
   qualityScore         Json                  @default("{}")
@@ -313,8 +272,8 @@ model Shot {
   durationSec          Decimal?              @map("duration_sec")
   emotion              String?               @map("emotion")
   novelQuote           String?               @map("novel_quote")
-  continuityJson       Json?                 @map("continuity_json")
   assets               Asset[]               @relation("ShotAssets")
+
   characterAppearances CharacterAppearance[] @relation("ShotCharacterAppearances")
   engineTasks          EngineTask[]          @relation("ShotEngineTask")
   publishingReviews    PublishingReview[]    @relation("ShotPublishingReview")
@@ -324,10 +283,13 @@ model Shot {
   shotPlanning         ShotPlanning?         @relation("ShotPlanning")
   organization         Organization?         @relation("OrganizationShots", fields: [organizationId], references: [id])
   scene                Scene                 @relation("SceneShots", fields: [sceneId], references: [id], onDelete: Cascade)
-  scriptBuild          ScriptBuild?          @relation(fields: [buildId], references: [id])
+  buildId              String?               @map("build_id")
+  sourceRefId          String?               @unique @map("source_ref_id")
   sourceRef            StorySourceRef?       @relation(fields: [sourceRefId], references: [id])
+  content              String?
+  visualDescription    String?
 
-  @@unique([sceneId, index, buildId])
+  @@unique([sceneId, index])
   @@index([sceneId, index])
   @@index([shotType, cameraMovement, cameraAngle, lightingPreset], map: "idx_shots_director_controls")
   @@map("shots")
@@ -803,7 +765,7 @@ model Subscription {
   userId             String?
   organizationId     String?
   planId             String
-  tier               UserTier           @default(Basic)
+  tier               UserTier           @default(Free)
   status             SubscriptionStatus @default(ACTIVE)
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
@@ -1045,7 +1007,6 @@ model Character {
   name                  String // Equivalent to canonicalName
   description           String?
   appearanceAnchorsJson Json?    @map("appearance_anchors_json")
-  firstSeenSourceRefId  String?  @map("first_seen_source_ref_id")
   referenceSheetUrls    Json?
   embeddingId           String?
   defaultSeed           String?
@@ -1054,8 +1015,9 @@ model Character {
   updatedAt             DateTime @updatedAt
 
   project      Project          @relation(fields: [projectId], references: [id])
-  firstSeenRef StorySourceRef?  @relation(fields: [firstSeenSourceRefId], references: [id])
   aliases      CharacterAlias[]
+  firstSeenSourceRefId String? @map("first_seen_source_ref_id")
+  firstSeenRef StorySourceRef? @relation(fields: [firstSeenSourceRefId], references: [id])
 
   @@unique([projectId, name])
   @@map("characters")
@@ -1449,7 +1411,7 @@ enum UserRole {
 }
 
 enum UserTier {
-  Basic
+  Free
   Pro
   Studio
   Enterprise
@@ -1802,35 +1764,55 @@ model UserSubscription {
   @@map("user_subscriptions")
 }
 
-model ScriptBuild {
-  id        String   @id @default(uuid())
-  projectId String   @map("project_id")
-  sourceId  String   @map("source_id")
-  status    String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED, AUDITED
-  version   String   @default("1.0.0")
-  metadata  Json?    // Added for audit logs and results
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+model NovelIngestRun {
+  id             String   @id @default(uuid())
+  projectId      String
+  organizationId String
+  novelSourceId  String?
+  manifestHash   String   @default("v1")
+  engineVersion  String   @default("ce06-v3")
+  status         String   @default("PROCESSING") // PROCESSING, COMPLETED, FAILED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  project     Project     @relation(fields: [projectId], references: [id])
-  storySource StorySource @relation(fields: [sourceId], references: [id])
-  episodes    Episode[]
-  scenes      Scene[]
-  shots       Shot[]
+  project      Project      @relation("ProjectNovelIngestRuns", fields: [projectId], references: [id], onDelete: Cascade)
+  organization Organization @relation("OrganizationNovelIngestRuns", fields: [organizationId], references: [id], onDelete: Cascade)
+  chunks       NovelChunk[] @relation("IngestRunChunks")
 
-  @@map("script_builds")
+  @@map("novel_ingest_runs")
+}
+
+model NovelChunk {
+  id            String   @id @default(uuid())
+  ingestRunId   String
+  chunkId       String   @unique // Business key
+  chNo          Int
+  volNo         Int      @default(1)
+  offsetStart   Int
+  offsetEnd     Int
+  sha256        String?
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  artifactUrl   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ingestRun NovelIngestRun @relation("IngestRunChunks", fields: [ingestRunId], references: [id], onDelete: Cascade)
+
+  @@index([ingestRunId])
+  @@map("novel_chunks")
 }
 
 model StorySource {
-  id         String   @id @default(uuid())
-  projectId  String   @map("project_id")
-  title      String
-  path       String
-  size       Int
-  globalHash String   @map("global_hash")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  name      String
+  path      String
+  size      Int
+  textHash  String   @map("text_hash")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
+  project      Project       @relation(fields: [projectId], references: [id])
   chunks       StoryChunk[]
   scriptBuilds ScriptBuild[]
 
@@ -1874,6 +1856,21 @@ model StorySourceRef {
   outfits    Outfit[]
 
   @@map("story_source_refs")
+}
+
+model ScriptBuild {
+  id            String   @id @default(uuid())
+  projectId     String   @map("project_id")
+  sourceId      String   @map("source_id")
+  status        String   @default("PENDING")
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  project     Project     @relation(fields: [projectId], references: [id])
+  storySource StorySource @relation(fields: [sourceId], references: [id])
+
+  @@map("script_builds")
 }
 
 model CharacterAlias {
@@ -1929,3 +1926,5 @@ model Outfit {
   @@unique([projectId, name])
   @@map("outfits")
 }
+// Removed non-existent models as they don't exist in DB
+

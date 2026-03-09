@@ -1,0 +1,61 @@
+import { JobService } from './job.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { DirectorConstraintSolverService } from '../shot-director/director-solver.service';
+import { CostLedgerService } from '../cost/cost-ledger.service';
+export declare class JobReportFacade {
+    private readonly jobService;
+    private readonly prisma;
+    private readonly directorSolver;
+    private readonly costLedger;
+    private readonly logger;
+    constructor(jobService: JobService, prisma: PrismaService, directorSolver: DirectorConstraintSolverService, costLedger: CostLedgerService);
+    private normalizeStorageKey;
+    handleReport(params: {
+        jobId: string;
+        status: string;
+        result?: any;
+        errorMessage?: string;
+        userId?: string;
+        apiKeyId?: string;
+        ip?: string;
+        userAgent?: string;
+        hmacMeta?: {
+            nonce?: string;
+            signature?: string;
+            hmacTimestamp?: string;
+        };
+        attempts?: number;
+    }): Promise<{
+        id: string;
+        createdAt: Date;
+        payload: import("../../../../packages/database/dist/generated/prisma/runtime/library").JsonValue | null;
+        result: import("../../../../packages/database/dist/generated/prisma/runtime/library").JsonValue | null;
+        type: import("database").$Enums.JobType;
+        status: import("database").$Enums.JobStatus;
+        updatedAt: Date;
+        projectId: string;
+        organizationId: string;
+        traceId: string | null;
+        episodeId: string | null;
+        sceneId: string | null;
+        shotId: string | null;
+        taskId: string | null;
+        workerId: string | null;
+        priority: number;
+        maxRetry: number;
+        retryCount: number;
+        attempts: number;
+        leaseUntil: Date | null;
+        lockedBy: string | null;
+        engineConfig: import("../../../../packages/database/dist/generated/prisma/runtime/library").JsonValue | null;
+        lastError: string | null;
+        isVerification: boolean;
+        dedupeKey: string | null;
+        outputSha256: string | null;
+        engineProvider: string | null;
+        engineRunId: string | null;
+        engineModel: string | null;
+        securityProcessed: boolean;
+        currentStep: string | null;
+    }>;
+}

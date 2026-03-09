@@ -1,0 +1,98 @@
+export declare class NovelInsightResponse {
+    novelSourceId: string;
+    projectId: string;
+    ce06: NovelAnalysisArtifact[];
+    ce07: MemoryUpdateArtifact[];
+    ce03_04: VisualMetricArtifact[];
+}
+export declare class VisualMetricArtifact {
+    jobId: string;
+    type: string;
+    status: string;
+    score?: number;
+    output_summary: any;
+    created_at: Date;
+}
+export declare class NovelAnalysisArtifact {
+    jobId: string;
+    workerId?: string;
+    createdAt: Date;
+    status: string;
+    payload: any;
+    result?: any;
+}
+export declare class MemoryUpdateArtifact {
+    jobId: string;
+    workerId?: string;
+    createdAt: Date;
+    status: string;
+    payload: any;
+    memoryContent?: any;
+}
+export declare class JobAuditResponse {
+    jobId: string;
+    type: string;
+    status: string;
+    workerId?: string;
+    createdAt: Date;
+    updatedAt: Date;
+    payload: any;
+    result: any;
+    auditLogs: any[];
+}
+export declare class AuditJobSummaryDto {
+    jobId: string;
+    traceId: string;
+    status: string;
+    createdAtIso: string;
+    workerId?: string;
+}
+export declare class DirectorAuditSummaryDto {
+    mode: 'realtime' | 'stored';
+    shotsEvaluated: number;
+    isValid: boolean;
+    violationsCount: number;
+    suggestionsCount: number;
+    violationsSample: Array<{
+        ruleId: string;
+        severity: 'WARNING' | 'ERROR';
+        message: string;
+    }>;
+    computedAtIso: string;
+}
+export declare class VideoAssetDto {
+    status: string;
+    secureUrl?: string;
+    jobId?: string;
+    assetId?: string;
+    storageKey?: string;
+}
+export declare class DagRunSummaryDto {
+    traceId: string;
+    timeline: Array<{
+        phase: 'CE06' | 'CE03' | 'CE04' | 'SHOT' | 'VIDEO';
+        jobId: string;
+        status: string;
+    }>;
+    missingPhases: string[];
+    builtFrom: 'latest_ce04_trace' | 'latest_run' | 'empty';
+    builtAtIso: string;
+}
+export declare class NovelAuditFullResponse {
+    novelSourceId: string;
+    projectId: string;
+    latestJobs: {
+        ce06?: AuditJobSummaryDto | null;
+        ce07?: AuditJobSummaryDto | null;
+        ce03?: AuditJobSummaryDto | null;
+        ce04?: AuditJobSummaryDto | null;
+        video?: AuditJobSummaryDto | null;
+    };
+    metrics: {
+        ce03Score: number;
+        ce04Score: number;
+    };
+    director: DirectorAuditSummaryDto;
+    dag: DagRunSummaryDto;
+    videoAsset?: VideoAssetDto;
+}

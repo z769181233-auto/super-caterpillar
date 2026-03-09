@@ -1,0 +1,44 @@
+import { JobService } from './job.service';
+import { JobReportFacade } from './job-report.facade';
+import { PermissionService } from '../permission/permission.service';
+import { AuthenticatedUser } from '@scu/shared-types';
+import { CreateJobDto } from './dto/create-job.dto';
+import { ReportJobDto } from './dto/report-job.dto';
+import { ListJobsDto } from './dto/list-jobs.dto';
+import { InstantiateCE01Dto } from './dto/instantiate-ce01.dto';
+import { RetryJobDto, ForceFailJobDto, BatchJobOperationDto } from './dto/job-operations.dto';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { CapacityGateService } from '../capacity/capacity-gate.service';
+import { Request, Response } from 'express';
+export declare class JobController {
+    private readonly jobService;
+    private readonly jobReportFacade;
+    private readonly permissionService;
+    private readonly auditLogService;
+    private readonly capacityGateService;
+    private readonly logger;
+    constructor(jobService: JobService, jobReportFacade: JobReportFacade, permissionService: PermissionService, auditLogService: AuditLogService, capacityGateService: CapacityGateService);
+    debugKey(key: string): Promise<any>;
+    createJob(shotId: string, createJobDto: CreateJobDto, user: AuthenticatedUser, organizationId: string, req: Request, res: Response): Promise<any>;
+    createProjectJob(createJobDto: CreateJobDto, user: AuthenticatedUser, organizationId: string, req: Request): Promise<any>;
+    getJobsByShot(shotId: string, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    getCapacityUsage(user: AuthenticatedUser, organizationId: string): Promise<any>;
+    getJob(id: string, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    listJobs(query: ListJobsDto, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    getEngineSummary(engineKey: string, projectId: string | undefined, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    retryJob(id: string, body: RetryJobDto, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    cancelJob(id: string, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    forceFailJob(id: string, body: ForceFailJobDto, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    batchRetry(body: BatchJobOperationDto, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    batchCancel(body: BatchJobOperationDto, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    batchForceFail(body: BatchJobOperationDto, user: AuthenticatedUser, organizationId: string): Promise<any>;
+    startJob(jobId: string, user: AuthenticatedUser, request: Request): Promise<any>;
+    reportJob(jobId: string, reportDto: ReportJobDto, user: AuthenticatedUser, request: Request): Promise<any>;
+    ackJob(jobId: string, request: Request): Promise<any>;
+    completeJob(jobId: string, body: {
+        status: 'SUCCEEDED' | 'FAILED';
+        result?: any;
+        errorMessage?: string;
+    }, request: Request): Promise<any>;
+    instantiateCE01(body: InstantiateCE01Dto, user: AuthenticatedUser, organizationId: string, request: Request): Promise<any>;
+}

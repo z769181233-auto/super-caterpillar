@@ -169,7 +169,6 @@ export class ApiClient {
       // 4. 计算签名
       // [HMAC V1.1 Fix] Align with API Guard logic:
       // If POST and body is empty, API uses contentHash in canonical string.
-      // If GET/DELETE, API uses body (which is empty string).
       if (method.toUpperCase() === 'POST' && bodyString === '') {
         signBody = contentHash;
       }

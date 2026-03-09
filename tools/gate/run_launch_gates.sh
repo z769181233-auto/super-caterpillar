@@ -22,6 +22,9 @@ echo -e "${BLUE}Mode: $GATE_ENV_MODE${NC}"
 
 # 商业级门禁权限授权 (仅在门禁运行期间临时开启 API 的 Bypass 通道)
 export NO_COLOR=1
+export PGUSER="postgres"
+export PGPASSWORD="${PGPASSWORD:-password}"
+export PGHOST="127.0.0.1"
 
 # Helper: 稳妥的 URL 参数追加/修改 (使用 Node.js 解析 URL 避免 Bash 乱拼)
 # Usage: mod_url <url> <kv_pair> <optional_new_origin>
@@ -795,7 +798,10 @@ fi
 if [ "$CONTEXT_INJECTION_PASSED" = true ]; then
     echo -e "${GREEN}✅ Gate 8 passed${NC}\n"
 else
-    echo -e "${RED}❌ Gate 8 failed${NC}\n"
+    echo -e "${RED}❌ Gate 8 failed${NC}"
+    echo -e "${YELLOW}--- GATE 8 LOG START ---${NC}"
+    cat "$CONTEXT_INJECTION_OUTPUT" || true
+    echo -e "${YELLOW}--- GATE 8 LOG END ---${NC}\n"
 fi
 
 # 门禁 9: Shots Director Control Fields (V3.0 P1-1)
@@ -947,7 +953,10 @@ fi
 if [ "$CE01_PASSED" = true ]; then
     echo -e "${GREEN}✅ Gate 13 passed${NC}\n"
 else
-    echo -e "${RED}❌ Gate 13 failed${NC}\n"
+    echo -e "${RED}❌ Gate 13 failed${NC}"
+    echo -e "${YELLOW}--- GATE 13 LOG START ---${NC}"
+    cat "$CE01_OUTPUT" || true
+    echo -e "${YELLOW}--- GATE 13 LOG END ---${NC}\n"
 fi
 
 # 门禁 14: CE02 Visual Density Integration (V3.0 Bible)

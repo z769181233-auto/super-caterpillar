@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "ts-node -r tsconfig-paths/register src/main.ts",
+    "dev": "API_BASE_URL=http://localhost:3000 ts-node -r tsconfig-paths/register src/main.ts",
     "build": "tsc -p tsconfig.json",
     "start": "ts-node -r tsconfig-paths/register src/main.ts"
   },

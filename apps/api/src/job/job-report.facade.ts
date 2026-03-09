@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { JobService } from './job.service';
-import { QualityMetricsWriter } from '../quality/quality-metrics.writer';
+// import { QualityMetricsWriter } from '../quality/quality-metrics.writer';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobType as JobTypeEnum, JobStatus as JobStatusEnum } from 'database';
 import { DirectorConstraintSolverService } from '../shot-director/director-solver.service';
@@ -22,15 +22,15 @@ export class JobReportFacade {
   constructor(
     @Inject(JobService)
     private readonly jobService: JobService,
-    @Inject(QualityMetricsWriter)
-    private readonly qualityMetricsWriter: QualityMetricsWriter,
+    // @Inject(QualityMetricsWriter)
+    // private readonly qualityMetricsWriter: QualityMetricsWriter,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(DirectorConstraintSolverService)
     private readonly directorSolver: DirectorConstraintSolverService,
     @Inject(CostLedgerService)
     private readonly costLedger: CostLedgerService
-  ) {}
+  ) { }
 
   /**
    * PLAN-1 SSOT: Normalize storage key (remove path pollution)
@@ -131,6 +131,7 @@ export class JobReportFacade {
         });
 
         if (job) {
+          /*
           const success = await this.qualityMetricsWriter.writeQualityMetrics({
             jobId: job.id,
             jobType: job.type,
@@ -148,6 +149,10 @@ export class JobReportFacade {
               `QualityMetrics write skipped for ${job.type} job ${job.id} (no metrics found)`
             );
           }
+          */
+          this.logger.log(
+            `[REPORT_FACADE] CE03/CE04 Auto-Quality skipped (DECOUPLED): jobId=${job.id}`
+          );
         }
       } catch (error: any) {
         // 质量指标写入失败不影响主流程
@@ -156,55 +161,55 @@ export class JobReportFacade {
           error.stack
         );
       }
+    }
 
-      // P0-3: CE05 Director Control (non-blocking)
-      if (updatedJob.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
-        try {
-          // 1) 取 shotId（防御性）
-          const payload: any = updatedJob.payload ?? {};
-          const shotId: string | undefined = payload.shotId ?? (updatedJob as any).shotId;
+    // P0-3: CE05 Director Control (non-blocking)
+    if (updatedJob && updatedJob.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
+      try {
+        // 1) 取 shotId（防御性）
+        const payload: any = updatedJob.payload ?? {};
+        const shotId: string | undefined = payload.shotId ?? (updatedJob as any).shotId;
 
-          if (!shotId) {
-            this.logger.warn(`[CE05] skip: missing shotId jobId=${updatedJob.id}`);
-          } else {
-            // 2) 调用约束验证器
-            const shotInput = {
-              id: shotId,
-              type: payload.type ?? 'DEFAULT', // 添加required字段
-              params: {
-                durationSec: payload.durationSec ?? 5,
-                prompt: payload.prompt ?? '',
-                motion: payload.motion ?? 'NONE',
-              },
-            };
-            const validation = this.directorSolver.validateShot(shotInput);
+        if (!shotId) {
+          this.logger.warn(`[CE05] skip: missing shotId jobId=${updatedJob.id}`);
+        } else {
+          // 2) 调用约束验证器
+          const shotInput = {
+            id: shotId,
+            type: payload.type ?? 'DEFAULT', // 添加required字段
+            params: {
+              durationSec: payload.durationSec ?? 5,
+              prompt: payload.prompt ?? '',
+              motion: payload.motion ?? 'NONE',
+            },
+          };
+          const validation = this.directorSolver.validateShot(shotInput);
 
-            // 3) Upsert 写入 shot_plannings（幂等，序列化JSON）
-            await this.prisma.shotPlanning.upsert({
-              where: { shotId },
-              create: {
-                shotId,
-                engineKey: 'CE05_DIRECTOR',
-                engineVersion: null,
-                confidence: validation.violations.length === 0 ? 1.0 : 0.5,
-                data: JSON.parse(JSON.stringify(validation)) as any, // 序列化
-              },
-              update: {
-                engineKey: 'CE05_DIRECTOR',
-                confidence: validation.violations.length === 0 ? 1.0 : 0.5,
-                data: JSON.parse(JSON.stringify(validation)) as any, // 序列化
-              },
-            });
+          // 3) Upsert 写入 shot_plannings（幂等，序列化JSON）
+          await this.prisma.shotPlanning.upsert({
+            where: { shotId },
+            create: {
+              shotId,
+              engineKey: 'CE05_DIRECTOR',
+              engineVersion: null,
+              confidence: validation.violations.length === 0 ? 1.0 : 0.5,
+              data: JSON.parse(JSON.stringify(validation)) as any, // 序列化
+            },
+            update: {
+              engineKey: 'CE05_DIRECTOR',
+              confidence: validation.violations.length === 0 ? 1.0 : 0.5,
+              data: JSON.parse(JSON.stringify(validation)) as any, // 序列化
+            },
+          });
 
-            this.logger.log(
-              `[CE05] ShotPlanning upserted shotId=${shotId} isValid=${validation.isValid} violations=${validation.violations.length}`
-            );
-          }
-        } catch (e: any) {
-          this.logger.warn(
-            `[CE05] failed (non-blocking) jobId=${updatedJob.id} err=${e?.message ?? e}`
+          this.logger.log(
+            `[CE05] ShotPlanning upserted shotId=${shotId} isValid=${validation.isValid} violations=${validation.violations.length}`
           );
         }
+      } catch (e: any) {
+        this.logger.warn(
+          `[CE05] failed (non-blocking) jobId=${updatedJob.id} err=${e?.message ?? e}`
+        );
       }
     }
 
@@ -295,7 +300,6 @@ export class JobReportFacade {
           const videoUrl =
             params.result?.outputKey || params.result?.storageKey || params.result?.videoUrl;
           if (videoUrl) {
-            // Stage 10 Refactor: Business Key Idempotency (One Asset per Type per Owner)
             // Stage 10 Refactor: Business Key Idempotency (One Asset per Type per Owner)
             // Unique Key: @@unique([ownerType, ownerId, type])
             await this.prisma.asset.upsert({

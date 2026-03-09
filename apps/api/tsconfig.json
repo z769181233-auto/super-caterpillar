@@ -68,6 +68,7 @@
     "node_modules",
     "dist",
     "test/**/*",
-    "src/scripts/**/*"
+    "src/scripts/**/*",
+    "src/script-build/**/*"
   ]
 }

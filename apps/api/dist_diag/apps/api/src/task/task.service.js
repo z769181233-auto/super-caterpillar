@@ -1,0 +1,82 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TaskService = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+const audit_log_service_1 = require("../audit-log/audit-log.service");
+const database_1 = require("database");
+let TaskService = class TaskService {
+    prisma;
+    auditLogService;
+    constructor(prisma, auditLogService) {
+        this.prisma = prisma;
+        this.auditLogService = auditLogService;
+        console.log('[DEBUG_BOOT] TaskService constructor start');
+        console.log('[DEBUG_BOOT] TaskService constructor end');
+    }
+    async create(params) {
+        const task = await this.prisma.task.create({
+            data: {
+                organizationId: params.organizationId,
+                projectId: params.projectId,
+                type: params.type,
+                status: params.status ?? database_1.TaskStatus.PENDING,
+                payload: params.payload,
+                attempts: params.attempts ?? 0,
+                maxRetry: params.maxRetry ?? 3,
+                retryCount: params.retryCount ?? 0,
+                error: params.error,
+                traceId: params.traceId,
+            },
+        });
+        await this.auditLogService.record({
+            action: 'TASK_CREATED',
+            resourceType: 'task',
+            resourceId: task.id,
+            details: {
+                type: task.type,
+                organizationId: task.organizationId,
+            },
+        });
+        return task;
+    }
+    async findById(id) {
+        return this.prisma.task.findUnique({
+            where: { id },
+            include: { jobs: true },
+        });
+    }
+    async updateStatus(id, status, payload, errorMessage, output, workerId) {
+        return this.prisma.task.update({
+            where: { id },
+            data: {
+                status,
+                ...(payload !== undefined ? { payload } : {}),
+                ...(errorMessage ? { error: errorMessage } : {}),
+                ...(output !== undefined ? { output } : {}),
+                ...(workerId !== undefined ? { workerId } : {}),
+            },
+        });
+    }
+};
+exports.TaskService = TaskService;
+exports.TaskService = TaskService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)(prisma_service_1.PrismaService)),
+    __param(1, (0, common_1.Inject)(audit_log_service_1.AuditLogService)),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        audit_log_service_1.AuditLogService])
+], TaskService);
+//# sourceMappingURL=task.service.js.map

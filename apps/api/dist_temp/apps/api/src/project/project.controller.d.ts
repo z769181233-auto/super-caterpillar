@@ -1,0 +1,53 @@
+import { ProjectService } from './project.service';
+import { StructureGenerateService } from './structure-generate.service';
+import { SceneGraphService } from './scene-graph.service';
+import { JobService } from '../job/job.service';
+import { TaskService } from '../task/task.service';
+import { PermissionService } from '../permission/permission.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { AuthenticatedUser } from '@scu/shared-types';
+import { Request } from 'express';
+import { CreateProjectDto, UpdateProjectDto, CreateEpisodeDto, CreateSceneDto, UpdateSceneDto, CreateShotDto, UpdateShotDto } from './dto';
+import { ListShotsDto } from './dto/list-shots.dto';
+export declare class ProjectController {
+    private readonly projectService;
+    private readonly structureGenerateService;
+    private readonly sceneGraphService;
+    private readonly jobService;
+    private readonly taskService;
+    private readonly permissionService;
+    private readonly auditLogService;
+    private readonly logger;
+    constructor(projectService: ProjectService, structureGenerateService: StructureGenerateService, sceneGraphService: SceneGraphService, jobService: JobService, taskService: TaskService, permissionService: PermissionService, auditLogService: AuditLogService);
+    getProjects(user: AuthenticatedUser, organizationId: string | null, page?: string, pageSize?: string): Promise<any>;
+    createDemoStructure(user: AuthenticatedUser, organizationId: string | null): Promise<any>;
+    createProject(createProjectDto: CreateProjectDto, user: AuthenticatedUser, organizationId: string | null, request: Request): Promise<any>;
+    getProject(id: string, organizationId: string | null): Promise<any>;
+    getProjectTree(id: string, organizationId: string | null): Promise<any>;
+    getProjectSceneGraph(id: string, user: AuthenticatedUser, organizationId: string | null): Promise<any>;
+    getProjectOverview(id: string, organizationId: string | null): Promise<any>;
+    listEpisodes(projectId: string, seasonId: string, page: string, pageSize: string, user: AuthenticatedUser, organizationId: string | null): Promise<any>;
+    listScenes(projectId: string, episodeId: string, page: string, pageSize: string, user: AuthenticatedUser, organizationId: string | null): Promise<any>;
+    listShotsInProject(projectId: string, sceneId: string, page: string, pageSize: string, user: AuthenticatedUser, organizationId: string | null): Promise<any>;
+    generateStructure(projectId: string, user: AuthenticatedUser, organizationId: string | null): Promise<any>;
+    updateProject(id: string, updateProjectDto: UpdateProjectDto): Promise<any>;
+    deleteProject(id: string, user: AuthenticatedUser, request: Request): Promise<any>;
+    createEpisode(projectId: string, createEpisodeDto: CreateEpisodeDto, user: AuthenticatedUser, request: Request): Promise<any>;
+    createScene(episodeId: string, createSceneDto: CreateSceneDto, user: AuthenticatedUser, request: Request): Promise<any>;
+    updateScene(id: string, updateSceneDto: UpdateSceneDto, user: AuthenticatedUser, request: Request): Promise<any>;
+    createShot(sceneId: string, createShotDto: CreateShotDto, user: AuthenticatedUser, request: Request): Promise<any>;
+    getShot(id: string, user: AuthenticatedUser, organizationId: string | null): Promise<any>;
+    updateShot(id: string, updateShotDto: UpdateShotDto, user: AuthenticatedUser, organizationId: string | null, request: Request): Promise<any>;
+    listShots(query: ListShotsDto, user: AuthenticatedUser, organizationId: string | null): Promise<any>;
+    batchReview(body: {
+        shotIds: string[];
+        reviewStatus: 'APPROVED' | 'REJECTED';
+        reviewNote?: string;
+    }, user: AuthenticatedUser, organizationId: string | null): Promise<any>;
+    batchGenerate(body: {
+        shotIds: string[];
+        jobType: 'IMAGE' | 'VIDEO' | 'STORYBOARD' | 'AUDIO';
+        engine?: string;
+        engineConfig?: any;
+    }, user: AuthenticatedUser, organizationId: string | null, request: Request): Promise<any>;
+}
