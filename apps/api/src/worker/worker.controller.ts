@@ -79,7 +79,12 @@ export class WorkerController {
         },
       };
     } catch (e: any) {
-      console.log(`[API_WORKER_ROUTE] handler error=${e.message}`);
+      console.log(`[API_WORKER_REGISTER] CATCH ERROR:`);
+      console.log(`[API_WORKER_REGISTER] error.name=${e.name}`);
+      console.log(`[API_WORKER_REGISTER] error.message=${e.message}`);
+      console.log(`[API_WORKER_REGISTER] error.cause=${e.cause}`);
+      console.log(`[API_WORKER_REGISTER] context: workerId=${registerDto.workerId} user=${user?.userId}`);
+      console.log(`[API_WORKER_REGISTER] error.stack:\n${e.stack}`);
       throw e;
     }
   }
@@ -235,7 +240,12 @@ export class WorkerController {
         },
       };
     } catch (e: any) {
-      console.log(`[API_WORKER_ROUTE] handler error=${e.message}`);
+      console.log(`[API_WORKER_NEXT] CATCH ERROR:`);
+      console.log(`[API_WORKER_NEXT] error.name=${e.name}`);
+      console.log(`[API_WORKER_NEXT] error.message=${e.message}`);
+      console.log(`[API_WORKER_NEXT] error.cause=${e.cause}`);
+      console.log(`[API_WORKER_NEXT] context: workerId=${workerId} user=${user?.userId}`);
+      console.log(`[API_WORKER_NEXT] error.stack:\n${e.stack}`);
       throw e;
     }
   }
