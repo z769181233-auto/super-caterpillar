@@ -157,6 +157,21 @@ jobs:
           echo "--- Startup WORKER log (Head) ---"
           cat .data/logs/worker.log | head -n 100 || echo "WORKER log missing"
 
+      - name: Probe API Worker Endpoints
+        run: |
+          echo "==============================================="
+          echo "--- PROBING API WORKER ENDPOINTS ---"
+          echo "1. POST /api/workers/register"
+          curl -v -s -X POST http://127.0.0.1:3000/api/workers/register \
+            -H "Content-Type: application/json" \
+            -d '{"workerId":"probe-worker","name":"Probe","capabilities":{"supportedJobTypes":[]},"gpuCount":0}' || echo "Curl failed"
+          
+          echo -e "\n\n2. POST /api/workers/local-worker/jobs/next"
+          curl -v -s -X POST http://127.0.0.1:3000/api/workers/local-worker/jobs/next \
+            -H "Content-Type: application/json" \
+            -H "x-worker-id: local-worker" || echo "Curl failed"
+          echo "==============================================="
+
       - name: Run Launch Gates (CI Mode + P6-2)
         run: |
           # CI Mode triggers Local-like subset strictly
@@ -166,6 +181,9 @@ jobs:
           echo "==============================================="
           echo "--- Full WORKER log for Claim traces ---"
           cat .data/logs/worker.log || echo "WORKER log missing"
+          echo "==============================================="
+          echo "--- Full API log ---"
+          cat .data/logs/api.log || echo "api.log missing"
           echo "==============================================="
 
           exit $EXIT_CODE
