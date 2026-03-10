@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "API_BASE_URL=http://localhost:3000 ts-node -r tsconfig-paths/register src/main.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node -r tsconfig-paths/register dist/main.js"
+    "start": "ts-node -r tsconfig-paths/register src/main.ts",
+    "start:ci": "node ci-start.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

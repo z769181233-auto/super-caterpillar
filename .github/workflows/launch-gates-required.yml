@@ -122,7 +122,11 @@ jobs:
           export NODE_ENV=staging
           export API_URL="http://127.0.0.1:3000"
           export WORKER_PORT=3001
-          nohup pnpm --filter @scu/worker start > .data/logs/worker.log 2>&1 &
+          
+          echo "--- [WORKER PRE-BOOT] dist/ structure ---"
+          ls -laR apps/workers/dist || true
+          
+          nohup pnpm --filter @scu/worker run start:ci > .data/logs/worker.log 2>&1 &
           echo $! > .data/pids/worker.pid
 
           # Wait for API health
