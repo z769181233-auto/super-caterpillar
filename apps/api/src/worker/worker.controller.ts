@@ -43,9 +43,10 @@ export class WorkerController {
     @CurrentUser() user: { userId: string },
     @Req() request: Request
   ): Promise<any> {
-    console.log(`[API_WORKER_ROUTE] register hit`);
-    console.log(`[API_WORKER_ROUTE] auth headers present: ${!!request.headers.authorization}`);
-    console.log(`[API_WORKER_ROUTE] request body parsed: ${!!registerDto}`);
+    console.log(`[API_WORKER_REGISTER] route=/api/workers/register workerId=${registerDto.workerId} timestamp=${new Date().toISOString()}`);
+    console.log(`[API_WORKER_REGISTER] auth principal: ${user?.userId}`);
+    const headersKeysReg = Object.keys(request.headers).filter(k => !['authorization', 'cookie', 'x-api-key', 'x-signature'].includes(k));
+    console.log(`[API_WORKER_REGISTER] headers: keys=${headersKeysReg.join(',')}`);
     try {
       const requestInfo = AuditLogService.extractRequestInfo(request);
       const apiKeyId = (request as any).apiKey?.id;
@@ -147,8 +148,10 @@ export class WorkerController {
     @CurrentUser() user: { userId: string },
     @Req() request: Request
   ): Promise<any> {
-    console.log(`[API_WORKER_ROUTE] next-job hit`);
-    console.log(`[API_WORKER_ROUTE] auth headers present: ${!!request.headers.authorization}`);
+    console.log(`[API_WORKER_NEXT] route=/api/workers/:workerId/jobs/next workerId=${workerId} timestamp=${new Date().toISOString()}`);
+    console.log(`[API_WORKER_NEXT] auth principal: ${user?.userId}`);
+    const headersKeysNext = Object.keys(request.headers).filter(k => !['authorization', 'cookie', 'x-api-key', 'x-signature'].includes(k));
+    console.log(`[API_WORKER_NEXT] headers: keys=${headersKeysNext.join(',')} x-worker-id=${request.headers['x-worker-id']}`);
     try {
       const logger = new Logger(WorkerController.name);
       // logger.log(`[WorkerController] getNextJob called. WorkerId=${workerId}`);
