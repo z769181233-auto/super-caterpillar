@@ -55,6 +55,13 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
 
+  app.use('/api/workers', (req: any, res: any, next: any) => {
+    console.log(`[API_WORKER_PRE] hit method=${req.method} url=${req.originalUrl || req.url}`);
+    console.log(`[API_WORKER_PRE] headers keys=${Object.keys(req.headers).join(',')}`);
+    console.log(`[API_WORKER_PRE] next()`);
+    next();
+  });
+
   app.use(json({ limit: '100mb' }));
   app.use(urlencoded({ extended: true, limit: '100mb' }));
 

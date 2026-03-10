@@ -202,6 +202,28 @@ export async function startWorkerApp() {
 
   console.log(`[Worker] Registering worker: ${workerId}`);
   try {
+    const net = require('net');
+    await new Promise((resolve) => {
+      const sock = net.createConnection(3000, '127.0.0.1');
+      sock.on('connect', () => {
+        console.log('[WORKER_NET] connect_ok 127.0.0.1:3000');
+        sock.destroy();
+        resolve(true);
+      });
+      sock.on('error', (err: any) => {
+        console.log(`[WORKER_NET] connect_error code=${err.code} errno=${err.errno} syscall=${err.syscall} address=${err.address} port=${err.port}`);
+        resolve(false);
+      });
+    });
+
+    try {
+      const res = await fetch('http://127.0.0.1:3000/health');
+      const text = await res.text();
+      console.log(`[WORKER_FETCH_HEALTH] status=${res.status} body=${text.substring(0, 50).replace(/\\n/g, ' ')}`);
+    } catch (err: any) {
+      console.log(`[WORKER_FETCH_HEALTH] error name=${err.name} code=${err.code} cause=${err.cause?.code || err.cause?.name}`);
+    }
+
     await apiClient.registerWorker({
       workerId,
       name: `Worker-${workerId}`,
