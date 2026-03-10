@@ -96,6 +96,7 @@ import {
   processCharacterCardsJob,
   processAssetListJob,
 } from './processors/asset-extraction.processor';
+import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.processor';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ProcessorContext } from './types/processor-context';
 
@@ -151,6 +152,7 @@ async function processJobWithExecutor(job: any): Promise<void> {
       job.createdAt,
       async () => {
         const ctx: ProcessorContext = { prisma, job, apiClient, localStorage: localStorageAdapter };
+        if (job.type === 'CE06_NOVEL_PARSING') return processCE06NovelParsingJob(ctx);
         if (job.type === 'CE06_SCRIPT_OUTLINE') return processScriptOutlineJob(ctx);
         if (job.type === 'CE11_SCENE_SPLIT') return processSceneSplitJob(ctx);
         if (job.type === 'CE12_SHOT_SPLIT') return processShotSplitJob(ctx);
@@ -178,20 +180,27 @@ export async function startWorkerApp() {
   await prisma.$connect();
   jobExecutor = new JobExecutor(apiClient);
 
+  const supportedJobTypes = [
+    'CE06_NOVEL_PARSING',
+    'CE06_SCRIPT_OUTLINE',
+    'CE11_SCENE_SPLIT',
+    'CE12_SHOT_SPLIT',
+    'CE99_CONTINUITY_AUDIT',
+    'CE13_CHARACTER_CARDS',
+    'CE14_ASSET_LIST',
+  ];
+
+  console.log('[WORKER_BOOT] entry=apps/workers/src/worker-app.ts');
+  console.log('[WORKER_BOOT] supportedJobTypes=', supportedJobTypes);
+  console.log('[WORKER_BOOT] hasCE06=', supportedJobTypes.includes('CE06_NOVEL_PARSING'));
+
   console.log(`[Worker] Registering worker: ${workerId}`);
   try {
     await apiClient.registerWorker({
       workerId,
       name: `Worker-${workerId}`,
       capabilities: {
-        supportedJobTypes: [
-          'CE06_SCRIPT_OUTLINE',
-          'CE11_SCENE_SPLIT',
-          'CE12_SHOT_SPLIT',
-          'CE99_CONTINUITY_AUDIT',
-          'CE13_CHARACTER_CARDS',
-          'CE14_ASSET_LIST',
-        ],
+        supportedJobTypes,
         supportedEngines: ['real'],
       },
     });

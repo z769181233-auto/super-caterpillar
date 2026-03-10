@@ -5,6 +5,8 @@ node_modules/
 **/.next/
 dist/
 **/dist/
+apps/api/dist_diag/
+apps/api/dist_temp/
 build/
 **/build/
 out/

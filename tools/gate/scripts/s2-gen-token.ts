@@ -15,7 +15,7 @@ const payload = {
   // JwtStrategy extracts `sub`, `email`, `tier`, `orgId`.
   // But validate function queries DB using `sub`.
   // So minimally we need `sub`.
-  tier: 'Basic', // standard
+  tier: 'Free', // standard
 };
 
 const token = jwt.sign(payload, SECRET, { expiresIn: '1h' });

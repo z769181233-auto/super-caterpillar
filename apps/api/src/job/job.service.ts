@@ -1116,7 +1116,9 @@ export class JobService {
         if (job.type === JobTypeEnum.NOVEL_ANALYSIS) {
           engineKey = 'default_novel_analysis';
         } else if (job.type === JobTypeEnum.VIDEO_RENDER) {
-          engineKey = 'default_video_render'; // 假设有
+          engineKey = 'default_video_render';
+        } else if (job.type === JobTypeEnum.CE06_NOVEL_PARSING) {
+          engineKey = 'ce06_novel_parsing';
         }
       }
 

@@ -77,7 +77,9 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: ['metrics', 'health', 'ping', 'api/health', 'health/(.*)', 'api/health/(.*)'],
+  });
 
   const port = Number(process.env.PORT) || 3000;
 

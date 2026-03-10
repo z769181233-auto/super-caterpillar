@@ -27,7 +27,7 @@ export class WorkerService {
     private readonly auditLogService: AuditLogService,
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService
-  ) {}
+  ) { }
 
   // P6-2-2-1: Dispatch Rate Limiting (Anti-Cascade Flood)
   private dispatchHistory: Map<string, number[]> = new Map();
@@ -688,6 +688,8 @@ export class WorkerService {
           return null;
         }
 
+        console.log('[WORKER_CLAIM] supportedJobTypes=', supportedJobTypes);
+
         console.log(
           `[WorkerService] DEBUG: Searching PENDING jobs for ${workerId}. Types: ${supportedJobTypes.join(',')}`
         );
@@ -812,7 +814,6 @@ export class WorkerService {
           return null; // Wait for concurrent jobs to finish
         }
 
-        // 6. Fetch the oldest/highest priority job for THIS selected organization
         const candidate = await tx.shotJob.findFirst({
           where: {
             organizationId: selectedOrgId,
@@ -825,8 +826,13 @@ export class WorkerService {
 
         if (!candidate) {
           console.log(`[WorkerService] DEBUG: No candidate job found for ${workerId}`);
+          if (supportedJobTypes.includes('CE06_NOVEL_PARSING')) {
+            console.log('[WORKER_CLAIM] no claimable CE06 job found');
+          }
           return null;
         }
+
+        console.log('[WORKER_CLAIM] claimed job=', candidate.id, candidate.type);
 
         console.log(
           `[WorkerService] DEBUG: Found candidate job ${candidate.id} (${candidate.type}). Atomic update via WRR.`

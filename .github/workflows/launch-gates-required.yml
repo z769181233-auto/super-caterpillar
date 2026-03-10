@@ -136,14 +136,34 @@ jobs:
             sleep 2
           done
 
+          # Wait for WORKER boot
+          echo "Waiting for WORKER boot..."
+          for i in $(seq 1 10); do
+            if grep -q "WORKER_BOOT" .data/logs/worker.log 2>/dev/null; then
+              echo "WORKER booted successfully."
+              break
+            fi
+            sleep 1
+          done
+
           # Debug Startup
           echo "--- Last 50 lines of API log ---"
           cat .data/logs/api.log | tail -n 50 || echo "API log missing"
+          echo "--- Startup WORKER log (Head) ---"
+          cat .data/logs/worker.log | head -n 100 || echo "WORKER log missing"
 
       - name: Run Launch Gates (CI Mode + P6-2)
         run: |
           # CI Mode triggers Local-like subset strictly
-          bash tools/gate/run_launch_gates.sh
+          EXIT_CODE=0
+          bash tools/gate/run_launch_gates.sh || EXIT_CODE=$?
+
+          echo "==============================================="
+          echo "--- Full WORKER log for Claim traces ---"
+          cat .data/logs/worker.log || echo "WORKER log missing"
+          echo "==============================================="
+
+          exit $EXIT_CODE
         env:
           GATE_ENV_MODE: ci
           API_URL: http://127.0.0.1:3000
