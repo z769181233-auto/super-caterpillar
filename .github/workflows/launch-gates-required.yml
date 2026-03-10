@@ -121,6 +121,7 @@ jobs:
           export PRISMA_CLIENT_ENGINE_TYPE=library
           export NODE_ENV=staging
           export API_URL="http://127.0.0.1:3000"
+          export API_BASE_URL="http://127.0.0.1:3000"
           export WORKER_PORT=3001
           
           echo "--- [WORKER PRE-BOOT] dist/ structure ---"

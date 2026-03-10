@@ -119,11 +119,17 @@ const workerId = readArg('workerId') || process.env.WORKER_ID || env.workerId;
 
 const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
 
-console.log('API_BASE_URL(raw)=', JSON.stringify(process.env.API_BASE_URL));
-if (process.env.API_BASE_URL?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
-const baseUrl = process.env.API_BASE_URL;
+const rawApiBaseUrl = process.env.API_BASE_URL;
+const rawApiUrl = process.env.API_URL;
+const baseUrl = rawApiBaseUrl || rawApiUrl;
+
+console.log(`[BOOT_ENV] API_BASE_URL_RAW=${rawApiBaseUrl}`);
+console.log(`[BOOT_ENV] API_URL_RAW=${rawApiUrl}`);
+console.log(`[BOOT_ENV] API_BASE_URL_RESOLVED=${baseUrl}`);
+
+if (rawApiBaseUrl?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
 if (!baseUrl) {
-  throw new Error('API_BASE_URL is required in production');
+  throw new Error('API_BASE_URL or API_URL is required in production');
 }
 let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
