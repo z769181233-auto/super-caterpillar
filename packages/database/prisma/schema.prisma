@@ -98,6 +98,7 @@ model NovelSource {
 
   error String?
 
+  rawText String? @map("rawText")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -796,12 +797,14 @@ model UsageRecord {
 }
 
 model BillingLedger {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  jobId          String   @map("job_id") @db.Uuid
-  projectId      String   @map("project_id") @db.Uuid
+  id             String   @id @default(uuid())
+  jobId          String   @map("job_id")
+  projectId      String   @map("project_id")
   billingState   String   @map("billing_state") @db.VarChar(20)
   amount         BigInt   @map("amount")
   idempotencyKey String   @unique(map: "unique_idempotency") @map("idempotency_key") @db.VarChar(128)
+  status         String?
+  tenantId       String?  @map("tenant_id")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp()
 
   @@unique([jobId, billingState], name: "unique_job_billing")
