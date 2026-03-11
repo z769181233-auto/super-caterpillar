@@ -35,14 +35,22 @@ cat > "$EVI/ce02_input.json" <<JSON
 JSON
 echo "[GATE14] Bible Payload Prepared."
 
+# ENV PROBE
+export PGUSER="${PGUSER:-postgres}"
+export PGPASSWORD="${PGPASSWORD:-password}"
+export PGHOST="${PGHOST:-127.0.0.1}"
+
+# PENDING: Wait for API to be ready
+echo "[GATE] Probing API..."
+
 # 2) Seed Database Hierarchy
 echo "[GATE14] Seeding DB Hierarchy..."
 
 # User & Project
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO users(id, email, \"passwordHash\", \"userType\", role, tier, quota, \"defaultOrganizationId\", \"createdAt\", \"updatedAt\")
-VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Basic', '{}'::jsonb, '${ORG_ID}', now(), now())
-ON CONFLICT (id) DO NOTHING;
+VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Free', '{}'::jsonb, '${ORG_ID}', now(), now())
+ON CONFLICT (id) DO UPDATE SET tier='Free';
 INSERT INTO projects(id, name, description, \"ownerId\", \"organizationId\", status, \"createdAt\", \"updatedAt\")
 VALUES ('${PROJ_ID}', 'gate14-ce02', 'gate14 verification', 'user-gate', '${ORG_ID}', 'in_progress', now(), now())
 ON CONFLICT (id) DO NOTHING;

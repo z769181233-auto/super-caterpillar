@@ -26,14 +26,22 @@ echo "[GATE15] Evidence Dir: ${EVI}"
 # 1) Prepare Bible Input (Canonical V3.0 Payload for CE11)
 echo "[GATE15] Bible Payload Prepared."
 
+# ENV PROBE
+export PGUSER="${PGUSER:-postgres}"
+export PGPASSWORD="${PGPASSWORD:-password}"
+export PGHOST="${PGHOST:-127.0.0.1}"
+
+# PENDING: Wait for API to be ready
+echo "[GATE] Probing API..."
+
 # 2) Seed Database Hierarchy
 echo "[GATE15] Seeding DB Hierarchy..."
 
 # User & Project
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO users(id, email, \"passwordHash\", \"userType\", role, tier, quota, \"defaultOrganizationId\", \"createdAt\", \"updatedAt\")
-VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Basic', NULL, NULL, now(), now())
-ON CONFLICT (id) DO NOTHING;
+VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Free', NULL, NULL, now(), now())
+ON CONFLICT (id) DO UPDATE SET tier='Free';
 INSERT INTO organizations(id, name, \"ownerId\", \"createdAt\", \"updatedAt\")
 VALUES ('${ORG_ID}', 'Gate Org', 'user-gate', now(), now())
 ON CONFLICT (id) DO NOTHING;

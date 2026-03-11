@@ -9,7 +9,12 @@ echo "=================================================="
 export MOCK_LLM=true
 export GATE_MODE=true
 
-# 2. Preparation: Clear existing jobs
+# 2. Preparation:# ENV FIX
+export PGUSER="${PGUSER:-postgres}"
+export PGPASSWORD="${PGPASSWORD:-password}"
+export PGHOST="${PGHOST:-127.0.0.1}"
+
+# Cleanup previous jobs if any
 set -a && source .env.local && set +a
 
 echo "Clearing existing job queue..."

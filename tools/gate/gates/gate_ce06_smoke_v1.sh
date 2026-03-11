@@ -26,10 +26,10 @@ DELETE FROM \"users\" WHERE id = 'smoke-user';
 "
 
 echo "[Step 1] Seeding User, Project & Org Data..."
-PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu <<SQL
+PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p 5433 -U $PGUSER -d scu <<SQL
 INSERT INTO "users" (id, email, "passwordHash", "userType", role, tier, "createdAt", "updatedAt")
-VALUES ('smoke-user', 'smoke@example.com', 'dummy_hash', 'individual', 'VIEWER', 'Basic', NOW(), NOW())
-ON CONFLICT (id) DO NOTHING;
+VALUES ('smoke-user', 'smoke@example.com', 'dummy_hash', 'individual', 'VIEWER', 'Free', NOW(), NOW())
+ON CONFLICT (id) DO UPDATE SET tier='Free';
 
 INSERT INTO "organizations" (id, name, "ownerId", slug, "createdAt", "updatedAt")
 VALUES ('smoke-org', 'Smoke Test Org', 'smoke-user', 'smoke-org', NOW(), NOW())
@@ -40,8 +40,8 @@ VALUES ('smoke-proj', 'Smoke Test Project', 'smoke-user', 'smoke-org', 'in_progr
 ON CONFLICT (id) DO NOTHING;
 SQL
 
-echo "[Step 1.1] Seeding Legacy Job for Logic Verification (10 credits for 95123 chars)..."
-PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu <<SQL
+echo "[GATE6] Starting CE06 Verification at $(date +%Y%m%d_%H%M%S)..."
+PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p 5433 -U $PGUSER -d scu <<SQL
 INSERT INTO billing_ledger (id, "tenantId", "traceId", "itemType", "itemId", "chargeCode", amount, status, "updatedAt")
 VALUES (gen_random_uuid()::text, 'default', '5a51685b-e508-4ec6-b53d-bf428f4165f9', 'JOB', '5a51685b-e508-4ec6-b53d-bf428f4165f9', 'SCAN_CHAR', 10, 'POSTED', NOW())
 ON CONFLICT DO NOTHING;

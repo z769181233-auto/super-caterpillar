@@ -44,8 +44,14 @@ table_exists() {
 SCENE_TABLE="novel_scenes"
 if ! table_exists "novel_scenes"; then
   SCENE_TABLE="scenes"
+  # ENV FIX
+  export PGUSER="${PGUSER:-postgres}"
+  export PGPASSWORD="${PGPASSWORD:-password}"
+  export PGHOST="${PGHOST:-127.0.0.1}"
+  echo "[GATE] Using scene table: scenes" | tee -a "$EVI/GATE_RUN.log"
+else
+  echo "[GATE] Using scene table: $SCENE_TABLE" | tee -a "$EVI/GATE_RUN.log"
 fi
-echo "[GATE] Using scene table: $SCENE_TABLE" | tee -a "$EVI/GATE_RUN.log"
 
 # ----------------------------
 # 1) Create minimal project context via V3 Fixture Helper
