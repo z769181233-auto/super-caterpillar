@@ -38,9 +38,9 @@ run() {
 
 ledger_sum_posted() {
   # Prefer DATABASE_URL; fallback to typical local
-  local db="${DATABASE_URL:-postgresql://postgres:password@localhost:5433/scu}"
+  local db="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5433/scu}"
   # sum(amount) might be null
-  psql "$db" -X -q -t -c "SELECT COALESCE(SUM(amount),0) FROM billing_ledger WHERE status='POSTED';" | tr -d '[:space:]'
+  psql "$db" -X -q -t -c "SELECT COALESCE(SUM(amount),0) FROM billing_ledgers WHERE status='POSTED';" | tr -d '[:space:]'
 }
 
 kill_by_pidfile() {

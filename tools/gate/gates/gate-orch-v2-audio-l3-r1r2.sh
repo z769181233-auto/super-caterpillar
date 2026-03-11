@@ -25,7 +25,7 @@ export WORKER_API_SECRET="dev-worker-secret"
 export WORKER_ID="$WORKER_SYNC_ID"
 export WORKER_MAX_CONCURRENCY="4" # Increase for parallel
 export REPO_ROOT=$(pwd)
-export DATABASE_URL="postgresql://postgres:password@localhost:5433/scu?schema=public"
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5433/scu?schema=public"
 
 # 0. Env Injection (Force API to see Audio V2)
 echo "ORCH_V2_AUDIO_ENABLED=1" >> .env.local

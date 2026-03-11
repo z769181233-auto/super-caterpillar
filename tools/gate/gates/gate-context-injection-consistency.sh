@@ -13,13 +13,7 @@ mkdir -p "$EVI"
 echo "[GATE] $GATE_NAME - START" | tee "$EVI/GATE_RUN.log"
 echo "[EVI] $EVI" | tee -a "$EVI/GATE_RUN.log"
 
-# [Wave R0-P1] Respect environment DATABASE_URL or fallback to local dev port
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
-# Ensure psql doesn't default to root by extracting from URL if needed, 
-# but in CI the standard env vars are usually set.
-export PGUSER="postgres"
-export PGPASSWORD="${PGPASSWORD:-password}"
-export PGHOST="127.0.0.1"
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
 
 # ----------------------------
 # 0) Schema probe (no guessing)
@@ -30,7 +24,7 @@ psql "$DATABASE_URL" -c "
 select table_name, column_name
 from information_schema.columns
 where table_schema='public'
-  and table_name in ('organizations','projects','novel_sources','novel_volumes','novel_chapters','scenes','novel_scenes','shot_jobs','users')
+  and table_name in ('organizations','projects','novel_sources','novel_volumes','novel_chapters','scenes','scenes','shot_jobs','users')
 order by table_name, ordinal_position;
 " | tee "$EVI/SCHEMA_PROBE.txt" | tee -a "$EVI/GATE_RUN.log"
 
@@ -40,85 +34,113 @@ table_exists() {
   psql "$DATABASE_URL" -tAc "select to_regclass('public.${t}') is not null;" | grep -qi "t"
 }
 
-# V3.0: Prefer novel_scenes for Novel Parsing context injection verification
-SCENE_TABLE="novel_scenes"
-if ! table_exists "novel_scenes"; then
+# V3.0: Prefer scenes for Novel Parsing context injection verification
+SCENE_TABLE="scenes"
+if ! table_exists "scenes"; then
   SCENE_TABLE="scenes"
-  # ENV FIX
-  export PGUSER="${PGUSER:-postgres}"
-  export PGPASSWORD="${PGPASSWORD:-password}"
-  export PGHOST="${PGHOST:-127.0.0.1}"
-  echo "[GATE] Using scene table: scenes" | tee -a "$EVI/GATE_RUN.log"
-else
-  echo "[GATE] Using scene table: $SCENE_TABLE" | tee -a "$EVI/GATE_RUN.log"
 fi
+echo "[GATE] Using scene table: $SCENE_TABLE" | tee -a "$EVI/GATE_RUN.log"
 
 # ----------------------------
-# 1) Create minimal project context via V3 Fixture Helper
+# 1) Create minimal project context (essential for context injection)
 # ----------------------------
-# [Wave R0-P1] Use fixed Project ID to match deterministic replay fixture
-export PROJ_ID="gate8-ctx-aligned"
-export ORG_ID="gate-org"
+TEST_ORG_ID="org_context_test_$TS"
+TEST_PROJECT_ID="proj_context_test_$TS"
+TEST_SOURCE_ID="source_ctx_$TS"
+TEST_VOL_ID="vol_ctx_$TS"
+TEST_CHAPTER_1_ID="chapter_ctx_1_$TS"
+TEST_CHAPTER_2_ID="chapter_ctx_2_$TS"
 
-CHAPTER_1_TEXT="第一章：张三身穿红色长袍，手持长剑，站在森林边缘。他的长发在风中铺扬，腰间挂着一块玉佩。"
-CHAPTER_2_TEXT="第二章：张三继续前行，他的红袍在风中铺扬。长剑依然握在手中，森林深处传来声响。"
-
-echo "[GATE] Invoking V3 Fixture Helper..." | tee -a "$EVI/GATE_RUN.log"
-# Use the helper to create V3.0 compatible entities
-# Ensure we pass the original chapter content to keep business logic consistent
-SEED_JSON=$(PROJ_ID="$PROJ_ID" ORG_ID="$ORG_ID" CHAP1_CONTENT="$CHAPTER_1_TEXT" CHAP2_CONTENT="$CHAPTER_2_TEXT" DATABASE_URL="$DATABASE_URL" npx tsx tools/gate/scripts/seed_v3_novel_fixture.ts)
-echo "$SEED_JSON" >> "$EVI/GATE_RUN.log"
-
-TEST_ORG_ID=$(echo "$SEED_JSON" | jq -r .orgId)
-TEST_PROJECT_ID=$(echo "$SEED_JSON" | jq -r .projId)
-TEST_NOVEL_ID=$(echo "$SEED_JSON" | jq -r .novelId)
-TEST_SOURCE_ID=$(echo "$SEED_JSON" | jq -r .sourceId)
-TEST_VOL_ID=$(echo "$SEED_JSON" | jq -r .volId)
-TEST_CHAPTER_1_ID=$(echo "$SEED_JSON" | jq -r .chapter1Id)
-TEST_CHAPTER_2_ID=$(echo "$SEED_JSON" | jq -r .chapter2Id)
-USER_ID=$(echo "$SEED_JSON" | jq -r .userId)
-
-if [ -z "$TEST_CHAPTER_1_ID" ] || [ "$TEST_CHAPTER_1_ID" == "null" ]; then
-  echo "[GATE] FAIL - Seed failed or returned invalid JSON" | tee -a "$EVI/GATE_RUN.log"
-  echo "Seed output: $SEED_JSON" >> "$EVI/GATE_RUN.log"
+# Find any user id to satisfy FK
+USER_ID="$(psql "$DATABASE_URL" -tAc "select id from users limit 1;" | tr -d '[:space:]')"
+if [ -z "$USER_ID" ]; then
+  echo "[GATE] FAIL - No user found in users table" | tee -a "$EVI/GATE_RUN.log"
   exit 1
 fi
 
-echo "[GATE] Seeded V3 Entities for Pilot: Org=$TEST_ORG_ID, Proj=$TEST_PROJECT_ID, Novel=$TEST_NOVEL_ID" | tee -a "$EVI/GATE_RUN.log"
-echo "[GATE] Project: $TEST_PROJECT_ID, Chap1: $TEST_CHAPTER_1_ID, Chap2: $TEST_CHAPTER_2_ID" | tee -a "$EVI/GATE_RUN.log"
+echo "[GATE] Creating full project hierarchy (hierarchical fix)..." | tee -a "$EVI/GATE_RUN.log"
+
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<SQL | tee -a "$EVI/GATE_RUN.log"
+-- Org
+INSERT INTO organizations (id, name, "ownerId", "createdAt", "updatedAt")
+VALUES ('$TEST_ORG_ID', 'Context Test Org', '$USER_ID', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
+
+-- Project
+INSERT INTO projects (id, name, "ownerId", "organizationId", status, "createdAt", "updatedAt")
+VALUES ('$TEST_PROJECT_ID', 'Context Injection Test', '$USER_ID', '$TEST_ORG_ID', 'in_progress', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
+
+-- NovelSource
+INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "createdAt", "updatedAt")
+VALUES ('$TEST_SOURCE_ID', '$TEST_PROJECT_ID', '角色状态一致性测试小说', '测试文本', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
+
+-- Volume (Use project_id / novel_source_id variants)
+INSERT INTO novel_volumes (id, "project_id", "novel_source_id", index, title, "created_at", "updated_at")
+VALUES ('$TEST_VOL_ID', '$TEST_PROJECT_ID', '$TEST_SOURCE_ID', 1, '第一卷', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
+
+--# Chapters (Essential for Processor to lookup)
+INSERT INTO novel_chapters (id, "volume_id", "novel_source_id", index, title, summary, "created_at", "updated_at")
+VALUES 
+  ('$TEST_CHAPTER_1_ID', '$TEST_VOL_ID', '$TEST_SOURCE_ID', 1, '第一章', '张三初次登场', NOW(), NOW()),
+  ('$TEST_CHAPTER_2_ID', '$TEST_VOL_ID', '$TEST_SOURCE_ID', 2, '第二章', '张三继续前行', NOW(), NOW())
+ON CONFLICT (id) DO NOTHING;
+
+-- V3.0 P0-2: Inject a dummy vector for Chapter 1 to test Long-term memory retrieval
+-- Since we use a deterministic hash-based simulated embedding in the worker,
+-- we'll just set it to a simple non-null vector here.
+UPDATE novel_chapters 
+SET summary_vector = array_fill(0.1, ARRAY[1536])::vector 
+WHERE id = '$TEST_CHAPTER_1_ID';
+SQL
 
 # ----------------------------
-# 2) Seed Initial Graph Jobs (V3.0 Schema)
+# 2) Create two CE06 parsing jobs in shot_jobs (with TOP-LEVEL traceId)
 # ----------------------------
-echo "[GATE] Seeding jobs with trace_ctx_1 and trace_ctx_2..." | tee -a "$EVI/GATE_RUN.log"
+CHAPTER_1_TEXT="第一章：张三身穿红色长袍，手持长剑，站在森林边缘。他的长发在风中铺扬，腰间挂着一块玉佩。"
+CHAPTER_2_TEXT="第二章：张三继续前行，他的红袍在风中铺扬。长剑依然握在手中，森林深处传来声响。"
 
-JOB_1_ID="job_v3_ctx_1_$TS"
-JOB_2_ID="job_v3_ctx_2_$TS"
+JOB_1_ID="job_ctx_1_$TS"
+JOB_2_ID="job_ctx_2_$TS"
 JOB_TYPE="CE06_NOVEL_PARSING"
 
-psql "$DATABASE_URL" -c "
-INSERT INTO \"shot_jobs\" (id, \"organizationId\", \"projectId\", \"type\", status, attempts, payload, \"traceId\", \"createdAt\", \"updatedAt\")
-VALUES ('$JOB_1_ID', '$TEST_ORG_ID', '$TEST_PROJECT_ID', '$JOB_TYPE', 'PENDING', 0, jsonb_build_object('phase','CHUNK_PARSE','traceId','trace_ctx_1','chapterId','$TEST_CHAPTER_1_ID','rawText', \$CH1\$${CHAPTER_1_TEXT}\$CH1\$), 'trace_ctx_1', NOW(), NOW()), ('$JOB_2_ID', '$TEST_ORG_ID', '$TEST_PROJECT_ID', '$JOB_TYPE', 'PENDING', 0, jsonb_build_object('phase','CHUNK_PARSE','traceId','trace_ctx_2','chapterId','$TEST_CHAPTER_2_ID','rawText', \$CH2\$${CHAPTER_2_TEXT}\$CH2\$), 'trace_ctx_2', NOW(), NOW());
-" | tee -a "$EVI/GATE_RUN.log"
+echo "[GATE] Creating jobs in shot_jobs (with top-level traceId)..." | tee -a "$EVI/GATE_RUN.log"
+
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<SQL | tee -a "$EVI/GATE_RUN.log"
+INSERT INTO shot_jobs
+  (id, "organizationId", "projectId", type, status, priority, payload, "traceId", "createdAt", "updatedAt")
+VALUES
+  ('$JOB_1_ID', '$TEST_ORG_ID', '$TEST_PROJECT_ID', '$JOB_TYPE', 'PENDING', 0,
+   jsonb_build_object('phase','CHUNK_PARSE','traceId','trace_ctx_1','chapterId','$TEST_CHAPTER_1_ID','raw_text', \$CH1\$${CHAPTER_1_TEXT}\$CH1\$),
+   'trace_ctx_1', NOW(), NOW()),
+  ('$JOB_2_ID', '$TEST_ORG_ID', '$TEST_PROJECT_ID', '$JOB_TYPE', 'PENDING', 0,
+   jsonb_build_object('phase','CHUNK_PARSE','traceId','trace_ctx_2','chapterId','$TEST_CHAPTER_2_ID','raw_text', \$CH2\$${CHAPTER_2_TEXT}\$CH2\$),
+   'trace_ctx_2', NOW(), NOW());
+SQL
 
 # ----------------------------
-# 3) Wait for Worker processing
+# 3) Poll statuses (increased timeout)
 # ----------------------------
-echo "[GATE] Waiting for jobs to complete..." | tee -a "$EVI/GATE_RUN.log"
-MAX_RETRIES=40
-for i in $(seq 1 $MAX_RETRIES); do
-  PENDING_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM \"shot_jobs\" WHERE id IN ('$JOB_1_ID', '$JOB_2_ID') AND status != 'SUCCEEDED';")
-  if [ "$PENDING_COUNT" -eq 0 ]; then
-    echo "[GATE] All jobs succeeded!" | tee -a "$EVI/GATE_RUN.log"
+echo "[GATE] Polling job status (120s timeout)..." | tee -a "$EVI/GATE_RUN.log"
+TIMEOUT=120
+ELAPSED=0
+while [ $ELAPSED -lt $TIMEOUT ]; do
+  JOB_1_STATUS="$(psql "$DATABASE_URL" -tAc "SELECT status FROM shot_jobs WHERE id='$JOB_1_ID';" | tr -d '[:space:]')"
+  JOB_2_STATUS="$(psql "$DATABASE_URL" -tAc "SELECT status FROM shot_jobs WHERE id='$JOB_2_ID';" | tr -d '[:space:]')"
+
+  echo "[GATE] Job status: JOB1=$JOB_1_STATUS, JOB2=$JOB_2_STATUS" | tee -a "$EVI/GATE_RUN.log"
+
+  if [ "$JOB_1_STATUS" = "SUCCEEDED" ] && [ "$JOB_2_STATUS" = "SUCCEEDED" ]; then
+    echo "[GATE] Both jobs SUCCEEDED" | tee -a "$EVI/GATE_RUN.log"
     break
   fi
-  if [ "$i" -eq $MAX_RETRIES ]; then
-    echo "[GATE] TIMEOUT waiting for context injection jobs" | tee -a "$EVI/GATE_RUN.log"
-    psql "$DATABASE_URL" -c "SELECT id, status, \"lastError\" FROM \"shot_jobs\" WHERE id IN ('$JOB_1_ID', '$JOB_2_ID');" | tee -a "$EVI/GATE_RUN.log"
+
+  if [ "$JOB_1_STATUS" = "FAILED" ] || [ "$JOB_2_STATUS" = "FAILED" ]; then
+    echo "[GATE] FAIL - Job failed" | tee -a "$EVI/GATE_RUN.log"
+    psql "$DATABASE_URL" -c "SELECT id, status, \"lastError\" FROM shot_jobs WHERE id IN ('$JOB_1_ID', '$JOB_2_ID');" | tee -a "$EVI/GATE_RUN.log"
     exit 1
   fi
-  echo "  ..waiting ($i/$MAX_RETRIES)" | tee -a "$EVI/GATE_RUN.log"
-  sleep 3
+
+  sleep 2
+  ELAPSED=$((ELAPSED + 2))
 done
 
 if [ $ELAPSED -ge $TIMEOUT ]; then
@@ -152,45 +174,33 @@ FROM (
 ) t;
 " | tee "$EVI/GRAPH_STATE_SNAPSHOT.json" | tee -a "$EVI/GATE_RUN.log"
 
-echo "[GATE] Snapshot Full Content:" | tee -a "$EVI/GATE_RUN.log"
-cat "$EVI/GRAPH_STATE_SNAPSHOT.json" | jq . | tee -a "$EVI/GATE_RUN.log"
-
-echo "[GATE] Snapshot Preview (Characters):" | tee -a "$EVI/GATE_RUN.log"
-cat "$EVI/GRAPH_STATE_SNAPSHOT.json" | jq -c '.[].graph_state_snapshot.characters[].name' | tee -a "$EVI/GATE_RUN.log" || true
-
 # ----------------------------
 # 5) Python assertion
 # ----------------------------
 echo "[GATE] Validating character consistency..." | tee -a "$EVI/GATE_RUN.log"
 python3 tools/gate/scripts/validate_character_consistency.py "$EVI/GRAPH_STATE_SNAPSHOT.json" \
-  > "$EVI/GRAPH_STATE_DIFF.json" 2>&1 || true
+  > "$EVI/GRAPH_STATE_DIFF.json"
 
 if grep -q "INCONSISTENT" "$EVI/GRAPH_STATE_DIFF.json"; then
   echo "[GATE] FAIL - Character state drift detected" | tee -a "$EVI/GATE_RUN.log"
-  echo ">>> CHARACTER CONSISTENCY DIFF <<<"
-  cat "$EVI/GRAPH_STATE_DIFF.json"
-  echo ">>> END OF DIFF <<<"
+  cat "$EVI/GRAPH_STATE_DIFF.json" | tee -a "$EVI/GATE_RUN.log"
   exit 1
 fi
 
-echo "[GATE] SUCCESS - Character state is consistent across snapshots" | tee -a "$EVI/GATE_RUN.log"
-exit 0
-
 # ----------------------------
 # 6) Verify Long-term Memory (Vector Search) in logs
-# [DEPRECATED] This check is disabled due to schema migration away from pgvector/summary_vector
 # ----------------------------
-# echo "[GATE] Verifying Long-term Memory retrieval..." | tee -a "$EVI/GATE_RUN.log"
-# if [ -f "$REPO_ROOT/logs/worker.log" ]; then
-#   # Look for context injection logs that indicate hit
-#   if grep -i "Long-term=" "$REPO_ROOT/logs/worker.log" | grep -q "相似章节参考"; then
-#     echo "[GATE] PASS - Vector search returned results!" | tee -a "$EVI/GATE_RUN.log"
-#   else
-#     echo "[GATE] WARN - Vector search might have returned empty results (check logs)" | tee -a "$EVI/GATE_RUN.log"
-#   fi
-# else
-#     echo "[GATE] Skip log check (worker.log not found)" | tee -a "$EVI/GATE_RUN.log"
-# fi
+echo "[GATE] Verifying Long-term Memory retrieval..." | tee -a "$EVI/GATE_RUN.log"
+if [ -f "$REPO_ROOT/logs/worker.log" ]; then
+  # Look for context injection logs that indicate hit
+  if grep -i "Long-term=" "$REPO_ROOT/logs/worker.log" | grep -q "相似章节参考"; then
+    echo "[GATE] PASS - Vector search returned results!" | tee -a "$EVI/GATE_RUN.log"
+  else
+    echo "[GATE] WARN - Vector search might have returned empty results (check logs)" | tee -a "$EVI/GATE_RUN.log"
+  fi
+else
+    echo "[GATE] Skip log check (worker.log not found)" | tee -a "$EVI/GATE_RUN.log"
+fi
 
 echo "[GATE] PASS - Character states consistent across snapshots!" | tee -a "$EVI/GATE_RUN.log"
 echo "[EVI] Evidence archived to: $EVI" | tee -a "$EVI/GATE_RUN.log"

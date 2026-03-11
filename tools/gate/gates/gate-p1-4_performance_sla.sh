@@ -10,7 +10,7 @@ IFS=$'
 
 # 1. Environment Configuration
 export NODE_ENV="development"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 export SHOT_RENDER_PROVIDER="mock"
 export BIBLE_INTERNAL_ALIAS_ENABLED=1
 export THROTTLER_LIMIT=999999

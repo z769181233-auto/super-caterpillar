@@ -5,7 +5,7 @@ set -euo pipefail
 # 目标：触发完整的小说到视频流程，验证 R-P0-01
 
 API_URL=${API_URL:-"http://localhost:3000"}
-DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:password@localhost:5433/scu"}
+DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5433/scu"}
 EVIDENCE_DIR="docs/_evidence/e2e_full_video_generation_$(date +%Y%m%d_%H%M%S)"
 STORAGE_KEY="novels/6658806f8f328fd26fe6c0e7756b7c319e33159c881b2ef4b9c63375ab73243c.txt"
 

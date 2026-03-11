@@ -7,7 +7,7 @@ IFS=$'
 # GATE 15: CE11 Shot Generator Integration
 # Goal: Verify Bible V3.0 CE11 Protocol (sceneId -> shots) maps to Production DB (shots table).
 
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 TS="$(date +%Y%m%d_%H%M%S)"
 EVI="docs/_evidence/gate15_ce11_${TS}"
 mkdir -p "$EVI"
@@ -26,14 +26,6 @@ echo "[GATE15] Evidence Dir: ${EVI}"
 # 1) Prepare Bible Input (Canonical V3.0 Payload for CE11)
 echo "[GATE15] Bible Payload Prepared."
 
-# ENV PROBE
-export PGUSER="${PGUSER:-postgres}"
-export PGPASSWORD="${PGPASSWORD:-password}"
-export PGHOST="${PGHOST:-127.0.0.1}"
-
-# PENDING: Wait for API to be ready
-echo "[GATE] Probing API..."
-
 # 2) Seed Database Hierarchy
 echo "[GATE15] Seeding DB Hierarchy..."
 
@@ -41,7 +33,7 @@ echo "[GATE15] Seeding DB Hierarchy..."
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO users(id, email, \"passwordHash\", \"userType\", role, tier, quota, \"defaultOrganizationId\", \"createdAt\", \"updatedAt\")
 VALUES ('user-gate', 'gate@scu.com', 'hash', 'admin', 'ADMIN', 'Free', NULL, NULL, now(), now())
-ON CONFLICT (id) DO UPDATE SET tier='Free';
+ON CONFLICT (id) DO NOTHING;
 INSERT INTO organizations(id, name, \"ownerId\", \"createdAt\", \"updatedAt\")
 VALUES ('${ORG_ID}', 'Gate Org', 'user-gate', now(), now())
 ON CONFLICT (id) DO NOTHING;
@@ -52,8 +44,8 @@ ON CONFLICT (id) DO NOTHING;
 
 # Source
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO novel_sources(id, \"projectId\", \"rawText\", \"fileName\", \"createdAt\", \"updatedAt\")
-VALUES ('src_${PROJ_ID}', '${PROJ_ID}', 'Dummy', 'gate15.txt', now(), now());
+INSERT INTO novel_sources(id, \"projectId\", \"organizationId\", \"rawText\", \"fileName\", \"createdAt\", \"updatedAt\")
+VALUES ('src_${PROJ_ID}', '${PROJ_ID}', '${ORG_ID}', 'Dummy', 'gate15.txt', now(), now());
 " > /dev/null
 
 # Volume
@@ -70,7 +62,7 @@ VALUES ('${CHAP_ID}', '${VOL_ID}', 'src_${PROJ_ID}', 1, 'Gate Chapter', now(), n
 
 # Scene (Bible Input Source)
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO novel_scenes(id, chapter_id, index, title, raw_text, enriched_text, project_id, created_at, updated_at)
+INSERT INTO scenes(id, chapter_id, scene_index, title, raw_text, enriched_text, project_id, created_at, updated_at)
 VALUES ('${SCENE_ID}', '${CHAP_ID}', 1, 'Gate Scene', 'Initial Text', 'Cyberpunk city, neon lights, busy streets.', '${PROJ_ID}', now(), now());
 " > /dev/null
 

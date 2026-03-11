@@ -1,4 +1,4 @@
-import { videoMergeSelector } from '../../../packages/engines/video_merge/selector';
+import { videoMergeSelector } from '../../../packages/engines-video-merge/selector';
 import * as path from 'path';
 import * as fs from 'fs';
 import { PrismaClient, AssetOwnerType, AssetType } from 'database';

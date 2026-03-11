@@ -19,7 +19,7 @@ echo "Evidence: ${EVID_ROOT}"
 echo "===================================================="
 
 # 1. 环境准备
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 PROJECT_ID="gate-ce06-$(date +%s)"
 TRACE_ID="trace-${PROJECT_ID}"
 

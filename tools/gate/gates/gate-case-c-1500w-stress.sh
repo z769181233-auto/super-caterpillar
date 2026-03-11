@@ -55,7 +55,7 @@ fi
 
 # Phase 2: 上传并触发
 echo "[Phase 2] 触发端到端导入流程..."
-API_KEY="ak_smoke_test_key_v1"
+API_KEY="ak_worker_dev_0000000000000000"
 SHA256=$(shasum -a 256 "$NOVEL_FILE" | awk '{print $1}')
 
 echo "-> 上传小说文件..."

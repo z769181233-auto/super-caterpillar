@@ -15,7 +15,7 @@ IFS=$'
 PROJECT_ID="proj_stage4_3m_$(date +%s)"
 FILE_KEY="uploads/mock_novel_stage4_3m.txt"
 ABS_FILE_PATH="$(pwd)/$FILE_KEY"
-DB_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+DB_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 
 echo "=================================================="
 echo "GATE: Stage 4 Scale 3M (The Shredder)"
@@ -45,26 +45,26 @@ echo "[OK] Generated 10,000 chapters. Size: $SIZE"
 
 # 2. Setup DB (Project)
 echo "Setting up Project..."
-psql "$DB_URL" -c "INSERT INTO users (id, email, \"passwordHash\", \"userType\", \"createdAt\", \"updatedAt\") VALUES ('user_stage4_3m', 'stage4_3m@example.com', 'hash', 'admin', NOW(), NOW()) ON CONFLICT DO NOTHING;"
-psql "$DB_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", credits, type, \"createdAt\", \"updatedAt\") VALUES ('org_stage4_3m', 'Stage4 3M Org', 'user_stage4_3m', 100000, 'personal', NOW(), NOW()) ON CONFLICT DO NOTHING;"
-psql "$DB_URL" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, metadata, \"settingsJson\", \"createdAt\", \"updatedAt\") VALUES ('$PROJECT_ID', 'Stage4 3M Scale', 'user_stage4_3m', 'org_stage4_3m', 'in_progress', '{}', '{}', NOW(), NOW());"
+psql "$DATABASE_URL" -c "INSERT INTO users (id, email, \"passwordHash\", \"userType\", \"createdAt\", \"updatedAt\") VALUES ('user_stage4_3m', 'stage4_3m@example.com', 'hash', 'admin', NOW(), NOW()) ON CONFLICT DO NOTHING;"
+psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", credits, type, \"createdAt\", \"updatedAt\") VALUES ('org_stage4_3m', 'Stage4 3M Org', 'user_stage4_3m', 100000, 'personal', NOW(), NOW()) ON CONFLICT DO NOTHING;"
+psql "$DATABASE_URL" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, metadata, \"settingsJson\", \"createdAt\", \"updatedAt\") VALUES ('$PROJECT_ID', 'Stage4 3M Scale', 'user_stage4_3m', 'org_stage4_3m', 'in_progress', '{}', '{}', NOW(), NOW());"
 
 # 2.5 Create NovelSource Record
 NS_ID="ns_3m_$(date +%s)"
 echo "Creating NovelSource Record ($NS_ID)..."
-psql "$DB_URL" -c "INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", status, \"totalChapters\", \"processedChunks\", \"createdAt\", \"updatedAt\") VALUES ('$NS_ID', '$PROJECT_ID', 'org_stage4_3m', '$ABS_FILE_PATH', 'mock_novel_stage4_3m.txt', 15000000, 'PENDING', 0, 0, NOW(), NOW());"
+psql "$DATABASE_URL" -c "psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt") VALUES ('$NS_ID', '$PROJECT_ID', 'org_stage4_3m', '$ABS_FILE_PATH', 'mock_novel_stage4_3m.txt', 15000000, 'PENDING', 0, 0, NOW(), NOW());"
 
 # 3. Insert SCAN Job
 JOB_ID="job_scan_3m_$(date +%s)"
 PAYLOAD="{\"projectId\":\"$PROJECT_ID\", \"fileKey\":\"$ABS_FILE_PATH\", \"novelSourceId\":\"$NS_ID\"}"
 
 echo "Inserting NOVEL_SCAN_TOC Job ($JOB_ID)..."
-psql "$DB_URL" -c "INSERT INTO shot_jobs (id, \"organizationId\", \"projectId\", type, status, priority, payload, \"createdAt\", \"updatedAt\") VALUES ('$JOB_ID', 'org_stage4_3m', '$PROJECT_ID', 'NOVEL_SCAN_TOC', 'PENDING', 100, '$PAYLOAD', NOW(), NOW());"
+psql "$DATABASE_URL" -c "INSERT INTO shot_jobs (id, \"organizationId\", \"projectId\", type, status, priority, payload, \"createdAt\", \"updatedAt\") VALUES ('$JOB_ID', 'org_stage4_3m', '$PROJECT_ID', 'NOVEL_SCAN_TOC', 'PENDING', 100, '$PAYLOAD', NOW(), NOW());"
 
 echo "Waiting for Worker to pick up NOVEL_SCAN_TOC..."
 # Poll for SCAN job completion (It might take longer for 10k chapters)
 for i in {1..60}; do
-  STATUS=$(psql "$DB_URL" -t -c "SELECT status FROM shot_jobs WHERE id='$JOB_ID';" | xargs)
+  STATUS=$(psql "$DATABASE_URL" -t -c "SELECT status FROM shot_jobs WHERE id='$JOB_ID';" | xargs)
   echo "  Scan Job Status: $STATUS"
   if [ "$STATUS" == "SUCCEEDED" ]; then
     echo "[PASS] Scan Job SUCCEEDED"
@@ -72,7 +72,7 @@ for i in {1..60}; do
   fi
   if [ "$STATUS" == "FAILED" ]; then
     echo "[FAIL] Scan Job FAILED"
-    psql "$DB_URL" -t -c "SELECT \"lastError\" FROM shot_jobs WHERE id='$JOB_ID';"
+    psql "$DATABASE_URL" -t -c "SELECT \"lastError\" FROM shot_jobs WHERE id='$JOB_ID';"
     exit 1
   fi
   sleep 5
@@ -85,10 +85,10 @@ fi
 
 # 4. Verify Fan-out
 echo "Verifying Fan-out..."
-EP_COUNT=$(psql "$DB_URL" -t -c "SELECT COUNT(*) FROM episodes WHERE \"projectId\"='$PROJECT_ID';" | xargs)
+EP_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM episodes WHERE \"projectId\"='$PROJECT_ID';" | xargs)
 echo "  Episodes Created: $EP_COUNT"
 
-JOB_COUNT=$(psql "$DB_URL" -t -c "SELECT COUNT(*) FROM shot_jobs WHERE \"projectId\"='$PROJECT_ID' AND type='NOVEL_CHUNK_PARSE';" | xargs)
+JOB_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM shot_jobs WHERE \"projectId\"='$PROJECT_ID' AND type='NOVEL_CHUNK_PARSE';" | xargs)
 echo "  Chunk Jobs Created: $JOB_COUNT"
 
 if [ "$EP_COUNT" -eq "10000" ] && [ "$JOB_COUNT" -eq "10000" ]; then
@@ -104,12 +104,12 @@ echo "Waiting for Chunk Jobs Execution (Sample check)..."
 # but we check if they are *starting* and *succeeding* without mass failure.
 
 for i in {1..30}; do
-  SUCCEEDED_COUNT=$(psql "$DB_URL" -t -c "SELECT count(*) FROM shot_jobs WHERE \"projectId\"='$PROJECT_ID' AND type='NOVEL_CHUNK_PARSE' AND status='SUCCEEDED';" | xargs)
-  FAILED_COUNT=$(psql "$DB_URL" -t -c "SELECT count(*) FROM shot_jobs WHERE \"projectId\"='$PROJECT_ID' AND type='NOVEL_CHUNK_PARSE' AND status='FAILED';" | xargs)
+  SUCCEEDED_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT count(*) FROM shot_jobs WHERE \"projectId\"='$PROJECT_ID' AND type='NOVEL_CHUNK_PARSE' AND status='SUCCEEDED';" | xargs)
+  FAILED_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT count(*) FROM shot_jobs WHERE \"projectId\"='$PROJECT_ID' AND type='NOVEL_CHUNK_PARSE' AND status='FAILED';" | xargs)
   
   # New: Check NovelSource Progress
-  NS_PROGRESS=$(psql "$DB_URL" -t -c "SELECT \"processedChunks\" FROM novel_sources WHERE \"projectId\"='$PROJECT_ID';" | xargs)
-  NS_STATUS=$(psql "$DB_URL" -t -c "SELECT status FROM novel_sources WHERE \"projectId\"='$PROJECT_ID';" | xargs)
+  NS_PROGRESS=$(psql "$DATABASE_URL" -t -c "SELECT \"processedChunks\" FROM novel_sources WHERE \"projectId\"='$PROJECT_ID';" | xargs)
+  NS_STATUS=$(psql "$DATABASE_URL" -t -c "SELECT status FROM novel_sources WHERE \"projectId\"='$PROJECT_ID';" | xargs)
 
   echo "  Chunk Jobs: SUCCEEDED=$SUCCEEDED_COUNT, FAILED=$FAILED_COUNT | NS_STATUS=$NS_STATUS, NS_PROGRESS=$NS_PROGRESS"
   

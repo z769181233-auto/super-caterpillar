@@ -74,7 +74,7 @@ if [ -f .env ]; then
   export $(grep -v '^#' .env | xargs)
 fi
 
-export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:password@127.0.0.1:5432/scu"}
+export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
 export GATE_MODE=1  # 强制 Hook 同步执行
 export QUALITY_HOOK_SYNC_FOR_GATE=1
 

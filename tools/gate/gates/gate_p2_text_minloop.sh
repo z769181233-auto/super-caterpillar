@@ -11,7 +11,7 @@ RUNNER="tools/p2/run_text_minloop.ts"
 cd "$(dirname "$0")/../../.."
 
 if [ -z "${DATABASE_URL:-}" ]; then
-  export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
+  export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
 fi
 
 echo "=== Gate P2 Check: Text Minloop Integration ===" | tee "$EVI/gate.log"

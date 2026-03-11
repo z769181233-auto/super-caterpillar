@@ -78,7 +78,7 @@ fi
 # 3. Start Workers with CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
 log "Starting Workers with CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1..."
 export CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
-export WORKER_API_KEY=ak_smoke_test_key_v1
+export WORKER_API_KEY=ak_worker_dev_0000000000000000
 export WORKER_API_SECRET=super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678
 export JOB_WORKER_ENABLED=true
 
@@ -434,7 +434,7 @@ fi
 # 3. Start Workers with CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
 log "Starting Workers with CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1..."
 export CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
-export WORKER_API_KEY=ak_smoke_test_key_v1
+export WORKER_API_KEY=ak_worker_dev_0000000000000000
 export WORKER_API_SECRET=super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678
 export JOB_WORKER_ENABLED=true
 
@@ -790,7 +790,7 @@ fi
 # 3. Start Workers with CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
 log "Starting Workers with CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1..."
 export CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
-export WORKER_API_KEY=ak_smoke_test_key_v1
+export WORKER_API_KEY=ak_worker_dev_0000000000000000
 export WORKER_API_SECRET=super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678
 export JOB_WORKER_ENABLED=true
 
@@ -1146,7 +1146,7 @@ fi
 # 3. Start Workers with CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
 log "Starting Workers with CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1..."
 export CE07_MEMORY_UPDATE_GATE_FAIL_ONCE=1
-export WORKER_API_KEY=ak_smoke_test_key_v1
+export WORKER_API_KEY=ak_worker_dev_0000000000000000
 export WORKER_API_SECRET=super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678
 export JOB_WORKER_ENABLED=true
 

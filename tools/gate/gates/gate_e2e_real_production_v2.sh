@@ -5,7 +5,7 @@ set -euo pipefail
 # 验证完整链路：15M小说上传 → 解析 → 生成视频
 
 API_URL=${API_URL:-"http://localhost:3000"}
-DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:password@localhost:5433/scu"}
+DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5433/scu"}
 EVIDENCE_DIR="docs/_evidence/e2e_real_production_$(date +%Y%m%d_%H%M%S)"
 NOVEL_FILE="15m_test.txt"
 

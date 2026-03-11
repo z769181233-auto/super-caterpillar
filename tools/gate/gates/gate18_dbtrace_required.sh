@@ -7,28 +7,6 @@ if [[ -z "$ARTIFACT_DIR" || ! -d "$ARTIFACT_DIR" ]]; then
   exit 10
 fi
 
-if [[ "${GATE_ENV_MODE:-local}" == "ci" ]] && [[ "${ENGINE_REAL:-0}" != "1" ]]; then
-  echo "--- GATE18B: DB Traceability REQUIRED (MOCK ACK) ---"
-  ACK_FILE="$ARTIFACT_DIR/gate18b_mock_traceability_ack.json"
-  cat <<EOF > "$ACK_FILE"
-{
-  "gate_env_mode": "ci",
-  "engine_real": 0,
-  "gate17_status": "skipped_mock_mode",
-  "gate18_status": "skipped_mock_mode",
-  "reason": "no real engine artifacts expected in CI mock mode",
-  "verdict": "mock_traceability_acknowledged"
-}
-EOF
-  if [[ -f "$ACK_FILE" ]]; then
-    echo "✅ GATE18B: DB Traceability REQUIRED PASS (MOCK_ACK_MODE)"
-    exit 0
-  else
-    echo "[GATE18_DBTRACE_REQUIRED] FAIL: could not create mock ack file"
-    exit 14
-  fi
-fi
-
 # Exit codes (SSOT)
 # 10: bad args
 # 12: DATABASE_URL missing

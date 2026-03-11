@@ -8,7 +8,7 @@ echo "===================================================="
 
 # Step 0: 清理旧的验证数据
 PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -c "
-DELETE FROM billing_ledger WHERE \"traceId\" LIKE 'smoke-%' OR \"traceId\" = '5a51685b-e508-4ec6-b53d-bf428f4165f9';
+DELETE FROM billing_ledgers WHERE \"traceId\" LIKE 'smoke-%' OR \"traceId\" = '5a51685b-e508-4ec6-b53d-bf428f4165f9';
 DELETE FROM billing_events WHERE project_id IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org');
 DELETE FROM cost_ledgers WHERE \"projectId\" IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org');
 DELETE FROM scenes WHERE \"episodeId\" IN (SELECT id FROM episodes WHERE \"projectId\" IN (SELECT id FROM projects WHERE \"organizationId\" = 'smoke-org'));
@@ -26,10 +26,10 @@ DELETE FROM \"users\" WHERE id = 'smoke-user';
 "
 
 echo "[Step 1] Seeding User, Project & Org Data..."
-PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p 5433 -U $PGUSER -d scu <<SQL
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu <<SQL
 INSERT INTO "users" (id, email, "passwordHash", "userType", role, tier, "createdAt", "updatedAt")
 VALUES ('smoke-user', 'smoke@example.com', 'dummy_hash', 'individual', 'VIEWER', 'Free', NOW(), NOW())
-ON CONFLICT (id) DO UPDATE SET tier='Free';
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO "organizations" (id, name, "ownerId", slug, "createdAt", "updatedAt")
 VALUES ('smoke-org', 'Smoke Test Org', 'smoke-user', 'smoke-org', NOW(), NOW())
@@ -40,9 +40,9 @@ VALUES ('smoke-proj', 'Smoke Test Project', 'smoke-user', 'smoke-org', 'in_progr
 ON CONFLICT (id) DO NOTHING;
 SQL
 
-echo "[GATE6] Starting CE06 Verification at $(date +%Y%m%d_%H%M%S)..."
-PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p 5433 -U $PGUSER -d scu <<SQL
-INSERT INTO billing_ledger (id, "tenantId", "traceId", "itemType", "itemId", "chargeCode", amount, status, "updatedAt")
+echo "[Step 1.1] Seeding Legacy Job for Logic Verification (10 credits for 95123 chars)..."
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu <<SQL
+INSERT INTO billing_ledgers (id, "tenantId", "traceId", "itemType", "itemId", "chargeCode", amount, status, "updatedAt")
 VALUES (gen_random_uuid()::text, 'default', '5a51685b-e508-4ec6-b53d-bf428f4165f9', 'JOB', '5a51685b-e508-4ec6-b53d-bf428f4165f9', 'SCAN_CHAR', 10, 'POSTED', NOW())
 ON CONFLICT DO NOTHING;
 SQL
@@ -85,7 +85,7 @@ fi
 
 echo "[Step 6] Final Billing Check..."
 PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -c "
-SELECT \"traceId\", amount, status FROM billing_ledger 
+SELECT \"traceId\", amount, status FROM billing_ledgers 
 WHERE status='POSTED' AND \"traceId\" IN ('5a51685b-e508-4ec6-b53d-bf428f4165f9', '$JOB_ID');"
 
 echo "✅ CE06 SMOKE COMPLETE"

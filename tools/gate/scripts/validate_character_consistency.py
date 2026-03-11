@@ -36,12 +36,13 @@ def normalize_char(c):
 
 
 def extract_characters(snapshot_obj):
-    """从快照对象中提取角色列表"""
+    """从快照对象中提取角色列表，采用角色名称作为主键以解决 ID 漂移问题"""
     snap = snapshot_obj.get("graph_state_snapshot") or {}
     chars = snap.get("characters") or []
     if not isinstance(chars, list):
         chars = []
-    return {normalize_char(c)["id"]: normalize_char(c) for c in chars}
+    # 使用 name 作为 key 确保即使 ID 变化也能进行一致性对比
+    return {normalize_char(c)["name"]: normalize_char(c) for c in chars}
 
 
 def main():

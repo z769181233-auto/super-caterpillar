@@ -13,10 +13,8 @@ LOG_FILE="$EVD_DIR/PATH_LEAK_GATE.log"
 
 echo "==== [GATE] Path Leak Scan Starting (Scope: SSOT Locked) ====" | tee "$LOG_FILE"
 
-# 环境变量加载 (可选)
-if [ -f .env.local ]; then
-  set -a && source .env.local && set +a
-fi
+# 环境变量加载
+set -a && source .env.local && set +a
 
 LEAK_COUNT=0
 

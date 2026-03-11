@@ -4,7 +4,7 @@ set -euo pipefail
 # 选项 C 的混合验证：直接查看现有任务和视频
 # 绕过 API 问题，手动验证视频生成能力
 
-DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:password@localhost:5433/scu"}
+DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5433/scu"}
 STORAGE_ROOT="${STORAGE_ROOT:-.data/storage}"
 EVIDENCE_DIR="docs/_evidence/e2e_manual_verification_$(date +%Y%m%d_%H%M%S)"
 

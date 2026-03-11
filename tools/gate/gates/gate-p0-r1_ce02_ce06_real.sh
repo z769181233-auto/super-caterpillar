@@ -19,7 +19,7 @@ mkdir -p "${EVID_DIR}"
 export GATE_MODE=1
 export PRODUCTION_MODE=1
 export VERIFICATION_COST_CAP_USD=1
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 export JWT_SECRET="${JWT_SECRET:-f0f4cb55a02a5bf2b2e9cbb273daf87991ad426e3ea68cf90cf394027c6ac23c9140290dce913869d9241aa675335d27}"
 
 API_BASE="${API_BASE:-http://127.0.0.1:3000}"
@@ -127,7 +127,7 @@ mkdir -p "${EVID_DIR}"
 export GATE_MODE=1
 export PRODUCTION_MODE=1
 export VERIFICATION_COST_CAP_USD=1
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 export JWT_SECRET="${JWT_SECRET:-f0f4cb55a02a5bf2b2e9cbb273daf87991ad426e3ea68cf90cf394027c6ac23c9140290dce913869d9241aa675335d27}"
 
 API_BASE="${API_BASE:-http://127.0.0.1:3000}"
@@ -235,7 +235,7 @@ mkdir -p "${EVID_DIR}"
 export GATE_MODE=1
 export PRODUCTION_MODE=1
 export VERIFICATION_COST_CAP_USD=1
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 export JWT_SECRET="${JWT_SECRET:-f0f4cb55a02a5bf2b2e9cbb273daf87991ad426e3ea68cf90cf394027c6ac23c9140290dce913869d9241aa675335d27}"
 
 API_BASE="${API_BASE:-http://127.0.0.1:3000}"
@@ -343,7 +343,7 @@ mkdir -p "${EVID_DIR}"
 export GATE_MODE=1
 export PRODUCTION_MODE=1
 export VERIFICATION_COST_CAP_USD=1
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 export JWT_SECRET="${JWT_SECRET:-f0f4cb55a02a5bf2b2e9cbb273daf87991ad426e3ea68cf90cf394027c6ac23c9140290dce913869d9241aa675335d27}"
 
 API_BASE="${API_BASE:-http://127.0.0.1:3000}"

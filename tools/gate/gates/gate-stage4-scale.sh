@@ -17,7 +17,7 @@ IFS=$'
 PROJECT_ID="proj_stage4_$(date +%s)"
 FILE_KEY="uploads/mock_novel_stage4.txt"
 ABS_FILE_PATH="$(pwd)/$FILE_KEY"
-DB_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+DB_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 
 echo "=================================================="
 echo "GATE: Stage 4 Scale (The Shredder)"
@@ -40,22 +40,22 @@ echo "[OK] Generated 100 chapters."
 
 # 2. Setup DB (Project)
 echo "Setting up Project..."
-psql "$DB_URL" -c "INSERT INTO users (id, email, \"passwordHash\", \"userType\", \"createdAt\", \"updatedAt\") VALUES ('user_stage4', 'stage4@example.com', 'hash', 'admin', NOW(), NOW()) ON CONFLICT DO NOTHING;"
-psql "$DB_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", credits, type, \"createdAt\", \"updatedAt\") VALUES ('org_stage4', 'Stage4 Org', 'user_stage4', 1000, 'personal', NOW(), NOW()) ON CONFLICT DO NOTHING;"
+psql "$DATABASE_URL" -c "INSERT INTO users (id, email, \"passwordHash\", \"userType\", \"createdAt\", \"updatedAt\") VALUES ('user_stage4', 'stage4@example.com', 'hash', 'admin', NOW(), NOW()) ON CONFLICT DO NOTHING;"
+psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", credits, type, \"createdAt\", \"updatedAt\") VALUES ('org_stage4', 'Stage4 Org', 'user_stage4', 1000, 'personal', NOW(), NOW()) ON CONFLICT DO NOTHING;"
 # Fix: Project requires status enum 'in_progress' and json defaults
-psql "$DB_URL" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, metadata, \"settingsJson\", \"createdAt\", \"updatedAt\") VALUES ('$PROJECT_ID', 'Stage4 Scale', 'user_stage4', 'org_stage4', 'in_progress', '{}', '{}', NOW(), NOW());"
+psql "$DATABASE_URL" -c "INSERT INTO projects (id, name, \"ownerId\", \"organizationId\", status, metadata, \"settingsJson\", \"createdAt\", \"updatedAt\") VALUES ('$PROJECT_ID', 'Stage4 Scale', 'user_stage4', 'org_stage4', 'in_progress', '{}', '{}', NOW(), NOW());"
 
 # 3. Insert SCAN Job
 JOB_ID="job_scan_$(date +%s)"
 PAYLOAD="{\"projectId\":\"$PROJECT_ID\", \"fileKey\":\"$ABS_FILE_PATH\"}"
 
 echo "Inserting NOVEL_SCAN_TOC Job ($JOB_ID)..."
-psql "$DB_URL" -c "INSERT INTO shot_jobs (id, \"organizationId\", \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\") VALUES ('$JOB_ID', 'org_stage4', '$PROJECT_ID', NULL, NULL, NULL, 'NOVEL_SCAN_TOC', 'PENDING', '$PAYLOAD', NOW(), NOW());"
+psql "$DATABASE_URL" -c "INSERT INTO shot_jobs (id, \"organizationId\", \"projectId\", \"episodeId\", \"sceneId\", \"shotId\", type, status, payload, \"createdAt\", \"updatedAt\") VALUES ('$JOB_ID', 'org_stage4', '$PROJECT_ID', NULL, NULL, NULL, 'NOVEL_SCAN_TOC', 'PENDING', '$PAYLOAD', NOW(), NOW());"
 
 echo "Waiting for Worker to pick up NOVEL_SCAN_TOC..."
 # Simple poll
 for i in {1..30}; do
-  STATUS=$(psql "$DB_URL" -t -c "SELECT status FROM shot_jobs WHERE id='$JOB_ID';" | xargs)
+  STATUS=$(psql "$DATABASE_URL" -t -c "SELECT status FROM shot_jobs WHERE id='$JOB_ID';" | xargs)
   echo "  Status: $STATUS"
   if [ "$STATUS" == "SUCCEEDED" ]; then
     echo "[PASS] Job SUCCEEDED"
@@ -63,7 +63,7 @@ for i in {1..30}; do
   fi
   if [ "$STATUS" == "FAILED" ]; then
     echo "[FAIL] Job FAILED"
-    psql "$DB_URL" -t -c "SELECT \"lastError\" FROM shot_jobs WHERE id='$JOB_ID';"
+    psql "$DATABASE_URL" -t -c "SELECT \"lastError\" FROM shot_jobs WHERE id='$JOB_ID';"
     exit 1
   fi
   sleep 2
@@ -76,10 +76,10 @@ fi
 
 # 4. Verify Fan-out
 echo "Verifying Fan-out..."
-EP_COUNT=$(psql "$DB_URL" -t -c "SELECT COUNT(*) FROM episodes WHERE \"projectId\"='$PROJECT_ID';" | xargs)
+EP_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM episodes WHERE \"projectId\"='$PROJECT_ID';" | xargs)
 echo "  Episodes Created: $EP_COUNT"
 
-JOB_COUNT=$(psql "$DB_URL" -t -c "SELECT COUNT(*) FROM shot_jobs WHERE \"projectId\"='$PROJECT_ID' AND type='NOVEL_CHUNK_PARSE';" | xargs)
+JOB_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM shot_jobs WHERE \"projectId\"='$PROJECT_ID' AND type='NOVEL_CHUNK_PARSE';" | xargs)
 echo "  Chunk Jobs Created: $JOB_COUNT"
 
 if [ "$EP_COUNT" -eq "100" ] && [ "$JOB_COUNT" -eq "100" ]; then

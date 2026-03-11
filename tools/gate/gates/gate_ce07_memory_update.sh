@@ -15,7 +15,7 @@ mkdir -p "$EVI"
 
 # Ensure DB URL
 if [ -z "${DATABASE_URL:-}" ]; then
-  export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
+  export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
 fi
 
 RUNNER="tools/engine/run_ce07.ts"

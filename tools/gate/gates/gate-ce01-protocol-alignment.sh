@@ -5,9 +5,9 @@ IFS=$'
 	'
 
 # GATE 13: CE01 Protocol Alignment
-# Goal: Verify Bible V3.0 Protocol (text_chunk, prev_context) maps to Production DB (novel_scenes) without data loss.
+# Goal: Verify Bible V3.0 Protocol (text_chunk, prev_context) maps to Production DB (scenes) without data loss.
 
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
 TS="$(date +%Y%m%d_%H%M%S)"
 EVI="docs/_evidence/gate13_ce01_${TS}"
 mkdir -p "$EVI"
@@ -48,8 +48,8 @@ ON CONFLICT (id) DO NOTHING;
 
 # Ensure Novel Source exists
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO novel_sources(id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"createdAt\", \"updatedAt\")
-VALUES ('src_${PROJ_ID}', '${PROJ_ID}', '${ORG_ID}', 'gate13/${PROJ_ID}/dummy.txt', 'gate13_dummy.txt', 1024, now(), now())
+INSERT INTO novel_sources(id, \"projectId\", \"organizationId\", \"rawText\", \"fileName\", \"createdAt\", \"updatedAt\")
+VALUES ('src_${PROJ_ID}', '${PROJ_ID}', 'Dummy Content for Gate 13', 'gate13_dummy.txt', now(), now())
 ON CONFLICT (id) DO NOTHING;
 " > "$EVI/db_seed_source.txt" 2>&1 || (echo "NovelSource Seed Failed:"; cat "$EVI/db_seed_source.txt"; exit 1)
 
@@ -114,22 +114,22 @@ if [ $count -eq $MAX_RETRIES ]; then
 fi
 
 # 5) DB Assertion: Verify Persistence
-# We check 'novel_scenes' for the inserted data.
+# We check 'scenes' for the inserted data.
 
 echo "[GATE13] Verifying Persistence..."
 
 psql "$DATABASE_URL" -c "
 SELECT id, project_id, index, location_slug, time_of_day, environment_tags, graph_state_snapshot, raw_text
-FROM novel_scenes
+FROM scenes
 WHERE project_id='${PROJ_ID}'
 ORDER BY created_at DESC
 LIMIT 5;
-" > "$EVI/novel_scenes_rows.txt"
+" > "$EVI/scenes_rows.txt"
 
-cat "$EVI/novel_scenes_rows.txt"
+cat "$EVI/scenes_rows.txt"
 
 # 5.1 Assert 'text_chunk' was mapped to 'raw_text'
-if grep -q "Hero walks into the tavern" "$EVI/novel_scenes_rows.txt"; then
+if grep -q "Hero walks into the tavern" "$EVI/scenes_rows.txt"; then
   echo "✅ PASS: text_chunk mapped to raw_text."
 else
   echo "❌ FAIL: raw_text content missing or incorrect."
@@ -137,7 +137,7 @@ else
 fi
 
 # 5.2 Assert 'prev_context' is in 'graph_state_snapshot' 
-if grep -q "red robes" "$EVI/novel_scenes_rows.txt"; then
+if grep -q "red robes" "$EVI/scenes_rows.txt"; then
   echo "✅ PASS: prev_context logic trace found in DB."
 else
   echo "⚠️ WARN: prev_context not explicitly found in text output. (Engine might abstract it or Mock mode used)."
@@ -151,7 +151,7 @@ JOB_ID=${JOB_ID}
 EVI=${EVI}
 - ce01_input.json
 - poll_job_status.log
-- novel_scenes_rows.txt
+- scenes_rows.txt
 TXT
 
 (

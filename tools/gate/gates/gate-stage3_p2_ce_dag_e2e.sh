@@ -66,7 +66,7 @@ VALUES (
 
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"updatedAt\")
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt") VALUES ($NOVEL_SOURCE_ID, $PROJECT_ID, $ORG_ID, 'Dummy', 'dummy.txt', 'keys/dummy', 100, now()) ON CONFLICT (id) DO NOTHING;
 VALUES (
 
 
@@ -219,7 +219,7 @@ VALUES (
 
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"updatedAt\")
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt") VALUES ($NOVEL_SOURCE_ID, $PROJECT_ID, $ORG_ID, 'Dummy', 'dummy.txt', 'keys/dummy', 100, now()) ON CONFLICT (id) DO NOTHING;
 VALUES (
 
 
@@ -372,7 +372,7 @@ VALUES (
 
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"updatedAt\")
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt") VALUES ($NOVEL_SOURCE_ID, $PROJECT_ID, $ORG_ID, 'Dummy', 'dummy.txt', 'keys/dummy', 100, now()) ON CONFLICT (id) DO NOTHING;
 VALUES (
 
 
@@ -525,7 +525,7 @@ VALUES (
 
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"fileKey\", \"fileName\", \"fileSize\", \"updatedAt\")
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt") VALUES ($NOVEL_SOURCE_ID, $PROJECT_ID, $ORG_ID, 'Dummy', 'dummy.txt', 'keys/dummy', 100, now()) ON CONFLICT (id) DO NOTHING;
 VALUES (
 
 

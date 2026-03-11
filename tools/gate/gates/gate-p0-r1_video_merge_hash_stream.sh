@@ -12,7 +12,7 @@ TMP="docs/_evidence/tmp_bigfile_512mb.bin"
 echo "=== GATE P0-R1 [VIDEO_MERGE_HASH_STREAM] START ===" | tee "$LOG"
 
 # 1) 静态断言：禁止 readFileSync 用于 hash
-if grep -n "readFileSync(" packages/engines-video-merge/providers/local_ffmpeg.provider.ts > /dev/null; then
+if rg -n "readFileSync\(" packages/engines/video_merge/providers/local_ffmpeg.provider.ts > /dev/null; then
   echo "❌ readFileSync detected in video_merge provider (OOM risk)" | tee -a "$LOG"
   exit 1
 else
@@ -20,11 +20,9 @@ else
 fi
 
 # 2) 生成大文件（512MB）
-echo "[DEBUG] Generating 512MB test file at $TMP..." | tee -a "$LOG"
+echo "Generating 512MB test file at $TMP..." | tee -a "$LOG"
 rm -f "$TMP"
-echo "[DEBUG] Executing dd command..." | tee -a "$LOG"
-dd if=/dev/zero of="$TMP" bs=1048576 count=512 2>/dev/null
-echo "[DEBUG] dd command finished. Checking file existence..." | tee -a "$LOG"
+dd if=/dev/zero of="$TMP" bs=1m count=512 2>/dev/null
 
 # 3) 运行内存检查脚本
 echo "Running memory check..." | tee -a "$LOG"

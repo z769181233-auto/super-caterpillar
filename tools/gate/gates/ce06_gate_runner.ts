@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import { PrismaClient } from 'database';
 
-const prisma = new PrismaClient({});
+const prisma = new PrismaClient();
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3011';
 const API_KEY = process.env.API_KEY;
