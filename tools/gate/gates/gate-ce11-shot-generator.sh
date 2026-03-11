@@ -48,16 +48,22 @@ INSERT INTO novel_sources(id, \"projectId\", \"organizationId\", \"rawText\", \"
 VALUES ('src_${PROJ_ID}', '${PROJ_ID}', '${ORG_ID}', 'Dummy', 'gate15.txt', '${PROJ_ID}/gate15.txt', 1024, now(), now());
 " > /dev/null
 
+# Novel (Missing Relational Bridge)
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
+INSERT INTO novels(id, project_id, title, created_at, updated_at)
+VALUES ('nov_${PROJ_ID}', '${PROJ_ID}', 'Gate 15 Novel', now(), now());
+" > /dev/null
+
 # Volume
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO novel_volumes(id, project_id, novel_source_id, index, title, created_at, updated_at)
-VALUES ('${VOL_ID}', '${PROJ_ID}', 'src_${PROJ_ID}', 1, 'Gate Volume', now(), now());
+VALUES ('${VOL_ID}', '${PROJ_ID}', 'nov_${PROJ_ID}', 1, 'Gate Volume', now(), now());
 " > /dev/null
 
 # Chapter
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO novel_chapters(id, volume_id, novel_source_id, index, title, created_at, updated_at)
-VALUES ('${CHAP_ID}', '${VOL_ID}', 'src_${PROJ_ID}', 1, 'Gate Chapter', now(), now());
+VALUES ('${CHAP_ID}', '${VOL_ID}', 'nov_${PROJ_ID}', 1, 'Gate Chapter', now(), now());
 " > /dev/null
 
 # Scene (Bible Input Source)
