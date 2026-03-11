@@ -44,8 +44,8 @@ ON CONFLICT (id) DO NOTHING;
 
 # Source
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO novel_sources(id, \"projectId\", \"organizationId\", \"rawText\", \"fileName\", \"createdAt\", \"updatedAt\")
-VALUES ('src_${PROJ_ID}', '${PROJ_ID}', '${ORG_ID}', 'Dummy', 'gate15.txt', now(), now());
+INSERT INTO novel_sources(id, \"projectId\", \"organizationId\", \"rawText\", \"fileName\", \"fileKey\", \"fileSize\", \"createdAt\", \"updatedAt\")
+VALUES ('src_${PROJ_ID}', '${PROJ_ID}', '${ORG_ID}', 'Dummy', 'gate15.txt', '${PROJ_ID}/gate15.txt', 1024, now(), now());
 " > /dev/null
 
 # Volume
