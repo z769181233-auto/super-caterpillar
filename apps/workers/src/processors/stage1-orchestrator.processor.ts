@@ -189,8 +189,15 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
         shotParams
       );
 
-      const shot = await prisma.shot.create({
-        data: shotData as any,
+      const shot = await prisma.shot.upsert({
+        where: {
+          sceneId_index: {
+            sceneId: scene.id,
+            index: i + 1,
+          },
+        },
+        update: shotData as any,
+        create: shotData as any,
       });
       shotIds.push(shot.id);
     }
