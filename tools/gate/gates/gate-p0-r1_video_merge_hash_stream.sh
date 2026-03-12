@@ -12,7 +12,7 @@ TMP="docs/_evidence/tmp_bigfile_512mb.bin"
 echo "=== GATE P0-R1 [VIDEO_MERGE_HASH_STREAM] START ===" | tee "$LOG"
 
 # 1) 静态断言：禁止 readFileSync 用于 hash
-if rg -n "readFileSync\(" packages/engines/video_merge/providers/local_ffmpeg.provider.ts > /dev/null; then
+if grep -R -n "readFileSync(" packages/engines-video-merge/providers/local_ffmpeg.provider.ts > /dev/null 2>&1; then
   echo "❌ readFileSync detected in video_merge provider (OOM risk)" | tee -a "$LOG"
   exit 1
 else

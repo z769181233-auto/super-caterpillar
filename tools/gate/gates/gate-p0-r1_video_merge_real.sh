@@ -24,14 +24,18 @@ export ASSET_STORAGE_DIR
 TS_INPUT_DIR="$ASSET_STORAGE_DIR/frames"
 mkdir -p "$TS_INPUT_DIR"
 
-# 1x1 Red Pixel PNG Base64
-PIXEL_B64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-
 echo "Generating 24 dummy frames..."
-for i in {0..23}; do
-  fname=$(printf "frame_%04d.png" $i)
-  echo "$PIXEL_B64" | base64 -d > "$TS_INPUT_DIR/$fname"
-done
+node - "$TS_INPUT_DIR" <<'NODE'
+const fs = require('fs');
+const path = require('path');
+const tmpDir = process.argv[2];
+const minPng = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c4944415408d763f8ffffff3f0005fe02fe0dc444200000000049454e44ae426082', 'hex');
+
+for (let i = 0; i < 24; i++) {
+  const padded = i.toString().padStart(4, '0');
+  fs.writeFileSync(path.join(tmpDir, `frame_${padded}.png`), minPng);
+}
+NODE
 
 # 2. 调用 Engine (via ts-node script)
 RUNNER_SCRIPT="$ASSET_STORAGE_DIR/run_engine.ts"
