@@ -29,6 +29,12 @@ echo "[GATE15] Bible Payload Prepared."
 # 2) Seed Database Hierarchy
 echo "[GATE15] Seeding DB Hierarchy..."
 
+# Engine Registry (Required for CE11 execution layer SHOT_RENDER bindings)
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
+INSERT INTO engines (id, name, code, \"engineKey\", enabled, \"isActive\", mode, \"adapterName\", \"adapterType\", type, config, \"createdAt\", \"updatedAt\")
+VALUES ('eng_ce07_fusion_${TS}', 'Mock Fusion CE07', 'ce07_fusion_${TS}', 'ce07_fusion_sdxl', true, true, 'process', 'mock', 'mock', 'image_generation', '{}', now(), now());
+" > /dev/null
+
 # User & Project
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO users(id, email, \"passwordHash\", \"userType\", role, tier, quota, \"defaultOrganizationId\", \"createdAt\", \"updatedAt\")
