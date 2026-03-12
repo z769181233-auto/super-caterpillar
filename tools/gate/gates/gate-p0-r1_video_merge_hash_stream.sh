@@ -24,8 +24,17 @@ echo "Generating 512MB test file at $TMP..." | tee -a "$LOG"
 rm -f "$TMP"
 dd if=/dev/zero of="$TMP" bs=1m count=512 2>/dev/null
 
+echo "=== DIAGNOSTICS: 512MB Generated File ===" | tee -a "$LOG"
+ls -lh "$TMP" | tee -a "$LOG" || true
+echo "=========================================" | tee -a "$LOG"
+
 # 3) 运行内存检查脚本
 echo "Running memory check..." | tee -a "$LOG"
+
+# 设置强制调试追踪，直到 node 结束，并在失败时强行打点
+set -x
+trap 'echo "❌ [FATAL] hash_stream script crashed at line $LINENO with exit code $?" | tee -a "$LOG"' ERR
+
 node - "$TMP" <<'NODE'
 const fs = require('fs');
 const { createHash } = require('crypto');
