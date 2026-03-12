@@ -59,27 +59,31 @@ In the heart of the digital nebula, a spark ignited. Wide shot of a neon city.
 Chapter 2: The Gravity Defiance.
 The caterpillar looked up at the stars. It began to float. Close up of its glowing eyes."
 
-# 创建 NovelSource/Volume/Chapter (为了数据完整性)
+# 创建 NovelSource/Novels/Volume/Chapter (为了数据完整性)
 SOURCE_ID="source_$TS"
-psql "$DATABASE_URL" -c "psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt") VALUES ('$SOURCE_ID', '$PROJ_ID', 'P4 E2E Novel', 'Antigravity', '$(echo "$NOVEL_TEXT" | sed "s/'/''/g")', NOW(), NOW());" > /dev/null
+NOVEL_ID="nov_$TS"
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"rawText\", \"fileName\", \"fileKey\", \"fileSize\", \"createdAt\", \"updatedAt\") VALUES ('$SOURCE_ID', '$PROJ_ID', '$ORG_ID', '$(echo "$NOVEL_TEXT" | sed "s/'/''/g")', 'novel.txt', 'key_$TS', 1024, NOW(), NOW());" > /dev/null
+
+psql "$DATABASE_URL" -c "INSERT INTO novels (id, project_id, title, created_at, updated_at) VALUES ('$NOVEL_ID', '$PROJ_ID', 'P4 E2E Novel', NOW(), NOW()) ON CONFLICT (project_id) DO NOTHING;" > /dev/null
 
 VOL_ID="vol_$TS"
-psql "$DATABASE_URL" -c "INSERT INTO novel_volumes (id, project_id, novel_source_id, index, title, updated_at) VALUES ('$VOL_ID', '$PROJ_ID', '$SOURCE_ID', 1, 'Volume 1', NOW());" > /dev/null
+psql "$DATABASE_URL" -c "INSERT INTO novel_volumes (id, project_id, novel_source_id, \"index\", title, updated_at) VALUES ('$VOL_ID', '$PROJ_ID', '$NOVEL_ID', 1, 'Volume 1', NOW());" > /dev/null
 
 CH1_ID="ch1_$TS"
-psql "$DATABASE_URL" -c "INSERT INTO novel_chapters (id, novel_source_id, volume_id, index, title, updated_at) VALUES ('$CH1_ID', '$SOURCE_ID', '$VOL_ID', 1, 'Chapter 1', NOW());" > /dev/null
+psql "$DATABASE_URL" -c "INSERT INTO novel_chapters (id, novel_source_id, volume_id, \"index\", title, updated_at) VALUES ('$CH1_ID', '$NOVEL_ID', '$VOL_ID', 1, 'Chapter 1', NOW());" > /dev/null
 
 EP_ID="ep_$TS"
 # 为 Project 创建一个 Season
 SEA_ID="sea_$TS"
-psql "$DATABASE_URL" -c "INSERT INTO seasons (id, \"projectId\", index, title, \"updatedAt\") VALUES ('$SEA_ID', '$PROJ_ID', 1, 'Season 1', NOW());" > /dev/null
-psql "$DATABASE_URL" -c "INSERT INTO episodes (id, \"projectId\", \"seasonId\", index, name, \"chapterId\") VALUES ('$EP_ID', '$PROJ_ID', '$SEA_ID', 1, 'Episode 1', '$CH1_ID');" > /dev/null
+psql "$DATABASE_URL" -c "INSERT INTO seasons (id, \"projectId\", \"index\", title, \"updatedAt\") VALUES ('$SEA_ID', '$PROJ_ID', 1, 'Season 1', NOW());" > /dev/null
+psql "$DATABASE_URL" -c "INSERT INTO episodes (id, \"projectId\", \"seasonId\", \"index\", name, \"chapterId\") VALUES ('$EP_ID', '$PROJ_ID', '$SEA_ID', 1, 'Episode 1', '$CH1_ID');" > /dev/null
 
 SCENE_ID="scene_$TS"
-psql "$DATABASE_URL" -c "INSERT INTO scenes (id, \"episodeId\", \"projectId\", index, title, summary) VALUES ('$SCENE_ID', '$EP_ID', '$PROJ_ID', 1, 'Main Scene', 'Auto-generated for P4 E2E');" > /dev/null
+psql "$DATABASE_URL" -c "INSERT INTO scenes (id, \"episodeId\", project_id, scene_index, title, summary) VALUES ('$SCENE_ID', '$EP_ID', '$PROJ_ID', 1, 'Main Scene', 'Auto-generated for P4 E2E');" > /dev/null
 
 SHOT_ID="shot_$TS"
-psql "$DATABASE_URL" -c "INSERT INTO shots (id, \"sceneId\", \"organizationId\", index, type, title) VALUES ('$SHOT_ID', '$SCENE_ID', '$ORG_ID', 1, 'pipeline_stage1', 'Pipeline Shot');" > /dev/null
+# Note: Physical column in 'shots' is 'index' (reserved), quote required.
+psql "$DATABASE_URL" -c "INSERT INTO shots (id, \"sceneId\", \"organizationId\", \"index\", type, title) VALUES ('$SHOT_ID', '$SCENE_ID', '$ORG_ID', 1, 'pipeline_stage1', 'Pipeline Shot');" > /dev/null
 
 # 4. 触发管线
 TRIGGER_MODE="A" # Default Path A
@@ -130,7 +134,8 @@ while [ $i -lt $MAX_WAIT ]; do
     fi
     
     # 失败检测
-    if grep -q "FAILED" <(tail -n 1 "$EVI_ROOT/job_trace.jsonl"); then
+    LAST_TRACE_LINE=$(tail -n 1 "$EVI_ROOT/job_trace.jsonl" || true)
+    if echo "$LAST_TRACE_LINE" | grep -q "FAILED"; then
         log "❌ FAILED: Detected failed job in trace."
         exit 1
     fi
@@ -180,8 +185,8 @@ log "✅ secured.mp4 exists."
 # 7. ffprobe 校验
 log "Running ffprobe validation..."
 # ffprobe output is now guaranteed to be in .runtime due to P4-FIX-0
-ffprobe -i "$STORAGE_ROOT/$HLS_URL" 2>&1 > "$EVI_ROOT/ffprobe_hls.log" || log "⚠️ ffprobe HLS warn"
-ffprobe -i "$STORAGE_ROOT/$STORAGE_KEY" 2>&1 > "$EVI_ROOT/ffprobe_mp4.log" || log "⚠️ ffprobe MP4 warn"
+ffprobe -i "$STORAGE_ROOT/$HLS_URL" > "$EVI_ROOT/ffprobe_hls.log" 2>&1 || log "⚠️ ffprobe HLS warn"
+ffprobe -i "$STORAGE_ROOT/$STORAGE_KEY" > "$EVI_ROOT/ffprobe_mp4.log" 2>&1 || log "⚠️ ffprobe MP4 warn"
 
 # 8. 固化 SHA256SUMS
 log "Calculating SHA256SUMS..."

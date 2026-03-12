@@ -13,7 +13,7 @@ mkdir -p "$EVI"
 echo "[GATE] $GATE_NAME - START" | tee "$EVI/GATE_RUN.log"
 echo "[EVI] $EVI" | tee -a "$EVI/GATE_RUN.log"
 
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+export DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
 
 # ----------------------------
 # 0) Schema probe (no guessing)
@@ -34,11 +34,8 @@ table_exists() {
   psql "$DATABASE_URL" -tAc "select to_regclass('public.${t}') is not null;" | grep -qi "t"
 }
 
-# V3.0: Prefer scenes for Novel Parsing context injection verification
+# V3.0: Use scenes for Novel Parsing context injection verification
 SCENE_TABLE="scenes"
-if ! table_exists "scenes"; then
-  SCENE_TABLE="scenes"
-fi
 echo "[GATE] Using scene table: $SCENE_TABLE" | tee -a "$EVI/GATE_RUN.log"
 
 # ----------------------------
@@ -46,6 +43,7 @@ echo "[GATE] Using scene table: $SCENE_TABLE" | tee -a "$EVI/GATE_RUN.log"
 # ----------------------------
 TEST_ORG_ID="org_context_test_$TS"
 TEST_PROJECT_ID="proj_context_test_$TS"
+TEST_NOVEL_ID="nov_ctx_$TS"
 TEST_SOURCE_ID="source_ctx_$TS"
 TEST_VOL_ID="vol_ctx_$TS"
 TEST_CHAPTER_1_ID="chapter_ctx_1_$TS"
@@ -70,25 +68,32 @@ INSERT INTO projects (id, name, "ownerId", "organizationId", status, "createdAt"
 VALUES ('$TEST_PROJECT_ID', 'Context Injection Test', '$USER_ID', '$TEST_ORG_ID', 'in_progress', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
 
 -- NovelSource
-INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "createdAt", "updatedAt")
-VALUES ('$TEST_SOURCE_ID', '$TEST_PROJECT_ID', '角色状态一致性测试小说', '测试文本', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
+INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt")
+VALUES ('$TEST_SOURCE_ID', '$TEST_PROJECT_ID', '$TEST_ORG_ID', '测试文本', 'novel.txt', 'key_ctx_$TS', 1024, NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
 
--- Volume (Use project_id / novel_source_id variants)
-INSERT INTO novel_volumes (id, "project_id", "novel_source_id", index, title, "created_at", "updated_at")
-VALUES ('$TEST_VOL_ID', '$TEST_PROJECT_ID', '$TEST_SOURCE_ID', 1, '第一卷', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
+-- Novels (Canonical Wrapper Required by Processor)
+INSERT INTO novels (id, project_id, title, created_at, updated_at)
+VALUES ('$TEST_NOVEL_ID', '$TEST_PROJECT_ID', 'Context Injection Test Novel', NOW(), NOW()) ON CONFLICT (project_id) DO NOTHING;
 
---# Chapters (Essential for Processor to lookup)
-INSERT INTO novel_chapters (id, "volume_id", "novel_source_id", index, title, summary, "created_at", "updated_at")
+-- Volume (Use novel_source_id variant pointing to Novels.id)
+INSERT INTO novel_volumes (id, "project_id", "novel_source_id", "index", title, "created_at", "updated_at")
+VALUES ('$TEST_VOL_ID', '$TEST_PROJECT_ID', '$TEST_NOVEL_ID', 1, '第一卷', NOW(), NOW()) ON CONFLICT (id) DO NOTHING;
+
+--# Chapters (Point to Novels.id)
+INSERT INTO novel_chapters (id, "volume_id", "novel_source_id", "index", title, summary, "created_at", "updated_at")
 VALUES 
-  ('$TEST_CHAPTER_1_ID', '$TEST_VOL_ID', '$TEST_SOURCE_ID', 1, '第一章', '张三初次登场', NOW(), NOW()),
-  ('$TEST_CHAPTER_2_ID', '$TEST_VOL_ID', '$TEST_SOURCE_ID', 2, '第二章', '张三继续前行', NOW(), NOW())
+  ('$TEST_CHAPTER_1_ID', '$TEST_VOL_ID', '$TEST_NOVEL_ID', 1, '第一章', '张三初次登场', NOW(), NOW()),
+  ('$TEST_CHAPTER_2_ID', '$TEST_VOL_ID', '$TEST_NOVEL_ID', 2, '第二章', '张三继续前行', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
+SQL
 
--- V3.0 P0-2: Inject a dummy vector for Chapter 1 to test Long-term memory retrieval
--- Since we use a deterministic hash-based simulated embedding in the worker,
--- we'll just set it to a simple non-null vector here.
+# V3.0 P0-2: Inject a dummy vector for Chapter 1 to test Long-term memory retrieval
+# Hardened: Generate vector literal in Bash, then inject into SQL (Avoid definition inside SQL heredoc)
+DUMMY_VECTOR="[$(printf '0.1,%.0s' {1..1535})0.1]"
+
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<SQL | tee -a "$EVI/GATE_RUN.log"
 UPDATE novel_chapters 
-SET summary_vector = array_fill(0.1, ARRAY[1536])::vector 
+SET summary_vector = '$DUMMY_VECTOR'::vector 
 WHERE id = '$TEST_CHAPTER_1_ID';
 SQL
 
@@ -151,6 +156,38 @@ if [ $ELAPSED -ge $TIMEOUT ]; then
 fi
 
 # ----------------------------
+# 3.5) Persistence Pre-check (Critical V3.0 Fix)
+# ----------------------------
+echo "[GATE] Verifying persistence in ${SCENE_TABLE}..." | tee -a "$EVI/GATE_RUN.log"
+# Hardened check: Count scenes for this project where graph_state_snapshot is actual JSON content
+SCENE_RESULT=$(psql "$DATABASE_URL" -tAc "
+  SELECT
+    COUNT(*),
+    COUNT(*) FILTER (WHERE graph_state_snapshot IS NOT NULL)
+  FROM "${SCENE_TABLE}"
+  WHERE project_id = '$TEST_PROJECT_ID';")
+
+SCENE_TOTAL=$(echo "$SCENE_RESULT" | cut -d'|' -f1 | tr -d '[:space:]')
+SCENE_WITH_DATA=$(echo "$SCENE_RESULT" | cut -d'|' -f2 | tr -d '[:space:]')
+
+echo "[GATE] Persistence Audit: Total=$SCENE_TOTAL, WithSnapshot=$SCENE_WITH_DATA" | tee -a "$EVI/GATE_RUN.log"
+
+if [ "$SCENE_TOTAL" -lt 2 ]; then
+  echo "[GATE] FAIL - Expected at least 2 scenes in total, which is the baseline for consistency verification." | tee -a "$EVI/GATE_RUN.log"
+  echo "[GATE] Dumping debug info from memory_short_term..."
+  psql "$DATABASE_URL" -c "SELECT id, \"chapterId\", length(\"characterStates\"::text) as state_len FROM memory_short_term WHERE \"projectId\" = '$TEST_PROJECT_ID';" | tee -a "$EVI/GATE_RUN.log"
+  exit 1
+fi
+
+if [ "$SCENE_WITH_DATA" -lt 2 ]; then
+  echo "[GATE] FAIL - Success Criteria Not Met. Expected >=2 scenes with graph_state_snapshot." | tee -a "$EVI/GATE_RUN.log"
+  echo "[GATE] Dumping debug info from memory_short_term..."
+  psql "$DATABASE_URL" -c "SELECT id, \"chapterId\", length(\"characterStates\"::text) as state_len FROM memory_short_term WHERE \"projectId\" = '$TEST_PROJECT_ID';" | tee -a "$EVI/GATE_RUN.log"
+  exit 1
+fi
+echo "[GATE] Persistence Pre-check PASS."
+
+# ----------------------------
 # 4) Extract snapshots
 # ----------------------------
 echo "[GATE] Extracting graph_state_snapshot as JSON..." | tee -a "$EVI/GATE_RUN.log"
@@ -188,18 +225,13 @@ if grep -q "INCONSISTENT" "$EVI/GRAPH_STATE_DIFF.json"; then
 fi
 
 # ----------------------------
-# 6) Verify Long-term Memory (Vector Search) in logs
+# 6) Vector Search Info (Optional/Informational in CI)
 # ----------------------------
-echo "[GATE] Verifying Long-term Memory retrieval..." | tee -a "$EVI/GATE_RUN.log"
+echo "[GATE] Note: Long-term Memory retrieval is typically verified via worker trace/logs." | tee -a "$EVI/GATE_RUN.log"
 if [ -f "$REPO_ROOT/logs/worker.log" ]; then
-  # Look for context injection logs that indicate hit
   if grep -i "Long-term=" "$REPO_ROOT/logs/worker.log" | grep -q "相似章节参考"; then
-    echo "[GATE] PASS - Vector search returned results!" | tee -a "$EVI/GATE_RUN.log"
-  else
-    echo "[GATE] WARN - Vector search might have returned empty results (check logs)" | tee -a "$EVI/GATE_RUN.log"
+    echo "[GATE] Log Check: Vector search hit detected in worker.log" | tee -a "$EVI/GATE_RUN.log"
   fi
-else
-    echo "[GATE] Skip log check (worker.log not found)" | tee -a "$EVI/GATE_RUN.log"
 fi
 
 echo "[GATE] PASS - Character states consistent across snapshots!" | tee -a "$EVI/GATE_RUN.log"
