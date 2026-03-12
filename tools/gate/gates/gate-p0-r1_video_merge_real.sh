@@ -79,19 +79,33 @@ async function main() {
 main();
 EOF
 
-echo "Running engine script..."
+echo "Running engine script in verbose mode..."
 export TS_INPUT_DIR
 OUTPUT_LOG="${ASSET_STORAGE_DIR}/output.log"
+STDERR_LOG="${ASSET_STORAGE_DIR}/error.log"
+
+echo "=== DIAGNOSTICS: Input PNGs ==="
+ls -lh "$TS_INPUT_DIR"
+file "$TS_INPUT_DIR"/frame_0000.png || true
+echo "==============================="
 
 # Install ts-node if needed or assume environment
 # Assuming dev environment
-npx ts-node "$RUNNER_SCRIPT" > "$OUTPUT_LOG" 2>&1 || {
+npx ts-node "$RUNNER_SCRIPT" > "$OUTPUT_LOG" 2> "$STDERR_LOG" || {
+    echo "❌ FAIL: Script execution failed. Dumping stdout & stderr:"
+    echo "--- STDOUT ---"
     cat "$OUTPUT_LOG"
-    echo "❌ FAIL: Script execution failed"
+    echo "--- STDERR ---"
+    cat "$STDERR_LOG"
+    echo "=============="
     exit 1
 }
 
+echo "--- Script STDOUT ---"
 cat "$OUTPUT_LOG"
+echo "--- Script STDERR ---"
+cat "$STDERR_LOG"
+echo "====================="
 
 # 3. 解析结果
 JSON_OUTPUT=$(sed -n '/__RESULT_START__/,/__RESULT_END__/p' "$OUTPUT_LOG" | grep -v "__RESULT_")
