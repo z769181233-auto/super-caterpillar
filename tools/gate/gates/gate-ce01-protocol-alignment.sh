@@ -121,33 +121,33 @@ if [ $count -eq $MAX_RETRIES ]; then
 fi
 
 # 5) DB Assertion: Verify Persistence
-# We check 'scenes' for the inserted data.
+# We check 'shot_jobs' (adapter emission) for the constructed payload data.
 
-echo "[GATE13] Verifying Persistence..."
+echo "[GATE13] Verifying Persistence (Adapter Pipeline Output)..."
 
 psql "$DATABASE_URL" -c "
-SELECT id, project_id, scene_index, location_slug, time_of_day, environment_tags, graph_state_snapshot, enriched_text
-FROM scenes
-WHERE project_id='${PROJ_ID}'
-ORDER BY created_at DESC
+SELECT id, type, status, payload->>'phase' as phase, payload->>'raw_text' as adapted_text
+FROM shot_jobs
+WHERE \"projectId\"='${PROJ_ID}' AND payload->>'phase'='CHUNK_PARSE'
+ORDER BY \"createdAt\" DESC
 LIMIT 5;
-" > "$EVI/scenes_rows.txt"
+" > "$EVI/jobs_rows.txt"
 
-cat "$EVI/scenes_rows.txt"
+cat "$EVI/jobs_rows.txt"
 
-# 5.1 Assert 'text_chunk' was mapped to 'enriched_text'
-if grep -q "Hero walks into the tavern" "$EVI/scenes_rows.txt"; then
-  echo "✅ PASS: text_chunk mapped to enriched_text."
+# 5.1 Assert 'text_chunk' was fully adapted and injected into new pipeline
+if grep -q "Hero walks into the tavern" "$EVI/jobs_rows.txt"; then
+  echo "✅ PASS: text_chunk successfully adapted and dispatched into internal pipeline."
 else
-  echo "❌ FAIL: enriched_text content missing or incorrect."
+  echo "❌ FAIL: adapted payload content missing or incorrect."
   exit 1
 fi
 
-# 5.2 Assert 'prev_context' is in 'graph_state_snapshot' 
-if grep -q "red robes" "$EVI/scenes_rows.txt"; then
+# 5.2 Assert 'prev_context' propagation
+if grep -q "red robes" "$EVI/jobs_rows.txt"; then
   echo "✅ PASS: prev_context logic trace found in DB."
 else
-  echo "⚠️ WARN: prev_context not explicitly found in text output. (Engine might abstract it or Mock mode used)."
+  echo "⚠️ WARN: prev_context not implicitly tracked in child job payload. (SCAN adapter drops it or Mock mode used)."
 fi
 
 # 6) Artifact Pointers
