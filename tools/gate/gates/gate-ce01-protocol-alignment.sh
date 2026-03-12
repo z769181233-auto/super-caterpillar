@@ -120,28 +120,29 @@ if [ $count -eq $MAX_RETRIES ]; then
   exit 1
 fi
 
-# 5) DB Assertion: Verify Persistence
-# We check 'shot_jobs' (adapter emission) for the constructed payload data.
-
-echo "[GATE13] Verifying Persistence (Adapter Pipeline Output)..."
+# 5) DB Assertion: Verify Persistence (Job Topology Printout)
+echo "[GATE13] Dumping raw job topology for project..."
 
 psql "$DATABASE_URL" -c "
-SELECT id, type, status, payload->>'phase' as phase, payload->>'raw_text' as adapted_text
+SELECT id, type, status, \"traceId\", \"createdAt\", payload
 FROM shot_jobs
-WHERE \"projectId\"='${PROJ_ID}' AND payload->>'phase'='CHUNK_PARSE'
-ORDER BY \"createdAt\" DESC
-LIMIT 5;
-" > "$EVI/jobs_rows.txt"
+WHERE \"projectId\"='${PROJ_ID}'
+ORDER BY \"createdAt\" ASC;
+" > "$EVI/jobs_topology.txt"
 
-cat "$EVI/jobs_rows.txt"
+cat "$EVI/jobs_topology.txt"
 
-# 5.1 Assert 'text_chunk' was fully adapted and injected into new pipeline
-if grep -q "Hero walks into the tavern" "$EVI/jobs_rows.txt"; then
-  echo "✅ PASS: text_chunk successfully adapted and dispatched into internal pipeline."
+# 5.1 Temporary soft-assert to check if text_chunk exists anywhere in the payload dumps
+if grep -q "Hero walks into the tavern" "$EVI/jobs_topology.txt"; then
+  echo "✅ PASS: text_chunk found SOMEWHERE in the job topology."
 else
-  echo "❌ FAIL: adapted payload content missing or incorrect."
-  exit 1
+  echo "⚠️ WARN: text_chunk NOT FOUND in any job payload dump. (Topology captured for review)"
 fi
+
+# We intentionally exit 1 here during Phase C-R17 to force the CI to halt and show us the logs
+# without falsely signaling a complete pass before we lock the true assertion rules in V6.
+echo "❌ FAIL: Halting Gate 13 for C-R17 Job Topology Review."
+exit 1
 
 # 5.2 Assert 'prev_context' propagation
 if grep -q "red robes" "$EVI/jobs_rows.txt"; then
