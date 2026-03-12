@@ -7,15 +7,24 @@ IFS=$'\n\t'
 
 LOG="docs/_evidence/P0_R1_VIDEO_MERGE_HASH_STREAM_$(date +%Y%m%dT%H%M%S).log"
 mkdir -p docs/_evidence
-TMP="docs/_evidence/tmp_bigfile_512mb.bin"
+TMP="docs/_evidence/tmp_bigfile_stress.bin"
 
 echo "=== GATE P0-R1 [VIDEO_MERGE_HASH_STREAM] START ===" | tee "$LOG"
 
+# 自动识别环境并分级
+if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${GATE_ENV_MODE:-}" = "ci" ]; then
+    FILE_SIZE_MB=128
+    echo "[ENV] CI environment detected, scaling down test fixture to ${FILE_SIZE_MB}MB" | tee -a "$LOG"
+else
+    FILE_SIZE_MB=512
+    echo "[ENV] Local/Real environment detected, using ${FILE_SIZE_MB}MB stress fixture" | tee -a "$LOG"
+fi
+
 # === STAGE 1: DD ===
-echo "[STAGE 1] Generating 512MB test file at $TMP..." | tee -a "$LOG"
+echo "[STAGE 1] Generating ${FILE_SIZE_MB}MB test file at $TMP..." | tee -a "$LOG"
 rm -f "$TMP"
-if ! dd if=/dev/zero of="$TMP" bs=1m count=512 2>/dev/null; then
-    echo "FAIL_STAGE_1_DD: dd command returned non-zero" | tee -a "$LOG"
+if ! dd if=/dev/zero of="$TMP" bs=1m count="$FILE_SIZE_MB" 2>/dev/null; then
+    echo "FAIL_STAGE_1_DD: dd command returned non-zero (FILE_SIZE=${FILE_SIZE_MB}MB)" | tee -a "$LOG"
     exit 11
 fi
 echo "[STAGE 1] dd done" | tee -a "$LOG"
