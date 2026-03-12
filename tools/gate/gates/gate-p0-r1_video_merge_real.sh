@@ -29,7 +29,7 @@ node - "$TS_INPUT_DIR" <<'NODE'
 const fs = require('fs');
 const path = require('path');
 const tmpDir = process.argv[2];
-const minPng = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c4944415408d763f8ffffff3f0005fe02fe0dc444200000000049454e44ae426082', 'hex');
+const minPng = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108020000007c5712240000000d4944415478da63fccfc0500f000485018084a98c210000000049454e44ae426082', 'hex');
 
 for (let i = 0; i < 24; i++) {
   const padded = i.toString().padStart(4, '0');
