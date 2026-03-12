@@ -68,8 +68,8 @@ VALUES ('${CHAP_ID}', '${VOL_ID}', 'nov_${PROJ_ID}', 1, 'Gate Chapter', now(), n
 
 # Scene (Bible Input Source)
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO scenes(id, chapter_id, scene_index, title, raw_text, enriched_text, project_id, created_at, updated_at)
-VALUES ('${SCENE_ID}', '${CHAP_ID}', 1, 'Gate Scene', 'Initial Text', 'Cyberpunk city, neon lights, busy streets.', '${PROJ_ID}', now(), now());
+INSERT INTO scenes(id, chapter_id, scene_index, title, enriched_text, project_id, created_at, updated_at)
+VALUES ('${SCENE_ID}', '${CHAP_ID}', 1, 'Gate Scene', 'Cyberpunk city, neon lights, busy streets.', '${PROJ_ID}', now(), now());
 " > /dev/null
 
 # Production Hierarchy (Required for shots FK)
@@ -78,7 +78,7 @@ INSERT INTO seasons(id, \"projectId\", index, title, \"createdAt\", \"updatedAt\
 VALUES ('sea_${TS}', '${PROJ_ID}', 1, 'Gate Season', now(), now());
 INSERT INTO episodes(id, \"seasonId\", \"projectId\", index, name)
 VALUES ('epi_${TS}', 'sea_${TS}', '${PROJ_ID}', 1, 'Gate Episode');
-INSERT INTO scenes(id, \"episodeId\", index, title, \"projectId\", \"enrichedText\", \"reviewStatus\")
+INSERT INTO scenes(id, \"episodeId\", scene_index, title, project_id, enriched_text, \"reviewStatus\")
 VALUES ('${SCENE_ID}', 'epi_${TS}', 1, 'Gate Scene', '${PROJ_ID}', 'Cyberpunk city, neon lights, busy streets.', 'DRAFT');
 " > /dev/null
 
