@@ -53,6 +53,13 @@ VALUES ('src_${PROJ_ID}', '${PROJ_ID}', '${ORG_ID}', 'Dummy Content for Gate 13'
 ON CONFLICT (id) DO NOTHING;
 " > "$EVI/db_seed_source.txt" 2>&1 || (echo "NovelSource Seed Failed:"; cat "$EVI/db_seed_source.txt"; exit 1)
 
+# Ensure Novel (Canonical Tier) exists for CE06 Processor Lookup
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
+INSERT INTO novels(id, project_id, title, author, organization_id, raw_file_url, total_tokens, status, file_name, file_size, file_type, character_count, chapter_count, created_at, updated_at)
+VALUES ('nov_${PROJ_ID}', '${PROJ_ID}', 'Gate13 Validated Novel', 'Gate', '${ORG_ID}', '${PROJ_ID}/gate13.txt', 0, 'UPLOADED', 'gate13_dummy.txt', 1024, 'text/plain', 1000, 1, now(), now())
+ON CONFLICT (project_id) DO NOTHING;
+" > "$EVI/db_seed_novel.txt" 2>&1 || (echo "Novel Seed Failed:"; cat "$EVI/db_seed_novel.txt"; exit 1)
+
 echo "[GATE13] Project & Source Seeded."
 
 # 3) Insert Job via Adapter Compatibility Mode
