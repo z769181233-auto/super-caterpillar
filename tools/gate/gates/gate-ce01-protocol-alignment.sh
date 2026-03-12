@@ -126,7 +126,7 @@ fi
 echo "[GATE13] Verifying Persistence..."
 
 psql "$DATABASE_URL" -c "
-SELECT id, project_id, index, location_slug, time_of_day, environment_tags, graph_state_snapshot, raw_text
+SELECT id, project_id, scene_index, location_slug, time_of_day, environment_tags, graph_state_snapshot, enriched_text
 FROM scenes
 WHERE project_id='${PROJ_ID}'
 ORDER BY created_at DESC
@@ -135,11 +135,11 @@ LIMIT 5;
 
 cat "$EVI/scenes_rows.txt"
 
-# 5.1 Assert 'text_chunk' was mapped to 'raw_text'
+# 5.1 Assert 'text_chunk' was mapped to 'enriched_text'
 if grep -q "Hero walks into the tavern" "$EVI/scenes_rows.txt"; then
-  echo "✅ PASS: text_chunk mapped to raw_text."
+  echo "✅ PASS: text_chunk mapped to enriched_text."
 else
-  echo "❌ FAIL: raw_text content missing or incorrect."
+  echo "❌ FAIL: enriched_text content missing or incorrect."
   exit 1
 fi
 
