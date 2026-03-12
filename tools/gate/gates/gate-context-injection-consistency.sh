@@ -88,14 +88,21 @@ ON CONFLICT (id) DO NOTHING;
 SQL
 
 # V3.0 P0-2: Inject a dummy vector for Chapter 1 to test Long-term memory retrieval
-# Hardened: Generate vector literal in Bash, then inject into SQL (Avoid definition inside SQL heredoc)
-DUMMY_VECTOR="[$(printf '0.1,%.0s' {1..1535})0.1]"
+# Hardened: Probing pgvector capability before update
+HAS_VECTOR=$(psql "$DATABASE_URL" -tAc "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vector');")
 
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<SQL | tee -a "$EVI/GATE_RUN.log"
-UPDATE novel_chapters 
-SET summary_vector = '$DUMMY_VECTOR'::vector 
-WHERE id = '$TEST_CHAPTER_1_ID';
+if [ "$HAS_VECTOR" = "t" ]; then
+    echo "[GATE] pgvector detected. Injecting dummy vector..." | tee -a "$EVI/GATE_RUN.log"
+    DUMMY_VECTOR="[$(printf '0.1,%.0s' {1..1535})0.1]"
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<SQL | tee -a "$EVI/GATE_RUN.log"
+    UPDATE novel_chapters 
+    SET summary_vector = '$DUMMY_VECTOR'::vector 
+    WHERE id = '$TEST_CHAPTER_1_ID';
 SQL
+else
+    echo "[GATE] Skip summary_vector update (pgvector type missing in current environment)" | tee -a "$EVI/GATE_RUN.log"
+    echo "VECTOR_TYPE_PRESENT=false" > "$EVI/VECTOR_CAPABILITY_CHECK.txt"
+fi
 
 # ----------------------------
 # 2) Create two CE06 parsing jobs in shot_jobs (with TOP-LEVEL traceId)

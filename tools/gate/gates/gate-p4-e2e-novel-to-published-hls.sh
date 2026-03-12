@@ -79,7 +79,7 @@ psql "$DATABASE_URL" -c "INSERT INTO seasons (id, \"projectId\", \"index\", titl
 psql "$DATABASE_URL" -c "INSERT INTO episodes (id, \"projectId\", \"seasonId\", \"index\", name, \"chapterId\") VALUES ('$EP_ID', '$PROJ_ID', '$SEA_ID', 1, 'Episode 1', '$CH1_ID');" > /dev/null
 
 SCENE_ID="scene_$TS"
-psql "$DATABASE_URL" -c "INSERT INTO scenes (id, \"episodeId\", project_id, scene_index, title, summary) VALUES ('$SCENE_ID', '$EP_ID', '$PROJ_ID', 1, 'Main Scene', 'Auto-generated for P4 E2E');" > /dev/null
+psql "$DATABASE_URL" -c "INSERT INTO scenes (id, \"episodeId\", project_id, scene_index, title, summary, status, created_at, updated_at) VALUES ('$SCENE_ID', '$EP_ID', '$PROJ_ID', 1, 'Main Scene', 'Auto-generated for P4 E2E', 'PENDING', NOW(), NOW());" > /dev/null
 
 SHOT_ID="shot_$TS"
 # Note: Physical column in 'shots' is 'index' (reserved), quote required.
