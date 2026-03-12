@@ -20,14 +20,23 @@ else
     echo "[ENV] Local/Real environment detected, using ${FILE_SIZE_MB}MB stress fixture" | tee -a "$LOG"
 fi
 
-# === STAGE 1: DD ===
+# === STAGE 1: File Generation (Node.js ftruncate) ===
 echo "[STAGE 1] Generating ${FILE_SIZE_MB}MB test file at $TMP..." | tee -a "$LOG"
+mkdir -p "$(dirname "$TMP")"
 rm -f "$TMP"
-if ! dd if=/dev/zero of="$TMP" bs=1m count="$FILE_SIZE_MB" 2>/dev/null; then
-    echo "FAIL_STAGE_1_DD: dd command returned non-zero (FILE_SIZE=${FILE_SIZE_MB}MB)" | tee -a "$LOG"
+
+# 使用 Node.js 稳健生成占位文件（ftruncate）
+if ! node -e "
+const fs = require('fs');
+const size = parseInt(process.argv[1]) * 1024 * 1024;
+const fd = fs.openSync(process.argv[2], 'w');
+fs.ftruncateSync(fd, size);
+fs.closeSync(fd);
+" "$FILE_SIZE_MB" "$TMP" 2>>"$LOG"; then
+    echo "FAIL_STAGE_1_GENERATE: Node.js ftruncate failed" | tee -a "$LOG"
     exit 11
 fi
-echo "[STAGE 1] dd done" | tee -a "$LOG"
+echo "[STAGE 1] file generation done" | tee -a "$LOG"
 
 # === STAGE 2: File Check ===
 echo "[STAGE 2] Checking generated file..." | tee -a "$LOG"
