@@ -723,6 +723,9 @@ if [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p0-r1_video_merge_hash_stream.sh" ]
     else
         echo -e "  ${RED}❌ Video Merge memory safety check failed${NC}"
         echo "- ❌ Video Merge memory safety check failed" >> "$VIDEO_MERGE_MEM_OUTPUT"
+        echo "  --- Executed Script Output Start ---"
+        cat "$VIDEO_MERGE_MEM_OUTPUT"
+        echo "  --- Executed Script Output End ---"
         VIDEO_MERGE_MEM_PASSED=false
     fi
 else
