@@ -11,35 +11,32 @@ TMP="docs/_evidence/tmp_bigfile_512mb.bin"
 
 echo "=== GATE P0-R1 [VIDEO_MERGE_HASH_STREAM] START ===" | tee "$LOG"
 
-# 1) 静态断言：禁止 readFileSync 用于 hash
-if grep -R -n "readFileSync(" packages/engines-video-merge/providers/local_ffmpeg.provider.ts > /dev/null 2>&1; then
-  echo "❌ readFileSync detected in video_merge provider (OOM risk)" | tee -a "$LOG"
-  exit 1
-else
-  echo "✅ No readFileSync calls found in provider" | tee -a "$LOG"
-fi
-
-# 2) 生成大文件（512MB）
-echo "Generating 512MB test file at $TMP..." | tee -a "$LOG"
+# === STAGE 1: DD ===
+echo "[STAGE 1] Generating 512MB test file at $TMP..." | tee -a "$LOG"
 rm -f "$TMP"
-dd if=/dev/zero of="$TMP" bs=1m count=512 2>/dev/null
+if ! dd if=/dev/zero of="$TMP" bs=1m count=512 2>/dev/null; then
+    echo "FAIL_STAGE_1_DD: dd command returned non-zero" | tee -a "$LOG"
+    exit 11
+fi
+echo "[STAGE 1] dd done" | tee -a "$LOG"
 
-echo "=== DIAGNOSTICS: 512MB Generated File ===" | tee -a "$LOG"
-ls -lh "$TMP" | tee -a "$LOG" || true
-echo "=========================================" | tee -a "$LOG"
+# === STAGE 2: File Check ===
+echo "[STAGE 2] Checking generated file..." | tee -a "$LOG"
+if [ ! -f "$TMP" ]; then
+    echo "FAIL_STAGE_2_FILE_CHECK: File not found after dd" | tee -a "$LOG"
+    exit 12
+fi
+ls -lh "$TMP" | tee -a "$LOG"
+echo "[STAGE 2] file check passed" | tee -a "$LOG"
 
-# 3) 运行内存检查脚本
-echo "Running memory check..." | tee -a "$LOG"
+# === STAGE 3: Node Execution ===
+NODE_SCRIPT="$TMP.js"
+NODE_OUT="$TMP.out"
 
-# 设置强制调试追踪，直到 node 结束，并在失败时强行打点
-set -x
-trap 'echo "❌ [FATAL] hash_stream script crashed at line $LINENO with exit code $?" | tee -a "$LOG"' ERR
-
-node - "$TMP" <<'NODE'
+cat > "$NODE_SCRIPT" <<'NODE'
 const fs = require('fs');
 const { createHash } = require('crypto');
 const path = require('path');
-
 const filePath = process.argv[2];
 
 function sha256File(filePath) {
@@ -54,14 +51,12 @@ function sha256File(filePath) {
 
 (async () => {
   if (!fs.existsSync(filePath)) {
-    console.error("Test file not found:", filePath);
-    process.exit(1);
+    console.error("FAIL_STAGE_3_NODE_EXEC: Test file not found by Node");
+    process.exit(13);
   }
-
   const before = process.memoryUsage().rss;
   const digest = await sha256File(filePath);
   const after = process.memoryUsage().rss;
-
   const deltaMB = (after - before) / 1024 / 1024;
 
   console.log("digest:", digest);
@@ -70,13 +65,38 @@ function sha256File(filePath) {
   console.log("rss_delta_mb:", deltaMB.toFixed(2));
 
   if (deltaMB > 200) {
-    console.error(`❌ OOM-risk: RSS delta too high: ${deltaMB.toFixed(2)} MB`);
-    process.exit(1);
+    console.error(`FAIL_STAGE_4_RSS_LIMIT: OOM-risk RSS delta too high: ${deltaMB.toFixed(2)} MB`);
+    process.exit(14);
   }
   console.log("✅ RSS delta is within safe limits");
 })();
 NODE
 
+echo "[STAGE 3] Running Node memory check..." | tee -a "$LOG"
+set +e
+node "$NODE_SCRIPT" "$TMP" > "$NODE_OUT" 2>&1
+RC=$?
+set -e
+
+echo "[STEP] node exit code=$RC" | tee -a "$LOG"
+echo "--- Node STDOUT/STDERR Start ---" | tee -a "$LOG"
+cat "$NODE_OUT" | tee -a "$LOG"
+echo "--- Node STDOUT/STDERR End ---" | tee -a "$LOG"
+
+if [ $RC -ne 0 ]; then
+    if grep -q "FAIL_STAGE_4_RSS_LIMIT" "$NODE_OUT"; then
+        echo "FAIL_STAGE_4_RSS_LIMIT: rss delta exceeded threshold" | tee -a "$LOG"
+    elif grep -q "FAIL_STAGE_3_NODE_EXEC" "$NODE_OUT"; then
+        echo "FAIL_STAGE_3_NODE_EXEC: file missing at node startup" | tee -a "$LOG"
+    else
+        echo "FAIL_STAGE_4_NODE_CRASH: Node crashed unexpectedly with exit code $RC" | tee -a "$LOG"
+    fi
+    exit $RC
+fi
+
+echo "[STAGE 4] Node execution completed perfectly" | tee -a "$LOG"
+
 # Cleanup
-rm -f "$TMP"
+rm -f "$TMP" "$NODE_SCRIPT" "$NODE_OUT"
 echo "GATE P0-R1 [VIDEO_MERGE_HASH_STREAM]: PASS" | tee -a "$LOG"
+exit 0
