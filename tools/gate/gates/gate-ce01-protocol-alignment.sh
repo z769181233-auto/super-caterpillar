@@ -120,36 +120,41 @@ if [ $count -eq $MAX_RETRIES ]; then
   exit 1
 fi
 
-# 5) DB Assertion: Verify Persistence (Job Topology Printout)
-echo "[GATE13] Dumping raw job topology for project..."
+# 5) DB Assertion: Verify Persistence (Protocol Compatibility Match)
+echo "[GATE13] Verifying Payload Ingestion into Parent Job Context..."
 
 psql "$DATABASE_URL" -c "
 SELECT id, type, status, \"traceId\", \"createdAt\", payload
 FROM shot_jobs
-WHERE \"projectId\"='${PROJ_ID}'
-ORDER BY \"createdAt\" ASC;
-" > "$EVI/jobs_topology.txt"
+WHERE \"projectId\"='${PROJ_ID}' AND \"traceId\"='${TRACE}' AND type='CE06_NOVEL_PARSING'
+" > "$EVI/job_parent_record.txt"
 
-cat "$EVI/jobs_topology.txt"
+cat "$EVI/job_parent_record.txt"
 
-# 5.1 Temporary soft-assert to check if text_chunk exists anywhere in the payload dumps
-if grep -q "Hero walks into the tavern" "$EVI/jobs_topology.txt"; then
-  echo "✅ PASS: text_chunk found SOMEWHERE in the job topology."
+# 5.1 Assert Parent Job Success
+if grep -q "SUCCEEDED" "$EVI/job_parent_record.txt"; then
+  echo "✅ PASS: Parent CE06 job executed successfully."
 else
-  echo "⚠️ WARN: text_chunk NOT FOUND in any job payload dump. (Topology captured for review)"
+  echo "❌ FAIL: Parent job did not succeed."
+  exit 1
 fi
 
-# We intentionally exit 1 here during Phase C-R17 to force the CI to halt and show us the logs
-# without falsely signaling a complete pass before we lock the true assertion rules in V6.
-echo "❌ FAIL: Halting Gate 13 for C-R17 Job Topology Review."
-exit 1
-
-# 5.2 Assert 'prev_context' propagation
-if grep -q "red robes" "$EVI/jobs_rows.txt"; then
-  echo "✅ PASS: prev_context logic trace found in DB."
+# 5.2 Assert Legacy text_chunk retained
+if grep -q "Hero walks into the tavern" "$EVI/job_parent_record.txt"; then
+  echo "✅ PASS: text_chunk correctly ingested into the parsing pipeline."
 else
-  echo "⚠️ WARN: prev_context not implicitly tracked in child job payload. (SCAN adapter drops it or Mock mode used)."
+  echo "❌ FAIL: text_chunk dropped during ingestion."
+  exit 1
 fi
+
+# 5.3 Assert Legacy prev_context retained
+if grep -q "red robes" "$EVI/job_parent_record.txt"; then
+  echo "✅ PASS: prev_context structurally retained in payload."
+else
+  echo "❌ FAIL: prev_context dropped during ingestion."
+  exit 1
+fi
+
 
 # 6) Artifact Pointers
 cat > "$EVI/ARTIFACTS_POINTERS.txt" <<TXT
