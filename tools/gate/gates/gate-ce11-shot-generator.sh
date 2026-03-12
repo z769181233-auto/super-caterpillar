@@ -78,8 +78,7 @@ INSERT INTO seasons(id, \"projectId\", index, title, \"createdAt\", \"updatedAt\
 VALUES ('sea_${TS}', '${PROJ_ID}', 1, 'Gate Season', now(), now());
 INSERT INTO episodes(id, \"seasonId\", \"projectId\", index, name)
 VALUES ('epi_${TS}', 'sea_${TS}', '${PROJ_ID}', 1, 'Gate Episode');
-INSERT INTO scenes(id, \"episodeId\", scene_index, title, project_id, enriched_text, \"reviewStatus\", created_at, updated_at)
-VALUES ('${SCENE_ID}', 'epi_${TS}', 1, 'Gate Scene', '${PROJ_ID}', 'Cyberpunk city, neon lights, busy streets.', 'DRAFT', now(), now());
+UPDATE scenes SET \"episodeId\" = 'epi_${TS}', \"reviewStatus\" = 'DRAFT', updated_at = now() WHERE id = '${SCENE_ID}';
 " > /dev/null
 
 echo "[GATE15] DB Hierarchy Seeded."
