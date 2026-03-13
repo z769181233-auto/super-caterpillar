@@ -700,7 +700,8 @@ elif [ -f "$CAPACITY_REPORT_FILE" ]; then
     fi
 else
     echo -e "  ${YELLOW}⚠️  Capacity report file not found${NC}"
-    echo "- ⚠️  Capacity report file not found" >> "$CAPACITY_REPORT_OUTPUT"
+    echo "- ❌ Capacity report file not found" >> "$CAPACITY_REPORT_OUTPUT"
+    CAPACITY_REPORT_PASSED=false
 fi
 
 if [ "$CAPACITY_REPORT_PASSED" = true ]; then
@@ -1304,7 +1305,7 @@ fi
   echo "## Gate Mode Semantics"
   echo "- **MODE**: $GATE_ENV_MODE"
   if [ "$GATE_ENV_MODE" = "local" ] || [ "$GATE_ENV_MODE" = "ci" ]; then
-    echo "- **Skipped Gates (local/ci mode)**: Gate 4, 5, 7, 8, 9, 11, 12"
+    echo "- **Skipped Gates (local/ci mode)**: Gate 4, 5, 7, 9, 12"
     echo "- **Required Gates**: Gate 1, 2, 3, 6, 10, 13, 14, 15, 16"
   else
     echo "- **Required Gates**: 1-16 (ALL REQUIRED)"

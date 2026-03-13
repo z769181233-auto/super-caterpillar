@@ -379,8 +379,9 @@ export async function startGateWorkerApp() {
           }
         }
 
+        let assetId: string | undefined;
         if (sId) {
-          await prisma.asset.upsert({
+          const asset = await prisma.asset.upsert({
             where: { ownerType_ownerId_type: { ownerType: 'SCENE', ownerId: sId, type: 'VIDEO' } },
             update: { status: 'GENERATED', storageKey: mockKey, createdByJobId: job.id },
             create: {
@@ -393,8 +394,14 @@ export async function startGateWorkerApp() {
               createdByJobId: job.id,
             },
           });
+          assetId = asset.id;
         }
-        result = { status: 'SUCCEEDED', videoKey: mockKey, output: { storageKey: mockKey } };
+        result = {
+          status: 'SUCCEEDED',
+          videoKey: mockKey,
+          assetId: assetId,
+          output: { storageKey: mockKey, assetId: assetId },
+        };
       } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE')
         result = await processTimelineComposeJob(ctx);
       else if (job.type === 'TIMELINE_RENDER') result = await processTimelineRenderJob(ctx);
