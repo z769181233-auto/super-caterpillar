@@ -114,23 +114,29 @@ log "Pipeline triggered (TraceId: $TRACE_ID). Monitoring..."
 MAX_WAIT=150 # 5 minutes (2s * 150)
 i=0
 FOUND=0
+CHAIN_BROKEN=0
+CE09_STATUS=""
+ASSET_STATUS=""
 while [ $i -lt $MAX_WAIT ]; do
     # 记录 Job Trace (增量记录)
     psql "$DATABASE_URL" -t -c "SELECT json_agg(t) FROM (SELECT id, type, status, \"updatedAt\", \"lastError\" FROM shot_jobs WHERE \"projectId\" = '$PROJ_ID' OR \"traceId\" = '$TRACE_ID' ORDER BY \"createdAt\" ASC) t;" >> "$EVI_ROOT/job_trace.jsonl"
     
-    # PLAN-0: 强制检查 CE09 job 是否 SUCCEEDED
     # PLAN-0: 检查是否有任何失败的子任务 (失败早期退出)
     FAILED_JOBS_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE (\"projectId\" = '$PROJ_ID' OR \"traceId\" = '$TRACE_ID') AND status = 'FAILED';")
     if [ "$FAILED_JOBS_COUNT" -gt 0 ]; then
         log "❌ FAILED: Detected $FAILED_JOBS_COUNT failed jobs in P4 chain. Exiting early for diagnostics."
+        CHAIN_BROKEN=1
         break
     fi
 
+    # PLAN-0: 强制检查 CE09 job 是否 SUCCEEDED
+    CE09_STATUS=$(psql "$DATABASE_URL" -tAc "SELECT status FROM shot_jobs WHERE \"projectId\" = '$PROJ_ID' AND type = 'CE09_MEDIA_SECURITY' LIMIT 1" | tr -d '[:space:]')
+
     # PLAN-0: 检查 Asset 状态 + hls_playlist_url 非空
-    ASSET_STATUS=$(psql "$DATABASE_URL" -t -c "SELECT status FROM assets WHERE \"projectId\" = '$PROJ_ID' AND status = 'PUBLISHED' AND hls_playlist_url IS NOT NULL LIMIT 1" | xargs)
+    ASSET_STATUS=$(psql "$DATABASE_URL" -tAc "SELECT status FROM assets WHERE \"projectId\" = '$PROJ_ID' AND status = 'PUBLISHED' AND hls_playlist_url IS NOT NULL LIMIT 1" | tr -d '[:space:]')
     
     # PLAN-0: 必须同时满足 CE09 SUCCEEDED + Asset PUBLISHED + hls_playlist_url 非空
-    if [ "$CE09_STATUS" = "SUCCEEDED" ] && [ "$ASSET_STATUS" = "PUBLISHED" ]; then
+    if [ "${CE09_STATUS:-}" = "SUCCEEDED" ] && [ "${ASSET_STATUS:-}" = "PUBLISHED" ]; then
         ASSET_QUERY=$(psql "$DATABASE_URL" -t -c "SELECT json_agg(t) FROM (SELECT * FROM assets WHERE \"projectId\" = '$PROJ_ID' AND status = 'PUBLISHED' LIMIT 1) t;" | jq -c '.[0]')
         log "✅ Asset PUBLISHED + CE09 SUCCEEDED detected after $((i * 2))s"
         echo "$ASSET_QUERY" > "$EVI_ROOT/asset_record.json"
@@ -138,20 +144,19 @@ while [ $i -lt $MAX_WAIT ]; do
         break
     fi
     
-    # 失败检测
-    LAST_TRACE_LINE=$(tail -n 1 "$EVI_ROOT/job_trace.jsonl" || true)
-    if echo "$LAST_TRACE_LINE" | grep -q "FAILED"; then
-        log "❌ FAILED: Detected failed job in trace."
-        exit 1
-    fi
+
 
     sleep 2
     i=$((i+1))
-    [ $((i % 15)) -eq 0 ] && log "Wait $((i * 2))s... (Polling CE09=$CE09_STATUS, Asset=$ASSET_STATUS)"
+    [ $((i % 15)) -eq 0 ] && log "Wait $((i * 2))s... (Polling CE09=${CE09_STATUS:-}, Asset=${ASSET_STATUS:-})"
 done
 
 if [ $FOUND -eq 0 ]; then
-    log "❌ FAILED: Timeout or Chain Break in P4 Pipeline (300s)"
+    if [ "${CHAIN_BROKEN:-0}" -eq 1 ]; then
+        log "❌ FAILED: P4 chain broken before publish target reached"
+    else
+        log "❌ FAILED: Timeout waiting for publish target (300s)"
+    fi
     
     log "[DIAGNOSTIC] Dumping Full P4 Job Chain Audit (including Errors & Payloads)..."
     psql "$DATABASE_URL" -c "
@@ -164,10 +169,10 @@ if [ $FOUND -eq 0 ]; then
       WHERE \"projectId\" = '$PROJ_ID' OR \"traceId\" = '$TRACE_ID'
       ORDER BY \"createdAt\" ASC;" | tee -a "$EVI_ROOT/p4_job_chain_full.txt"
   
-    ROOT_JOB_STATE=$(psql "$DATABASE_URL" -tAc "SELECT status FROM shot_jobs WHERE id='$JOB_ID';") 
-    if [ "$ROOT_JOB_STATE" = "PENDING" ]; then
+    ROOT_JOB_STATE=$(psql "$DATABASE_URL" -tAc "SELECT status FROM shot_jobs WHERE id='$JOB_ID';" | tr -d '[:space:]') 
+    if [ "${ROOT_JOB_STATE:-}" = "PENDING" ]; then
        log "[GATE] ERROR_CODE: FAIL_A (Root job not consumed by worker)"
-    elif [ "$ROOT_JOB_STATE" = "FAILED" ]; then
+    elif [ "${ROOT_JOB_STATE:-}" = "FAILED" ]; then
        log "[GATE] ERROR_CODE: FAIL_B (Root job failed during execution)"
     else
        SUB_JOBS_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND id != '$JOB_ID';")
