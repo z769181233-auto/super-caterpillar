@@ -506,6 +506,7 @@ export class ApiClient {
         parentJobId?: string;
         traceId?: string;
         priority?: number;
+        dedupeKey?: string;
       },
     dto?: { type?: string; jobType?: string; payload?: any; traceId?: string; priority?: number },
     headers?: Record<string, string>

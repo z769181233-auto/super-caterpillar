@@ -37,7 +37,10 @@ export class JobUpdateOpsService {
         if (!job) throw new NotFoundException(`Job ${jobId} not found`);
 
         if (job.workerId !== workerNode.id) throw new ForbiddenException(`Job ownership mismatch`);
-        if (job.status === 'RUNNING') return { status: 'RUNNING', idempotent: true };
+        if (job.status === 'RUNNING' || job.status === 'SUCCEEDED') {
+            this.logger.log(`[JOB_ACK_IDEMPOTENT] Job ${jobId} already in status ${job.status}, skipping ack.`);
+            return { status: job.status, idempotent: true };
+        }
         if (job.status !== 'DISPATCHED') throw new BadRequestException(`Cannot ack job in status ${job.status}`);
 
         await this.prisma.shotJob.update({
@@ -54,12 +57,23 @@ export class JobUpdateOpsService {
     async reportJobResult(
         jobId: string,
         result: { status: 'SUCCEEDED' | 'FAILED'; result?: any; errorMessage?: string },
-        userId?: string
+        userId?: string,
+        source: string = 'unknown'
     ) {
         const job = await this.prisma.shotJob.findUnique({
             where: { id: jobId },
         });
         if (!job) throw new NotFoundException(`Job ${jobId} not found`);
+ 
+        const isIdempotent = job.status === 'SUCCEEDED' && result.status === 'SUCCEEDED';
+        
+        this.logger.log(
+            `[JOB_RESULT_REPORT] jobId=${jobId} type=${job.type} oldStatus=${job.status} newStatus=${result.status} source=${source} idempotentSkip=${isIdempotent}`
+        );
+
+        if (isIdempotent) {
+            return job;
+        }
 
         const updatedJob = await this.prisma.shotJob.update({
             where: { id: jobId },
@@ -148,7 +162,7 @@ export class JobUpdateOpsService {
         if (job.workerId !== workerNode.id) throw new ForbiddenException(`Job ownership mismatch`);
 
         // 3. Delegate to reportJobResult
-        return this.reportJobResult(jobId, params, undefined);
+        return this.reportJobResult(jobId, params, undefined, 'worker-complete');
     }
 
     async updateTaskStatusIfAllJobsCompleted(taskId: string) {

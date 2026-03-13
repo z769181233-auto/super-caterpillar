@@ -916,7 +916,7 @@ export class OrchestratorService {
 
     // 2.3 继承验证标记（关键：防止下游作业计费污染）
     const isVerification = !!contextJob.isVerification;
-    const dedupeKey = isVerification ? `gate_video:${pipelineRunId}` : undefined;
+    const dedupeKey = `video_render_${(contextJob.payload as any)?.sceneId || contextJob.sceneId}_${pipelineRunId || contextJob.traceId}`;
 
     if (isVerification) {
       this.logger.log(
