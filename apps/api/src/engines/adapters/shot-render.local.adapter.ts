@@ -38,10 +38,24 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
         );
       }
 
-      const storageRoot = path.resolve(process.env.STORAGE_ROOT || '.data/storage');
+      this.logger.log(`[ShotRenderLocal] CWD: ${process.cwd()}`);
+
+      // P0-R0-PATH: Hardware Storage Root to Repo Root
+      let repoRoot = process.cwd();
+      while (repoRoot.length > 1 && !fs.existsSync(path.join(repoRoot, 'pnpm-workspace.yaml'))) {
+        repoRoot = path.dirname(repoRoot);
+      }
+
+      const storageRoot = (process.env.STORAGE_ROOT) 
+        ? path.resolve(process.env.STORAGE_ROOT)
+        : path.join(repoRoot, '.data/storage');
+      
+      this.logger.log(`[ShotRenderLocal] Resolved storageRoot: ${storageRoot}`);
+
       const outputDir = path.join(storageRoot, 'renders', projectId, 'scenes', sceneId);
 
       if (!fs.existsSync(outputDir)) {
+        this.logger.log(`[ShotRenderLocal] Creating directory: ${outputDir}`);
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
