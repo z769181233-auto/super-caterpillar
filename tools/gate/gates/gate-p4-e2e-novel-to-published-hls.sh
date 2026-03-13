@@ -146,7 +146,28 @@ while [ $i -lt $MAX_WAIT ]; do
 done
 
 if [ $FOUND -eq 0 ]; then
-    log "❌ FAILED: Timeout waiting for PUBLISHED status."
+    log "❌ FAILED: Timeout waiting for PUBLISHED status (300s)"
+    
+    log "[DIAGNOSTIC] Dumping P4 Job Chain Audit..."
+    psql "$DATABASE_URL" -c "
+      SELECT id, type, status, \"traceId\", \"createdAt\", \"updatedAt\"
+      FROM shot_jobs 
+      WHERE \"projectId\" = '$PROJ_ID' OR \"traceId\" = '$TRACE_ID'
+      ORDER BY \"createdAt\" ASC;"
+  
+    ROOT_JOB_STATE=$(psql "$DATABASE_URL" -tAc "SELECT status FROM shot_jobs WHERE id='$JOB_ID';") 
+    if [ "$ROOT_JOB_STATE" = "PENDING" ]; then
+       log "[GATE] ERROR_CODE: FAIL_A (Root job not consumed by worker)"
+    elif [ "$ROOT_JOB_STATE" = "FAILED" ]; then
+       log "[GATE] ERROR_CODE: FAIL_B (Root job failed during execution)"
+    else
+       CE09_EXISTS=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND type = 'CE09_MEDIA_SECURITY';")
+       if [ "$CE09_EXISTS" -eq 0 ]; then
+          log "[GATE] ERROR_CODE: FAIL_C (Root job succeeded but CE09 not spawned - fan-out break)"
+       else
+          log "[GATE] ERROR_CODE: FAIL_D (CE09 exists but Asset not PUBLISHED - final pipeline break)"
+       fi
+    fi
     exit 1
 fi
 
