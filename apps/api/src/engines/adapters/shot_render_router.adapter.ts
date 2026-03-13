@@ -396,7 +396,8 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     provider: 'replicate' | 'local' | 'comfyui' | 'mock' | 'local_mps' | 'fusion';
     reason: string;
   } {
-    const envProvider = (process.env.SHOT_RENDER_PROVIDER || 'replicate').toLowerCase() as any;
+    const isGateOrCi = process.env.GATE_MODE === '1' || process.env.CI === 'true';
+    const envProvider = (process.env.SHOT_RENDER_PROVIDER || (isGateOrCi ? 'local' : 'replicate')).toLowerCase() as any;
     const engineMode = process.env.ENGINE_MODE || 'development';
 
     if (engineMode === 'production' && envProvider === 'mock') {
@@ -431,7 +432,10 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
           'JOB_CONFIG_INVALID: REPLICATE_API_TOKEN missing while SHOT_RENDER_PROVIDER=replicate. Production forbids silent fallback to mock/demo.'
         );
       }
-      return { provider: 'replicate', reason: 'Default/Explicit SHOT_RENDER_PROVIDER=replicate' };
+      return { 
+        provider: 'replicate', 
+        reason: (process.env.SHOT_RENDER_PROVIDER ? 'Explicit' : 'Default') + ' SHOT_RENDER_PROVIDER=replicate' 
+      };
     }
 
     throw new Error(

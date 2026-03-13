@@ -182,7 +182,7 @@ if [ $FOUND -eq 0 ]; then
           FAILED_RENDER_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND type = 'SHOT_RENDER' AND status = 'FAILED';")
           if [ "$FAILED_RENDER_COUNT" -gt 0 ]; then
              log "[GATE] ERROR_CODE: FAIL_C2 (SHOT_RENDER sub-jobs failed - pipeline stalled at render)"
-             psql "$DATABASE_URL" -c "SELECT id, \"lastError\" FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND type = 'SHOT_RENDER' AND status = 'FAILED';" | tee -a "$EVI_ROOT/render_errors.txt"
+             psql "$DATABASE_URL" -c "SELECT id, \"engine_provider\", \"engine_model\", \"lastError\" FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND type = 'SHOT_RENDER' AND status = 'FAILED';" | tee -a "$EVI_ROOT/render_errors.txt"
           else
              CE09_EXISTS=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND type = 'CE09_MEDIA_SECURITY';")
              if [ "$CE09_EXISTS" -eq 0 ]; then
