@@ -37,6 +37,8 @@ coverage/
 **/.runtime/
 .gate/
 **/.gate/
+__pycache__/
+*.pyc
 
 # Root Logs, PIDs & Temp Txt
 *.log

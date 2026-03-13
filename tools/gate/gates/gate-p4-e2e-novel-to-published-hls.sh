@@ -119,9 +119,14 @@ while [ $i -lt $MAX_WAIT ]; do
     psql "$DATABASE_URL" -t -c "SELECT json_agg(t) FROM (SELECT id, type, status, \"updatedAt\", \"lastError\" FROM shot_jobs WHERE \"projectId\" = '$PROJ_ID' OR \"traceId\" = '$TRACE_ID' ORDER BY \"createdAt\" ASC) t;" >> "$EVI_ROOT/job_trace.jsonl"
     
     # PLAN-0: 强制检查 CE09 job 是否 SUCCEEDED
-    CE09_STATUS=$(psql "$DATABASE_URL" -t -c "SELECT status FROM shot_jobs WHERE \"projectId\" = '$PROJ_ID' AND type = 'CE09_MEDIA_SECURITY' LIMIT 1" | xargs)
-    
-    # 检查 Asset 状态 + hls_playlist_url 非空
+    # PLAN-0: 检查是否有任何失败的子任务 (失败早期退出)
+    FAILED_JOBS_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE (\"projectId\" = '$PROJ_ID' OR \"traceId\" = '$TRACE_ID') AND status = 'FAILED';")
+    if [ "$FAILED_JOBS_COUNT" -gt 0 ]; then
+        log "❌ FAILED: Detected $FAILED_JOBS_COUNT failed jobs in P4 chain. Exiting early for diagnostics."
+        break
+    fi
+
+    # PLAN-0: 检查 Asset 状态 + hls_playlist_url 非空
     ASSET_STATUS=$(psql "$DATABASE_URL" -t -c "SELECT status FROM assets WHERE \"projectId\" = '$PROJ_ID' AND status = 'PUBLISHED' AND hls_playlist_url IS NOT NULL LIMIT 1" | xargs)
     
     # PLAN-0: 必须同时满足 CE09 SUCCEEDED + Asset PUBLISHED + hls_playlist_url 非空
@@ -146,14 +151,18 @@ while [ $i -lt $MAX_WAIT ]; do
 done
 
 if [ $FOUND -eq 0 ]; then
-    log "❌ FAILED: Timeout waiting for PUBLISHED status (300s)"
+    log "❌ FAILED: Timeout or Chain Break in P4 Pipeline (300s)"
     
-    log "[DIAGNOSTIC] Dumping P4 Job Chain Audit..."
+    log "[DIAGNOSTIC] Dumping Full P4 Job Chain Audit (including Errors & Payloads)..."
     psql "$DATABASE_URL" -c "
-      SELECT id, type, status, \"traceId\", \"createdAt\", \"updatedAt\"
+      SELECT 
+        id, type, status, \"traceId\", 
+        \"lastError\", \"engine_provider\", \"engine_model\",
+        left(payload::text, 200) as payload_snippet,
+        left(result::text, 200) as result_snippet
       FROM shot_jobs 
       WHERE \"projectId\" = '$PROJ_ID' OR \"traceId\" = '$TRACE_ID'
-      ORDER BY \"createdAt\" ASC;"
+      ORDER BY \"createdAt\" ASC;" | tee -a "$EVI_ROOT/p4_job_chain_full.txt"
   
     ROOT_JOB_STATE=$(psql "$DATABASE_URL" -tAc "SELECT status FROM shot_jobs WHERE id='$JOB_ID';") 
     if [ "$ROOT_JOB_STATE" = "PENDING" ]; then
@@ -161,11 +170,22 @@ if [ $FOUND -eq 0 ]; then
     elif [ "$ROOT_JOB_STATE" = "FAILED" ]; then
        log "[GATE] ERROR_CODE: FAIL_B (Root job failed during execution)"
     else
-       CE09_EXISTS=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND type = 'CE09_MEDIA_SECURITY';")
-       if [ "$CE09_EXISTS" -eq 0 ]; then
-          log "[GATE] ERROR_CODE: FAIL_C (Root job succeeded but CE09 not spawned - fan-out break)"
+       SUB_JOBS_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND id != '$JOB_ID';")
+       if [ "$SUB_JOBS_COUNT" -eq 0 ]; then
+          log "[GATE] ERROR_CODE: FAIL_C1 (Root job succeeded but ZERO sub-jobs spawned - orchestrator break)"
        else
-          log "[GATE] ERROR_CODE: FAIL_D (CE09 exists but Asset not PUBLISHED - final pipeline break)"
+          FAILED_RENDER_COUNT=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND type = 'SHOT_RENDER' AND status = 'FAILED';")
+          if [ "$FAILED_RENDER_COUNT" -gt 0 ]; then
+             log "[GATE] ERROR_CODE: FAIL_C2 (SHOT_RENDER sub-jobs failed - pipeline stalled at render)"
+             psql "$DATABASE_URL" -c "SELECT id, \"lastError\" FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND type = 'SHOT_RENDER' AND status = 'FAILED';" | tee -a "$EVI_ROOT/render_errors.txt"
+          else
+             CE09_EXISTS=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM shot_jobs WHERE \"traceId\" = '$TRACE_ID' AND type = 'CE09_MEDIA_SECURITY';")
+             if [ "$CE09_EXISTS" -eq 0 ]; then
+                log "[GATE] ERROR_CODE: FAIL_C3 (Render finished but CE09 not spawned - final fan-out break)"
+             else
+                log "[GATE] ERROR_CODE: FAIL_D (CE09 exists but Asset not PUBLISHED - persistence or publish break)"
+             fi
+          fi
        fi
     fi
     exit 1
