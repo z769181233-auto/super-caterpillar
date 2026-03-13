@@ -260,6 +260,13 @@ else
 fi
 
 ALL_GATES_PASSED=true
+ACTUAL_SKIPPED_GATES=""
+
+# Helper to track skipped gates
+mark_skipped() {
+  local gate_name="$1"
+  ACTUAL_SKIPPED_GATES="${ACTUAL_SKIPPED_GATES}${gate_name}, "
+}
 
 # 门禁 1: Preflight 检查（含 CORS 生产验证）
 echo -e "${BLUE}Gate 1: Preflight Check + CORS Production Validation${NC}"
@@ -616,7 +623,8 @@ VIDEO_E2E_OUTPUT="$TEMP_DIR/video_e2e.txt"
 if [ "$GATE_ENV_MODE" = "local" ]; then
     echo -e "  ${YELLOW}⚠️  Skipping Gate 4 (Requires credits, mode=local)${NC}"
     echo "- ⚠️  Skipped (local mode)" >> "$VIDEO_E2E_OUTPUT"
-    VIDEO_E2E_PASSED=true
+    VIDEO_E2E_PASSED="skipped"
+    mark_skipped "Gate 4"
 elif [ -f "$PROJECT_ROOT/tools/smoke/run_video_e2e.sh" ]; then
     if bash "$PROJECT_ROOT/tools/smoke/run_video_e2e.sh" > "$VIDEO_E2E_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Video E2E test passed${NC}"
@@ -651,7 +659,8 @@ CAPACITY_REPORT_FILE="$PROJECT_ROOT/docs/LAUNCH_CAPACITY_REPORT.md"
 if [ "$GATE_ENV_MODE" = "local" ]; then
     echo -e "  ${YELLOW}⚠️  Skipping Gate 5 (Requires benchmark results, mode=local)${NC}"
     echo "- ⚠️  Skipped (local mode)" >> "$CAPACITY_REPORT_OUTPUT"
-    CAPACITY_REPORT_PASSED=true
+    CAPACITY_REPORT_PASSED="skipped"
+    mark_skipped "Gate 5"
 elif [ -f "$CAPACITY_REPORT_FILE" ]; then
     # 检查是否还有占位符
     if grep -q "___\|待填充\|待执行\|TBD\|TODO.*数据" "$CAPACITY_REPORT_FILE"; then
@@ -751,7 +760,8 @@ VIDEO_MERGE_GUARD_OUTPUT="$TEMP_DIR/video_merge_guard.txt"
 if [ "$GATE_ENV_MODE" = "local" ]; then
     echo -e "  ${YELLOW}⚠️  Skipping Gate 7 (Video Merge Guardrails, mode=local)${NC}"
     echo "- ⚠️  Skipped (local mode)" >> "$VIDEO_MERGE_GUARD_OUTPUT"
-    VIDEO_MERGE_GUARD_PASSED=true
+    VIDEO_MERGE_GUARD_PASSED="skipped"
+    mark_skipped "Gate 7"
 elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p0-r2_video_merge_timeout_threads.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-p0-r2_video_merge_timeout_threads.sh" > "$VIDEO_MERGE_GUARD_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Video Merge resource guardrails check passed${NC}"
@@ -783,7 +793,8 @@ CONTEXT_INJECTION_OUTPUT="$TEMP_DIR/context_injection.txt"
 if [ "$GATE_ENV_MODE" = "local" ]; then
     echo -e "  ${YELLOW}⚠️  Skipping Gate 8 (Context Injection, mode=local)${NC}"
     echo "- ⚠️  Skipped (local mode)" >> "$CONTEXT_INJECTION_OUTPUT"
-    CONTEXT_INJECTION_PASSED=true
+    CONTEXT_INJECTION_PASSED="skipped"
+    mark_skipped "Gate 8"
 elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-context-injection-consistency.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-context-injection-consistency.sh" > "$CONTEXT_INJECTION_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Context Injection consistency check passed${NC}"
@@ -818,7 +829,8 @@ SHOTS_DIRECTOR_OUTPUT="$TEMP_DIR/shots_director.txt"
 if [ "$GATE_ENV_MODE" = "local" ]; then
     echo -e "  ${YELLOW}⚠️  Skipping Gate 9 (Director Columns, mode=local)${NC}"
     echo "- ⚠️  Skipped (local mode)" >> "$SHOTS_DIRECTOR_OUTPUT"
-    SHOTS_DIRECTOR_PASSED=true
+    SHOTS_DIRECTOR_PASSED="skipped"
+    mark_skipped "Gate 9"
 elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p1-1_shots_director_cols.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-p1-1_shots_director_cols.sh" > "$SHOTS_DIRECTOR_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Shots Director Control Fields check passed${NC}"
@@ -878,7 +890,8 @@ P4_E2E_OUTPUT="$TEMP_DIR/p4_e2e.txt"
 if [ "$GATE_ENV_MODE" = "local" ]; then
     echo -e "  ${YELLOW}⚠️  Skipping Gate 11 (P4 E2E Pipeline, mode=local)${NC}"
     echo "- ⚠️  Skipped (local mode)" >> "$P4_E2E_OUTPUT"
-    P4_E2E_PASSED=true
+    P4_E2E_PASSED="skipped"
+    mark_skipped "Gate 11"
 elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p4-e2e-novel-to-published-hls.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-p4-e2e-novel-to-published-hls.sh" > "$P4_E2E_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ P4 E2E Pipeline check passed${NC}"
@@ -910,7 +923,8 @@ BILLING_OUTPUT="$TEMP_DIR/billing_integrity.txt"
 if [ "$GATE_ENV_MODE" = "local" ]; then
     echo -e "  ${YELLOW}⚠️  Skipping Gate 12 (Billing Integrity, mode=local)${NC}"
     echo "- ⚠️  Skipped (local mode)" >> "$BILLING_OUTPUT"
-    BILLING_PASSED=true
+    BILLING_PASSED="skipped"
+    mark_skipped "Gate 12"
 elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p2-billing-integrity.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-p2-billing-integrity.sh" > "$BILLING_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Billing Integrity check passed${NC}"
@@ -1277,15 +1291,15 @@ fi
   echo "- Gate 1 (Preflight): $([ "$PREFLIGHT_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 2 (Capacity Gate): $([ "$CAPACITY_GATE_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 3 (Signed URL): $([ "$SIGNED_URL_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
-  echo "- Gate 4 (Video E2E): $([ "$VIDEO_E2E_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
-  echo "- Gate 5 (Capacity Report): $([ "$CAPACITY_REPORT_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 4 (Video E2E): $([[ "$VIDEO_E2E_PASSED" == "skipped" ]] && echo "⚠️  SKIPPED" || ([ "$VIDEO_E2E_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED"))"
+  echo "- Gate 5 (Capacity Report): $([[ "$CAPACITY_REPORT_PASSED" == "skipped" ]] && echo "⚠️  SKIPPED" || ([ "$CAPACITY_REPORT_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED"))"
   echo "- Gate 6 (Video Merge Memory): $([ "$VIDEO_MERGE_MEM_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
-  echo "- Gate 7 (Video Merge Guardrails): $([ "$VIDEO_MERGE_GUARD_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
-  echo "- Gate 8 (Context Injection): $([ "$CONTEXT_INJECTION_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
-  echo "- Gate 9 (Director Control): $([ "$SHOTS_DIRECTOR_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 7 (Video Merge Guardrails): $([[ "$VIDEO_MERGE_GUARD_PASSED" == "skipped" ]] && echo "⚠️  SKIPPED" || ([ "$VIDEO_MERGE_GUARD_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED"))"
+  echo "- Gate 8 (Context Injection): $([[ "$CONTEXT_INJECTION_PASSED" == "skipped" ]] && echo "⚠️  SKIPPED" || ([ "$CONTEXT_INJECTION_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED"))"
+  echo "- Gate 9 (Director Control): $([[ "$SHOTS_DIRECTOR_PASSED" == "skipped" ]] && echo "⚠️  SKIPPED" || ([ "$SHOTS_DIRECTOR_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED"))"
   echo "- Gate 10 (Frame Merge): $([ "$FRAME_MERGE_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
-  echo "- Gate 11 (P4 E2E Pipeline): $([ "$P4_E2E_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
-  echo "- Gate 12 (Billing Integrity): $([ "$BILLING_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
+  echo "- Gate 11 (P4 E2E Pipeline): $([[ "$P4_E2E_PASSED" == "skipped" ]] && echo "⚠️  SKIPPED" || ([ "$P4_E2E_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED"))"
+  echo "- Gate 12 (Billing Integrity): $([[ "$BILLING_PASSED" == "skipped" ]] && echo "⚠️  SKIPPED" || ([ "$BILLING_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED"))"
   echo "- Gate 13 (CE01 Protocol): $([ "$CE01_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 14 (CE02 Visual Density): $([ "$CE02_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 15 (CE11 Shot Generator): $([ "$CE11_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
@@ -1305,8 +1319,13 @@ fi
   echo "## Gate Mode Semantics"
   echo "- **MODE**: $GATE_ENV_MODE"
   if [ "$GATE_ENV_MODE" = "local" ] || [ "$GATE_ENV_MODE" = "ci" ]; then
+<<<<<<< HEAD
     echo "- **Skipped Gates (local/ci mode)**: Gate 4, 5, 7, 9, 12"
     echo "- **Required Gates**: Gate 1, 2, 3, 6, 10, 13, 14, 15, 16"
+=======
+    echo "- **Skipped Gates (Physically skipped)**: ${ACTUAL_SKIPPED_GATES:-None}"
+    echo "- **Required/Executed Gates**: Gate 1, 2, 3, 6, 10, 13, 14, 15, 16 + partial others"
+>>>>>>> 4fb30f1e9 (fix(gate11): audio fallback and summary consistency)
   else
     echo "- **Required Gates**: 1-16 (ALL REQUIRED)"
   fi
@@ -1352,8 +1371,8 @@ fi
 
 # 只有在非 local 且非 ci 模式下 (即 staging)，4/5 的失败才影响最终结果
 if [ "$GATE_ENV_MODE" != "local" ] && [ "$GATE_ENV_MODE" != "ci" ]; then
-    [ "$VIDEO_E2E_PASSED" != true ] && ALL_PASSED=false
-    [ "$CAPACITY_REPORT_PASSED" != true ] && ALL_PASSED=false
+    [[ "$VIDEO_E2E_PASSED" != true ]] && [[ "$VIDEO_E2E_PASSED" != "skipped" ]] && ALL_PASSED=false
+    [[ "$CAPACITY_REPORT_PASSED" != true ]] && [[ "$CAPACITY_REPORT_PASSED" != "skipped" ]] && ALL_PASSED=false
 fi
 
 echo ""
