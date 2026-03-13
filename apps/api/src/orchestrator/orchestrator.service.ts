@@ -518,10 +518,15 @@ export class OrchestratorService {
    */
   @OnEvent('job.succeeded')
   async handleJobSucceededEvent(job: any) {
-    this.logger.log(`[Orchestrator] Received job.succeeded event for job ${job.id}`);
+    const jobId = job.id || job.jobId;
+    this.logger.log(`[Orchestrator] Received job.succeeded event for job ${jobId}`);
+    if (!jobId) {
+      this.logger.error(`[Orchestrator] Received job.succeeded event but jobId is undefined! payload=${JSON.stringify(job)}`);
+      return;
+    }
     // Extract result from payload or metadata if needed,
     // but the actual DAG logic in handleJobCompletion will fetch the latest job state.
-    await this.handleJobCompletion(job.id, job.result || {});
+    await this.handleJobCompletion(jobId, job.result || {});
   }
 
   /**

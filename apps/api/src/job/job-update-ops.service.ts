@@ -127,6 +127,7 @@ export class JobUpdateOpsService {
 
         // 5. Emit Event for Orchestrator
         this.eventEmitter.emit(`job.${result.status === 'SUCCEEDED' ? 'succeeded' : 'failed'}`, {
+            id: jobId,
             jobId,
             type: job.type,
             projectId: job.projectId,
