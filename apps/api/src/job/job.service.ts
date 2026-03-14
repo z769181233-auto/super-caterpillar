@@ -2035,7 +2035,10 @@ export class JobService {
    * CE06 完成 → 触发 CE03
    * CE03 完成 → 触发 CE04
    */
-  private async handleCECoreJobCompletion(
+  /**
+   * Orchestrate CE Core Pipeline completion (DAG transitions)
+   */
+  public async handleCECoreJobCompletion(
     job: ShotJobWithShotHierarchy,
     result?: unknown
   ): Promise<void> {
@@ -2224,20 +2227,22 @@ export class JobService {
       // Stage-1: 检查是否所有 SHOT_RENDER 都已完成
       await this.handleStage1ShotCompletion(job);
     } else if (job.type === JobTypeEnum.TIMELINE_RENDER) {
-      // 导出完成，触发 CE09 安全加固
-      if (pipeline.includes('CE09_MEDIA_SECURITY')) {
-        // Audit Trail: VIDEO_EXPORT -> CE09
+      if (pipeline.includes("CE09_MEDIA_SECURITY")) {
+        this.logger.log(`[CE09_FANOUT_ELIGIBLE] TIMELINE_RENDER finished, triggering CE09 for project ${job.projectId}`);
         await this.auditLogService.record({
-          action: 'CE_DAG_TRANSITION',
-          resourceType: 'job',
+          action: "CE_DAG_TRANSITION",
+          resourceType: "job",
           resourceId: job.id,
           traceId: job.traceId || task?.traceId || undefined,
           details: {
-            from: 'TIMELINE_RENDER',
-            to: 'CE09_MEDIA_SECURITY',
+            from: "TIMELINE_RENDER",
+            to: "CE09_MEDIA_SECURITY",
             projectId: job.projectId,
           },
         });
+
+        const assetId = (result as any)?.assetId || job.shotId;
+        this.logger.log(`[CE09_FANOUT_ENQUEUED] Enqueuing CE09 with assetId: ${assetId}`);
 
         await this.createCECoreJob({
           projectId: job.projectId!,
@@ -2245,10 +2250,13 @@ export class JobService {
           taskId: job.taskId!,
           jobType: JobTypeEnum.CE09_MEDIA_SECURITY,
           payload: {
-            projectId: job.projectId,
-            assetId: (result as any)?.assetId,
-            shotId: job.shotId || undefined,
-            engineKey: 'ce09_media_security',
+            assetId,
+            originJobId: job.id,
+          },
+        });
+      } else {
+        this.logger.log(`[CE09_FANOUT_SKIPPED] CE09 not in pipeline: ${pipeline.join(",")}`);
+      }
             previousJobId: job.id,
             previousJobResult: result,
             pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
