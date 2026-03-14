@@ -220,7 +220,8 @@ export class ProductionFlowHook {
     }
 
     const ce09DedupeKey = `ce09_${payload.pipelineRunId || job.id}_${assetId}`;
-    this.logger.log(`[CE09_FANOUT_ELIGIBLE] jobId=${job.id} assetId=${assetId} pipelineRunId=${payload.pipelineRunId}`);
+    const videoPath = (job.result as any)?.storageKey;
+    this.logger.log(`[CE09_FANOUT_ELIGIBLE] jobId=${job.id} assetId=${assetId} videoPath=${videoPath} pipelineRunId=${payload.pipelineRunId}`);
 
     await this.jobService.createCECoreJob({
       projectId: job.projectId,
@@ -233,6 +234,7 @@ export class ProductionFlowHook {
         projectId: job.projectId,
         sceneId: payload.sceneId,
         assetId,
+        videoPath,
         pipelineRunId: payload.pipelineRunId,
         originJobId: job.id,
         engineKey: 'ce09_media_security',

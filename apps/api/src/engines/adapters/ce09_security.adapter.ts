@@ -12,7 +12,7 @@ import { performance } from 'perf_hooks';
  * - Watermark + MD5 + Screenshot + HLS
  * - 0 Sync IO
  */
-import { config } from '@scu/config';
+import { env } from '@scu/config';
 
 @Injectable()
 export class CE09SecurityLocalAdapter implements EngineAdapter {
@@ -28,9 +28,7 @@ export class CE09SecurityLocalAdapter implements EngineAdapter {
     const t0 = performance.now();
 
     try {
-      const root = path.resolve(process.cwd());
-      const repoRoot = root.includes('apps/') ? path.dirname(path.dirname(root)) : root;
-      const storageRoot = path.join(repoRoot, '.runtime');
+      const storageRoot = env.storageRoot;
       const absInput = safeJoin(storageRoot, videoPath);
 
       const secureRelativeDir = `secure/${projectId}/${pipelineRunId}`;
