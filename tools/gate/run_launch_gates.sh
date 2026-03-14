@@ -667,35 +667,41 @@ elif [ -f "$CAPACITY_REPORT_FILE" ]; then
         echo -e "  ${YELLOW}⚠️  Capacity report contains placeholder data, attempting auto-fill...${NC}"
         echo "- ⚠️  Capacity report contains placeholder data, attempting auto-fill..." >> "$CAPACITY_REPORT_OUTPUT"
 
-        MISSING_ENV=""
+        # 强制检查并尝试重新获取 Token (CI 健壮性增强)
         if [ -z "${AUTH_TOKEN_A:-}" ]; then
-            MISSING_ENV="${MISSING_ENV} AUTH_TOKEN_A"
-        fi
-        if [ -z "${SHOT_ID:-}" ]; then
-            MISSING_ENV="${MISSING_ENV} SHOT_ID"
+            echo "[gate] Gate 5: AUTH_TOKEN_A missing, attempting emergency mint..."
+            if [ -x "$PROJECT_ROOT/tools/smoke/mint_auth_token.sh" ]; then
+                AUTH_TOKEN_A="$("$PROJECT_ROOT/tools/smoke/mint_auth_token.sh" 2>/dev/null || true)"
+                export AUTH_TOKEN_A
+            fi
         fi
 
-        if [ -n "$MISSING_ENV" ]; then
-            echo -e "  ${RED}❌ Missing env for capacity benchmark:${NC}${MISSING_ENV}"
-            echo "- ❌ Missing env for capacity benchmark:${MISSING_ENV}" >> "$CAPACITY_REPORT_OUTPUT"
+        if [ -z "${AUTH_TOKEN_A:-}" ] || [ -z "${SHOT_ID:-}" ]; then
+            echo -e "  ${RED}❌ Missing critical env for Gate 5 benchmark (AUTH_TOKEN_A or SHOT_ID)${NC}"
+            echo "- ❌ Missing env for capacity benchmark: AUTH_TOKEN_A=${AUTH_TOKEN_A:-(missing)} SHOT_ID=${SHOT_ID:-(missing)}" >> "$CAPACITY_REPORT_OUTPUT"
             CAPACITY_REPORT_PASSED=false
         else
             AUTO_FILL_FAILED=false
             echo "  Running capacity benchmark and filling report..." >> "$CAPACITY_REPORT_OUTPUT"
-            bash "$PROJECT_ROOT/tools/load/run_capacity_benchmark.sh" >> "$CAPACITY_REPORT_OUTPUT" 2>&1 || AUTO_FILL_FAILED=true
+            
+            # 1. 运行压测 (显式传递环境变量)
+            AUTH_TOKEN_A="$AUTH_TOKEN_A" SHOT_ID="$SHOT_ID" bash "$PROJECT_ROOT/tools/load/run_capacity_benchmark.sh" >> "$CAPACITY_REPORT_OUTPUT" 2>&1 || AUTO_FILL_FAILED=true
+            
+            # 2. 填充报告 (仅在压测成功后执行)
             if [ "$AUTO_FILL_FAILED" = false ]; then
+                echo "  Benchmark success, filling md report..." >> "$CAPACITY_REPORT_OUTPUT"
                 npx tsx "$PROJECT_ROOT/tools/load/fill_capacity_report.ts" >> "$CAPACITY_REPORT_OUTPUT" 2>&1 || AUTO_FILL_FAILED=true
             fi
 
             if [ "$AUTO_FILL_FAILED" = true ]; then
-                echo -e "  ${RED}❌ Failed to auto-fill capacity report from benchmark${NC}"
+                echo -e "  ${RED}❌ Gate 5 auto-fill failed. Check $CAPACITY_REPORT_OUTPUT for details.${NC}"
                 echo "- ❌ Failed to auto-fill capacity report from benchmark" >> "$CAPACITY_REPORT_OUTPUT"
                 CAPACITY_REPORT_PASSED=false
             else
                 # 回填后再次检查占位符
                 if grep -q "___\|待填充\|待执行\|TBD\|TODO.*数据" "$CAPACITY_REPORT_FILE"; then
-                    echo -e "  ${RED}❌ Capacity report still contains placeholder data after auto-fill${NC}"
-                    echo "- ❌ Capacity report still contains placeholder data after auto-fill" >> "$CAPACITY_REPORT_OUTPUT"
+                    echo -e "  ${RED}❌ Capacity report still contains placeholders after auto-fill${NC}"
+                    echo "- ❌ Capacity report still contains placeholders after auto-fill" >> "$CAPACITY_REPORT_OUTPUT"
                     CAPACITY_REPORT_PASSED=false
                 else
                     echo -e "  ${GREEN}✅ Capacity report data is complete (auto-filled)${NC}"
