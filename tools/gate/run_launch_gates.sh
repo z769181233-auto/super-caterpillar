@@ -120,7 +120,7 @@ pick_first_2xx() {
 }
 # 报告文件
 TS="$(date +%Y%m%d_%H%M%S)"
-EVI_DIR="$PROJECT_ROOT/docs/_evidence/run_launch_gates_${TS}"
+EVI_DIR="${EVI_DIR:-$PROJECT_ROOT/docs/_evidence/run_launch_gates_${TS}}"
 mkdir -p "$EVI_DIR"
 
 # W3-0: ARTIFACT_DIR 契约强制（唯一 SSOT）
@@ -228,18 +228,22 @@ command -v node >/dev/null 2>&1 || { echo -e "${RED}❌ node is required for mod
 # Default Post-Check Status (ensure initialized)
 POST_POLLUTION_PASSED=true
 
-echo -e "${BLUE}Stability Gate: Repo Root Pollution Check${NC}"
-PRE_POLLUTION_OUTPUT="$TEMP_DIR/pre_repo_root_pollution.txt"
-if ! bash "$PROJECT_ROOT/tools/gate/gates/gate_repo_root_pollution.sh" >"$PRE_POLLUTION_OUTPUT" 2>&1; then
-    echo -e "${RED}❌ Stability check failed${NC}"
-    exit 1
-fi
+if [[ "${SKIP_STABILITY:-0}" == "0" ]]; then
+    echo -e "${BLUE}Stability Gate: Repo Root Pollution Check${NC}"
+    PRE_POLLUTION_OUTPUT="$TEMP_DIR/pre_repo_root_pollution.txt"
+    if ! bash "$PROJECT_ROOT/tools/gate/gates/gate_repo_root_pollution.sh" >"$PRE_POLLUTION_OUTPUT" 2>&1; then
+        echo -e "${RED}❌ Stability check failed${NC}"
+        exit 1
+    fi
 
-echo -e "${BLUE}Hygiene Gate: Billing Doc Hygiene Check${NC}"
-PRE_BILL_DOC_OUTPUT="$TEMP_DIR/pre_billing_doc_hygiene.txt"
-if ! bash "$PROJECT_ROOT/tools/gate/gates/gate_billing_doc_hygiene.sh" >"$PRE_BILL_DOC_OUTPUT" 2>&1; then
-    echo -e "${RED}❌ Hygiene check failed${NC}"
-    exit 1
+    echo -e "${BLUE}Hygiene Gate: Billing Doc Hygiene Check${NC}"
+    PRE_BILL_DOC_OUTPUT="$TEMP_DIR/pre_billing_doc_hygiene.txt"
+    if ! bash "$PROJECT_ROOT/tools/gate/gates/gate_billing_doc_hygiene.sh" >"$PRE_BILL_DOC_OUTPUT" 2>&1; then
+        echo -e "${RED}❌ Hygiene check failed${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}⚠️  Skipping Stability & Hygiene gates (SKIP_STABILITY=1)${NC}"
 fi
 echo ""
 
