@@ -1319,13 +1319,8 @@ fi
   echo "## Gate Mode Semantics"
   echo "- **MODE**: $GATE_ENV_MODE"
   if [ "$GATE_ENV_MODE" = "local" ] || [ "$GATE_ENV_MODE" = "ci" ]; then
-<<<<<<< HEAD
-    echo "- **Skipped Gates (local/ci mode)**: Gate 4, 5, 7, 9, 12"
-    echo "- **Required Gates**: Gate 1, 2, 3, 6, 10, 13, 14, 15, 16"
-=======
     echo "- **Skipped Gates (Physically skipped)**: ${ACTUAL_SKIPPED_GATES:-None}"
     echo "- **Required/Executed Gates**: Gate 1, 2, 3, 6, 10, 13, 14, 15, 16 + partial others"
->>>>>>> 4fb30f1e9 (fix(gate11): audio fallback and summary consistency)
   else
     echo "- **Required Gates**: 1-16 (ALL REQUIRED)"
   fi
