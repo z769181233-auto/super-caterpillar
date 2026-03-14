@@ -228,6 +228,7 @@ async function runLoadTest() {
     threshold: { p95Ms: p95Threshold, successRate: 0.95 },
     pass: successRate >= 0.95 && p95 <= p95Threshold,
     ts: new Date().toISOString(),
+    errorSummary: stats.errors.slice(0, 10).map(e => ({ code: e.statusCode || e.errorCode, msg: e.message || e.error })),
   };
 
   // JSON 输出模式：仅输出 JSON + 可选写入文件，不打印人类可读内容
