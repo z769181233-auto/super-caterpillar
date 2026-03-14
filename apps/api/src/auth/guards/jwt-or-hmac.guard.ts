@@ -43,7 +43,7 @@ export class JwtOrHmacGuard implements CanActivate {
   }
 
   private hasJwt(req: any): boolean {
-    const authHeader = req?.headers?.['authorization'];
+    const authHeader = this.getHeader(req, 'Authorization');
     if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
       return true;
     }

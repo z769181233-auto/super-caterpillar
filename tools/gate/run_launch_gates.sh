@@ -678,9 +678,20 @@ else
             echo "[gate] Gate 5: AUTH_TOKEN_A missing, attempting emergency mint..."
             if [ -x "$PROJECT_ROOT/tools/smoke/mint_auth_token.sh" ]; then
                 AUTH_TOKEN_A="$("$PROJECT_ROOT/tools/smoke/mint_auth_token.sh" 2>/dev/null || true)"
-                export AUTH_TOKEN_A
+                if [ -n "$AUTH_TOKEN_A" ]; then
+                    export AUTH_TOKEN_A
+                    echo "[gate] Gate 5: AUTH_TOKEN_A successfully minted (len: ${#AUTH_TOKEN_A})"
+                else
+                    echo "[gate] Gate 5: AUTH_TOKEN_A minting failed (returned empty)"
+                fi
             fi
+        else
+            echo "[gate] Gate 5: Using existing AUTH_TOKEN_A (len: ${#AUTH_TOKEN_A})"
         fi
+
+        # 补齐 Worker 鉴权信息 (解决 401 注册失败)
+        export WORKER_API_KEY="${WORKER_API_KEY:-scu-dev-worker-key}"
+        export WORKER_API_SECRET="${WORKER_API_SECRET:-scu-dev-worker-secret}"
 
         if [ -z "${AUTH_TOKEN_A:-}" ] || [ -z "${SHOT_ID:-}" ]; then
             echo -e "  ${RED}❌ Missing critical env for Gate 5 benchmark (AUTH_TOKEN_A or SHOT_ID)${NC}"
