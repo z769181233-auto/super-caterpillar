@@ -557,7 +557,7 @@ else
             
             # 测试 6: 越权访问（使用 AUTH_TOKEN_B 签名访问 A 的资源）
             if [ -n "$AUTH_TOKEN_B" ]; then
-                echo "  Test 6: Unauthorized access (cross-tenant)..."
+                                echo "  Test 6: Unauthorized access (cross-tenant)..."
                 SIGN_B_RESPONSE=$(curl -s -w "\n%{http_code}" \
                     -H "$AUTH_HEADER_B" \
                     "${API_URL}/api/storage/sign/${TEST_STORAGE_KEY}" 2>/dev/null || echo -e "\n000")
@@ -661,13 +661,19 @@ if [ "$GATE_ENV_MODE" = "local" ]; then
     echo "- ⚠️  Skipped (local mode)" >> "$CAPACITY_REPORT_OUTPUT"
     CAPACITY_REPORT_PASSED="skipped"
     mark_skipped "Gate 5"
-elif [ -f "$CAPACITY_REPORT_FILE" ]; then
-    # 检查是否还有占位符
-    if grep -q "___\|待填充\|待执行\|TBD\|TODO.*数据" "$CAPACITY_REPORT_FILE"; then
+else
+    NEED_AUTO_FILL=false
+    if [ ! -f "$CAPACITY_REPORT_FILE" ]; then
+        echo -e "  ${YELLOW}⚠️  Capacity report file missing, will attempt to generate...${NC}"
+        NEED_AUTO_FILL=true
+    elif grep -q "___\|待填充\|待执行\|TBD\|TODO.*数据" "$CAPACITY_REPORT_FILE"; then
         echo -e "  ${YELLOW}⚠️  Capacity report contains placeholder data, attempting auto-fill...${NC}"
-        echo "- ⚠️  Capacity report contains placeholder data, attempting auto-fill..." >> "$CAPACITY_REPORT_OUTPUT"
+        NEED_AUTO_FILL=true
+    fi
 
-        # 强制检查并尝试重新获取 Token (CI 健壮性增强)
+    if [ "$NEED_AUTO_FILL" = true ]; then
+        echo "- ⚠️  Capacity report missing or incomplete, attempting auto-fill..." >> "$CAPACITY_REPORT_OUTPUT"
+        mkdir -p "$(dirname "$CAPACITY_REPORT_FILE")"
         if [ -z "${AUTH_TOKEN_A:-}" ]; then
             echo "[gate] Gate 5: AUTH_TOKEN_A missing, attempting emergency mint..."
             if [ -x "$PROJECT_ROOT/tools/smoke/mint_auth_token.sh" ]; then
@@ -678,45 +684,29 @@ elif [ -f "$CAPACITY_REPORT_FILE" ]; then
 
         if [ -z "${AUTH_TOKEN_A:-}" ] || [ -z "${SHOT_ID:-}" ]; then
             echo -e "  ${RED}❌ Missing critical env for Gate 5 benchmark (AUTH_TOKEN_A or SHOT_ID)${NC}"
-            echo "- ❌ Missing env for capacity benchmark: AUTH_TOKEN_A=${AUTH_TOKEN_A:-(missing)} SHOT_ID=${SHOT_ID:-(missing)}" >> "$CAPACITY_REPORT_OUTPUT"
             CAPACITY_REPORT_PASSED=false
         else
             AUTO_FILL_FAILED=false
-            echo "  Running capacity benchmark and filling report..." >> "$CAPACITY_REPORT_OUTPUT"
-            
-            # 1. 运行压测 (显式传递环境变量)
             AUTH_TOKEN_A="$AUTH_TOKEN_A" SHOT_ID="$SHOT_ID" bash "$PROJECT_ROOT/tools/load/run_capacity_benchmark.sh" >> "$CAPACITY_REPORT_OUTPUT" 2>&1 || AUTO_FILL_FAILED=true
-            
-            # 2. 填充报告 (仅在压测成功后执行)
             if [ "$AUTO_FILL_FAILED" = false ]; then
-                echo "  Benchmark success, filling md report..." >> "$CAPACITY_REPORT_OUTPUT"
                 npx tsx "$PROJECT_ROOT/tools/load/fill_capacity_report.ts" >> "$CAPACITY_REPORT_OUTPUT" 2>&1 || AUTO_FILL_FAILED=true
             fi
 
             if [ "$AUTO_FILL_FAILED" = true ]; then
-                echo -e "  ${RED}❌ Gate 5 auto-fill failed. Check $CAPACITY_REPORT_OUTPUT for details.${NC}"
-                echo "- ❌ Failed to auto-fill capacity report from benchmark" >> "$CAPACITY_REPORT_OUTPUT"
+                echo -e "  ${RED}❌ Gate 5 auto-fill failed${NC}"
                 CAPACITY_REPORT_PASSED=false
             else
-                # 回填后再次检查占位符
-                if grep -q "___\|待填充\|待执行\|TBD\|TODO.*数据" "$CAPACITY_REPORT_FILE"; then
-                    echo -e "  ${RED}❌ Capacity report still contains placeholders after auto-fill${NC}"
-                    echo "- ❌ Capacity report still contains placeholders after auto-fill" >> "$CAPACITY_REPORT_OUTPUT"
+                if [ ! -f "$CAPACITY_REPORT_FILE" ] || grep -q "___\|待填充\|待执行\|TBD\|TODO.*数据" "$CAPACITY_REPORT_FILE"; then
+                    echo -e "  ${RED}❌ Capacity report incomplete after auto-fill${NC}"
                     CAPACITY_REPORT_PASSED=false
                 else
                     echo -e "  ${GREEN}✅ Capacity report data is complete (auto-filled)${NC}"
-                    echo "- ✅ Capacity report data is complete (auto-filled)" >> "$CAPACITY_REPORT_OUTPUT"
                 fi
             fi
         fi
     else
         echo -e "  ${GREEN}✅ Capacity report data is complete${NC}"
-        echo "- ✅ Capacity report data is complete" >> "$CAPACITY_REPORT_OUTPUT"
     fi
-else
-    echo -e "  ${YELLOW}⚠️  Capacity report file not found${NC}"
-    echo "- ❌ Capacity report file not found" >> "$CAPACITY_REPORT_OUTPUT"
-    CAPACITY_REPORT_PASSED=false
 fi
 
 if [ "$CAPACITY_REPORT_PASSED" = true ]; then
@@ -724,8 +714,6 @@ if [ "$CAPACITY_REPORT_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 5 failed${NC}\n"
 fi
-
-# 门禁 6: Video Merge Memory Safety
 echo -e "${BLUE}Gate 6: Video Merge Memory Safety${NC}"
 echo "Running video merge memory consumption regression test..."
 
