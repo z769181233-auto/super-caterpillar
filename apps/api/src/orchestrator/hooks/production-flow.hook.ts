@@ -205,6 +205,9 @@ export class ProductionFlowHook {
             `[ProductionFlow] Created PublishedVideo for assetId=${assetId}, pipelineRunId=${payload.pipelineRunId}`
           );
         }
+      }
+    }
+
     const jobWithHierarchy = await this.jobService.findJobByIdWithShotHierarchy(evt.id);
     if (jobWithHierarchy) {
       this.logger.log(`[CE_FANOUT_TRIGGER] Routing TIMELINE_RENDER success to JobService for project ${job.projectId}`);

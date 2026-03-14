@@ -2254,16 +2254,6 @@ export class JobService {
             originJobId: job.id,
           },
         });
-      } else {
-        this.logger.log(`[CE09_FANOUT_SKIPPED] CE09 not in pipeline: ${pipeline.join(",")}`);
-      }
-            previousJobId: job.id,
-            previousJobResult: result,
-            pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
-            traceId: job.traceId || task?.traceId || undefined,
-          },
-        });
-        this.logger.log(`TIMELINE_RENDER completed, triggered CE09 for project ${job.projectId}`);
       }
     } else if (job.type === JobTypeEnum.CE09_MEDIA_SECURITY) {
       // CE09 完成，回写 security_processed 和 assets
@@ -2725,5 +2715,15 @@ export class JobService {
       this.logger.log(`[QUALITY_HOOK] Async mode for job ${jobId}`);
       setImmediate(() => void safeRun());
     }
+  }
+
+  /**
+   * P14-0-B: Retrieve job with shot hierarchy for fan-out decisions
+   */
+  async findJobByIdWithShotHierarchy(jobId: string): Promise<ShotJobWithShotHierarchy | null> {
+    return this.prisma.shotJob.findUnique({
+      where: { id: jobId },
+      include: SHOT_JOB_WITH_HIERARCHY,
+    }) as Promise<ShotJobWithShotHierarchy | null>;
   }
 }
