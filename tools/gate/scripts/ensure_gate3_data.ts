@@ -35,21 +35,28 @@ async function main() {
   if (existingOrg) {
     org = await prisma.organization.update({
       where: { id: existingOrg.id },
-      data: { ownerId: user.id },
+      data: { 
+        ownerId: user.id,
+        credits: 1000000, // [A5 FIX] Ensure credits exist for Gate 3+
+      },
     });
-    console.log(`Org updated ownership: ${org.id}`);
+    console.log(`Org updated ownership and credits: ${org.id}`);
   } else {
     org = await prisma.organization.upsert({
       where: { id: 'gate-org' },
-      update: { ownerId: user.id },
+      update: { 
+        ownerId: user.id,
+        credits: 1000000, // [A5 FIX]
+      },
       create: {
         id: 'gate-org',
         name: 'Gate Org',
         slug: 'gate-org',
         ownerId: user.id,
+        credits: 1000000,
       },
     });
-    console.log(`Org ensured via upset: ${org.id}`);
+    console.log(`Org ensured via upsert with credits: ${org.id}`);
   }
 
   // 3. Ensure Project - Force Update Ownership

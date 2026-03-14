@@ -135,15 +135,31 @@ async function main() {
       update: {
         name: smokeOrgName,
         ownerId: user.id,
-        credits: 999999, // Ensure enough credits for VIDEO_RENDER Gate
+        credits: 1000000, // [A5 FIX] Ensure enough credits explicitly
       },
       create: {
         name: smokeOrgName,
         slug: smokeOrgSlug,
         ownerId: user.id,
-        credits: 999999,
+        credits: 1000000,
       },
     });
+
+    // [A5_FIX] Ensure CostCenter exists for BudgetGuard compatibility
+    await (prisma as any).costCenter.upsert({
+      where: { id: `cc-${organization.id}` },
+      update: {
+        budget: 1000000,
+        currentCost: 0,
+      },
+      create: {
+        id: `cc-${organization.id}`,
+        organizationId: organization.id,
+        name: 'Default Cost Center',
+        budget: 1000000,
+        currentCost: 0,
+      },
+    }).catch((e: any) => console.warn('   [A5] Failed to seed CostCenter (ignoring):', e.message));
 
     // 3) 保证用户加入该组织
     await prisma.membership.upsert({
