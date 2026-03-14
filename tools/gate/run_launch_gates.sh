@@ -687,17 +687,28 @@ else
             CAPACITY_REPORT_PASSED=false
         else
             AUTO_FILL_FAILED=false
+            echo "--- Gate 5 Debug Info ---" >> "$CAPACITY_REPORT_OUTPUT"
+            echo "CWD: $(pwd)" >> "$CAPACITY_REPORT_OUTPUT"
+            echo "PROJECT_ROOT: $PROJECT_ROOT" >> "$CAPACITY_REPORT_OUTPUT"
+            ls -la "$PROJECT_ROOT/tools/load/" >> "$CAPACITY_REPORT_OUTPUT" 2>&1
+            echo "------------------------" >> "$CAPACITY_REPORT_OUTPUT"
+
+            echo "Running capacity benchmark..." >> "$CAPACITY_REPORT_OUTPUT"
             AUTH_TOKEN_A="$AUTH_TOKEN_A" SHOT_ID="$SHOT_ID" bash "$PROJECT_ROOT/tools/load/run_capacity_benchmark.sh" >> "$CAPACITY_REPORT_OUTPUT" 2>&1 || AUTO_FILL_FAILED=true
+            
             if [ "$AUTO_FILL_FAILED" = false ]; then
+                echo "Benchmark success, filling report..." >> "$CAPACITY_REPORT_OUTPUT"
                 npx tsx "$PROJECT_ROOT/tools/load/fill_capacity_report.ts" >> "$CAPACITY_REPORT_OUTPUT" 2>&1 || AUTO_FILL_FAILED=true
             fi
 
             if [ "$AUTO_FILL_FAILED" = true ]; then
-                echo -e "  ${RED}❌ Gate 5 auto-fill failed${NC}"
+                echo -e "  ${RED}❌ Gate 5 auto-fill failed. Detailed logs follow:${NC}"
+                cat "$CAPACITY_REPORT_OUTPUT"
                 CAPACITY_REPORT_PASSED=false
             else
                 if [ ! -f "$CAPACITY_REPORT_FILE" ] || grep -q "___\|待填充\|待执行\|TBD\|TODO.*数据" "$CAPACITY_REPORT_FILE"; then
-                    echo -e "  ${RED}❌ Capacity report incomplete after auto-fill${NC}"
+                    echo -e "  ${RED}❌ Capacity report incomplete after auto-fill. Detailed logs follow:${NC}"
+                    cat "$CAPACITY_REPORT_OUTPUT"
                     CAPACITY_REPORT_PASSED=false
                 else
                     echo -e "  ${GREEN}✅ Capacity report data is complete (auto-filled)${NC}"
