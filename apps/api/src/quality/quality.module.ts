@@ -11,7 +11,7 @@ import { ProjectModule } from '../project/project.module';
 import { IdentityModule } from '../identity/identity.module';
 
 @Module({
-  imports: [PrismaModule, forwardRef(() => JobModule), IdentityModule, ProjectModule],
+  imports: [PrismaModule, forwardRef(() => JobModule), forwardRef(() => IdentityModule), forwardRef(() => ProjectModule)],
   controllers: [QualityGateController],
   providers: [QualityMetricsWriter, QualityScoreService, QualityBackfillSweeper],
   exports: [QualityMetricsWriter, QualityScoreService, QualityBackfillSweeper],

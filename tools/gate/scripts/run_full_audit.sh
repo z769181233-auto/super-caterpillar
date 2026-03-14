@@ -29,7 +29,7 @@ grep -Ei "error|exception|fail" worker_audit.log | tail -n 20 >> "$AUDIT_REPORT"
 
 echo "### Database Schema Anomalies" >> "$AUDIT_REPORT"
 # Check for any unexpected columns or missing V3.0 columns again
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 psql "$DATABASE_URL" -c "\d novel_scenes" >> "$AUDIT_REPORT"
 
 echo "Report generated at $AUDIT_REPORT"

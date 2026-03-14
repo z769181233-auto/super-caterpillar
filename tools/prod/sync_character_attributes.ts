@@ -4,7 +4,7 @@ import * as path from 'path';
 
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 const CHARACTER_DNA: Record<string, string> = {
   'Zhang Ruochen':

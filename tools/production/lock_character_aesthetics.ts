@@ -4,7 +4,7 @@ import * as path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
     console.log('--- Lock Character Aesthetics: God-Tier V4.0 ---');

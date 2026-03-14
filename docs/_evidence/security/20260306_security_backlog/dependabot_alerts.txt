@@ -1,0 +1,20 @@
+包名: multer
+严重级: high
+URL: https://github.com/z769181233-auto/super-caterpillar/security/dependabot/50
+
+包名: @hono/node-server
+严重级: high
+URL: https://github.com/z769181233-auto/super-caterpillar/security/dependabot/49
+
+包名: hono
+严重级: medium
+URL: https://github.com/z769181233-auto/super-caterpillar/security/dependabot/48
+
+包名: hono
+严重级: medium
+URL: https://github.com/z769181233-auto/super-caterpillar/security/dependabot/47
+
+包名: hono
+严重级: high
+URL: https://github.com/z769181233-auto/super-caterpillar/security/dependabot/46
+

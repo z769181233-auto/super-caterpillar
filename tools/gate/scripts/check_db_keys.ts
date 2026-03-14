@@ -1,7 +1,7 @@
 import { PrismaClient } from 'database';
 
 async function check() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   try {
     const key = await prisma.apiKey.findUnique({
       where: { key: 'local-worker' },

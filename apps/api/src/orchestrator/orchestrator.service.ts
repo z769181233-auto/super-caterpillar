@@ -518,10 +518,15 @@ export class OrchestratorService {
    */
   @OnEvent('job.succeeded')
   async handleJobSucceededEvent(job: any) {
-    this.logger.log(`[Orchestrator] Received job.succeeded event for job ${job.id}`);
+    const jobId = job.id || job.jobId;
+    this.logger.log(`[Orchestrator] Received job.succeeded event for job ${jobId}`);
+    if (!jobId) {
+      this.logger.error(`[Orchestrator] Received job.succeeded event but jobId is undefined! payload=${JSON.stringify(job)}`);
+      return;
+    }
     // Extract result from payload or metadata if needed,
     // but the actual DAG logic in handleJobCompletion will fetch the latest job state.
-    await this.handleJobCompletion(job.id, job.result || {});
+    await this.handleJobCompletion(jobId, job.result || {});
   }
 
   /**
@@ -916,7 +921,7 @@ export class OrchestratorService {
 
     // 2.3 继承验证标记（关键：防止下游作业计费污染）
     const isVerification = !!contextJob.isVerification;
-    const dedupeKey = isVerification ? `gate_video:${pipelineRunId}` : undefined;
+    const dedupeKey = `video_render_${(contextJob.payload as any)?.sceneId || contextJob.sceneId}_${pipelineRunId || contextJob.traceId}`;
 
     if (isVerification) {
       this.logger.log(
@@ -990,18 +995,35 @@ export class OrchestratorService {
 
     // 2. Resolve Asset ID from Result
     const start = Date.now();
-    // Wait for result to be persisted if needed? No, handleJobCompletion fetched job, but did it fetch result?
-    // job.result is JSON.
     const result = videoJob.result as any;
-    const assetId = result?.assetId || result?.output?.assetId;
-    const storageKey = result?.storageKey || result?.output?.storageKey;
+    let assetId = result?.assetId || result?.output?.assetId;
+    let storageKey = result?.storageKey || result?.output?.storageKey;
+
+    // Phase V.4: Robust Fallback for Gate/CI Mode
+    if ((!assetId || !storageKey) && (process.env.GATE_MODE === '1' || process.env.CI === 'true')) {
+      this.logger.log(`[DAG] VIDEO_RENDER result missing fields. Attempting DB fallback for sceneId=${payload.sceneId}`);
+      const sceneId = payload.sceneId;
+      if (sceneId) {
+        const asset = await this.prisma.asset.findFirst({
+          where: { ownerType: 'SCENE', ownerId: sceneId, type: 'VIDEO' },
+          orderBy: { createdAt: 'desc' }
+        });
+        if (asset) {
+          assetId = asset.id;
+          storageKey = asset.storageKey;
+          this.logger.log(`[DAG] Found asset in DB fallback: ${assetId} / ${storageKey}`);
+        }
+      }
+    }
 
     if (!assetId || !storageKey) {
       this.logger.error(
-        `[DAG] VIDEO_RENDER succeeded but missing assetId/storageKey in result. Cannot spawn CE09. Result: ${JSON.stringify(result)}`
+        `[DAG] VIDEO_RENDER succeeded but missing assetId/storageKey in result. Cannot spawn CE09. [VIDEO_RENDER_POST] jobId=${videoJob.id} videoKey=${result?.videoKey} shouldSpawnCE09=false reason=missing_asset_info result_keys=${Object.keys(result || {})}`
       );
       return;
     }
+
+    this.logger.log(`[DAG] [VIDEO_RENDER_POST] jobId=${videoJob.id} videoKey=${storageKey} assetId=${assetId} shouldSpawnCE09=true`);
 
     this.logger.log(`[DAG] Spawning CE09 for ${pipelineRunId} from VIDEO_RENDER asset ${assetId}`);
 

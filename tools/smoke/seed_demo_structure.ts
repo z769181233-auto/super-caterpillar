@@ -8,7 +8,7 @@ import { PrismaClient } from 'database';
 import fs from 'fs';
 import path from 'path';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   // Try to use the smoke user if available, otherwise fallback

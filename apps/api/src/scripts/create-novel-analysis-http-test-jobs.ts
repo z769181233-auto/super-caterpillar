@@ -14,7 +14,7 @@ import * as util from 'util';
 // 加载根目录 .env，确保数据库配置生效
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function ensureUserOrgProject() {
   const email = 'http-mock+test@local';

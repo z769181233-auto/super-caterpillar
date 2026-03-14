@@ -1,7 +1,11 @@
 name: sbom
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -9,6 +13,7 @@ permissions:
 
 jobs:
   sbom:
+    name: sbom
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +27,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.20.1
           cache: 'pnpm'
 
       # 必须安装依赖，否则 CycloneDX 1.6+ 报 missing evidence (no node_modules)。认识。

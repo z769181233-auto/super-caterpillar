@@ -2,7 +2,7 @@ import axios from 'axios';
 // @ts-ignore
 import { PrismaClient } from '../packages/database/src/generated/prisma/index';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const API_BASE_URL = 'http://localhost:3000';
 // Using the same project and shot from previous steps
 const PROJECT_ID = '99a1bcdb-fe85-4244-9a80-dabae0a3dbe1';

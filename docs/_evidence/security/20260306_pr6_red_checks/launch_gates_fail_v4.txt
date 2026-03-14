@@ -1,0 +1,100 @@
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2100350Z with:
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2100551Z   name: gate-evidence-report
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2100870Z   path: docs/_evidence/run_launch_gates_*
+launch-gates-required	Upload Evidence Artifact	api.log
+launch-gates-required	Upload Evidence Artifact	worker.log
+launch-gates-required	Upload Evidence Artifact	
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2101200Z   if-no-files-found: warn
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2101410Z   compression-level: 6
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2101613Z   overwrite: false
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2101808Z   include-hidden-files: false
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2102013Z env:
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2102195Z   PRISMA_SKIP_POSTINSTALL_GENERATE: 1
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2102492Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.2102777Z ##[endgroup]
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.4335409Z Multiple search paths detected. Calculating the least common ancestor of all paths
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.4338937Z The least common ancestor is /home/runner/work/super-caterpillar/super-caterpillar. This will be the root directory of the artifact
+launch-gates-required	Upload Evidence Artifact	2026-03-06T11:49:13.4356251Z ##[warning]No files were found with the provided path: docs/_evidence/run_launch_gates_*
+launch-gates-required	Upload Evidence Artifact	api.log
+launch-gates-required	Upload Evidence Artifact	worker.log. No artifacts will be uploaded.
+launch-gates-required	Post Run pnpm/action-setup@v3	﻿2026-03-06T11:49:13.4448486Z Post job cleanup.
+launch-gates-required	Post Run pnpm/action-setup@v3	2026-03-06T11:49:13.5318217Z Pruning is unnecessary.
+launch-gates-required	Post Run actions/checkout@v4	﻿2026-03-06T11:49:13.5441964Z Post job cleanup.
+launch-gates-required	Post Run actions/checkout@v4	2026-03-06T11:49:13.6392004Z [command]/usr/bin/git version
+launch-gates-required	Post Run actions/checkout@v4	2026-03-06T11:49:13.6435980Z git version 2.53.0
+launch-gates-required	Post Run actions/checkout@v4	2026-03-06T11:49:13.6479200Z Temporarily overriding HOME='/home/runner/work/_temp/090b0b6e-a37d-4557-b694-909f9141cdb2' before making global git config changes
+launch-gates-required	Post Run actions/checkout@v4	2026-03-06T11:49:13.6480595Z Adding repository directory to the temporary git global config as a safe directory
+launch-gates-required	Post Run actions/checkout@v4	2026-03-06T11:49:13.6484903Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/super-caterpillar/super-caterpillar
+launch-gates-required	Post Run actions/checkout@v4	2026-03-06T11:49:13.6519464Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+launch-gates-required	Post Run actions/checkout@v4	2026-03-06T11:49:13.6552868Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+launch-gates-required	Post Run actions/checkout@v4	2026-03-06T11:49:13.6781422Z fatal: No url found for submodule path 'apps/fusion-engine' in .gitmodules
+launch-gates-required	Post Run actions/checkout@v4	2026-03-06T11:49:13.6810952Z ##[warning]The process '/usr/bin/git' failed with exit code 128
+launch-gates-required	Stop containers	﻿2026-03-06T11:49:13.6885608Z Print service container logs: b99e24d2b0154a869e894fc7e4ed2556_postgres15_a0ad80
+launch-gates-required	Stop containers	2026-03-06T11:49:13.6890044Z ##[command]/usr/bin/docker logs --details 196ccbfa18427bb5b7d932e3fbafdef5a80a7671d60ea6cd57e8fe41864daab2
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7012419Z  The files belonging to this database system will be owned by user "postgres".
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7013343Z  This user must also own the server process.
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7013934Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7014379Z  The database cluster will be initialized with locale "en_US.utf8".
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7015123Z  The default database encoding has accordingly been set to "UTF8".
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7015816Z  The default text search configuration will be set to "english".
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7016368Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7016841Z  Data page checksums are disabled.
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7017259Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7017765Z  fixing permissions on existing directory /var/lib/postgresql/data ... ok
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7018441Z  creating subdirectories ... ok
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7018995Z  selecting dynamic shared memory implementation ... posix
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7019577Z  selecting default max_connections ... 100
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7020060Z  selecting default shared_buffers ... 128MB
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7021542Z  initdb: warning: enabling "trust" authentication for local connections
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7022730Z  initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7024348Z  2026-03-06 11:48:30.503 UTC [1] LOG:  starting PostgreSQL 15.17 (Debian 15.17-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7025088Z  2026-03-06 11:48:30.503 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7025550Z  2026-03-06 11:48:30.503 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7026056Z  2026-03-06 11:48:30.504 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7026621Z  2026-03-06 11:48:30.507 UTC [64] LOG:  database system was shut down at 2026-03-06 11:48:30 UTC
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7027110Z  2026-03-06 11:48:30.511 UTC [1] LOG:  database system is ready to accept connections
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7027573Z  2026-03-06 11:48:39.590 UTC [75] FATAL:  role "root" does not exist
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7027957Z  2026-03-06 11:48:49.669 UTC [83] FATAL:  role "root" does not exist
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7028316Z  2026-03-06 11:48:59.749 UTC [91] FATAL:  role "root" does not exist
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7028671Z  2026-03-06 11:49:09.834 UTC [100] FATAL:  role "root" does not exist
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7028994Z  selecting default time zone ... Etc/UTC
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7029256Z  creating configuration files ... ok
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7029507Z  running bootstrap script ... ok
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7030029Z  performing post-bootstrap initialization ... ok
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7030311Z  syncing data to disk ... ok
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7030516Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7030674Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7030886Z  Success. You can now start the database server using:
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7031619Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7031993Z      pg_ctl -D /var/lib/postgresql/data -l logfile start
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7032345Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7032973Z  waiting for server to start....2026-03-06 11:48:30.184 UTC [48] LOG:  starting PostgreSQL 15.17 (Debian 15.17-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7034040Z  2026-03-06 11:48:30.185 UTC [48] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7034586Z  2026-03-06 11:48:30.188 UTC [51] LOG:  database system was shut down at 2026-03-06 11:48:30 UTC
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7035084Z  2026-03-06 11:48:30.192 UTC [48] LOG:  database system is ready to accept connections
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7035443Z   done
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7035603Z  server started
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7035779Z  CREATE DATABASE
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7035954Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7036344Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7036645Z  /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7037008Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7037238Z  2026-03-06 11:48:30.383 UTC [48] LOG:  received fast shutdown request
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7037728Z  waiting for server to shut down....2026-03-06 11:48:30.383 UTC [48] LOG:  aborting any active transactions
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7038380Z  2026-03-06 11:48:30.385 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7038875Z  2026-03-06 11:48:30.386 UTC [49] LOG:  shutting down
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7039233Z  2026-03-06 11:48:30.386 UTC [49] LOG:  checkpoint starting: shutdown immediate
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7040167Z  2026-03-06 11:48:30.404 UTC [49] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.014 s, sync=0.003 s, total=0.019 s; sync files=301, longest=0.001 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7041086Z  2026-03-06 11:48:30.411 UTC [48] LOG:  database system is shut down
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7041380Z   done
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7041532Z  server stopped
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7041704Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7041915Z  PostgreSQL init process complete; ready for start up.
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7042187Z  
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7047461Z Stop and remove container: b99e24d2b0154a869e894fc7e4ed2556_postgres15_a0ad80
+launch-gates-required	Stop containers	2026-03-06T11:49:13.7052707Z ##[command]/usr/bin/docker rm --force 196ccbfa18427bb5b7d932e3fbafdef5a80a7671d60ea6cd57e8fe41864daab2
+launch-gates-required	Stop containers	2026-03-06T11:49:14.8967338Z 196ccbfa18427bb5b7d932e3fbafdef5a80a7671d60ea6cd57e8fe41864daab2
+launch-gates-required	Stop containers	2026-03-06T11:49:14.8996342Z Remove container network: github_network_72596ab3de3048f8959bf085a7c6db25
+launch-gates-required	Stop containers	2026-03-06T11:49:14.9000860Z ##[command]/usr/bin/docker network rm github_network_72596ab3de3048f8959bf085a7c6db25
+launch-gates-required	Stop containers	2026-03-06T11:49:15.0364371Z github_network_72596ab3de3048f8959bf085a7c6db25
+launch-gates-required	Complete job	﻿2026-03-06T11:49:15.0427460Z Cleaning up orphan processes

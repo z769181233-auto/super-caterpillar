@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import * as util from 'util';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const jsonPath = path.resolve(__dirname, '../config/engines.json');

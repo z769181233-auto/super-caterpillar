@@ -13,7 +13,7 @@ lsof -ti:3001 | xargs kill -9 2>/dev/null || true
 # 2. CONFIGURE ENVIRONMENT
 export JWT_SECRET="smoke_jwt_secret_dev_only_change_me"
 export JWT_REFRESH_SECRET="smoke_jwt_refresh_secret_dev_only_change_me"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu?schema=public"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu?schema=public"
 export REDIS_URL="redis://localhost:6379"
 export IGNORE_ENV_FILE="true"
 export FRONTEND_URL="http://localhost:3001"

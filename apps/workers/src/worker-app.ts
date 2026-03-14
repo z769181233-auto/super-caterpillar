@@ -96,11 +96,11 @@ import {
   processCharacterCardsJob,
   processAssetListJob,
 } from './processors/asset-extraction.processor';
+import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.processor';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ProcessorContext } from './types/processor-context';
 
 const prisma = new PrismaClient({
-  datasources: { db: { url: env.databaseUrl } },
   log: env.isDevelopment ? ['error', 'warn'] : ['error'],
 });
 
@@ -119,11 +119,17 @@ const workerId = readArg('workerId') || process.env.WORKER_ID || env.workerId;
 
 const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
 
-console.log('API_BASE_URL(raw)=', JSON.stringify(process.env.API_BASE_URL));
-if (process.env.API_BASE_URL?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
-const baseUrl = process.env.API_BASE_URL;
+const rawApiBaseUrl = process.env.API_BASE_URL;
+const rawApiUrl = process.env.API_URL;
+const baseUrl = rawApiBaseUrl || rawApiUrl;
+
+console.log(`[BOOT_ENV] API_BASE_URL_RAW=${rawApiBaseUrl}`);
+console.log(`[BOOT_ENV] API_URL_RAW=${rawApiUrl}`);
+console.log(`[BOOT_ENV] API_BASE_URL_RESOLVED=${baseUrl}`);
+
+if (rawApiBaseUrl?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
 if (!baseUrl) {
-  throw new Error('API_BASE_URL is required in production');
+  throw new Error('API_BASE_URL or API_URL is required in production');
 }
 let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
@@ -152,6 +158,7 @@ async function processJobWithExecutor(job: any): Promise<void> {
       job.createdAt,
       async () => {
         const ctx: ProcessorContext = { prisma, job, apiClient, localStorage: localStorageAdapter };
+        if (job.type === 'CE06_NOVEL_PARSING') return processCE06NovelParsingJob(ctx);
         if (job.type === 'CE06_SCRIPT_OUTLINE') return processScriptOutlineJob(ctx);
         if (job.type === 'CE11_SCENE_SPLIT') return processSceneSplitJob(ctx);
         if (job.type === 'CE12_SHOT_SPLIT') return processShotSplitJob(ctx);
@@ -179,20 +186,49 @@ export async function startWorkerApp() {
   await prisma.$connect();
   jobExecutor = new JobExecutor(apiClient);
 
+  const supportedJobTypes = [
+    'CE06_NOVEL_PARSING',
+    'CE06_SCRIPT_OUTLINE',
+    'CE11_SCENE_SPLIT',
+    'CE12_SHOT_SPLIT',
+    'CE99_CONTINUITY_AUDIT',
+    'CE13_CHARACTER_CARDS',
+    'CE14_ASSET_LIST',
+  ];
+
+  console.log('[WORKER_BOOT] entry=apps/workers/src/worker-app.ts');
+  console.log('[WORKER_BOOT] supportedJobTypes=', supportedJobTypes);
+  console.log('[WORKER_BOOT] hasCE06=', supportedJobTypes.includes('CE06_NOVEL_PARSING'));
+
   console.log(`[Worker] Registering worker: ${workerId}`);
   try {
+    const net = require('net');
+    await new Promise((resolve) => {
+      const sock = net.createConnection(3000, '127.0.0.1');
+      sock.on('connect', () => {
+        console.log('[WORKER_NET] connect_ok 127.0.0.1:3000');
+        sock.destroy();
+        resolve(true);
+      });
+      sock.on('error', (err: any) => {
+        console.log(`[WORKER_NET] connect_error code=${err.code} errno=${err.errno} syscall=${err.syscall} address=${err.address} port=${err.port}`);
+        resolve(false);
+      });
+    });
+
+    try {
+      const res = await fetch('http://127.0.0.1:3000/health');
+      const text = await res.text();
+      console.log(`[WORKER_FETCH_HEALTH] status=${res.status} body=${text.substring(0, 50).replace(/\\n/g, ' ')}`);
+    } catch (err: any) {
+      console.log(`[WORKER_FETCH_HEALTH] error name=${err.name} code=${err.code} cause=${err.cause?.code || err.cause?.name}`);
+    }
+
     await apiClient.registerWorker({
       workerId,
       name: `Worker-${workerId}`,
       capabilities: {
-        supportedJobTypes: [
-          'CE06_SCRIPT_OUTLINE',
-          'CE11_SCENE_SPLIT',
-          'CE12_SHOT_SPLIT',
-          'CE99_CONTINUITY_AUDIT',
-          'CE13_CHARACTER_CARDS',
-          'CE14_ASSET_LIST',
-        ],
+        supportedJobTypes,
         supportedEngines: ['real'],
       },
     });

@@ -29,6 +29,12 @@ echo "[GATE15] Bible Payload Prepared."
 # 2) Seed Database Hierarchy
 echo "[GATE15] Seeding DB Hierarchy..."
 
+# Engine Registry (Required for CE11 execution layer SHOT_RENDER bindings)
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
+INSERT INTO engines (id, name, code, \"engineKey\", enabled, \"isActive\", mode, \"adapterName\", \"adapterType\", type, config, \"createdAt\", \"updatedAt\")
+VALUES ('eng_ce07_fusion_${TS}', 'Mock Fusion CE07', 'ce07_fusion_${TS}', 'ce07_fusion_sdxl', true, true, 'process', 'mock', 'mock', 'image_generation', '{}', now(), now());
+" > /dev/null
+
 # User & Project
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO users(id, email, \"passwordHash\", \"userType\", role, tier, quota, \"defaultOrganizationId\", \"createdAt\", \"updatedAt\")
@@ -44,26 +50,32 @@ ON CONFLICT (id) DO NOTHING;
 
 # Source
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO novel_sources(id, \"projectId\", \"rawText\", \"fileName\", \"createdAt\", \"updatedAt\")
-VALUES ('src_${PROJ_ID}', '${PROJ_ID}', 'Dummy', 'gate15.txt', now(), now());
+INSERT INTO novel_sources(id, \"projectId\", \"organizationId\", \"rawText\", \"fileName\", \"fileKey\", \"fileSize\", \"createdAt\", \"updatedAt\")
+VALUES ('src_${PROJ_ID}', '${PROJ_ID}', '${ORG_ID}', 'Dummy', 'gate15.txt', '${PROJ_ID}/gate15.txt', 1024, now(), now());
+" > /dev/null
+
+# Novel (Missing Relational Bridge)
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
+INSERT INTO novels(id, project_id, title, created_at, updated_at)
+VALUES ('nov_${PROJ_ID}', '${PROJ_ID}', 'Gate 15 Novel', now(), now());
 " > /dev/null
 
 # Volume
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO novel_volumes(id, project_id, novel_source_id, index, title, created_at, updated_at)
-VALUES ('${VOL_ID}', '${PROJ_ID}', 'src_${PROJ_ID}', 1, 'Gate Volume', now(), now());
+VALUES ('${VOL_ID}', '${PROJ_ID}', 'nov_${PROJ_ID}', 1, 'Gate Volume', now(), now());
 " > /dev/null
 
 # Chapter
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
 INSERT INTO novel_chapters(id, volume_id, novel_source_id, index, title, created_at, updated_at)
-VALUES ('${CHAP_ID}', '${VOL_ID}', 'src_${PROJ_ID}', 1, 'Gate Chapter', now(), now());
+VALUES ('${CHAP_ID}', '${VOL_ID}', 'nov_${PROJ_ID}', 1, 'Gate Chapter', now(), now());
 " > /dev/null
 
 # Scene (Bible Input Source)
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
-INSERT INTO novel_scenes(id, chapter_id, index, title, raw_text, enriched_text, project_id, created_at, updated_at)
-VALUES ('${SCENE_ID}', '${CHAP_ID}', 1, 'Gate Scene', 'Initial Text', 'Cyberpunk city, neon lights, busy streets.', '${PROJ_ID}', now(), now());
+INSERT INTO scenes(id, chapter_id, scene_index, title, enriched_text, project_id, created_at, updated_at)
+VALUES ('${SCENE_ID}', '${CHAP_ID}', 1, 'Gate Scene', 'Cyberpunk city, neon lights, busy streets.', '${PROJ_ID}', now(), now());
 " > /dev/null
 
 # Production Hierarchy (Required for shots FK)
@@ -72,8 +84,7 @@ INSERT INTO seasons(id, \"projectId\", index, title, \"createdAt\", \"updatedAt\
 VALUES ('sea_${TS}', '${PROJ_ID}', 1, 'Gate Season', now(), now());
 INSERT INTO episodes(id, \"seasonId\", \"projectId\", index, name)
 VALUES ('epi_${TS}', 'sea_${TS}', '${PROJ_ID}', 1, 'Gate Episode');
-INSERT INTO scenes(id, \"episodeId\", index, title, \"projectId\", \"enrichedText\", \"reviewStatus\")
-VALUES ('${SCENE_ID}', 'epi_${TS}', 1, 'Gate Scene', '${PROJ_ID}', 'Cyberpunk city, neon lights, busy streets.', 'DRAFT');
+UPDATE scenes SET \"episodeId\" = 'epi_${TS}', \"reviewStatus\" = 'DRAFT', updated_at = now() WHERE id = '${SCENE_ID}';
 " > /dev/null
 
 echo "[GATE15] DB Hierarchy Seeded."

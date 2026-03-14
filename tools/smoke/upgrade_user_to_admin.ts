@@ -1,6 +1,6 @@
 import { PrismaClient } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const email = 'a3@test.com';

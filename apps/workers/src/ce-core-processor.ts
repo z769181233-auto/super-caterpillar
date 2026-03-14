@@ -859,6 +859,7 @@ export async function processShotRenderJob(
           organizationId: shotJob?.organizationId || 'system',
           jobType: 'VIDEO_RENDER' as any,
           priority: 10,
+          dedupeKey: `video_render_${sceneId}_${traceId}`, // P0: Prevent redundant video renders per scene
           payload: {
             traceId,
             projectId,

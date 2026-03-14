@@ -3,7 +3,7 @@ import { PrismaClient } from '../packages/database/src/generated/prisma/index';
 // @ts-ignore
 import fetch from 'node-fetch'; // assuming node environment
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const API_BASE_URL = 'http://localhost:3001'; // Assuming web app handles API routes at /api or separate API server at 3000?
 // Actually apiClient says http://localhost:3000 by default. Let's use 3000.
 const API_SERVER_URL = 'http://localhost:3000';

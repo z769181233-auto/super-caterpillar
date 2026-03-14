@@ -13,7 +13,7 @@ import * as util from 'util';
 // Load env from monorepo root
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const email = 'worker+test@local';

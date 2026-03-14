@@ -91,10 +91,25 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       // CE01 usually needs a shotId. Let's create a placeholder concept or just wait.
       // Actually, for ControlNetMapper, we just need the ID string.
 
-      // Find Character Visual Engine
-      const engine = await prisma.engine.findFirst({
+      let engine = await prisma.engine.findFirst({
         where: { code: 'character_visual' },
       });
+
+      if (!engine) {
+        engine = await prisma.engine.create({
+          data: {
+            code: 'character_visual',
+            engineKey: 'character_visual',
+            name: 'Mock Character Visual',
+            mode: 'local',
+            isActive: true,
+            adapterName: 'mock-adapter',
+            adapterType: 'mock',
+            config: {},
+            type: 'visual',
+          },
+        });
+      }
 
       // We create the job now with NO shotId (scene level only) or just use scene.
       const dummyJob = await prisma.shotJob.create({
@@ -113,7 +128,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       const binding = await prisma.jobEngineBinding.create({
         data: {
           jobId: dummyJob.id,
-          engineId: engine?.id || 'mock-engine-id',
+          engineId: engine.id,
           engineKey: 'character_visual',
           status: 'COMPLETED',
         },
@@ -174,8 +189,15 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
         shotParams
       );
 
-      const shot = await prisma.shot.create({
-        data: shotData as any,
+      const shot = await prisma.shot.upsert({
+        where: {
+          sceneId_index: {
+            sceneId: scene.id,
+            index: i + 1,
+          },
+        },
+        update: shotData as any,
+        create: shotData as any,
       });
       shotIds.push(shot.id);
     }

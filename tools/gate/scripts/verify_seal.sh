@@ -16,7 +16,7 @@ export GATE_MODE=1
 export GATE_ENV_MODE=local
 export SCU_REPO_ROOT="$ROOT"
 export ARTIFACT_DIR="$ART"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5433/scu"
+export DATABASE_URL="postgresql://postgres:password@localhost:5433/scu"
 
 # GENTLE START: Check if API is already running
 if curl -s http://localhost:3000/api/health > /dev/null; then

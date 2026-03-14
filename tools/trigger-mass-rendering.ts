@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { PrismaClient } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const PROJECT_ID = 'prod-pilot-pilot_1770212330012';
 const API_URL = 'http://localhost:3000/api/admin/prod-gate/shot-render';
 const BATCH_SIZE = 500;

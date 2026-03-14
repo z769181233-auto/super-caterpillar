@@ -25,11 +25,32 @@ export class RealTtsProvider implements AudioProvider {
   }
 
   async synthesize(input: AudioSynthesisInput): Promise<AudioSynthesisOutput> {
+    const isGateMode = process.env.GATE_MODE === '1' || process.env.CI === 'true';
     const apiKey = process.env.AUDIO_VENDOR_API_KEY;
 
-    // PLAN-1: NOT_CONFIGURED hard failure
-    if (!apiKey) {
+    // PLAN-1: NOT_CONFIGURED hard failure (if not in gate mode)
+    if (!apiKey && !isGateMode) {
       throw new Error('AUDIO_VENDOR_API_KEY_NOT_CONFIGURED');
+    }
+
+    // Phase X2: Gate/CI Fallback logic
+    if (isGateMode && !apiKey) {
+      const startTs = Date.now();
+      console.log(
+        `[AUDIO_RENDER_MODE] gateMode=true, audioProvider=mock (RealTtsProvider fallback), reason=Missing API Key in Gate/CI`
+      );
+      const output = await this.stubFallback.synthesize(input);
+      return {
+        ...output,
+        meta: {
+          ...output.meta,
+          provider: this.key(),
+          vendor: 'mock_vendor_fallback',
+          vendorRequestId: `mock_fallback_${crypto.randomBytes(4).toString('hex')}`,
+          vendorLatencyMs: Date.now() - startTs,
+          fallbackUsed: true,
+        },
+      };
     }
 
     // P18-2-HARD: Audit Call Evidence

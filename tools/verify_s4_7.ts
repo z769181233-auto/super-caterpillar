@@ -4,7 +4,7 @@ import path from 'path';
 import { spawn, spawnSync } from 'child_process';
 const { v4: uuidv4 } = require('uuid');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('🚀 Starting S4-7 Verification (Multi-Shot Timeline Render)...');

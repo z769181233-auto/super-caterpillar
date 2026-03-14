@@ -17,9 +17,11 @@ export class JobWatchdogService {
   private readonly workerHeartbeatTimeoutMs: number;
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
+    console.log('[DEBUG_BOOT] JobWatchdogService constructor start');
     // P2 修复：统一使用 packages/config 的配置
     this.jobTimeoutMs = (env as any).jobWatchdogTimeoutMs ?? 3600000;
     this.workerHeartbeatTimeoutMs = env.workerHeartbeatTimeoutMs || 30000;
+    console.log('[DEBUG_BOOT] JobWatchdogService constructor end');
   }
 
   /**
@@ -116,7 +118,7 @@ export class JobWatchdogService {
               // 这通常意味着任务在 Worker 内部挂起或丢失，必须强制回收
               this.logger.warn(
                 `[JobWatchdog] FORCED RECOVERY: Job ${currentJob.id} lease expired but worker ${currentJob.worker?.workerId} is still online. ` +
-                  `Marking as RETRYING to break the hang.`
+                `Marking as RETRYING to break the hang.`
               );
             }
 

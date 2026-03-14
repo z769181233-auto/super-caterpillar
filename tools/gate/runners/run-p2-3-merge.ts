@@ -1,4 +1,4 @@
-import { videoMergeSelector } from '../../../packages/engines/video_merge/selector';
+import { videoMergeSelector } from '../../../packages/engines-video-merge/selector';
 import * as path from 'path';
 import * as fs from 'fs';
 import { PrismaClient, AssetOwnerType, AssetType } from 'database';
@@ -31,7 +31,7 @@ async function main() {
 
     if (persist && projectId && ownerId) {
       console.log(`[Runner] Persisting asset to DB... projectId=${projectId}`);
-      const prisma = new PrismaClient();
+      const prisma = new PrismaClient({});
       const storageKey = path.relative(process.cwd(), result.asset.uri);
 
       const asset = await prisma.asset.upsert({

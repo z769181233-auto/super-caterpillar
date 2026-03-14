@@ -291,7 +291,7 @@ export const env: AppConfig = {
 
   // P5-Fix: Robust STORAGE_ROOT (Relative to Absolute)
   storageRoot: (() => {
-    const raw = (process.env.STORAGE_ROOT || '.runtime') as string;
+    const raw = (process.env.STORAGE_ROOT || '.data/storage') as string;
     if (path.isAbsolute(raw)) return raw;
     // Resolve relative to project root (3 levels up from packages/config/src)
     return path.resolve(__dirname, '../../..', raw);

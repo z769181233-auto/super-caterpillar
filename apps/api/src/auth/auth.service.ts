@@ -13,7 +13,7 @@ import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { env } from '@scu/config';
-import { UserRole } from 'database';
+import { UserRole, UserTier } from 'database';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +23,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     @Inject(JwtService)
     private readonly jwtService: JwtService
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto) {
     const { email, password, userType = 'individual' as any } = registerDto;
@@ -49,7 +49,7 @@ export class AuthService {
           passwordHash,
           userType,
           role: UserRole.creator, // 统一 lowercase
-          tier: 'Basic',
+          tier: UserTier.Free,
           quota: {
             remainingTokens: 1000,
             computeSeconds: 3600,

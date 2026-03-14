@@ -207,5 +207,41 @@ export class ProductionFlowHook {
         }
       }
     }
+
+    if (!payload.publish) {
+      this.logger.warn(`[CE09_FANOUT_SKIPPED] reason=publish_false jobId=${job.id}`);
+      return true;
+    }
+
+    const assetId = (job.result as any)?.assetId;
+    if (!assetId) {
+      this.logger.warn(`[CE09_FANOUT_SKIPPED] reason=missing_asset_id jobId=${job.id}`);
+      return true;
+    }
+
+    const ce09DedupeKey = `ce09_${payload.pipelineRunId || job.id}_${assetId}`;
+    const videoPath = (job.result as any)?.storageKey;
+    this.logger.log(`[CE09_FANOUT_ELIGIBLE] jobId=${job.id} assetId=${assetId} videoPath=${videoPath} pipelineRunId=${payload.pipelineRunId}`);
+
+    await this.jobService.createCECoreJob({
+      projectId: job.projectId,
+      organizationId: job.organizationId,
+      taskId: job.taskId ?? undefined,
+      jobType: JobType.CE09_MEDIA_SECURITY,
+      traceId: job.traceId ?? undefined,
+      dedupeKey: ce09DedupeKey,
+      payload: {
+        projectId: job.projectId,
+        sceneId: payload.sceneId,
+        assetId,
+        videoPath,
+        pipelineRunId: payload.pipelineRunId,
+        originJobId: job.id,
+        engineKey: 'ce09_media_security',
+      },
+    });
+
+    this.logger.log(`[CE09_FANOUT_ENQUEUED] jobId=${job.id} assetId=${assetId} dedupeKey=${ce09DedupeKey}`);
+    return true;
   }
 }

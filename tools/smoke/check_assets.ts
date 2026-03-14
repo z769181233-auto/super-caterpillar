@@ -1,5 +1,5 @@
 import { PrismaClient } from 'database';
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 console.error('DEBUG: Script Starting... DB=' + process.env.DATABASE_URL);
 

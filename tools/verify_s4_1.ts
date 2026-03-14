@@ -17,7 +17,7 @@ if (process.env.GATE_MODE === '0') {
 }
 
 import { PrismaClient } from '../packages/database';
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('Connecting to DB...');

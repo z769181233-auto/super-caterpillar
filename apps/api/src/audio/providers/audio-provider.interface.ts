@@ -25,6 +25,7 @@ export type AudioSynthesisMeta = {
   bgmSelectionSeed?: string;
   libraryId?: string;
   libraryIdSource?: 'env' | 'project' | 'default' | 'fallback';
+  fallbackUsed?: boolean;
 };
 
 export type AudioSynthesisOutput = {

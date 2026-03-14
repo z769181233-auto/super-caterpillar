@@ -24,14 +24,18 @@ export ASSET_STORAGE_DIR
 TS_INPUT_DIR="$ASSET_STORAGE_DIR/frames"
 mkdir -p "$TS_INPUT_DIR"
 
-# 1x1 Red Pixel PNG Base64
-PIXEL_B64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-
 echo "Generating 24 dummy frames..."
-for i in {0..23}; do
-  fname=$(printf "frame_%04d.png" $i)
-  echo "$PIXEL_B64" | base64 -d > "$TS_INPUT_DIR/$fname"
-done
+node - "$TS_INPUT_DIR" <<'NODE'
+const fs = require('fs');
+const path = require('path');
+const tmpDir = process.argv[2];
+const minPng = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108020000007c5712240000000d4944415478da63fccfc0500f000485018084a98c210000000049454e44ae426082', 'hex');
+
+for (let i = 0; i < 24; i++) {
+  const padded = i.toString().padStart(4, '0');
+  fs.writeFileSync(path.join(tmpDir, `frame_${padded}.png`), minPng);
+}
+NODE
 
 # 2. 调用 Engine (via ts-node script)
 RUNNER_SCRIPT="$ASSET_STORAGE_DIR/run_engine.ts"
@@ -75,19 +79,33 @@ async function main() {
 main();
 EOF
 
-echo "Running engine script..."
+echo "Running engine script in verbose mode..."
 export TS_INPUT_DIR
 OUTPUT_LOG="${ASSET_STORAGE_DIR}/output.log"
+STDERR_LOG="${ASSET_STORAGE_DIR}/error.log"
+
+echo "=== DIAGNOSTICS: Input PNGs ==="
+ls -lh "$TS_INPUT_DIR"
+file "$TS_INPUT_DIR"/frame_0000.png || true
+echo "==============================="
 
 # Install ts-node if needed or assume environment
 # Assuming dev environment
-npx ts-node "$RUNNER_SCRIPT" > "$OUTPUT_LOG" 2>&1 || {
+npx ts-node "$RUNNER_SCRIPT" > "$OUTPUT_LOG" 2> "$STDERR_LOG" || {
+    echo "❌ FAIL: Script execution failed. Dumping stdout & stderr:"
+    echo "--- STDOUT ---"
     cat "$OUTPUT_LOG"
-    echo "❌ FAIL: Script execution failed"
+    echo "--- STDERR ---"
+    cat "$STDERR_LOG"
+    echo "=============="
     exit 1
 }
 
+echo "--- Script STDOUT ---"
 cat "$OUTPUT_LOG"
+echo "--- Script STDERR ---"
+cat "$STDERR_LOG"
+echo "====================="
 
 # 3. 解析结果
 JSON_OUTPUT=$(sed -n '/__RESULT_START__/,/__RESULT_END__/p' "$OUTPUT_LOG" | grep -v "__RESULT_")

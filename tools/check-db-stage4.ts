@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const SCENE_ID = '415e844f-429b-4f65-959f-8c4843ad76bf'; // ID from previous successful run
 
 async function check() {

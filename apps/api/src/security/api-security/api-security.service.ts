@@ -50,7 +50,7 @@ export class ApiSecurityService {
     private readonly auditLogService: AuditLogService,
     @Inject(SecretEncryptionService)
     private readonly secretEncryptionService: SecretEncryptionService
-  ) {}
+  ) { }
 
   /**
    * 验证 HMAC 签名（v2 规范）
@@ -639,7 +639,7 @@ export class ApiSecurityService {
 
         throw new InternalServerErrorException(
           `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-            `Production environment requires encrypted storage.`
+          `Production environment requires encrypted storage.`
         );
       } else {
         // dev/test 环境或主密钥未配置：允许 fallback

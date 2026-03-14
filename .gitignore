@@ -5,6 +5,8 @@ node_modules/
 **/.next/
 dist/
 **/dist/
+apps/api/dist_diag/
+apps/api/dist_temp/
 build/
 **/build/
 out/
@@ -35,6 +37,8 @@ coverage/
 **/.runtime/
 .gate/
 **/.gate/
+__pycache__/
+*.pyc
 
 # Root Logs, PIDs & Temp Txt
 *.log
@@ -120,3 +124,4 @@ shots.csv
 
 # audit: ignore prisma generated artifacts
 packages/database/src/generated/prisma/
+.pnpm-store

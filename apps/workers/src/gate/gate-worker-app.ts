@@ -78,11 +78,17 @@ export async function startGateWorkerApp() {
   const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
   const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
 
-  console.log('API_BASE_URL(raw)=', JSON.stringify(process.env.API_BASE_URL));
-  if (process.env.API_BASE_URL?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
-  const baseUrl = process.env.API_BASE_URL;
+  const rawApiBaseUrl = process.env.API_BASE_URL;
+  const rawApiUrl = process.env.API_URL;
+  const baseUrl = rawApiBaseUrl || rawApiUrl;
+
+  console.log(`[BOOT_ENV] API_BASE_URL_RAW=${rawApiBaseUrl}`);
+  console.log(`[BOOT_ENV] API_URL_RAW=${rawApiUrl}`);
+  console.log(`[BOOT_ENV] API_BASE_URL_RESOLVED=${baseUrl}`);
+
+  if (rawApiBaseUrl?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
   if (!baseUrl) {
-    throw new Error('API_BASE_URL is required in production');
+    throw new Error('API_BASE_URL or API_URL is required in production');
   }
   let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
@@ -102,7 +108,6 @@ export async function startGateWorkerApp() {
   const engineHubClient = new EngineHubClient(apiClient);
 
   const prisma = new PrismaClient({
-    datasources: { db: { url: env.databaseUrl } },
     log: ['error'],
   });
 
@@ -150,7 +155,6 @@ export async function startGateWorkerApp() {
             'PIPELINE_PROD_VIDEO_V1',
             'EPISODE_RENDER',
             'NOVEL_ANALYSIS',
-            'NOVEL_REDUCE_AGGREGATE',
           ],
           supportedModels: [],
           supportedEngines: [
@@ -375,8 +379,9 @@ export async function startGateWorkerApp() {
           }
         }
 
+        let assetId: string | undefined;
         if (sId) {
-          await prisma.asset.upsert({
+          const asset = await prisma.asset.upsert({
             where: { ownerType_ownerId_type: { ownerType: 'SCENE', ownerId: sId, type: 'VIDEO' } },
             update: { status: 'GENERATED', storageKey: mockKey, createdByJobId: job.id },
             create: {
@@ -389,8 +394,14 @@ export async function startGateWorkerApp() {
               createdByJobId: job.id,
             },
           });
+          assetId = asset.id;
         }
-        result = { status: 'SUCCEEDED', output: { storageKey: mockKey } };
+        result = {
+          status: 'SUCCEEDED',
+          videoKey: mockKey,
+          assetId: assetId,
+          output: { storageKey: mockKey, assetId: assetId },
+        };
       } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE')
         result = await processTimelineComposeJob(ctx);
       else if (job.type === 'TIMELINE_RENDER') result = await processTimelineRenderJob(ctx);
@@ -417,8 +428,6 @@ export async function startGateWorkerApp() {
       } else if (job.type === 'EPISODE_RENDER') {
         const { processEpisodeRenderJob } = await import('../processors/episode-render.processor');
         result = await processEpisodeRenderJob(ctx);
-      } else if (job.type === 'NOVEL_REDUCE_AGGREGATE') {
-        result = await processNovelReduce(ctx);
       } else {
         process.stdout.write(util.format(`[GateWorker] ⚠️ Unknown Job Type: ${job.type}`) + '\n');
         return;

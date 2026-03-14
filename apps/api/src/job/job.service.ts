@@ -3,20 +3,21 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  UnprocessableEntityException,
   Inject,
+  forwardRef,
   HttpException,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { getTraceId } from '@scu/observability';
+import { CapacityErrorCode, CapacityExceededException } from '../common/errors/capacity-errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { TaskService } from '../task/task.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuditActions } from '../audit/audit.constants';
 import { ProjectResolver } from '../common/project-resolver';
-import { SceneGraphService } from '../project/scene-graph.service';
-import { StructureGenerateService } from '../project/structure-generate.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { QualityScoreService } from '../quality/quality-score.service';
@@ -27,11 +28,9 @@ import { FinancialSettlementService } from '../billing/financial-settlement.serv
 import { CopyrightService } from '../copyright/copyright.service';
 import { CapacityGateService } from '../capacity/capacity-gate.service';
 import { BudgetService } from '../billing/budget.service';
-import { CapacityExceededException, CapacityErrorCode } from '../common/errors/capacity-errors';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { PublishedVideoService } from '../publish/published-video.service';
-import { UnprocessableEntityException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   Prisma,
@@ -50,44 +49,29 @@ import {
   transitionJobStatusAdmin,
 } from './job.rules';
 import { markRetryOrFail, computeNextRetry } from './job.retry';
-type JobStatusType = JobStatus;
-type JobTypeType = JobType;
-type TaskStatusType = TaskStatus;
-type TaskTypeType = TaskType;
-const JobStatusEnum = JobStatus;
-const JobTypeEnum = JobType;
-const TaskStatusEnum = TaskStatus;
-const TaskTypeEnum = TaskType;
 
-// Prisma 类型定义（使用 GetPayload 获取完整类型）
-// 注意：ShotJobGetPayload 在 Prisma 5.22.0 中定义在顶层，不在 Prisma 命名空间内
-// 但由于类型导出可能不完整，暂时使用 any，后续应修复为正确的类型
-// TODO: 修复为正确的 Prisma 类型（可能需要从 @prisma/client/.prisma/client 导入）
-type ShotJobWithShotHierarchy = Prisma.ShotJobGetPayload<{
-  include: {
-    task: true;
-    shot: {
-      include: {
-        scene: {
-          include: {
-            episode: {
-              include: {
-                season: {
-                  include: {
-                    project: true;
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-  };
-}>;
+// Forwarding types for backward compatibility
+export type JobStatusType = JobStatus;
+export type JobTypeType = JobType;
+export type TaskStatusType = TaskStatus;
+export type TaskTypeType = TaskType;
+export const JobStatusEnum = JobStatus;
+export const JobTypeEnum = JobType;
+export const TaskStatusEnum = TaskStatus;
+export const TaskTypeEnum = TaskType;
+
+import { JobAuthOpsService } from './job-auth-ops.service';
+import { JobCreationOpsService } from './job-creation-ops.service';
+import { JobUpdateOpsService } from './job-update-ops.service';
+import { ShotJobWithShotHierarchy } from './job.service.types';
+import { SHOT_JOB_WITH_HIERARCHY, SHOT_WITH_HIERARCHY } from './job.service.queries';
 
 /**
- * Job Service
+ * Job Service (Tactical Slimming Facade)
+ */
+
+/**
+ * Job Service (Tactical Slimming Facade)
  */
 @Injectable()
 export class JobService {
@@ -95,10 +79,10 @@ export class JobService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(TaskService) private readonly taskService: TaskService,
+    @Inject(forwardRef(() => TaskService)) private readonly taskService: TaskService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry,
-    @Inject(QualityScoreService)
+    @Inject(forwardRef(() => QualityScoreService))
     private readonly qualityScoreService: QualityScoreService,
     @Inject(EngineConfigStoreService)
     private readonly engineConfigStore: EngineConfigStoreService,
@@ -120,63 +104,23 @@ export class JobService {
     private readonly eventEmitter: EventEmitter2,
     @Inject(FinancialSettlementService)
     private readonly financialSettlementService: FinancialSettlementService,
-    private readonly projectResolver: ProjectResolver
+    @Inject(forwardRef(() => ProjectResolver))
+    private readonly projectResolver: ProjectResolver,
+    private readonly jobAuthOps: JobAuthOpsService,
+    private readonly jobCreationOps: JobCreationOpsService,
+    private readonly jobUpdateOps: JobUpdateOpsService
   ) { }
 
-
-
-
   /**
-   * Localized Check Shot Ownership (Breaking cycle with ProjectService)
+   * Ownership verification delegated to JobAuthOpsService
    */
-  private async checkShotOwnership(shotId: string, userId: string, organizationId: string) {
-    const shot = await this.prisma.shot.findUnique({
-      where: { id: shotId },
-      include: {
-        scene: {
-          include: {
-            episode: {
-              include: {
-                project: true,
-                season: {
-                  include: {
-                    project: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!shot) {
-      throw new NotFoundException('Shot not found');
-    }
-
-    // 获取 project（支持 Season 和 Project 两种结构）
-    const scene = (shot as any).scene;
-    let shotProject = await this.projectResolver.resolveProjectAuthOnly(scene?.episode);
-
-    // V3.0 Fallback: 如果没有通过 Episode 找到 Project，尝试直接通过 scene.projectId 查找
-    if (!shotProject && scene?.projectId) {
-      shotProject = await this.prisma.project.findUnique({
-        where: { id: scene.projectId },
-      });
-    }
-
-    if (!shotProject) {
-      throw new NotFoundException(`Project not found for shot ${shotId}`);
-    }
-
-    // Studio v0.7: 检查组织权限
-    if (shotProject.organizationId !== organizationId) {
-      throw new ForbiddenException('You do not have permission to access this shot');
-    }
-
-    return shot;
+  async checkShotOwnership(shotId: string, userId: string, organizationId: string) {
+    return this.jobAuthOps.checkShotOwnership(shotId, organizationId);
   }
 
+  /**
+   * Creation logic delegated to JobCreationOpsService
+   */
   async create(
     shotId: string,
     createJobDto: CreateJobDto,
@@ -184,264 +128,82 @@ export class JobService {
     organizationId: string,
     taskId?: string
   ) {
-    console.log(
-      `[JobService.create] DEBUG START: type=${createJobDto.type} shotId=${shotId} orgId=${organizationId}`
-    );
-    try {
-      // 0. dedupeKey 幂等检查（商业级强幂等，防止重复创建）
-      if (createJobDto.dedupeKey) {
-        const existing = await this.prisma.shotJob.findUnique({
-          where: { dedupeKey: createJobDto.dedupeKey },
-        });
-        if (existing) {
-          this.logger.log(
-            `[Job] create: dedupeKey=${createJobDto.dedupeKey} already exists, returning jobId=${existing.id}`
-          );
-          return existing;
-        }
-      }
-
-      // 文本安全审查
-      if (this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_TRI_STATE')) {
-        const payload = (createJobDto.payload || {}) as Record<string, any>;
-        const textToCheck =
-          payload.enrichedText ?? payload.promptText ?? payload.rawText ?? payload.text ?? null;
-
-        if (textToCheck) {
-          const traceId = payload.traceId || randomUUID();
-          // 使用一个临时ID进行检查，Job ID在后续创建
-          const tempJobId = randomUUID();
-
-          const safetyResult = await this.textSafetyService.sanitize(textToCheck, {
-            projectId: (createJobDto.payload as any)?.projectId || shotId, // 尽力获取 projectId
-            userId,
-            orgId: organizationId,
-            traceId,
-            resourceType: 'JOB',
-            resourceId: tempJobId,
-          });
-
-          if (
-            safetyResult.decision === 'BLOCK' &&
-            this.featureFlagService.isEnabled('FEATURE_TEXT_SAFETY_BLOCK_ON_JOB_CREATE')
-          ) {
-            throw new UnprocessableEntityException({
-              statusCode: 422,
-              error: 'Unprocessable Entity',
-              message: 'Job creation blocked by safety check',
-              code: 'TEXT_SAFETY_VIOLATION',
-              details: {
-                decision: safetyResult.decision,
-                riskLevel: safetyResult.riskLevel,
-                reasons: safetyResult.reasons,
-                flags: safetyResult.flags,
-                traceId: safetyResult.traceId,
-              },
-            });
-          }
-        }
-      }
-
-      const shot = await this.checkShotOwnership(shotId, userId, organizationId);
-      if (!shot) throw new NotFoundException('Shot not found');
-
-      const shotWithHierarchy = await this.prisma.shot.findUnique({
-        where: { id: shotId },
-        include: {
-          scene: {
-            include: {
-              episode: {
-                include: {
-                  project: true, // V3.0: Direct link
-                  season: { include: { project: true } },
-                },
-              },
-            },
-          },
-        },
-      });
-      const scene = shotWithHierarchy?.scene;
-      const episode = scene?.episode;
-      const project = await this.projectResolver.resolveProjectAuthOnly(episode);
-
-      if (!scene || !episode || !project) {
-        throw new NotFoundException('Shot hierarchy is incomplete');
-      }
-
-      // Stage 4: Hard Gate
-      // 工业化硬性门槛：Scene 必须通过 Stage 2 (Novel Analysis) 才能进入 Stage 3 (Shot Render)
-      if (!scene.summary) {
-        throw new BadRequestException(
-          'Cannot create job: Scene analysis incomplete (missing summary). Please complete Stage 2 first.'
-        );
-      }
-
-      // PRODUCTION_MODE Gate: 未审核不允许渲染
-      if (process.env.NODE_ENV === 'production' && createJobDto.type === JobTypeEnum.SHOT_RENDER) {
-        if (
-          shot.reviewStatus !== ShotReviewStatus.APPROVED &&
-          shot.reviewStatus !== ShotReviewStatus.FINALIZED
-        ) {
-          throw new ForbiddenException({
-            code: 'SHOT_NOT_APPROVED',
-            message:
-              'Production mode requires human approval (APPROVED/FINALIZED) before rendering.',
-          });
-        }
-      }
-
-      // API-Side Stable Error Code for Fail Fast
-      if (createJobDto.type === JobTypeEnum.NOVEL_ANALYSIS) {
-        const novelSource = await this.prisma.novel.findFirst({
-          where: { projectId: project.id },
-        });
-        if (!novelSource || !novelSource.rawFileUrl) {
-          throw new BadRequestException(
-            'NOVEL_SOURCE_MISSING: Project has no novel source or empty text.'
-          );
-        }
-      }
-
-      // Stage 10: Billing Hard Gate for High Cost Jobs
-      // COST_TABLE: VIDEO_RENDER = 10, SHOT_RENDER = 2, OTHERS = 0 (for now)
-      let requiredCredits = 0;
-      if (createJobDto.type === JobTypeEnum.VIDEO_RENDER) requiredCredits = 10;
-      else if (createJobDto.type === JobTypeEnum.SHOT_RENDER) requiredCredits = 2;
-
-      if (requiredCredits > 0) {
-        try {
-          // TraceId for audit
-          const traceId = `JOB_CREATE_${shotId}_${createJobDto.type}_${Date.now()}`;
-          console.log(`[JOB_DEBUG] billingService defined: ${!!this.billingService}`);
-          console.log(
-            `[JOB_DEBUG] calling billingService.consumeCredits with orgId=${organizationId} userId=${userId} credits=${requiredCredits}`
-          );
-          await this.billingService.consumeCredits(
-            project.id,
-            userId,
-            organizationId,
-            requiredCredits,
-            createJobDto.type,
-            traceId
-          );
-        } catch (error: any) {
-          if (error instanceof ForbiddenException) throw error;
-
-          console.error(
-            `[JOB_ERROR] Billing gate REJECTED job creation: User=${userId}, Type=${createJobDto.type}, Required=${requiredCredits}. Actual error: ${error.message}`
-          );
-          throw new ForbiddenException(
-            `Insufficient credits to start job. Required: ${requiredCredits} credits. Details: ${error.message}`
-          );
-        }
-      }
-
-      // E4: SHOT_RENDER 强制契约 - 必须携带有效 referenceSheetId
-      if (createJobDto.type === JobTypeEnum.SHOT_RENDER) {
-        const referenceSheetId = createJobDto.payload?.referenceSheetId;
-        await this.validateReferenceSheetId(
-          referenceSheetId,
-          organizationId,
-          project.id,
-          createJobDto.isVerification
-        );
-      }
-
-      const finalTaskId =
-        taskId ||
-        (
-          await this.taskService.create({
-            organizationId,
-            projectId: project.id,
-            type: TaskTypeEnum.SHOT_RENDER,
-            status: TaskStatusEnum.PENDING,
-            payload: { shotId, jobType: createJobDto.type, ...createJobDto.payload },
-          })
-        ).id;
-
-      // Stage3-A: 在事务中创建 Job 并绑定 Engine（确保原子性）
-      // 绑定之前不要对外返回 job，绑定失败必须保证 job 不可领取
-      let job;
-      try {
-        job = await this.prisma.$transaction(async (tx) => {
-          // 1. 创建 Job
-          const createdJob = await tx.shotJob.create({
-            data: {
-              organizationId,
-              projectId: project.id,
-              episodeId: episode.id,
-              sceneId: scene.id,
-              shotId,
-              taskId: finalTaskId,
-              type: createJobDto.type as JobTypeType,
-              status: JobStatusEnum.PENDING,
-              priority: 0,
-              maxRetry: 3,
-              retryCount: 0,
-              attempts: 0,
-              payload: createJobDto.payload ?? {},
-              engineConfig: createJobDto.engineConfig ?? {},
-              traceId: createJobDto.traceId,
-              isVerification: createJobDto.isVerification || false, // Handle isVerification
-              dedupeKey: createJobDto.dedupeKey, // Handle dedupeKey
-            },
-          });
-
-          // 2. 绑定 Engine（在同一个事务中）
-          const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
-            createJobDto.type as JobType
-          );
-          if (!engineSelection) {
-            // 如果没有可用 Engine，事务会自动回滚 Job 创建
-            throw new BadRequestException(`No engine available for job type: ${createJobDto.type}`);
-          }
-
-          // 3. 创建 Engine Binding（在同一个事务中）
-          await tx.jobEngineBinding.create({
-            data: {
-              jobId: createdJob.id,
-              engineId: engineSelection.engineId,
-              engineKey: engineSelection.engineKey,
-              engineVersionId: engineSelection.engineVersionId,
-              status: JobEngineBindingStatus.BOUND,
-              metadata: {
-                selectedAt: new Date().toISOString(),
-                reason: 'Job creation binding',
-              },
-            },
-          });
-
-          return createdJob;
-        });
-      } catch (error: any) {
-        // 并发冲突兜底：如果是 dedupeKey unique violation，再次查询返回已存在作业
-        if (
-          createJobDto.dedupeKey &&
-          error.code === 'P2002' &&
-          error.meta?.target?.includes('dedupeKey')
-        ) {
-          const existing = await this.prisma.shotJob.findUnique({
-            where: { dedupeKey: createJobDto.dedupeKey },
-          });
-          if (existing) {
-            this.logger.log(
-              `[Job] create: Caught dedupeKey unique violation, returning existing jobId=${existing.id}`
-            );
-            return existing;
-          }
-        }
-        throw error;
-      }
-
-      this.logger.log(
-        `Job created successfully: jobId=${job.id}, type=${job.type}, isVerification=${job.isVerification}`
-      );
-      return job;
-    } catch (err: any) {
-      this.logger.error(`JobService.create FAILED: ${err.message}`, err.stack);
-      throw err;
-    }
+    return this.jobCreationOps.create(shotId, createJobDto, userId, organizationId, taskId);
   }
+
+  /**
+   * Status updates delegated to JobUpdateOpsService
+   */
+  async ackJob(jobId: string, workerId: string) {
+    return this.jobUpdateOps.ackJob(jobId, workerId);
+  }
+
+  /**
+   * Result reporting delegated to JobUpdateOpsService
+   */
+  async reportJobResult(
+    jobId: string,
+    status: JobStatusType,
+    result?: any,
+    errorMessage?: string,
+    userId?: string,
+    apiKeyId?: string,
+    ip?: string,
+    userAgent?: string,
+    hmacMeta?: { nonce?: string; signature?: string; hmacTimestamp?: string },
+    attempts?: number
+  ) {
+    return this.jobUpdateOps.reportJobResult(jobId, { status: status as any, result, errorMessage }, userId);
+  }
+
+  /**
+   * markJobFailedAndMaybeRetry facade for backward compatibility
+   */
+  async markJobFailedAndMaybeRetry(
+    jobId: string,
+    errorMessage?: string,
+    userId?: string
+  ) {
+    return this.jobUpdateOps.markJobFailedAndMaybeRetry(jobId, errorMessage, userId);
+  }
+
+  /**
+   * Complete job delegated to JobUpdateOpsService
+   */
+  async completeJob(
+    jobId: string,
+    workerId: string,
+    params: {
+      status: 'SUCCEEDED' | 'FAILED';
+      result?: any;
+      errorMessage?: string;
+    }
+  ) {
+    return this.jobUpdateOps.completeJob(jobId, workerId, params);
+  }
+
+  /**
+   * Reference verification delegated to JobCreationOpsService
+   */
+  async validateReferenceSheetId(
+    referenceSheetId: string | undefined,
+    organizationId: string,
+    projectId: string,
+    isVerification: boolean = false
+  ) {
+    return this.jobCreationOps.validateReferenceSheetId(referenceSheetId, organizationId, projectId, isVerification);
+  }
+
+
+
+
+
+
+
+
+
+
+
 
   /**
    * 创建小说分析 Job（不需要 shotId）
@@ -924,50 +686,6 @@ export class JobService {
     };
   }
 
-  /**
-   * E4: 下游拦截 - 验证 referenceSheetId 存在且属于当前租户/项目
-   * SECURITY: 防止跨租户引用 referenceSheetId 或缺失 referenceSheetId
-   */
-  private async validateReferenceSheetId(
-    referenceSheetId: string | undefined,
-    organizationId: string,
-    projectId: string,
-    isVerification: boolean = false
-  ): Promise<void> {
-    // Stage-3 Sealing Bypass: 如果是验证模式下的 Mock ID，直接放行
-    if (
-      referenceSheetId === 'gate-mock-ref-id' ||
-      (isVerification && referenceSheetId === 'gate-mock-ref-id')
-    ) {
-      return;
-    }
-
-    if (!referenceSheetId) {
-      throw new BadRequestException({
-        code: 'REFERENCE_SHEET_REQUIRED',
-        message: 'referenceSheetId is required for SHOT_RENDER jobs',
-      });
-    }
-
-    // 验证 referenceSheetId 存在且属于当前 org/project
-    const binding = await this.prisma.jobEngineBinding.findFirst({
-      where: {
-        id: referenceSheetId,
-        job: {
-          organizationId,
-          projectId,
-        },
-      },
-    });
-
-    if (!binding) {
-      throw new BadRequestException({
-        code: 'REFERENCE_SHEET_FORBIDDEN',
-        message:
-          'referenceSheetId does not exist or does not belong to current organization/project',
-      });
-    }
-  }
 
   /**
    * 幂等创建 VIDEO_RENDER Job
@@ -1341,775 +1059,9 @@ export class JobService {
    * @param ip IP 地址（用于审计日志）
    * @param userAgent UserAgent（用于审计日志）
    */
-  async reportJobResult(
-    jobId: string,
-    status: JobStatusType,
-    result?: any,
-    errorMessage?: string,
-    userId?: string,
-    apiKeyId?: string,
-    ip?: string,
-    userAgent?: string,
-    hmacMeta?: { nonce?: string; signature?: string; hmacTimestamp?: string },
-    attempts?: number
-  ) {
-    const job = await this.prisma.shotJob.findUnique({
-      where: { id: jobId },
-      include: {
-        task: true,
-        worker: true,
-        shot: {
-          include: {
-            scene: {
-              include: {
-                episode: {
-                  include: {
-                    season: {
-                      include: {
-                        project: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
 
-    if (!job) {
-      throw new NotFoundException('Resource not found');
-    }
 
-    const timestamp = hmacMeta?.hmacTimestamp
-      ? new Date(Number(hmacMeta.hmacTimestamp))
-      : undefined;
 
-    // P1-1: Result Idempotency Check
-    // Prevent stale worker reports (e.g. from previous attempts) from overwriting current state.
-    if (attempts !== undefined && job.attempts !== attempts) {
-      this.logger.warn(
-        `[JobService] Stale report rejected: Job ${jobId} attempts mismatch (db=${job.attempts}, report=${attempts})`
-      );
-
-      try {
-        await this.auditLogService.record({
-          userId: userId,
-          apiKeyId: apiKeyId,
-          action: 'JOB_REPORT_IGNORED',
-          resourceType: 'job',
-          resourceId: jobId,
-          ip,
-          userAgent,
-          details: {
-            reason: 'stale_attempts_mismatch',
-            dbAttempts: job.attempts,
-            reportAttempts: attempts,
-            workerId: job.workerId || undefined,
-            incomingTimestamp: timestamp,
-          },
-          traceId: job.traceId || undefined,
-        });
-      } catch (e) {
-        this.logger.warn(`[JobService] Failed to record JOB_REPORT_IGNORED: ${e}`);
-      }
-
-      return job;
-    }
-
-    // Stage2-D: 写入 audit_logs（JOB_REPORT_RECEIVED）
-    // 审计日志失败不应影响主流程（与其它模块保持一致）
-    try {
-      await this.auditLogService.record({
-        userId,
-        apiKeyId,
-        action: 'JOB_REPORT_RECEIVED',
-        resourceType: 'job',
-        resourceId: jobId,
-        ip,
-        userAgent,
-        details: {
-          jobId,
-          status,
-          reason: errorMessage,
-          workerId: job.workerId || undefined,
-          taskId: job.taskId || undefined,
-          incomingNonce: hmacMeta?.nonce,
-          incomingSignature: hmacMeta?.signature,
-          incomingTimestamp: timestamp,
-        },
-        traceId: job.traceId || undefined,
-      });
-    } catch (e: unknown) {
-      const err = e as Error;
-      this.logger.warn(
-        `[Job] reportJobResult: failed to write JOB_REPORT_RECEIVED audit log for job ${jobId}: ${err?.message || String(e)} `
-      );
-    }
-
-    // 幂等/可重试：Worker 可能因网络抖动重复上报（例如第一次上报后置逻辑 5xx）
-    // 规则：
-    // - 若 Job 已经是终态/非 RUNNING，则：
-    //   - 同状态重复上报：直接返回（幂等）
-    //   - 终态后收到 FAILED（Worker 在 5xx 后兜底上报 FAILED）：直接返回（避免把 SUCCEEDED 误判为失败）
-    //   - 其它非法转换仍拒绝
-    if (job.status !== JobStatusEnum.RUNNING) {
-      const alreadyTerminal =
-        job.status === JobStatusEnum.SUCCEEDED || job.status === JobStatusEnum.FAILED;
-
-      if (status === job.status) {
-        return job;
-      }
-
-      // 如果已经成功/失败，则忽略后续 FAILED 上报（典型：Worker 报告接口 5xx 后的兜底 FAILED）
-      if (alreadyTerminal && status === JobStatusEnum.FAILED) {
-        return job;
-      }
-
-      throw new BadRequestException(`Job ${jobId} is not in RUNNING status`);
-    }
-
-    // 断言状态转换（规则型正确）
-    transitionJobStatus(job.status, status, {
-      jobId: job.id,
-      jobType: job.type,
-      workerId: job.workerId || undefined,
-    });
-
-    if (status === JobStatusEnum.SUCCEEDED) {
-      let updatedJob: ShotJobWithShotHierarchy | undefined = undefined;
-      try {
-        // 为 payload 构造“精简结果”，避免把超大结构写进 job.payload
-        let resultForPayload: unknown = result;
-        if (job.type === JobTypeEnum.NOVEL_ANALYSIS && result) {
-          const safe: Record<string, any> = {};
-          if ((result as any).stats) safe.stats = (result as any).stats;
-          if ((result as any).metrics) safe.metrics = (result as any).metrics;
-          resultForPayload = safe;
-        }
-
-        const currentPayload = (job.payload as Record<string, any>) || {};
-        const updatedPayload: Record<string, any> =
-          resultForPayload != null
-            ? { ...currentPayload, result: resultForPayload }
-            : currentPayload;
-
-        updatedJob = (await this.prisma.$transaction(async (tx) => {
-          const uJob = await tx.shotJob.update({
-            where: { id: jobId, status: JobStatusEnum.RUNNING }, // P3-A: enforce running origin
-            data: {
-              status: JobStatusEnum.SUCCEEDED,
-              payload: updatedPayload ?? undefined,
-              result: result ?? undefined,
-              attempts: job.attempts, // attempts 只在领取时递增，不在此处递增
-              retryCount: job.retryCount,
-              lastError: null,
-              // workerId: null, // Keep workerId for history
-              securityProcessed:
-                job.type === JobTypeEnum.CE09_MEDIA_SECURITY ? true : job.securityProcessed,
-            },
-            include: {
-              task: true,
-              worker: true,
-              shot: {
-                include: {
-                  scene: {
-                    include: {
-                      episode: {
-                        include: {
-                          season: {
-                            include: {
-                              project: true,
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          });
-
-          // P3-A: Dual State Machine Physical Binding - COMMITTED
-          try {
-            await tx.billingLedger.create({
-              data: {
-                jobId: uJob.id,
-                projectId: uJob.projectId,
-                billingState: 'COMMITTED',
-                amount: 1n,
-                idempotencyKey: `${uJob.id}_COMMITTED`,
-              },
-            });
-          } catch (e: any) {
-            if (e.code === 'P2002') {
-              this.logger.warn(
-                `[JobService] Billing idempotency hit: ${uJob.id}_COMMITTED already exists`
-              );
-            } else {
-              throw e;
-            }
-          }
-
-          return uJob;
-        })) as ShotJobWithShotHierarchy;
-
-        if (process.env.NODE_ENV === 'development') {
-          this.logger.log(
-            `[DEV][Job] reportJobResult jobId = ${jobId} status = ${status} workerId = ${updatedJob.workerId} `
-          );
-        }
-
-        // P1 修复：提取可观测性字段
-        const spanId = job.traceId || null; // 使用 traceId 作为 span_id（若存在）
-        const modelUsed =
-          (job.engineConfig as Record<string, any>)?.engineKey ||
-          (job.payload as Record<string, any>)?.engineKey ||
-          null;
-        const duration =
-          job.updatedAt && job.createdAt
-            ? new Date(job.updatedAt).getTime() - new Date(job.createdAt).getTime()
-            : undefined;
-
-        await this.auditLogService.record({
-          userId,
-          apiKeyId,
-          action: AuditActions.JOB_SUCCEEDED,
-          resourceType: 'job',
-          resourceId: jobId,
-          ip,
-          userAgent,
-          details: {
-            taskId: job.taskId || undefined,
-            workerId: job.workerId || undefined,
-            attempts: job.attempts, // attempts 只作为"领取次数统计"
-            duration, // 执行耗时（毫秒），注意：包含队列等待时间
-            incomingNonce: hmacMeta?.nonce,
-            incomingSignature: hmacMeta?.signature,
-            incomingTimestamp: timestamp,
-            spanId, // 分布式追踪 ID（使用 traceId）
-            modelUsed, // 使用的模型/引擎
-          },
-          traceId: job.traceId || undefined,
-        });
-      } catch (e: any) {
-        this.logger.warn(`Failed to record JOB_SUCCEEDED audit log: ${e.message}`);
-      }
-
-      // 提取 SUCCEEDED 后的状态用于后续逻辑
-      if (!updatedJob) {
-        // 兜底防御：理论上 update 成功后 updatedJob 必有值
-        return job;
-      }
-
-      // Full Implementation: Integration with Billing System
-      // P0: Billing & Credits - Only for non-verification jobs
-      if (userId && !job.isVerification) {
-        try {
-          const cost = 1.0;
-          // TraceId for legacy path
-          const traceId = `LEGACY_JOB_COMPLETE_${jobId}_${Date.now()} `;
-          // Use consumeCredits for deduction
-          // P1-C: Use consumeCredits with projectId
-          await this.billingService.consumeCredits(
-            job.projectId,
-            userId,
-            job.organizationId,
-            cost,
-            'LEGACY_JOB',
-            traceId
-          );
-        } catch (error) {
-          this.logger.error(
-            `Failed to deduct credits for job ${jobId}: ${(error as Error).message} `
-          );
-        }
-      }
-
-      // Full Implementation: Integration with Copyright System
-      if (userId && this.copyrightService && job.type === JobTypeEnum.SHOT_RENDER) {
-        try {
-          // Mock asset registration for the rendered shot
-          // In a real scenario, we'd hash the output file
-          const contentHash = `job - ${job.id} -content`;
-          await this.copyrightService.registerAsset(userId, 'shot_render', contentHash);
-        } catch (error) {
-          this.logger.error(
-            `Failed to register copyright for job ${jobId}: ${(error as Error).message} `
-          );
-        }
-      }
-
-      // P14-0: 质量评分 Hook（真实落库出口，确保所有上报路径都触发）
-      await this.triggerQualityHookAfterPersist({
-        jobId: updatedJob.id,
-        jobType: updatedJob.type,
-        status: updatedJob.status,
-        traceId: updatedJob.traceId || undefined,
-        projectId: updatedJob.projectId,
-        shotId: updatedJob.shotId,
-      });
-
-      if (job.taskId) {
-        await this.updateTaskStatusIfAllJobsCompleted(job.taskId);
-      }
-
-      // Stage13: CE Core Layer - 处理 CE Job 完成后的 DAG 触发
-      if (
-        job.type === JobTypeEnum.CE06_NOVEL_PARSING ||
-        job.type === JobTypeEnum.CE03_VISUAL_DENSITY ||
-        job.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT ||
-        job.type === JobTypeEnum.PIPELINE_TIMELINE_COMPOSE ||
-        job.type === JobTypeEnum.TIMELINE_RENDER ||
-        job.type === JobTypeEnum.CE09_MEDIA_SECURITY
-      ) {
-        await this.handleCECoreJobCompletion(job, result);
-      }
-
-      // Stage 3: Event-Driven DAG Trigger (SHOT_RENDER -> VIDEO_RENDER)
-      // Removed direct call to orchestratorService to break circular dependency.
-      // Orchestrator now listens to 'job.succeeded' event emitted below.
-
-      // Verification Hook Trigger: Emit event for decoupled validation logic
-      console.log(
-        `[EVENT DEBUG] Emitting job.succeeded for job ${updatedJob.id} type ${updatedJob.type}`
-      );
-      this.eventEmitter.emit('job.succeeded', updatedJob);
-
-      // Stage-1: VIDEO_RENDER 完成后自动记录发布 (Internal Verification)
-      if (job.type === JobTypeEnum.VIDEO_RENDER) {
-        await this.handleStage1VideoCompletion(updatedJob, result);
-      }
-
-      // CE09: SHOT_RENDER 完成后进入安全链路（HLS/水印/指纹）
-      if (job.type === JobTypeEnum.SHOT_RENDER) {
-        await this.handleShotRenderSecurityPipeline(updatedJob, result);
-        // Stage-1 Fix: 检查是否需要触发自动合成
-        await this.handleStage1ShotCompletion(updatedJob);
-      }
-
-      // 如果是 NOVEL_ANALYSIS Job，更新对应的 NovelAnalysisJob 状态
-      if (job.type === JobTypeEnum.NOVEL_ANALYSIS) {
-        try {
-          const task = await this.prisma.task.findUnique({
-            where: { id: job.taskId || '' },
-          });
-          if (task?.payload && typeof task.payload === 'object') {
-            const payload = task.payload as any;
-            const analysisJobId = payload.analysisJobId;
-            if (analysisJobId) {
-              // 只写入轻量进度信息，避免把巨大 result 复制到 progress（progress 设计用途：{ current, total, message }）
-              const safeProgress: any = {
-                message: 'Analysis completed',
-                jobId: job.id,
-              };
-              if (result?.stats) safeProgress.stats = result.stats;
-              if (result?.metrics) safeProgress.metrics = result.metrics;
-
-              await this.prisma.novelAnalysisJob.update({
-                where: { id: analysisJobId },
-                data: {
-                  status: 'DONE',
-                  progress: safeProgress,
-                },
-              });
-            }
-          }
-        } catch (e: any) {
-          // NovelAnalysisJob 同步失败不应阻断 Job 主状态写入（否则会造成 UI 永久 RUNNING + Worker 重试风暴）
-          this.logger.warn(
-            `[Job] reportJobResult: failed to update NovelAnalysisJob for job ${jobId}: ${e?.message || e} `
-          );
-        }
-
-        // 清除 SceneGraph 缓存，确保前端能获取最新结构 - Now via Event Driver
-        if (job.projectId) {
-          this.eventEmitter.emit('project.structure_changed', {
-            projectId: job.projectId,
-            context: 'NOVEL_ANALYSIS_COMPLETED',
-          });
-        }
-      }
-
-      return updatedJob;
-    } else {
-      // 如果是 NOVEL_ANALYSIS Job 失败，更新对应的 NovelAnalysisJob 状态
-      if (job.type === JobTypeEnum.NOVEL_ANALYSIS) {
-        try {
-          const task = await this.prisma.task.findUnique({
-            where: { id: job.taskId || '' },
-          });
-          if (task?.payload && typeof task.payload === 'object') {
-            const payload = task.payload as any;
-            const analysisJobId = payload.analysisJobId;
-            if (analysisJobId) {
-              await this.prisma.novelAnalysisJob.update({
-                where: { id: analysisJobId },
-                data: {
-                  status: 'FAILED',
-                  errorMessage: errorMessage || 'Unknown error',
-                  progress: {
-                    message: 'Analysis failed',
-                    jobId: job.id,
-                  },
-                },
-              });
-            }
-          }
-        } catch (e: any) {
-          this.logger.warn(
-            `[Job] reportJobResult: failed to mark NovelAnalysisJob FAILED for job ${jobId}: ${e?.message || e} `
-          );
-        }
-      }
-
-      // Stage13: CE Core Layer - 处理 CE Job 失败后的 DAG 阻断
-      if (
-        job.type === JobTypeEnum.CE06_NOVEL_PARSING ||
-        job.type === JobTypeEnum.CE03_VISUAL_DENSITY ||
-        job.type === JobTypeEnum.CE04_VISUAL_ENRICHMENT
-      ) {
-        await this.handleCECoreJobFailure(job);
-      }
-
-      // 使用统一的重试入口方法
-      return this.markJobFailedAndMaybeRetry(jobId, errorMessage, userId, apiKeyId, ip, userAgent);
-    }
-  }
-
-  /**
-   * 统一的重试入口：标记 Job 失败并决定是否重试
-   * 参考《TaskSystemAsyncExecutionSpec_V1.0》中关于重试策略的章节
-   *
-   * @param jobId Job ID
-   * @param errorMessage 错误信息
-   * @param userId 用户 ID（用于审计日志）
-   * @param apiKeyId API Key ID（用于审计日志）
-   * @param ip IP 地址（用于审计日志）
-   * @param userAgent UserAgent（用于审计日志）
-   * @returns 更新后的 Job
-   */
-  async markJobFailedAndMaybeRetry(
-    jobId: string,
-    errorMessage?: string,
-    userId?: string,
-    apiKeyId?: string,
-    ip?: string,
-    userAgent?: string
-  ) {
-    const job = await this.prisma.shotJob.findUnique({
-      where: { id: jobId },
-      include: {
-        task: true,
-        worker: true,
-        shot: {
-          include: {
-            scene: {
-              include: {
-                episode: {
-                  include: {
-                    season: {
-                      include: {
-                        project: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!job) {
-      throw new NotFoundException('Resource not found');
-    }
-
-    return this.retryJobIfPossible(job, errorMessage, undefined, userId, apiKeyId, ip, userAgent);
-  }
-
-  /**
-   * 根据重试策略处理失败的 Job（统一入口，使用 job.retry.ts）
-   * 参考《TaskSystemAsyncExecutionSpec_V1.0》中关于重试策略和 backoff 的章节
-   *
-   * 重试策略（统一入口，使用 job.retry.ts）：
-   * - 只用 retryCount/maxRetry 判断，不使用 attempts
-   * - 如果 retryCount >= maxRetry → FAILED
-   * - 否则 → RETRYING（等待 backoff 时间后，由 Orchestrator 放回 PENDING）
-   */
-  private async retryJobIfPossible(
-    job: ShotJobWithShotHierarchy,
-    errorMessage?: string,
-    result?: unknown,
-    userId?: string,
-    apiKeyId?: string,
-    ip?: string,
-    userAgent?: string
-  ) {
-    // 断言状态转换：RUNNING -> RETRYING 或 RUNNING -> FAILED
-    const computation = computeNextRetry(job);
-    const targetStatus = computation.shouldFail ? JobStatusEnum.FAILED : JobStatusEnum.RETRYING;
-
-    transitionJobStatus(JobStatusEnum.RUNNING, targetStatus, {
-      jobId: job.id,
-      jobType: job.type,
-      workerId: job.workerId || undefined,
-    });
-
-    // 使用统一的重试入口
-    const result_retry = await this.prisma.$transaction(async (tx) => {
-      return await markRetryOrFail(tx, job, { errorMessage });
-    });
-
-    // P1 修复：可观测性字段：记录 worker_id、duration、error_code、span_id、model_used
-    const spanId = job.traceId || null; // 使用 traceId 作为 span_id（若存在）
-    const modelUsed =
-      (job.engineConfig as any)?.engineKey || (job.payload as any)?.engineKey || null;
-    const duration =
-      job.updatedAt && job.createdAt
-        ? new Date(job.updatedAt).getTime() - new Date(job.createdAt).getTime()
-        : undefined; // 注意：包含队列等待时间，非纯执行时间
-
-    // 记录结构化日志：Job 进入重试或最终失败
-    // 参考《平台日志监控与可观测性体系说明书_ObservabilityMonitoringSpec_V1.0》：结构化日志格式
-    this.logger.log(
-      JSON.stringify({
-        event: computation.shouldFail ? 'JOB_FAILED_FINAL' : 'JOB_ENTERED_RETRY',
-        jobId: job.id,
-        jobType: job.type,
-        taskId: job.taskId || null,
-        workerId: job.workerId || null,
-        statusBefore: 'RUNNING',
-        statusAfter: result_retry.status,
-        retryCount: result_retry.retryCount,
-        maxRetry: job.maxRetry,
-        nextRetryAt: result_retry.nextRetryAt?.toISOString() || null,
-        backoffDelayMs: computation.shouldFail ? null : computation.backoffMs,
-        errorMessage: errorMessage || null,
-        errorCode: computation.shouldFail ? 'MAX_RETRY_REACHED' : 'JOB_RETRYING',
-        duration, // 执行耗时（毫秒），注意：包含队列等待时间
-        spanId, // 分布式追踪 ID
-        modelUsed, // 使用的模型/引擎
-        timestamp: new Date().toISOString(),
-      })
-    );
-
-    await this.auditLogService.record({
-      userId,
-      apiKeyId,
-      action: computation.shouldFail ? AuditActions.JOB_FAILED : AuditActions.JOB_RETRYING,
-      resourceType: 'job',
-      resourceId: job.id,
-      ip,
-      userAgent,
-      details: {
-        taskId: job.taskId || undefined,
-        workerId: job.workerId || undefined,
-        attempts: job.attempts, // attempts 只作为"领取次数统计"
-        retryCount: result_retry.retryCount,
-        error: errorMessage,
-        errorCode: computation.shouldFail ? 'MAX_RETRY_REACHED' : 'JOB_RETRYING',
-        duration, // 执行耗时（毫秒），注意：包含队列等待时间
-        spanId, // 分布式追踪 ID
-        modelUsed, // 使用的模型/引擎
-        backoffDelayMs: computation.shouldFail ? undefined : computation.backoffMs,
-        nextRetryAt: result_retry.nextRetryAt?.toISOString() || undefined,
-      },
-    });
-
-    if (job.taskId) {
-      await this.updateTaskStatusIfAllJobsCompleted(job.taskId);
-    }
-
-    // 重新查询更新后的 Job
-    const updatedJob = await this.prisma.shotJob.findUnique({
-      where: { id: job.id },
-    });
-
-    return updatedJob;
-  }
-
-  /**
-   * 检查 Task 的所有 Job 是否完成，如果是则更新 Task 状态
-   * @param taskId Task ID
-   */
-  private async updateTaskStatusIfAllJobsCompleted(taskId: string) {
-    const task = await this.prisma.task.findUnique({
-      where: { id: taskId },
-      include: { jobs: true },
-    });
-
-    if (!task || task.jobs.length === 0) {
-      return;
-    }
-
-    const allSucceeded = task.jobs.every((job: any) => job.status === JobStatusEnum.SUCCEEDED);
-    const hasFailed = task.jobs.some((job: any) => job.status === JobStatusEnum.FAILED);
-    const hasRetrying = task.jobs.some((job: any) => job.status === JobStatusEnum.RETRYING);
-    const hasPendingOrRunning = task.jobs.some(
-      (job: any) => job.status === JobStatusEnum.PENDING || job.status === JobStatusEnum.RUNNING
-    );
-
-    if (allSucceeded) {
-      // S1-FIX-A: 收集所有 Job 的结果作为 Task 的 output
-      const taskOutput = task.jobs.map((j: any) => ({
-        jobId: j.id,
-        status: j.status,
-        result: j.payload?.result || null,
-      }));
-
-      // S1-FIX-A: 获取执行该 Task 的 Worker ID（取第一个成功的 Job 的 workerId）
-      const workerId = task.jobs.find((j: any) => j.workerId)?.workerId || null;
-
-      await this.taskService.updateStatus(
-        taskId,
-        TaskStatusEnum.SUCCEEDED,
-        undefined,
-        undefined,
-        taskOutput,
-        workerId
-      );
-      return;
-    }
-
-    if (hasFailed && !hasRetrying && !hasPendingOrRunning) {
-      // S1-FIX-A: 获取执行该 Task 的 Worker ID（取第一个失败的 Job 的 workerId）
-      const workerId = task.jobs.find((j: any) => j.workerId)?.workerId || null;
-      await this.taskService.updateStatus(
-        taskId,
-        TaskStatusEnum.FAILED,
-        undefined,
-        'Some jobs failed',
-        undefined,
-        workerId
-      );
-    }
-  }
-
-  /**
-   * Stage 2: Worker Acknowledge Job (DISPATCHED -> RUNNING)
-   * 幂等接口：重复调用返回成功，不改变状态
-   */
-  async ackJob(jobId: string, workerId: string) {
-    // 1. Resolve Worker UUID
-    const workerNode = await this.prisma.workerNode.findUnique({
-      where: { workerId },
-    });
-    if (!workerNode) {
-      throw new ForbiddenException(`Worker ${workerId} not found`);
-    }
-
-    const job = await this.prisma.shotJob.findUnique({
-      where: { id: jobId },
-    });
-
-    if (!job) {
-      throw new NotFoundException(`Job ${jobId} not found`);
-    }
-
-    // 2. Strict Ownership Check
-    if (job.workerId !== workerNode.id) {
-      this.logger.warn(
-        `[JobService] Ack forbidden: Job ${jobId} owned by ${job.workerId}, but claimed by ${workerId} (${workerNode.id})`
-      );
-      throw new ForbiddenException(`Job ownership mismatch`);
-    }
-
-    // 3. Idempotency & State Transition
-    if (job.status === JobStatusEnum.RUNNING) {
-      return { status: 'RUNNING', idempotent: true };
-    }
-
-    if (job.status !== JobStatusEnum.DISPATCHED) {
-      throw new BadRequestException(
-        `Cannot ack job in status ${job.status} (expected DISPATCHED or RUNNING)`
-      );
-    }
-
-    // 4. Atomic Transition
-    await this.prisma.shotJob.update({
-      where: { id: jobId },
-      data: {
-        status: JobStatusEnum.RUNNING,
-        // startedAt field not strictly in schema, rely on updatedAt or handle in payload if needed
-      },
-    });
-
-    this.logger.log(`[JobService] Job ${jobId} acked by ${workerId} -> RUNNING`);
-    return { status: 'RUNNING', idempotent: false };
-  }
-
-  /**
-   * Stage 2: Worker Complete Job (RUNNING -> SUCCEEDED | FAILED)
-   * 幂等接口：重复调用返回成功
-   */
-  async completeJob(
-    jobId: string,
-    workerId: string,
-    params: {
-      status: 'SUCCEEDED' | 'FAILED';
-      result?: any;
-      errorMessage?: string;
-    }
-  ) {
-    // 1. Resolve Worker UUID
-    const workerNode = await this.prisma.workerNode.findUnique({
-      where: { workerId },
-    });
-    if (!workerNode) {
-      throw new ForbiddenException(`Worker ${workerId} not found`);
-    }
-
-    const job = await this.prisma.shotJob.findUnique({
-      where: { id: jobId },
-    });
-
-    if (!job) {
-      throw new NotFoundException(`Job ${jobId} not found`);
-    }
-
-    // 2. Strict Ownership Check
-    if (job.workerId !== workerNode.id) {
-      this.logger.warn(
-        `[JobService] Complete forbidden: Job ${jobId} owned by ${job.workerId}, but claimed by ${workerId} (${workerNode.id})`
-      );
-      throw new ForbiddenException(`Job ownership mismatch`);
-    }
-
-    // 3. Idempotency
-    if (job.status === JobStatusEnum.SUCCEEDED || job.status === JobStatusEnum.FAILED) {
-      // Return existing terminal state
-      return { status: job.status, idempotent: true };
-    }
-
-    if (job.status !== JobStatusEnum.RUNNING) {
-      // Allow completing even if still DISPATCHED? No, strict flow: Next -> Ack -> Complete
-      // But if ack was skipped/lost, strictly we should fail.
-      // For Stage 2, enforce RUNNING.
-      throw new BadRequestException(
-        `Cannot complete job in status ${job.status} (expected RUNNING)`
-      );
-    }
-
-    // 4. Reuse reportJobResult logic for consistency (Audits, Billing, DAG)
-    // Map string status to Enum
-    const targetStatus =
-      params.status === 'SUCCEEDED' ? JobStatusEnum.SUCCEEDED : JobStatusEnum.FAILED;
-
-    const updatedJob = await this.reportJobResult(
-      jobId,
-      targetStatus,
-      params.result,
-      params.errorMessage,
-      undefined, // system derived
-      undefined // system derived
-    );
-
-    return { status: updatedJob?.status || targetStatus, idempotent: false };
-  }
 
   /**
    * 处理单个 Job（由 Worker 调用）
@@ -2164,7 +1116,9 @@ export class JobService {
         if (job.type === JobTypeEnum.NOVEL_ANALYSIS) {
           engineKey = 'default_novel_analysis';
         } else if (job.type === JobTypeEnum.VIDEO_RENDER) {
-          engineKey = 'default_video_render'; // 假设有
+          engineKey = 'default_video_render';
+        } else if (job.type === JobTypeEnum.CE06_NOVEL_PARSING) {
+          engineKey = 'ce06_novel_parsing';
         }
       }
 
@@ -3081,7 +2035,10 @@ export class JobService {
    * CE06 完成 → 触发 CE03
    * CE03 完成 → 触发 CE04
    */
-  private async handleCECoreJobCompletion(
+  /**
+   * Orchestrate CE Core Pipeline completion (DAG transitions)
+   */
+  public async handleCECoreJobCompletion(
     job: ShotJobWithShotHierarchy,
     result?: unknown
   ): Promise<void> {
@@ -3270,20 +2227,22 @@ export class JobService {
       // Stage-1: 检查是否所有 SHOT_RENDER 都已完成
       await this.handleStage1ShotCompletion(job);
     } else if (job.type === JobTypeEnum.TIMELINE_RENDER) {
-      // 导出完成，触发 CE09 安全加固
-      if (pipeline.includes('CE09_MEDIA_SECURITY')) {
-        // Audit Trail: VIDEO_EXPORT -> CE09
+      if (pipeline.includes("CE09_MEDIA_SECURITY")) {
+        this.logger.log(`[CE09_FANOUT_ELIGIBLE] TIMELINE_RENDER finished, triggering CE09 for project ${job.projectId}`);
         await this.auditLogService.record({
-          action: 'CE_DAG_TRANSITION',
-          resourceType: 'job',
+          action: "CE_DAG_TRANSITION",
+          resourceType: "job",
           resourceId: job.id,
           traceId: job.traceId || task?.traceId || undefined,
           details: {
-            from: 'TIMELINE_RENDER',
-            to: 'CE09_MEDIA_SECURITY',
+            from: "TIMELINE_RENDER",
+            to: "CE09_MEDIA_SECURITY",
             projectId: job.projectId,
           },
         });
+
+        const assetId = (result as any)?.assetId || job.shotId;
+        this.logger.log(`[CE09_FANOUT_ENQUEUED] Enqueuing CE09 with assetId: ${assetId}`);
 
         await this.createCECoreJob({
           projectId: job.projectId!,
@@ -3291,17 +2250,10 @@ export class JobService {
           taskId: job.taskId!,
           jobType: JobTypeEnum.CE09_MEDIA_SECURITY,
           payload: {
-            projectId: job.projectId,
-            assetId: (result as any)?.assetId,
-            shotId: job.shotId || undefined,
-            engineKey: 'ce09_media_security',
-            previousJobId: job.id,
-            previousJobResult: result,
-            pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
-            traceId: job.traceId || task?.traceId || undefined,
+            assetId,
+            originJobId: job.id,
           },
         });
-        this.logger.log(`TIMELINE_RENDER completed, triggered CE09 for project ${job.projectId}`);
       }
     } else if (job.type === JobTypeEnum.CE09_MEDIA_SECURITY) {
       // CE09 完成，回写 security_processed 和 assets
@@ -3763,5 +2715,15 @@ export class JobService {
       this.logger.log(`[QUALITY_HOOK] Async mode for job ${jobId}`);
       setImmediate(() => void safeRun());
     }
+  }
+
+  /**
+   * P14-0-B: Retrieve job with shot hierarchy for fan-out decisions
+   */
+  async findJobByIdWithShotHierarchy(jobId: string): Promise<ShotJobWithShotHierarchy | null> {
+    return this.prisma.shotJob.findUnique({
+      where: { id: jobId },
+      include: SHOT_JOB_WITH_HIERARCHY,
+    }) as Promise<ShotJobWithShotHierarchy | null>;
   }
 }

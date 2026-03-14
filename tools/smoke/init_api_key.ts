@@ -5,10 +5,11 @@
 
 import { PrismaClient } from 'database';
 
-// Force smoke test to use correct port
-process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5434/scu';
+// Force smoke test to use correct port (env var takes priority if set by CI)
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5434/scu';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 // NOTE: dev/test smoke only: we store raw secret into secretHash to match dev/test resolver behavior.
 // Do NOT use this approach in production.
@@ -44,7 +45,25 @@ async function main() {
     console.error('❌ Database not ready, cannot initialize API Key');
     process.exit(1);
   }
-  const apiKey = process.env.API_KEY || 'scu_smoke_key';
+
+  // PRE-REQUISITE: Ensure 'user-gate' exists for downstream gates
+  console.log('--- [INIT] Ensuring pre-requisite users exist ---');
+  try {
+    await prisma.user.upsert({
+      where: { id: 'user-gate' },
+      update: {},
+      create: {
+        id: 'user-gate',
+        email: 'gate-tester@example.com',
+        passwordHash: 'dummy-hash-for-gate',
+      },
+    });
+    console.log('✅ User "user-gate" is ready.');
+  } catch (err: any) {
+    console.warn('⚠️  Failed to ensure user-gate (might already exist or schema differ):', err.message);
+  }
+
+  const apiKey = process.env.API_KEY || 'ak_smoke_test_key_v1';
   const apiSecret = process.env.API_SECRET || 'scu_smoke_secret';
 
   // Smoke 默认种子数据（可通过环境变量覆盖）
@@ -116,11 +135,13 @@ async function main() {
       update: {
         name: smokeOrgName,
         ownerId: user.id,
+        credits: 999999, // Ensure enough credits for VIDEO_RENDER Gate
       },
       create: {
         name: smokeOrgName,
         slug: smokeOrgSlug,
         ownerId: user.id,
+        credits: 999999,
       },
     });
 
@@ -222,7 +243,7 @@ async function main() {
     const engines = [
       { code: 'default_novel_analysis', name: 'Default Novel Analysis', type: 'local' },
       { code: 'default_shot_render', name: 'Default Shot Render', type: 'local' },
-      { code: 'default_video_render', name: 'Default Video Render', type: 'local' },
+      { code: 'video_merge', name: 'Video Merge (FFmpeg Real)', type: 'local' },
     ];
 
     for (const eng of engines) {
@@ -244,6 +265,20 @@ async function main() {
     }
     console.log('✅ Default engines seeded.');
 
+    // --- SSOT GUARDRAIL: Verify canonical engine mapping for Gate 4 ---
+    console.log('   [GUARD] Verifying SSOT Alignment for VIDEO_RENDER...');
+    const CANONICAL_VIDEO_ENGINE = 'video_merge';
+    const videoEngine = await prisma.engine.findUnique({
+      where: { code: CANONICAL_VIDEO_ENGINE },
+    });
+
+    if (!videoEngine || !videoEngine.isActive || !videoEngine.enabled) {
+      console.error(`❌ SSOT FAILURE: Canonical engine '${CANONICAL_VIDEO_ENGINE}' is missing or disabled.`);
+      console.error(`   API EngineRegistry expects '${CANONICAL_VIDEO_ENGINE}' for VIDEO_RENDER jobs.`);
+      process.exit(1);
+    }
+    console.log(`✅ SSOT ASSERT PASSED: Engine '${CANONICAL_VIDEO_ENGINE}' is ready.`);
+
     // --- HARD ASSERT: verify binding in DB is exactly what we expect ---
     const check = await prisma.apiKey.findUnique({
       where: { key: apiKey },
@@ -256,7 +291,7 @@ async function main() {
     if (check.ownerUserId !== user.id || check.ownerOrgId !== organization.id) {
       throw new Error(
         `[smoke] apiKey binding mismatch. expected user=${user.id} org=${organization.id} but got user=${check.ownerUserId} org=${check.ownerOrgId}. ` +
-          `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
+        `This almost always indicates DATABASE_URL mismatch between API and init script, or stale DB state.`
       );
     }
     console.log(`✅ Verified apiKey binding: ${apiKey} -> user=${user.id} org=${organization.id}`);

@@ -1,7 +1,7 @@
 // @ts-ignore
 import { PrismaClient } from '../packages/database/src/generated/prisma/index';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 // --- 移植自 novel-analysis-processor.ts 的核心逻辑 ---
 

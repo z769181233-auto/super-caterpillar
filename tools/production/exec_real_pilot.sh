@@ -9,7 +9,7 @@ echo "📂 Evidence: $EVI"
 export SHOT_RENDER_PROVIDER=local
 export GATE_MODE=0
 export WORKER_MAX_CONCURRENCY=5
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5433/scu"
+export DATABASE_URL="postgresql://postgres:password@localhost:5433/scu"
 echo "🔧 Env: PROVIDER=$SHOT_RENDER_PROVIDER, GATE_MODE=$GATE_MODE, DB=:5433"
 
 # R-3: Boot Runtime

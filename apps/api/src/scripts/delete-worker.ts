@@ -3,7 +3,7 @@
 import { PrismaClient } from 'database';
 import * as util from 'util';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   process.stdout.write(util.format('==============================') + '\n');

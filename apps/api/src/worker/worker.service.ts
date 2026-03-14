@@ -27,7 +27,7 @@ export class WorkerService {
     private readonly auditLogService: AuditLogService,
     @Inject(forwardRef(() => JobService))
     private readonly jobService: JobService
-  ) {}
+  ) { }
 
   // P6-2-2-1: Dispatch Rate Limiting (Anti-Cascade Flood)
   private dispatchHistory: Map<string, number[]> = new Map();
@@ -635,13 +635,14 @@ export class WorkerService {
    * @returns 领取到的 Job，如果没有可用的 Job 则返回 null
    */
   async dispatchNextJobForWorker(workerId: string) {
-    console.log(`[XXX_DEBUG] WorkerService.dispatchNextJobForWorker called for ${workerId}`);
+    console.log(`[API_WORKER_NEXT_SVC] entered for workerId=${workerId}`);
     // 1. Resolve WorkerNode (String -> UUID)
     try {
       const workerNode = await this.prisma.workerNode.findUnique({
         where: { workerId },
         include: { shotJobs: { where: { status: JobStatus.RUNNING } } },
       });
+      console.log(`[API_WORKER_NEXT_SVC] worker lookup result=${!!workerNode}`);
 
       if (!workerNode) {
         this.logger.warn(`[WorkerService] Worker not found for dispatch: ${workerId}`);
@@ -688,9 +689,9 @@ export class WorkerService {
           return null;
         }
 
-        console.log(
-          `[WorkerService] DEBUG: Searching PENDING jobs for ${workerId}. Types: ${supportedJobTypes.join(',')}`
-        );
+        console.log('[WORKER_CLAIM] supportedJobTypes=', supportedJobTypes);
+
+        console.log(`[API_WORKER_NEXT_SVC] candidate job query start (supportedJobTypes=${supportedJobTypes.join(',')})`);
 
         // P4-A: Multi-Tier Weighted Round Robin (WRR) & Atomic Concurrency Limit check
         // 1. Fetch organizations with PENDING jobs
@@ -812,7 +813,6 @@ export class WorkerService {
           return null; // Wait for concurrent jobs to finish
         }
 
-        // 6. Fetch the oldest/highest priority job for THIS selected organization
         const candidate = await tx.shotJob.findFirst({
           where: {
             organizationId: selectedOrgId,
@@ -825,12 +825,16 @@ export class WorkerService {
 
         if (!candidate) {
           console.log(`[WorkerService] DEBUG: No candidate job found for ${workerId}`);
+          if (supportedJobTypes.includes('CE06_NOVEL_PARSING')) {
+            console.log('[WORKER_CLAIM] no claimable CE06 job found');
+          }
           return null;
         }
 
-        console.log(
-          `[WorkerService] DEBUG: Found candidate job ${candidate.id} (${candidate.type}). Atomic update via WRR.`
-        );
+        console.log('[WORKER_CLAIM] claimed job=', candidate.id, candidate.type);
+
+        console.log(`[API_WORKER_NEXT_SVC] candidate job query result=${candidate.id}`);
+        console.log(`[API_WORKER_NEXT_SVC] lease/claim start...`);
 
         // 2.2 Atomic Update
         const updateResult = await tx.shotJob.updateMany({
@@ -844,7 +848,7 @@ export class WorkerService {
           },
         });
 
-        console.log(`[WorkerService] DEBUG: Atomic update result count: ${updateResult.count}`);
+        console.log(`[API_WORKER_NEXT_SVC] lease/claim success (update count=${updateResult.count})`);
 
         if (updateResult.count === 0) {
           return null;
@@ -958,6 +962,8 @@ export class WorkerService {
 
       return dispatchedJob;
     } catch (error) {
+      console.log(`[API_WORKER_NEXT_SVC] EXCEPTION CAUGHT: ${(error as any)?.message}`);
+      console.log(`[API_WORKER_NEXT_SVC] STACK: ${(error as any)?.stack}`);
       this.logger.error(
         `[WorkerService] dispatchNextJobForWorker CRITICAL ERROR: ${error}`,
         (error as any)?.stack

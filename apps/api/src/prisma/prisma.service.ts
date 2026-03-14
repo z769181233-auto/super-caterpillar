@@ -6,7 +6,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    super();
+    super({});
     // 开发/测试环境：诊断 Prisma Client 来源和模型
     if (process.env.NODE_ENV !== 'production') {
       try {
@@ -77,9 +77,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
+    console.log('[DEBUG_BOOT] PrismaService.onModuleInit start ($connect)');
     try {
       await this.$connect();
+      console.log('[DEBUG_BOOT] PrismaService.onModuleInit end ($connect)');
     } catch (e) {
+      console.error('[DEBUG_BOOT] PrismaService.onModuleInit FAILED', e);
       this.logger.warn(`[PrismaService] Failed to connect to DB at startup: ${e}`);
     }
   }
