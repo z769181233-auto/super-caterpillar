@@ -284,6 +284,32 @@ mark_skipped() {
   ACTUAL_SKIPPED_GATES="${ACTUAL_SKIPPED_GATES}${gate_name}, "
 }
 
+ci_fail_fast_if_needed() {
+  local gate_name="$1"
+  local gate_status="$2"
+  local gate_output="${3:-}"
+
+  if [ "$GATE_ENV_MODE" != "ci" ] || [ "$gate_status" != "false" ]; then
+    return 0
+  fi
+
+  {
+    echo ""
+    echo "## CI Fail-Fast"
+    echo "- Failed gate: ${gate_name}"
+    echo "- Timestamp: $(date)"
+    if [ -n "$gate_output" ] && [ -f "$gate_output" ]; then
+      echo ""
+      echo '```text'
+      tail -n 200 "$gate_output" || true
+      echo '```'
+    fi
+  } >> "$REPORT_FILE"
+
+  echo -e "${RED}[CI FAIL-FAST] ${gate_name} failed; stopping remaining gates to preserve CI budget.${NC}"
+  exit 1
+}
+
 # 门禁 1: Preflight 检查（含 CORS 生产验证）
 echo -e "${BLUE}Gate 1: Preflight Check + CORS Production Validation${NC}"
 echo "Running preflight checks..."
@@ -377,6 +403,7 @@ else
     echo -e "${RED}❌ Gate 1 failed${NC}\n"
     ALL_GATES_PASSED=false
 fi
+ci_fail_fast_if_needed "Gate 1" "$PREFLIGHT_PASSED" "$PREFLIGHT_OUTPUT"
 
 # 门禁 2: 容量门禁负向测试
 echo -e "${BLUE}Gate 2: Capacity Gate Negative Tests${NC}"
@@ -437,6 +464,7 @@ if [ "$CAPACITY_GATE_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 2 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 2" "$CAPACITY_GATE_PASSED" "$CAPACITY_OUTPUT"
 
 # 门禁 3: Signed URL 全自动真验
 echo -e "${BLUE}Gate 3: Signed URL Full Auto Test${NC}"
@@ -618,6 +646,7 @@ if [ "$SIGNED_URL_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 3 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 3" "$SIGNED_URL_PASSED" "$SIGNED_URL_OUTPUT"
 
 if [[ "$ORIG_BYPASS" == "__UNSET__" ]]; then
   unset SCU_GATE_ALLOW_TEMP_BYPASS
@@ -663,6 +692,7 @@ if [ "$VIDEO_E2E_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 4 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 4" "$VIDEO_E2E_PASSED" "$VIDEO_E2E_OUTPUT"
 
 # 门禁 5: 容量报告数据完整性检查
 echo -e "${BLUE}Gate 5: Capacity Report Data Completeness${NC}"
@@ -752,6 +782,7 @@ if [ "$CAPACITY_REPORT_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 5 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 5" "$CAPACITY_REPORT_PASSED" "$CAPACITY_REPORT_OUTPUT"
 echo -e "${BLUE}Gate 6: Video Merge Memory Safety${NC}"
 echo "Running video merge memory consumption regression test..."
 
@@ -781,6 +812,7 @@ if [ "$VIDEO_MERGE_MEM_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 6 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 6" "$VIDEO_MERGE_MEM_PASSED" "$VIDEO_MERGE_MEM_OUTPUT"
 
 # 门禁 7: Video Merge Resource Guardrails (Timeout/Threads)
 echo -e "${BLUE}Gate 7: Video Merge Resource Guardrails (Timeout/Threads)${NC}"
@@ -814,6 +846,7 @@ if [ "$VIDEO_MERGE_GUARD_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 7 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 7" "$VIDEO_MERGE_GUARD_PASSED" "$VIDEO_MERGE_GUARD_OUTPUT"
 
 # 门禁 8: Context Injection Consistency (V3.0 P0-2)
 echo -e "${BLUE}Gate 8: Context Injection Consistency (V3.0 P0-2)${NC}"
@@ -850,6 +883,7 @@ else
     cat "$CONTEXT_INJECTION_OUTPUT" || true
     echo -e "${YELLOW}--- GATE 8 LOG END ---${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 8" "$CONTEXT_INJECTION_PASSED" "$CONTEXT_INJECTION_OUTPUT"
 
 # 门禁 9: Shots Director Control Fields (V3.0 P1-1)
 echo -e "${BLUE}Gate 9: Shots Director Control Fields (V3.0 P1-1)${NC}"
@@ -887,6 +921,7 @@ if [ "$SHOTS_DIRECTOR_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 9 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 9" "$SHOTS_DIRECTOR_PASSED" "$SHOTS_DIRECTOR_OUTPUT"
 
 # 门禁 10: Frame Merge Two Fragments (V3.0 P2-3)
 echo -e "${BLUE}Gate 10: Frame Merge Two Fragments (V3.0 P2-3)${NC}"
@@ -915,6 +950,7 @@ if [ "$FRAME_MERGE_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 10 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 10" "$FRAME_MERGE_PASSED" "$FRAME_MERGE_OUTPUT"
 
 # 门禁 11: P4 E2E Pipeline (Novel -> Published HLS)
 echo -e "${BLUE}Gate 11: P4 E2E Pipeline (Novel -> Published HLS)${NC}"
@@ -948,6 +984,7 @@ if [ "$P4_E2E_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 11 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 11" "$P4_E2E_PASSED" "$P4_E2E_OUTPUT"
 
 # 门禁 12: Billing Integrity & Closed-Loop (P2 Recovery)
 echo -e "${BLUE}Gate 12: Billing Integrity & Closed-Loop (P2 Recovery)${NC}"
@@ -981,6 +1018,7 @@ if [ "$BILLING_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 12 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 12" "$BILLING_PASSED" "$BILLING_OUTPUT"
 
 # 门禁 13: CE01 Protocol Alignment (V3.0 Bible)
 echo -e "${BLUE}Gate 13: CE01 Protocol Alignment (Bible V3.0)${NC}"
@@ -1012,6 +1050,7 @@ else
     cat "$CE01_OUTPUT" || true
     echo -e "${YELLOW}--- GATE 13 LOG END ---${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 13" "$CE01_PASSED" "$CE01_OUTPUT"
 
 # 门禁 14: CE02 Visual Density Integration (V3.0 Bible)
 echo -e "${BLUE}Gate 14: CE02 Visual Density Integration (Bible V3.0)${NC}"
@@ -1040,6 +1079,7 @@ if [ "$CE02_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 14 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 14" "$CE02_PASSED" "$CE02_OUTPUT"
 
 # 门禁 15: CE11 Shot Generator Integration (V3.0 Bible)
 echo -e "${BLUE}Gate 15: CE11 Shot Generator Integration (Bible V3.0)${NC}"
@@ -1068,6 +1108,7 @@ if [ "$CE11_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 15 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 15" "$CE11_PASSED" "$CE11_OUTPUT"
 
 # 门禁 16: Billing Documentation Hygiene
 echo -e "${BLUE}Gate 16: Billing Documentation Hygiene${NC}"
@@ -1096,6 +1137,7 @@ if [ "$DOC_HYGIENE_PASSED" = true ]; then
 else
     echo -e "${RED}❌ Gate 16 failed${NC}\n"
 fi
+ci_fail_fast_if_needed "Gate 16" "$DOC_HYGIENE_PASSED" "$DOC_HYGIENE_OUTPUT"
 
 # 门禁 17: Engine Sanity (Week 1 引擎真化)
 # 仅在 ENGINE_REAL=1 时执行（默认 Skip）
