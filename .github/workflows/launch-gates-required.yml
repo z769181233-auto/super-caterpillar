@@ -31,6 +31,7 @@ jobs:
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
       PRISMA_CLIENT_ENGINE_TYPE: 'library'
       PRISMA_CLI_QUERY_ENGINE_TYPE: 'library'
+      ENGINE_DEFAULT: 'ce06_novel_parsing'
       PGUSER: 'postgres'
       PGPASSWORD: 'password'
       PGHOST: '127.0.0.1'
@@ -123,6 +124,10 @@ jobs:
           export API_URL="http://127.0.0.1:3000"
           export API_BASE_URL="http://127.0.0.1:3000"
           export WORKER_PORT=3001
+          export WORKER_ID="local-worker"
+          export WORKER_NAME="local-worker"
+          export WORKER_API_KEY="ak_smoke_test_key_v1"
+          export WORKER_API_SECRET="scu_smoke_secret"
           
           echo "--- [WORKER PRE-BOOT] dist/ structure ---"
           ls -laR apps/workers/dist || true
