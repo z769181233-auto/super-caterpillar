@@ -19,8 +19,9 @@ import { SecretEncryptionService } from './secret-encryption.service';
 import { buildHmacError } from '../../common/utils/hmac-error.utils';
 
 function secretFingerprint(secret: string) {
-  // do not leak secret; only fingerprint
-  const fp = createHash('sha256').update(secret).digest('hex').slice(0, 12);
+  // do not leak secret; fingerprint with keyed HMAC to avoid raw weak-hash on sensitive inputs
+  const salt = process.env.API_FINGERPRINT_SALT || process.env.HMAC_SECRET_KEY || 'scu-fingerprint';
+  const fp = createHmac('sha256', salt).update(secret).digest('hex').slice(0, 12);
   return { len: secret.length, sha12: fp };
 }
 import {
