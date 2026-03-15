@@ -12,7 +12,7 @@ jobs:
   launch-gates-required:
     name: launch-gates-required
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:15
