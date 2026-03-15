@@ -97,6 +97,8 @@ import {
   processAssetListJob,
 } from './processors/asset-extraction.processor';
 import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.processor';
+import { processShotRenderJob } from './processors/shot-render.processor';
+import { processVideoRenderJob } from './processors/video-render.processor';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ProcessorContext } from './types/processor-context';
 
@@ -153,7 +155,12 @@ if (!baseUrl) {
 let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
 const workerApiKey = readArg('apiKey') || env.workerApiKey;
-const workerSecret = process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET;
+const workerSecret =
+  readArg('apiSecret') ||
+  process.env.WORKER_API_SECRET ||
+  env.workerApiSecret ||
+  process.env.HMAC_SECRET_KEY ||
+  process.env.API_SECRET_KEY;
 
 if (!workerSecret) {
   const errMsg = '[P1-FATAL] WORKER_API_SECRET is missing. Fail-fast triggered.';
@@ -187,15 +194,24 @@ async function processJobWithExecutor(job: any): Promise<void> {
         if (job.type === 'CE99_CONTINUITY_AUDIT') return processContinuityAuditJob(ctx);
         if (job.type === 'CE13_CHARACTER_CARDS') return processCharacterCardsJob(ctx);
         if (job.type === 'CE14_ASSET_LIST') return processAssetListJob(ctx);
+        if (job.type === 'SHOT_RENDER') return processShotRenderJob(ctx);
+        if (job.type === 'VIDEO_RENDER') return processVideoRenderJob(ctx);
         throw new Error(`Unsupported job type: ${job.type}`);
       }
     );
 
+    const normalizedStatus =
+      result.success && result.output?.status !== 'FAILED' ? 'SUCCEEDED' : 'FAILED';
+    const normalizedError =
+      normalizedStatus === 'FAILED'
+        ? result.error || result.output?.error || 'WORKER_PROCESSOR_FAILED'
+        : undefined;
+
     await apiClient.reportJobResult({
       jobId: job.id,
-      status: result.success ? 'SUCCEEDED' : 'FAILED',
+      status: normalizedStatus,
       result: result.output,
-      error: result.error,
+      error: normalizedError,
     });
   } catch (error: any) {
     console.error(`[Worker] Job ${job.id} execution failed:`, error.message);
@@ -235,6 +251,8 @@ export async function startWorkerApp() {
     'CE99_CONTINUITY_AUDIT',
     'CE13_CHARACTER_CARDS',
     'CE14_ASSET_LIST',
+    'SHOT_RENDER',
+    'VIDEO_RENDER',
   ];
 
   console.log('[WORKER_BOOT] entry=apps/workers/src/worker-app.ts');

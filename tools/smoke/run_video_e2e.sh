@@ -162,13 +162,14 @@ mkdir -p "$(dirname "$WORKER_LOG_FILE")"
 (
   cd apps/workers && \
   JOB_WORKER_ENABLED=true \
-  GATE_MODE=1 \
+  GATE_MODE=0 \
   JWT_SECRET="${JWT_SECRET:-}" \
   JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-}" \
   REDIS_URL="${REDIS_URL:-}" \
   DATABASE_URL="${DATABASE_URL:-}" \
   API_BASE_URL="${API_BASE_URL:-http://localhost:3000}" \
   API_URL="${API_URL:-http://localhost:3000}" \
+  WORKER_ID="${WORKER_ID:-local-worker}" \
   WORKER_API_KEY="${WORKER_API_KEY:-ak_smoke_test_key_v1}" \
   WORKER_API_SECRET="${WORKER_API_SECRET:-scu_smoke_secret}" \
   pnpm dev
