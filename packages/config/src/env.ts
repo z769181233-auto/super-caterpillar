@@ -87,6 +87,19 @@ function requiresWorkerIdentity(): boolean {
   );
 }
 
+function resolveEngineDefault(): string {
+  const explicit = process.env.ENGINE_DEFAULT?.trim();
+  if (explicit) return explicit;
+
+  // CI / unit-test imports often load config without a full worker/runtime env.
+  // Keep production strictness, but avoid failing test bootstrap on a runtime-only key.
+  if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID || process.env.CI) {
+    return 'ce06_novel_parsing';
+  }
+
+  return getEnv('ENGINE_DEFAULT');
+}
+
 // JWT Secret Check (Silent)
 
 export const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
@@ -232,7 +245,7 @@ export const env: AppConfig = {
   jobWorkerEnabled: process.env.JOB_WORKER_ENABLED === 'true',
 
   // Engine
-  engineDefault: getEnv('ENGINE_DEFAULT'), // P0: Strict from env or authoritative router
+  engineDefault: resolveEngineDefault(), // P0: strict in runtime, deterministic fallback in CI/test bootstrap
   engineRealHttpBaseUrl: process.env.ENGINE_REAL_HTTP_BASE_URL ?? 'http://localhost:8000', // 真实 HTTP 引擎基础 URL
 
   // HMAC Authentication
