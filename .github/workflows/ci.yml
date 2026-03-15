@@ -39,6 +39,7 @@ jobs:
       PRISMA_CLIENT_ENGINE_TYPE: 'binary'
       JWT_SECRET: 'ci-secret-for-test'
       JWT_REFRESH_SECRET: 'ci-refresh-secret-for-test'
+      ENGINE_DEFAULT: 'ce06_novel_parsing'
       SHOT_RENDER_PROVIDER: 'mock'
     steps:
       - uses: actions/checkout@v4
