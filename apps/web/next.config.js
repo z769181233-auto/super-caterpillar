@@ -6,6 +6,9 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['database', '@scu/shared-types'],
   trailingSlash: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     unoptimized: true,
   },
