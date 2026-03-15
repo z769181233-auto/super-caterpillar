@@ -4,7 +4,7 @@ import path from 'path';
 import { spawnSync } from 'child_process';
 const { v4: uuidv4 } = require('uuid');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('🚀 Starting S4-8 Verification (Transitions, BGM & Timecode)...');

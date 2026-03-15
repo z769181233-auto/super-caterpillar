@@ -93,24 +93,9 @@ export class EngineInvokerHubService implements OnModuleInit {
     const started = Date.now();
     let fallbackReason: string | undefined;
 
-    // 0. 故障注入 (Fault Injection) - 仅在 GATE_MODE 下生效
+    // 0. Security Audit: Fault Injection and Bypass are permanently disabled in Round 3 hardening.
     const isGateMode = process.env.GATE_MODE === '1';
-    const forceFailKeys = (process.env.ENGINE_FORCE_FAIL_KEYS || '').split(',').filter(Boolean);
     const disableKeys = (process.env.ENGINE_DISABLE_KEYS || '').split(',').filter(Boolean);
-
-    if (isGateMode && forceFailKeys.includes(req.engineKey)) {
-      const result: EngineInvocationResult<TOutput> = {
-        success: false,
-        selectedEngineKey: req.engineKey,
-        error: {
-          code: 'FAULT_INJECTED',
-          message: `Engine ${req.engineKey} matched ENGINE_FORCE_FAIL_KEYS`,
-        },
-        metrics: { latencyMs: Date.now() - started },
-      };
-      await this.logInvocation(req, result);
-      return result;
-    }
 
     const jobId = req.metadata?.jobId || `manual_${started}`;
     const projectId = req.metadata?.projectId || 'default_project';
@@ -118,25 +103,15 @@ export class EngineInvokerHubService implements OnModuleInit {
 
     // 0.0 Auto-resolve engineKey from jobType if missing
     if (!req.engineKey && req.jobType) {
-      const defaultKey = this.memoryRegistry.getDefaultEngineKeyForJobType(req.jobType);
-
-      // P5-0.1: CE11 Strict Engine Key Enforcement (No Silent Mock in Production)
+      // P5-0.1: CE11 Strict Engine Key Enforcement (No Silent Mock even in Verification)
       if (req.jobType === 'CE11_SHOT_GENERATOR') {
-        const payload = req.payload as any;
-        const isVerif =
-          !!req.metadata?.isVerification ||
-          !!(req.metadata?.gateMode as any) ||
-          !!payload?.isVerification ||
-          !!payload?.gateMode;
+        throw new BadRequestException(
+          '[P1-HARD] CE11_SHOT_GENERATOR requires explicit engineKey (e.g. ce11_shot_generator_real)'
+        );
+      }
 
-        if (!isVerif) {
-          throw new BadRequestException(
-            'CE11_SHOT_GENERATOR requires explicit engineKey in production (e.g. ce11_shot_generator_real)'
-          );
-        }
-        // In verification mode, allow implicit mock resolution
-        if (defaultKey) req.engineKey = defaultKey;
-      } else if (defaultKey) {
+      const defaultKey = this.memoryRegistry.getDefaultEngineKeyForJobType(req.jobType);
+      if (defaultKey) {
         req.engineKey = defaultKey;
       }
     }
@@ -395,7 +370,7 @@ export class EngineInvokerHubService implements OnModuleInit {
     if (engineKey === 'ce04_visual_enrichment') {
       return 'CE04_VISUAL_ENRICHMENT';
     }
-    if (engineKey === 'ce11_shot_generator_real' || engineKey === 'ce11_shot_generator_mock') {
+    if (engineKey === 'ce11_shot_generator_real') {
       return 'CE11_SHOT_GENERATOR';
     }
     if (

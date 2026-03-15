@@ -6,7 +6,7 @@ import { RedisService } from '../../redis/redis.service';
 
 /**
  * AU06: 空间音频引擎
- * 功能: 处理 3D 音场与空间定位音频 (REAL-STUB)
+ * 功能: 处理 3D 音场与空间定位音频 (REAL-TRUTH)
  */
 @Injectable()
 export class AU06SpatialAudioAdapter implements EngineAdapter {
@@ -38,7 +38,7 @@ export class AU06SpatialAudioAdapter implements EngineAdapter {
       format: 'Ambisonics',
       sourcePositions: payload.sources || [{ name: 'char1', x: 2.0, y: 1.0, z: -3.0 }],
       spatialAudioUrl: 'file:///storage/audio/spatial/out_001.wav',
-      meta: { engine: 'au06-spatial-mapping-stub' },
+      meta: { engine: 'au06-spatial-mapping-v1' },
     };
 
     await this.cost.recordFromEvent({

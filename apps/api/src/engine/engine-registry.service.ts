@@ -228,7 +228,7 @@ export class EngineRegistry {
       PIPELINE_STAGE1_NOVEL_TO_VIDEO: 'stage1_orchestrator',
       CE09_MEDIA_SECURITY: 'ce09_security_real',
 
-      CE11_SHOT_GENERATOR: 'ce11_shot_generator_mock', // Default to Mock
+      CE11_SHOT_GENERATOR: 'ce11_shot_generator_real', // Replaced Mock with Real default
       CE11_SHOT_GENERATOR_REAL: 'ce11_shot_generator_real', // Explicit Real
       CE14_NARRATIVE_CLIMAX: 'ce14_narrative_climax',
 

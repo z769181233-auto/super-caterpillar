@@ -37,7 +37,7 @@ psql "$DATABASE_URL" <<EOF
 INSERT INTO organizations (id, name, "ownerId", "updatedAt") VALUES ('$ORG_ID', 'B1 Test Org', 'system', now()) ON CONFLICT DO NOTHING;
 INSERT INTO projects (id, name, "organizationId", "ownerId", "updatedAt") VALUES ('$PROJECT_ID', 'B1 Test Proj', '$ORG_ID', 'system', now());
 INSERT INTO seasons (id, "projectId", index, title, "updatedAt") VALUES ('season_$PROJECT_ID', '$PROJECT_ID', 1, 'Season 1', now());
-INSERT INTO novel_sources (id, "projectId", "organizationId", "totalChapters", status, "fileKey", "fileName", "fileSize", "updatedAt") VALUES ('ns_$PROJECT_ID', '$PROJECT_ID', '$ORG_ID', 1, 'PARSING', 'uploads/wangu_shendi_15m.txt', 'wangu.txt', 100, now());
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt") VALUES ('ns_$PROJECT_ID', '$PROJECT_ID', '$ORG_ID', 1, 'PARSING', 'uploads/wangu_shendi_15m.txt', 'wangu.txt', 100, now());
 INSERT INTO episodes (id, "projectId", "seasonId", index, name) VALUES ('$EPISODE_ID', '$PROJECT_ID', 'season_$PROJECT_ID', 1, 'B1 Test Episode');
 EOF
 

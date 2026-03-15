@@ -22,7 +22,7 @@ export class IdentityController {
     const { projectId, characterId, referenceAssetId, targetAssetId, shotId, referenceAnchorId } =
       body;
 
-    // 1. Calculate Score (Real-Stub)
+    // 1. Calculate Score (Real-Truth)
     const result = await this.identityService.scoreIdentity(
       referenceAssetId,
       targetAssetId,

@@ -37,13 +37,11 @@ function pickHmacSecretSSOT(): string {
     process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET;
 
   if (!v) {
-    if (process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1') {
-      const errMsg = '[P1-FAIL-FAST] FATAL: WORKER_API_SECRET missing in production. Refusing to start.';
-      process.stderr.write(errMsg + '\\n');
-      throw new Error(errMsg);
-    }
+    const errMsg = '[P1-FAIL-FAST] FATAL: WORKER_API_SECRET missing. Refusing to start with insecure default.';
+    process.stderr.write(errMsg + '\n');
+    throw new Error(errMsg);
   }
-  return v || 'dev-secret';
+  return v;
 }
 import * as util from 'util';
 import { BillingOutboxDispatcher } from '../billing/outbox-dispatcher.service';
@@ -75,14 +73,31 @@ export async function startGateWorkerApp() {
   process.stdout.write(util.format('Version: V2-PIPELINE-SUPPORT') + '\n');
   process.stdout.write(util.format('========================================\n') + '\n');
 
-  const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
-  const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
+  const workerId = (() => {
+    const id = (process.env.WORKER_ID || process.env.WORKER_NAME || '').trim();
+    if (!id) {
+      throw new Error('[Strict] WORKER_ID / WORKER_NAME environment variable is required.');
+    }
+    return id;
+  })();
+  const workerName = (() => {
+    const name = (process.env.WORKER_NAME || process.env.WORKER_ID || '').trim();
+    if (!name) throw new Error('[Strict] WORKER_NAME / WORKER_ID environment variable is required.');
+    return name;
+  })();
+  const isProd = process.env.NODE_ENV === 'production';
 
-  console.log('API_BASE_URL(raw)=', JSON.stringify(process.env.API_BASE_URL));
-  if (process.env.API_BASE_URL?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
-  const baseUrl = process.env.API_BASE_URL;
+  const rawApiBaseUrl = process.env.API_BASE_URL;
+  const rawApiUrl = process.env.API_URL;
+  const baseUrl = rawApiBaseUrl || rawApiUrl;
+
+  console.log(`[BOOT_ENV] API_BASE_URL_RAW=${rawApiBaseUrl}`);
+  console.log(`[BOOT_ENV] API_URL_RAW=${rawApiUrl}`);
+  console.log(`[BOOT_ENV] API_BASE_URL_RESOLVED=${baseUrl}`);
+
+  if (rawApiBaseUrl?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
   if (!baseUrl) {
-    throw new Error('API_BASE_URL is required in production');
+    throw new Error('API_BASE_URL or API_URL is required in production');
   }
   let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
@@ -102,7 +117,6 @@ export async function startGateWorkerApp() {
   const engineHubClient = new EngineHubClient(apiClient);
 
   const prisma = new PrismaClient({
-    datasources: { db: { url: env.databaseUrl } },
     log: ['error'],
   });
 
@@ -150,7 +164,6 @@ export async function startGateWorkerApp() {
             'PIPELINE_PROD_VIDEO_V1',
             'EPISODE_RENDER',
             'NOVEL_ANALYSIS',
-            'NOVEL_REDUCE_AGGREGATE',
           ],
           supportedModels: [],
           supportedEngines: [
@@ -164,7 +177,7 @@ export async function startGateWorkerApp() {
             'video_merge',
             'default_shot_render',
             'ce09_security_real',
-            'ce11_shot_generator_mock',
+            'ce11_shot_generator_real',
             'timeline_render',
             'audio_engine',
             'fusion',
@@ -348,49 +361,9 @@ export async function startGateWorkerApp() {
         }
 
         const storageRoot = (env as any).storageRoot;
-        const mockKey = 'videos/gate_mock.mp4';
-        const mockPath = path.join(storageRoot, mockKey);
-
-        process.stdout.write(
-          `[GateWorker] VIDEO_RENDER: cwd=${process.cwd()}, repoRoot=${repoRoot}, target=${mockPath}\n`
-        );
-
-        if (!fs.existsSync(path.dirname(mockPath)))
-          fs.mkdirSync(path.dirname(mockPath), { recursive: true });
-        if (!fs.existsSync(mockPath)) {
-          // Generate 1s blue video using ffmpeg
-          const { execSync } = require('child_process');
-          try {
-            process.stdout.write('[GateWorker] Generating mock video...\n');
-            execSync(
-              `ffmpeg -f lavfi -i color=c=blue:s=640x360:d=1 -c:v libx264 -t 1 -pix_fmt yuv420p "${mockPath}"`,
-              { stdio: 'ignore' }
-            );
-          } catch (e) {
-            console.error(
-              '[GateWorker] Failed to generate mock video via ffmpeg, creating dummy file',
-              e
-            );
-            fs.writeFileSync(mockPath, 'dummy video content');
-          }
-        }
-
-        if (sId) {
-          await prisma.asset.upsert({
-            where: { ownerType_ownerId_type: { ownerType: 'SCENE', ownerId: sId, type: 'VIDEO' } },
-            update: { status: 'GENERATED', storageKey: mockKey, createdByJobId: job.id },
-            create: {
-              projectId: job.projectId!,
-              ownerId: sId,
-              ownerType: 'SCENE',
-              type: 'VIDEO',
-              storageKey: mockKey,
-              status: 'GENERATED',
-              createdByJobId: job.id,
-            },
-          });
-        }
-        result = { status: 'SUCCEEDED', output: { storageKey: mockKey } };
+        // P1-HARD: Mock video generation logic REMOVED.
+        // Truth-based rendering required. If real renderer (ShotRenderRouter) fails, it remains failed.
+        throw new Error('VIDEO_RENDER_NON_TRUTH_FALLBACK: Absolute truth required. GateWorker must not fallback to non-truth configuration.');
       } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE')
         result = await processTimelineComposeJob(ctx);
       else if (job.type === 'TIMELINE_RENDER') result = await processTimelineRenderJob(ctx);
@@ -417,8 +390,6 @@ export async function startGateWorkerApp() {
       } else if (job.type === 'EPISODE_RENDER') {
         const { processEpisodeRenderJob } = await import('../processors/episode-render.processor');
         result = await processEpisodeRenderJob(ctx);
-      } else if (job.type === 'NOVEL_REDUCE_AGGREGATE') {
-        result = await processNovelReduce(ctx);
       } else {
         process.stdout.write(util.format(`[GateWorker] ⚠️ Unknown Job Type: ${job.type}`) + '\n');
         return;
@@ -440,21 +411,13 @@ export async function startGateWorkerApp() {
 
       if (isSuccess && job.payload?.artifactDir) {
         const artDir = job.payload.artifactDir;
-        const framesPath = path.join(artDir, 'frames.txt');
-        if (!fs.existsSync(framesPath)) {
-          fs.writeFileSync(framesPath, 'frame001.png\nframe002.png\n');
-        }
-
-        const outputMp4Path = path.join(artDir, 'output.mp4');
-        if (!fs.existsSync(outputMp4Path)) {
-          fs.writeFileSync(outputMp4Path, 'mock mp4 content');
-        }
+        // P6-TRUTH: Dummy output writes REMOVED.
+        // Truth-based delivery required.
 
         fs.writeFileSync(
           path.join(artDir, 'EVIDENCE_SOURCE.json'),
           JSON.stringify({ jobId: job.id, traceId: (job as any).traceId }, null, 2)
         );
-        process.stdout.write(util.format(`[GateWorker] 📝 已向 ${artDir} 写入模拟产物`) + '\n');
 
         // B3-3: 发布 Artifact 事件通知
         await eventNotifier
@@ -481,8 +444,7 @@ export async function startGateWorkerApp() {
 
         const isVerification =
           (job as any).isVerification === true ||
-          job.payload?.isVerification === true ||
-          job.payload?.mode === 'mock';
+          job.payload?.isVerification === true;
 
         const legacyMp4 = path.join(artDir, 'output.mp4');
         if (fs.existsSync(legacyMp4) && !fs.existsSync(mp4Path)) {
@@ -493,19 +455,15 @@ export async function startGateWorkerApp() {
           const contractMp4 = path.join(artDir, 'shot_render_output.mp4');
           if (!fs.existsSync(contractMp4) && !fs.existsSync(legacyMp4)) {
             throw new Error(
-              "POST_L3_FORBID_MOCK: non-verification job cannot generate dummy artifacts. Set job.isVerification=true or payload.mode='mock' for testing."
+              "ARTIFACT_DELIVERY_FAILED: Truth-based delivery required. Non-verification job missing real artifacts."
             );
           }
         }
 
         if (!fs.existsSync(mp4Path)) {
-          if (isVerification) {
-            fs.writeFileSync(mp4Path, 'mock mp4 content');
-          } else {
-            throw new Error(
-              'POST_L3_FORBID_MOCK: non-verification job missing real artifact and cannot write mock content'
-            );
-          }
+          throw new Error(
+            'ARTIFACT_NOT_FOUND: Absolute truth required. No real artifact found in local storage.'
+          );
         }
 
         const mp4Sha = sha256File(mp4Path);

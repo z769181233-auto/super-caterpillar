@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProjectSceneGraph, NovelAnalysisStatus, ProjectOverviewDTO } from '@scu/shared-types';
 import { projectApi, novelImportApi } from '@/lib/apiClient';
-import { getProjectOverviewMock } from '@/lib/mock/project-overview';
 import { OverviewHeader } from '@/components/workbench/overview/OverviewHeader';
 import { FlowProgress } from './FlowProgress';
 import { NextActionCard } from '@/components/workbench/overview/NextActionCard';

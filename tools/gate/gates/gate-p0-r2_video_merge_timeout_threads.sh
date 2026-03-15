@@ -24,7 +24,7 @@ echo "[2/3] Assert -threads applied via provider log (default=1 and override=2).
 npx tsx - <<'NODE'
 const fs = require('fs');
 const path = require('path');
-const minPng = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c4944415408d763f8ffffff3f0005fe02fe0dc444200000000049454e44ae426082', 'hex');
+const minPng = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108020000007c5712240000000d4944415478da63fccfc0500f000485018084a98c210000000049454e44ae426082', 'hex');
 
 const tmpDir = ".tmp/p0r2_frames";
 if (!fs.existsSync(tmpDir)) {

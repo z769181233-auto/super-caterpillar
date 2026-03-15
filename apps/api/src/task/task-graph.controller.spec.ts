@@ -25,6 +25,7 @@ describe('TaskGraphController - S3-C.3 Phase 1', () => {
   };
 
   const mockPrismaService = {
+    $disconnect: jest.fn().mockResolvedValue(undefined),
     shotJob: {
       findMany: jest.fn(),
     },

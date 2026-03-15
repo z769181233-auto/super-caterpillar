@@ -170,9 +170,8 @@ export async function processNovelReduce(context: ProcessorContext) {
 
     // 5. Cascade Trigger (Shot Planning)
     if (createdSceneIds.length > 0) {
-      const targetEngineKey = isVerification
-        ? 'ce11_shot_generator_mock'
-        : 'ce11_shot_generator_real';
+      // P1-HARD: No longer allows fallback to Mock even in verification mode.
+      const targetEngineKey = 'ce11_shot_generator_real';
 
       const cascadeJobs = createdSceneIds.map((sceneId, idx) => ({
         type: JobType.CE11_SHOT_GENERATOR,

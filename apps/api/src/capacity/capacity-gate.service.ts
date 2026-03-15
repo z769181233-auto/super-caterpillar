@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException, HttpException, HttpStatus } fr
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from 'database';
 import { JobStatus, JobType } from 'database';
+const { Client } = require('pg');
 
 const JobStatusEnum = JobStatus;
 const JobTypeEnum = JobType;
@@ -21,6 +22,7 @@ export interface CapacityCheckResult {
 @Injectable()
 export class CapacityGateService {
   private readonly logger = new Logger(CapacityGateService.name);
+  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
 
   // 配置项（可从环境变量读取）
   private readonly MAX_CONCURRENT_VIDEO_RENDER = parseInt(
@@ -34,6 +36,90 @@ export class CapacityGateService {
   );
 
   constructor(private readonly prisma: PrismaService) {}
+
+  private isPrismaTimeout(error: any): boolean {
+    const message = String(error?.message || '');
+    return (
+      message.includes('PRISMA_QUERY_TIMEOUT') ||
+      message.includes(`exceeded ${this.prismaQueryTimeoutMs}ms`) ||
+      error?.code === 'P1001'
+    );
+  }
+
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL is required for pg fallback');
+    }
+
+    const client = new Client({
+      connectionString: databaseUrl,
+      statement_timeout: this.prismaQueryTimeoutMs,
+      query_timeout: this.prismaQueryTimeoutMs,
+    });
+
+    await client.connect();
+    try {
+      return await fn(client);
+    } finally {
+      await client.end().catch(() => undefined);
+    }
+  }
+
+  private async countJobsViaPg(
+    organizationId: string,
+    clauses: Array<string>,
+    values: Array<any>
+  ): Promise<number> {
+    return this.withPgClient(async (client) => {
+      const whereSql = ['\"organizationId\" = $1', ...clauses].join(' AND ');
+      const result = await client.query(
+        `SELECT COUNT(*)::int AS count FROM "shot_jobs" WHERE ${whereSql}`,
+        [organizationId, ...values]
+      );
+      return Number(result.rows?.[0]?.count || 0);
+    });
+  }
+
+  private async getCapacityUsageViaPg(organizationId: string): Promise<{
+    videoRender: { inProgress: number; pending: number; limit: number; pendingLimit: number };
+    total: { pending: number; limit: number };
+  }> {
+    const videoRenderType = String(JobTypeEnum.VIDEO_RENDER);
+    const pendingStatus = String(JobStatusEnum.PENDING);
+    const dispatchedStatus = String(JobStatusEnum.DISPATCHED);
+    const runningStatus = String(JobStatusEnum.RUNNING);
+
+    const [inProgress, pending, totalPending] = await Promise.all([
+      this.countJobsViaPg(
+        organizationId,
+        [
+          '"type"::text = $2',
+          '"status"::text = ANY($3::text[])',
+        ],
+        [videoRenderType, [pendingStatus, dispatchedStatus, runningStatus]]
+      ),
+      this.countJobsViaPg(
+        organizationId,
+        ['"type"::text = $2', '"status"::text = $3'],
+        [videoRenderType, pendingStatus]
+      ),
+      this.countJobsViaPg(organizationId, ['"status"::text = $2'], [pendingStatus]),
+    ]);
+
+    return {
+      videoRender: {
+        inProgress,
+        pending,
+        limit: this.MAX_CONCURRENT_VIDEO_RENDER,
+        pendingLimit: this.MAX_PENDING_VIDEO_RENDER,
+      },
+      total: {
+        pending: totalPending,
+        limit: this.MAX_PENDING_JOBS,
+      },
+    };
+  }
 
   /**
    * 检查是否可以创建新的 VIDEO_RENDER job
@@ -211,42 +297,53 @@ export class CapacityGateService {
       limit: number;
     };
   }> {
-    const [inProgress, pending, totalPending] = await Promise.all([
-      this.prisma.shotJob.count({
-        where: {
-          organizationId,
-          type: JobTypeEnum.VIDEO_RENDER,
-          status: {
-            in: [JobStatusEnum.PENDING, JobStatusEnum.DISPATCHED, JobStatusEnum.RUNNING],
+    try {
+      const [inProgress, pending, totalPending] = await Promise.all([
+        this.prisma.shotJob.count({
+          where: {
+            organizationId,
+            type: JobTypeEnum.VIDEO_RENDER,
+            status: {
+              in: [JobStatusEnum.PENDING, JobStatusEnum.DISPATCHED, JobStatusEnum.RUNNING],
+            },
           },
-        },
-      }),
-      this.prisma.shotJob.count({
-        where: {
-          organizationId,
-          type: JobTypeEnum.VIDEO_RENDER,
-          status: JobStatusEnum.PENDING,
-        },
-      }),
-      this.prisma.shotJob.count({
-        where: {
-          organizationId,
-          status: JobStatusEnum.PENDING,
-        },
-      }),
-    ]);
+        }),
+        this.prisma.shotJob.count({
+          where: {
+            organizationId,
+            type: JobTypeEnum.VIDEO_RENDER,
+            status: JobStatusEnum.PENDING,
+          },
+        }),
+        this.prisma.shotJob.count({
+          where: {
+            organizationId,
+            status: JobStatusEnum.PENDING,
+          },
+        }),
+      ]);
 
-    return {
-      videoRender: {
-        inProgress,
-        pending,
-        limit: this.MAX_CONCURRENT_VIDEO_RENDER,
-        pendingLimit: this.MAX_PENDING_VIDEO_RENDER,
-      },
-      total: {
-        pending: totalPending,
-        limit: this.MAX_PENDING_JOBS,
-      },
-    };
+      return {
+        videoRender: {
+          inProgress,
+          pending,
+          limit: this.MAX_CONCURRENT_VIDEO_RENDER,
+          pendingLimit: this.MAX_PENDING_VIDEO_RENDER,
+        },
+        total: {
+          pending: totalPending,
+          limit: this.MAX_PENDING_JOBS,
+        },
+      };
+    } catch (error: any) {
+      if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+
+      this.logger.warn(
+        `[CapacityGate] Prisma getCapacityUsage degraded for ${organizationId}, using pg fallback: ${error.message}`
+      );
+      return this.getCapacityUsageViaPg(organizationId);
+    }
   }
 }

@@ -17,9 +17,24 @@ export class JobWatchdogService {
   private readonly workerHeartbeatTimeoutMs: number;
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
+    console.log('[DEBUG_BOOT] JobWatchdogService constructor start');
     // P2 修复：统一使用 packages/config 的配置
     this.jobTimeoutMs = (env as any).jobWatchdogTimeoutMs ?? 3600000;
     this.workerHeartbeatTimeoutMs = env.workerHeartbeatTimeoutMs || 30000;
+    console.log('[DEBUG_BOOT] JobWatchdogService constructor end');
+  }
+
+  private shouldSkipForPrismaTimeout(error: any): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return false;
+    }
+    const message = String(error?.message || '');
+    return (
+      message.includes('PRISMA_QUERY_TIMEOUT') ||
+      message.includes('startup connect exceeded') ||
+      message.includes("Can't reach database server") ||
+      message.includes('P1001')
+    );
   }
 
   /**
@@ -116,7 +131,7 @@ export class JobWatchdogService {
               // 这通常意味着任务在 Worker 内部挂起或丢失，必须强制回收
               this.logger.warn(
                 `[JobWatchdog] FORCED RECOVERY: Job ${currentJob.id} lease expired but worker ${currentJob.worker?.workerId} is still online. ` +
-                  `Marking as RETRYING to break the hang.`
+                `Marking as RETRYING to break the hang.`
               );
             }
 
@@ -185,6 +200,12 @@ export class JobWatchdogService {
         `[JobWatchdog] Recovery completed: ${recoveredCount} recovered, ${failedCount} failed`
       );
     } catch (error) {
+      if (this.shouldSkipForPrismaTimeout(error)) {
+        this.logger.warn(
+          `[JobWatchdog] Skipping recovery scan in non-production due to Prisma degradation: ${error.message}`
+        );
+        return;
+      }
       // P0 修复：生产日志禁止输出 stack
       const isProd = process.env.NODE_ENV === 'production';
       if (isProd) {

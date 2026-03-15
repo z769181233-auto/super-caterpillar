@@ -1,7 +1,7 @@
 import { PrismaClient } from 'database';
 
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   try {
     console.log('Attempting to create VIDEO_RENDER task...');
     // We probably can't create real task because of foreign keys (Project/Org),

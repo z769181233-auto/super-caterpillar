@@ -28,7 +28,7 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
       useFactory: () => ({
         secret: process.env.JWT_SECRET || env.jwtSecret,
         signOptions: {
-          expiresIn: env.jwtExpiresIn,
+          expiresIn: env.jwtExpiresIn as any,
         },
       }),
     }),
@@ -62,4 +62,4 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
     NonceModule,
   ], // 导出供其他模块使用
 })
-export class AuthModule {}
+export class AuthModule { }

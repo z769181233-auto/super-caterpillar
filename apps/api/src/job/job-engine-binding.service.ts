@@ -13,16 +13,43 @@ import { EngineConfigStoreService } from '../engine/engine-config-store.service'
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { PRODUCTION_MODE } from '@scu/config';
 import { JobType, JobEngineBindingStatus } from 'database';
+const { Client } = require('pg');
 
 @Injectable()
 export class JobEngineBindingService {
   private readonly logger = new Logger(JobEngineBindingService.name);
+  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || 5000);
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(EngineConfigStoreService) private readonly engineConfigStore: EngineConfigStoreService,
     @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry
   ) {}
+
+  private isPrismaTimeout(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error ?? '');
+    return message.includes('PRISMA_QUERY_TIMEOUT');
+  }
+
+  private async withPgClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL required for pg fallback');
+    }
+
+    const client = new Client({
+      connectionString,
+      statement_timeout: this.prismaQueryTimeoutMs,
+      query_timeout: this.prismaQueryTimeoutMs,
+    });
+
+    await client.connect();
+    try {
+      return await fn(client);
+    } finally {
+      await client.end();
+    }
+  }
 
   /**
    * 根据 JobType 选择 Engine
@@ -40,13 +67,37 @@ export class JobEngineBindingService {
     }
 
     // Stage3-A: 根据 engineKey（即 code）查找 Engine，只选 isActive=true
-    const engine = await this.prisma.engine.findFirst({
-      where: {
-        engineKey, // Stage13: 使用 engineKey 字段查找
-        isActive: true,
-        enabled: true,
-      },
-    });
+    let engine: any;
+    try {
+      engine = await this.prisma.engine.findFirst({
+        where: {
+          engineKey, // Stage13: 使用 engineKey 字段查找
+          isActive: true,
+          enabled: true,
+        },
+      });
+    } catch (error) {
+      if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+      this.logger.warn(
+        `[JobEngineBindingService.selectEngineForJob] Prisma degraded for ${engineKey}; using pg fallback`
+      );
+      engine = await this.withPgClient(async (client) => {
+        const result = await client.query(
+          `
+            SELECT id, code, "engineKey", mode, "defaultVersion"
+            FROM engines
+            WHERE "engineKey" = $1
+              AND "isActive" = true
+              AND enabled = true
+            LIMIT 1
+          `,
+          [engineKey]
+        );
+        return result.rows[0] ?? null;
+      });
+    }
 
     if (!engine) {
       this.logger.warn(`No active engine found for engineKey: ${engineKey}, jobType: ${jobType}`);
@@ -54,7 +105,7 @@ export class JobEngineBindingService {
     }
 
     // PHASE-C: Zero-Bypass Gate (Stub physical block)
-    // 生产模式下只允许 http 模式的真实引擎，禁止 local/mock/default_*
+    // 生产模式下只允许 http 模式的真实引擎，禁止本地或非标引擎
     if (PRODUCTION_MODE) {
       const isStub = !engine.mode || engine.mode !== 'http';
       const isDefault = engine.code.startsWith('default_') || engineKey.startsWith('default_');
@@ -83,13 +134,37 @@ export class JobEngineBindingService {
     // 可选：选择特定版本（如果有默认版本）
     let engineVersionId: string | undefined;
     if (engine.defaultVersion) {
-      const version = await this.prisma.engineVersion.findFirst({
-        where: {
-          engineId: engine.id,
-          versionName: engine.defaultVersion,
-          enabled: true,
-        },
-      });
+      let version: any;
+      try {
+        version = await this.prisma.engineVersion.findFirst({
+          where: {
+            engineId: engine.id,
+            versionName: engine.defaultVersion,
+            enabled: true,
+          },
+        });
+      } catch (error) {
+        if (!this.isPrismaTimeout(error)) {
+          throw error;
+        }
+        this.logger.warn(
+          `[JobEngineBindingService.selectEngineForJob] Prisma degraded for engine version ${engine.defaultVersion}; using pg fallback`
+        );
+        version = await this.withPgClient(async (client) => {
+          const result = await client.query(
+            `
+              SELECT id
+              FROM engine_versions
+              WHERE "engineId" = $1
+                AND "versionName" = $2
+                AND enabled = true
+              LIMIT 1
+            `,
+            [engine.id, engine.defaultVersion]
+          );
+          return result.rows[0] ?? null;
+        });
+      }
       if (version) {
         engineVersionId = version.id;
       }

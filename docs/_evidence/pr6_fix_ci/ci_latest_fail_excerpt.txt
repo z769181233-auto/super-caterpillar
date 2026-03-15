@@ -1,0 +1,18 @@
+(Excerpt composed from remote fail log #110 and local `.env`-free reproduction)
+
+Test Suites: 2 failed, 4 passed, 6 total
+Tests:       7 failed, 19 passed, 26 total
+
+console.warn
+  [Mock] Environment variable JWT_REFRESH_SECRET is required but missing. Returning MOCK.
+
+console.log
+  [DEBUG] SHOT_RENDER_PROVIDER env: undefined
+
+Failed:    api#test
+Process completed with exit code 1.
+
+(Associated Stack Errors from previous traces)
+TypeError: this.auditService.log is not a function
+TypeError: this.costLedgerService.recordFromEvent is not a function
+TypeError: Cannot read properties of undefined (reading '$disconnect')

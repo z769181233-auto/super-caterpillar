@@ -96,12 +96,33 @@ import {
   processCharacterCardsJob,
   processAssetListJob,
 } from './processors/asset-extraction.processor';
+import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.processor';
+import { processShotRenderJob } from './processors/shot-render.processor';
+import { processVideoRenderJob } from './processors/video-render.processor';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ProcessorContext } from './types/processor-context';
 
 const prisma = new PrismaClient({
-  datasources: { db: { url: env.databaseUrl } },
   log: env.isDevelopment ? ['error', 'warn'] : ['error'],
+});
+const prismaConnectTimeoutMs = Number(process.env.PRISMA_CONNECT_TIMEOUT_MS || '5000');
+const prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+
+prisma.$use(async (params, next) => {
+  return await Promise.race([
+    next(params),
+    new Promise((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              `WORKER_PRISMA_QUERY_TIMEOUT: ${params.model || '$raw'}.${params.action} exceeded ${prismaQueryTimeoutMs}ms`
+            )
+          ),
+        prismaQueryTimeoutMs
+      )
+    ),
+  ]);
 });
 
 function readArg(name: string): string | undefined {
@@ -119,25 +140,39 @@ const workerId = readArg('workerId') || process.env.WORKER_ID || env.workerId;
 
 const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
 
-console.log('API_BASE_URL(raw)=', JSON.stringify(process.env.API_BASE_URL));
-if (process.env.API_BASE_URL?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
-const baseUrl = process.env.API_BASE_URL;
+const rawApiBaseUrl = process.env.API_BASE_URL;
+const rawApiUrl = process.env.API_URL;
+const baseUrl = rawApiBaseUrl || rawApiUrl;
+
+console.log(`[BOOT_ENV] API_BASE_URL_RAW=${rawApiBaseUrl}`);
+console.log(`[BOOT_ENV] API_URL_RAW=${rawApiUrl}`);
+console.log(`[BOOT_ENV] API_BASE_URL_RESOLVED=${baseUrl}`);
+
+if (rawApiBaseUrl?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
 if (!baseUrl) {
-  throw new Error('API_BASE_URL is required in production');
+  throw new Error('API_BASE_URL or API_URL is required in production');
 }
 let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
 const workerApiKey = readArg('apiKey') || env.workerApiKey;
-const workerSecret = process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET || env.workerApiSecret;
+const workerSecret =
+  readArg('apiSecret') ||
+  process.env.WORKER_API_SECRET ||
+  env.workerApiSecret ||
+  process.env.HMAC_SECRET_KEY ||
+  process.env.API_SECRET_KEY;
 
-if (!workerSecret && isProd) {
-  const errMsg = '[P1-FAIL-FAST] FATAL: WORKER_API_SECRET missing in production. Refusing to start.';
-  console.error(errMsg);
+if (!workerSecret) {
+  const errMsg = '[P1-FATAL] WORKER_API_SECRET is missing. Fail-fast triggered.';
   throw new Error(errMsg);
 }
-const workerApiSecret = workerSecret || 'dev-secret';
+const workerApiSecret = workerSecret;
 
 const apiClient = new ApiClient(apiBaseUrl, workerApiKey, workerApiSecret, workerId);
+const apiBase = new URL(apiBaseUrl);
+const apiProbeHost = apiBase.hostname;
+const apiProbePort = Number(apiBase.port || (apiBase.protocol === 'https:' ? '443' : '80'));
+const apiHealthUrl = new URL('/health', apiBaseUrl).toString();
 
 let isRunning = false;
 let tasksRunning = 0;
@@ -152,21 +187,31 @@ async function processJobWithExecutor(job: any): Promise<void> {
       job.createdAt,
       async () => {
         const ctx: ProcessorContext = { prisma, job, apiClient, localStorage: localStorageAdapter };
+        if (job.type === 'CE06_NOVEL_PARSING') return processCE06NovelParsingJob(ctx);
         if (job.type === 'CE06_SCRIPT_OUTLINE') return processScriptOutlineJob(ctx);
         if (job.type === 'CE11_SCENE_SPLIT') return processSceneSplitJob(ctx);
         if (job.type === 'CE12_SHOT_SPLIT') return processShotSplitJob(ctx);
         if (job.type === 'CE99_CONTINUITY_AUDIT') return processContinuityAuditJob(ctx);
         if (job.type === 'CE13_CHARACTER_CARDS') return processCharacterCardsJob(ctx);
         if (job.type === 'CE14_ASSET_LIST') return processAssetListJob(ctx);
+        if (job.type === 'SHOT_RENDER') return processShotRenderJob(ctx);
+        if (job.type === 'VIDEO_RENDER') return processVideoRenderJob(ctx);
         throw new Error(`Unsupported job type: ${job.type}`);
       }
     );
 
+    const normalizedStatus =
+      result.success && result.output?.status !== 'FAILED' ? 'SUCCEEDED' : 'FAILED';
+    const normalizedError =
+      normalizedStatus === 'FAILED'
+        ? result.error || result.output?.error || 'WORKER_PROCESSOR_FAILED'
+        : undefined;
+
     await apiClient.reportJobResult({
       jobId: job.id,
-      status: result.success ? 'SUCCEEDED' : 'FAILED',
+      status: normalizedStatus,
       result: result.output,
-      error: result.error,
+      error: normalizedError,
     });
   } catch (error: any) {
     console.error(`[Worker] Job ${job.id} execution failed:`, error.message);
@@ -176,23 +221,81 @@ async function processJobWithExecutor(job: any): Promise<void> {
 }
 
 export async function startWorkerApp() {
-  await prisma.$connect();
+  try {
+    await Promise.race([
+      prisma.$connect(),
+      new Promise((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                `WORKER_PRISMA_CONNECT_TIMEOUT: startup connect exceeded ${prismaConnectTimeoutMs}ms`
+              )
+            ),
+          prismaConnectTimeoutMs
+        )
+      ),
+    ]);
+  } catch (error: any) {
+    console.warn(
+      `[Worker] Prisma startup connect skipped: ${error?.message || 'unknown error'}. Continuing with API-first bootstrap.`
+    );
+  }
   jobExecutor = new JobExecutor(apiClient);
+
+  const supportedJobTypes = [
+    'CE06_NOVEL_PARSING',
+    'CE06_SCRIPT_OUTLINE',
+    'CE11_SCENE_SPLIT',
+    'CE12_SHOT_SPLIT',
+    'CE99_CONTINUITY_AUDIT',
+    'CE13_CHARACTER_CARDS',
+    'CE14_ASSET_LIST',
+    'SHOT_RENDER',
+    'VIDEO_RENDER',
+  ];
+
+  console.log('[WORKER_BOOT] entry=apps/workers/src/worker-app.ts');
+  console.log('[WORKER_BOOT] supportedJobTypes=', supportedJobTypes);
+  console.log('[WORKER_BOOT] hasCE06=', supportedJobTypes.includes('CE06_NOVEL_PARSING'));
 
   console.log(`[Worker] Registering worker: ${workerId}`);
   try {
+    const net = require('net');
+    await new Promise((resolve) => {
+      const sock = net.createConnection(apiProbePort, apiProbeHost);
+      sock.on('connect', () => {
+        console.log(`[WORKER_NET] connect_ok ${apiProbeHost}:${apiProbePort}`);
+        sock.destroy();
+        resolve(true);
+      });
+      sock.on('error', (err: any) => {
+        console.log(
+          `[WORKER_NET] connect_error host=${apiProbeHost} port=${apiProbePort} code=${err.code} errno=${err.errno} syscall=${err.syscall} address=${err.address} port=${err.port}`
+        );
+        resolve(false);
+      });
+    });
+
+    try {
+      const res = await fetch(apiHealthUrl);
+      const text = await res.text();
+      console.log(
+        `[WORKER_FETCH_HEALTH] url=${apiHealthUrl} status=${res.status} body=${text
+          .substring(0, 50)
+          .replace(/\\n/g, ' ')}`
+      );
+    } catch (err: any) {
+      console.log(
+        `[WORKER_FETCH_HEALTH] url=${apiHealthUrl} error name=${err.name} code=${err.code} cause=${err.cause?.code || err.cause?.name}`
+      );
+    }
+
     await apiClient.registerWorker({
       workerId,
       name: `Worker-${workerId}`,
       capabilities: {
-        supportedJobTypes: [
-          'CE06_SCRIPT_OUTLINE',
-          'CE11_SCENE_SPLIT',
-          'CE12_SHOT_SPLIT',
-          'CE99_CONTINUITY_AUDIT',
-          'CE13_CHARACTER_CARDS',
-          'CE14_ASSET_LIST',
-        ],
+        supportedJobTypes,
         supportedEngines: ['real'],
       },
     });

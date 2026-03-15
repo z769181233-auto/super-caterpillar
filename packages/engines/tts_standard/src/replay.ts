@@ -41,13 +41,8 @@ async function __ENGINE__ReplayEngine_Impl(input: __ENGINE__Input): Promise<__EN
   };
 
   // 5. 返回确定性结果
-  return {
-    assets: {
-      audio: 'mock://tts_standard/replay_audio.mp3',
-    },
-    billing_usage,
-    audit_trail,
-  };
+  // P1-HARD: Internal protocol is physically hardened.
+  throw new Error('AUDIO_REPLAY_INVALID: Absolute truth required. Replay engine must return real assets.');
 }
 
 export const __ENGINE__ReplayEngine = __ENGINE__ReplayEngine_Impl;

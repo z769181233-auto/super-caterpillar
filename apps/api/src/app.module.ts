@@ -49,7 +49,7 @@ import { CostModule } from './cost/cost.module';
 import { V3Module } from './v3/v3.module';
 import { IdentityModule } from './identity/identity.module';
 import { CharacterModule } from './character/character.module';
-import { ScriptBuildModule } from './script-build/script-build.module';
+// import { ScriptBuildModule } from './script-build/script-build.module';
 import { env } from '@scu/config';
 import { StorageController } from './storage/storage.controller';
 import { LocalStorageService } from './storage/local-storage.service';
@@ -68,8 +68,8 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
   imports: [
     EventEmitterModule.forRoot(),
     FeatureFlagModule, // Stage 11: Feature Flags（全局模块，优先加载）
-    BillingModule, // Scaffolding: Billing System
-    CopyrightModule, // Scaffolding: Copyright System
+    // BillingModule, // Scaffolding: Billing System
+    // CopyrightModule, // Scaffolding: Copyright System
     ConfigModule.forRoot({
       isGlobal: true,
       ignoreEnvFile: true, // 禁止 ConfigModule 读文件，统一使用 packages/config（避免 split-brain）
@@ -86,14 +86,13 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
         transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
       },
     }),
+    JobModule,
     PrismaModule, // ✅ 必须出现一次，让 @Global 生效
     ObservabilityModule,
     AuthModule,
     UserModule,
     ProjectModule,
-    JobModule,
-    // ...(JOB_WORKER_ENABLED ? [JobWorkerModule] : []),
-    // FORCE DISABLED FOR DEBUGGING
+    ...(JOB_WORKER_ENABLED ? [JobWorkerModule] : []),
 
     WorkerModule,
     OrchestratorModule,
@@ -125,7 +124,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     V3Module, // V3.0 Contract Facade
     IdentityModule,
     CharacterModule, // P13-0: CE23 Identity Consistency
-    ScriptBuildModule,
+    // ScriptBuildModule,
     ...(process.env.NODE_ENV !== 'production' || process.env.ALLOW_OPS_ENDPOINTS
       ? [OpsModule]
       : []), // Stage3-A: 运维诊断接口（仅 dev/管理员）
@@ -157,9 +156,9 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
       useClass: AllExceptionsFilter,
     },
     // FORCE REGISTRATION: Storage services moved to StorageModule or Global
-    // LocalStorageService,
-    // SignedUrlService,
-    // StorageAuthService,
+    LocalStorageService,
+    SignedUrlService,
+    StorageAuthService,
 
     // A4: 环境变量强制校验服务（P0级启动检查）
     // @see docs/_specs/GO_LIVE_CHECKLIST_SSOT.md
@@ -168,6 +167,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(TraceMiddleware).forRoutes('*');
+    // consumer.apply(TraceMiddleware).forRoutes('*');
   }
 }

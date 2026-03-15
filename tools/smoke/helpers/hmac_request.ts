@@ -41,12 +41,9 @@ function generateSignature(
   secret: string,
   apiKey: string
 ): string {
-  const contentHash = crypto
-    .createHash('sha256')
-    .update(body || '')
-    .digest('hex');
-  // Unified with ApiSecurityService v2 spec
-  const stringToSign = `v2\n${method}\n${path}\n${apiKey}\n${timestamp}\n${nonce}\n${contentHash}\n`;
+  // Balanced with ApiSecurityService.ts buildCanonicalStringV2 (Strict APISpec V1.1)
+  // Format: {API_KEY}{NONCE}{TIMESTAMP}{BODY}
+  const stringToSign = `${apiKey}${nonce}${timestamp}${body || ''}`;
   return crypto.createHmac('sha256', secret).update(stringToSign).digest('hex');
 }
 
@@ -65,6 +62,7 @@ export async function makeHmacRequest(options: HmacRequestOptions): Promise<Hmac
   const timestamp = providedTimestamp || Math.floor(Date.now() / 1000);
   const nonce = providedNonce || `nonce-${timestamp}-${Math.random().toString(36).substring(7)}`;
   const bodyString = body ? JSON.stringify(body) : '';
+  const requestTimeoutMs = Number(process.env.SMOKE_HMAC_TIMEOUT_MS || 60000);
 
   const signature = generateSignature(
     method,
@@ -93,7 +91,7 @@ export async function makeHmacRequest(options: HmacRequestOptions): Promise<Hmac
     const fetchOptions: RequestInit = {
       method,
       headers,
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(requestTimeoutMs),
     };
 
     if (bodyString && (method === 'POST' || method === 'PUT')) {

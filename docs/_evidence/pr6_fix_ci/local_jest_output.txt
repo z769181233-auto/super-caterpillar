@@ -1,0 +1,386 @@
+
+> api@1.0.0 test /Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api
+> jest
+
+PASS src/engines/nlp/__tests__/nlp_base.spec.ts (5.272 s)
+PASS src/engines/adapters/__tests__/ce07_memory_update.spec.ts (5.577 s)
+[32m[Nest] 15570  - [39m03/07/2026, 9:00:26 PM [32m    LOG[39m [38;5;3m[CE07MemoryUpdateAdapter] [39m[32m[CE07] Finished memory update for character=char_f9554205-c487-452d-8ae1-12678058af9a duration=0ms[39m
+PASS src/security/api-security/api-security.spec.ts (5.831 s)
+  ● Console
+
+    console.log
+      [dotenv@17.3.1] injecting env (37) from ../../.env.local -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+
+      at _log (../../../node_modules/.pnpm/dotenv@17.3.1/node_modules/dotenv/lib/main.js:139:11)
+
+    console.log
+      [dotenv@17.3.1] injecting env (19) from ../../.env -- tip: ⚙️  suppress all logs with { quiet: true }
+
+      at _log (../../../node_modules/.pnpm/dotenv@17.3.1/node_modules/dotenv/lib/main.js:139:11)
+
+    console.log
+      [HMAC_DEBUG] Using Body strategy. Method=POST, BodyLen=15, HasContentSha256=true
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:532:15)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"enter","path":"/api/test","method":"POST","xApiKey":"ak_test_123...","xTimestamp":"1772892026","xNonce":"nonce_123456...","xSigLen":64,"xSigPrefix":"15c7ba4a5fc0","contentSha256":"e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"db_lookup_api_key_start","apiKey":"ak_test_123..."}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_pass","timeDiff":0}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"nonce_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"secret_pick","source":"db_per_key","secretLen":15,"secretSha12":"caff08160ade"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      [HMAC_DEBUG] Using Body strategy. Method=POST, BodyLen=15, HasContentSha256=true
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:532:15)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"canonical","canonicalLen":48,"canonicalSha12":"8c4d36bfbd11","bodyLen":15,"bodySha12":"e1d7c49f3a04"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"compare","receivedPrefix":"15c7ba4a5fc0","computedPrefix":"15c7ba4a5fc0","match":true}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"exit_success"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      [HMAC_DEBUG] Using Body strategy. Method=POST, BodyLen=8, HasContentSha256=false
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:532:15)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"enter","path":"/api/projects/123/novel/import-file","method":"POST","xApiKey":"ak_test_123...","xTimestamp":"1772892026","xNonce":"nonce_123456...","xSigLen":64,"xSigPrefix":"04c722645294","contentSha256":"UNSIGNED"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"db_lookup_api_key_start","apiKey":"ak_test_123..."}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_pass","timeDiff":0}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"nonce_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"secret_pick","source":"db_per_key","secretLen":15,"secretSha12":"caff08160ade"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      [HMAC_DEBUG] Using ContentHash strategy
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:528:51)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"canonical","canonicalLen":41,"canonicalSha12":"1ba1afd0ea45","bodyLen":0,"bodySha12":"e3b0c44298fc"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"compare","receivedPrefix":"04c722645294","computedPrefix":"04c722645294","match":true}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"exit_success"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      [HMAC_DEBUG] Using Body strategy. Method=POST, BodyLen=15, HasContentSha256=true
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:532:15)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"enter","path":"/api/test","method":"POST","xApiKey":"ak_test_123...","xTimestamp":"1772891626","xNonce":"nonce_123456...","xSigLen":64,"xSigPrefix":"7116d639f06c","contentSha256":"e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"db_lookup_api_key_start","apiKey":"ak_test_123..."}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"reject","reason":"timestamp_out_of_window","timeDiff":400,"window":300}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      [HMAC_DEBUG] Using Body strategy. Method=POST, BodyLen=15, HasContentSha256=true
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:532:15)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"enter","path":"/api/test","method":"POST","xApiKey":"ak_test_123...","xTimestamp":"1772892026","xNonce":"nonce_123456...","xSigLen":64,"xSigPrefix":"15c7ba4a5fc0","contentSha256":"e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"db_lookup_api_key_start","apiKey":"ak_test_123..."}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_pass","timeDiff":0}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"nonce_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"secret_pick","source":"db_per_key","secretLen":15,"secretSha12":"caff08160ade"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      [HMAC_DEBUG] Using Body strategy. Method=POST, BodyLen=15, HasContentSha256=true
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:532:15)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"canonical","canonicalLen":48,"canonicalSha12":"8c4d36bfbd11","bodyLen":15,"bodySha12":"e1d7c49f3a04"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"compare","receivedPrefix":"15c7ba4a5fc0","computedPrefix":"15c7ba4a5fc0","match":true}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"exit_success"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"enter","path":"/api/test","method":"POST","xApiKey":"ak_test_123...","xTimestamp":"1772892026","xNonce":"nonce_123456...","xSigLen":64,"xSigPrefix":"15c7ba4a5fc0","contentSha256":"e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"db_lookup_api_key_start","apiKey":"ak_test_123..."}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_pass","timeDiff":0}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"nonce_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"reject","reason":"nonce_replay"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"enter","path":"/api/test","method":"POST","xApiKey":"ak_test_123...","xTimestamp":"1772892026","xNonce":"nonce_123456...","xSigLen":19,"xSigPrefix":"wrong_signat","contentSha256":"e1d7c49f3a04e1ec1a5b150ec68041c903cd75fda52aa1239fd586439ef1154b"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"db_lookup_api_key_start","apiKey":"ak_test_123..."}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"timestamp_check_pass","timeDiff":0}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"nonce_check_start"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"secret_pick","source":"db_per_key","secretLen":15,"secretSha12":"caff08160ade"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      [HMAC_DEBUG] Using Body strategy. Method=POST, BodyLen=15, HasContentSha256=true
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:532:15)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"canonical","canonicalLen":48,"canonicalSha12":"8c4d36bfbd11","bodyLen":15,"bodySha12":"e1d7c49f3a04"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"reject","reason":"signature_format_error","sigIsHex":false,"expectedIsHex":true}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"enter","path":"/api/test","method":"POST","xApiKey":"invalid_key...","xTimestamp":"1772892026","xNonce":"nonce_123456...","xSigLen":9,"xSigPrefix":"signature","contentSha256":"undefined"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"db_lookup_api_key_start","apiKey":"invalid_key..."}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"reject","reason":"invalid_api_key","apiKey":"invalid_key..."}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"enter","path":"/api/test","method":"POST","xApiKey":"ak_test_123...","xTimestamp":"1772892026","xNonce":"nonce_123456...","xSigLen":9,"xSigPrefix":"signature","contentSha256":"undefined"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"db_lookup_api_key_start","apiKey":"ak_test_123..."}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      {"tag":"HMAC_DEBUG_STEP","step":"reject","reason":"api_key_disabled","status":"DISABLED"}
+
+      at dlog (security/api-security/api-security.service.ts:78:17)
+
+    console.log
+      [HMAC_DEBUG] Using Body strategy. Method=POST, BodyLen=11, HasContentSha256=false
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:532:15)
+
+    console.log
+      [HMAC_DEBUG] Using Body strategy. Method=GET, BodyLen=0, HasContentSha256=false
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:532:15)
+
+    console.log
+      [HMAC_DEBUG] Using ContentHash strategy
+
+      at ApiSecurityService.buildCanonicalStringV2 (security/api-security/api-security.service.ts:528:51)
+
+PASS src/task/task-graph.controller.spec.ts (5.873 s)
+  ● Console
+
+    console.log
+      [dotenv@17.3.1] injecting env (37) from ../../.env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+      at _log (../../../node_modules/.pnpm/dotenv@17.3.1/node_modules/dotenv/lib/main.js:139:11)
+
+    console.log
+      [dotenv@17.3.1] injecting env (20) from ../../.env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+
+      at _log (../../../node_modules/.pnpm/dotenv@17.3.1/node_modules/dotenv/lib/main.js:139:11)
+
+PASS src/engine-profile/engine-profile.service.spec.ts (6.048 s)
+  ● Console
+
+    console.log
+      [dotenv@17.3.1] injecting env (37) from ../../.env.local -- tip: 🛡️ auth for agents: https://vestauth.com
+
+      at _log (../../../node_modules/.pnpm/dotenv@17.3.1/node_modules/dotenv/lib/main.js:139:11)
+
+    console.log
+      [dotenv@17.3.1] injecting env (20) from ../../.env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+      at _log (../../../node_modules/.pnpm/dotenv@17.3.1/node_modules/dotenv/lib/main.js:139:11)
+
+    console.log
+      [DEBUG] SHOT_RENDER_PROVIDER env: replicate
+
+      at Object.<anonymous> (../../../packages/engines-shot-render/dist/index.js:834:9)
+
+PASS src/engines/adapters/__tests__/shot_preview.spec.ts (6.133 s)
+  ● Console
+
+    console.log
+      [dotenv@17.3.1] injecting env (37) from ../../.env.local -- tip: ⚙️  enable debug logging with { debug: true }
+
+      at _log (../../../node_modules/.pnpm/dotenv@17.3.1/node_modules/dotenv/lib/main.js:139:11)
+
+    console.log
+      [dotenv@17.3.1] injecting env (19) from ../../.env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+      at _log (../../../node_modules/.pnpm/dotenv@17.3.1/node_modules/dotenv/lib/main.js:139:11)
+
+    console.log
+      [DEBUG] SHOT_RENDER_PROVIDER env: replicate
+
+      at Object.<anonymous> (../../../packages/engines-shot-render/dist/index.js:834:9)
+
+[32m[Nest] 15567  - [39m03/07/2026, 9:00:27 PM [32m    LOG[39m [38;5;3m[ShotPreviewFastAdapter] [39m[32m[ShotPreview] Cache MISS for preview:v1:50c45bc68b66e0a64813212f9d916222f68b14ce6040e952a08135dce7da425a. Rendering...[39m
+
+Test Suites: 6 passed, 6 total
+Tests:       26 passed, 26 total
+Snapshots:   0 total
+Time:        6.725 s
+Ran all test suites.

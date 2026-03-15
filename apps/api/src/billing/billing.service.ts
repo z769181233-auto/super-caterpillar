@@ -9,12 +9,40 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import { randomUUID } from 'crypto';
+const { Client } = require('pg');
 
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
+  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || 5000);
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  private isPrismaTimeout(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error ?? '');
+    return message.includes('PRISMA_QUERY_TIMEOUT');
+  }
+
+  private async withPgClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL required for pg fallback');
+    }
+
+    const client = new Client({
+      connectionString,
+      statement_timeout: this.prismaQueryTimeoutMs,
+      query_timeout: this.prismaQueryTimeoutMs,
+    });
+
+    await client.connect();
+    try {
+      return await fn(client);
+    } finally {
+      await client.end();
+    }
+  }
 
   /**
    * Get available credits for an organization.
@@ -29,10 +57,39 @@ export class BillingService {
       throw new ForbiddenException('Organization ID is required for billing check');
     }
 
-    const org = await this.prisma.organization.findUnique({
-      where: { id: organizationId },
-      select: { credits: true },
-    });
+    let org: { credits: number | null } | null = null;
+    try {
+      org = await this.prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { credits: true },
+      });
+    } catch (error) {
+      if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+
+      this.logger.warn(
+        `Prisma getCredits degraded for org ${organizationId}, using pg fallback: ${error instanceof Error ? error.message : String(error)}`
+      );
+
+      org = await this.withPgClient(async (client) => {
+        const result = await client.query(
+          'SELECT credits FROM organizations WHERE id = $1 LIMIT 1',
+          [organizationId]
+        );
+        const row = result.rows[0] as { credits: string | number | null } | undefined;
+        return row
+          ? {
+              credits:
+                row.credits == null
+                  ? null
+                  : typeof row.credits === 'string'
+                    ? Number(row.credits)
+                    : row.credits,
+            }
+          : null;
+      });
+    }
 
     if (!org) throw new NotFoundException('Organization not found');
 
@@ -69,7 +126,113 @@ export class BillingService {
       `[BILLING_DEBUG] consumeCredits orgId=${organizationId} amount=${amount} type=${type}`
     );
 
-    return this.prisma.$transaction(async (tx) => {
+    const details = {
+      amount,
+      type,
+    };
+
+    const runPgFallback = async () =>
+      this.withPgClient(async (client) => {
+        await client.query('BEGIN');
+        try {
+          const orgResult = await client.query(
+            'SELECT credits FROM organizations WHERE id = $1 FOR UPDATE',
+            [organizationId]
+          );
+          const org = orgResult.rows[0] as { credits: number | string | null } | undefined;
+
+          if (!org || Number(org.credits || 0) < amount) {
+            throw new ForbiddenException(
+              `Insufficient credits to start job. Required: ${amount} credits. (Available: ${org ? Number(org.credits || 0) : 0})`
+            );
+          }
+
+          const updateResult = await client.query(
+            'UPDATE organizations SET credits = credits - $2, "updatedAt" = NOW() WHERE id = $1 RETURNING credits',
+            [organizationId, amount]
+          );
+          const updatedRow = updateResult.rows[0] as { credits: number | string | null } | undefined;
+          const newCredits = Number(updatedRow?.credits ?? 0);
+
+          const userResult = await client.query(
+            'SELECT id FROM users WHERE id = $1 LIMIT 1',
+            [userId]
+          );
+          const finalUserRow = userResult.rows[0] as { id: string } | undefined;
+          const finalUserId = finalUserRow?.id ?? null;
+
+          await client.query(
+            `
+              INSERT INTO billing_events
+                (id, project_id, org_id, user_id, type, credits_delta, currency, metadata, created_at)
+              VALUES
+                ($1, $2, $3, $4, $5, $6, 'USD', $7::jsonb, NOW())
+            `,
+            [
+              randomUUID(),
+              projectId,
+              organizationId,
+              finalUserId,
+              'pay_as_you_go',
+              -amount,
+              JSON.stringify({
+                type,
+                traceId,
+                legacyEventType: 'pay_as_you_go',
+                originalUserId: userId,
+              }),
+            ]
+          );
+
+          const detailsWithBalance = {
+            ...details,
+            newCredits,
+          };
+          const payload = {
+            action: 'BILLING_CONSUME',
+            resourceType: 'job',
+            resourceId: traceId,
+            orgId: organizationId,
+            details: detailsWithBalance,
+            timestamp: new Date().toISOString(),
+          };
+
+          await client.query(
+            `
+              INSERT INTO audit_logs
+                (id, "userId", "orgId", action, "resourceType", "resourceId", details, "timestamp", payload, "createdAt")
+              VALUES
+                ($1, $2, $3, $4, $5, $6, $7::jsonb, NOW(), $8::jsonb, NOW())
+            `,
+            [
+              randomUUID(),
+              finalUserId,
+              organizationId,
+              'BILLING_CONSUME',
+              'job',
+              traceId ?? null,
+              JSON.stringify(detailsWithBalance),
+              JSON.stringify(payload),
+            ]
+          );
+
+          await client.query('COMMIT');
+          return true;
+        } catch (pgError) {
+          await client.query('ROLLBACK');
+          throw pgError;
+        }
+      });
+
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.warn(
+        `Using pg consumeCredits path in non-production for org ${organizationId}`
+      );
+      return runPgFallback();
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
       // A5: Atomic Update with Row-Level Lock
       // Use raw SQL to ensure FOR UPDATE skip locked or strict locking
       // although Prisma's transaction with updateMany is decent,
@@ -111,9 +274,8 @@ export class BillingService {
       // 4. Audit Log (In-Transaction for Stage 10 Strict Consistency)
       const updatedOrg = await tx.organization.findUnique({ where: { id: organizationId } });
       const newCredits = updatedOrg?.credits ?? 0;
-      const details = {
-        amount,
-        type,
+      const detailsWithBalance = {
+        ...details,
         newCredits,
       };
 
@@ -123,7 +285,7 @@ export class BillingService {
         resourceType: 'job',
         resourceId: traceId,
         orgId: organizationId,
-        details: JSON.parse(JSON.stringify(details)),
+        details: JSON.parse(JSON.stringify(detailsWithBalance)),
         timestamp: new Date().toISOString(),
       };
 
@@ -134,14 +296,25 @@ export class BillingService {
           action: 'BILLING_CONSUME',
           resourceType: 'job',
           resourceId: traceId,
-          details: details,
+          details: detailsWithBalance,
           timestamp: new Date(),
           payload: payload,
         },
       });
 
       return true;
-    });
+      });
+    } catch (error) {
+      if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+
+      this.logger.warn(
+        `Prisma consumeCredits degraded for org ${organizationId}, using pg fallback: ${error instanceof Error ? error.message : String(error)}`
+      );
+
+      return runPgFallback();
+    }
   }
 
   async checkQuota(userId: string, organizationId: string, required: number = 1): Promise<boolean> {

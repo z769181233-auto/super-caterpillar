@@ -65,16 +65,14 @@ export async function processCE11ShotGeneratorJob(
     let finalEngineKey: string;
     if (selectedEngineKey) {
       finalEngineKey = selectedEngineKey;
-    } else if (isVerification) {
-      // 验证模式允许缺省，默认由后端策略决定（此处暂定 mock 以保持兼容）
-      finalEngineKey = 'ce11_shot_generator_mock';
     } else {
-      // 非验证模式（生产路径）强制要求 engineKey
+      // P1-HARD: CE11 strictly requires engineKey, even in verification/gate mode.
+      // Defending against implicit internal fallback.
       return {
         status: 'FAILED',
         error: {
           code: 'MISSING_ENGINE_KEY',
-          message: 'CE11 Production requires explicit engineKey="ce11_shot_generator_real"',
+          message: 'CE11 requires explicit engineKey (e.g. "ce11_shot_generator_real")',
         },
       };
     }
@@ -103,57 +101,30 @@ export async function processCE11ShotGeneratorJob(
         },
       });
     } catch (error: any) {
-      logger.warn(
-        `[CE11] Providing mock engine result as fallback to unblock pipeline: ${error.message}`
-      );
-      engineResult = {
-        success: true,
-        selectedEngineKey: 'ce11_mock_fallback',
-        output: {
-          shots: [
-            {
-              shot_type: 'MEDIUM_SHOT',
-              action_description: 'Mock action',
-              visualPrompt: 'Mock visual',
-            },
-          ],
-          billing_usage: { model: 'mock', cost: 0 },
-        },
-      };
+      logger.error(`[CE11] Engine invocation failed: ${error.message}`);
+      throw error; // P0 FIX: Do not mask errors with fallback results in production path
     }
 
     if (!engineResult.success) {
-      logger.warn(
-        `[CE11] Engine returned failure, providing mock result to unblock pipeline: ${engineResult.error?.message}`
-      );
-      engineResult = {
-        success: true,
-        selectedEngineKey: 'ce11_mock_fallback',
-        output: {
-          shots: [
-            {
-              shot_type: 'MEDIUM_SHOT',
-              action_description: 'Mock action',
-              visualPrompt: 'Mock visual',
-            },
-          ],
-          billing_usage: { model: 'mock', cost: 0 },
-        },
-      };
+      logger.error(`[CE11] Engine returned failure: ${engineResult.error?.message}`);
+      throw new Error(`CE11 Engine Failed: ${engineResult.error?.message}`);
     }
 
     logger.log(
-      `[CE11] Engine invocation successful (or mocked). selectedEngineKey=${engineResult.selectedEngineKey}`
+      `[CE11] Engine invocation successful. selectedEngineKey=${engineResult.selectedEngineKey}`
     );
 
     const engineOutput = engineResult.output as any;
     const outputShots = engineOutput.shots || [];
 
-    // 2.5 Idempotency: Clear existing shots for this scene before creating new ones
-    // This prevents duplicates on retry since Shot model lacks unique constraint on [sceneId, index]
+    // 2.5 Idempotency: NOTE: Physical deletion (deleteMany) is disabled to prevent data loss.
+    // Future: Implement soft-delete or versioning if needed.
+    // For now, we allow overlapping or require manual cleanup to ensure P0 safety.
+    /*
     await (prisma as any).shot.deleteMany({
       where: { sceneId: novelSceneId },
     });
+    */
 
     // 3. 落库到 shots 表 (增量写入)
     const createdShots = [];
@@ -176,7 +147,7 @@ export async function processCE11ShotGeneratorJob(
           cameraMovement: shotData.camera_movement,
           cameraAngle: shotData.camera_angle,
           lightingPreset: shotData.lighting_preset,
-          visualPrompt: shotData.visual_prompt || 'placeholder visual prompt',
+          visualPrompt: shotData.visual_prompt, // P0 SEALed: Mandatory field from engine
           negativePrompt: shotData.negative_prompt,
           actionDescription: shotData.action_description,
           dialogueContent: shotData.dialogue_content,

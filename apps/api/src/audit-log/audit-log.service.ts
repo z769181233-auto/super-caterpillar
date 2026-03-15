@@ -1,6 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { createHmac, randomBytes, createHash } from 'crypto';
+const { Client } = require('pg');
 
 /**
  * 审计日志服务
@@ -14,8 +15,34 @@ import { createHmac, randomBytes, createHash } from 'crypto';
 @Injectable()
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
+  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  private shouldFallbackToPg(error: any): boolean {
+    const message = String(error?.message || '');
+    return (
+      message.includes('PRISMA_QUERY_TIMEOUT') ||
+      message.includes('startup connect exceeded') ||
+      message.includes("Can't reach database server") ||
+      message.includes('P1001')
+    );
+  }
+
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    const client = new Client({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: this.prismaQueryTimeoutMs,
+      query_timeout: this.prismaQueryTimeoutMs,
+    });
+
+    await client.connect();
+    try {
+      return await fn(client);
+    } finally {
+      await client.end().catch(() => undefined);
+    }
+  }
 
   /**
    * 记录审计日志
@@ -107,26 +134,65 @@ export class AuditLogService {
         traceId,
         auditKeyVersion: 'v1',
       };
+      const recordId = `audit_${randomBytes(12).toString('hex')}`;
 
-      await this.prisma.auditLog.create({
-        data: {
-          userId: options.userId,
-          orgId: options.orgId,
-          apiKeyId: options.apiKeyId,
-          action: options.action,
-          resourceType: options.resourceType,
-          resourceId: options.resourceId,
-          ip: ip as any,
-          userAgent: userAgent as any,
-          details: details as any,
-          nonce: reqNonce || serverNonce,
-          signature: reqSignature || recordSignature,
-          timestamp: reqTimestamp || serverTimestamp,
-          payload: payload as any,
-        },
-      });
+      const createData = {
+        id: recordId,
+        userId: options.userId,
+        orgId: options.orgId,
+        apiKeyId: options.apiKeyId,
+        action: options.action,
+        resourceType: options.resourceType,
+        resourceId: options.resourceId,
+        ip: ip as any,
+        userAgent: userAgent as any,
+        details: details as any,
+        nonce: reqNonce || serverNonce,
+        signature: reqSignature || recordSignature,
+        timestamp: reqTimestamp || serverTimestamp,
+        payload: payload as any,
+      };
+
+      try {
+        await this.prisma.auditLog.create({ data: createData });
+      } catch (error: any) {
+        if (!this.shouldFallbackToPg(error)) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `Prisma audit log degraded for ${options.action} ${options.resourceType}:${options.resourceId}, using pg fallback: ${error.message}`
+        );
+
+        await this.withPgClient((client) =>
+          client.query(
+            `
+              INSERT INTO audit_logs
+                (id, "userId", "orgId", "apiKeyId", action, "resourceType", "resourceId", ip, "userAgent", details, nonce, signature, timestamp, payload, "createdAt")
+              VALUES
+                ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12,$13,$14::jsonb,NOW())
+            `,
+            [
+              createData.id,
+              createData.userId ?? null,
+              createData.orgId ?? null,
+              createData.apiKeyId ?? null,
+              createData.action,
+              createData.resourceType,
+              createData.resourceId ?? null,
+              createData.ip ?? null,
+              createData.userAgent ?? null,
+              JSON.stringify(details),
+              createData.nonce,
+              createData.signature,
+              createData.timestamp,
+              JSON.stringify(payload),
+            ]
+          )
+        );
+      }
     } catch (error: any) {
-      this.logger.error(
+      this.logger.warn(
         `Failed to record audit log: ${options.action} for ${options.resourceType}:${options.resourceId}`,
         error?.stack
       );

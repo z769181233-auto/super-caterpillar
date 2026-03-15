@@ -1077,9 +1077,9 @@ export function mapCE06OutputToProjectStructure(
         summary: '', // Scan phase doesn't have summary
         scenes: [
           {
-            // Create dummy scene to hold content if needed, but SCAN has no content?
+            // Create placeholder scene to hold content if needed, but SCAN has no content?
             // ScanChunk has start/end offset.
-            // We need to create a dummy scene OR fetch content?
+            // We need to create a placeholder scene OR fetch content?
             // Wait, SCAN phase output doesn't have CONTENT?
             // ce06RealEngine (SCAN) returns only metadata.
             // BUT we need scenes for validation: "structure.seasons[0].episodes[0].scenes[0]..."

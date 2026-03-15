@@ -15,7 +15,7 @@ async function main() {
     process.exit(1);
   }
 
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
 
   try {
     const job = {

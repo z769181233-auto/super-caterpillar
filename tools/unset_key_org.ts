@@ -1,7 +1,7 @@
 import { PrismaClient } from '../packages/database';
 
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   try {
     await prisma.apiKey.update({
       where: { key: 'dev-worker-key' },

@@ -61,7 +61,7 @@ export class AssetService {
       data: {
         assetId,
         secureUrl,
-        expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour expiry (mock for MVP)
+        expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour expiry (P1-HARD)
       },
     };
   }

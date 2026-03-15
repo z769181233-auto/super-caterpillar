@@ -22,10 +22,10 @@ else
 fi
 echo ""
 
-# 2. 查询 billing_ledgers 表中 POSTED 记录数
+# 2. 查询 billing_ledger 表中 POSTED 记录数
 echo "[2/5] 查询 Billing Ledgers POSTED 记录..."
 POSTED_COUNT=$(PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -t -c \
-  "SELECT COUNT(*) FROM billing_ledgers WHERE status='POSTED';")
+  "SELECT COUNT(*) FROM billing_ledger WHERE status='POSTED';")
 
 echo "Posted Count: $POSTED_COUNT"
 if [ "$POSTED_COUNT" -gt 0 ]; then
@@ -41,7 +41,7 @@ if [ "$POSTED_COUNT" -gt 0 ]; then
   echo "[3/5] 最新 10 条 POSTED 记录："
   PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -c \
     "SELECT \"traceId\", \"chargeCode\", amount, status, \"createdAt\"
-     FROM billing_ledgers
+     FROM billing_ledger
      WHERE status='POSTED'
      ORDER BY \"createdAt\" DESC
      LIMIT 10;"

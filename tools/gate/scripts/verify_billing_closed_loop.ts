@@ -2,7 +2,7 @@ import { PrismaClient } from 'database';
 import axios from 'axios';
 import { createHmac } from 'crypto';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const API_URL = 'http://localhost:3000';
 const API_KEY = 'dev-worker-key';
 const API_SECRET = 'dev-worker-secret';

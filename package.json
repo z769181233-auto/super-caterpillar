@@ -1,20 +1,24 @@
 {
   "name": "super-caterpillar-universe",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=20.20.1"
+  },
   "private": true,
   "description": "Super Caterpillar Universe — Monorepo (API / Web / Workers)",
   "pnpm": {
     "overrides": {
-      "prisma": "7.4.2",
-      "@prisma/client": "7.4.2",
-      "next": "15.5.10",
-      "qs": "6.14.2",
-      "hono": "4.11.10",
-      "lodash": "^4.17.23",
-      "axios": "1.13.6",
-      "ajv": "8.17.1",
-      "glob": "13.0.6"
-    }
+    "next": "15.5.10",
+    "qs": "6.14.2",
+    "hono": "4.12.8",
+    "@hono/node-server": "1.19.10",
+    "multer": "2.1.1",
+    "lodash": "^4.17.23",
+    "axios": "1.13.6",
+    "ajv": "8.17.1",
+    "glob": "13.0.6",
+    "file-type": "21.3.2"
+  }
   },
   "scripts": {
     "env:init": "node tools/env/print-env-source.js",
@@ -53,9 +57,6 @@
     "gate:commercial": "bash tools/gate/run_commercial_seal.sh",
     "build:web:cf": "turbo run build --filter=web"
   },
-  "engines": {
-    "node": "20.x"
-  },
   "devDependencies": {
     "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^11.1.15",
@@ -76,7 +77,7 @@
     "knip": "^5.85.0",
     "lint-staged": "^16.3.2",
     "prettier": "^3.8.1",
-    "prisma": "7.4.2",
+    "prisma": "5.22.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
@@ -103,6 +104,7 @@
   },
   "dependencies": {
     "@formatjs/icu-messageformat-parser": "^3.5.1",
+    "@prisma/client": "5.22.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jszip": "^3.10.1",

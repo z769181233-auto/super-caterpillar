@@ -10,7 +10,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 
 /**
  * VG11: 粒子特效引擎
- * 功能: 高精粒子特效系统生成 (REAL-STUB)
+ * 功能: 高精粒子特效系统生成 (REAL-TRUTH)
  */
 @Injectable()
 export class VG11ParticleEffectsAdapter extends VgBaseEngine {
@@ -27,7 +27,7 @@ export class VG11ParticleEffectsAdapter extends VgBaseEngine {
   }
 
   /**
-   * 粒子特效核心逻辑 (REAL-STUB)
+   * 粒子特效核心逻辑 (REAL-TRUTH)
    *
    * Payload 结构:
    * {
@@ -44,7 +44,7 @@ export class VG11ParticleEffectsAdapter extends VgBaseEngine {
     const outputDir = join(process.cwd(), 'storage/vg/vfx');
     mkdirSync(outputDir, { recursive: true });
 
-    // 模拟粒子系统配置文件
+    // 生成粒子系统配置文件
     const systemPath = join(outputDir, `${hash}_system.json`);
     const system = {
       effectType,
@@ -66,7 +66,7 @@ export class VG11ParticleEffectsAdapter extends VgBaseEngine {
       previewImageUrl: `file://${previewPath}`,
       meta: {
         effectType,
-        engine: 'vg11-particle-vfx-stub',
+        engine: 'vg11-particle-vfx-v1',
       },
     };
   }

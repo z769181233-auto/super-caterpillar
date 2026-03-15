@@ -7,7 +7,7 @@ async function main() {
     process.argv.find((arg) => arg.startsWith('--count='))?.split('=')[1] || '10',
     10
   );
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
 
   process.stdout.write(util.format(`[StressTrigger] Injecting ${count} PENDING jobs...`) + '\n');
 

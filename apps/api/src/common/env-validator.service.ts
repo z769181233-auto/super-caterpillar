@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { pickHmacSecretSSOT } from '@scu/config';
 
 /**
  * 环境变量强制校验服务
@@ -35,8 +36,8 @@ export class EnvValidatorService implements OnModuleInit {
     },
     {
       key: 'GATE_MODE',
-      expectedValues: ['0', '1'],
-      description: '生产环境必须显式设置 GATE_MODE=0 或 1',
+      expectedValues: ['0'],
+      description: '生产环境必须显式设置 GATE_MODE=0',
     },
   ] as const;
 
@@ -48,14 +49,14 @@ export class EnvValidatorService implements OnModuleInit {
 
     // 1. 检查 P0 级必需变量
     for (const varName of this.P0_REQUIRED_VARS) {
-      const value = process.env[varName];
+      const value = this.resolveRequiredValue(varName);
 
       if (!value || value.trim() === '') {
         errors.push(
           `❌ P0 环境变量缺失: ${varName}\n` +
           `   描述: ${this.getVarDescription(varName)}\n` +
           `   影响: 系统无法启动\n` +
-          `   修复: 在 .env.local 中设置 ${varName}`
+          `   修复: ${this.getVarRemediation(varName)}`
         );
       } else {
         this.logger.log(`✅ [P0] ${varName}: 已配置 (${this.maskSensitive(varName, value)})`);
@@ -135,7 +136,7 @@ export class EnvValidatorService implements OnModuleInit {
   private getVarDescription(varName: string): string {
     const descriptions: Record<string, string> = {
       DATABASE_URL: '生产数据库连接字符串（PostgreSQL）',
-      API_SECRET_KEY: 'HMAC 签名主密钥（强随机字符串，至少32位）',
+      API_SECRET_KEY: 'HMAC 签名主密钥（强随机字符串，至少32位；兼容 HMAC_SECRET_KEY）',
       NODE_ENV: '运行环境标识（development/production）',
       ENABLE_INTERNAL_JOB_WORKER: '是否启动内置 Worker 进程（true/false）',
       GATE_MODE: '门禁模式（0=生产，1=开发）',
@@ -149,7 +150,7 @@ export class EnvValidatorService implements OnModuleInit {
    * 脱敏敏感信息
    */
   private maskSensitive(varName: string, value: string): string {
-    const sensitiveVars = ['API_SECRET_KEY', 'DATABASE_URL'];
+    const sensitiveVars = ['API_SECRET_KEY', 'HMAC_SECRET_KEY', 'WORKER_API_SECRET', 'DATABASE_URL'];
 
     if (sensitiveVars.includes(varName)) {
       if (value.length <= 8) {
@@ -192,5 +193,25 @@ export class EnvValidatorService implements OnModuleInit {
     } catch {
       return '(解析失败)';
     }
+  }
+
+  private resolveRequiredValue(varName: string): string {
+    if (varName === 'API_SECRET_KEY') {
+      try {
+        return pickHmacSecretSSOT();
+      } catch {
+        return '';
+      }
+    }
+
+    return process.env[varName] || '';
+  }
+
+  private getVarRemediation(varName: string): string {
+    if (varName === 'API_SECRET_KEY') {
+      return '在 .env.local 中设置 HMAC_SECRET_KEY（推荐）或 API_SECRET_KEY';
+    }
+
+    return `在 .env.local 中设置 ${varName}`;
   }
 }

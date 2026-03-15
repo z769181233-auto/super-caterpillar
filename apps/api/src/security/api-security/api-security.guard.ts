@@ -34,13 +34,6 @@ export class ApiSecurityGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    // P1-1: 门禁模式旁路（仅限测试环境）
-    // P1-1: 门禁模式旁路（仅限测试环境）
-    if (process.env.GATE_MODE === 'test' || process.env.GATE_MODE === '1') {
-      // Allow Stage Validation with GATE_MODE=1 in production
-      return true;
-    }
-
     // 如果未标记，直接通过（不强制签名）
     if (!requireSignature) {
       return true;

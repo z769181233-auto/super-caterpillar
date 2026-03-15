@@ -50,7 +50,8 @@ export class VG03LightingEngineAdapter extends VgBaseEngine {
       inputArg = `-i "${sourcePath}"`;
     }
 
-    const cmd = `ffmpeg -y ${inputArg} -vf "${result.filter_string}" -frames:v 1 "${outputPath}"`;
+    const filter = result.filter_string || 'null';
+    const cmd = `ffmpeg -y ${inputArg} -vf "${filter}" -frames:v 1 "${outputPath}"`;
     execSync(cmd, { stdio: 'ignore' });
 
     return {

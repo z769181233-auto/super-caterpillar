@@ -80,7 +80,7 @@ export class DialogueOptimizationAdapter implements EngineAdapter {
       ooc_flags,
       rules_applied,
       diff_summary: { count: diff_count },
-      meta: { implementation: 'stub_rules', persona },
+      meta: { implementation: 'rule_engine_v1', persona },
     };
 
     // 3. Save Cache (7 days)

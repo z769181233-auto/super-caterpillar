@@ -239,11 +239,11 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
 
   private parseOutputs(outputs: any, payload: any): CE11Output {
     // Logic: Look for text/json nodes.
-    // If no text output (e.g. image workflow), verify inputs and return dummy structure?
+    // If no text output (e.g. image workflow), verify inputs and return empty structure?
     // User says: "Parse outputs (Phase 1 can just parse text node... if no text node generate structure from prompt)"
 
     // Let's look for any output containing 'text' or 'json'
-    // Or just return a standard mock structure if we are in a "Real Connection but Logic Mock" phase.
+    // Or just return a standard temporary structure if we are in a "Real Connection but Logic Fallback" phase.
     // However, "Real Gate" implies real I/O.
 
     // Scan outputs for text

@@ -68,7 +68,7 @@ INSERT INTO scenes (id, \"episodeId\", \"index\", \"title\", \"summary\")
 VALUES (
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"rawText\", \"updatedAt\")
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt") VALUES ($NOVEL_SOURCE_ID, $PROJECT_ID, $ORG_ID, 'Dummy', 'dummy.txt', 'keys/dummy', 100, now()) ON CONFLICT (id) DO NOTHING;
 VALUES (
 INSERT INTO engines (id, \"engineKey\", \"adapterName\", \"adapterType\", config, enabled, \"createdAt\", \"updatedAt\", code, \"isActive\", name, type)
 VALUES 
@@ -230,7 +230,7 @@ INSERT INTO scenes (id, \"episodeId\", \"index\", \"title\", \"summary\")
 VALUES (
 INSERT INTO shots (id, \"sceneId\", \"index\", type, params) 
 VALUES (
-INSERT INTO novel_sources (id, \"projectId\", \"rawText\", \"updatedAt\")
+psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, "projectId", "organizationId", "rawText", "fileName", "fileKey", "fileSize", "createdAt", "updatedAt") VALUES ($NOVEL_SOURCE_ID, $PROJECT_ID, $ORG_ID, 'Dummy', 'dummy.txt', 'keys/dummy', 100, now()) ON CONFLICT (id) DO NOTHING;
 VALUES (
 INSERT INTO engines (id, \"engineKey\", \"adapterName\", \"adapterType\", config, enabled, \"createdAt\", \"updatedAt\", code, \"isActive\", name, type)
 VALUES 

@@ -1,10 +1,13 @@
 name: codeql
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
   schedule:
-    - cron: "0 2 * * *"
+    - cron: '0 2 * * *'
 
 permissions:
   actions: read
@@ -23,4 +26,5 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          config-file: ./.github/codeql/codeql-config.yml
       - uses: github/codeql-action/analyze@v3

@@ -1,7 +1,7 @@
 import { PrismaClient } from 'database';
 import * as bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const email = 'smoke_admin@scu.local';

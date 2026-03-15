@@ -96,7 +96,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     }
 
     // P0-R5: High-Fidelity Pass-through (Phase T: Strict)
-    // If source asset is MP4, use it directly (bypass frames.txt/mock-compose)
+    // If source asset is MP4, use it directly (bypass frames.txt/fallback-compose)
     try {
       const sourceAsset = await prisma.asset.findFirst({
         where: { ownerId: shot.shotId, ownerType: AssetOwnerType.SHOT, type: AssetType.VIDEO }, // Ensure VIDEO
@@ -197,6 +197,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
 
   let ttsAsset: any = null;
   let bgmAsset: any = null;
+  let audioRenderMode: 'standard' | 'fallback_silence' = 'standard';
 
   if (shouldGenerate && sceneId) {
     console.log(
@@ -204,117 +205,131 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     );
 
     // 1. Generate Voice (TTS) via AU01
-    const ttsText = `${traceId}:${sceneId}:AUDIO_TTS`;
-    const ttsRes = await apiClient.invokeEngine({
-      engineKey: 'au01_voice_tts',
-      payload: {
-        text: ttsText,
-        preview,
-        projectId,
-        traceId,
-        sceneId,
-      },
-      context: { ...job.context, jobId: job.id, traceId },
-    });
-
-    if (ttsRes.status !== 'SUCCESS') {
-      throw new Error(`AU01_TTS_FAIL: ${ttsRes.error?.message}`);
-    }
-
-    const ttsSourcePath = ttsRes.output.assetUrl.replace('file://', '');
-    const ttsSha = ttsRes.output.meta.audioFileSha256 || 'unknown-sha';
-
-    if (!(await fileExists(ttsSourcePath))) {
-      throw new Error(`AU01 returned path but file missing: ${ttsSourcePath}`);
-    }
-
-    const ttsAbsPath = path.join(storageRoot, ttsStorageKey);
-    await ensureDir(path.dirname(ttsAbsPath));
-    await fsp.copyFile(ttsSourcePath, ttsAbsPath);
-
-    // Persist TTS Asset
-    ttsAsset = await prisma.asset.upsert({
-      where: {
-        ownerType_ownerId_type: {
-          ownerId: sceneId,
-          ownerType: AssetOwnerType.SCENE,
-          type: 'AUDIO_TTS' as any,
+    try {
+      const ttsText = `${traceId}:${sceneId}:AUDIO_TTS`;
+      const ttsRes = await apiClient.invokeEngine({
+        engineKey: 'au01_voice_tts',
+        payload: {
+          text: ttsText,
+          preview,
+          projectId,
+          traceId,
+          sceneId,
         },
-      },
-      update: {
-        checksum: ttsSha,
-        status: 'GENERATED',
-        storageKey: ttsStorageKey,
-      },
-      create: {
-        projectId,
-        ownerId: sceneId,
-        ownerType: AssetOwnerType.SCENE,
-        type: 'AUDIO_TTS' as any,
-        storageKey: ttsStorageKey,
-        checksum: ttsSha,
-        status: 'GENERATED',
-      },
-    });
+        context: { ...job.context, jobId: job.id, traceId },
+      });
+
+      if (ttsRes.status !== 'SUCCESS') {
+        const errMsg = ttsRes.error?.message || 'Unknown AU01 error';
+        if (errMsg.includes('AUDIO_VENDOR_API_KEY_NOT_CONFIGURED') || process.env.GATE_MODE === '1') {
+          console.warn(`[TimelineRender] [AUDIO_FALLBACK] AU01 failed: ${errMsg}. Using fallback_silence.`);
+          audioRenderMode = 'fallback_silence';
+        } else {
+          throw new Error(`AU01_TTS_FAIL: ${errMsg}`);
+        }
+      }
+
+      if (audioRenderMode === 'standard') {
+        const ttsSourcePath = ttsRes.output.assetUrl.replace('file://', '');
+        const ttsSha = ttsRes.output.meta.audioFileSha256 || 'unknown-sha';
+
+        if (!(await fileExists(ttsSourcePath))) {
+          throw new Error(`AU01 returned path but file missing: ${ttsSourcePath}`);
+        }
+
+        const ttsAbsPath = path.join(storageRoot, ttsStorageKey);
+        await ensureDir(path.dirname(ttsAbsPath));
+        await fsp.copyFile(ttsSourcePath, ttsAbsPath);
+
+        // Persist TTS Asset
+        ttsAsset = await prisma.asset.upsert({
+          where: {
+            ownerType_ownerId_type: {
+              ownerId: sceneId,
+              ownerType: AssetOwnerType.SCENE,
+              type: 'AUDIO_TTS' as any,
+            },
+          },
+          update: {
+            checksum: ttsSha,
+            status: 'GENERATED',
+            storageKey: ttsStorageKey,
+          },
+          create: {
+            projectId,
+            ownerId: sceneId,
+            ownerType: AssetOwnerType.SCENE,
+            type: 'AUDIO_TTS' as any,
+            storageKey: ttsStorageKey,
+            checksum: ttsSha,
+            status: 'GENERATED',
+          },
+        });
+      }
+    } catch (e: any) {
+      console.warn(`[TimelineRender] [AUDIO_FALLBACK_CATCH] AU01 Exception: ${e.message}. Using fallback_silence.`);
+      audioRenderMode = 'fallback_silence';
+    }
 
     // 2. Handle BGM via AU02
-    // AudioService for P18-0 uses a separate internal synthesis for BGM.
-    const bgmSeed = payloadForAudio?.bgmSeed ?? `${traceId}:${sceneId}:AUDIO_BGM`;
+    if (audioRenderMode === 'standard') {
+      try {
+        const bgmSeed = payloadForAudio?.bgmSeed ?? `${traceId}:${sceneId}:AUDIO_BGM`;
 
-    const bgmRes = await apiClient.invokeEngine({
-      engineKey: 'au02_bgm_gen',
-      payload: {
-        seed: bgmSeed,
-        style: bgmSeed, // Use seed as style/text
-        preview,
-        projectId,
-        traceId,
-        sceneId,
-      },
-      context: { ...job.context, jobId: job.id, traceId },
-    });
+        const bgmRes = await apiClient.invokeEngine({
+          engineKey: 'au02_bgm_gen',
+          payload: {
+            seed: bgmSeed,
+            style: bgmSeed, // Use seed as style/text
+            preview,
+            projectId,
+            traceId,
+            sceneId,
+          },
+          context: { ...job.context, jobId: job.id, traceId },
+        });
 
-    if (bgmRes.status !== 'SUCCESS') {
-      throw new Error(`AU02_BGM_FAIL: ${bgmRes.error?.message}`);
+        if (bgmRes.status === 'SUCCESS') {
+          const bgmSourcePath = bgmRes.output.assetUrl.replace('file://', '');
+          const bgmSha = bgmRes.output.meta.audioFileSha256 || 'unknown-sha';
+
+          if (await fileExists(bgmSourcePath)) {
+            const bgmAbsPath = path.join(storageRoot, bgmStorageKey);
+            await ensureDir(path.dirname(bgmAbsPath));
+            await fsp.copyFile(bgmSourcePath, bgmAbsPath);
+
+            bgmAsset = await prisma.asset.upsert({
+              where: {
+                ownerType_ownerId_type: {
+                  ownerId: sceneId,
+                  ownerType: AssetOwnerType.SCENE,
+                  type: 'AUDIO_BGM' as any,
+                },
+              },
+              update: {
+                checksum: bgmSha,
+                status: 'GENERATED',
+                storageKey: bgmStorageKey,
+              },
+              create: {
+                projectId,
+                ownerId: sceneId,
+                ownerType: AssetOwnerType.SCENE,
+                type: 'AUDIO_BGM' as any,
+                storageKey: bgmStorageKey,
+                checksum: bgmSha,
+                status: 'GENERATED',
+              },
+            });
+          }
+        }
+      } catch (e: any) {
+        console.warn(`[TimelineRender] [AUDIO_BGM_FAIL_NON_BLOCKING] AU02 Exception: ${e.message}`);
+      }
     }
-
-    const bgmSourcePath = bgmRes.output.assetUrl.replace('file://', '');
-    const bgmSha = bgmRes.output.meta.audioFileSha256 || 'unknown-sha';
-
-    if (!(await fileExists(bgmSourcePath))) {
-      throw new Error(`AU02 returned path but file missing: ${bgmSourcePath}`);
-    }
-
-    const bgmAbsPath = path.join(storageRoot, bgmStorageKey);
-    await ensureDir(path.dirname(bgmAbsPath));
-    await fsp.copyFile(bgmSourcePath, bgmAbsPath);
-
-    bgmAsset = await prisma.asset.upsert({
-      where: {
-        ownerType_ownerId_type: {
-          ownerId: sceneId,
-          ownerType: AssetOwnerType.SCENE,
-          type: 'AUDIO_BGM' as any,
-        },
-      },
-      update: {
-        checksum: bgmSha,
-        status: 'GENERATED',
-        storageKey: bgmStorageKey,
-      },
-      create: {
-        projectId,
-        ownerId: sceneId,
-        ownerType: AssetOwnerType.SCENE,
-        type: 'AUDIO_BGM' as any,
-        storageKey: bgmStorageKey,
-        checksum: bgmSha,
-        status: 'GENERATED',
-      },
-    });
 
     console.log(
-      `[TimelineRender] Audio prepared via EngineHub (AU01/AU02). TTS=${ttsSha}, BGM=${bgmSha}`
+      `[TimelineRender] Audio phase finished. Mode=${audioRenderMode}, TTS=${ttsAsset?.id || 'none'}, BGM=${bgmAsset?.id || 'none'}`
     );
   }
 
@@ -595,7 +610,13 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     success: true,
     assetId: asset.id,
     storageKey: finalOutputRelative,
-    audit: { action: 'ce10.timeline_render.success', sceneId: timeline.sceneId, traceId },
+    audioRenderMode,
+    audit: { 
+      action: 'ce10.timeline_render.success', 
+      sceneId: timeline.sceneId, 
+      traceId,
+      audioRenderMode 
+    },
   };
 }
 

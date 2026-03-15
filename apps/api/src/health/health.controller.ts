@@ -6,6 +6,8 @@ import { JobStatus, JobType } from 'database';
 
 @Controller()
 export class HealthController {
+  private readonly readyProbeTimeoutMs = Number(process.env.HEALTH_READY_TIMEOUT_MS || '3000');
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService?: RedisService
@@ -13,12 +15,11 @@ export class HealthController {
 
   @Get('/health')
   health() {
-    const isStub = process.env.P9_B3_STUB_MODE === '1';
     return {
       ok: true,
       service: 'api',
-      mode: isStub ? 'stub' : 'real',
-      stub: isStub ? 1 : 0,
+      mode: 'real',
+      truth_seal: 'sealed',
       missing_envs: (process as any).missingEnvs || [],
       gate_mode: Number(process.env.GATE_MODE) || 0,
       ts: new Date().toISOString()
@@ -27,13 +28,12 @@ export class HealthController {
 
   @Get('/api/health')
   apiHealth() {
-    const isStub = process.env.P9_B3_STUB_MODE === '1';
     return {
       ok: true,
       service: 'api',
       status: 'ok',
-      mode: isStub ? 'stub' : 'real',
-      stub: isStub ? 1 : 0,
+      mode: 'real',
+      truth_seal: 'sealed',
       missing_envs: (process as any).missingEnvs || [],
       gate_mode: Number(process.env.GATE_MODE) || 0,
       ts: new Date().toISOString()
@@ -54,7 +54,15 @@ export class HealthController {
 
     // 检查数据库连接
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      const { Client } = require('pg');
+      const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+        connectionTimeoutMillis: this.readyProbeTimeoutMs,
+        query_timeout: this.readyProbeTimeoutMs,
+      });
+      await client.connect();
+      await client.query('SELECT 1');
+      await client.end();
       checks.database = true;
     } catch (error) {
       checks.database = false;
@@ -92,95 +100,6 @@ export class HealthController {
     return { ok: true, pong: true, ts: new Date().toISOString() };
   }
 
-  @Get('/metrics')
-  @Header('Content-Type', 'text/plain; charset=utf-8')
-  async metrics() {
-    const uptime = process.uptime();
-    const node = process.version;
-    const memUsage = process.memoryUsage();
-
-    // 收集 Job 统计信息
-    const [totalJobs, pendingJobs, runningJobs, failedJobs, videoRenderPending] = await Promise.all(
-      [
-        this.prisma.shotJob.count(),
-        this.prisma.shotJob.count({ where: { status: JobStatus.PENDING } }),
-        this.prisma.shotJob.count({ where: { status: JobStatus.RUNNING } }),
-        this.prisma.shotJob.count({ where: { status: JobStatus.FAILED } }),
-        this.prisma.shotJob.count({
-          where: {
-            type: JobType.VIDEO_RENDER,
-            status: JobStatus.PENDING,
-          },
-        }),
-      ]
-    );
-
-    // P5-1: Unified Scrape - Include Global Registry + Worker Metrics
-    const globalMetrics = await (await import('@scu/observability')).registry.metrics();
-
-    let workerMetrics = '';
-    const workerMetricsPort = process.env.WORKER_METRICS_PORT || 3001;
-    try {
-      // Use dynamic import for axios to avoid static dependency in health check
-      const axios = (await import('axios')).default;
-      const workerResp = await axios.get(`http://127.0.0.1:${workerMetricsPort}/metrics`, {
-        timeout: 500,
-        validateStatus: (status) => status === 200,
-      });
-      workerMetrics = '\n\n# --- Worker Metrics ---\n' + workerResp.data;
-    } catch (e) {
-      workerMetrics = '\n\n# --- Worker Metrics Unavailable ---';
-    }
-
-    // Prometheus 格式的指标
-    return `# scu_api_metrics
-# HELP scu_api_uptime_seconds API server uptime in seconds
-# TYPE scu_api_uptime_seconds gauge
-scu_api_uptime_seconds ${uptime}
-
-# HELP scu_api_node_version Node.js version
-# TYPE scu_api_node_version gauge
-scu_api_node_version{version="${node}"} 1
-
-# HELP scu_api_memory_heap_used_bytes Heap memory used in bytes
-# TYPE scu_api_memory_heap_used_bytes gauge
-scu_api_memory_heap_used_bytes ${memUsage.heapUsed}
-
-# HELP scu_api_memory_heap_total_bytes Total heap memory in bytes
-# TYPE scu_api_memory_heap_total_bytes gauge
-scu_api_memory_heap_total_bytes ${memUsage.heapTotal}
-
-# HELP scu_api_memory_rss_bytes Resident set size in bytes
-# TYPE scu_api_memory_rss_bytes gauge
-scu_api_memory_rss_bytes ${memUsage.rss}
-
-# HELP scu_api_jobs_total Total number of jobs (API DB snapshot)
-# TYPE scu_api_jobs_total gauge
-scu_api_jobs_total ${totalJobs}
-
-# HELP scu_api_jobs_pending Number of pending jobs
-# TYPE scu_api_jobs_pending gauge
-scu_api_jobs_pending ${pendingJobs}
-
-# HELP scu_api_jobs_running Number of running jobs
-# TYPE scu_api_jobs_running gauge
-scu_api_jobs_running ${runningJobs}
-
-# HELP scu_api_jobs_failed Number of failed jobs
-# TYPE scu_api_jobs_failed gauge
-scu_api_jobs_failed ${failedJobs}
-
-# HELP scu_api_jobs_video_render_pending Number of pending VIDEO_RENDER jobs
-# TYPE scu_api_jobs_video_render_pending gauge
-scu_api_jobs_video_render_pending ${videoRenderPending}
-
-${TextSafetyMetrics.getPrometheusOutput()}
-
-${globalMetrics}
-
-${workerMetrics}
-`;
-  }
 
   // 兼容 smoke：/api/health/ready /api/health/live /api/health/gpu
   @Get('/api/health/ready')

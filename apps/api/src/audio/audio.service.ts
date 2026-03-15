@@ -7,7 +7,6 @@ import {
   AudioSynthesisInput,
   AudioSynthesisOutput,
 } from './providers/audio-provider.interface';
-import { StubWavProvider } from './providers/stub-wav.provider';
 import { RealTtsProvider } from './providers/real-tts.provider';
 import { BgmLibraryProvider } from './providers/bgm-library.provider';
 import { mixWithDucking, sha256File } from './mixer/ffmpeg-mixer';
@@ -31,7 +30,7 @@ export type AudioGenerateRequest = {
   projectSettings?: AudioProjectSettings;
   bgmSeed?: string; // deterministic bgm generator seed
   preview?: boolean; // P18-6.1: Fast partial synthesis
-  previewCapMs?: number; // P19-0.1: Hardened capping (default 3000 stub/real)
+  previewCapMs?: number; // P19-0.1: Hardened capping (default 3000)
 };
 
 export type AudioGenerateResult = {
@@ -43,12 +42,10 @@ export type AudioGenerateResult = {
 
 @Injectable()
 export class AudioService {
-  private readonly stubProvider: AudioProvider;
   private readonly realProvider: AudioProvider;
   private readonly bgmProvider: AudioProvider;
 
   constructor(private readonly metrics: OpsMetricsService) {
-    this.stubProvider = new StubWavProvider();
     this.realProvider = new RealTtsProvider();
     this.bgmProvider = new BgmLibraryProvider();
   }
@@ -82,28 +79,13 @@ export class AudioService {
     // P20-0: Metrics Instrumentation
     if (req.preview) this.metrics.incrementAudioPreview();
 
-    // Strict silence: when kill switch ON -> force legacy/stub, do not attempt real/shadow, do not emit real signals
+    // Strict silence: when kill switch ON -> Fail Fast.
     if (killOn) {
-      const voice = await this.stubProvider.synthesize({ text: req.text });
-      const signals = {
-        audio_kill_switch: true,
-        audio_kill_switch_source: 'env',
-        audio_mode: 'legacy',
-        provider: voice.meta.provider,
-        algo_version: voice.meta.algoVersion,
-        duration_ms: voice.meta.durationMs,
-        audio_file_sha256: voice.meta.audioFileSha256,
-        // P19-0.1 Audit Signals
-        audio_preview: !!req.preview,
-        preview_cap_ms: req.preview ? req.previewCapMs || 3000 : 0,
-        voice_meta: voice.meta,
-        audio_real_enabled: project.audioRealEnabled,
-      };
-      return { voice, signals };
+      throw new Error('AUDIO_KILL_SWITCH_ACTIVE: Absolute truth required. Fail-fast strictly enforced.');
     }
 
     // P18-2 Logic: Selection based on Whitelist
-    const provider = project.audioRealEnabled ? this.realProvider : this.stubProvider;
+    const provider = this.realProvider;
     if (project.audioRealEnabled && !killOn) {
       this.metrics.incrementAudioVendorCall();
     }
@@ -115,7 +97,7 @@ export class AudioService {
     const signals: Record<string, any> = {
       audio_kill_switch: false,
       audio_kill_switch_source: 'none',
-      audio_mode: project.audioRealEnabled ? 'real' : 'stub',
+      audio_mode: 'truth_standard',
       provider: voice.meta.provider,
       algo_version: voice.meta.algoVersion,
       duration_ms: voice.meta.durationMs,
@@ -129,7 +111,7 @@ export class AudioService {
     };
 
     // Mixer (REAL meaning for P18-0): run ffmpeg mixing deterministically
-    // We generate deterministic BGM from seed using same stub provider (different seed).
+    // We generate deterministic BGM from seed using same truth provider (different seed).
     const mixerEnabled = project.audioMixerEnabled ?? true;
     if (!mixerEnabled) {
       return { voice, signals };

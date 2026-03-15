@@ -6,7 +6,7 @@ PORT="${PORT:-3000}"
 API_BASE_URL="${API_BASE_URL:-http://localhost:${PORT}}"
 API_URL="${API_URL:-$API_BASE_URL}"
 API_LOG_FILE="${API_LOG_FILE:-$REPO_ROOT/.tmp/scu_api_smoke.log}"
-DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu?schema=public}"
+DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu?schema=public}"
 
 mkdir -p "$(dirname "$API_LOG_FILE")"
 

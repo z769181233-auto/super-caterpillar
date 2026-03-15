@@ -14,7 +14,7 @@ export REDIS_URL="redis://localhost:6379"
 export CORS_ORIGINS="*"
 export API_PORT=3999
 export NODE_ENV=test
-export DATABASE_URL=${DATABASE_URL:-"postgres://postgres:postgres@localhost:5432/scu_dev"} # Default fallback
+export DATABASE_URL=${DATABASE_URL:-"postgres://postgres:password@127.0.0.1:5432/scu_dev"} # Default fallback
 
 echo "=== Staging Stress Test Pipeline ==="
 

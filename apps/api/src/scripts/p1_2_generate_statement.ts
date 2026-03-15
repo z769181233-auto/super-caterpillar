@@ -3,7 +3,7 @@ import { PrismaClient } from 'database';
 import { createHash } from 'node:crypto';
 import * as util from 'util';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 function mustEnv(name: string) {
   const v = process.env[name];

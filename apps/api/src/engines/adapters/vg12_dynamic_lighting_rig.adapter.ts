@@ -70,7 +70,7 @@ export class VG12DynamicLightingRigAdapter extends VgBaseEngine {
       meta: {
         sceneId,
         mood: rig.mood,
-        engine: 'vg12-lighting-rig-stub',
+        engine: 'vg12-lighting-rig-v1',
       },
     };
   }

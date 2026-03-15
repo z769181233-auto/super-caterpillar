@@ -169,7 +169,6 @@ export class ApiClient {
       // 4. 计算签名
       // [HMAC V1.1 Fix] Align with API Guard logic:
       // If POST and body is empty, API uses contentHash in canonical string.
-      // If GET/DELETE, API uses body (which is empty string).
       if (method.toUpperCase() === 'POST' && bodyString === '') {
         signBody = contentHash;
       }
@@ -263,6 +262,9 @@ export class ApiClient {
         process.stderr.write(
           util.format('[Worker HTTP Error]', method, url, 'Network Error', error.message) + '\n'
         );
+        process.stderr.write(`[Worker FETCH_ERR_TRACE] name=${error.name} code=${error.code} errno=${error.errno} type=${error.type}\n`);
+        process.stderr.write(`[Worker FETCH_ERR_CAUSE] name=${error.cause?.name} code=${error.cause?.code} errno=${error.cause?.errno} syscall=${error.cause?.syscall} address=${error.cause?.address} port=${error.cause?.port}\n`);
+        process.stderr.write(`[Worker FETCH_ERR_STACK] ${error.stack}\n`);
       }
       throw new Error(`API request failed: ${error.message}`);
     }
@@ -504,6 +506,7 @@ export class ApiClient {
         parentJobId?: string;
         traceId?: string;
         priority?: number;
+        dedupeKey?: string;
       },
     dto?: { type?: string; jobType?: string; payload?: any; traceId?: string; priority?: number },
     headers?: Record<string, string>

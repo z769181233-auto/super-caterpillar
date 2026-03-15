@@ -17,7 +17,7 @@ const E2E_USER_EMAIL = `e2e_auto_${randomBytes(4).toString('hex')}@scu.test`;
 // Password hash was mocked in seed, but for login we need a password that matches the hash
 const E2E_PASSWORD = 'Password123!';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 // Helper for fetch wrapper
 async function request(method: string, path: string, data?: any, token?: string) {

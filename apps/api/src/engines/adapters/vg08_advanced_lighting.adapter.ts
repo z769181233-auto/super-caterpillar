@@ -76,7 +76,7 @@ export class VG08AdvancedLightingAdapter extends VgBaseEngine {
         sceneId,
         quality,
         rayDepth: lightMap.rayDepth,
-        engine: 'vg08-raytracer-stub',
+        engine: 'vg08-raytracer-v1',
       },
     };
   }

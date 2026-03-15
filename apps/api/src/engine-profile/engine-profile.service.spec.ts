@@ -16,6 +16,7 @@ describe('EngineProfileService', () => {
         {
           provide: PrismaService,
           useValue: {
+            $disconnect: jest.fn().mockResolvedValue(undefined),
             shotJob: {
               findMany: jest.fn(),
             },

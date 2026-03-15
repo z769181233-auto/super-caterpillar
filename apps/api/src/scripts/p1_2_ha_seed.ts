@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as util from 'util';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 function env(name: string, def?: string) {
   const v = process.env[name] ?? def;

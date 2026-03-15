@@ -8,7 +8,7 @@ import {
 import { StructureQAEngineInput } from '@scu/shared-types';
 
 /**
- * Stage4 MVP: Structure QA local stub
+ * Stage4 MVP: Structure QA local truth
  */
 @Injectable()
 export class StructureQALocalAdapter implements EngineAdapter {

@@ -13,6 +13,7 @@ import { RedisService } from '../redis/redis.service';
 @Injectable()
 export class NonceService {
   private readonly logger = new Logger(NonceService.name);
+  private readonly nonceTtlSeconds = Number(process.env.NONCE_TTL_SECONDS || '300');
   // Dev-only: 内存 Map 作为 fallback（仅当 Redis 不可用时）
   private readonly devMemoryStore = new Map<string, { timestamp: number; expiresAt: number }>();
   private readonly isDev = process.env.NODE_ENV !== 'production';
@@ -59,7 +60,51 @@ export class NonceService {
       );
     }
 
+    const nonceKey = `nonce:${apiKey}:${nonce}`;
+
     try {
+      if (this.isDev) {
+        const now = Date.now();
+        const existing = this.devMemoryStore.get(nonceKey);
+        if (existing && existing.expiresAt > now) {
+          throw {
+            code: 'P2002',
+            message: 'Unique constraint failed',
+            meta: { target: ['nonce', 'apiKey'] },
+          };
+        }
+        this.devMemoryStore.set(nonceKey, {
+          timestamp,
+          expiresAt: now + this.nonceTtlSeconds * 1000,
+        });
+
+        if (process.env.NODE_ENV !== 'production') {
+          this.logger.log(
+            `✅ nonce stored ok (使用 devMemoryStore): ${JSON.stringify({
+              nonce: nonce.substring(0, 16) + '...',
+              apiKey: apiKey.substring(0, 8) + '...',
+            })}`
+          );
+        }
+        return;
+      }
+
+      if (this.redisService) {
+        const stored = await this.redisService.setNx(nonceKey, String(timestamp), this.nonceTtlSeconds);
+        if (stored) {
+          return;
+        }
+
+        const existing = await this.redisService.get(nonceKey);
+        if (existing !== null) {
+          throw {
+            code: 'P2002',
+            message: 'Unique constraint failed',
+            meta: { target: ['nonce', 'apiKey'] },
+          };
+        }
+      }
+
       // 使用 Prisma Client 写入 nonce_store 表
       // 注意：如果 nonceStore 模型不可用，使用 $queryRaw 作为后备方案
       if ('nonceStore' in this.prisma) {

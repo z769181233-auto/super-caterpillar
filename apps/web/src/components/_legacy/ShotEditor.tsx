@@ -40,7 +40,7 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [selectedEngine, setSelectedEngine] = useState<string>('mock'); // Studio v0.6: 引擎选择
+  const [selectedEngine, setSelectedEngine] = useState<string>('real-http'); // Studio v0.6: 迁移到真实引擎骨架
   const [reviewing, setReviewing] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectNote, setRejectNote] = useState('');
@@ -518,7 +518,6 @@ export default function ShotEditor({ shot, onUpdate }: ShotEditorProps) {
                   marginBottom: '0.5rem',
                 }}
               >
-                <option value="mock">Mock（模拟）</option>
                 <option value="real-http">Real HTTP（真实引擎骨架）</option>
               </select>
             </div>

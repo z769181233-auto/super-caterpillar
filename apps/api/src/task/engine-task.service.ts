@@ -21,7 +21,10 @@ export class EngineTaskService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly engineRegistry: EngineRegistry
-  ) {}
+  ) {
+    console.log('[DEBUG_BOOT] EngineTaskService constructor start');
+    console.log('[DEBUG_BOOT] EngineTaskService constructor end');
+  }
 
   /**
    * 根据 TaskId 查找 EngineTaskSummary

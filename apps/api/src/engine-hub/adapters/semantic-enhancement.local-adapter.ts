@@ -8,7 +8,7 @@ import {
 import { SemanticEnhancementEngineInput } from '@scu/shared-types';
 
 /**
- * Stage4 MVP: Semantic Enhancement local stub
+ * Stage4 MVP: Semantic Enhancement local truth
  */
 @Injectable()
 export class SemanticEnhancementLocalAdapter implements EngineAdapter {

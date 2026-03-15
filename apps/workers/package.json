@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "ts-node -r tsconfig-paths/register src/main.ts",
-    "build": "pnpm --filter database prisma:generate && tsc -p tsconfig.json --noEmit",
-    "start": "ts-node -r tsconfig-paths/register src/main.ts"
+    "dev": "API_BASE_URL=http://localhost:3000 ts-node -r tsconfig-paths/register src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "ts-node -r tsconfig-paths/register src/main.ts",
+    "start:ci": "node ci-start.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -21,6 +22,7 @@
     "@scu/router": "workspace:*",
     "@scu/shared-types": "workspace:*",
     "@scu/storage": "workspace:^",
+    "@scu/shared": "workspace:*",
     "axios": "^1.13.6",
     "database": "workspace:*",
     "prom-client": "^15.1.3",

@@ -1,18 +1,23 @@
 name: ci
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci
   cancel-in-progress: true
 
 jobs:
-  build_test:
+  ci:
+    name: ci
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -29,19 +34,25 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
-      PRISMA_SKIP_POSTINSTALL_GENERATE: "1"
+      IGNORE_ENV_FILE: 'true'
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/testdb
+      PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
+      PRISMA_CLIENT_ENGINE_TYPE: 'binary'
+      JWT_SECRET: 'ci-secret-for-test'
+      JWT_REFRESH_SECRET: 'ci-refresh-secret-for-test'
+      ENGINE_DEFAULT: 'ce06_novel_parsing'
+      SHOT_RENDER_PROVIDER: 'mock'
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v3
         with:
           version: 9
-          run_install: false
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20.20.1'
           cache: 'pnpm'
 
       - name: Install dependencies (ignore-scripts)
@@ -49,7 +60,7 @@ jobs:
 
       - name: Inject Physical .env for Prisma
         run: |
-          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/testdb" > packages/database/.env
+          echo "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/testdb" > packages/database/.env
 
       - name: Generate Prisma Client (npx explicit + clean)
         run: |
@@ -58,7 +69,7 @@ jobs:
           export PRISMA_CLIENT_ENGINE_TYPE=binary
           npx prisma generate --schema=./packages/database/prisma/schema.prisma
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/testdb
 
       - name: Turbo build
         run: pnpm turbo run build --cache-dir=.turbo --continue

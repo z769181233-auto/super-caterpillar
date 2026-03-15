@@ -10,7 +10,7 @@ export interface EngineBillingUsage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
-  model: string; // 用于价格表查价（如 'ce06-replay-mock' / 'gemini-2.0-flash'）
+  model: string; // 用于价格表查价（如 'ce06-novel-parsing' / 'gemini-2.0-flash'）
 }
 
 export interface EngineAuditTrail {

@@ -23,7 +23,7 @@ function getDuration(absPath: string): Promise<number> {
 }
 
 async function test() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
 
   // Mock OpsMetricsService
   const mockMetrics = {

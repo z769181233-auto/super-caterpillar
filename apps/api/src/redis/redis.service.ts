@@ -17,6 +17,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     try {
       const redisUrl = env.redisUrl || 'redis://localhost:6379';
+      const redisDisabled =
+        process.env.DISABLE_REDIS === 'true' ||
+        ['disabled', 'off', 'none'].includes(String(redisUrl).trim().toLowerCase());
+
+      if (redisDisabled) {
+        this.logger.warn('Redis disabled by environment; falling back to direct DB queries');
+        this.client = null;
+        this.isConnected = false;
+        return;
+      }
+
       this.logger.log(`Connecting to Redis: ${redisUrl.replace(/\/\/.*@/, '//***@')}`);
 
       this.client = createClient({
@@ -109,6 +120,26 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return true;
     } catch (error: any) {
       this.logger.warn(`Redis SET failed for key ${key}: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * 仅当 key 不存在时设置（带 TTL）
+   */
+  async setNx(key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+    if (!this.isAvailable()) {
+      return false;
+    }
+
+    try {
+      const result = await this.client!.set(key, value, {
+        NX: true,
+        ...(ttlSeconds ? { EX: ttlSeconds } : {}),
+      });
+      return result === 'OK';
+    } catch (error: any) {
+      this.logger.warn(`Redis SET NX failed for key ${key}: ${error.message}`);
       return false;
     }
   }

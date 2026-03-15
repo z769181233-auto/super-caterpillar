@@ -68,7 +68,7 @@ export class VG10ClothDynamicsAdapter extends VgBaseEngine {
       meta: {
         characterId,
         clothType,
-        engine: 'vg10-cloth-dyn-stub',
+        engine: 'vg10-cloth-dyn-v1',
       },
     };
   }

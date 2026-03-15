@@ -18,6 +18,12 @@ kill_port() {
   fi
 }
 
+# ENV DEFAULTS
+export PGUSER="${PGUSER:-postgres}"
+export PGPASSWORD="${PGPASSWORDR:-password}"
+export PGHOST="${PGHOST:-127.0.0.1}"
+
+# Load common bash libs if needed
 kill_pidfile_if_repo_proc() {
   # only kill if command line contains repo root (avoid killing IDE node services)
   local pidfile="$1"

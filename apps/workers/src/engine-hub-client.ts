@@ -41,11 +41,11 @@ export class EngineHubClient {
           'ce03-v1',
           'ce03',
           'shot_render',
-          'ce11_shot_generator_mock',
+          'ce11_shot_generator_real',
         ];
 
         const isAlias = ALIASES.includes(targetEngineKey);
-        const PROHIBITED_PATTERNS = ['mock_', 'gate_', 'default_', 'test_'];
+        const PROHIBITED_PATTERNS = ['gate_', 'default_', 'test_'];
         const isProhibited = PROHIBITED_PATTERNS.some((p) => targetEngineKey.startsWith(p));
 
         if (isAlias || isProhibited) {

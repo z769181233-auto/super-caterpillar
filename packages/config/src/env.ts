@@ -13,6 +13,8 @@ import * as util from 'util';
 const ignoreEnvFile = process.env.IGNORE_ENV_FILE === 'true';
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isCI = !!process.env.CI;
+const isBootstrapContext =
+  process.env.NODE_ENV === 'test' || !!process.env.JEST_WORKER_ID || !!process.env.CI;
 
 // Loaded via dotenv.config() logic below
 
@@ -56,15 +58,15 @@ function getEnv(key: string, defaultValue?: string, requiredInProduction = false
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (value === undefined) {
-    if (isProduction && requiredInProduction) {
-      console.warn(`[Mock] Environment variable ${key} is required in PRODUCTION but missing. Returning MOCK.`);
-      return `MOCK_${key}`;
-    }
     if (defaultValue !== undefined) {
       return defaultValue;
     }
-    console.warn(`[Mock] Environment variable ${key} is required but missing. Returning MOCK.`);
-    return `MOCK_${key}`;
+    const bootstrapDefault = getBootstrapDefault(key);
+    if (bootstrapDefault !== undefined) {
+      return bootstrapDefault;
+    }
+    // P0 SEALed: Fail-fast if missing and no default, regardless of NODE_ENV
+    throw new Error(`[CONFIG_FATAL] Environment variable ${key} is required but missing.`);
   }
   return value;
 }
@@ -76,6 +78,52 @@ function getEnvNumber(key: string, defaultValue?: number): number {
     throw new Error(`Environment variable ${key} must be a number`);
   }
   return num;
+}
+
+function requiresWorkerIdentity(): boolean {
+  if (isBootstrapContext) {
+    return false;
+  }
+
+  return (
+    process.env.JOB_WORKER_ENABLED === 'true' ||
+    process.env.ENABLE_INTERNAL_JOB_WORKER === 'true' ||
+    Boolean(process.env.WORKER_API_SECRET) ||
+    process.argv.some((arg) => arg.toLowerCase().includes('worker'))
+  );
+}
+
+function getBootstrapDefault(key: string): string | undefined {
+  if (!isBootstrapContext) {
+    return undefined;
+  }
+
+  switch (key) {
+    case 'ENGINE_DEFAULT':
+      return 'ce06_novel_parsing';
+    case 'JWT_SECRET':
+      return 'ci-test-jwt-secret';
+    case 'JWT_REFRESH_SECRET':
+      return 'ci-test-refresh-secret';
+    case 'WORKER_ID':
+    case 'WORKER_NAME':
+      return '__bootstrap_worker__';
+    default:
+      return undefined;
+  }
+}
+
+function resolveEngineDefault(): string {
+  const explicit = process.env.ENGINE_DEFAULT?.trim();
+  if (explicit) return explicit;
+
+  return getEnv('ENGINE_DEFAULT');
+}
+
+function resolveJwtSecret(key: 'JWT_SECRET' | 'JWT_REFRESH_SECRET', fallback: string): string {
+  const explicit = process.env[key]?.trim();
+  if (explicit) return explicit;
+  return getEnv(key, fallback);
 }
 
 // JWT Secret Check (Silent)
@@ -160,10 +208,10 @@ export const env: AppConfig = {
   jobWatchdogTimeoutMs: getEnvNumber('JOB_WATCHDOG_TIMEOUT_MS', 3600000), // 默认 1 小时
 
   // Database
-  databaseUrl: getEnv('DATABASE_URL', undefined, true),
+  databaseUrl: getEnv('DATABASE_URL'),
 
   // Redis
-  redisUrl: getEnv('REDIS_URL', 'redis://localhost:6379', true),
+  redisUrl: getEnv('REDIS_URL', 'redis://localhost:6379'),
 
   // API
   apiPort: getEnvNumber('API_PORT', 3000),
@@ -171,12 +219,12 @@ export const env: AppConfig = {
   apiUrl:
     process.env.API_BASE_URL ||
     process.env.API_URL ||
-    `http://${getEnv('API_HOST', 'localhost')}:${getEnvNumber('API_PORT', 3000)}`,
+  `http://${getEnv('API_HOST', 'localhost')}:${getEnvNumber('API_PORT', 3000)}`,
 
   // JWT
-  jwtSecret: getEnv('JWT_SECRET'),
+  jwtSecret: resolveJwtSecret('JWT_SECRET', 'ci-test-jwt-secret'),
   jwtExpiresIn: getEnv('JWT_EXPIRES_IN', '7d'),
-  jwtRefreshSecret: getEnv('JWT_REFRESH_SECRET'),
+  jwtRefreshSecret: resolveJwtSecret('JWT_REFRESH_SECRET', 'ci-test-refresh-secret'),
   jwtRefreshExpiresIn: getEnv('JWT_REFRESH_EXPIRES_IN', '30d'),
 
   // Application
@@ -200,29 +248,30 @@ export const env: AppConfig = {
   workerApiSecret: process.env.WORKER_API_SECRET,
   workerId: (() => {
     const id = (process.env.WORKER_ID || process.env.WORKER_NAME || '').trim();
-    const isGateRun =
-      Object.keys(process.env).some(
-        (k) => k.endsWith('_GATE_FAIL_ONCE') && process.env[k] === '1'
-      ) || process.env.HMAC_TRACE === '1';
-
-    // 商业级鲁棒性：只有在 Gate/Trace 模式下且非 API 服务器进程（即 Worker 进程）时才进行硬断言
-    const isApiProcess =
-      !!process.env.API_PORT || !!process.env.NEST_APP_NAME || process.env.SERVICE_TYPE === 'api';
-
-    if (isGateRun && !isApiProcess) {
-      if (!id) throw new Error('[Strict] WORKER_ID is required in gate/trace mode for Worker');
-      if (id === 'local-worker')
-        throw new Error('[Strict] WORKER_ID must not be "local-worker" in gate/trace mode');
+    if (!id) {
+      if (requiresWorkerIdentity()) {
+        throw new Error('[Strict] WORKER_ID / WORKER_NAME environment variable is required.');
+      }
+      return getBootstrapDefault('WORKER_ID') ?? '__non_worker_context__';
     }
-    return id || 'local-worker';
+    return id;
   })(),
-  workerName: process.env.WORKER_NAME || process.env.WORKER_ID || 'local-worker',
+  workerName: (() => {
+    const name = (process.env.WORKER_NAME || process.env.WORKER_ID || '').trim();
+    if (!name) {
+      if (requiresWorkerIdentity()) {
+        throw new Error('[Strict] WORKER_NAME / WORKER_ID environment variable is required.');
+      }
+      return getBootstrapDefault('WORKER_NAME') ?? '__non_worker_context__';
+    }
+    return name;
+  })(),
   workerPollInterval: Number(process.env.WORKER_POLL_INTERVAL ?? '2000'),
   // Worker Job Processing (必须显式设置为 'true' 才启用)
   jobWorkerEnabled: process.env.JOB_WORKER_ENABLED === 'true',
 
   // Engine
-  engineDefault: process.env.ENGINE_DEFAULT ?? 'mock', // 默认使用的引擎
+  engineDefault: resolveEngineDefault(), // P0: strict in runtime, deterministic fallback in CI/test bootstrap
   engineRealHttpBaseUrl: process.env.ENGINE_REAL_HTTP_BASE_URL ?? 'http://localhost:8000', // 真实 HTTP 引擎基础 URL
 
   // HMAC Authentication
@@ -291,14 +340,14 @@ export const env: AppConfig = {
 
   // P5-Fix: Robust STORAGE_ROOT (Relative to Absolute)
   storageRoot: (() => {
-    const raw = (process.env.STORAGE_ROOT || '.runtime') as string;
+    const raw = (process.env.STORAGE_ROOT || '.data/storage') as string;
     if (path.isAbsolute(raw)) return raw;
     // Resolve relative to project root (3 levels up from packages/config/src)
     return path.resolve(__dirname, '../../..', raw);
   })() as string,
 
   ce23RealForceDisable: process.env.CE23_REAL_FORCE_DISABLE === '1',
-  orchV2AudioEnabled: process.env.ORCH_V2_AUDIO_ENABLED === '1' || true, // FORCED TRUE FOR L3 VERIFICATION
+  orchV2AudioEnabled: process.env.ORCH_V2_AUDIO_ENABLED === '1', // [A5 FIX] Remove forced true
 
   // Repository Root (Calculated)
   repoRoot: path.resolve(__dirname, '../../..'),
@@ -336,15 +385,8 @@ export function validateRequiredEnvs() {
       process.exit(1);
     }
 
-    // 仅在显式开启 P9_B3_STUB_MODE 或非生产环境下进行 Mock 注入
-    // eslint-disable-next-line no-console
-    console.warn(`[WARN] ${errorMsg}. Mocking them as P9_B3_STUB_MODE=${isStubMode}.`);
-    missing.forEach(k => {
-      process.env[k] = `MOCK_${k}`;
-    });
-
-    // 挂载缺失列表供 Stub Server 读取
-    (process as any).missingEnvs = missing;
+    // [A5_FIX] Strictly prohibit silent internal protocols in any mode
+    throw new Error(errorMsg);
   } else {
     // eslint-disable-next-line no-console
     console.log('[Config] Environment Integrity Check: PASS ✅');

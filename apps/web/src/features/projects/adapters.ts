@@ -1,4 +1,21 @@
-import type { ProjectCardView } from './mock';
+export interface ProjectCardView {
+  id: string;
+  title: string;
+  updatedAt: string;
+  latestBuild?: {
+    id: string;
+    status: 'READY' | 'RUNNING' | 'ERROR' | 'DONE';
+    audited: boolean;
+    sealed: boolean;
+  };
+  stats?: {
+    seasons: number;
+    episodes: number;
+    scenes: number;
+    shots: number;
+  };
+  tags: string[];
+}
 
 // Adapter to transform backend project schema to Frontend UI schema (ProjectCardView)
 export function adaptProjects(rawProjects: any[]): ProjectCardView[] {

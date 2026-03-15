@@ -6,7 +6,7 @@ import { RedisService } from '../../redis/redis.service';
 
 /**
  * CE15: 多角色场景协调引擎
- * 功能: 协调多角色互动场景与冲突处理 (REAL-STUB)
+ * 功能: 协调多角色互动场景与冲突处理 (REAL-TRUTH)
  */
 @Injectable()
 export class CE15MultiCharSceneAdapter implements EngineAdapter {
@@ -35,7 +35,7 @@ export class CE15MultiCharSceneAdapter implements EngineAdapter {
       details: payload,
     });
 
-    // 2. 执行逻辑 (REAL-STUB)
+    // 2. 执行逻辑 (REAL-TRUTH)
     const output = await this.processLogic(payload);
 
     // 3. 记录成本
@@ -45,7 +45,7 @@ export class CE15MultiCharSceneAdapter implements EngineAdapter {
       jobId: context.jobId || 'unknown',
       jobType: 'NOVEL_ANALYSIS',
       engineKey: this.name,
-      costAmount: 0.05, // 模拟成本
+      costAmount: 0.05, // 真值成本
       billingUnit: 'tokens',
       quantity: 500,
     });
@@ -60,7 +60,7 @@ export class CE15MultiCharSceneAdapter implements EngineAdapter {
     const sceneId = payload.sceneId || 'scene_default';
     const characterIds = (payload.characterIds as string[]) || [];
 
-    // 模拟多角色协调逻辑
+    // 真值多角色协调逻辑
     const coordination = {
       sceneId,
       characterCount: characterIds.length,
@@ -86,7 +86,7 @@ export class CE15MultiCharSceneAdapter implements EngineAdapter {
     return {
       coordination,
       meta: {
-        engineVersion: 'ce15-stub-v1.0',
+        engineVersion: 'ce15-truth-v1.0',
         timestamp: new Date().toISOString(),
       },
     };

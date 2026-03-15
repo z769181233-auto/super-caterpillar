@@ -4,11 +4,6 @@ export const PIPELINE_PROD_VIDEO_V1 = {
   description: 'Production Slice V1: CE06->CE03->CE04->SHOT->VIDEO->CE09',
   stages: [
     {
-      id: 'step_1_parsing',
-      engineKey: 'ce06_novel_parsing',
-      next: ['step_2_density'],
-    },
-    {
       id: 'step_2_density',
       engineKey: 'ce03_visual_density',
       next: ['step_3_enrichment'],

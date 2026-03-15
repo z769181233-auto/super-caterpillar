@@ -20,6 +20,19 @@ export class QualityBackfillSweeper {
     private readonly featureFlagService: FeatureFlagService
   ) {}
 
+  private shouldSkipForPrismaTimeout(error: any): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return false;
+    }
+    const message = String(error?.message || '');
+    return (
+      message.includes('PRISMA_QUERY_TIMEOUT') ||
+      message.includes('startup connect exceeded') ||
+      message.includes("Can't reach database server") ||
+      message.includes('P1001')
+    );
+  }
+
   /**
    * 定期执行补偿扫描
    * 每 5 分钟扫描一次最近 15 分钟的记录
@@ -108,6 +121,12 @@ export class QualityBackfillSweeper {
         );
       }
     } catch (error: any) {
+      if (this.shouldSkipForPrismaTimeout(error)) {
+        this.logger.warn(
+          `[QualitySweeper] Skipping backfill scan in non-production due to Prisma degradation: ${error.message}`
+        );
+        return;
+      }
       this.logger.error(`[QualitySweeper] Error during backfill scan: ${error.message}`);
     }
   }

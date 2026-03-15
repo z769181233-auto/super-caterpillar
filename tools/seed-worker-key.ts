@@ -1,7 +1,7 @@
 // @ts-ignore
 import { PrismaClient } from '../packages/database/src/generated/prisma/index';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const WORKER_KEY = 'ak_worker_dev_0000000000000000';

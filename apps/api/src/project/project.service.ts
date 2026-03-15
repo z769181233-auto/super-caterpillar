@@ -40,7 +40,10 @@ export class ProjectService {
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     private readonly projectResolver: ProjectResolver
-  ) { }
+  ) {
+    console.log('[DEBUG_BOOT] ProjectService constructor start');
+    console.log('[DEBUG_BOOT] ProjectService constructor end');
+  }
 
 
 

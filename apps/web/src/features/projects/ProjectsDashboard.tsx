@@ -5,7 +5,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProjectsHeader } from './ProjectsHeader';
 import { ProjectsGrid } from './ProjectsGrid';
 import { DashboardAside } from './DashboardAside';
-import { ProjectCardView } from './mock';
+import { ProjectCardView } from './adapters';
 import { useTranslations } from 'next-intl';
 import { projectApi } from '@/lib/apiClient';
 import { adaptProjects } from './adapters';

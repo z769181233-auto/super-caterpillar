@@ -1,4 +1,4 @@
-import { spawnWithTimeout } from '../../../packages/engines/video_merge/providers/spawn_with_timeout';
+import { spawnWithTimeout } from '../../../packages/engines-video-merge/providers/spawn_with_timeout';
 
 async function testTimeout() {
   console.log('Starting sleep 5 with 200ms timeout...');
@@ -17,7 +17,7 @@ async function testTimeout() {
 
 async function testThreads() {
   const { localFfmpegProvider } =
-    await import('../../../packages/engines/video_merge/providers/local_ffmpeg.provider');
+    await import('../../../packages/engines-video-merge/providers/local_ffmpeg.provider');
   const fs = await import('fs');
   const path = await import('path');
 

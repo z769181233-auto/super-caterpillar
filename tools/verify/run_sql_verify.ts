@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..', '..');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 interface SqlResult {
   sqlFile: string;

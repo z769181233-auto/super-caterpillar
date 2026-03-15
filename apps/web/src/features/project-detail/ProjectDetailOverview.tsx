@@ -122,10 +122,10 @@ export function ProjectDetailOverview({ project, onSwitchTab }: ProjectDetailOve
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
-                {t('mockBuildName', { defaultValue: 'Act 1: Genesis (Beta)' })}
+                {t('truthBuildName', { defaultValue: 'Act 1: Genesis (Beta)' })}
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                {t('mockBuildDesc', { defaultValue: 'Click View All to open studio' })}
+                {t('buildDesc')}
               </div>
             </div>
             <Button variant="secondary" onClick={() => onSwitchTab('builds')}>

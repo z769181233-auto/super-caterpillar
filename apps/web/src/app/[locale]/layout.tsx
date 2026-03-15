@@ -7,7 +7,8 @@ export function generateStaticParams() {
   return [{ locale: 'en' }, { locale: 'zh' }, { locale: 'vi' }];
 }
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const { locale } = await props.params;
   const t = await getTranslations({ locale, namespace: 'Index' });
   return {
     title: t('navTitle'),
@@ -26,13 +27,12 @@ import UnauthorizedRedirectProvider from '@/components/auth/UnauthorizedRedirect
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
-export default async function RootLayout({
-  children,
-  params: { locale },
-}: {
+export default async function RootLayout(props: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await props.params;
+  const { children } = props;
   // Static export requirement: cache the locale for server-side functions
   setRequestLocale(locale);
   const messages = await getMessages({ locale });
