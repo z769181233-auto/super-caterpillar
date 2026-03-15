@@ -18,11 +18,9 @@ import { Prisma } from 'database';
 import { SecretEncryptionService } from './secret-encryption.service';
 import { buildHmacError } from '../../common/utils/hmac-error.utils';
 
-function secretFingerprint(secret: string) {
-  // do not leak secret; fingerprint with keyed HMAC to avoid raw weak-hash on sensitive inputs
-  const salt = process.env.API_FINGERPRINT_SALT || process.env.HMAC_SECRET_KEY || 'scu-fingerprint';
-  const fp = createHmac('sha256', salt).update(secret).digest('hex').slice(0, 12);
-  return { len: secret.length, sha12: fp };
+function summarizeSensitiveInput(value: string) {
+  // Debug-only metadata; avoid hashing or echoing sensitive inputs to keep CodeQL and logs clean.
+  return { len: value.length };
 }
 import {
   SignatureVerificationResult,
@@ -318,12 +316,11 @@ export class ApiSecurityService {
       }
 
       if (dbg) {
-        const fp = secretFingerprint(secret || '');
+        const fp = summarizeSensitiveInput(secret || '');
         dlog({
           step: 'secret_pick',
           source: secretSource,
           secretLen: fp.len,
-          secretSha12: fp.sha12,
         });
       }
 
@@ -355,14 +352,12 @@ export class ApiSecurityService {
 
       // Debug canonical WITHOUT leaking raw content: sha12 only
       if (dbg) {
-        const cfp = secretFingerprint(canonicalString);
-        const bodyFp = secretFingerprint(bodyToSign);
+        const cfp = summarizeSensitiveInput(canonicalString);
+        const bodyFp = summarizeSensitiveInput(bodyToSign);
         dlog({
           step: 'canonical',
           canonicalLen: cfp.len,
-          canonicalSha12: cfp.sha12,
           bodyLen: bodyFp.len,
-          bodySha12: bodyFp.sha12,
         });
       }
 
