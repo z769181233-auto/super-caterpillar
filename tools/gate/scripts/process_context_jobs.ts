@@ -23,24 +23,31 @@ async function main() {
     process.env.API_SECRET_KEY || 'gate-ci-api-secret-key-32-characters-min';
   process.env.HMAC_SECRET_KEY =
     process.env.HMAC_SECRET_KEY || 'gate-ci-hmac-secret-key-32-characters-min';
-  process.env.REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+  process.env.DISABLE_REDIS = process.env.DISABLE_REDIS || 'true';
+  process.env.REDIS_URL = process.env.REDIS_URL || 'disabled';
   process.env.API_PORT = process.env.API_PORT || '3000';
   process.env.API_HOST = process.env.API_HOST || '127.0.0.1';
 
+  log('[GATE_DRIVER] bootstrap start');
   const [{ NestFactory }, { AppModule }, { JobService }, { PrismaService }] = await Promise.all([
     import('@nestjs/core'),
     import('../../../apps/api/src/app.module'),
     import('../../../apps/api/src/job/job.service'),
     import('../../../apps/api/src/prisma/prisma.service'),
   ]);
+  log('[GATE_DRIVER] imports loaded');
 
+  log('[GATE_DRIVER] creating app context');
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ['error', 'warn'],
   });
+  log('[GATE_DRIVER] app context ready');
 
   try {
+    log('[GATE_DRIVER] resolving services');
     const jobService = app.get(JobService);
     const prisma = app.get(PrismaService);
+    log('[GATE_DRIVER] services resolved');
 
     for (const jobId of jobIds) {
       log(`[GATE_DRIVER] processing job ${jobId}`);

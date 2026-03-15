@@ -114,7 +114,8 @@ jobs:
           export JWT_SECRET="dummy-secret-for-ci"
           export API_SECRET_KEY="dummy-api-secret-key-for-ci-32chars-min"
           export HMAC_SECRET_KEY="dummy-hmac-secret-key-for-ci-32chars-min"
-          export REDIS_URL="redis://127.0.0.1:6379"
+          export DISABLE_REDIS="true"
+          export REDIS_URL="disabled"
           export ENABLE_INTERNAL_JOB_WORKER="true"
           nohup pnpm --filter api start > .data/logs/api.log 2>&1 &
           echo $! > .data/pids/api.pid
@@ -129,6 +130,8 @@ jobs:
           export WORKER_NAME="local-worker"
           export WORKER_API_KEY="ak_smoke_test_key_v1"
           export WORKER_API_SECRET="scu_smoke_secret"
+          export DISABLE_REDIS="true"
+          export REDIS_URL="disabled"
           
           echo "--- [WORKER PRE-BOOT] dist/ structure ---"
           ls -laR apps/workers/dist || true
@@ -198,6 +201,8 @@ jobs:
           API_URL: http://127.0.0.1:3000
           DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
           PRISMA_CLIENT_ENGINE_TYPE: library
+          DISABLE_REDIS: 'true'
+          REDIS_URL: disabled
           API_KEY: ak_smoke_test_key_v1
           P6_2: '1' # Explicitly enable P6-2
 

@@ -17,6 +17,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     try {
       const redisUrl = env.redisUrl || 'redis://localhost:6379';
+      const redisDisabled =
+        process.env.DISABLE_REDIS === 'true' ||
+        ['disabled', 'off', 'none'].includes(String(redisUrl).trim().toLowerCase());
+
+      if (redisDisabled) {
+        this.logger.warn('Redis disabled by environment; falling back to direct DB queries');
+        this.client = null;
+        this.isConnected = false;
+        return;
+      }
+
       this.logger.log(`Connecting to Redis: ${redisUrl.replace(/\/\/.*@/, '//***@')}`);
 
       this.client = createClient({
