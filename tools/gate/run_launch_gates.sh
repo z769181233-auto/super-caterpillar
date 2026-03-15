@@ -137,6 +137,18 @@ echo -e "${BLUE}[GATES] ARTIFACT_DIR=$ARTIFACT_DIR${NC}"
 
 REPORT_FILE="$EVI_DIR/GATEKEEPER_VERIFICATION_REPORT.md"
 
+# 写入一个最小头部，确保即使后续门禁中途退出/被取消，报告文件也不是空文件。
+cat > "$REPORT_FILE" <<EOF
+# GATEKEEPER VERIFICATION REPORT
+
+- Timestamp: $(date)
+- Mode: $GATE_ENV_MODE
+- API_URL: $API_URL
+- NGINX_URL: $NGINX_URL
+
+> Report initialization completed. Detailed gate results will be appended or replaced if the run completes normally.
+EOF
+
 TEMP_DIR="${TEMP_DIR:-$(mktemp -d 2>/dev/null || mktemp -d -t scu_gates)}"
 cleanup() {
   cd "$ORIG_PWD" 2>/dev/null || true
@@ -851,6 +863,10 @@ if [ "$GATE_ENV_MODE" = "local" ]; then
     echo "- ⚠️  Skipped (local mode)" >> "$SHOTS_DIRECTOR_OUTPUT"
     SHOTS_DIRECTOR_PASSED="skipped"
     mark_skipped "Gate 9"
+elif [ "$CONTEXT_INJECTION_PASSED" != true ]; then
+    echo -e "  ${YELLOW}⚠️  Skipping Gate 9 because Gate 8 did not pass${NC}"
+    echo "- ⚠️  Dependency not met: Gate 8 (Context Injection) failed" >> "$SHOTS_DIRECTOR_OUTPUT"
+    SHOTS_DIRECTOR_PASSED=false
 elif [ -f "$PROJECT_ROOT/tools/gate/gates/gate-p1-1_shots_director_cols.sh" ]; then
     if bash "$PROJECT_ROOT/tools/gate/gates/gate-p1-1_shots_director_cols.sh" > "$SHOTS_DIRECTOR_OUTPUT" 2>&1; then
         echo -e "  ${GREEN}✅ Shots Director Control Fields check passed${NC}"
@@ -1392,4 +1408,3 @@ else
     echo "Report saved to: $REPORT_FILE"
     exit 1
 fi
-

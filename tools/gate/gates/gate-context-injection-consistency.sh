@@ -129,6 +129,19 @@ VALUES
 SQL
 
 # ----------------------------
+# 2.5) Actively drive CE06 jobs (do not rely only on background polling)
+# ----------------------------
+echo "[GATE] Driving CE06 jobs via API app context..." | tee -a "$EVI/GATE_RUN.log"
+if [ -f "$REPO_ROOT/tools/gate/scripts/process_context_jobs.ts" ]; then
+  if ! npx tsx "$REPO_ROOT/tools/gate/scripts/process_context_jobs.ts" "$JOB_1_ID" "$JOB_2_ID" \
+    | tee -a "$EVI/GATE_RUN.log"; then
+    echo "[GATE] WARN - active CE06 driver returned non-zero; continuing with status poll." | tee -a "$EVI/GATE_RUN.log"
+  fi
+else
+  echo "[GATE] WARN - active CE06 driver script missing; falling back to passive poll." | tee -a "$EVI/GATE_RUN.log"
+fi
+
+# ----------------------------
 # 3) Poll statuses (increased timeout)
 # ----------------------------
 echo "[GATE] Polling job status (120s timeout)..." | tee -a "$EVI/GATE_RUN.log"
@@ -159,6 +172,14 @@ if [ $ELAPSED -ge $TIMEOUT ]; then
   echo "[GATE] FAIL - Timeout waiting for jobs" | tee -a "$EVI/GATE_RUN.log"
   # Show logs if timeout
   psql "$DATABASE_URL" -c "SELECT id, status, \"lastError\" FROM shot_jobs WHERE id LIKE 'job_ctx_%' ORDER BY \"createdAt\" DESC LIMIT 5;"
+  if [ -f "$REPO_ROOT/.data/logs/api.log" ]; then
+    echo "[GATE] --- API LOG TAIL ---" | tee -a "$EVI/GATE_RUN.log"
+    tail -n 120 "$REPO_ROOT/.data/logs/api.log" | tee -a "$EVI/GATE_RUN.log"
+  fi
+  if [ -f "$REPO_ROOT/.data/logs/worker.log" ]; then
+    echo "[GATE] --- WORKER LOG TAIL ---" | tee -a "$EVI/GATE_RUN.log"
+    tail -n 120 "$REPO_ROOT/.data/logs/worker.log" | tee -a "$EVI/GATE_RUN.log"
+  fi
   exit 1
 fi
 
