@@ -115,6 +115,7 @@ jobs:
           export API_SECRET_KEY="dummy-api-secret-key-for-ci-32chars-min"
           export HMAC_SECRET_KEY="dummy-hmac-secret-key-for-ci-32chars-min"
           export REDIS_URL="redis://127.0.0.1:6379"
+          export ENABLE_INTERNAL_JOB_WORKER="true"
           nohup pnpm --filter api start > .data/logs/api.log 2>&1 &
           echo $! > .data/pids/api.pid
 
