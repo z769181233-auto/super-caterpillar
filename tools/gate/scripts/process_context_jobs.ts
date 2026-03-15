@@ -13,11 +13,19 @@ async function main() {
   // Avoid recursively starting the internal interval worker inside this helper.
   process.env.ENABLE_INTERNAL_JOB_WORKER = 'false';
   process.env.JOB_WORKER_ENABLED = 'false';
+  process.env.IGNORE_ENV_FILE = process.env.IGNORE_ENV_FILE || 'true';
   process.env.NODE_ENV = process.env.NODE_ENV || 'staging';
   process.env.ENGINE_DEFAULT = process.env.ENGINE_DEFAULT || 'ce06_novel_parsing';
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'gate-ci-jwt-secret';
   process.env.JWT_REFRESH_SECRET =
     process.env.JWT_REFRESH_SECRET || 'gate-ci-jwt-refresh-secret';
+  process.env.API_SECRET_KEY =
+    process.env.API_SECRET_KEY || 'gate-ci-api-secret-key-32-characters-min';
+  process.env.HMAC_SECRET_KEY =
+    process.env.HMAC_SECRET_KEY || 'gate-ci-hmac-secret-key-32-characters-min';
+  process.env.REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+  process.env.API_PORT = process.env.API_PORT || '3000';
+  process.env.API_HOST = process.env.API_HOST || '127.0.0.1';
 
   const [{ NestFactory }, { AppModule }, { JobService }, { PrismaService }] = await Promise.all([
     import('@nestjs/core'),
