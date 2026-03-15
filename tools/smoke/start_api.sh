@@ -77,11 +77,14 @@ echo "$API_LOG_FILE" > /tmp/scu_api_smoke_last.logpath
 echo "[start_api] API_LOG_FILE=$API_LOG_FILE"
 echo "[start_api] DATABASE_URL=$(echo $DATABASE_URL | sed 's/:[^@]*@/:***@/')"
 
-# Use pre-built main.js if available to avoid webpack overhead in smoke tests
-if [ -f "apps/api/dist/main.js" ]; then
+# In CI/gate runs, prefer the same startup path as the workflow to avoid local
+# dist/module-resolution drift from masking the real gate behavior.
+if [ -n "${CI:-}" ] || [ "${GATE_ENV_MODE:-}" = "ci" ]; then
+  echo "[start_api] CI/gate mode detected; using pnpm --filter api start"
+  pnpm --filter api start > "$API_LOG_FILE" 2>&1 &
+elif [ -f "apps/api/dist/main.js" ]; then
   echo "[start_api] Using pre-built dist/main.js"
-  export NODE_ENV=development # Use development for smoke even on pre-built dist
-  # Note: production mode might require some envs, but for smoke it should be fine as we injected them above
+  export NODE_ENV=development
   node apps/api/dist/main.js > "$API_LOG_FILE" 2>&1 &
 else
   echo "[start_api] dist/main.js not found, falling back to pnpm dev"

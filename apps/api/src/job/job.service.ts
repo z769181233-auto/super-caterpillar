@@ -65,6 +65,7 @@ import { JobCreationOpsService } from './job-creation-ops.service';
 import { JobUpdateOpsService } from './job-update-ops.service';
 import { ShotJobWithShotHierarchy } from './job.service.types';
 import { SHOT_JOB_WITH_HIERARCHY, SHOT_WITH_HIERARCHY } from './job.service.queries';
+const { Client } = require('pg');
 
 /**
  * Job Service (Tactical Slimming Facade)
@@ -76,6 +77,7 @@ import { SHOT_JOB_WITH_HIERARCHY, SHOT_WITH_HIERARCHY } from './job.service.quer
 @Injectable()
 export class JobService {
   private readonly logger = new Logger(JobService.name);
+  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -1188,22 +1190,26 @@ export class JobService {
       `[DEBUG] findJobById: id = ${id} userId = ${userId} orgId = ${organizationId} `
     );
 
-    const job = (await this.prisma.shotJob.findUnique({
-      where: {
-        id,
-        organizationId, // Studio v0.7: 按组织过滤
-      },
-      include: {
-        task: true,
-        shot: {
-          include: {
-            scene: {
-              include: {
-                episode: {
-                  include: {
-                    season: {
-                      include: {
-                        project: true, // 影视工业标准：通过 Season 关联到 Project
+    let job: ShotJobWithShotHierarchy | null = null;
+    let usedPgFallback = false;
+    try {
+      job = (await this.prisma.shotJob.findFirst({
+        where: {
+          id,
+          organizationId, // Studio v0.7: 按组织过滤
+        },
+        include: {
+          task: true,
+          shot: {
+            include: {
+              scene: {
+                include: {
+                  episode: {
+                    include: {
+                      season: {
+                        include: {
+                          project: true, // 影视工业标准：通过 Season 关联到 Project
+                        },
                       },
                     },
                   },
@@ -1211,18 +1217,27 @@ export class JobService {
               },
             },
           },
-        },
-        engineBinding: {
-          include: {
-            engine: true,
-            engineVersion: true,
+          engineBinding: {
+            include: {
+              engine: true,
+              engineVersion: true,
+            },
           },
         },
-      },
-    })) as ShotJobWithShotHierarchy | null;
+      })) as ShotJobWithShotHierarchy | null;
+    } catch (error: any) {
+      if (!this.shouldFallbackToPg(error)) {
+        throw error;
+      }
+      usedPgFallback = true;
+      this.logger.warn(
+        `[JobService.findJobById] Prisma degraded for ${id}; using pg fallback: ${error.message}`
+      );
+      job = (await this.findJobByIdViaPg(id, organizationId)) as ShotJobWithShotHierarchy | null;
+    }
 
     if (!job) {
-      this.logger.warn(`[DEBUG] Job not found by findUnique.Check orgId match.`);
+      this.logger.warn(`[DEBUG] Job not found by org-scoped lookup. Check orgId match.`);
       // Debug: Attempt to find without orgId to diagnose
       const jobAnyOrg = await this.prisma.shotJob.findUnique({ where: { id } });
       if (jobAnyOrg) {
@@ -1233,6 +1248,10 @@ export class JobService {
         this.logger.warn(`[DEBUG] Job strictly NOT FOUND in DB.`);
       }
       throw new NotFoundException('Job not found');
+    }
+
+    if (usedPgFallback) {
+      return job;
     }
 
     // Studio v0.7: 检查组织权限
@@ -1262,6 +1281,93 @@ export class JobService {
     }
 
     return job;
+  }
+
+  private shouldFallbackToPg(error: any): boolean {
+    const message = String(error?.message || '');
+    return (
+      message.includes('PRISMA_QUERY_TIMEOUT') ||
+      message.includes('startup connect exceeded') ||
+      message.includes("Can't reach database server") ||
+      message.includes('P1001')
+    );
+  }
+
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL required for pg fallback');
+    }
+    const client = new Client({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: this.prismaQueryTimeoutMs,
+      query_timeout: this.prismaQueryTimeoutMs,
+    });
+    await client.connect();
+    try {
+      return await fn(client);
+    } finally {
+      await client.end().catch(() => undefined);
+    }
+  }
+
+  private async findJobByIdViaPg(id: string, organizationId: string) {
+    return this.withPgClient(async (client) => {
+      const result = await client.query(
+        `
+          SELECT
+            id,
+            "organizationId",
+            "projectId",
+            "episodeId",
+            "sceneId",
+            "shotId",
+            "taskId",
+            "workerId",
+            status,
+            type,
+            priority,
+            "retryCount",
+            attempts,
+            "lastError",
+            payload,
+            result,
+            "createdAt",
+            "updatedAt"
+          FROM shot_jobs
+          WHERE id = $1
+            AND "organizationId" = $2
+          LIMIT 1
+        `,
+        [id, organizationId]
+      );
+      if (!result.rows[0]) {
+        return null;
+      }
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        organizationId: row.organizationId,
+        projectId: row.projectId,
+        episodeId: row.episodeId,
+        sceneId: row.sceneId,
+        shotId: row.shotId,
+        taskId: row.taskId,
+        workerId: row.workerId,
+        status: row.status,
+        type: row.type,
+        priority: row.priority,
+        retryCount: row.retryCount,
+        attempts: row.attempts,
+        lastError: row.lastError,
+        payload: row.payload,
+        result: row.result,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        task: null,
+        shot: null,
+        engineBinding: null,
+      };
+    });
   }
 
   /**

@@ -110,7 +110,11 @@ export SHOT_ID
 echo "[E2E] Assert shot exists in DB (seed DB)..."
 npx tsx tools/smoke/assert_shot_exists.ts
 
-E2E_FORCE_RESTART_API="${E2E_FORCE_RESTART_API:-false}"
+if [ -n "${CI:-}" ] || [ "${GATE_ENV_MODE:-}" = "ci" ]; then
+  E2E_FORCE_RESTART_API="${E2E_FORCE_RESTART_API:-true}"
+else
+  E2E_FORCE_RESTART_API="${E2E_FORCE_RESTART_API:-false}"
+fi
 
 kill_port_3000_if_needed() {
   local pids

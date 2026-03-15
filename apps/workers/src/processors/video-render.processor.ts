@@ -1,5 +1,6 @@
 import { PrismaClient, AssetOwnerType, AssetType } from 'database';
 import * as path from 'path';
+import { promises as fsp } from 'fs';
 import { randomUUID } from 'crypto';
 import { ApiClient } from '../api-client';
 import { ProcessorContext } from '../types/processor-context';
@@ -79,6 +80,30 @@ export async function processVideoRenderJob(
       return { id: assetId };
     });
 
+  const normalizeStorageKey = async (rawStorageKey: string): Promise<string> => {
+    if (!rawStorageKey) {
+      throw new Error('VIDEO_MERGE_MISSING_STORAGE_KEY');
+    }
+
+    if (!path.isAbsolute(rawStorageKey) || !localStorage) {
+      return rawStorageKey;
+    }
+
+    const storageRoot = path.resolve(localStorage.root);
+    const absoluteSource = path.resolve(rawStorageKey);
+    if (absoluteSource === storageRoot || absoluteSource.startsWith(`${storageRoot}${path.sep}`)) {
+      return path.relative(storageRoot, absoluteSource);
+    }
+
+    const targetRelative = path.join('videos', path.basename(absoluteSource));
+    const targetAbsolute = localStorage.getAbsolutePath(targetRelative);
+    await fsp.mkdir(path.dirname(targetAbsolute), { recursive: true });
+    if (absoluteSource !== targetAbsolute) {
+      await fsp.copyFile(absoluteSource, targetAbsolute);
+    }
+    return targetRelative;
+  };
+
   try {
     // 1. Resolve sceneId if missing (P4 Fix)
     if (!sceneId && payload.shotId) {
@@ -121,7 +146,9 @@ export async function processVideoRenderJob(
     }
 
     const output = (mergeResult as any).output || {};
-    const storageKey = output.storageKey || output.asset?.uri || output.asset?.storageKey;
+    const storageKey = await normalizeStorageKey(
+      output.storageKey || output.asset?.uri || output.asset?.storageKey
+    );
     const sha256 = output.sha256 || output.asset?.sha256;
     const duration = output.duration || output.asset?.durationSeconds;
 
