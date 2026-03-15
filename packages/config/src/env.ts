@@ -100,6 +100,17 @@ function resolveEngineDefault(): string {
   return getEnv('ENGINE_DEFAULT');
 }
 
+function resolveJwtSecret(key: 'JWT_SECRET' | 'JWT_REFRESH_SECRET', fallback: string): string {
+  const explicit = process.env[key]?.trim();
+  if (explicit) return explicit;
+
+  if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID || process.env.CI) {
+    return fallback;
+  }
+
+  return getEnv(key);
+}
+
 // JWT Secret Check (Silent)
 
 export const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
@@ -193,12 +204,12 @@ export const env: AppConfig = {
   apiUrl:
     process.env.API_BASE_URL ||
     process.env.API_URL ||
-    `http://${getEnv('API_HOST', 'localhost')}:${getEnvNumber('API_PORT', 3000)}`,
+  `http://${getEnv('API_HOST', 'localhost')}:${getEnvNumber('API_PORT', 3000)}`,
 
   // JWT
-  jwtSecret: getEnv('JWT_SECRET'),
+  jwtSecret: resolveJwtSecret('JWT_SECRET', 'ci-test-jwt-secret'),
   jwtExpiresIn: getEnv('JWT_EXPIRES_IN', '7d'),
-  jwtRefreshSecret: getEnv('JWT_REFRESH_SECRET'),
+  jwtRefreshSecret: resolveJwtSecret('JWT_REFRESH_SECRET', 'ci-test-refresh-secret'),
   jwtRefreshExpiresIn: getEnv('JWT_REFRESH_EXPIRES_IN', '30d'),
 
   // Application
