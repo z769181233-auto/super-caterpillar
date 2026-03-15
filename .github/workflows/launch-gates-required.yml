@@ -201,8 +201,14 @@ jobs:
           API_URL: http://127.0.0.1:3000
           DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
           PRISMA_CLIENT_ENGINE_TYPE: library
+          JWT_SECRET: dummy-secret-for-ci
+          API_SECRET_KEY: dummy-api-secret-key-for-ci-32chars-min
+          HMAC_SECRET_KEY: dummy-hmac-secret-key-for-ci-32chars-min
+          ENGINE_DEFAULT: ce06_novel_parsing
           DISABLE_REDIS: 'true'
           REDIS_URL: disabled
+          AUTH_EMAIL: smoke@example.com
+          AUTH_PASSWORD: smoke-dev-password
           API_KEY: ak_smoke_test_key_v1
           P6_2: '1' # Explicitly enable P6-2
 

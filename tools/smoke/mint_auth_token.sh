@@ -62,7 +62,29 @@ mint_via_local_jwt() {
   local row
   row="$(
     psql "$DATABASE_URL" -Atc \
-      "select u.id, coalesce(u.\"defaultOrganizationId\", om.\"organizationId\", '') as org_id, coalesce(u.tier::text, 'Free') as tier from users u left join organization_members om on om.\"userId\" = u.id where u.email = '${AUTH_EMAIL}' order by om.\"createdAt\" asc nulls last limit 1;" \
+      "with preferred as (
+         select u.id, coalesce(u.\"defaultOrganizationId\", om.\"organizationId\", '') as org_id, coalesce(u.tier::text, 'Free') as tier, 0 as ord
+         from users u
+         left join organization_members om on om.\"userId\" = u.id
+         where u.email = '${AUTH_EMAIL}'
+         order by om.\"createdAt\" asc nulls last
+         limit 1
+       ),
+       fallback_any as (
+         select u.id, coalesce(u.\"defaultOrganizationId\", om.\"organizationId\", '') as org_id, coalesce(u.tier::text, 'Free') as tier, 1 as ord
+         from users u
+         left join organization_members om on om.\"userId\" = u.id
+         order by om.\"createdAt\" asc nulls last, u.\"createdAt\" asc
+         limit 1
+       )
+       select id, org_id, tier
+       from (
+         select * from preferred
+         union all
+         select * from fallback_any
+       ) s
+       order by ord
+       limit 1;" \
       2>/dev/null || true
   )"
 
