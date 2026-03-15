@@ -74,6 +74,19 @@ function getEnvNumber(key: string, defaultValue?: number): number {
   return num;
 }
 
+function requiresWorkerIdentity(): boolean {
+  if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
+    return false;
+  }
+
+  return (
+    process.env.JOB_WORKER_ENABLED === 'true' ||
+    process.env.ENABLE_INTERNAL_JOB_WORKER === 'true' ||
+    Boolean(process.env.WORKER_API_SECRET) ||
+    process.argv.some((arg) => arg.toLowerCase().includes('worker'))
+  );
+}
+
 // JWT Secret Check (Silent)
 
 export const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
@@ -197,13 +210,21 @@ export const env: AppConfig = {
   workerId: (() => {
     const id = (process.env.WORKER_ID || process.env.WORKER_NAME || '').trim();
     if (!id) {
-      throw new Error('[Strict] WORKER_ID / WORKER_NAME environment variable is required.');
+      if (requiresWorkerIdentity()) {
+        throw new Error('[Strict] WORKER_ID / WORKER_NAME environment variable is required.');
+      }
+      return '__non_worker_context__';
     }
     return id;
   })(),
   workerName: (() => {
     const name = (process.env.WORKER_NAME || process.env.WORKER_ID || '').trim();
-    if (!name) throw new Error('[Strict] WORKER_NAME / WORKER_ID environment variable is required.');
+    if (!name) {
+      if (requiresWorkerIdentity()) {
+        throw new Error('[Strict] WORKER_NAME / WORKER_ID environment variable is required.');
+      }
+      return '__non_worker_context__';
+    }
     return name;
   })(),
   workerPollInterval: Number(process.env.WORKER_POLL_INTERVAL ?? '2000'),
