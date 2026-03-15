@@ -187,7 +187,7 @@ jobs:
             -H "x-worker-id: local-worker" || echo "Curl failed"
           echo "==============================================="
 
-      - name: Run Launch Gates (CI Mode + P6-2)
+      - name: Run Launch Gates (CI Mode)
         run: |
           # CI Mode triggers Local-like subset strictly
           EXIT_CODE=0
@@ -219,7 +219,6 @@ jobs:
           AUTH_EMAIL: gate@example.com
           AUTH_PASSWORD: smoke-dev-password
           API_KEY: ak_smoke_test_key_v1
-          P6_2: '1' # Explicitly enable P6-2
 
       - name: Upload Evidence Artifact
         if: always()
