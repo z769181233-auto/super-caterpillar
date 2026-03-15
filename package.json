@@ -8,14 +8,17 @@
   "description": "Super Caterpillar Universe — Monorepo (API / Web / Workers)",
   "pnpm": {
     "overrides": {
-      "next": "15.5.10",
-      "qs": "6.14.2",
-      "hono": "4.11.10",
-      "lodash": "^4.17.23",
-      "axios": "1.13.6",
-      "ajv": "8.17.1",
-      "glob": "13.0.6"
-    }
+    "next": "15.5.10",
+    "qs": "6.14.2",
+    "hono": "4.12.8",
+    "@hono/node-server": "1.19.10",
+    "multer": "2.1.1",
+    "lodash": "^4.17.23",
+    "axios": "1.13.6",
+    "ajv": "8.17.1",
+    "glob": "13.0.6",
+    "file-type": "21.3.2"
+  }
   },
   "scripts": {
     "env:init": "node tools/env/print-env-source.js",
