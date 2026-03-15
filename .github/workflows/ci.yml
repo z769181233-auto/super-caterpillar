@@ -34,7 +34,7 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     env:
-      DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/testdb
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/testdb
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
       PRISMA_CLIENT_ENGINE_TYPE: 'binary'
       JWT_SECRET: 'ci-secret-for-test'
@@ -58,7 +58,7 @@ jobs:
 
       - name: Inject Physical .env for Prisma
         run: |
-          echo "DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/testdb" > packages/database/.env
+          echo "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/testdb" > packages/database/.env
 
       - name: Generate Prisma Client (npx explicit + clean)
         run: |
@@ -67,7 +67,7 @@ jobs:
           export PRISMA_CLIENT_ENGINE_TYPE=binary
           npx prisma generate --schema=./packages/database/prisma/schema.prisma
         env:
-          DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/testdb
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/testdb
 
       - name: Turbo build
         run: pnpm turbo run build --cache-dir=.turbo --continue
