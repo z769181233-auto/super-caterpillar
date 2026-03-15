@@ -52,8 +52,8 @@ async function main() {
 
       const orgId = 'gate-org';
       const existingOrg = await client.query(
-        'SELECT id FROM "organizations" WHERE slug = $1 LIMIT 1',
-        ['gate-org']
+        'SELECT id FROM "organizations" WHERE id = $1 OR slug = $2 LIMIT 1',
+        [orgId, 'gate-org']
       );
       if (existingOrg.rowCount > 0) {
         await client.query(
