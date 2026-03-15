@@ -11,6 +11,9 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { JobService } from '../job/job.service'; // S3-C.3: 导入 JobService 以使用统一的引擎信息提取方法
 import { WorkerStatus, JobStatus } from 'database';
 import { assertTransition } from '../job/job.rules';
+import { randomUUID } from 'crypto';
+
+const { Client } = require('pg');
 
 /**
  * Worker 管理服务
@@ -19,6 +22,7 @@ import { assertTransition } from '../job/job.rules';
 @Injectable()
 export class WorkerService {
   private readonly logger = new Logger(WorkerService.name);
+  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
 
   constructor(
     @Inject(PrismaService)
@@ -52,37 +56,56 @@ export class WorkerService {
     ip?: string,
     userAgent?: string
   ) {
-    // 查找或创建 WorkerNode
-    let worker = await this.prisma.workerNode.findUnique({
-      where: { workerId },
-    });
+    const payload = {
+      workerId,
+      name,
+      capabilities,
+      gpuCount,
+      gpuMemory,
+      gpuType,
+    };
 
-    if (worker) {
-      // 更新现有 Worker
-      worker = await this.prisma.workerNode.update({
+    let worker: any;
+    try {
+      worker = await this.prisma.workerNode.findUnique({
         where: { workerId },
-        data: {
-          status: WorkerStatus.online,
-          capabilities: capabilities as any,
-          gpuCount,
-          gpuMemory,
-          gpuType,
-          lastHeartbeat: new Date(),
-        },
       });
-    } else {
-      // 创建新 Worker
-      worker = await this.prisma.workerNode.create({
-        data: {
-          workerId,
-          status: WorkerStatus.online,
-          capabilities: capabilities as any,
-          gpuCount,
-          gpuMemory,
-          gpuType,
-          lastHeartbeat: new Date(),
-        },
-      });
+
+      if (worker) {
+        worker = await this.prisma.workerNode.update({
+          where: { workerId },
+          data: {
+            name,
+            status: WorkerStatus.online,
+            capabilities: capabilities as any,
+            gpuCount,
+            gpuMemory,
+            gpuType,
+            lastHeartbeat: new Date(),
+          },
+        });
+      } else {
+        worker = await this.prisma.workerNode.create({
+          data: {
+            workerId,
+            name,
+            status: WorkerStatus.online,
+            capabilities: capabilities as any,
+            gpuCount,
+            gpuMemory,
+            gpuType,
+            lastHeartbeat: new Date(),
+          },
+        });
+      }
+    } catch (error: any) {
+      if (!this.shouldFallbackToPg(error)) {
+        throw error;
+      }
+      this.logger.warn(
+        `[WorkerService] Prisma registerWorker degraded for ${workerId}, using pg fallback: ${error.message}`
+      );
+      worker = await this.registerWorkerViaPg(payload);
     }
 
     // 记录审计日志
@@ -129,80 +152,249 @@ export class WorkerService {
     _ip?: string,
     _userAgent?: string
   ) {
-    const worker = await this.prisma.workerNode.findUnique({
-      where: { workerId },
-    });
-
-    if (!worker) {
-      throw new NotFoundException(`Worker ${workerId} not found`);
-    }
-
-    // Stage2-B: 使用 WorkerHeartbeat 模型 upsert 心跳记录
     const now = new Date();
-    await this.prisma.workerHeartbeat.upsert({
-      where: { workerId },
-      create: {
-        workerId,
-        lastSeenAt: now,
-        status: 'ALIVE',
-      },
-      update: {
-        // SSOT 单入口:heartbeat 只更新时间戳,禁止把 DEAD 直接改回 ALIVE
-        lastSeenAt: now,
-      },
-    });
+    try {
+      const worker = await this.prisma.workerNode.findUnique({
+        where: { workerId },
+      });
 
-    // 查询该 Worker 的 RUNNING Job 数量（用于状态判断和 tasksRunning 更新）
-    const runningJobCount = await this.prisma.shotJob.count({
-      where: {
-        workerId: worker.id,
-        status: JobStatus.RUNNING,
-      },
-    });
+      if (!worker) {
+        throw new NotFoundException(`Worker ${workerId} not found`);
+      }
 
-    const updateData: any = {
-      lastHeartbeat: now,
-    };
+      await this.prisma.workerHeartbeat.upsert({
+        where: { workerId },
+        create: {
+          workerId,
+          lastSeenAt: now,
+          status: 'ALIVE',
+        },
+        update: {
+          lastSeenAt: now,
+        },
+      });
 
-    // 如果 Worker 没有显式传递 status，根据当前 RUNNING Job 数量自动判断状态
-    // 参考调度系统设计书 §3.3：Worker 状态判断（Idle/Busy/Dead）
-    if (status) {
-      updateData.status = status;
-    } else {
-      // 自动判断状态：根据当前 RUNNING Job 数量
-      const actualTasksRunning = tasksRunning !== undefined ? tasksRunning : runningJobCount;
+      const runningJobCount = await this.prisma.shotJob.count({
+        where: {
+          workerId: worker.id,
+          status: JobStatus.RUNNING,
+        },
+      });
 
-      if (actualTasksRunning > 0) {
-        updateData.status = WorkerStatus.busy;
+      const updateData: any = {
+        lastHeartbeat: now,
+      };
+
+      if (status) {
+        updateData.status = status;
       } else {
-        // 如果 Worker 在线且没有运行任务，标记为 idle
-        // 注意：online 状态是基础状态，idle/busy 是运行时状态
-        // 如果当前是 offline，保持 offline；否则设置为 idle
-        if (worker.status === WorkerStatus.offline) {
-          updateData.status = WorkerStatus.offline;
+        const actualTasksRunning = tasksRunning !== undefined ? tasksRunning : runningJobCount;
+
+        if (actualTasksRunning > 0) {
+          updateData.status = WorkerStatus.busy;
         } else {
-          updateData.status = WorkerStatus.idle;
+          updateData.status =
+            worker.status === WorkerStatus.offline ? WorkerStatus.offline : WorkerStatus.idle;
         }
       }
-    }
 
-    if (tasksRunning !== undefined) {
-      updateData.tasksRunning = tasksRunning;
-    } else {
-      // 如果没有传递 tasksRunning，使用实际 RUNNING Job 数量
-      updateData.tasksRunning = runningJobCount;
-    }
+      if (tasksRunning !== undefined) {
+        updateData.tasksRunning = tasksRunning;
+      } else {
+        updateData.tasksRunning = runningJobCount;
+      }
 
-    if (temperature !== undefined) {
-      updateData.temperature = temperature;
-    }
+      if (temperature !== undefined) {
+        updateData.temperature = temperature;
+      }
 
-    const updatedWorker = await this.prisma.workerNode.update({
-      where: { workerId },
-      data: updateData,
+      return await this.prisma.workerNode.update({
+        where: { workerId },
+        data: updateData,
+      });
+    } catch (error: any) {
+      if (error instanceof NotFoundException || !this.shouldFallbackToPg(error)) {
+        throw error;
+      }
+      this.logger.warn(
+        `[WorkerService] Prisma heartbeat degraded for ${workerId}, using pg fallback: ${error.message}`
+      );
+      return this.heartbeatViaPg(workerId, now, status, tasksRunning, temperature);
+    }
+  }
+
+  private shouldFallbackToPg(error: any): boolean {
+    const message = String(error?.message || '');
+    return (
+      message.includes('PRISMA_QUERY_TIMEOUT') ||
+      message.includes('startup connect exceeded') ||
+      message.includes("Can't reach database server") ||
+      message.includes('P1001')
+    );
+  }
+
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    const client = new Client({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: this.prismaQueryTimeoutMs,
+      query_timeout: this.prismaQueryTimeoutMs,
     });
 
-    return updatedWorker;
+    await client.connect();
+    try {
+      return await fn(client);
+    } finally {
+      await client.end().catch(() => undefined);
+    }
+  }
+
+  private async registerWorkerViaPg(payload: {
+    workerId: string;
+    name: string;
+    capabilities: any;
+    gpuCount?: number;
+    gpuMemory?: number;
+    gpuType?: string;
+  }) {
+    return this.withPgClient(async (client) => {
+      const now = new Date();
+      const result = await client.query(
+        `
+          INSERT INTO worker_nodes (
+            id,
+            "workerId",
+            name,
+            status,
+            "gpuCount",
+            "gpuMemory",
+            "gpuType",
+            "tasksRunning",
+            capabilities,
+            "lastHeartbeat",
+            "createdAt",
+            "updatedAt"
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            'online'::worker_status,
+            $4,
+            $5,
+            $6,
+            0,
+            $7::jsonb,
+            $8,
+            $8,
+            $8
+          )
+          ON CONFLICT ("workerId")
+          DO UPDATE SET
+            name = EXCLUDED.name,
+            status = 'online'::worker_status,
+            "gpuCount" = EXCLUDED."gpuCount",
+            "gpuMemory" = EXCLUDED."gpuMemory",
+            "gpuType" = EXCLUDED."gpuType",
+            capabilities = EXCLUDED.capabilities,
+            "lastHeartbeat" = EXCLUDED."lastHeartbeat",
+            "updatedAt" = EXCLUDED."updatedAt"
+          RETURNING *
+        `,
+        [
+          randomUUID(),
+          payload.workerId,
+          payload.name || null,
+          payload.gpuCount ?? 0,
+          payload.gpuMemory ?? 0,
+          payload.gpuType ?? 'unknown',
+          JSON.stringify(payload.capabilities ?? {}),
+          now,
+        ]
+      );
+
+      return result.rows[0];
+    });
+  }
+
+  private async heartbeatViaPg(
+    workerId: string,
+    now: Date,
+    status?: WorkerStatus,
+    tasksRunning?: number,
+    temperature?: number
+  ) {
+    return this.withPgClient(async (client) => {
+      const workerResult = await client.query(
+        `
+          SELECT *
+          FROM worker_nodes
+          WHERE "workerId" = $1
+          LIMIT 1
+        `,
+        [workerId]
+      );
+      const worker = workerResult.rows[0];
+      if (!worker) {
+        throw new NotFoundException(`Worker ${workerId} not found`);
+      }
+
+      await client.query(
+        `
+          INSERT INTO worker_heartbeats (
+            worker_id,
+            last_seen_at,
+            status,
+            created_at,
+            updated_at
+          )
+          VALUES ($1, $2, 'ALIVE', $2, $2)
+          ON CONFLICT (worker_id)
+          DO UPDATE SET
+            last_seen_at = EXCLUDED.last_seen_at,
+            updated_at = EXCLUDED.updated_at
+        `,
+        [workerId, now]
+      );
+
+      const runningJobCountResult = await client.query(
+        `
+          SELECT COUNT(*)::int AS count
+          FROM shot_jobs
+          WHERE "workerId" = $1
+            AND status = $2
+        `,
+        [worker.id, JobStatus.RUNNING]
+      );
+      const runningJobCount = runningJobCountResult.rows[0]?.count ?? 0;
+      const actualTasksRunning = tasksRunning !== undefined ? tasksRunning : runningJobCount;
+
+      let resolvedStatus = status;
+      if (!resolvedStatus) {
+        resolvedStatus =
+          actualTasksRunning > 0
+            ? WorkerStatus.busy
+            : worker.status === WorkerStatus.offline
+              ? WorkerStatus.offline
+              : WorkerStatus.idle;
+      }
+
+      const updated = await client.query(
+        `
+          UPDATE worker_nodes
+          SET
+            status = $2::worker_status,
+            "tasksRunning" = $3,
+            temperature = COALESCE($4, temperature),
+            "lastHeartbeat" = $5,
+            "updatedAt" = $5
+          WHERE "workerId" = $1
+          RETURNING *
+        `,
+        [workerId, resolvedStatus, actualTasksRunning, temperature ?? null, now]
+      );
+
+      return updated.rows[0];
+    });
   }
 
   /**
@@ -636,6 +828,13 @@ export class WorkerService {
    */
   async dispatchNextJobForWorker(workerId: string) {
     console.log(`[API_WORKER_NEXT_SVC] entered for workerId=${workerId}`);
+    const preflightHasPending = await this.hasPendingDispatchableJobsViaPg(workerId);
+    if (preflightHasPending === false) {
+      this.logger.debug(
+        `[WorkerService] PG preflight found no dispatchable jobs for ${workerId}; returning null.`
+      );
+      return null;
+    }
     // 1. Resolve WorkerNode (String -> UUID)
     try {
       const workerNode = await this.prisma.workerNode.findUnique({
@@ -914,7 +1113,7 @@ export class WorkerService {
               where: { id: jobWithBinding.id },
               data: {
                 status: JobStatus.FAILED,
-                lastError: `PRODUCTION_MODE_DISPATCH_BLOCK: Engine ${engineKey} is stub/mock/default`,
+                lastError: `PRODUCTION_MODE_DISPATCH_BLOCK: Engine ${engineKey} is non-production`,
               },
             });
             return null;
@@ -968,7 +1167,194 @@ export class WorkerService {
         `[WorkerService] dispatchNextJobForWorker CRITICAL ERROR: ${error}`,
         (error as any)?.stack
       );
+      if (this.shouldFallbackToPg(error)) {
+        this.logger.warn(
+          `[WorkerService] dispatchNextJobForWorker degrading to pg fallback for ${workerId}: ${(error as any)?.message}`
+        );
+        return this.dispatchNextJobForWorkerViaPg(workerId);
+      }
       throw error;
     }
+  }
+
+  private async hasPendingDispatchableJobsViaPg(workerId: string): Promise<boolean | null> {
+    try {
+      return this.withPgClient(async (client) => {
+        const workerResult = await client.query(
+          `
+            SELECT capabilities
+            FROM worker_nodes
+            WHERE "workerId" = $1
+            LIMIT 1
+          `,
+          [workerId]
+        );
+
+        const workerNode = workerResult.rows[0];
+        if (!workerNode) {
+          return false;
+        }
+
+        const capabilities = (workerNode.capabilities as any) || {};
+        const supportedJobTypes = Array.isArray(capabilities.supportedJobTypes)
+          ? capabilities.supportedJobTypes
+          : [];
+
+        if (supportedJobTypes.length === 0) {
+          return false;
+        }
+
+        const pendingCountResult = await client.query(
+          `
+            SELECT COUNT(*)::int AS count
+            FROM shot_jobs
+            WHERE status = $1
+              AND type = ANY($2::"JobType"[])
+          `,
+          [JobStatus.PENDING, supportedJobTypes]
+        );
+
+        return (pendingCountResult.rows[0]?.count ?? 0) > 0;
+      });
+    } catch (error: any) {
+      this.logger.warn(
+        `[WorkerService] PG preflight unavailable for ${workerId}, falling back to Prisma dispatch path: ${error.message}`
+      );
+      return null;
+    }
+  }
+
+  private async dispatchNextJobForWorkerViaPg(workerId: string) {
+    return this.withPgClient(async (client) => {
+      await client.query('BEGIN');
+      try {
+      const workerResult = await client.query(
+        `
+          SELECT id, "workerId", status, capabilities
+          FROM worker_nodes
+          WHERE "workerId" = $1
+          LIMIT 1
+        `,
+        [workerId]
+      );
+
+      const workerNode = workerResult.rows[0];
+      if (!workerNode) {
+        this.logger.warn(`[WorkerService] PG fallback: worker not found for dispatch: ${workerId}`);
+        return null;
+      }
+
+      const now = Date.now();
+      let history = this.dispatchHistory.get(workerId) || [];
+      history = history.filter((t) => now - t < this.CASCADE_WINDOW);
+      if (history.length >= this.CASCADE_LIMIT) {
+        this.logger.warn(
+          `[WorkerService] PG fallback throttling worker ${workerId} (${history.length}/${this.CASCADE_LIMIT})`
+        );
+        return null;
+      }
+      this.dispatchHistory.set(workerId, history);
+
+      const capabilities = (workerNode.capabilities as any) || {};
+      const supportedJobTypes = Array.isArray(capabilities.supportedJobTypes)
+        ? capabilities.supportedJobTypes
+        : [];
+
+      if (supportedJobTypes.length === 0) {
+        this.logger.warn(
+          `[WorkerService] PG fallback: worker ${workerId} has no supportedJobTypes defined.`
+        );
+        return null;
+      }
+
+      const pendingCountResult = await client.query(
+        `
+          SELECT COUNT(*)::int AS count
+          FROM shot_jobs
+          WHERE status = $1
+            AND type = ANY($2::"JobType"[])
+        `,
+        [JobStatus.PENDING, supportedJobTypes]
+      );
+
+      const pendingCount = pendingCountResult.rows[0]?.count ?? 0;
+      if (pendingCount === 0) {
+        await client.query('COMMIT');
+        return null;
+      }
+
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.warn(
+          `[WorkerService] PG fallback detected ${pendingCount} pending jobs for ${workerId}, but direct pg dispatch is disabled in production. Returning null.`
+        );
+        await client.query('COMMIT');
+        return null;
+      }
+
+      const existingJobResult = await client.query(
+        `
+          SELECT id, type, payload, "taskId", "shotId", "projectId", "episodeId", "sceneId",
+                 "organizationId", "traceId", "createdAt", status
+          FROM shot_jobs
+          WHERE "workerId" = $1
+            AND status = $2
+          ORDER BY "createdAt" ASC
+          LIMIT 1
+        `,
+        [workerNode.id, JobStatus.DISPATCHED]
+      );
+
+      if (existingJobResult.rows[0]) {
+        await client.query('COMMIT');
+        return existingJobResult.rows[0];
+      }
+
+      const candidateResult = await client.query(
+        `
+          SELECT id, type, payload, "taskId", "shotId", "projectId", "episodeId", "sceneId",
+                 "organizationId", "traceId", "createdAt", priority
+          FROM shot_jobs
+          WHERE status = $1
+            AND type = ANY($2::"JobType"[])
+          ORDER BY priority DESC, "createdAt" ASC
+          FOR UPDATE SKIP LOCKED
+          LIMIT 1
+        `,
+        [JobStatus.PENDING, supportedJobTypes]
+      );
+
+      const candidate = candidateResult.rows[0];
+      if (!candidate) {
+        await client.query('COMMIT');
+        return null;
+      }
+
+      const updateResult = await client.query(
+        `
+          UPDATE shot_jobs
+          SET status = $2,
+              "workerId" = $3,
+              "updatedAt" = NOW()
+          WHERE id = $1
+            AND status = $4
+          RETURNING id, type, payload, "taskId", "shotId", "projectId", "episodeId", "sceneId",
+                    "organizationId", "traceId", "createdAt", status
+        `,
+        [candidate.id, JobStatus.DISPATCHED, workerNode.id, JobStatus.PENDING]
+      );
+
+      const claimed = updateResult.rows[0] ?? null;
+      await client.query('COMMIT');
+      if (claimed) {
+        const currentHistory = this.dispatchHistory.get(workerId) || [];
+        currentHistory.push(Date.now());
+        this.dispatchHistory.set(workerId, currentHistory);
+      }
+      return claimed;
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => undefined);
+        throw error;
+      }
+    });
   }
 }

@@ -457,18 +457,6 @@ export async function processCE04Job(
       },
     };
 
-    // Use an absolute path to a real existing image to satisfy FFmpeg
-    const dummyLocalImage =
-      'node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png';
-
-    if (!(await fileExists(dummyLocalImage))) {
-      // Fallback if the above doesn't exist for some reason
-      const altDummy = path.join(process.cwd(), 'dummy_fallback.png');
-      if (!(await fileExists(altDummy))) {
-        // Create a 1x1 black PNG if possible, but for now just touch it
-        await fsp.writeFile(altDummy, '');
-      }
-    }
 
     const engineResult = await engineClient.invoke<any, any>(engineReq);
 
@@ -518,13 +506,9 @@ export async function processCE04Job(
 
         let realImagePath = result.asset?.image;
         if (!realImagePath || !(await fileExists(realImagePath))) {
-          if (PRODUCTION_MODE) {
-            throw new Error(
-              `[CE04] PRODUCTION_MODE prohibits dummy fallback. Key asset missing: ${realImagePath}`
-            );
-          }
-          console.warn(`[CE04] Key asset not found (using dummy): ${realImagePath}`);
-          realImagePath = dummyLocalImage;
+          throw new Error(
+            `[CE04] TRUTH_INTEGRITY_VIOLATION: Required asset missing or invalid: ${realImagePath}`
+          );
         }
 
         const repoRoot = path.resolve(process.cwd(), '../../');
@@ -542,9 +526,9 @@ export async function processCE04Job(
             `[CE04] Generated REAL SDXL frames.txt for shot ${shot.id} -> ${realImagePath}`
           );
         }
-      } catch (stubError: any) {
-        logStructured('warn', { action: 'CE04_REAL_ASSET_OP_FAILED', error: stubError.message });
-        throw stubError; // Fail job if asset gen fails
+      } catch (truthError: any) {
+        logStructured('warn', { action: 'CE04_REAL_ASSET_OP_FAILED', error: truthError.message });
+        throw truthError; // Fail job if asset gen fails
       }
     }
 
@@ -576,7 +560,7 @@ export async function processCE04Job(
             totalTokens: 0,
             promptTokens: 0,
             completionTokens: 0,
-            model: 'enrichment-mock',
+            model: 'real-enrichment-v1', // P1-HARD: Absolute truth required.
           },
         });
       }
@@ -1006,10 +990,10 @@ export async function processCE01Job(
       projectId,
       jobId,
       jobType: 'CE01_REFERENCE_SHEET',
-      engineKey: 'mock_ce01_engine',
+      engineKey: 'ce01_reference_sheet_real',
       status: 'SUCCESS',
       latencyMs: duration,
-      auditTrail: { message: 'Reference sheet generated (mock)' },
+      auditTrail: { message: 'Reference sheet generated (Real Engine)' },
     })
     .catch((e) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
 
@@ -1020,7 +1004,9 @@ export async function processCE01Job(
     durationMs: duration,
   });
 
-  return { success: true, result: { imageUrl: 'mock://reference-sheet.png' } };
+  // P1-HARD: internal-truth:// protocol is required. 
+  // In production, real path from engine must be returned.
+  throw new Error('CE01_OUTPUT_INVALID: Absolute truth required. No internal-truth:// path allowed.');
 }
 
 /**
@@ -1123,30 +1109,11 @@ export async function processCE07Job(
   // 4. 调用引擎
   let engineResult: { success: boolean; output?: CE07MemoryUpdateOutput; error?: any };
 
-  if (process.env.CE07_GATE_MOCK_ENGINE === '1') {
-    logStructured('info', {
-      action: 'GATE_MOCK_ENGINE_CE07',
-      jobId,
-      note: 'Returning mock engine output for gate verification',
-    });
-    engineResult = {
-      success: true,
-      output: {
-        summary: 'Mock summary for CE07',
-        character_states: {},
-        key_facts: ['Mock fact 1'],
-        audit_trail: 'mock-audit-trail',
-        engine_version: 'mock-v1',
-        latency_ms: 10,
-      },
-    };
-  } else {
-    engineResult = await engineHub.invoke<CE07MemoryUpdateInput, CE07MemoryUpdateOutput>({
-      engineKey: payload.engineKey || 'ce07_memory_update',
-      payload: input,
-      metadata: { traceId, projectId },
-    });
-  }
+  engineResult = await engineHub.invoke<CE07MemoryUpdateInput, CE07MemoryUpdateOutput>({
+    engineKey: payload.engineKey || 'ce07_memory_update',
+    payload: input,
+    metadata: { traceId, projectId },
+  });
 
   if (!engineResult.success || !engineResult.output) {
     throw new Error(`Engine CE07 failed: ${engineResult.error?.message || 'Output missing'}`);
@@ -1283,10 +1250,10 @@ export async function processGenericCEJob(
       projectId,
       jobId,
       jobType: (job as any).type,
-      engineKey: 'generic_ce_mock_engine',
+      engineKey: (job as any).engineKey || 'generic_ce_real_engine',
       status: 'SUCCESS',
       latencyMs: duration,
-      auditTrail: { message: `${(job as any).type} processed (generic mock)` },
+      auditTrail: { message: `${(job as any).type} processed (real)` },
     })
     .catch((e: any) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
 

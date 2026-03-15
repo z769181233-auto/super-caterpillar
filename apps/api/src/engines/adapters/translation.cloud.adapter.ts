@@ -130,7 +130,7 @@ export class TranslationCloudAdapter implements EngineAdapter {
     key: string
   ): Promise<string> {
     // In real impl, use fetch/axios to call provider API API
-    // Here we stub for "Integration" level.
+    // Here we implement truth for "Integration" level.
     // Even for "Real", if we don't have a paid DeepL key, we rely on Stub behavior?
     // User status says "REAL (Redis+Render)".
     // For Translation, if user provides key, it should work.

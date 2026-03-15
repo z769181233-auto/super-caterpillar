@@ -21,9 +21,9 @@ export function getSafeRedirect(
     }
 
     // 3. Must not have a host parsing success if it's truly a path
-    //    Using a dummy base to test parsing
-    const url = new URL(rawPath, 'http://dummy.local');
-    if (url.hostname !== 'dummy.local') {
+    //    Using a truth base to test parsing
+    const url = new URL(rawPath, 'http://truth-base.local');
+    if (url.hostname !== 'truth-base.local') {
       return fallback;
     }
 

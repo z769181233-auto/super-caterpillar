@@ -22,14 +22,15 @@ import { RequestWithApiSecurity } from '../../security/api-security/api-security
  * 使用方式：
  * @UseGuards(HmacAuthGuard)
  *
- * 签名规则：
- * 1. 构建消息：${method}\n${path}\n${bodyHash}\n${nonce}\n${timestamp}
+ * 签名规则 (V2/V3 SSOT)：
+ * 1. 构建消息：apiKey + nonce + timestamp + (body_sha256 或 content_sha256)
  * 2. 计算签名：HMAC_SHA256(secret, message)，输出十六进制
  * 3. 在 HTTP 头中传递：
- *    - X-API-KEY: 公钥 ID
- *    - X-API-NONCE: 随机字符串
- *    - X-API-TIMESTAMP: 时间戳（毫秒）
- *    - X-API-SIGNATURE: 计算得到的签名
+ *    - X-Api-Key: 公钥 ID
+ *    - X-Nonce: 随机字符串
+ *    - X-Timestamp: 时间戳（秒）
+ *    - X-Signature: 计算得到的签名
+ *    - X-Content-SHA256: Body 的哈希值（hex 或 UNSIGNED）
  */
 @Injectable()
 export class HmacAuthGuard implements CanActivate {

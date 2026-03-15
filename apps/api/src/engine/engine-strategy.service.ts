@@ -56,19 +56,10 @@ export class EngineStrategyService {
       // Note: baseEngineKey is from input.engineKey. payload.engineKey might be legacy.
       const explicitEngineKey = baseEngineKey || payload?.engineKey || payload?.engine;
 
-      if (!isVerification && !explicitEngineKey) {
+      if (!explicitEngineKey) {
         throw new BadRequestException(
-          'CE11_SHOT_GENERATOR requires explicit engineKey in production (e.g. ce11_shot_generator_real)'
+          '[P1-HARD] CE11_SHOT_GENERATOR requires explicit engineKey even in verification mode.'
         );
-      }
-
-      // If in verification mode and no key provided, default to mock (as per requirement)
-      if (isVerification && !explicitEngineKey) {
-        return {
-          engineKey: 'ce11_shot_generator_mock',
-          resolvedVersion: null,
-          strategyLabel: 'p5_verification_fallback',
-        };
       }
     }
 

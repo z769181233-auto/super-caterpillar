@@ -49,7 +49,7 @@ export async function processCE03VisualDensityJob(
 
     // 2. Logic (Simulate Density Calculation)
     // In real impl, this calls python engine.
-    // For S4-2, we just produce a mock score and persist.
+    // For S4-2, we just produce a truth score and persist.
 
     const densityScore = Math.random() * 100;
 

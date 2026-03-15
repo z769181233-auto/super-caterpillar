@@ -42,6 +42,7 @@ export class ApiSecurityService {
   private readonly TIMESTAMP_WINDOW_SECONDS = 300; // ±5 分钟
   private readonly NONCE_TTL_SECONDS = 300; // 5 分钟
   private readonly logger = new Logger(ApiSecurityService.name);
+  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -51,6 +52,32 @@ export class ApiSecurityService {
     @Inject(SecretEncryptionService)
     private readonly secretEncryptionService: SecretEncryptionService
   ) { }
+
+  private shouldFallbackToPg(error: any): boolean {
+    const message = String(error?.message || '');
+    return (
+      message.includes('PRISMA_QUERY_TIMEOUT') ||
+      message.includes('startup connect exceeded') ||
+      message.includes("Can't reach database server") ||
+      message.includes('P1001')
+    );
+  }
+
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    const { Client } = require('pg');
+    const client = new Client({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: this.prismaQueryTimeoutMs,
+      query_timeout: this.prismaQueryTimeoutMs,
+    });
+
+    await client.connect();
+    try {
+      return await fn(client);
+    } finally {
+      await client.end().catch(() => undefined);
+    }
+  }
 
   /**
    * 验证 HMAC 签名（v2 规范）
@@ -133,13 +160,7 @@ export class ApiSecurityService {
         throw new Error('Prisma Client Malformed: apiKey model missing');
       }
 
-      const keyRecord = await this.prisma.apiKey.findUnique({
-        where: { key: apiKey },
-        include: {
-          ownerUser: true,
-          ownerOrg: true,
-        },
-      });
+      const keyRecord = await this.findApiKeyRecord(apiKey);
 
       if (!keyRecord) {
         dlog({ step: 'reject', reason: 'invalid_api_key', apiKey: apiKey.slice(0, 12) + '...' });
@@ -429,8 +450,21 @@ export class ApiSecurityService {
           where: { id: keyRecord.id },
           data: { lastUsedAt: new Date() },
         })
-        .catch((e) => {
+        .catch(async (e) => {
           if (dbg) dlog({ step: 'db_update_lastUsedAt_failed', error: e?.message });
+          if (!this.shouldFallbackToPg(e)) {
+            return;
+          }
+          try {
+            await this.withPgClient((client) =>
+              client.query(`UPDATE api_keys SET "lastUsedAt" = NOW(), "updatedAt" = NOW() WHERE id = $1`, [
+                keyRecord.id,
+              ])
+            );
+            if (dbg) dlog({ step: 'db_update_lastUsedAt_fallback_pg_ok' });
+          } catch (pgError: any) {
+            if (dbg) dlog({ step: 'db_update_lastUsedAt_fallback_pg_failed', error: pgError?.message });
+          }
         });
 
       // 10. 写入成功审计日志
@@ -670,6 +704,103 @@ export class ApiSecurityService {
     throw new InternalServerErrorException(
       `API Key ${this.maskApiKey(apiKey)} has no secret stored (neither encrypted nor hash).`
     );
+  }
+
+  private async findApiKeyRecord(apiKey: string): Promise<any | null> {
+    try {
+      return await this.prisma.apiKey.findUnique({
+        where: { key: apiKey },
+        include: {
+          ownerUser: true,
+          ownerOrg: true,
+        },
+      });
+    } catch (error: any) {
+      const message = String(error?.message || '');
+      const shouldFallback =
+        message.includes('PRISMA_QUERY_TIMEOUT') ||
+        message.includes('startup connect exceeded') ||
+        message.includes("Can't reach database server") ||
+        message.includes('P1001');
+
+      if (!shouldFallback) {
+        throw error;
+      }
+
+      this.logger.warn(
+        `[ApiSecurityService] Prisma apiKey lookup degraded, using pg fallback for ${this.maskApiKey(apiKey)}: ${message}`
+      );
+
+      const { Client } = require('pg');
+      const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+        connectionTimeoutMillis: Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000'),
+        query_timeout: Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000'),
+      });
+
+      try {
+        await client.connect();
+        const result = await client.query(
+          `
+            SELECT
+              ak.*,
+              u.id AS owner_user_id_resolved,
+              u.email AS owner_user_email,
+              u."userType" AS owner_user_type,
+              u.role AS owner_user_role,
+              u.tier AS owner_user_tier,
+              o.id AS owner_org_id_resolved,
+              o.name AS owner_org_name
+            FROM api_keys ak
+            LEFT JOIN users u ON u.id = ak."ownerUserId"
+            LEFT JOIN organizations o ON o.id = ak."ownerOrgId"
+            WHERE ak.key = $1
+            LIMIT 1
+          `,
+          [apiKey]
+        );
+
+        const row = result.rows[0];
+        if (!row) {
+          return null;
+        }
+
+        return {
+          id: row.id,
+          key: row.key,
+          secretHash: row.secretHash,
+          name: row.name,
+          ownerUserId: row.ownerUserId,
+          ownerOrgId: row.ownerOrgId,
+          status: row.status,
+          lastUsedAt: row.lastUsedAt,
+          expiresAt: row.expiresAt,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+          secretEnc: row.secretEnc,
+          secretEncIv: row.secretEncIv,
+          secretEncTag: row.secretEncTag,
+          secretVersion: row.secretVersion,
+          ownerUser: row.owner_user_id_resolved
+            ? {
+                id: row.owner_user_id_resolved,
+                email: row.owner_user_email,
+                userType: row.owner_user_type,
+                role: row.owner_user_role,
+                tier: row.owner_user_tier,
+              }
+            : null,
+          ownerOrg: row.owner_org_id_resolved
+            ? {
+                id: row.owner_org_id_resolved,
+                name: row.owner_org_name,
+              }
+            : null,
+        };
+      } finally {
+        await client.end().catch(() => undefined);
+      }
+    }
   }
 
   /**

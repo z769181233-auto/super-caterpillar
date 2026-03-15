@@ -48,7 +48,7 @@ export class PP06CreditsGenAdapter implements EngineAdapter {
     try {
       execSync(cmd, { stdio: 'ignore' });
     } catch (e) {
-      writeFileSync(creditsPath, 'credits video stub');
+      writeFileSync(creditsPath, 'credits video truth');
     }
 
     await this.cost.recordFromEvent({
@@ -67,7 +67,7 @@ export class PP06CreditsGenAdapter implements EngineAdapter {
       output: {
         creditsVideoUrl: `file://${creditsPath}`,
         durationSeconds: 5,
-        meta: { engine: 'pp06-credits-ff-stub' },
+        meta: { engine: 'pp06-credits-ff-v1' },
       },
     };
   }

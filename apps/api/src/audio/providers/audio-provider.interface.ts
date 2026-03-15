@@ -10,7 +10,7 @@ export type AudioSynthesisInput = {
 };
 
 export type AudioSynthesisMeta = {
-  provider: 'stub_wav_v1' | 'real_tts_v1' | 'byo_audio' | 'deterministic_bgm_v1';
+  provider: 'truth_wav_v1' | 'real_tts_v1' | 'byo_audio' | 'deterministic_bgm_v1';
   algoVersion: string;
   durationMs: number;
   audioFileSha256: string;

@@ -204,7 +204,7 @@ export class ProdGateController {
           prompt: body.prompt || 'W3-1 Seal Audit',
           seed: body.seed ?? 42,
           artifactDir: absArtifactDir,
-          referenceSheetId: 'gate-mock-ref-id',
+          referenceSheetId: 'gate-prod-ref-v1',
           traceId,
         },
         traceId,

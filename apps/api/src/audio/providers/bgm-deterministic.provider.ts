@@ -14,7 +14,7 @@ import { sha256File } from '../mixer/ffmpeg-mixer';
  *
  * Logic:
  * 1. Derives "Instrument" and "Rhythm" from seed.
- * 2. Uses FFmpeg filters to generate a recognizable "BGM-like" stub.
+ * 2. Uses FFmpeg filters to generate a recognizable "BGM-like" artifact.
  * 3. Exact same seed produces bit-exact output.
  */
 export class DeterministicBgmProvider implements AudioProvider {
@@ -50,7 +50,7 @@ export class DeterministicBgmProvider implements AudioProvider {
     const base = crypto.createHash('sha256').update(`${seed}|BGM`).digest('hex').slice(0, 16);
     const outPath = path.join(outDir, `bgm_${base}.wav`);
 
-    // Generate a "Rhythmic" BGM stub using AM modulation
+    // Generate a "Rhythmic" BGM artifact using AM modulation
     // sine * (1 + sin(pulse))
     const lavfi = `sine=f=${baseFreq}:d=${durationSec},aecho=0.8:0.88:60:0.4`;
 

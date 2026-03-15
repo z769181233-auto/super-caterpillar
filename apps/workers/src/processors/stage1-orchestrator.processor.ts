@@ -83,59 +83,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
     if (refSheetJob && refSheetJob.engineBinding) {
       refSheetId = refSheetJob.engineBinding.id;
     } else {
-      // If not found, we create it dynamically.
-      // NOTE: We need a sceneId and potentially a shotId for the mock job.
-      // Since we haven't created shots yet, we use a placeholder or the scene itself.
-      // However, the original logic used shotIds[0].
-      // Strategy: Create the CE01 job but link it later? OR just use scene level.
-      // CE01 usually needs a shotId. Let's create a placeholder concept or just wait.
-      // Actually, for ControlNetMapper, we just need the ID string.
-
-      let engine = await prisma.engine.findFirst({
-        where: { code: 'character_visual' },
-      });
-
-      if (!engine) {
-        engine = await prisma.engine.create({
-          data: {
-            code: 'character_visual',
-            engineKey: 'character_visual',
-            name: 'Mock Character Visual',
-            mode: 'local',
-            isActive: true,
-            adapterName: 'mock-adapter',
-            adapterType: 'mock',
-            config: {},
-            type: 'visual',
-          },
-        });
-      }
-
-      // We create the job now with NO shotId (scene level only) or just use scene.
-      const dummyJob = await prisma.shotJob.create({
-        data: {
-          projectId,
-          organizationId,
-          episodeId,
-          sceneId: scene.id,
-          // shotId: null, // Scene-level reference sheet
-          type: 'CE01_REFERENCE_SHEET',
-          status: 'SUCCEEDED',
-          payload: { mock: true },
-        },
-      });
-
-      const binding = await prisma.jobEngineBinding.create({
-        data: {
-          jobId: dummyJob.id,
-          engineId: engine.id,
-          engineKey: 'character_visual',
-          status: 'COMPLETED',
-        },
-      });
-
-      refSheetId = binding.id;
-      console.log(`[Stage1] Created Mock Reference Sheet Job Binding (Scene Level): ${refSheetId}`);
+      console.warn(`[Stage1] NO Reference Sheet found for project ${projectId}. Proceeding without established visual binding.`);
     }
 
     const shotIds: string[] = [];
@@ -203,8 +151,6 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
     }
     console.log(`[Stage1] Planned ${shotIds.length} shots. Ensuring Reference Sheet exists...`);
 
-    // MVP: Ensure a mock reference sheet exists for E4 validation
-    // STAGE 1 MOCK: Create a dummy CE01 Job/Binding if not present
 
     console.log(`[Stage1] Spawning renders via API...`);
 

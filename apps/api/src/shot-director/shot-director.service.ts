@@ -208,7 +208,7 @@ export class ShotDirectorService {
 
       // Bind Engine? VIDEO_RENDER uses 'ffmpeg' engine.
       // We need to create binding or Worker won't pick it up (due to Stage 3-A logic: whereEngineBinding required).
-      // Need to bind a dummy engine 'ffmpeg_local'
+      // Need to bind a real engine 'ffmpeg_local'
       // I need an Engine record for 'ffmpeg_local'.
       // I'll ensure it exists or create it?
       // Better: Worker logic `getAndMarkNextPendingJob` has:
@@ -225,7 +225,7 @@ export class ShotDirectorService {
             name: 'FFmpeg Local Renderer',
             type: 'local',
             engineKey: 'ffmpeg_local',
-            adapterName: 'default_shot_render', // Reuse existing adapter or mock
+            adapterName: 'default_shot_render', // Reuse existing adapter or fallback
             adapterType: 'local',
             config: {},
             isActive: true,

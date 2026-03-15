@@ -164,39 +164,6 @@ export async function processCE04VisualEnrichmentJob(
     };
   } catch (error: any) {
     logger.error(`[CE04] Failed: ${error.message}`);
-    // P1-1: Emergency Fallback for Gate Verification
-    if (process.env.GATE_MODE === '1') {
-      logger.warn(`[CE04] GATE_MODE detected, providing mock success. shotId: ${shotId}`);
-
-      try {
-        await prisma.asset.create({
-          data: {
-            id: `gate-asset-${Date.now()}`,
-            type: AssetType.IMAGE,
-            storageKey: 'gate/mock_keyframe.png',
-            projectId: job.projectId || 'proj_unknown',
-            ownerId: shotId,
-            ownerType: AssetOwnerType.SHOT,
-            status: 'GENERATED',
-          },
-        });
-      } catch (e: any) {
-        if (e.code === 'P2002') {
-          logger.warn(`[CE04] Asset already exists for shotId=${shotId}`);
-        } else {
-          logger.error(`[CE04] Fallback asset creation error: ${e.message}`);
-        }
-      }
-
-      return {
-        status: 'SUCCEEDED',
-        output: {
-          keyframeKey: 'gate/mock_keyframe.png',
-          nextStep: 'SHOT_RENDER',
-          isMock: true,
-        },
-      };
-    }
     return {
       status: 'FAILED',
       error: error.message,

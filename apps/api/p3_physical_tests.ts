@@ -12,7 +12,7 @@ async function runTests() {
   const user = await prisma.user.upsert({
     where: { id: 'sysadmin' },
     update: {},
-    create: { id: 'sysadmin', email: 'sysadmin@test.com', passwordHash: 'mock' },
+    create: { id: 'sysadmin', email: 'sysadmin@test.com', passwordHash: 'truth-secret' },
   });
   const org = await prisma.organization.upsert({
     where: { id: '00000000-0000-0000-0000-000000000001' },

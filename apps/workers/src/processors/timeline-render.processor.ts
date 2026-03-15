@@ -96,7 +96,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     }
 
     // P0-R5: High-Fidelity Pass-through (Phase T: Strict)
-    // If source asset is MP4, use it directly (bypass frames.txt/mock-compose)
+    // If source asset is MP4, use it directly (bypass frames.txt/fallback-compose)
     try {
       const sourceAsset = await prisma.asset.findFirst({
         where: { ownerId: shot.shotId, ownerType: AssetOwnerType.SHOT, type: AssetType.VIDEO }, // Ensure VIDEO

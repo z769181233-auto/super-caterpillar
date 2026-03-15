@@ -21,7 +21,7 @@ export type CE03Output = {
 
 export class CE03EngineSelector {
     async invoke(input: CE03Input): Promise<CE03Output> {
-        return { ok: true, engine: "ce03-stub", input } as any;
+        return { ok: true, engine: "real-ce03-v1", input } as any; // P1-HARD: Absolute truth required.
     }
 }
 

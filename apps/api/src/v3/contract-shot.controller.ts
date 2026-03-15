@@ -59,7 +59,7 @@ export class ContractShotController {
       payload: {
         sceneId: scene.id,
         novelSceneId: scene.id, // Support processor flexibility
-        engineKey: 'ce11_shot_generator_mock', // DEBUG: Hardcoded Mock
+        engineKey: 'ce11_shot_generator_real',
         traceId,
       },
       traceId,

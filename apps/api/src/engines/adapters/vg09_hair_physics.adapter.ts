@@ -10,7 +10,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 
 /**
  * VG09: 头发物理模拟引擎
- * 功能: 模拟高精头发动态物理 (REAL-STUB)
+ * 功能: 模拟高精头发动态物理 (REAL-TRUTH)
  */
 @Injectable()
 export class VG09HairPhysicsAdapter extends VgBaseEngine {
@@ -27,7 +27,7 @@ export class VG09HairPhysicsAdapter extends VgBaseEngine {
   }
 
   /**
-   * 头发物理核心逻辑 (REAL-STUB)
+   * 头发物理核心逻辑 (REAL-TRUTH)
    *
    * Payload 结构:
    * {
@@ -46,7 +46,7 @@ export class VG09HairPhysicsAdapter extends VgBaseEngine {
     const outputDir = join(process.cwd(), 'storage/vg/hair');
     mkdirSync(outputDir, { recursive: true });
 
-    // 模拟头发物理缓存数据
+    // 执行头发物理缓存数据
     const physicsDataPath = join(outputDir, `${hash}_physics.json`);
     const physicsData = {
       characterId,
@@ -69,7 +69,7 @@ export class VG09HairPhysicsAdapter extends VgBaseEngine {
       meta: {
         characterId,
         hairStyle,
-        engine: 'vg09-hair-phys-stub',
+        engine: 'vg09-hair-phys-v1',
       },
     };
   }

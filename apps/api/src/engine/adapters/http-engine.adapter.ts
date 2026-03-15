@@ -58,7 +58,6 @@ export class HttpEngineAdapter implements EngineAdapter {
     return (
       engineKey === 'http' ||
       engineKey.startsWith('http_') ||
-      engineKey === 'mock_http_engine' ||
       engineKey === 'ce06_novel_parsing' ||
       engineKey === 'ce03_visual_density' ||
       engineKey === 'ce04_visual_enrichment'

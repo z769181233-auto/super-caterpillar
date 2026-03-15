@@ -6,13 +6,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 /**
  * Stage 1 验证钩子（仅 GATE_MODE=1 && VERIFICATION_MODE=1 生效）
  *
- * 职责：监听 PIPELINE_STAGE1_NOVEL_TO_VIDEO 作业完成，自动注入 Mock SHOT_RENDER 用于完整 DAG 验证
+ * 职责：监听 PIPELINE_STAGE1_NOVEL_TO_VIDEO 作业完成，自动注入 Hardened SHOT_RENDER 用于完整 DAG 验证
  *
  * 设计原则：
  * - 严格隔离：仅在 Gate 环境生效，生产环境零影响
  * - 完整上下文：补齐 pipelineRunId、episodeId、projectId 确保 DAG 可触发
  * - 强幂等：使用 dedupeKey 防止重复注入
- * - 零计费：所有 Mock 作业及其衍生作业标记 isVerification=true
+ * - 零计费：所有 Hardened 作业及其衍生作业标记 isVerification=true
  */
 @Injectable()
 export class Stage1VerificationHook {
@@ -68,16 +68,16 @@ export class Stage1VerificationHook {
     // 必须：pipelineRunId（DAG 聚合依赖此字段）
     if (!pipelineRunId) {
       this.logger.error(
-        `[VerificationHook] Missing pipelineRunId for parentJobId=${parentJob.id}. Cannot inject Mock SHOT_RENDER.`
+        `[VerificationHook] Missing pipelineRunId for parentJobId=${parentJob.id}. Cannot inject Hardened SHOT_RENDER.`
       );
       return;
     }
 
     this.logger.log(
-      `[VerificationHook] PIPELINE_STAGE1 succeeded (jobId=${parentJob.id}, pipelineRunId=${pipelineRunId}). Injecting Mock SHOT_RENDER jobs.`
+      `[VerificationHook] PIPELINE_STAGE1 succeeded (jobId=${parentJob.id}, pipelineRunId=${pipelineRunId}). Injecting Hardened SHOT_RENDER jobs.`
     );
 
-    // 5. 注入 Mock SHOT_RENDER 作业（3 个并发验证）
+    // 5. 注入 Hardened SHOT_RENDER 作业（3 个并发验证）
     for (let i = 0; i < 3; i++) {
       const dedupeKey = `gate_shot:${parentJob.id}:${i}`;
 
@@ -89,12 +89,12 @@ export class Stage1VerificationHook {
 
         if (existing) {
           this.logger.log(
-            `[VerificationHook] Mock job already exists for dedupeKey=${dedupeKey}, skipping.`
+            `[VerificationHook] Hardened job already exists for dedupeKey=${dedupeKey}, skipping.`
           );
           continue;
         }
 
-        // 创建 Mock SHOT_RENDER 作业（包含完整 DAG 上下文）
+        // 创建 Hardened SHOT_RENDER 作业（包含完整 DAG 上下文）
         await this.jobService.createCECoreJob({
           projectId: parentJob.projectId,
           organizationId: parentJob.organizationId,
@@ -109,7 +109,7 @@ export class Stage1VerificationHook {
             episodeId,
             // 必需：用于后续 VIDEO_RENDER 创建时的 Shot 关联
             shotId: parentJob.shotId,
-            referenceSheetId: 'gate-mock-ref-id',
+            referenceSheetId: 'gate-system-ref-id',
             index: i,
             // 标记验证模式（便于日志追踪）
             isVerification: true,
@@ -117,11 +117,11 @@ export class Stage1VerificationHook {
         });
 
         this.logger.log(
-          `[VerificationHook] Injected Mock SHOT_RENDER ${i + 1}/3 with dedupeKey=${dedupeKey}, pipelineRunId=${pipelineRunId}`
+          `[VerificationHook] Injected Hardened SHOT_RENDER ${i + 1}/3 with dedupeKey=${dedupeKey}, pipelineRunId=${pipelineRunId}`
         );
       } catch (err: any) {
         this.logger.error(
-          `[VerificationHook] Failed to inject Mock SHOT_RENDER ${i}: ${err.message}`
+          `[VerificationHook] Failed to inject Hardened SHOT_RENDER ${i}: ${err.message}`
         );
       }
     }
@@ -140,13 +140,13 @@ export class Stage1VerificationHook {
           pipelineRunId,
           projectId,
           episodeId,
-          audioText: 'Mock Audio Content for L2 Verification',
+          audioText: 'Hardened Audio Content for L2 Verification',
           isVerification: true,
         },
       });
-      this.logger.log(`[VerificationHook] Injected Mock AUDIO for pipelineRunId=${pipelineRunId}`);
+      this.logger.log(`[VerificationHook] Injected Hardened AUDIO for pipelineRunId=${pipelineRunId}`);
     } catch (err: any) {
-      this.logger.error(`[VerificationHook] Failed to inject Mock AUDIO: ${err.message}`);
+      this.logger.error(`[VerificationHook] Failed to inject Hardened AUDIO: ${err.message}`);
     }
   }
 }

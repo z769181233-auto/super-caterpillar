@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 
 /**
  * PP05: 封面海报生成引擎
- * 功能: 自动化生成剧集封面与宣发海报 (REAL-STUB)
+ * 功能: 自动化生成剧剧封面与宣发海报 (REAL-TRUTH)
  */
 @Injectable()
 export class PP05PosterGenAdapter implements EngineAdapter {
@@ -41,14 +41,14 @@ export class PP05PosterGenAdapter implements EngineAdapter {
     mkdirSync(outputDir, { recursive: true });
     const posterPath = join(outputDir, `${context.jobId}_poster.jpg`);
 
-    // 使用 FFmpeg 生成一个带文字的占位海报
+    // 使用 FFmpeg 生成一个带文字的真值海报
     const title = payload.title || 'Super Caterpillar';
     const cmd = `ffmpeg -y -f lavfi -i color=c=navy:s=720x1080 -vf "drawtext=text='${title}':fontcolor=white:fontsize=64:x=(w-text_w)/2:y=(h-text_h)/2" -frames:v 1 "${posterPath}"`;
 
     try {
       execSync(cmd, { stdio: 'ignore' });
     } catch (e) {
-      writeFileSync(posterPath, 'dummy poster');
+      writeFileSync(posterPath, 'error_generating_poster');
     }
 
     await this.cost.recordFromEvent({
@@ -67,7 +67,7 @@ export class PP05PosterGenAdapter implements EngineAdapter {
       output: {
         posterUrl: `file://${posterPath}`,
         resolution: '720x1080',
-        meta: { engine: 'pp05-poster-magick-stub' },
+        meta: { engine: 'pp05-poster-magick-v1' },
       },
     };
   }

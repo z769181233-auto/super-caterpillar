@@ -24,6 +24,19 @@ export class JobWatchdogService {
     console.log('[DEBUG_BOOT] JobWatchdogService constructor end');
   }
 
+  private shouldSkipForPrismaTimeout(error: any): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return false;
+    }
+    const message = String(error?.message || '');
+    return (
+      message.includes('PRISMA_QUERY_TIMEOUT') ||
+      message.includes('startup connect exceeded') ||
+      message.includes("Can't reach database server") ||
+      message.includes('P1001')
+    );
+  }
+
   /**
    * 定期扫描并恢复僵尸任务
    * 每 5 分钟执行一次
@@ -187,6 +200,12 @@ export class JobWatchdogService {
         `[JobWatchdog] Recovery completed: ${recoveredCount} recovered, ${failedCount} failed`
       );
     } catch (error) {
+      if (this.shouldSkipForPrismaTimeout(error)) {
+        this.logger.warn(
+          `[JobWatchdog] Skipping recovery scan in non-production due to Prisma degradation: ${error.message}`
+        );
+        return;
+      }
       // P0 修复：生产日志禁止输出 stack
       const isProd = process.env.NODE_ENV === 'production';
       if (isProd) {

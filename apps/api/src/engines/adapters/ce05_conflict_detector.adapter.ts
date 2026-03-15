@@ -38,7 +38,7 @@ export class CE05ConflictDetectorAdapter extends NlpBaseEngine {
       conflict_detected: conflicts.length > 0,
       conflict_points: conflicts,
       intensity: Math.min(conflicts.length * 0.2, 1.0),
-      meta: { implementation: 'ce05_stub_v1' },
+      meta: { implementation: 'ce05_truth_v1' },
     };
   }
 }

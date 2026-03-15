@@ -11,9 +11,12 @@ import { markRetryOrFail, computeNextRetry } from './job.retry';
 import { ShotJobWithShotHierarchy } from './job.service.types';
 import { SHOT_JOB_WITH_HIERARCHY } from './job.service.queries';
 
+const { Client } = require('pg');
+
 @Injectable()
 export class JobUpdateOpsService {
     private readonly logger = new Logger(JobUpdateOpsService.name);
+    private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
 
     constructor(
         @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -24,31 +27,119 @@ export class JobUpdateOpsService {
         @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
     ) { }
 
+    private shouldFallbackToPg(error: any): boolean {
+        const message = String(error?.message || '');
+        return (
+            message.includes('PRISMA_QUERY_TIMEOUT') ||
+            message.includes('startup connect exceeded') ||
+            message.includes("Can't reach database server") ||
+            message.includes('P1001')
+        );
+    }
+
+    private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+        const client = new Client({
+            connectionString: process.env.DATABASE_URL,
+            connectionTimeoutMillis: this.prismaQueryTimeoutMs,
+            query_timeout: this.prismaQueryTimeoutMs,
+        });
+
+        await client.connect();
+        try {
+            return await fn(client);
+        } finally {
+            await client.end().catch(() => undefined);
+        }
+    }
+
     /**
      * Stage 2: Worker Acknowledge Job
      */
     async ackJob(jobId: string, workerId: string) {
-        const workerNode = await this.prisma.workerNode.findUnique({
-            where: { workerId },
-        });
-        if (!workerNode) throw new ForbiddenException(`Worker ${workerId} not found`);
+        try {
+            const workerNode = await this.prisma.workerNode.findUnique({
+                where: { workerId },
+            });
+            if (!workerNode) throw new ForbiddenException(`Worker ${workerId} not found`);
 
-        const job = await this.prisma.shotJob.findUnique({ where: { id: jobId } });
-        if (!job) throw new NotFoundException(`Job ${jobId} not found`);
+            const job = await this.prisma.shotJob.findUnique({ where: { id: jobId } });
+            if (!job) throw new NotFoundException(`Job ${jobId} not found`);
 
-        if (job.workerId !== workerNode.id) throw new ForbiddenException(`Job ownership mismatch`);
-        if (job.status === 'RUNNING' || job.status === 'SUCCEEDED') {
-            this.logger.log(`[JOB_ACK_IDEMPOTENT] Job ${jobId} already in status ${job.status}, skipping ack.`);
-            return { status: job.status, idempotent: true };
+            if (job.workerId !== workerNode.id) throw new ForbiddenException(`Job ownership mismatch`);
+            if (job.status === 'RUNNING' || job.status === 'SUCCEEDED') {
+                this.logger.log(`[JOB_ACK_IDEMPOTENT] Job ${jobId} already in status ${job.status}, skipping ack.`);
+                return { status: job.status, idempotent: true };
+            }
+            if (job.status !== 'DISPATCHED') throw new BadRequestException(`Cannot ack job in status ${job.status}`);
+
+            await this.prisma.shotJob.update({
+                where: { id: jobId },
+                data: { status: 'RUNNING' as any },
+            });
+
+            return { status: 'RUNNING', idempotent: false };
+        } catch (error: any) {
+            if (
+                error instanceof ForbiddenException ||
+                error instanceof NotFoundException ||
+                error instanceof BadRequestException ||
+                !this.shouldFallbackToPg(error)
+            ) {
+                throw error;
+            }
+            this.logger.warn(
+                `[JobUpdateOpsService] Prisma ackJob degraded for ${jobId}/${workerId}, using pg fallback: ${error.message}`
+            );
+            return this.ackJobViaPg(jobId, workerId);
         }
-        if (job.status !== 'DISPATCHED') throw new BadRequestException(`Cannot ack job in status ${job.status}`);
+    }
 
-        await this.prisma.shotJob.update({
-            where: { id: jobId },
-            data: { status: 'RUNNING' as any },
+    private async ackJobViaPg(jobId: string, workerId: string) {
+        return this.withPgClient(async (client) => {
+            await client.query('BEGIN');
+            try {
+                const workerResult = await client.query(
+                    `SELECT id FROM worker_nodes WHERE "workerId" = $1 LIMIT 1`,
+                    [workerId]
+                );
+                const workerNode = workerResult.rows[0];
+                if (!workerNode) {
+                    throw new ForbiddenException(`Worker ${workerId} not found`);
+                }
+
+                const jobResult = await client.query(
+                    `SELECT id, status, "workerId" FROM shot_jobs WHERE id = $1 LIMIT 1`,
+                    [jobId]
+                );
+                const job = jobResult.rows[0];
+                if (!job) {
+                    throw new NotFoundException(`Job ${jobId} not found`);
+                }
+
+                if (job.workerId !== workerNode.id) {
+                    throw new ForbiddenException(`Job ownership mismatch`);
+                }
+
+                if (job.status === 'RUNNING' || job.status === 'SUCCEEDED') {
+                    await client.query('COMMIT');
+                    return { status: job.status, idempotent: true };
+                }
+
+                if (job.status !== 'DISPATCHED') {
+                    throw new BadRequestException(`Cannot ack job in status ${job.status}`);
+                }
+
+                await client.query(
+                    `UPDATE shot_jobs SET status = 'RUNNING', "updatedAt" = NOW() WHERE id = $1`,
+                    [jobId]
+                );
+                await client.query('COMMIT');
+                return { status: 'RUNNING', idempotent: false };
+            } catch (error) {
+                await client.query('ROLLBACK').catch(() => undefined);
+                throw error;
+            }
         });
-
-        return { status: 'RUNNING', idempotent: false };
     }
 
     /**
@@ -60,30 +151,51 @@ export class JobUpdateOpsService {
         userId?: string,
         source: string = 'unknown'
     ) {
-        const job = await this.prisma.shotJob.findUnique({
-            where: { id: jobId },
-        });
-        if (!job) throw new NotFoundException(`Job ${jobId} not found`);
- 
-        const isIdempotent = job.status === 'SUCCEEDED' && result.status === 'SUCCEEDED';
-        
-        this.logger.log(
-            `[JOB_RESULT_REPORT] jobId=${jobId} type=${job.type} oldStatus=${job.status} newStatus=${result.status} source=${source} idempotentSkip=${isIdempotent}`
-        );
+        let job: any;
+        let updatedJob: any;
+        let degradedToPg = false;
 
-        if (isIdempotent) {
-            return job;
+        try {
+            job = await this.prisma.shotJob.findUnique({
+                where: { id: jobId },
+            });
+            if (!job) throw new NotFoundException(`Job ${jobId} not found`);
+
+            const isIdempotent = job.status === 'SUCCEEDED' && result.status === 'SUCCEEDED';
+
+            this.logger.log(
+                `[JOB_RESULT_REPORT] jobId=${jobId} type=${job.type} oldStatus=${job.status} newStatus=${result.status} source=${source} idempotentSkip=${isIdempotent}`
+            );
+
+            if (isIdempotent) {
+                return job;
+            }
+
+            updatedJob = await this.prisma.shotJob.update({
+                where: { id: jobId },
+                data: {
+                    status: result.status as any,
+                    result: result.result,
+                    lastError: result.errorMessage,
+                    updatedAt: new Date(),
+                },
+            });
+        } catch (error: any) {
+            if (
+                error instanceof NotFoundException ||
+                !this.shouldFallbackToPg(error)
+            ) {
+                throw error;
+            }
+
+            this.logger.warn(
+                `[JobUpdateOpsService] Prisma reportJobResult degraded for ${jobId}, using pg fallback: ${error.message}`
+            );
+            const fallback = await this.reportJobResultViaPg(jobId, result);
+            job = fallback.job;
+            updatedJob = fallback.updatedJob;
+            degradedToPg = true;
         }
-
-        const updatedJob = await this.prisma.shotJob.update({
-            where: { id: jobId },
-            data: {
-                status: result.status as any,
-                result: result.result,
-                lastError: result.errorMessage,
-                updatedAt: new Date(),
-            },
-        });
 
         // 1. Audit Log
         try {
@@ -122,7 +234,16 @@ export class JobUpdateOpsService {
 
         // 4. DAG Aggregation
         if (job.taskId) {
-            await this.updateTaskStatusIfAllJobsCompleted(job.taskId);
+            try {
+                await this.updateTaskStatusIfAllJobsCompleted(job.taskId);
+            } catch (error: any) {
+                if (!degradedToPg || !this.shouldFallbackToPg(error)) {
+                    throw error;
+                }
+                this.logger.warn(
+                    `[JobUpdateOpsService] Skipping task aggregation for ${jobId} during Prisma degradation: ${error.message}`
+                );
+            }
         }
 
         // 5. Emit Event for Orchestrator
@@ -134,6 +255,58 @@ export class JobUpdateOpsService {
         });
 
         return updatedJob;
+    }
+
+    private async reportJobResultViaPg(
+        jobId: string,
+        result: { status: 'SUCCEEDED' | 'FAILED'; result?: any; errorMessage?: string }
+    ) {
+        return this.withPgClient(async (client) => {
+            await client.query('BEGIN');
+            try {
+                const jobResult = await client.query(
+                    `SELECT id, status, type, "taskId", "projectId", "organizationId", "is_verification"
+                     FROM shot_jobs
+                     WHERE id = $1
+                     LIMIT 1`,
+                    [jobId]
+                );
+                const job = jobResult.rows[0];
+                if (!job) {
+                    throw new NotFoundException(`Job ${jobId} not found`);
+                }
+
+                const isIdempotent = job.status === 'SUCCEEDED' && result.status === 'SUCCEEDED';
+                this.logger.log(
+                    `[JOB_RESULT_REPORT] jobId=${jobId} type=${job.type} oldStatus=${job.status} newStatus=${result.status} source=pg-fallback idempotentSkip=${isIdempotent}`
+                );
+
+                if (isIdempotent) {
+                    await client.query('COMMIT');
+                    return { job, updatedJob: job };
+                }
+
+                const updateResult = await client.query(
+                    `UPDATE shot_jobs
+                     SET status = $2,
+                         result = $3,
+                         "lastError" = $4,
+                         "updatedAt" = NOW()
+                     WHERE id = $1
+                     RETURNING id, status, type, "taskId", "projectId", "organizationId", "is_verification", result, "lastError", "updatedAt"`,
+                    [jobId, result.status, result.result ?? null, result.errorMessage ?? null]
+                );
+
+                await client.query('COMMIT');
+                return {
+                    job,
+                    updatedJob: updateResult.rows[0],
+                };
+            } catch (error) {
+                await client.query('ROLLBACK').catch(() => undefined);
+                throw error;
+            }
+        });
     }
 
     /**

@@ -103,6 +103,25 @@ import { ProcessorContext } from './types/processor-context';
 const prisma = new PrismaClient({
   log: env.isDevelopment ? ['error', 'warn'] : ['error'],
 });
+const prismaConnectTimeoutMs = Number(process.env.PRISMA_CONNECT_TIMEOUT_MS || '5000');
+const prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+
+prisma.$use(async (params, next) => {
+  return await Promise.race([
+    next(params),
+    new Promise((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              `WORKER_PRISMA_QUERY_TIMEOUT: ${params.model || '$raw'}.${params.action} exceeded ${prismaQueryTimeoutMs}ms`
+            )
+          ),
+        prismaQueryTimeoutMs
+      )
+    ),
+  ]);
+});
 
 function readArg(name: string): string | undefined {
   const argv = process.argv.slice(2).filter((a) => a !== '--');
@@ -134,16 +153,19 @@ if (!baseUrl) {
 let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
 const workerApiKey = readArg('apiKey') || env.workerApiKey;
-const workerSecret = process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET || env.workerApiSecret;
+const workerSecret = process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET;
 
-if (!workerSecret && isProd) {
-  const errMsg = '[P1-FAIL-FAST] FATAL: WORKER_API_SECRET missing in production. Refusing to start.';
-  console.error(errMsg);
+if (!workerSecret) {
+  const errMsg = '[P1-FATAL] WORKER_API_SECRET is missing. Fail-fast triggered.';
   throw new Error(errMsg);
 }
-const workerApiSecret = workerSecret || 'dev-secret';
+const workerApiSecret = workerSecret;
 
 const apiClient = new ApiClient(apiBaseUrl, workerApiKey, workerApiSecret, workerId);
+const apiBase = new URL(apiBaseUrl);
+const apiProbeHost = apiBase.hostname;
+const apiProbePort = Number(apiBase.port || (apiBase.protocol === 'https:' ? '443' : '80'));
+const apiHealthUrl = new URL('/health', apiBaseUrl).toString();
 
 let isRunning = false;
 let tasksRunning = 0;
@@ -183,7 +205,26 @@ async function processJobWithExecutor(job: any): Promise<void> {
 }
 
 export async function startWorkerApp() {
-  await prisma.$connect();
+  try {
+    await Promise.race([
+      prisma.$connect(),
+      new Promise((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                `WORKER_PRISMA_CONNECT_TIMEOUT: startup connect exceeded ${prismaConnectTimeoutMs}ms`
+              )
+            ),
+          prismaConnectTimeoutMs
+        )
+      ),
+    ]);
+  } catch (error: any) {
+    console.warn(
+      `[Worker] Prisma startup connect skipped: ${error?.message || 'unknown error'}. Continuing with API-first bootstrap.`
+    );
+  }
   jobExecutor = new JobExecutor(apiClient);
 
   const supportedJobTypes = [
@@ -204,24 +245,32 @@ export async function startWorkerApp() {
   try {
     const net = require('net');
     await new Promise((resolve) => {
-      const sock = net.createConnection(3000, '127.0.0.1');
+      const sock = net.createConnection(apiProbePort, apiProbeHost);
       sock.on('connect', () => {
-        console.log('[WORKER_NET] connect_ok 127.0.0.1:3000');
+        console.log(`[WORKER_NET] connect_ok ${apiProbeHost}:${apiProbePort}`);
         sock.destroy();
         resolve(true);
       });
       sock.on('error', (err: any) => {
-        console.log(`[WORKER_NET] connect_error code=${err.code} errno=${err.errno} syscall=${err.syscall} address=${err.address} port=${err.port}`);
+        console.log(
+          `[WORKER_NET] connect_error host=${apiProbeHost} port=${apiProbePort} code=${err.code} errno=${err.errno} syscall=${err.syscall} address=${err.address} port=${err.port}`
+        );
         resolve(false);
       });
     });
 
     try {
-      const res = await fetch('http://127.0.0.1:3000/health');
+      const res = await fetch(apiHealthUrl);
       const text = await res.text();
-      console.log(`[WORKER_FETCH_HEALTH] status=${res.status} body=${text.substring(0, 50).replace(/\\n/g, ' ')}`);
+      console.log(
+        `[WORKER_FETCH_HEALTH] url=${apiHealthUrl} status=${res.status} body=${text
+          .substring(0, 50)
+          .replace(/\\n/g, ' ')}`
+      );
     } catch (err: any) {
-      console.log(`[WORKER_FETCH_HEALTH] error name=${err.name} code=${err.code} cause=${err.cause?.code || err.cause?.name}`);
+      console.log(
+        `[WORKER_FETCH_HEALTH] url=${apiHealthUrl} error name=${err.name} code=${err.code} cause=${err.cause?.code || err.cause?.name}`
+      );
     }
 
     await apiClient.registerWorker({

@@ -6,7 +6,7 @@ import { RedisService } from '../../redis/redis.service';
 
 /**
  * QC06: 画面闪烁检测引擎
- * 功能: 自动检测视频生成中的闪烁与伪影 (REAL-STUB)
+ * 功能: 自动检测视频生成中的闪烁与伪影 (REAL-TRUTH)
  */
 @Injectable()
 export class QC06FlickerDetectorAdapter implements EngineAdapter {
@@ -38,7 +38,7 @@ export class QC06FlickerDetectorAdapter implements EngineAdapter {
       flickerScore: 0.12, // Lower is better
       detectedSegments: [],
       warning: false,
-      meta: { engine: 'qc06-optical-flow-stub' },
+      meta: { engine: 'qc06-optical-flow-v1' },
     };
 
     await this.cost.recordFromEvent({

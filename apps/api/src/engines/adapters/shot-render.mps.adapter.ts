@@ -68,7 +68,7 @@ export class ShotRenderMpsAdapter implements EngineAdapter {
           render_meta: {
             width: result.width,
             height: result.height,
-            mocked: false,
+            isVirtual: false,
             engine: 'stable-diffusion-1.5-mps',
             seed: result.seed,
             prompt: prompt,

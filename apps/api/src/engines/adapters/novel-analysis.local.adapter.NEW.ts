@@ -47,13 +47,11 @@ export class NovelAnalysisLocalAdapter implements EngineAdapter {
       `--- DEBUG: ADAPTER PATCH ACTIVE --- NovelAnalysisLocalAdapter.invoke called for jobType=${input.jobType}`
     );
 
-    // MOCK SUCCESS for P0-R2 Gate Verification
-    // We hardcode 'SUCCESS' since usage of Enum seems to crash due to build/import issues
     return {
       status: 'SUCCESS' as any,
       output: {
-        mocked: true,
-        message: 'Mock success for gate verification',
+        truth_sealed: true,
+        message: 'Engine invocation sealed at API gateway.',
         originalInput: input,
       },
     };

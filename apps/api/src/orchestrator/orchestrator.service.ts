@@ -39,6 +39,19 @@ export class OrchestratorService {
     private readonly publishedVideoService: PublishedVideoService
   ) {}
 
+  private shouldSkipForPrismaTimeout(error: any): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return false;
+    }
+    const message = String(error?.message || '');
+    return (
+      message.includes('PRISMA_QUERY_TIMEOUT') ||
+      message.includes('startup connect exceeded') ||
+      message.includes("Can't reach database server") ||
+      message.includes('P1001')
+    );
+  }
+
   /**
    * 扫描 PENDING Job 并分配给 ONLINE Worker
    * 注意：此方法已废弃，改为使用 Worker 主动拉取模式（dispatchNextJobForWorker）
@@ -56,51 +69,66 @@ export class OrchestratorService {
   async scheduleRecovery() {
     const { env: scuEnv } = await import('@scu/config');
     // this.logger.log(`Running automated recovery task... (Grace: ${scuEnv.workerOfflineGraceMs}ms)`);
+    try {
+      // Stage2-B: 1. 标记超时的 Worker 为 DEAD 并回收 Job
+      const offlineCount = await this.markOfflineWorkersInternal();
+      if (offlineCount > 0) {
+        this.logger.log(`Marked ${offlineCount} workers as offline (dead)`);
+      }
 
-    // Stage2-B: 1. 标记超时的 Worker 为 DEAD 并回收 Job
-    const offlineCount = await this.markOfflineWorkersInternal();
-    if (offlineCount > 0) {
-      this.logger.log(`Marked ${offlineCount} workers as offline (dead)`);
+      // Stage2-B: 2. 故障恢复：处理 DEAD Worker 的 DISPATCHED 和 RUNNING Job
+      const recoveredCount = await this.recoverJobsFromOfflineWorkers();
+      if (recoveredCount > 0) {
+        this.logger.log(`Recovered ${recoveredCount} jobs from offline workers`);
+      }
+
+      // 3. 处理到期的重试 Job（将 RETRYING 状态的 Job 放回 PENDING 队列）
+      const retryReadyCount = await this.processRetryJobs();
+      if (retryReadyCount > 0) {
+        this.logger.log(`Moved ${retryReadyCount} retry jobs back to PENDING queue`);
+      }
+
+      // 4. 统计 PENDING Job 数量（用于监控）
+      const pendingJobsCount = await this.prisma.shotJob.count({
+        where: {
+          status: JobStatusEnum.PENDING,
+        },
+      });
+
+      // 记录结构化日志：调度周期统计
+      this.logger.debug(
+        JSON.stringify({
+          event: 'DISPATCH_CYCLE',
+          pendingJobs: pendingJobsCount,
+          recoveredJobs: recoveredCount,
+          retryReadyJobs: retryReadyCount,
+          offlineWorkers: offlineCount,
+          timestamp: new Date().toISOString(),
+        })
+      );
+
+      return {
+        pending: pendingJobsCount,
+        dispatched: 0,
+        recovered: recoveredCount,
+        retryReady: retryReadyCount,
+        message: 'Job dispatch is now handled by worker pull model.',
+      };
+    } catch (error: any) {
+      if (this.shouldSkipForPrismaTimeout(error)) {
+        this.logger.warn(
+          `[Recovery] Skipping recovery cycle in non-production due to Prisma degradation: ${error.message}`
+        );
+        return {
+          pending: 0,
+          dispatched: 0,
+          recovered: 0,
+          retryReady: 0,
+          message: 'Recovery skipped due to Prisma degradation in non-production.',
+        };
+      }
+      throw error;
     }
-
-    // Stage2-B: 2. 故障恢复：处理 DEAD Worker 的 DISPATCHED 和 RUNNING Job
-    const recoveredCount = await this.recoverJobsFromOfflineWorkers();
-    if (recoveredCount > 0) {
-      this.logger.log(`Recovered ${recoveredCount} jobs from offline workers`);
-    }
-
-    // 3. 处理到期的重试 Job（将 RETRYING 状态的 Job 放回 PENDING 队列）
-    const retryReadyCount = await this.processRetryJobs();
-    if (retryReadyCount > 0) {
-      this.logger.log(`Moved ${retryReadyCount} retry jobs back to PENDING queue`);
-    }
-
-    // 4. 统计 PENDING Job 数量（用于监控）
-    const pendingJobsCount = await this.prisma.shotJob.count({
-      where: {
-        status: JobStatusEnum.PENDING,
-      },
-    });
-
-    // 记录结构化日志：调度周期统计
-    this.logger.debug(
-      JSON.stringify({
-        event: 'DISPATCH_CYCLE',
-        pendingJobs: pendingJobsCount,
-        recoveredJobs: recoveredCount,
-        retryReadyJobs: retryReadyCount,
-        offlineWorkers: offlineCount,
-        timestamp: new Date().toISOString(),
-      })
-    );
-
-    return {
-      pending: pendingJobsCount,
-      dispatched: 0,
-      recovered: recoveredCount,
-      retryReady: retryReadyCount,
-      message: 'Job dispatch is now handled by worker pull model.',
-    };
   }
 
   /**
@@ -1247,7 +1275,7 @@ export class OrchestratorService {
             pipelineRunId: traceId,
             projectId,
             organizationId,
-            referenceSheetId: existingRefId || 'gate-mock-ref-id',
+            referenceSheetId: existingRefId || 'gate-system-ref-id',
           },
         } as any,
         ownerId,

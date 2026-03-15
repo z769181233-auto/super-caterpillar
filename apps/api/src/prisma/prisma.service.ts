@@ -4,9 +4,27 @@ import { PrismaClient } from 'database';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+  private readonly connectTimeoutMs = Number(process.env.PRISMA_CONNECT_TIMEOUT_MS || '5000');
+  private readonly queryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
 
   constructor() {
     super({});
+    this.$use(async (params, next) => {
+      return await Promise.race([
+        next(params),
+        new Promise((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `PRISMA_QUERY_TIMEOUT: ${params.model || '$raw'}.${params.action} exceeded ${this.queryTimeoutMs}ms`
+                )
+              ),
+            this.queryTimeoutMs
+          )
+        ),
+      ]);
+    });
     // 开发/测试环境：诊断 Prisma Client 来源和模型
     if (process.env.NODE_ENV !== 'production') {
       try {
@@ -36,25 +54,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     // P1-1 DB URL Source Audit
     const dbUrl = process.env.DATABASE_URL;
-    const mockUrl = process.env.MOCK_DATABASE_URL;
     const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
 
-    let source = 'fallback/missing';
-    let activeUrl = 'unknown';
+    let source = 'DATABASE_URL';
+    let activeUrl = dbUrl || 'unknown';
 
-    if (dbUrl) {
-      source = 'DATABASE_URL';
-      activeUrl = dbUrl;
-    } else if (mockUrl) {
-      source = 'MOCK_DATABASE_URL';
-      activeUrl = mockUrl;
-    }
-
-    if (isProd && source !== 'DATABASE_URL') {
-      const errMsg = `[P1-1] FATAL: DATABASE_URL is missing or using fallback/mock in production. Fail-fast triggered.`;
-      // eslint-disable-next-line no-console
-      console.error(errMsg);
-      throw new Error(errMsg);
+    if (!dbUrl) {
+      source = 'missing';
+      if (isProd) {
+        const errMsg = `[P1-1] FATAL: DATABASE_URL is missing in production. Fail-fast triggered.`;
+        console.error(errMsg);
+        throw new Error(errMsg);
+      }
     }
 
     try {
@@ -79,7 +90,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleInit() {
     console.log('[DEBUG_BOOT] PrismaService.onModuleInit start ($connect)');
     try {
-      await this.$connect();
+      await Promise.race([
+        this.$connect(),
+        new Promise((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `PRISMA_CONNECT_TIMEOUT: startup connect exceeded ${this.connectTimeoutMs}ms`
+                )
+              ),
+            this.connectTimeoutMs
+          )
+        ),
+      ]);
       console.log('[DEBUG_BOOT] PrismaService.onModuleInit end ($connect)');
     } catch (e) {
       console.error('[DEBUG_BOOT] PrismaService.onModuleInit FAILED', e);

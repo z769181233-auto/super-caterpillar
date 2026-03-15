@@ -135,7 +135,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
 
       const selectedOutput = await this.selector.invoke(ce06Input);
       let structure: any;
-      let engineInfo = { key: 'legacy_stub', version: '1.0' };
+      let engineInfo = { key: 'truth_standard_ce06', version: '1.0' };
 
       if (selectedOutput) {
         // 使用新引擎结果
@@ -145,10 +145,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
           version: (selectedOutput as any).engineInfo?.version || '1.0',
         };
       } else {
-        // 使用 Legacy Stub (Legacy 模式或选择器返回 null)
-        // @ts-ignore
-        const { basicTextSegmentation } = require('./novel-analysis-processor');
-        structure = basicTextSegmentation(rawText, projectId);
+        throw new Error('CE06_PARSING_FAILED: Absolute truth required. No legacy fallback allowed.');
       }
 
       const parseDuration = selectedOutput
@@ -184,7 +181,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
       const writeDuration = Date.now() - writeStartTime;
       const totalDuration = Date.now() - startTime;
 
-      // S3-A: 写入 AuditLog 和 CostLedger (如果不是 LEGACY_STUB 模式)
+      // Standard: 写入 AuditLog 和 CostLedger
       if (selectedOutput) {
         const jobId = input.payload.jobId || 'unknown';
         const inputHash = hashData(ce06Input);
@@ -409,52 +406,8 @@ export class EngineAdapterClient {
       },
     });
 
-    // [P2b] 注册 CE11 Shot Generator Mock 适配器
-    this.adapters.set('ce11_shot_generator_mock', {
-      name: 'ce11_shot_generator_mock',
-      supports: (k) => k === 'ce11_shot_generator_mock',
-      invoke: async (input) => {
-        const traceId = input.payload?.traceId || (input as any).metadata?.traceId || 'unknown';
-        process.stdout.write(`[Engine:CE11_MOCK] Invoking mock shot generation for: ${traceId}\n`);
-
-        return {
-          status: 'SUCCESS' as any,
-          output: {
-            shots: [
-              {
-                shot_type: 'WIDE_SHOT',
-                camera_movement: 'PAN_LEFT',
-                camera_angle: 'EYE_LEVEL',
-                lighting_preset: 'DRAMATIC',
-                visualPrompt: 'A wide shot of a futuristic city under neon lights, pan left.',
-                action_description: 'Crowds moving through the streets.',
-                duration_sec: 3.5,
-              },
-              {
-                shot_type: 'CLOSE_UP',
-                camera_movement: 'STATIC',
-                camera_angle: 'LOW_ANGLE',
-                lighting_preset: 'NEON',
-                visualPrompt: 'A close up of a cybernetic eye reflecting neon signage.',
-                dialogue_content: '"I see everything."',
-                sound_fx: 'Electromagnetic hum',
-                duration_sec: 2.5,
-              },
-            ],
-            billing_usage: {
-              model: 'ce11-mock-v1',
-              totalTokens: 150,
-              cost: 0,
-            },
-          },
-          metrics: {
-            latencyMs: 150,
-            tokensIn: 50,
-            tokensOut: 100,
-          },
-        };
-      },
-    });
+    // P1-HARD: CE11 Shot Generator Mock Adapter removed for Round 3 Sealing.
+    // Shot generation now strictly requires truth-based engine providers.
   }
 
   /**

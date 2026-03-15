@@ -24,17 +24,10 @@ export class Ce14NarrativeClimaxAdapter extends NlpBaseEngine {
    * 实现具体的高潮识别逻辑 (REAL-STUB)
    */
   protected async processLogic(payload: any, input: EngineInvokeInput): Promise<any> {
-    this.logger.log(`Processing CE14 Climax for project: ${input.context.projectId}`);
-
-    // 实操逻辑骨架：识别文本流中的张力峰值
-    const text = payload.text || '';
-    const mockClimax = {
-      climax_detected: text.length > 500,
-      peak_intensity: 0.88,
-      indices: [100, 250, 480],
-      meta: { v: '1.0.0-nlp-base' },
-    };
-
-    return mockClimax;
+    if (process.env.NODE_ENV === 'production' && process.env.GATE_MODE !== '1') {
+      throw new Error(`[ENGINE_UNAVAILABLE] CE14 Narrative Climax implementation required.`);
+    }
+    this.logger.warn(`CE14 Climax running in non-prod mode. No REAL implementation bound.`);
+    throw new Error('[STUB_ERROR] CE14 Narrative Climax is a STUB; real implementation missing.');
   }
 }

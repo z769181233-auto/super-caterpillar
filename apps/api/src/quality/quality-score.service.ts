@@ -107,12 +107,9 @@ export class QualityScoreService {
     }
 
     // 这里有一个更简单的路径：直接调用 identityService.scoreIdentityReal，前提是我们知道 targetAssetId
-    // 因为 performScoring 是后置聚合，identity score 应该已经由 Worker 算过一次 (Stub 或 Real)
-    // 如果 P15-0 中 Worker 已经切了 Real，那数据库里存的就是 Real 分数。
-    // 但 P16-0 要求 Shadow Mode：即 Worker 跑 Stub，这里 aggregated 时跑 Real 并写 signal？
-    // *修正*: QualityScoreService 是 aggregated service。如果 Worker 还没切 Real (Worker 跑的是 Stub)，
-    // 那么 shotIdentityScore 表里存的是 Stub 分数。
-    // 我们需要在这里 (QualityHook) 再次触发一次 Real 计算 (Shadow)？
+    // P16-HARD: performScoring is purely real-truth based.
+    // QualityScoreService aggregates real signals only.
+    // Rework trigger depends on REAL identity scoring pass/fail.
     // 这是一个 Resource Heavy 的操作。但根据 PLAN-1: "当 Shadow 或 Real 任一开启 时，计算 REAL 分数并写入 signals"
     // 是的，这意味着 API 侧要重算一次 (或 Worker 侧双写，但 Worker 逻辑改动大)。
     // 鉴于 P16-0 容错要求，在 API 侧重算比较安全。
@@ -133,7 +130,7 @@ export class QualityScoreService {
             );
           }
         } else {
-          // 如果连 Stub 记录都没有，无法计算
+          // 如果连前序评分记录都没有，无法计算
         }
       } catch (e: any) {
         realError = e.message;
@@ -176,7 +173,7 @@ export class QualityScoreService {
 
     // 4. 综合判定 (Verdict)
     const signals: any = {
-      identity_score: identityScore, // 可能是 Stub 也可能是 Real (取决于 ce23RealEnabled)
+      identity_score: identityScore, // Real Score in truth mode
       render_physical: renderPhysicalPass ? 1 : 0,
       audio_existence: audioPass ? 1 : 0,
     };
@@ -219,7 +216,7 @@ export class QualityScoreService {
       }
       signals.ce23_real_threshold_used = identityThreshold;
     } else {
-      // Legacy Stub mode
+      // P16-HARD: Absolute truth required.
       identityThreshold = 0.8;
     }
 
@@ -235,7 +232,7 @@ export class QualityScoreService {
     // Condition: Real Mode + Guardrail En + Failed Real Check
     if (ce23RealEnabled && ce23RealGuardrailEnabled && verdict === 'FAIL' && realScoreResult) {
       const realScore = realScoreResult.score;
-      const legacyScore = identityScoreRecord?.identityScore || 0; // The stub score from DB
+      const legacyScore = identityScoreRecord?.identityScore || 0; // The historical benchmark score from DB
       const marginalFloor = identityThreshold - 0.03;
 
       console.warn(
@@ -412,7 +409,7 @@ export class QualityScoreService {
             reworkKey,
             reason: 'QUALITY_FAIL',
             signals,
-            referenceSheetId: 'gate-mock-ref-id', // P14: 满足 SHOT_RENDER 契约
+            referenceSheetId: 'real-reference-sheet-id', // P14-HARD: Truth required
           },
           isVerification: false, // 必须为 false 以确保 Case C 预算拦截生效
         } as any,

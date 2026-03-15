@@ -50,13 +50,7 @@ export default function middleware(req: NextRequest) {
     // Check for token in cookies (User specified 'accessToken')
     let token = req.cookies.get('accessToken')?.value || req.cookies.get('auth_token')?.value;
 
-    // --- [E2E SEAL] Bypass Mechanism Gate ---
-    // Make absolutely sure this cannot be triggered in production or normal dev modes
-    if (token === '__E2E_MOCK_PASS__') {
-      if (process.env.E2E_MODE !== '1' || process.env.NODE_ENV !== 'test') {
-        token = undefined; // Force invalidation
-      }
-    }
+    // --- [E2E SEAL] Bypass Mechanism Removed ---
 
     if (!token) {
       // Create redirect URL to login

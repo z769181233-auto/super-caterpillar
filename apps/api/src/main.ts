@@ -30,20 +30,12 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function bootstrap() {
-  const isStubMode = process.env.P9_B3_STUB_MODE === '1';
-
-  // P0-2: Wait for 10s to ensure background services (like Job Worker) are ready
-  console.log('[BOOTSTRAP] Waiting 10s for environment stabilizing...');
-  await new Promise(resolve => setTimeout(resolve, 10000));
-
   // A4: Environment Integrity Guard
   try {
     validateRequiredEnvs();
   } catch (e) {
-    if (!isStubMode) {
-      console.error('[FATAL] Environment validation failed. Service will exit.');
-      process.exit(1);
-    }
+    console.error('[FATAL] Environment validation failed. Service will exit.');
+    process.exit(1);
   }
 
   console.log('[BOOTSTRAP] Calling NestFactory.create(AppModule)...');
@@ -90,8 +82,13 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 3000;
 
+  console.log('[BOOTSTRAP] Calling app.init()...');
+  await app.init();
+  console.log('[BOOTSTRAP] app.init() returned.');
+
   console.log(`[BOOTSTRAP] Attempting app.listen on port ${port}...`);
   await app.listen(port, '0.0.0.0');
+  console.log(`[BOOTSTRAP] app.listen() returned on port ${port}.`);
 }
 
 bootstrap().catch(e => {

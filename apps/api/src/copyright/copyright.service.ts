@@ -30,7 +30,7 @@ export class CopyrightService {
     return {
       hash,
       verified: true,
-      ownerId: 'mock-owner-id',
+      ownerId: 'unknown-owner-id',
       timestamp: new Date(),
     };
   }

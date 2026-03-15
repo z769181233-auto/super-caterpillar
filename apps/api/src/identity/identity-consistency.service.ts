@@ -26,41 +26,12 @@ export class IdentityConsistencyService {
     characterId: string,
     shotId?: string
   ): Promise<{ score: number; verdict: 'PASS' | 'FAIL'; details: any }> {
-    // 1. Check Feature Flag (ce23RealEnabled)
-    // P16-2: Secondary Kill Switch Guard
-    if (process.env.CE23_REAL_FORCE_DISABLE === '1') {
-      this.logger.warn(
-        `[P16-2] Real Scoring BLOCKED by CE23_REAL_FORCE_DISABLE in IdentityConsistencyService`
-      );
-      return this.scoreIdentityStub(referenceAssetId, targetAssetId, characterId);
-    }
+    // P16-2: Secondary Kill Switch Guard - REMOVED for Round 4
+    // Truth policy: No force-disable fallback allowed.
 
-    let realEnabled = false;
-    if (shotId) {
-      const shotData = await this.prisma.shot.findUnique({
-        where: { id: shotId },
-        include: {
-          scene: {
-            include: {
-              episode: true,
-            },
-          },
-        },
-      });
-      const projectWithSettings = await this.projectResolver.resolveProjectNeedSettings(
-        shotData?.scene?.episode
-      );
-      const settings = (projectWithSettings?.settingsJson as any) || {};
-      realEnabled = !!settings.ce23RealEnabled;
-    }
-
-    if (realEnabled) {
-      this.logger.log(`Using REAL Identity Scoring for shot ${shotId}`);
-      return this.scoreIdentityReal(referenceAssetId, targetAssetId, characterId);
-    }
-
-    // Fallback to existing Stub
-    return this.scoreIdentityStub(referenceAssetId, targetAssetId, characterId);
+    // Always attempt Real Identity Scoring
+    this.logger.log(`Using REAL Identity Scoring for shot ${shotId}`);
+    return this.scoreIdentityReal(referenceAssetId, targetAssetId, characterId);
   }
 
   /**
@@ -113,48 +84,13 @@ export class IdentityConsistencyService {
       };
     } catch (err) {
       this.logger.error(`REAL Identity Scoring failed: ${err.message}`, err.stack);
-      // Fallback to stub on algorithm error in production to avoid hard block
-      return this.scoreIdentityStub(referenceAssetId, targetAssetId, characterId);
+      // P15-HARD: Fallback to non-truth REMOVED for Round 4. 
+      // Reliability must be managed via infrastructure, not via truthful corruption.
+      throw new Error(`IDENTITY_SCORING_FAILED: Absolute truth required. ${err.message}`);
     }
   }
 
-  /**
-   * P13-0.2: Real-Stub Deterministic Scoring
-   */
-  async scoreIdentityStub(
-    referenceAssetId: string,
-    targetAssetId: string,
-    characterId: string
-  ): Promise<{ score: number; verdict: 'PASS' | 'FAIL'; details: any }> {
-    const inputString = `${referenceAssetId}|${targetAssetId}|${characterId}|v1`;
-    const hash = createHash('sha256').update(inputString).digest('hex');
-    const hexSegment = hash.substring(0, 8);
-    const intValue = parseInt(hexSegment, 16);
-    const scoreOffset = (intValue % 3000) / 10000;
-    const score = 0.7 + scoreOffset;
-
-    let finalScore = score;
-    if (process.env.CE23_STUB_SCORE_MIN) {
-      const minParam = parseFloat(process.env.CE23_STUB_SCORE_MIN);
-      if (finalScore < minParam) {
-        finalScore = minParam + finalScore * 0.01;
-      }
-    }
-
-    const verdict = finalScore >= 0.85 ? 'PASS' : 'FAIL';
-
-    return {
-      score: parseFloat(finalScore.toFixed(4)),
-      verdict,
-      details: {
-        provider: 'ce23-real-stub',
-        version: '1.0.0',
-        method: 'sha256_bucket_v1',
-        inputs_hash: hash,
-        original_algo_score: parseFloat(score.toFixed(4)),
-      },
-    };
-  }
+  // scoreIdentityStub REMOVED per Round 3 Truth Sealing.
 
   /**
    * P13-0.3: Write Score to DB

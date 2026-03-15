@@ -114,6 +114,26 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * 仅当 key 不存在时设置（带 TTL）
+   */
+  async setNx(key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+    if (!this.isAvailable()) {
+      return false;
+    }
+
+    try {
+      const result = await this.client!.set(key, value, {
+        NX: true,
+        ...(ttlSeconds ? { EX: ttlSeconds } : {}),
+      });
+      return result === 'OK';
+    } catch (error: any) {
+      this.logger.warn(`Redis SET NX failed for key ${key}: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
    * 删除键
    */
   async del(key: string): Promise<boolean> {

@@ -179,7 +179,8 @@ export class StoryService {
         traceId, // Task 的 traceId 字段
         payload: {
           pipeline: [
-            'CE06_NOVEL_PARSING',
+            // [A5_FIX] CE06 is an Import Stub and forbidden as production dependency per LAUNCH_STANDARD_V1.1
+            // 'CE06_NOVEL_PARSING', 
             'CE03_VISUAL_DENSITY',
             'CE04_VISUAL_ENRICHMENT',
             'VIDEO_EXPORT',
@@ -194,7 +195,9 @@ export class StoryService {
       },
     });
 
-    // 5. 创建 CE06 Job（复用现有逻辑）
+    // 5. [A5_FIX] Skip CE06 Job creation for production pipeline.
+    // Parsing/Shredding should be handled by truth-ready services or synchronous logic.
+    /*
     const job = await this.jobService.createCECoreJob({
       projectId,
       organizationId,
@@ -209,30 +212,34 @@ export class StoryService {
         traceId,
       },
     });
+    */
+
+    // [A5_FIX] Trigger next step (CE03) directly or via Task flow adjustment
+    this.logger.log(`Task ${task.id} created without CE06 dependency (Stub check).`);
 
     // 6. 记录审计日志
     await this.auditLogService.record({
       userId,
       action: AuditActions.JOB_CREATED,
-      resourceType: 'job',
-      resourceId: job.id,
+      resourceType: 'task', // Changed from job to task
+      resourceId: task.id,
       ip,
       userAgent,
       details: {
-        jobType: 'CE06_NOVEL_PARSING',
+        jobType: 'CE03_VISUAL_DENSITY', // New head of pipeline
         taskId: task.id,
         traceId,
         projectId,
       },
     });
 
-    this.logger.log(`CE06 Job created: ${job.id}, traceId: ${traceId}`);
+    this.logger.log(`Task created: ${task.id}, traceId: ${traceId} (CE06 Bypassed)`);
 
     // 7. 返回结果
     return {
-      jobId: job.id,
+      jobId: task.id, // Keep field name for compatibility prefixing taskId
       traceId,
-      status: job.status,
+      status: task.status,
       taskId: task.id,
     };
   }

@@ -54,7 +54,7 @@ export class JobEngineBindingService {
     }
 
     // PHASE-C: Zero-Bypass Gate (Stub physical block)
-    // 生产模式下只允许 http 模式的真实引擎，禁止 local/mock/default_*
+    // 生产模式下只允许 http 模式的真实引擎，禁止本地或非标引擎
     if (PRODUCTION_MODE) {
       const isStub = !engine.mode || engine.mode !== 'http';
       const isDefault = engine.code.startsWith('default_') || engineKey.startsWith('default_');

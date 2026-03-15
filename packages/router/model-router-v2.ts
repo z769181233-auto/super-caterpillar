@@ -1,4 +1,4 @@
-export type RouterModel = 'gemini' | 'sdxl' | 'flux' | 'replay-stub';
+export type RouterModel = 'gemini' | 'sdxl' | 'flux';
 
 export interface RouterV2Request {
   jobType: string;
@@ -34,18 +34,12 @@ export class ModelRouterV2 {
     if (jobType === 'SHOT_RENDER' || jobType === 'shot_render') {
       // 规格：预算达 100% (BLOCK_HIGH_COST) 时，禁止高成本模型，尝试降级
       if (req.budgetLevel === 'BLOCK_HIGH_COST' || req.budgetLevel === 'BLOCK_ALL_CONSUME') {
-        return {
-          selectedModel: 'replay-stub',
-          reason: `Budget constraint (${req.budgetLevel}) enforced: Degrading to LOW_COST Stub`,
-        };
+        throw new Error(`[ROUTER_FATAL] Budget constraint (${req.budgetLevel}) enforced: No legacy low-cost options allowed.`);
       }
 
       // 如果预算极其有限 (Legacy support)
       if (costLimit < 1.0) {
-        return {
-          selectedModel: 'replay-stub',
-          reason: 'Cost limit exceeded, falling back to Stub',
-        };
+        throw new Error('[ROUTER_FATAL] Cost limit exceeded, failing fast (Absolute truth required).');
       }
 
       // 如果追求极致质量且预算充足
@@ -62,7 +56,7 @@ export class ModelRouterV2 {
       return { selectedModel: 'gemini', reason: 'Cinematic analysis requires Gemini' };
     }
 
-    // 4. 兜底逻辑
-    return { selectedModel: 'replay-stub', reason: 'No specific rule found, safety fallback' };
+    // 4. 兜底逻辑：绝对真值模式，禁止回退到 Stub
+    throw new Error(`[ROUTER_FATAL] No routing rule found for jobType: ${jobType}. Safety fallback disabled.`);
   }
 }

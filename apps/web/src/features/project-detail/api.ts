@@ -8,96 +8,81 @@ import {
 } from './adapters';
 
 /**
- * 模拟从 B 端或聚合微服务拿取项目主视图数据
+ * 从后端 API 拿取项目主视图真实数据
  */
 export async function getProjectDetail(projectId: string): Promise<ProjectDetailView> {
-  // 这里未来接入真正的 fetch('/api/projects/${projectId}')
-  // 暂时用 Promise 配合 Mock 模拟真实 IO 延迟与装配
+  const response = await fetch(`/api/projects/${projectId}`);
+  const result = await response.json();
 
-  // TODO: Connect to true backend Project API
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const mockRawData = {
-        id: projectId,
-        name: '[Super Caterpillar] Universe ' + projectId,
-        organizationId: 'org-caterpillar-zero',
-        status: 'RUNNING',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        stats: {
-          buildsCount: 3,
-          structuralStatus: 'Audited',
-          usage: '128.5 hrs',
-        },
-        audit: {
-          fingerprintStatus: 'SEALED',
-          rulesVersion: 'v2.1-INDUSTRIAL',
-        },
-      };
+  if (!response.ok || !result.success) {
+    throw new Error(result.error?.message || 'Failed to fetch project detail');
+  }
 
-      resolve(adaptProjectDetail(mockRawData));
-    }, 500);
+  const raw = result.data;
+  // 映射后端项目实体至前端视图模型
+  return adaptProjectDetail({
+    ...raw,
+    status: raw.status === 'in_progress' ? 'RUNNING' : 'READY',
+    stats: {
+      buildsCount: raw.episodes?.length || 0,
+      structuralStatus: raw.episodes?.length > 0 ? 'Audited' : 'Pending',
+      usage: '--',
+    },
+    audit: {
+      fingerprintStatus: 'UNKNOWN',
+      rulesVersion: 'v1.1-LAUNCH',
+    },
   });
 }
 
 /**
- * 获取具体项目的构建实例列表
+ * 获取具体项目的任务运行列表（用作构建实例列表）
  */
 export async function getProjectBuilds(projectId: string): Promise<BuildRowView[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const mockRawList = [
-        {
-          id: 'build-v1.0.0',
-          name: 'Act 1: Genesis (Beta)',
-          status: 'DONE',
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-          metrics: { episodes: 1, scenes: 12, shots: 86 },
-        },
-        {
-          id: 'build-v0.9.5',
-          name: 'Act 1: Skeleton',
-          status: 'DONE',
-          createdAt: new Date(Date.now() - 7200000).toISOString(),
-          metrics: { episodes: 1, scenes: 12, shots: 0 },
-        },
-        {
-          id: 'build-v0.9.0',
-          name: 'Prototype Injection',
-          status: 'ERROR',
-          createdAt: new Date(Date.now() - 10800000).toISOString(),
-          metrics: { episodes: 0, scenes: 0, shots: 0 },
-        },
-      ];
+  const response = await fetch(`/api/projects/${projectId}/overview`);
+  const result = await response.json();
 
-      resolve(adaptBuildsList(mockRawList));
-    }, 600);
-  });
+  if (!response.ok || !result.success) {
+    return [];
+  }
+
+  const runningJobs = result.data?.runningJobs || [];
+  // 将运行中的 Job 映射为 UI 的构建行
+  return adaptBuildsList(
+    runningJobs.map((job: any) => ({
+      id: job.id,
+      name: `${job.jobType} [Task: ${job.taskId?.slice(0, 8)}]`,
+      status: job.status === 'RUNNING' ? 'RUNNING' : job.status === 'SUCCESS' ? 'DONE' : 'ERROR',
+      createdAt: job.createdAt,
+      metrics: {
+        episodes: '--',
+        scenes: '--',
+        shots: '1',
+      },
+    }))
+  );
 }
 
 /**
- * 获取物理审计及取证报告大纲
+ * 获取物理审计及取证报告大纲（从真实审计日志提取）
  */
 export async function getProjectEvidenceSummary(projectId: string): Promise<EvidenceSummaryView> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const mockRawData = {
-        // missing globalHash intentionally
-        // globalHash: 'sha256:8a1b9e...d74cf',
-        cid: 'QmYwAPJzv5CZsnA625s3Xf2nex59n1X9',
-        buildId: 'build-v1.0.0',
-        verified: true,
-        lastGeneratedAt: new Date().toISOString(),
-        status: 'Verified',
-      };
+  const response = await fetch(`/api/projects/${projectId}/overview`);
+  const result = await response.json();
 
-      const adapted = adaptEvidenceSummary(mockRawData);
-      // Simulate that buildId was derived heuristically rather than from authoritative log
-      if (adapted.buildId) {
-        adapted.buildId.source = 'derived';
-      }
+  if (!response.ok || !result.success) {
+    throw new Error('Failed to fetch evidence summary');
+  }
 
-      resolve(adapted);
-    }, 400);
+  const overview = result.data;
+  const recentAudit = overview.auditLogs?.[0];
+
+  return adaptEvidenceSummary({
+    globalHash: recentAudit?.id ? `audit:${recentAudit.id.slice(0, 16)}` : undefined,
+    cid: recentAudit?.resourceId === projectId ? 'confirmed' : undefined,
+    buildId: overview.runningJobs?.[0]?.id || 'N/A',
+    verified: overview.nextAction?.action?.canRun === true,
+    lastGeneratedAt: overview.auditLogs?.[0]?.at || new Date().toISOString(),
+    status: overview.nextAction?.action?.canRun ? 'Verified' : 'Unverified',
   });
 }

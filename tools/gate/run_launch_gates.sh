@@ -1145,9 +1145,8 @@ if [[ "${ENGINE_REAL:-0}" == "1" ]]; then
     }
     if [ "$ENGINE_PROVENANCE_PASSED" = true ]; then echo -e "  ${GREEN}✅ Engine Provenance check passed${NC}"; fi
 else
-    echo -e "  ${YELLOW}⚠️  Engine Provenance Check skipped (set ENGINE_REAL=1 to enable)${NC}"
-    echo "- ⚠️  Engine Provenance Check skipped (ENGINE_REAL=0)" >> "$ENGINE_PROVENANCE_OUTPUT"
-    echo -e "${BLUE}ℹ️  Gate 18 skipped (Mock mode)${NC}\n"
+    echo -e "  ${RED}❌ Engine Provenance Check FAILED (ENGINE_REAL=0 or missing)${NC}"
+    echo "- ❌ Engine Provenance Check FAILED" >> "$ENGINE_PROVENANCE_OUTPUT"
 fi
 
 # 门禁 18b: Gate 18 DB Traceability REQUIRED (L3 - POST-L3-0 硬化)
@@ -1159,16 +1158,10 @@ ENGINE_DBTRACE_OUTPUT="$TEMP_DIR/engine_dbtrace_required.txt"
 if [[ "${GATE_ENV_MODE:-local}" == "ci" ]]; then
     # CI 模式：根据 ENGINE_REAL 决定是否强制依赖 DATABASE_URL
     if [[ "${ENGINE_REAL:-0}" != "1" ]]; then
-        echo "  DB Traceability Acknowledged (CI Mock mode)"
+        echo "  DB Traceability Check (Enforcing REAL Check)..."
         if bash tools/gate/gates/gate18_dbtrace_required.sh "$ARTIFACT_DIR" > "$ENGINE_DBTRACE_OUTPUT" 2>&1; then
-            if grep -q "MOCK_ACK_MODE" "$ENGINE_DBTRACE_OUTPUT"; then
-                echo -e "  ${GREEN}✅ Gate 18b DB Traceability passed (MOCK_ACK_MODE)${NC}"
-                ENGINE_DBTRACE_PASSED="mock_ack"
-            else
-                # Fallback if internal logic acted real
-                echo -e "  ${GREEN}✅ Gate 18b DB Traceability passed (REAL)${NC}"
-                ENGINE_DBTRACE_PASSED=true
-            fi
+            echo -e "  ${GREEN}✅ Gate 18b DB Traceability passed (REAL)${NC}"
+            ENGINE_DBTRACE_PASSED=true
         else
             echo -e "  ${RED}❌ Gate 18b DB Traceability failed${NC}"
             ENGINE_DBTRACE_PASSED=false
@@ -1326,10 +1319,8 @@ fi
   echo "- Gate 16 (Billing Documentation Hygiene): $([ "$DOC_HYGIENE_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
   echo "- Gate 17 (Engine Sanity): $([ "$ENGINE_SANITY_PASSED" = true ] && echo "✅ PASSED" || echo "⚠️  SKIPPED")"
   echo "- Gate 18 (Engine Provenance): $([ "$ENGINE_PROVENANCE_PASSED" = true ] && echo "✅ PASSED" || echo "⚠️  SKIPPED")"
-  if [ "$ENGINE_DBTRACE_PASSED" = "mock_ack" ]; then
-    echo "- Gate 18b (DB Traceability): ✅ PASS_MOCK_ACK"
-  elif [ "$ENGINE_DBTRACE_PASSED" = true ]; then
-    echo "- Gate 18b (DB Traceability): ✅ PASS_REAL"
+  if [ "$ENGINE_DBTRACE_PASSED" = true ]; then
+    echo "- Gate 18b (DB Traceability): ✅ PASSED"
   elif [ "$ENGINE_DBTRACE_PASSED" = false ]; then
     echo "- Gate 18b (DB Traceability): ❌ FAILED"
   else
