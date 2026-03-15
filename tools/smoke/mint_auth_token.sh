@@ -4,8 +4,10 @@ set -euo pipefail
 API_URL="${API_URL:-http://localhost:3000}"
 DATABASE_URL="${DATABASE_URL:-postgresql://postgres:${PGPASSWORD:-password}@${PGHOST:-127.0.0.1}:5434/scu}"
 
-# Use fixed smoke user by default (avoid DB pollution)
-AUTH_EMAIL="${AUTH_EMAIL:-smoke@example.com}"
+# Use the gate-seeded user by default in CI/gate runs.
+# This avoids depending on registration/login side effects when a direct JWT
+# can be minted against the deterministic gate fixture user.
+AUTH_EMAIL="${AUTH_EMAIL:-gate@example.com}"
 AUTH_PASSWORD="${AUTH_PASSWORD:-smoke-dev-password}"
 
 # --- helpers ---
@@ -63,18 +65,26 @@ mint_via_local_jwt() {
   row="$(
     psql "$DATABASE_URL" -Atc \
       "with preferred as (
-         select u.id, coalesce(u.\"defaultOrganizationId\", om.\"organizationId\", '') as org_id, coalesce(u.tier::text, 'Free') as tier, 0 as ord
+         select u.id,
+                coalesce(u.\"defaultOrganizationId\", om.\"organizationId\", owned.id, '') as org_id,
+                coalesce(u.tier::text, 'Free') as tier,
+                0 as ord
          from users u
          left join organization_members om on om.\"userId\" = u.id
+         left join organizations owned on owned.\"ownerId\" = u.id
          where u.email = '${AUTH_EMAIL}'
-         order by om.\"createdAt\" asc nulls last
+         order by om.\"createdAt\" asc nulls last, owned.\"createdAt\" asc nulls last
          limit 1
        ),
        fallback_any as (
-         select u.id, coalesce(u.\"defaultOrganizationId\", om.\"organizationId\", '') as org_id, coalesce(u.tier::text, 'Free') as tier, 1 as ord
+         select u.id,
+                coalesce(u.\"defaultOrganizationId\", om.\"organizationId\", owned.id, '') as org_id,
+                coalesce(u.tier::text, 'Free') as tier,
+                1 as ord
          from users u
          left join organization_members om on om.\"userId\" = u.id
-         order by om.\"createdAt\" asc nulls last, u.\"createdAt\" asc
+         left join organizations owned on owned.\"ownerId\" = u.id
+         order by om.\"createdAt\" asc nulls last, owned.\"createdAt\" asc nulls last, u.\"createdAt\" asc
          limit 1
        )
        select id, org_id, tier

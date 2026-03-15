@@ -207,7 +207,7 @@ jobs:
           ENGINE_DEFAULT: ce06_novel_parsing
           DISABLE_REDIS: 'true'
           REDIS_URL: disabled
-          AUTH_EMAIL: smoke@example.com
+          AUTH_EMAIL: gate@example.com
           AUTH_PASSWORD: smoke-dev-password
           API_KEY: ak_smoke_test_key_v1
           P6_2: '1' # Explicitly enable P6-2
