@@ -1,21 +1,32 @@
 import * as util from 'util';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 import './observability/stage4.metrics'; // P5-1: Register Stage4 metrics on startup
 
 // Load root .env (using __dirname to be robust against different CWDs)
 const root = path.resolve(__dirname, '../../../');
 const envPath = path.join(root, '.env');
 const envLocalPath = path.join(root, '.env.local');
+const ignoreEnvFile = process.env.IGNORE_ENV_FILE === 'true';
 
 // Priority: .env.local > .env (respecting existing process.env)
-if (require('fs').existsSync(envLocalPath)) {
-  dotenv.config({ path: envLocalPath });
+if (!ignoreEnvFile) {
+  if (fs.existsSync(envLocalPath)) {
+    dotenv.config({ path: envLocalPath });
+  }
+  dotenv.config({ path: envPath });
+  console.log(
+    `[Bootstrap] Loaded env from ${root}. SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`
+  );
+} else {
+  process.stdout.write(
+    util.format(
+      '[Bootstrap] IGNORE_ENV_FILE=true, skipping root .env files. PRISMA_CLIENT_ENGINE_TYPE=%s',
+      process.env.PRISMA_CLIENT_ENGINE_TYPE ?? '<unset>'
+    ) + '\n'
+  );
 }
-dotenv.config({ path: envPath });
-console.log(
-  `[Bootstrap] Loaded env from ${root}. SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`
-);
 
 /**
  * Worker Bootstrap 入口

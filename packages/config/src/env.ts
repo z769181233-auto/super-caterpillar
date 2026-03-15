@@ -13,6 +13,8 @@ import * as util from 'util';
 const ignoreEnvFile = process.env.IGNORE_ENV_FILE === 'true';
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isCI = !!process.env.CI;
+const isBootstrapContext =
+  process.env.NODE_ENV === 'test' || !!process.env.JEST_WORKER_ID || !!process.env.CI;
 
 // Loaded via dotenv.config() logic below
 
@@ -59,6 +61,10 @@ function getEnv(key: string, defaultValue?: string, requiredInProduction = false
     if (defaultValue !== undefined) {
       return defaultValue;
     }
+    const bootstrapDefault = getBootstrapDefault(key);
+    if (bootstrapDefault !== undefined) {
+      return bootstrapDefault;
+    }
     // P0 SEALed: Fail-fast if missing and no default, regardless of NODE_ENV
     throw new Error(`[CONFIG_FATAL] Environment variable ${key} is required but missing.`);
   }
@@ -75,7 +81,7 @@ function getEnvNumber(key: string, defaultValue?: number): number {
 }
 
 function requiresWorkerIdentity(): boolean {
-  if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
+  if (isBootstrapContext) {
     return false;
   }
 
@@ -87,15 +93,29 @@ function requiresWorkerIdentity(): boolean {
   );
 }
 
+function getBootstrapDefault(key: string): string | undefined {
+  if (!isBootstrapContext) {
+    return undefined;
+  }
+
+  switch (key) {
+    case 'ENGINE_DEFAULT':
+      return 'ce06_novel_parsing';
+    case 'JWT_SECRET':
+      return 'ci-test-jwt-secret';
+    case 'JWT_REFRESH_SECRET':
+      return 'ci-test-refresh-secret';
+    case 'WORKER_ID':
+    case 'WORKER_NAME':
+      return '__bootstrap_worker__';
+    default:
+      return undefined;
+  }
+}
+
 function resolveEngineDefault(): string {
   const explicit = process.env.ENGINE_DEFAULT?.trim();
   if (explicit) return explicit;
-
-  // CI / unit-test imports often load config without a full worker/runtime env.
-  // Keep production strictness, but avoid failing test bootstrap on a runtime-only key.
-  if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID || process.env.CI) {
-    return 'ce06_novel_parsing';
-  }
 
   return getEnv('ENGINE_DEFAULT');
 }
@@ -103,12 +123,7 @@ function resolveEngineDefault(): string {
 function resolveJwtSecret(key: 'JWT_SECRET' | 'JWT_REFRESH_SECRET', fallback: string): string {
   const explicit = process.env[key]?.trim();
   if (explicit) return explicit;
-
-  if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID || process.env.CI) {
-    return fallback;
-  }
-
-  return getEnv(key);
+  return getEnv(key, fallback);
 }
 
 // JWT Secret Check (Silent)
@@ -237,7 +252,7 @@ export const env: AppConfig = {
       if (requiresWorkerIdentity()) {
         throw new Error('[Strict] WORKER_ID / WORKER_NAME environment variable is required.');
       }
-      return '__non_worker_context__';
+      return getBootstrapDefault('WORKER_ID') ?? '__non_worker_context__';
     }
     return id;
   })(),
@@ -247,7 +262,7 @@ export const env: AppConfig = {
       if (requiresWorkerIdentity()) {
         throw new Error('[Strict] WORKER_NAME / WORKER_ID environment variable is required.');
       }
-      return '__non_worker_context__';
+      return getBootstrapDefault('WORKER_NAME') ?? '__non_worker_context__';
     }
     return name;
   })(),

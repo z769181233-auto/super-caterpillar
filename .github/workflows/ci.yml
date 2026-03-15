@@ -34,6 +34,7 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     env:
+      IGNORE_ENV_FILE: 'true'
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/testdb
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
       PRISMA_CLIENT_ENGINE_TYPE: 'binary'

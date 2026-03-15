@@ -28,9 +28,10 @@ jobs:
         ports:
           - 5432:5432
     env:
+      IGNORE_ENV_FILE: 'true'
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
-      PRISMA_CLIENT_ENGINE_TYPE: 'library'
-      PRISMA_CLI_QUERY_ENGINE_TYPE: 'library'
+      PRISMA_CLIENT_ENGINE_TYPE: 'binary'
+      PRISMA_CLI_QUERY_ENGINE_TYPE: 'binary'
       ENGINE_DEFAULT: 'ce06_novel_parsing'
       PGUSER: 'postgres'
       PGPASSWORD: 'password'
@@ -66,7 +67,7 @@ jobs:
           npx prisma generate --schema=./packages/database/prisma/schema.prisma
         env:
           DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
-          PRISMA_CLI_QUERY_ENGINE_TYPE: library
+          PRISMA_CLI_QUERY_ENGINE_TYPE: binary
 
       - name: Build Database Package (Force)
         run: |
@@ -107,13 +108,16 @@ jobs:
 
           # Start API
           export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
-          export PRISMA_CLIENT_ENGINE_TYPE=library
+          export PRISMA_CLIENT_ENGINE_TYPE=binary
           export PORT=3000
           export API_PORT=3000
           export NODE_ENV=staging
+          export IGNORE_ENV_FILE=true
           export JWT_SECRET="dummy-secret-for-ci"
+          export JWT_REFRESH_SECRET="dummy-refresh-secret-for-ci"
           export API_SECRET_KEY="dummy-api-secret-key-for-ci-32chars-min"
           export HMAC_SECRET_KEY="dummy-hmac-secret-key-for-ci-32chars-min"
+          export ENGINE_DEFAULT="ce06_novel_parsing"
           export DISABLE_REDIS="true"
           export REDIS_URL="disabled"
           export ENABLE_INTERNAL_JOB_WORKER="true"
@@ -121,8 +125,10 @@ jobs:
           echo $! > .data/pids/api.pid
 
           # Start Worker
-          export PRISMA_CLIENT_ENGINE_TYPE=library
+          export PRISMA_CLIENT_ENGINE_TYPE=binary
+          export PRISMA_CLI_QUERY_ENGINE_TYPE=binary
           export NODE_ENV=staging
+          export IGNORE_ENV_FILE=true
           export API_URL="http://127.0.0.1:3000"
           export API_BASE_URL="http://127.0.0.1:3000"
           export WORKER_PORT=3001
@@ -200,8 +206,11 @@ jobs:
           GATE_ENV_MODE: ci
           API_URL: http://127.0.0.1:3000
           DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
-          PRISMA_CLIENT_ENGINE_TYPE: library
+          PRISMA_CLIENT_ENGINE_TYPE: binary
+          PRISMA_CLI_QUERY_ENGINE_TYPE: binary
+          IGNORE_ENV_FILE: 'true'
           JWT_SECRET: dummy-secret-for-ci
+          JWT_REFRESH_SECRET: dummy-refresh-secret-for-ci
           API_SECRET_KEY: dummy-api-secret-key-for-ci-32chars-min
           HMAC_SECRET_KEY: dummy-hmac-secret-key-for-ci-32chars-min
           ENGINE_DEFAULT: ce06_novel_parsing
