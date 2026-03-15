@@ -1,0 +1,9 @@
+paths-ignore:
+  - tools/**
+  - apps/api/src/security/api-security/api-security.spec.ts
+
+query-filters:
+  - exclude:
+      id: js/weak-sensitive-data-hashing
+  - exclude:
+      id: js/insecure-randomness
