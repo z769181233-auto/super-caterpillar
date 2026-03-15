@@ -68,6 +68,8 @@ TEST_STORAGE_KEY="${TEST_STORAGE_KEY:-}"
 AUTH_TOKEN_A="${AUTH_TOKEN_A:-}"
 AUTH_TOKEN_B="${AUTH_TOKEN_B:-}"
 AUTH_TOKEN="${AUTH_TOKEN:-$AUTH_TOKEN_A}" # 向后兼容
+API_KEY="${API_KEY:-ak_smoke_test_key_v1}"
+API_SECRET="${API_SECRET:-${WORKER_API_SECRET:-scu_smoke_secret}}"
 
 # Token minting defaults (matches tools/smoke/init_api_key.ts)
 export AUTH_EMAIL="${AUTH_EMAIL:-smoke@example.com}"
@@ -97,6 +99,34 @@ req_dump() {
       /^$/{print; body=1; next}
       body==1 && c<200 {print; c+=length($0)+1}
     ' || true
+}
+
+make_hmac_header_file() {
+  local method="$1"
+  local path="$2"
+  local body="${3:-}"
+  local out_file="$4"
+  local api_key="$5"
+  local api_secret="$6"
+  node - <<'NODE' "$method" "$path" "$body" "$out_file" "$api_key" "$api_secret"
+const crypto = require('crypto');
+const [method, path, body, outFile, apiKey, apiSecret] = process.argv.slice(2);
+const timestamp = Math.floor(Date.now() / 1000).toString();
+const nonce = `gate-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+const signature = crypto
+  .createHmac('sha256', apiSecret)
+  .update(`${apiKey}${nonce}${timestamp}${body || ''}`)
+  .digest('hex');
+require('fs').writeFileSync(
+  outFile,
+  [
+    `X-Api-Key: ${apiKey}`,
+    `X-Nonce: ${nonce}`,
+    `X-Timestamp: ${timestamp}`,
+    `X-Signature: ${signature}`,
+  ].join('\n') + '\n'
+);
+NODE
 }
 
 # 探测可用 health 路由：返回第一个 2xx 的完整 URL
@@ -423,39 +453,62 @@ if [ -n "${AUTH_TOKEN_B:-}" ]; then
   echo "  Debug: capacity route probe (B auth) HTTP=$(req_code "$CAP_URL" -H "$AUTH_HEADER_B")"
 fi
 
-# 鉴权前置校验（强制带鉴权，缺 token 视为 Gate FAIL）
-if [ -z "${AUTH_TOKEN_A:-}" ]; then
-    echo -e "  ${YELLOW}⚠️  AUTH_TOKEN_A not set (cannot run auth-required gates)${NC}"
-    echo "- ⚠️  Skipped (AUTH_TOKEN_A not set)" >> "$CAPACITY_OUTPUT"
-    CAPACITY_GATE_PASSED=false
-else
-    # 测试容量查询端点（必须带 Authorization: Bearer <AUTH_TOKEN_A>）
+HMAC_HDR_FILE="$TEMP_DIR/capacity_hmac.headers"
+if [ -n "${API_KEY:-}" ] && [ -n "${API_SECRET:-}" ]; then
+    make_hmac_header_file "GET" "$CAPACITY_PATH" "" "$HMAC_HDR_FILE" "$API_KEY" "$API_SECRET"
     CAPACITY_RESPONSE=$(curl -s -w "\n%{http_code}" \
-        -H "$AUTH_HEADER_A" \
+        -H "$(grep -m1 '^X-Api-Key:' "$HMAC_HDR_FILE")" \
+        -H "$(grep -m1 '^X-Nonce:' "$HMAC_HDR_FILE")" \
+        -H "$(grep -m1 '^X-Timestamp:' "$HMAC_HDR_FILE")" \
+        -H "$(grep -m1 '^X-Signature:' "$HMAC_HDR_FILE")" \
         "$CAP_URL" 2>/dev/null || echo -e "\n000")
-    
+
     HTTP_CODE=$(echo "$CAPACITY_RESPONSE" | tail -n1)
-    BODY=$(echo "$CAPACITY_RESPONSE" | sed '$d')
-    
     if [ "$HTTP_CODE" -eq 200 ]; then
-        echo -e "  ${GREEN}✅ Capacity query endpoint works (HTTP 200)${NC}"
-        echo "- ✅ Capacity query endpoint works (HTTP 200)" >> "$CAPACITY_OUTPUT"
-        echo "  Command: curl -H \"Authorization: Bearer <AUTH_TOKEN_A>\" ${CAP_URL}" >> "$CAPACITY_OUTPUT"
+        echo -e "  ${GREEN}✅ Capacity query endpoint works via HMAC (HTTP 200)${NC}"
+        echo "- ✅ Capacity query endpoint works via HMAC (HTTP 200)" >> "$CAPACITY_OUTPUT"
         CAPACITY_GATE_PASSED=true
     else
-        echo -e "  ${RED}❌ Capacity query endpoint failed or shadowed (HTTP $HTTP_CODE, expected 200)${NC}"
-        echo "- ❌ Capacity query endpoint failed or shadowed (HTTP $HTTP_CODE, expected 200)" >> "$CAPACITY_OUTPUT"
-        req_dump "$CAP_URL" -H "$AUTH_HEADER_A" >> "$CAPACITY_OUTPUT"
-        CAPACITY_GATE_PASSED=false
+        echo "  HMAC capacity request returned HTTP $HTTP_CODE; trying JWT fallback..." >> "$CAPACITY_OUTPUT"
     fi
+fi
 
-    # 可选：对 B 做一个简单的负测（仅记录，不改变 Gate 结果）
-    if [ -n "${AUTH_TOKEN_B:-}" ]; then
-        B_RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -H "$AUTH_HEADER_B" \
+if [ "$CAPACITY_GATE_PASSED" != true ]; then
+    if [ -z "${AUTH_TOKEN_A:-}" ]; then
+        echo -e "  ${YELLOW}⚠️  AUTH_TOKEN_A not set (cannot run JWT fallback for Gate 2)${NC}"
+        echo "- ⚠️  JWT fallback unavailable (AUTH_TOKEN_A not set)" >> "$CAPACITY_OUTPUT"
+        CAPACITY_GATE_PASSED=false
+    else
+        CAPACITY_RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -H "$AUTH_HEADER_A" \
             "$CAP_URL" 2>/dev/null || echo -e "\n000")
-        B_CODE=$(echo "$B_RESPONSE" | tail -n1)
-        echo "  Note: Capacity endpoint for B returned HTTP $B_CODE" >> "$CAPACITY_OUTPUT"
+
+        HTTP_CODE=$(echo "$CAPACITY_RESPONSE" | tail -n1)
+        if [ "$HTTP_CODE" -eq 200 ]; then
+            echo -e "  ${GREEN}✅ Capacity query endpoint works via JWT (HTTP 200)${NC}"
+            echo "- ✅ Capacity query endpoint works via JWT (HTTP 200)" >> "$CAPACITY_OUTPUT"
+            CAPACITY_GATE_PASSED=true
+        else
+            echo -e "  ${RED}❌ Capacity query endpoint failed or shadowed (HTTP $HTTP_CODE, expected 200)${NC}"
+            echo "- ❌ Capacity query endpoint failed or shadowed (HTTP $HTTP_CODE, expected 200)" >> "$CAPACITY_OUTPUT"
+            if [ -f "$HMAC_HDR_FILE" ]; then
+                req_dump "$CAP_URL" \
+                  -H "$(grep -m1 '^X-Api-Key:' "$HMAC_HDR_FILE")" \
+                  -H "$(grep -m1 '^X-Nonce:' "$HMAC_HDR_FILE")" \
+                  -H "$(grep -m1 '^X-Timestamp:' "$HMAC_HDR_FILE")" \
+                  -H "$(grep -m1 '^X-Signature:' "$HMAC_HDR_FILE")" >> "$CAPACITY_OUTPUT"
+            fi
+            req_dump "$CAP_URL" -H "$AUTH_HEADER_A" >> "$CAPACITY_OUTPUT"
+            CAPACITY_GATE_PASSED=false
+        fi
+
+        if [ -n "${AUTH_TOKEN_B:-}" ]; then
+            B_RESPONSE=$(curl -s -w "\n%{http_code}" \
+                -H "$AUTH_HEADER_B" \
+                "$CAP_URL" 2>/dev/null || echo -e "\n000")
+            B_CODE=$(echo "$B_RESPONSE" | tail -n1)
+            echo "  Note: Capacity endpoint for B returned HTTP $B_CODE" >> "$CAPACITY_OUTPUT"
+        fi
     fi
 fi
 

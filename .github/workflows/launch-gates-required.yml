@@ -219,6 +219,7 @@ jobs:
           AUTH_EMAIL: gate@example.com
           AUTH_PASSWORD: smoke-dev-password
           API_KEY: ak_smoke_test_key_v1
+          API_SECRET: scu_smoke_secret
 
       - name: Upload Evidence Artifact
         if: always()
