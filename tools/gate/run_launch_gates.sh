@@ -337,6 +337,12 @@ ci_fail_fast_if_needed() {
   } >> "$REPORT_FILE"
 
   echo -e "${RED}[CI FAIL-FAST] ${gate_name} failed; stopping remaining gates to preserve CI budget.${NC}"
+  if [ -n "$gate_output" ] && [ -f "$gate_output" ]; then
+    echo "----- ${gate_name} (tail -n 200) -----"
+    tail -n 200 "$gate_output" || true
+    echo "----- end ${gate_name} -----"
+  fi
+  echo "Report saved to: $REPORT_FILE"
   exit 1
 }
 

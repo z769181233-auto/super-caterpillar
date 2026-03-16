@@ -193,8 +193,20 @@ jobs:
         run: |
           # CI Mode triggers Local-like subset strictly
           EXIT_CODE=0
-          bash tools/gate/run_launch_gates.sh || EXIT_CODE=$?
+          bash tools/gate/run_launch_gates.sh 2>&1 | tee .data/logs/launch-gates.log || EXIT_CODE=${PIPESTATUS[0]}
 
+          echo "==============================================="
+          echo "--- Launch Gates report ---"
+          if ls docs/_evidence/run_launch_gates_*/GATEKEEPER_VERIFICATION_REPORT.md >/dev/null 2>&1; then
+            LATEST_REPORT="$(ls -td docs/_evidence/run_launch_gates_*/GATEKEEPER_VERIFICATION_REPORT.md | head -n 1)"
+            echo "REPORT=$LATEST_REPORT"
+            tail -n 400 "$LATEST_REPORT" || true
+          else
+            echo "No GATEKEEPER_VERIFICATION_REPORT.md found"
+          fi
+          echo "==============================================="
+          echo "--- Launch Gates stdout log ---"
+          cat .data/logs/launch-gates.log || echo "launch-gates.log missing"
           echo "==============================================="
           echo "--- Full WORKER log for Claim traces ---"
           cat .data/logs/worker.log || echo "WORKER log missing"
