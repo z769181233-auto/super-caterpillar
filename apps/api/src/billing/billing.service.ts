@@ -44,6 +44,15 @@ export class BillingService {
     }
   }
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
   /**
    * Get available credits for an organization.
    * Uses Organization's credits (Stage 10).
@@ -112,12 +121,6 @@ export class BillingService {
     if (amount <= 0) return true;
 
     console.log(`[BILLING_DEBUG] orgId=${organizationId} projectId=${projectId} amount=${amount}`);
-
-    // [Emergency Bypass] Unblock Wangu Production due to schema mismatch
-    if (organizationId === 'org_wangu' || projectId === 'wangu_trailer_20260215_232235') {
-      console.log(`[BILLING_DEBUG] BYPASSING confirmed for ${projectId}`);
-      return true;
-    }
 
     // Ensure organizationId is present
     if (!organizationId) throw new ForbiddenException('Organization ID is required');
@@ -224,9 +227,9 @@ export class BillingService {
         }
       });
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (this.isCiOrGateContext() || process.env.FORCE_BILLING_PG_PATH === '1') {
       this.logger.warn(
-        `Using pg consumeCredits path in non-production for org ${organizationId}`
+        `Using pg consumeCredits path in CI/test/gate-compatible mode for org ${organizationId}`
       );
       return runPgFallback();
     }

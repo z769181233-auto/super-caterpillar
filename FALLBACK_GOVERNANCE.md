@@ -22,6 +22,8 @@ Rule:
 
 - Keep only while Prisma degradation root cause is unresolved.
 - Must not silently convert failed business behavior into success.
+- Must not diverge by default between local development and production behavior.
+- Example: billing should use PG-primary only in CI/test/gate or via explicit override, not in all non-production environments.
 
 ## Category B: CI/Test/Gate Only
 
@@ -59,3 +61,9 @@ Current rule:
 1. Remove security-sensitive fallbacks first where possible.
 2. Replace resilience fallbacks by fixing Prisma root cause.
 3. Keep CI deterministic fallbacks isolated and clearly labeled.
+
+## Removed Hard Bypasses
+
+These patterns are not acceptable and should stay removed:
+
+- Project/org hardcoded billing bypasses such as `org_wangu` / `wangu_trailer_20260215_232235`
