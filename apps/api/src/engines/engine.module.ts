@@ -9,7 +9,7 @@
 import { Module, OnModuleInit, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { EngineRegistry } from '../engine/engine-registry.service';
-import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter.NEW';
+import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter';
 import { CE06LocalAdapter } from './adapters/ce06_novel_parsing.adapter';
 import { CE09SecurityLocalAdapter } from './adapters/ce09_security.adapter';
 import { CE03LocalAdapter } from './adapters/ce03_visual_density.adapter';

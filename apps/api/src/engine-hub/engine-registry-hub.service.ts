@@ -3,7 +3,7 @@ import { EngineDescriptor } from './engine-descriptor.interface';
 import { SemanticEnhancementLocalAdapter } from './adapters/semantic-enhancement.local-adapter';
 import { ShotPlanningLocalAdapter } from './adapters/shot-planning.local-adapter';
 import { StructureQALocalAdapter } from './adapters/structure-qa.local-adapter';
-import { NovelAnalysisLocalAdapter } from '../engines/adapters/novel-analysis.local.adapter.NEW';
+import { NovelAnalysisLocalAdapter } from '../engines/adapters/novel-analysis.local.adapter';
 import { CE06LocalAdapter } from '../engines/adapters/ce06_novel_parsing.adapter';
 import { CE03LocalAdapter } from '../engines/adapters/ce03_visual_density.adapter';
 import { CE04LocalAdapter } from '../engines/adapters/ce04_visual_enrichment.adapter';
