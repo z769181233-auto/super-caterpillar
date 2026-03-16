@@ -38,6 +38,19 @@ export class WorkerService {
   private readonly CASCADE_LIMIT = 100; // max 100 jobs per 10s per worker node
   private readonly CASCADE_WINDOW = 10000;
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldAllowDirectPgDispatchFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_WORKER_PG_DISPATCH_FALLBACK === '1';
+  }
+
   /**
    * 注册或更新 Worker
    * @param workerId Worker 唯一标识
@@ -828,7 +841,9 @@ export class WorkerService {
    */
   async dispatchNextJobForWorker(workerId: string) {
     console.log(`[API_WORKER_NEXT_SVC] entered for workerId=${workerId}`);
-    const preflightHasPending = await this.hasPendingDispatchableJobsViaPg(workerId);
+    const preflightHasPending = this.shouldAllowDirectPgDispatchFallback()
+      ? await this.hasPendingDispatchableJobsViaPg(workerId)
+      : null;
     if (preflightHasPending === false) {
       this.logger.debug(
         `[WorkerService] PG preflight found no dispatchable jobs for ${workerId}; returning null.`
@@ -1168,6 +1183,12 @@ export class WorkerService {
         (error as any)?.stack
       );
       if (this.shouldFallbackToPg(error)) {
+        if (!this.shouldAllowDirectPgDispatchFallback()) {
+          this.logger.error(
+            `[WorkerService] Prisma dispatch degraded for ${workerId}, but direct pg dispatch fallback is disabled outside CI/test/gate unless FORCE_WORKER_PG_DISPATCH_FALLBACK=1`
+          );
+          throw error;
+        }
         this.logger.warn(
           `[WorkerService] dispatchNextJobForWorker degrading to pg fallback for ${workerId}: ${(error as any)?.message}`
         );

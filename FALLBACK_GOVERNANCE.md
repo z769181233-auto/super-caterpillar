@@ -24,6 +24,7 @@ Rule:
 - Must not silently convert failed business behavior into success.
 - Must not diverge by default between local development and production behavior.
 - Example: billing should use PG-primary only in CI/test/gate or via explicit override, not in all non-production environments.
+- Example: worker direct PG dispatch should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
 
 ## Category B: CI/Test/Gate Only
 
