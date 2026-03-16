@@ -4,27 +4,33 @@ import { PrismaClient } from 'database';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
-  private readonly connectTimeoutMs = Number(process.env.PRISMA_CONNECT_TIMEOUT_MS || '5000');
-  private readonly queryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+  private readonly connectTimeoutMs = Number(
+    process.env.PRISMA_CONNECT_TIMEOUT_MS ||
+      (this.isCiOrGateContext() ? '5000' : '15000')
+  );
+  private readonly queryTimeoutMs = Number(
+    process.env.PRISMA_QUERY_TIMEOUT_MS ||
+      (this.isCiOrGateContext() ? '5000' : '15000')
+  );
 
   constructor() {
     super({});
-    this.$use(async (params, next) => {
-      return await Promise.race([
-        next(params),
-        new Promise((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  `PRISMA_QUERY_TIMEOUT: ${params.model || '$raw'}.${params.action} exceeded ${this.queryTimeoutMs}ms`
-                )
-              ),
-            this.queryTimeoutMs
-          )
-        ),
-      ]);
-    });
+    if (this.shouldEnforceClientQueryTimeout()) {
+      this.$use(async (params, next) => {
+        return await this.withTimeout(
+          () => next(params),
+          this.queryTimeoutMs,
+          `PRISMA_QUERY_TIMEOUT: ${params.model || '$raw'}.${params.action} exceeded ${this.queryTimeoutMs}ms`
+        );
+      });
+      this.logger.warn(
+        `[PrismaService] Client-side Prisma query timeout wrapper enabled (${this.queryTimeoutMs}ms) in CI/test/gate mode`
+      );
+    } else {
+      this.logger.log(
+        `[PrismaService] Client-side Prisma query timeout wrapper disabled in normal runtime; relying on real DB/engine failures instead`
+      );
+    }
     // 开发/测试环境：诊断 Prisma Client 来源和模型
     if (process.env.NODE_ENV !== 'production') {
       try {
@@ -87,23 +93,50 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
   }
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldEnforceClientQueryTimeout(): boolean {
+    return (
+      this.isCiOrGateContext() ||
+      process.env.PRISMA_ENFORCE_CLIENT_QUERY_TIMEOUT === '1'
+    );
+  }
+
+  private async withTimeout<T>(
+    run: () => Promise<T>,
+    timeoutMs: number,
+    message: string
+  ): Promise<T> {
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      return await Promise.race([
+        run(),
+        new Promise<T>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
+  }
+
   async onModuleInit() {
     console.log('[DEBUG_BOOT] PrismaService.onModuleInit start ($connect)');
     try {
-      await Promise.race([
-        this.$connect(),
-        new Promise((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  `PRISMA_CONNECT_TIMEOUT: startup connect exceeded ${this.connectTimeoutMs}ms`
-                )
-              ),
-            this.connectTimeoutMs
-          )
-        ),
-      ]);
+      await this.withTimeout(
+        () => this.$connect(),
+        this.connectTimeoutMs,
+        `PRISMA_CONNECT_TIMEOUT: startup connect exceeded ${this.connectTimeoutMs}ms`
+      );
       console.log('[DEBUG_BOOT] PrismaService.onModuleInit end ($connect)');
     } catch (e) {
       console.error('[DEBUG_BOOT] PrismaService.onModuleInit FAILED', e);
