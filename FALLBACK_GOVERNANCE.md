@@ -29,6 +29,7 @@ Rule:
 - Example: engine selection/version PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
 - Example: budget status PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
 - Example: capacity PG fallback should stay disabled in normal runtime and fail-open capacity checks should be limited to CI/test/gate or explicit override.
+- Example: JWT user/org PG fallback should stay disabled in normal runtime and degraded authentication paths should not bounce back into Prisma for debug enumeration.
 
 ## Category B: CI/Test/Gate Only
 

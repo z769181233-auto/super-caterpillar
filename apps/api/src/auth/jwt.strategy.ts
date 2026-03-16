@@ -38,6 +38,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return error instanceof Error && error.message.includes('PRISMA_QUERY_TIMEOUT');
   }
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldAllowJwtPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_JWT_PG_FALLBACK === '1';
+  }
+
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
     const client = new Client({
       connectionString: process.env.DATABASE_URL,
@@ -82,6 +95,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     // JWT validation trace
     let user: any;
+    let degradedToPg = false;
     try {
       user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
@@ -95,20 +109,34 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       });
     } catch (error) {
       if (!this.isPrismaTimeout(error)) throw error;
+      if (!this.shouldAllowJwtPgFallback()) {
+        this.logger.error(
+          `[JWT] Prisma degraded on user lookup for user=${payload.sub}, but pg fallback is disabled outside CI/test/gate unless FORCE_JWT_PG_FALLBACK=1`
+        );
+        throw error;
+      }
       this.logger.warn(`[JWT] Prisma degraded on user lookup, using pg fallback for user=${payload.sub}`);
       user = await this.findUserViaPg(payload.sub);
+      degradedToPg = true;
     }
     // User lookup trace
 
     if (!user) {
-      this.prisma.user
-        .findMany()
-        .then((all) => JSON.stringify(all.map((u) => u.id)))
-        .then((ids) => {
-          this.logger.error(
-            `[DEBUG] User NOT found. Payload sub: ${payload.sub}. Available IDs: ${ids}`
-          );
-        });
+      if (!degradedToPg) {
+        this.prisma.user
+          .findMany()
+          .then((all) => JSON.stringify(all.map((u) => u.id)))
+          .then((ids) => {
+            this.logger.error(
+              `[DEBUG] User NOT found. Payload sub: ${payload.sub}. Available IDs: ${ids}`
+            );
+          })
+          .catch(() => undefined);
+      } else {
+        this.logger.error(
+          `[DEBUG] User NOT found after pg fallback. Payload sub: ${payload.sub}. Skipping Prisma debug enumeration because JWT lookup is already in degraded mode.`
+        );
+      }
       throw new UnauthorizedException('User not found');
     }
 
@@ -139,6 +167,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         }
       } catch (error) {
         if (!this.isPrismaTimeout(error)) throw error;
+        if (!this.shouldAllowJwtPgFallback()) {
+          this.logger.error(
+            `[JWT] Prisma degraded on org validation for user=${user.id} org=${payload.orgId}, but pg fallback is disabled outside CI/test/gate unless FORCE_JWT_PG_FALLBACK=1`
+          );
+          throw error;
+        }
         this.logger.warn(
           `[JWT] Prisma degraded on org validation, using pg fallback for user=${user.id} org=${payload.orgId}`
         );
