@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { projectApi } from '@/lib/apiClient';
-import { Button } from '@/components/_legacy/ui/Button';
+import { Button } from '@/components/ui/Button';
 
 export function VideoPlayerPageContent() {
     const router = useRouter();

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, ReactNode } from 'react';
-import { WorkbenchSidebar, WorkbenchModule } from '@/components/_legacy/workbench/WorkbenchSidebar';
+import { WorkbenchSidebar, WorkbenchModule } from '@/components/workbench/WorkbenchSidebar';
 
 interface WorkbenchLayoutProps {
   children?: ReactNode;

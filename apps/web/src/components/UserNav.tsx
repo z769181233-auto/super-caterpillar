@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/_legacy/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { userApi } from '@/lib/apiClient';
 import { UserDTO } from '@/types/dto';
 

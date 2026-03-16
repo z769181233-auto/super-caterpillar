@@ -12,7 +12,7 @@ import EngineTag from '@/components/engines/EngineTag';
 import AdapterBadge from '@/components/engines/AdapterBadge';
 import QualityScoreBadge from '@/components/quality/QualityScoreBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { DetailDrawer } from '@/components/_legacy/ui/DetailDrawer';
+import { DetailDrawer } from '@/components/ui/DetailDrawer';
 
 interface Job {
   id: string;
