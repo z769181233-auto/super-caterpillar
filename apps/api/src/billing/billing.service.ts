@@ -53,6 +53,14 @@ export class BillingService {
     );
   }
 
+  private shouldAllowBillingPgFallback(): boolean {
+    return (
+      this.isCiOrGateContext() ||
+      process.env.FORCE_BILLING_PG_PATH === '1' ||
+      process.env.FORCE_BILLING_PG_FALLBACK === '1'
+    );
+  }
+
   /**
    * Get available credits for an organization.
    * Uses Organization's credits (Stage 10).
@@ -74,6 +82,12 @@ export class BillingService {
       });
     } catch (error) {
       if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+      if (!this.shouldAllowBillingPgFallback()) {
+        this.logger.error(
+          `Prisma getCredits degraded for org ${organizationId}, but pg fallback is disabled outside CI/test/gate unless FORCE_BILLING_PG_FALLBACK=1`
+        );
         throw error;
       }
 
@@ -309,6 +323,12 @@ export class BillingService {
       });
     } catch (error) {
       if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+      if (!this.shouldAllowBillingPgFallback()) {
+        this.logger.error(
+          `Prisma consumeCredits degraded for org ${organizationId}, but pg fallback is disabled outside CI/test/gate unless FORCE_BILLING_PG_FALLBACK=1`
+        );
         throw error;
       }
 
