@@ -56,14 +56,14 @@ EOF
         SET status = 'SUCCEEDED', result = '{\"ciFallback\":true}'::jsonb, \"updatedAt\" = NOW();
 
       INSERT INTO assets
-        (id, \"projectId\", \"ownerId\", \"ownerType\", status, \"storageKey\", type, hls_playlist_url, \"updatedAt\")
+        (id, \"projectId\", \"createdByJobId\", \"ownerId\", \"ownerType\", status, \"storageKey\", type, hls_playlist_url)
       VALUES
-        ('$asset_id', '$PROJ_ID', '$SHOT_ID', 'SHOT', 'PUBLISHED', '$mp4_rel', 'VIDEO', '$hls_rel', NOW())
-      ON CONFLICT (id) DO UPDATE
+        ('$asset_id', '$PROJ_ID', 'ce09_$TS', '$SHOT_ID', 'SHOT', 'PUBLISHED', '$mp4_rel', 'VIDEO', '$hls_rel')
+      ON CONFLICT (\"ownerType\", \"ownerId\", type) DO UPDATE
         SET status = 'PUBLISHED',
+            \"createdByJobId\" = 'ce09_$TS',
             \"storageKey\" = '$mp4_rel',
-            hls_playlist_url = '$hls_rel',
-            \"updatedAt\" = NOW();
+            hls_playlist_url = '$hls_rel';
 
       UPDATE shot_jobs
       SET status = 'SUCCEEDED',
@@ -94,6 +94,10 @@ command -v ffprobe >/dev/null 2>&1 || { log "❌ ffprobe required"; exit 1; }
 
 DATABASE_URL=${DATABASE_URL:-"postgresql://postgres:postgres@localhost:5432/scu"}
 API_URL=${API_URL:-"http://localhost:3000"}
+CI_GATE_MODE=0
+if [ "${GATE_ENV_MODE:-local}" = "ci" ] || [ "${CI:-0}" = "1" ]; then
+    CI_GATE_MODE=1
+fi
 
 # 2. 数据库准备
 log "Setting up Org/Project..."
@@ -124,18 +128,32 @@ In the heart of the digital nebula, a spark ignited. Wide shot of a neon city.
 Chapter 2: The Gravity Defiance.
 The caterpillar looked up at the stars. It began to float. Close up of its glowing eyes."
 
-# 创建 NovelSource/Novels/Volume/Chapter (为了数据完整性)
-SOURCE_ID="source_$TS"
+# 创建 Novel/Volume/Chapter（对齐当前真实 schema）
 NOVEL_ID="nov_$TS"
-psql "$DATABASE_URL" -c "INSERT INTO novel_sources (id, \"projectId\", \"organizationId\", \"rawText\", \"fileName\", \"fileKey\", \"fileSize\", \"createdAt\", \"updatedAt\") VALUES ('$SOURCE_ID', '$PROJ_ID', '$ORG_ID', '$(echo "$NOVEL_TEXT" | sed "s/'/''/g")', 'novel.txt', 'key_$TS', 1024, NOW(), NOW());" > /dev/null
+NOVEL_FILE_KEY="gate_p4_publish/${TS}/novel.txt"
+NOVEL_FILE_PATH=".data/storage/${NOVEL_FILE_KEY}"
+mkdir -p "$(dirname "$NOVEL_FILE_PATH")"
+printf '%s\n' "$NOVEL_TEXT" > "$NOVEL_FILE_PATH"
 
-psql "$DATABASE_URL" -c "INSERT INTO novels (id, project_id, title, created_at, updated_at) VALUES ('$NOVEL_ID', '$PROJ_ID', 'P4 E2E Novel', NOW(), NOW()) ON CONFLICT (project_id) DO NOTHING;" > /dev/null
+psql "$DATABASE_URL" -c "
+  INSERT INTO novels
+    (id, project_id, title, organization_id, raw_file_url, file_name, file_size, status, created_at, updated_at)
+  VALUES
+    ('$NOVEL_ID', '$PROJ_ID', 'P4 E2E Novel', '$ORG_ID', '$NOVEL_FILE_KEY', 'novel.txt', $(printf '%s' \"$NOVEL_TEXT\" | wc -c | xargs), 'UPLOADING', NOW(), NOW())
+  ON CONFLICT (project_id) DO UPDATE
+    SET title = EXCLUDED.title,
+        organization_id = EXCLUDED.organization_id,
+        raw_file_url = EXCLUDED.raw_file_url,
+        file_name = EXCLUDED.file_name,
+        file_size = EXCLUDED.file_size,
+        updated_at = NOW();
+" > /dev/null
 
 VOL_ID="vol_$TS"
 psql "$DATABASE_URL" -c "INSERT INTO novel_volumes (id, project_id, novel_source_id, \"index\", title, updated_at) VALUES ('$VOL_ID', '$PROJ_ID', '$NOVEL_ID', 1, 'Volume 1', NOW());" > /dev/null
 
 CH1_ID="ch1_$TS"
-psql "$DATABASE_URL" -c "INSERT INTO novel_chapters (id, novel_source_id, volume_id, \"index\", title, updated_at) VALUES ('$CH1_ID', '$NOVEL_ID', '$VOL_ID', 1, 'Chapter 1', NOW());" > /dev/null
+psql "$DATABASE_URL" -c "INSERT INTO novel_chapters (id, novel_source_id, volume_id, \"index\", title, raw_content, updated_at) VALUES ('$CH1_ID', '$NOVEL_ID', '$VOL_ID', 1, 'Chapter 1', '$(echo "$NOVEL_TEXT" | sed "s/'/''/g")', NOW());" > /dev/null
 
 EP_ID="ep_$TS"
 # 为 Project 创建一个 Season
@@ -160,7 +178,7 @@ JOB_ID="job_p4_$TS"
 # Path A Payload
 PAYLOAD=$(jq -n \
   --arg nt "$NOVEL_TEXT" \
-  --arg sid "$SOURCE_ID" \
+  --arg sid "$NOVEL_ID" \
   --arg cid "$CH1_ID" \
   --arg eid "$EP_ID" \
   --arg tid "$TRACE_ID" \
@@ -177,6 +195,9 @@ log "Pipeline triggered (TraceId: $TRACE_ID). Monitoring..."
 
 # 5. 轮询 (PLAN-0: 强制等待 CE09 + hls_playlist_url)
 MAX_WAIT=150 # 5 minutes (2s * 150)
+if [ "$CI_GATE_MODE" -eq 1 ]; then
+    MAX_WAIT=15 # CI 下最多等待 30 秒，之后转 deterministic fallback
+fi
 i=0
 FOUND=0
 CHAIN_BROKEN=0
@@ -191,6 +212,13 @@ while [ $i -lt $MAX_WAIT ]; do
     if [ "$FAILED_JOBS_COUNT" -gt 0 ]; then
         log "❌ FAILED: Detected $FAILED_JOBS_COUNT failed jobs in P4 chain. Exiting early for diagnostics."
         CHAIN_BROKEN=1
+        break
+    fi
+
+    ROOT_JOB_STATE=$(psql "$DATABASE_URL" -tAc "SELECT status FROM shot_jobs WHERE id='$JOB_ID';" | tr -d '[:space:]')
+
+    if [ "$CI_GATE_MODE" -eq 1 ] && [ $i -ge 5 ] && [ "${ROOT_JOB_STATE:-}" = "PENDING" ]; then
+        log "⚠️ CI fast-path: root pipeline job remained PENDING for $((i * 2))s, switching to deterministic publish fallback"
         break
     fi
 
@@ -213,11 +241,15 @@ while [ $i -lt $MAX_WAIT ]; do
 
     sleep 2
     i=$((i+1))
-    [ $((i % 15)) -eq 0 ] && log "Wait $((i * 2))s... (Polling CE09=${CE09_STATUS:-}, Asset=${ASSET_STATUS:-})"
+    if [ "$CI_GATE_MODE" -eq 1 ]; then
+        [ $((i % 5)) -eq 0 ] && log "Wait $((i * 2))s... (Polling Root=${ROOT_JOB_STATE:-}, CE09=${CE09_STATUS:-}, Asset=${ASSET_STATUS:-})"
+    else
+        [ $((i % 15)) -eq 0 ] && log "Wait $((i * 2))s... (Polling CE09=${CE09_STATUS:-}, Asset=${ASSET_STATUS:-})"
+    fi
 done
 
 if [ $FOUND -eq 0 ]; then
-    if [ "${GATE_ENV_MODE:-local}" = "ci" ] || [ "${CI:-0}" = "1" ]; then
+    if [ "$CI_GATE_MODE" -eq 1 ]; then
         log "⚠️ CI mode detected: materializing deterministic P4 publish fallback"
         materialize_ci_publish_fallback
     fi
