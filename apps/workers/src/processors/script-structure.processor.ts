@@ -4,12 +4,24 @@ import { ProcessorContext } from '../types/processor-context';
 import { defaultLLMClient } from '../agents/llm-client';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
-import { UsageMeter } from '../../../../packages/metering/src/usage-meter';
 
 export interface ScriptStructureResult {
   success: boolean;
   output?: any;
   error?: any;
+}
+
+async function recordProcessingUsageBestEffort(
+  organizationId: string,
+  computeTimeMs: number,
+  metadata: any
+) {
+  try {
+    const metering = await import('../../../../packages/metering/src/usage-meter');
+    await metering.UsageMeter.recordProcessing(organizationId, computeTimeMs, metadata);
+  } catch (e) {
+    console.warn(`[UsageMeter] Failed to record processing:`, e);
+  }
 }
 
 /**
@@ -341,13 +353,13 @@ export async function processContinuityAuditJob(
       select: { organizationId: true },
     });
     if (proj?.organizationId) {
-      await UsageMeter.recordProcessing(proj.organizationId, Date.now() - startTime, {
+      await recordProcessingUsageBestEffort(proj.organizationId, Date.now() - startTime, {
         episodes: episodes.length,
         isIndustrialSealed: auditSummary.isIndustrialSealed,
       });
     }
   } catch (e) {
-    console.warn(`[UsageMeter] Failed to record processing:`, e);
+    console.warn(`[ScriptStructure] Failed to prepare processing metering:`, e);
   }
 
   return { success: true, output: auditSummary };

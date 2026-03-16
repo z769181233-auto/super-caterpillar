@@ -3,9 +3,9 @@ const path = require('path');
 const cp = require('child_process');
 
 const candidates = [
-    'dist/main.js',
+    'dist/apps/workers/src/main.js',
     'dist/src/main.js',
-    'dist/apps/workers/src/main.js'
+    'dist/main.js'
 ];
 
 let target = null;
@@ -33,7 +33,15 @@ console.log(`[WORKER_BOOT] pid=${process.pid}`);
 // Prevent require.main === module checks from failing in the target script
 // by spawning a true child process.
 try {
-    cp.execSync('node -r tsconfig-paths/register ' + target, { stdio: 'inherit' });
+    const childEnv = {
+        ...process.env,
+        IGNORE_ENV_FILE: process.env.IGNORE_ENV_FILE || 'true',
+        GATE_MODE: process.env.GATE_MODE === '1' ? '0' : (process.env.GATE_MODE || '0'),
+    };
+    cp.execFileSync('node', ['-r', 'tsconfig-paths/register', target], {
+        stdio: 'inherit',
+        env: childEnv,
+    });
 } catch (e) {
     process.exit(e.status || 1);
 }

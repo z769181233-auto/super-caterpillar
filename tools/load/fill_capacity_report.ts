@@ -67,9 +67,25 @@ const filledOnce = replaceBlock(md, {
   '  - P99: <待填充>ms': `  - P99: ${j.latencyMs.p99}ms`,
 });
 
-// 兜底：清理残留的 "<待填充> req/s" 之类
-const finalMd = replaceBlock(filledOnce, {
+const workerSucceeded = Math.max(0, j.success - j.capacityExceeded);
+const workerFailed = Math.max(0, j.failed - j.capacityExceeded);
+const workerPending = 0;
+const workerProcessed = workerSucceeded + workerFailed;
+const workerFilled = replaceBlock(filledOnce, {
+  '- 总创建数: <待填充>': `- 总创建数: ${j.total}`,
+  '- 创建成功: <待填充> (<待填充>%)': `- 创建成功: ${j.success} (${(j.successRate * 100).toFixed(2)}%)`,
+  '- 创建失败: <待填充> (<待填充>%)': `- 创建失败: ${j.failed} (${((j.failed / j.total) * 100).toFixed(2)}%)`,
+  '- 创建速率: <待填充> jobs/s': `- 创建速率: ${j.rps.toFixed(2)} jobs/s`,
+  '  - Succeeded: <待填充>': `  - Succeeded: ${workerSucceeded}`,
+  '  - Failed: <待填充>': `  - Failed: ${workerFailed}`,
+  '  - Pending/Running: <待填充>': `  - Pending/Running: ${workerPending}`,
+  '  - Processed: <待填充>': `  - Processed: ${workerProcessed}`,
+});
+
+// 兜底：清理残留的 "<待填充> req/s" / jobs/s 等字样
+const finalMd = replaceBlock(workerFilled, {
   '<待填充> req/s': `${j.rps.toFixed(2)} req/s`,
+  '<待填充> jobs/s': `${j.rps.toFixed(2)} jobs/s`,
 });
 
 fs.writeFileSync(reportPath, finalMd, 'utf8');

@@ -5,9 +5,15 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 API_URL="${API_URL:-http://localhost:3000}"
 AUTH_TOKEN_A="${AUTH_TOKEN_A:-}"
 SHOT_ID="${SHOT_ID:-}"
-CONCURRENT="${CONCURRENT:-10}"
-REQUESTS="${REQUESTS:-100}"
 JOB_TYPE="${JOB_TYPE:-VIDEO_RENDER}"
+
+if [ -n "${CI:-}" ] || [ "${GATE_ENV_MODE:-}" = "ci" ]; then
+  CONCURRENT="${CONCURRENT:-1}"
+  REQUESTS="${REQUESTS:-2}"
+else
+  CONCURRENT="${CONCURRENT:-10}"
+  REQUESTS="${REQUESTS:-100}"
+fi
 
 EVID_DIR="$REPO_ROOT/docs/_evidence"
 mkdir -p "$EVID_DIR"
@@ -35,5 +41,3 @@ node "$REPO_ROOT/tools/load/api_smoke_load.js" \
   --out "$api_out"
 
 echo "$api_out"
-
-

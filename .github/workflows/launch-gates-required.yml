@@ -118,13 +118,26 @@ jobs:
           export API_SECRET_KEY="dummy-api-secret-key-for-ci-32chars-min"
           export HMAC_SECRET_KEY="dummy-hmac-secret-key-for-ci-32chars-min"
           export ENGINE_DEFAULT="ce06_novel_parsing"
+          export WORKER_ID="ci-api-bootstrap"
+          export WORKER_NAME="ci-api-bootstrap"
           export DISABLE_REDIS="true"
           export REDIS_URL="disabled"
-          export ENABLE_INTERNAL_JOB_WORKER="true"
+          export ENABLE_INTERNAL_JOB_WORKER="false"
           nohup pnpm --filter api start > .data/logs/api.log 2>&1 &
           echo $! > .data/pids/api.pid
 
-          # Start Worker
+          # Wait for API health
+          echo "Waiting for API on port 3000..."
+          for i in $(seq 1 45); do
+            if curl -s http://127.0.0.1:3000/health; then
+              echo "API is ready."
+              break
+            fi
+            echo "Waiting... $i/45"
+            sleep 2
+          done
+
+          # Start Worker only after API is confirmed healthy
           export PRISMA_CLIENT_ENGINE_TYPE=binary
           export PRISMA_CLI_QUERY_ENGINE_TYPE=binary
           export NODE_ENV=staging
@@ -138,23 +151,12 @@ jobs:
           export WORKER_API_SECRET="scu_smoke_secret"
           export DISABLE_REDIS="true"
           export REDIS_URL="disabled"
-          
+
           echo "--- [WORKER PRE-BOOT] dist/ structure ---"
           ls -laR apps/workers/dist || true
-          
+
           nohup pnpm --filter @scu/worker run start:ci > .data/logs/worker.log 2>&1 &
           echo $! > .data/pids/worker.pid
-
-          # Wait for API health
-          echo "Waiting for API on port 3000..."
-          for i in $(seq 1 45); do
-            if curl -s http://127.0.0.1:3000/health; then
-              echo "API is ready."
-              break
-            fi
-            echo "Waiting... $i/45"
-            sleep 2
-          done
 
           # Wait for WORKER boot
           echo "Waiting for WORKER boot..."

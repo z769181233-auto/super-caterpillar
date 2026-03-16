@@ -32,6 +32,7 @@ const options = {
   authToken: null,
   json: false,
   out: null,
+  requestTimeoutMs: process.env.CI || process.env.GATE_ENV_MODE === 'ci' ? 5000 : 30000,
 };
 
 for (let i = 0; i < args.length; i += 2) {
@@ -45,6 +46,7 @@ for (let i = 0; i < args.length; i += 2) {
   else if (key === '--auth-token') options.authToken = value;
   else if (key === '--json') options.json = value === 'true' || value === '1';
   else if (key === '--out') options.out = value;
+  else if (key === '--request-timeout-ms') options.requestTimeoutMs = parseInt(value, 10);
 }
 
 if (!options.shotId) {
@@ -153,10 +155,10 @@ function makeRequest() {
       resolve();
     });
 
-    req.setTimeout(30000, () => {
+    req.setTimeout(options.requestTimeoutMs, () => {
       req.destroy();
       stats.failed++;
-      stats.errors.push({ error: 'Request timeout', responseTime: 30000 });
+      stats.errors.push({ error: 'Request timeout', responseTime: options.requestTimeoutMs });
       stats.total++;
       resolve();
     });
