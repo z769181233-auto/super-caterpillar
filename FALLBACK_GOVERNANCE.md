@@ -69,6 +69,53 @@ Current rule:
 2. Replace resilience fallbacks by fixing Prisma root cause.
 3. Keep CI deterministic fallbacks isolated and clearly labeled.
 
+## Tightened In This Cleanup Wave
+
+These runtime fallbacks now require `CI/test/gate` context or an explicit override instead of being
+available by default in normal runtime:
+
+- `apps/api/src/worker/worker.service.ts`
+- `apps/api/src/job/job-update-ops.service.ts`
+- `apps/api/src/job/job-engine-binding.service.ts`
+- `apps/api/src/billing/budget.service.ts`
+- `apps/api/src/capacity/capacity-gate.service.ts`
+- `apps/api/src/auth/jwt.strategy.ts`
+- `apps/api/src/audit-log/audit-log.service.ts`
+
+## Remaining High-Priority Queue
+
+These paths still deserve another pass because they either remain broadly enabled or still contain
+degraded-mode behavior that can obscure the real failure source:
+
+1. `apps/api/src/security/api-security/api-security.service.ts`
+- Security-sensitive.
+- Still the highest-risk remaining fallback surface because it affects trust boundaries.
+
+2. `apps/api/src/billing/billing.service.ts`
+- `getCredits()` still falls back to PG directly on Prisma timeout.
+- `consumeCredits()` is narrowed, but billing remains a production-critical path and should eventually
+  converge on one runtime behavior.
+
+3. `apps/api/src/worker/worker.service.ts`
+- `registerWorker()` and `heartbeat()` still keep broad runtime PG fallbacks.
+- Dispatch has been narrowed, but worker lifecycle writes still need the same treatment.
+
+4. `apps/api/src/job/job.service.ts`
+- `findJobById()` now avoids recursive Prisma diagnostics, but still keeps a broad PG fallback path.
+- This is a core read path and should be audited after worker/billing.
+
+5. `apps/api/src/job/job-auth-ops.service.ts`
+- Shot ownership still degrades to PG by default.
+- This is auth-adjacent and should be reviewed before calling the runtime fully tightened.
+
+6. `apps/api/src/task/task.service.ts`
+- `create()` still degrades to PG directly on Prisma timeout.
+- Not as sensitive as auth/billing, but it remains a core orchestration path.
+
+7. `apps/api/src/job/job-creation-ops.service.ts`
+- Still contains production-like degraded path handling.
+- Needs a dedicated review so CI/gate allowances do not leak into normal runtime semantics.
+
 ## Removed Hard Bypasses
 
 These patterns are not acceptable and should stay removed:
