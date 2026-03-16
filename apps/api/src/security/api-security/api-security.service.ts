@@ -78,6 +78,23 @@ export class ApiSecurityService {
     }
   }
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldAllowEnvSecretFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.ALLOW_HMAC_ENV_FALLBACK === '1';
+  }
+
+  private shouldAllowLegacySecretHashFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK === '1';
+  }
+
   /**
    * 验证 HMAC 签名（v2 规范）
    *
@@ -306,11 +323,16 @@ export class ApiSecurityService {
         secret = await this.resolveSecretForApiKey(keyRecord, apiKey, ip, userAgent);
         secretSource = 'db_per_key';
       } catch (e) {
-        // allow fallback to env; do not throw here
+        if (!this.shouldAllowEnvSecretFallback()) {
+          throw e;
+        }
+        this.logger.warn(
+          `API Key ${this.maskApiKey(apiKey)} falling back to env-backed HMAC secret in CI/test/gate-compatible mode`
+        );
         secret = '';
       }
 
-      if (!secret || secret.length === 0) {
+      if ((!secret || secret.length === 0) && this.shouldAllowEnvSecretFallback()) {
         secret = pickHmacSecretSSOT();
         secretSource = 'SSOT';
       }
@@ -644,13 +666,9 @@ export class ApiSecurityService {
       }
     }
 
-    // 2. Fallback 到旧字段（仅 dev/test 允许，或主密钥未配置时）
+    // 2. Fallback 到旧字段（仅 CI/test/gate 或显式开关允许）
     if (keyRecord.secretHash) {
-      const isProduction = process.env.NODE_ENV === 'production';
-      const isMasterKeyConfigured = this.secretEncryptionService.isMasterKeyConfigured();
-
-      // 只有在生产环境且主密钥已配置的情况下才强制拦截（硬门禁）
-      if (isProduction && isMasterKeyConfigured) {
+      if (!this.shouldAllowLegacySecretHashFallback()) {
         await this.writeAuditLog(
           {
             nonce: '',
@@ -669,15 +687,14 @@ export class ApiSecurityService {
 
         throw new InternalServerErrorException(
           `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-          `Production environment requires encrypted storage.`
+            `Encrypted secret storage is required unless CI/test/gate fallback is explicitly allowed.`
         );
-      } else {
-        // dev/test 环境或主密钥未配置：允许 fallback
-        this.logger.warn(
-          `API Key ${this.maskApiKey(apiKey)} using secretHash fallback (isMasterKeyConfigured=${isMasterKeyConfigured})`
-        );
-        return keyRecord.secretHash;
       }
+
+      this.logger.warn(
+        `API Key ${this.maskApiKey(apiKey)} using secretHash fallback in CI/test/gate-compatible mode`
+      );
+      return keyRecord.secretHash;
     }
 
     // 3. 既没有新字段也没有旧字段：错误

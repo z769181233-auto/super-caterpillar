@@ -393,6 +393,58 @@ describe('ApiSecurityService', () => {
       expect(result.errorCode).toBe('4003');
       expect(result.errorMessage).toContain('API Key 已被禁用');
     });
+
+    it('应该在非 CI/test/gate 上下文拒绝 secretHash fallback', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      const originalCi = process.env.CI;
+      const originalJestWorkerId = process.env.JEST_WORKER_ID;
+      const originalGateEnvMode = process.env.GATE_ENV_MODE;
+      const originalAllowLegacy = process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK;
+
+      try {
+        process.env.NODE_ENV = 'production';
+        delete process.env.CI;
+        delete process.env.JEST_WORKER_ID;
+        delete process.env.GATE_ENV_MODE;
+        delete process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK;
+
+        prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
+          id: 'key_id_123',
+          key: mockApiKey,
+          secretHash: mockSecret,
+          status: 'ACTIVE',
+          expiresAt: null,
+        });
+
+        redisService.get = jest.fn().mockResolvedValue(null);
+        redisService.set = jest.fn().mockResolvedValue(true);
+
+        const result = await service.verifySignature({
+          apiKey: mockApiKey,
+          nonce: mockNonce,
+          timestamp: mockTimestamp,
+          signature: 'aa'.repeat(32),
+          method: 'POST',
+          path: '/api/test',
+          contentSha256: '',
+          body: '',
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.errorCode).toBe('500');
+        expect(result.errorMessage).toContain('insecure secret storage');
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+        if (originalCi === undefined) delete process.env.CI;
+        else process.env.CI = originalCi;
+        if (originalJestWorkerId === undefined) delete process.env.JEST_WORKER_ID;
+        else process.env.JEST_WORKER_ID = originalJestWorkerId;
+        if (originalGateEnvMode === undefined) delete process.env.GATE_ENV_MODE;
+        else process.env.GATE_ENV_MODE = originalGateEnvMode;
+        if (originalAllowLegacy === undefined) delete process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK;
+        else process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK = originalAllowLegacy;
+      }
+    });
   });
 
   describe('buildCanonicalStringV2', () => {
