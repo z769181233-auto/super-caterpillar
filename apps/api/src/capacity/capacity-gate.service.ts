@@ -46,6 +46,23 @@ export class CapacityGateService {
     );
   }
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldAllowCapacityPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_CAPACITY_PG_FALLBACK === '1';
+  }
+
+  private shouldAllowCapacityOpenOnError(): boolean {
+    return this.isCiOrGateContext() || process.env.ALLOW_CAPACITY_OPEN_ON_ERROR === '1';
+  }
+
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
@@ -238,7 +255,10 @@ export class CapacityGateService {
       };
     } catch (error) {
       this.logger.error(`[CapacityGate] Error checking capacity: ${error.message}`, error.stack);
-      // 容错：如果检查失败，允许创建（避免阻塞正常流程）
+      if (!this.shouldAllowCapacityOpenOnError()) {
+        throw new HttpException('Capacity check unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      // 仅在 CI/test/gate 或显式 override 下允许 fail-open
       return {
         allowed: true,
         reason: 'Capacity check failed, allowing by default',
@@ -337,6 +357,12 @@ export class CapacityGateService {
       };
     } catch (error: any) {
       if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+      if (!this.shouldAllowCapacityPgFallback()) {
+        this.logger.error(
+          `[CapacityGate] Prisma getCapacityUsage degraded for ${organizationId}, but pg fallback is disabled outside CI/test/gate unless FORCE_CAPACITY_PG_FALLBACK=1`
+        );
         throw error;
       }
 

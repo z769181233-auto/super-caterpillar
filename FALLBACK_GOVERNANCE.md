@@ -28,6 +28,7 @@ Rule:
 - Example: job ack/report PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
 - Example: engine selection/version PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
 - Example: budget status PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
+- Example: capacity PG fallback should stay disabled in normal runtime and fail-open capacity checks should be limited to CI/test/gate or explicit override.
 
 ## Category B: CI/Test/Gate Only
 
