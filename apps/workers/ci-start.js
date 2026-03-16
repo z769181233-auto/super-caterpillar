@@ -29,16 +29,23 @@ if (!target) {
 
 console.log(`[WORKER_BOOT] resolvedEntry=${target}`);
 console.log(`[WORKER_BOOT] pid=${process.pid}`);
+const targetPath = path.join(__dirname, target);
 
 // Prevent require.main === module checks from failing in the target script
 // by spawning a true child process.
 try {
+    const inheritedNodeOptions = process.env.NODE_OPTIONS || '';
+    const sanitizedNodeOptions = inheritedNodeOptions
+        .replace(/(^|\s)-r\s+tsconfig-paths\/register(?=\s|$)/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
     const childEnv = {
         ...process.env,
         IGNORE_ENV_FILE: process.env.IGNORE_ENV_FILE || 'true',
         GATE_MODE: process.env.GATE_MODE === '1' ? '0' : (process.env.GATE_MODE || '0'),
+        NODE_OPTIONS: sanitizedNodeOptions,
     };
-    cp.execFileSync('node', ['-r', 'tsconfig-paths/register', target], {
+    cp.execFileSync('node', [targetPath], {
         stdio: 'inherit',
         env: childEnv,
     });

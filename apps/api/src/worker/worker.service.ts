@@ -1182,7 +1182,7 @@ export class WorkerService {
       return this.withPgClient(async (client) => {
         const workerResult = await client.query(
           `
-            SELECT capabilities
+            SELECT id, capabilities
             FROM worker_nodes
             WHERE "workerId" = $1
             LIMIT 1
@@ -1202,6 +1202,21 @@ export class WorkerService {
 
         if (supportedJobTypes.length === 0) {
           return false;
+        }
+
+        const existingDispatchedResult = await client.query(
+          `
+            SELECT 1
+            FROM shot_jobs
+            WHERE "workerId" = $1
+              AND status = $2
+            LIMIT 1
+          `,
+          [workerNode.id, JobStatus.DISPATCHED]
+        );
+
+        if (existingDispatchedResult.rowCount && existingDispatchedResult.rowCount > 0) {
+          return true;
         }
 
         const pendingCountResult = await client.query(
