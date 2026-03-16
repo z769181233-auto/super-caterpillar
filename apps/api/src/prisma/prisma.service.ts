@@ -12,17 +12,41 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     process.env.PRISMA_QUERY_TIMEOUT_MS ||
       (this.isCiOrGateContext() ? '5000' : '15000')
   );
+  private readonly slowQueryWarnMs = Number(
+    process.env.PRISMA_SLOW_QUERY_WARN_MS ||
+      (this.isCiOrGateContext() ? '1000' : '2000')
+  );
 
   constructor() {
     super({});
-    if (this.shouldEnforceClientQueryTimeout()) {
-      this.$use(async (params, next) => {
-        return await this.withTimeout(
-          () => next(params),
-          this.queryTimeoutMs,
-          `PRISMA_QUERY_TIMEOUT: ${params.model || '$raw'}.${params.action} exceeded ${this.queryTimeoutMs}ms`
+    this.$use(async (params, next) => {
+      const startedAt = Date.now();
+      try {
+        const result = this.shouldEnforceClientQueryTimeout()
+          ? await this.withTimeout(
+              () => next(params),
+              this.queryTimeoutMs,
+              `PRISMA_QUERY_TIMEOUT: ${params.model || '$raw'}.${params.action} exceeded ${this.queryTimeoutMs}ms`
+            )
+          : await next(params);
+
+        const durationMs = Date.now() - startedAt;
+        if (durationMs >= this.slowQueryWarnMs) {
+          this.logger.warn(
+            `[PrismaService] Slow query detected: ${params.model || '$raw'}.${params.action} took ${durationMs}ms`
+          );
+        }
+        return result;
+      } catch (error) {
+        const durationMs = Date.now() - startedAt;
+        this.logger.warn(
+          `[PrismaService] Query failed after ${durationMs}ms: ${params.model || '$raw'}.${params.action} -> ${error instanceof Error ? error.message : String(error)}`
         );
-      });
+        throw error;
+      }
+    });
+
+    if (this.shouldEnforceClientQueryTimeout()) {
       this.logger.warn(
         `[PrismaService] Client-side Prisma query timeout wrapper enabled (${this.queryTimeoutMs}ms) in CI/test/gate mode`
       );
@@ -31,6 +55,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         `[PrismaService] Client-side Prisma query timeout wrapper disabled in normal runtime; relying on real DB/engine failures instead`
       );
     }
+    this.logger.log(
+      `[PrismaService] Slow query warning threshold set to ${this.slowQueryWarnMs}ms`
+    );
     // 开发/测试环境：诊断 Prisma Client 来源和模型
     if (process.env.NODE_ENV !== 'production') {
       try {
