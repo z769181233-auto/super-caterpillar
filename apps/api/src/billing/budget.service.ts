@@ -21,6 +21,19 @@ export class BudgetService {
     return message.includes('PRISMA_QUERY_TIMEOUT');
   }
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldAllowBudgetPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_BUDGET_PG_FALLBACK === '1';
+  }
+
   private async withPgClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
@@ -61,6 +74,12 @@ export class BudgetService {
         });
       } catch (error) {
         if (!this.isPrismaTimeout(error)) {
+          throw error;
+        }
+        if (!this.shouldAllowBudgetPgFallback()) {
+          this.logger.error(
+            `BUDGET_PRISMA_DEGRADED orgId=${organizationId} but pg fallback is disabled outside CI/test/gate unless FORCE_BUDGET_PG_FALLBACK=1`
+          );
           throw error;
         }
 
