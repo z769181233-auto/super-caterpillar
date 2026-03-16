@@ -95,6 +95,10 @@ export class ApiSecurityService {
     return this.isCiOrGateContext() || process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK === '1';
   }
 
+  private shouldAllowApiKeyPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_APIKEY_PG_FALLBACK === '1';
+  }
+
   /**
    * 验证 HMAC 签名（v2 规范）
    *
@@ -473,6 +477,13 @@ export class ApiSecurityService {
           if (!this.shouldFallbackToPg(e)) {
             return;
           }
+          if (!this.shouldAllowApiKeyPgFallback()) {
+            if (dbg) dlog({ step: 'db_update_lastUsedAt_fallback_pg_blocked' });
+            this.logger.warn(
+              `[ApiSecurityService] Prisma apiKey lastUsedAt update degraded for ${this.maskApiKey(apiKey)}, but pg fallback is disabled outside CI/test/gate unless FORCE_APIKEY_PG_FALLBACK=1`
+            );
+            return;
+          }
           try {
             await this.withPgClient((client) =>
               client.query(`UPDATE api_keys SET "lastUsedAt" = NOW(), "updatedAt" = NOW() WHERE id = $1`, [
@@ -737,6 +748,12 @@ export class ApiSecurityService {
         message.includes('P1001');
 
       if (!shouldFallback) {
+        throw error;
+      }
+      if (!this.shouldAllowApiKeyPgFallback()) {
+        this.logger.error(
+          `[ApiSecurityService] Prisma apiKey lookup degraded for ${this.maskApiKey(apiKey)}, but pg fallback is disabled outside CI/test/gate unless FORCE_APIKEY_PG_FALLBACK=1`
+        );
         throw error;
       }
 

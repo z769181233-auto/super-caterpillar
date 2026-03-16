@@ -62,6 +62,8 @@ Current rule:
 - Env-secret fallback is allowed only in CI/test/gate or via explicit `ALLOW_HMAC_ENV_FALLBACK=1`.
 - Legacy `secretHash` fallback is allowed only in CI/test/gate or via explicit
   `ALLOW_LEGACY_SECRET_HASH_FALLBACK=1`.
+- API key lookup / `lastUsedAt` PG fallback is allowed only in CI/test/gate or via explicit
+  `FORCE_APIKEY_PG_FALLBACK=1`.
 
 ## Next Cleanup Order
 
