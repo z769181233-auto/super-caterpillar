@@ -29,6 +29,19 @@ export class AuditLogService {
     );
   }
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldAllowAuditLogPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_AUDIT_LOG_PG_FALLBACK === '1';
+  }
+
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
     const client = new Client({
       connectionString: process.env.DATABASE_URL,
@@ -158,6 +171,12 @@ export class AuditLogService {
       } catch (error: any) {
         if (!this.shouldFallbackToPg(error)) {
           throw error;
+        }
+        if (!this.shouldAllowAuditLogPgFallback()) {
+          this.logger.warn(
+            `Prisma audit log degraded for ${options.action} ${options.resourceType}:${options.resourceId}, skipping pg fallback outside CI/test/gate unless FORCE_AUDIT_LOG_PG_FALLBACK=1`
+          );
+          return;
         }
 
         this.logger.warn(
