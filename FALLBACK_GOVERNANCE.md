@@ -26,6 +26,7 @@ Rule:
 - Example: billing should use PG-primary only in CI/test/gate or via explicit override, not in all non-production environments.
 - Example: worker direct PG dispatch should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
 - Example: job ack/report PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
+- Example: engine selection/version PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
 
 ## Category B: CI/Test/Gate Only
 

@@ -31,6 +31,19 @@ export class JobEngineBindingService {
     return message.includes('PRISMA_QUERY_TIMEOUT');
   }
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldAllowEngineBindingPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_ENGINE_BINDING_PG_FALLBACK === '1';
+  }
+
   private async withPgClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
@@ -78,6 +91,12 @@ export class JobEngineBindingService {
       });
     } catch (error) {
       if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+      if (!this.shouldAllowEngineBindingPgFallback()) {
+        this.logger.error(
+          `[JobEngineBindingService.selectEngineForJob] Prisma degraded for ${engineKey}, but pg fallback is disabled outside CI/test/gate unless FORCE_ENGINE_BINDING_PG_FALLBACK=1`
+        );
         throw error;
       }
       this.logger.warn(
@@ -145,6 +164,12 @@ export class JobEngineBindingService {
         });
       } catch (error) {
         if (!this.isPrismaTimeout(error)) {
+          throw error;
+        }
+        if (!this.shouldAllowEngineBindingPgFallback()) {
+          this.logger.error(
+            `[JobEngineBindingService.selectEngineForJob] Prisma degraded for engine version ${engine.defaultVersion}, but pg fallback is disabled outside CI/test/gate unless FORCE_ENGINE_BINDING_PG_FALLBACK=1`
+          );
           throw error;
         }
         this.logger.warn(
