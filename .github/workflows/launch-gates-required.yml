@@ -206,7 +206,9 @@ jobs:
           exit $EXIT_CODE
         env:
           GATE_ENV_MODE: ci
+          NODE_ENV: staging
           API_URL: http://127.0.0.1:3000
+          API_BASE_URL: http://127.0.0.1:3000
           DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
           PRISMA_CLIENT_ENGINE_TYPE: binary
           PRISMA_CLI_QUERY_ENGINE_TYPE: binary
@@ -222,6 +224,11 @@ jobs:
           AUTH_PASSWORD: smoke-dev-password
           API_KEY: ak_smoke_test_key_v1
           API_SECRET: scu_smoke_secret
+          WORKER_ID: local-worker
+          WORKER_NAME: local-worker
+          WORKER_API_KEY: ak_smoke_test_key_v1
+          WORKER_API_SECRET: scu_smoke_secret
+          SHOT_RENDER_PROVIDER: replicate
 
       - name: Upload Evidence Artifact
         if: always()
