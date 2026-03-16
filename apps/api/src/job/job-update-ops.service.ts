@@ -37,6 +37,19 @@ export class JobUpdateOpsService {
         );
     }
 
+    private isCiOrGateContext(): boolean {
+        return (
+            process.env.NODE_ENV === 'test' ||
+            process.env.CI === '1' ||
+            !!process.env.JEST_WORKER_ID ||
+            process.env.GATE_ENV_MODE === 'ci'
+        );
+    }
+
+    private shouldAllowJobUpdatePgFallback(): boolean {
+        return this.isCiOrGateContext() || process.env.FORCE_JOB_UPDATE_PG_FALLBACK === '1';
+    }
+
     private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
         const client = new Client({
             connectionString: process.env.DATABASE_URL,
@@ -85,6 +98,12 @@ export class JobUpdateOpsService {
                 error instanceof BadRequestException ||
                 !this.shouldFallbackToPg(error)
             ) {
+                throw error;
+            }
+            if (!this.shouldAllowJobUpdatePgFallback()) {
+                this.logger.error(
+                    `[JobUpdateOpsService] Prisma ackJob degraded for ${jobId}/${workerId}, but pg fallback is disabled outside CI/test/gate unless FORCE_JOB_UPDATE_PG_FALLBACK=1`
+                );
                 throw error;
             }
             this.logger.warn(
@@ -185,6 +204,12 @@ export class JobUpdateOpsService {
                 error instanceof NotFoundException ||
                 !this.shouldFallbackToPg(error)
             ) {
+                throw error;
+            }
+            if (!this.shouldAllowJobUpdatePgFallback()) {
+                this.logger.error(
+                    `[JobUpdateOpsService] Prisma reportJobResult degraded for ${jobId}, but pg fallback is disabled outside CI/test/gate unless FORCE_JOB_UPDATE_PG_FALLBACK=1`
+                );
                 throw error;
             }
 
