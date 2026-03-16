@@ -17,7 +17,6 @@ but they preserve truthful behavior and do not fabricate successful outcomes.
 - `apps/api/src/capacity/capacity-gate.service.ts`
 - `apps/api/src/auth/jwt.strategy.ts`
 - `apps/api/src/audit-log/audit-log.service.ts`
-- `apps/api/src/job/job.service.ts`
 - `apps/api/src/job/job-auth-ops.service.ts`
 - `apps/api/src/task/task.service.ts`
 - `apps/api/src/job/job-creation-ops.service.ts`
@@ -95,7 +94,6 @@ available by default in normal runtime:
 - `apps/api/src/job/job-auth-ops.service.ts`
 - `apps/api/src/task/task.service.ts`
 - `apps/api/src/job/job-creation-ops.service.ts`
-- `apps/api/src/worker/worker.service.ts`
 
 ## Remaining High-Priority Queue
 
