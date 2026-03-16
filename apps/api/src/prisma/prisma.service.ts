@@ -1,24 +1,81 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from 'database';
 
+function isCiOrGateContextEnv(): boolean {
+  return (
+    process.env.NODE_ENV === 'test' ||
+    process.env.CI === '1' ||
+    !!process.env.JEST_WORKER_ID ||
+    process.env.GATE_ENV_MODE === 'ci'
+  );
+}
+
+function buildPrismaDatasourceUrl(
+  rawUrl: string | undefined,
+  connectTimeoutMs: number,
+  queryTimeoutMs: number
+): string | undefined {
+  if (!rawUrl) return rawUrl;
+  try {
+    const url = new URL(rawUrl);
+    const connectTimeoutSec = String(Math.max(1, Math.ceil(connectTimeoutMs / 1000)));
+    const poolTimeoutSec = String(Math.max(1, Math.ceil(queryTimeoutMs / 1000)));
+
+    if (!url.searchParams.has('connect_timeout')) {
+      url.searchParams.set('connect_timeout', connectTimeoutSec);
+    }
+    if (!url.searchParams.has('pool_timeout')) {
+      url.searchParams.set('pool_timeout', poolTimeoutSec);
+    }
+    if (!url.searchParams.has('application_name')) {
+      url.searchParams.set('application_name', 'super-caterpillar-api');
+    }
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
-  private readonly connectTimeoutMs = Number(
-    process.env.PRISMA_CONNECT_TIMEOUT_MS ||
-      (this.isCiOrGateContext() ? '5000' : '15000')
-  );
-  private readonly queryTimeoutMs = Number(
-    process.env.PRISMA_QUERY_TIMEOUT_MS ||
-      (this.isCiOrGateContext() ? '5000' : '15000')
-  );
-  private readonly slowQueryWarnMs = Number(
-    process.env.PRISMA_SLOW_QUERY_WARN_MS ||
-      (this.isCiOrGateContext() ? '1000' : '2000')
-  );
+  private readonly connectTimeoutMs: number;
+  private readonly queryTimeoutMs: number;
+  private readonly slowQueryWarnMs: number;
 
   constructor() {
-    super({});
+    const ciOrGate = isCiOrGateContextEnv();
+    const connectTimeoutMs = Number(
+      process.env.PRISMA_CONNECT_TIMEOUT_MS || (ciOrGate ? '5000' : '15000')
+    );
+    const queryTimeoutMs = Number(
+      process.env.PRISMA_QUERY_TIMEOUT_MS || (ciOrGate ? '5000' : '15000')
+    );
+    const slowQueryWarnMs = Number(
+      process.env.PRISMA_SLOW_QUERY_WARN_MS || (ciOrGate ? '1000' : '2000')
+    );
+    const prismaDatasourceUrl = buildPrismaDatasourceUrl(
+      process.env.DATABASE_URL,
+      connectTimeoutMs,
+      queryTimeoutMs
+    );
+
+    super(
+      prismaDatasourceUrl
+        ? {
+            datasources: {
+              db: {
+                url: prismaDatasourceUrl,
+              },
+            },
+          }
+        : {}
+    );
+
+    this.connectTimeoutMs = connectTimeoutMs;
+    this.queryTimeoutMs = queryTimeoutMs;
+    this.slowQueryWarnMs = slowQueryWarnMs;
+
     this.$use(async (params, next) => {
       const startedAt = Date.now();
       try {
@@ -58,6 +115,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.logger.log(
       `[PrismaService] Slow query warning threshold set to ${this.slowQueryWarnMs}ms`
     );
+    if (prismaDatasourceUrl && prismaDatasourceUrl !== process.env.DATABASE_URL) {
+      this.logger.log(
+        `[PrismaService] Applied datasource URL tuning for Prisma client (connect_timeout/pool_timeout/application_name)`
+      );
+    }
     // 开发/测试环境：诊断 Prisma Client 来源和模型
     if (process.env.NODE_ENV !== 'production') {
       try {
@@ -121,12 +183,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   private isCiOrGateContext(): boolean {
-    return (
-      process.env.NODE_ENV === 'test' ||
-      process.env.CI === '1' ||
-      !!process.env.JEST_WORKER_ID ||
-      process.env.GATE_ENV_MODE === 'ci'
-    );
+    return isCiOrGateContextEnv();
   }
 
   private shouldEnforceClientQueryTimeout(): boolean {
