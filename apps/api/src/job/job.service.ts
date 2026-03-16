@@ -1238,14 +1238,18 @@ export class JobService {
 
     if (!job) {
       this.logger.warn(`[DEBUG] Job not found by org-scoped lookup. Check orgId match.`);
-      // Debug: Attempt to find without orgId to diagnose
-      const jobAnyOrg = await this.prisma.shotJob.findUnique({ where: { id } });
-      if (jobAnyOrg) {
-        this.logger.warn(
-          `[DEBUG] Job FOUND without org filter! Job Org = ${jobAnyOrg.organizationId}, Request Org = ${organizationId} `
-        );
+      if (!usedPgFallback) {
+        // Debug: only use Prisma diagnostic lookup when the current path is not already degraded.
+        const jobAnyOrg = await this.prisma.shotJob.findUnique({ where: { id } });
+        if (jobAnyOrg) {
+          this.logger.warn(
+            `[DEBUG] Job FOUND without org filter! Job Org = ${jobAnyOrg.organizationId}, Request Org = ${organizationId} `
+          );
+        } else {
+          this.logger.warn(`[DEBUG] Job strictly NOT FOUND in DB.`);
+        }
       } else {
-        this.logger.warn(`[DEBUG] Job strictly NOT FOUND in DB.`);
+        this.logger.warn(`[DEBUG] Skipping Prisma diagnostic lookup because PG fallback path is active.`);
       }
       throw new NotFoundException('Job not found');
     }
@@ -1269,10 +1273,31 @@ export class JobService {
       }
     } else {
       // 如果没有关联 Shot，直接检查项目组织 (NOVEL_SCAN_TOC 等任务)
-      const project = await this.prisma.project.findUnique({
-        where: { id: job.projectId },
-        select: { organizationId: true },
-      });
+      let project: { organizationId: string } | null = null;
+      try {
+        project = await this.prisma.project.findUnique({
+          where: { id: job.projectId },
+          select: { organizationId: true },
+        });
+      } catch (error: any) {
+        if (!this.shouldFallbackToPg(error)) {
+          throw error;
+        }
+        this.logger.warn(
+          `[JobService.findJobById] Prisma project auth lookup degraded for ${job.projectId}; using pg fallback: ${error.message}`
+        );
+        project = await this.withPgClient(async (client) => {
+          const result = await client.query(
+            `SELECT "organizationId" FROM projects WHERE id = $1 LIMIT 1`,
+            [job.projectId]
+          );
+          return result.rows[0]
+            ? {
+                organizationId: result.rows[0].organizationId,
+              }
+            : null;
+        });
+      }
       if (!project || project.organizationId !== organizationId) {
         throw new ForbiddenException(
           'You do not have permission to access this job (Project check failed)'
