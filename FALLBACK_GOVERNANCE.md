@@ -17,6 +17,10 @@ but they preserve truthful behavior and do not fabricate successful outcomes.
 - `apps/api/src/capacity/capacity-gate.service.ts`
 - `apps/api/src/auth/jwt.strategy.ts`
 - `apps/api/src/audit-log/audit-log.service.ts`
+- `apps/api/src/job/job.service.ts`
+- `apps/api/src/job/job-auth-ops.service.ts`
+- `apps/api/src/task/task.service.ts`
+- `apps/api/src/job/job-creation-ops.service.ts`
 
 Rule:
 
@@ -32,6 +36,8 @@ Rule:
 - Example: JWT user/org PG fallback should stay disabled in normal runtime and degraded authentication paths should not bounce back into Prisma for debug enumeration.
 - Example: audit-log PG fallback should stay disabled in normal runtime and degrade to best-effort skip outside CI/test/gate unless explicitly overridden.
 - Example: billing read/write PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
+- Example: worker lifecycle PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
+- Example: job query/auth/task creation PG fallback should stay disabled in normal runtime and only be allowed in CI/test/gate or via explicit override.
 
 ## Category B: CI/Test/Gate Only
 
@@ -84,6 +90,12 @@ available by default in normal runtime:
 - `apps/api/src/capacity/capacity-gate.service.ts`
 - `apps/api/src/auth/jwt.strategy.ts`
 - `apps/api/src/audit-log/audit-log.service.ts`
+- `apps/api/src/billing/billing.service.ts`
+- `apps/api/src/job/job.service.ts`
+- `apps/api/src/job/job-auth-ops.service.ts`
+- `apps/api/src/task/task.service.ts`
+- `apps/api/src/job/job-creation-ops.service.ts`
+- `apps/api/src/worker/worker.service.ts`
 
 ## Remaining High-Priority Queue
 
@@ -94,30 +106,10 @@ degraded-mode behavior that can obscure the real failure source:
 - Security-sensitive.
 - Still the highest-risk remaining fallback surface because it affects trust boundaries.
 
-2. `apps/api/src/billing/billing.service.ts`
-- `getCredits()` still falls back to PG directly on Prisma timeout.
-- `consumeCredits()` is narrowed, but billing remains a production-critical path and should eventually
-  converge on one runtime behavior.
-
-3. `apps/api/src/worker/worker.service.ts`
-- `registerWorker()` and `heartbeat()` still keep broad runtime PG fallbacks.
-- Dispatch has been narrowed, but worker lifecycle writes still need the same treatment.
-
-4. `apps/api/src/job/job.service.ts`
-- `findJobById()` now avoids recursive Prisma diagnostics, but still keeps a broad PG fallback path.
-- This is a core read path and should be audited after worker/billing.
-
-5. `apps/api/src/job/job-auth-ops.service.ts`
-- Shot ownership still degrades to PG by default.
-- This is auth-adjacent and should be reviewed before calling the runtime fully tightened.
-
-6. `apps/api/src/task/task.service.ts`
-- `create()` still degrades to PG directly on Prisma timeout.
-- Not as sensitive as auth/billing, but it remains a core orchestration path.
-
-7. `apps/api/src/job/job-creation-ops.service.ts`
-- Still contains production-like degraded path handling.
-- Needs a dedicated review so CI/gate allowances do not leak into normal runtime semantics.
+2. Prisma root-cause remediation
+- Most broad runtime fallbacks have now been narrowed to `CI/test/gate` or explicit override.
+- The next meaningful step is no longer “add another flag”, but to remove the need for these flags by
+  fixing Prisma degradation itself.
 
 ## Removed Hard Bypasses
 

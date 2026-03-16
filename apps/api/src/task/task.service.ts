@@ -29,6 +29,19 @@ export class TaskService {
     return message.includes('PRISMA_QUERY_TIMEOUT');
   }
 
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldAllowTaskPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_TASK_PG_FALLBACK === '1';
+  }
+
   private async withPgClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
@@ -119,6 +132,9 @@ export class TaskService {
       });
     } catch (error) {
       if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+      if (!this.shouldAllowTaskPgFallback()) {
         throw error;
       }
       task = await createWithPg();

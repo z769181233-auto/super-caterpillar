@@ -51,6 +51,10 @@ export class WorkerService {
     return this.isCiOrGateContext() || process.env.FORCE_WORKER_PG_DISPATCH_FALLBACK === '1';
   }
 
+  private shouldAllowWorkerLifecyclePgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_WORKER_LIFECYCLE_PG_FALLBACK === '1';
+  }
+
   /**
    * 注册或更新 Worker
    * @param workerId Worker 唯一标识
@@ -113,6 +117,12 @@ export class WorkerService {
       }
     } catch (error: any) {
       if (!this.shouldFallbackToPg(error)) {
+        throw error;
+      }
+      if (!this.shouldAllowWorkerLifecyclePgFallback()) {
+        this.logger.error(
+          `[WorkerService] Prisma registerWorker degraded for ${workerId}, but lifecycle pg fallback is disabled outside CI/test/gate unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
+        );
         throw error;
       }
       this.logger.warn(
@@ -227,6 +237,12 @@ export class WorkerService {
       });
     } catch (error: any) {
       if (error instanceof NotFoundException || !this.shouldFallbackToPg(error)) {
+        throw error;
+      }
+      if (!this.shouldAllowWorkerLifecyclePgFallback()) {
+        this.logger.error(
+          `[WorkerService] Prisma heartbeat degraded for ${workerId}, but lifecycle pg fallback is disabled outside CI/test/gate unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
+        );
         throw error;
       }
       this.logger.warn(

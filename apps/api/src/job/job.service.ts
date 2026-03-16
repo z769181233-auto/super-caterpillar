@@ -1229,6 +1229,12 @@ export class JobService {
       if (!this.shouldFallbackToPg(error)) {
         throw error;
       }
+      if (!this.shouldAllowJobQueryPgFallback()) {
+        this.logger.error(
+          `[JobService.findJobById] Prisma degraded for ${id}, but pg fallback is disabled outside CI/test/gate unless FORCE_JOB_QUERY_PG_FALLBACK=1`
+        );
+        throw error;
+      }
       usedPgFallback = true;
       this.logger.warn(
         `[JobService.findJobById] Prisma degraded for ${id}; using pg fallback: ${error.message}`
@@ -1283,6 +1289,12 @@ export class JobService {
         if (!this.shouldFallbackToPg(error)) {
           throw error;
         }
+        if (!this.shouldAllowJobQueryPgFallback()) {
+          this.logger.error(
+            `[JobService.findJobById] Prisma project auth lookup degraded for ${job.projectId}, but pg fallback is disabled outside CI/test/gate unless FORCE_JOB_QUERY_PG_FALLBACK=1`
+          );
+          throw error;
+        }
         this.logger.warn(
           `[JobService.findJobById] Prisma project auth lookup degraded for ${job.projectId}; using pg fallback: ${error.message}`
         );
@@ -1316,6 +1328,19 @@ export class JobService {
       message.includes("Can't reach database server") ||
       message.includes('P1001')
     );
+  }
+
+  private isCiOrGateContext(): boolean {
+    return (
+      process.env.NODE_ENV === 'test' ||
+      process.env.CI === '1' ||
+      !!process.env.JEST_WORKER_ID ||
+      process.env.GATE_ENV_MODE === 'ci'
+    );
+  }
+
+  private shouldAllowJobQueryPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_JOB_QUERY_PG_FALLBACK === '1';
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
