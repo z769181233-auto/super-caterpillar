@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import { normalizeLegacyBillingLedgerRow } from './billing-ledger-compat.util';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
@@ -438,7 +439,12 @@ export class BillingService {
       this.prisma.billingLedger.count({ where }),
     ]);
 
-    return { items, total, page, pageSize };
+    return {
+      items: items.map((item) => normalizeLegacyBillingLedgerRow(item as any)),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   async getSummary(projectId?: string, orgId?: string) {

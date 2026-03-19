@@ -17,6 +17,7 @@ import {
   isCiOrGateContextEnv,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
+import { buildLegacyBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
 
 /**
  * Worker 管理服务
@@ -1080,13 +1081,13 @@ export class WorkerService {
         // P3-A: Dual State Machine Physical Binding - RESERVED
         try {
           await tx.billingLedger.create({
-            data: {
+            data: buildLegacyBillingLedgerCreateData({
               jobId: candidate.id,
               projectId: candidate.projectId,
+              tenantId: (candidate as any).organizationId,
               billingState: 'RESERVED',
               amount: 1n,
-              idempotencyKey: `${candidate.id}_RESERVED`,
-            },
+            }),
           });
         } catch (e: any) {
           if (e.code === 'P2002') {

@@ -1,6 +1,7 @@
 // apps/api/src/scripts/p1_2_billing_seed.ts
 import { PrismaClient } from 'database';
 import * as util from 'util';
+import { buildLegacyBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
 
 const prisma = new PrismaClient({});
 
@@ -58,16 +59,14 @@ async function main() {
 
   // 4) 创建 ledger(只 1 条,保证不重复)
   await prisma.billingLedger.create({
-    data: {
+    data: buildLegacyBillingLedgerCreateData({
+      jobId: job.id,
+      projectId: project.id,
       tenantId: org.id,
-      traceId: job.id,
-      itemType: 'shot_render',
-      itemId: job.id,
-      chargeCode: 'ce03_visual_density',
-      amount: 100, // 1 credit * 100
+      billingState: 'COMMITTED',
+      amount: 100n, // 1 credit * 100
       status: 'POSTED',
-      evidenceRef: 'seed',
-    },
+    }) as any,
   });
 
   process.stdout.write(util.format(`PROJECT_ID=${project.id}`) + '\n');

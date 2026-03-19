@@ -6,6 +6,7 @@
  */
 
 import { Prisma, JobStatus } from 'database';
+import { buildLegacyBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
 
 /**
  * 重试计算结果
@@ -105,13 +106,13 @@ export async function markRetryOrFail(
   // P3-A: Dual State Machine Physical Binding - RELEASED
   try {
     await tx.billingLedger.create({
-      data: {
+      data: buildLegacyBillingLedgerCreateData({
         jobId: job.id,
         projectId: job.projectId,
+        tenantId: job.projectId,
         billingState: 'RELEASED',
         amount: 1n,
-        idempotencyKey: `${job.id}_RELEASED`,
-      },
+      }),
     });
   } catch (e: any) {
     if (e.code === 'P2002') {
