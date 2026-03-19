@@ -237,7 +237,7 @@ export class StoryService {
 
     // 7. 返回结果
     return {
-      jobId: task.id, // Keep field name for compatibility prefixing taskId
+      jobId: task.id, // 兼容仍读取 jobId 的旧调用方；真实主键语义已迁到 taskId
       traceId,
       status: task.status,
       taskId: task.id,
