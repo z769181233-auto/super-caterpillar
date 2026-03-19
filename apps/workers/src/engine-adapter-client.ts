@@ -145,7 +145,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
           version: (selectedOutput as any).engineInfo?.version || '1.0',
         };
       } else {
-        throw new Error('CE06_PARSING_FAILED: Absolute truth required. No legacy fallback allowed.');
+        throw new Error('CE06_PARSING_FAILED: Absolute truth required. No historical fallback allowed.');
       }
 
       const parseDuration = selectedOutput

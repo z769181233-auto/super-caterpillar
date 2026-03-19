@@ -446,14 +446,14 @@ export async function startGateWorkerApp() {
           (job as any).isVerification === true ||
           job.payload?.isVerification === true;
 
-        const legacyMp4 = path.join(artDir, 'output.mp4');
-        if (fs.existsSync(legacyMp4) && !fs.existsSync(mp4Path)) {
-          fs.copyFileSync(legacyMp4, mp4Path);
+        const fallbackOutputMp4 = path.join(artDir, 'output.mp4');
+        if (fs.existsSync(fallbackOutputMp4) && !fs.existsSync(mp4Path)) {
+          fs.copyFileSync(fallbackOutputMp4, mp4Path);
         }
 
         if (!isVerification) {
           const contractMp4 = path.join(artDir, 'shot_render_output.mp4');
-          if (!fs.existsSync(contractMp4) && !fs.existsSync(legacyMp4)) {
+          if (!fs.existsSync(contractMp4) && !fs.existsSync(fallbackOutputMp4)) {
             throw new Error(
               "ARTIFACT_DELIVERY_FAILED: Truth-based delivery required. Non-verification job missing real artifacts."
             );

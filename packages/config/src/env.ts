@@ -411,7 +411,7 @@ export function pickHmacSecretSSOT(): string {
   if (!process.env.HMAC_SECRET_KEY) {
     // eslint-disable-next-line no-console
     console.warn(
-      '[WARN] HMAC_SECRET_KEY missing; fallback to legacy env used. Please migrate to HMAC_SECRET_KEY.'
+      '[WARN] HMAC_SECRET_KEY missing; fallback to historical env path used. Please migrate to HMAC_SECRET_KEY.'
     );
   }
 

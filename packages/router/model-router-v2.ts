@@ -34,7 +34,9 @@ export class ModelRouterV2 {
     if (jobType === 'SHOT_RENDER' || jobType === 'shot_render') {
       // 规格：预算达 100% (BLOCK_HIGH_COST) 时，禁止高成本模型，尝试降级
       if (req.budgetLevel === 'BLOCK_HIGH_COST' || req.budgetLevel === 'BLOCK_ALL_CONSUME') {
-        throw new Error(`[ROUTER_FATAL] Budget constraint (${req.budgetLevel}) enforced: No legacy low-cost options allowed.`);
+        throw new Error(
+          `[ROUTER_FATAL] Budget constraint (${req.budgetLevel}) enforced: No historical low-cost options allowed.`
+        );
       }
 
       // 如果预算极其有限 (Legacy support)
