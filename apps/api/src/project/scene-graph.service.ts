@@ -71,6 +71,24 @@ export class SceneGraphService {
           },
           orderBy: { index: 'asc' },
         },
+        seasons: {
+          include: {
+            episodes: {
+              include: {
+                scenes: {
+                  include: {
+                    shots: {
+                      orderBy: { index: 'asc' },
+                    },
+                  },
+                  orderBy: { sceneIndex: 'asc' },
+                },
+              },
+              orderBy: { index: 'asc' },
+            },
+          },
+          orderBy: { index: 'asc' },
+        },
       },
     });
 
@@ -104,16 +122,20 @@ export class SceneGraphService {
     }
 
     // 4. 映射为 SceneGraph DTO
+    const seasons = projectData.seasons.map((season: any) => this.mapSeasonToNode(season));
+    const compatibilityEpisodes =
+      seasons.length === 0
+        ? projectData.episodes.map((episode: any) => this.mapEpisodeToNode(episode, project.id))
+        : undefined;
+
     const sceneGraph: ProjectSceneGraph = {
       projectId: project.id,
       projectName: project.name,
       projectStatus: project.status,
       analysisStatus,
       analysisUpdatedAt,
-      seasons: [], // V3.0: Empty for now
-      episodes: projectData.episodes.map((episode: any) =>
-        this.mapEpisodeToNode(episode, project.id)
-      ),
+      seasons,
+      episodes: compatibilityEpisodes,
     };
 
     // 5. 写入缓存

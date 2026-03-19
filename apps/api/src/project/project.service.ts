@@ -443,10 +443,13 @@ export class ProjectService {
     }));
 
     // Compatibility root: keep episodes at project root for older consumers.
-    const compatibilityEpisodes = project.episodes?.map((episode: any) => ({
-      ...episode,
-      scenes: episode.scenes.map(enrichScene),
-    }));
+    const compatibilityEpisodes =
+      seasons.length === 0
+        ? project.episodes?.map((episode: any) => ({
+            ...episode,
+            scenes: episode.scenes.map(enrichScene),
+          }))
+        : undefined;
 
     // [Start] Strict Status Mapping Logic
     // 1. Determine sourceType
