@@ -6,10 +6,9 @@ import { AuditLogService } from '../audit-log/audit-log.service';
  * Asset Service
  * CE09: Media Security 服务层
  *
- * TODO: 实现真实逻辑
- * - secure-url: 生成带签名的临时访问 URL
- * - hls: 生成 HLS 播放列表（如果未生成则触发生成）
- * - watermark: 添加可见/不可见水印
+ * 当前实现：
+ * - secure-url / hls: 基于 storageKey 生成可访问地址
+ * - watermark: 仅保留受理入口，返回未实现
  */
 @Injectable()
 export class AssetService {
@@ -20,11 +19,6 @@ export class AssetService {
     private readonly auditLogService: AuditLogService
   ) {}
 
-  /**
-   * MVP Implementation of Secure URL
-   * In MVP, we use local file serving or direct S3 URL signing.
-   * For this stage, we assume local file path stored in storageKey and return a served URL.
-   */
   async getSecureUrl(assetId: string, userId?: string) {
     const asset = await this.prisma.asset.findUnique({
       where: { id: assetId },
@@ -48,11 +42,8 @@ export class AssetService {
       details: { operation: 'getSecureUrl' },
     });
 
-    // MVP: If storageKey starts with http, return it directly.
-    // If it's a local path, assume a static serve prefix (e.g. /uploads)
     let secureUrl = asset.storageKey;
     if (!secureUrl.startsWith('http')) {
-      // Assume local dev environment
       secureUrl = `http://localhost:3000/uploads/${asset.storageKey}`;
     }
 
@@ -67,7 +58,6 @@ export class AssetService {
   }
 
   async getHls(assetId: string, userId?: string) {
-    // MVP: Delegate to getSecureUrl logic for now, assuming storageKey points to m3u8 if it's HLS
     return this.getSecureUrl(assetId, userId);
   }
 
@@ -78,8 +68,6 @@ export class AssetService {
     });
     if (!asset) throw new NotFoundException('Asset not found');
 
-    // Simple Project Membership check
-    // This assumes ProjectService or similar logic exists, or we query DB directly
     const member = await this.prisma.projectMember.findFirst({
       where: {
         userId,
@@ -99,7 +87,6 @@ export class AssetService {
   }
 
   async addWatermark(assetId: string, userId?: string) {
-    // Stage 4 MVP: Not implementing actual watermarking yet, but logging the request
     this.logger.warn(`Watermarking requested for ${assetId} but not implemented in MVP`);
     return {
       success: false,

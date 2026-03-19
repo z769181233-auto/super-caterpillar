@@ -14,8 +14,6 @@
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json --testPathPattern=e2e",
     "load:test": "ts-node scripts/load-test.ts",
-    "e2e:novel-pipeline": "ts-node -r tsconfig-paths/register src/scripts/legacy/e2e-novel-pipeline.legacy.ts",
-    "e2e:novel": "ts-node -r tsconfig-paths/register src/scripts/legacy/e2e-novel-pipeline.legacy.ts",
     "e2e:novel:worker": "ts-node -r tsconfig-paths/register src/scripts/e2e-novel-worker-pipeline.ts",
     "init:worker-api-key": "ts-node -r tsconfig-paths/register src/scripts/init-worker-api-key.ts",
     "delete:worker": "ts-node -r tsconfig-paths/register src/scripts/delete-worker.ts",

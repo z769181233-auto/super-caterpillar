@@ -6,9 +6,9 @@ import { AuditLogService } from '../audit-log/audit-log.service';
  * Shot Director Service
  * CE05: Director Control 服务层
  *
- * TODO: 实现真实逻辑
- * - inpaint: 图像修复（移除/替换区域）
- * - pose: 姿态控制（调整角色姿态）
+ * 当前实现：
+ * - inpaint / pose: 接受请求、记录审计并返回 PENDING job 占位
+ * - composeVideo: 真实创建 VIDEO_RENDER job
  */
 @Injectable()
 export class ShotDirectorService {
@@ -20,7 +20,6 @@ export class ShotDirectorService {
   ) {}
 
   async inpaint(shotId: string, userId?: string) {
-    // TODO: 实现真实逻辑
     const shot = await this.prisma.shot.findUnique({
       where: { id: shotId },
     });
@@ -49,7 +48,6 @@ export class ShotDirectorService {
   }
 
   async pose(shotId: string, userId?: string) {
-    // TODO: 实现真实逻辑
     const shot = await this.prisma.shot.findUnique({
       where: { id: shotId },
     });
