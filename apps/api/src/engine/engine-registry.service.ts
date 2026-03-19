@@ -51,7 +51,7 @@ export class EngineRegistry {
     private readonly engineConfigStore: EngineConfigStoreService,
     private readonly engineRoutingService: EngineRoutingService,
     @Inject(forwardRef(() => EngineStrategyService))
-    private readonly engineStrategyService?: EngineStrategyService // S4-B: 策略路由层（可选，向后兼容）
+    private readonly engineStrategyService?: EngineStrategyService // S4-B: 策略路由层（可选，未启用时回落到基础路由）
   ) {
     // 默认引擎标识，可以通过环境变量配置
     this.defaultEngineKey = (env as any).engineDefault || 'default_novel_analysis';
@@ -259,7 +259,7 @@ export class EngineRegistry {
     }
 
     // 从 DB 配置构造 Engine 对象（最小字段）
-    // 兼容现有字段：engineKey -> code, adapterName -> name, adapterType -> type, enabled -> isActive
+    // 统一旧字段命名到当前返回口径：engineKey -> code, adapterName -> name, adapterType -> type, enabled -> isActive
     return {
       id: engineConfig.id,
       code: engineConfig.code || engineConfig.engineKey || engineConfig.id,
@@ -289,7 +289,7 @@ export class EngineRegistry {
     const baseEngineKey = input.engineKey || this.getDefaultEngineKeyForJobType(jobType) || null;
 
     // 2) S4-B: 通过策略层决定最终 engineKey / resolvedVersion
-    // 如果策略层可用，使用策略层；否则直接使用路由层（向后兼容）
+    // 如果策略层可用，使用策略层；否则直接使用路由层
     let routingResult: { engineKey: string | null; resolvedVersion?: string | null };
     if (this.engineStrategyService) {
       const strategyDecision = this.engineStrategyService.decideStrategy(
@@ -306,7 +306,7 @@ export class EngineRegistry {
         resolvedVersion: strategyDecision.resolvedVersion,
       };
     } else {
-      // 向后兼容：直接使用路由层
+      // 策略层不可用时直接使用基础路由
       routingResult = this.engineRoutingService.resolve({
         jobType,
         baseEngineKey,
@@ -356,7 +356,7 @@ export class EngineRegistry {
       payload: nextPayload,
     };
 
-    // 4) 选择 adapter（保留现有 findAdapter 行为和内部兼容逻辑）
+    // 4) 选择 adapter（保留现有 findAdapter 行为和内部映射逻辑）
     const adapter = this.findAdapter(nextInput.engineKey, nextInput.jobType, nextInput.payload);
 
     // 5) 调用 adapter.invoke（适配器内部仍使用 EngineConfigService/EngineConfigStore 读取配置）

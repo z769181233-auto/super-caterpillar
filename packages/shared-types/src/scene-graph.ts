@@ -73,7 +73,7 @@ export interface ProjectSceneGraph {
   analysisStatus?: 'PENDING' | 'ANALYZING' | 'DONE' | 'FAILED' | null; // 小说分析状态
   analysisUpdatedAt?: string | null; // ISO 8601 时间字符串
   seasons: SeasonNode[]; // 影视工业标准：Season → Episode → Scene → Shot
-  // 向后兼容：仅旧项目/无 season 数据时才出现
-  episodes?: EpisodeNode[]; // @deprecated 新代码应优先使用 seasons[].episodes
+  // 仅旧项目/无 season 数据时才出现
+  episodes?: EpisodeNode[]; // 新代码应优先使用 seasons[].episodes
   engineContext?: Record<string, any>; // 预留：项目级引擎上下文
 }

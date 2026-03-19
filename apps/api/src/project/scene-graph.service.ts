@@ -123,7 +123,7 @@ export class SceneGraphService {
 
     // 4. 映射为 SceneGraph DTO
     const seasons = projectData.seasons.map((season: any) => this.mapSeasonToNode(season));
-    const compatibilityEpisodes =
+    const rootEpisodesForOldProjects =
       seasons.length === 0
         ? projectData.episodes.map((episode: any) => this.mapEpisodeToNode(episode, project.id))
         : undefined;
@@ -135,7 +135,7 @@ export class SceneGraphService {
       analysisStatus,
       analysisUpdatedAt,
       seasons,
-      episodes: compatibilityEpisodes,
+      episodes: rootEpisodesForOldProjects,
     };
 
     // 5. 写入缓存

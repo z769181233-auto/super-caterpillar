@@ -160,7 +160,7 @@ export class JobService {
   }
 
   /**
-   * markJobFailedAndMaybeRetry facade for backward compatibility
+   * Thin delegation kept for existing call sites
    */
   async markJobFailedAndMaybeRetry(
     jobId: string,
@@ -2101,7 +2101,7 @@ export class JobService {
     try {
       await this.jobEngineBindingService.markBindingExecuting(jobId);
     } catch (error: any) {
-      // 绑定状态更新失败不影响 Job 状态转换（向后兼容）
+      // 绑定状态更新失败不影响 Job 状态转换
       this.logger.warn(`Failed to mark binding as EXECUTING for job ${jobId}: ${error.message} `);
     }
 

@@ -30,7 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         (request: any) => {
           return request?.cookies?.accessToken || null;
         },
-        // 兼容从 Authorization header 读取（用于向后兼容）
+        // 从 Authorization header 读取 Bearer token
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
       ignoreExpiration: false,

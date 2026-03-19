@@ -264,7 +264,7 @@ export class ProjectService {
           },
           orderBy: { index: 'asc' },
         },
-        // 向后兼容：保留 episodes 直接关联（用于旧数据）
+        // 旧项目仍可能直接挂载 episodes（无 seasons 数据时读取）
         // 注意：根据 schema，seasonId 是必填的，所以这里查询逻辑可能需要调整
         // 如果确实需要查询"未关联到 Season"的 Episode，可能需要通过其他字段判断
         episodes: {
@@ -442,8 +442,8 @@ export class ProjectService {
       })),
     }));
 
-    // Compatibility root: keep episodes at project root for older consumers.
-    const compatibilityEpisodes =
+    // Legacy root output: only emit project-root episodes for old projects without seasons.
+    const rootEpisodesForOldProjects =
       seasons.length === 0
         ? project.episodes?.map((episode: any) => ({
             ...episode,
@@ -500,7 +500,7 @@ export class ProjectService {
     return {
       ...projectWithoutTasks,
       seasons,
-      episodes: compatibilityEpisodes,
+      episodes: rootEpisodesForOldProjects,
       analysisStatus,
       analysisUpdatedAt,
       // New Fields
@@ -660,7 +660,7 @@ export class ProjectService {
   }
 
   /**
-   * 创建 Episode（支持 Season 和 Project 两种模式，向后兼容）
+   * 创建 Episode（优先挂到 Season；旧调用方仍允许直接挂到 Project）
    */
   async createEpisode(
     projectIdOrSeasonId: string,

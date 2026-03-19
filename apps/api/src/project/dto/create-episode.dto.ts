@@ -9,7 +9,7 @@ export class CreateEpisodeDto {
   @IsString()
   @MinLength(1, { message: 'Episode name must not be empty' })
   @MaxLength(200, { message: 'Episode name must not exceed 200 characters' })
-  name?: string; // @deprecated 兼容旧客户端，新代码应使用 title
+  name?: string; // 旧客户端兼容字段；新代码应使用 title
 
   @IsOptional()
   @IsString()
