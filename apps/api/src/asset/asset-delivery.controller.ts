@@ -34,12 +34,7 @@ export class AssetDeliveryController {
    * V1.1 Allied Endpoint: 获取带安全签名的资产载链接
    * GET /api/assets/:id/secure-url
    */
-  /**
-   * V1.1 Allied Endpoint: 获取带安全签名的资产载链接
-   * GET /api/assets/:id/secure-url
-   */
   @Get(':id/secure-url')
-  @Get(':id/signed-url') // Alias for compatibility
   @RequireSignature()
   async getSecureUrl(
     @Param('id') assetId: string,
@@ -80,8 +75,6 @@ export class AssetDeliveryController {
       success: true,
       data: {
         signed_url: asset.signedUrl, // V1.1: snake_case
-        signedUrl: asset.signedUrl, // Compatibility: Deprecated
-        url: asset.signedUrl, // Compatibility: Deprecated
         expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
         expire: 3600, // V1.1: Seconds (Strict)
       },
