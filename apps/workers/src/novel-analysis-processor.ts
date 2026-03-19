@@ -1572,7 +1572,7 @@ export async function processNovelAnalysisJob(
       const billingUsage = (structure as any).billing_usage;
 
       if (billingUsage && billingUsage.totalTokens > 0) {
-        await costLedger.recordCE06Billing({
+        await costLedger.recordEngineBilling({
           jobId,
           jobType: 'CE06_NOVEL_PARSING',
           traceId: (job as any).traceId || `trace-${jobId}`,

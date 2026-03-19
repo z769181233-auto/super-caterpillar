@@ -171,43 +171,4 @@ export class CostLedgerService {
     }
   }
 
-  /**
-   * Deprecated/Wrapper methods for backward compatibility
-   */
-  async recordGenericBilling(params: {
-    jobId: string;
-    jobType: string;
-    traceId: string;
-    projectId: string;
-    userId: string;
-    orgId: string;
-    attempt?: number;
-    billingUsage: EngineBillingUsage;
-  }): Promise<void> {
-    // Map to new generic method
-    return this.recordEngineBilling({
-      ...params,
-      engineKey: 'generic', // Default fallback
-    });
-  }
-
-  async recordCE06Billing(params: any) {
-    // P0 Hotfix: Use correct engineKey instead of 'generic'
-    return this.recordEngineBilling({
-      ...params,
-      engineKey: params.engineKey || 'ce06_novel_parsing',
-    });
-  }
-
-  async recordCE03Billing(params: any) {
-    return this.recordGenericBilling(params);
-  }
-
-  async recordCE04Billing(params: any) {
-    return this.recordGenericBilling(params);
-  }
-
-  async recordShotRenderBilling(params: any) {
-    return this.recordGenericBilling(params);
-  }
 }
