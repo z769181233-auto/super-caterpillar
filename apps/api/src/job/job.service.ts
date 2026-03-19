@@ -67,6 +67,7 @@ import { SHOT_JOB_WITH_HIERARCHY, SHOT_WITH_HIERARCHY } from './job.service.quer
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
 
@@ -1322,13 +1323,7 @@ export class JobService {
   }
 
   private shouldFallbackToPg(error: any): boolean {
-    const message = String(error?.message || '');
-    return (
-      message.includes('PRISMA_QUERY_TIMEOUT') ||
-      message.includes('startup connect exceeded') ||
-      message.includes("Can't reach database server") ||
-      message.includes('P1001')
-    );
+    return isPrismaFallbackEligibleError(error);
   }
 
   private isCiOrGateContext(): boolean {

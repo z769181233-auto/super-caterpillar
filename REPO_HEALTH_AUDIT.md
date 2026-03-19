@@ -104,6 +104,10 @@ Current status:
 - Synthetic timeout noise has been reduced in `apps/api/src/prisma/prisma.service.ts`
 - raw PG fallback client behavior is now centralized through:
   - `apps/api/src/prisma/pg-runtime.util.ts`
+- service-level fallback eligibility is now also centralized through:
+  - `isPrismaFallbackEligibleError()`
+- background schedulers no longer self-skip on generic `PRISMA_QUERY_TIMEOUT`; they only skip on real DB unavailability
+- `audit-insight` no longer fabricates local timeout-based partial failures
 
 But the remaining real work is:
 

@@ -19,6 +19,11 @@ export function isDatabaseUnavailableError(error: unknown): boolean {
   );
 }
 
+export function isPrismaFallbackEligibleError(error: unknown): boolean {
+  const message = String((error as any)?.message || '');
+  return message.includes('PRISMA_QUERY_TIMEOUT') || isDatabaseUnavailableError(error);
+}
+
 export function getRuntimeDbTimeoutMs(kind: 'connect' | 'query' | 'slowQueryWarn'): number {
   const ciOrGate = isCiOrGateContextEnv();
 

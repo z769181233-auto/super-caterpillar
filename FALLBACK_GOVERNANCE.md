@@ -95,6 +95,14 @@ available by default in normal runtime:
 - `apps/api/src/task/task.service.ts`
 - `apps/api/src/job/job-creation-ops.service.ts`
 
+In addition, Prisma fallback/error classification is now centralized through
+`apps/api/src/prisma/pg-runtime.util.ts`:
+
+- `isDatabaseUnavailableError()` is used for background skip behavior
+- `isPrismaFallbackEligibleError()` is used for runtime PG fallback eligibility
+
+This removes duplicated per-service keyword matching and reduces drift between services.
+
 ## Remaining High-Priority Queue
 
 These paths still deserve another pass because they either remain broadly enabled or still contain

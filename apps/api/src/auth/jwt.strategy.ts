@@ -7,6 +7,7 @@ import { env } from '@scu/config';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
 
@@ -39,7 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   private isPrismaTimeout(error: unknown): boolean {
-    return error instanceof Error && error.message.includes('PRISMA_QUERY_TIMEOUT');
+    return isPrismaFallbackEligibleError(error);
   }
 
   private isCiOrGateContext(): boolean {

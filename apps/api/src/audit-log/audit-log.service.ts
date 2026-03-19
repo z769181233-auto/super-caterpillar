@@ -4,6 +4,7 @@ import { createHmac, randomBytes, createHash } from 'crypto';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
 
@@ -24,13 +25,7 @@ export class AuditLogService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   private shouldFallbackToPg(error: any): boolean {
-    const message = String(error?.message || '');
-    return (
-      message.includes('PRISMA_QUERY_TIMEOUT') ||
-      message.includes('startup connect exceeded') ||
-      message.includes("Can't reach database server") ||
-      message.includes('P1001')
-    );
+    return isPrismaFallbackEligibleError(error);
   }
 
   private isCiOrGateContext(): boolean {

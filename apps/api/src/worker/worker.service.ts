@@ -15,6 +15,7 @@ import { randomUUID } from 'crypto';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
 import { buildLegacyBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
@@ -252,13 +253,7 @@ export class WorkerService {
   }
 
   private shouldFallbackToPg(error: any): boolean {
-    const message = String(error?.message || '');
-    return (
-      message.includes('PRISMA_QUERY_TIMEOUT') ||
-      message.includes('startup connect exceeded') ||
-      message.includes("Can't reach database server") ||
-      message.includes('P1001')
-    );
+    return isPrismaFallbackEligibleError(error);
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {

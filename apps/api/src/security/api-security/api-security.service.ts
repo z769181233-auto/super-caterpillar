@@ -20,6 +20,7 @@ import { buildHmacError } from '../../common/utils/hmac-error.utils';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../../prisma/pg-runtime.util';
 
@@ -58,13 +59,7 @@ export class ApiSecurityService {
   ) { }
 
   private shouldFallbackToPg(error: any): boolean {
-    const message = String(error?.message || '');
-    return (
-      message.includes('PRISMA_QUERY_TIMEOUT') ||
-      message.includes('startup connect exceeded') ||
-      message.includes("Can't reach database server") ||
-      message.includes('P1001')
-    );
+    return isPrismaFallbackEligibleError(error);
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
@@ -724,12 +719,7 @@ export class ApiSecurityService {
         },
       });
     } catch (error: any) {
-      const message = String(error?.message || '');
-      const shouldFallback =
-        message.includes('PRISMA_QUERY_TIMEOUT') ||
-        message.includes('startup connect exceeded') ||
-        message.includes("Can't reach database server") ||
-        message.includes('P1001');
+      const shouldFallback = isPrismaFallbackEligibleError(error);
 
       if (!shouldFallback) {
         throw error;
@@ -742,7 +732,7 @@ export class ApiSecurityService {
       }
 
       this.logger.warn(
-        `[ApiSecurityService] Prisma apiKey lookup degraded, using pg fallback for ${this.maskApiKey(apiKey)}: ${message}`
+        `[ApiSecurityService] Prisma apiKey lookup degraded, using pg fallback for ${this.maskApiKey(apiKey)}: ${error instanceof Error ? error.message : String(error)}`
       );
 
       return this.withPgClient(async (client) => {

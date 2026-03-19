@@ -14,6 +14,7 @@ import { normalizeLegacyBillingLedgerRow } from './billing-ledger-compat.util';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
 
@@ -25,8 +26,7 @@ export class BillingService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   private isPrismaTimeout(error: unknown): boolean {
-    const message = error instanceof Error ? error.message : String(error ?? '');
-    return message.includes('PRISMA_QUERY_TIMEOUT');
+    return isPrismaFallbackEligibleError(error);
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {

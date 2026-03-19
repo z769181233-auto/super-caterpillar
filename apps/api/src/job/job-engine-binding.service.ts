@@ -16,6 +16,7 @@ import { JobType, JobEngineBindingStatus } from 'database';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
 
@@ -31,8 +32,7 @@ export class JobEngineBindingService {
   ) {}
 
   private isPrismaTimeout(error: unknown): boolean {
-    const message = error instanceof Error ? error.message : String(error ?? '');
-    return message.includes('PRISMA_QUERY_TIMEOUT');
+    return isPrismaFallbackEligibleError(error);
   }
 
   private isCiOrGateContext(): boolean {
