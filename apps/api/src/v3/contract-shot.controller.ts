@@ -113,9 +113,9 @@ export class ContractShotController {
     if (v3Status === 'RUNNING') progress = 50;
     if (v3Status === 'SUCCEEDED') progress = 100;
 
-    if (jobType === 'CE11_SHOT_GENERATOR') currentStep = 'CE11_SHOT_GEN';
-    if (jobType === 'SHOT_RENDER') currentStep = 'SHOT_RENDER';
-    if (jobType === 'VIDEO_RENDER') currentStep = 'VIDEO_MERGE';
+    if (jobType === 'CE11_SHOT_GENERATOR') currentStep = v3Status === 'SUCCEEDED' ? 'SHOT_PERSIST' : 'CE11_SHOT_GEN';
+    if (jobType === 'SHOT_RENDER') currentStep = v3Status === 'SUCCEEDED' ? 'SHOT_PERSIST' : 'SHOT_RENDER';
+    if (jobType === 'VIDEO_RENDER') currentStep = v3Status === 'SUCCEEDED' ? 'PUBLISH_HLS' : 'VIDEO_MERGE';
 
     // 3. Result Preview (Unified stable set)
     const scenesCount = await this.prisma.scene.count({ where: { projectId: job.projectId } });
@@ -125,6 +125,9 @@ export class ContractShotController {
           projectId: job.projectId,
         },
       },
+    });
+    const costLedgerCount = await this.prisma.billingLedger.count({
+      where: { jobId: job.id },
     });
 
     let resultPreview = null;
@@ -139,7 +142,7 @@ export class ContractShotController {
         ...assetReceipt,
         scenes_count: scenesCount,
         shots_count: shotsCount,
-        cost_ledger_count: 1,
+        cost_ledger_count: costLedgerCount,
       };
     } else {
       // Maintain stable key set for FAILED/RUNNING
@@ -153,7 +156,7 @@ export class ContractShotController {
         fallback_reason: null,
         scenes_count: scenesCount,
         shots_count: shotsCount,
-        cost_ledger_count: 0,
+        cost_ledger_count: costLedgerCount,
         error_code: v3Status === 'FAILED' ? 'JOB_FAILED' : undefined,
       };
     }
