@@ -127,7 +127,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
         structured_text: rawText, // Stage-3-B: SSOT 要求字段
         novelSourceId: novelSource.id,
         projectId,
-        rawText, // 向后兼容
+        rawText, // 兼容仍读取 rawText 的旧适配器
         options: {
           model: input.payload.engineVersion || 'gemini-2.0-flash',
         },

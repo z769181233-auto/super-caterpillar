@@ -302,7 +302,7 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       projectId: job.projectId || timeline.projectId,
       episodeId: job.episodeId || timeline.episodeId,
       sceneId: job.sceneId || timeline.sceneId,
-      shotId: timeline.shots[0].shotId, // Optional, for legacy query compatibility
+      shotId: timeline.shots[0].shotId, // 可选，兼容仍按 shotId 查询的旧入口
       payload: {
         assetId: asset.id, // Primary Entry Point
         videoAssetStorageKey: finalOutputRelative, // Legacy/Backup

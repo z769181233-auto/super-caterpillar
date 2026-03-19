@@ -192,7 +192,7 @@ async function executeScanJob(
           phase: 'CHUNK_PARSE',
           chapterId: chapter.id,
           raw_text: rawText.substring(chunk.start_offset, chunk.end_offset), // extract from loaded rawText
-          rawText: rawText.substring(chunk.start_offset, chunk.end_offset), // P6-0 Fix: Backwards compatibility
+          rawText: rawText.substring(chunk.start_offset, chunk.end_offset), // 兼容仍读取 rawText 的旧下游
           traceId,
           projectId,
           pipelineRunId: job.payload?.pipelineRunId,

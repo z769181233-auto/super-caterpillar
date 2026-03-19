@@ -1604,7 +1604,7 @@ export async function processNovelAnalysisJob(
       scenes_count: structure.stats.scenesCount,
       shots_count: structure.stats.shotsCount,
       episodes_count: structure.stats.episodesCount,
-      // For V3 Contract compatibility
+      // 保留 seasons 输出，兼容仍消费旧结构的调用方
       stats: structure.stats,
       cost_ledger_count: 1, // Assume 1 ledger record per analysis job
     };
