@@ -17,6 +17,11 @@ These files are still referenced by active production/tooling scripts such as:
 - `tools/production/character_db/sample_final.py`
 - `tools/production/character_db/watchdog_eval.py`
 
+Retention intent:
+
+- `pytorch_lora_weights.bin` is the current primary LoRA weight used by inference and audit scripts.
+- `pytorch_lora_weights_step_*.bin` remains tracked because `watchdog_eval.py` actively scans and evaluates step checkpoints as they appear.
+
 ### Assets already removed from the repo
 
 The following tracked historical outputs have been removed:
