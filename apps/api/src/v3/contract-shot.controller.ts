@@ -2,17 +2,46 @@ import {
   Controller,
   Post,
   Body,
-  Inject,
   NotFoundException,
   InternalServerErrorException,
   Logger,
   Param,
   Get,
 } from '@nestjs/common';
+import { IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
 import { JobService } from '../job/job.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobType } from 'database';
 import { AssetReceiptResolverService } from './asset-receipt-resolver.service';
+
+class RenderShotBodyDto {
+  @IsString()
+  reference_sheet_id!: string;
+
+  @IsOptional()
+  @IsString()
+  organization_id?: string;
+
+  @IsOptional()
+  @IsString()
+  trace_id?: string;
+
+  @IsOptional()
+  @IsString()
+  dedupe_key?: string;
+
+  @IsOptional()
+  @IsString()
+  engine?: string;
+
+  @IsOptional()
+  @IsObject()
+  engine_config?: Record<string, any>;
+
+  @IsOptional()
+  @IsBoolean()
+  is_verification?: boolean;
+}
 
 @Controller('v3/shot')
 export class ContractShotController {
@@ -73,14 +102,64 @@ export class ContractShotController {
   }
 
   @Post(':id/render')
-  async renderShot(@Param('id') id: string) {
-    const shot = await this.prisma.shot.findUnique({ where: { id } });
+  async renderShot(@Param('id') id: string, @Body() body: RenderShotBodyDto) {
+    const shot = await this.prisma.shot.findUnique({
+      where: { id },
+      include: {
+        scene: {
+          include: {
+            episode: {
+              include: {
+                project: true,
+              },
+            },
+          },
+        },
+      },
+    });
     if (!shot) throw new NotFoundException('Shot not found');
 
-    // TODO: Trigger Shot Render Job
+    const scene = shot.scene;
+    const episode = scene?.episode;
+    const project = episode?.project;
+    if (!scene || !episode || !project) {
+      throw new NotFoundException('Shot hierarchy is incomplete');
+    }
+
+    const orgId = body.organization_id || project.organizationId;
+    const traceId = body.trace_id || `v3_sr_${shot.id}_${Date.now()}`;
+
+    const job = await this.jobService.create(
+      shot.id,
+      {
+        type: JobType.SHOT_RENDER,
+        payload: {
+          shotId: shot.id,
+          sceneId: scene.id,
+          episodeId: episode.id,
+          projectId: project.id,
+          organizationId: orgId,
+          referenceSheetId: body.reference_sheet_id,
+          engine: body.engine,
+          engineConfig: body.engine_config ?? {},
+          traceId,
+        },
+        engine: body.engine,
+        engineConfig: body.engine_config ?? {},
+        traceId,
+        dedupeKey: body.dedupe_key,
+        isVerification: body.is_verification,
+      },
+      project.ownerId,
+      orgId
+    );
+
     return {
-      id: shot.id,
-      render_status: 'PENDING',
+      shot_id: shot.id,
+      job_id: job.id,
+      status: 'QUEUED',
+      render_status: 'QUEUED',
+      trace_id: job.traceId || traceId,
     };
   }
 
