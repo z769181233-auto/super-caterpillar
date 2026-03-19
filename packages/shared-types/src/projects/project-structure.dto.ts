@@ -9,7 +9,7 @@ export interface ProjectStructureTree {
   // Context
   projectId: string;
   projectName: string;
-  projectStatus: string; // Added for legacy compatibility and context
+  projectStatus: string; // 项目状态上下文，供结构页和工作台视图使用
 
   // Status Fields (Strict)
   sourceType: 'DEMO' | 'NOVEL';

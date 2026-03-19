@@ -3,9 +3,9 @@ import { Logger } from '@nestjs/common';
 import { FeatureFlagService } from '../../feature-flag/feature-flag.service';
 
 /**
- * AssetPublicDto - Stage 11 Signed URL 兼容策略
+ * AssetPublicDto - 资产公开返回 DTO
  *
- * 永远返回 storageKey（兼容期）
+ * 当前仍返回 storageKey，供现有前后端消费
  * 仅在 FEATURE_SIGNED_URL_ENFORCED=true 时返回 signedUrl/signedUrlExpiresAt
  * 批量策略：只对 VIDEO + GENERATED 签名
  */
@@ -29,7 +29,7 @@ export class AssetPublicDto {
   @ApiProperty()
   status: 'GENERATED' | 'LOCKED' | 'PUBLISHED';
 
-  @ApiProperty({ description: '向后兼容字段（至少保留到 Stage 12）' })
+  @ApiProperty({ description: '当前仍保留的存储键字段，供现有消费方使用' })
   storageKey: string;
 
   @ApiPropertyOptional({ description: '签名 URL（需 Feature Flag）' })

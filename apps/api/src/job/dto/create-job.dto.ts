@@ -40,15 +40,15 @@ export class CreateJobDto {
 
   @IsOptional()
   @IsString()
-  jobType?: string; // Worker compatibility
+  jobType?: string; // 系统 worker 仍会发送的兼容别名，新代码应优先使用 type
 
   @IsOptional()
   @IsString()
-  projectId?: string; // Worker compatibility
+  projectId?: string; // Project-level job 创建上下文（system-worker/HMAC 路径仍使用）
 
   @IsOptional()
   @IsString()
-  organizationId?: string; // Worker compatibility
+  organizationId?: string; // 组织上下文（system-worker/HMAC 路径仍使用）
 
   @IsOptional()
   @IsObject()
