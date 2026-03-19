@@ -8,15 +8,19 @@ interface BuildClientProps {
   buildId: string;
 }
 
+function getProjectEpisodes(data: any) {
+  const seasonEpisodes = (data?.seasons || []).flatMap((season: any) => season?.episodes || []);
+  return seasonEpisodes.length > 0 ? seasonEpisodes : data?.episodes || [];
+}
+
 export default function BuildClient({ initialData, buildId }: BuildClientProps) {
   const [data] = useState(initialData);
+  const episodes = getProjectEpisodes(initialData);
   const [selectedShot, setSelectedShot] = useState<any>(null);
   const [shotDetails, setShotDetails] = useState<any>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedEpisodes, setExpandedEpisodes] = useState<Set<string>>(
-    new Set([initialData?.episodes?.[0]?.id])
-  );
+  const [expandedEpisodes, setExpandedEpisodes] = useState<Set<string>>(new Set([episodes?.[0]?.id]));
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -44,7 +48,7 @@ export default function BuildClient({ initialData, buildId }: BuildClientProps) 
     }
   };
 
-  const filteredEpisodes = (data?.episodes || [])
+  const filteredEpisodes = getProjectEpisodes(data)
     .map((ep: any) => ({
       ...ep,
       scenes: (ep?.scenes || [])
