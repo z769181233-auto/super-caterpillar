@@ -1,9 +1,8 @@
-import { Controller, Post, Body, Res, Req, Inject } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { RefreshDto } from './dto/refresh.dto';
 import { env } from '@scu/config';
 import { AuditAction } from '../audit/audit.decorator';
 import { AuditActions } from '../audit/audit.constants';
@@ -102,6 +101,15 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    if (result.data.refreshToken) {
+      res.cookie('refreshToken', result.data.refreshToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'strict' : 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+    }
+
     return {
       success: true,
       data: {
@@ -114,7 +122,11 @@ export class AuthController {
 
   @Post('logout')
   @AuditAction(AuditActions.LOGOUT)
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+    if (refreshToken) {
+      await this.authService.revokeRefreshToken(refreshToken);
+    }
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     return {

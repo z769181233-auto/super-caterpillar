@@ -14,15 +14,29 @@ import * as jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { env } from '@scu/config';
 import { UserRole, UserTier } from 'database';
+import { RedisService } from '../redis/redis.service';
+
+type RefreshTokenPayload = {
+  sub: string;
+  email: string;
+  tier: string;
+  orgId: string | null;
+  type: 'refresh';
+  jti: string;
+  exp?: number;
+};
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly inMemoryRevokedRefreshTokens = new Map<string, number>();
   constructor(
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(JwtService)
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    @Inject(RedisService)
+    private readonly redisService: RedisService
   ) { }
 
   async register(registerDto: RegisterDto) {
@@ -179,15 +193,13 @@ export class AuthService {
   async refresh(refreshToken: string) {
     try {
       // 验证 refresh token（使用 refresh secret）
-      const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as {
-        sub: string;
-        email: string;
-        tier: string;
-        type: string;
-      };
+      const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as RefreshTokenPayload;
 
-      if (payload.type !== 'refresh') {
+      if (payload.type !== 'refresh' || !payload.jti) {
         throw new UnauthorizedException('Invalid refresh token');
+      }
+      if (await this.isRefreshTokenRevoked(payload.jti)) {
+        throw new UnauthorizedException('Refresh token has been revoked');
       }
 
       // 查询用户
@@ -202,8 +214,8 @@ export class AuthService {
       // Studio v0.7: 获取当前组织
       const currentOrganizationId = await this.getCurrentOrganization(user.id);
 
-      // 生成新的 access token（包含组织 ID）
-      const accessToken = await this.generateAccessToken(
+      await this.revokeRefreshTokenPayload(payload);
+      const tokens = await this.generateTokens(
         user.id,
         user.email,
         user.tier,
@@ -213,13 +225,26 @@ export class AuthService {
       return {
         success: true,
         data: {
-          accessToken,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
         },
         requestId: randomUUID(),
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async revokeRefreshToken(refreshToken: string): Promise<void> {
+    try {
+      const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as RefreshTokenPayload;
+      if (payload.type !== 'refresh' || !payload.jti) {
+        return;
+      }
+      await this.revokeRefreshTokenPayload(payload);
+    } catch {
+      // Ignore invalid tokens during logout.
     }
   }
 
@@ -259,11 +284,59 @@ export class AuthService {
       tier,
       orgId: organizationId, // Studio v0.7: 组织 ID
       type: 'refresh',
+      jti: randomUUID(),
     };
-    // TODO: 实现 refresh token 黑名单 / 轮转策略
     return jwt.sign(payload, env.jwtRefreshSecret, {
       expiresIn: env.jwtRefreshExpiresIn,
     } as jwt.SignOptions);
+  }
+
+  private getRefreshBlacklistKey(jti: string): string {
+    return `auth:refresh:blacklist:${jti}`;
+  }
+
+  private pruneInMemoryRevocations() {
+    const now = Date.now();
+    for (const [jti, expiresAt] of this.inMemoryRevokedRefreshTokens.entries()) {
+      if (expiresAt <= now) {
+        this.inMemoryRevokedRefreshTokens.delete(jti);
+      }
+    }
+  }
+
+  private async isRefreshTokenRevoked(jti: string): Promise<boolean> {
+    this.pruneInMemoryRevocations();
+    if (this.inMemoryRevokedRefreshTokens.has(jti)) {
+      return true;
+    }
+
+    const revoked = await this.redisService.get(this.getRefreshBlacklistKey(jti));
+    return revoked === '1';
+  }
+
+  private async revokeRefreshTokenPayload(payload: RefreshTokenPayload): Promise<void> {
+    if (!payload.jti || !payload.exp) {
+      return;
+    }
+
+    const expiresInMs = payload.exp * 1000 - Date.now();
+    if (expiresInMs <= 0) {
+      return;
+    }
+
+    const ttlSeconds = Math.ceil(expiresInMs / 1000);
+    const storedInRedis = await this.redisService.set(
+      this.getRefreshBlacklistKey(payload.jti),
+      '1',
+      ttlSeconds
+    );
+
+    if (!storedInRedis) {
+      this.inMemoryRevokedRefreshTokens.set(payload.jti, Date.now() + expiresInMs);
+      this.logger.warn(
+        `[AUTH_REFRESH] Redis unavailable; using in-memory refresh token revocation for jti=${payload.jti}`
+      );
+    }
   }
 
   /**
