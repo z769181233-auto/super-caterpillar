@@ -137,20 +137,44 @@ export class CostLedgerService {
   /**
    * 查询项目的所有成本记录
    */
-  async getProjectCosts(projectId: string) {
+  private async getAllProjectCosts(projectId: string) {
     return this.prisma.billingLedger.findMany({
       where: { projectId: projectId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
+  async getProjectCosts(projectId: string, page = 1, pageSize = 50) {
+    const normalizedPage = Math.max(1, page);
+    const normalizedPageSize = Math.min(100, Math.max(1, pageSize));
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.billingLedger.findMany({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' },
+        skip: (normalizedPage - 1) * normalizedPageSize,
+        take: normalizedPageSize,
+      }),
+      this.prisma.billingLedger.count({
+        where: { projectId },
+      }),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page: normalizedPage,
+        pageSize: normalizedPageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / normalizedPageSize)),
+      },
+    };
+  }
+
   /**
    * 获取项目成本汇总
    */
   async getProjectCostSummary(projectId: string) {
-    const rows = await this.prisma.billingLedger.findMany({
-      where: { projectId: projectId },
-    });
+    const rows = await this.getAllProjectCosts(projectId);
     // amount is BigInt, cast to Number for legacy API response
     const total = rows.reduce((s, r) => s + Number(r.amount) / 100, 0);
 
@@ -166,7 +190,7 @@ export class CostLedgerService {
    * 按Job类型分组统计
    */
   async getCostByJobType(projectId: string) {
-    const costs = await this.getProjectCosts(projectId);
+    const costs = await this.getAllProjectCosts(projectId);
 
     const byType = costs.reduce(
       (acc, cost) => {

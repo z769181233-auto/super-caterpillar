@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Param, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Post, Get, Param, BadRequestException, Query } from '@nestjs/common';
 import { IsNumber, IsOptional, IsString, IsObject } from 'class-validator';
 import { CostLedgerService, RecordCostEventParams } from './cost-ledger.service';
 import { RequireSignature } from '../security/api-security/api-security.decorator';
@@ -74,11 +74,17 @@ export class CostController {
   constructor(private readonly costLedgerService: CostLedgerService) {}
 
   /**
-   * 获取项目的所有成本记录(分页TODO)
+   * 获取项目的所有成本记录
    */
   @Get()
-  async getProjectCosts(@Param('projectId') projectId: string) {
-    return this.costLedgerService.getProjectCosts(projectId);
+  async getProjectCosts(
+    @Param('projectId') projectId: string,
+    @Query('page') page?: string,
+    @Query('page_size') pageSize?: string
+  ) {
+    const parsedPage = page ? parseInt(page, 10) : 1;
+    const parsedPageSize = pageSize ? parseInt(pageSize, 10) : 50;
+    return this.costLedgerService.getProjectCosts(projectId, parsedPage, parsedPageSize);
   }
 
   /**
