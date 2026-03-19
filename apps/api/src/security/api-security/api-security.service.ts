@@ -610,16 +610,6 @@ export class ApiSecurityService {
   }
 
   /**
-   * 构建规范字符串 v1（已废弃，保留用于兼容）
-   *
-   * @deprecated 使用 buildCanonicalStringV2 代替
-   */
-  buildCanonicalString(apiKey: string, nonce: string, timestamp: string, body: string): string {
-    const normalizedBody = body || '';
-    return `${apiKey}${nonce}${timestamp}${normalizedBody}`;
-  }
-
-  /**
    * 计算 HMAC-SHA256 签名
    */
   computeSignature(secret: string, message: string): string {

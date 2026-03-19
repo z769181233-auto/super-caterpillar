@@ -528,18 +528,6 @@ describe('ApiSecurityService', () => {
     });
   });
 
-  describe('buildCanonicalString (v1, deprecated)', () => {
-    it('应该正确构建规范字符串（v1 兼容）', () => {
-      const apiKey = 'ak_test';
-      const nonce = 'nonce_123';
-      const timestamp = '1234567890';
-      const body = '{"test":"data"}';
-
-      const canonical = service.buildCanonicalString(apiKey, nonce, timestamp, body);
-      expect(canonical).toBe(`${apiKey}${nonce}${timestamp}${body}`);
-    });
-  });
-
   describe('computeSignature', () => {
     it('应该正确计算 HMAC-SHA256 签名', () => {
       const secret = 'test_secret';
