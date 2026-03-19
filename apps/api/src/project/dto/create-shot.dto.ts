@@ -6,6 +6,7 @@ import {
   Min,
   MaxLength,
   MinLength,
+  IsArray,
 } from 'class-validator';
 
 export class CreateShotDto {
@@ -31,4 +32,32 @@ export class CreateShotDto {
   @IsObject()
   @IsOptional()
   params?: Record<string, any>;
+
+  @IsString()
+  @IsOptional()
+  shotType?: string;
+
+  @IsObject()
+  @IsOptional()
+  camera?: Record<string, any>;
+
+  @IsArray()
+  @IsOptional()
+  characters?: string[];
+
+  @IsString()
+  @IsOptional()
+  action?: string;
+
+  @IsString()
+  @IsOptional()
+  emotion?: string;
+
+  @IsNumber()
+  @IsOptional()
+  durationSec?: number;
+
+  @IsString()
+  @IsOptional()
+  novelQuote?: string;
 }

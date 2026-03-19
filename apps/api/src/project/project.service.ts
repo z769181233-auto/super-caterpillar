@@ -929,17 +929,34 @@ export class ProjectService {
         throw new BadRequestException('Cannot determine organizationId for shot');
       }
 
+      const isNovelDerivedShot =
+        createShotDto.type === 'novel_analysis' || Boolean(createShotDto.params?.sourceText);
+
+      if (isNovelDerivedShot && !createShotDto.novelQuote && !createShotDto.params?.sourceText) {
+        throw new BadRequestException('novelQuote is required for novel-derived shots');
+      }
+
       return tx.shot.create({
         data: {
           sceneId,
           index: createShotDto.index ?? 1,
           type: createShotDto.type,
-          params: createShotDto.params ?? {},
+          params: {
+            ...(createShotDto.params ?? {}),
+            ...(createShotDto.camera ? { camera: createShotDto.camera } : {}),
+            ...(createShotDto.characters ? { characters: createShotDto.characters } : {}),
+          },
           qualityScore: {}, // 确保 qualityScore 字段有默认值
           organizationId: finalOrganizationId,
           // 如果 createShotDto 包含 title/description，也写入
           title: (createShotDto as any).title,
           description: (createShotDto as any).description,
+          shotType: createShotDto.shotType ?? createShotDto.type,
+          actionDescription: createShotDto.action,
+          emotion: createShotDto.emotion,
+          durationSec:
+            createShotDto.durationSec === undefined ? undefined : new Prisma.Decimal(createShotDto.durationSec),
+          novelQuote: createShotDto.novelQuote ?? createShotDto.params?.sourceText,
         },
       });
     });

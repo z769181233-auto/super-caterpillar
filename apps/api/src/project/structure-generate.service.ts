@@ -249,15 +249,39 @@ export class StructureGenerateService {
 
           if (sceneData.shots && sceneData.shots.length > 0) {
             await tx.shot.createMany({
-              data: sceneData.shots.map((shotData) => ({
-                sceneId: scene.id,
-                index: shotData.index,
-                title: shotData.title || null,
-                description: shotData.summary || shotData.text?.substring(0, 200) || null,
-                type: 'novel_analysis',
-                params: { sourceText: shotData.text } as any,
-                qualityScore: {} as any,
-              })),
+              data: sceneData.shots.map((shotData) => {
+                const novelQuote =
+                  shotData.novelQuote || shotData.text || shotData.summary || shotData.title;
+                if (!novelQuote) {
+                  throw new Error(
+                    `NOVEL_TO_SHOT_SCHEMA_INVALID: shot ${sceneData.index}.${shotData.index} missing novelQuote/source text`
+                  );
+                }
+
+                return {
+                  sceneId: scene.id,
+                  index: shotData.index,
+                  title: shotData.title || null,
+                  description: shotData.summary || shotData.text?.substring(0, 200) || null,
+                  type: 'novel_analysis',
+                  params: {
+                    sourceText: shotData.text,
+                    camera: shotData.camera || {
+                      type: shotData.shotType || 'medium',
+                      movement: 'static',
+                      lens: '50mm',
+                    },
+                    characters: shotData.characters || [],
+                  } as any,
+                  qualityScore: {} as any,
+                  shotType: shotData.shotType || 'medium',
+                  actionDescription:
+                    shotData.action || shotData.summary || shotData.text?.substring(0, 200) || null,
+                  emotion: shotData.emotion || 'neutral',
+                  durationSec: shotData.durationSec ?? 3,
+                  novelQuote,
+                };
+              }),
             });
           }
         }
