@@ -935,11 +935,6 @@ export const engineApi = {
     return json?.data ?? json;
   },
 
-  // Alias for backward compatibility
-  async listEngines() {
-    return engineApi.getEngines();
-  },
-
   async syncEngines() {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/engines/sync`, {
       method: 'POST',
