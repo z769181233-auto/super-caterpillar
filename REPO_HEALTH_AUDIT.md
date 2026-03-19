@@ -36,6 +36,8 @@ between real remaining risks and intentional retained compatibility or assets.
   - audit log
   - API key lookup
 - Remaining runtime fallback policy is recorded in `FALLBACK_GOVERNANCE.md`.
+- A remaining synthetic timeout in `apps/api/src/audit-insight/audit-insight.service.ts` was removed so
+  audit insight no longer manufactures partial failures via local `Promise.race`.
 
 #### Documentation source-of-truth clarified
 

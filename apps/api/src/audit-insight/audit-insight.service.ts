@@ -243,7 +243,6 @@ export class AuditInsightService {
 
     // 4. Director (Real-time with Cap and Timeout)
     const PERFORMANCE_CAP = 50;
-    const TIMEOUT_MS = 2000;
 
     const shots = await this.prisma.shot.findMany({
       where: {
@@ -266,31 +265,24 @@ export class AuditInsightService {
 
     const solver = new DirectorConstraintSolverService();
 
-    // Timeout Protection using Promise.race
     let results: any[] = [];
     let isPartial = false;
     let message = 'Success';
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
     try {
-      results = (await Promise.race([
-        Promise.resolve(
-          shots.map((s) =>
-            solver.validateShot({
-              id: s.id,
-              type: s.type as any,
-              // Ensure params is parsed if it's stored as JSON string, or used as object
-              params: typeof s.params === 'string' ? JSON.parse(s.params) : s.params || {},
-              // Map other necessary fields like enriched_prompt if available
-            })
-          )
-        ),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS)),
-      ])) as any[];
+      results = shots.map((s) =>
+        solver.validateShot({
+          id: s.id,
+          type: s.type as any,
+          // Ensure params is parsed if it's stored as JSON string, or used as object
+          params: typeof s.params === 'string' ? JSON.parse(s.params) : s.params || {},
+          // Map other necessary fields like enriched_prompt if available
+        })
+      ) as any[];
     } catch (e: any) {
       isPartial = true;
-      message =
-        e.message === 'TIMEOUT' ? 'Director evaluation timed out (partial results)' : e.message;
+      message = e.message;
       results = []; // Or keep partial if we had them
     }
     /* eslint-enable @typescript-eslint/no-explicit-any */
