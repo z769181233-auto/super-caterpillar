@@ -70,6 +70,8 @@ Current rule:
   `ALLOW_LEGACY_SECRET_HASH_FALLBACK=1`.
 - API key lookup / `lastUsedAt` PG fallback is allowed only in CI/test/gate or via explicit
   `FORCE_APIKEY_PG_FALLBACK=1`.
+- Security PG fallback is now limited to real DB-unavailability signals rather than generic Prisma
+  degraded-mode errors.
 
 ## Next Cleanup Order
 

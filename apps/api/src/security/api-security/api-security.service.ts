@@ -20,7 +20,7 @@ import { buildHmacError } from '../../common/utils/hmac-error.utils';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
-  isPrismaFallbackEligibleError,
+  isDatabaseUnavailableError,
   withRuntimePgClient,
 } from '../../prisma/pg-runtime.util';
 
@@ -59,7 +59,7 @@ export class ApiSecurityService {
   ) { }
 
   private shouldFallbackToPg(error: any): boolean {
-    return isPrismaFallbackEligibleError(error);
+    return isDatabaseUnavailableError(error);
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
@@ -322,6 +322,20 @@ export class ApiSecurityService {
         this.logger.warn(
           `API Key ${this.maskApiKey(apiKey)} falling back to env-backed HMAC secret in CI/test/gate-compatible mode`
         );
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'ENV_SECRET_FALLBACK_USED',
+          },
+          ip,
+          userAgent,
+          keyRecord.id
+        );
         secret = '';
       }
 
@@ -478,6 +492,20 @@ export class ApiSecurityService {
               client.query(`UPDATE api_keys SET "lastUsedAt" = NOW(), "updatedAt" = NOW() WHERE id = $1`, [
                 keyRecord.id,
               ])
+            );
+            await this.writeAuditLog(
+              {
+                nonce,
+                signature,
+                timestamp,
+                path,
+                method,
+                apiKey: this.maskApiKey(apiKey),
+                reason: 'APIKEY_LAST_USED_AT_PG_FALLBACK_USED',
+              },
+              ip,
+              userAgent,
+              keyRecord.id
             );
             if (dbg) dlog({ step: 'db_update_lastUsedAt_fallback_pg_ok' });
           } catch (pgError: any) {
@@ -684,6 +712,20 @@ export class ApiSecurityService {
       this.logger.warn(
         `API Key ${this.maskApiKey(apiKey)} using secretHash fallback in CI/test/gate-compatible mode`
       );
+      await this.writeAuditLog(
+        {
+          nonce: '',
+          signature: '',
+          timestamp: new Date().toISOString(),
+          path: '',
+          method: '',
+          apiKey: this.maskApiKey(apiKey),
+          reason: 'LEGACY_SECRET_HASH_FALLBACK_USED',
+        },
+        ip,
+        userAgent,
+        keyRecord.id
+      );
       return keyRecord.secretHash;
     }
 
@@ -719,7 +761,7 @@ export class ApiSecurityService {
         },
       });
     } catch (error: any) {
-      const shouldFallback = isPrismaFallbackEligibleError(error);
+      const shouldFallback = isDatabaseUnavailableError(error);
 
       if (!shouldFallback) {
         throw error;
@@ -733,6 +775,19 @@ export class ApiSecurityService {
 
       this.logger.warn(
         `[ApiSecurityService] Prisma apiKey lookup degraded, using pg fallback for ${this.maskApiKey(apiKey)}: ${error instanceof Error ? error.message : String(error)}`
+      );
+      await this.writeAuditLog(
+        {
+          nonce: '',
+          signature: '',
+          timestamp: new Date().toISOString(),
+          path: '',
+          method: '',
+          apiKey: this.maskApiKey(apiKey),
+          reason: 'APIKEY_PG_FALLBACK_USED',
+        },
+        undefined,
+        undefined
       );
 
       return this.withPgClient(async (client) => {

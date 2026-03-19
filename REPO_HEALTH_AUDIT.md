@@ -123,6 +123,8 @@ Current status:
 
 - env-secret fallback and legacy secret-hash fallback are no longer open by default
 - they are limited to CI/test/gate or explicit flags
+- API key lookup / `lastUsedAt` PG fallback is now further narrowed to real DB-unavailability
+  signals instead of generic Prisma degraded-mode errors
 
 Remaining risk:
 
