@@ -18,7 +18,11 @@ import { CreateJobDto } from './dto/create-job.dto';
 import { JobEngineBindingStatus } from 'database';
 import { TaskService } from '../task/task.service';
 import { ProjectResolver } from '../common/project-resolver';
-import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
+import {
+    getRuntimeDbTimeoutMs,
+    isCiOrGateContextEnv,
+    withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 @Injectable()
 export class JobCreationOpsService {
@@ -58,12 +62,7 @@ export class JobCreationOpsService {
     }
 
     private isCiOrGateContext(): boolean {
-        return (
-            process.env.NODE_ENV === 'test' ||
-            process.env.CI === '1' ||
-            !!process.env.JEST_WORKER_ID ||
-            process.env.GATE_ENV_MODE === 'ci'
-        );
+        return isCiOrGateContextEnv();
     }
 
     private shouldAllowJobCreationPgPath(): boolean {

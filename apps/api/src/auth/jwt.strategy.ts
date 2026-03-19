@@ -4,7 +4,11 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { env } from '@scu/config';
-import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
+import {
+  getRuntimeDbTimeoutMs,
+  isCiOrGateContextEnv,
+  withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 export interface JwtPayload {
   sub: string;
@@ -39,12 +43,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   private isCiOrGateContext(): boolean {
-    return (
-      process.env.NODE_ENV === 'test' ||
-      process.env.CI === '1' ||
-      !!process.env.JEST_WORKER_ID ||
-      process.env.GATE_ENV_MODE === 'ci'
-    );
+    return isCiOrGateContextEnv();
   }
 
   private shouldAllowJwtPgFallback(): boolean {

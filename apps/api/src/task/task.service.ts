@@ -3,7 +3,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { Prisma, TaskType as TaskTypeEnum, TaskStatus as TaskStatusEnum } from 'database';
 import { randomUUID } from 'crypto';
-import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
+import {
+  getRuntimeDbTimeoutMs,
+  isCiOrGateContextEnv,
+  withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 /**
  * Task Service
@@ -30,12 +34,7 @@ export class TaskService {
   }
 
   private isCiOrGateContext(): boolean {
-    return (
-      process.env.NODE_ENV === 'test' ||
-      process.env.CI === '1' ||
-      !!process.env.JEST_WORKER_ID ||
-      process.env.GATE_ENV_MODE === 'ci'
-    );
+    return isCiOrGateContextEnv();
   }
 
   private shouldAllowTaskPgFallback(): boolean {

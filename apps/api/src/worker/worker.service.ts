@@ -12,7 +12,11 @@ import { JobService } from '../job/job.service'; // S3-C.3: 导入 JobService �
 import { WorkerStatus, JobStatus } from 'database';
 import { assertTransition } from '../job/job.rules';
 import { randomUUID } from 'crypto';
-import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
+import {
+  getRuntimeDbTimeoutMs,
+  isCiOrGateContextEnv,
+  withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 /**
  * Worker 管理服务
@@ -38,12 +42,7 @@ export class WorkerService {
   private readonly CASCADE_WINDOW = 10000;
 
   private isCiOrGateContext(): boolean {
-    return (
-      process.env.NODE_ENV === 'test' ||
-      process.env.CI === '1' ||
-      !!process.env.JEST_WORKER_ID ||
-      process.env.GATE_ENV_MODE === 'ci'
-    );
+    return isCiOrGateContextEnv();
   }
 
   private shouldAllowDirectPgDispatchFallback(): boolean {

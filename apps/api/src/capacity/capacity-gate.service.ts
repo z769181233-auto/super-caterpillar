@@ -2,7 +2,11 @@ import { Injectable, Logger, BadRequestException, HttpException, HttpStatus } fr
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from 'database';
 import { JobStatus, JobType } from 'database';
-import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
+import {
+  getRuntimeDbTimeoutMs,
+  isCiOrGateContextEnv,
+  withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 const JobStatusEnum = JobStatus;
 const JobTypeEnum = JobType;
@@ -47,12 +51,7 @@ export class CapacityGateService {
   }
 
   private isCiOrGateContext(): boolean {
-    return (
-      process.env.NODE_ENV === 'test' ||
-      process.env.CI === '1' ||
-      !!process.env.JEST_WORKER_ID ||
-      process.env.GATE_ENV_MODE === 'ci'
-    );
+    return isCiOrGateContextEnv();
   }
 
   private shouldAllowCapacityPgFallback(): boolean {

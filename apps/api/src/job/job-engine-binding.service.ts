@@ -13,7 +13,11 @@ import { EngineConfigStoreService } from '../engine/engine-config-store.service'
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { PRODUCTION_MODE } from '@scu/config';
 import { JobType, JobEngineBindingStatus } from 'database';
-import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
+import {
+  getRuntimeDbTimeoutMs,
+  isCiOrGateContextEnv,
+  withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 @Injectable()
 export class JobEngineBindingService {
@@ -32,12 +36,7 @@ export class JobEngineBindingService {
   }
 
   private isCiOrGateContext(): boolean {
-    return (
-      process.env.NODE_ENV === 'test' ||
-      process.env.CI === '1' ||
-      !!process.env.JEST_WORKER_ID ||
-      process.env.GATE_ENV_MODE === 'ci'
-    );
+    return isCiOrGateContextEnv();
   }
 
   private shouldAllowEngineBindingPgFallback(): boolean {

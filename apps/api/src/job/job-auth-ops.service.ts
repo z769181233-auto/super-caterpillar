@@ -2,7 +2,11 @@ import { Injectable, Inject, NotFoundException, ForbiddenException, forwardRef }
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectResolver } from '../common/project-resolver';
 import { SHOT_WITH_HIERARCHY } from './job.service.queries';
-import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
+import {
+    getRuntimeDbTimeoutMs,
+    isCiOrGateContextEnv,
+    withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 @Injectable()
 export class JobAuthOpsService {
@@ -20,12 +24,7 @@ export class JobAuthOpsService {
     }
 
     private isCiOrGateContext(): boolean {
-        return (
-            process.env.NODE_ENV === 'test' ||
-            process.env.CI === '1' ||
-            !!process.env.JEST_WORKER_ID ||
-            process.env.GATE_ENV_MODE === 'ci'
-        );
+        return isCiOrGateContextEnv();
     }
 
     private shouldAllowJobAuthPgFallback(): boolean {

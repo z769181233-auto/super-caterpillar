@@ -10,7 +10,11 @@ import { JobStatus, JobType } from 'database';
 import { markRetryOrFail, computeNextRetry } from './job.retry';
 import { ShotJobWithShotHierarchy } from './job.service.types';
 import { SHOT_JOB_WITH_HIERARCHY } from './job.service.queries';
-import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
+import {
+    getRuntimeDbTimeoutMs,
+    isCiOrGateContextEnv,
+    withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 @Injectable()
 export class JobUpdateOpsService {
@@ -37,12 +41,7 @@ export class JobUpdateOpsService {
     }
 
     private isCiOrGateContext(): boolean {
-        return (
-            process.env.NODE_ENV === 'test' ||
-            process.env.CI === '1' ||
-            !!process.env.JEST_WORKER_ID ||
-            process.env.GATE_ENV_MODE === 'ci'
-        );
+        return isCiOrGateContextEnv();
     }
 
     private shouldAllowJobUpdatePgFallback(): boolean {
