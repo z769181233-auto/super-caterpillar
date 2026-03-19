@@ -79,7 +79,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
         checksum: sha256,
         status: 'PUBLISHED',
         hlsPlaylistUrl: hlsPlaylistKey,
-        signedUrl: `/api/assets/signed-url?key=${storageKey}&t=${Date.now()}`,
+        signedUrl: targetAssetId ? `/api/assets/${targetAssetId}/secure-url` : null,
         watermarkMode: 'SCU_VISIBLE_V1_ASYNC',
         fingerprintId: fpRecord.id,
       },
