@@ -33,6 +33,31 @@ interface ApiBuildResponse {
   sceneCount?: number;
   shotCount?: number;
   characterCount?: number;
+  seasons?: Array<{
+    id: string;
+    index: number;
+    title?: string;
+    summary?: string;
+    episodes: Array<{
+      id: string;
+      index: number;
+      title: string;
+      summary?: string;
+      scenes: Array<{
+        id: string;
+        index: number;
+        title: string;
+        summary?: string;
+        shots: Array<{
+          id: string;
+          index: number;
+          summary?: string;
+          startOffset?: number;
+          endOffset?: number;
+        }>;
+      }>;
+    }>;
+  }>;
   episodes: Array<{
     id: string;
     index: number;
@@ -57,6 +82,11 @@ interface ApiBuildResponse {
     topLocations: Array<{ name: string; count: number }>;
     pacing: { beats: number; intensityHint: string };
   };
+}
+
+function getProjectEpisodes(data: ApiBuildResponse) {
+  const seasonEpisodes = (data.seasons || []).flatMap((season) => season.episodes || []);
+  return seasonEpisodes.length > 0 ? seasonEpisodes : data.episodes || [];
 }
 
 interface ApiShotResponse {
@@ -88,6 +118,7 @@ export async function fetchBuildStudio(buildId: string): Promise<{
   insights: InsightsPayload;
 }> {
   const data = await getJSON<ApiBuildResponse>(`${API_BASE}/builds/${buildId}/outline`);
+  const episodes = getProjectEpisodes(data);
 
   const summary: BuildSummary = {
     buildId,
@@ -117,7 +148,7 @@ export async function fetchBuildStudio(buildId: string): Promise<{
   };
 
   // 后端 episodes -> tree 映射
-  const tree: ScriptNode[] = (data?.episodes || []).map((ep) => ({
+  const tree: ScriptNode[] = episodes.map((ep) => ({
     type: 'episode',
     id: ep.id,
     index: ep.index,
@@ -141,7 +172,7 @@ export async function fetchBuildStudio(buildId: string): Promise<{
   }));
 
   // Mock L1 Curve Data with AI Diagnostics (必需件 B)
-  const shots = (data.episodes || []).flatMap((ep) =>
+  const shots = episodes.flatMap((ep) =>
     (ep.scenes || []).flatMap((sc) => sc.shots || [])
   );
   const dynamicFrames: EmotionalFrame[] = shots.map((sh, i) => {

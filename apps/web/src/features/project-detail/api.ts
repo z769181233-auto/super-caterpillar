@@ -7,6 +7,11 @@ import {
   EvidenceSummaryView,
 } from './adapters';
 
+function getProjectEpisodes(raw: any) {
+  const seasonEpisodes = (raw?.seasons || []).flatMap((season: any) => season?.episodes || []);
+  return seasonEpisodes.length > 0 ? seasonEpisodes : raw?.episodes || [];
+}
+
 /**
  * 从后端 API 拿取项目主视图真实数据
  */
@@ -19,13 +24,14 @@ export async function getProjectDetail(projectId: string): Promise<ProjectDetail
   }
 
   const raw = result.data;
+  const episodes = getProjectEpisodes(raw);
   // 映射后端项目实体至前端视图模型
   return adaptProjectDetail({
     ...raw,
     status: raw.status === 'in_progress' ? 'RUNNING' : 'READY',
     stats: {
-      buildsCount: raw.episodes?.length || 0,
-      structuralStatus: raw.episodes?.length > 0 ? 'Audited' : 'Pending',
+      buildsCount: episodes.length || 0,
+      structuralStatus: episodes.length > 0 ? 'Audited' : 'Pending',
       usage: '--',
     },
     audit: {
