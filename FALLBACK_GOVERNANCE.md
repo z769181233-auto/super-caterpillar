@@ -108,6 +108,9 @@ degraded-mode behavior that can obscure the real failure source:
 - Most broad runtime fallbacks have now been narrowed to `CI/test/gate` or explicit override.
 - The next meaningful step is no longer “add another flag”, but to remove the need for these flags by
   fixing Prisma degradation itself.
+- Raw `pg` fallback clients should stay centralized through
+  `apps/api/src/prisma/pg-runtime.util.ts` so timeout/application-name behavior no longer drifts
+  per service.
 
 ## Removed Hard Bypasses
 

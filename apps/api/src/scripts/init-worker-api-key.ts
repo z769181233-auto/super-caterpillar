@@ -9,8 +9,7 @@
 
 import { randomUUID } from 'crypto';
 import * as util from 'util';
-
-const { Client } = require('pg');
+import { createRuntimePgClient, getRuntimeDbTimeoutMs } from '../prisma/pg-runtime.util';
 
 const WORKER_API_KEY = process.env.WORKER_API_KEY;
 const WORKER_API_SECRET = process.env.WORKER_API_SECRET;
@@ -32,10 +31,10 @@ async function main() {
     process.exit(1);
   }
 
-  const client = new Client({
+  const client = createRuntimePgClient({
+    applicationName: 'super-caterpillar-api-init-worker-key',
     connectionString: databaseUrl,
-    connectionTimeoutMillis: Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000'),
-    query_timeout: Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000'),
+    queryTimeoutMs: getRuntimeDbTimeoutMs('query'),
   });
 
   try {

@@ -2,7 +2,7 @@ import { Injectable, Logger, BadRequestException, HttpException, HttpStatus } fr
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from 'database';
 import { JobStatus, JobType } from 'database';
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 const JobStatusEnum = JobStatus;
 const JobTypeEnum = JobType;
@@ -22,7 +22,7 @@ export interface CapacityCheckResult {
 @Injectable()
 export class CapacityGateService {
   private readonly logger = new Logger(CapacityGateService.name);
-  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   // 配置项（可从环境变量读取）
   private readonly MAX_CONCURRENT_VIDEO_RENDER = parseInt(
@@ -64,23 +64,13 @@ export class CapacityGateService {
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
-    const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl) {
-      throw new Error('DATABASE_URL is required for pg fallback');
-    }
-
-    const client = new Client({
-      connectionString: databaseUrl,
-      statement_timeout: this.prismaQueryTimeoutMs,
-      query_timeout: this.prismaQueryTimeoutMs,
-    });
-
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end().catch(() => undefined);
-    }
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-capacity',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
   }
 
   private async countJobsViaPg(

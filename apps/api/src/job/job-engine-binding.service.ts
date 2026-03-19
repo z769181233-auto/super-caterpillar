@@ -13,12 +13,12 @@ import { EngineConfigStoreService } from '../engine/engine-config-store.service'
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { PRODUCTION_MODE } from '@scu/config';
 import { JobType, JobEngineBindingStatus } from 'database';
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 @Injectable()
 export class JobEngineBindingService {
   private readonly logger = new Logger(JobEngineBindingService.name);
-  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || 5000);
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -44,24 +44,14 @@ export class JobEngineBindingService {
     return this.isCiOrGateContext() || process.env.FORCE_ENGINE_BINDING_PG_FALLBACK === '1';
   }
 
-  private async withPgClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('DATABASE_URL required for pg fallback');
-    }
-
-    const client = new Client({
-      connectionString,
-      statement_timeout: this.prismaQueryTimeoutMs,
-      query_timeout: this.prismaQueryTimeoutMs,
-    });
-
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end();
-    }
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-engine-binding',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
   }
 
   /**

@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { createHmac, randomBytes, createHash } from 'crypto';
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 /**
  * 审计日志服务
@@ -15,7 +15,7 @@ const { Client } = require('pg');
 @Injectable()
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
-  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
@@ -43,18 +43,13 @@ export class AuditLogService {
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
-    const client = new Client({
-      connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: this.prismaQueryTimeoutMs,
-      query_timeout: this.prismaQueryTimeoutMs,
-    });
-
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end().catch(() => undefined);
-    }
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-audit-log',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
   }
 
   /**

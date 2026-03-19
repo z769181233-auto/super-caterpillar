@@ -2,11 +2,11 @@ import { Injectable, Inject, NotFoundException, ForbiddenException, forwardRef }
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectResolver } from '../common/project-resolver';
 import { SHOT_WITH_HIERARCHY } from './job.service.queries';
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 @Injectable()
 export class JobAuthOpsService {
-    private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || 5000);
+    private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
     constructor(
         @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -32,24 +32,14 @@ export class JobAuthOpsService {
         return this.isCiOrGateContext() || process.env.FORCE_JOB_AUTH_PG_FALLBACK === '1';
     }
 
-    private async withPgClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
-        const connectionString = process.env.DATABASE_URL;
-        if (!connectionString) {
-            throw new Error('DATABASE_URL required for pg fallback');
-        }
-
-        const client = new Client({
-            connectionString,
-            statement_timeout: this.prismaQueryTimeoutMs,
-            query_timeout: this.prismaQueryTimeoutMs,
-        });
-
-        await client.connect();
-        try {
-            return await fn(client);
-        } finally {
-            await client.end();
-        }
+    private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+        return withRuntimePgClient(
+            {
+                applicationName: 'super-caterpillar-api-job-auth',
+                queryTimeoutMs: this.prismaQueryTimeoutMs,
+            },
+            fn
+        );
     }
 
     /**

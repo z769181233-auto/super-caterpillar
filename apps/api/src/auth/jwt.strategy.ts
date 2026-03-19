@@ -4,7 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { env } from '@scu/config';
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 export interface JwtPayload {
   sub: string;
@@ -18,7 +18,7 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly logger = new Logger(JwtStrategy.name);
-  private readonly queryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+  private readonly queryTimeoutMs = getRuntimeDbTimeoutMs('query');
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -52,17 +52,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
-    const client = new Client({
-      connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: this.queryTimeoutMs,
-      query_timeout: this.queryTimeoutMs,
-    });
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end().catch(() => undefined);
-    }
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-jwt',
+        queryTimeoutMs: this.queryTimeoutMs,
+      },
+      fn
+    );
   }
 
   private async findUserViaPg(userId: string) {

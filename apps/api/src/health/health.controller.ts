@@ -1,6 +1,7 @@
 import { Controller, Get, Header } from '@nestjs/common';
 import { TextSafetyMetrics } from '../observability/text_safety.metrics';
 import { PrismaService } from '../prisma/prisma.service';
+import { withRuntimePgClient } from '../prisma/pg-runtime.util';
 import { RedisService } from '../redis/redis.service';
 import { JobStatus, JobType } from 'database';
 
@@ -54,15 +55,17 @@ export class HealthController {
 
     // 检查数据库连接
     try {
-      const { Client } = require('pg');
-      const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        connectionTimeoutMillis: this.readyProbeTimeoutMs,
-        query_timeout: this.readyProbeTimeoutMs,
-      });
-      await client.connect();
-      await client.query('SELECT 1');
-      await client.end();
+      await withRuntimePgClient(
+        {
+          applicationName: 'super-caterpillar-api-health',
+          connectionTimeoutMs: this.readyProbeTimeoutMs,
+          queryTimeoutMs: this.readyProbeTimeoutMs,
+          statementTimeoutMs: this.readyProbeTimeoutMs,
+        },
+        async (client) => {
+          await client.query('SELECT 1');
+        }
+      );
       checks.database = true;
     } catch (error) {
       checks.database = false;

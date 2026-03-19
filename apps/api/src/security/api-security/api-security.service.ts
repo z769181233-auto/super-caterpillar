@@ -17,6 +17,7 @@ import { AuditActions } from '../../audit/audit.constants';
 import { Prisma } from 'database';
 import { SecretEncryptionService } from './secret-encryption.service';
 import { buildHmacError } from '../../common/utils/hmac-error.utils';
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../../prisma/pg-runtime.util';
 
 function summarizeSensitiveInput(value: string) {
   // Debug-only metadata; avoid hashing or echoing sensitive inputs to keep CodeQL and logs clean.
@@ -41,7 +42,7 @@ export class ApiSecurityService {
   private readonly TIMESTAMP_WINDOW_SECONDS = 300; // ±5 分钟
   private readonly NONCE_TTL_SECONDS = 300; // 5 分钟
   private readonly logger = new Logger(ApiSecurityService.name);
-  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -63,19 +64,13 @@ export class ApiSecurityService {
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
-    const { Client } = require('pg');
-    const client = new Client({
-      connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: this.prismaQueryTimeoutMs,
-      query_timeout: this.prismaQueryTimeoutMs,
-    });
-
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end().catch(() => undefined);
-    }
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-hmac',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
   }
 
   private isCiOrGateContext(): boolean {
@@ -761,15 +756,7 @@ export class ApiSecurityService {
         `[ApiSecurityService] Prisma apiKey lookup degraded, using pg fallback for ${this.maskApiKey(apiKey)}: ${message}`
       );
 
-      const { Client } = require('pg');
-      const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        connectionTimeoutMillis: Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000'),
-        query_timeout: Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000'),
-      });
-
-      try {
-        await client.connect();
+      return this.withPgClient(async (client) => {
         const result = await client.query(
           `
             SELECT
@@ -827,9 +814,7 @@ export class ApiSecurityService {
               }
             : null,
         };
-      } finally {
-        await client.end().catch(() => undefined);
-      }
+      });
     }
   }
 

@@ -12,8 +12,7 @@ import { JobService } from '../job/job.service'; // S3-C.3: 导入 JobService �
 import { WorkerStatus, JobStatus } from 'database';
 import { assertTransition } from '../job/job.rules';
 import { randomUUID } from 'crypto';
-
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 /**
  * Worker 管理服务
@@ -22,7 +21,7 @@ const { Client } = require('pg');
 @Injectable()
 export class WorkerService {
   private readonly logger = new Logger(WorkerService.name);
-  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(
     @Inject(PrismaService)
@@ -263,18 +262,13 @@ export class WorkerService {
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
-    const client = new Client({
-      connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: this.prismaQueryTimeoutMs,
-      query_timeout: this.prismaQueryTimeoutMs,
-    });
-
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end().catch(() => undefined);
-    }
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-worker',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
   }
 
   private async registerWorkerViaPg(payload: {

@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { Prisma, TaskType as TaskTypeEnum, TaskStatus as TaskStatusEnum } from 'database';
 import { randomUUID } from 'crypto';
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 /**
  * Task Service
@@ -14,7 +14,7 @@ const { Client } = require('pg');
  */
 @Injectable()
 export class TaskService {
-  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || 5000);
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -42,24 +42,14 @@ export class TaskService {
     return this.isCiOrGateContext() || process.env.FORCE_TASK_PG_FALLBACK === '1';
   }
 
-  private async withPgClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('DATABASE_URL required for pg fallback');
-    }
-
-    const client = new Client({
-      connectionString,
-      statement_timeout: this.prismaQueryTimeoutMs,
-      query_timeout: this.prismaQueryTimeoutMs,
-    });
-
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end();
-    }
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-task',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
   }
 
   /**

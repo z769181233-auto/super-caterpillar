@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 export enum BudgetLevel {
   OK = 'OK',
@@ -12,7 +12,7 @@ export enum BudgetLevel {
 @Injectable()
 export class BudgetService {
   private readonly logger = new Logger(BudgetService.name);
-  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || 5000);
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
@@ -34,24 +34,14 @@ export class BudgetService {
     return this.isCiOrGateContext() || process.env.FORCE_BUDGET_PG_FALLBACK === '1';
   }
 
-  private async withPgClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('DATABASE_URL required for pg fallback');
-    }
-
-    const client = new Client({
-      connectionString,
-      statement_timeout: this.prismaQueryTimeoutMs,
-      query_timeout: this.prismaQueryTimeoutMs,
-    });
-
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end();
-    }
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-budget',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
   }
 
   async getBudgetStatus(

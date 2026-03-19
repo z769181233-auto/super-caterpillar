@@ -65,7 +65,7 @@ import { JobCreationOpsService } from './job-creation-ops.service';
 import { JobUpdateOpsService } from './job-update-ops.service';
 import { ShotJobWithShotHierarchy } from './job.service.types';
 import { SHOT_JOB_WITH_HIERARCHY, SHOT_WITH_HIERARCHY } from './job.service.queries';
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 /**
  * Job Service (Tactical Slimming Facade)
@@ -77,7 +77,7 @@ const { Client } = require('pg');
 @Injectable()
 export class JobService {
   private readonly logger = new Logger(JobService.name);
-  private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -1344,20 +1344,13 @@ export class JobService {
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
-    if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL required for pg fallback');
-    }
-    const client = new Client({
-      connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: this.prismaQueryTimeoutMs,
-      query_timeout: this.prismaQueryTimeoutMs,
-    });
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end().catch(() => undefined);
-    }
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-job',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
   }
 
   private async findJobByIdViaPg(id: string, organizationId: string) {

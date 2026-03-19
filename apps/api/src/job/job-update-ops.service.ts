@@ -10,13 +10,12 @@ import { JobStatus, JobType } from 'database';
 import { markRetryOrFail, computeNextRetry } from './job.retry';
 import { ShotJobWithShotHierarchy } from './job.service.types';
 import { SHOT_JOB_WITH_HIERARCHY } from './job.service.queries';
-
-const { Client } = require('pg');
+import { getRuntimeDbTimeoutMs, withRuntimePgClient } from '../prisma/pg-runtime.util';
 
 @Injectable()
 export class JobUpdateOpsService {
     private readonly logger = new Logger(JobUpdateOpsService.name);
-    private readonly prismaQueryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
+    private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
     constructor(
         @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -51,18 +50,13 @@ export class JobUpdateOpsService {
     }
 
     private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
-        const client = new Client({
-            connectionString: process.env.DATABASE_URL,
-            connectionTimeoutMillis: this.prismaQueryTimeoutMs,
-            query_timeout: this.prismaQueryTimeoutMs,
-        });
-
-        await client.connect();
-        try {
-            return await fn(client);
-        } finally {
-            await client.end().catch(() => undefined);
-        }
+        return withRuntimePgClient(
+            {
+                applicationName: 'super-caterpillar-api-job-update',
+                queryTimeoutMs: this.prismaQueryTimeoutMs,
+            },
+            fn
+        );
     }
 
     /**
