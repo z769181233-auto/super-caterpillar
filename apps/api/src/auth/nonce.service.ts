@@ -105,50 +105,13 @@ export class NonceService {
         }
       }
 
-      // 使用 Prisma Client 写入 nonce_store 表
-      // 注意：如果 nonceStore 模型不可用，使用 $queryRaw 作为后备方案
-      if ('nonceStore' in this.prisma) {
-        await (this.prisma as any).nonceStore.create({
-          data: {
-            nonce,
-            apiKey,
-            timestamp: BigInt(timestamp),
-          },
-        });
-      } else {
-        // TODO(Stage5-P0): $queryRaw fallback 临时方案
-        // 当 Prisma Client 单一来源治理完成，
-        // 且运行时确认 prisma.nonceStore 稳定存在后，
-        // 必须删除此 $queryRaw fallback，仅保留 prisma.nonceStore.create 路径
-
-        // 开发/测试环境：记录 fallback 使用
-        if (process.env.NODE_ENV !== 'production') {
-          this.logger.warn('⚠️  使用 $queryRaw fallback（prisma.nonceStore 不可用）');
-        }
-
-        // 后备方案：使用 $queryRaw 直接执行 SQL
-        // 先检查是否已存在（用于重放检测）
-        const existing = await (this.prisma as any).$queryRaw<Array<{ count: bigint }>>`
-          SELECT COUNT(*)::bigint as count
-          FROM nonce_store
-          WHERE nonce = ${nonce} AND "apiKey" = ${apiKey}
-        `;
-
-        if (existing && existing.length > 0 && Number(existing[0].count) > 0) {
-          // 已存在，视为重放
-          throw {
-            code: 'P2002',
-            message: 'Unique constraint failed',
-            meta: { target: ['nonce', 'apiKey'] },
-          };
-        }
-
-        // 不存在，执行插入
-        await (this.prisma as any).$queryRaw`
-          INSERT INTO nonce_store (id, nonce, "apiKey", timestamp)
-          VALUES (gen_random_uuid()::text, ${nonce}, ${apiKey}, ${BigInt(timestamp)})
-        `;
-      }
+      await this.prisma.nonceStore.create({
+        data: {
+          nonce,
+          apiKey,
+          timestamp: BigInt(timestamp),
+        },
+      });
 
       // 开发/测试环境：确认写入成功
       if (process.env.NODE_ENV !== 'production') {
@@ -220,8 +183,6 @@ export class NonceService {
                 err?.name === 'PrismaClientKnownRequestError',
               prismaServiceConstructor: this.prisma?.constructor?.name,
               prismaServiceKeys: Object.keys(this.prisma || {}).slice(0, 50),
-              hasNonceStore: 'nonceStore' in (this.prisma || {}),
-              hasNonceStoreCapital: 'NonceStore' in (this.prisma || {}),
               databaseUrl: this.getDatabaseUrlSafe(),
             })}`
           );
