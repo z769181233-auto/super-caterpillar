@@ -14,7 +14,6 @@ import { JobModule } from './job/job.module';
 import { JobWorkerModule } from './job/job-worker.module';
 import { WorkerModule } from './worker/worker.module';
 import { OrchestratorModule } from './orchestrator/orchestrator.module';
-import { AutofillModule } from './autofill/autofill.module';
 import { NovelImportModule } from './novel-import/novel-import.module';
 import { EngineModule } from './engines/engine.module';
 import { EngineAdminModule } from './engine-admin/engine-admin.module';
@@ -96,7 +95,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
 
     WorkerModule,
     OrchestratorModule,
-    AutofillModule,
     NovelImportModule,
     EngineModule,
     EngineAdminModule,
