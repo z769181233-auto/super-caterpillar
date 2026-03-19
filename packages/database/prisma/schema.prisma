@@ -801,13 +801,23 @@ model BillingLedger {
   jobId          String   @map("job_id")
   projectId      String   @map("project_id")
   billingState   String   @map("billing_state") @db.VarChar(20)
+  traceId        String?  @map("trace_id")
+  itemType       String?  @map("item_type")
+  itemId         String?  @map("item_id")
+  chargeCode     String?  @map("charge_code")
   amount         BigInt   @map("amount")
+  currency       String?  @default("CREDIT")
+  evidenceRef    String?  @map("evidence_ref")
   idempotencyKey String   @unique(map: "unique_idempotency") @map("idempotency_key") @db.VarChar(128)
   status         String?
   tenantId       String?  @map("tenant_id")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt      DateTime? @updatedAt @map("updated_at") @db.Timestamp()
 
   @@unique([jobId, billingState], name: "unique_job_billing")
+  @@index([tenantId, traceId, itemType, itemId, chargeCode], map: "idx_billing_ledger_ssot_lookup")
+  @@index([traceId], map: "idx_billing_ledger_trace_id")
+  @@index([status], map: "idx_billing_ledger_status")
   @@map("billing_ledger")
 }
 
@@ -1930,4 +1940,3 @@ model Outfit {
   @@map("outfits")
 }
 // Removed non-existent models as they don't exist in DB
-

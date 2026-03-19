@@ -41,16 +41,24 @@ export function buildLegacyBillingLedgerCreateData(params: {
   billingState: string;
   amount: bigint;
   status?: BillingLedgerSsotStatus;
+  evidenceRef?: string | null;
 }) {
   const billingState = String(params.billingState || '').toUpperCase();
+  const status = params.status || mapLegacyBillingStateToSsotStatus(billingState);
   return {
     jobId: params.jobId,
     projectId: params.projectId,
     billingState,
+    traceId: params.jobId,
+    itemType: 'JOB',
+    itemId: params.jobId,
+    chargeCode: mapLegacyBillingStateToChargeCode(billingState),
     amount: params.amount,
+    currency: 'CREDIT',
+    evidenceRef: params.evidenceRef || null,
     idempotencyKey: buildLegacyBillingLedgerIdempotencyKey(params.jobId, billingState),
     tenantId: params.tenantId || params.projectId,
-    status: params.status || mapLegacyBillingStateToSsotStatus(billingState),
+    status,
   };
 }
 
