@@ -6,8 +6,8 @@ source of truth for implementation and verification.
 ## Rules
 
 - Prefer Markdown / JSON SSOT files in this index over historical PDF documents.
-- Treat versioned PDFs in this folder as historical context unless a Markdown / JSON SSOT file
-  explicitly points back to them for reference.
+- Treat versioned PDFs as historical context only. Historical PDFs / Word documents have been moved
+  out of `docs/_specs` root into `docs/_specs_archived/historical_source_docs_20260319/`.
 - When code behavior and a historical PDF disagree, implementation work should align to the SSOT
   files listed below.
 
@@ -61,4 +61,6 @@ The following classes of files are not the primary execution SSOT anymore:
 - ad-hoc sample payloads unless referenced by a listed SSOT
 
 These files may still be useful for business or historical context, but they should not override
-the current SSOT documents above during implementation or verification.
+the current SSOT documents above during implementation or verification. Historical documents should
+be reviewed from `docs/_specs_archived/historical_source_docs_20260319/`, not from `docs/_specs`
+root.
