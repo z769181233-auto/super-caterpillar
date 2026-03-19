@@ -9,6 +9,16 @@ export function isCiOrGateContextEnv(): boolean {
   );
 }
 
+export function isDatabaseUnavailableError(error: unknown): boolean {
+  const message = String((error as any)?.message || '');
+  return (
+    message.includes('startup connect exceeded') ||
+    message.includes('PRISMA_CONNECT_TIMEOUT') ||
+    message.includes("Can't reach database server") ||
+    message.includes('P1001')
+  );
+}
+
 export function getRuntimeDbTimeoutMs(kind: 'connect' | 'query' | 'slowQueryWarn'): number {
   const ciOrGate = isCiOrGateContextEnv();
 

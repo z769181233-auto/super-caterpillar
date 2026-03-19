@@ -1,6 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { isDatabaseUnavailableError } from '../prisma/pg-runtime.util';
 import { JobStatus, JobType } from 'database';
 import { env } from '@scu/config';
 
@@ -24,17 +25,11 @@ export class JobWatchdogService {
     console.log('[DEBUG_BOOT] JobWatchdogService constructor end');
   }
 
-  private shouldSkipForPrismaTimeout(error: any): boolean {
+  private shouldSkipForDatabaseUnavailability(error: any): boolean {
     if (process.env.NODE_ENV === 'production') {
       return false;
     }
-    const message = String(error?.message || '');
-    return (
-      message.includes('PRISMA_QUERY_TIMEOUT') ||
-      message.includes('startup connect exceeded') ||
-      message.includes("Can't reach database server") ||
-      message.includes('P1001')
-    );
+    return isDatabaseUnavailableError(error);
   }
 
   /**
@@ -200,9 +195,9 @@ export class JobWatchdogService {
         `[JobWatchdog] Recovery completed: ${recoveredCount} recovered, ${failedCount} failed`
       );
     } catch (error) {
-      if (this.shouldSkipForPrismaTimeout(error)) {
+      if (this.shouldSkipForDatabaseUnavailability(error)) {
         this.logger.warn(
-          `[JobWatchdog] Skipping recovery scan in non-production due to Prisma degradation: ${error.message}`
+          `[JobWatchdog] Skipping recovery scan in non-production due to database unavailability: ${error.message}`
         );
         return;
       }

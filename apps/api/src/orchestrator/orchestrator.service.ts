@@ -7,6 +7,7 @@ import { ProjectModule } from '../project/project.module';
 import { NovelImportModule } from '../novel-import/novel-import.module';
 import { PublishedVideoService } from '../publish/published-video.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { isDatabaseUnavailableError } from '../prisma/pg-runtime.util';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { TaskService } from '../task/task.service';
 import { JobService } from '../job/job.service';
@@ -39,17 +40,11 @@ export class OrchestratorService {
     private readonly publishedVideoService: PublishedVideoService
   ) {}
 
-  private shouldSkipForPrismaTimeout(error: any): boolean {
+  private shouldSkipForDatabaseUnavailability(error: any): boolean {
     if (process.env.NODE_ENV === 'production') {
       return false;
     }
-    const message = String(error?.message || '');
-    return (
-      message.includes('PRISMA_QUERY_TIMEOUT') ||
-      message.includes('startup connect exceeded') ||
-      message.includes("Can't reach database server") ||
-      message.includes('P1001')
-    );
+    return isDatabaseUnavailableError(error);
   }
 
   /**
@@ -115,16 +110,16 @@ export class OrchestratorService {
         message: 'Job dispatch is now handled by worker pull model.',
       };
     } catch (error: any) {
-      if (this.shouldSkipForPrismaTimeout(error)) {
+      if (this.shouldSkipForDatabaseUnavailability(error)) {
         this.logger.warn(
-          `[Recovery] Skipping recovery cycle in non-production due to Prisma degradation: ${error.message}`
+          `[Recovery] Skipping recovery cycle in non-production due to database unavailability: ${error.message}`
         );
         return {
           pending: 0,
           dispatched: 0,
           recovered: 0,
           retryReady: 0,
-          message: 'Recovery skipped due to Prisma degradation in non-production.',
+          message: 'Recovery skipped due to database unavailability in non-production.',
         };
       }
       throw error;
