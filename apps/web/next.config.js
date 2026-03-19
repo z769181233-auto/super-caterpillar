@@ -1,3 +1,4 @@
+const path = require('path');
 const withNextIntl = require('next-intl/plugin')();
 const isStaticExport = process.env.STATIC_EXPORT === '1';
 
@@ -6,9 +7,7 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['database', '@scu/shared-types'],
   trailingSlash: true,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  outputFileTracingRoot: path.join(__dirname, '../..'),
   images: {
     unoptimized: true,
   },

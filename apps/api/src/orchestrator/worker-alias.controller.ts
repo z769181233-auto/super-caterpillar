@@ -6,7 +6,6 @@ import { HeartbeatDto } from '../worker/dto/heartbeat.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Request } from 'express';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { OrchestratorService } from './orchestrator.service';
 
 /**
  * Worker Alias Controller (Migrated to Orchestrator to break circular dependency)
@@ -105,7 +104,6 @@ export class WorkerAliasController {
     @CurrentUser() user: { userId: string },
     @Req() request: Request
   ): Promise<any> {
-    console.log(`[XXX_DEBUG] WorkerAliasController.getNextJob called for ${workerId}`);
     const job = await this.workerService.dispatchNextJobForWorker(workerId);
 
     if (!job) {
