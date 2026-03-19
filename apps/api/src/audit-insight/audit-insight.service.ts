@@ -434,28 +434,37 @@ export class AuditInsightService {
         };
       }
     } else if (videoJ) {
-      // DEPRECATED Fallback (job payload result.videoKey)
+      // Compatibility fallback: older jobs may still persist videoKey in payload.result.
       this.logger.warn(`WARN_DEPRECATED_JOB_VIDEO_KEY_PATH_USED=1 projectId=${projectId}`);
 
       const payload = (videoJ.payload as any) || {};
       const res = payload.result || {};
-      const legacyKey = res.videoKey as string | undefined;
+      const compatibilityStorageKey = res.videoKey as string | undefined;
 
-      if (videoJ.status === 'SUCCEEDED' && legacyKey) {
+      if (videoJ.status === 'SUCCEEDED' && compatibilityStorageKey) {
         try {
           const { url } = this.signedUrlService.generateSignedUrl({
-            key: legacyKey,
+            key: compatibilityStorageKey,
             tenantId: projectId,
             userId,
             expiresIn: 3600,
           });
-          videoAsset = { status: 'READY', secureUrl: url, jobId: videoJ.id, storageKey: legacyKey };
+          videoAsset = {
+            status: 'READY',
+            secureUrl: url,
+            jobId: videoJ.id,
+            storageKey: compatibilityStorageKey,
+          };
         } catch (e) {
           this.logger.error(
-            '[AuditInsight] Failed to sign video URL from legacy job payload',
+            '[AuditInsight] Failed to sign video URL from compatibility job payload',
             (e as Error).message
           );
-          videoAsset = { status: 'ERROR_SIGNING', jobId: videoJ.id, storageKey: legacyKey };
+          videoAsset = {
+            status: 'ERROR_SIGNING',
+            jobId: videoJ.id,
+            storageKey: compatibilityStorageKey,
+          };
         }
       } else {
         videoAsset = { status: videoJ.status, jobId: videoJ.id };

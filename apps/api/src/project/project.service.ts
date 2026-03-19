@@ -442,9 +442,8 @@ export class ProjectService {
       })),
     }));
 
-    // For legacy episodes root
-    // Note: This modifies the specialized 'episodes' property for backward compat
-    const legacyEpisodes = project.episodes?.map((episode: any) => ({
+    // Compatibility root: keep episodes at project root for older consumers.
+    const compatibilityEpisodes = project.episodes?.map((episode: any) => ({
       ...episode,
       scenes: episode.scenes.map(enrichScene),
     }));
@@ -498,7 +497,7 @@ export class ProjectService {
     return {
       ...projectWithoutTasks,
       seasons,
-      episodes: legacyEpisodes, // Assuming we want coverage here too
+      episodes: compatibilityEpisodes,
       analysisStatus,
       analysisUpdatedAt,
       // New Fields
