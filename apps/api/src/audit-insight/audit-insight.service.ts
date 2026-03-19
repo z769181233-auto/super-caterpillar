@@ -310,11 +310,9 @@ export class AuditInsightService {
     const director: DirectorAuditSummaryDto & {
       partial?: boolean;
       message?: string;
-      evaluatedShots?: number;
     } = {
       mode: 'realtime',
       shotsEvaluated: shots.length,
-      evaluatedShots: shots.length, // Alias for backward compatibility
       isValid: results.length > 0 ? results.every((r) => r.isValid) : false, // Default to false if no shots
       violationsCount: totalViolations,
       suggestionsCount: totalSuggestions,
