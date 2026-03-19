@@ -767,15 +767,24 @@ export class ProjectService {
         throw new NotFoundException('Episode not found');
       }
 
-      // CE07: 分镜生成前读取短期记忆（占位实现）
-      // TODO: 实现真实逻辑（使用 MemoryShortTerm 进行推理）
+      let memorySeedSummary: string | null = null;
+      let memorySeedCharacters: Prisma.InputJsonValue | undefined = undefined;
+
+      // CE07: 分镜生成前读取短期记忆，并在缺省字段上作为轻量 seed 使用
       if (episode.chapter?.id) {
         try {
           const shortTermMemory = await tx.memoryShortTerm.findFirst({
             where: { chapterId: episode.chapter.id },
           });
-          // 如果存在短期记忆，可以在创建 Scene 时使用（当前仅记录日志）
           if (shortTermMemory) {
+            memorySeedSummary = shortTermMemory.summary || null;
+            if (
+              createSceneDto.characters === undefined &&
+              shortTermMemory.characterStates &&
+              typeof shortTermMemory.characterStates === 'object'
+            ) {
+              memorySeedCharacters = shortTermMemory.characterStates as Prisma.InputJsonValue;
+            }
             this.logger.debug(`CE07: Using short-term memory for chapter ${episode.chapter.id}`);
           }
         } catch (error: any) {
@@ -815,7 +824,10 @@ export class ProjectService {
           projectId: episode.projectId || episode.project?.id || episode.season?.projectId || '',
           sceneIndex: createSceneDto.index, // V3.0
           title: createSceneDto.title || `Scene ${createSceneDto.index}`,
-          summary: createSceneDto.summary,
+          summary: createSceneDto.summary || memorySeedSummary || undefined,
+          characters:
+            (createSceneDto.characters as Prisma.InputJsonValue | undefined) ||
+            memorySeedCharacters,
         },
       });
     });
