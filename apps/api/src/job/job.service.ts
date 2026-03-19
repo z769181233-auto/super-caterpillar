@@ -24,7 +24,6 @@ import { QualityScoreService } from '../quality/quality-score.service';
 import { EngineConfigStoreService } from '../engine/engine-config-store.service';
 import { JobEngineBindingService } from './job-engine-binding.service';
 import { BillingService } from '../billing/billing.service';
-import { FinancialSettlementService } from '../billing/financial-settlement.service';
 import { CopyrightService } from '../copyright/copyright.service';
 import { CapacityGateService } from '../capacity/capacity-gate.service';
 import { BudgetService } from '../billing/budget.service';
@@ -108,8 +107,6 @@ export class JobService {
     private readonly publishedVideoService: PublishedVideoService,
     @Inject(EventEmitter2)
     private readonly eventEmitter: EventEmitter2,
-    @Inject(FinancialSettlementService)
-    private readonly financialSettlementService: FinancialSettlementService,
     @Inject(forwardRef(() => ProjectResolver))
     private readonly projectResolver: ProjectResolver,
     private readonly jobAuthOps: JobAuthOpsService,

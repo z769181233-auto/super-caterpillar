@@ -12,7 +12,6 @@ import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { PublishedVideoService } from '../publish/published-video.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { FinancialSettlementService } from '../billing/financial-settlement.service';
 import { JobAuthOpsService } from './job-auth-ops.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { JobEngineBindingStatus } from 'database';
@@ -49,8 +48,6 @@ export class JobCreationOpsService {
         private readonly publishedVideoService: PublishedVideoService,
         @Inject(EventEmitter2)
         private readonly eventEmitter: EventEmitter2,
-        @Inject(FinancialSettlementService)
-        private readonly financialSettlementService: FinancialSettlementService,
         @Inject(forwardRef(() => TaskService)) private readonly taskService: TaskService,
         @Inject(forwardRef(() => ProjectResolver)) private readonly projectResolver: ProjectResolver,
         private readonly jobAuthOps: JobAuthOpsService
