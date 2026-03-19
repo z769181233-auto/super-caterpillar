@@ -53,7 +53,7 @@ export class EngineStrategyService {
     // P5-0.1: CE11 Strict Engine Key Enforcement (No Silent Mock in Production)
     if (jobType === 'CE11_SHOT_GENERATOR') {
       const isVerification = payload?.isVerification === true || payload?.gateMode === true;
-      // Note: baseEngineKey is from input.engineKey. payload.engineKey might be legacy.
+      // Note: baseEngineKey comes from input.engineKey; payload.engineKey may come from older callers.
       const explicitEngineKey = baseEngineKey || payload?.engineKey || payload?.engine;
 
       if (!explicitEngineKey) {

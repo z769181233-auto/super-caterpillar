@@ -129,7 +129,7 @@ export default function ProjectStructureTree({ projectId, data }: ProjectStructu
     });
   };
 
-  // S3-C Hard Revision 2: Title/Name 字段兼容 (避免旧数据/legacy字段导致的显示问题)
+  // S3-C Hard Revision 2: 统一 title/name 读取，避免旧数据字段导致的显示问题
   const getNodeTitle = (node: any): string => {
     return node.title ?? node.name ?? '(untitled)';
   };

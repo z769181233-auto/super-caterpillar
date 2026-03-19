@@ -145,7 +145,7 @@ export class ApiSecurityGuard implements CanActivate {
       method,
       path: pathWithQuery, // v2: 包含 query string
       contentSha256: finalContentSha256,
-      body: rawBodyBytes ? rawBodyBytes.toString('utf8') : undefined, // 兼容字段
+      body: rawBodyBytes ? rawBodyBytes.toString('utf8') : undefined, // 供 HMAC 校验元信息使用
       ip: request.ip || (request.headers['x-forwarded-for'] as string) || undefined,
       userAgent: request.headers['user-agent'] || undefined,
     });

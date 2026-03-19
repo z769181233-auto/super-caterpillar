@@ -320,7 +320,7 @@ export class StructureGenerateService {
         projectId,
         episodes: episodes as any,
         statis: {
-          // NOTE: Field name in legacy might be 'stats', aligned with DTO
+          // NOTE: Older payloads may still use 'stats'; normalize it to the DTO field here.
           seasonsCount: 0,
           episodesCount: episodes.length,
           scenesCount: 0,

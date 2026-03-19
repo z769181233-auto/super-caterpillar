@@ -175,7 +175,7 @@ export class CostLedgerService {
    */
   async getProjectCostSummary(projectId: string) {
     const rows = await this.getAllProjectCosts(projectId);
-    // amount is BigInt, cast to Number for legacy API response
+    // amount is BigInt; cast to Number for the current public response shape
     const total = rows.reduce((s, r) => s + Number(r.amount) / 100, 0);
 
     return {

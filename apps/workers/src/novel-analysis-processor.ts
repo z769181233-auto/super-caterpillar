@@ -1134,7 +1134,7 @@ export function mapCE06OutputToProjectStructure(
             shots: [],
           };
 
-          // S3-B Fix: Even in legacy volumes check for shots if present (rare but possible)
+          // S3-B Fix: Even in already-structured volumes, still honor embedded shots if present.
           if (
             (sc as any).shots &&
             Array.isArray((sc as any).shots) &&

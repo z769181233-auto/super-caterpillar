@@ -175,7 +175,7 @@ export async function processCE03Job(
           `PRODUCTION_MODE_FORBIDS_FALLBACK: No input data found for CE03 job ${jobId}`
         );
       }
-      // Production Fallback: all scenes (legacy/bulk mode)
+      // Production fallback: process all scenes when running in bulk mode
       const parseResult = await prisma.novelParseResult.findUnique({
         where: { projectId },
       });

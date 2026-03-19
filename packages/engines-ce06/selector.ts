@@ -18,7 +18,7 @@ export async function ce06Selector(input: CE06Input): Promise<CE06Output | null>
   return null;
 }
 
-// 保留类形式以兼容旧代码
+// 保留类形式以适配当前调用方式
 export class CE06EngineSelector {
   async invoke(input: CE06Input): Promise<CE06Output | null> {
     return ce06Selector(input);

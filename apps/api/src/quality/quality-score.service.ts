@@ -192,8 +192,8 @@ export class QualityScoreService {
     if (forceDisable) {
       signals.ce23_kill_switch = true;
       signals.ce23_kill_switch_source = 'env';
-      // P0 Patch: Explicitly set mode to legacy
-      signals.ce23_real_mode = 'legacy';
+      // P0 Patch: Explicitly mark the system as running in historical-score mode
+      signals.ce23_real_mode = 'historical';
 
       // P0 Patch: Safety check - ensure no real/shadow artifacts leaked
       delete signals.identity_score_real_ppv64;
@@ -232,14 +232,14 @@ export class QualityScoreService {
     // Condition: Real Mode + Guardrail En + Failed Real Check
     if (ce23RealEnabled && ce23RealGuardrailEnabled && verdict === 'FAIL' && realScoreResult) {
       const realScore = realScoreResult.score;
-      const legacyScore = identityScoreRecord?.identityScore || 0; // The historical benchmark score from DB
+      const historicalBenchmarkScore = identityScoreRecord?.identityScore || 0; // Historical benchmark score from DB
       const marginalFloor = identityThreshold - 0.03;
 
       console.warn(
-        `[GUARDRAIL_DEBUG] Checking shot ${shotId}. Real=${realScore}, Thresh=${identityThreshold} (Floor=${marginalFloor}), Legacy=${legacyScore} (Req >= 0.90)`
+        `[GUARDRAIL_DEBUG] Checking shot ${shotId}. Real=${realScore}, Thresh=${identityThreshold} (Floor=${marginalFloor}), Historical=${historicalBenchmarkScore} (Req >= 0.90)`
       );
 
-      if (realScore >= marginalFloor && legacyScore >= 0.9) {
+      if (realScore >= marginalFloor && historicalBenchmarkScore >= 0.9) {
         guardrailBlocked = true;
         stopReason = 'GUARDRAIL_BLOCKED_REWORK';
         signals.stopReason = stopReason;
@@ -249,7 +249,7 @@ export class QualityScoreService {
         console.warn(`[GUARDRAIL] Shot ${shotId} blocked from rework. StopReason set.`);
       } else {
         console.warn(
-          `[GUARDRAIL_SKIP] Real=${realScore} vs ${marginalFloor}, Legacy=${legacyScore} vs 0.90. (Enabled: ${ce23RealGuardrailEnabled})`
+          `[GUARDRAIL_SKIP] Real=${realScore} vs ${marginalFloor}, Historical=${historicalBenchmarkScore} vs 0.90. (Enabled: ${ce23RealGuardrailEnabled})`
         );
       }
     }

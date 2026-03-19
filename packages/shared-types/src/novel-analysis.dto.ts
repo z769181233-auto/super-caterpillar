@@ -37,7 +37,7 @@ export interface AnalyzedSeason {
 
 export interface AnalyzedProjectStructure {
   projectId: string;
-  seasons?: AnalyzedSeason[]; // [Deprecated] 仅兼容旧输出，新代码应优先消费扁平 episodes
+  seasons?: AnalyzedSeason[]; // 仅旧输出仍会返回；新代码应优先消费扁平 episodes
   episodes: AnalyzedEpisode[]; // [V3.0] Flat structure: Project -> Episode
   stats: {
     seasonsCount: number;

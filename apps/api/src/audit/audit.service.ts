@@ -11,7 +11,7 @@ interface AuditLogInput {
   traceId?: string;
   ip?: string | null;
   userAgent?: string | null;
-  ua?: string | null; // 兼容旧字段名
+  ua?: string | null; // 旧字段名，映射到 userAgent
   details?: any;
 }
 

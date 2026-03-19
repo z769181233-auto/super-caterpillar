@@ -25,7 +25,7 @@ export interface EngineAuditTrail {
 
 /** 结构化输入（按现有字段命名保守兼容） */
 export interface CE06NovelParsingInput {
-  // NOTE：这里用"最小必需字段 + 扩展兼容字段"策略，避免破坏现有调用方
+  // NOTE：这里保留最小必需字段 + 扩展字段，避免破坏现有调用方
   structured_text: string;
   phase?: 'SCAN' | 'CHUNK_PARSE';
 
@@ -57,7 +57,7 @@ export interface CE06NovelParsingOutput {
 }
 
 /**
- * 兼容旧命名（历史代码可能在用 CE06Input/CE06Output）
+ * 保留旧命名导出，供现有调用方继续使用
  * 关键：不要让 repo 里再出现第二套"看起来一样但不兼容"的类型定义
  */
 export type CE06Input = CE06NovelParsingInput;
