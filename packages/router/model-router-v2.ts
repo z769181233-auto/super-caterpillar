@@ -39,7 +39,7 @@ export class ModelRouterV2 {
         );
       }
 
-      // 如果预算极其有限 (Legacy support)
+      // 如果预算极其有限，直接硬失败，不再尝试低成本替代路线
       if (costLimit < 1.0) {
         throw new Error('[ROUTER_FATAL] Cost limit exceeded, failing fast (Absolute truth required).');
       }

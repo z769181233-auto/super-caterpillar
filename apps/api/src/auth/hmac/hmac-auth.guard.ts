@@ -244,7 +244,7 @@ export class HmacAuthGuard implements CanActivate {
       if (keyRecord.ownerUser) {
         (request as any).user = {
           userId: keyRecord.ownerUser.id,
-          id: keyRecord.ownerUser.id, // Compatibility
+          id: keyRecord.ownerUser.id, // Keep Passport-style request.user shape aligned
           email: keyRecord.ownerUser.email,
           userType: keyRecord.ownerUser.userType || 'USER', // Fallback
           role: keyRecord.ownerUser.role || 'USER', // Fallback
