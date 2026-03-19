@@ -141,6 +141,8 @@ Meaning:
 - read/write semantics are closer to SSOT
 - `billing-ledger-compat.util.ts` now centralizes status mapping so active read/write paths no longer
   hardcode `COMMITTED` as their only notion of a billed ledger
+- existing rows can now be backfilled toward SSOT fields through:
+  - `pnpm --filter api backfill:billing-ledger-ssot`
 - storage model still needs a deliberate schema migration phase
 
 ### What should not be mistaken for repository problems

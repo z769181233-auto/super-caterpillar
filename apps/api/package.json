@@ -22,6 +22,7 @@
     "create:http-jobs": "ts-node -r tsconfig-paths/register src/scripts/create-novel-analysis-http-test-jobs.ts",
     "inspect:jobs": "ts-node -r tsconfig-paths/register src/scripts/inspect-jobs.ts",
     "reset:test-jobs": "ts-node -r tsconfig-paths/register src/scripts/reset-test-jobs.ts",
+    "backfill:billing-ledger-ssot": "ts-node -r tsconfig-paths/register src/scripts/backfill-billing-ledger-ssot.ts",
     "sync:engines": "ts-node -r tsconfig-paths/register src/scripts/sync-engines-from-json.ts",
     "init:ce-api-key": "ts-node -r tsconfig-paths/register ../../tools/smoke/init_ce_runtime_api_key.ts"
   },
