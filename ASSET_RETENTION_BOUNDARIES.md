@@ -4,23 +4,21 @@ This repository has been cleaned so that tracked non-code assets are reduced to 
 
 ### Tracked runtime assets that remain
 
-Only the following tracked asset family remains:
+Only the following tracked asset remains:
 
 - `output/lora_chenpingan/pytorch_lora_weights.bin`
-- `output/lora_chenpingan/pytorch_lora_weights_step_*.bin`
 
-These files are still referenced by active production/tooling scripts such as:
+This file is still referenced by active production/tooling scripts such as:
 
 - `tools/production/character_db/auto_compare_lora.py`
 - `tools/production/character_db/inference_optimized.py`
 - `tools/production/character_db/p0_judicial_audit.py`
 - `tools/production/character_db/sample_final.py`
-- `tools/production/character_db/watchdog_eval.py`
 
 Retention intent:
 
 - `pytorch_lora_weights.bin` is the current primary LoRA weight used by inference and audit scripts.
-- `pytorch_lora_weights_step_*.bin` remains tracked because `watchdog_eval.py` actively scans and evaluates step checkpoints as they appear.
+- Step checkpoints such as `pytorch_lora_weights_step_*.bin` are treated as local training artifacts, not repository truth. `watchdog_eval.py` can still scan them when they are generated locally, but they are no longer tracked in Git.
 
 ### Assets already removed from the repo
 
