@@ -21,7 +21,8 @@ export async function __ENGINE__RealEngine(input: __ENGINE__Input): Promise<__EN
   const paramsHash = crypto.createHash('sha256').update(JSON.stringify(input)).digest('hex');
 
   // 2. 执行真实业务逻辑
-  // TODO: 替换为实际业务实现
+  // TEMPLATE_REQUIRED:
+  // 复制此母版到具体引擎后，必须在这里替换成真实业务调用。
   // 示例:
   // const result = await callExternalAPI(input);
   // const asset = await generateAsset(input);
@@ -30,9 +31,9 @@ export async function __ENGINE__RealEngine(input: __ENGINE__Input): Promise<__EN
 
   // 3. 构建计费使用量（必须）
   const billing_usage: EngineBillingUsage = {
-    promptTokens: 0, // TODO: 填入实际值
-    completionTokens: 0, // TODO: 填入实际值
-    totalTokens: 0, // TODO: 填入实际值
+    promptTokens: 0, // TEMPLATE_DEFAULT: 具体引擎应填入真实 token 使用量
+    completionTokens: 0, // TEMPLATE_DEFAULT: 具体引擎应填入真实 token 使用量
+    totalTokens: 0, // TEMPLATE_DEFAULT: 具体引擎应填入真实 token 使用量
     model: '__ENGINE__-real',
     gpuSeconds: duration / 1000,
   };
@@ -48,7 +49,7 @@ export async function __ENGINE__RealEngine(input: __ENGINE__Input): Promise<__EN
 
   // 5. 返回结果
   return {
-    // TODO: 添加业务输出字段
+    // TEMPLATE_REQUIRED: 在具体引擎中添加真实业务输出字段
     // result: { ... },
     // asset: { uri: '...', sha256: '...' },
 
