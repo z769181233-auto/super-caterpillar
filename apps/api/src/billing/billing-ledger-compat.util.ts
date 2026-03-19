@@ -2,6 +2,22 @@ export type LegacyBillingState = 'RESERVED' | 'COMMITTED' | 'RELEASED' | string;
 
 export type BillingLedgerSsotStatus = 'PENDING' | 'POSTED' | 'REVERSED' | 'FAILED';
 
+export function mapSsotStatusToLegacyBillingState(
+  status: BillingLedgerSsotStatus
+): LegacyBillingState | null {
+  switch (status) {
+    case 'PENDING':
+      return 'RESERVED';
+    case 'POSTED':
+      return 'COMMITTED';
+    case 'REVERSED':
+      return 'RELEASED';
+    case 'FAILED':
+    default:
+      return null;
+  }
+}
+
 export function mapLegacyBillingStateToSsotStatus(
   billingState?: LegacyBillingState | null
 ): BillingLedgerSsotStatus {
@@ -28,6 +44,16 @@ export function mapLegacyBillingStateToChargeCode(billingState?: LegacyBillingSt
     default:
       return 'JOB_UNKNOWN';
   }
+}
+
+export function buildBillingLedgerStatusWhere(status: BillingLedgerSsotStatus) {
+  const legacyBillingState = mapSsotStatusToLegacyBillingState(status);
+  if (!legacyBillingState) {
+    return { status };
+  }
+  return {
+    OR: [{ status }, { billingState: legacyBillingState }],
+  };
 }
 
 export function buildLegacyBillingLedgerIdempotencyKey(jobId: string, billingState: string): string {

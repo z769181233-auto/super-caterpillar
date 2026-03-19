@@ -10,7 +10,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
-import { normalizeLegacyBillingLedgerRow } from './billing-ledger-compat.util';
+import {
+  buildBillingLedgerStatusWhere,
+  normalizeLegacyBillingLedgerRow,
+} from './billing-ledger-compat.util';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
@@ -472,7 +475,7 @@ export class BillingService {
     // SSOT: Reconcile Logic (Read-only version)
     const [ledgerSum, eventSum, billingEventsCount, billedLedgerCount] = await Promise.all([
       this.prisma.billingLedger.aggregate({
-        where: { projectId: projectId, billingState: 'COMMITTED' },
+        where: { projectId: projectId, ...buildBillingLedgerStatusWhere('POSTED') },
         _sum: { amount: true },
       }),
       this.prisma.billingEvent.aggregate({
@@ -483,7 +486,7 @@ export class BillingService {
         where: { projectId },
       }),
       this.prisma.billingLedger.count({
-        where: { projectId: projectId, billingState: 'COMMITTED' },
+        where: { projectId: projectId, ...buildBillingLedgerStatusWhere('POSTED') },
       }),
     ]);
 

@@ -139,6 +139,8 @@ Current code has a compatibility layer that normalizes ledger rows toward SSOT, 
 Meaning:
 
 - read/write semantics are closer to SSOT
+- `billing-ledger-compat.util.ts` now centralizes status mapping so active read/write paths no longer
+  hardcode `COMMITTED` as their only notion of a billed ledger
 - storage model still needs a deliberate schema migration phase
 
 ### What should not be mistaken for repository problems
