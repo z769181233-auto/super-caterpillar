@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { RequireSignature } from '../security/api-security/api-security.decorator';
