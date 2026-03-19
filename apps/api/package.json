@@ -20,7 +20,7 @@
     "dev:create-test-novel-job": "ts-node -r tsconfig-paths/register src/scripts/dev-create-test-novel-job.ts",
     "create:test-novel-job": "ts-node -r tsconfig-paths/register src/scripts/create-test-novel-job.ts",
     "create:http-jobs": "ts-node -r tsconfig-paths/register src/scripts/create-novel-analysis-http-test-jobs.ts",
-    "debug:jobs": "ts-node -r tsconfig-paths/register src/scripts/debug-jobs.ts",
+    "inspect:jobs": "ts-node -r tsconfig-paths/register src/scripts/inspect-jobs.ts",
     "reset:test-jobs": "ts-node -r tsconfig-paths/register src/scripts/reset-test-jobs.ts",
     "sync:engines": "ts-node -r tsconfig-paths/register src/scripts/sync-engines-from-json.ts",
     "init:ce-api-key": "ts-node -r tsconfig-paths/register ../../tools/smoke/init_ce_runtime_api_key.ts"

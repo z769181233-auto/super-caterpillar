@@ -2,7 +2,7 @@ import { PrismaClient } from 'database';
 import * as util from 'util';
 
 /**
- * 调试脚本：打印最近 20 条 NOVEL_ANALYSIS Job
+ * 运营检查脚本：打印最近 20 条 NOVEL_ANALYSIS Job
  */
 async function main() {
   const prisma = new PrismaClient({});
