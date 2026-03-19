@@ -49,15 +49,15 @@ import {
 } from './job.rules';
 import { markRetryOrFail, computeNextRetry } from './job.retry';
 
-// Forwarding types for backward compatibility
-export type JobStatusType = JobStatus;
-export type JobTypeType = JobType;
-export type TaskStatusType = TaskStatus;
-export type TaskTypeType = TaskType;
-export const JobStatusEnum = JobStatus;
-export const JobTypeEnum = JobType;
-export const TaskStatusEnum = TaskStatus;
-export const TaskTypeEnum = TaskType;
+// Local enum aliases used throughout this service for readability.
+type JobStatusType = JobStatus;
+type JobTypeType = JobType;
+type TaskStatusType = TaskStatus;
+type TaskTypeType = TaskType;
+const JobStatusEnum = JobStatus;
+const JobTypeEnum = JobType;
+const TaskStatusEnum = TaskStatus;
+const TaskTypeEnum = TaskType;
 
 import { JobAuthOpsService } from './job-auth-ops.service';
 import { JobCreationOpsService } from './job-creation-ops.service';
