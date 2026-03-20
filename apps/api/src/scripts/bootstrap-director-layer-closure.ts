@@ -200,20 +200,20 @@ async function main() {
             'movement', COALESCE(s.camera_movement, 'STATIC'),
             'angle', COALESCE(s.camera_angle, 'EYE_LEVEL'),
             'lighting', COALESCE(s.lighting_preset, 'NATURAL'),
-            'visualPrompt', COALESCE(s.visual_prompt, $2),
-            'action', COALESCE(s.action_description, $3),
-            'filmIrId', $4,
+            'visualPrompt', COALESCE(s.visual_prompt, $2::text),
+            'action', COALESCE(s.action_description, $3::text),
+            'filmIrId', $4::text,
             'dramaticFunction', COALESCE(s.dramatic_function, 'CONFLICT'),
             'emotionalTarget', COALESCE(s.emotional_target, '压迫感 → 紧张对峙 → 短暂呼吸'),
             'shotPattern', 'CLOSE_UP_DOMINANT',
             'continuityConstraints', jsonb_build_object('mustMatch', jsonb_build_array('character_costume', 'location')),
             'plannerVersion', 'film-planner-v1',
-            'raw', jsonb_build_object('bootstrap', true, 'sceneId', $1)
+            'raw', jsonb_build_object('bootstrap', true, 'sceneId', $1::text)
           ),
           'director_layer_bootstrap',
           'film-planner-v1'
         FROM shots s
-        WHERE s."sceneId" = $1
+        WHERE s."sceneId" = $1::text
           AND NOT EXISTS (SELECT 1 FROM shot_plannings sp WHERE sp."shotId" = s.id)
       `,
       [scene.id, `Bootstrap visual: ${summarizeText(sourceText, 80)}`, `Bootstrap shot: ${summarizeText(sourceText, 80)}`, filmIrId],
@@ -323,7 +323,6 @@ async function main() {
     );
   } finally {
     await client.end();
-    process.exit(process.exitCode ?? 0);
   }
 }
 
