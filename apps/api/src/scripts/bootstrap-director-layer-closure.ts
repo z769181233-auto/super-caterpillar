@@ -319,9 +319,9 @@ async function main() {
     if (scene.episodeId && firstShotId) {
       const jobTraceId = `director-bootstrap:${scene.id}`;
       const dedupeKey = `director-bootstrap:video-render:${scene.id}`;
+      const pipelineRunId = `director-bootstrap:${scene.id}`;
       const storageKey = `director-bootstrap/${scene.project_id}/${scene.episodeId}/${firstShotId}.mp4`;
       const hlsPlaylistUrl = `director-bootstrap/${scene.project_id}/${scene.episodeId}/${firstShotId}/master.m3u8`;
-      const signedUrl = `/api/assets/bootstrap-${firstShotId}/secure-url`;
       const publishedVideoId = randomUUID();
       const checksum = `director-bootstrap:${scene.id}`;
       const jobResult = JSON.stringify({
@@ -330,6 +330,7 @@ async function main() {
         shotId: firstShotId,
         storageKey,
         hlsPlaylistUrl,
+        pipelineRunId,
       });
 
       const existingJobResult = await client.query<{ id: string }>(
@@ -371,6 +372,7 @@ async function main() {
         );
       }
 
+      const assetSeedId = randomUUID();
       await client.query(
         `
           INSERT INTO assets (
@@ -384,8 +386,20 @@ async function main() {
             WHERE "ownerType" = 'SHOT' AND "ownerId" = $5 AND type = 'VIDEO'
           )
         `,
-        [randomUUID(), scene.project_id, checksum, syntheticJobId, firstShotId, storageKey, hlsPlaylistUrl, signedUrl],
+        [assetSeedId, scene.project_id, checksum, syntheticJobId, firstShotId, storageKey, hlsPlaylistUrl, null],
       );
+
+      const assetResult = await client.query<{ id: string }>(
+        `
+          SELECT id
+          FROM assets
+          WHERE "ownerType" = 'SHOT' AND "ownerId" = $1 AND type = 'VIDEO'
+          LIMIT 1
+        `,
+        [firstShotId],
+      );
+      const assetId = assetResult.rows[0]?.id ?? assetSeedId;
+      const signedUrl = `/api/assets/${assetId}/secure-url`;
 
       await client.query(
         `
@@ -443,6 +457,31 @@ async function main() {
             )
         `,
         [publishedVideoId, scene.project_id, scene.episodeId, storageKey, checksum, firstShotId, scene.id, filmIrId],
+      );
+
+      await client.query(
+        `
+          UPDATE published_videos
+          SET
+            status = 'INTERNAL_READY',
+            metadata =
+              COALESCE(metadata, '{}'::jsonb)
+              || jsonb_build_object(
+                'pipelineRunId', $2::text,
+                'publishedAt', NOW()::text,
+                'directorLayer',
+                COALESCE(metadata->'directorLayer', '{}'::jsonb)
+                  || jsonb_build_object(
+                    'assetStorageKey', $3::text,
+                    'assetCreatedByJobId', $4::text,
+                    'hlsPlaylistUrl', $5::text,
+                    'signedUrl', $6::text
+                  )
+              ),
+            "updatedAt" = NOW()
+          WHERE "assetId" = $1
+        `,
+        [assetId, pipelineRunId, storageKey, syntheticJobId, hlsPlaylistUrl, signedUrl],
       );
     }
     console.log('[director-bootstrap] publish evidence ensured');

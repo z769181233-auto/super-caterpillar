@@ -7,7 +7,8 @@
       "description": "当前最小严格闭环验收样本集，要求 Film IR、Shot Planner、Continuity、Content Gate、Publish Director Evidence 全部存在。",
       "sceneIds": [
         "48d64a2e-74b5-4b14-a248-f8764a210548",
-        "abc883ab-481c-4e39-98a5-07e541f520df"
+        "abc883ab-481c-4e39-98a5-07e541f520df",
+        "89bad37e-9580-40f8-b95b-2c69c163ddfa"
       ]
     }
   }
