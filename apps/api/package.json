@@ -23,6 +23,7 @@
     "inspect:jobs": "ts-node -r tsconfig-paths/register src/scripts/inspect-jobs.ts",
     "export:film-ir-dataset": "ts-node -r tsconfig-paths/register src/scripts/export-film-ir-training-data.ts",
     "bootstrap:director-layer": "ts-node -r tsconfig-paths/register src/scripts/bootstrap-director-layer-closure.ts",
+    "bootstrap:director-layer:batch": "ts-node -r tsconfig-paths/register src/scripts/bootstrap-director-layer-batch.ts",
     "verify:director-layer": "ts-node -r tsconfig-paths/register src/scripts/verify-director-layer-closure.ts",
     "verify:director-layer:batch": "ts-node -r tsconfig-paths/register src/scripts/verify-director-layer-batch.ts",
     "reset:test-jobs": "ts-node -r tsconfig-paths/register src/scripts/reset-test-jobs.ts",
