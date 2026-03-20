@@ -246,6 +246,7 @@ jobs:
         run: |
           pnpm --filter api bootstrap:director-layer:batch
           pnpm --filter api verify:director-layer:batch
+          pnpm --filter api report:director-layer -- --output=.data/logs/director-layer-report.md
         env:
           NODE_ENV: staging
           API_BASE_URL: http://127.0.0.1:3000
@@ -261,3 +262,4 @@ jobs:
             docs/_evidence/run_launch_gates_*
             .data/logs/api.log
             .data/logs/worker.log
+            .data/logs/director-layer-report.md

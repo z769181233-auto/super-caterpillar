@@ -26,6 +26,7 @@
     "bootstrap:director-layer:batch": "ts-node -r tsconfig-paths/register src/scripts/bootstrap-director-layer-batch.ts",
     "verify:director-layer": "ts-node -r tsconfig-paths/register src/scripts/verify-director-layer-closure.ts",
     "verify:director-layer:batch": "ts-node -r tsconfig-paths/register src/scripts/verify-director-layer-batch.ts",
+    "report:director-layer": "ts-node -r tsconfig-paths/register src/scripts/generate-director-layer-report.ts",
     "reset:test-jobs": "ts-node -r tsconfig-paths/register src/scripts/reset-test-jobs.ts",
     "backfill:billing-ledger-ssot": "ts-node -r tsconfig-paths/register src/scripts/backfill-billing-ledger-ssot.ts",
     "sync:engines": "ts-node -r tsconfig-paths/register src/scripts/sync-engines-from-json.ts",
