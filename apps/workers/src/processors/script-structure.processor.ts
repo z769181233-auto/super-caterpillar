@@ -46,6 +46,53 @@ async function recomputeHashFromRaw(
   });
 }
 
+async function appendContinuitySnapshotBestEffort(params: {
+  prisma: PrismaClient;
+  projectId: string;
+  sceneId: string;
+  shotId?: string | null;
+  traceId?: string | null;
+  source: string;
+  snapshotType: string;
+  snapshotData: Record<string, unknown>;
+  evidenceRef?: string | null;
+}) {
+  const { prisma, projectId, sceneId, shotId, traceId, source, snapshotType, snapshotData, evidenceRef } =
+    params;
+
+  try {
+    await (prisma as any).$executeRawUnsafe(
+      `
+        INSERT INTO continuity_state_snapshots (
+          id,
+          project_id,
+          scene_id,
+          shot_id,
+          trace_id,
+          source,
+          snapshot_type,
+          snapshot_data,
+          evidence_ref
+        ) VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9
+        )
+      `,
+      crypto.randomUUID(),
+      projectId,
+      sceneId,
+      shotId ?? null,
+      traceId ?? null,
+      source,
+      snapshotType,
+      JSON.stringify(snapshotData ?? {}),
+      evidenceRef ?? null,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[ContinuitySnapshot] append skipped: ${message}`);
+  }
+}
+
 /**
  * [CE06_SCRIPT_OUTLINE]
  */
@@ -238,6 +285,7 @@ export async function processContinuityAuditJob(
       sceneId: scene.id,
       projectId: scene.projectId,
       episodeId: scene.episodeId,
+      filmIrId: (scene as any).filmIrId ?? null,
       shotCount,
       characterCount: characterIds.length,
       hasEnrichedText: !!scene.enrichedText,
@@ -266,6 +314,17 @@ export async function processContinuityAuditJob(
         source: 'CE_CONSISTENCY_CHECK',
         violationFlag: false,
       },
+    });
+
+    await appendContinuitySnapshotBestEffort({
+      prisma,
+      projectId: scene.projectId,
+      sceneId: scene.id,
+      traceId: (job as any).traceId ?? (job.payload as any)?.traceId ?? job.id,
+      source: 'CE_CONSISTENCY_CHECK',
+      snapshotType: 'SCENE_AUDIT',
+      snapshotData: continuitySummary,
+      evidenceRef: (scene as any).filmIrId ?? null,
     });
 
     try {
