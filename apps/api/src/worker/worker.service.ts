@@ -18,7 +18,7 @@ import {
   isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
-import { buildLegacyBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
+import { buildBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
 
 /**
  * Worker 管理服务
@@ -1076,18 +1076,22 @@ export class WorkerService {
         // P3-A: Dual State Machine Physical Binding - RESERVED
         try {
           await tx.billingLedger.create({
-            data: buildLegacyBillingLedgerCreateData({
-              jobId: candidate.id,
-              projectId: candidate.projectId,
-              tenantId: (candidate as any).organizationId,
-              billingState: 'RESERVED',
+            data: buildBillingLedgerCreateData({
+              tenantId: (candidate as any).organizationId || candidate.projectId,
+              traceId: candidate.traceId || candidate.id,
+              itemType: 'JOB',
+              itemId: candidate.id,
+              chargeCode: 'JOB_RESERVED',
               amount: 1n,
+              status: 'PENDING',
+              projectId: candidate.projectId,
+              jobId: candidate.id,
             }),
           });
         } catch (e: any) {
           if (e.code === 'P2002') {
             this.logger.warn(
-              `[WorkerService] Billing idempotency hit: ${candidate.id}_RESERVED already exists`
+              `[WorkerService] Billing idempotency hit: reserved ledger already exists for ${candidate.id}`
             );
           } else {
             throw e; // Abort transaction

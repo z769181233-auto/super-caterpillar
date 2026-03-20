@@ -60,6 +60,63 @@ export function buildLegacyBillingLedgerIdempotencyKey(jobId: string, billingSta
   return `${jobId}_${String(billingState || '').toUpperCase()}`;
 }
 
+export function buildBillingLedgerSsotIdempotencyKey(params: {
+  tenantId: string;
+  traceId: string;
+  itemType: string;
+  itemId: string;
+  chargeCode: string;
+}): string {
+  return [
+    params.tenantId,
+    params.traceId,
+    params.itemType,
+    params.itemId,
+    params.chargeCode,
+  ]
+    .map((part) => String(part || '').trim())
+    .join(':');
+}
+
+export function buildBillingLedgerCreateData(params: {
+  tenantId: string;
+  traceId: string;
+  itemType: string;
+  itemId: string;
+  chargeCode: string;
+  amount: bigint;
+  status: BillingLedgerSsotStatus;
+  projectId?: string | null;
+  jobId?: string | null;
+  evidenceRef?: string | null;
+}) {
+  const legacyBillingState = mapSsotStatusToLegacyBillingState(params.status);
+  const jobId = params.jobId || params.traceId;
+  const projectId = params.projectId || params.tenantId;
+
+  return {
+    jobId,
+    projectId,
+    billingState: legacyBillingState || 'UNKNOWN',
+    traceId: params.traceId,
+    itemType: params.itemType,
+    itemId: params.itemId,
+    chargeCode: params.chargeCode,
+    amount: params.amount,
+    currency: 'CREDIT',
+    evidenceRef: params.evidenceRef || null,
+    idempotencyKey: buildBillingLedgerSsotIdempotencyKey({
+      tenantId: params.tenantId,
+      traceId: params.traceId,
+      itemType: params.itemType,
+      itemId: params.itemId,
+      chargeCode: params.chargeCode,
+    }),
+    tenantId: params.tenantId,
+    status: params.status,
+  };
+}
+
 export function buildLegacyBillingLedgerCreateData(params: {
   jobId: string;
   projectId: string;
@@ -71,21 +128,18 @@ export function buildLegacyBillingLedgerCreateData(params: {
 }) {
   const billingState = String(params.billingState || '').toUpperCase();
   const status = params.status || mapLegacyBillingStateToSsotStatus(billingState);
-  return {
-    jobId: params.jobId,
-    projectId: params.projectId,
-    billingState,
+  return buildBillingLedgerCreateData({
+    tenantId: params.tenantId || params.projectId,
     traceId: params.jobId,
     itemType: 'JOB',
     itemId: params.jobId,
     chargeCode: mapLegacyBillingStateToChargeCode(billingState),
     amount: params.amount,
-    currency: 'CREDIT',
-    evidenceRef: params.evidenceRef || null,
-    idempotencyKey: buildLegacyBillingLedgerIdempotencyKey(params.jobId, billingState),
-    tenantId: params.tenantId || params.projectId,
     status,
-  };
+    projectId: params.projectId,
+    jobId: params.jobId,
+    evidenceRef: params.evidenceRef || null,
+  });
 }
 
 export function normalizeLegacyBillingLedgerRow<

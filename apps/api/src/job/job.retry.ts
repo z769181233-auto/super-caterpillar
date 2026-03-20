@@ -6,7 +6,7 @@
  */
 
 import { Prisma, JobStatus } from 'database';
-import { buildLegacyBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
+import { buildBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
 
 /**
  * 重试计算结果
@@ -65,6 +65,8 @@ export async function markRetryOrFail(
   job: {
     id: string;
     projectId: string;
+    organizationId?: string | null;
+    traceId?: string | null;
     retryCount: number;
     maxRetry: number;
     payload: any;
@@ -106,18 +108,22 @@ export async function markRetryOrFail(
   // P3-A: Dual State Machine Physical Binding - RELEASED
   try {
     await tx.billingLedger.create({
-      data: buildLegacyBillingLedgerCreateData({
-        jobId: job.id,
-        projectId: job.projectId,
-        tenantId: job.projectId,
-        billingState: 'RELEASED',
+      data: buildBillingLedgerCreateData({
+        tenantId: (job as any).organizationId || job.projectId,
+        traceId: job.traceId || job.id,
+        itemType: 'JOB',
+        itemId: job.id,
+        chargeCode: 'JOB_RELEASED',
         amount: 1n,
+        status: 'REVERSED',
+        projectId: job.projectId,
+        jobId: job.id,
       }),
     });
   } catch (e: any) {
     if (e.code === 'P2002') {
       // Idempotency hit, ignore
-      console.warn(`[JobRetry] Billing idempotency hit: ${job.id}_RELEASED already exists`);
+      console.warn(`[JobRetry] Billing idempotency hit: released ledger already exists for ${job.id}`);
     } else {
       throw e;
     }
