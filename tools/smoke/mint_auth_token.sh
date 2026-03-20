@@ -2,7 +2,7 @@
 set -euo pipefail
 
 API_URL="${API_URL:-http://localhost:3000}"
-DATABASE_URL="${DATABASE_URL:-postgresql://postgres:${PGPASSWORD:-password}@${PGHOST:-127.0.0.1}:5434/scu}"
+DATABASE_URL="${DATABASE_URL:-postgresql://postgres:${PGPASSWORD:-password}@${PGHOST:-127.0.0.1}:${PGPORT:-5432}/scu}"
 
 # Use the gate-seeded user by default in CI/gate runs.
 # This avoids depending on registration/login side effects when a direct JWT

@@ -8,7 +8,7 @@ import { randomUUID } from 'crypto';
 const { Client } = require('pg');
 
 const databaseUrl =
-  process.env.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:5434/scu';
+  process.env.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/scu';
 
 const apiKey = process.env.API_KEY || 'ak_smoke_test_key_v1';
 const apiSecret = process.env.API_SECRET || 'scu_smoke_secret';

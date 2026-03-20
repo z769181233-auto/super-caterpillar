@@ -11,7 +11,7 @@ async function main() {
   const storageRoot = process.env.STORAGE_ROOT || path.join(repoRoot, '.data/storage');
   const storage = new LocalStorageAdapter(storageRoot);
   const databaseUrl =
-    process.env.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:5434/scu';
+    process.env.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/scu';
   const queryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
 
   console.log(`[Seed] Storage Root: ${storageRoot}`);

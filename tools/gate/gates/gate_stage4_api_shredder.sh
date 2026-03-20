@@ -84,7 +84,7 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
   
   if [ "$STATUS" == "SUCCEEDED" ]; then
     echo "✅ API Shredder Test PASSED"
-    # psql -d "postgresql://postgres:postgres@127.0.0.1:5434/scu" -c "SELECT title, \"sceneIndex\" FROM scenes WHERE \"projectId\"='${PROJECT_ID}' ORDER BY \"sceneIndex\" LIMIT 10;"
+    # psql -d "postgresql://postgres:password@127.0.0.1:5432/scu" -c "SELECT title, \"sceneIndex\" FROM scenes WHERE \"projectId\"='${PROJECT_ID}' ORDER BY \"sceneIndex\" LIMIT 10;"
     exit 0
   fi
   
