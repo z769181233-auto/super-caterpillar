@@ -21,6 +21,7 @@
     "create:test-novel-job": "ts-node -r tsconfig-paths/register src/scripts/create-test-novel-job.ts",
     "create:http-jobs": "ts-node -r tsconfig-paths/register src/scripts/create-novel-analysis-http-test-jobs.ts",
     "inspect:jobs": "ts-node -r tsconfig-paths/register src/scripts/inspect-jobs.ts",
+    "export:film-ir-dataset": "ts-node -r tsconfig-paths/register src/scripts/export-film-ir-training-data.ts",
     "reset:test-jobs": "ts-node -r tsconfig-paths/register src/scripts/reset-test-jobs.ts",
     "backfill:billing-ledger-ssot": "ts-node -r tsconfig-paths/register src/scripts/backfill-billing-ledger-ssot.ts",
     "sync:engines": "ts-node -r tsconfig-paths/register src/scripts/sync-engines-from-json.ts",
