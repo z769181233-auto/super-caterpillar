@@ -5,10 +5,10 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import type { FilmIRRecord, FilmIRDelegate, FilmIRStatus } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { CreateFilmIRDto, UpdateFilmIRDto } from './dto/create-film-ir.dto';
-import type { FilmIRRecord, FilmIRDelegate } from '../../../../packages/database/src/film-ir-types';
 
 /**
  * Film IR Service — P1/P2-2 阶段（强类型 CRUD + planner 持久化支撑）
@@ -37,14 +37,10 @@ export class FilmIRService {
   ) {}
 
   /**
-   * 强类型访问器：通过 PrismaClient 类型扩展访问 filmIR 模型
-   * 本地环境：由 packages/database/src/film-ir-types.ts 的 module augmentation 提供类型
-   * CI 环境：由 prisma generate 生成的 index.d.ts 提供完整类型
+   * 强类型访问器：统一使用 generated Prisma delegate 类型
    */
   private get filmIr(): FilmIRDelegate {
-    // 访问 Prisma Client 的 filmIR 属性（camelCase，Prisma 约定）
-    // 类型由 film-ir-types.ts 的 module augmentation 提供
-    return (this.prisma as PrismaService & { filmIR: FilmIRDelegate }).filmIR;
+    return this.prisma.filmIR;
   }
 
   /**
@@ -174,7 +170,7 @@ export class FilmIRService {
         ...(dto.avgShotLengthSec !== undefined && { avgShotLengthSec: dto.avgShotLengthSec }),
         ...(dto.whyThisChoice !== undefined && { whyThisChoice: dto.whyThisChoice }),
         ...(dto.qualityScore !== undefined && { qualityScore: dto.qualityScore }),
-        ...(dto.status !== undefined && { status: dto.status as import('../../../../packages/database/src/film-ir-types').FilmIRStatus }),
+        ...(dto.status !== undefined && { status: dto.status as FilmIRStatus }),
 
       },
     });

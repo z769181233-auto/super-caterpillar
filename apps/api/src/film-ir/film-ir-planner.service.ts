@@ -18,7 +18,7 @@ import type {
   PlanFilmIRRequest,
   PlanFilmIRResponse,
 } from './dto/plan-film-ir.dto';
-import type { FilmIRRecord } from '../../../../packages/database/src/film-ir-types';
+import type { FilmIRRecord } from 'database';
 
 /**
  * Film IR Planner Service（P2.1 + P2.2 升级）
