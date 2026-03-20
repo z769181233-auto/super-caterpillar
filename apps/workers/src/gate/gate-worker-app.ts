@@ -23,6 +23,7 @@ import { processNovelScan } from '../processors/novel-scan.processor';
 import { processNovelChunk } from '../processors/novel-chunk.processor';
 import { processNovelReduce } from '../processors/novel-reduce.processor';
 import { processFilmIRPlanJob } from '../processors/film-ir-plan.processor';
+import { processContinuityAuditJob } from '../processors/script-structure.processor';
 import type { ProcessorContext } from '../types/processor-context';
 import { processAudioJob } from '../processors/audio.processor';
 import { processNovelAnalysisJob } from '../novel-analysis-processor';
@@ -153,6 +154,7 @@ export async function startGateWorkerApp() {
             'CE03_VISUAL_DENSITY',
             'CE04_VISUAL_ENRICHMENT',
             'CE02_VISUAL_DENSITY',
+            'CE_CONSISTENCY_CHECK',
             'VIDEO_RENDER',
             'CE09_MEDIA_SECURITY',
             'PIPELINE_TIMELINE_COMPOSE',
@@ -161,6 +163,7 @@ export async function startGateWorkerApp() {
             'NOVEL_SCAN_TOC',
             'NOVEL_CHUNK_PARSE',
             'CE11_SHOT_GENERATOR',
+            'CE_SHOT_PLAN',
             'AUDIO',
             'PIPELINE_PROD_VIDEO_V1',
             'EPISODE_RENDER',
@@ -342,7 +345,9 @@ export async function startGateWorkerApp() {
       else if (job.type === 'CE04_VISUAL_ENRICHMENT')
         result = await processCE04VisualEnrichmentJob(ctx);
       else if (job.type === 'CE02_VISUAL_DENSITY') result = await processCE02VisualDensityJob(ctx);
+      else if (job.type === 'CE_CONSISTENCY_CHECK') result = await processContinuityAuditJob(ctx);
       else if (job.type === 'CE11_SHOT_GENERATOR') result = await processCE11ShotGeneratorJob(ctx);
+      else if (job.type === 'CE_SHOT_PLAN') result = await processCE11ShotGeneratorJob(ctx);
       else if (job.type === 'CE_FILM_IR_PLAN') result = await processFilmIRPlanJob(ctx);
       else if (job.type === 'VIDEO_RENDER') {
         const pl = (job.payload || {}) as any;

@@ -92,6 +92,7 @@ import {
   processShotSplitJob,
   processContinuityAuditJob,
 } from './processors/script-structure.processor';
+import { processCE11ShotGeneratorJob } from './processors/ce11-shot-generator.processor';
 import {
   processCharacterCardsJob,
   processAssetListJob,
@@ -193,9 +194,11 @@ async function processJobWithExecutor(job: any): Promise<void> {
         if (job.type === 'CE11_SCENE_SPLIT') return processSceneSplitJob(ctx);
         if (job.type === 'CE12_SHOT_SPLIT') return processShotSplitJob(ctx);
         if (job.type === 'CE99_CONTINUITY_AUDIT') return processContinuityAuditJob(ctx);
+        if (job.type === 'CE_CONSISTENCY_CHECK') return processContinuityAuditJob(ctx);
         if (job.type === 'CE13_CHARACTER_CARDS') return processCharacterCardsJob(ctx);
         if (job.type === 'CE14_ASSET_LIST') return processAssetListJob(ctx);
         if (job.type === 'CE_FILM_IR_PLAN') return processFilmIRPlanJob(ctx);
+        if (job.type === 'CE_SHOT_PLAN') return processCE11ShotGeneratorJob(ctx);
         if (job.type === 'SHOT_RENDER') return processShotRenderJob(ctx);
         if (job.type === 'VIDEO_RENDER') return processVideoRenderJob(ctx);
         throw new Error(`Unsupported job type: ${job.type}`);
@@ -251,9 +254,11 @@ export async function startWorkerApp() {
     'CE11_SCENE_SPLIT',
     'CE12_SHOT_SPLIT',
     'CE99_CONTINUITY_AUDIT',
+    'CE_CONSISTENCY_CHECK',
     'CE13_CHARACTER_CARDS',
     'CE14_ASSET_LIST',
     'CE_FILM_IR_PLAN',
+    'CE_SHOT_PLAN',
     'SHOT_RENDER',
     'VIDEO_RENDER',
   ];
