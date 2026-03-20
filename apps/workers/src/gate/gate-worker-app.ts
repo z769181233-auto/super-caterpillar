@@ -22,6 +22,7 @@ import { processStage1OrchestratorJob } from '../processors/stage1-orchestrator.
 import { processNovelScan } from '../processors/novel-scan.processor';
 import { processNovelChunk } from '../processors/novel-chunk.processor';
 import { processNovelReduce } from '../processors/novel-reduce.processor';
+import { processFilmIRPlanJob } from '../processors/film-ir-plan.processor';
 import type { ProcessorContext } from '../types/processor-context';
 import { processAudioJob } from '../processors/audio.processor';
 import { processNovelAnalysisJob } from '../novel-analysis-processor';
@@ -164,6 +165,7 @@ export async function startGateWorkerApp() {
             'PIPELINE_PROD_VIDEO_V1',
             'EPISODE_RENDER',
             'NOVEL_ANALYSIS',
+            'CE_FILM_IR_PLAN',
           ],
           supportedModels: [],
           supportedEngines: [
@@ -341,6 +343,7 @@ export async function startGateWorkerApp() {
         result = await processCE04VisualEnrichmentJob(ctx);
       else if (job.type === 'CE02_VISUAL_DENSITY') result = await processCE02VisualDensityJob(ctx);
       else if (job.type === 'CE11_SHOT_GENERATOR') result = await processCE11ShotGeneratorJob(ctx);
+      else if (job.type === 'CE_FILM_IR_PLAN') result = await processFilmIRPlanJob(ctx);
       else if (job.type === 'VIDEO_RENDER') {
         const pl = (job.payload || {}) as any;
         const sId =

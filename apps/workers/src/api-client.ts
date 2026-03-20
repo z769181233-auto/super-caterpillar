@@ -548,4 +548,26 @@ export class ApiClient {
     }
     return response.data;
   }
+
+  /**
+   * 触发 Film IR Planner
+   * POST /api/film-ir/planner/plan
+   */
+  async planFilmIR(payload: {
+    scene_id: string;
+    source_text?: string;
+    source_context_summary?: string;
+    dramatic_goal?: string;
+    relationship_before?: string;
+    relationship_after?: string;
+    planner_version?: string;
+    dry_run?: boolean;
+    save_as_draft?: boolean;
+  }): Promise<any> {
+    const response = await this.request<any>('POST', '/api/film-ir/planner/plan', payload);
+    if (!response.success && !(response as any).data) {
+      throw new Error(`Failed to plan Film IR: ${response.error?.message || response.message}`);
+    }
+    return response.data || response;
+  }
 }
