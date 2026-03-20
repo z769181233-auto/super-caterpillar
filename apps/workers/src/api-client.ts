@@ -570,4 +570,20 @@ export class ApiClient {
     }
     return response.data || response;
   }
+
+  /**
+   * 触发内容质量评分
+   * POST /api/quality/score
+   */
+  async triggerQualityScore(payload: {
+    shotId: string;
+    traceId: string;
+    attempt?: number;
+  }): Promise<any> {
+    const response = await this.request<any>('POST', '/api/quality/score', payload);
+    if (!response.success && !(response as any).data) {
+      throw new Error(`Failed to trigger quality score: ${response.error?.message || response.message}`);
+    }
+    return response.data || response;
+  }
 }

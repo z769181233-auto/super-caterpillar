@@ -24,6 +24,7 @@ import { processNovelChunk } from '../processors/novel-chunk.processor';
 import { processNovelReduce } from '../processors/novel-reduce.processor';
 import { processFilmIRPlanJob } from '../processors/film-ir-plan.processor';
 import { processContinuityAuditJob } from '../processors/script-structure.processor';
+import { processContentJudgeJob } from '../processors/content-judge.processor';
 import type { ProcessorContext } from '../types/processor-context';
 import { processAudioJob } from '../processors/audio.processor';
 import { processNovelAnalysisJob } from '../novel-analysis-processor';
@@ -164,6 +165,7 @@ export async function startGateWorkerApp() {
             'NOVEL_CHUNK_PARSE',
             'CE11_SHOT_GENERATOR',
             'CE_SHOT_PLAN',
+            'CE_CONTENT_JUDGE',
             'AUDIO',
             'PIPELINE_PROD_VIDEO_V1',
             'EPISODE_RENDER',
@@ -349,6 +351,7 @@ export async function startGateWorkerApp() {
       else if (job.type === 'CE11_SHOT_GENERATOR') result = await processCE11ShotGeneratorJob(ctx);
       else if (job.type === 'CE_SHOT_PLAN') result = await processCE11ShotGeneratorJob(ctx);
       else if (job.type === 'CE_FILM_IR_PLAN') result = await processFilmIRPlanJob(ctx);
+      else if (job.type === 'CE_CONTENT_JUDGE') result = await processContentJudgeJob(ctx);
       else if (job.type === 'VIDEO_RENDER') {
         const pl = (job.payload || {}) as any;
         const sId =

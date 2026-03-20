@@ -101,6 +101,7 @@ import { processCE06NovelParsingJob } from './processors/ce06-novel-parsing.proc
 import { processShotRenderJob } from './processors/shot-render.processor';
 import { processVideoRenderJob } from './processors/video-render.processor';
 import { processFilmIRPlanJob } from './processors/film-ir-plan.processor';
+import { processContentJudgeJob } from './processors/content-judge.processor';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ProcessorContext } from './types/processor-context';
 
@@ -199,6 +200,7 @@ async function processJobWithExecutor(job: any): Promise<void> {
         if (job.type === 'CE14_ASSET_LIST') return processAssetListJob(ctx);
         if (job.type === 'CE_FILM_IR_PLAN') return processFilmIRPlanJob(ctx);
         if (job.type === 'CE_SHOT_PLAN') return processCE11ShotGeneratorJob(ctx);
+        if (job.type === 'CE_CONTENT_JUDGE') return processContentJudgeJob(ctx);
         if (job.type === 'SHOT_RENDER') return processShotRenderJob(ctx);
         if (job.type === 'VIDEO_RENDER') return processVideoRenderJob(ctx);
         throw new Error(`Unsupported job type: ${job.type}`);
@@ -259,6 +261,7 @@ export async function startWorkerApp() {
     'CE14_ASSET_LIST',
     'CE_FILM_IR_PLAN',
     'CE_SHOT_PLAN',
+    'CE_CONTENT_JUDGE',
     'SHOT_RENDER',
     'VIDEO_RENDER',
   ];
