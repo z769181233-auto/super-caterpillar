@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
 import * as path from 'path';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Client } = require('pg') as { Client: new (opts: { connectionString: string }) => PgClient };
@@ -10,6 +11,19 @@ interface PgClient {
   query<T extends Record<string, unknown>>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
   end(): Promise<void>;
 }
+
+type AcceptanceRegistry = {
+  version: number;
+  updatedAt: string;
+  defaultProfile: string;
+  profiles: Record<
+    string,
+    {
+      description: string;
+      sceneIds: string[];
+    }
+  >;
+};
 
 type SceneRow = {
   id: string;
@@ -127,10 +141,24 @@ async function main() {
 
   const limitArg = Number(process.argv.find((arg) => arg.startsWith('--limit='))?.split('=')[1] ?? '5');
   const sceneIdsArg = process.argv.find((arg) => arg.startsWith('--sceneIds='))?.split('=')[1];
+  const profileArg =
+    process.argv.find((arg) => arg.startsWith('--profile='))?.split('=')[1] ??
+    'director-layer-minimal-closure';
+  const registryPath = path.resolve(
+    __dirname,
+    '../../../../docs/_specs/DIRECTOR_LAYER_ACCEPTANCE_REGISTRY.json',
+  );
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
 
   try {
+    let registrySceneIds: string[] = [];
+    if (!sceneIdsArg && fs.existsSync(registryPath)) {
+      const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as AcceptanceRegistry;
+      const activeProfile = registry.profiles[profileArg] ?? registry.profiles[registry.defaultProfile];
+      registrySceneIds = activeProfile?.sceneIds ?? [];
+    }
+
     const scenes = sceneIdsArg
       ? await client.query<SceneRow>(
           `
@@ -141,6 +169,16 @@ async function main() {
           `,
           [sceneIdsArg.split(',').map((id) => id.trim()).filter(Boolean)],
         )
+      : registrySceneIds.length > 0
+        ? await client.query<SceneRow>(
+            `
+              SELECT id, "episodeId", project_id, film_ir_id
+              FROM scenes
+              WHERE id = ANY($1::text[])
+              ORDER BY updated_at DESC
+            `,
+            [registrySceneIds],
+          )
       : await client.query<SceneRow>(
           `
             SELECT id, "episodeId", project_id, film_ir_id
@@ -165,6 +203,7 @@ async function main() {
     const failed = results.filter((result) => result.verdict !== 'PASS');
     const payload = {
       verdict: failed.length === 0 ? 'PASS' : 'FAIL',
+      profile: sceneIdsArg ? null : profileArg,
       totalScenes: results.length,
       passedScenes: results.length - failed.length,
       failedScenes: failed.length,

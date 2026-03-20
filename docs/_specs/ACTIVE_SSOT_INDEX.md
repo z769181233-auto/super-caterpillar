@@ -29,6 +29,7 @@ source of truth for implementation and verification.
 - `FILM_IR_V1_SSOT.md`
 - `DIRECTOR_LAYER_ARCHITECTURE.md`
 - `DIRECTOR_LAYER_PHASE_ROADMAP.md`
+- `DIRECTOR_LAYER_ACCEPTANCE_REGISTRY.json`
 
 ### Quality / Observability
 
