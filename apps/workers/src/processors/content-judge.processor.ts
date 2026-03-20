@@ -1,5 +1,69 @@
 import { ProcessorContext } from '../types/processor-context';
 
+function toNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function resolveGateDecision(params: {
+  thresholdProfile: string;
+  verdict: string;
+  overallScore: number | null;
+  identityScore: number | null;
+  audioScore: number | null;
+  renderScore: number | null;
+}) {
+  const {
+    thresholdProfile,
+    verdict,
+    overallScore,
+    identityScore,
+    audioScore,
+    renderScore,
+  } = params;
+
+  const profile = thresholdProfile.toLowerCase();
+  const thresholds =
+    profile === 'strict'
+      ? { pass: 0.85, warn: 0.72, identity: 0.8 }
+      : profile === 'advisory'
+        ? { pass: 0.7, warn: 0.55, identity: 0.6 }
+        : { pass: 0.78, warn: 0.62, identity: 0.7 };
+
+  if (renderScore === 0 || audioScore === 0) {
+    return {
+      gateVerdict: profile === 'advisory' ? 'WARN' : 'BLOCK',
+      thresholds,
+      reason: 'missing_required_media_signals',
+    };
+  }
+
+  if (verdict === 'PASS' && overallScore !== null && overallScore >= thresholds.pass) {
+    return {
+      gateVerdict: 'PASS',
+      thresholds,
+      reason: 'meets_pass_threshold',
+    };
+  }
+
+  if (
+    overallScore !== null &&
+    overallScore >= thresholds.warn &&
+    (identityScore === null || identityScore >= thresholds.identity)
+  ) {
+    return {
+      gateVerdict: 'WARN',
+      thresholds,
+      reason: 'below_pass_but_within_warn_band',
+    };
+  }
+
+  return {
+    gateVerdict: profile === 'advisory' ? 'WARN' : 'BLOCK',
+    thresholds,
+    reason: 'below_quality_threshold',
+  };
+}
+
 export async function processContentJudgeJob(
   context: ProcessorContext
 ): Promise<{ success: boolean; output?: any; error?: string }> {
@@ -18,6 +82,12 @@ export async function processContentJudgeJob(
     (typeof payload.traceId === 'string' && payload.traceId) ||
     (typeof job.traceId === 'string' && job.traceId) ||
     job.id;
+  const thresholdProfile =
+    (typeof payload.thresholdProfile === 'string' && payload.thresholdProfile) ||
+    'standard';
+  const gateVersion =
+    (typeof payload.gateVersion === 'string' && payload.gateVersion) ||
+    'content-judge-v1';
 
   const response = await apiClient.triggerQualityScore({
     shotId,
@@ -43,22 +113,21 @@ export async function processContentJudgeJob(
 
   if (shot?.scene?.projectId) {
     const score = response as Record<string, any>;
-    const overallScore =
-      typeof score.overallScore === 'number'
-        ? score.overallScore
-        : typeof score.overall_score === 'number'
-          ? score.overall_score
-          : null;
+    const overallScore = toNumber(score.overallScore) ?? toNumber(score.overall_score);
     const signals =
       score.signals && typeof score.signals === 'object' ? (score.signals as Record<string, any>) : {};
-    const identityScore =
-      typeof signals.identity_score === 'number' ? signals.identity_score : null;
-    const audioScore =
-      typeof signals.audio_existence === 'number' ? signals.audio_existence : null;
-    const renderScore =
-      typeof signals.render_physical === 'number' ? signals.render_physical : null;
+    const identityScore = toNumber(signals.identity_score);
+    const audioScore = toNumber(signals.audio_existence);
+    const renderScore = toNumber(signals.render_physical);
     const verdict = typeof score.verdict === 'string' ? score.verdict : 'PENDING';
-    const gateVerdict = verdict === 'PASS' ? 'PASS' : verdict === 'FAIL' ? 'BLOCK' : 'WARN';
+    const gateDecision = resolveGateDecision({
+      thresholdProfile,
+      verdict,
+      overallScore,
+      identityScore,
+      audioScore,
+      renderScore,
+    });
 
     await prisma.contentGateResult.create({
       data: {
@@ -66,7 +135,7 @@ export async function processContentJudgeJob(
         sceneId: shot.scene.id,
         episodeId: shot.scene.episodeId,
         filmIrId: shot.filmIrId ?? shot.scene.filmIrId ?? null,
-        gateVersion: 'content-judge-v1',
+        gateVersion,
         dramaticAlignmentScore: overallScore,
         visualStrategyMatchScore: renderScore,
         continuityScore: identityScore,
@@ -75,7 +144,7 @@ export async function processContentJudgeJob(
         characterConsistencyScore: identityScore,
         soundAlignmentScore: audioScore,
         publishReadinessScore: overallScore,
-        gateVerdict,
+        gateVerdict: gateDecision.gateVerdict,
         gateDetails: {
           qualityScoreId: score.id ?? null,
           jobId: job.id,
@@ -83,6 +152,9 @@ export async function processContentJudgeJob(
           traceId,
           verdict,
           overallScore,
+          thresholdProfile,
+          thresholds: gateDecision.thresholds,
+          gateReason: gateDecision.reason,
           signals,
         } as any,
         evidenceRef: traceId,
