@@ -34,6 +34,20 @@ async function main() {
       queryTimeoutMs: getRuntimeDbTimeoutMs('query'),
     },
     async (client) => {
+      // Old local databases can still be on the pre-SSOT table shape.
+      await client.query(`
+        ALTER TABLE billing_ledger
+        ADD COLUMN IF NOT EXISTS tenant_id TEXT,
+        ADD COLUMN IF NOT EXISTS trace_id TEXT,
+        ADD COLUMN IF NOT EXISTS item_type TEXT,
+        ADD COLUMN IF NOT EXISTS item_id TEXT,
+        ADD COLUMN IF NOT EXISTS charge_code TEXT,
+        ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'CREDIT',
+        ADD COLUMN IF NOT EXISTS evidence_ref TEXT,
+        ADD COLUMN IF NOT EXISTS status TEXT,
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP
+      `);
+
       while (true) {
         const result = await client.query(
           `
@@ -49,8 +63,8 @@ async function main() {
               status,
               tenant_id
             FROM billing_ledger
-            WHERE ($1::text IS NULL OR id > $1::text)
-            ORDER BY id ASC
+            WHERE ($1::uuid IS NULL OR id::text > $1::text)
+            ORDER BY id::text ASC
             LIMIT $2
           `,
           [cursorId, batchSize]
@@ -111,7 +125,7 @@ async function main() {
             `
               UPDATE billing_ledger
               SET ${sets.join(', ')}, updated_at = NOW()
-              WHERE id = $1::text
+              WHERE id = $1::uuid
             `,
             [row.id, ...values]
           );
