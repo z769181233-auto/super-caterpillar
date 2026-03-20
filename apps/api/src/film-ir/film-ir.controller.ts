@@ -51,6 +51,23 @@ export class FilmIRController {
     private readonly jobService: JobService,
   ) {}
 
+  private normalizeTraceSegment(value: unknown, fallback: string): string {
+    if (typeof value !== 'string' || !value.trim()) {
+      return fallback;
+    }
+    return value.trim().replace(/[^a-zA-Z0-9_-]+/g, '-');
+  }
+
+  private buildDirectorTraceId(prefix: string, targetId: string, variant?: unknown): string {
+    const suffix = this.normalizeTraceSegment(variant, 'v1');
+    return `${prefix}_${targetId}_${suffix}`;
+  }
+
+  private buildDirectorDedupeKey(jobType: string, targetId: string, variant?: unknown): string {
+    const suffix = this.normalizeTraceSegment(variant, 'v1');
+    return `${jobType}:${targetId}:${suffix}`;
+  }
+
   private async resolveSceneContext(sceneId: string) {
     const scene = await this.prisma.scene.findUnique({
       where: { id: sceneId },
@@ -244,8 +261,16 @@ export class FilmIRController {
     }
 
     const scene = await this.resolveSceneContext(sceneId);
-    const traceId = body.trace_id ?? body.traceId ?? `film_ir_${sceneId}_${Date.now()}`;
+    const plannerVersion = body.planner_version ?? body.plannerVersion ?? 'film-planner-v1';
+    const traceId =
+      body.trace_id ??
+      body.traceId ??
+      this.buildDirectorTraceId('film_ir', sceneId, plannerVersion);
     const organizationId = currentOrganizationId ?? scene.organizationId;
+    const dedupeKey =
+      body.dedupe_key ??
+      body.dedupeKey ??
+      this.buildDirectorDedupeKey('CE_FILM_IR_PLAN', sceneId, plannerVersion);
 
     const job = await this.jobService.createCECoreJob({
       projectId: scene.projectId,
@@ -258,12 +283,12 @@ export class FilmIRController {
         dramatic_goal: body.dramatic_goal ?? body.dramaticGoal,
         relationship_before: body.relationship_before ?? body.relationshipBefore,
         relationship_after: body.relationship_after ?? body.relationshipAfter,
-        planner_version: body.planner_version ?? body.plannerVersion,
+        planner_version: plannerVersion,
         dry_run: body.dry_run ?? body.dryRun ?? false,
         save_as_draft: body.save_as_draft ?? body.saveAsDraft ?? true,
       },
       traceId,
-      dedupeKey: body.dedupe_key ?? body.dedupeKey,
+      dedupeKey,
       priority: body.priority,
       isVerification: body.is_verification ?? body.isVerification,
     });
@@ -290,8 +315,16 @@ export class FilmIRController {
     @CurrentOrganization() currentOrganizationId: string | null,
   ) {
     const scene = await this.resolveSceneContext(sceneId);
-    const traceId = body.trace_id ?? body.traceId ?? `shot_plan_${sceneId}_${Date.now()}`;
+    const plannerVersion = body.planner_version ?? body.plannerVersion ?? 'shot-planner-v1';
+    const traceId =
+      body.trace_id ??
+      body.traceId ??
+      this.buildDirectorTraceId('shot_plan', sceneId, plannerVersion);
     const organizationId = currentOrganizationId ?? scene.organizationId;
+    const dedupeKey =
+      body.dedupe_key ??
+      body.dedupeKey ??
+      this.buildDirectorDedupeKey('CE_SHOT_PLAN', sceneId, plannerVersion);
 
     const job = await this.jobService.createCECoreJob({
       projectId: scene.projectId,
@@ -305,10 +338,11 @@ export class FilmIRController {
         engineVersion: body.engine_version ?? body.engineVersion,
         seed: body.seed,
         pipelineRunId: body.pipeline_run_id ?? body.pipelineRunId,
+        plannerVersion,
         organizationId,
       },
       traceId,
-      dedupeKey: body.dedupe_key ?? body.dedupeKey,
+      dedupeKey,
       priority: body.priority,
       isVerification: body.is_verification ?? body.isVerification,
     });
@@ -335,8 +369,16 @@ export class FilmIRController {
     @CurrentOrganization() currentOrganizationId: string | null,
   ) {
     const scene = await this.resolveSceneContext(sceneId);
-    const traceId = body.trace_id ?? body.traceId ?? `continuity_${sceneId}_${Date.now()}`;
+    const stateVersion = body.state_version ?? body.stateVersion ?? 'continuity-v1';
+    const traceId =
+      body.trace_id ??
+      body.traceId ??
+      this.buildDirectorTraceId('continuity', sceneId, stateVersion);
     const organizationId = currentOrganizationId ?? scene.organizationId;
+    const dedupeKey =
+      body.dedupe_key ??
+      body.dedupeKey ??
+      this.buildDirectorDedupeKey('CE_CONSISTENCY_CHECK', sceneId, stateVersion);
 
     const job = await this.jobService.createCECoreJob({
       projectId: scene.projectId,
@@ -346,9 +388,10 @@ export class FilmIRController {
         sceneId,
         projectId: scene.projectId,
         traceId,
+        stateVersion,
       },
       traceId,
-      dedupeKey: body.dedupe_key ?? body.dedupeKey,
+      dedupeKey,
       priority: body.priority,
       isVerification: body.is_verification ?? body.isVerification,
     });
@@ -375,8 +418,16 @@ export class FilmIRController {
     @CurrentOrganization() currentOrganizationId: string | null,
   ) {
     const shot = await this.resolveShotContext(shotId);
-    const traceId = body.trace_id ?? body.traceId ?? `content_judge_${shotId}_${Date.now()}`;
+    const gateVersion = body.gate_version ?? body.gateVersion ?? 'content-judge-v1';
+    const traceId =
+      body.trace_id ??
+      body.traceId ??
+      this.buildDirectorTraceId('content_judge', shotId, gateVersion);
     const organizationId = currentOrganizationId ?? shot.organizationId;
+    const dedupeKey =
+      body.dedupe_key ??
+      body.dedupeKey ??
+      this.buildDirectorDedupeKey('CE_CONTENT_JUDGE', shotId, gateVersion);
 
     const job = await this.jobService.createCECoreJob({
       projectId: shot.projectId,
@@ -387,10 +438,11 @@ export class FilmIRController {
         sceneId: shot.sceneId,
         projectId: shot.projectId,
         traceId,
+        gateVersion,
         attempt: body.attempt,
       },
       traceId,
-      dedupeKey: body.dedupe_key ?? body.dedupeKey,
+      dedupeKey,
       priority: body.priority,
       isVerification: body.is_verification ?? body.isVerification,
     });
