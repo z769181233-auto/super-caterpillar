@@ -307,6 +307,73 @@ async function main() {
       `SELECT COUNT(*)::text AS count FROM shots WHERE "sceneId" = $1`,
       [scene.id],
     );
+    const firstShotResult = await client.query<{ id: string }>(
+      `SELECT id FROM shots WHERE "sceneId" = $1 ORDER BY index ASC NULLS LAST LIMIT 1`,
+      [scene.id],
+    );
+    const firstShotId = firstShotResult.rows[0]?.id ?? null;
+
+    if (scene.episodeId && firstShotId) {
+      const assetId = randomUUID();
+      const publishedVideoId = randomUUID();
+      const storageKey = `director-bootstrap/${scene.project_id}/${scene.episodeId}/${firstShotId}.mp4`;
+      const checksum = `director-bootstrap:${scene.id}`;
+
+      await client.query(
+        `
+          INSERT INTO assets (
+            id, "projectId", "createdAt", checksum, "ownerId", "ownerType", status, "storageKey", type, "shotId"
+          )
+          SELECT $1,$2,NOW(),$3,$4,'SHOT','PUBLISHED',$5,'VIDEO',$4
+          WHERE NOT EXISTS (
+            SELECT 1 FROM assets
+            WHERE "ownerType" = 'SHOT' AND "ownerId" = $4 AND type = 'VIDEO'
+          )
+        `,
+        [assetId, scene.project_id, checksum, firstShotId, storageKey],
+      );
+
+      await client.query(
+        `
+          INSERT INTO published_videos (
+            id, "projectId", "episodeId", "assetId", "storageKey", checksum, status, metadata, "createdAt", "updatedAt"
+          )
+          SELECT
+            $1,$2,$3,a.id,$4,$5,'PUBLISHED',
+            jsonb_build_object(
+              'pipelineRunId', NULL,
+              'publishedAt', NOW()::text,
+              'directorLayer', jsonb_build_object(
+                'shotId', $6::text,
+                'sceneId', $7::text,
+                'filmIrId', $8::text,
+                'latestGateResultId', cgr.id,
+                'latestGateVersion', cgr.gate_version,
+                'latestGateVerdict', cgr.gate_verdict,
+                'publishReadinessScore', cgr.publish_readiness_score::text,
+                'evidenceRef', cgr.evidence_ref,
+                'gateEvaluatedAt', cgr.created_at::text
+              )
+            ),
+            NOW(),
+            NOW()
+          FROM assets a
+          LEFT JOIN LATERAL (
+            SELECT id, gate_version, gate_verdict, publish_readiness_score, evidence_ref, created_at
+            FROM content_gate_results
+            WHERE scene_id = $7 AND film_ir_id = $8
+            ORDER BY created_at DESC
+            LIMIT 1
+          ) cgr ON TRUE
+          WHERE a."ownerType" = 'SHOT' AND a."ownerId" = $6::text AND a.type = 'VIDEO'
+            AND NOT EXISTS (
+              SELECT 1 FROM published_videos pv WHERE pv."assetId" = a.id
+            )
+        `,
+        [publishedVideoId, scene.project_id, scene.episodeId, storageKey, checksum, firstShotId, scene.id, filmIrId],
+      );
+    }
+    console.log('[director-bootstrap] publish evidence ensured');
 
     console.log(
       JSON.stringify(

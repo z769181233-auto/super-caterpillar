@@ -134,7 +134,7 @@ async function main() {
       hasContinuitySnapshots: summary.continuitySnapshotCount > 0,
       hasContentGateResults: summary.contentGateResultCount > 0,
       hasPublishDirectorEvidence:
-        !!summary.latestPublishedDirectorLayer || summary.publishedVideoCount === 0,
+        summary.publishedVideoCount > 0 && !!summary.latestPublishedDirectorLayer,
     };
 
     const passed =
