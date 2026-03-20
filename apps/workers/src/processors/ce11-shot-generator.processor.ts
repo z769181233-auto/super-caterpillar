@@ -53,6 +53,22 @@ export async function processCE11ShotGeneratorJob(
     }
 
     const resolveProjectId = projectId || scene.projectId;
+    const activeFilmIrId = scene.filmIrId || null;
+    const activeFilmIr =
+      activeFilmIrId
+        ? await (prisma as any).filmIR.findUnique({
+            where: { id: activeFilmIrId },
+            select: {
+              id: true,
+              dramaticFunction: true,
+              emotionalTarget: true,
+              shotPattern: true,
+              visualStrategy: true,
+              continuityConstraints: true,
+              plannerVersion: true,
+            },
+          })
+        : null;
 
     // 2. 调用 CE11 引擎 (P5-3 Explicit Routing)
     const selectedEngineKey = payload.engineKey || (job as any).engineKey;
@@ -155,6 +171,17 @@ export async function processCE11ShotGeneratorJob(
           assetBindings: shotData.asset_bindings || {},
           controlnetSettings: shotData.controlnet_settings || {},
           durationSec: shotData.duration_sec ? Number(shotData.duration_sec) : 3.0,
+          emotion: shotData.emotion || activeFilmIr?.emotionalTarget || null,
+          dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
+          emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
+          filmIrId: activeFilmIr?.id || null,
+          novelQuote:
+            shotData.novel_quote ||
+            shotData.novelQuote ||
+            shotData.text ||
+            shotData.summary ||
+            shotData.title ||
+            null,
           organizationId: job.organizationId || 'org-default',
         },
       });
@@ -175,6 +202,14 @@ export async function processCE11ShotGeneratorJob(
             lighting: shotData.lighting_preset || 'NATURAL',
             visualPrompt: shotData.visual_prompt,
             action: shotData.action_description,
+            filmIrId: activeFilmIr?.id || null,
+            dramaticFunction:
+              shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
+            emotionalTarget:
+              shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
+            shotPattern: shotData.shot_pattern || activeFilmIr?.shotPattern || null,
+            continuityConstraints: activeFilmIr?.continuityConstraints || null,
+            plannerVersion: activeFilmIr?.plannerVersion || payload.plannerVersion || null,
             // Full raw data backup
             raw: shotData,
           },
@@ -190,6 +225,14 @@ export async function processCE11ShotGeneratorJob(
             lighting: shotData.lighting_preset || 'NATURAL',
             visualPrompt: shotData.visual_prompt,
             action: shotData.action_description,
+            filmIrId: activeFilmIr?.id || null,
+            dramaticFunction:
+              shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
+            emotionalTarget:
+              shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
+            shotPattern: shotData.shot_pattern || activeFilmIr?.shotPattern || null,
+            continuityConstraints: activeFilmIr?.continuityConstraints || null,
+            plannerVersion: activeFilmIr?.plannerVersion || payload.plannerVersion || null,
             // Full raw data backup
             raw: shotData,
           },
