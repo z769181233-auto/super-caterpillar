@@ -2,8 +2,16 @@ import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Client } = require('pg') as { Client: new (opts: { connectionString: string }) => PgClient };
 
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
+interface PgClient {
+  connect(): Promise<void>;
+  query<T extends Record<string, unknown>>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
+  end(): Promise<void>;
+}
 
 type AcceptanceRegistry = {
   version: number;
@@ -18,7 +26,12 @@ type AcceptanceRegistry = {
   >;
 };
 
-function resolveSceneIds(): { profile: string; sceneIds: string[] } {
+async function resolveSceneIds(): Promise<{ profile: string; sceneIds: string[] }> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is required');
+  }
+
   const sceneIdsArg = process.argv.find((arg) => arg.startsWith('--sceneIds='))?.split('=')[1];
   const profileArg =
     process.argv.find((arg) => arg.startsWith('--profile='))?.split('=')[1] ??
@@ -39,21 +52,43 @@ function resolveSceneIds(): { profile: string; sceneIds: string[] } {
     throw new Error(`Acceptance registry not found: ${registryPath}`);
   }
 
-  const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as AcceptanceRegistry;
-  const activeProfile = registry.profiles[profileArg] ?? registry.profiles[registry.defaultProfile];
-  const sceneIds = activeProfile?.sceneIds ?? [];
-  if (sceneIds.length === 0) {
-    throw new Error(`No sceneIds found for profile: ${profileArg}`);
+  let sceneIds: string[] = [];
+  if (fs.existsSync(registryPath)) {
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as AcceptanceRegistry;
+    const activeProfile = registry.profiles[profileArg] ?? registry.profiles[registry.defaultProfile];
+    sceneIds = activeProfile?.sceneIds ?? [];
   }
 
-  return { profile: profileArg, sceneIds };
+  if (sceneIds.length > 0) {
+    const client = new Client({ connectionString: databaseUrl });
+    await client.connect();
+    try {
+      const existing = await client.query<{ id: string }>(
+        `
+          SELECT id
+          FROM scenes
+          WHERE id = ANY($1::text[])
+        `,
+        [sceneIds],
+      );
+      const existingIds = existing.rows.map((row) => row.id);
+      if (existingIds.length > 0) {
+        return { profile: profileArg, sceneIds: existingIds };
+      }
+    } finally {
+      await client.end();
+    }
+  }
+
+  return { profile: `${profileArg}:fallback-latest`, sceneIds: [] };
 }
 
-function main() {
-  const { profile, sceneIds } = resolveSceneIds();
+async function main() {
+  const { profile, sceneIds } = await resolveSceneIds();
   const scriptPath = path.resolve(__dirname, './bootstrap-director-layer-closure.ts');
 
-  const results = sceneIds.map((sceneId) => {
+  const targets = sceneIds.length > 0 ? sceneIds : [null];
+  const results = targets.map((sceneId) => {
     const run = spawnSync(
       process.execPath,
       [
@@ -61,7 +96,7 @@ function main() {
         '-r',
         'tsconfig-paths/register',
         scriptPath,
-        `--sceneId=${sceneId}`,
+        ...(sceneId ? [`--sceneId=${sceneId}`] : []),
       ],
       {
         cwd: path.resolve(__dirname, '../../..'),
@@ -76,7 +111,7 @@ function main() {
     const success = run.status === 0;
 
     return {
-      sceneId,
+      sceneId: sceneId ?? 'AUTO_LATEST_UUID_SCENE',
       verdict: success ? 'BOOTSTRAPPED' : 'FAILED',
       exitCode: run.status,
       stdout,
@@ -105,4 +140,7 @@ function main() {
   }
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

@@ -242,6 +242,16 @@ jobs:
           WORKER_API_SECRET: scu_smoke_secret
           SHOT_RENDER_PROVIDER: replicate
 
+      - name: Run Director Layer Closure
+        run: |
+          pnpm --filter api bootstrap:director-layer:batch
+          pnpm --filter api verify:director-layer:batch
+        env:
+          NODE_ENV: staging
+          API_BASE_URL: http://127.0.0.1:3000
+          DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
+          IGNORE_ENV_FILE: 'true'
+
       - name: Upload Evidence Artifact
         if: always()
         uses: actions/upload-artifact@v4

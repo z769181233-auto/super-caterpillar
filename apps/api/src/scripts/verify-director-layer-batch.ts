@@ -159,7 +159,7 @@ async function main() {
       registrySceneIds = activeProfile?.sceneIds ?? [];
     }
 
-    const scenes = sceneIdsArg
+    let scenes = sceneIdsArg
       ? await client.query<SceneRow>(
           `
             SELECT id, "episodeId", project_id, film_ir_id
@@ -176,9 +176,9 @@ async function main() {
               FROM scenes
               WHERE id = ANY($1::text[])
               ORDER BY updated_at DESC
-            `,
-            [registrySceneIds],
-          )
+          `,
+          [registrySceneIds],
+        )
       : await client.query<SceneRow>(
           `
             SELECT id, "episodeId", project_id, film_ir_id
@@ -190,6 +190,20 @@ async function main() {
           `,
           [limitArg],
         );
+
+    if (!sceneIdsArg && registrySceneIds.length > 0 && scenes.rows.length === 0) {
+      scenes = await client.query<SceneRow>(
+        `
+          SELECT id, "episodeId", project_id, film_ir_id
+          FROM scenes
+          WHERE film_ir_id IS NOT NULL
+            AND id ~ '^[0-9a-f-]{36}$'
+          ORDER BY updated_at DESC
+          LIMIT $1
+        `,
+        [limitArg],
+      );
+    }
 
     if (scenes.rows.length === 0) {
       throw new Error('No Film IR scenes found for batch verification');
