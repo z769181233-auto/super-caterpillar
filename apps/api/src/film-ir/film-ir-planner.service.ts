@@ -6,6 +6,7 @@ import {
   OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -88,6 +89,79 @@ export class FilmIRPlannerService implements OnModuleInit {
   }
 
   /**
+   * P1 最小运行证据：append-only film_ir_runs
+   *
+   * 这里故意走 raw SQL，避免在当前阶段把 generated Prisma client 也一起拖进大范围变更。
+   * 如果本地库尚未应用 migration，则静默降级到仅保留 audit log。
+   */
+  private async recordPlannerRun(params: {
+    sceneId: string;
+    projectId: string;
+    filmIrId?: string | null;
+    plannerVersion: string;
+    status: 'SUCCEEDED' | 'FAILED' | 'REJECTED' | 'DRY_RUN';
+    inputSnapshot: Record<string, unknown>;
+    outputSnapshot?: Record<string, unknown> | null;
+    validationValid?: boolean | null;
+    validationErrors?: unknown[];
+    validationWarnings?: unknown[];
+    errorMessage?: string | null;
+    evidenceRef?: string | null;
+  }): Promise<void> {
+    if (typeof (this.prisma as any).$executeRawUnsafe !== 'function') {
+      return;
+    }
+
+    try {
+      await (this.prisma as any).$executeRawUnsafe(
+        `
+          INSERT INTO film_ir_runs (
+            id,
+            scene_id,
+            project_id,
+            film_ir_id,
+            planner_version,
+            provider,
+            model,
+            status,
+            input_snapshot,
+            output_snapshot,
+            validation_valid,
+            validation_errors,
+            validation_warnings,
+            error_message,
+            evidence_ref
+          ) VALUES (
+            $1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12::jsonb,$13::jsonb,$14,$15
+          )
+        `,
+        randomUUID(),
+        params.sceneId,
+        params.projectId,
+        params.filmIrId ?? null,
+        params.plannerVersion,
+        this.provider.providerId,
+        this.provider.modelId,
+        params.status,
+        JSON.stringify(params.inputSnapshot ?? {}),
+        JSON.stringify(params.outputSnapshot ?? null),
+        params.validationValid ?? null,
+        JSON.stringify(params.validationErrors ?? []),
+        JSON.stringify(params.validationWarnings ?? []),
+        params.errorMessage ?? null,
+        params.evidenceRef ?? null,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`[FilmIRPlanner] film_ir_runs append skipped: ${message}`);
+    }
+  }
+
+  private toJsonRecord(value: unknown): Record<string, unknown> {
+    return JSON.parse(JSON.stringify(value ?? {})) as Record<string, unknown>;
+  }
+
+  /**
    * 主规划入口：支持 dry-run + save-draft
    */
   async plan(
@@ -130,6 +204,9 @@ export class FilmIRPlannerService implements OnModuleInit {
     if (!scene) {
       throw new BadRequestException(`Scene ${scene_id} not found`);
     }
+    if (!scene.projectId) {
+      throw new BadRequestException(`Scene ${scene_id} has no projectId`);
+    }
 
     const resolvedSourceText =
       source_text ?? (scene.enrichedText as string | null) ?? '';
@@ -156,6 +233,15 @@ export class FilmIRPlannerService implements OnModuleInit {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error(`[FilmIRPlanner] Provider 调用失败: ${message}`);
+      await this.recordPlannerRun({
+        sceneId: scene_id,
+        projectId: scene.projectId,
+        plannerVersion: planner_version,
+        status: 'FAILED',
+        inputSnapshot: invokeInput,
+        validationValid: null,
+        errorMessage: message,
+      });
       await this.auditLogService.record({
         userId,
         action: 'FILM_IR_PLAN_FAILED',
@@ -199,6 +285,17 @@ export class FilmIRPlannerService implements OnModuleInit {
           },
         });
       }
+      await this.recordPlannerRun({
+        sceneId: scene_id,
+        projectId: scene.projectId,
+        plannerVersion: planner_version,
+        status: dry_run ? 'DRY_RUN' : 'REJECTED',
+        inputSnapshot: invokeInput,
+        outputSnapshot: this.toJsonRecord(invokeResult.draftFields),
+        validationValid: validation.valid,
+        validationErrors: validation.errors,
+        validationWarnings: validation.warnings,
+      });
       return {
         dry_run: true,
         film_ir_id: null,
@@ -268,6 +365,20 @@ export class FilmIRPlannerService implements OnModuleInit {
         },
         provider_metadata: invokeResult.meta,
       },
+    });
+
+    await this.recordPlannerRun({
+      sceneId: scene_id,
+      projectId: scene.projectId,
+      filmIrId: savedFilmIR?.id ?? null,
+      plannerVersion: planner_version,
+      status: 'SUCCEEDED',
+      inputSnapshot: invokeInput,
+      outputSnapshot: this.toJsonRecord(invokeResult.draftFields),
+      validationValid: validation.valid,
+      validationErrors: validation.errors,
+      validationWarnings: validation.warnings,
+      evidenceRef: savedFilmIR?.evidenceRef ?? null,
     });
 
     return {

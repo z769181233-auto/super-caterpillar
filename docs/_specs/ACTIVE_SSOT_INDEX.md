@@ -26,6 +26,9 @@ source of truth for implementation and verification.
 - `V3_JOB_STATE_SSOT.md`
 - `V3_CONTRACT_MAPPING_SSOT.md`
 - `CE23_REAL_SSOT.md`
+- `FILM_IR_V1_SSOT.md`
+- `DIRECTOR_LAYER_ARCHITECTURE.md`
+- `DIRECTOR_LAYER_PHASE_ROADMAP.md`
 
 ### Quality / Observability
 
