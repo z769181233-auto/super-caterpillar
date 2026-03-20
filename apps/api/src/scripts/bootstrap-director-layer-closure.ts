@@ -16,6 +16,7 @@ type SceneRow = {
   id: string;
   title: string | null;
   project_id: string;
+  organizationId: string;
   episodeId: string | null;
   enriched_text: string | null;
   summary: string | null;
@@ -43,16 +44,18 @@ async function main() {
     const sceneResult = await client.query<SceneRow>(
       sceneIdArg
         ? `
-            SELECT id, title, project_id, "episodeId", enriched_text, summary
-            FROM scenes
-            WHERE id = $1
+            SELECT s.id, s.title, s.project_id, s."episodeId", s.enriched_text, s.summary, p."organizationId"
+            FROM scenes s
+            JOIN projects p ON p.id = s.project_id
+            WHERE s.id = $1
             LIMIT 1
           `
         : `
-            SELECT id, title, project_id, "episodeId", enriched_text, summary
-            FROM scenes
-            WHERE id ~ '^[0-9a-f-]{36}$'
-            ORDER BY updated_at DESC
+            SELECT s.id, s.title, s.project_id, s."episodeId", s.enriched_text, s.summary, p."organizationId"
+            FROM scenes s
+            JOIN projects p ON p.id = s.project_id
+            WHERE s.id ~ '^[0-9a-f-]{36}$'
+            ORDER BY s.updated_at DESC
             LIMIT 1
           `,
       sceneIdArg ? [sceneIdArg] : [],
@@ -314,23 +317,88 @@ async function main() {
     const firstShotId = firstShotResult.rows[0]?.id ?? null;
 
     if (scene.episodeId && firstShotId) {
-      const assetId = randomUUID();
-      const publishedVideoId = randomUUID();
+      const jobTraceId = `director-bootstrap:${scene.id}`;
+      const dedupeKey = `director-bootstrap:video-render:${scene.id}`;
       const storageKey = `director-bootstrap/${scene.project_id}/${scene.episodeId}/${firstShotId}.mp4`;
+      const hlsPlaylistUrl = `director-bootstrap/${scene.project_id}/${scene.episodeId}/${firstShotId}/master.m3u8`;
+      const signedUrl = `/api/assets/bootstrap-${firstShotId}/secure-url`;
+      const publishedVideoId = randomUUID();
       const checksum = `director-bootstrap:${scene.id}`;
+      const jobResult = JSON.stringify({
+        bootstrap: true,
+        sceneId: scene.id,
+        shotId: firstShotId,
+        storageKey,
+        hlsPlaylistUrl,
+      });
+
+      const existingJobResult = await client.query<{ id: string }>(
+        `
+          SELECT id
+          FROM shot_jobs
+          WHERE dedupe_key = $1
+          LIMIT 1
+        `,
+        [dedupeKey],
+      );
+      const syntheticJobId = existingJobResult.rows[0]?.id ?? randomUUID();
+
+      if (existingJobResult.rows.length === 0) {
+        await client.query(
+          `
+            INSERT INTO shot_jobs (
+              id, "organizationId", "projectId", "episodeId", "sceneId", "shotId",
+              status, type, priority, "maxRetry", "retryCount", attempts,
+              payload, "createdAt", "updatedAt", "traceId", is_verification, dedupe_key, result, "current_step"
+            ) VALUES (
+              $1,$2,$3,$4,$5,$6,
+              'SUCCEEDED','VIDEO_RENDER',0,0,0,1,
+              $7::jsonb,NOW(),NOW(),$8,TRUE,$9,$10::jsonb,'PUBLISH_HLS'
+            )
+          `,
+          [
+            syntheticJobId,
+            scene.organizationId,
+            scene.project_id,
+            scene.episodeId,
+            scene.id,
+            firstShotId,
+            JSON.stringify({ bootstrap: true, source: 'director-layer-closure' }),
+            jobTraceId,
+            dedupeKey,
+            jobResult,
+          ],
+        );
+      }
 
       await client.query(
         `
           INSERT INTO assets (
-            id, "projectId", "createdAt", checksum, "ownerId", "ownerType", status, "storageKey", type, "shotId"
+            id, "projectId", "createdAt", checksum, "createdByJobId", "ownerId", "ownerType",
+            status, "storageKey", type, "shotId", hls_playlist_url, signed_url
           )
-          SELECT $1,$2,NOW(),$3,$4,'SHOT','PUBLISHED',$5,'VIDEO',$4
+          SELECT $1,$2,NOW(),$3,$4,$5,'SHOT','PUBLISHED',$6,'VIDEO',$5,$7,$8
           WHERE NOT EXISTS (
-            SELECT 1 FROM assets
-            WHERE "ownerType" = 'SHOT' AND "ownerId" = $4 AND type = 'VIDEO'
+            SELECT 1
+            FROM assets
+            WHERE "ownerType" = 'SHOT' AND "ownerId" = $5 AND type = 'VIDEO'
           )
         `,
-        [assetId, scene.project_id, checksum, firstShotId, storageKey],
+        [randomUUID(), scene.project_id, checksum, syntheticJobId, firstShotId, storageKey, hlsPlaylistUrl, signedUrl],
+      );
+
+      await client.query(
+        `
+          UPDATE assets
+          SET
+            "createdByJobId" = COALESCE("createdByJobId", $2),
+            status = 'PUBLISHED',
+            "storageKey" = COALESCE(NULLIF("storageKey", ''), $3),
+            hls_playlist_url = COALESCE(hls_playlist_url, $4),
+            signed_url = COALESCE(signed_url, $5)
+          WHERE "ownerType" = 'SHOT' AND "ownerId" = $1 AND type = 'VIDEO'
+        `,
+        [firstShotId, syntheticJobId, storageKey, hlsPlaylistUrl, signedUrl],
       );
 
       await client.query(
@@ -352,7 +420,11 @@ async function main() {
                 'latestGateVerdict', cgr.gate_verdict,
                 'publishReadinessScore', cgr.publish_readiness_score::text,
                 'evidenceRef', cgr.evidence_ref,
-                'gateEvaluatedAt', cgr.created_at::text
+                'gateEvaluatedAt', cgr.created_at::text,
+                'assetStorageKey', a."storageKey",
+                'assetCreatedByJobId', a."createdByJobId",
+                'hlsPlaylistUrl', a.hls_playlist_url,
+                'signedUrl', a.signed_url
               )
             ),
             NOW(),
