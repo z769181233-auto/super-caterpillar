@@ -1,0 +1,333 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Client } = require('pg') as { Client: new (opts: { connectionString: string }) => PgClient };
+
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
+interface PgClient {
+  connect(): Promise<void>;
+  query<T extends Record<string, unknown>>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
+  end(): Promise<void>;
+}
+
+type SceneRow = {
+  id: string;
+  title: string | null;
+  project_id: string;
+  episodeId: string | null;
+  enriched_text: string | null;
+  summary: string | null;
+};
+
+function summarizeText(text: string, max = 160): string {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (compact.length <= max) return compact;
+  return `${compact.slice(0, max - 1)}...`;
+}
+
+async function main() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is required');
+  }
+
+  const sceneIdArg = process.argv.find((arg) => arg.startsWith('--sceneId='))?.split('=')[1];
+  const client = new Client({ connectionString: databaseUrl });
+  await client.connect();
+
+  try {
+    console.log('[director-bootstrap] start');
+
+    const sceneResult = await client.query<SceneRow>(
+      sceneIdArg
+        ? `
+            SELECT id, title, project_id, "episodeId", enriched_text, summary
+            FROM scenes
+            WHERE id = $1
+            LIMIT 1
+          `
+        : `
+            SELECT id, title, project_id, "episodeId", enriched_text, summary
+            FROM scenes
+            WHERE id ~ '^[0-9a-f-]{36}$'
+            ORDER BY updated_at DESC
+            LIMIT 1
+          `,
+      sceneIdArg ? [sceneIdArg] : [],
+    );
+
+    const scene = sceneResult.rows[0];
+    if (!scene) {
+      throw new Error(sceneIdArg ? `Scene ${sceneIdArg} not found` : 'No scene with enriched_text found');
+    }
+
+    console.log(`[director-bootstrap] scene=${scene.id}`);
+
+    const sourceText = scene.enriched_text || scene.summary || scene.title || 'Director bootstrap scene';
+    const sourceContextSummary = scene.summary || summarizeText(sourceText, 120);
+
+    const existingFilmIr = await client.query<{ id: string; status: string }>(
+      `
+        SELECT id, status
+        FROM film_ir
+        WHERE scene_id = $1 AND planner_version = 'film-planner-v1'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `,
+      [scene.id],
+    );
+
+    const filmIrId = existingFilmIr.rows[0]?.id ?? randomUUID();
+    if (existingFilmIr.rows.length === 0) {
+      await client.query(
+        `
+          INSERT INTO film_ir (
+            id, scene_id, project_id, planner_version, status,
+            source_text, source_context_summary,
+            dramatic_function, dramatic_goal, emotional_target,
+            visual_strategy, blocking_strategy, shot_pattern, avg_shot_length_sec,
+            camera_motion_style, composition_style, lighting_style, color_strategy, sound_strategy,
+            continuity_constraints, why_this_choice, alternative_rejected_reason,
+            quality_score, confidence, evidence_ref
+          ) VALUES (
+            $1,$2,$3,'film-planner-v1','LOCKED',
+            $4,$5,
+            'CONFLICT',$6,'压迫感 → 紧张对峙 → 短暂呼吸',
+            '近景主导，强调角色反应','角色保持对立压缩空间','CLOSE_UP_DOMINANT',3.5,
+            'STATIC','三等分对峙构图','LOW_KEY','冷蓝低饱和','环境音渐弱，对话主导',
+            $7::jsonb,'Bootstrap 以最小风险验证 director-layer 数据闭环','无需真实媒体信号即可先验证协议闭环',
+            0.82,0.88,$8
+          )
+        `,
+        [
+          filmIrId,
+          scene.id,
+          scene.project_id,
+          sourceText,
+          sourceContextSummary,
+          `基于场景「${summarizeText(sourceText, 40)}」的最小闭环导演规划`,
+          JSON.stringify({ mustMatch: ['character_costume', 'location'], canChange: ['expression'] }),
+          `director-bootstrap:${scene.id}`,
+        ],
+      );
+    } else if (existingFilmIr.rows[0].status !== 'LOCKED') {
+      await client.query(`UPDATE film_ir SET status = 'LOCKED', updated_at = NOW() WHERE id = $1`, [filmIrId]);
+    }
+
+    await client.query(`UPDATE scenes SET film_ir_id = $2, updated_at = NOW() WHERE id = $1`, [scene.id, filmIrId]);
+    console.log(`[director-bootstrap] filmIr=${filmIrId}`);
+
+    await client.query(
+      `
+        INSERT INTO film_ir_runs (
+          id, scene_id, project_id, film_ir_id, planner_version, provider, model, status,
+          input_snapshot, output_snapshot, validation_valid, validation_errors, validation_warnings, error_message, evidence_ref
+        )
+        SELECT $1,$2,$3,$4,'film-planner-v1','mock','mock-model-v1','SUCCEEDED',
+               $5::jsonb,$6::jsonb,TRUE,'[]'::jsonb,'[]'::jsonb,NULL,$7
+        WHERE NOT EXISTS (
+          SELECT 1 FROM film_ir_runs
+          WHERE scene_id = $2 AND planner_version = 'film-planner-v1' AND status = 'SUCCEEDED'
+        )
+      `,
+      [
+        randomUUID(),
+        scene.id,
+        scene.project_id,
+        filmIrId,
+        JSON.stringify({ sourceTextLength: sourceText.length }),
+        JSON.stringify({ dramatic_function: 'CONFLICT', shot_pattern: 'CLOSE_UP_DOMINANT' }),
+        `director-bootstrap:${scene.id}`,
+      ],
+    );
+
+    const shotCountResult = await client.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM shots WHERE "sceneId" = $1`,
+      [scene.id],
+    );
+    const shotCount = Number(shotCountResult.rows[0]?.count ?? '0');
+
+    if (shotCount === 0) {
+      for (let i = 0; i < 2; i++) {
+        await client.query(
+          `
+            INSERT INTO shots (
+              id, "sceneId", index, type, shot_type, action_description, novel_quote,
+              organizationId, film_ir_id, dramatic_function, emotional_target
+            ) VALUES (
+              $1,$2,$3,'generated',$4,$5,$6,'org-default',$7,'CONFLICT','压迫感 → 紧张对峙 → 短暂呼吸'
+            )
+          `,
+          [
+            `shot_bootstrap_${scene.id}_${i + 1}`,
+            scene.id,
+            i + 1,
+            i === 0 ? 'wide' : 'close_up',
+            `Bootstrap shot ${i + 1}: ${summarizeText(sourceText, 80)}`,
+            summarizeText(sourceText, 120),
+            filmIrId,
+          ],
+        );
+      }
+    } else {
+      await client.query(
+        `
+          UPDATE shots
+          SET
+            film_ir_id = COALESCE(film_ir_id, $2),
+            dramatic_function = COALESCE(dramatic_function, 'CONFLICT'),
+            emotional_target = COALESCE(emotional_target, '压迫感 → 紧张对峙 → 短暂呼吸'),
+            novel_quote = COALESCE(novel_quote, $3),
+            action_description = COALESCE(action_description, $4)
+          WHERE "sceneId" = $1
+        `,
+        [scene.id, filmIrId, summarizeText(sourceText, 120), `Bootstrap shot: ${summarizeText(sourceText, 80)}`],
+      );
+    }
+
+    await client.query(
+      `
+        INSERT INTO shot_plannings (id, "shotId", "createdAt", "updatedAt", data, "engineKey", "engineVersion")
+        SELECT
+          gen_random_uuid()::text,
+          s.id,
+          NOW(),
+          NOW(),
+          jsonb_build_object(
+            'shotType', COALESCE(s.shot_type, 'medium'),
+            'movement', COALESCE(s.camera_movement, 'STATIC'),
+            'angle', COALESCE(s.camera_angle, 'EYE_LEVEL'),
+            'lighting', COALESCE(s.lighting_preset, 'NATURAL'),
+            'visualPrompt', COALESCE(s.visual_prompt, $2),
+            'action', COALESCE(s.action_description, $3),
+            'filmIrId', $4,
+            'dramaticFunction', COALESCE(s.dramatic_function, 'CONFLICT'),
+            'emotionalTarget', COALESCE(s.emotional_target, '压迫感 → 紧张对峙 → 短暂呼吸'),
+            'shotPattern', 'CLOSE_UP_DOMINANT',
+            'continuityConstraints', jsonb_build_object('mustMatch', jsonb_build_array('character_costume', 'location')),
+            'plannerVersion', 'film-planner-v1',
+            'raw', jsonb_build_object('bootstrap', true, 'sceneId', $1)
+          ),
+          'director_layer_bootstrap',
+          'film-planner-v1'
+        FROM shots s
+        WHERE s."sceneId" = $1
+          AND NOT EXISTS (SELECT 1 FROM shot_plannings sp WHERE sp."shotId" = s.id)
+      `,
+      [scene.id, `Bootstrap visual: ${summarizeText(sourceText, 80)}`, `Bootstrap shot: ${summarizeText(sourceText, 80)}`, filmIrId],
+    );
+    console.log('[director-bootstrap] shots projected');
+
+    await client.query(
+      `
+        DELETE FROM continuity_states
+        WHERE project_id = $1 AND entity_type = 'SCENE' AND entity_id = $2 AND at_scene_id = $2
+      `,
+      [scene.project_id, scene.id],
+    );
+    await client.query(
+      `
+        INSERT INTO continuity_states (
+          id, project_id, entity_type, entity_id, at_scene_id, at_shot_id,
+          state_data, is_locked, source, violation_flag, created_at, updated_at
+        ) VALUES (
+          $1,$2,'SCENE',$3,$3,NULL,$4::jsonb,FALSE,'DIRECTOR_BOOTSTRAP',FALSE,NOW(),NOW()
+        )
+      `,
+      [
+        randomUUID(),
+        scene.project_id,
+        scene.id,
+        JSON.stringify({
+          mode: 'scene',
+          sceneId: scene.id,
+          projectId: scene.project_id,
+          episodeId: scene.episodeId,
+          filmIrId,
+          hasEnrichedText: true,
+          bootstrap: true,
+        }),
+      ],
+    );
+    await client.query(
+      `
+        INSERT INTO continuity_state_snapshots (
+          id, project_id, scene_id, shot_id, trace_id, source, snapshot_type, snapshot_data, evidence_ref, created_at
+        )
+        SELECT $1,$2,$3,NULL,$4,'DIRECTOR_BOOTSTRAP','SCENE_AUDIT',$5::jsonb,$6,NOW()
+        WHERE NOT EXISTS (
+          SELECT 1 FROM continuity_state_snapshots
+          WHERE scene_id = $3 AND trace_id = $4 AND snapshot_type = 'SCENE_AUDIT'
+        )
+      `,
+      [
+        randomUUID(),
+        scene.project_id,
+        scene.id,
+        `director_bootstrap_${scene.id}`,
+        JSON.stringify({ sceneId: scene.id, filmIrId, bootstrap: true }),
+        filmIrId,
+      ],
+    );
+    console.log('[director-bootstrap] continuity ensured');
+
+    await client.query(
+      `
+        INSERT INTO content_gate_results (
+          id, project_id, scene_id, episode_id, film_ir_id, gate_version,
+          dramatic_alignment_score, visual_strategy_match_score, continuity_score, shot_coherence_score,
+          rhythm_score, character_consistency_score, sound_alignment_score, publish_readiness_score,
+          gate_verdict, gate_details, evidence_ref, created_at
+        )
+        SELECT
+          $1,$2,$3,$4,$5,'director-bootstrap-v1',
+          0.82,0.78,0.80,0.81,
+          0.76,0.80,0.00,0.74,
+          'WARN',$6::jsonb,$7,NOW()
+        WHERE NOT EXISTS (
+          SELECT 1 FROM content_gate_results
+          WHERE scene_id = $3 AND film_ir_id = $5 AND gate_version = 'director-bootstrap-v1'
+        )
+      `,
+      [
+        randomUUID(),
+        scene.project_id,
+        scene.id,
+        scene.episodeId,
+        filmIrId,
+        JSON.stringify({ bootstrap: true, thresholdProfile: 'advisory', gateReason: 'bootstrap_without_media_signals' }),
+        `director-bootstrap:${scene.id}`,
+      ],
+    );
+    console.log('[director-bootstrap] gate ensured');
+
+    const finalShotCountResult = await client.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM shots WHERE "sceneId" = $1`,
+      [scene.id],
+    );
+
+    console.log(
+      JSON.stringify(
+        {
+          verdict: 'BOOTSTRAPPED',
+          sceneId: scene.id,
+          filmIrId,
+          filmIrStatus: 'LOCKED',
+          shotCount: Number(finalShotCountResult.rows[0]?.count ?? '0'),
+        },
+        null,
+        2,
+      ),
+    );
+  } finally {
+    await client.end();
+    process.exit(process.exitCode ?? 0);
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

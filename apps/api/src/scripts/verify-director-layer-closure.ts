@@ -1,115 +1,175 @@
-import { PrismaClient } from 'database';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Client } = require('pg') as { Client: new (opts: { connectionString: string }) => PgClient };
 
-const prisma = new PrismaClient({});
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
+interface PgClient {
+  connect(): Promise<void>;
+  query<T extends Record<string, unknown>>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
+  end(): Promise<void>;
+}
 
 async function main() {
-  const sceneIdArg = process.argv.find((arg) => arg.startsWith('--sceneId='))?.split('=')[1];
-
-  const scene = await prisma.scene.findFirst({
-    where: sceneIdArg ? { id: sceneIdArg } : { filmIrId: { not: null } },
-    orderBy: { updatedAt: 'desc' },
-    include: {
-      shots: {
-        orderBy: { index: 'asc' },
-        include: {
-          shotPlanning: true,
-          assets: true,
-        },
-      },
-      filmIr: true,
-      episode: true,
-    },
-  });
-
-  if (!scene) {
-    throw new Error(sceneIdArg ? `Scene ${sceneIdArg} not found` : 'No scene with Film IR found');
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is required');
   }
 
-  const continuitySnapshots = await prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
-    `
-      SELECT COUNT(*)::bigint AS count
-      FROM continuity_state_snapshots
-      WHERE scene_id = $1
-    `,
-    scene.id,
-  ).catch(() => [{ count: BigInt(0) }]);
+  const sceneIdArg = process.argv.find((arg) => arg.startsWith('--sceneId='))?.split('=')[1];
+  const client = new Client({ connectionString: databaseUrl });
+  await client.connect();
 
-  const gateResults = await prisma.contentGateResult.findMany({
-    where: {
+  try {
+    const sceneResult = await client.query(
+      sceneIdArg
+        ? `
+            SELECT id, "episodeId", project_id, film_ir_id
+            FROM scenes
+            WHERE id = $1
+            LIMIT 1
+          `
+        : `
+            SELECT id, "episodeId", project_id, film_ir_id
+            FROM scenes
+            WHERE film_ir_id IS NOT NULL
+            ORDER BY updated_at DESC
+            LIMIT 1
+          `,
+      sceneIdArg ? [sceneIdArg] : [],
+    );
+    const scene = sceneResult.rows[0];
+    if (!scene) {
+      throw new Error(sceneIdArg ? `Scene ${sceneIdArg} not found` : 'No scene with Film IR found');
+    }
+
+    const filmIrResult = await client.query(
+      `SELECT id, status FROM film_ir WHERE id = $1 LIMIT 1`,
+      [scene.film_ir_id],
+    );
+    const filmIr = filmIrResult.rows[0] ?? null;
+
+    const shotCounts = await client.query(
+      `
+        SELECT
+          COUNT(*)::int AS shot_count,
+          COUNT(*) FILTER (WHERE film_ir_id IS NOT NULL)::int AS shot_film_ir_count,
+          COUNT(*) FILTER (WHERE dramatic_function IS NOT NULL OR emotional_target IS NOT NULL)::int AS shot_director_fields_count
+        FROM shots
+        WHERE "sceneId" = $1
+      `,
+      [scene.id],
+    );
+
+    const shotPlanningCount = await client.query(
+      `
+        SELECT COUNT(*)::int AS count
+        FROM shot_plannings sp
+        JOIN shots s ON s.id = sp."shotId"
+        WHERE s."sceneId" = $1
+      `,
+      [scene.id],
+    );
+
+    const continuitySnapshotCount = await client.query(
+      `
+        SELECT COUNT(*)::int AS count
+        FROM continuity_state_snapshots
+        WHERE scene_id = $1
+      `,
+      [scene.id],
+    );
+
+    const gateResults = await client.query(
+      `
+        SELECT gate_verdict, created_at
+        FROM content_gate_results
+        WHERE scene_id = $1
+        ORDER BY created_at DESC
+      `,
+      [scene.id],
+    );
+
+    const publishVideos = scene.episodeId
+      ? await client.query(
+          `
+            SELECT metadata
+            FROM published_videos
+            WHERE "episodeId" = $1
+            ORDER BY "createdAt" DESC
+          `,
+          [scene.episodeId],
+        )
+      : { rows: [] as Array<{ metadata: any }> };
+
+    const latestPublishedDirectorLayer =
+      publishVideos.rows[0]?.metadata?.directorLayer ?? null;
+
+    const summary = {
       sceneId: scene.id,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  const publishedVideos = await prisma.publishedVideo.findMany({
-    where: {
       episodeId: scene.episodeId,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      projectId: scene.project_id,
+      filmIrId: scene.film_ir_id,
+      filmIrStatus: filmIr?.status ?? null,
+      shotCount: Number(shotCounts.rows[0]?.shot_count ?? 0),
+      shotPlanningCount: Number(shotPlanningCount.rows[0]?.count ?? 0),
+      shotsWithFilmIrCount: Number(shotCounts.rows[0]?.shot_film_ir_count ?? 0),
+      shotsWithDirectorFieldsCount: Number(shotCounts.rows[0]?.shot_director_fields_count ?? 0),
+      continuitySnapshotCount: Number(continuitySnapshotCount.rows[0]?.count ?? 0),
+      contentGateResultCount: gateResults.rows.length,
+      latestGateVerdict: gateResults.rows[0]?.gate_verdict ?? null,
+      publishedVideoCount: publishVideos.rows.length,
+      latestPublishedDirectorLayer,
+    };
 
-  const summary = {
-    sceneId: scene.id,
-    episodeId: scene.episodeId,
-    projectId: scene.projectId,
-    filmIrId: scene.filmIrId,
-    filmIrStatus: scene.filmIr?.status ?? null,
-    shotCount: scene.shots.length,
-    shotPlanningCount: scene.shots.filter((shot) => !!shot.shotPlanning).length,
-    shotsWithFilmIrCount: scene.shots.filter((shot) => !!shot.filmIrId).length,
-    shotsWithDirectorFieldsCount: scene.shots.filter(
-      (shot) => !!shot.dramaticFunction || !!shot.emotionalTarget,
-    ).length,
-    continuitySnapshotCount: Number(continuitySnapshots[0]?.count ?? BigInt(0)),
-    contentGateResultCount: gateResults.length,
-    latestGateVerdict: gateResults[0]?.gateVerdict ?? null,
-    publishedVideoCount: publishedVideos.length,
-    latestPublishedDirectorLayer:
-      (publishedVideos[0]?.metadata as any)?.directorLayer ?? null,
-  };
+    const checks = {
+      hasFilmIr: !!summary.filmIrId,
+      hasApprovedOrLockedFilmIr:
+        summary.filmIrStatus === 'APPROVED' || summary.filmIrStatus === 'LOCKED',
+      hasShots: summary.shotCount > 0,
+      hasShotPlanning: summary.shotPlanningCount > 0,
+      hasShotFilmIrProjection: summary.shotsWithFilmIrCount > 0,
+      hasDirectorFieldsOnShots: summary.shotsWithDirectorFieldsCount > 0,
+      hasContinuitySnapshots: summary.continuitySnapshotCount > 0,
+      hasContentGateResults: summary.contentGateResultCount > 0,
+      hasPublishDirectorEvidence:
+        !!summary.latestPublishedDirectorLayer || summary.publishedVideoCount === 0,
+    };
 
-  const checks = {
-    hasFilmIr: !!summary.filmIrId,
-    hasApprovedOrLockedFilmIr:
-      summary.filmIrStatus === 'APPROVED' || summary.filmIrStatus === 'LOCKED',
-    hasShots: summary.shotCount > 0,
-    hasShotPlanning: summary.shotPlanningCount > 0,
-    hasShotFilmIrProjection: summary.shotsWithFilmIrCount > 0,
-    hasDirectorFieldsOnShots: summary.shotsWithDirectorFieldsCount > 0,
-    hasContinuitySnapshots: summary.continuitySnapshotCount > 0,
-    hasContentGateResults: summary.contentGateResultCount > 0,
-    hasPublishDirectorEvidence:
-      !!summary.latestPublishedDirectorLayer || summary.publishedVideoCount === 0,
-  };
+    const passed =
+      checks.hasFilmIr &&
+      checks.hasApprovedOrLockedFilmIr &&
+      checks.hasShots &&
+      checks.hasShotPlanning &&
+      checks.hasShotFilmIrProjection &&
+      checks.hasDirectorFieldsOnShots &&
+      checks.hasContinuitySnapshots &&
+      checks.hasContentGateResults &&
+      checks.hasPublishDirectorEvidence;
 
-  const passed =
-    checks.hasFilmIr &&
-    checks.hasShots &&
-    checks.hasShotPlanning &&
-    checks.hasShotFilmIrProjection &&
-    checks.hasDirectorFieldsOnShots &&
-    checks.hasContinuitySnapshots &&
-    checks.hasContentGateResults &&
-    checks.hasPublishDirectorEvidence;
+    console.log(
+      JSON.stringify(
+        {
+          verdict: passed ? 'PASS' : 'FAIL',
+          checks,
+          summary,
+        },
+        null,
+        2,
+      ),
+    );
 
-  const result = {
-    verdict: passed ? 'PASS' : 'FAIL',
-    checks,
-    summary,
-  };
-
-  console.log(JSON.stringify(result, null, 2));
-
-  if (!passed) {
-    process.exitCode = 1;
+    if (!passed) {
+      process.exitCode = 1;
+    }
+  } finally {
+    await client.end();
+    process.exit(process.exitCode ?? 0);
   }
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
