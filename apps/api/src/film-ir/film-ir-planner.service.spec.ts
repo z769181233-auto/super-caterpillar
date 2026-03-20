@@ -5,7 +5,7 @@ import { FilmIRService } from './film-ir.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { FilmIROutputValidator } from './film-ir-output-validator.service';
-import { BadRequestException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 
 /**
  * FilmIR Planner Service 行为测试（P2.2 封板）
@@ -134,6 +134,15 @@ describe('FilmIRPlannerService Behavior Tests (P2.2)', () => {
   // A. dry_run 行为
   // ==================================================================
   describe('A. dry_run 行为', () => {
+    it('A0: planner disabled 时拒绝规划请求', async () => {
+      const disabledService = await buildModule({ filmIrPlannerEnabled: false });
+      disabledService.onModuleInit();
+
+      await expect(disabledService.plan({ scene_id: 'scene-001', dry_run: true }))
+        .rejects
+        .toThrow(ServiceUnavailableException);
+    });
+
     it('A1: dry_run=true 时不写 DB，返回 film_ir_id=null', async () => {
       mockPrismaService.scene.findUnique.mockResolvedValue(mockScene);
       const result = await service.plan({ scene_id: 'scene-001', dry_run: true });
@@ -376,6 +385,18 @@ describe('FilmIRPlannerService Behavior Tests (P2.2)', () => {
       const result = await nonStrictService.plan({ scene_id: 'scene-001', save_as_draft: true });
       // valid=true，非 strict，应该写 DB
       expect(mockFilmIRService.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('F. Health 行为', () => {
+    it('F1: planner disabled 时 health.status=disabled', async () => {
+      const disabledService = await buildModule({ filmIrPlannerEnabled: false });
+      disabledService.onModuleInit();
+
+      await expect(disabledService.health()).resolves.toMatchObject({
+        status: 'disabled',
+        enabled: false,
+      });
     });
   });
 

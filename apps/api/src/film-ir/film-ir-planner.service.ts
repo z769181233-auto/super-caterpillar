@@ -4,6 +4,7 @@ import {
   BadRequestException,
   UnprocessableEntityException,
   OnModuleInit,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -105,7 +106,17 @@ export class FilmIRPlannerService implements OnModuleInit {
       save_as_draft = true,
     } = request;
 
+    const plannerEnabled = this.configService.get<boolean>('filmIrPlannerEnabled') ?? false;
     const strictMode = this.configService.get<boolean>('filmIrPlannerStrictMode') ?? false;
+
+    if (!plannerEnabled) {
+      this.logger.warn(
+        `[FilmIRPlanner] 请求被拒绝: planner disabled sceneId=${scene_id} version=${planner_version}`,
+      );
+      throw new ServiceUnavailableException(
+        'Film IR planner is disabled. Set FILM_IR_PLANNER_ENABLED=true to enable planning.',
+      );
+    }
 
     this.logger.log(
       `[FilmIRPlanner] 开始规划: sceneId=${scene_id} version=${planner_version} dryRun=${dry_run} provider=${this.provider.providerId} strictMode=${strictMode}`,
@@ -278,11 +289,12 @@ export class FilmIRPlannerService implements OnModuleInit {
     enabled: boolean;
     strictMode: boolean;
   }> {
+    const enabled = this.configService.get<boolean>('filmIrPlannerEnabled') ?? false;
     return {
-      status: 'ok',
+      status: enabled ? 'ok' : 'disabled',
       provider: this.provider.providerId,
       model: this.provider.modelId,
-      enabled: this.configService.get<boolean>('filmIrPlannerEnabled') ?? false,
+      enabled,
       strictMode: this.configService.get<boolean>('filmIrPlannerStrictMode') ?? false,
     };
   }
