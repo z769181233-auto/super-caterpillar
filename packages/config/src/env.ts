@@ -188,6 +188,15 @@ export interface AppConfig {
   ce23RealForceDisable: boolean;
   orchV2AudioEnabled: boolean;
   repoRoot: string;
+
+  // ★ P2.2 Film IR Planner 配置
+  filmIrPlannerEnabled: boolean;
+  filmIrPlannerProvider: 'mock' | 'openai';
+  filmIrPlannerModel: string;
+  filmIrPlannerTimeoutMs: number;
+  filmIrPlannerMaxRetries: number;
+  filmIrPlannerStrictMode: boolean;
+  openaiApiKey: string | undefined;
 }
 
 export const env: AppConfig = {
@@ -347,10 +356,19 @@ export const env: AppConfig = {
   })() as string,
 
   ce23RealForceDisable: process.env.CE23_REAL_FORCE_DISABLE === '1',
-  orchV2AudioEnabled: process.env.ORCH_V2_AUDIO_ENABLED === '1', // [A5 FIX] Remove forced true
+  orchV2AudioEnabled: process.env.ORCH_V2_AUDIO_ENABLED === '1',
 
   // Repository Root (Calculated)
   repoRoot: path.resolve(__dirname, '../../..'),
+
+  // ★ P2.2 Film IR Planner 配置
+  filmIrPlannerEnabled: process.env.FILM_IR_PLANNER_ENABLED === 'true',
+  filmIrPlannerProvider: (process.env.FILM_IR_PLANNER_PROVIDER === 'openai' ? 'openai' : 'mock') as 'mock' | 'openai',
+  filmIrPlannerModel: getEnv('FILM_IR_PLANNER_MODEL', 'gpt-4o-mini'),
+  filmIrPlannerTimeoutMs: getEnvNumber('FILM_IR_PLANNER_TIMEOUT_MS', 30000),
+  filmIrPlannerMaxRetries: getEnvNumber('FILM_IR_PLANNER_MAX_RETRIES', 2),
+  filmIrPlannerStrictMode: process.env.FILM_IR_PLANNER_STRICT_MODE === 'true',
+  openaiApiKey: process.env.OPENAI_API_KEY,
 };
 
 /**
