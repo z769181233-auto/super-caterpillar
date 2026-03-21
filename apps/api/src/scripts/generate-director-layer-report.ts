@@ -44,6 +44,8 @@ type SceneEvidenceRow = {
   latestGateVerdict: string | null;
   latestGateReason: string | null;
   latestThresholdProfile: string | null;
+  latestGatePolicyLevel: string | null;
+  latestPublishAction: string | null;
   latestEvidenceRef: string | null;
   latestPublishDirectorLayer: Record<string, unknown> | null;
   verdict: 'PASS' | 'FAIL';
@@ -293,6 +295,18 @@ async function main() {
           typeof latestGate.rows[0]?.gate_details?.thresholdProfile === 'string'
             ? (latestGate.rows[0]?.gate_details?.thresholdProfile as string)
             : null,
+        latestGatePolicyLevel:
+          typeof latestGate.rows[0]?.gate_details?.gatePolicyLevel === 'string'
+            ? (latestGate.rows[0]?.gate_details?.gatePolicyLevel as string)
+            : typeof latestPublish.rows[0]?.metadata?.directorLayer?.gatePolicyLevel === 'string'
+              ? (latestPublish.rows[0]?.metadata?.directorLayer?.gatePolicyLevel as string)
+            : null,
+        latestPublishAction:
+          typeof latestGate.rows[0]?.gate_details?.publishAction === 'string'
+            ? (latestGate.rows[0]?.gate_details?.publishAction as string)
+            : typeof latestPublish.rows[0]?.metadata?.directorLayer?.publishAction === 'string'
+              ? (latestPublish.rows[0]?.metadata?.directorLayer?.publishAction as string)
+            : null,
         latestEvidenceRef: latestGate.rows[0]?.evidence_ref ?? null,
         latestPublishDirectorLayer: latestPublish.rows[0]?.metadata?.directorLayer ?? null,
         verdict,
@@ -309,6 +323,16 @@ async function main() {
       }, {}),
       thresholdProfiles: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
         const key = row.latestThresholdProfile || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      gatePolicyLevels: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.latestGatePolicyLevel || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      publishActions: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.latestPublishAction || 'UNKNOWN';
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
@@ -360,6 +384,8 @@ async function main() {
     lines.push(`- Total Overrides: ${aggregate.totalOverrides}`);
     lines.push(`- Gate Verdicts: ${JSON.stringify(aggregate.gateVerdicts)}`);
     lines.push(`- Threshold Profiles: ${JSON.stringify(aggregate.thresholdProfiles)}`);
+    lines.push(`- Gate Policy Levels: ${JSON.stringify(aggregate.gatePolicyLevels)}`);
+    lines.push(`- Publish Actions: ${JSON.stringify(aggregate.publishActions)}`);
     lines.push(`- Gate Reasons: ${JSON.stringify(aggregate.gateReasons)}`);
     lines.push(`- Continuity Sources: ${JSON.stringify(aggregate.continuitySources)}`);
     lines.push(`- Continuity Resolution Modes: ${JSON.stringify(aggregate.continuityResolutionModes)}`);

@@ -183,6 +183,18 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
       typeof gateResults.rows[0]?.gate_details?.thresholdProfile === 'string'
         ? (gateResults.rows[0]?.gate_details?.thresholdProfile as string)
         : null,
+    latestGatePolicyLevel:
+      typeof gateResults.rows[0]?.gate_details?.gatePolicyLevel === 'string'
+        ? (gateResults.rows[0]?.gate_details?.gatePolicyLevel as string)
+        : typeof latestPublishedDirectorLayer?.gatePolicyLevel === 'string'
+          ? (latestPublishedDirectorLayer.gatePolicyLevel as string)
+        : null,
+    latestPublishAction:
+      typeof gateResults.rows[0]?.gate_details?.publishAction === 'string'
+        ? (gateResults.rows[0]?.gate_details?.publishAction as string)
+        : typeof latestPublishedDirectorLayer?.publishAction === 'string'
+          ? (latestPublishedDirectorLayer.publishAction as string)
+        : null,
     publishedVideoCount: publishVideos.rows.length,
     latestPublishedDirectorLayer,
   };

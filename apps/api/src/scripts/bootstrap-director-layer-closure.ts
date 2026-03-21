@@ -516,8 +516,48 @@ async function main() {
         scene.id,
         effectiveEpisodeId,
         filmIrId,
-        JSON.stringify({ bootstrap: true, thresholdProfile: 'advisory', gateReason: 'bootstrap_without_media_signals' }),
+        JSON.stringify({
+          bootstrap: true,
+          thresholdProfile: 'advisory',
+          gateReason: 'bootstrap_without_media_signals',
+          gatePolicyLevel: 'WARN',
+          publishAction: 'REQUIRE_REVIEW',
+          thresholds: {
+            pass: 0.7,
+            warn: 0.55,
+            identity: 0.6,
+            publish: 0.58,
+            continuity: 0.55,
+          },
+        }),
         `director-bootstrap:${scene.id}`,
+      ],
+    );
+    await client.query(
+      `
+        UPDATE content_gate_results
+        SET gate_details = COALESCE(gate_details, '{}'::jsonb) || $1::jsonb
+        WHERE scene_id = $2
+          AND film_ir_id = $3
+          AND gate_version = 'director-bootstrap-v1'
+      `,
+      [
+        JSON.stringify({
+          bootstrap: true,
+          thresholdProfile: 'advisory',
+          gateReason: 'bootstrap_without_media_signals',
+          gatePolicyLevel: 'WARN',
+          publishAction: 'REQUIRE_REVIEW',
+          thresholds: {
+            pass: 0.7,
+            warn: 0.55,
+            identity: 0.6,
+            publish: 0.58,
+            continuity: 0.55,
+          },
+        }),
+        scene.id,
+        filmIrId,
       ],
     );
     console.log('[director-bootstrap] gate ensured');
@@ -676,6 +716,11 @@ async function main() {
                 'publishReadinessScore', cgr.publish_readiness_score::text,
                 'evidenceRef', cgr.evidence_ref,
                 'gateEvaluatedAt', cgr.created_at::text,
+                'thresholdProfile', cgr.gate_details->>'thresholdProfile',
+                'gateReason', cgr.gate_details->>'gateReason',
+                'gatePolicyLevel', cgr.gate_details->>'gatePolicyLevel',
+                'publishAction', cgr.gate_details->>'publishAction',
+                'gateThresholds', cgr.gate_details->'thresholds',
                 'assetStorageKey', a."storageKey",
                 'assetCreatedByJobId', a."createdByJobId",
                 'hlsPlaylistUrl', a.hls_playlist_url,
@@ -686,7 +731,7 @@ async function main() {
             NOW()
           FROM assets a
           LEFT JOIN LATERAL (
-            SELECT id, gate_version, gate_verdict, publish_readiness_score, evidence_ref, created_at
+            SELECT id, gate_version, gate_verdict, publish_readiness_score, evidence_ref, created_at, gate_details
             FROM content_gate_results
             WHERE scene_id = $7 AND film_ir_id = $8
             ORDER BY created_at DESC

@@ -144,12 +144,25 @@ function resolveGateDecision(params: {
         ? { pass: 0.7, warn: 0.55, identity: 0.6, publish: 0.58, continuity: 0.55 }
         : { pass: 0.78, warn: 0.62, identity: 0.7, publish: 0.68, continuity: 0.64 };
 
+  const toPolicy = (gateVerdict: 'PASS' | 'WARN' | 'BLOCK', reason: string) => ({
+    gateVerdict,
+    thresholds,
+    reason,
+    gatePolicyLevel:
+      gateVerdict === 'PASS' ? 'ADVISORY' : gateVerdict === 'WARN' ? 'WARN' : 'BLOCK',
+    publishAction:
+      gateVerdict === 'PASS'
+        ? 'ALLOW_PUBLISH'
+        : gateVerdict === 'WARN'
+          ? 'REQUIRE_REVIEW'
+          : 'BLOCK_PUBLISH',
+  });
+
   if (renderScore === 0 || audioScore === 0) {
-    return {
-      gateVerdict: profile === 'advisory' ? 'WARN' : 'BLOCK',
-      thresholds,
-      reason: 'missing_required_media_signals',
-    };
+    return toPolicy(
+      profile === 'advisory' ? 'WARN' : 'BLOCK',
+      'missing_required_media_signals',
+    );
   }
 
   const compositeScore = averageScores(
@@ -168,30 +181,24 @@ function resolveGateDecision(params: {
     publishReadinessScore !== null &&
     publishReadinessScore < thresholds.publish
   ) {
-    return {
-      gateVerdict: profile === 'advisory' ? 'WARN' : 'BLOCK',
-      thresholds,
-      reason: 'publish_readiness_below_threshold',
-    };
+    return toPolicy(
+      profile === 'advisory' ? 'WARN' : 'BLOCK',
+      'publish_readiness_below_threshold',
+    );
   }
 
   if (
     continuityScore !== null &&
     continuityScore < thresholds.continuity
   ) {
-    return {
-      gateVerdict: profile === 'advisory' ? 'WARN' : 'BLOCK',
-      thresholds,
-      reason: 'continuity_below_threshold',
-    };
+    return toPolicy(
+      profile === 'advisory' ? 'WARN' : 'BLOCK',
+      'continuity_below_threshold',
+    );
   }
 
   if (verdict === 'PASS' && compositeScore !== null && compositeScore >= thresholds.pass) {
-    return {
-      gateVerdict: 'PASS',
-      thresholds,
-      reason: 'meets_pass_threshold',
-    };
+    return toPolicy('PASS', 'meets_pass_threshold');
   }
 
   if (
@@ -199,18 +206,10 @@ function resolveGateDecision(params: {
     compositeScore >= thresholds.warn &&
     (identityScore === null || identityScore >= thresholds.identity)
   ) {
-    return {
-      gateVerdict: 'WARN',
-      thresholds,
-      reason: 'below_pass_but_within_warn_band',
-    };
+    return toPolicy('WARN', 'below_pass_but_within_warn_band');
   }
 
-  return {
-    gateVerdict: profile === 'advisory' ? 'WARN' : 'BLOCK',
-    thresholds,
-    reason: 'below_quality_threshold',
-  };
+  return toPolicy(profile === 'advisory' ? 'WARN' : 'BLOCK', 'below_quality_threshold');
 }
 
 export async function processContentJudgeJob(
@@ -400,6 +399,8 @@ export async function processContentJudgeJob(
           thresholdProfile,
           thresholds: gateDecision.thresholds,
           gateReason: gateDecision.reason,
+          gatePolicyLevel: gateDecision.gatePolicyLevel,
+          publishAction: gateDecision.publishAction,
           directorPlan: planningContext.directorPlan,
           executionPolicy: planningContext.executionPolicy,
           timelinePolicy: planningContext.timelinePolicy,

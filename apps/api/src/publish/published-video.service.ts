@@ -172,6 +172,14 @@ export class PublishedVideoService {
                   gateDetails?.thresholds && typeof gateDetails.thresholds === 'object'
                     ? gateDetails.thresholds
                     : null,
+                gatePolicyLevel:
+                  typeof gateDetails?.gatePolicyLevel === 'string'
+                    ? gateDetails.gatePolicyLevel
+                    : null,
+                publishAction:
+                  typeof gateDetails?.publishAction === 'string'
+                    ? gateDetails.publishAction
+                    : null,
                 gatePolicyStatus:
                   publishEvidence?.gateVerdict === 'PASS'
                     ? 'publishable'

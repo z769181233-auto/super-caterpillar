@@ -154,10 +154,22 @@ async function main() {
           ? activeContinuityState.rows[0].state_data.resolutionMode
           : null,
       contentGateResultCount: gateResults.rows.length,
-      latestGateVerdict: gateResults.rows[0]?.gate_verdict ?? null,
-      publishedVideoCount: publishVideos.rows.length,
-      latestPublishedDirectorLayer,
-    };
+    latestGateVerdict: gateResults.rows[0]?.gate_verdict ?? null,
+    latestGatePolicyLevel:
+      typeof gateResults.rows[0]?.gate_details?.gatePolicyLevel === 'string'
+        ? gateResults.rows[0].gate_details.gatePolicyLevel
+        : typeof latestPublishedDirectorLayer?.gatePolicyLevel === 'string'
+          ? latestPublishedDirectorLayer.gatePolicyLevel
+        : null,
+    latestPublishAction:
+      typeof gateResults.rows[0]?.gate_details?.publishAction === 'string'
+        ? gateResults.rows[0].gate_details.publishAction
+        : typeof latestPublishedDirectorLayer?.publishAction === 'string'
+          ? latestPublishedDirectorLayer.publishAction
+        : null,
+    publishedVideoCount: publishVideos.rows.length,
+    latestPublishedDirectorLayer,
+  };
 
     const checks = {
       hasFilmIr: !!summary.filmIrId,
