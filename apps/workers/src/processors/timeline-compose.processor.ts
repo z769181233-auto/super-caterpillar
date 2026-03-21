@@ -49,6 +49,44 @@ export interface TimelineData {
   audio?: AudioConfig;
 }
 
+function deriveTransitionProfile(params: any): {
+  transition: 'none' | 'xfade';
+  transitionSec: number;
+} {
+  if (params.transition === 'xfade') {
+    return {
+      transition: 'xfade',
+      transitionSec: Number(params.transitionSec || 0.5),
+    };
+  }
+
+  const directorPlan = params.directorPlan || {};
+  const transitionHint = String(directorPlan.transitionHint || '').toLowerCase();
+  const rhythm = String(directorPlan.editingRhythmStrategy || '').toUpperCase();
+  const avgShotLengthSec = Number(directorPlan.avgShotLengthSec || 0);
+
+  if (transitionHint === 'hold') {
+    return { transition: 'none', transitionSec: 0 };
+  }
+
+  if (transitionHint === 'match_cut') {
+    return {
+      transition: 'xfade',
+      transitionSec: avgShotLengthSec >= 6 || rhythm.includes('LINGER') ? 0.8 : 0.6,
+    };
+  }
+
+  if (rhythm.includes('FAST') || rhythm.includes('TIGHT')) {
+    return { transition: 'xfade', transitionSec: 0.35 };
+  }
+
+  if (rhythm.includes('LINGER') || rhythm.includes('HOLD')) {
+    return { transition: 'none', transitionSec: 0 };
+  }
+
+  return { transition: 'none', transitionSec: 0 };
+}
+
 /**
  * CE10: Timeline Composition Processor
  * 职责：DB 溯源查询 Scene -> Shots，编排确定的 timeline.json，确立全链路渲染参数。
@@ -177,10 +215,11 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     const params = shotParamsMap.get(shot.id) || (shot.params as any) || {};
     const durationFrames = (shot.durationSeconds || 1) * fps;
 
-    // S4-8: 增强转场检测
-    const transition = params.transition === 'xfade' ? 'xfade' : 'none';
+    // S4-8 + Director Layer: 优先尊重显式 params，其次消费 directorPlan 的节奏/转场提示
+    const transitionProfile = deriveTransitionProfile(params);
+    const transition = transitionProfile.transition;
     const transitionFrames =
-      transition === 'xfade' ? Math.floor((params.transitionSec || 0.5) * fps) : 0;
+      transition === 'xfade' ? Math.floor(transitionProfile.transitionSec * fps) : 0;
 
     // 安全校验：转场长度不能超过镜头时长一半
     if (transition === 'xfade' && transitionFrames >= durationFrames / 2) {
