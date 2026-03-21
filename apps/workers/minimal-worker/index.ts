@@ -11,7 +11,7 @@
  * 4. 每 10 秒发送 heartbeat (POST /api/workers/:workerId/heartbeat)
  */
 
-import { createHmac, randomBytes, createHash } from 'crypto';
+import { createHmac, randomBytes, createHash, randomInt } from 'crypto';
 import * as util from 'util';
 
 console.log('API_BASE_URL(raw)=', JSON.stringify(process.env.API_BASE_URL));
@@ -184,8 +184,8 @@ async function processJob(job: any): Promise<void> {
     await reportJobRunning(jobId);
 
     // 2. 模拟执行（sleep 2~5 秒）
-    // P1 Security: Use crypto for execution jitter to avoid predictable timings
-    const durationMs = 2000 + (randomBytes(4).readUInt32BE(0) % 3000);
+    // Generate a random duration between 2000ms and 5000ms using unbiased random
+    const durationMs = 2000 + randomInt(0, 3000);
     process.stdout.write(
       `[${new Date().toISOString()}] ⏳ Executing job ${jobId} (${Math.round(durationMs)}ms)...\n`
     );

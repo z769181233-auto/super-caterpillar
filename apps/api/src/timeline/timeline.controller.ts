@@ -12,7 +12,7 @@ import { JobService } from '../job/job.service';
 import { JobType } from 'database';
 import * as fs from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomInt } from 'crypto';
 
 @UseGuards(JwtOrHmacGuard)
 @Controller('timeline')
@@ -54,7 +54,9 @@ export class TimelineController {
     // 3. Persist Timeline Data (Contract with Processor: expects file)
     // Path: .runtime/timelines/<projectId>/<uuid>.json
     const runtimeDir = path.resolve(process.cwd(), '.runtime');
-    const storageKeyRaw = `timelines/${projectId}/${randomUUID()}.json`;
+    // P0 Security: Break path traversal taint by taking basename of validated projectId
+    const safeProjectId = path.basename(projectId);
+    const storageKeyRaw = `timelines/${safeProjectId}/${randomUUID()}.json`;
     const absPath = path.join(runtimeDir, storageKeyRaw);
 
     try {

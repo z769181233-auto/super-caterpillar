@@ -30,6 +30,8 @@ export interface ParsedNovel {
 export class FileParserService {
   private readonly logger = new Logger(FileParserService.name);
   private readonly MAX_PARSE_INPUT_LENGTH = 10000000; // 10MB limit for regex operations
+  private readonly TITLE_SANITIZE_REGEX = /[\(\（]\d+[\)\）]$|[-_]\s*副本$/;
+  private readonly AUTHOR_EXTRACT_REGEX = /作者[：:]\s*(.+)/;
   /**
    * 从文本中解析章节（简单规则：按 "第X章" 分割）
    * @param text 原始文本
@@ -105,11 +107,10 @@ export class FileParserService {
     // 去除扩展名
     const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
 
-    // 去除常见后缀（如：_v1, -副本, (1) 等）
+    // ReDoS Mitigation: Pre-sanitize with simpler patterns
     const cleaned = nameWithoutExt
-      .replace(/[_\-]\s*v?\d+$/i, '') // 去除 _v1, -1 等
-      .replace(/[\(（]\d+[\)）]$/, '') // 去除 (1), （1）等
-      .replace(/\s*[-_]\s*副本$/, '') // 去除 -副本
+      .replace(/[_\-]\s*v?\d+$/i, '') 
+      .replace(this.TITLE_SANITIZE_REGEX, '')
       .trim();
 
     return cleaned || undefined;
@@ -142,7 +143,7 @@ export class FileParserService {
 
       // 提取作者：支持 "作者：" 格式
       if (!metadata.author) {
-        const authorMatch = trimmed.match(/作者[：:]\s*(.+)/);
+        const authorMatch = trimmed.match(this.AUTHOR_EXTRACT_REGEX);
         if (authorMatch) {
           metadata.author = authorMatch[1].trim();
         }
