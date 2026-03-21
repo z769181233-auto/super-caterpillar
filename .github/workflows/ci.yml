@@ -38,6 +38,7 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/testdb
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
       PRISMA_CLIENT_ENGINE_TYPE: 'binary'
+      PRISMA_CLI_QUERY_ENGINE_TYPE: 'binary'
       JWT_SECRET: 'ci-secret-for-test'
       JWT_REFRESH_SECRET: 'ci-refresh-secret-for-test'
       ENGINE_DEFAULT: 'ce06_novel_parsing'
@@ -65,11 +66,12 @@ jobs:
       - name: Generate Prisma Client (npx explicit + clean)
         run: |
           rm -rf packages/database/src/generated
-          # Prisma 7 兼容性修正：使用环境变量显式覆盖并忽略迁移限制。认识。
           export PRISMA_CLIENT_ENGINE_TYPE=binary
+          export PRISMA_CLI_QUERY_ENGINE_TYPE=binary
           npx prisma generate --schema=./packages/database/prisma/schema.prisma
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/testdb
+          PRISMA_CLI_QUERY_ENGINE_TYPE: binary
 
       - name: Turbo build
         run: pnpm turbo run build --cache-dir=.turbo --continue

@@ -244,9 +244,25 @@ jobs:
 
       - name: Run Director Layer Closure
         run: |
-          pnpm --filter api bootstrap:director-layer:batch
-          pnpm --filter api verify:director-layer:batch
-          pnpm --filter api report:director-layer -- --output=.data/logs/director-layer-report.md
+          EXIT_CODE=0
+          {
+            echo "=== bootstrap:director-layer:batch ==="
+            pnpm --filter api bootstrap:director-layer:batch
+            echo "=== verify:director-layer:batch ==="
+            pnpm --filter api verify:director-layer:batch
+            echo "=== report:director-layer ==="
+            pnpm --filter api report:director-layer -- --output=.data/logs/director-layer-report.md
+          } 2>&1 | tee .data/logs/director-layer-closure.log || EXIT_CODE=${PIPESTATUS[0]}
+
+          echo "==============================================="
+          echo "--- Director Layer Closure log ---"
+          cat .data/logs/director-layer-closure.log || echo "director-layer-closure.log missing"
+          echo "==============================================="
+          echo "--- Director Layer report ---"
+          cat .data/logs/director-layer-report.md || echo "director-layer-report.md missing"
+          echo "==============================================="
+
+          exit $EXIT_CODE
         env:
           NODE_ENV: staging
           API_BASE_URL: http://127.0.0.1:3000
@@ -262,4 +278,5 @@ jobs:
             docs/_evidence/run_launch_gates_*
             .data/logs/api.log
             .data/logs/worker.log
+            .data/logs/director-layer-closure.log
             .data/logs/director-layer-report.md
