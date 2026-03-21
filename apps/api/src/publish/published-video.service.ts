@@ -19,6 +19,10 @@ export class PublishedVideoService {
       where: { id: assetId },
       select: {
         id: true,
+        createdByJobId: true,
+        storageKey: true,
+        hlsPlaylistUrl: true,
+        signedUrl: true,
         shotId: true,
         shot: {
           select: {
@@ -82,6 +86,10 @@ export class PublishedVideoService {
                   publishEvidence?.publishReadinessScore?.toString() ?? null,
                 evidenceRef: publishEvidence?.evidenceRef ?? null,
                 gateEvaluatedAt: publishEvidence?.createdAt?.toISOString?.() ?? null,
+                assetStorageKey: asset?.storageKey ?? storageKey ?? null,
+                assetCreatedByJobId: asset?.createdByJobId ?? null,
+                hlsPlaylistUrl: asset?.hlsPlaylistUrl ?? null,
+                signedUrl: asset?.signedUrl ?? null,
               },
             } as any,
           },
