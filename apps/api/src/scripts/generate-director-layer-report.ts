@@ -389,6 +389,29 @@ async function main() {
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
+      shotPlannerRuleSetVersions: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key =
+          typeof row.latestPublishDirectorLayer?.shotPlannerRuleSetVersion === 'string'
+            ? (row.latestPublishDirectorLayer.shotPlannerRuleSetVersion as string)
+            : 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      shotPlannerMatchedRuleIds: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const values = Array.isArray(row.latestPublishDirectorLayer?.shotPlannerMatchedRuleIds)
+          ? row.latestPublishDirectorLayer.shotPlannerMatchedRuleIds
+          : [];
+        if (values.length === 0) {
+          acc.UNKNOWN = (acc.UNKNOWN || 0) + 1;
+          return acc;
+        }
+        for (const value of values) {
+          if (typeof value === 'string' && value.length > 0) {
+            acc[value] = (acc[value] || 0) + 1;
+          }
+        }
+        return acc;
+      }, {}),
     };
 
     lines.push('');
@@ -407,6 +430,8 @@ async function main() {
     lines.push(`- Coverage Roles: ${JSON.stringify(aggregate.coverageRoles)}`);
     lines.push(`- Rhythm Classes: ${JSON.stringify(aggregate.rhythmClasses)}`);
     lines.push(`- Planner Versions: ${JSON.stringify(aggregate.plannerVersions)}`);
+    lines.push(`- Shot Planner Rule Set Versions: ${JSON.stringify(aggregate.shotPlannerRuleSetVersions)}`);
+    lines.push(`- Shot Planner Matched Rule IDs: ${JSON.stringify(aggregate.shotPlannerMatchedRuleIds)}`);
 
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, `${lines.join('\n')}\n`, 'utf8');

@@ -372,6 +372,17 @@ export async function processContentJudgeJob(
       audioScore,
       renderScore,
     });
+    const ruleSetVersion =
+      typeof planningContext.timelinePolicy?.ruleSetVersion === 'string'
+        ? planningContext.timelinePolicy.ruleSetVersion
+        : typeof planningContext.executionPolicy?.shotPlannerRuleSetVersion === 'string'
+          ? planningContext.executionPolicy.shotPlannerRuleSetVersion
+          : typeof planningContext.directorPlan?.shotPlannerRuleSetVersion === 'string'
+            ? planningContext.directorPlan.shotPlannerRuleSetVersion
+            : null;
+    const matchedRules = Array.isArray(planningContext.timelinePolicy?.matchedRules)
+      ? planningContext.timelinePolicy.matchedRules
+      : [];
 
     await prisma.contentGateResult.create({
       data: {
@@ -401,6 +412,8 @@ export async function processContentJudgeJob(
           gateReason: gateDecision.reason,
           gatePolicyLevel: gateDecision.gatePolicyLevel,
           publishAction: gateDecision.publishAction,
+          shotPlannerRuleSetVersion: ruleSetVersion,
+          shotPlannerMatchedRules: matchedRules,
           directorPlan: planningContext.directorPlan,
           executionPolicy: planningContext.executionPolicy,
           timelinePolicy: planningContext.timelinePolicy,

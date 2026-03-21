@@ -52,6 +52,16 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   const directorRenderSummary = {
     audioMode,
     audioMasterPriority: masterPriority,
+    ruleSetVersions: timeline.shots
+      .map((shot) => shot.directorPlan?.ruleSetVersion)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    matchedRuleIds: timeline.shots.flatMap((shot) =>
+      Array.isArray(shot.directorPlan?.matchedRules)
+        ? shot.directorPlan.matchedRules
+            .map((rule) => rule?.id)
+            .filter((value): value is string => typeof value === 'string' && value.length > 0)
+        : [],
+    ),
     coverageRoles: timeline.shots
       .map((shot) => shot.directorPlan?.coverageRole)
       .filter((value): value is string => typeof value === 'string' && value.length > 0),

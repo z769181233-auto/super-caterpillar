@@ -162,6 +162,23 @@ export class PublishedVideoService {
                     : typeof directorPlan?.plannerVersion === 'string'
                       ? directorPlan.plannerVersion
                       : null,
+                shotPlannerRuleSetVersion:
+                  typeof timelinePolicy?.ruleSetVersion === 'string'
+                    ? timelinePolicy.ruleSetVersion
+                    : typeof executionPolicy?.shotPlannerRuleSetVersion === 'string'
+                      ? executionPolicy.shotPlannerRuleSetVersion
+                      : typeof directorPlan?.shotPlannerRuleSetVersion === 'string'
+                        ? directorPlan.shotPlannerRuleSetVersion
+                        : null,
+                shotPlannerMatchedRuleIds: Array.isArray(timelinePolicy?.matchedRules)
+                  ? timelinePolicy.matchedRules
+                      .map((rule) =>
+                        rule && typeof rule === 'object' && typeof (rule as Record<string, unknown>).id === 'string'
+                          ? ((rule as Record<string, unknown>).id as string)
+                          : null,
+                      )
+                      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+                  : [],
                 thresholdProfile:
                   typeof gateDetails?.thresholdProfile === 'string'
                     ? gateDetails.thresholdProfile
