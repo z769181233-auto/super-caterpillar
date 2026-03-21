@@ -22,6 +22,14 @@ export const MODEL_PRICE_TABLE: Record<string, number> = {
 };
 
 /**
+ * P1-2: 时间维度计费标准 (Credits per Second)
+ */
+export const DURATION_PRICE_TABLE = {
+  GPU_SECOND: 0.05, // 1小时 GPU ≈ 180 Credits ≈ 9 RMB
+  CPU_SECOND: 0.005, // 1小时 CPU ≈ 18 Credits ≈ 0.9 RMB
+};
+
+/**
  * 根据模型名称获取价格（Credits per 1k tokens）
  *
  * @param modelName - 模型名称（如 "gemini-2.0-flash"）

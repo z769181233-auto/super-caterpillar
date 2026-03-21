@@ -7,6 +7,14 @@ import { EngineHubClient } from '../engine-hub-client';
 import { config } from '@scu/config';
 import { ProcessorContext } from '../types/processor-context';
 
+/**
+ * P1 Standard: Resolve Runtime Dir (Deduplicated across Workers)
+ */
+function resolveRuntimeDir(): string {
+  const root = process.env.RUNTIME_DIR || process.env.SCU_REPO_ROOT || process.cwd();
+  return path.resolve(root, '.runtime');
+}
+
 export interface TimelineShot {
   shotId: string;
   index: number;
@@ -202,6 +210,13 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       },
       shots: {
         orderBy: { index: 'asc' },
+        include: {
+          characterAppearances: {
+            include: {
+              character: true
+            }
+          }
+        }
       },
     },
   });
@@ -248,11 +263,11 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       try {
         const ttsRes = await engineHubClient.invoke<any, any>({
           engineKey: 'tts_standard',
-          payload: {
-            text: dialogue,
-            voiceId: 'default', // TODO: Make configurable
-            speed: 1.0,
-          },
+            payload: {
+              text: dialogue,
+              voiceId: (shot as any).characterAppearances?.[0]?.character?.attributes?.voiceId || 'default',
+              speed: 1.0,
+            },
           metadata: {
             jobId: job.id,
             traceId,
@@ -327,8 +342,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     const actualStart = idx === 0 ? 0 : currentFrame - transitionFrames;
     const actualEnd = actualStart + durationFrames;
 
-    // Generate frames.txt if shot has resultImageUrl
-    const framesTxtPath = path.join(process.cwd(), '.runtime', 'frames', shot.id, 'frames.txt');
+    const runtimeRoot = resolveRuntimeDir();
+    const framesTxtPath = path.join(runtimeRoot, 'frames', shot.id, 'frames.txt');
 
     // Resolve Storage Root
     const storageRoot = (config as any).storageRoot;
@@ -462,7 +477,7 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   };
 
   // 3. 产物持久化
-  const runtimeDir = path.join(process.cwd(), '.runtime', 'timelines');
+  const runtimeDir = path.join(resolveRuntimeDir(), 'timelines');
   if (!(await fileExists(runtimeDir))) await ensureDir(runtimeDir);
 
   const timelineFileName = `timeline_${sceneId}_${Date.now()}.json`;

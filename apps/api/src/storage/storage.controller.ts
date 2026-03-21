@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Req, Res, HttpStatus, Query, Logger, Param } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { Controller, Post, Get, Req, Res, HttpStatus, Query, Logger, Param, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -20,6 +21,7 @@ function normalizeStorageKey(keyDef: any): string {
   return String(keyDef).replace(/^\/+/, '');
 }
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('storage')
 export class StorageController {
   private readonly logger = new Logger(StorageController.name);

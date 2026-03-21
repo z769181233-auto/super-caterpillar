@@ -14,6 +14,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('timeline')
 export class TimelineController {
   constructor(private readonly jobService: JobService) {}

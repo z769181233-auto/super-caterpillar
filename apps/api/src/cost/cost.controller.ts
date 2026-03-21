@@ -1,4 +1,5 @@
-import { Body, Controller, Post, Get, Param, BadRequestException, Query } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { Body, Controller, Post, Get, Param, BadRequestException, Query, UseGuards } from '@nestjs/common';
 import { IsNumber, IsOptional, IsString, IsObject } from 'class-validator';
 import { CostLedgerService, RecordCostEventParams } from './cost-ledger.service';
 import { RequireSignature } from '../security/api-security/api-security.decorator';
@@ -22,6 +23,7 @@ class CostEventDto implements RecordCostEventParams {
  * 用于Worker通过HTTP事件触发API侧业务逻辑
  * ✅ P0-2: 已添加 HMAC 鉴权保护
  */
+@UseGuards(JwtOrHmacGuard)
 @Controller('internal/events')
 @RequireSignature() // P0-2: HMAC Guard 全局保护
 export class InternalEventsController {

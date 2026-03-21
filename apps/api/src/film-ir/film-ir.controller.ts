@@ -42,6 +42,7 @@ import { JobType } from 'database';
  *   POST /film-ir/planner/plan    — LLM 规划（dry-run + save draft）
  *   GET  /film-ir/planner/health  — Planner 健康检查
  */
+@UseGuards(JwtOrHmacGuard)
 @Controller('film-ir')
 export class FilmIRController {
   constructor(

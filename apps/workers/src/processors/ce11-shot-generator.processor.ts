@@ -272,7 +272,7 @@ export async function processCE11ShotGeneratorJob(
           soundFx: shotData.sound_fx,
           assetBindings: shotData.asset_bindings || {},
           controlnetSettings: shotData.controlnet_settings || {},
-          durationSec: shotData.duration_sec ? Number(shotData.duration_sec) : 3.0,
+          durationSec: shotData.duration_sec ? Number(shotData.duration_sec) : (activeFilmIr?.avgShotLengthSec ? Number(activeFilmIr.avgShotLengthSec) : 3.0),
           emotion: shotData.emotion || activeFilmIr?.emotionalTarget || null,
           dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
           emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
@@ -386,8 +386,8 @@ export async function processCE11ShotGeneratorJob(
                 ...jobData,
                 engineBinding: {
                   create: {
-                    engineKey: 'ce07_fusion_sdxl',
-                    engine: { connect: { engineKey: 'ce07_fusion_sdxl' } },
+                    engineKey: process.env.DEFAULT_FUSION_ENGINE || 'ce07_fusion_sdxl',
+                    engine: { connect: { engineKey: process.env.DEFAULT_FUSION_ENGINE || 'ce07_fusion_sdxl' } },
                     status: 'BOUND',
                   },
                 },

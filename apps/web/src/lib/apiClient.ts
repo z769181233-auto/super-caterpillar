@@ -531,7 +531,7 @@ export const organizationApi = {
 // Auth API
 export const authApi = {
   async login(email: string, password: string) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/auth/login`, {
+    const res = await fetchWithAuth(`/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -553,7 +553,7 @@ export const authApi = {
   },
 
   async logout() {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/auth/logout`, {
+    const res = await fetchWithAuth(`/api/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -566,7 +566,7 @@ export const authApi = {
   },
 
   async register(email: string, password: string) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/auth/register`, {
+    const res = await fetchWithAuth(`/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

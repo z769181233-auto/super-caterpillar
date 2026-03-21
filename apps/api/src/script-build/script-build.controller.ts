@@ -3,6 +3,7 @@ import { ScriptBuildService } from './script-build.service';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { Public } from '../auth/decorators/public.decorator';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('builds')
 export class ScriptBuildController {
   constructor(private readonly scriptBuildService: ScriptBuildService) {}

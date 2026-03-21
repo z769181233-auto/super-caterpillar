@@ -1,4 +1,5 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { TaskGraphService } from './task-graph.service';
 import { QualityScoreService } from '../quality/quality-score.service';
 import { QualityFeedbackService } from '../quality/quality-feedback.service';
@@ -8,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JobService } from '../job/job.service';
 import { randomUUID } from 'crypto';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('tasks')
 export class TaskGraphController {
   constructor(

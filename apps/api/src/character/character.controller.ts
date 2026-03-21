@@ -1,3 +1,4 @@
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import {
   Controller,
   Get,
@@ -18,6 +19,7 @@ import {
   TrainLoraDto,
 } from './character.dto';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('v1')
 export class CharacterController {
   constructor(private readonly characterService: CharacterService) {}

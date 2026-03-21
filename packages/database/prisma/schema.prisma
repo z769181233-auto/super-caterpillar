@@ -1,7 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
   output        = "../src/generated/prisma"
-  engineType    = "binary"
+  engineType    = "library"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -1433,7 +1433,7 @@ enum UserRole {
 }
 
 enum UserTier {
-  Free
+  Free       @map("Basic")
   Pro
   Studio
   Enterprise

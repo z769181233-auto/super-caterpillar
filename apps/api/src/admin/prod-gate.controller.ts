@@ -1,4 +1,5 @@
-import { Controller, Post, Body, Get, Param, Logger, BadRequestException } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { Controller, Post, Body, Get, Param, Logger, BadRequestException, UseGuards } from '@nestjs/common';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { ShotRenderRouterAdapter } from './../engines/adapters/shot_render_router.adapter';
 import { OrchestratorService } from '../orchestrator/orchestrator.service';
@@ -13,6 +14,7 @@ import * as path from 'node:path';
  * Only active when GATE_MODE=1.
  * Provides controlled entry points for automated gate scripts.
  */
+@UseGuards(JwtOrHmacGuard)
 @Controller('admin/prod-gate')
 export class ProdGateController {
   private readonly logger = new Logger(ProdGateController.name);
