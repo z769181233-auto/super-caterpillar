@@ -11,6 +11,16 @@ interface PgClient {
   end(): Promise<void>;
 }
 
+function deriveFreshness(updatedAt: string | Date | null | undefined): string | null {
+  if (!updatedAt) return null;
+  const timestamp = new Date(updatedAt).getTime();
+  if (!Number.isFinite(timestamp)) return null;
+  const ageMs = Date.now() - timestamp;
+  if (ageMs <= 5 * 60 * 1000) return 'FRESH';
+  if (ageMs <= 24 * 60 * 60 * 1000) return 'STALE';
+  return 'AGED';
+}
+
 function getCliArg(name: string): string | undefined {
   const prefix = `--${name}=`;
   const inline = process.argv.find((arg) => arg.startsWith(prefix));
@@ -100,7 +110,7 @@ async function main() {
     );
     const activeContinuityState = await client.query(
       `
-        SELECT source, is_locked, state_data
+        SELECT source, is_locked, state_data, updated_at
         FROM continuity_states
         WHERE project_id = $1
           AND entity_type = 'SCENE'
@@ -157,6 +167,7 @@ async function main() {
         typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
           ? activeContinuityState.rows[0].state_data.lifecycleStage
           : null,
+      activeContinuityFreshness: deriveFreshness(activeContinuityState.rows[0]?.updated_at),
       contentGateResultCount: gateResults.rows.length,
     latestGateVerdict: gateResults.rows[0]?.gate_verdict ?? null,
     latestGatePolicyLevel:

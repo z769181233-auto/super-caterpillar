@@ -12,6 +12,16 @@ interface PgClient {
   end(): Promise<void>;
 }
 
+function deriveFreshness(updatedAt: string | Date | null | undefined): string | null {
+  if (!updatedAt) return null;
+  const timestamp = new Date(updatedAt).getTime();
+  if (!Number.isFinite(timestamp)) return null;
+  const ageMs = Date.now() - timestamp;
+  if (ageMs <= 5 * 60 * 1000) return 'FRESH';
+  if (ageMs <= 24 * 60 * 60 * 1000) return 'STALE';
+  return 'AGED';
+}
+
 type AcceptanceRegistry = {
   version: number;
   updatedAt: string;
@@ -38,6 +48,7 @@ type SceneEvidenceRow = {
   activeContinuityLocked: boolean;
   activeContinuityResolutionMode: string | null;
   activeContinuityLifecycleStage: string | null;
+  activeContinuityFreshness: string | null;
   continuityLockCount: number;
   continuityOverrideCount: number;
   gateCount: number;
@@ -151,8 +162,8 @@ async function main() {
     lines.push(`- Profile: ${profile}`);
     lines.push(`- Total Scenes: ${scenes.rows.length}`);
     lines.push('');
-    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Active State | Lifecycle | Locks | Overrides | Gate | Publish | Verdict |');
-    lines.push('|---|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---|');
+    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Active State | Lifecycle | Freshness | Locks | Overrides | Gate | Publish | Verdict |');
+    lines.push('|---|---:|---:|---:|---:|---|---|---|---:|---:|---:|---:|---|');
     const sceneEvidenceRows: SceneEvidenceRow[] = [];
 
     for (const scene of scenes.rows) {
@@ -172,9 +183,10 @@ async function main() {
         source: string | null;
         is_locked: boolean | null;
         state_data: Record<string, unknown> | null;
+        updated_at: string | null;
       }>(
         `
-          SELECT source, is_locked, state_data
+          SELECT source, is_locked, state_data, updated_at
           FROM continuity_states
           WHERE project_id = $1
             AND entity_type = 'SCENE'
@@ -266,7 +278,7 @@ async function main() {
           typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
             ? String(activeContinuityState.rows[0]?.state_data?.lifecycleStage)
             : 'NONE'
-        } | ${Number(continuityLockCount.rows[0]?.count ?? 0)} | ${Number(
+        } | ${deriveFreshness(activeContinuityState.rows[0]?.updated_at) || 'UNKNOWN'} | ${Number(continuityLockCount.rows[0]?.count ?? 0)} | ${Number(
           continuityOverrideCount.rows[0]?.count ?? 0,
         )} | ${Number(gateCount.rows[0]?.count ?? 0)} | ${Number(
           publishCount.rows[0]?.count ?? 0,
@@ -291,6 +303,7 @@ async function main() {
           typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
             ? (activeContinuityState.rows[0]?.state_data?.lifecycleStage as string)
             : null,
+        activeContinuityFreshness: deriveFreshness(activeContinuityState.rows[0]?.updated_at),
         continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
         continuityOverrideCount: Number(continuityOverrideCount.rows[0]?.count ?? 0),
         gateCount: Number(gateCount.rows[0]?.count ?? 0),
@@ -365,6 +378,11 @@ async function main() {
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
+      continuityFreshness: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.activeContinuityFreshness || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
       coverageRoles: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
         const key =
           typeof row.latestPublishDirectorLayer?.coverageRole === 'string'
@@ -427,6 +445,7 @@ async function main() {
     lines.push(`- Continuity Sources: ${JSON.stringify(aggregate.continuitySources)}`);
     lines.push(`- Continuity Resolution Modes: ${JSON.stringify(aggregate.continuityResolutionModes)}`);
     lines.push(`- Continuity Lifecycle Stages: ${JSON.stringify(aggregate.continuityLifecycleStages)}`);
+    lines.push(`- Continuity Freshness: ${JSON.stringify(aggregate.continuityFreshness)}`);
     lines.push(`- Coverage Roles: ${JSON.stringify(aggregate.coverageRoles)}`);
     lines.push(`- Rhythm Classes: ${JSON.stringify(aggregate.rhythmClasses)}`);
     lines.push(`- Planner Versions: ${JSON.stringify(aggregate.plannerVersions)}`);

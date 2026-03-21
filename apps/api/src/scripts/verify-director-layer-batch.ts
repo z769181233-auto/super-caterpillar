@@ -12,6 +12,16 @@ interface PgClient {
   end(): Promise<void>;
 }
 
+function deriveFreshness(updatedAt: string | Date | null | undefined): string | null {
+  if (!updatedAt) return null;
+  const timestamp = new Date(updatedAt).getTime();
+  if (!Number.isFinite(timestamp)) return null;
+  const ageMs = Date.now() - timestamp;
+  if (ageMs <= 5 * 60 * 1000) return 'FRESH';
+  if (ageMs <= 24 * 60 * 60 * 1000) return 'STALE';
+  return 'AGED';
+}
+
 type AcceptanceRegistry = {
   version: number;
   updatedAt: string;
@@ -95,9 +105,10 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
     source: string | null;
     is_locked: boolean | null;
     state_data: Record<string, unknown> | null;
+    updated_at: string | null;
   }>(
     `
-      SELECT source, is_locked, state_data
+      SELECT source, is_locked, state_data, updated_at
       FROM continuity_states
       WHERE project_id = $1
         AND entity_type = 'SCENE'
@@ -175,6 +186,7 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
       typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
         ? (activeContinuityState.rows[0]?.state_data?.lifecycleStage as string)
         : null,
+    activeContinuityFreshness: deriveFreshness(activeContinuityState.rows[0]?.updated_at),
     continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
     continuityOverrideCount: Number(continuityOverrideCount.rows[0]?.count ?? 0),
     contentGateResultCount: gateResults.rows.length,
