@@ -68,6 +68,42 @@ async function main() {
 
     console.log(`[director-bootstrap] scene=${scene.id}`);
 
+    let effectiveEpisodeId = scene.episodeId;
+
+    if (!effectiveEpisodeId) {
+      const nextEpisodeIndexResult = await client.query<{ next_index: number }>(
+        `
+          SELECT COALESCE(MAX(index), 0) + 1 AS next_index
+          FROM episodes
+          WHERE "projectId" = $1
+        `,
+        [scene.project_id],
+      );
+      const syntheticEpisodeId = randomUUID();
+      const syntheticEpisodeIndex = Number(nextEpisodeIndexResult.rows[0]?.next_index ?? 1);
+
+      await client.query(
+        `
+          INSERT INTO episodes (id, "projectId", index, name, summary, status)
+          VALUES ($1, $2, $3, $4, $5, 'bootstrap')
+        `,
+        [
+          syntheticEpisodeId,
+          scene.project_id,
+          syntheticEpisodeIndex,
+          `Director Bootstrap Episode ${syntheticEpisodeIndex}`,
+          `Synthetic episode for director-layer closure scene ${scene.id}`,
+        ],
+      );
+
+      await client.query(`UPDATE scenes SET "episodeId" = $2, updated_at = NOW() WHERE id = $1`, [
+        scene.id,
+        syntheticEpisodeId,
+      ]);
+
+      effectiveEpisodeId = syntheticEpisodeId;
+    }
+
     const sourceText = scene.enriched_text || scene.summary || scene.title || 'Director bootstrap scene';
     const sourceContextSummary = scene.summary || summarizeText(sourceText, 120);
 
@@ -158,9 +194,9 @@ async function main() {
           `
             INSERT INTO shots (
               id, "sceneId", index, type, shot_type, action_description, novel_quote,
-              organizationId, film_ir_id, dramatic_function, emotional_target
+              "organizationId", film_ir_id, dramatic_function, emotional_target
             ) VALUES (
-              $1,$2,$3,'generated',$4,$5,$6,'org-default',$7,'CONFLICT','压迫感 → 紧张对峙 → 短暂呼吸'
+              $1,$2,$3,'generated',$4,$5,$6,$7,$8,'CONFLICT','压迫感 → 紧张对峙 → 短暂呼吸'
             )
           `,
           [
@@ -170,6 +206,7 @@ async function main() {
             i === 0 ? 'wide' : 'close_up',
             `Bootstrap shot ${i + 1}: ${summarizeText(sourceText, 80)}`,
             summarizeText(sourceText, 120),
+            scene.organizationId,
             filmIrId,
           ],
         );
@@ -247,7 +284,7 @@ async function main() {
           mode: 'scene',
           sceneId: scene.id,
           projectId: scene.project_id,
-          episodeId: scene.episodeId,
+          episodeId: effectiveEpisodeId,
           filmIrId,
           hasEnrichedText: true,
           bootstrap: true,
@@ -298,7 +335,7 @@ async function main() {
         randomUUID(),
         scene.project_id,
         scene.id,
-        scene.episodeId,
+        effectiveEpisodeId,
         filmIrId,
         JSON.stringify({ bootstrap: true, thresholdProfile: 'advisory', gateReason: 'bootstrap_without_media_signals' }),
         `director-bootstrap:${scene.id}`,
@@ -316,12 +353,12 @@ async function main() {
     );
     const firstShotId = firstShotResult.rows[0]?.id ?? null;
 
-    if (scene.episodeId && firstShotId) {
+    if (effectiveEpisodeId && firstShotId) {
       const jobTraceId = `director-bootstrap:${scene.id}`;
       const dedupeKey = `director-bootstrap:video-render:${scene.id}`;
       const pipelineRunId = `director-bootstrap:${scene.id}`;
-      const storageKey = `director-bootstrap/${scene.project_id}/${scene.episodeId}/${firstShotId}.mp4`;
-      const hlsPlaylistUrl = `director-bootstrap/${scene.project_id}/${scene.episodeId}/${firstShotId}/master.m3u8`;
+      const storageKey = `director-bootstrap/${scene.project_id}/${effectiveEpisodeId}/${firstShotId}.mp4`;
+      const hlsPlaylistUrl = `director-bootstrap/${scene.project_id}/${effectiveEpisodeId}/${firstShotId}/master.m3u8`;
       const publishedVideoId = randomUUID();
       const checksum = `director-bootstrap:${scene.id}`;
       const jobResult = JSON.stringify({
@@ -352,7 +389,7 @@ async function main() {
               status, type, priority, "maxRetry", "retryCount", attempts,
               payload, "createdAt", "updatedAt", "traceId", is_verification, dedupe_key, result, "current_step"
             ) VALUES (
-              $1,$2,$3,$4,$5,$6,
+            $1,$2,$3,$4,$5,$6,
               'SUCCEEDED','VIDEO_RENDER',0,0,0,1,
               $7::jsonb,NOW(),NOW(),$8,TRUE,$9,$10::jsonb,'PUBLISH_HLS'
             )
@@ -361,7 +398,7 @@ async function main() {
             syntheticJobId,
             scene.organizationId,
             scene.project_id,
-            scene.episodeId,
+            effectiveEpisodeId,
             scene.id,
             firstShotId,
             JSON.stringify({ bootstrap: true, source: 'director-layer-closure' }),
@@ -456,7 +493,7 @@ async function main() {
               SELECT 1 FROM published_videos pv WHERE pv."assetId" = a.id
             )
         `,
-        [publishedVideoId, scene.project_id, scene.episodeId, storageKey, checksum, firstShotId, scene.id, filmIrId],
+        [publishedVideoId, scene.project_id, effectiveEpisodeId, storageKey, checksum, firstShotId, scene.id, filmIrId],
       );
 
       await client.query(
