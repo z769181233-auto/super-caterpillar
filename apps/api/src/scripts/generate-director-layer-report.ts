@@ -42,8 +42,26 @@ type SceneEvidenceRow = {
   verdict: 'PASS' | 'FAIL';
 };
 
+function getCliArg(name: string): string | undefined {
+  const prefix = `--${name}=`;
+  const inline = process.argv.find((arg) => arg.startsWith(prefix));
+  if (inline) {
+    return inline.slice(prefix.length);
+  }
+
+  const index = process.argv.findIndex((arg) => arg === `--${name}`);
+  if (index >= 0) {
+    const value = process.argv[index + 1];
+    if (value && !value.startsWith('--')) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 function resolveOutputPath(): string {
-  const outputArg = process.argv.find((arg) => arg.startsWith('--output='))?.split('=')[1];
+  const outputArg = getCliArg('output');
   if (outputArg) {
     return path.resolve(outputArg);
   }
@@ -57,10 +75,8 @@ function resolveOutputPath(): string {
 }
 
 function resolveProfileAndScenes(): { profile: string; sceneIds: string[] } {
-  const sceneIdsArg = process.argv.find((arg) => arg.startsWith('--sceneIds='))?.split('=')[1];
-  const profileArg =
-    process.argv.find((arg) => arg.startsWith('--profile='))?.split('=')[1] ??
-    'director-layer-minimal-closure';
+  const sceneIdsArg = getCliArg('sceneIds');
+  const profileArg = getCliArg('profile') ?? 'director-layer-minimal-closure';
 
   if (sceneIdsArg) {
     return {

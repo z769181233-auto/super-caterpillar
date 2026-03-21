@@ -26,13 +26,31 @@ type AcceptanceRegistry = {
   >;
 };
 
+function getCliArg(name: string): string | undefined {
+  const prefix = `--${name}=`;
+  const inline = process.argv.find((arg) => arg.startsWith(prefix));
+  if (inline) {
+    return inline.slice(prefix.length);
+  }
+
+  const index = process.argv.findIndex((arg) => arg === `--${name}`);
+  if (index >= 0) {
+    const value = process.argv[index + 1];
+    if (value && !value.startsWith('--')) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 async function resolveSceneIds(): Promise<{ profile: string; sceneIds: string[] }> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error('DATABASE_URL is required');
   }
 
-  const sceneIdsArg = process.argv.find((arg) => arg.startsWith('--sceneIds='))?.split('=')[1];
+  const sceneIdsArg = getCliArg('sceneIds');
   const profileArg =
     process.argv.find((arg) => arg.startsWith('--profile='))?.split('=')[1] ??
     'director-layer-minimal-closure';

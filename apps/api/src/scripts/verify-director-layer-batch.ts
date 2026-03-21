@@ -32,6 +32,24 @@ type SceneRow = {
   film_ir_id: string | null;
 };
 
+function getCliArg(name: string): string | undefined {
+  const prefix = `--${name}=`;
+  const inline = process.argv.find((arg) => arg.startsWith(prefix));
+  if (inline) {
+    return inline.slice(prefix.length);
+  }
+
+  const index = process.argv.findIndex((arg) => arg === `--${name}`);
+  if (index >= 0) {
+    const value = process.argv[index + 1];
+    if (value && !value.startsWith('--')) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 async function verifyScene(client: PgClient, scene: SceneRow) {
   const filmIrResult = await client.query<{ id: string; status: string }>(
     `SELECT id, status FROM film_ir WHERE id = $1 LIMIT 1`,
@@ -139,11 +157,9 @@ async function main() {
     throw new Error('DATABASE_URL is required');
   }
 
-  const limitArg = Number(process.argv.find((arg) => arg.startsWith('--limit='))?.split('=')[1] ?? '5');
-  const sceneIdsArg = process.argv.find((arg) => arg.startsWith('--sceneIds='))?.split('=')[1];
-  const profileArg =
-    process.argv.find((arg) => arg.startsWith('--profile='))?.split('=')[1] ??
-    'director-layer-minimal-closure';
+  const limitArg = Number(getCliArg('limit') ?? '5');
+  const sceneIdsArg = getCliArg('sceneIds');
+  const profileArg = getCliArg('profile') ?? 'director-layer-minimal-closure';
   const registryPath = path.resolve(
     __dirname,
     '../../../../docs/_specs/DIRECTOR_LAYER_ACCEPTANCE_REGISTRY.json',

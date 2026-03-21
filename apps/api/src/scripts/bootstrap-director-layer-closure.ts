@@ -12,6 +12,24 @@ interface PgClient {
   end(): Promise<void>;
 }
 
+function getCliArg(name: string): string | undefined {
+  const prefix = `--${name}=`;
+  const inline = process.argv.find((arg) => arg.startsWith(prefix));
+  if (inline) {
+    return inline.slice(prefix.length);
+  }
+
+  const index = process.argv.findIndex((arg) => arg === `--${name}`);
+  if (index >= 0) {
+    const value = process.argv[index + 1];
+    if (value && !value.startsWith('--')) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 type SceneRow = {
   id: string;
   title: string | null;
@@ -34,7 +52,7 @@ async function main() {
     throw new Error('DATABASE_URL is required');
   }
 
-  const sceneIdArg = process.argv.find((arg) => arg.startsWith('--sceneId='))?.split('=')[1];
+  const sceneIdArg = getCliArg('sceneId');
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
 
