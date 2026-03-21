@@ -1,5 +1,2 @@
-export function MinimalImportPageContent() {
-    return <div>Minimal Import (placeholder)</div>;
-}
-
-export default MinimalImportPageContent;
+export { ImportNovelPageContent as MinimalImportPageContent } from './ImportNovelPageContent';
+export { default } from './ImportNovelPageContent';

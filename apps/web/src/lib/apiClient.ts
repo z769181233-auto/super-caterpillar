@@ -589,11 +589,17 @@ export const authApi = {
 };
 
 export const novelImportApi = {
-  async importNovelFile(projectId: string, file: File): Promise<ImportNovelResultDTO> {
+  async importNovelFile(
+    projectId: string,
+    file: File,
+    meta?: { title?: string; author?: string }
+  ): Promise<ImportNovelResultDTO> {
     const formData = new FormData();
     formData.append('file', file);
+    if (meta?.title) formData.append('title', meta.title);
+    if (meta?.author) formData.append('author', meta.author);
 
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/novel/import-file`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/import-file`, {
       method: 'POST',
       body: formData,
       credentials: 'include',
@@ -613,9 +619,9 @@ export const novelImportApi = {
 
   async importNovel(
     projectId: string,
-    payload: { novelName: string; author: string; fileUrl: string }
+    payload: { title?: string; novelName?: string; author?: string; fileUrl?: string; rawText?: string; content?: string }
   ): Promise<ImportNovelResultDTO> {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/novel/import`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -635,7 +641,7 @@ export const novelImportApi = {
   },
 
   async analyzeNovel(projectId: string): Promise<ImportNovelResultDTO> {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/novel/analyze`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/analyze`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -653,7 +659,7 @@ export const novelImportApi = {
   },
 
   async getNovelJobs(projectId: string): Promise<JobDTO[]> {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/novel/jobs`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/jobs`, {
       method: 'GET',
       credentials: 'include',
     });

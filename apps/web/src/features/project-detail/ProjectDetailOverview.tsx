@@ -13,6 +13,7 @@ interface ProjectDetailOverviewProps {
 
 export function ProjectDetailOverview({ project, onSwitchTab }: ProjectDetailOverviewProps) {
   const t = useTranslations('ProjectDetail');
+  const importHref = `/projects/${project.id}/import-novel`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -44,7 +45,7 @@ export function ProjectDetailOverview({ project, onSwitchTab }: ProjectDetailOve
                 {t('ctaOpenStudio')}
               </Button>
             ) : (
-              <Button variant="primary" onClick={() => {}} disabled>
+              <Button variant="primary" onClick={() => (window.location.href = importHref)}>
                 {t('ctaImportNovel')}
               </Button>
             )}
