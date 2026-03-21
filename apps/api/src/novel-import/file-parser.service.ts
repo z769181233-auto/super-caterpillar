@@ -44,31 +44,31 @@ export class FileParserService {
 
     const chapters: Array<{ title: string; content: string }> = [];
 
-    // 匹配 "第X章" 或 "第一章" 等格式
-    const chapterPattern =
-      /(第[一二三四五六七八九十\d]+章[：:]\s*.+?)(?=第[一二三四五六七八九十\d]+章|$)/gs;
-    let match: RegExpExecArray | null;
-    let lastIndex = 0;
+    // P1 Security: Avoid lookahead regex which is prone to ReDoS. 
+    // Use a simple split-and-process approach instead.
+    const parts = text.split(/(?=第[一二三四五六七八九十\d]+章[：:])/g);
 
-    while ((match = chapterPattern.exec(text)) !== null) {
-      // 提取章节标题和内容
-      const fullMatch = match[0];
-      const titleMatch = fullMatch.match(/^(第[一二三四五六七八九十\d]+章[：:]\s*.+?)(?:\n|$)/);
-      const title = titleMatch ? titleMatch[1].trim() : `第${chapters.length + 1}章`;
-      const content = fullMatch.substring(titleMatch ? titleMatch[0].length : 0).trim();
+    for (const part of parts) {
+      const trimmedPart = part.trim();
+      if (!trimmedPart) continue;
 
-      if (content.length > 0) {
+      const titleMatch = trimmedPart.match(/^(第[一二三四五六七八九十\d]+章[：:]\s*.+?)(?:\n|$)/);
+      if (titleMatch) {
+        const title = titleMatch[1].trim();
+        const content = trimmedPart.substring(titleMatch[0].length).trim();
         chapters.push({ title, content });
+      } else if (chapters.length === 0) {
+        // Handle text before the first chapter
+        chapters.push({ title: '前言/第一章', content: trimmedPart });
+      } else {
+        // Append orphaned text to last chapter
+        chapters[chapters.length - 1].content += '\n\n' + trimmedPart;
       }
-      lastIndex = match.index + fullMatch.length;
     }
 
-    // 如果没有找到章节标记，将整个文本作为一个章节
+    // Default to a single chapter if nothing split
     if (chapters.length === 0 && text.trim().length > 0) {
-      chapters.push({
-        title: '第1章',
-        content: text.trim(),
-      });
+      chapters.push({ title: '第1章', content: text.trim() });
     }
 
     return chapters;

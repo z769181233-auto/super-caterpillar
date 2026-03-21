@@ -111,6 +111,13 @@ export class SignedUrlService {
         return false;
       }
 
+      // P0 Security: Strict Type Defense for all inputs to prevent array-injection/type-confusion
+      if (typeof key !== 'string' || typeof signature !== 'string' || 
+          typeof tenantId !== 'string' || typeof userId !== 'string') {
+        this.logger.warn(`[SignedUrlService] Invalid param types detected`);
+        return false;
+      }
+
       // 验证 key 安全性
       if (key.includes('..') || key.startsWith('/')) {
         this.logger.warn(`[SignedUrlService] Invalid key in signed URL: ${key}`);

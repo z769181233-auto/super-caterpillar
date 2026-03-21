@@ -24,7 +24,12 @@ export class TimelineController {
   async createPreview(@Body() body: any, @Req() req: any) {
     // 1. Validate Payload
     const { projectId, ...timelineData } = body;
-    if (!projectId) throw new BadRequestException('projectId is required');
+    if (!projectId || typeof projectId !== 'string') throw new BadRequestException('projectId is required and must be a string');
+    
+    // P1 Security: Prevent Path Traversal by white-listing projectId format
+    if (!/^[a-zA-Z0-9_\-]+$/.test(projectId)) {
+      throw new BadRequestException('Invalid projectId format (alphanumeric and underscores/hyphens only)');
+    }
     if (
       !timelineData.shots ||
       !Array.isArray(timelineData.shots) ||
