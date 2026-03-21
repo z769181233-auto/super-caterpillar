@@ -150,6 +150,9 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
     audioMasterPriority: timeline.audio?.masterPriority || null,
     bgmGain:
       typeof timeline.audio?.bgmGain === 'number' ? timeline.audio.bgmGain : null,
+    coverageRoles: timeline.shots
+      .map((shot) => shot.directorPlan?.coverageRole)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
     transitionHints: timeline.shots
       .map((shot) => shot.directorPlan?.transitionHint)
       .filter((value): value is string => typeof value === 'string' && value.length > 0),

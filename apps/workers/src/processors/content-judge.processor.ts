@@ -18,11 +18,21 @@ function averageScores(...values: Array<number | null>): number | null {
 function deriveRhythmScore(params: {
   overallScore: number | null;
   shotPlanPresent: boolean;
-  directorPlan: Record<string, any>;
+  planningContext: Record<string, any>;
 }) {
-  const { overallScore, shotPlanPresent, directorPlan } = params;
-  const rhythm = String(directorPlan.editingRhythmStrategy || '').toUpperCase();
-  const transitionHint = String(directorPlan.transitionHint || '').toLowerCase();
+  const { overallScore, shotPlanPresent, planningContext } = params;
+  const rhythm = String(
+    planningContext.timelinePolicy?.rhythmClass ||
+      planningContext.executionPolicy?.rhythmClass ||
+      planningContext.directorPlan?.editingRhythmStrategy ||
+      '',
+  ).toUpperCase();
+  const transitionHint = String(
+    planningContext.timelinePolicy?.transitionHint ||
+      planningContext.executionPolicy?.transitionHint ||
+      planningContext.directorPlan?.transitionHint ||
+      '',
+  ).toLowerCase();
 
   let modifier = 0;
   if (shotPlanPresent) modifier += 0.05;
@@ -30,16 +40,24 @@ function deriveRhythmScore(params: {
   if (transitionHint === 'hold') modifier += 0.02;
   if (rhythm.includes('FAST') || rhythm.includes('TIGHT')) modifier += 0.04;
   if (rhythm.includes('LINGER') || rhythm.includes('HOLD')) modifier += 0.02;
+  if (planningContext.timelinePolicy?.coverageRole === 'detail') modifier += 0.01;
 
   return clampScore((overallScore ?? 0) + modifier);
 }
 
 function deriveVisualStrategyMatchScore(params: {
   renderScore: number | null;
-  directorPlan: Record<string, any>;
+  planningContext: Record<string, any>;
 }) {
-  const { renderScore, directorPlan } = params;
+  const { renderScore, planningContext } = params;
+  const visualPolicy = planningContext.executionPolicy?.visualPolicy || {};
+  const cameraPolicy = planningContext.executionPolicy?.cameraPolicy || {};
+  const directorPlan = planningContext.directorPlan || {};
   const hasVisualIntent = !!(
+    visualPolicy.visualStrategy ||
+    cameraPolicy.compositionStyle ||
+    cameraPolicy.distanceStrategy ||
+    cameraPolicy.angleStrategy ||
     directorPlan.visualStrategy ||
     directorPlan.compositionStyle ||
     directorPlan.cameraDistanceStrategy ||
@@ -237,14 +255,24 @@ export async function processContentJudgeJob(
     const audioScore = toNumber(signals.audio_existence);
     const renderScore = toNumber(signals.render_physical);
     const verdict = typeof score.verdict === 'string' ? score.verdict : 'PENDING';
-    const directorPlan =
-      ((shot.params as Record<string, any> | null)?.directorPlan as Record<string, any> | undefined) ||
-      ((shot.shotPlanning?.data as Record<string, any> | null) ?? {});
+    const shotParams = (shot.params as Record<string, any> | null) ?? {};
+    const shotPlanningData = (shot.shotPlanning?.data as Record<string, any> | null) ?? {};
+    const planningContext = {
+      directorPlan:
+        (shotParams.directorPlan as Record<string, any> | undefined) ||
+        shotPlanningData.directorPlan ||
+        shotPlanningData,
+      executionPolicy:
+        (shotParams.executionPolicy as Record<string, any> | undefined) ||
+        shotPlanningData.executionPolicy ||
+        null,
+      timelinePolicy: shotPlanningData.timelinePolicy || null,
+    };
     const shotPlanPresent = !!shot.shotPlanning;
     const dramaticAlignmentScore = clampScore(overallScore);
     const visualStrategyMatchScore = deriveVisualStrategyMatchScore({
       renderScore,
-      directorPlan,
+      planningContext,
     });
     const continuityScore = clampScore(
       averageScores(identityScore, toNumber(signals.identity_score_real_ppv64)),
@@ -255,7 +283,7 @@ export async function processContentJudgeJob(
     const rhythmScore = deriveRhythmScore({
       overallScore,
       shotPlanPresent,
-      directorPlan,
+      planningContext,
     });
     const characterConsistencyScore = clampScore(identityScore);
     const soundAlignmentScore = clampScore(audioScore);
@@ -308,7 +336,9 @@ export async function processContentJudgeJob(
           thresholdProfile,
           thresholds: gateDecision.thresholds,
           gateReason: gateDecision.reason,
-          directorPlan,
+          directorPlan: planningContext.directorPlan,
+          executionPolicy: planningContext.executionPolicy,
+          timelinePolicy: planningContext.timelinePolicy,
           shotPlanPresent,
           derivedScores: {
             dramaticAlignmentScore,
