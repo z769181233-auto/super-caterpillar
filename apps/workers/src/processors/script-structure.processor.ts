@@ -395,46 +395,55 @@ export async function processContinuityAuditJob(
       : latestOverride
         ? 'STATE_OVERRIDE'
         : 'CE_CONSISTENCY_CHECK';
+    const resolutionMode = activeLock
+      ? 'LOCKED'
+      : latestOverride
+        ? 'OVERRIDE_APPLIED'
+        : 'AUTO';
 
-    if (!activeLock) {
-      await (prisma as any).continuityState.deleteMany({
-        where: {
+    await (prisma as any).continuityState.upsert({
+      where: {
+        projectId_entityType_entityId_atSceneId: {
           projectId: scene.projectId,
           entityType: 'SCENE',
           entityId: scene.id,
           atSceneId: scene.id,
         },
-      });
-
-      await (prisma as any).continuityState.create({
-        data: {
-          projectId: scene.projectId,
-          entityType: 'SCENE',
-          entityId: scene.id,
-          atSceneId: scene.id,
-          atShotId: null,
-          stateData: effectiveStateData,
-          isLocked: false,
-          source: effectiveSource,
-          violationFlag: false,
+      },
+      update: {
+        stateData: {
+          ...effectiveStateData,
+          resolutionMode,
+          activeSource: effectiveSource,
+          lockId: activeLock?.id ?? null,
+          lockReason: activeLock?.lock_reason ?? null,
+          overrideId: latestOverride?.id ?? null,
+          overrideReason: latestOverride?.override_reason ?? null,
         },
-      });
-    }
-
-    if (activeLock) {
-      await (prisma as any).continuityState.updateMany({
-        where: {
-          projectId: scene.projectId,
-          entityType: 'SCENE',
-          entityId: scene.id,
-          atSceneId: scene.id,
+        isLocked: !!activeLock,
+        source: effectiveSource,
+        violationFlag: false,
+      },
+      create: {
+        projectId: scene.projectId,
+        entityType: 'SCENE',
+        entityId: scene.id,
+        atSceneId: scene.id,
+        atShotId: null,
+        stateData: {
+          ...effectiveStateData,
+          resolutionMode,
+          activeSource: effectiveSource,
+          lockId: activeLock?.id ?? null,
+          lockReason: activeLock?.lock_reason ?? null,
+          overrideId: latestOverride?.id ?? null,
+          overrideReason: latestOverride?.override_reason ?? null,
         },
-        data: {
-          isLocked: true,
-          source: 'STATE_LOCK',
-        },
-      });
-    }
+        isLocked: !!activeLock,
+        source: effectiveSource,
+        violationFlag: false,
+      },
+    });
 
     await appendContinuitySnapshotBestEffort({
       prisma,
@@ -449,9 +458,14 @@ export async function processContinuityAuditJob(
           : 'SCENE_AUDIT',
       snapshotData: {
         ...effectiveStateData,
+        resolutionMode,
+        activeSource: effectiveSource,
         lockId: activeLock?.id ?? null,
         lockReason: activeLock?.lock_reason ?? null,
         lockEvidenceRef: activeLock?.evidence_ref ?? null,
+        overrideId: latestOverride?.id ?? null,
+        overrideReason: latestOverride?.override_reason ?? null,
+        overrideEvidenceRef: latestOverride?.evidence_ref ?? null,
       },
       evidenceRef:
         activeLock?.evidence_ref ??

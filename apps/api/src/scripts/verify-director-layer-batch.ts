@@ -91,6 +91,22 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
     `,
     [scene.id],
   );
+  const activeContinuityState = await client.query<{
+    source: string | null;
+    is_locked: boolean | null;
+    state_data: Record<string, unknown> | null;
+  }>(
+    `
+      SELECT source, is_locked, state_data
+      FROM continuity_states
+      WHERE project_id = $1
+        AND entity_type = 'SCENE'
+        AND entity_id = $2
+        AND at_scene_id = $3
+      LIMIT 1
+    `,
+    [scene.project_id, scene.id, scene.id],
+  );
   const continuityLockCount = await client.query<{ count: number }>(
     `
       SELECT COUNT(*)::int AS count
@@ -149,6 +165,12 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
     shotsWithFilmIrCount: Number(shotCounts.rows[0]?.shot_film_ir_count ?? 0),
     shotsWithDirectorFieldsCount: Number(shotCounts.rows[0]?.shot_director_fields_count ?? 0),
     continuitySnapshotCount: Number(continuitySnapshotCount.rows[0]?.count ?? 0),
+    activeContinuitySource: activeContinuityState.rows[0]?.source ?? null,
+    activeContinuityLocked: !!activeContinuityState.rows[0]?.is_locked,
+    activeContinuityResolutionMode:
+      typeof activeContinuityState.rows[0]?.state_data?.resolutionMode === 'string'
+        ? (activeContinuityState.rows[0]?.state_data?.resolutionMode as string)
+        : null,
     continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
     continuityOverrideCount: Number(continuityOverrideCount.rows[0]?.count ?? 0),
     contentGateResultCount: gateResults.rows.length,

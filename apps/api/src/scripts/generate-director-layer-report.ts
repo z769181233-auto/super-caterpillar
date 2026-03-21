@@ -34,6 +34,9 @@ type SceneEvidenceRow = {
   shotCount: number;
   shotPlanningCount: number;
   continuityCount: number;
+  activeContinuitySource: string | null;
+  activeContinuityLocked: boolean;
+  activeContinuityResolutionMode: string | null;
   continuityLockCount: number;
   continuityOverrideCount: number;
   gateCount: number;
@@ -145,8 +148,8 @@ async function main() {
     lines.push(`- Profile: ${profile}`);
     lines.push(`- Total Scenes: ${scenes.rows.length}`);
     lines.push('');
-    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Locks | Overrides | Gate | Publish | Verdict |');
-    lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|---|');
+    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Active State | Locks | Overrides | Gate | Publish | Verdict |');
+    lines.push('|---|---:|---:|---:|---:|---|---:|---:|---:|---:|---|');
     const sceneEvidenceRows: SceneEvidenceRow[] = [];
 
     for (const scene of scenes.rows) {
@@ -161,6 +164,22 @@ async function main() {
       const continuityCount = await client.query<{ count: number }>(
         `SELECT COUNT(*)::int AS count FROM continuity_state_snapshots WHERE scene_id = $1`,
         [scene.id],
+      );
+      const activeContinuityState = await client.query<{
+        source: string | null;
+        is_locked: boolean | null;
+        state_data: Record<string, unknown> | null;
+      }>(
+        `
+          SELECT source, is_locked, state_data
+          FROM continuity_states
+          WHERE project_id = $1
+            AND entity_type = 'SCENE'
+            AND entity_id = $2
+            AND at_scene_id = $3
+          LIMIT 1
+        `,
+        [scene.project_id, scene.id, scene.id],
       );
       const continuityLockCount = await client.query<{ count: number }>(
         `
@@ -232,7 +251,15 @@ async function main() {
           shotCounts.rows[0]?.shot_count ?? 0,
         )} | ${Number(shotPlanningCount.rows[0]?.count ?? 0)} | ${Number(
           continuityCount.rows[0]?.count ?? 0,
-        )} | ${Number(continuityLockCount.rows[0]?.count ?? 0)} | ${Number(
+        )} | ${
+          activeContinuityState.rows[0]?.source
+            ? `${activeContinuityState.rows[0].source}${
+                activeContinuityState.rows[0]?.state_data?.resolutionMode
+                  ? `/${String(activeContinuityState.rows[0].state_data.resolutionMode)}`
+                  : ''
+              }`
+            : 'NONE'
+        } | ${Number(continuityLockCount.rows[0]?.count ?? 0)} | ${Number(
           continuityOverrideCount.rows[0]?.count ?? 0,
         )} | ${Number(gateCount.rows[0]?.count ?? 0)} | ${Number(
           publishCount.rows[0]?.count ?? 0,
@@ -247,6 +274,12 @@ async function main() {
         shotCount: Number(shotCounts.rows[0]?.shot_count ?? 0),
         shotPlanningCount: Number(shotPlanningCount.rows[0]?.count ?? 0),
         continuityCount: Number(continuityCount.rows[0]?.count ?? 0),
+        activeContinuitySource: activeContinuityState.rows[0]?.source ?? null,
+        activeContinuityLocked: !!activeContinuityState.rows[0]?.is_locked,
+        activeContinuityResolutionMode:
+          typeof activeContinuityState.rows[0]?.state_data?.resolutionMode === 'string'
+            ? (activeContinuityState.rows[0]?.state_data?.resolutionMode as string)
+            : null,
         continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
         continuityOverrideCount: Number(continuityOverrideCount.rows[0]?.count ?? 0),
         gateCount: Number(gateCount.rows[0]?.count ?? 0),
@@ -284,6 +317,16 @@ async function main() {
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
+      continuitySources: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.activeContinuitySource || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      continuityResolutionModes: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.activeContinuityResolutionMode || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
       coverageRoles: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
         const key =
           typeof row.latestPublishDirectorLayer?.coverageRole === 'string'
@@ -318,6 +361,8 @@ async function main() {
     lines.push(`- Gate Verdicts: ${JSON.stringify(aggregate.gateVerdicts)}`);
     lines.push(`- Threshold Profiles: ${JSON.stringify(aggregate.thresholdProfiles)}`);
     lines.push(`- Gate Reasons: ${JSON.stringify(aggregate.gateReasons)}`);
+    lines.push(`- Continuity Sources: ${JSON.stringify(aggregate.continuitySources)}`);
+    lines.push(`- Continuity Resolution Modes: ${JSON.stringify(aggregate.continuityResolutionModes)}`);
     lines.push(`- Coverage Roles: ${JSON.stringify(aggregate.coverageRoles)}`);
     lines.push(`- Rhythm Classes: ${JSON.stringify(aggregate.rhythmClasses)}`);
     lines.push(`- Planner Versions: ${JSON.stringify(aggregate.plannerVersions)}`);

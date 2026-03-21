@@ -98,6 +98,18 @@ async function main() {
       `,
       [scene.id],
     );
+    const activeContinuityState = await client.query(
+      `
+        SELECT source, is_locked, state_data
+        FROM continuity_states
+        WHERE project_id = $1
+          AND entity_type = 'SCENE'
+          AND entity_id = $2
+          AND at_scene_id = $3
+        LIMIT 1
+      `,
+      [scene.project_id, scene.id, scene.id],
+    );
 
     const gateResults = await client.query(
       `
@@ -135,6 +147,12 @@ async function main() {
       shotsWithFilmIrCount: Number(shotCounts.rows[0]?.shot_film_ir_count ?? 0),
       shotsWithDirectorFieldsCount: Number(shotCounts.rows[0]?.shot_director_fields_count ?? 0),
       continuitySnapshotCount: Number(continuitySnapshotCount.rows[0]?.count ?? 0),
+      activeContinuitySource: activeContinuityState.rows[0]?.source ?? null,
+      activeContinuityLocked: !!activeContinuityState.rows[0]?.is_locked,
+      activeContinuityResolutionMode:
+        typeof activeContinuityState.rows[0]?.state_data?.resolutionMode === 'string'
+          ? activeContinuityState.rows[0].state_data.resolutionMode
+          : null,
       contentGateResultCount: gateResults.rows.length,
       latestGateVerdict: gateResults.rows[0]?.gate_verdict ?? null,
       publishedVideoCount: publishVideos.rows.length,
