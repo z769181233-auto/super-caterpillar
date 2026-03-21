@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "updatedAt": "2026-03-21",
   "defaultProfile": "director-layer-minimal-closure",
   "profiles": {
@@ -10,7 +10,8 @@
         "abc883ab-481c-4e39-98a5-07e541f520df",
         "89bad37e-9580-40f8-b95b-2c69c163ddfa",
         "820d8005-f866-45f7-ad07-4649a90bd3a3",
-        "03d073aa-2c6b-44ac-8056-2b5b75dcde6d"
+        "03d073aa-2c6b-44ac-8056-2b5b75dcde6d",
+        "0a0aa994-e4d6-44a9-a47e-88a3a5b5b25c"
       ]
     }
   }
