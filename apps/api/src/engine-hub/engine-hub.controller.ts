@@ -52,11 +52,12 @@ export class EngineHubController {
     try {
       // P6-0: Forward to invoker which now handles large payloads via AuditLog hardening
       const result = await this.engineInvoker.invoke(req);
-      process.stdout.write(`!!! [15M-TRACE-EXIT] JobId: ${jobId} SUCCESS !!!\n`);
+      process.stdout.write(`!!! [15M-TRACE-EXIT] JobId: ${String(jobId)} SUCCESS !!!\n`);
       return { success: true, data: result };
     } catch (e: any) {
-      process.stdout.write(`!!! [15M-TRACE-CRASH] JobId: ${jobId} ERROR: ${e.message} !!!\n`);
-      console.error(`!!! [15M-STACK] JobId: ${jobId}`, e);
+      process.stdout.write(`!!! [15M-TRACE-CRASH] JobId: ${String(jobId)} ERROR: ${e.message} !!!\n`);
+      // P1 Security: Do not pass externally controlled string as the first argument (format string vuln)
+      console.error('!!! [15M-STACK] JobId Trace Error:', jobId, e);
       throw e;
     }
   }

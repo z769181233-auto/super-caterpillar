@@ -16,11 +16,11 @@ function buildSignedHeaders(
   contentType?: string
 ): Record<string, string> {
   const apiKey = requireEnv('WORKER_API_KEY');
-  const secret = requireEnv('HMAC_SECRET_KEY');
+  const hmacSigningKey = requireEnv('HMAC_SECRET_KEY');
   const nonce = randomUUID();
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const canonical = `${apiKey}${nonce}${timestamp}${body || contentSha256}`;
-  const signature = createHmac('sha256', secret).update(canonical, 'utf8').digest('hex');
+  const signature = createHmac('sha256', hmacSigningKey).update(canonical, 'utf8').digest('hex');
 
   const headers: Record<string, string> = {
     'X-Api-Key': apiKey,

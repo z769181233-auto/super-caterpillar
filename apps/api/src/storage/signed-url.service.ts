@@ -61,8 +61,9 @@ export class SignedUrlService {
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
     const expires = Math.floor(expiresAt.getTime() / 1000);
 
-    // 构建签名字符串：method:key:tenantId:userId:expires
-    const signString = `${method}:${key}:${tenantId}:${userId}:${expires}`;
+    // P1 Security: Use a safe separator (\0) or JSON to prevent type-confusion/parameter-tampering.
+    // Standard colon separators can be spoofed if keys/ids contain colons.
+    const signString = [method, key, tenantId, userId, String(expires)].join('\0');
 
     // 生成 HMAC-SHA256 签名
     const signature = createHmac('sha256', this.secret).update(signString).digest('hex');
@@ -110,8 +111,8 @@ export class SignedUrlService {
         return false;
       }
 
-      // 构建签名字符串：method:key:tenantId:userId:expires
-      const signString = `${method}:${key}:${tenantId}:${userId}:${expires}`;
+      // P1 Security: Consistent separator (\0) with generation logic
+      const signString = [method, key, tenantId, userId, String(expires)].join('\0');
 
       // 计算期望的签名
       const expectedSignature = createHmac('sha256', this.secret).update(signString).digest('hex');

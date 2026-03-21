@@ -22,7 +22,7 @@ if (!baseUrl) {
 }
 const API_BASE_URL = baseUrl;
 const API_KEY = process.env.API_KEY || '';
-const API_SECRET = process.env.API_SECRET || '';
+const API_HMAC_KEY = process.env.API_SECRET || '';
 const WORKER_ID = process.env.WORKER_ID || 'minimal-worker-001';
 
 /**
@@ -40,10 +40,10 @@ function buildMessage(apiKey: string, nonce: string, timestamp: string, body: st
 }
 
 /**
- * 计算 HMAC-SHA256 签名
+ * 计算 HMAC-SHA256 签名 (Sign Message)
  */
-function computeSignature(secret: string, message: string): string {
-  const hmac = createHmac('sha256', secret);
+function computeSignature(hmacKey: string, message: string): string {
+  const hmac = createHmac('sha256', hmacKey);
   hmac.update(message);
   return hmac.digest('hex');
 }
@@ -55,7 +55,7 @@ function generateHmacHeaders(body: string = '') {
   const nonce = generateNonce();
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const message = buildMessage(API_KEY, nonce, timestamp, body);
-  const signature = computeSignature(API_SECRET, message);
+  const signature = computeSignature(API_HMAC_KEY, message);
 
   return {
     'X-Api-Key': API_KEY,
@@ -184,11 +184,10 @@ async function processJob(job: any): Promise<void> {
     await reportJobRunning(jobId);
 
     // 2. 模拟执行（sleep 2~5 秒）
-    const durationMs = 2000 + Math.random() * 3000;
+    // P1 Security: Use crypto for execution jitter to avoid predictable timings
+    const durationMs = 2000 + (randomBytes(4).readUInt32BE(0) % 3000);
     process.stdout.write(
-      util.format(
-        `[${new Date().toISOString()}] ⏳ Executing job ${jobId} (${Math.round(durationMs)}ms)...`
-      ) + '\n'
+      `[${new Date().toISOString()}] ⏳ Executing job ${jobId} (${Math.round(durationMs)}ms)...\n`
     );
     await new Promise((resolve) => setTimeout(resolve, durationMs));
 
