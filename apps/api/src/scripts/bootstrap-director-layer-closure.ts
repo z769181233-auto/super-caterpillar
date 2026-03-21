@@ -41,6 +41,41 @@ async function main() {
   try {
     console.log('[director-bootstrap] start');
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS film_ir_runs (
+        id text PRIMARY KEY,
+        scene_id text NOT NULL,
+        project_id text NOT NULL,
+        film_ir_id text NOT NULL,
+        planner_version text NOT NULL,
+        provider text,
+        model text,
+        status text NOT NULL,
+        input_snapshot jsonb,
+        output_snapshot jsonb,
+        validation_valid boolean NOT NULL DEFAULT false,
+        validation_errors jsonb,
+        validation_warnings jsonb,
+        error_message text,
+        evidence_ref text,
+        created_at timestamptz NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS continuity_state_snapshots (
+        id text PRIMARY KEY,
+        project_id text NOT NULL,
+        scene_id text NOT NULL,
+        shot_id text,
+        trace_id text NOT NULL,
+        source text NOT NULL,
+        snapshot_type text NOT NULL,
+        snapshot_data jsonb NOT NULL,
+        evidence_ref text,
+        created_at timestamptz NOT NULL DEFAULT NOW()
+      )
+    `);
+
     const sceneResult = await client.query<SceneRow>(
       sceneIdArg
         ? `
@@ -61,9 +96,82 @@ async function main() {
       sceneIdArg ? [sceneIdArg] : [],
     );
 
-    const scene = sceneResult.rows[0];
+    let scene = sceneResult.rows[0];
+    if (!scene && !sceneIdArg) {
+      await client.query(
+        `
+          INSERT INTO "users" (id, email, "passwordHash", role, "createdAt", "updatedAt")
+          VALUES ('user-gate', 'gate@example.com', 'director-bootstrap', 'ADMIN', NOW(), NOW())
+          ON CONFLICT (id) DO NOTHING
+        `,
+      );
+      await client.query(
+        `
+          INSERT INTO organizations (id, name, "ownerId", "createdAt", "updatedAt")
+          VALUES ('gate-org', 'Gate Organization', 'user-gate', NOW(), NOW())
+          ON CONFLICT (id) DO NOTHING
+        `,
+      );
+
+      const ownerResult = await client.query<{ id: string }>(
+        `
+          SELECT id
+          FROM "users"
+          ORDER BY "createdAt" ASC
+          LIMIT 1
+        `,
+      );
+      const organizationResult = await client.query<{ id: string }>(
+        `
+          SELECT id
+          FROM organizations
+          ORDER BY "createdAt" ASC
+          LIMIT 1
+        `,
+      );
+
+      const ownerId = ownerResult.rows[0]?.id;
+      const organizationId = organizationResult.rows[0]?.id;
+      if (!ownerId || !organizationId) {
+        throw new Error('No eligible scene found and no user/organization available for bootstrap fallback');
+      }
+
+      const projectId = randomUUID();
+      const syntheticSceneId = randomUUID();
+      await client.query(
+        `
+          INSERT INTO projects (
+            id, name, description, "ownerId", "organizationId", status, "createdAt", "updatedAt"
+          ) VALUES (
+            $1, 'Director Bootstrap Project', 'Synthetic project for director-layer closure bootstrap', $2, $3, 'in_progress', NOW(), NOW()
+          )
+        `,
+        [projectId, ownerId, organizationId],
+      );
+      await client.query(
+        `
+          INSERT INTO scenes (
+            id, "episodeId", scene_index, status, title, summary, project_id, enriched_text, created_at, updated_at
+          ) VALUES (
+            $1, NULL, 1, 'PENDING', 'Director Bootstrap Scene', 'Synthetic scene for director-layer closure bootstrap', $2,
+            'Synthetic scene for director-layer closure bootstrap', NOW(), NOW()
+          )
+        `,
+        [syntheticSceneId, projectId],
+      );
+
+      scene = {
+        id: syntheticSceneId,
+        title: 'Director Bootstrap Scene',
+        project_id: projectId,
+        organizationId,
+        episodeId: null,
+        enriched_text: 'Synthetic scene for director-layer closure bootstrap',
+        summary: 'Synthetic scene for director-layer closure bootstrap',
+      };
+    }
     if (!scene) {
-      throw new Error(sceneIdArg ? `Scene ${sceneIdArg} not found` : 'No scene with enriched_text found');
+      throw new Error(sceneIdArg ? `Scene ${sceneIdArg} not found` : 'No eligible scene found for director bootstrap');
     }
 
     console.log(`[director-bootstrap] scene=${scene.id}`);
@@ -129,7 +237,7 @@ async function main() {
             visual_strategy, blocking_strategy, shot_pattern, avg_shot_length_sec,
             camera_motion_style, composition_style, lighting_style, color_strategy, sound_strategy,
             continuity_constraints, why_this_choice, alternative_rejected_reason,
-            quality_score, confidence, evidence_ref
+            quality_score, confidence, evidence_ref, created_at, updated_at
           ) VALUES (
             $1,$2,$3,'film-planner-v1','LOCKED',
             $4,$5,
@@ -137,7 +245,7 @@ async function main() {
             '近景主导，强调角色反应','角色保持对立压缩空间','CLOSE_UP_DOMINANT',3.5,
             'STATIC','三等分对峙构图','LOW_KEY','冷蓝低饱和','环境音渐弱，对话主导',
             $7::jsonb,'Bootstrap 以最小风险验证 director-layer 数据闭环','无需真实媒体信号即可先验证协议闭环',
-            0.82,0.88,$8
+            0.82,0.88,$8,NOW(),NOW()
           )
         `,
         [
