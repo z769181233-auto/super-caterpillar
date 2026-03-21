@@ -144,6 +144,25 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
   const tracks = timeline.audio?.tracks || [];
   const hasDucking = tracks.some((t) => t.ducking);
   const forcePathB = hasTransitions || tracks.length > 1 || hasDucking;
+  const directorTimelineSummary = {
+    hasTransitions,
+    audioMode: timeline.audio?.mode || null,
+    audioMasterPriority: timeline.audio?.masterPriority || null,
+    bgmGain:
+      typeof timeline.audio?.bgmGain === 'number' ? timeline.audio.bgmGain : null,
+    transitionHints: timeline.shots
+      .map((shot) => shot.directorPlan?.transitionHint)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    rhythmStrategies: timeline.shots
+      .map((shot) => shot.directorPlan?.editingRhythmStrategy)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    soundStrategies: timeline.shots
+      .map((shot) => shot.directorPlan?.soundStrategy)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    silenceStrategies: timeline.shots
+      .map((shot) => shot.directorPlan?.silenceStrategy)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+  };
 
   if (!forcePathB) {
     // Path A: Simple Concat
@@ -323,8 +342,14 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       assetId: asset.id,
       storageKey: finalOutputRelative,
       metrics: { durationMs: latencyMs, cost: costAmount, shots: timeline.shots.length },
+      directorTimelineSummary,
     },
-    audit: { action: 'ce11.timeline_preview.success', sceneId: timeline.sceneId, traceId },
+    audit: {
+      action: 'ce11.timeline_preview.success',
+      sceneId: timeline.sceneId,
+      traceId,
+      directorTimelineSummary,
+    },
   };
 }
 

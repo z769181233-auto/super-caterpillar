@@ -16,6 +16,13 @@ export interface TimelineShot {
   framesTxtStorageKey: string;
   transition: 'none' | 'xfade';
   transitionFrames: number; // Overlap length
+  directorPlan?: {
+    transitionHint?: string;
+    editingRhythmStrategy?: string;
+    soundStrategy?: string;
+    silenceStrategy?: string;
+    avgShotLengthSec?: number;
+  };
 }
 
 export interface AudioTrack {
@@ -35,6 +42,7 @@ export interface AudioConfig {
   tracks: AudioTrack[];
   masterPriority?: string;
   mode?: 'none' | 'loop' | 'truncate'; // Legacy support
+  bgmGain?: number;
 }
 
 export interface TimelineData {

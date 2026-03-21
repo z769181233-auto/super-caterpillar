@@ -28,6 +28,7 @@ export class PublishedVideoService {
           select: {
             id: true,
             filmIrId: true,
+            params: true,
             scene: {
               select: {
                 id: true,
@@ -57,6 +58,16 @@ export class PublishedVideoService {
           },
         })
       : null;
+
+    const directorPlan =
+      asset?.shot?.params &&
+      typeof asset.shot.params === 'object' &&
+      !Array.isArray(asset.shot.params) &&
+      'directorPlan' in (asset.shot.params as Record<string, unknown>)
+        ? ((asset.shot.params as Record<string, unknown>).directorPlan as
+            | Record<string, unknown>
+            | undefined)
+        : undefined;
 
     return await this.prisma.$transaction(async (tx) => {
       let pv = await tx.publishedVideo.findFirst({
@@ -90,6 +101,22 @@ export class PublishedVideoService {
                 assetCreatedByJobId: asset?.createdByJobId ?? null,
                 hlsPlaylistUrl: asset?.hlsPlaylistUrl ?? null,
                 signedUrl: asset?.signedUrl ?? null,
+                transitionHint:
+                  typeof directorPlan?.transitionHint === 'string'
+                    ? directorPlan.transitionHint
+                    : null,
+                editingRhythmStrategy:
+                  typeof directorPlan?.editingRhythmStrategy === 'string'
+                    ? directorPlan.editingRhythmStrategy
+                    : null,
+                audioMasterPriority:
+                  typeof directorPlan?.soundStrategy === 'string'
+                    ? directorPlan.soundStrategy
+                    : null,
+                silenceStrategy:
+                  typeof directorPlan?.silenceStrategy === 'string'
+                    ? directorPlan.silenceStrategy
+                    : null,
               },
             } as any,
           },
