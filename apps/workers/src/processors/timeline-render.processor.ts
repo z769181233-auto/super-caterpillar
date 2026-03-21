@@ -47,6 +47,8 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   const fps = timeline.fps || 24;
   const width = timeline.width || 1280;
   const height = timeline.height || 720;
+  const masterPriority = timeline.audio?.masterPriority || 'dialogue';
+  const audioMode = timeline.audio?.mode || 'truncate';
 
   // FFmpeg Fail-fast check
   try {
@@ -344,6 +346,14 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   let tracks = timeline.audio?.tracks || [];
   if (ttsAsset && bgmAsset) {
     console.log(`[TimelineRender] Adding audio tracks: TTS + BGM`);
+    const existingBgmTrack = timeline.audio?.tracks?.find((track) => track.type === 'music');
+    const derivedBgmGain =
+      typeof existingBgmTrack?.gain === 'number'
+        ? existingBgmTrack.gain
+        : masterPriority === 'music'
+          ? 0.45
+          : 0.25;
+
     tracks = [
       {
         id: 'tts_main',
@@ -355,9 +365,13 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         id: 'bgm_main',
         type: 'music', // 使用 'music' 而非 'bgm'
         storageKey: bgmAsset.storageKey,
-        gain: 0.3, // 降低 BGM 音量
-        loop: false, // 已经计算足够时长,不需要 loop
-        ducking: { target: 'dialogue', gain: 0.3 }, // ducking gain (降低到30%)
+        gain: derivedBgmGain,
+        loop: audioMode === 'loop',
+        ducking:
+          masterPriority === 'music'
+            ? { target: 'dialogue', gain: 0.18 }
+            : { target: 'dialogue', gain: 0.3 },
+        truncate: audioMode === 'loop' ? 'longest' : 'shortest',
       },
     ];
   }
