@@ -153,6 +153,10 @@ async function main() {
         typeof activeContinuityState.rows[0]?.state_data?.resolutionMode === 'string'
           ? activeContinuityState.rows[0].state_data.resolutionMode
           : null,
+      activeContinuityLifecycleStage:
+        typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
+          ? activeContinuityState.rows[0].state_data.lifecycleStage
+          : null,
       contentGateResultCount: gateResults.rows.length,
     latestGateVerdict: gateResults.rows[0]?.gate_verdict ?? null,
     latestGatePolicyLevel:

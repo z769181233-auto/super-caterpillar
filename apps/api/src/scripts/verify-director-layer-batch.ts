@@ -171,6 +171,10 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
       typeof activeContinuityState.rows[0]?.state_data?.resolutionMode === 'string'
         ? (activeContinuityState.rows[0]?.state_data?.resolutionMode as string)
         : null,
+    activeContinuityLifecycleStage:
+      typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
+        ? (activeContinuityState.rows[0]?.state_data?.lifecycleStage as string)
+        : null,
     continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
     continuityOverrideCount: Number(continuityOverrideCount.rows[0]?.count ?? 0),
     contentGateResultCount: gateResults.rows.length,

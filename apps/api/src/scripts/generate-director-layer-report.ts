@@ -37,6 +37,7 @@ type SceneEvidenceRow = {
   activeContinuitySource: string | null;
   activeContinuityLocked: boolean;
   activeContinuityResolutionMode: string | null;
+  activeContinuityLifecycleStage: string | null;
   continuityLockCount: number;
   continuityOverrideCount: number;
   gateCount: number;
@@ -150,8 +151,8 @@ async function main() {
     lines.push(`- Profile: ${profile}`);
     lines.push(`- Total Scenes: ${scenes.rows.length}`);
     lines.push('');
-    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Active State | Locks | Overrides | Gate | Publish | Verdict |');
-    lines.push('|---|---:|---:|---:|---:|---|---:|---:|---:|---:|---|');
+    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Active State | Lifecycle | Locks | Overrides | Gate | Publish | Verdict |');
+    lines.push('|---|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---|');
     const sceneEvidenceRows: SceneEvidenceRow[] = [];
 
     for (const scene of scenes.rows) {
@@ -261,6 +262,10 @@ async function main() {
                   : ''
               }`
             : 'NONE'
+        } | ${
+          typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
+            ? String(activeContinuityState.rows[0]?.state_data?.lifecycleStage)
+            : 'NONE'
         } | ${Number(continuityLockCount.rows[0]?.count ?? 0)} | ${Number(
           continuityOverrideCount.rows[0]?.count ?? 0,
         )} | ${Number(gateCount.rows[0]?.count ?? 0)} | ${Number(
@@ -281,6 +286,10 @@ async function main() {
         activeContinuityResolutionMode:
           typeof activeContinuityState.rows[0]?.state_data?.resolutionMode === 'string'
             ? (activeContinuityState.rows[0]?.state_data?.resolutionMode as string)
+            : null,
+        activeContinuityLifecycleStage:
+          typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
+            ? (activeContinuityState.rows[0]?.state_data?.lifecycleStage as string)
             : null,
         continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
         continuityOverrideCount: Number(continuityOverrideCount.rows[0]?.count ?? 0),
@@ -351,6 +360,11 @@ async function main() {
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
+      continuityLifecycleStages: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.activeContinuityLifecycleStage || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
       coverageRoles: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
         const key =
           typeof row.latestPublishDirectorLayer?.coverageRole === 'string'
@@ -389,6 +403,7 @@ async function main() {
     lines.push(`- Gate Reasons: ${JSON.stringify(aggregate.gateReasons)}`);
     lines.push(`- Continuity Sources: ${JSON.stringify(aggregate.continuitySources)}`);
     lines.push(`- Continuity Resolution Modes: ${JSON.stringify(aggregate.continuityResolutionModes)}`);
+    lines.push(`- Continuity Lifecycle Stages: ${JSON.stringify(aggregate.continuityLifecycleStages)}`);
     lines.push(`- Coverage Roles: ${JSON.stringify(aggregate.coverageRoles)}`);
     lines.push(`- Rhythm Classes: ${JSON.stringify(aggregate.rhythmClasses)}`);
     lines.push(`- Planner Versions: ${JSON.stringify(aggregate.plannerVersions)}`);

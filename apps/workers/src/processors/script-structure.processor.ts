@@ -372,6 +372,23 @@ export async function processContinuityAuditJob(
       atSceneId: scene.id,
     });
 
+    const existingContinuityState = await (prisma as any).continuityState.findUnique({
+      where: {
+        projectId_entityType_entityId_atSceneId: {
+          projectId: scene.projectId,
+          entityType: 'SCENE',
+          entityId: scene.id,
+          atSceneId: scene.id,
+        },
+      },
+      select: {
+        id: true,
+        stateData: true,
+        source: true,
+        updatedAt: true,
+      },
+    });
+
     const latestOverride = await getLatestContinuityOverrideBestEffort({
       prisma,
       projectId: scene.projectId,
@@ -379,16 +396,6 @@ export async function processContinuityAuditJob(
       entityId: scene.id,
       atSceneId: scene.id,
     });
-
-    const effectiveStateData = latestOverride?.override_data
-      ? {
-          ...continuitySummary,
-          ...(latestOverride.override_data as Record<string, unknown>),
-          overrideId: latestOverride.id,
-          overrideReason: latestOverride.override_reason ?? null,
-          overrideBy: latestOverride.override_by ?? null,
-        }
-      : continuitySummary;
 
     const effectiveSource = activeLock
       ? 'STATE_LOCK'
@@ -400,6 +407,35 @@ export async function processContinuityAuditJob(
       : latestOverride
         ? 'OVERRIDE_APPLIED'
         : 'AUTO';
+    const lifecycleStage = activeLock
+      ? 'LOCKED_CURRENT'
+      : latestOverride
+        ? 'OVERRIDE_CURRENT'
+        : existingContinuityState
+          ? 'AUTO_REFRESHED'
+          : 'AUTO_INITIAL';
+    const lockedBaseState =
+      existingContinuityState?.stateData &&
+      typeof existingContinuityState.stateData === 'object' &&
+      !Array.isArray(existingContinuityState.stateData)
+        ? (existingContinuityState.stateData as Record<string, unknown>)
+        : null;
+    const effectiveStateData = activeLock
+      ? {
+          ...continuitySummary,
+          ...(lockedBaseState ?? {}),
+          lockId: activeLock.id,
+          lockReason: activeLock.lock_reason ?? null,
+        }
+      : latestOverride?.override_data
+        ? {
+            ...continuitySummary,
+            ...(latestOverride.override_data as Record<string, unknown>),
+            overrideId: latestOverride.id,
+            overrideReason: latestOverride.override_reason ?? null,
+            overrideBy: latestOverride.override_by ?? null,
+          }
+        : continuitySummary;
 
     await (prisma as any).continuityState.upsert({
       where: {
@@ -414,11 +450,15 @@ export async function processContinuityAuditJob(
         stateData: {
           ...effectiveStateData,
           resolutionMode,
+          lifecycleStage,
           activeSource: effectiveSource,
           lockId: activeLock?.id ?? null,
           lockReason: activeLock?.lock_reason ?? null,
           overrideId: latestOverride?.id ?? null,
           overrideReason: latestOverride?.override_reason ?? null,
+          previousStateId: existingContinuityState?.id ?? null,
+          previousSource: existingContinuityState?.source ?? null,
+          previousUpdatedAt: existingContinuityState?.updatedAt?.toISOString?.() ?? null,
         },
         isLocked: !!activeLock,
         source: effectiveSource,
@@ -433,11 +473,15 @@ export async function processContinuityAuditJob(
         stateData: {
           ...effectiveStateData,
           resolutionMode,
+          lifecycleStage,
           activeSource: effectiveSource,
           lockId: activeLock?.id ?? null,
           lockReason: activeLock?.lock_reason ?? null,
           overrideId: latestOverride?.id ?? null,
           overrideReason: latestOverride?.override_reason ?? null,
+          previousStateId: existingContinuityState?.id ?? null,
+          previousSource: existingContinuityState?.source ?? null,
+          previousUpdatedAt: existingContinuityState?.updatedAt?.toISOString?.() ?? null,
         },
         isLocked: !!activeLock,
         source: effectiveSource,
@@ -459,6 +503,7 @@ export async function processContinuityAuditJob(
       snapshotData: {
         ...effectiveStateData,
         resolutionMode,
+        lifecycleStage,
         activeSource: effectiveSource,
         lockId: activeLock?.id ?? null,
         lockReason: activeLock?.lock_reason ?? null,
@@ -466,6 +511,9 @@ export async function processContinuityAuditJob(
         overrideId: latestOverride?.id ?? null,
         overrideReason: latestOverride?.override_reason ?? null,
         overrideEvidenceRef: latestOverride?.evidence_ref ?? null,
+        previousStateId: existingContinuityState?.id ?? null,
+        previousSource: existingContinuityState?.source ?? null,
+        previousUpdatedAt: existingContinuityState?.updatedAt?.toISOString?.() ?? null,
       },
       evidenceRef:
         activeLock?.evidence_ref ??
