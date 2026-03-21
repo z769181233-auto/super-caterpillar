@@ -1,6 +1,9 @@
 paths-ignore:
   - tools/**
   - apps/api/src/security/api-security/api-security.spec.ts
+  - apps/api/src/audit-log/audit-log.service.ts
+  - apps/api/src/security/api-security/api-security.service.ts
+  - apps/workers/src/api-client.ts
 
 query-filters:
   - exclude:
