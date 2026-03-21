@@ -49,6 +49,66 @@ export interface TimelineData {
   audio?: AudioConfig;
 }
 
+function deriveAudioPreferences(shotParamsList: any[]): {
+  masterPriority: string;
+  mode: 'none' | 'loop' | 'truncate';
+  bgmGain: number;
+} {
+  const directorPlans = shotParamsList
+    .map((params) => params?.directorPlan || null)
+    .filter(Boolean);
+
+  const soundHints = directorPlans
+    .map((plan) => String(plan.soundStrategy || '').toUpperCase())
+    .filter(Boolean);
+  const silenceHints = directorPlans
+    .map((plan) => String(plan.silenceStrategy || '').toUpperCase())
+    .filter(Boolean);
+
+  const prefersSilence = silenceHints.some(
+    (value) => value.includes('SILENCE') || value.includes('QUIET') || value.includes('BREATH'),
+  );
+  const prefersDialogueFocus = soundHints.some(
+    (value) => value.includes('DIALOGUE') || value.includes('VOICE') || value.includes('INTIMATE'),
+  );
+  const prefersAmbientLoop = soundHints.some(
+    (value) => value.includes('AMBIENT') || value.includes('ATMOS') || value.includes('SPACE'),
+  );
+  const prefersMusicForward = soundHints.some(
+    (value) => value.includes('MUSIC') || value.includes('SCORE') || value.includes('ORCHESTRAL'),
+  );
+
+  if (prefersSilence) {
+    return {
+      masterPriority: 'dialogue',
+      mode: 'truncate',
+      bgmGain: 0.15,
+    };
+  }
+
+  if (prefersDialogueFocus) {
+    return {
+      masterPriority: 'dialogue',
+      mode: prefersAmbientLoop ? 'loop' : 'truncate',
+      bgmGain: 0.22,
+    };
+  }
+
+  if (prefersMusicForward) {
+    return {
+      masterPriority: 'music',
+      mode: prefersAmbientLoop ? 'loop' : 'truncate',
+      bgmGain: 0.4,
+    };
+  }
+
+  return {
+    masterPriority: 'dialogue',
+    mode: prefersAmbientLoop ? 'loop' : 'truncate',
+    bgmGain: 0.3,
+  };
+}
+
 function deriveTransitionProfile(params: any): {
   transition: 'none' | 'xfade';
   transitionSec: number;
@@ -211,8 +271,10 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
   let currentFrame = 0;
   const timelineShots: TimelineShot[] = [];
+  const shotParamsList: any[] = [];
   for (const [idx, shot] of (scene.shots as any[]).entries()) {
     const params = shotParamsMap.get(shot.id) || (shot.params as any) || {};
+    shotParamsList.push(params);
     const durationFrames = (shot.durationSeconds || 1) * fps;
 
     // S4-8 + Director Layer: 优先尊重显式 params，其次消费 directorPlan 的节奏/转场提示
@@ -280,6 +342,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     timelineShots.push(s);
   }
 
+  const audioPreferences = deriveAudioPreferences(shotParamsList);
+
   const timelineData: TimelineData = {
     sceneId,
     projectId,
@@ -297,8 +361,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
                 id: 'bgm',
                 type: 'music' as const,
                 storageKey: (job.payload as any).bgmStorageKey,
-                gain: (job.payload as any).bgmGain || 0.5,
-                loop: (job.payload as any).bgmMode === 'loop',
+                gain: (job.payload as any).bgmGain || audioPreferences.bgmGain,
+                loop: ((job.payload as any).bgmMode || audioPreferences.mode) === 'loop',
                 ducking: { target: 'dialogue', gain: 0.2 },
                 truncate: 'shortest' as const,
               },
@@ -320,7 +384,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
           })
           .filter((t): t is AudioTrack => t !== null),
       ],
-      masterPriority: 'dialogue',
+      masterPriority: audioPreferences.masterPriority,
+      mode: audioPreferences.mode,
     },
   };
 
