@@ -34,9 +34,13 @@ type SceneEvidenceRow = {
   shotCount: number;
   shotPlanningCount: number;
   continuityCount: number;
+  continuityLockCount: number;
+  continuityOverrideCount: number;
   gateCount: number;
   publishCount: number;
   latestGateVerdict: string | null;
+  latestGateReason: string | null;
+  latestThresholdProfile: string | null;
   latestEvidenceRef: string | null;
   latestPublishDirectorLayer: Record<string, unknown> | null;
   verdict: 'PASS' | 'FAIL';
@@ -141,8 +145,8 @@ async function main() {
     lines.push(`- Profile: ${profile}`);
     lines.push(`- Total Scenes: ${scenes.rows.length}`);
     lines.push('');
-    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Gate | Publish | Verdict |');
-    lines.push('|---|---:|---:|---:|---:|---:|---:|---|');
+    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Locks | Overrides | Gate | Publish | Verdict |');
+    lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|---|');
     const sceneEvidenceRows: SceneEvidenceRow[] = [];
 
     for (const scene of scenes.rows) {
@@ -158,6 +162,24 @@ async function main() {
         `SELECT COUNT(*)::int AS count FROM continuity_state_snapshots WHERE scene_id = $1`,
         [scene.id],
       );
+      const continuityLockCount = await client.query<{ count: number }>(
+        `
+          SELECT COUNT(*)::int AS count
+          FROM continuity_state_locks
+          WHERE project_id = $1
+            AND (at_scene_id IS NULL OR at_scene_id = $2)
+        `,
+        [scene.project_id, scene.id],
+      );
+      const continuityOverrideCount = await client.query<{ count: number }>(
+        `
+          SELECT COUNT(*)::int AS count
+          FROM continuity_state_overrides
+          WHERE project_id = $1
+            AND (at_scene_id IS NULL OR at_scene_id = $2)
+        `,
+        [scene.project_id, scene.id],
+      );
       const gateCount = await client.query<{ count: number }>(
         `SELECT COUNT(*)::int AS count FROM content_gate_results WHERE scene_id = $1`,
         [scene.id],
@@ -165,9 +187,10 @@ async function main() {
       const latestGate = await client.query<{
         gate_verdict: string | null;
         evidence_ref: string | null;
+        gate_details: Record<string, unknown> | null;
       }>(
         `
-          SELECT gate_verdict, evidence_ref
+          SELECT gate_verdict, evidence_ref, gate_details
           FROM content_gate_results
           WHERE scene_id = $1
           ORDER BY created_at DESC
@@ -209,6 +232,8 @@ async function main() {
           shotCounts.rows[0]?.shot_count ?? 0,
         )} | ${Number(shotPlanningCount.rows[0]?.count ?? 0)} | ${Number(
           continuityCount.rows[0]?.count ?? 0,
+        )} | ${Number(continuityLockCount.rows[0]?.count ?? 0)} | ${Number(
+          continuityOverrideCount.rows[0]?.count ?? 0,
         )} | ${Number(gateCount.rows[0]?.count ?? 0)} | ${Number(
           publishCount.rows[0]?.count ?? 0,
         )} | ${verdict} |`,
@@ -222,14 +247,53 @@ async function main() {
         shotCount: Number(shotCounts.rows[0]?.shot_count ?? 0),
         shotPlanningCount: Number(shotPlanningCount.rows[0]?.count ?? 0),
         continuityCount: Number(continuityCount.rows[0]?.count ?? 0),
+        continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
+        continuityOverrideCount: Number(continuityOverrideCount.rows[0]?.count ?? 0),
         gateCount: Number(gateCount.rows[0]?.count ?? 0),
         publishCount: Number(publishCount.rows[0]?.count ?? 0),
         latestGateVerdict: latestGate.rows[0]?.gate_verdict ?? null,
+        latestGateReason:
+          typeof latestGate.rows[0]?.gate_details?.gateReason === 'string'
+            ? (latestGate.rows[0]?.gate_details?.gateReason as string)
+            : null,
+        latestThresholdProfile:
+          typeof latestGate.rows[0]?.gate_details?.thresholdProfile === 'string'
+            ? (latestGate.rows[0]?.gate_details?.thresholdProfile as string)
+            : null,
         latestEvidenceRef: latestGate.rows[0]?.evidence_ref ?? null,
         latestPublishDirectorLayer: latestPublish.rows[0]?.metadata?.directorLayer ?? null,
         verdict,
       });
     }
+
+    const aggregate = {
+      totalLocks: sceneEvidenceRows.reduce((sum, row) => sum + row.continuityLockCount, 0),
+      totalOverrides: sceneEvidenceRows.reduce((sum, row) => sum + row.continuityOverrideCount, 0),
+      gateVerdicts: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.latestGateVerdict || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      thresholdProfiles: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.latestThresholdProfile || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      gateReasons: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.latestGateReason || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+    };
+
+    lines.push('');
+    lines.push('## Aggregate');
+    lines.push('');
+    lines.push(`- Total Locks: ${aggregate.totalLocks}`);
+    lines.push(`- Total Overrides: ${aggregate.totalOverrides}`);
+    lines.push(`- Gate Verdicts: ${JSON.stringify(aggregate.gateVerdicts)}`);
+    lines.push(`- Threshold Profiles: ${JSON.stringify(aggregate.thresholdProfiles)}`);
+    lines.push(`- Gate Reasons: ${JSON.stringify(aggregate.gateReasons)}`);
 
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, `${lines.join('\n')}\n`, 'utf8');
@@ -241,6 +305,7 @@ async function main() {
       totalScenes: sceneEvidenceRows.length,
       passedScenes: sceneEvidenceRows.filter((row) => row.verdict === 'PASS').length,
       failedScenes: sceneEvidenceRows.filter((row) => row.verdict !== 'PASS').length,
+      aggregate,
       scenes: sceneEvidenceRows,
     };
     fs.writeFileSync(jsonOutputPath, `${JSON.stringify(evidencePackage, null, 2)}\n`, 'utf8');

@@ -55,6 +55,7 @@ export class PublishedVideoService {
             publishReadinessScore: true,
             evidenceRef: true,
             createdAt: true,
+            gateDetails: true,
           },
         })
       : null;
@@ -67,6 +68,12 @@ export class PublishedVideoService {
         ? ((asset.shot.params as Record<string, unknown>).directorPlan as
             | Record<string, unknown>
             | undefined)
+        : undefined;
+    const gateDetails =
+      publishEvidence?.gateDetails &&
+      typeof publishEvidence.gateDetails === 'object' &&
+      !Array.isArray(publishEvidence.gateDetails)
+        ? (publishEvidence.gateDetails as Record<string, unknown>)
         : undefined;
 
     return await this.prisma.$transaction(async (tx) => {
@@ -117,6 +124,24 @@ export class PublishedVideoService {
                   typeof directorPlan?.silenceStrategy === 'string'
                     ? directorPlan.silenceStrategy
                     : null,
+                thresholdProfile:
+                  typeof gateDetails?.thresholdProfile === 'string'
+                    ? gateDetails.thresholdProfile
+                    : null,
+                gateReason:
+                  typeof gateDetails?.gateReason === 'string' ? gateDetails.gateReason : null,
+                gateThresholds:
+                  gateDetails?.thresholds && typeof gateDetails.thresholds === 'object'
+                    ? gateDetails.thresholds
+                    : null,
+                gatePolicyStatus:
+                  publishEvidence?.gateVerdict === 'PASS'
+                    ? 'publishable'
+                    : publishEvidence?.gateVerdict === 'WARN'
+                      ? 'review_required'
+                      : publishEvidence?.gateVerdict === 'BLOCK'
+                        ? 'blocked'
+                        : 'pending',
               },
             } as any,
           },

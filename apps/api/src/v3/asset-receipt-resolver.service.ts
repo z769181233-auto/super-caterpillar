@@ -10,6 +10,17 @@ export interface V3AssetReceipt {
   duration_sec: number | null;
   fallback_reason: string | null;
   error_code?: string;
+  director_layer?: {
+    scene_id: string | null;
+    film_ir_id: string | null;
+    gate_verdict: string | null;
+    gate_reason: string | null;
+    threshold_profile: string | null;
+    transition_hint: string | null;
+    rhythm_strategy: string | null;
+    audio_master_priority: string | null;
+    silence_strategy: string | null;
+  } | null;
 }
 
 @Injectable()
@@ -110,6 +121,12 @@ export class AssetReceiptResolverService {
 
   private mapAssetToReceipt(asset: any, fallbackReason: string | null): V3AssetReceipt {
     const metadata = (asset.publishedVideo?.metadata as any) || {};
+    const directorLayer =
+      metadata.directorLayer &&
+      typeof metadata.directorLayer === 'object' &&
+      !Array.isArray(metadata.directorLayer)
+        ? metadata.directorLayer
+        : null;
     return {
       asset_id: asset.id,
       hls_url: asset.hlsPlaylistUrl,
@@ -118,6 +135,19 @@ export class AssetReceiptResolverService {
       storage_key: asset.storageKey,
       duration_sec: metadata.duration_sec || 0,
       fallback_reason: fallbackReason,
+      director_layer: directorLayer
+        ? {
+            scene_id: directorLayer.sceneId ?? null,
+            film_ir_id: directorLayer.filmIrId ?? null,
+            gate_verdict: directorLayer.latestGateVerdict ?? null,
+            gate_reason: directorLayer.gateReason ?? null,
+            threshold_profile: directorLayer.thresholdProfile ?? null,
+            transition_hint: directorLayer.transitionHint ?? null,
+            rhythm_strategy: directorLayer.editingRhythmStrategy ?? null,
+            audio_master_priority: directorLayer.audioMasterPriority ?? null,
+            silence_strategy: directorLayer.silenceStrategy ?? null,
+          }
+        : null,
     };
   }
 }

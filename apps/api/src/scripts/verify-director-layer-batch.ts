@@ -91,10 +91,32 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
     `,
     [scene.id],
   );
-
-  const gateResults = await client.query<{ gate_verdict: string | null; created_at: string }>(
+  const continuityLockCount = await client.query<{ count: number }>(
     `
-      SELECT gate_verdict, created_at
+      SELECT COUNT(*)::int AS count
+      FROM continuity_state_locks
+      WHERE project_id = $1
+        AND (at_scene_id IS NULL OR at_scene_id = $2)
+    `,
+    [scene.project_id, scene.id],
+  );
+  const continuityOverrideCount = await client.query<{ count: number }>(
+    `
+      SELECT COUNT(*)::int AS count
+      FROM continuity_state_overrides
+      WHERE project_id = $1
+        AND (at_scene_id IS NULL OR at_scene_id = $2)
+    `,
+    [scene.project_id, scene.id],
+  );
+
+  const gateResults = await client.query<{
+    gate_verdict: string | null;
+    created_at: string;
+    gate_details: Record<string, unknown> | null;
+  }>(
+    `
+      SELECT gate_verdict, created_at, gate_details
       FROM content_gate_results
       WHERE scene_id = $1
       ORDER BY created_at DESC
@@ -127,8 +149,18 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
     shotsWithFilmIrCount: Number(shotCounts.rows[0]?.shot_film_ir_count ?? 0),
     shotsWithDirectorFieldsCount: Number(shotCounts.rows[0]?.shot_director_fields_count ?? 0),
     continuitySnapshotCount: Number(continuitySnapshotCount.rows[0]?.count ?? 0),
+    continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
+    continuityOverrideCount: Number(continuityOverrideCount.rows[0]?.count ?? 0),
     contentGateResultCount: gateResults.rows.length,
     latestGateVerdict: gateResults.rows[0]?.gate_verdict ?? null,
+    latestGateReason:
+      typeof gateResults.rows[0]?.gate_details?.gateReason === 'string'
+        ? (gateResults.rows[0]?.gate_details?.gateReason as string)
+        : null,
+    latestThresholdProfile:
+      typeof gateResults.rows[0]?.gate_details?.thresholdProfile === 'string'
+        ? (gateResults.rows[0]?.gate_details?.thresholdProfile as string)
+        : null,
     publishedVideoCount: publishVideos.rows.length,
     latestPublishedDirectorLayer,
   };
