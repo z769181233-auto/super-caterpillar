@@ -16,7 +16,7 @@ type SceneRow = {
   id: string;
   title: string | null;
   project_id: string;
-  organizationId: string;
+  organizationId: string | null;
   episodeId: string | null;
   enriched_text: string | null;
   summary: string | null;
@@ -81,14 +81,14 @@ async function main() {
         ? `
             SELECT s.id, s.title, s.project_id, s."episodeId", s.enriched_text, s.summary, p."organizationId"
             FROM scenes s
-            JOIN projects p ON p.id = s.project_id
+            LEFT JOIN projects p ON p.id = s.project_id
             WHERE s.id = $1
             LIMIT 1
           `
         : `
             SELECT s.id, s.title, s.project_id, s."episodeId", s.enriched_text, s.summary, p."organizationId"
             FROM scenes s
-            JOIN projects p ON p.id = s.project_id
+            LEFT JOIN projects p ON p.id = s.project_id
             WHERE s.id ~ '^[0-9a-f-]{36}$'
             ORDER BY s.updated_at DESC
             LIMIT 1
@@ -97,7 +97,8 @@ async function main() {
     );
 
     let scene = sceneResult.rows[0];
-    if (!scene && !sceneIdArg) {
+
+    const ensureBootstrapPrincipal = async () => {
       await client.query(
         `
           INSERT INTO "users" (id, email, "passwordHash", role, "createdAt", "updatedAt")
@@ -136,8 +137,14 @@ async function main() {
         throw new Error('No eligible scene found and no user/organization available for bootstrap fallback');
       }
 
+      return { ownerId, organizationId };
+    };
+
+    if (!scene) {
+      const { ownerId, organizationId } = await ensureBootstrapPrincipal();
       const projectId = randomUUID();
-      const syntheticSceneId = randomUUID();
+      const syntheticSceneId = sceneIdArg ?? randomUUID();
+
       await client.query(
         `
           INSERT INTO projects (
@@ -170,8 +177,24 @@ async function main() {
         summary: 'Synthetic scene for director-layer closure bootstrap',
       };
     }
-    if (!scene) {
-      throw new Error(sceneIdArg ? `Scene ${sceneIdArg} not found` : 'No eligible scene found for director bootstrap');
+
+    if (!scene.organizationId) {
+      const { ownerId, organizationId } = await ensureBootstrapPrincipal();
+      await client.query(
+        `
+          INSERT INTO projects (
+            id, name, description, "ownerId", "organizationId", status, "createdAt", "updatedAt"
+          ) VALUES (
+            $1, 'Director Bootstrap Project', 'Synthetic project for director-layer closure bootstrap', $2, $3, 'in_progress', NOW(), NOW()
+          )
+          ON CONFLICT (id) DO UPDATE
+          SET "organizationId" = EXCLUDED."organizationId",
+              "ownerId" = EXCLUDED."ownerId",
+              "updatedAt" = NOW()
+        `,
+        [scene.project_id, ownerId, organizationId],
+      );
+      scene.organizationId = organizationId;
     }
 
     console.log(`[director-bootstrap] scene=${scene.id}`);
