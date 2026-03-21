@@ -3,62 +3,21 @@ import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
 import { ProcessorContext } from '../types/processor-context';
 import { CostLedgerService } from '../billing/cost-ledger.service';
-
-function deriveTransitionHint(activeFilmIr: any): 'cut' | 'match_cut' | 'hold' {
-  const rhythm = String(activeFilmIr?.editingRhythmStrategy || '').toUpperCase();
-  const shotPattern = String(activeFilmIr?.shotPattern || '').toUpperCase();
-  const avgShotLength = Number(activeFilmIr?.avgShotLengthSec || 0);
-
-  if (rhythm.includes('LINGER') || rhythm.includes('HOLD') || avgShotLength >= 6) {
-    return 'hold';
-  }
-
-  if (shotPattern.includes('MONTAGE') || shotPattern.includes('PARALLEL')) {
-    return 'match_cut';
-  }
-
-  return 'cut';
-}
-
-function deriveCoverageRole(shotData: any): 'establish' | 'performance' | 'detail' | 'insert' {
-  const shotType = String(shotData?.shot_type || '').toUpperCase();
-
-  if (shotType.includes('WIDE') || shotType.includes('ESTABLISH') || shotType.includes('MASTER')) {
-    return 'establish';
-  }
-
-  if (shotType.includes('INSERT') || shotType.includes('CUTAWAY')) {
-    return 'insert';
-  }
-
-  if (shotType.includes('CLOSE') || shotType.includes('DETAIL') || shotType.includes('EXTREME')) {
-    return 'detail';
-  }
-
-  return 'performance';
-}
-
-function deriveRhythmClass(activeFilmIr: any): 'fast' | 'balanced' | 'linger' {
-  const rhythm = String(activeFilmIr?.editingRhythmStrategy || '').toUpperCase();
-  const avgShotLength = Number(activeFilmIr?.avgShotLengthSec || 0);
-
-  if (rhythm.includes('FAST') || rhythm.includes('TIGHT') || avgShotLength <= 2) {
-    return 'fast';
-  }
-
-  if (rhythm.includes('LINGER') || rhythm.includes('HOLD') || avgShotLength >= 6) {
-    return 'linger';
-  }
-
-  return 'balanced';
-}
+import {
+  buildTimelinePolicy,
+  deriveCoverageRole,
+  deriveRhythmClass,
+  deriveTransitionHint,
+  getShotPlannerRuleSetVersion,
+} from '../lib/shot-planner-rules';
 
 function buildDirectorPlan(activeFilmIr: any, shotData: any, plannerVersion: string | null) {
-  const transitionHint = deriveTransitionHint(activeFilmIr);
+  const transitionHint = deriveTransitionHint(activeFilmIr).value;
 
   return {
     filmIrId: activeFilmIr?.id || null,
     plannerVersion,
+    shotPlannerRuleSetVersion: getShotPlannerRuleSetVersion(),
     dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
     emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
     shotPattern: shotData.shot_pattern || activeFilmIr?.shotPattern || null,
@@ -87,13 +46,16 @@ function buildDirectorPlan(activeFilmIr: any, shotData: any, plannerVersion: str
 }
 
 function buildExecutionPolicy(activeFilmIr: any, shotData: any, plannerVersion: string | null) {
-  const transitionHint = deriveTransitionHint(activeFilmIr);
+  const transitionHint = deriveTransitionHint(activeFilmIr).value;
+  const coverageRole = deriveCoverageRole(shotData).value;
+  const rhythmClass = deriveRhythmClass(activeFilmIr).value;
 
   return {
     plannerVersion,
+    shotPlannerRuleSetVersion: getShotPlannerRuleSetVersion(),
     filmIrId: activeFilmIr?.id || null,
-    coverageRole: deriveCoverageRole(shotData),
-    rhythmClass: deriveRhythmClass(activeFilmIr),
+    coverageRole,
+    rhythmClass,
     transitionHint,
     durationSecTarget: shotData.duration_sec ? Number(shotData.duration_sec) : null,
     cameraPolicy: {
@@ -285,6 +247,7 @@ export async function processCE11ShotGeneratorJob(
       const plannerVersion = activeFilmIr?.plannerVersion || payload.plannerVersion || null;
       const directorPlan = buildDirectorPlan(activeFilmIr, shotData, plannerVersion);
       const executionPolicy = buildExecutionPolicy(activeFilmIr, shotData, plannerVersion);
+      const timelinePolicy = buildTimelinePolicy(activeFilmIr, shotData);
 
       // 构造 Bible V3.0 要求的 Shot 数据
       // Use upsert to prevent re-runs from creating duplicate shots (if id is deterministic or if we clear first)
@@ -347,11 +310,7 @@ export async function processCE11ShotGeneratorJob(
             action: shotData.action_description,
             ...directorPlan,
             executionPolicy,
-            timelinePolicy: {
-              transitionHint: executionPolicy.transitionHint,
-              rhythmClass: executionPolicy.rhythmClass,
-              coverageRole: executionPolicy.coverageRole,
-            },
+            timelinePolicy,
             // Full raw data backup
             raw: shotData,
           },
@@ -369,11 +328,7 @@ export async function processCE11ShotGeneratorJob(
             action: shotData.action_description,
             ...directorPlan,
             executionPolicy,
-            timelinePolicy: {
-              transitionHint: executionPolicy.transitionHint,
-              rhythmClass: executionPolicy.rhythmClass,
-              coverageRole: executionPolicy.coverageRole,
-            },
+            timelinePolicy,
             // Full raw data backup
             raw: shotData,
           },

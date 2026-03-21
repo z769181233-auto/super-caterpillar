@@ -17,6 +17,7 @@ export interface TimelineShot {
   transition: 'none' | 'xfade';
   transitionFrames: number; // Overlap length
   directorPlan?: {
+    ruleSetVersion?: string;
     transitionHint?: string;
     editingRhythmStrategy?: string;
     soundStrategy?: string;
@@ -24,6 +25,7 @@ export interface TimelineShot {
     avgShotLengthSec?: number;
     coverageRole?: string;
     rhythmClass?: string;
+    matchedRules?: Array<{ id: string; reason: string }>;
   };
 }
 
@@ -365,6 +367,11 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       transition,
       transitionFrames,
       directorPlan: {
+        ruleSetVersion:
+          params.timelinePolicy?.ruleSetVersion ||
+          params.executionPolicy?.shotPlannerRuleSetVersion ||
+          params.directorPlan?.shotPlannerRuleSetVersion ||
+          undefined,
         transitionHint:
           params.timelinePolicy?.transitionHint ||
           params.executionPolicy?.transitionHint ||
@@ -395,6 +402,9 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
           params.timelinePolicy?.rhythmClass ||
           params.executionPolicy?.rhythmClass ||
           undefined,
+        matchedRules: Array.isArray(params.timelinePolicy?.matchedRules)
+          ? params.timelinePolicy.matchedRules
+          : undefined,
       },
     };
 
