@@ -20,6 +20,39 @@ function deriveTransitionHint(activeFilmIr: any): 'cut' | 'match_cut' | 'hold' {
   return 'cut';
 }
 
+function deriveCoverageRole(shotData: any): 'establish' | 'performance' | 'detail' | 'insert' {
+  const shotType = String(shotData?.shot_type || '').toUpperCase();
+
+  if (shotType.includes('WIDE') || shotType.includes('ESTABLISH') || shotType.includes('MASTER')) {
+    return 'establish';
+  }
+
+  if (shotType.includes('INSERT') || shotType.includes('CUTAWAY')) {
+    return 'insert';
+  }
+
+  if (shotType.includes('CLOSE') || shotType.includes('DETAIL') || shotType.includes('EXTREME')) {
+    return 'detail';
+  }
+
+  return 'performance';
+}
+
+function deriveRhythmClass(activeFilmIr: any): 'fast' | 'balanced' | 'linger' {
+  const rhythm = String(activeFilmIr?.editingRhythmStrategy || '').toUpperCase();
+  const avgShotLength = Number(activeFilmIr?.avgShotLengthSec || 0);
+
+  if (rhythm.includes('FAST') || rhythm.includes('TIGHT') || avgShotLength <= 2) {
+    return 'fast';
+  }
+
+  if (rhythm.includes('LINGER') || rhythm.includes('HOLD') || avgShotLength >= 6) {
+    return 'linger';
+  }
+
+  return 'balanced';
+}
+
 function buildDirectorPlan(activeFilmIr: any, shotData: any, plannerVersion: string | null) {
   const transitionHint = deriveTransitionHint(activeFilmIr);
 
@@ -50,6 +83,44 @@ function buildDirectorPlan(activeFilmIr: any, shotData: any, plannerVersion: str
     propStateConstraints: activeFilmIr?.propStateConstraints || null,
     locationStateConstraints: activeFilmIr?.locationStateConstraints || null,
     transitionHint,
+  };
+}
+
+function buildExecutionPolicy(activeFilmIr: any, shotData: any, plannerVersion: string | null) {
+  const transitionHint = deriveTransitionHint(activeFilmIr);
+
+  return {
+    plannerVersion,
+    filmIrId: activeFilmIr?.id || null,
+    coverageRole: deriveCoverageRole(shotData),
+    rhythmClass: deriveRhythmClass(activeFilmIr),
+    transitionHint,
+    durationSecTarget: shotData.duration_sec ? Number(shotData.duration_sec) : null,
+    cameraPolicy: {
+      shotType: shotData.shot_type || 'MEDIUM_SHOT',
+      distanceStrategy: activeFilmIr?.cameraDistanceStrategy || null,
+      angleStrategy: activeFilmIr?.cameraAngleStrategy || null,
+      motionStyle: activeFilmIr?.cameraMotionStyle || null,
+      compositionStyle: activeFilmIr?.compositionStyle || null,
+      blockingStrategy: activeFilmIr?.blockingStrategy || null,
+    },
+    visualPolicy: {
+      visualStrategy: activeFilmIr?.visualStrategy || null,
+      lightingStyle: activeFilmIr?.lightingStyle || null,
+      colorStrategy: activeFilmIr?.colorStrategy || null,
+      spatialStrategy: activeFilmIr?.spatialStrategy || null,
+    },
+    audioPolicy: {
+      soundStrategy: activeFilmIr?.soundStrategy || null,
+      silenceStrategy: activeFilmIr?.silenceStrategy || null,
+    },
+    continuityPolicy: {
+      continuityConstraints: activeFilmIr?.continuityConstraints || null,
+      characterStateConstraints: activeFilmIr?.characterStateConstraints || null,
+      costumeStateConstraints: activeFilmIr?.costumeStateConstraints || null,
+      propStateConstraints: activeFilmIr?.propStateConstraints || null,
+      locationStateConstraints: activeFilmIr?.locationStateConstraints || null,
+    },
   };
 }
 
@@ -213,6 +284,7 @@ export async function processCE11ShotGeneratorJob(
       const shotData = outputShots[i];
       const plannerVersion = activeFilmIr?.plannerVersion || payload.plannerVersion || null;
       const directorPlan = buildDirectorPlan(activeFilmIr, shotData, plannerVersion);
+      const executionPolicy = buildExecutionPolicy(activeFilmIr, shotData, plannerVersion);
 
       // 构造 Bible V3.0 要求的 Shot 数据
       // Use upsert to prevent re-runs from creating duplicate shots (if id is deterministic or if we clear first)
@@ -244,6 +316,7 @@ export async function processCE11ShotGeneratorJob(
           filmIrId: activeFilmIr?.id || null,
           params: {
             directorPlan,
+            executionPolicy,
           },
           novelQuote:
             shotData.novel_quote ||
@@ -273,6 +346,12 @@ export async function processCE11ShotGeneratorJob(
             visualPrompt: shotData.visual_prompt,
             action: shotData.action_description,
             ...directorPlan,
+            executionPolicy,
+            timelinePolicy: {
+              transitionHint: executionPolicy.transitionHint,
+              rhythmClass: executionPolicy.rhythmClass,
+              coverageRole: executionPolicy.coverageRole,
+            },
             // Full raw data backup
             raw: shotData,
           },
@@ -289,6 +368,12 @@ export async function processCE11ShotGeneratorJob(
             visualPrompt: shotData.visual_prompt,
             action: shotData.action_description,
             ...directorPlan,
+            executionPolicy,
+            timelinePolicy: {
+              transitionHint: executionPolicy.transitionHint,
+              rhythmClass: executionPolicy.rhythmClass,
+              coverageRole: executionPolicy.coverageRole,
+            },
             // Full raw data backup
             raw: shotData,
           },

@@ -22,6 +22,8 @@ export interface TimelineShot {
     soundStrategy?: string;
     silenceStrategy?: string;
     avgShotLengthSec?: number;
+    coverageRole?: string;
+    rhythmClass?: string;
   };
 }
 
@@ -63,7 +65,16 @@ function deriveAudioPreferences(shotParamsList: any[]): {
   bgmGain: number;
 } {
   const directorPlans = shotParamsList
-    .map((params) => params?.directorPlan || null)
+    .map((params) => {
+      const executionPolicy = params?.executionPolicy || {};
+      const audioPolicy = executionPolicy.audioPolicy || {};
+      return {
+        ...params?.directorPlan,
+        soundStrategy: audioPolicy.soundStrategy ?? params?.directorPlan?.soundStrategy ?? null,
+        silenceStrategy:
+          audioPolicy.silenceStrategy ?? params?.directorPlan?.silenceStrategy ?? null,
+      };
+    })
     .filter(Boolean);
 
   const soundHints = directorPlans
@@ -128,10 +139,21 @@ function deriveTransitionProfile(params: any): {
     };
   }
 
+  const executionPolicy = params.executionPolicy || {};
+  const timelinePolicy = params.timelinePolicy || {};
   const directorPlan = params.directorPlan || {};
-  const transitionHint = String(directorPlan.transitionHint || '').toLowerCase();
-  const rhythm = String(directorPlan.editingRhythmStrategy || '').toUpperCase();
-  const avgShotLengthSec = Number(directorPlan.avgShotLengthSec || 0);
+  const transitionHint = String(
+    timelinePolicy.transitionHint || executionPolicy.transitionHint || directorPlan.transitionHint || ''
+  ).toLowerCase();
+  const rhythm = String(
+    timelinePolicy.rhythmClass ||
+      executionPolicy.rhythmClass ||
+      directorPlan.editingRhythmStrategy ||
+      ''
+  ).toUpperCase();
+  const avgShotLengthSec = Number(
+    executionPolicy.durationSecTarget || directorPlan.avgShotLengthSec || 0
+  );
 
   if (transitionHint === 'hold') {
     return { transition: 'none', transitionSec: 0 };
@@ -342,6 +364,38 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       framesTxtStorageKey: framesTxtPath,
       transition,
       transitionFrames,
+      directorPlan: {
+        transitionHint:
+          params.timelinePolicy?.transitionHint ||
+          params.executionPolicy?.transitionHint ||
+          params.directorPlan?.transitionHint ||
+          undefined,
+        editingRhythmStrategy:
+          params.timelinePolicy?.rhythmClass ||
+          params.executionPolicy?.rhythmClass ||
+          params.directorPlan?.editingRhythmStrategy ||
+          undefined,
+        soundStrategy:
+          params.executionPolicy?.audioPolicy?.soundStrategy ||
+          params.directorPlan?.soundStrategy ||
+          undefined,
+        silenceStrategy:
+          params.executionPolicy?.audioPolicy?.silenceStrategy ||
+          params.directorPlan?.silenceStrategy ||
+          undefined,
+        avgShotLengthSec:
+          params.executionPolicy?.durationSecTarget ||
+          params.directorPlan?.avgShotLengthSec ||
+          undefined,
+        coverageRole:
+          params.timelinePolicy?.coverageRole ||
+          params.executionPolicy?.coverageRole ||
+          undefined,
+        rhythmClass:
+          params.timelinePolicy?.rhythmClass ||
+          params.executionPolicy?.rhythmClass ||
+          undefined,
+      },
     };
 
     // 更新游标：下一个镜头的基准开始时间是当前镜头的结束点
