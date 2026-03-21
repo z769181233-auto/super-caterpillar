@@ -54,8 +54,16 @@ async function bootstrap() {
     next();
   });
 
-  app.use(json({ limit: '100mb' }));
-  app.use(urlencoded({ extended: true, limit: '100mb' }));
+  app.enableCors({
+    origin: [env.frontendUrl, 'http://localhost:3001', 'http://localhost:3002'],
+    credentials: true,
+  });
+
+  // P1 Security: Reduce global body limits to prevent DOS (100MB -> 50MB for general metadata)
+  // Large file uploads (Novels/Assets) should use streaming or signed URLs
+  const bodyLimit = process.env.GLOBAL_BODY_LIMIT || '50mb';
+  app.use(json({ limit: bodyLimit }));
+  app.use(urlencoded({ extended: true, limit: bodyLimit }));
 
   app.useGlobalInterceptors(new LoggingInterceptor());
 

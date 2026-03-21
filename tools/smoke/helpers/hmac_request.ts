@@ -60,7 +60,8 @@ export async function makeHmacRequest(options: HmacRequestOptions): Promise<Hmac
   } = options;
 
   const timestamp = providedTimestamp || Math.floor(Date.now() / 1000);
-  const nonce = providedNonce || `nonce-${timestamp}-${Math.random().toString(36).substring(7)}`;
+  const nonce =
+    providedNonce || `nonce-${timestamp}-${crypto.randomBytes(8).toString('hex')}`;
   const bodyString = body ? JSON.stringify(body) : '';
   const requestTimeoutMs = Number(process.env.SMOKE_HMAC_TIMEOUT_MS || 60000);
 
@@ -124,7 +125,7 @@ export async function testNonceReplay(
   options: Omit<HmacRequestOptions, 'nonce' | 'timestamp'>
 ): Promise<{ firstRequest: HmacRequestResult; secondRequest: HmacRequestResult }> {
   const timestamp = Math.floor(Date.now() / 1000);
-  const nonce = `replay-test-${timestamp}-${Math.random().toString(36).substring(7)}`;
+  const nonce = `replay-test-${timestamp}-${crypto.randomBytes(8).toString('hex')}`;
 
   const firstRequest = await makeHmacRequest({
     ...options,
