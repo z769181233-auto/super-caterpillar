@@ -26,6 +26,22 @@ type SceneSummary = {
   film_ir_id: string | null;
 };
 
+type SceneEvidenceRow = {
+  sceneId: string;
+  episodeId: string | null;
+  projectId: string;
+  filmIrId: string | null;
+  shotCount: number;
+  shotPlanningCount: number;
+  continuityCount: number;
+  gateCount: number;
+  publishCount: number;
+  latestGateVerdict: string | null;
+  latestEvidenceRef: string | null;
+  latestPublishDirectorLayer: Record<string, unknown> | null;
+  verdict: 'PASS' | 'FAIL';
+};
+
 function resolveOutputPath(): string {
   const outputArg = process.argv.find((arg) => arg.startsWith('--output='))?.split('=')[1];
   if (outputArg) {
@@ -111,6 +127,7 @@ async function main() {
     lines.push('');
     lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Gate | Publish | Verdict |');
     lines.push('|---|---:|---:|---:|---:|---:|---:|---|');
+    const sceneEvidenceRows: SceneEvidenceRow[] = [];
 
     for (const scene of scenes.rows) {
       const shotCounts = await client.query<{ shot_count: number }>(
@@ -129,12 +146,37 @@ async function main() {
         `SELECT COUNT(*)::int AS count FROM content_gate_results WHERE scene_id = $1`,
         [scene.id],
       );
+      const latestGate = await client.query<{
+        gate_verdict: string | null;
+        evidence_ref: string | null;
+      }>(
+        `
+          SELECT gate_verdict, evidence_ref
+          FROM content_gate_results
+          WHERE scene_id = $1
+          ORDER BY created_at DESC
+          LIMIT 1
+        `,
+        [scene.id],
+      );
       const publishCount = scene.episodeId
-        ? await client.query<{ count: number }>(
+        ? await client.query<{ count: number; metadata: { directorLayer?: Record<string, unknown> | null } | null }>(
             `SELECT COUNT(*)::int AS count FROM published_videos WHERE "episodeId" = $1`,
             [scene.episodeId],
           )
         : { rows: [{ count: 0 }] };
+      const latestPublish = scene.episodeId
+        ? await client.query<{ metadata: { directorLayer?: Record<string, unknown> | null } | null }>(
+            `
+              SELECT metadata
+              FROM published_videos
+              WHERE "episodeId" = $1
+              ORDER BY "createdAt" DESC
+              LIMIT 1
+            `,
+            [scene.episodeId],
+          )
+        : { rows: [] as Array<{ metadata: { directorLayer?: Record<string, unknown> | null } | null }> };
 
       const verdict =
         !!scene.film_ir_id &&
@@ -155,11 +197,44 @@ async function main() {
           publishCount.rows[0]?.count ?? 0,
         )} | ${verdict} |`,
       );
+
+      sceneEvidenceRows.push({
+        sceneId: scene.id,
+        episodeId: scene.episodeId,
+        projectId: scene.project_id,
+        filmIrId: scene.film_ir_id,
+        shotCount: Number(shotCounts.rows[0]?.shot_count ?? 0),
+        shotPlanningCount: Number(shotPlanningCount.rows[0]?.count ?? 0),
+        continuityCount: Number(continuityCount.rows[0]?.count ?? 0),
+        gateCount: Number(gateCount.rows[0]?.count ?? 0),
+        publishCount: Number(publishCount.rows[0]?.count ?? 0),
+        latestGateVerdict: latestGate.rows[0]?.gate_verdict ?? null,
+        latestEvidenceRef: latestGate.rows[0]?.evidence_ref ?? null,
+        latestPublishDirectorLayer: latestPublish.rows[0]?.metadata?.directorLayer ?? null,
+        verdict,
+      });
     }
 
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, `${lines.join('\n')}\n`, 'utf8');
-    console.log(JSON.stringify({ verdict: 'REPORT_WRITTEN', outputPath }, null, 2));
+    const jsonOutputPath = outputPath.replace(/\.md$/i, '.json');
+    const evidencePackage = {
+      verdict: sceneEvidenceRows.every((row) => row.verdict === 'PASS') ? 'PASS' : 'FAIL',
+      generatedAt: new Date().toISOString(),
+      profile,
+      totalScenes: sceneEvidenceRows.length,
+      passedScenes: sceneEvidenceRows.filter((row) => row.verdict === 'PASS').length,
+      failedScenes: sceneEvidenceRows.filter((row) => row.verdict !== 'PASS').length,
+      scenes: sceneEvidenceRows,
+    };
+    fs.writeFileSync(jsonOutputPath, `${JSON.stringify(evidencePackage, null, 2)}\n`, 'utf8');
+    console.log(
+      JSON.stringify(
+        { verdict: 'REPORT_WRITTEN', outputPath, jsonOutputPath, summary: evidencePackage.verdict },
+        null,
+        2,
+      ),
+    );
   } finally {
     await client.end();
   }

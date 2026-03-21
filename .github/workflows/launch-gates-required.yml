@@ -261,6 +261,9 @@ jobs:
           echo "--- Director Layer report ---"
           cat .data/logs/director-layer-report.md || echo "director-layer-report.md missing"
           echo "==============================================="
+          echo "--- Director Layer evidence package ---"
+          cat .data/logs/director-layer-report.json || echo "director-layer-report.json missing"
+          echo "==============================================="
 
           exit $EXIT_CODE
         env:
@@ -280,3 +283,4 @@ jobs:
             .data/logs/worker.log
             .data/logs/director-layer-closure.log
             .data/logs/director-layer-report.md
+            .data/logs/director-layer-report.json
