@@ -105,7 +105,9 @@ export class StoryService {
       // 2. 将内容写入磁盘作为流式源 (Shredder 模式必备)
       const uploadDir = path.join(process.cwd(), 'uploads/novels');
       await fs.mkdir(uploadDir, { recursive: true });
-      const filePath = path.join(uploadDir, `shredder_${projectId}_${Date.now()}.txt`);
+      // P0 Security: Break path traversal taint by taking basename of validated projectId
+      const safeId = path.basename(projectId);
+      const filePath = path.join(uploadDir, `shredder_${safeId}_${Date.now()}.txt`);
       await fs.writeFile(filePath, dto.rawText);
 
       // 3. 触发 Shredder 工作流

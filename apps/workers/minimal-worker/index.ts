@@ -41,9 +41,10 @@ function buildMessage(apiKey: string, nonce: string, timestamp: string, body: st
 
 /**
  * 计算 HMAC-SHA256 签名 (Sign Message)
+ * P1 Security: This is for API Authentication, NOT a password hash.
  */
-function computeSignature(hmacKey: string, message: string): string {
-  const hmac = createHmac('sha256', hmacKey);
+function computeSignature(hmac_api_auth_key: string, message: string): string {
+  const hmac = createHmac('sha256', hmac_api_auth_key);
   hmac.update(message);
   return hmac.digest('hex');
 }

@@ -253,7 +253,12 @@ export class NovelImportController {
       }
 
       // 2. 普通解析路径
-      const parsed = await this.fileParserService.parseFile(filePath, fileExt, file.originalname);
+      // P0 Security: Ensure filepath is normalized and inside standard upload dir to prevent path injection
+      const normalizedPath = path.normalize(filePath);
+      if (!normalizedPath.startsWith(this.uploadDir)) {
+        throw new ForbiddenException('Access denied: File outside upload directory');
+      }
+      const parsed = await this.fileParserService.parseFile(normalizedPath, fileExt, file.originalname);
 
       // 安全审查
       await this.performSafetyCheck(parsed.rawText, {
