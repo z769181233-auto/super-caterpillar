@@ -284,6 +284,30 @@ async function main() {
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
+      coverageRoles: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key =
+          typeof row.latestPublishDirectorLayer?.coverageRole === 'string'
+            ? (row.latestPublishDirectorLayer.coverageRole as string)
+            : 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      rhythmClasses: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key =
+          typeof row.latestPublishDirectorLayer?.rhythmClass === 'string'
+            ? (row.latestPublishDirectorLayer.rhythmClass as string)
+            : 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      plannerVersions: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key =
+          typeof row.latestPublishDirectorLayer?.plannerVersion === 'string'
+            ? (row.latestPublishDirectorLayer.plannerVersion as string)
+            : 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
     };
 
     lines.push('');
@@ -294,6 +318,9 @@ async function main() {
     lines.push(`- Gate Verdicts: ${JSON.stringify(aggregate.gateVerdicts)}`);
     lines.push(`- Threshold Profiles: ${JSON.stringify(aggregate.thresholdProfiles)}`);
     lines.push(`- Gate Reasons: ${JSON.stringify(aggregate.gateReasons)}`);
+    lines.push(`- Coverage Roles: ${JSON.stringify(aggregate.coverageRoles)}`);
+    lines.push(`- Rhythm Classes: ${JSON.stringify(aggregate.rhythmClasses)}`);
+    lines.push(`- Planner Versions: ${JSON.stringify(aggregate.plannerVersions)}`);
 
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, `${lines.join('\n')}\n`, 'utf8');

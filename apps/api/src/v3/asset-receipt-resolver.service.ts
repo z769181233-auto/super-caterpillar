@@ -16,6 +16,7 @@ export interface V3AssetReceipt {
     gate_verdict: string | null;
     gate_reason: string | null;
     threshold_profile: string | null;
+    planner_version: string | null;
     coverage_role: string | null;
     rhythm_class: string | null;
     transition_hint: string | null;
@@ -144,6 +145,7 @@ export class AssetReceiptResolverService {
             gate_verdict: directorLayer.latestGateVerdict ?? null,
             gate_reason: directorLayer.gateReason ?? null,
             threshold_profile: directorLayer.thresholdProfile ?? null,
+            planner_version: directorLayer.plannerVersion ?? null,
             coverage_role: directorLayer.coverageRole ?? null,
             rhythm_class: directorLayer.rhythmClass ?? null,
             transition_hint: directorLayer.transitionHint ?? null,

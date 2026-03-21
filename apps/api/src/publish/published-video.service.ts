@@ -156,6 +156,12 @@ export class PublishedVideoService {
                     : typeof executionPolicy?.rhythmClass === 'string'
                       ? executionPolicy.rhythmClass
                       : null,
+                plannerVersion:
+                  typeof executionPolicy?.plannerVersion === 'string'
+                    ? executionPolicy.plannerVersion
+                    : typeof directorPlan?.plannerVersion === 'string'
+                      ? directorPlan.plannerVersion
+                      : null,
                 thresholdProfile:
                   typeof gateDetails?.thresholdProfile === 'string'
                     ? gateDetails.thresholdProfile
