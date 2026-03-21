@@ -4,6 +4,55 @@ import { EngineHubClient } from '../engine-hub-client';
 import { ProcessorContext } from '../types/processor-context';
 import { CostLedgerService } from '../billing/cost-ledger.service';
 
+function deriveTransitionHint(activeFilmIr: any): 'cut' | 'match_cut' | 'hold' {
+  const rhythm = String(activeFilmIr?.editingRhythmStrategy || '').toUpperCase();
+  const shotPattern = String(activeFilmIr?.shotPattern || '').toUpperCase();
+  const avgShotLength = Number(activeFilmIr?.avgShotLengthSec || 0);
+
+  if (rhythm.includes('LINGER') || rhythm.includes('HOLD') || avgShotLength >= 6) {
+    return 'hold';
+  }
+
+  if (shotPattern.includes('MONTAGE') || shotPattern.includes('PARALLEL')) {
+    return 'match_cut';
+  }
+
+  return 'cut';
+}
+
+function buildDirectorPlan(activeFilmIr: any, shotData: any, plannerVersion: string | null) {
+  const transitionHint = deriveTransitionHint(activeFilmIr);
+
+  return {
+    filmIrId: activeFilmIr?.id || null,
+    plannerVersion,
+    dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
+    emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
+    shotPattern: shotData.shot_pattern || activeFilmIr?.shotPattern || null,
+    visualStrategy: activeFilmIr?.visualStrategy || null,
+    blockingStrategy: activeFilmIr?.blockingStrategy || null,
+    avgShotLengthSec: activeFilmIr?.avgShotLengthSec
+      ? Number(activeFilmIr.avgShotLengthSec)
+      : null,
+    cameraDistanceStrategy: activeFilmIr?.cameraDistanceStrategy || null,
+    cameraAngleStrategy: activeFilmIr?.cameraAngleStrategy || null,
+    cameraMotionStyle: activeFilmIr?.cameraMotionStyle || null,
+    compositionStyle: activeFilmIr?.compositionStyle || null,
+    spatialStrategy: activeFilmIr?.spatialStrategy || null,
+    lightingStyle: activeFilmIr?.lightingStyle || null,
+    colorStrategy: activeFilmIr?.colorStrategy || null,
+    soundStrategy: activeFilmIr?.soundStrategy || null,
+    silenceStrategy: activeFilmIr?.silenceStrategy || null,
+    editingRhythmStrategy: activeFilmIr?.editingRhythmStrategy || null,
+    continuityConstraints: activeFilmIr?.continuityConstraints || null,
+    characterStateConstraints: activeFilmIr?.characterStateConstraints || null,
+    costumeStateConstraints: activeFilmIr?.costumeStateConstraints || null,
+    propStateConstraints: activeFilmIr?.propStateConstraints || null,
+    locationStateConstraints: activeFilmIr?.locationStateConstraints || null,
+    transitionHint,
+  };
+}
+
 /**
  * CE11 Shot Generator Processor (V3.0 Bible Alignment)
  * Input: { "novelSceneId": string }
@@ -64,7 +113,23 @@ export async function processCE11ShotGeneratorJob(
               emotionalTarget: true,
               shotPattern: true,
               visualStrategy: true,
+              blockingStrategy: true,
+              avgShotLengthSec: true,
+              cameraDistanceStrategy: true,
+              cameraAngleStrategy: true,
+              cameraMotionStyle: true,
+              compositionStyle: true,
+              spatialStrategy: true,
+              lightingStyle: true,
+              colorStrategy: true,
+              soundStrategy: true,
+              silenceStrategy: true,
+              editingRhythmStrategy: true,
               continuityConstraints: true,
+              characterStateConstraints: true,
+              costumeStateConstraints: true,
+              propStateConstraints: true,
+              locationStateConstraints: true,
               plannerVersion: true,
             },
           })
@@ -146,6 +211,8 @@ export async function processCE11ShotGeneratorJob(
     const createdShots = [];
     for (let i = 0; i < outputShots.length; i++) {
       const shotData = outputShots[i];
+      const plannerVersion = activeFilmIr?.plannerVersion || payload.plannerVersion || null;
+      const directorPlan = buildDirectorPlan(activeFilmIr, shotData, plannerVersion);
 
       // 构造 Bible V3.0 要求的 Shot 数据
       // Use upsert to prevent re-runs from creating duplicate shots (if id is deterministic or if we clear first)
@@ -175,6 +242,9 @@ export async function processCE11ShotGeneratorJob(
           dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
           emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
           filmIrId: activeFilmIr?.id || null,
+          params: {
+            directorPlan,
+          },
           novelQuote:
             shotData.novel_quote ||
             shotData.novelQuote ||
@@ -202,14 +272,7 @@ export async function processCE11ShotGeneratorJob(
             lighting: shotData.lighting_preset || 'NATURAL',
             visualPrompt: shotData.visual_prompt,
             action: shotData.action_description,
-            filmIrId: activeFilmIr?.id || null,
-            dramaticFunction:
-              shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
-            emotionalTarget:
-              shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
-            shotPattern: shotData.shot_pattern || activeFilmIr?.shotPattern || null,
-            continuityConstraints: activeFilmIr?.continuityConstraints || null,
-            plannerVersion: activeFilmIr?.plannerVersion || payload.plannerVersion || null,
+            ...directorPlan,
             // Full raw data backup
             raw: shotData,
           },
@@ -225,14 +288,7 @@ export async function processCE11ShotGeneratorJob(
             lighting: shotData.lighting_preset || 'NATURAL',
             visualPrompt: shotData.visual_prompt,
             action: shotData.action_description,
-            filmIrId: activeFilmIr?.id || null,
-            dramaticFunction:
-              shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
-            emotionalTarget:
-              shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
-            shotPattern: shotData.shot_pattern || activeFilmIr?.shotPattern || null,
-            continuityConstraints: activeFilmIr?.continuityConstraints || null,
-            plannerVersion: activeFilmIr?.plannerVersion || payload.plannerVersion || null,
+            ...directorPlan,
             // Full raw data backup
             raw: shotData,
           },
