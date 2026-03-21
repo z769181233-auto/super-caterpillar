@@ -2091,6 +2091,48 @@ model ContinuityViolation {
   @@map("continuity_violations")
 }
 
+/// 连续性状态锁（append-only + active flag）。
+/// 用于冻结某个实体在某个 Scene/Shot 上的状态，不允许自动审计覆盖。
+model ContinuityStateLock {
+  id         String   @id @default(uuid())
+  projectId  String   @map("project_id")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  atSceneId  String?  @map("at_scene_id")
+  atShotId   String?  @map("at_shot_id")
+  lockReason String?  @map("lock_reason") @db.Text
+  lockedBy   String?  @map("locked_by")
+  evidenceRef String? @map("evidence_ref")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([projectId, entityType, entityId])
+  @@index([atSceneId])
+  @@index([isActive, createdAt])
+  @@map("continuity_state_locks")
+}
+
+/// 连续性状态覆盖（append-only）。
+/// 由人工或高优先级流程写入，用于覆盖自动推断的状态摘要。
+model ContinuityStateOverride {
+  id            String   @id @default(uuid())
+  projectId     String   @map("project_id")
+  entityType    String   @map("entity_type")
+  entityId      String   @map("entity_id")
+  atSceneId     String?  @map("at_scene_id")
+  atShotId      String?  @map("at_shot_id")
+  overrideData  Json     @map("override_data")
+  overrideReason String? @map("override_reason") @db.Text
+  overrideBy    String?  @map("override_by")
+  evidenceRef   String?  @map("evidence_ref")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([projectId, entityType, entityId])
+  @@index([atSceneId])
+  @@index([createdAt])
+  @@map("continuity_state_overrides")
+}
+
 /// 内容质量门禁结果（append-only，不允许 UPDATE/DELETE）。
 /// 由 ContentJudgeService 在评分完成后写入。
 model ContentGateResult {

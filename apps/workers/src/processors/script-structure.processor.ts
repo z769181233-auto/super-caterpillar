@@ -93,6 +93,77 @@ async function appendContinuitySnapshotBestEffort(params: {
   }
 }
 
+async function getActiveContinuityLockBestEffort(params: {
+  prisma: PrismaClient;
+  projectId: string;
+  entityType: string;
+  entityId: string;
+  atSceneId?: string | null;
+}) {
+  const { prisma, projectId, entityType, entityId, atSceneId } = params;
+
+  try {
+    const result = await (prisma as any).$queryRawUnsafe(
+      `
+        SELECT id, lock_reason, locked_by, evidence_ref
+        FROM continuity_state_locks
+        WHERE project_id = $1
+          AND entity_type = $2
+          AND entity_id = $3
+          AND is_active = true
+          AND (at_scene_id IS NULL OR at_scene_id = $4)
+        ORDER BY created_at DESC
+        LIMIT 1
+      `,
+      projectId,
+      entityType,
+      entityId,
+      atSceneId ?? null,
+    );
+
+    return Array.isArray(result) ? result[0] ?? null : null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[ContinuityStateLock] lookup skipped: ${message}`);
+    return null;
+  }
+}
+
+async function getLatestContinuityOverrideBestEffort(params: {
+  prisma: PrismaClient;
+  projectId: string;
+  entityType: string;
+  entityId: string;
+  atSceneId?: string | null;
+}) {
+  const { prisma, projectId, entityType, entityId, atSceneId } = params;
+
+  try {
+    const result = await (prisma as any).$queryRawUnsafe(
+      `
+        SELECT id, override_data, override_reason, override_by, evidence_ref
+        FROM continuity_state_overrides
+        WHERE project_id = $1
+          AND entity_type = $2
+          AND entity_id = $3
+          AND (at_scene_id IS NULL OR at_scene_id = $4)
+        ORDER BY created_at DESC
+        LIMIT 1
+      `,
+      projectId,
+      entityType,
+      entityId,
+      atSceneId ?? null,
+    );
+
+    return Array.isArray(result) ? result[0] ?? null : null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[ContinuityStateOverride] lookup skipped: ${message}`);
+    return null;
+  }
+}
+
 /**
  * [CE06_SCRIPT_OUTLINE]
  */
@@ -293,38 +364,100 @@ export async function processContinuityAuditJob(
       isIndustrialSealed: true,
     };
 
-    await (prisma as any).continuityState.deleteMany({
-      where: {
-        projectId: scene.projectId,
-        entityType: 'SCENE',
-        entityId: scene.id,
-        atSceneId: scene.id,
-      },
+    const activeLock = await getActiveContinuityLockBestEffort({
+      prisma,
+      projectId: scene.projectId,
+      entityType: 'SCENE',
+      entityId: scene.id,
+      atSceneId: scene.id,
     });
 
-    await (prisma as any).continuityState.create({
-      data: {
-        projectId: scene.projectId,
-        entityType: 'SCENE',
-        entityId: scene.id,
-        atSceneId: scene.id,
-        atShotId: null,
-        stateData: continuitySummary,
-        isLocked: false,
-        source: 'CE_CONSISTENCY_CHECK',
-        violationFlag: false,
-      },
+    const latestOverride = await getLatestContinuityOverrideBestEffort({
+      prisma,
+      projectId: scene.projectId,
+      entityType: 'SCENE',
+      entityId: scene.id,
+      atSceneId: scene.id,
     });
+
+    const effectiveStateData = latestOverride?.override_data
+      ? {
+          ...continuitySummary,
+          ...(latestOverride.override_data as Record<string, unknown>),
+          overrideId: latestOverride.id,
+          overrideReason: latestOverride.override_reason ?? null,
+          overrideBy: latestOverride.override_by ?? null,
+        }
+      : continuitySummary;
+
+    const effectiveSource = activeLock
+      ? 'STATE_LOCK'
+      : latestOverride
+        ? 'STATE_OVERRIDE'
+        : 'CE_CONSISTENCY_CHECK';
+
+    if (!activeLock) {
+      await (prisma as any).continuityState.deleteMany({
+        where: {
+          projectId: scene.projectId,
+          entityType: 'SCENE',
+          entityId: scene.id,
+          atSceneId: scene.id,
+        },
+      });
+
+      await (prisma as any).continuityState.create({
+        data: {
+          projectId: scene.projectId,
+          entityType: 'SCENE',
+          entityId: scene.id,
+          atSceneId: scene.id,
+          atShotId: null,
+          stateData: effectiveStateData,
+          isLocked: false,
+          source: effectiveSource,
+          violationFlag: false,
+        },
+      });
+    }
+
+    if (activeLock) {
+      await (prisma as any).continuityState.updateMany({
+        where: {
+          projectId: scene.projectId,
+          entityType: 'SCENE',
+          entityId: scene.id,
+          atSceneId: scene.id,
+        },
+        data: {
+          isLocked: true,
+          source: 'STATE_LOCK',
+        },
+      });
+    }
 
     await appendContinuitySnapshotBestEffort({
       prisma,
       projectId: scene.projectId,
       sceneId: scene.id,
       traceId: (job as any).traceId ?? (job.payload as any)?.traceId ?? job.id,
-      source: 'CE_CONSISTENCY_CHECK',
-      snapshotType: 'SCENE_AUDIT',
-      snapshotData: continuitySummary,
-      evidenceRef: (scene as any).filmIrId ?? null,
+      source: effectiveSource,
+      snapshotType: activeLock
+        ? 'SCENE_AUDIT_LOCKED'
+        : latestOverride
+          ? 'SCENE_AUDIT_OVERRIDE_APPLIED'
+          : 'SCENE_AUDIT',
+      snapshotData: {
+        ...effectiveStateData,
+        lockId: activeLock?.id ?? null,
+        lockReason: activeLock?.lock_reason ?? null,
+        lockEvidenceRef: activeLock?.evidence_ref ?? null,
+      },
+      evidenceRef:
+        activeLock?.evidence_ref ??
+        latestOverride?.evidence_ref ??
+        (scene as any).filmIrId ??
+        null,
     });
 
     try {

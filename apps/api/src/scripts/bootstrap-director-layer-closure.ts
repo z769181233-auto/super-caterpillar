@@ -93,6 +93,36 @@ async function main() {
         created_at timestamptz NOT NULL DEFAULT NOW()
       )
     `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS continuity_state_locks (
+        id text PRIMARY KEY,
+        project_id text NOT NULL,
+        entity_type text NOT NULL,
+        entity_id text NOT NULL,
+        at_scene_id text,
+        at_shot_id text,
+        lock_reason text,
+        locked_by text,
+        evidence_ref text,
+        is_active boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS continuity_state_overrides (
+        id text PRIMARY KEY,
+        project_id text NOT NULL,
+        entity_type text NOT NULL,
+        entity_id text NOT NULL,
+        at_scene_id text,
+        at_shot_id text,
+        override_data jsonb NOT NULL,
+        override_reason text,
+        override_by text,
+        evidence_ref text,
+        created_at timestamptz NOT NULL DEFAULT NOW()
+      )
+    `);
 
     const sceneResult = await client.query<SceneRow>(
       sceneIdArg
