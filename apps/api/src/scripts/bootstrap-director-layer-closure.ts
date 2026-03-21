@@ -492,7 +492,7 @@ async function main() {
       const hlsPlaylistUrl = `director-bootstrap/${scene.project_id}/${effectiveEpisodeId}/${firstShotId}/master.m3u8`;
       const publishedVideoId = randomUUID();
       const checksum = `director-bootstrap:${scene.id}`;
-      const jobResult = JSON.stringify({
+      let jobResult = JSON.stringify({
         bootstrap: true,
         sceneId: scene.id,
         shotId: firstShotId,
@@ -500,7 +500,6 @@ async function main() {
         hlsPlaylistUrl,
         pipelineRunId,
       });
-
       const existingJobResult = await client.query<{ id: string }>(
         `
           SELECT id
@@ -568,6 +567,21 @@ async function main() {
       );
       const assetId = assetResult.rows[0]?.id ?? assetSeedId;
       const signedUrl = `/api/assets/${assetId}/secure-url`;
+      jobResult = JSON.stringify({
+        bootstrap: true,
+        sceneId: scene.id,
+        shotId: firstShotId,
+        assetId,
+        storageKey,
+        hlsPlaylistUrl,
+        pipelineRunId,
+        output: {
+          assetId,
+          storageKey,
+          hls_playlist_url: hlsPlaylistUrl,
+          signed_url: signedUrl,
+        },
+      });
 
       await client.query(
         `
@@ -581,6 +595,17 @@ async function main() {
           WHERE "ownerType" = 'SHOT' AND "ownerId" = $1 AND type = 'VIDEO'
         `,
         [firstShotId, syntheticJobId, storageKey, hlsPlaylistUrl, signedUrl],
+      );
+
+      await client.query(
+        `
+          UPDATE shot_jobs
+          SET
+            result = $2::jsonb,
+            "updatedAt" = NOW()
+          WHERE id = $1
+        `,
+        [syntheticJobId, jobResult],
       );
 
       await client.query(
