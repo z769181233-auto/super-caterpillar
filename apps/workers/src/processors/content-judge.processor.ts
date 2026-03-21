@@ -4,10 +4,77 @@ function toNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function clampScore(value: number | null): number | null {
+  if (value === null || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(1, value));
+}
+
+function averageScores(...values: Array<number | null>): number | null {
+  const filtered = values.filter((value): value is number => value !== null && Number.isFinite(value));
+  if (filtered.length === 0) return null;
+  return filtered.reduce((sum, value) => sum + value, 0) / filtered.length;
+}
+
+function deriveRhythmScore(params: {
+  overallScore: number | null;
+  shotPlanPresent: boolean;
+  directorPlan: Record<string, any>;
+}) {
+  const { overallScore, shotPlanPresent, directorPlan } = params;
+  const rhythm = String(directorPlan.editingRhythmStrategy || '').toUpperCase();
+  const transitionHint = String(directorPlan.transitionHint || '').toLowerCase();
+
+  let modifier = 0;
+  if (shotPlanPresent) modifier += 0.05;
+  if (transitionHint === 'match_cut') modifier += 0.03;
+  if (transitionHint === 'hold') modifier += 0.02;
+  if (rhythm.includes('FAST') || rhythm.includes('TIGHT')) modifier += 0.04;
+  if (rhythm.includes('LINGER') || rhythm.includes('HOLD')) modifier += 0.02;
+
+  return clampScore((overallScore ?? 0) + modifier);
+}
+
+function deriveVisualStrategyMatchScore(params: {
+  renderScore: number | null;
+  directorPlan: Record<string, any>;
+}) {
+  const { renderScore, directorPlan } = params;
+  const hasVisualIntent = !!(
+    directorPlan.visualStrategy ||
+    directorPlan.compositionStyle ||
+    directorPlan.cameraDistanceStrategy ||
+    directorPlan.cameraAngleStrategy
+  );
+
+  return clampScore((renderScore ?? 0) + (hasVisualIntent ? 0.1 : 0));
+}
+
+function derivePublishReadinessScore(params: {
+  overallScore: number | null;
+  renderScore: number | null;
+  audioScore: number | null;
+  gateVerdictHint: string;
+}) {
+  const { overallScore, renderScore, audioScore, gateVerdictHint } = params;
+  const base = averageScores(overallScore, renderScore, audioScore);
+  if (base === null) return null;
+  if (gateVerdictHint === 'PASS') return clampScore(base + 0.05);
+  if (gateVerdictHint === 'WARN') return clampScore(base);
+  return clampScore(base - 0.08);
+}
+
 function resolveGateDecision(params: {
   thresholdProfile: string;
   verdict: string;
   overallScore: number | null;
+  dramaticAlignmentScore: number | null;
+  visualStrategyMatchScore: number | null;
+  continuityScore: number | null;
+  shotCoherenceScore: number | null;
+  rhythmScore: number | null;
+  characterConsistencyScore: number | null;
+  soundAlignmentScore: number | null;
+  publishReadinessScore: number | null;
   identityScore: number | null;
   audioScore: number | null;
   renderScore: number | null;
@@ -16,6 +83,14 @@ function resolveGateDecision(params: {
     thresholdProfile,
     verdict,
     overallScore,
+    dramaticAlignmentScore,
+    visualStrategyMatchScore,
+    continuityScore,
+    shotCoherenceScore,
+    rhythmScore,
+    characterConsistencyScore,
+    soundAlignmentScore,
+    publishReadinessScore,
     identityScore,
     audioScore,
     renderScore,
@@ -24,10 +99,10 @@ function resolveGateDecision(params: {
   const profile = thresholdProfile.toLowerCase();
   const thresholds =
     profile === 'strict'
-      ? { pass: 0.85, warn: 0.72, identity: 0.8 }
+      ? { pass: 0.85, warn: 0.72, identity: 0.8, publish: 0.8, continuity: 0.75 }
       : profile === 'advisory'
-        ? { pass: 0.7, warn: 0.55, identity: 0.6 }
-        : { pass: 0.78, warn: 0.62, identity: 0.7 };
+        ? { pass: 0.7, warn: 0.55, identity: 0.6, publish: 0.58, continuity: 0.55 }
+        : { pass: 0.78, warn: 0.62, identity: 0.7, publish: 0.68, continuity: 0.64 };
 
   if (renderScore === 0 || audioScore === 0) {
     return {
@@ -37,7 +112,41 @@ function resolveGateDecision(params: {
     };
   }
 
-  if (verdict === 'PASS' && overallScore !== null && overallScore >= thresholds.pass) {
+  const compositeScore = averageScores(
+    overallScore,
+    dramaticAlignmentScore,
+    visualStrategyMatchScore,
+    continuityScore,
+    shotCoherenceScore,
+    rhythmScore,
+    characterConsistencyScore,
+    soundAlignmentScore,
+    publishReadinessScore,
+  );
+
+  if (
+    publishReadinessScore !== null &&
+    publishReadinessScore < thresholds.publish
+  ) {
+    return {
+      gateVerdict: profile === 'advisory' ? 'WARN' : 'BLOCK',
+      thresholds,
+      reason: 'publish_readiness_below_threshold',
+    };
+  }
+
+  if (
+    continuityScore !== null &&
+    continuityScore < thresholds.continuity
+  ) {
+    return {
+      gateVerdict: profile === 'advisory' ? 'WARN' : 'BLOCK',
+      thresholds,
+      reason: 'continuity_below_threshold',
+    };
+  }
+
+  if (verdict === 'PASS' && compositeScore !== null && compositeScore >= thresholds.pass) {
     return {
       gateVerdict: 'PASS',
       thresholds,
@@ -46,8 +155,8 @@ function resolveGateDecision(params: {
   }
 
   if (
-    overallScore !== null &&
-    overallScore >= thresholds.warn &&
+    compositeScore !== null &&
+    compositeScore >= thresholds.warn &&
     (identityScore === null || identityScore >= thresholds.identity)
   ) {
     return {
@@ -100,6 +209,14 @@ export async function processContentJudgeJob(
     select: {
       id: true,
       filmIrId: true,
+      params: true,
+      shotPlanning: {
+        select: {
+          data: true,
+          engineKey: true,
+          engineVersion: true,
+        },
+      },
       scene: {
         select: {
           id: true,
@@ -120,10 +237,46 @@ export async function processContentJudgeJob(
     const audioScore = toNumber(signals.audio_existence);
     const renderScore = toNumber(signals.render_physical);
     const verdict = typeof score.verdict === 'string' ? score.verdict : 'PENDING';
+    const directorPlan =
+      ((shot.params as Record<string, any> | null)?.directorPlan as Record<string, any> | undefined) ||
+      ((shot.shotPlanning?.data as Record<string, any> | null) ?? {});
+    const shotPlanPresent = !!shot.shotPlanning;
+    const dramaticAlignmentScore = clampScore(overallScore);
+    const visualStrategyMatchScore = deriveVisualStrategyMatchScore({
+      renderScore,
+      directorPlan,
+    });
+    const continuityScore = clampScore(
+      averageScores(identityScore, toNumber(signals.identity_score_real_ppv64)),
+    );
+    const shotCoherenceScore = clampScore(
+      averageScores(overallScore, renderScore, shotPlanPresent ? 1 : 0),
+    );
+    const rhythmScore = deriveRhythmScore({
+      overallScore,
+      shotPlanPresent,
+      directorPlan,
+    });
+    const characterConsistencyScore = clampScore(identityScore);
+    const soundAlignmentScore = clampScore(audioScore);
+    const publishReadinessScore = derivePublishReadinessScore({
+      overallScore,
+      renderScore,
+      audioScore,
+      gateVerdictHint: verdict,
+    });
     const gateDecision = resolveGateDecision({
       thresholdProfile,
       verdict,
       overallScore,
+      dramaticAlignmentScore,
+      visualStrategyMatchScore,
+      continuityScore,
+      shotCoherenceScore,
+      rhythmScore,
+      characterConsistencyScore,
+      soundAlignmentScore,
+      publishReadinessScore,
       identityScore,
       audioScore,
       renderScore,
@@ -136,14 +289,14 @@ export async function processContentJudgeJob(
         episodeId: shot.scene.episodeId,
         filmIrId: shot.filmIrId ?? shot.scene.filmIrId ?? null,
         gateVersion,
-        dramaticAlignmentScore: overallScore,
-        visualStrategyMatchScore: renderScore,
-        continuityScore: identityScore,
-        shotCoherenceScore: overallScore,
-        rhythmScore: overallScore,
-        characterConsistencyScore: identityScore,
-        soundAlignmentScore: audioScore,
-        publishReadinessScore: overallScore,
+        dramaticAlignmentScore,
+        visualStrategyMatchScore,
+        continuityScore,
+        shotCoherenceScore,
+        rhythmScore,
+        characterConsistencyScore,
+        soundAlignmentScore,
+        publishReadinessScore,
         gateVerdict: gateDecision.gateVerdict,
         gateDetails: {
           qualityScoreId: score.id ?? null,
@@ -155,6 +308,18 @@ export async function processContentJudgeJob(
           thresholdProfile,
           thresholds: gateDecision.thresholds,
           gateReason: gateDecision.reason,
+          directorPlan,
+          shotPlanPresent,
+          derivedScores: {
+            dramaticAlignmentScore,
+            visualStrategyMatchScore,
+            continuityScore,
+            shotCoherenceScore,
+            rhythmScore,
+            characterConsistencyScore,
+            soundAlignmentScore,
+            publishReadinessScore,
+          },
           signals,
         } as any,
         evidenceRef: traceId,
