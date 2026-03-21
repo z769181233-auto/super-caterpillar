@@ -29,12 +29,19 @@ export interface ParsedNovel {
 @Injectable()
 export class FileParserService {
   private readonly logger = new Logger(FileParserService.name);
+  private readonly MAX_PARSE_INPUT_LENGTH = 10000000; // 10MB limit for regex operations
   /**
    * 从文本中解析章节（简单规则：按 "第X章" 分割）
    * @param text 原始文本
    * @returns 章节列表
    */
   parseChaptersFromText(text: string): Array<{ title: string; content: string }> {
+    // ReDoS Mitigation: Input length safeguard
+    if (text.length > this.MAX_PARSE_INPUT_LENGTH) {
+      this.logger.warn(`Input text too large for regex parsing: ${text.length}`);
+      return [{ title: 'Full Text (Safety Skip)', content: text.substring(0, 1000) }];
+    }
+
     const chapters: Array<{ title: string; content: string }> = [];
 
     // 匹配 "第X章" 或 "第一章" 等格式

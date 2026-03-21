@@ -20,7 +20,9 @@ function buildSignedHeaders(
   const nonce = randomUUID();
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const canonical = `${apiKey}${nonce}${timestamp}${body || contentSha256}`;
-  const signature = createHmac('sha256', hmacSigningKey).update(canonical, 'utf8').digest('hex');
+  // NOTE: This is an HMAC signature for API authentication, NOT a password hash.
+  // Using String() to ensure consistent type for crypto.update()
+  const signature = createHmac('sha256', String(hmacSigningKey)).update(String(canonical), 'utf8').digest('hex');
 
   const headers: Record<string, string> = {
     'X-Api-Key': apiKey,

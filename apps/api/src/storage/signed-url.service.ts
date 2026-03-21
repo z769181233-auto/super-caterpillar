@@ -96,6 +96,12 @@ export class SignedUrlService {
     method: string = 'GET'
   ): boolean {
     try {
+      // P1 Security: Ensure signature is a string to prevent type confusion (e.g. array injection)
+      if (typeof signature !== 'string') {
+        this.logger.warn(`[SignedUrlService] Invalid signature type: ${typeof signature}`);
+        return false;
+      }
+
       // 检查过期时间
       const now = Math.floor(Date.now() / 1000);
       if (expires < now) {
