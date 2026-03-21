@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "updatedAt": "2026-03-20",
+  "version": 2,
+  "updatedAt": "2026-03-21",
   "defaultProfile": "director-layer-minimal-closure",
   "profiles": {
     "director-layer-minimal-closure": {
@@ -8,7 +8,8 @@
       "sceneIds": [
         "48d64a2e-74b5-4b14-a248-f8764a210548",
         "abc883ab-481c-4e39-98a5-07e541f520df",
-        "89bad37e-9580-40f8-b95b-2c69c163ddfa"
+        "89bad37e-9580-40f8-b95b-2c69c163ddfa",
+        "820d8005-f866-45f7-ad07-4649a90bd3a3"
       ]
     }
   }
