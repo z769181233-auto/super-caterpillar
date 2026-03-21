@@ -49,6 +49,19 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   const height = timeline.height || 720;
   const masterPriority = timeline.audio?.masterPriority || 'dialogue';
   const audioMode = timeline.audio?.mode || 'truncate';
+  const directorRenderSummary = {
+    audioMode,
+    audioMasterPriority: masterPriority,
+    coverageRoles: timeline.shots
+      .map((shot) => shot.directorPlan?.coverageRole)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    rhythmClasses: timeline.shots
+      .map((shot) => shot.directorPlan?.rhythmClass)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    transitionHints: timeline.shots
+      .map((shot) => shot.directorPlan?.transitionHint)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+  };
 
   // FFmpeg Fail-fast check
   try {
@@ -625,11 +638,13 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     assetId: asset.id,
     storageKey: finalOutputRelative,
     audioRenderMode,
-    audit: { 
-      action: 'ce10.timeline_render.success', 
-      sceneId: timeline.sceneId, 
+    directorRenderSummary,
+    audit: {
+      action: 'ce10.timeline_render.success',
+      sceneId: timeline.sceneId,
       traceId,
-      audioRenderMode 
+      audioRenderMode,
+      directorRenderSummary,
     },
   };
 }

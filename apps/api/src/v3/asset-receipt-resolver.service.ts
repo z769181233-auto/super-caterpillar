@@ -16,6 +16,8 @@ export interface V3AssetReceipt {
     gate_verdict: string | null;
     gate_reason: string | null;
     threshold_profile: string | null;
+    coverage_role: string | null;
+    rhythm_class: string | null;
     transition_hint: string | null;
     rhythm_strategy: string | null;
     audio_master_priority: string | null;
@@ -142,6 +144,8 @@ export class AssetReceiptResolverService {
             gate_verdict: directorLayer.latestGateVerdict ?? null,
             gate_reason: directorLayer.gateReason ?? null,
             threshold_profile: directorLayer.thresholdProfile ?? null,
+            coverage_role: directorLayer.coverageRole ?? null,
+            rhythm_class: directorLayer.rhythmClass ?? null,
             transition_hint: directorLayer.transitionHint ?? null,
             rhythm_strategy: directorLayer.editingRhythmStrategy ?? null,
             audio_master_priority: directorLayer.audioMasterPriority ?? null,

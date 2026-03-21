@@ -29,6 +29,11 @@ export class PublishedVideoService {
             id: true,
             filmIrId: true,
             params: true,
+            shotPlanning: {
+              select: {
+                data: true,
+              },
+            },
             scene: {
               select: {
                 id: true,
@@ -69,6 +74,21 @@ export class PublishedVideoService {
             | Record<string, unknown>
             | undefined)
         : undefined;
+    const executionPolicy =
+      asset?.shot?.params &&
+      typeof asset.shot.params === 'object' &&
+      !Array.isArray(asset.shot.params) &&
+      'executionPolicy' in (asset.shot.params as Record<string, unknown>)
+        ? ((asset.shot.params as Record<string, unknown>).executionPolicy as
+            | Record<string, unknown>
+            | undefined)
+        : (((asset?.shot?.shotPlanning?.data as Record<string, unknown> | null) ?? {}).executionPolicy as
+            | Record<string, unknown>
+            | undefined);
+    const timelinePolicy =
+      ((asset?.shot?.shotPlanning?.data as Record<string, unknown> | null) ?? {}).timelinePolicy as
+        | Record<string, unknown>
+        | undefined;
     const gateDetails =
       publishEvidence?.gateDetails &&
       typeof publishEvidence.gateDetails === 'object' &&
@@ -124,6 +144,18 @@ export class PublishedVideoService {
                   typeof directorPlan?.silenceStrategy === 'string'
                     ? directorPlan.silenceStrategy
                     : null,
+                coverageRole:
+                  typeof timelinePolicy?.coverageRole === 'string'
+                    ? timelinePolicy.coverageRole
+                    : typeof executionPolicy?.coverageRole === 'string'
+                      ? executionPolicy.coverageRole
+                      : null,
+                rhythmClass:
+                  typeof timelinePolicy?.rhythmClass === 'string'
+                    ? timelinePolicy.rhythmClass
+                    : typeof executionPolicy?.rhythmClass === 'string'
+                      ? executionPolicy.rhythmClass
+                      : null,
                 thresholdProfile:
                   typeof gateDetails?.thresholdProfile === 'string'
                     ? gateDetails.thresholdProfile

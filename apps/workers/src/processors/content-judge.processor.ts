@@ -15,6 +15,28 @@ function averageScores(...values: Array<number | null>): number | null {
   return filtered.reduce((sum, value) => sum + value, 0) / filtered.length;
 }
 
+function deriveContinuityScore(params: {
+  identityScore: number | null;
+  realIdentityScore: number | null;
+  continuityContext: {
+    snapshotType?: string | null;
+    lockId?: string | null;
+    overrideId?: string | null;
+  } | null;
+}) {
+  const { identityScore, realIdentityScore, continuityContext } = params;
+  const base = averageScores(identityScore, realIdentityScore);
+  if (base === null) return null;
+
+  let modifier = 0;
+  if (continuityContext?.lockId) modifier += 0.04;
+  if (continuityContext?.overrideId) modifier += 0.02;
+  if (String(continuityContext?.snapshotType || '').includes('LOCKED')) modifier += 0.02;
+  if (String(continuityContext?.snapshotType || '').includes('OVERRIDE')) modifier += 0.02;
+
+  return clampScore(base + modifier);
+}
+
 function deriveRhythmScore(params: {
   overallScore: number | null;
   shotPlanPresent: boolean;
@@ -246,12 +268,52 @@ export async function processContentJudgeJob(
     },
   });
 
+  const continuityRows = shot?.scene?.id
+    ? await (prisma as any).$queryRawUnsafe(
+        `
+          SELECT snapshot_type, snapshot_data, evidence_ref
+          FROM continuity_state_snapshots
+          WHERE scene_id = $1
+          ORDER BY created_at DESC
+          LIMIT 1
+        `,
+        shot.scene.id,
+      )
+    : [];
+  const latestContinuity = Array.isArray(continuityRows) ? continuityRows[0] ?? null : null;
+  const continuityData =
+    latestContinuity?.snapshot_data &&
+    typeof latestContinuity.snapshot_data === 'object' &&
+    !Array.isArray(latestContinuity.snapshot_data)
+      ? (latestContinuity.snapshot_data as Record<string, any>)
+      : null;
+  const continuityContext = latestContinuity
+    ? {
+        snapshotType:
+          typeof latestContinuity.snapshot_type === 'string'
+            ? latestContinuity.snapshot_type
+            : null,
+        evidenceRef:
+          typeof latestContinuity.evidence_ref === 'string' ? latestContinuity.evidence_ref : null,
+        lockId: typeof continuityData?.lockId === 'string' ? continuityData.lockId : null,
+        lockReason:
+          typeof continuityData?.lockReason === 'string' ? continuityData.lockReason : null,
+        overrideId:
+          typeof continuityData?.overrideId === 'string' ? continuityData.overrideId : null,
+        overrideReason:
+          typeof continuityData?.overrideReason === 'string'
+            ? continuityData.overrideReason
+            : null,
+      }
+    : null;
+
   if (shot?.scene?.projectId) {
     const score = response as Record<string, any>;
     const overallScore = toNumber(score.overallScore) ?? toNumber(score.overall_score);
     const signals =
       score.signals && typeof score.signals === 'object' ? (score.signals as Record<string, any>) : {};
     const identityScore = toNumber(signals.identity_score);
+    const realIdentityScore = toNumber(signals.identity_score_real_ppv64);
     const audioScore = toNumber(signals.audio_existence);
     const renderScore = toNumber(signals.render_physical);
     const verdict = typeof score.verdict === 'string' ? score.verdict : 'PENDING';
@@ -274,9 +336,11 @@ export async function processContentJudgeJob(
       renderScore,
       planningContext,
     });
-    const continuityScore = clampScore(
-      averageScores(identityScore, toNumber(signals.identity_score_real_ppv64)),
-    );
+    const continuityScore = deriveContinuityScore({
+      identityScore,
+      realIdentityScore,
+      continuityContext,
+    });
     const shotCoherenceScore = clampScore(
       averageScores(overallScore, renderScore, shotPlanPresent ? 1 : 0),
     );
@@ -339,6 +403,7 @@ export async function processContentJudgeJob(
           directorPlan: planningContext.directorPlan,
           executionPolicy: planningContext.executionPolicy,
           timelinePolicy: planningContext.timelinePolicy,
+          continuityContext,
           shotPlanPresent,
           derivedScores: {
             dramaticAlignmentScore,
