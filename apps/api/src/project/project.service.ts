@@ -812,10 +812,15 @@ export class ProjectService {
         }
       }
 
+      const resolvedProjectId = episode.projectId || episode.project?.id || episode.season?.projectId;
+      if (!resolvedProjectId) {
+        throw new BadRequestException(`Cannot determine projectId for scene in episode ${episodeId}`);
+      }
+
       return tx.scene.create({
         data: {
           episodeId,
-          projectId: episode.projectId || episode.project?.id || episode.season?.projectId || '',
+          projectId: resolvedProjectId,
           sceneIndex: createSceneDto.index, // V3.0
           title: createSceneDto.title || `Scene ${createSceneDto.index}`,
           summary: createSceneDto.summary || memorySeedSummary || undefined,

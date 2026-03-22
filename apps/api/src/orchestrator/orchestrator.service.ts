@@ -1062,32 +1062,9 @@ export class OrchestratorService {
     let storageKey =
       getStringField(result, 'storageKey') || getStringField(resultOutput ?? {}, 'storageKey');
 
-    // Phase V.4: Robust Fallback for Gate/CI Mode
-    if ((!assetId || !storageKey) && (process.env.GATE_MODE === '1' || process.env.CI === 'true')) {
-      this.logger.log(
-        `[DAG] VIDEO_RENDER result missing fields. Attempting DB fallback for sceneId=${sceneId}`
-      );
-      if (sceneId) {
-        const asset = await this.prisma.asset.findUnique({
-          where: {
-            ownerType_ownerId_type: {
-              ownerType: 'SCENE',
-              ownerId: sceneId,
-              type: 'VIDEO',
-            },
-          },
-        });
-        if (asset) {
-          assetId = asset.id;
-          storageKey = asset.storageKey;
-          this.logger.log(`[DAG] Found asset in DB fallback: ${assetId} / ${storageKey}`);
-        }
-      }
-    }
-
     if (!assetId || !storageKey) {
       this.logger.error(
-        `[DAG] VIDEO_RENDER succeeded but missing assetId/storageKey in result. Cannot spawn CE09. [VIDEO_RENDER_POST] jobId=${videoJob.id} videoKey=${result?.videoKey} shouldSpawnCE09=false reason=missing_asset_info result_keys=${Object.keys(result || {})}`
+        `[DAG] VIDEO_RENDER succeeded but missing assetId/storageKey in result. CE09 spawn is sealed and DB fallback is disabled. [VIDEO_RENDER_POST] jobId=${videoJob.id} sceneId=${sceneId ?? 'unknown'} videoKey=${result?.videoKey} shouldSpawnCE09=false reason=missing_asset_info result_keys=${Object.keys(result || {})}`
       );
       return;
     }
