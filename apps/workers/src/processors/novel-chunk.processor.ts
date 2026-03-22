@@ -96,11 +96,15 @@ export async function processNovelChunk(context: ProcessorContext) {
         const result = await (await import('../agents')).runMultiAgentAnalysis(contextPrompt);
         analyzedScenes = result.scenes || [];
       } catch (err: any) {
-        const structure = basicTextSegmentation(chunkText, projectId);
+        const structure = basicTextSegmentation(chunkText, projectId, {
+          allowSyntheticStructure: true,
+        });
         analyzedScenes = structure.episodes.flatMap((ep) => ep.scenes);
       }
     } else {
-      const structure = basicTextSegmentation(chunkText, projectId);
+      const structure = basicTextSegmentation(chunkText, projectId, {
+        allowSyntheticStructure: true,
+      });
       analyzedScenes = structure.episodes.flatMap((ep) => ep.scenes);
     }
 

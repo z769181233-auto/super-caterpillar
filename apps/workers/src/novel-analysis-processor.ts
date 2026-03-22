@@ -37,19 +37,36 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
   void logEntry;
 }
 
+interface FailFastError extends Error {
+  blockingReason?: string;
+  nextAction?: string;
+}
+
+function createMissingStructureMarkersError(): FailFastError {
+  const error = new Error(
+    'Novel analysis requires explicit chapter/episode markers; synthetic fallback structure is disabled'
+  ) as FailFastError;
+  error.blockingReason = 'NOVEL_STRUCTURE_MARKERS_MISSING';
+  error.nextAction = 'USE_CE06_OR_ADD_CHAPTER_MARKERS';
+  return error;
+}
+
 /**
  * 基础规则解析：从 rawText 解析出 Season/Episode/Scene/Shot 结构
  * 这是 MVP 版本，后续可以替换为 LLM 分析。
  */
 export function basicTextSegmentation(
   rawText: string,
-  projectId: string
+  projectId: string,
+  options?: { allowSyntheticStructure?: boolean }
 ): AnalyzedProjectStructure {
   const lines = rawText.split(/\r?\n/);
+  const allowSyntheticStructure = options?.allowSyntheticStructure === true;
 
   const episodes: AnalyzedEpisode[] = [];
   let currentEpisode: AnalyzedEpisode | null = null;
   let currentScene: AnalyzedScene | null = null;
+  let detectedStructureMarker = false;
 
   let episodeIndex = 0;
   let sceneIndex = 0;
@@ -130,6 +147,7 @@ export function basicTextSegmentation(
 
     const episodeMatch = line.match(episodePattern) || line.match(seasonPattern);
     if (episodeMatch) {
+      detectedStructureMarker = true;
       // 新 Episode (忽略 Season 差异，直接作为 Episode)
       flushScene();
       flushEpisode();
@@ -158,51 +176,8 @@ export function basicTextSegmentation(
   flushScene();
   flushEpisode();
 
-  // 如果仍然一个 Episode 都没有，说明整本书没有标题，整体作为 1 集处理
-  if (episodes.length === 0 && rawText.trim()) {
-    const fallbackEpisode: AnalyzedEpisode = {
-      index: 1,
-      title: '默认剧集',
-      summary: '',
-      scenes: [],
-    };
-
-    const paragraphs = rawText.split(/\n\s*\n+/);
-    let fallbackSceneIndex = 0;
-    for (const para of paragraphs) {
-      const trimmed = para.trim();
-      if (!trimmed) continue;
-
-      fallbackSceneIndex += 1;
-      const scene: AnalyzedScene = {
-        index: fallbackSceneIndex,
-        title: `场景 ${fallbackSceneIndex}`,
-        summary: trimmed.slice(0, 50),
-        shots: [],
-      };
-
-      const sentences = trimmed.split(/(?<=[。！？!?])/);
-      let fallbackShotIndex = 0;
-      for (const sentence of sentences) {
-        const text = sentence.trim();
-        if (!text) continue;
-        fallbackShotIndex += 1;
-        scene.shots.push({
-          index: fallbackShotIndex,
-          title: `镜头 ${fallbackShotIndex}`,
-          summary: text.slice(0, 50),
-          text,
-        });
-      }
-
-      if (scene.shots.length > 0) {
-        fallbackEpisode.scenes.push(scene);
-      }
-    }
-
-    if (fallbackEpisode.scenes.length > 0) {
-      episodes.push(fallbackEpisode);
-    }
+  if (!detectedStructureMarker && rawText.trim() && !allowSyntheticStructure) {
+    throw createMissingStructureMarkersError();
   }
 
   let episodesCount = episodes.length;
@@ -1672,10 +1647,6 @@ async function getNovelContentStream(
     return Readable.from(generateChapters());
   }
 
-  interface FailFastError extends Error {
-    blockingReason?: string;
-    nextAction?: string;
-  }
   const error = new Error('Missing source text') as FailFastError;
   error.blockingReason = 'NO_SOURCE_TEXT';
   error.nextAction = 'PROVIDE_TEXT';
