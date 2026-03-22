@@ -123,7 +123,6 @@ export async function markRetryOrFail(
   } catch (e: any) {
     if (e.code === 'P2002') {
       // Idempotency hit, ignore
-      console.warn(`[JobRetry] Billing idempotency hit: released ledger already exists for ${job.id}`);
     } else {
       throw e;
     }

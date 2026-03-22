@@ -24,10 +24,7 @@ export class TaskService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) {
-    console.log('[DEBUG_BOOT] TaskService constructor start');
-    console.log('[DEBUG_BOOT] TaskService constructor end');
-  }
+  ) {}
 
   private isPrismaTimeout(error: unknown): boolean {
     return isPrismaFallbackEligibleError(error);
