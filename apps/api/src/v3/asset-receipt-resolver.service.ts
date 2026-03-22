@@ -38,11 +38,10 @@ export class AssetReceiptResolverService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Resolves the production asset for a given job using a 4-level deterministic strategy.
+   * Resolves the production asset for a given job using a sealed 3-level deterministic strategy.
    * 1. Level 1: Match by createdByJobId (Direct link).
    * 2. Level 2: Pipeline Trace (Match by traceId + type/status).
    * 3. Level 3: Temporal Window (Match by projectId + traceId + time +/- 5m).
-   * 4. Level 4: Heuristic Fallback (Latest published asset in project).
    */
   async resolveAsset(params: {
     projectId: string;
@@ -100,20 +99,6 @@ export class AssetReceiptResolverService {
     });
     if (level3) {
       return this.mapAssetToReceipt(level3, null);
-    }
-
-    // Level 4: Heuristic Fallback (Auditable)
-    const level4 = await this.prisma.asset.findFirst({
-      where: {
-        projectId,
-        status: 'PUBLISHED',
-        type: 'VIDEO',
-      },
-      include: { publishedVideo: true },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (level4) {
-      return this.mapAssetToReceipt(level4, 'HEURISTIC_LATEST_PUBLISHED_ASSET');
     }
 
     // No asset found - Return full null set with error code

@@ -96,8 +96,12 @@ export class EngineInvokerHubService implements OnModuleInit {
     const disableKeys = (process.env.ENGINE_DISABLE_KEYS || '').split(',').filter(Boolean);
 
     const jobId = req.metadata?.jobId || `manual_${started}`;
-    const projectId = req.metadata?.projectId || 'default_project';
+    const projectId = req.metadata?.projectId;
     const attempt = (req.metadata?.attempt as number) || 0;
+
+    if (!projectId) {
+      throw new BadRequestException('projectId is required for engine hub invocation');
+    }
 
     // 0.0 Auto-resolve engineKey from jobType if missing
     if (!req.engineKey && req.jobType) {
