@@ -90,16 +90,8 @@ export class JwtOrHmacGuard implements CanActivate {
     // [P1-FIX] Removed GATE_MODE bypass. All access MUST resolve identity via JWT or HMAC,
     // otherwise downstream guards like PermissionsGuard will hard-crash with 403 user identity missing.
 
-    const dbg = process.env.HMAC_DEBUG === '1';
-    const dlog = (obj: any) => {
-      if (!dbg) return;
-      try {
-        // eslint-disable-next-line no-console
-        console.log(JSON.stringify({ tag: 'HMAC_DEBUG_STEP', ...obj }));
-      } catch {
-        // Ignore JSON stringify errors in debug logging
-      }
-    };
+    const dbg = false;
+    const dlog = (_obj: any) => {};
 
     if (this.hasJwt(req)) {
       dlog({ step: 'jwt_or_hmac_branch', branch: 'jwt' });

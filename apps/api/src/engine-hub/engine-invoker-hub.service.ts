@@ -35,9 +35,7 @@ export class EngineInvokerHubService implements OnModuleInit {
     private auditLogService: AuditLogService,
     @Inject(CostLimitService)
     private costLimit: CostLimitService
-  ) {
-    console.log(`[EngineInvokerHubService] Constructor - costLimit defined: ${!!this.costLimit}`);
-  }
+  ) {}
 
   async onModuleInit() {
     this.ensureDependencies();

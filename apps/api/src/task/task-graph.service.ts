@@ -34,10 +34,7 @@ export interface TaskGraph {
 export class TaskGraphService {
   private readonly logger = new Logger(TaskGraphService.name);
 
-  constructor(private readonly prisma: PrismaService) {
-    console.log('[DEBUG_BOOT] TaskGraphService constructor start');
-    console.log('[DEBUG_BOOT] TaskGraphService constructor end');
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 根据 TaskId 查找 Task → Job 关系图

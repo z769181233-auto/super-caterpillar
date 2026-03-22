@@ -104,7 +104,6 @@ export class BgmLibraryProvider implements AudioProvider {
 
     if (fs.existsSync(outPath)) {
       // P18-6.2: 0-cost cache hit
-      console.log(`[CACHE] Hit: ${outPath}`);
     } else {
       await this.run('ffmpeg', args);
     }
