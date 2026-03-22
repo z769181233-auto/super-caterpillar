@@ -409,7 +409,7 @@ export class AuditInsightService {
     if (videoFromAsset?.storageKey) {
       // Use Asset SSOT
       try {
-        const { url } = this.signedUrlService.generateSignedUrl({
+        const { url } = await this.signedUrlService.generateSignedUrl({
           key: videoFromAsset.storageKey,
           tenantId: projectId, // tenant binding (project-scoped)
           userId,
@@ -445,7 +445,7 @@ export class AuditInsightService {
 
       if (videoJ.status === 'SUCCEEDED' && payloadVideoStorageKey) {
         try {
-          const { url } = this.signedUrlService.generateSignedUrl({
+          const { url } = await this.signedUrlService.generateSignedUrl({
             key: payloadVideoStorageKey,
             tenantId: projectId,
             userId,

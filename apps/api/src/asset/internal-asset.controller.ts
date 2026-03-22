@@ -38,7 +38,7 @@ export class InternalAssetController {
     }
 
     // Generate a short-lived signed URL for internal tools/gates using real tenant/user context.
-    const { url, expiresAt } = this.signedUrlService.generateSignedUrl({
+    const { url, expiresAt } = await this.signedUrlService.generateSignedUrl({
       key,
       tenantId,
       userId,

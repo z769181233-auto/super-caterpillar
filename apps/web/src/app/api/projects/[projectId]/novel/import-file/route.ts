@@ -12,7 +12,7 @@ export async function POST(
   const { projectId } = await params;
   const formData = await request.formData();
   const forwardHeaders = extractForwardHeaders(request);
-  const signedHeaders = buildSignedMultipartHeaders();
+  const signedHeaders = await buildSignedMultipartHeaders();
 
   const response = await fetch(buildApiUrl(`/api/projects/${projectId}/novel/import-file`), {
     method: 'POST',

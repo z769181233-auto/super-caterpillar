@@ -11,7 +11,7 @@ export async function POST(
 ) {
   const { projectId } = await params;
   const payload = await request.json();
-  const signed = buildSignedJsonRequest(payload);
+  const signed = await buildSignedJsonRequest(payload);
   const forwardHeaders = extractForwardHeaders(request);
 
   const response = await fetch(buildApiUrl(`/api/projects/${projectId}/novel/import`), {

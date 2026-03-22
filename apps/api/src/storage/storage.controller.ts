@@ -80,7 +80,7 @@ export class StorageController {
     if (!orgId) {
       throw new BadRequestException('Organization context required');
     }
-    const { url, expiresAt } = this.signedUrlService.generateSignedUrl({
+    const { url, expiresAt } = await this.signedUrlService.generateSignedUrl({
       key,
       tenantId: orgId,
       userId: user.userId,
@@ -110,7 +110,7 @@ export class StorageController {
     // Proactive Fix: Normalize HEAD to GET for signature verification to support curl -I
     const verifyMethod = method === 'HEAD' ? 'GET' : method;
 
-    const isValid = this.signedUrlService.verifySignedUrl(
+    const isValid = await this.signedUrlService.verifySignedUrl(
       key,
       parseInt(expires, 10),
       signature,

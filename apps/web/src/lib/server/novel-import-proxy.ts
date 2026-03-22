@@ -1,5 +1,9 @@
-import { createHash, createHmac, randomUUID } from 'crypto';
+import { createHash, randomUUID, webcrypto } from 'crypto';
 import { buildApiUrl as buildWebApiUrl } from '@/lib/api-base';
+
+const textEncoder = new TextEncoder();
+type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
+let signingKeyPromise: Promise<NodeCryptoKey> | null = null;
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -9,19 +13,32 @@ function requireEnv(name: string): string {
   return value;
 }
 
-function buildSignedHeaders(
+async function getSigningKey(secret: string): Promise<NodeCryptoKey> {
+  if (!signingKeyPromise) {
+    signingKeyPromise = webcrypto.subtle.importKey(
+      'raw',
+      textEncoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+  }
+  return signingKeyPromise;
+}
+
+async function buildSignedHeaders(
   body: string,
   contentSha256: string,
   contentType?: string
-): Record<string, string> {
+): Promise<Record<string, string>> {
   const apiKey = requireEnv('WORKER_API_KEY');
   const hmacSigningKey = requireEnv('HMAC_SECRET_KEY');
   const nonce = randomUUID();
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const canonical = `${apiKey}${nonce}${timestamp}${body || contentSha256}`;
-  // NOTE: This is an HMAC signature for API authentication, NOT a password hash.
-  // Using String() to ensure consistent type for crypto.update()
-  const signature = createHmac('sha256', String(hmacSigningKey)).update(String(canonical), 'utf8').digest('hex');
+  const key = await getSigningKey(hmacSigningKey);
+  const rawSignature = await webcrypto.subtle.sign('HMAC', key, textEncoder.encode(canonical));
+  const signature = Buffer.from(rawSignature).toString('hex');
 
   const headers: Record<string, string> = {
     'X-Api-Key': apiKey,
@@ -38,43 +55,43 @@ function buildSignedHeaders(
   return headers;
 }
 
-export function buildSignedJsonRequest(payload: unknown): {
+export async function buildSignedJsonRequest(payload: unknown): Promise<{
   body: string;
   headers: Record<string, string>;
-} {
+}> {
   const body = JSON.stringify(payload);
   const contentSha256 = createHash('sha256').update(body, 'utf8').digest('hex');
   return {
     body,
-    headers: buildSignedHeaders(body, contentSha256, 'application/json'),
+    headers: await buildSignedHeaders(body, contentSha256, 'application/json'),
   };
 }
 
-export function buildSignedRawJsonRequest(rawBody: string): {
+export async function buildSignedRawJsonRequest(rawBody: string): Promise<{
   body: string;
   headers: Record<string, string>;
-} {
+}> {
   const body = rawBody;
   const contentSha256 = createHash('sha256').update(body, 'utf8').digest('hex');
   return {
     body,
-    headers: buildSignedHeaders(body, contentSha256, 'application/json'),
+    headers: await buildSignedHeaders(body, contentSha256, 'application/json'),
   };
 }
 
-export function buildSignedJsonHashRequest(rawBody: string): {
+export async function buildSignedJsonHashRequest(rawBody: string): Promise<{
   body: string;
   headers: Record<string, string>;
-} {
+}> {
   const body = rawBody;
   const contentSha256 = createHash('sha256').update(body, 'utf8').digest('hex');
   return {
     body,
-    headers: buildSignedHeaders(contentSha256, contentSha256, 'application/json'),
+    headers: await buildSignedHeaders(contentSha256, contentSha256, 'application/json'),
   };
 }
 
-export function buildSignedMultipartHeaders(): Record<string, string> {
+export async function buildSignedMultipartHeaders(): Promise<Record<string, string>> {
   return buildSignedHeaders('', 'UNSIGNED');
 }
 
