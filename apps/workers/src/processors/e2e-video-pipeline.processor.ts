@@ -111,6 +111,7 @@ export async function processE2EVideoPipelineJob(
     const existingCE06 = await prisma.shotJob.findFirst({
       where: idempotencyWhere,
       select: { id: true },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (existingCE06) {

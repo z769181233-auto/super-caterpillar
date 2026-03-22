@@ -145,6 +145,7 @@ export async function processCE04VisualEnrichmentJob(
         type: 'SHOT_RENDER',
         payload: { path: ['pipelineRunId'], equals: validPipelineRunId },
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!existingRender) {

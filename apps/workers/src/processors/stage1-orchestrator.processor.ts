@@ -64,9 +64,8 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
 
     // 获取当前 Episode 下的 Scene 结构（Stage-1 默认将所有 Shot 放入第一个 Scene）
     // Ensure we fetch graph_state_snapshot
-    let scene = await prisma.scene.findFirst({
-      where: { episodeId },
-      orderBy: { sceneIndex: 'asc' },
+    let scene = await prisma.scene.findUnique({
+      where: { episodeId_sceneIndex: { episodeId, sceneIndex: 1 } },
     });
     if (!scene) {
       scene = await prisma.scene.create({

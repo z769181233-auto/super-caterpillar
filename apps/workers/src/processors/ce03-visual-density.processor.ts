@@ -146,6 +146,7 @@ export async function processCE03VisualDensityJob(
           shotId: job.shotId,
           type: 'CE04_VISUAL_ENRICHMENT',
         },
+        orderBy: { createdAt: 'desc' },
       });
 
       if (!existingCE04) {
