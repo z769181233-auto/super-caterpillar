@@ -26,7 +26,6 @@ export class CE19StorySummaryGenAdapter implements EngineAdapter {
     if (process.env.NODE_ENV === 'production' && process.env.GATE_MODE !== '1') {
       throw new Error(`[ENGINE_UNAVAILABLE] CE19 Story Summary Gen implementation required.`);
     }
-    console.warn(`CE19 Story Summary Gen running in non-prod mode. No REAL implementation bound.`);
     throw new Error('[STUB_ERROR] CE19 Story Summary Gen is a STUB; real implementation missing.');
   }
 }

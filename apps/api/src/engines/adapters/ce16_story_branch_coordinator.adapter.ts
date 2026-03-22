@@ -57,7 +57,6 @@ export class CE16StoryBranchCoordinatorAdapter implements EngineAdapter {
     if (process.env.NODE_ENV === 'production' && process.env.GATE_MODE !== '1') {
       throw new Error(`[ENGINE_UNAVAILABLE] CE16 Story Branch Coordinator implementation required.`);
     }
-    console.warn(`CE16 Branch Coordinator running in non-prod mode. No REAL implementation bound.`);
     throw new Error('[STUB_ERROR] CE16 Story Branch Coordinator is a STUB; real implementation missing.');
   }
 }

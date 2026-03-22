@@ -1270,7 +1270,6 @@ export class OrchestratorService {
           enrichedText: novelText,
         },
       });
-      console.log('[DEBUG_A1] Novel structure created');
 
       // 3. Create Episode for orchestration
       // [Audit] Removed Season layer per V1.1 Production Spec
@@ -1329,8 +1328,6 @@ export class OrchestratorService {
         ownerId,
         organizationId
       );
-      console.log(`[DEBUG_A1] Job created: ${job.id}`);
-
       this.logger.log(`Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`);
 
       return {
