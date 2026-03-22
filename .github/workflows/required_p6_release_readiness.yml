@@ -33,14 +33,16 @@ jobs:
       DATABASE_URL: postgresql://postgres:password@127.0.0.1:5432/scu
       PRISMA_SKIP_POSTINSTALL_GENERATE: '1'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
         with:
           version: 9
           run_install: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20.20.1
           cache: 'pnpm'

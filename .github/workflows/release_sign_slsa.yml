@@ -15,13 +15,15 @@ jobs:
     outputs:
       dist_sha256: ${{ steps.hash.outputs.dist_sha256 }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20.20.1
           cache: pnpm
@@ -40,7 +42,7 @@ jobs:
           sha256sum dist.tgz | awk '{print $1}' > dist.tgz.sha256
           echo "dist_sha256=$(cat dist.tgz.sha256)" >> $GITHUB_OUTPUT
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: release-artifact
           path: |
@@ -70,7 +72,7 @@ jobs:
             --output-certificate dist.tgz.crt \
             dist.tgz
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: signatures
           path: |
