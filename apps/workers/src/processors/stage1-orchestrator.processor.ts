@@ -82,15 +82,32 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
 
     // P1-2: Refactored - Resolve Reference Sheet BEFORE creating shots to enable binding
     let refSheetId: string | undefined;
-    const refSheetJob = await prisma.shotJob.findFirst({
-      where: { projectId, type: 'CE01_REFERENCE_SHEET', status: 'SUCCEEDED' },
-      orderBy: { createdAt: 'desc' },
-      include: { engineBinding: true },
+    const latestBindings = await prisma.jobEngineBinding.findMany({
+      where: {
+        engineKey: 'character_visual',
+        status: 'COMPLETED',
+        job: {
+          projectId,
+          organizationId,
+          type: 'CE01_REFERENCE_SHEET',
+          status: 'SUCCEEDED',
+        },
+      },
+      orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
+      take: 2,
     });
 
-    if (refSheetJob && refSheetJob.engineBinding) {
-      refSheetId = refSheetJob.engineBinding.id;
-    } else {
+    if (latestBindings.length > 0) {
+      refSheetId = latestBindings[0].id;
+    }
+
+    if (latestBindings.length > 1) {
+      logger.warn(
+        `[Stage1] Multiple completed reference sheet bindings found for project ${projectId}. Using latest binding ${latestBindings[0].id}.`
+      );
+    }
+
+    if (!refSheetId) {
       logger.warn(
         `[Stage1] NO Reference Sheet found for project ${projectId}. Proceeding without established visual binding.`
       );

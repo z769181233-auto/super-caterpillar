@@ -26,6 +26,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
           projectId: string;
           storageKey: string;
           signedUrl: string | null;
+          fingerprintId: string | null;
         }
       | null = null;
 
@@ -33,7 +34,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     if (targetAssetId) {
       resolvedAsset = await prisma.asset.findUnique({
         where: { id: targetAssetId },
-        select: { id: true, projectId: true, storageKey: true, signedUrl: true },
+        select: { id: true, projectId: true, storageKey: true, signedUrl: true, fingerprintId: true },
       });
 
       if (!resolvedAsset) {
@@ -56,7 +57,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
             type: AssetType.VIDEO,
           },
         },
-        select: { id: true, projectId: true, storageKey: true, signedUrl: true },
+        select: { id: true, projectId: true, storageKey: true, signedUrl: true, fingerprintId: true },
       });
 
       if (resolvedAsset) {
@@ -96,12 +97,21 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     const { storageKey, hlsPlaylistKey, screenshotKey, framemd5Key, sha256 } = secResult.output;
 
     // 3. Update Asset
-    let fpRecord = await prisma.securityFingerprint.findFirst({
-      where: { assetId: targetAssetId },
-      orderBy: { createdAt: 'desc' },
-    });
+    let fpRecord = resolvedAsset?.fingerprintId
+      ? await prisma.securityFingerprint.findUnique({
+          where: { id: resolvedAsset.fingerprintId },
+        })
+      : null;
 
-    if (!fpRecord) {
+    if (fpRecord) {
+      fpRecord = await prisma.securityFingerprint.update({
+        where: { id: fpRecord.id },
+        data: {
+          assetId: targetAssetId,
+          fpVector: { algorithm: 'sha256', hash: sha256 },
+        },
+      });
+    } else {
       fpRecord = await prisma.securityFingerprint.create({
         data: {
           assetId: targetAssetId,
@@ -125,17 +135,12 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
 
     // 4. Publishing Review
     if (shotId) {
-      const existingReview = await prisma.publishingReview.findFirst({
+      const reviewUpdate = await prisma.publishingReview.updateMany({
         where: { shotId },
-        orderBy: { createdAt: 'desc' },
+        data: { result: ReviewResult.require_review },
       });
 
-      if (existingReview) {
-        await prisma.publishingReview.update({
-          where: { id: existingReview.id },
-          data: { result: ReviewResult.require_review },
-        });
-      } else {
+      if (reviewUpdate.count === 0) {
         await prisma.publishingReview.create({
           data: {
             shotId,

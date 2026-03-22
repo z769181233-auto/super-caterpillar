@@ -109,40 +109,53 @@ export async function processIdentityLockJob(ctx: {
     traceId,
   });
 
+  let currentAnchorId: string | null = null;
+
   try {
     // 1. Transactional State Management (Active Single Source)
     let anchor = await prisma.$transaction(async (tx) => {
-      // Check for EXISTING processing/ready
-      const existingActive = await tx.characterIdentityAnchor.findFirst({
+      const activeAnchors = await tx.characterIdentityAnchor.findMany({
         where: { characterId, isActive: true },
         orderBy: { updatedAt: 'desc' },
       });
 
-      if (existingActive) {
-        if (existingActive.status === 'PROCESSING') {
+      const [latestActive, ...staleActive] = activeAnchors;
+
+      if (staleActive.length > 0) {
+        await tx.characterIdentityAnchor.updateMany({
+          where: {
+            id: {
+              in: staleActive.map((anchor) => anchor.id),
+            },
+          },
+          data: { isActive: false },
+        });
+      }
+
+      // Check for EXISTING processing/ready
+      if (latestActive) {
+        if (latestActive.status === 'PROCESSING') {
           // Basic timeout check (e.g. 5 minutes)
-          const ageMs = Date.now() - existingActive.updatedAt.getTime();
+          const ageMs = Date.now() - latestActive.updatedAt.getTime();
           if (ageMs < 5 * 60 * 1000) {
             throw new Error(
-              `Concurrent processing lock: Anchor ${existingActive.id} is PROCESSING`
+              `Concurrent processing lock: Anchor ${latestActive.id} is PROCESSING`
             );
           }
-          // Timeout -> Deactivate and continue
-          await tx.characterIdentityAnchor.updateMany({
-            where: { characterId, isActive: true },
-            data: { isActive: false },
-          });
+
           await tx.characterIdentityAnchor.update({
-            where: { id: existingActive.id },
-            data: { status: 'FAILED', lastError: 'Timeout overridden' },
+            where: { id: latestActive.id },
+            data: {
+              isActive: false,
+              status: 'FAILED',
+              lastError: 'Timeout overridden',
+            },
           });
-        } else if (existingActive.status === 'READY' && !payload.forceRebuild) {
-          // Idempotency return
-          return { type: 'EXISTING', data: existingActive };
+        } else if (latestActive.status === 'READY' && !payload.forceRebuild) {
+          return { type: 'EXISTING', data: latestActive };
         } else {
-          // READY but forcing rebuild -> Deactivate
-          await tx.characterIdentityAnchor.updateMany({
-            where: { characterId, isActive: true },
+          await tx.characterIdentityAnchor.update({
+            where: { id: latestActive.id },
             data: { isActive: false },
           });
         }
@@ -166,7 +179,7 @@ export async function processIdentityLockJob(ctx: {
       return { status: 'SKIPPED', anchorId: anchor.data.id };
     }
 
-    const currentAnchorId = anchor.data.id;
+    currentAnchorId = anchor.data.id;
     const seed = payload.seed || Math.floor(Math.random() * 2147483647);
 
     // 2. Fetch Character Profile for dynamic prompt
@@ -305,14 +318,10 @@ export async function processIdentityLockJob(ctx: {
     // Since we used Transaction for creation, we don't have the ID easily in catch block unless we scoped it.
     // Ideally we should query for the PROCESSING anchor and fail it.
     try {
-      const processing = await prisma.characterIdentityAnchor.findFirst({
-        where: { characterId, status: 'PROCESSING', isActive: true },
-        orderBy: { updatedAt: 'desc' },
-      });
-      if (processing) {
+      if (currentAnchorId) {
         await prisma.characterIdentityAnchor.update({
-          where: { id: processing.id },
-          data: { status: 'FAILED', lastError: error.message },
+          where: { id: currentAnchorId },
+          data: { status: 'FAILED', lastError: error.message, isActive: false },
           // We keep it Active=true (but Failed) so we know the latest attempt failed?
           // Hard constraint says: "If READY but... check fail... mark old inactive".
           // Here we are failing the NEW one.
