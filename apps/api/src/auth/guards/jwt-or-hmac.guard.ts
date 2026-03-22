@@ -3,10 +3,8 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { ModuleRef, Reflector } from '@nestjs/core';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { HmacAuthGuard } from '../hmac/hmac-auth.guard';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -22,11 +20,27 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
  */
 @Injectable()
 export class JwtOrHmacGuard implements CanActivate {
+  private jwtAuthGuard?: JwtAuthGuard;
+  private hmacAuthGuard?: HmacAuthGuard;
+
   constructor(
-    @Inject(forwardRef(() => JwtAuthGuard)) private readonly jwtAuthGuard: JwtAuthGuard,
-    @Inject(forwardRef(() => HmacAuthGuard)) private readonly hmacAuthGuard: HmacAuthGuard,
-    @Inject(Reflector) private readonly reflector: Reflector
-  ) { }
+    private readonly moduleRef: ModuleRef,
+    private readonly reflector: Reflector
+  ) {}
+
+  private getJwtAuthGuard(): JwtAuthGuard {
+    if (!this.jwtAuthGuard) {
+      this.jwtAuthGuard = this.moduleRef.get(JwtAuthGuard, { strict: false });
+    }
+    return this.jwtAuthGuard;
+  }
+
+  private getHmacAuthGuard(): HmacAuthGuard {
+    if (!this.hmacAuthGuard) {
+      this.hmacAuthGuard = this.moduleRef.get(HmacAuthGuard, { strict: false });
+    }
+    return this.hmacAuthGuard;
+  }
 
   /**
    * P0-SEC: 大小写不敏感的 Header 读取
@@ -89,12 +103,12 @@ export class JwtOrHmacGuard implements CanActivate {
 
     if (this.hasJwt(req)) {
       dlog({ step: 'jwt_or_hmac_branch', branch: 'jwt' });
-      return (await this.jwtAuthGuard.canActivate(context)) as boolean;
+      return (await this.getJwtAuthGuard().canActivate(context)) as boolean;
     }
 
     if (this.hasHmac(req)) {
       dlog({ step: 'jwt_or_hmac_branch', branch: 'hmac' });
-      return (await this.hmacAuthGuard.canActivate(context)) as boolean;
+      return (await this.getHmacAuthGuard().canActivate(context)) as boolean;
     }
 
     dlog({ step: 'jwt_or_hmac_branch', branch: 'none' });

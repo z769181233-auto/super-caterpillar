@@ -91,6 +91,7 @@ import { AuditModule } from '../audit/audit.module';
 import { CostModule } from '../cost/cost.module';
 import { CharacterModule } from '../character/character.module';
 import { AudioModule } from '../audio/audio.module';
+import { AuthModule } from '../auth/auth.module';
 import { AudioTTSLocalAdapter } from './adapters/audio-tts.local.adapter';
 
 @Module({
@@ -99,6 +100,7 @@ import { AudioTTSLocalAdapter } from './adapters/audio-tts.local.adapter';
     EngineAdminModule,
     AuditLogModule,
     AuditModule,
+    AuthModule,
     CostModule,
     CharacterModule,
     forwardRef(() => EngineHubModule),

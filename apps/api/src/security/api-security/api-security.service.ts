@@ -81,7 +81,19 @@ export class ApiSecurityService {
   }
 
   private shouldAllowLegacySecretHashFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK === '1';
+    return (
+      this.isCiOrGateContext() ||
+      process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK === '1' ||
+      this.isLocalDevLegacySecretFallbackEnabled()
+    );
+  }
+
+  private isLocalDevLegacySecretFallbackEnabled(): boolean {
+    return process.env.NODE_ENV === 'development';
+  }
+
+  private isLocalDevWorkerApiKey(apiKey: string): boolean {
+    return apiKey === 'ak_worker_dev_0000000000000000';
   }
 
   private shouldAllowApiKeyPgFallback(): boolean {
@@ -686,7 +698,12 @@ export class ApiSecurityService {
 
     // 2. Fallback 到旧字段（仅 CI/test/gate 或显式开关允许）
     if (keyRecord.secretHash) {
-      if (!this.shouldAllowLegacySecretHashFallback()) {
+      if (
+        !this.shouldAllowLegacySecretHashFallback() ||
+        (!this.isCiOrGateContext() &&
+          !this.isLocalDevLegacySecretFallbackEnabled() &&
+          this.isLocalDevWorkerApiKey(apiKey))
+      ) {
         await this.writeAuditLog(
           {
             nonce: '',
@@ -709,8 +726,41 @@ export class ApiSecurityService {
         );
       }
 
+      const fallbackMode = this.isCiOrGateContext()
+        ? 'CI/test/gate-compatible'
+        : this.isLocalDevWorkerApiKey(apiKey) && this.isLocalDevLegacySecretFallbackEnabled()
+          ? 'local-development'
+          : 'explicit-env';
+
+      if (
+        !this.isCiOrGateContext() &&
+        this.isLocalDevLegacySecretFallbackEnabled() &&
+        !this.isLocalDevWorkerApiKey(apiKey)
+      ) {
+        await this.writeAuditLog(
+          {
+            nonce: '',
+            signature: '',
+            timestamp: new Date().toISOString(),
+            path: '',
+            method: '',
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'INSECURE_SECRET_STORAGE',
+            errorCode: '500',
+          },
+          ip,
+          userAgent,
+          keyRecord.id
+        );
+
+        throw new InternalServerErrorException(
+          `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
+            `Development fallback is limited to the local dev worker key unless explicitly allowed.`
+        );
+      }
+
       this.logger.warn(
-        `API Key ${this.maskApiKey(apiKey)} using secretHash fallback in CI/test/gate-compatible mode`
+        `API Key ${this.maskApiKey(apiKey)} using secretHash fallback in ${fallbackMode} mode`
       );
       await this.writeAuditLog(
         {

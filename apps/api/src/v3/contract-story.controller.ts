@@ -14,7 +14,6 @@ import { StoryService } from '../story/story.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AssetReceiptResolverService } from './asset-receipt-resolver.service';
 
-@UseGuards(JwtOrHmacGuard)
 @Controller('v3/story')
 export class ContractStoryController {
   private readonly logger = new Logger(ContractStoryController.name);

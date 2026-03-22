@@ -4,6 +4,7 @@ import { EngineTaskService } from './engine-task.service';
 import { TaskGraphService } from './task-graph.service';
 import { TaskGraphController } from './task-graph.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AuthModule } from '../auth/auth.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 import { EngineModule } from '../engines/engine.module';
 import { QualityScoreService } from '../quality/quality-score.service';
@@ -15,6 +16,7 @@ import { QualityModule } from '../quality/quality.module';
 @Module({
   imports: [
     PrismaModule,
+    AuthModule,
     AuditLogModule,
     EngineModule, // 导入 EngineModule 以使用 EngineRegistry
     forwardRef(() => JobModule), // S3-C.3: 导入 JobModule（使用 forwardRef 避免循环依赖）

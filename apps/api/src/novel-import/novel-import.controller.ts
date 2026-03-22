@@ -399,6 +399,13 @@ export class NovelImportController {
 
     const traceId = randomUUID();
     const title = importNovelDto.title || 'Direct Import ' + new Date().toISOString();
+    const analysisJob = await this.prisma.novelAnalysisJob.create({
+      data: {
+        projectId,
+        jobType: 'ANALYZE_ALL',
+        status: 'PENDING',
+      },
+    });
 
     // P0-S4: Massive Text Guard (Shredder)
     if (rawText.length > this.SHREDDER_THRESHOLD_CHARACTERS) {
@@ -438,6 +445,7 @@ export class NovelImportController {
           taskId: result.taskId,
           novelSourceId: result.novelSourceId,
           mode: 'SHREDDER',
+          analysisJobId: analysisJob.id,
         },
         message: 'Massive text detected, Shredder scanning started',
       };
@@ -514,11 +522,20 @@ export class NovelImportController {
       request.headers['user-agent']
     );
 
+    await this.prisma.novelAnalysisJob.update({
+      where: { id: analysisJob.id },
+      data: {
+        novelSourceId: novelSource.id,
+        progress: { message: 'Job created', jobId: job.id, taskId: task.id },
+      },
+    });
+
     return {
       success: true,
       data: {
         jobId: job.id,
         taskId: task.id,
+        analysisJobId: analysisJob.id,
         novelSourceId: novelSource.id,
         chapterCount: chapters.length,
       },
@@ -602,6 +619,15 @@ export class NovelImportController {
     });
     if (!novelSource) throw new NotFoundException('找不到小说源');
 
+    const analysisJob = await this.prisma.novelAnalysisJob.create({
+      data: {
+        projectId,
+        novelSourceId: novelSource.id,
+        jobType: body.chapterId ? 'ANALYZE_CHAPTER' : 'ANALYZE_ALL',
+        status: 'PENDING',
+      },
+    });
+
     const task = await this.taskService.create({
       organizationId,
       projectId,
@@ -628,9 +654,16 @@ export class NovelImportController {
       request.headers['user-agent']
     );
 
+    await this.prisma.novelAnalysisJob.update({
+      where: { id: analysisJob.id },
+      data: {
+        progress: { message: 'Analysis started', jobId: job.id, taskId: task.id },
+      },
+    });
+
     return {
       success: true,
-      data: { jobId: job.id, taskId: task.id },
+      data: { jobId: job.id, taskId: task.id, analysisJobId: analysisJob.id },
       message: 'Analysis started',
     };
   }

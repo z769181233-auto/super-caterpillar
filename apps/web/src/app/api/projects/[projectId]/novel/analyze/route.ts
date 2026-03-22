@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   buildApiUrl,
-  buildSignedJsonRequest,
+  buildSignedJsonHashRequest,
   extractForwardHeaders,
 } from '@/lib/server/novel-import-proxy';
 
@@ -11,8 +11,7 @@ export async function POST(
 ) {
   const { projectId } = await params;
   const raw = await request.text();
-  const payload = raw ? JSON.parse(raw) : {};
-  const signed = buildSignedJsonRequest(payload);
+  const signed = buildSignedJsonHashRequest(raw);
   const forwardHeaders = extractForwardHeaders(request);
 
   const response = await fetch(buildApiUrl(`/api/projects/${projectId}/novel/analyze`), {

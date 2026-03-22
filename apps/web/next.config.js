@@ -16,7 +16,7 @@ const nextConfig = {
     if (process.env.NODE_ENV === 'development') {
       return [
         {
-          source: '/api/:path*',
+          source: '/api/backend/:path*',
           destination: 'http://localhost:3000/api/:path*',
         },
       ];

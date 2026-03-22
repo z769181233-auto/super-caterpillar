@@ -44,7 +44,6 @@ class RenderShotBodyDto {
   is_verification?: boolean;
 }
 
-@UseGuards(JwtOrHmacGuard)
 @Controller('v3/shot')
 export class ContractShotController {
   private readonly logger = new Logger(ContractShotController.name);

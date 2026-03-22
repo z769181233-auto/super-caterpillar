@@ -19,7 +19,6 @@ import {
   TrainLoraDto,
 } from './character.dto';
 
-@UseGuards(JwtOrHmacGuard)
 @Controller('v1')
 export class CharacterController {
   constructor(private readonly characterService: CharacterService) {}
