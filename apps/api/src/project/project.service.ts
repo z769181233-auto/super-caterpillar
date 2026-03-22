@@ -54,7 +54,7 @@ export class ProjectService {
     // Studio v0.7: 创建项目时必须指定组织
     // Studio v0.7: Find 'OWNER' role
     // Using findFirst/findUnique. Modified for Robustness.
-    let finalOwnerRole = await this.prisma.role.findFirst({
+    let finalOwnerRole = await this.prisma.role.findUnique({
       where: { name: 'OWNER' },
     });
 
@@ -72,7 +72,7 @@ export class ProjectService {
         this.logger.error(`ERROR: Failed to create OWNER role: ${err.message}`);
         // If unique constraint violation, it means it exists. Try finding it again.
         this.logger.log('RETRYING FIND OWNER ROLE ...');
-        finalOwnerRole = await this.prisma.role.findFirst({
+        finalOwnerRole = await this.prisma.role.findUnique({
           where: { name: 'OWNER' },
         });
         if (finalOwnerRole) {
@@ -1780,17 +1780,17 @@ export class ProjectService {
     }
 
     // Ensure Project Member (Idempotent)
-    const existingMember = await this.prisma.projectMember.findFirst({
-      where: { userId, projectId: project.id },
+    const existingMember = await this.prisma.projectMember.findUnique({
+      where: { userId_projectId: { userId, projectId: project.id } },
     });
 
     if (!existingMember) {
-      let ownerRole = await this.prisma.role.findFirst({ where: { name: 'OWNER' } });
+      let ownerRole = await this.prisma.role.findUnique({ where: { name: 'OWNER' } });
       if (!ownerRole) {
         try {
           ownerRole = await this.prisma.role.create({ data: { name: 'OWNER', level: 100 } });
         } catch (e) {
-          ownerRole = await this.prisma.role.findFirst({ where: { name: 'OWNER' } });
+          ownerRole = await this.prisma.role.findUnique({ where: { name: 'OWNER' } });
         }
       }
       if (ownerRole) {
@@ -1802,8 +1802,8 @@ export class ProjectService {
     }
 
     // 2. 幂等创建结构: 1 Season
-    let season = await this.prisma.season.findFirst({
-      where: { projectId: project.id, index: 1 },
+    let season = await this.prisma.season.findUnique({
+      where: { projectId_index: { projectId: project.id, index: 1 } },
     });
 
     if (!season) {
@@ -1819,8 +1819,8 @@ export class ProjectService {
 
     // 3. 创建 2 Episodes
     for (let epIndex = 1; epIndex <= 2; epIndex++) {
-      let episode = await this.prisma.episode.findFirst({
-        where: { seasonId: season.id, index: epIndex },
+      let episode = await this.prisma.episode.findUnique({
+        where: { projectId_index: { projectId: project.id, index: epIndex } },
       });
 
       if (!episode) {
@@ -1837,8 +1837,8 @@ export class ProjectService {
 
       // 4. 每集创建 3 Scenes
       for (let scIndex = 1; scIndex <= 3; scIndex++) {
-        let scene = await this.prisma.scene.findFirst({
-          where: { episodeId: episode.id, sceneIndex: scIndex },
+        let scene = await this.prisma.scene.findUnique({
+          where: { episodeId_sceneIndex: { episodeId: episode.id, sceneIndex: scIndex } },
         });
 
         if (!scene) {
@@ -1856,8 +1856,8 @@ export class ProjectService {
 
         // 5. 每场景创建 5 Shots
         for (let shotIndex = 1; shotIndex <= 5; shotIndex++) {
-          const existing = await this.prisma.shot.findFirst({
-            where: { sceneId: scene.id, index: shotIndex },
+          const existing = await this.prisma.shot.findUnique({
+            where: { sceneId_index: { sceneId: scene.id, index: shotIndex } },
           });
 
           if (!existing) {

@@ -464,9 +464,8 @@ export class JobService {
 
       if (!traceId) traceId = `tr_ce01_${randomUUID()}`;
 
-      let episode = await this.prisma.episode.findFirst({
-        where: { projectId },
-        orderBy: { index: 'asc' },
+      let episode = await this.prisma.episode.findUnique({
+        where: { projectId_index: { projectId, index: 1 } },
       });
 
       if (!episode) {
@@ -481,9 +480,8 @@ export class JobService {
         });
       }
 
-      let scene = await this.prisma.scene.findFirst({
-        where: { episodeId: episode.id },
-        orderBy: { sceneIndex: 'asc' },
+      let scene = await this.prisma.scene.findUnique({
+        where: { episodeId_sceneIndex: { episodeId: episode.id, sceneIndex: 1 } },
       });
 
       if (!scene) {
@@ -498,9 +496,8 @@ export class JobService {
         });
       }
 
-      let shot = await this.prisma.shot.findFirst({
-        where: { sceneId: scene.id },
-        orderBy: { index: 'asc' },
+      let shot = await this.prisma.shot.findUnique({
+        where: { sceneId_index: { sceneId: scene.id, index: 1 } },
       });
 
       if (!shot) {
@@ -617,6 +614,7 @@ export class JobService {
         },
       },
       include: { engineVersion: true },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (existingBinding) {
@@ -742,6 +740,7 @@ export class JobService {
           type: jobType,
           status: { notIn: [JobStatusEnum.FAILED] }, // Ignore failed, create new one. CANCELLED doesn't exist in Prisma enum yet
         },
+        orderBy: { createdAt: 'desc' },
       });
 
       if (existing) {
@@ -1199,11 +1198,8 @@ export class JobService {
     let job: ShotJobWithShotHierarchy | null = null;
     let usedPgFallback = false;
     try {
-      job = (await this.prisma.shotJob.findFirst({
-        where: {
-          id,
-          organizationId, // Studio v0.7: 按组织过滤
-        },
+      const found = await this.prisma.shotJob.findUnique({
+        where: { id },
         include: {
           task: true,
           shot: {
@@ -1230,7 +1226,8 @@ export class JobService {
             },
           },
         },
-      })) as ShotJobWithShotHierarchy | null;
+      });
+      job = found && found.organizationId === organizationId ? (found as ShotJobWithShotHierarchy) : null;
     } catch (error: any) {
       if (!this.shouldFallbackToPg(error)) {
         throw error;
@@ -2630,6 +2627,7 @@ export class JobService {
         type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
         traceId: pipelineRunId,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!pipelineJob) return;
@@ -2698,6 +2696,7 @@ export class JobService {
         type: 'pipeline_stage1',
         scene: { episode: { projectId } },
       },
+      orderBy: { index: 'asc' },
     });
 
     const targetShotId = placeholderShot?.id || succeededShots[0].shotId;
@@ -2740,6 +2739,7 @@ export class JobService {
         type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
         traceId: pipelineRunId,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!pipelineJob) return;

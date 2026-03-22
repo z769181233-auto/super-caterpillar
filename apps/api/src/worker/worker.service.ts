@@ -941,6 +941,7 @@ export class WorkerService {
             workerId: workerNode.id,
             status: JobStatus.DISPATCHED,
           },
+          orderBy: { createdAt: 'desc' },
         });
 
         if (existingJob) {
