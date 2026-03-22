@@ -8,6 +8,25 @@ export interface AssetExtractionResult {
   error?: any;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => asRecord(item))
+    .filter((item): item is Record<string, unknown> => item !== null);
+}
+
+function asNonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 /**
  * P5-C.2: Character & Asset Extraction Processor
  * Handles:
@@ -69,30 +88,39 @@ ${text}
     responseFormat: 'json_object',
   });
 
-  const characters = result.characters || [];
+  const characters = asRecordArray((result as Record<string, unknown>)?.characters);
   for (const char of characters) {
+    const characterName = asNonEmptyString(char.name);
+    if (!characterName) {
+      continue;
+    }
+
     // 1. Upsert Character (Main name is unique within project)
     const character = await prisma.character.upsert({
       where: {
         projectId_name: {
           projectId,
-          name: char.name,
+          name: characterName,
         },
       },
       update: {
-        description: char.description,
+        description: asNonEmptyString(char.description),
       },
       create: {
         projectId,
-        name: char.name,
-        description: char.description,
+        name: characterName,
+        description: asNonEmptyString(char.description),
         firstSeenSourceRefId: episode.sourceRefId,
       },
     });
 
     // 2. Upsert Aliases
-    if (char.aliases && Array.isArray(char.aliases)) {
-      for (const aliasText of char.aliases) {
+    for (const alias of Array.isArray(char.aliases) ? char.aliases : []) {
+      const aliasText = asNonEmptyString(alias);
+      if (!aliasText || aliasText === characterName) {
+        continue;
+      }
+
         await prisma.characterAlias.upsert({
           where: {
             characterId_aliasText: {
@@ -107,7 +135,6 @@ ${text}
             type: 'NAME',
           },
         });
-      }
     }
   }
 
@@ -163,51 +190,60 @@ ${text}
   });
 
   // 1. Process Locations
-  if (result.locations) {
-    for (const loc of result.locations) {
+  for (const loc of asRecordArray((result as Record<string, unknown>)?.locations)) {
+      const name = asNonEmptyString(loc.name);
+      if (!name) {
+        continue;
+      }
+
       await prisma.location.upsert({
-        where: { projectId_name: { projectId, name: loc.name } },
-        update: { description: loc.description },
+        where: { projectId_name: { projectId, name } },
+        update: { description: asNonEmptyString(loc.description) },
         create: {
           projectId,
-          name: loc.name,
-          description: loc.description,
+          name,
+          description: asNonEmptyString(loc.description),
           firstSeenSourceRefId: episode.sourceRefId,
         },
       });
-    }
   }
 
   // 2. Process Props
-  if (result.props) {
-    for (const pr of result.props) {
+  for (const pr of asRecordArray((result as Record<string, unknown>)?.props)) {
+      const name = asNonEmptyString(pr.name);
+      if (!name) {
+        continue;
+      }
+
       await prisma.prop.upsert({
-        where: { projectId_name: { projectId, name: pr.name } },
-        update: { description: pr.description },
+        where: { projectId_name: { projectId, name } },
+        update: { description: asNonEmptyString(pr.description) },
         create: {
           projectId,
-          name: pr.name,
-          description: pr.description,
+          name,
+          description: asNonEmptyString(pr.description),
           firstSeenSourceRefId: episode.sourceRefId,
         },
       });
-    }
   }
 
   // 3. Process Outfits
-  if (result.outfits) {
-    for (const out of result.outfits) {
+  for (const out of asRecordArray((result as Record<string, unknown>)?.outfits)) {
+      const name = asNonEmptyString(out.name);
+      if (!name) {
+        continue;
+      }
+
       await prisma.outfit.upsert({
-        where: { projectId_name: { projectId, name: out.name } },
-        update: { description: out.description },
+        where: { projectId_name: { projectId, name } },
+        update: { description: asNonEmptyString(out.description) },
         create: {
           projectId,
-          name: out.name,
-          description: out.description,
+          name,
+          description: asNonEmptyString(out.description),
           firstSeenSourceRefId: episode.sourceRefId,
         },
       });
-    }
   }
 
   return { success: true };

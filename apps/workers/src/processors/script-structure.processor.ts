@@ -11,6 +11,29 @@ export interface ScriptStructureResult {
   error?: any;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asNonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function asNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => asRecord(item))
+    .filter((item): item is Record<string, unknown> => item !== null);
+}
+
 async function recordProcessingUsageBestEffort(
   organizationId: string,
   computeTimeMs: number,
@@ -192,20 +215,30 @@ export async function processScriptOutlineJob(
     responseFormat: 'json_object',
   });
 
-  const episodes = result.episodes || [];
+  const episodes = asRecordArray((result as Record<string, unknown>)?.episodes);
   for (const ep of episodes) {
-    if (typeof ep.startChunkIndex !== 'number') {
-      throw new Error(`Episode ${ep.index} is missing startChunkIndex`);
+    const episodeIndex = asNumber(ep.index);
+    const startChunkIndex = asNumber(ep.startChunkIndex);
+    const title = asNonEmptyString(ep.title);
+
+    if (episodeIndex === null) {
+      throw new Error('Episode is missing numeric index');
+    }
+    if (startChunkIndex === null) {
+      throw new Error(`Episode ${episodeIndex} is missing startChunkIndex`);
+    }
+    if (!title) {
+      throw new Error(`Episode ${episodeIndex} is missing title`);
     }
 
     // P5-C HARDENING Fix: Fetch the EXACT chunk by chunkIndex to get correct offsets
     const targetChunk = await prisma.storyChunk.findUnique({
-      where: { sourceId_chunkIndex: { sourceId, chunkIndex: ep.startChunkIndex } },
+      where: { sourceId_chunkIndex: { sourceId, chunkIndex: startChunkIndex } },
     });
 
     if (!targetChunk) {
       throw new Error(
-        `Missing exact chunk for sourceId=${sourceId}, chunkIndex=${ep.startChunkIndex}`
+        `Missing exact chunk for sourceId=${sourceId}, chunkIndex=${startChunkIndex}`
       );
     }
 
@@ -222,22 +255,22 @@ export async function processScriptOutlineJob(
       where: {
         projectId_index: {
           projectId,
-          index: ep.index,
+          index: episodeIndex,
         },
       },
       update: {
         buildId,
-        name: ep.title,
-        summary: ep.summary,
+        name: title,
+        summary: asNonEmptyString(ep.summary),
         sourceRefId: sourceRef.id,
         status: 'pending',
       },
       create: {
         projectId,
         buildId,
-        index: ep.index,
-        name: ep.title,
-        summary: ep.summary,
+        index: episodeIndex,
+        name: title,
+        summary: asNonEmptyString(ep.summary),
         sourceRefId: sourceRef.id,
         status: 'pending',
       },
@@ -276,14 +309,23 @@ export async function processSceneSplitJob(ctx: ProcessorContext): Promise<Scrip
     responseFormat: 'json_object',
   });
 
-  const scenes = result.scenes || [];
+  const scenes = asRecordArray((result as Record<string, unknown>)?.scenes);
   for (const sc of scenes) {
+    const sceneIndex = asNumber(sc.index);
+    const title = asNonEmptyString(sc.title);
+    if (sceneIndex === null) {
+      throw new Error('Scene is missing numeric index');
+    }
+    if (!title) {
+      throw new Error(`Scene ${sceneIndex} is missing title`);
+    }
+
     const sceneSourceRef = await prisma.storySourceRef.create({
       data: {
         chunkId: episode.sourceRef!.chunkId,
         offsetStart: episode.sourceRef!.offsetStart,
         offsetEnd: episode.sourceRef!.offsetEnd,
-        textHash: `scene-${sc.index}-${Date.now()}`,
+        textHash: `scene-${sceneIndex}-${Date.now()}`,
       },
     });
 
@@ -291,15 +333,15 @@ export async function processSceneSplitJob(ctx: ProcessorContext): Promise<Scrip
       where: {
         episodeId_sceneIndex: {
           episodeId,
-          sceneIndex: sc.index,
+          sceneIndex,
         },
       },
       update: {
         projectId,
         buildId,
-        title: sc.title,
-        locationSlug: sc.location,
-        summary: sc.summary,
+        title,
+        locationSlug: asNonEmptyString(sc.location),
+        summary: asNonEmptyString(sc.summary),
         status: 'PENDING',
         sourceRefId: sceneSourceRef.id,
       },
@@ -307,10 +349,10 @@ export async function processSceneSplitJob(ctx: ProcessorContext): Promise<Scrip
         projectId,
         episodeId,
         buildId,
-        sceneIndex: sc.index,
-        title: sc.title,
-        locationSlug: sc.location,
-        summary: sc.summary,
+        sceneIndex,
+        title,
+        locationSlug: asNonEmptyString(sc.location),
+        summary: asNonEmptyString(sc.summary),
         status: 'PENDING',
         sourceRefId: sceneSourceRef.id,
       },
@@ -349,14 +391,23 @@ export async function processShotSplitJob(ctx: ProcessorContext): Promise<Script
     responseFormat: 'json_object',
   });
 
-  const shots = result.shots || [];
+  const shots = asRecordArray((result as Record<string, unknown>)?.shots);
   for (const shot of shots) {
+    const shotIndex = asNumber(shot.index);
+    const content = asNonEmptyString(shot.content);
+    if (shotIndex === null) {
+      throw new Error('Shot is missing numeric index');
+    }
+    if (!content) {
+      throw new Error(`Shot ${shotIndex} is missing content`);
+    }
+
     const shotSourceRef = await prisma.storySourceRef.create({
       data: {
         chunkId: scene.sourceRef!.chunkId,
         offsetStart: scene.sourceRef!.offsetStart,
         offsetEnd: scene.sourceRef!.offsetEnd,
-        textHash: `shot-${shot.index}-${Date.now()}`,
+        textHash: `shot-${shotIndex}-${Date.now()}`,
       },
     });
 
@@ -364,13 +415,13 @@ export async function processShotSplitJob(ctx: ProcessorContext): Promise<Script
       where: {
         sceneId_index: {
           sceneId,
-          index: shot.index,
+          index: shotIndex,
         },
       },
       update: {
         buildId,
-        content: shot.content,
-        visualDescription: shot.visualDescription,
+        content,
+        visualDescription: asNonEmptyString(shot.visualDescription),
         renderStatus: 'PENDING',
         sourceRefId: shotSourceRef.id,
         type: 'GENERATED',
@@ -378,9 +429,9 @@ export async function processShotSplitJob(ctx: ProcessorContext): Promise<Script
       create: {
         sceneId,
         buildId,
-        index: shot.index,
-        content: shot.content,
-        visualDescription: shot.visualDescription,
+        index: shotIndex,
+        content,
+        visualDescription: asNonEmptyString(shot.visualDescription),
         renderStatus: 'PENDING',
         sourceRefId: shotSourceRef.id,
         type: 'GENERATED',
