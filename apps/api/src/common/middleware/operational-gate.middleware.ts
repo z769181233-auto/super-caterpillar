@@ -20,10 +20,6 @@ export class OperationalGateMiddleware implements NestMiddleware {
     const orgId = (req.headers['x-scu-org-id'] || req.headers['x-org-id']) as string;
     const url = req.originalUrl || req.url;
 
-    if (process.env.DEBUG_OP_GATE === 'true') {
-      console.log(`[OpGate] Path: ${url}, Org: ${orgId}`);
-    }
-
     // 1. Engine Offline Check (Hard Requirement: No silent fallback)
     // If the request targets a specific engine or we are in a generation flow
     if (url.includes('/ce-dag/run') || url.includes('/v3/story/parse')) {

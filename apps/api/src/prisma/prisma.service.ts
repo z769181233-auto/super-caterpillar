@@ -86,7 +86,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // 开发/测试环境：诊断 Prisma Client 来源和模型
     if (process.env.NODE_ENV !== 'production') {
       try {
-        // eslint-disable-next-line no-console
         this.logger.log('[PrismaService] Prisma Client 诊断信息:', {
           prismaClientSource: this.constructor.name,
           prismaClientPath: require.resolve('database'),
@@ -96,7 +95,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             .slice(0, 30),
         });
       } catch (e) {
-        // eslint-disable-next-line no-console
         this.logger.log('[PrismaService] Prisma Client 诊断信息:', {
           prismaClientSource: this.constructor.name,
           hasNonceStore: 'nonceStore' in this,
@@ -121,7 +119,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       source = 'missing';
       if (isProd) {
         const errMsg = `[P1-1] FATAL: DATABASE_URL is missing in production. Fail-fast triggered.`;
-        console.error(errMsg);
+        this.logger.error(errMsg);
         throw new Error(errMsg);
       }
     }
@@ -133,14 +131,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         const port = parsed.port || '5432';
         const db = parsed.pathname.substring(1);
         const auditMsg = `[DB_URL_AUDIT] source=${source} host=${host} port=${port} db=${db}`;
-        // eslint-disable-next-line no-console
-        console.log(auditMsg);
         this.logger.log(auditMsg);
       }
     } catch (e) {
       const auditMsg = `[DB_URL_AUDIT] source=${source} unparseable_url`;
-      // eslint-disable-next-line no-console
-      console.log(auditMsg);
       this.logger.log(auditMsg);
     }
   }
@@ -177,16 +171,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    console.log('[DEBUG_BOOT] PrismaService.onModuleInit start ($connect)');
     try {
       await this.withTimeout(
         () => this.$connect(),
         this.connectTimeoutMs,
         `PRISMA_CONNECT_TIMEOUT: startup connect exceeded ${this.connectTimeoutMs}ms`
       );
-      console.log('[DEBUG_BOOT] PrismaService.onModuleInit end ($connect)');
     } catch (e) {
-      console.error('[DEBUG_BOOT] PrismaService.onModuleInit FAILED', e);
       this.logger.warn(`[PrismaService] Failed to connect to DB at startup: ${e}`);
     }
   }
