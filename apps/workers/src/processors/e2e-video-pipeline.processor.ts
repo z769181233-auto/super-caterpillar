@@ -52,6 +52,9 @@ export async function processE2EVideoPipelineJob(
   const jobId = job.id;
   const payload = job.payload as E2EVideoPipelinePayload;
   const projectId = job.projectId || payload.projectId;
+  if (!projectId) {
+    throw new Error('[PIPELINE_E2E_VIDEO] Missing projectId');
+  }
 
   // 1. 确定 pipelineRunId
   // 如果 payload 里传了 pipelineRunId，就用传的；否则用当前 job.id 作为 runId
@@ -219,8 +222,9 @@ export async function processE2EVideoPipelineJob(
         payload: {
           projectId,
           novelSourceId: payload.novelSourceId,
-          rawText:
-            payload.raw_text || payload.sourceText || `GATE_MOCK_PROD_SLICE_TEXT_${Date.now()}`,
+          rawText: payload.raw_text || payload.sourceText || (() => {
+            throw new Error('[PIPELINE_E2E_VIDEO] Missing rawText/sourceText');
+          })(),
           pipelineRunId,
           rootJobId: jobId,
         },

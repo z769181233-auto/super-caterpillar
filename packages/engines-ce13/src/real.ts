@@ -18,7 +18,8 @@ export async function ce13RealEngine(input: CE13Input): Promise<CE13Output> {
     try {
       const llmClient = new LLMClient();
       const provider = process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai';
-      const model = provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : 'gpt-4-turbo-preview';
+      const model =
+        provider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : process.env.OPENAI_MODEL || 'gpt-4o';
 
       const response = await llmClient.chat({
         provider: provider as any,
@@ -70,9 +71,7 @@ export async function ce13RealEngine(input: CE13Input): Promise<CE13Output> {
           : undefined,
       };
     } catch (error: any) {
-      console.warn(
-        `[CE13] AI Pacing analysis failed, falling back to rule logic: ${error.message}`
-      );
+      console.warn(`[CE13] AI pacing analysis failed, falling back to rules: ${error?.message || error}`);
     }
   }
 

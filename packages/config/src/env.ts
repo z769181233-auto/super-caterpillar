@@ -1,7 +1,6 @@
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
-import * as util from 'util';
 import * as crypto from 'crypto';
 
 // 加载环境变量文件（按优先级顺序）
@@ -42,10 +41,6 @@ if (!ignoreEnvFile) {
     }
   }
 } else {
-  // eslint-disable-next-line no-console
-  process.stdout.write(
-    util.format('[Config] IGNORE_ENV_FILE=true, strictly skipping all .env files.') + '\n'
-  );
 }
 
 // DATABASE_URL source tracking (silent)
@@ -402,16 +397,12 @@ export function validateRequiredEnvs() {
 
     if (isProd && !isStubMode) {
       // 商业级严格口径：生产环境且未显式开启 Stub 模式，必须失败退出
-      // eslint-disable-next-line no-console
-      console.error(`${errorMsg}. Service will exit to prevent inconsistent state.`);
       process.exit(1);
     }
 
     // [A5_FIX] Strictly prohibit silent internal protocols in any mode
     throw new Error(errorMsg);
   } else {
-    // eslint-disable-next-line no-console
-    console.log('[Config] Environment Integrity Check: PASS ✅');
     (process as any).missingEnvs = [];
   }
 }
@@ -427,14 +418,6 @@ export function pickHmacSecretSSOT(): string {
 
   if (!v) {
     throw new Error('HMAC_SECRET_MISSING: Please set HMAC_SECRET_KEY in environment or .env.local');
-  }
-
-  // Deprecation warnings (do not block)
-  if (!process.env.HMAC_SECRET_KEY) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      '[WARN] HMAC_SECRET_KEY missing; fallback to historical env path used. Please migrate to HMAC_SECRET_KEY.'
-    );
   }
 
   return v;

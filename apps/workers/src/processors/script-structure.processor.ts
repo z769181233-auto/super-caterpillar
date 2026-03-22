@@ -19,8 +19,7 @@ async function recordProcessingUsageBestEffort(
   try {
     const metering = await import('../../../../packages/metering/src/usage-meter');
     await metering.UsageMeter.recordProcessing(organizationId, computeTimeMs, metadata);
-  } catch (e) {
-    console.warn(`[UsageMeter] Failed to record processing:`, e);
+  } catch {
   }
 }
 
@@ -87,9 +86,7 @@ async function appendContinuitySnapshotBestEffort(params: {
       JSON.stringify(snapshotData ?? {}),
       evidenceRef ?? null,
     );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`[ContinuitySnapshot] append skipped: ${message}`);
+  } catch {
   }
 }
 
@@ -122,9 +119,7 @@ async function getActiveContinuityLockBestEffort(params: {
     );
 
     return Array.isArray(result) ? result[0] ?? null : null;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`[ContinuityStateLock] lookup skipped: ${message}`);
+  } catch {
     return null;
   }
 }
@@ -157,9 +152,7 @@ async function getLatestContinuityOverrideBestEffort(params: {
     );
 
     return Array.isArray(result) ? result[0] ?? null : null;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`[ContinuityStateOverride] lookup skipped: ${message}`);
+  } catch {
     return null;
   }
 }
@@ -172,6 +165,12 @@ export async function processScriptOutlineJob(
 ): Promise<ScriptStructureResult> {
   const { prisma, job } = ctx;
   const { sourceId, buildId, projectId } = job.payload;
+  if (!projectId) {
+    throw new Error('Missing projectId for script outline job');
+  }
+  if (!buildId) {
+    throw new Error('Missing buildId for script outline job');
+  }
 
   // P5-C HARDENING: Fetch PREVIEW chunks (e.g., first 50) for LLM context
   const previewChunks = await prisma.storyChunk.findMany({
@@ -197,8 +196,8 @@ export async function processScriptOutlineJob(
   for (const ep of episodes) {
     // P5-C HARDENING Fix: Fetch the EXACT chunk by chunkIndex to get correct offsets
     const targetChunk =
-      (await prisma.storyChunk.findFirst({
-        where: { sourceId, chunkIndex: ep.startChunkIndex },
+      (await prisma.storyChunk.findUnique({
+        where: { sourceId_chunkIndex: { sourceId, chunkIndex: ep.startChunkIndex } },
       })) || previewChunks[0];
 
     const sourceRef = await prisma.storySourceRef.create({
@@ -232,6 +231,15 @@ export async function processScriptOutlineJob(
 export async function processSceneSplitJob(ctx: ProcessorContext): Promise<ScriptStructureResult> {
   const { prisma, job } = ctx;
   const { episodeId, buildId, projectId } = job.payload;
+  if (!projectId) {
+    throw new Error('Missing projectId for scene split job');
+  }
+  if (!buildId) {
+    throw new Error('Missing buildId for scene split job');
+  }
+  if (!episodeId) {
+    throw new Error('Missing episodeId for scene split job');
+  }
 
   const episode = await prisma.episode.findUnique({
     where: { id: episodeId },
@@ -281,6 +289,15 @@ export async function processSceneSplitJob(ctx: ProcessorContext): Promise<Scrip
 export async function processShotSplitJob(ctx: ProcessorContext): Promise<ScriptStructureResult> {
   const { prisma, job } = ctx;
   const { sceneId, buildId, projectId } = job.payload;
+  if (!projectId) {
+    throw new Error('Missing projectId for shot split job');
+  }
+  if (!buildId) {
+    throw new Error('Missing buildId for shot split job');
+  }
+  if (!sceneId) {
+    throw new Error('Missing sceneId for shot split job');
+  }
 
   const scene = await prisma.scene.findUnique({
     where: { id: sceneId },
@@ -332,8 +349,11 @@ export async function processContinuityAuditJob(
   const { prisma, job } = ctx;
   const { buildId, sceneId } = job.payload;
   const startTime = Date.now();
+  if (!buildId && !sceneId) {
+    throw new Error('Missing buildId or sceneId for continuity audit job');
+  }
 
-  // Film IR / runtime path: allow scene-level continuity audit without legacy script build.
+  // Film IR / runtime path: allow scene-level continuity audit without script build.
   if (!buildId && sceneId) {
     const scene = await prisma.scene.findUnique({
       where: { id: sceneId },
@@ -552,8 +572,7 @@ export async function processContinuityAuditJob(
           mode: 'scene',
         });
       }
-    } catch (e) {
-      console.warn(`[ScriptStructure] Failed to prepare processing metering:`, e);
+    } catch {
     }
 
     return {
@@ -563,7 +582,7 @@ export async function processContinuityAuditJob(
   }
 
   if (!buildId) {
-    throw new Error('Missing buildId or sceneId for continuity audit job');
+    throw new Error('Missing buildId for continuity audit job');
   }
 
   const build = await prisma.scriptBuild.findUnique({
@@ -692,10 +711,6 @@ export async function processContinuityAuditJob(
     },
   });
 
-  console.log(
-    `\n${auditSummary.isIndustrialSealed ? '✅' : '❌'} AUDIT FINISHED. Sealed: ${auditSummary.isIndustrialSealed}`
-  );
-
   // P5-A: Soft Metering - Record compute effort
   try {
     const projectId = job.payload.projectId || build.projectId;
@@ -709,8 +724,7 @@ export async function processContinuityAuditJob(
         isIndustrialSealed: auditSummary.isIndustrialSealed,
       });
     }
-  } catch (e) {
-    console.warn(`[ScriptStructure] Failed to prepare processing metering:`, e);
+  } catch {
   }
 
   return { success: true, output: auditSummary };

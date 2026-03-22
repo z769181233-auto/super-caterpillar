@@ -114,6 +114,7 @@ export async function processIdentityLockJob(ctx: {
       // Check for EXISTING processing/ready
       const existingActive = await tx.characterIdentityAnchor.findFirst({
         where: { characterId, isActive: true },
+        orderBy: { updatedAt: 'desc' },
       });
 
       if (existingActive) {
@@ -164,11 +165,14 @@ export async function processIdentityLockJob(ctx: {
     const seed = payload.seed || Math.floor(Math.random() * 2147483647);
 
     // 2. Fetch Character Profile for dynamic prompt
-    const profile = await prisma.characterProfile.findFirst({
-      where: { projectId, name: characterId } // In this schema, characterId in payload often refers to the name/slug
+    const profile = await prisma.characterProfile.findUnique({
+      where: { projectId_name: { projectId, name: characterId } }, // characterId in payload often refers to the name/slug
     });
 
-    const characterPrompt = profile?.basePrompt || 'A character concept sheet, simple background, 8k, best quality';
+    const characterPrompt = profile?.basePrompt?.trim();
+    if (!characterPrompt) {
+      throw new Error(`[IdentityLock] Missing character profile/basePrompt for ${characterId}`);
+    }
     const ssotRoot = resolveSsotRoot();
     const identityDir = path.join(ssotRoot, 'characters', characterId, 'identity', currentAnchorId);
 
@@ -298,6 +302,7 @@ export async function processIdentityLockJob(ctx: {
     try {
       const processing = await prisma.characterIdentityAnchor.findFirst({
         where: { characterId, status: 'PROCESSING', isActive: true },
+        orderBy: { updatedAt: 'desc' },
       });
       if (processing) {
         await prisma.characterIdentityAnchor.update({

@@ -30,6 +30,14 @@ export async function processVideoRenderJob(
   const payload = (job.payload || {}) as any;
   const { pipelineRunId, projectId, frames, frameKeys } = payload;
   let sceneId = payload.sceneId;
+  const organizationId = job.organizationId;
+
+  if (!projectId) {
+    throw new Error('[VideoRender_HUB] Missing projectId');
+  }
+  if (!organizationId) {
+    throw new Error('[VideoRender_HUB] Missing organizationId');
+  }
 
   logger.log(`[VideoRender_HUB] Processing job ${job.id} for run ${pipelineRunId}`);
   const queryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
@@ -194,7 +202,7 @@ export async function processVideoRenderJob(
           resourceType: 'scene',
           resourceId: sceneId,
           action: 'ce08.video_render.hub_success',
-          orgId: (job as any).organizationId || 'unknown',
+          orgId: organizationId,
           details: {
             jobId: job.id,
             pipelineRunId,

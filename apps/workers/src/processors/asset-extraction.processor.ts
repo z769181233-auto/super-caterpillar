@@ -24,6 +24,13 @@ export async function processCharacterCardsJob(
   const { prisma, job } = ctx;
   const { episodeId, projectId } = job.payload;
 
+  if (!episodeId) {
+    throw new Error('Missing episodeId for character extraction');
+  }
+  if (!projectId) {
+    throw new Error('Missing projectId for character extraction');
+  }
+
   const episode = await prisma.episode.findUnique({
     where: { id: episodeId },
     include: { sourceRef: { include: { chunk: true } } },
@@ -33,7 +40,10 @@ export async function processCharacterCardsJob(
     throw new Error('Episode or SourceRef not found');
   }
 
-  const text = episode.sourceRef.chunk?.contentPreview || 'Mock text for character extraction';
+  const text = episode.sourceRef.chunk?.contentPreview;
+  if (!text) {
+    throw new Error('Missing source text for character extraction');
+  }
 
   const prompt = `
 你是一位专业的文学分析师。请从以下片段中提取所有出现的人物，并识别他们的“主名”和“别名”（包括头衔、昵称、代词代指等）。
@@ -111,6 +121,13 @@ export async function processAssetListJob(ctx: ProcessorContext): Promise<AssetE
   const { prisma, job } = ctx;
   const { episodeId, projectId } = job.payload;
 
+  if (!episodeId) {
+    throw new Error('Missing episodeId for asset extraction');
+  }
+  if (!projectId) {
+    throw new Error('Missing projectId for asset extraction');
+  }
+
   const episode = await prisma.episode.findUnique({
     where: { id: episodeId },
     include: { sourceRef: { include: { chunk: true } } },
@@ -120,7 +137,10 @@ export async function processAssetListJob(ctx: ProcessorContext): Promise<AssetE
     throw new Error('Episode or SourceRef not found');
   }
 
-  const text = episode.sourceRef.chunk?.contentPreview || 'Mock text for asset extraction';
+  const text = episode.sourceRef.chunk?.contentPreview;
+  if (!text) {
+    throw new Error('Missing source text for asset extraction');
+  }
 
   const prompt = `
 从以下片段中提取环境资产：地点 (Location)、道具 (Prop)、服装 (Outfit)。

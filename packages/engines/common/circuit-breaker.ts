@@ -228,8 +228,8 @@ export class CircuitBreaker {
    * 日志输出
    */
   private logState(event: string, message: string): void {
-    const timestamp = new Date().toISOString();
-    console.log(`[CIRCUIT_BREAKER] [${timestamp}] [${this.config.name}] [${event}] ${message}`);
+    void event;
+    void message;
   }
 }
 
@@ -273,11 +273,6 @@ export class ExponentialBackoff {
 
         // 计算延迟时间
         const delay = this.calculateDelay(attempt, config);
-
-        console.log(
-          `[RETRY] Attempt ${attempt + 1}/${config.maxRetries + 1} failed. ` +
-            `Retrying in ${delay}ms. Error: ${(error as Error).message}`
-        );
 
         await this.sleep(delay);
       }

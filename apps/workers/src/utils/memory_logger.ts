@@ -17,10 +17,8 @@ export class MemoryLogger {
 
   start(intervalMs: number = 1000) {
     const absolutePath = path.resolve(this.filePath);
-    console.log(`[MemoryLogger] Attempting to log to: ${absolutePath}`);
     if (!fs.existsSync(absolutePath)) {
       fs.writeFileSync(absolutePath, 'timestamp,rss_mb,heap_used_mb,external_mb\n');
-      console.log(`[MemoryLogger] Created new file: ${absolutePath}`);
     }
 
     this.interval = setInterval(() => {
@@ -33,18 +31,14 @@ export class MemoryLogger {
 
         fs.appendFileSync(absolutePath, `${timestamp},${rss},${heap},${external}\n`);
       } catch (err: any) {
-        console.error(`[MemoryLogger] Failed to write: ${err.message}`);
       }
     }, intervalMs);
-
-    console.log(`[MemoryLogger] Started interval logging.`);
   }
 
   stop() {
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
-      console.log(`[MemoryLogger] Stopped logging.`);
     }
   }
 }

@@ -280,6 +280,11 @@ export async function processContentJudgeJob(
     },
   });
 
+  const sceneProjectId = shot?.scene?.projectId;
+  if (!sceneProjectId) {
+    throw new Error(`Missing scene projectId for CE_CONTENT_JUDGE shot ${shotId}`);
+  }
+
   const continuityRows = shot?.scene?.id
     ? await (prisma as any).$queryRawUnsafe(
         `
@@ -319,16 +324,29 @@ export async function processContentJudgeJob(
       }
     : null;
 
-  if (shot?.scene?.projectId) {
+  if (sceneProjectId) {
     const score = response as Record<string, any>;
     const overallScore = toNumber(score.overallScore) ?? toNumber(score.overall_score);
+    if (overallScore === null) {
+      throw new Error(`Invalid quality score response: missing overallScore for shot ${shotId}`);
+    }
     const signals =
       score.signals && typeof score.signals === 'object' ? (score.signals as Record<string, any>) : {};
     const identityScore = toNumber(signals.identity_score);
     const realIdentityScore = toNumber(signals.identity_score_real_ppv64);
     const audioScore = toNumber(signals.audio_existence);
     const renderScore = toNumber(signals.render_physical);
-    const verdict = typeof score.verdict === 'string' ? score.verdict : 'PENDING';
+    if (identityScore === null || renderScore === null || audioScore === null) {
+      throw new Error(`Invalid quality score response: missing required signals for shot ${shotId}`);
+    }
+    const verdict =
+      score.verdict === 'PASS' || score.verdict === 'FAIL'
+        ? score.verdict
+        : (() => {
+            throw new Error(
+              `Invalid quality score response: missing verdict for shot ${shotId}`
+            );
+          })();
     const shotParams = (shot.params as Record<string, any> | null) ?? {};
     const shotPlanningData = (shot.shotPlanning?.data as Record<string, any> | null) ?? {};
     const planningContext = {
@@ -399,7 +417,7 @@ export async function processContentJudgeJob(
 
     await prisma.contentGateResult.create({
       data: {
-        projectId: shot.scene.projectId,
+        projectId: sceneProjectId,
         sceneId: shot.scene.id,
         episodeId: shot.scene.episodeId,
         filmIrId: shot.filmIrId ?? shot.scene.filmIrId ?? null,

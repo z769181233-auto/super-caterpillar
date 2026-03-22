@@ -7,6 +7,11 @@ import { config } from '@scu/config';
 import * as path from 'path';
 import * as fs from 'fs';
 
+const workerConfig = config as typeof config & {
+  storageRoot: string;
+  repoRoot: string;
+};
+
 export interface ProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
   output?: any;
@@ -20,7 +25,7 @@ export async function processCE04VisualEnrichmentJob(
   const logger = context.logger || console;
   const comfy = new ComfyUIClient();
   const traceId = job.payload?.traceId;
-  let shotId = job.shotId || 'shot_unknown';
+  let shotId = job.shotId;
 
   try {
     // 1. Hydrate Context
@@ -36,11 +41,17 @@ export async function processCE04VisualEnrichmentJob(
     }
     const projectId = fullJob.projectId;
     const sceneId = fullJob.sceneId;
-    shotId = fullJob.shotId!;
+    shotId = fullJob.shotId ?? fullJob.shot?.id;
+    if (!shotId) {
+      throw new Error(`[CE04] Shot ID is required for job ${job.id}`);
+    }
 
     // 2. ComfyUI Image Generation (P1 + B2 Style Lock)
-    const basePrompt =
-      fullJob.shot.enrichedPrompt || (fullJob.shot.params as any)?.prompt || 'Cinematic scenery';
+    const shotParams = fullJob.shot.params as { prompt?: string } | null;
+    const basePrompt = fullJob.shot.enrichedPrompt || shotParams?.prompt;
+    if (!basePrompt) {
+      throw new Error(`[CE04] Missing shot prompt for job ${job.id}`);
+    }
     const stylePrompt = fullJob.project?.stylePrompt || '';
 
     // B2: Global Style Locking
@@ -50,9 +61,8 @@ export async function processCE04VisualEnrichmentJob(
       `[CE04] Generating keyframe via ComfyUI. Final Prompt: ${prompt.substring(0, 50)}...`
     );
 
-    const repoRoot = process.env.REPO_ROOT || path.resolve(process.cwd(), '../../');
     const templatePath = path.join(
-      repoRoot,
+      workerConfig.repoRoot,
       'packages/engines/shot_render/providers/templates/comfyui_text2img_sdxl.json'
     );
     if (!fs.existsSync(templatePath)) {
@@ -67,7 +77,7 @@ export async function processCE04VisualEnrichmentJob(
     const buffer = await comfy.generateImage(template);
 
     // Save to .data/storage/keyframes
-    const storageRoot = (config as any).storageRoot || process.env.STORAGE_ROOT || '.runtime';
+    const storageRoot = workerConfig.storageRoot;
     const keyframeDir = path.join(storageRoot, 'keyframes', projectId, shotId);
     if (!fs.existsSync(keyframeDir)) fs.mkdirSync(keyframeDir, { recursive: true });
 

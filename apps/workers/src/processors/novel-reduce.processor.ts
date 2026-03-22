@@ -15,6 +15,7 @@ import {
 
 export async function processNovelReduce(context: ProcessorContext) {
   ensureDefaultMetrics();
+  const workerConfig = config as typeof config & { storageRoot: string };
   const t0 = Date.now();
   let peakRssMb = 0;
 
@@ -26,8 +27,17 @@ export async function processNovelReduce(context: ProcessorContext) {
 
   const { prisma, job } = context;
   const { projectId, ingestRunId, isVerification, novelSourceId } = job.payload;
+  const organizationId = job.organizationId;
 
-  console.log(`[NovelReduce] 🏁 Starting aggregation for ingestRun ${ingestRunId}`);
+  if (!projectId) {
+    throw new Error('[NovelReduce] Missing projectId on job');
+  }
+  if (!ingestRunId) {
+    throw new Error('[NovelReduce] Missing ingestRunId on job');
+  }
+  if (!organizationId) {
+    throw new Error('[NovelReduce] Missing organizationId on job');
+  }
 
   try {
     stage4JobsTotal.inc({ type: job.type, status: 'RUNNING' }, 1);
@@ -39,16 +49,9 @@ export async function processNovelReduce(context: ProcessorContext) {
       orderBy: { chNo: 'asc' },
     });
 
-    const pendingChunks = chunks.filter((c) => c.status !== 'COMPLETED');
-    if (pendingChunks.length > 0) {
-      console.warn(
-        `[NovelReduce] Found ${pendingChunks.length} chunks not completed. Partial aggregation may occur.`
-      );
-    }
-
     // 2. Aggregate Artifacts
     const allScenes: any[] = [];
-    const storageRoot = (config as any).storageRoot || '/tmp/storage';
+    const storageRoot = workerConfig.storageRoot || '/tmp/storage';
 
     for (const chunk of chunks) {
       if (!chunk.artifactUrl) continue;
@@ -61,16 +64,9 @@ export async function processNovelReduce(context: ProcessorContext) {
           // Adjust scene indices/IDs to be globally unique or sequential
           allScenes.push(...(data.scenes || []));
         } catch (err: any) {
-          console.error(
-            `[NovelReduce] Failed to read artifact for chunk ${chunk.id}: ${err.message}`
-          );
         }
       }
     }
-
-    console.log(
-      `[NovelReduce] Aggregated ${allScenes.length} total scenes from ${chunks.length} chunks.`
-    );
 
     if (allScenes.length === 0) {
       throw new Error(`[NovelReduce] No scenes found in any chunk artifacts.`);
@@ -89,13 +85,15 @@ export async function processNovelReduce(context: ProcessorContext) {
         // Here we follow the existing pattern of project-level flattening if no specific episodeId is passed.
 
         // Look for a default episode for this project or create one
-        let episode = await tx.episode.findFirst({ where: { projectId } });
+        let episode = await tx.episode.findUnique({
+          where: { projectId_index: { projectId, index: 1 } },
+        });
         if (!episode) {
           episode = await tx.episode.create({
             data: {
               projectId,
               index: 1,
-              name: 'Default Episode',
+              name: `Imported Episode ${ingestRunId.slice(0, 8)}`,
             },
           });
         }
@@ -134,7 +132,7 @@ export async function processNovelReduce(context: ProcessorContext) {
 
                 return hydrateShotWithDirectorControls(
                   {
-                    organizationId: job.organizationId as string,
+                    organizationId,
                     sceneId: dbScene.id,
                     index: shIdx + 1,
                     title: shot.title || `Shot ${shIdx + 1}`,
@@ -159,7 +157,7 @@ export async function processNovelReduce(context: ProcessorContext) {
     if (novelSourceId) {
       await prisma.novelSource.update({
         where: { id: novelSourceId },
-        data: { status: 'COMPLETED' as any },
+        data: { status: 'COMPLETED' },
       });
     }
 
@@ -177,7 +175,7 @@ export async function processNovelReduce(context: ProcessorContext) {
         type: JobType.CE11_SHOT_GENERATOR,
         status: JobStatus.PENDING,
         projectId,
-        organizationId: job.organizationId,
+        organizationId,
         taskId: job.taskId,
         traceId: job.traceId,
         isVerification,
@@ -207,14 +205,11 @@ export async function processNovelReduce(context: ProcessorContext) {
                     status: 'BOUND',
                   },
                 },
-              } as any,
+              } satisfies Parameters<typeof prisma.shotJob.create>[0]['data'],
             })
           )
         );
       }
-      console.log(
-        `[NovelReduce] Triggered ${cascadeJobs.length} CE11_SHOT_GENERATOR jobs with bindings.`
-      );
     }
 
     const durationSec = (Date.now() - t0) / 1000;
@@ -227,7 +222,6 @@ export async function processNovelReduce(context: ProcessorContext) {
       message: `Aggregated ${allScenes.length} scenes and triggered shot planning.`,
     };
   } catch (error: any) {
-    console.error(`[NovelReduce] ❌ Error: ${error.message}`);
     stage4JobsTotal.inc({ type: job.type, status: 'FAILED' }, 1);
     throw error;
   }

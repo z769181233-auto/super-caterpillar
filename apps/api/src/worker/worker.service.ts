@@ -9,7 +9,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { JobService } from '../job/job.service'; // S3-C.3: 导入 JobService 以使用统一的引擎信息提取方法
-import { WorkerStatus, JobStatus } from 'database';
+import { Prisma, WorkerStatus, JobStatus, JobType } from 'database';
 import { assertTransition } from '../job/job.rules';
 import { randomUUID } from 'crypto';
 import {
@@ -19,6 +19,44 @@ import {
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
 import { buildBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
+
+type WorkerCapabilities = {
+  disabled?: boolean;
+  supportedJobTypes?: string[];
+  [key: string]: unknown;
+};
+
+type PgClientLike = {
+  query: (query: string, params?: unknown[]) => Promise<{
+    rows: Array<Record<string, unknown>>;
+    rowCount?: number;
+  }>;
+};
+
+type WorkerNodeLike = {
+  id?: string;
+  workerId?: string;
+  status?: WorkerStatus;
+  capabilities?: Prisma.JsonValue;
+  lastHeartbeat?: Date | null;
+  tasksRunning?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function toWorkerCapabilities(value: unknown): WorkerCapabilities {
+  return isRecord(value) ? (value as WorkerCapabilities) : {};
+}
+
+function getStringArrayField(value: unknown, key: string): string[] {
+  if (!isRecord(value)) return [];
+  const raw = value[key];
+  return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === 'string') : [];
+}
 
 /**
  * Worker 管理服务
@@ -64,7 +102,7 @@ export class WorkerService {
   async registerWorker(
     workerId: string,
     name: string,
-    capabilities: any,
+    capabilities?: WorkerCapabilities,
     gpuCount?: number,
     gpuMemory?: number,
     gpuType?: string,
@@ -73,16 +111,17 @@ export class WorkerService {
     ip?: string,
     userAgent?: string
   ) {
+    const normalizedCapabilities = capabilities || {};
     const payload = {
       workerId,
       name,
-      capabilities,
+      capabilities: normalizedCapabilities,
       gpuCount,
       gpuMemory,
       gpuType,
     };
 
-    let worker: any;
+    let worker: WorkerNodeLike | null = null;
     try {
       worker = await this.prisma.workerNode.findUnique({
         where: { workerId },
@@ -94,7 +133,7 @@ export class WorkerService {
           data: {
             name,
             status: WorkerStatus.online,
-            capabilities: capabilities as any,
+            capabilities: normalizedCapabilities as Prisma.InputJsonValue,
             gpuCount,
             gpuMemory,
             gpuType,
@@ -107,7 +146,7 @@ export class WorkerService {
             workerId,
             name,
             status: WorkerStatus.online,
-            capabilities: capabilities as any,
+            capabilities: normalizedCapabilities as Prisma.InputJsonValue,
             gpuCount,
             gpuMemory,
             gpuType,
@@ -115,7 +154,7 @@ export class WorkerService {
           },
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (!this.shouldFallbackToPg(error)) {
         throw error;
       }
@@ -126,9 +165,13 @@ export class WorkerService {
         throw error;
       }
       this.logger.warn(
-        `[WorkerService] Prisma registerWorker degraded for ${workerId}, using pg fallback: ${error.message}`
+        `[WorkerService] Prisma registerWorker degraded for ${workerId}, using pg fallback: ${error instanceof Error ? error.message : String(error)}`
       );
       worker = await this.registerWorkerViaPg(payload);
+    }
+
+    if (!worker?.id || !worker.workerId) {
+      throw new Error(`[WorkerService] Invalid worker record returned for ${workerId}`);
     }
 
     // 记录审计日志
@@ -204,7 +247,12 @@ export class WorkerService {
         },
       });
 
-      const updateData: any = {
+      const updateData: {
+        lastHeartbeat: Date;
+        status?: WorkerStatus;
+        tasksRunning?: number;
+        temperature?: number;
+      } = {
         lastHeartbeat: now,
       };
 
@@ -235,7 +283,7 @@ export class WorkerService {
         where: { workerId },
         data: updateData,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException || !this.shouldFallbackToPg(error)) {
         throw error;
       }
@@ -246,17 +294,17 @@ export class WorkerService {
         throw error;
       }
       this.logger.warn(
-        `[WorkerService] Prisma heartbeat degraded for ${workerId}, using pg fallback: ${error.message}`
+        `[WorkerService] Prisma heartbeat degraded for ${workerId}, using pg fallback: ${error instanceof Error ? error.message : String(error)}`
       );
       return this.heartbeatViaPg(workerId, now, status, tasksRunning, temperature);
     }
   }
 
-  private shouldFallbackToPg(error: any): boolean {
+  private shouldFallbackToPg(error: unknown): boolean {
     return isPrismaFallbackEligibleError(error);
   }
 
-  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+  private async withPgClient<T>(fn: (client: PgClientLike) => Promise<T>): Promise<T> {
     return withRuntimePgClient(
       {
         applicationName: 'super-caterpillar-api-worker',
@@ -269,7 +317,7 @@ export class WorkerService {
   private async registerWorkerViaPg(payload: {
     workerId: string;
     name: string;
-    capabilities: any;
+    capabilities: WorkerCapabilities;
     gpuCount?: number;
     gpuMemory?: number;
     gpuType?: string;
@@ -383,7 +431,9 @@ export class WorkerService {
         `,
         [worker.id, JobStatus.RUNNING]
       );
-      const runningJobCount = runningJobCountResult.rows[0]?.count ?? 0;
+      const runningJobCount = Number(
+        (runningJobCountResult.rows[0] as { count?: number } | undefined)?.count ?? 0
+      );
       const actualTasksRunning = tasksRunning !== undefined ? tasksRunning : runningJobCount;
 
       let resolvedStatus = status;
@@ -431,15 +481,15 @@ export class WorkerService {
     });
 
     // 过滤掉被禁用的 Worker（参考调度系统设计书 §3.4）
-    const enabledWorkers = workers.filter((worker: any) => {
-      const caps = worker.capabilities as any;
+    const enabledWorkers = workers.filter((worker) => {
+      const caps = toWorkerCapabilities(worker.capabilities);
       return caps?.disabled !== true;
     });
 
     // 如果指定了 jobType，过滤出支持该类型的 Worker
     if (jobType) {
-      return enabledWorkers.filter((worker: any) => {
-        const caps = worker.capabilities as any;
+      return enabledWorkers.filter((worker) => {
+        const caps = toWorkerCapabilities(worker.capabilities);
         return caps?.supportedJobTypes?.includes(jobType);
       });
     }
@@ -624,19 +674,19 @@ export class WorkerService {
    * @param worker Worker 对象
    * @returns 'idle' | 'busy' | 'dead'
    */
-  private async determineWorkerState(worker: any): Promise<'idle' | 'busy' | 'dead'> {
+  private async determineWorkerState(worker: WorkerNodeLike): Promise<'idle' | 'busy' | 'dead'> {
     // P0 修复：使用环境变量配置 timeout
     const { env } = await import('@scu/config');
     const timeoutMs = env.workerHeartbeatTimeoutMs || 30000;
     const timeoutThreshold = new Date(Date.now() - timeoutMs);
 
     // Dead：心跳超时
-    if (worker.lastHeartbeat < timeoutThreshold) {
+    if (!worker.lastHeartbeat || worker.lastHeartbeat < timeoutThreshold) {
       return 'dead';
     }
 
     // Busy：有运行中的任务
-    if (worker.tasksRunning > 0) {
+    if ((worker.tasksRunning ?? 0) > 0) {
       return 'busy';
     }
 
@@ -659,7 +709,7 @@ export class WorkerService {
     const TIMEOUT = env.workerHeartbeatTimeoutMs || 30000;
 
     // S3-C.1: 查找每个 worker 当前正在处理的 job（status=RUNNING 且 workerId 匹配）
-    const workerIds = workers.map((w: any) => w.id);
+    const workerIds = workers.map((w) => w.id).filter((id): id is string => typeof id === 'string');
     const runningJobs = await this.prisma.shotJob.findMany({
       where: {
         status: 'RUNNING',
@@ -674,22 +724,25 @@ export class WorkerService {
     });
 
     // 构建 workerId -> job 的映射
-    const workerJobMap = new Map<string, any>();
+    const workerJobMap = new Map<string, { workerId: string | null; type: string; payload: unknown }>();
     for (const job of runningJobs) {
       if (job.workerId) {
-        workerJobMap.set(job.workerId, job);
+        workerJobMap.set(job.workerId, job as { workerId: string | null; type: string; payload: unknown });
       }
     }
 
     const formatted = await Promise.all(
-      workers.map(async (w: any) => {
-        const currentJob = workerJobMap.get(w.id);
+      workers.map(async (w: WorkerNodeLike) => {
+        const workerId = w.id;
+        const currentJob = workerId ? workerJobMap.get(workerId) : undefined;
         let currentEngineKey: string | null = null;
 
         if (currentJob) {
           // S3-C.1: 从 job 中提取 engineKey
           // S3-C.3: 使用 JobService 的统一方法提取引擎信息
-          currentEngineKey = this.jobService.extractEngineKeyFromJob(currentJob);
+          currentEngineKey = currentJob.type
+            ? this.jobService.extractEngineKeyFromJob(currentJob)
+            : null;
         }
 
         return {
@@ -699,8 +752,8 @@ export class WorkerService {
           isOnline: w.lastHeartbeat ? now - w.lastHeartbeat.getTime() < TIMEOUT : false,
           lastHeartbeat: w.lastHeartbeat?.toISOString() ?? null,
           tasksRunning: w.tasksRunning,
-          createdAt: w.createdAt.toISOString(),
-          updatedAt: w.updatedAt.toISOString(),
+          createdAt: w.createdAt?.toISOString?.() ?? new Date(0).toISOString(),
+          updatedAt: w.updatedAt?.toISOString?.() ?? new Date(0).toISOString(),
           // S3-C.1: 新增字段
           currentEngineKey,
         };
@@ -898,8 +951,8 @@ export class WorkerService {
         }
 
         // 2.1 Find one candidate PENDING job
-        const capabilities = (workerNode.capabilities as any) || {};
-        const supportedJobTypes = (capabilities.supportedJobTypes as string[]) || [];
+        const capabilities = toWorkerCapabilities(workerNode.capabilities);
+        const supportedJobTypes = (capabilities.supportedJobTypes || []) as JobType[];
 
         if (supportedJobTypes.length === 0) {
           this.logger.warn(`[WorkerService] Worker ${workerId} has no supportedJobTypes defined.`);
@@ -912,7 +965,7 @@ export class WorkerService {
           by: ['organizationId'],
           where: {
             status: JobStatus.PENDING,
-            type: { in: supportedJobTypes as any },
+            type: { in: supportedJobTypes },
           },
           _count: true,
         });
@@ -948,6 +1001,7 @@ export class WorkerService {
           pendingCount: number;
           weight: number;
           maxConc: number;
+          effectiveWeight: number;
         }
 
         let pool: CandidateOrg[] = orgDetails.map((org) => {
@@ -957,6 +1011,7 @@ export class WorkerService {
             pendingCount: pendingOrgs.find((p) => p.organizationId === org.id)?._count || 0,
             weight: plan?.priorityWeight || 1,
             maxConc: plan?.burstConcurrencyLimit || 1,
+            effectiveWeight: 0,
           };
         });
 
@@ -980,7 +1035,7 @@ export class WorkerService {
             const remaining = Math.max(0, c.maxConc - rc);
             // Effective Weight = Priority * min(Queue Length, Remaining Capacity)
             const effectiveWeight = c.weight * Math.min(c.pendingCount, remaining);
-            (c as any)._effectiveWeight = effectiveWeight;
+            c.effectiveWeight = effectiveWeight;
             totalWeight += effectiveWeight;
           }
 
@@ -992,7 +1047,7 @@ export class WorkerService {
           let randomWeight = Math.random() * totalWeight;
           let candidateId = pool[0].orgId;
           for (const c of pool) {
-            randomWeight -= (c as any)._effectiveWeight;
+            randomWeight -= c.effectiveWeight;
             if (randomWeight <= 0) {
               candidateId = c.orgId;
               break;
@@ -1030,7 +1085,7 @@ export class WorkerService {
           where: {
             organizationId: selectedOrgId,
             status: JobStatus.PENDING,
-            type: { in: supportedJobTypes as any },
+            type: { in: supportedJobTypes },
           },
           orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
           take: 1,
@@ -1060,7 +1115,7 @@ export class WorkerService {
         try {
           await tx.billingLedger.create({
             data: buildBillingLedgerCreateData({
-              tenantId: (candidate as any).organizationId || candidate.projectId,
+              tenantId: candidate.organizationId || candidate.projectId,
               traceId: candidate.traceId || candidate.id,
               itemType: 'JOB',
               itemId: candidate.id,
@@ -1071,8 +1126,8 @@ export class WorkerService {
               jobId: candidate.id,
             }),
           });
-        } catch (e: any) {
-          if (e.code === 'P2002') {
+        } catch (e: unknown) {
+          if (isRecord(e) && e.code === 'P2002') {
             this.logger.warn(
               `[WorkerService] Billing idempotency hit: reserved ledger already exists for ${candidate.id}`
             );
@@ -1167,10 +1222,10 @@ export class WorkerService {
       });
 
       return dispatchedJob;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `[WorkerService] dispatchNextJobForWorker CRITICAL ERROR: ${error}`,
-        (error as any)?.stack
+        error instanceof Error ? error.stack : undefined
       );
       if (this.shouldFallbackToPg(error)) {
         if (!this.shouldAllowDirectPgDispatchFallback()) {
@@ -1180,7 +1235,7 @@ export class WorkerService {
           throw error;
         }
         this.logger.warn(
-          `[WorkerService] dispatchNextJobForWorker degrading to pg fallback for ${workerId}: ${(error as any)?.message}`
+          `[WorkerService] dispatchNextJobForWorker degrading to pg fallback for ${workerId}: ${error instanceof Error ? error.message : String(error)}`
         );
         return this.dispatchNextJobForWorkerViaPg(workerId);
       }
@@ -1206,10 +1261,8 @@ export class WorkerService {
           return false;
         }
 
-        const capabilities = (workerNode.capabilities as any) || {};
-        const supportedJobTypes = Array.isArray(capabilities.supportedJobTypes)
-          ? capabilities.supportedJobTypes
-          : [];
+        const capabilities = toWorkerCapabilities(workerNode.capabilities);
+        const supportedJobTypes = (capabilities.supportedJobTypes || []) as JobType[];
 
         if (supportedJobTypes.length === 0) {
           return false;
@@ -1240,11 +1293,14 @@ export class WorkerService {
           [JobStatus.PENDING, supportedJobTypes]
         );
 
-        return (pendingCountResult.rows[0]?.count ?? 0) > 0;
+        const pendingCount = Number(
+          (pendingCountResult.rows[0] as { count?: number } | undefined)?.count ?? 0
+        );
+        return pendingCount > 0;
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.warn(
-        `[WorkerService] PG preflight unavailable for ${workerId}, falling back to Prisma dispatch path: ${error.message}`
+        `[WorkerService] PG preflight unavailable for ${workerId}, falling back to Prisma dispatch path: ${error instanceof Error ? error.message : String(error)}`
       );
       return null;
     }
@@ -1281,10 +1337,8 @@ export class WorkerService {
       }
       this.dispatchHistory.set(workerId, history);
 
-      const capabilities = (workerNode.capabilities as any) || {};
-      const supportedJobTypes = Array.isArray(capabilities.supportedJobTypes)
-        ? capabilities.supportedJobTypes
-        : [];
+      const capabilities = toWorkerCapabilities(workerNode.capabilities);
+      const supportedJobTypes = (capabilities.supportedJobTypes || []) as JobType[];
 
       if (supportedJobTypes.length === 0) {
         this.logger.warn(
@@ -1377,7 +1431,7 @@ export class WorkerService {
         this.dispatchHistory.set(workerId, currentHistory);
       }
       return claimed;
-      } catch (error) {
+      } catch (error: unknown) {
         await client.query('ROLLBACK').catch(() => undefined);
         throw error;
       }

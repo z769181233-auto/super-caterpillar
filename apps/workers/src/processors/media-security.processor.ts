@@ -10,9 +10,12 @@ import { ProcessorContext } from '../types/processor-context';
  */
 export async function processMediaSecurityJob(context: ProcessorContext) {
   const { prisma, job, apiClient } = context;
-  const { assetId, videoAssetStorageKey, pipelineRunId, shotId, projectId } = job.payload;
+  const { assetId, videoAssetStorageKey, pipelineRunId, shotId } = job.payload;
+  const projectId = job.projectId || job.payload.projectId;
 
-  console.log(`[MediaSecurity_HUB] Processing job ${job.id}. AssetId=${assetId}`);
+  if (!projectId) {
+    throw new Error('[CE09] Missing projectId');
+  }
 
   try {
     let targetAssetId = assetId;
@@ -22,6 +25,11 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     if (targetAssetId && !sourceStorageKey) {
       const asset = await prisma.asset.findUnique({ where: { id: targetAssetId } });
       if (asset) {
+        if (asset.projectId !== projectId) {
+          throw new Error(
+            `[CE09] Asset ${targetAssetId} does not belong to project ${projectId}`
+          );
+        }
         sourceStorageKey = asset.storageKey;
       }
     } else if (!targetAssetId && shotId) {
@@ -35,9 +43,19 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
         },
       });
       if (asset) {
+        if (asset.projectId !== projectId) {
+          throw new Error(`[CE09] Shot asset ${asset.id} does not belong to project ${projectId}`);
+        }
         targetAssetId = asset.id;
         sourceStorageKey = asset.storageKey;
       }
+    }
+
+    if (!targetAssetId) {
+      throw new Error('[CE09] Missing target asset');
+    }
+    if (!sourceStorageKey) {
+      throw new Error('[CE09] Missing source storage key');
     }
 
     // 2. Invoke EngineHub
@@ -61,6 +79,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     // 3. Update Asset
     let fpRecord = await prisma.securityFingerprint.findFirst({
       where: { assetId: targetAssetId },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!fpRecord) {
@@ -79,7 +98,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
         checksum: sha256,
         status: 'PUBLISHED',
         hlsPlaylistUrl: hlsPlaylistKey,
-        signedUrl: targetAssetId ? `/api/assets/${targetAssetId}/secure-url` : null,
+        signedUrl: `/api/assets/${targetAssetId}/secure-url`,
         watermarkMode: 'SCU_VISIBLE_V1_ASYNC',
         fingerprintId: fpRecord.id,
       },
@@ -89,6 +108,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     if (shotId) {
       const existingReview = await prisma.publishingReview.findFirst({
         where: { shotId },
+        orderBy: { createdAt: 'desc' },
       });
 
       if (existingReview) {
@@ -130,7 +150,6 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
       fingerprintId: fpRecord.id,
     };
   } catch (error: any) {
-    console.error(`[MediaSecurity_HUB] Failed: ${error.message}`);
     throw error;
   }
 }

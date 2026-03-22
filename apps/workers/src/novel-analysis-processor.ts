@@ -11,7 +11,6 @@ import {
 import { CE06EngineSelector } from '@scu/engines-ce06';
 import { CE06Input, CE06Output } from '@scu/engines-ce06';
 import { ApiClient } from './api-client';
-import * as util from 'util';
 import * as fs from 'fs';
 import { Readable } from 'stream';
 import { parseNovelStream } from './processors/stream-parser';
@@ -35,14 +34,7 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
     timestamp: new Date().toISOString(),
     ...data,
   };
-  const logMessage = JSON.stringify(logEntry);
-  if (level === 'error') {
-    process.stderr.write(util.format(logMessage) + '\n');
-  } else if (level === 'warn') {
-    process.stdout.write(util.format(logMessage) + '\n');
-  } else {
-    process.stdout.write(util.format(logMessage) + '\n');
-  }
+  void logEntry;
 }
 
 /**
@@ -563,15 +555,6 @@ export async function applyAnalyzedStructureToDatabase(
       },
       orderBy: { index: 'asc' },
     });
-    console.log(
-      `[S3-B Debug] Found ${existingSeasons.length} existing seasons for project ${projectId} (Index search)`
-    );
-    if (existingSeasons.length > 0) {
-      console.log(
-        `[S3-B Debug] Season 0 ID: ${existingSeasons[0].id}, Index: ${existingSeasons[0].index}`
-      );
-    }
-
     // S3-B Fine-Tune: 记录结构对比日志
     logStructured('info', {
       action: 'STRUCTURE_COMPARISON_START',
@@ -1005,12 +988,6 @@ export function mapCE06OutputToProjectStructure(
   projectId: string,
   output: CE06NovelParsingOutput | CE06Output
 ): AnalyzedProjectStructure {
-  console.log('[S3-B Debug] mapCE06 Output Keys:', Object.keys(output || {}));
-  if ((output as any).seasons)
-    console.log('[S3-B Debug] Seasons length:', (output as any).seasons.length);
-  if ((output as any).volumes)
-    console.log('[S3-B Debug] Volumes length:', (output as any).volumes.length);
-
   const seasons: AnalyzedSeason[] = [];
   let sIndex = 1;
 
@@ -1062,7 +1039,6 @@ export function mapCE06OutputToProjectStructure(
   // Pre-process chunks if flat ScanChunk[]
   let volumes = (output as any).volumes || [];
   if (volumes.length > 0 && typeof volumes[0].volume_index === 'number' && !volumes[0].chapters) {
-    console.log('[S3-B Debug] Detected flat ScanChunk array. Grouping by volume...');
     const groupedVolumes = new Map<number, any>();
     for (const chunk of volumes) {
       if (!groupedVolumes.has(chunk.volume_index)) {
@@ -1294,7 +1270,9 @@ async function processWithChunkMode(
 
   const llmProvider = process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai';
   const llmModel =
-    llmProvider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : 'gpt-4-turbo-preview';
+    llmProvider === 'anthropic'
+      ? 'claude-3-5-sonnet-20241022'
+      : process.env.OPENAI_MODEL || 'gpt-4o';
 
   const llmProcessor = new LLMBatchProcessor({
     provider: llmProvider as any,
@@ -1588,18 +1566,9 @@ export async function processNovelAnalysisJob(
           billingUsage,
         });
       } else {
-        process.stdout.write(
-          util.format(
-            `[BILLING] ⚠️  Job ${jobId} missing billing_usage, skipping cost record (non-fatal)`
-          ) + '\n'
-        );
       }
     } catch (billingError: any) {
       // 计费失败不阻塞主流程
-      process.stderr.write(
-        util.format(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message) +
-          '\n'
-      );
     }
 
     // 返回统计信息，将写入 Job.output

@@ -13,7 +13,6 @@ export async function executeCE06Real(input: CE06Input, apiKey: string): Promise
 
 export const ce06RealEngine = async (input: CE06Input, apiKey?: string): Promise<CE06Output> => {
   const phase = input.phase || 'SCAN';
-  console.log(`[CE06_REAL] Executing Phase: ${phase}`);
 
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) throw new Error('Missing API Key for CE06 Real Engine');
@@ -47,11 +46,8 @@ async function executeScanPhase(input: CE06Input): Promise<CE06Output> {
 async function executeChunkParsePhase(input: CE06Input, apiKey: string): Promise<CE06Output> {
   const chapterText = input.structured_text;
   let modelName = input.model || 'gemini-1.5-flash';
-  console.log(`[CE06_REAL_DIAGNOSTIC] ${new Date().toISOString()} - Original Model: ${modelName}`);
-
   if (modelName === 'gemini-1.5-flash') {
     // modelName = 'gemini-flash-latest';
-    // console.log(`[CE06_REAL_DIAGNOSTIC] Mapped to: ${modelName}`);
   }
 
   const systemPrompt = `You are a professional Screenwriter. Split the following chapter into scenes for a movie production. For each scene, capture the location, characters, and key actions.
@@ -117,7 +113,6 @@ Your output MUST be a JSON object with a "scenes" array. Each scene MUST have "t
       },
     };
   } catch (error: any) {
-    console.error(`[CE06_REAL] SDK Error: ${error.message}`);
     throw error;
   }
 }

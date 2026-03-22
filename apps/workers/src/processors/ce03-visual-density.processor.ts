@@ -46,6 +46,16 @@ export async function processCE03VisualDensityJob(
     const episodeId = fullJob.episodeId || fullJob.shot?.scene?.episodeId;
     const sceneId = fullJob.sceneId || fullJob.shot?.sceneId;
     const projectId = fullJob.projectId;
+    if (!projectId) {
+      throw new Error(`[CE03] Project ID is required for job ${job.id}`);
+    }
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { ownerId: true },
+    });
+    if (!project?.ownerId) {
+      throw new Error(`[CE03] Project owner is required for job ${job.id}`);
+    }
 
     // 2. Logic (Simulate Density Calculation)
     // In real impl, this calls python engine.
@@ -73,7 +83,9 @@ export async function processCE03VisualDensityJob(
     await prisma.auditLog.create({
       data: {
         resourceType: 'shot',
-        resourceId: job.shotId || 'unknown',
+        resourceId: job.shotId || fullJob.shotId || (() => {
+          throw new Error(`[CE03] Shot ID is required for job ${job.id}`);
+        })(),
         action: 'ce03.visual_density.success',
         orgId: jobOrgId,
         // actorId, traceId in details
@@ -82,7 +94,7 @@ export async function processCE03VisualDensityJob(
           score: densityScore,
           traceId,
           pipelineRunId,
-          actorId: job.workerId || 'unassigned',
+          actorId: job.workerId ?? null,
         },
       },
     });
@@ -110,7 +122,7 @@ export async function processCE03VisualDensityJob(
       jobType: 'CE03_VISUAL_DENSITY',
       traceId: traceId || job.id,
       projectId,
-      userId: 'system', // or derived from job
+      userId: project.ownerId,
       orgId: jobOrgId,
       engineKey: 'ce03_visual_density',
       runId: pipelineRunId as string,

@@ -16,7 +16,6 @@ import {
   jobPersistDuration,
   jobE2EDuration,
 } from '@scu/observability';
-import * as util from 'util';
 
 export interface ExecutionResult {
   success: boolean;
@@ -36,16 +35,8 @@ export class JobExecutor {
    * P1-5: Structured Span Logging Helper
    */
   private logSpan(phase: 'queue' | 'prepare' | 'exec' | 'persist' | 'e2e', data: any) {
-    if (env.isDevelopment || process.env.GATE_MODE === '1') {
-      process.stdout.write(
-        util.format(
-          JSON.stringify({
-            span: `job.${phase === 'exec' ? 'engine.exec' : phase}`,
-            ...data,
-          })
-        ) + '\n'
-      );
-    }
+    void phase;
+    void data;
   }
 
   /**
@@ -55,10 +46,15 @@ export class JobExecutor {
     jobId: string,
     engineKey: string,
     createdAt: string | Date,
-    processor: () => Promise<any>
+    processor: () => Promise<any>,
+    jobType: string = 'unknown'
   ): Promise<ExecutionResult> {
+    const config = env as typeof env & {
+      concurrencyLimiterEnabled: boolean;
+      retryPolicyEnabled: boolean;
+      retryMaxAttempts: number;
+    };
     const traceId = `worker-exec-${jobId}`;
-    const jobType = 'unknown'; // TODO: Pass jobType in P1-5-H1
     const labels = { engineKey, jobType, status: 'unknown' };
 
     workerJobsActive.inc({ engine: engineKey });
@@ -80,7 +76,6 @@ export class JobExecutor {
       let success = false;
 
       // 1. 获取本地令牌 (视为 Prepare 的一部分)
-      const config = env as any;
       if (config.concurrencyLimiterEnabled) {
         if (!engineLimiter.acquire(engineKey)) {
           workerJobsActive.dec({ engine: engineKey });
@@ -133,11 +128,6 @@ export class JobExecutor {
             // 3. 检查是否重试
             if (RetryPolicy.shouldRetry(attempt)) {
               const delay = RetryPolicy.getDelay(attempt);
-              process.stdout.write(
-                util.format(
-                  `[Executor] Job ${jobId} failed (attempt ${attempt}). Retrying in ${delay}ms... Error: ${error.message}`
-                ) + '\n'
-              );
               await new Promise((resolve) => setTimeout(resolve, delay));
               attempt++;
             } else {
@@ -207,7 +197,10 @@ export class JobExecutor {
    * 带超时的执行
    */
   private async executeWithTimeout(engineKey: string, processor: () => Promise<any>): Promise<any> {
-    const config = env as any;
+    const config = env as typeof env & {
+      execTimeoutEnabled: boolean;
+      getEngineTimeoutSeconds: (engineKey: string) => number;
+    };
     if (!config.execTimeoutEnabled) {
       return processor();
     }

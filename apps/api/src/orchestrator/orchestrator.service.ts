@@ -23,6 +23,61 @@ import {
 } from 'database';
 import { assertTransition, transitionJobStatusAdmin } from '../job/job.rules';
 
+type JsonRecord = Record<string, unknown>;
+
+type JobLike = {
+  id: string;
+  type?: string;
+  payload?: unknown;
+  result?: unknown;
+  projectId?: string | null;
+  organizationId?: string | null;
+  traceId?: string | null;
+  sceneId?: string | null;
+  shotId?: string | null;
+  episodeId?: string | null;
+  isVerification?: boolean;
+  shot?: {
+    episodeId?: string | null;
+    sceneId?: string | null;
+  } | null;
+};
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getRecordField(value: unknown): JsonRecord {
+  return isRecord(value) ? value : {};
+}
+
+function toRecord(value: unknown): JsonRecord {
+  return getRecordField(value);
+}
+
+function getStringField(source: JsonRecord, key: string): string | undefined {
+  const value = source[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getOutputRecord(value: unknown): JsonRecord | undefined {
+  const record = getRecordField(value);
+  const directOutput = record.output;
+  if (isRecord(directOutput)) {
+    return directOutput;
+  }
+
+  const directResult = record.result;
+  if (isRecord(directResult)) {
+    const nestedOutput = directResult.output;
+    if (isRecord(nestedOutput)) {
+      return nestedOutput;
+    }
+  }
+
+  return undefined;
+}
+
 /**
  * Orchestrator 服务
  * 负责将 PENDING Job 分配给 ONLINE Worker
@@ -40,7 +95,7 @@ export class OrchestratorService {
     private readonly publishedVideoService: PublishedVideoService
   ) {}
 
-  private shouldSkipForDatabaseUnavailability(error: any): boolean {
+  private shouldSkipForDatabaseUnavailability(error: unknown): boolean {
     if (process.env.NODE_ENV === 'production') {
       return false;
     }
@@ -109,10 +164,10 @@ export class OrchestratorService {
         retryReady: retryReadyCount,
         message: 'Job dispatch is now handled by worker pull model.',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (this.shouldSkipForDatabaseUnavailability(error)) {
         this.logger.warn(
-          `[Recovery] Skipping recovery cycle in non-production due to database unavailability: ${error.message}`
+          `[Recovery] Skipping recovery cycle in non-production due to database unavailability: ${error instanceof Error ? error.message : String(error)}`
         );
         return {
           pending: 0,
@@ -161,7 +216,7 @@ export class OrchestratorService {
       return 0;
     }
 
-    const offlineWorkerIds = offlineWorkers.map((w: any) => w.id);
+    const offlineWorkerIds = offlineWorkers.map((w) => w.id);
 
     // Stage2-B: 查找这些 Worker 的 DISPATCHED 和 RUNNING Job
     const stuckJobs = await this.prisma.shotJob.findMany({
@@ -241,8 +296,10 @@ export class OrchestratorService {
             timestamp: new Date().toISOString(),
           })
         );
-      } catch (error: any) {
-        this.logger.error(`[Orchestrator] Failed to recover job ${job.id}: ${error.message}`);
+      } catch (error: unknown) {
+        this.logger.error(
+          `[Orchestrator] Failed to recover job ${job.id}: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
 
@@ -448,9 +505,7 @@ export class OrchestratorService {
     });
 
     const now = new Date();
-    const waitTimes = pendingJobsWithTime.map(
-      (job: any) => now.getTime() - job.createdAt.getTime()
-    );
+    const waitTimes = pendingJobsWithTime.map((job) => now.getTime() - job.createdAt.getTime());
     const avgWaitTimeMs =
       waitTimes.length > 0
         ? waitTimes.reduce((sum: number, time: number) => sum + time, 0) / waitTimes.length
@@ -540,8 +595,8 @@ export class OrchestratorService {
    * Triggered by 'job.succeeded' event from JobService.
    */
   @OnEvent('job.succeeded')
-  async handleJobSucceededEvent(job: any) {
-    const jobId = job.id || job.jobId;
+  async handleJobSucceededEvent(job: JobLike) {
+    const jobId = job.id;
     this.logger.log(`[Orchestrator] Received job.succeeded event for job ${jobId}`);
     if (!jobId) {
       this.logger.error(`[Orchestrator] Received job.succeeded event but jobId is undefined! payload=${JSON.stringify(job)}`);
@@ -549,7 +604,7 @@ export class OrchestratorService {
     }
     // Extract result from payload or metadata if needed,
     // but the actual DAG logic in handleJobCompletion will fetch the latest job state.
-    await this.handleJobCompletion(jobId, job.result || {});
+    await this.handleJobCompletion(jobId, job.result);
   }
 
   /**
@@ -557,7 +612,7 @@ export class OrchestratorService {
    * Called by JobService when a job completes (SUCCEEDED).
    * Determines if subsequent jobs should be spawned.
    */
-  async handleJobCompletion(jobId: string, result: any) {
+  async handleJobCompletion(jobId: string, result: unknown) {
     // const fs = require('fs');
     const debugLog = (msg: string) =>
       fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
@@ -598,8 +653,8 @@ export class OrchestratorService {
 
     // PHASE-4 Hard Upgrade: PIPELINE_PROD_VIDEO_V1 Non-blocking Chain (CE06 -> CE03 -> CE04)
     if (job.status === JobStatusEnum.SUCCEEDED) {
-      const payload = (job.payload as any) || {};
-      const rootJobId = payload.rootJobId;
+      const payload = toRecord(job.payload);
+      const rootJobId = getStringField(payload, 'rootJobId');
       if (rootJobId) {
         await this.handleV1PipelineChain(job, rootJobId);
       }
@@ -609,7 +664,7 @@ export class OrchestratorService {
   /**
    * Stage 4: Handle V1 Pipeline Chain logic on API side
    */
-  private async handleV1PipelineChain(completedChildJob: any, rootJobId: string) {
+  private async handleV1PipelineChain(completedChildJob: JobLike, rootJobId: string) {
     const rootJob = await this.prisma.shotJob.findUnique({ where: { id: rootJobId } });
     if (!rootJob || rootJob.type !== JobTypeEnum.PIPELINE_PROD_VIDEO_V1) return;
     if (!rootJob.organizationId) {
@@ -624,11 +679,11 @@ export class OrchestratorService {
     }
     const ownerId = project.ownerId;
 
-    const payload = (completedChildJob.payload as any) || {};
-    const pipelineRunId = payload.pipelineRunId;
+    const payload = toRecord(completedChildJob.payload);
+    const pipelineRunId = getStringField(payload, 'pipelineRunId');
 
     if (completedChildJob.type === JobTypeEnum.CE06_NOVEL_PARSING) {
-      const chapterId = payload.chapterId || payload.payload?.chapterId;
+      const chapterId = getStringField(payload, 'chapterId');
       let scenes = [];
       if (chapterId) {
         scenes = await this.prisma.scene.findMany({ where: { chapterId } });
@@ -664,10 +719,10 @@ export class OrchestratorService {
                 rootJobId: rootJob.id,
                 pipelineRunId,
                 engineKey: 'real_shot_render',
-                referenceSheetId: (rootJob.payload as any)?.referenceSheetId,
+                referenceSheetId: getStringField(toRecord(rootJob.payload), 'referenceSheetId'),
               },
               traceId: rootJob.traceId || undefined,
-            } as any,
+            },
             ownerId,
             rootJob.organizationId
           );
@@ -679,7 +734,7 @@ export class OrchestratorService {
         projectId: rootJob.projectId,
         organizationId: rootJob.organizationId,
         taskId: rootJob.taskId || undefined,
-        jobType: JobTypeEnum.CE04_VISUAL_ENRICHMENT as any,
+        jobType: JobTypeEnum.CE04_VISUAL_ENRICHMENT,
         traceId: rootJob.traceId || undefined,
         payload: {
           projectId: rootJob.projectId,
@@ -711,10 +766,10 @@ export class OrchestratorService {
               rootJobId: rootJob.id,
               pipelineRunId,
               engineKey: 'real_shot_render',
-              referenceSheetId: (rootJob.payload as any)?.referenceSheetId,
+              referenceSheetId: getStringField(toRecord(rootJob.payload), 'referenceSheetId'),
             },
             traceId: rootJob.traceId || undefined,
-          } as any,
+          },
           ownerId,
           rootJob.organizationId
         );
@@ -732,10 +787,10 @@ export class OrchestratorService {
    * PLAN-2: Lazy Spawn Audio Job (Idempotent)
    * Triggered when a SHOT_RENDER completes.
    */
-  private async checkAndSpawnAudioGen(contextJob: any) {
-    const audioEnabled = (env as any).orchV2AudioEnabled;
-    const payload = contextJob.payload as any;
-    const pipelineRunId = payload?.pipelineRunId;
+  private async checkAndSpawnAudioGen(contextJob: JobLike) {
+    const audioEnabled = (env as typeof env & { orchV2AudioEnabled?: boolean }).orchV2AudioEnabled;
+    const payload = toRecord(contextJob.payload);
+    const pipelineRunId = getStringField(payload, 'pipelineRunId');
 
     this.logger.log(
       `[DAG] checkAndSpawnAudioGen called. audioEnabled=${audioEnabled} pipelineRunId=${pipelineRunId}`
@@ -770,8 +825,16 @@ export class OrchestratorService {
 
       // P18-6 Reuse: Spawn "gate-audio-p18-6-final.sh" equivalent job
       // For V1 Slice: We use a standard "Full Text" trigger
+      const organizationId = contextJob.organizationId;
+      if (!organizationId) {
+        this.logger.warn(
+          `[DAG] Cannot spawn AUDIO job for ${contextJob.id}: missing organizationId.`
+        );
+        return;
+      }
+
       await this.jobService.create(
-        contextJob.shotId,
+        contextJob.shotId || contextJob.id,
         {
           type: JobTypeEnum.AUDIO,
           payload: {
@@ -783,25 +846,30 @@ export class OrchestratorService {
             sceneId: contextJob.sceneId,
             shotId: contextJob.shotId,
           },
-        } as any,
+        },
         'gate-user', // Use a user that exists in Gate
-        contextJob.organizationId
+        organizationId
       );
-    } catch (e: any) {
-      this.logger.error(`[DAG] Error in checkAndSpawnAudioGen: ${e.message}`, e.stack);
-    }
+    } catch (e: unknown) {
+      this.logger.error(
+        `[DAG] Error in checkAndSpawnAudioGen: ${e instanceof Error ? e.message : String(e)}`
+      );
+      }
   }
 
   /**
    * Stage 3: Check if all shots in a pipeline run are complete, then spawn VIDEO_RENDER.
    */
-  private async checkAndSpawnStage1VideoRender(completedJob: any) {
+  private async checkAndSpawnStage1VideoRender(completedJob: JobLike) {
     // const fs = require('fs');
     const debugLog = (msg: string) =>
       fs.appendFileSync('/tmp/orchestrator_debug.log', `[${new Date().toISOString()}] ${msg}\n`);
 
-    const payload = completedJob.payload as any;
-    const pipelineRunId = payload?.pipelineRunId;
+    const payload =
+      typeof completedJob.payload === 'object' && completedJob.payload
+        ? (completedJob.payload as Record<string, unknown>)
+        : {};
+    const pipelineRunId = typeof payload.pipelineRunId === 'string' ? payload.pipelineRunId : undefined;
 
     debugLog(`checkAndSpawnStage1VideoRender: Job=${completedJob.id} Pipeline=${pipelineRunId}`);
 
@@ -838,7 +906,7 @@ export class OrchestratorService {
 
     // PLAN-2: Audio Barrier Check
     let audioReady = false;
-    let audioTrack: any = null;
+    let audioTrack: unknown = null;
     const audioEnabled = true;
 
     if (audioEnabled) {
@@ -856,27 +924,7 @@ export class OrchestratorService {
 
       if (audioJob && audioJob.status === JobStatusEnum.SUCCEEDED) {
         audioReady = true;
-        // Extract Audio Asset from Job Output
-        // Assuming P18-6 AudioService returns { mixed: { absPath, sha256 }, ... }
-        const result = audioJob.payload as any; // Wait, result is usually in 'output'?
-        // ShotJob schema has 'payload' but output via 'generatedAsset' or separate JSON?
-        // Looking at schema: model Task has 'output'. model ShotJob does NOT have 'output' field!
-        // Wait, standard practice in this repo?
-        // Ah, usually result is written to assets table OR passed via 'payload' update?
-        // Actually, in `test_p18_6_final.ts`, it just returns logic.
-        // But Worker usually updates job... where?
-        // Schema has `generatedAsset` relation.
-        // We should fetch Assets.
-        // OR checks Orchestrator `aggregateAndSpawn` below uses `job.result?.output`.
-        // BUT schema `ShotJob` DOES NOT HAVE `result` or `output` field!
-        // Wait, code says `const storageKey = (job.result as any)?.output?.storageKey;`.
-        // Is `ShotJob` augmented in code? Or uses `payload`?
-        // The schema `ShotJob` has `payload`. Workers typically write result to `payload.output`?
-        // Let's assume `payload.output`.
-        const output =
-          (audioJob.result as any)?.output ||
-          (audioJob.payload as any)?.result?.output ||
-          (audioJob.payload as any)?.output;
+        const output = getOutputRecord(audioJob.result) ?? getOutputRecord(audioJob.payload);
         if (output) audioTrack = output;
       } else if (!audioJob) {
         // If Audio enabled but no job exists yet (maybe Video finished before lazy spawn?)
@@ -904,10 +952,10 @@ export class OrchestratorService {
   }
 
   private async aggregateAndSpawnVideoRender(
-    shots: any[],
+    shots: Array<{ id: string; createdAt: Date; payload?: unknown; result?: unknown }>,
     pipelineRunId: string,
-    contextJob: any,
-    audioTrack: any = null
+    contextJob: JobLike,
+    audioTrack: unknown = null
   ) {
     // 2.1 Idempotency Check: Did we already spawn a VIDEO_RENDER for this run?
     const existingVideoJob = await this.prisma.shotJob.findFirst({
@@ -934,11 +982,8 @@ export class OrchestratorService {
 
     for (const job of shots) {
       // Assuming result stored in payload.output based on usage
-      const output =
-        (job.result as any)?.output ||
-        (job.payload as any)?.result?.output ||
-        (job.payload as any)?.output;
-      const storageKey = output?.storageKey;
+      const output = getOutputRecord(job.result) ?? getOutputRecord(job.payload);
+      const storageKey = getStringField(output ?? {}, 'storageKey');
       if (storageKey) {
         frames.push(storageKey);
       } else {
@@ -968,7 +1013,11 @@ export class OrchestratorService {
 
     // 2.3 继承验证标记（关键：防止下游作业计费污染）
     const isVerification = !!contextJob.isVerification;
-    const dedupeKey = `video_render_${(contextJob.payload as any)?.sceneId || contextJob.sceneId}_${pipelineRunId || contextJob.traceId}`;
+    const contextPayload = toRecord(contextJob.payload);
+    const sceneId =
+      getStringField(contextPayload, 'sceneId') ?? contextJob.sceneId ?? contextJob.shot?.sceneId ?? 'unknown_scene';
+    const traceKey = pipelineRunId || contextJob.traceId || 'unknown_trace';
+    const dedupeKey = `video_render_${sceneId}_${traceKey}`;
 
     if (isVerification) {
       this.logger.log(
@@ -983,10 +1032,10 @@ export class OrchestratorService {
 
     try {
       const videoJob = await this.jobService.create(
-        contextJob.shotId, // Owner context
+        contextJob.shotId ?? contextJob.id, // Owner context
         {
           type: JobTypeEnum.VIDEO_RENDER,
-          traceId: contextJob.traceId,
+          traceId: contextJob.traceId ?? undefined,
           isVerification,
           dedupeKey,
           payload: {
@@ -999,9 +1048,9 @@ export class OrchestratorService {
             publish: true, // Worker handles publishing (with dedupe_key idempotency)
             traceId: contextJob.traceId,
             isVerification, // 也在 payload 中携带，便于 Worker 识别
-            rootJobId: (contextJob.payload as any)?.rootJobId, // Propagate for V1 chain
+            rootJobId: getStringField(contextPayload, 'rootJobId'), // Propagate for V1 chain
           },
-        } as any,
+        },
         project.ownerId,
         project.organizationId
       );
@@ -1009,17 +1058,17 @@ export class OrchestratorService {
       this.logger.log(
         `[DAG] VIDEO_RENDER created: jobId=${videoJob.id}, isVerification=${isVerification}`
       );
-    } catch (e: any) {
-      this.logger.error(`[DAG] Failed to spawn VIDEO_RENDER: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(`[DAG] Failed to spawn VIDEO_RENDER: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
   /**
    * Stage 3-Final: Trigger CE09 after VIDEO_RENDER
    */
-  private async checkAndSpawnCE09(videoJob: any) {
-    const payload = videoJob.payload as any;
-    const pipelineRunId = payload?.pipelineRunId;
+  private async checkAndSpawnCE09(videoJob: JobLike) {
+    const payload = toRecord(videoJob.payload);
+    const pipelineRunId = getStringField(payload, 'pipelineRunId');
 
     if (!pipelineRunId) {
       this.logger.warn(
@@ -1042,9 +1091,11 @@ export class OrchestratorService {
 
     // 2. Resolve Asset ID from Result
     const start = Date.now();
-    const result = videoJob.result as any;
-    let assetId = result?.assetId || result?.output?.assetId;
-    let storageKey = result?.storageKey || result?.output?.storageKey;
+    const result = getRecordField(videoJob.result);
+    const resultOutput = getOutputRecord(result);
+    let assetId = getStringField(result, 'assetId') || getStringField(resultOutput ?? {}, 'assetId');
+    let storageKey =
+      getStringField(result, 'storageKey') || getStringField(resultOutput ?? {}, 'storageKey');
 
     // Phase V.4: Robust Fallback for Gate/CI Mode
     if ((!assetId || !storageKey) && (process.env.GATE_MODE === '1' || process.env.CI === 'true')) {
@@ -1075,7 +1126,7 @@ export class OrchestratorService {
     this.logger.log(`[DAG] Spawning CE09 for ${pipelineRunId} from VIDEO_RENDER asset ${assetId}`);
 
     try {
-      const projectId = payload.projectId || videoJob.projectId;
+      const projectId = getStringField(payload, 'projectId') ?? videoJob.projectId ?? undefined;
       if (!projectId) {
         throw new Error(`Missing projectId for CE09 spawn on pipeline ${pipelineRunId}`);
       }
@@ -1089,28 +1140,28 @@ export class OrchestratorService {
       }
 
       await this.jobService.create(
-        videoJob.shotId || videoJob.id,
+        videoJob.shotId ?? videoJob.id,
         {
           type: JobTypeEnum.CE09_MEDIA_SECURITY,
-          traceId: videoJob.traceId,
+          traceId: videoJob.traceId ?? undefined,
           payload: {
             pipelineRunId,
-            projectId: payload.projectId,
-            episodeId: payload.episodeId,
-            shotId: videoJob.shotId,
+            projectId,
+            episodeId: getStringField(payload, 'episodeId'),
+            shotId: videoJob.shotId ?? undefined,
             assetId,
             videoAssetStorageKey: storageKey,
-            traceId: videoJob.traceId,
+            traceId: videoJob.traceId ?? undefined,
             engineKey: 'ce09_security_real',
-            rootJobId: (payload as any)?.rootJobId, // Propagate for V1 chain
+            rootJobId: getStringField(payload, 'rootJobId'), // Propagate for V1 chain
           },
-        } as any,
+        },
         project.ownerId,
         project.organizationId
       );
       this.logger.log(`[DAG] CE09 spawned successfully for ${pipelineRunId}`);
-    } catch (e: any) {
-      this.logger.error(`[DAG] Failed to spawn CE09: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(`[DAG] Failed to spawn CE09: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
@@ -1221,7 +1272,7 @@ export class OrchestratorService {
             organizationId,
             status: 'in_progress',
             ownerId,
-          } as any,
+          },
         });
         projectId = project.id;
       } else {
@@ -1241,7 +1292,7 @@ export class OrchestratorService {
           projectId,
           organizationId,
           author: 'System',
-        } as any,
+        },
       });
 
       const volume = await this.prisma.novelVolume.create({
@@ -1259,7 +1310,7 @@ export class OrchestratorService {
           volumeId: volume.id,
           index: 1,
           title: 'Chapter 1',
-        } as any,
+        },
       });
 
       // Save actual text to Scene (Minimal context)
@@ -1281,7 +1332,7 @@ export class OrchestratorService {
           index: 1,
           name: 'Chapter 1',
           chapterId: chapter.id,
-        } as any,
+        },
       });
 
       // 3.5 Create placeholder Scene & Shot for Pipeline Job
@@ -1304,7 +1355,7 @@ export class OrchestratorService {
           type: 'pipeline_stage1',
           params: {},
           organizationId,
-        } as any,
+        },
       });
 
       // 4. Dispatch the Pipeline Job
@@ -1324,7 +1375,7 @@ export class OrchestratorService {
             organizationId,
             ...(existingRefId ? { referenceSheetId: existingRefId } : {}),
           },
-        } as any,
+        },
         ownerId,
         organizationId
       );
@@ -1337,11 +1388,11 @@ export class OrchestratorService {
         projectId,
         episodeId: episode.id,
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       this.logger.error({
         tag: 'ORCHESTRATOR_PIPELINE_ERROR',
-        error: e.message,
-        stack: e.stack,
+        error: e instanceof Error ? e.message : String(e),
+        stack: e instanceof Error ? e.stack : undefined,
         params: { novelTextLen: params.novelText?.length, projectId: params.projectId },
       });
       throw e;

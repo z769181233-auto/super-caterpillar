@@ -55,7 +55,6 @@ export class LLMClient {
         throw new Error(`Unsupported LLM provider: ${options.provider}`);
       } catch (error: any) {
         lastError = error;
-        console.warn(`[LLMClient] Attempt ${attempt + 1} failed: ${error.message}`);
 
         if (attempt < this.maxRetries - 1) {
           const delay = this.retryDelay * Math.pow(2, attempt);

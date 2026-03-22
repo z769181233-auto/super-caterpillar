@@ -14,9 +14,6 @@ export class GeminiClient {
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY || '';
-    if (!apiKey) {
-      console.warn('[GeminiClient] GEMINI_API_KEY not found');
-    }
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({
       model: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
@@ -44,7 +41,6 @@ export class GeminiClient {
         try {
           return JSON.parse(text);
         } catch (e) {
-          console.error('[Gemini] Failed to parse JSON:', text);
           const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/{[\s\S]*}/);
           if (jsonMatch) {
             return JSON.parse(jsonMatch[1] || jsonMatch[0]);
@@ -54,7 +50,6 @@ export class GeminiClient {
       }
       return text;
     } catch (e: any) {
-      console.error('[Gemini] Request error:', e.message);
       throw e;
     }
   }
@@ -112,14 +107,12 @@ export class LLMClient {
         try {
           return JSON.parse(content);
         } catch (e) {
-          console.error('[LLM] Failed to parse JSON response:', content);
           throw new Error('LLM returned invalid JSON');
         }
       }
 
       return content;
     } catch (e: any) {
-      console.error('[LLM] Request error:', e.message);
       throw e;
     }
   }

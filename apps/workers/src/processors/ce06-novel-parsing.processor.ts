@@ -22,11 +22,9 @@ export async function processCE06NovelParsingJob(
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
 
-  console.log(`\n!!! [CE06-ENTRY] JobId: ${job.id} !!!`);
-  console.log(`[CE06-ENTRY] Payload Type: ${typeof job.payload}`);
+  logger.log(`[CE06-ENTRY] JobId=${job.id}`);
   if (job.payload) {
-    console.log(`[CE06-ENTRY] Payload keys: ${Object.keys(job.payload)}`);
-    console.log(`[CE06-ENTRY] Payload string length: ${JSON.stringify(job.payload).length}`);
+    logger.log(`[CE06-ENTRY] Payload keys=${Object.keys(job.payload).join(',')}`);
   }
 
   const engineHub = new EngineHubClient(apiClient);
@@ -84,11 +82,11 @@ async function executeScanJob(
     }
   }
 
-  console.log(`[CE06-DEBUG] JobId: ${job.id}, PayloadKeys: ${Object.keys(payload)}`);
+  logger.log(`[CE06-DEBUG] JobId=${job.id} PayloadKeys=${Object.keys(payload).join(',')}`);
   if (rawText) {
-    console.log(`[CE06-DEBUG] rawText found, length: ${rawText.length}`);
+    logger.log(`[CE06-DEBUG] rawText length=${rawText.length}`);
   } else {
-    console.log(`[CE06-DEBUG] rawText is missing or empty!`);
+    logger.warn('[CE06-DEBUG] rawText missing or empty');
   }
 
   if (!rawText) throw new Error('SCAN phase requires raw_text');
@@ -127,18 +125,17 @@ async function executeScanJob(
     },
   });
 
-  console.log(`[CE06-SCAN] engineHub.invoke SUCCESS: ${engineResult.success}`);
+  logger.log(`[CE06-SCAN] engineHub.invoke success=${engineResult.success}`);
   if (!engineResult.success) {
-    console.log(`[CE06-SCAN] engineHub.invoke ERROR: ${JSON.stringify(engineResult.error)}`);
+    logger.warn('[CE06-SCAN] engineHub.invoke returned error');
   }
 
   if (!engineResult.success) {
     throw new Error(`SCAN failed: ${engineResult.error?.message}`);
   }
 
-  const novelSource = await prisma.novel.findFirst({
+  const novelSource = await prisma.novel.findUnique({
     where: { projectId },
-    orderBy: { createdAt: 'desc' },
   });
   if (!novelSource) throw new Error('NovelSource not found');
 
@@ -279,7 +276,6 @@ async function executeChunkParseJob(
 
   // V3.0 Phase 2: Protocol Adapter (Bible -> Internal)
   // Already normalized at top-level
-  // console.log('[CE06_DEBUG] Chunk Parse Payload:', JSON.stringify(job.payload));
 
   // Step 1: CE06 解析 (raw_text + context_injection)
   const ce06Result = await engineHub.invoke({
@@ -337,8 +333,8 @@ async function executeChunkParseJob(
       });
 
       // Step 2.1: Ensure Default Shot exists (Gap Fix for SHOT_RENDER)
-      let defaultShot = await tx.shot.findFirst({
-        where: { sceneId: scene.id, index: 1 },
+      let defaultShot = await tx.shot.findUnique({
+        where: { sceneId_index: { sceneId: scene.id, index: 1 } },
       });
 
       if (!defaultShot) {

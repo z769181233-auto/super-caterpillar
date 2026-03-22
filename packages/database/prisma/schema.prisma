@@ -1759,6 +1759,7 @@ enum AssetStatus {
 enum AssetOwnerType {
   SCENE
   SHOT
+  EPISODE
   CHARACTER
 }
 

@@ -1,4 +1,4 @@
-import { PrismaClient, JobType, JobStatus } from 'database';
+import { Prisma, PrismaClient, JobType, JobStatus } from 'database';
 import { ApiClient } from '../api-client';
 import { WorkerJobBase } from '@scu/shared-types';
 import type { ProcessorContext } from '../types/processor-context';
@@ -13,6 +13,11 @@ export interface Stage1OrchestratorPayload {
   traceId?: string;
 }
 
+type Stage1OrchestratorPayloadInput = Stage1OrchestratorPayload & {
+  sourceText?: string;
+  rawText?: string;
+};
+
 export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
   const { prisma, job, logger } = ctx;
   try {
@@ -22,7 +27,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       // Gate/Worker 运行 Stage1 编排必须具备 apiClient
       throw new Error('STAGE1_API_CLIENT_MISSING');
     }
-    const payload = job.payload as Stage1OrchestratorPayload;
+    const payload = job.payload as Stage1OrchestratorPayloadInput;
 
     // NOTE: novelText might be undefined if payload mismatch. handled below.
     // P1-2 FIX: projectId is in job object, NOT necessarily in payload.
@@ -38,10 +43,10 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       throw new Error(`[Stage1] Missing organizationId in job ${job.id}`);
     }
 
-    console.log(`[Stage1] Starting orchestrator for run ${pipelineRunId} (Project: ${projectId})`);
+    logger.log(`[Stage1] Starting orchestrator for run ${pipelineRunId}`);
 
     // P1-2: Robust Payload Extraction (novelText vs sourceText vs rawText)
-    const userText = novelText || (payload as any).sourceText || (payload as any).rawText || '';
+    const userText = novelText || payload.sourceText || payload.rawText || '';
     if (!userText || typeof userText !== 'string') {
       throw new Error(
         `[Stage1] Invalid payload: novelText/sourceText is missing or not a string. Keys: ${Object.keys(payload)}`
@@ -59,7 +64,10 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
 
     // 获取当前 Episode 下的 Scene 结构（Stage-1 默认将所有 Shot 放入第一个 Scene）
     // Ensure we fetch graph_state_snapshot
-    let scene = await prisma.scene.findFirst({ where: { episodeId } });
+    let scene = await prisma.scene.findFirst({
+      where: { episodeId },
+      orderBy: { sceneIndex: 'asc' },
+    });
     if (!scene) {
       scene = await prisma.scene.create({
         data: {
@@ -77,13 +85,16 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
     let refSheetId: string | undefined;
     const refSheetJob = await prisma.shotJob.findFirst({
       where: { projectId, type: 'CE01_REFERENCE_SHEET', status: 'SUCCEEDED' },
+      orderBy: { createdAt: 'desc' },
       include: { engineBinding: true },
     });
 
     if (refSheetJob && refSheetJob.engineBinding) {
       refSheetId = refSheetJob.engineBinding.id;
     } else {
-      console.warn(`[Stage1] NO Reference Sheet found for project ${projectId}. Proceeding without established visual binding.`);
+      logger.warn(
+        `[Stage1] NO Reference Sheet found for project ${projectId}. Proceeding without established visual binding.`
+      );
     }
 
     const shotIds: string[] = [];
@@ -94,7 +105,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       const paragraph = paragraphs[i].trim();
 
       // MVP P1-1: Heuristic Extraction for testing explicit columns
-      const directorControls: any = {};
+      const directorControls: Record<string, string> = {};
       if (paragraph.toUpperCase().includes('WIDE SHOT')) directorControls.shotType = 'WIDE SHOT';
       if (paragraph.toUpperCase().includes('CLOSE UP')) directorControls.shotType = 'CLOSE UP';
       if (paragraph.toUpperCase().includes('PAN')) directorControls.cameraMovement = 'PAN';
@@ -108,6 +119,8 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
           scene.graphStateSnapshot,
           refSheetId // Now resolved!
         );
+      const controlNetJson = controlNetSettings as unknown as Prisma.InputJsonValue;
+      const assetBindingsJson = assetBindings as unknown as Prisma.InputJsonValue;
 
       const shotParams = {
         prompt: paragraph.substring(0, 800),
@@ -117,10 +130,10 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
           steps: 20,
           guidance_scale: 7.0,
         },
-        controlnet_settings: controlNetSettings, // P1-2
-        asset_bindings: assetBindings, // P1-2
+        controlnet_settings: controlNetJson, // P1-2
+        asset_bindings: assetBindingsJson, // P1-2
         ...directorControls,
-      };
+      } as Prisma.InputJsonValue;
 
       const shotData = hydrateShotWithDirectorControls(
         {
@@ -135,7 +148,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
           enrichedPrompt: paragraph, // ✅ SSOT alignment: SHOT_RENDER requires this
         },
         shotParams
-      );
+      ) satisfies Prisma.ShotUncheckedCreateInput;
 
       const shot = await prisma.shot.upsert({
         where: {
@@ -144,15 +157,13 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
             index: i + 1,
           },
         },
-        update: shotData as any,
-        create: shotData as any,
+        update: shotData,
+        create: shotData,
       });
       shotIds.push(shot.id);
     }
-    console.log(`[Stage1] Planned ${shotIds.length} shots. Ensuring Reference Sheet exists...`);
-
-
-    console.log(`[Stage1] Spawning renders via API...`);
+    logger.log(`[Stage1] Planned ${shotIds.length} shots. Ensuring Reference Sheet exists...`);
+    logger.log('[Stage1] Spawning renders via API...');
 
     // 2. Spawn Concurrent Shot Renders
     // 核心：调用 API Client 以确保计费 (Billing) 和引擎绑定 (Engine Binding) 逻辑正确触发
@@ -162,11 +173,10 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       try {
         const response = await apiClient.createJob(
           {
-            type: 'SHOT_RENDER',
+            jobType: JobType.SHOT_RENDER,
             traceId,
             projectId,
             organizationId,
-            // shotId removed to pass API validation (property shotId should not exist)
             payload: {
               pipelineRunId,
               shotId,
@@ -174,42 +184,46 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
               referenceSheetId: refSheetId, // E4 Compliance
               parentJobId: job.id,
             },
-          } as any,
+          },
           undefined,
           { 'x-organization-id': organizationId }
         );
 
         const createdJobId = response?.id ?? response?.jobId;
         if (!createdJobId) {
-          console.error({
+          logger.error(
+            JSON.stringify({
             tag: 'STAGE1_CREATE_RENDER_JOB_FAILED',
             reason: 'missing_job_id_in_response',
             shotId,
             pipelineRunId,
             parentJobId: job.id,
             response,
-          });
+          })
+          );
           throw new Error('STAGE1_CREATE_RENDER_JOB_FAILED: missing_job_id_in_response');
         }
 
         renderJobs.push(createdJobId);
       } catch (error: any) {
         // ✅ 统一日志tag，并抛错中止（不允许继续）
-        console.error({
-          tag: 'STAGE1_CREATE_RENDER_JOB_FAILED',
-          shotId,
-          pipelineRunId,
-          parentJobId: job.id,
-          error: error?.message ?? String(error),
-          stack: error?.stack,
-        });
+          logger.error(
+            JSON.stringify({
+            tag: 'STAGE1_CREATE_RENDER_JOB_FAILED',
+            shotId,
+            pipelineRunId,
+            parentJobId: job.id,
+            error: error?.message ?? String(error),
+            stack: error?.stack,
+          })
+          );
 
         // ✅ 落库FAILED状态，保证审计可查
         try {
           await prisma.shotJob.update({
             where: { id: job.id },
             data: {
-              status: 'FAILED' as any,
+              status: JobStatus.FAILED,
               result: {
                 error: {
                   code: 'STAGE1_CREATE_RENDER_JOB_FAILED',
@@ -217,7 +231,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
                   shotId,
                   pipelineRunId,
                 },
-              } as any,
+              },
             },
           });
         } catch (_) {
@@ -230,28 +244,34 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
 
     // ✅ 双保险：renderJobIds为空直接FAIL（不允许空跑SUCCEEDED）
     if (!renderJobs.length) {
-      console.error({
+      logger.error(
+        JSON.stringify({
         tag: 'STAGE1_RENDER_JOB_IDS_EMPTY',
         pipelineRunId,
         parentJobId: job.id,
         shotIds,
-      });
+      })
+      );
 
       try {
         await prisma.shotJob.update({
           where: { id: job.id },
           data: {
-            status: 'FAILED' as any,
+            status: JobStatus.FAILED,
             result: {
               error: {
                 code: 'STAGE1_RENDER_JOB_IDS_EMPTY',
                 message: 'renderJobIds is empty; pipeline must not SUCCEED',
                 pipelineRunId,
               },
-            } as any,
+            },
           },
         });
-      } catch (_) {}
+      } catch (updateError: any) {
+        logger.warn(
+          `[Stage1] Failed to persist STAGE1_RENDER_JOB_IDS_EMPTY status: ${updateError?.message || String(updateError)}`
+        );
+      }
 
       throw new Error('STAGE1_RENDER_JOB_IDS_EMPTY');
     }
@@ -259,12 +279,12 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
     // 2.5 Blocking Aggregation Removed (Stage 3)
     // Orchestrator no longer waits. It exits after dispatching shots.
     // Video Render triggering is now Event-Driven (handled by API).
-    console.log(
+    logger.log(
       `[Stage1] Dispatch complete. ${renderJobs.length} shots spawned. Exiting. (Event Driven DAG enabled)`
     );
 
     // 3. Evidence Archiving
-    console.log(
+    logger.log(
       `[Stage-1 Evidence] Orchestration complete. pipelineRunId: ${pipelineRunId}, shots spawned: ${renderJobs.length}`
     );
 
@@ -277,27 +297,25 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       },
     };
   } catch (err: any) {
-    console.error(`[Stage1] Job FAILED: ${err.message}`, err);
+    logger.error(`[Stage1] Job FAILED: ${err.message}`);
     // Ensure we update result with error info
     try {
       await prisma.shotJob.update({
         where: { id: job.id },
         data: {
-          status: 'FAILED' as any,
+          status: JobStatus.FAILED,
           result: {
             error: {
               message: err.message,
               stack: err.stack,
               code: 'STAGE1_FATAL_ERROR',
             },
-          } as any,
+          },
         },
       });
     } catch (updateErr) {
-      console.error('[Stage1] Failed to persist error to DB', updateErr);
+      logger.error('[Stage1] Failed to persist error to DB');
     }
     throw err;
   }
 }
-
-const JobTypeEnum_SHOT_RENDER = 'SHOT_RENDER';

@@ -197,8 +197,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   const { sceneId, pipelineRunId } = job.payload;
   const traceId = job.traceId || `trace-${Date.now()}`;
 
-  console.log(`[TimelineCompose] [${traceId}] Starting for scene=${sceneId}`);
-
   // 1. DB 溯源获取 Context & Shots (Context SSOT)
   const scene = await prisma.scene.findUnique({
     where: { id: sceneId },
@@ -233,10 +231,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   const projectId = scene.episode.project.id;
   const episodeId = scene.episode.id;
 
-  console.log(
-    `[TimelineCompose] [${traceId}] Found ${scene.shots.length} shots for scene ${sceneId}: ${scene.shots.map((s) => s.id).join(', ')}`
-  );
-
   if (scene.shots.length < 1) {
     throw new Error(
       `[TimelineCompose] Fail-fast: Scene must have at least 1 shot for timeline compose. Found: ${scene.shots.length}`
@@ -256,18 +250,19 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     const dialogue = params.dialogue || params.text || params.voiceText;
 
     if (dialogue && !params.voiceAssetStorageKey && engineHubClient) {
-      console.log(
-        `[TimelineCompose] [${traceId}] Generating TTS for shot ${shot.id} (${dialogue.substring(0, 10)}...)`
-      );
-
       try {
+        const voiceId = (shot as any).characterAppearances?.[0]?.character?.attributes?.voiceId;
+        const ttsPayload: Record<string, any> = {
+          text: dialogue,
+          speed: 1.0,
+        };
+        if (voiceId) {
+          ttsPayload.voiceId = voiceId;
+        }
+
         const ttsRes = await engineHubClient.invoke<any, any>({
           engineKey: 'tts_standard',
-            payload: {
-              text: dialogue,
-              voiceId: (shot as any).characterAppearances?.[0]?.character?.attributes?.voiceId || 'default',
-              speed: 1.0,
-            },
+          payload: ttsPayload,
           metadata: {
             jobId: job.id,
             traceId,
@@ -278,15 +273,10 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
         if (ttsRes.success && ttsRes.output?.assetPath) {
           const newKey = ttsRes.output.assetPath;
-          console.log(`[TimelineCompose] [${traceId}] TTS Generated: ${newKey}`);
-
           params = { ...params, voiceAssetStorageKey: newKey };
           pendingAudioUpdates.push({ shotId: shot.id, storageKey: newKey });
-        } else {
-          console.warn(`[TimelineCompose] [${traceId}] TTS Generation failed or empty output`);
         }
-      } catch (err: any) {
-        console.error(`[TimelineCompose] [${traceId}] TTS Engine Error: ${err.message}`);
+      } catch {
       }
     }
 
@@ -295,9 +285,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
   // Persist updates to DB (Best Effort)
   if (pendingAudioUpdates.length > 0) {
-    console.log(
-      `[TimelineCompose] [${traceId}] Persisting ${pendingAudioUpdates.length} audio keys to DB...`
-    );
     await Promise.allSettled(
       pendingAudioUpdates.map((u) =>
         prisma.shot.update({
@@ -366,9 +353,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
         const durationSec = shot.durationSeconds || 1.0;
         const content = `file '${imageAbsPath}'\nduration ${durationSec}\nfile '${imageAbsPath}'`;
         await fsp.writeFile(framesTxtPath, content);
-        console.log(
-          `[TimelineCompose] Generated frames.txt for shot ${shot.id} at ${framesTxtPath}`
-        );
       }
     }
 
@@ -484,7 +468,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   const timelinePath = path.join(runtimeDir, timelineFileName);
 
   await fsp.writeFile(timelinePath, JSON.stringify(timelineData, null, 2));
-  console.log(`[TimelineCompose] [${traceId}] Timeline generated at: ${timelinePath}`);
 
   return {
     success: true,

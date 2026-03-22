@@ -17,6 +17,7 @@ import {
 
 export async function processNovelChunk(context: ProcessorContext) {
   ensureDefaultMetrics();
+  const workerConfig = config as typeof config & { storageRoot: string };
   const t0 = Date.now();
   let peakRssMb = 0;
 
@@ -47,14 +48,10 @@ export async function processNovelChunk(context: ProcessorContext) {
       data: { status: 'PROCESSING' },
     });
 
-    console.log(
-      `[NovelChunk] Parsing Project ${projectId}, Chunk ${dbChunkId}, Bytes ${startByte}-${endByte}`
-    );
-
     // 2. Path Resolution
     let filePath = fileKey;
     if (!path.isAbsolute(filePath)) {
-      const storageRoot = (config as any).storageRoot || '/tmp/storage';
+      const storageRoot = workerConfig.storageRoot || '/tmp/storage';
       filePath = path.resolve(storageRoot, fileKey);
     }
 
@@ -73,7 +70,6 @@ export async function processNovelChunk(context: ProcessorContext) {
       process.env.USE_MULTI_AGENT === 'true' || process.env.USE_MULTI_AGENT === '1';
 
     if (useDeepAnalysis) {
-      console.log(`[NovelChunk] Using Deep Multi-Agent Analysis for chunk ${dbChunkId}...`);
       const project = await prisma.project.findUnique({
         where: { id: projectId },
         select: { stylePrompt: true, styleGuide: true },
@@ -90,7 +86,9 @@ export async function processNovelChunk(context: ProcessorContext) {
             projectStylePrompt: project?.stylePrompt,
             projectStyleGuide: project?.styleGuide,
           },
-        } as any,
+          [(await import('../agents')).AgentRole.DIRECTOR]: {},
+          [(await import('../agents')).AgentRole.AUDITOR]: {},
+        },
         organizationId: job.organizationId as string,
       };
 
@@ -98,7 +96,6 @@ export async function processNovelChunk(context: ProcessorContext) {
         const result = await (await import('../agents')).runMultiAgentAnalysis(contextPrompt);
         analyzedScenes = result.scenes || [];
       } catch (err: any) {
-        console.error(`[NovelChunk] Multi-Agent failed: ${err.message}. Falling back.`);
         const structure = basicTextSegmentation(chunkText, projectId);
         analyzedScenes = structure.episodes.flatMap((ep) => ep.scenes);
       }
@@ -108,7 +105,7 @@ export async function processNovelChunk(context: ProcessorContext) {
     }
 
     // 4. Save Artifact (MAP Product)
-    const storageRoot = (config as any).storageRoot || '/tmp/storage';
+    const storageRoot = workerConfig.storageRoot || '/tmp/storage';
     const artifactDir = path.join(storageRoot, 'artifacts', 'chunks', ingestRunId);
     if (!fs.existsSync(artifactDir)) {
       await fsp.mkdir(artifactDir, { recursive: true });
@@ -150,15 +147,7 @@ export async function processNovelChunk(context: ProcessorContext) {
         select: { processedChunks: true, totalChapters: true },
       });
 
-      console.log(
-        `[NovelChunk] Progress: ${ns.processedChunks}/${ns.totalChapters} for source ${nsId}`
-      );
-
       if (ns.processedChunks >= ns.totalChapters) {
-        console.log(
-          `[NovelChunk] 🏁 All chunks completed for run ${ingestRunId}. Triggering REDUCE phase.`
-        );
-
         await prisma.novelIngestRun.update({
           where: { id: ingestRunId },
           data: { status: 'COMPLETED' }, // Or 'AGGREGATING'
@@ -169,7 +158,7 @@ export async function processNovelChunk(context: ProcessorContext) {
           data: {
             organizationId: job.organizationId as string,
             projectId,
-            type: 'NOVEL_REDUCE_AGGREGATE' as any,
+            type: JobType.NOVEL_REDUCE_AGGREGATE,
             status: 'PENDING',
             payload: {
               projectId,
@@ -213,7 +202,7 @@ export async function processNovelChunk(context: ProcessorContext) {
           where: { id: job.payload.novelSourceId },
           data: {
             // status: 'FAILED', // Don't set to FAILED immediately to allow other chunks to proceed
-            error: `Chunk ${job.payload.episodeId} failed: ${e.message || String(e)}`,
+            error: `Chunk ${dbChunkId} failed: ${e.message || String(e)}`,
           },
         })
         .catch(() => {});

@@ -3,7 +3,6 @@
  */
 
 /// <reference path="./types/config.d.ts" />
-import * as util from 'util';
 import { PrismaClient, JobStatus } from 'database';
 import { env, config as appConfig } from '@scu/config';
 
@@ -19,15 +18,28 @@ interface RuntimeConfig {
   jobWaveSize: number;
   throttled: boolean;
   reason: string;
-  metrics?: LoadMetrics;
+  metrics?: RuntimeMetrics;
 }
+
+type RuntimeMetrics = LoadMetrics & {
+  loadAvg: number;
+  freeMem: number;
+  cpus: number;
+};
+
+const workerConfig = appConfig as typeof appConfig & {
+  jobMaxInFlight: number;
+  jobWaveSize: number;
+  storageRoot: string;
+  nodeMaxOldSpaceMb?: number;
+};
 
 /**
  * 运行时 Profile 配置
  */
 export async function getRuntimeConfig(loadMonitor?: SystemLoadMonitor): Promise<RuntimeConfig> {
   const isSafeMode = process.env.SAFE_MODE === '1' || process.env.SAFE_MODE === 'true';
-  const baseMaxInFlight = (env as any).jobMaxInFlight || 10;
+  const baseMaxInFlight = workerConfig.jobMaxInFlight || 10;
 
   if (isSafeMode) {
     return {
@@ -55,7 +67,7 @@ export async function getRuntimeConfig(loadMonitor?: SystemLoadMonitor): Promise
       : os.freemem() / 1024 / 1024;
 
   let jobMaxInFlight = baseMaxInFlight;
-  let jobWaveSize = (env as any).jobWaveSize || 5;
+  let jobWaveSize = workerConfig.jobWaveSize || 5;
   let throttled = false;
   let reason = '';
 
@@ -75,11 +87,11 @@ export async function getRuntimeConfig(loadMonitor?: SystemLoadMonitor): Promise
 
   return {
     jobMaxInFlight,
-    nodeMaxOldSpaceMb: (env as any).nodeMaxOldSpaceMb || 2048,
+    nodeMaxOldSpaceMb: workerConfig.nodeMaxOldSpaceMb || 2048,
     jobWaveSize,
     throttled,
     reason,
-    metrics: { ...metrics, loadAvg, freeMem, cpus } as any,
+    metrics: { ...metrics, loadAvg, freeMem, cpus } as RuntimeMetrics,
   };
 }
 
@@ -147,10 +159,6 @@ const rawApiBaseUrl = process.env.API_BASE_URL;
 const rawApiUrl = process.env.API_URL;
 const baseUrl = rawApiBaseUrl || rawApiUrl;
 
-console.log(`[BOOT_ENV] API_BASE_URL_RAW=${rawApiBaseUrl}`);
-console.log(`[BOOT_ENV] API_URL_RAW=${rawApiUrl}`);
-console.log(`[BOOT_ENV] API_BASE_URL_RESOLVED=${baseUrl}`);
-
 if (rawApiBaseUrl?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
 if (!baseUrl) {
   throw new Error('API_BASE_URL or API_URL is required in production');
@@ -179,7 +187,7 @@ const apiHealthUrl = new URL('/health', apiBaseUrl).toString();
 
 let isRunning = false;
 let tasksRunning = 0;
-const localStorageAdapter = new LocalStorageAdapter((appConfig as any).storageRoot);
+const localStorageAdapter = new LocalStorageAdapter(workerConfig.storageRoot);
 
 async function processJobWithExecutor(job: any): Promise<void> {
   tasksRunning++;
@@ -204,7 +212,8 @@ async function processJobWithExecutor(job: any): Promise<void> {
         if (job.type === 'SHOT_RENDER') return processShotRenderJob(ctx);
         if (job.type === 'VIDEO_RENDER') return processVideoRenderJob(ctx);
         throw new Error(`Unsupported job type: ${job.type}`);
-      }
+      },
+      job.type
     );
 
     const normalizedStatus =
@@ -221,7 +230,6 @@ async function processJobWithExecutor(job: any): Promise<void> {
       error: normalizedError,
     });
   } catch (error: any) {
-    console.error(`[Worker] Job ${job.id} execution failed:`, error.message);
   } finally {
     tasksRunning--;
   }
@@ -244,9 +252,6 @@ export async function startWorkerApp() {
       ),
     ]);
   } catch (error: any) {
-    console.warn(
-      `[Worker] Prisma startup connect skipped: ${error?.message || 'unknown error'}. Continuing with API-first bootstrap.`
-    );
   }
   jobExecutor = new JobExecutor(apiClient);
 
@@ -266,40 +271,23 @@ export async function startWorkerApp() {
     'VIDEO_RENDER',
   ];
 
-  console.log('[WORKER_BOOT] entry=apps/workers/src/worker-app.ts');
-  console.log('[WORKER_BOOT] supportedJobTypes=', supportedJobTypes);
-  console.log('[WORKER_BOOT] hasCE06=', supportedJobTypes.includes('CE06_NOVEL_PARSING'));
-
-  console.log(`[Worker] Registering worker: ${workerId}`);
   try {
     const net = require('net');
     await new Promise((resolve) => {
       const sock = net.createConnection(apiProbePort, apiProbeHost);
       sock.on('connect', () => {
-        console.log(`[WORKER_NET] connect_ok ${apiProbeHost}:${apiProbePort}`);
         sock.destroy();
         resolve(true);
       });
       sock.on('error', (err: any) => {
-        console.log(
-          `[WORKER_NET] connect_error host=${apiProbeHost} port=${apiProbePort} code=${err.code} errno=${err.errno} syscall=${err.syscall} address=${err.address} port=${err.port}`
-        );
         resolve(false);
       });
     });
 
     try {
       const res = await fetch(apiHealthUrl);
-      const text = await res.text();
-      console.log(
-        `[WORKER_FETCH_HEALTH] url=${apiHealthUrl} status=${res.status} body=${text
-          .substring(0, 50)
-          .replace(/\\n/g, ' ')}`
-      );
+      await res.text();
     } catch (err: any) {
-      console.log(
-        `[WORKER_FETCH_HEALTH] url=${apiHealthUrl} error name=${err.name} code=${err.code} cause=${err.cause?.code || err.cause?.name}`
-      );
     }
 
     await apiClient.registerWorker({
@@ -311,25 +299,23 @@ export async function startWorkerApp() {
       },
     });
   } catch (e: any) {
-    console.warn(`[Worker] Registration failed: ${e.message}`);
   }
 
   isRunning = true;
-  console.log(`[Worker] Started. ID: ${workerId}`);
 
   // Heartbeat loop
   setInterval(async () => {
     try {
       await apiClient.heartbeat({ workerId, tasksRunning });
-    } catch (e) { }
+    } catch {}
   }, 10000);
 
   while (isRunning) {
     const job = await apiClient.getNextJob(workerId);
     if (job) {
-      console.log(`[Worker] Leased job: ${job.id} (${job.type})`);
       await apiClient.ackJob(job.id, workerId);
-      processJobWithExecutor(job).catch(console.error);
+      processJobWithExecutor(job).catch((error: any) => {
+      });
     }
     await new Promise((r) => setTimeout(r, 2000));
   }

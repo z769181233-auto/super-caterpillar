@@ -107,6 +107,9 @@ export async function processCE11ShotGeneratorJob(
     if (!novelSceneId) {
       throw new Error('Missing novelSceneId for CE11 Shot Generation');
     }
+    if (!projectId) {
+      throw new Error('[CE11] Missing projectId for CE11 Shot Generation');
+    }
 
     // 1. 获取小说场景内容
     // Use type-casting to avoid lint errors from outdated @scu/database types
@@ -125,16 +128,10 @@ export async function processCE11ShotGeneratorJob(
       );
     }
 
-    // Resolve ProjectId from scene relations if not in job
-    if (!projectId && scene.novelSource?.projectId) {
-      // assigned to const variable cannot be reassigned, so we use a new var or cast
-      // actually projectId is const. We should have defined it as let or use a new var.
-      // But wait, projectId is defined at line 23.
-      // line 23: const projectId = job.projectId || payload.projectId;
-      // I cannot reassign it.
-    }
-
     const resolveProjectId = projectId || scene.projectId;
+    if (!resolveProjectId) {
+      throw new Error(`[CE11] Missing projectId for scene ${novelSceneId}`);
+    }
     const activeFilmIrId = scene.filmIrId || null;
     const activeFilmIr =
       activeFilmIrId
@@ -340,13 +337,20 @@ export async function processCE11ShotGeneratorJob(
     if (!job.organizationId) {
       throw new Error(`[CE11] Organization ID is required for job ${job.id}`);
     }
+    const project = await prisma.project.findUnique({
+      where: { id: resolveProjectId },
+      select: { ownerId: true },
+    });
+    if (!project?.ownerId) {
+      throw new Error(`[CE11] Project owner is required for job ${job.id}`);
+    }
     const costService = new CostLedgerService(apiClient, prisma);
     await costService.recordEngineBilling({
       jobId: job.id,
       jobType: 'CE11_SHOT_GENERATOR',
       traceId,
-      projectId: projectId || 'unknown',
-      userId: 'system',
+      projectId: resolveProjectId,
+      userId: project.ownerId,
       orgId: job.organizationId,
       engineKey: finalEngineKey,
       runId: payload.pipelineRunId || traceId,
@@ -360,7 +364,7 @@ export async function processCE11ShotGeneratorJob(
       const renderJobs = createdShots.map((shotMeta) => ({
         type: JobType.SHOT_RENDER, // Enforce generic type for Router to handle
         status: JobStatus.PENDING,
-        projectId,
+        projectId: resolveProjectId,
         organizationId: job.organizationId,
         workerId: null,
         taskId: job.taskId,

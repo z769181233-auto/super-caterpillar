@@ -14,7 +14,7 @@ export interface LLMConfig {
 
 const DEFAULT_LLM_CONFIG: Partial<LLMConfig> = {
   provider: 'openai',
-  model: 'gpt-4-turbo-preview',
+  model: process.env.OPENAI_MODEL || 'gpt-4o',
   maxConcurrentRequests: 5,
   maxRetries: 3,
   retryDelay: 1000,
@@ -75,13 +75,6 @@ export class LLMBatchProcessor {
       (chunk) => !progress.completedChunkIds.has(chunk.metadata.chunkId)
     );
 
-    if (existingProgress && remainingChunks.length < chunks.length) {
-      console.log(
-        `[LLMBatchProcessor] Resume detected: ${progress.completedChunkIds.size} chunks already completed, ` +
-          `${remainingChunks.length} remaining`
-      );
-    }
-
     const queue = [...remainingChunks];
 
     // 并发处理
@@ -119,11 +112,6 @@ export class LLMBatchProcessor {
       } catch (error: any) {
         progress.failedChunks++;
         progress.failedChunkIds.set(chunk.metadata.chunkId, error.message);
-
-        console.error(
-          `[LLMBatchProcessor] Failed to process chunk ${chunk.metadata.chunkId}:`,
-          error.message
-        );
 
         // 支持异步回调
         await Promise.resolve(onProgress?.(progress));

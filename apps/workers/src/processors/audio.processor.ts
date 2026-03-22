@@ -1,4 +1,4 @@
-import { PrismaClient } from 'database';
+import { AssetOwnerType, AssetType, PrismaClient } from 'database';
 import { WorkerJobBase } from '@scu/shared-types';
 import { ApiClient } from '../api-client';
 
@@ -15,8 +15,14 @@ export async function processAudioJob(
 ): Promise<any> {
   const payload = job.payload as any;
   const { text, mode, projectId, pipelineRunId, voice } = payload;
+  const sceneId = payload.sceneId || payload.shotId;
 
-  console.log(`[AudioProcessor_HUB] Delegating job ${job.id} to EngineHub`);
+  if (!projectId) {
+    throw new Error('[AUDIO] Missing projectId');
+  }
+  if (!sceneId) {
+    throw new Error('[AUDIO] Missing sceneId');
+  }
 
   try {
     // 1. Invoke EngineHub for TTS
@@ -33,12 +39,25 @@ export async function processAudioJob(
     const { storageKey, duration, sha256, size } = ttsResult.output;
 
     // 2. Register Asset in DB
-    const asset = await prisma.asset.create({
-      data: {
-        projectId: job.projectId || 'system',
-        ownerType: 'SHOT',
-        ownerId: payload.shotId || payload.pipelineRunId,
-        type: 'AUDIO_TTS',
+    const asset = await prisma.asset.upsert({
+      where: {
+        ownerType_ownerId_type: {
+          ownerType: AssetOwnerType.SCENE,
+          ownerId: sceneId,
+          type: AssetType.AUDIO_TTS,
+        },
+      },
+      update: {
+        storageKey,
+        checksum: sha256,
+        status: 'GENERATED',
+        createdByJobId: job.id,
+      },
+      create: {
+        projectId,
+        ownerType: AssetOwnerType.SCENE,
+        ownerId: sceneId,
+        type: AssetType.AUDIO_TTS,
         status: 'GENERATED',
         storageKey,
         checksum: sha256,
@@ -57,7 +76,6 @@ export async function processAudioJob(
       },
     };
   } catch (error: any) {
-    console.error(`[AudioProcessor_HUB] Failed: ${error.message}`);
     throw error;
   }
 }

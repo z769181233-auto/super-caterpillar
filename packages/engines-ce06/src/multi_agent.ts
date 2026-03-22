@@ -49,7 +49,6 @@ export async function runMultiAgentAnalysis(
     updateBilling(billing, draftResult.response.usageMetadata);
 
     const scenes = draftData.scenes || [];
-    console.log(`[CE06_MULTI_AGENT] Screenwriter Agent produced ${scenes.length} scenes.`);
 
     // 2. DIRECTOR AGENT
     const visualPrompt = `Role: Director Agent\nTask: Enrich the visual descriptions for each scene. Focus: Lighting, camera angles, color palette, and character visual states. Constraint: You MUST provide "visual_prompt", "camera_movement", and "action_description" for EVERY scene. Requirement: Characters MUST contain "id", "name", and detailed "appearance" (clothing, hair).\nYour output MUST follow this JSON schema:\n{"scenes": [{"title": "...", "raw_text": "...", "visual_prompt": "cinematic photography of...", "camera_movement": "pan left", "action_description": "walking...", "visual_density_score": 0.8, "characters": [{"name": "...", "appearance": {"clothing": "...", "hair": "..."}}]}]}\n\nInput:\nScenes to process:\n${JSON.stringify(scenes)}`;
@@ -88,7 +87,6 @@ export async function runMultiAgentAnalysis(
       },
     };
   } catch (error: any) {
-    console.error(`[CE06_MULTI_AGENT] SDK Error: ${error.message}`);
     throw error;
   }
 }
