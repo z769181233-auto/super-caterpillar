@@ -62,6 +62,7 @@ export async function processE2EVideoPipelineJob(
 
   // TraceId 透传
   const traceId = job.traceId || payload.traceId || `trace-${jobId}`;
+  const ce06DedupeKey = `e2e_ce06_${projectId}_${pipelineRunId}`;
 
   // 审计: Pipeline Start
   // 使用 SUCCESS 状态但明确 action 为 start
@@ -113,13 +114,18 @@ export async function processE2EVideoPipelineJob(
       select: { id: true },
       orderBy: { createdAt: 'desc' },
     });
+    const existingCE06ByDedupe = await prisma.shotJob.findUnique({
+      where: { dedupeKey: ce06DedupeKey },
+      select: { id: true },
+    });
 
-    if (existingCE06) {
+    if (existingCE06 || existingCE06ByDedupe) {
+      const existingId = existingCE06?.id || existingCE06ByDedupe!.id;
       logStructured('info', {
         action: 'PIPELINE_IDEMPOTENT_HIT',
         jobId,
         pipelineRunId,
-        existingCE06Job: existingCE06.id,
+        existingCE06Job: existingId,
       });
 
       await apiClient
@@ -132,7 +138,7 @@ export async function processE2EVideoPipelineJob(
           status: 'SUCCESS',
           auditTrail: {
             action: 'pipeline.e2e_video.idempotent_hit',
-            existingCE06Job: existingCE06.id,
+            existingCE06Job: existingId,
           },
         })
         .catch(() => {});
@@ -142,7 +148,7 @@ export async function processE2EVideoPipelineJob(
         status: 'SPAWNED_CE06', // 逻辑上已成功
         pipelineRunId,
         spawned: {
-          ce06JobId: existingCE06.id,
+          ce06JobId: existingId,
         },
       };
     }
@@ -220,6 +226,7 @@ export async function processE2EVideoPipelineJob(
         type: JobType.CE06_NOVEL_PARSING,
         status: JobStatus.PENDING,
         traceId,
+        dedupeKey: ce06DedupeKey,
         payload: {
           projectId,
           novelSourceId: payload.novelSourceId,

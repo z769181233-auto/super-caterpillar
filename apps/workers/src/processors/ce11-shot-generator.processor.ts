@@ -246,30 +246,67 @@ export async function processCE11ShotGeneratorJob(
       const executionPolicy = buildExecutionPolicy(activeFilmIr, shotData, plannerVersion);
       const timelinePolicy = buildTimelinePolicy(activeFilmIr, shotData);
 
-      // 构造 Bible V3.0 要求的 Shot 数据
-      // Use upsert to prevent re-runs from creating duplicate shots (if id is deterministic or if we clear first)
-      // Since we don't have deterministic IDs here, we rely on clearing old shots or just create new ones.
-      // But wait: CE11 usually runs ONCE per scene. If retried, we risk duplicates.
-      // Better strategy: Clean old shots for this scene index? No, too dangerous.
-      // For now, let's keep create, but wrap in try-catch to log error properly.
-      // Actually, let's just log the error stack if create fails.
-
-      const shot = await (prisma as any).shot.create({
-        data: {
-          sceneId: novelSceneId,
-          index: i + 1, // Bible V3: index (internal: index)
+      const shotIndex = i + 1;
+      const shot = await (prisma as any).shot.upsert({
+        where: {
+          sceneId_index: {
+            sceneId: novelSceneId,
+            index: shotIndex,
+          },
+        },
+        update: {
           type: shotData.shot_type || 'MEDIUM_SHOT',
           cameraMovement: shotData.camera_movement,
           cameraAngle: shotData.camera_angle,
           lightingPreset: shotData.lighting_preset,
-          visualPrompt: shotData.visual_prompt, // P0 SEALed: Mandatory field from engine
+          visualPrompt: shotData.visual_prompt,
           negativePrompt: shotData.negative_prompt,
           actionDescription: shotData.action_description,
           dialogueContent: shotData.dialogue_content,
           soundFx: shotData.sound_fx,
           assetBindings: shotData.asset_bindings || {},
           controlnetSettings: shotData.controlnet_settings || {},
-          durationSec: shotData.duration_sec ? Number(shotData.duration_sec) : (activeFilmIr?.avgShotLengthSec ? Number(activeFilmIr.avgShotLengthSec) : 3.0),
+          durationSec: shotData.duration_sec
+            ? Number(shotData.duration_sec)
+            : activeFilmIr?.avgShotLengthSec
+              ? Number(activeFilmIr.avgShotLengthSec)
+              : 3.0,
+          emotion: shotData.emotion || activeFilmIr?.emotionalTarget || null,
+          dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
+          emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
+          filmIrId: activeFilmIr?.id || null,
+          params: {
+            directorPlan,
+            executionPolicy,
+          },
+          novelQuote:
+            shotData.novel_quote ||
+            shotData.novelQuote ||
+            shotData.text ||
+            shotData.summary ||
+            shotData.title ||
+            null,
+          organizationId: job.organizationId,
+        },
+        create: {
+          sceneId: novelSceneId,
+          index: shotIndex,
+          type: shotData.shot_type || 'MEDIUM_SHOT',
+          cameraMovement: shotData.camera_movement,
+          cameraAngle: shotData.camera_angle,
+          lightingPreset: shotData.lighting_preset,
+          visualPrompt: shotData.visual_prompt,
+          negativePrompt: shotData.negative_prompt,
+          actionDescription: shotData.action_description,
+          dialogueContent: shotData.dialogue_content,
+          soundFx: shotData.sound_fx,
+          assetBindings: shotData.asset_bindings || {},
+          controlnetSettings: shotData.controlnet_settings || {},
+          durationSec: shotData.duration_sec
+            ? Number(shotData.duration_sec)
+            : activeFilmIr?.avgShotLengthSec
+              ? Number(activeFilmIr.avgShotLengthSec)
+              : 3.0,
           emotion: shotData.emotion || activeFilmIr?.emotionalTarget || null,
           dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
           emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
@@ -372,6 +409,7 @@ export async function processCE11ShotGeneratorJob(
         episodeId: job.episodeId, // Propagate optional context
         isVerification,
         priority: 1, // Lower priority than generation
+        dedupeKey: `ce11_shot_render_${novelSceneId}_${shotMeta.id}_${traceId}`,
         payload: {
           shotId: shotMeta.id,
           projectId,
@@ -387,20 +425,32 @@ export async function processCE11ShotGeneratorJob(
       for (let i = 0; i < renderJobs.length; i += BATCH) {
         const batchJobs = renderJobs.slice(i, i + BATCH);
         await Promise.all(
-          batchJobs.map((jobData) =>
-            prisma.shotJob.create({
+          batchJobs.map(async (jobData) => {
+            const existingRenderJob = await prisma.shotJob.findUnique({
+              where: { dedupeKey: jobData.dedupeKey },
+              select: { id: true },
+            });
+            if (existingRenderJob) {
+              return existingRenderJob;
+            }
+
+            return prisma.shotJob.create({
               data: {
                 ...jobData,
                 engineBinding: {
                   create: {
                     engineKey: process.env.DEFAULT_FUSION_ENGINE || 'ce07_fusion_sdxl',
-                    engine: { connect: { engineKey: process.env.DEFAULT_FUSION_ENGINE || 'ce07_fusion_sdxl' } },
+                    engine: {
+                      connect: {
+                        engineKey: process.env.DEFAULT_FUSION_ENGINE || 'ce07_fusion_sdxl',
+                      },
+                    },
                     status: 'BOUND',
                   },
                 },
               } as any,
-            })
-          )
+            });
+          })
         );
       }
 
