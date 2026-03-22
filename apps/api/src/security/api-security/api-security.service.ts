@@ -93,7 +93,12 @@ export class ApiSecurityService {
   }
 
   private isLocalDevWorkerApiKey(apiKey: string): boolean {
-    return apiKey === 'ak_worker_dev_0000000000000000';
+    const configuredWorkerApiKey = process.env.WORKER_API_KEY?.trim();
+    return (
+      process.env.NODE_ENV === 'development' &&
+      !!configuredWorkerApiKey &&
+      apiKey === configuredWorkerApiKey
+    );
   }
 
   private shouldAllowApiKeyPgFallback(): boolean {

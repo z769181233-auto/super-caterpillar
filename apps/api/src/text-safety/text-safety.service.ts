@@ -194,9 +194,9 @@ export class TextSafetyService {
 
       return outcome;
     } catch (error) {
-      // Fail-safe: 自动降级为 PASS
+      // Fail-closed: any internal error becomes BLOCK
       this.logger.error(
-        `TextSafetyService.sanitize FAILED, fallback to PASS. Error: ${error.message}`,
+        `TextSafetyService.sanitize FAILED, fallback to BLOCK. Error: ${error.message}`,
         error.stack
       );
 
@@ -214,13 +214,13 @@ export class TextSafetyService {
       }
 
       // Metrics
-      TextSafetyMetrics.recordDecision('PASS'); // Fail-safe counts as PASS for external flow
+      TextSafetyMetrics.recordDecision('BLOCK');
       TextSafetyMetrics.recordLatency(Date.now() - start);
 
       return {
-        decision: 'PASS',
-        riskLevel: 'low',
-        sanitizedText: inputText, // Return original text on failure (or maybe partially sanitized if we wanted to risk it, but original is safer here to avoid data loss)
+        decision: 'BLOCK',
+        riskLevel: 'critical',
+        sanitizedText: '',
         sanitizedDigest: 'FAILSAFE',
         flags: ['FAILSAFE_TRIGGERED'],
         reasons: ['Internal error during sanitization'],

@@ -3,14 +3,7 @@ import { createHash, createHmac, randomUUID } from 'crypto';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 function requireEnv(name: string): string {
-  const fallbackValues: Record<string, string | undefined> = {
-    WORKER_API_KEY: process.env.WORKER_API_KEY || 'ak_worker_dev_0000000000000000',
-    HMAC_SECRET_KEY:
-      process.env.HMAC_SECRET_KEY ||
-      process.env.WORKER_API_SECRET ||
-      'sk_worker_dev_8cd1350dca488c7cfc1a2c970b65a2c8',
-  };
-  const value = process.env[name] || fallbackValues[name];
+  const value = process.env[name];
   if (!value) {
     throw new Error(`Missing required env: ${name}`);
   }

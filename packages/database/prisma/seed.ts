@@ -353,9 +353,13 @@ async function main() {
 
   // ========== API Keys Seed: Worker Key ==========
   process.stdout.write(util.format('🌱 Seeding API Keys...') + '\n');
-  const workerApiKey = 'ak_worker_dev_0000000000000000';
+  const workerApiKey = process.env.WORKER_API_KEY;
   const hmacSecret =
     process.env.HMAC_SECRET_KEY || process.env.WORKER_API_SECRET || process.env.API_SECRET_KEY;
+
+  if (!workerApiKey) {
+    throw new Error('SEED_WORKER_API_KEY_MISSING: set WORKER_API_KEY for seeding worker key');
+  }
 
   if (!hmacSecret) {
     throw new Error('SEED_HMAC_SECRET_MISSING: set HMAC_SECRET_KEY for seeding worker secret');
