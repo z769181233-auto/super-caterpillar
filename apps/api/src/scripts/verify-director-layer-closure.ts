@@ -123,7 +123,7 @@ async function main() {
 
     const gateResults = await client.query(
       `
-        SELECT gate_verdict, created_at
+        SELECT gate_verdict, created_at, gate_details
         FROM content_gate_results
         WHERE scene_id = $1
         ORDER BY created_at DESC
@@ -167,6 +167,14 @@ async function main() {
         typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
           ? activeContinuityState.rows[0].state_data.lifecycleStage
           : null,
+      activeContinuityTransitionType:
+        typeof activeContinuityState.rows[0]?.state_data?.transitionType === 'string'
+          ? activeContinuityState.rows[0].state_data.transitionType
+          : null,
+      activeContinuityPreviousSource:
+        typeof activeContinuityState.rows[0]?.state_data?.previousSource === 'string'
+          ? activeContinuityState.rows[0].state_data.previousSource
+          : null,
       activeContinuityFreshness: deriveFreshness(activeContinuityState.rows[0]?.updated_at),
       contentGateResultCount: gateResults.rows.length,
     latestGateVerdict: gateResults.rows[0]?.gate_verdict ?? null,
@@ -182,6 +190,18 @@ async function main() {
         : typeof latestPublishedDirectorLayer?.publishAction === 'string'
           ? latestPublishedDirectorLayer.publishAction
         : null,
+    latestPublishEligibility:
+      typeof gateResults.rows[0]?.gate_details?.publishEligibility === 'string'
+        ? gateResults.rows[0].gate_details.publishEligibility
+        : typeof latestPublishedDirectorLayer?.publishEligibility === 'string'
+          ? latestPublishedDirectorLayer.publishEligibility
+          : null,
+    latestPolicyStage:
+      typeof gateResults.rows[0]?.gate_details?.policyStage === 'string'
+        ? gateResults.rows[0].gate_details.policyStage
+        : typeof latestPublishedDirectorLayer?.policyStage === 'string'
+          ? latestPublishedDirectorLayer.policyStage
+          : null,
     publishedVideoCount: publishVideos.rows.length,
     latestPublishedDirectorLayer,
   };

@@ -538,6 +538,9 @@ async function main() {
           gateReason: 'bootstrap_without_media_signals',
           gatePolicyLevel: 'WARN',
           publishAction: 'REQUIRE_REVIEW',
+          publishEligibility: 'REVIEWABLE',
+          reviewRequired: true,
+          policyStage: 'REVIEW_GATE',
           thresholds: {
             pass: 0.7,
             warn: 0.55,
@@ -564,6 +567,9 @@ async function main() {
           gateReason: 'bootstrap_without_media_signals',
           gatePolicyLevel: 'WARN',
           publishAction: 'REQUIRE_REVIEW',
+          publishEligibility: 'REVIEWABLE',
+          reviewRequired: true,
+          policyStage: 'REVIEW_GATE',
           thresholds: {
             pass: 0.7,
             warn: 0.55,
@@ -736,6 +742,9 @@ async function main() {
                 'gateReason', cgr.gate_details->>'gateReason',
                 'gatePolicyLevel', cgr.gate_details->>'gatePolicyLevel',
                 'publishAction', cgr.gate_details->>'publishAction',
+                'publishEligibility', cgr.gate_details->>'publishEligibility',
+                'reviewRequired', COALESCE((cgr.gate_details->>'reviewRequired')::boolean, true),
+                'policyStage', cgr.gate_details->>'policyStage',
                 'gateThresholds', cgr.gate_details->'thresholds',
                 'assetStorageKey', a."storageKey",
                 'assetCreatedByJobId', a."createdByJobId",
@@ -777,7 +786,10 @@ async function main() {
                     'assetStorageKey', $3::text,
                     'assetCreatedByJobId', $4::text,
                     'hlsPlaylistUrl', $5::text,
-                    'signedUrl', $6::text
+                    'signedUrl', $6::text,
+                    'publishEligibility', 'REVIEWABLE',
+                    'reviewRequired', true,
+                    'policyStage', 'REVIEW_GATE'
                   )
               ),
             "updatedAt" = NOW()

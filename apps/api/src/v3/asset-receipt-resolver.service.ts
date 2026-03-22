@@ -18,6 +18,9 @@ export interface V3AssetReceipt {
     threshold_profile: string | null;
     gate_policy_level: string | null;
     publish_action: string | null;
+    publish_eligibility: string | null;
+    review_required: boolean | null;
+    policy_stage: string | null;
     shot_planner_rule_set_version: string | null;
     shot_planner_matched_rule_ids: string[] | null;
     planner_version: string | null;
@@ -151,6 +154,12 @@ export class AssetReceiptResolverService {
             threshold_profile: directorLayer.thresholdProfile ?? null,
             gate_policy_level: directorLayer.gatePolicyLevel ?? null,
             publish_action: directorLayer.publishAction ?? null,
+            publish_eligibility: directorLayer.publishEligibility ?? null,
+            review_required:
+              typeof directorLayer.reviewRequired === 'boolean'
+                ? directorLayer.reviewRequired
+                : null,
+            policy_stage: directorLayer.policyStage ?? null,
             shot_planner_rule_set_version: directorLayer.shotPlannerRuleSetVersion ?? null,
             shot_planner_matched_rule_ids: Array.isArray(directorLayer.shotPlannerMatchedRuleIds)
               ? directorLayer.shotPlannerMatchedRuleIds

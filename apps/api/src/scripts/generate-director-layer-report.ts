@@ -48,6 +48,8 @@ type SceneEvidenceRow = {
   activeContinuityLocked: boolean;
   activeContinuityResolutionMode: string | null;
   activeContinuityLifecycleStage: string | null;
+  activeContinuityTransitionType: string | null;
+  activeContinuityPreviousSource: string | null;
   activeContinuityFreshness: string | null;
   continuityLockCount: number;
   continuityOverrideCount: number;
@@ -58,6 +60,8 @@ type SceneEvidenceRow = {
   latestThresholdProfile: string | null;
   latestGatePolicyLevel: string | null;
   latestPublishAction: string | null;
+  latestPublishEligibility: string | null;
+  latestPolicyStage: string | null;
   latestEvidenceRef: string | null;
   latestPublishDirectorLayer: Record<string, unknown> | null;
   verdict: 'PASS' | 'FAIL';
@@ -162,8 +166,8 @@ async function main() {
     lines.push(`- Profile: ${profile}`);
     lines.push(`- Total Scenes: ${scenes.rows.length}`);
     lines.push('');
-    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Active State | Lifecycle | Freshness | Locks | Overrides | Gate | Publish | Verdict |');
-    lines.push('|---|---:|---:|---:|---:|---|---|---|---:|---:|---:|---:|---|');
+    lines.push('| Scene | Film IR | Shots | Shot Plan | Continuity | Active State | Lifecycle | Transition | Freshness | Locks | Overrides | Gate | Publish | Verdict |');
+    lines.push('|---|---:|---:|---:|---:|---|---|---|---|---:|---:|---:|---:|---|');
     const sceneEvidenceRows: SceneEvidenceRow[] = [];
 
     for (const scene of scenes.rows) {
@@ -278,6 +282,10 @@ async function main() {
           typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
             ? String(activeContinuityState.rows[0]?.state_data?.lifecycleStage)
             : 'NONE'
+        } | ${
+          typeof activeContinuityState.rows[0]?.state_data?.transitionType === 'string'
+            ? String(activeContinuityState.rows[0]?.state_data?.transitionType)
+            : 'NONE'
         } | ${deriveFreshness(activeContinuityState.rows[0]?.updated_at) || 'UNKNOWN'} | ${Number(continuityLockCount.rows[0]?.count ?? 0)} | ${Number(
           continuityOverrideCount.rows[0]?.count ?? 0,
         )} | ${Number(gateCount.rows[0]?.count ?? 0)} | ${Number(
@@ -302,6 +310,14 @@ async function main() {
         activeContinuityLifecycleStage:
           typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
             ? (activeContinuityState.rows[0]?.state_data?.lifecycleStage as string)
+            : null,
+        activeContinuityTransitionType:
+          typeof activeContinuityState.rows[0]?.state_data?.transitionType === 'string'
+            ? (activeContinuityState.rows[0]?.state_data?.transitionType as string)
+            : null,
+        activeContinuityPreviousSource:
+          typeof activeContinuityState.rows[0]?.state_data?.previousSource === 'string'
+            ? (activeContinuityState.rows[0]?.state_data?.previousSource as string)
             : null,
         activeContinuityFreshness: deriveFreshness(activeContinuityState.rows[0]?.updated_at),
         continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
@@ -328,7 +344,19 @@ async function main() {
             ? (latestGate.rows[0]?.gate_details?.publishAction as string)
             : typeof latestPublish.rows[0]?.metadata?.directorLayer?.publishAction === 'string'
               ? (latestPublish.rows[0]?.metadata?.directorLayer?.publishAction as string)
-            : null,
+              : null,
+        latestPublishEligibility:
+          typeof latestGate.rows[0]?.gate_details?.publishEligibility === 'string'
+            ? (latestGate.rows[0]?.gate_details?.publishEligibility as string)
+            : typeof latestPublish.rows[0]?.metadata?.directorLayer?.publishEligibility === 'string'
+              ? (latestPublish.rows[0]?.metadata?.directorLayer?.publishEligibility as string)
+              : null,
+        latestPolicyStage:
+          typeof latestGate.rows[0]?.gate_details?.policyStage === 'string'
+            ? (latestGate.rows[0]?.gate_details?.policyStage as string)
+            : typeof latestPublish.rows[0]?.metadata?.directorLayer?.policyStage === 'string'
+              ? (latestPublish.rows[0]?.metadata?.directorLayer?.policyStage as string)
+              : null,
         latestEvidenceRef: latestGate.rows[0]?.evidence_ref ?? null,
         latestPublishDirectorLayer: latestPublish.rows[0]?.metadata?.directorLayer ?? null,
         verdict,
@@ -358,6 +386,16 @@ async function main() {
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
+      publishEligibility: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.latestPublishEligibility || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      policyStages: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.latestPolicyStage || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
       gateReasons: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
         const key = row.latestGateReason || 'UNKNOWN';
         acc[key] = (acc[key] || 0) + 1;
@@ -375,6 +413,16 @@ async function main() {
       }, {}),
       continuityLifecycleStages: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
         const key = row.activeContinuityLifecycleStage || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      continuityTransitionTypes: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.activeContinuityTransitionType || 'UNKNOWN';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {}),
+      continuityPreviousSources: sceneEvidenceRows.reduce<Record<string, number>>((acc, row) => {
+        const key = row.activeContinuityPreviousSource || 'UNKNOWN';
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {}),
@@ -441,10 +489,14 @@ async function main() {
     lines.push(`- Threshold Profiles: ${JSON.stringify(aggregate.thresholdProfiles)}`);
     lines.push(`- Gate Policy Levels: ${JSON.stringify(aggregate.gatePolicyLevels)}`);
     lines.push(`- Publish Actions: ${JSON.stringify(aggregate.publishActions)}`);
+    lines.push(`- Publish Eligibility: ${JSON.stringify(aggregate.publishEligibility)}`);
+    lines.push(`- Policy Stages: ${JSON.stringify(aggregate.policyStages)}`);
     lines.push(`- Gate Reasons: ${JSON.stringify(aggregate.gateReasons)}`);
     lines.push(`- Continuity Sources: ${JSON.stringify(aggregate.continuitySources)}`);
     lines.push(`- Continuity Resolution Modes: ${JSON.stringify(aggregate.continuityResolutionModes)}`);
     lines.push(`- Continuity Lifecycle Stages: ${JSON.stringify(aggregate.continuityLifecycleStages)}`);
+    lines.push(`- Continuity Transition Types: ${JSON.stringify(aggregate.continuityTransitionTypes)}`);
+    lines.push(`- Continuity Previous Sources: ${JSON.stringify(aggregate.continuityPreviousSources)}`);
     lines.push(`- Continuity Freshness: ${JSON.stringify(aggregate.continuityFreshness)}`);
     lines.push(`- Coverage Roles: ${JSON.stringify(aggregate.coverageRoles)}`);
     lines.push(`- Rhythm Classes: ${JSON.stringify(aggregate.rhythmClasses)}`);

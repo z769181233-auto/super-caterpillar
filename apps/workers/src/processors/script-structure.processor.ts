@@ -407,6 +407,21 @@ export async function processContinuityAuditJob(
       : latestOverride
         ? 'OVERRIDE_APPLIED'
         : 'AUTO';
+    const transitionType = activeLock
+      ? existingContinuityState
+        ? existingContinuityState.source === 'STATE_LOCK'
+          ? 'LOCKED_STABLE'
+          : 'LOCK_TAKEN'
+        : 'LOCK_INITIAL'
+      : latestOverride
+        ? existingContinuityState
+          ? existingContinuityState.source === 'STATE_OVERRIDE'
+            ? 'OVERRIDE_REFRESHED'
+            : 'OVERRIDE_APPLIED'
+          : 'OVERRIDE_INITIAL'
+        : existingContinuityState
+          ? 'AUTO_REFRESH'
+          : 'AUTO_INITIAL';
     const lifecycleStage = activeLock
       ? 'LOCKED_CURRENT'
       : latestOverride
@@ -450,6 +465,7 @@ export async function processContinuityAuditJob(
         stateData: {
           ...effectiveStateData,
           resolutionMode,
+          transitionType,
           lifecycleStage,
           activeSource: effectiveSource,
           lockId: activeLock?.id ?? null,
@@ -473,6 +489,7 @@ export async function processContinuityAuditJob(
         stateData: {
           ...effectiveStateData,
           resolutionMode,
+          transitionType,
           lifecycleStage,
           activeSource: effectiveSource,
           lockId: activeLock?.id ?? null,
@@ -503,6 +520,7 @@ export async function processContinuityAuditJob(
       snapshotData: {
         ...effectiveStateData,
         resolutionMode,
+        transitionType,
         lifecycleStage,
         activeSource: effectiveSource,
         lockId: activeLock?.id ?? null,

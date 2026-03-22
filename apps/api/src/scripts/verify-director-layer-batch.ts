@@ -186,6 +186,14 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
       typeof activeContinuityState.rows[0]?.state_data?.lifecycleStage === 'string'
         ? (activeContinuityState.rows[0]?.state_data?.lifecycleStage as string)
         : null,
+    activeContinuityTransitionType:
+      typeof activeContinuityState.rows[0]?.state_data?.transitionType === 'string'
+        ? (activeContinuityState.rows[0]?.state_data?.transitionType as string)
+        : null,
+    activeContinuityPreviousSource:
+      typeof activeContinuityState.rows[0]?.state_data?.previousSource === 'string'
+        ? (activeContinuityState.rows[0]?.state_data?.previousSource as string)
+        : null,
     activeContinuityFreshness: deriveFreshness(activeContinuityState.rows[0]?.updated_at),
     continuityLockCount: Number(continuityLockCount.rows[0]?.count ?? 0),
     continuityOverrideCount: Number(continuityOverrideCount.rows[0]?.count ?? 0),
@@ -211,6 +219,18 @@ async function verifyScene(client: PgClient, scene: SceneRow) {
         : typeof latestPublishedDirectorLayer?.publishAction === 'string'
           ? (latestPublishedDirectorLayer.publishAction as string)
         : null,
+    latestPublishEligibility:
+      typeof gateResults.rows[0]?.gate_details?.publishEligibility === 'string'
+        ? (gateResults.rows[0]?.gate_details?.publishEligibility as string)
+        : typeof latestPublishedDirectorLayer?.publishEligibility === 'string'
+          ? (latestPublishedDirectorLayer.publishEligibility as string)
+          : null,
+    latestPolicyStage:
+      typeof gateResults.rows[0]?.gate_details?.policyStage === 'string'
+        ? (gateResults.rows[0]?.gate_details?.policyStage as string)
+        : typeof latestPublishedDirectorLayer?.policyStage === 'string'
+          ? (latestPublishedDirectorLayer.policyStage as string)
+          : null,
     publishedVideoCount: publishVideos.rows.length,
     latestPublishedDirectorLayer,
   };

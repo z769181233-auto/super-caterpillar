@@ -197,6 +197,18 @@ export class PublishedVideoService {
                   typeof gateDetails?.publishAction === 'string'
                     ? gateDetails.publishAction
                     : null,
+                publishEligibility:
+                  typeof gateDetails?.publishEligibility === 'string'
+                    ? gateDetails.publishEligibility
+                    : null,
+                reviewRequired:
+                  typeof gateDetails?.reviewRequired === 'boolean'
+                    ? gateDetails.reviewRequired
+                    : null,
+                policyStage:
+                  typeof gateDetails?.policyStage === 'string'
+                    ? gateDetails.policyStage
+                    : null,
                 gatePolicyStatus:
                   publishEvidence?.gateVerdict === 'PASS'
                     ? 'publishable'

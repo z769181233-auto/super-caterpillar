@@ -156,6 +156,19 @@ function resolveGateDecision(params: {
         : gateVerdict === 'WARN'
           ? 'REQUIRE_REVIEW'
           : 'BLOCK_PUBLISH',
+    publishEligibility:
+      gateVerdict === 'PASS'
+        ? 'ELIGIBLE'
+        : gateVerdict === 'WARN'
+          ? 'REVIEWABLE'
+          : 'INELIGIBLE',
+    reviewRequired: gateVerdict !== 'PASS',
+    policyStage:
+      gateVerdict === 'PASS'
+        ? 'READY'
+        : gateVerdict === 'WARN'
+          ? 'REVIEW_GATE'
+          : 'BLOCKING_GATE',
   });
 
   if (renderScore === 0 || audioScore === 0) {
@@ -412,6 +425,9 @@ export async function processContentJudgeJob(
           gateReason: gateDecision.reason,
           gatePolicyLevel: gateDecision.gatePolicyLevel,
           publishAction: gateDecision.publishAction,
+          publishEligibility: gateDecision.publishEligibility,
+          reviewRequired: gateDecision.reviewRequired,
+          policyStage: gateDecision.policyStage,
           shotPlannerRuleSetVersion: ruleSetVersion,
           shotPlannerMatchedRules: matchedRules,
           directorPlan: planningContext.directorPlan,
