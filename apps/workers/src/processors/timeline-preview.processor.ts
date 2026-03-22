@@ -335,36 +335,27 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
 
   // Stage 4: Trigger CE09_MEDIA_SECURITY with AssetId
   // Unified Entry Point
-  const existingSecurityJob = await prisma.shotJob.findFirst({
-    where: {
+  const ce09DedupeKey = `ce09_${pipelineRunId}_${asset.id}`;
+  await prisma.shotJob.upsert({
+    where: { dedupeKey: ce09DedupeKey },
+    update: {},
+    create: {
+      dedupeKey: ce09DedupeKey,
       type: JobType.CE09_MEDIA_SECURITY,
+      organizationId,
+      projectId,
+      episodeId: job.episodeId || timeline.episodeId,
+      sceneId: job.sceneId || timeline.sceneId,
+      shotId: timeline.shots[0].shotId, // 可选，兼容仍按 shotId 查询的旧入口
       payload: {
-        path: ['pipelineRunId'],
-        equals: pipelineRunId,
+        assetId: asset.id, // Primary Entry Point
+        videoAssetStorageKey: finalOutputRelative, // Legacy/Backup
+        pipelineRunId,
+        traceId,
+        projectId,
       },
     },
-    orderBy: { createdAt: 'desc' },
   });
-
-  if (!existingSecurityJob) {
-    await prisma.shotJob.create({
-      data: {
-        type: JobType.CE09_MEDIA_SECURITY,
-        organizationId,
-        projectId,
-        episodeId: job.episodeId || timeline.episodeId,
-        sceneId: job.sceneId || timeline.sceneId,
-        shotId: timeline.shots[0].shotId, // 可选，兼容仍按 shotId 查询的旧入口
-        payload: {
-          assetId: asset.id, // Primary Entry Point
-          videoAssetStorageKey: finalOutputRelative, // Legacy/Backup
-          pipelineRunId,
-          traceId,
-          projectId,
-        },
-      },
-    });
-  }
 
   // Stage 5: Metrics & Audit (Commercial Grade)
   const latencyMs = Date.now() - startTime;

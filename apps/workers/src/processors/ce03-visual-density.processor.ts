@@ -138,39 +138,31 @@ export async function processCE03VisualDensityJob(
     // 5. Orchestration (Trigger CE04)
     // S4-2 Requirement: CE03 -> CE04
     if (job.shotId && projectId && jobOrgId) {
-      // Idempotency Check
-      const existingCE04 = await prisma.shotJob.findFirst({
-        where: {
+      const ce04RunKey = pipelineRunId || traceId || fullJob.traceId || job.id;
+      const ce04DedupeKey = `ce04_visual_enrichment_${job.shotId}_${ce04RunKey}`;
+
+      const ce04Job = await prisma.shotJob.upsert({
+        where: { dedupeKey: ce04DedupeKey },
+        update: {},
+        create: {
+          dedupeKey: ce04DedupeKey,
           projectId,
           organizationId: jobOrgId,
+          episodeId: episodeId,
+          sceneId: sceneId,
           shotId: job.shotId,
           type: 'CE04_VISUAL_ENRICHMENT',
+          status: 'PENDING',
+          payload: {
+            rootJobId: job.payload?.rootJobId,
+            precedingJobId: job.id,
+            pipelineRunId,
+            traceId,
+          },
         },
-        orderBy: { createdAt: 'desc' },
       });
 
-      if (!existingCE04) {
-        const ce04Job = await prisma.shotJob.create({
-          data: {
-            projectId,
-            organizationId: jobOrgId,
-            episodeId: episodeId,
-            sceneId: sceneId,
-            shotId: job.shotId,
-            type: 'CE04_VISUAL_ENRICHMENT',
-            status: 'PENDING',
-            payload: {
-              rootJobId: job.payload?.rootJobId,
-              precedingJobId: job.id,
-              pipelineRunId,
-              traceId,
-            },
-          },
-        });
-        logger.log(`[CE03] Spawned CE04: ${ce04Job.id}`);
-      } else {
-        logger.log(`[CE03] CE04 already exists for run ${pipelineRunId}, skipping spawn.`);
-      }
+      logger.log(`[CE03] Ensured CE04 job: ${ce04Job.id}`);
     }
 
     return {

@@ -170,12 +170,14 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
     const renderJobs: string[] = [];
     for (const shotId of shotIds) {
       try {
+        const renderDedupeKey = `stage1_shot_render_${shotId}_${pipelineRunId}`;
         const response = await apiClient.createJob(
           {
             jobType: JobType.SHOT_RENDER,
             traceId,
             projectId,
             organizationId,
+            dedupeKey: renderDedupeKey,
             payload: {
               pipelineRunId,
               shotId,
