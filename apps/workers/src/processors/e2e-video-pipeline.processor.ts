@@ -91,36 +91,13 @@ export async function processE2EVideoPipelineJob(
 
   try {
     // 2. 幂等检查: 是否已经存在属于该 pipelineRunId 的 CE06 Job
-    // 关键修正: 必须加上 projectId, organizationId 隔离
-
-    // 获取 OrgId (后面 fallback 逻辑里有更详细获取，但这里幂等查询需要)
-    const initialOrgId = (job as any).organizationId;
-
-    const idempotencyWhere: any = {
-      type: JobType.CE06_NOVEL_PARSING,
-      projectId,
-      payload: {
-        path: ['pipelineRunId'],
-        equals: pipelineRunId,
-      },
-    };
-
-    if (initialOrgId) {
-      idempotencyWhere.organizationId = initialOrgId;
-    }
-
-    const existingCE06 = await prisma.shotJob.findFirst({
-      where: idempotencyWhere,
-      select: { id: true },
-      orderBy: { createdAt: 'desc' },
-    });
     const existingCE06ByDedupe = await prisma.shotJob.findUnique({
       where: { dedupeKey: ce06DedupeKey },
       select: { id: true },
     });
 
-    if (existingCE06 || existingCE06ByDedupe) {
-      const existingId = existingCE06?.id || existingCE06ByDedupe!.id;
+    if (existingCE06ByDedupe) {
+      const existingId = existingCE06ByDedupe.id;
       logStructured('info', {
         action: 'PIPELINE_IDEMPOTENT_HIT',
         jobId,

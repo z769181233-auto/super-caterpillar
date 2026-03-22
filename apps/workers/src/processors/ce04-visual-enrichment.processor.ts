@@ -139,22 +139,12 @@ export async function processCE04VisualEnrichmentJob(
     const validPipelineRunId = pipelineRunId || fullJob.traceId || traceId || `run_${job.id}`;
     const renderDedupeKey = `ce04_shot_render_${shotId}_${validPipelineRunId}`;
 
-    const existingRender = await prisma.shotJob.findFirst({
-      where: {
-        projectId,
-        shotId,
-        type: 'SHOT_RENDER',
-        payload: { path: ['pipelineRunId'], equals: validPipelineRunId },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
     const existingRenderByDedupe = await prisma.shotJob.findUnique({
       where: { dedupeKey: renderDedupeKey },
       select: { id: true },
     });
 
-    if (!existingRender && !existingRenderByDedupe) {
+    if (!existingRenderByDedupe) {
       await prisma.shotJob.create({
         data: {
           projectId,

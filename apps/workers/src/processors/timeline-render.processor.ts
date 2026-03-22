@@ -566,7 +566,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     const hlsArgs = [
       '-i',
       finalOutputPath,
-      '-codec:',
+      '-c',
       'copy',
       '-start_number',
       '0',

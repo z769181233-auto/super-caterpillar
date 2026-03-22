@@ -194,11 +194,20 @@ export async function processScriptOutlineJob(
 
   const episodes = result.episodes || [];
   for (const ep of episodes) {
+    if (typeof ep.startChunkIndex !== 'number') {
+      throw new Error(`Episode ${ep.index} is missing startChunkIndex`);
+    }
+
     // P5-C HARDENING Fix: Fetch the EXACT chunk by chunkIndex to get correct offsets
-    const targetChunk =
-      (await prisma.storyChunk.findUnique({
-        where: { sourceId_chunkIndex: { sourceId, chunkIndex: ep.startChunkIndex } },
-      })) || previewChunks[0];
+    const targetChunk = await prisma.storyChunk.findUnique({
+      where: { sourceId_chunkIndex: { sourceId, chunkIndex: ep.startChunkIndex } },
+    });
+
+    if (!targetChunk) {
+      throw new Error(
+        `Missing exact chunk for sourceId=${sourceId}, chunkIndex=${ep.startChunkIndex}`
+      );
+    }
 
     const sourceRef = await prisma.storySourceRef.create({
       data: {
@@ -209,8 +218,21 @@ export async function processScriptOutlineJob(
       },
     });
 
-    await prisma.episode.create({
-      data: {
+    await prisma.episode.upsert({
+      where: {
+        projectId_index: {
+          projectId,
+          index: ep.index,
+        },
+      },
+      update: {
+        buildId,
+        name: ep.title,
+        summary: ep.summary,
+        sourceRefId: sourceRef.id,
+        status: 'pending',
+      },
+      create: {
         projectId,
         buildId,
         index: ep.index,
@@ -265,8 +287,23 @@ export async function processSceneSplitJob(ctx: ProcessorContext): Promise<Scrip
       },
     });
 
-    await prisma.scene.create({
-      data: {
+    await prisma.scene.upsert({
+      where: {
+        episodeId_sceneIndex: {
+          episodeId,
+          sceneIndex: sc.index,
+        },
+      },
+      update: {
+        projectId,
+        buildId,
+        title: sc.title,
+        locationSlug: sc.location,
+        summary: sc.summary,
+        status: 'PENDING',
+        sourceRefId: sceneSourceRef.id,
+      },
+      create: {
         projectId,
         episodeId,
         buildId,
@@ -323,8 +360,22 @@ export async function processShotSplitJob(ctx: ProcessorContext): Promise<Script
       },
     });
 
-    await prisma.shot.create({
-      data: {
+    await prisma.shot.upsert({
+      where: {
+        sceneId_index: {
+          sceneId,
+          index: shot.index,
+        },
+      },
+      update: {
+        buildId,
+        content: shot.content,
+        visualDescription: shot.visualDescription,
+        renderStatus: 'PENDING',
+        sourceRefId: shotSourceRef.id,
+        type: 'GENERATED',
+      },
+      create: {
         sceneId,
         buildId,
         index: shot.index,
