@@ -1,6 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException, forwardRef } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { JobService } from '../job/job.service';
 
 /**
  * Shot Director Service
@@ -16,7 +18,9 @@ export class ShotDirectorService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditLogService: AuditLogService
+    private readonly auditLogService: AuditLogService,
+    @Inject(forwardRef(() => JobService))
+    private readonly jobService: JobService
   ) {}
 
   async inpaint(shotId: string, userId?: string) {
@@ -124,124 +128,32 @@ export class ShotDirectorService {
         throw new Error(`Scene ${sceneId} has no generated assets to compose`);
       }
 
-      // 3. Create VIDEO_RENDER Job
-      // Since we need to access JobService, but it might be circular dependency if we inject it directly?
-      // ShotDirectorService is a higher level service? No, JobService is lower level.
-      // Ideally we should inject JobService.
-      // For now, I will create Job directly via Prisma to avoid refactoring dependency injection graph if complex.
-      // Wait, creating Job involves triggers? No, just DB insert and notifying worker.
-      // But JobService.create handles logic.
-      // Let's rely on JobService.
-      // I need to add JobService to constructor.
-      // But I cannot easily change constructor in replace_file_content if I don't see it.
-      // I saw constructor in Step 22.
-      // I will modify the whole class or just use Prisma if simple.
-      // Using JobService is better for consistency (Task creation etc).
-
-      // Actually, `JobService` creates `ShotJob`. `VIDEO_RENDER` is a `ShotJob`?
-      // Yes, enum `JobType` has `VIDEO_RENDER`.
-      // But `ShotJob` table has mandatory `shotId`.
-      // `VIDEO_RENDER` is usually for a Scene or Episode.
-      // If it's for a Scene, `shotId` might be nullable?
-      // In `schema.prisma`:
-      // shotId         String
-      // shot           Shot         @relation("ShotJobs", fields: [shotId], references: [id])
-      // `shotId` is NOT optional.
-      // This is a schema limitation!
-      // Stage 8 "Video Assembly" implies we need to render a video for a Scene?
-      // If I use `ShotJob` for `VIDEO_RENDER`, I must attach it to a specific Shot.
-      // Or I create a "Video Job" table? No, reuse ShotJob if possible.
-      // Workaround: Attach `VIDEO_RENDER` job to the FIRST shot of the scene? Or a phantom shot?
-      // Or we modify schema to make shotId optional? (Too risky for now).
-      // Or we use `WorkerJob` directly? `WorkerJob` is for ephemeral tasks, but `ShotJob` is the main tracked entity.
-
-      // Let's use the first shot of the scene as the anchor.
+      // 3. Create VIDEO_RENDER Job through the shared job service.
       // And payload contains `sceneId`.
       const anchorShotId = scene.shots[0].id;
-
-      // Use Prisma directly to create job to avoid DI complexity in this edit chunk
-      // Use raw query or prisma client
-
-      // We need a Task first? JobService automatically creates Task.
-      // Manually creating Task + Job.
-
-      const finalOrganizationId = organizationId || scene.episode?.season?.project?.organizationId;
-      const finalProjectId = scene.episode?.season?.project?.id;
+      const finalProject = scene.episode?.season?.project;
+      const finalOrganizationId = organizationId || finalProject?.organizationId;
+      const finalProjectId = finalProject?.id;
 
       if (!finalOrganizationId || !finalProjectId) {
         throw new Error(`Cannot determine project/org for scene ${sceneId}`);
       }
 
-      const taskId = (
-        await this.prisma.task.create({
-          data: {
-            organizationId: finalOrganizationId,
-            projectId: finalProjectId,
-            type: 'VIDEO_RENDER',
-            status: 'PENDING',
-            payload: { sceneId, assetsCount: assets.length },
-          },
-        })
-      ).id;
-
-      const job = await this.prisma.shotJob.create({
-        data: {
-          organizationId: finalOrganizationId,
-          projectId: finalProjectId,
-          episodeId: scene.episodeId,
-          sceneId: scene.id,
-          shotId: anchorShotId, // Anchor to first shot
-          taskId: taskId,
-          type: 'VIDEO_RENDER',
-          status: 'PENDING',
-          payload: {
-            sceneId,
-            assets,
-            outputFormat: 'mp4',
-          },
-          retryCount: 0,
-          priority: 10,
-        },
-      });
-
-      // Bind Engine? VIDEO_RENDER uses 'ffmpeg' engine.
-      // We need to create binding or Worker won't pick it up (due to Stage 3-A logic: whereEngineBinding required).
-      // Need to bind a real engine 'ffmpeg_local'
-      // I need an Engine record for 'ffmpeg_local'.
-      // I'll ensure it exists or create it?
-      // Better: Worker logic `getAndMarkNextPendingJob` has:
-      // "Stage3-A: 只返回有 Engine 绑定的可执行 Job"
-      // So YES, I MUST bind an engine.
-
-      // Check if 'ffmpeg_local' engine exists
-      let engine = await this.prisma.engine.findUnique({ where: { engineKey: 'ffmpeg_local' } });
-      if (!engine) {
-        // Auto register ffmpeg engine on the fly (hacky but works for MVP)
-        engine = await this.prisma.engine.create({
-          data: {
-            code: 'ffmpeg_local',
-            name: 'FFmpeg Local Renderer',
-            type: 'local',
-            engineKey: 'ffmpeg_local',
-            adapterName: 'default_shot_render', // Reuse existing adapter or fallback
-            adapterType: 'local',
-            config: {},
-            isActive: true,
-          },
-        });
+      const effectiveUserId = userId || finalProject?.ownerId;
+      if (!effectiveUserId) {
+        throw new Error(`Cannot determine user for scene ${sceneId}`);
       }
 
-      await this.prisma.jobEngineBinding.create({
-        data: {
-          jobId: job.id,
-          engineId: engine.id,
-          engineKey: engine.engineKey,
-          status: 'BOUND',
-          metadata: { strategy: 'default' },
-        },
-      });
+      const traceId = `video_compose_${randomUUID()}`;
+      const job = await this.jobService.ensureVideoRenderJob(
+        anchorShotId,
+        assets,
+        traceId,
+        effectiveUserId,
+        finalOrganizationId
+      );
 
-      this.auditLogService.record({
+      await this.auditLogService.record({
         userId,
         action: 'VIDEO_RENDER_TRIGGERED',
         resourceType: 'job',
@@ -253,7 +165,7 @@ export class ShotDirectorService {
         success: true,
         data: {
           jobId: job.id,
-          status: 'PENDING',
+          status: job.status,
           assetsCount: assets.length,
         },
       };

@@ -803,6 +803,8 @@ export class JobService {
           isVerification: isVerification ?? false, // ✅ 关键修复：写入 isVerification
           payload: {
             shotId, // Explicitly include shotId in payload for Processor
+            projectId,
+            sceneId: shotHierarchy.scene.id,
             frameKeys,
             pipelineRunId: traceId, // EXECUTE-3 Fix: Ensure pipelineRunId is present
             fps: 24, // Default FPS
