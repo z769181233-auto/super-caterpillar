@@ -65,6 +65,7 @@ export async function processVideoRenderJob(
   const traceId = job.traceId || `trace-${jobId}`;
   const payload = isRecord(job.payload) ? job.payload : {};
   const pipelineRunId = getStringField(payload, 'pipelineRunId');
+  const projectId = getStringField(payload, 'projectId') ?? job.projectId;
 
   // 1. Root & Storage Resolver
   const storageRoot = workerConfig.storageRoot;
@@ -74,6 +75,9 @@ export async function processVideoRenderJob(
   const shotId = getStringField(payload, 'shotId');
   if (!shotId && !pipelineRunId)
     throw new Error(`[VIDEO_RENDER] shotId or pipelineRunId is required.`);
+  if (!projectId) {
+    throw new Error('[VIDEO_RENDER] projectId is required');
+  }
 
   if (PRODUCTION_MODE && shotId) {
     const shot = await prisma.shot.findUnique({
@@ -278,7 +282,7 @@ export async function processVideoRenderJob(
         },
       },
       create: {
-        projectId: job.projectId || 'system',
+        projectId,
         ownerType: AssetOwnerType.SHOT,
         ownerId,
         type: AssetType.VIDEO,
@@ -364,7 +368,7 @@ export async function processVideoRenderJob(
     await apiClient
       .postAuditLog({
         traceId,
-        projectId: job.projectId || 'system',
+        projectId,
         jobId,
         jobType: JobType.VIDEO_RENDER,
         engineKey: 'ffmpeg',
@@ -414,7 +418,6 @@ export async function processVideoRenderJob(
     // 7.2 Publish (Stage-1 Real Baseline)
     const shouldPublish = payload?.publish === true;
     if (shouldPublish) {
-      const projectId = getStringField(payload, 'projectId') || job.projectId;
       const episodeId = getStringField(payload, 'episodeId');
       if (!projectId || !episodeId) {
         throw new Error(`[VIDEO_RENDER] publish=true but missing projectId/episodeId`);
