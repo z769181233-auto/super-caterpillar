@@ -3,9 +3,9 @@ import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/share
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * PP05: 封面海报生成引擎
@@ -40,13 +40,29 @@ export class PP05PosterGenAdapter implements EngineAdapter {
     const outputDir = join(process.cwd(), 'storage/pp/posters');
     mkdirSync(outputDir, { recursive: true });
     const posterPath = join(outputDir, `${context.jobId}_poster.jpg`);
+    const titlePath = join(outputDir, `${context.jobId}_poster_title.txt`);
 
     // 使用 FFmpeg 生成一个带文字的真值海报
     const title = payload.title || 'Super Caterpillar';
-    const cmd = `ffmpeg -y -f lavfi -i color=c=navy:s=720x1080 -vf "drawtext=text='${title}':fontcolor=white:fontsize=64:x=(w-text_w)/2:y=(h-text_h)/2" -frames:v 1 "${posterPath}"`;
+    writeFileSync(titlePath, String(title).replace(/\r?\n/g, ' '), 'utf8');
+    const args = [
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'color=c=navy:s=720x1080',
+      '-vf',
+      `drawtext=textfile='${titlePath}':fontcolor=white:fontsize=64:x=(w-text_w)/2:y=(h-text_h)/2`,
+      '-frames:v',
+      '1',
+      posterPath,
+    ];
 
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', args);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (e) {
       writeFileSync(posterPath, 'error_generating_poster');
     }

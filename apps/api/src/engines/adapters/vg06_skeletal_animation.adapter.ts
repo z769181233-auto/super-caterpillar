@@ -4,9 +4,9 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * VG06: 骨骼动画引擎
@@ -69,7 +69,7 @@ export class VG06SkeletalAnimationAdapter extends VgBaseEngine {
 
     // 生成预览视频 (使用FFmpeg绘制骨架)
     const previewPath = join(outputDir, `${hash}_preview.mp4`);
-    this.generateAnimationPreview(animationData, previewPath, fps);
+    await this.generateAnimationPreview(animationData, previewPath, fps);
 
     return {
       animationDataUrl: `file://${dataPath}`,
@@ -208,14 +208,30 @@ export class VG06SkeletalAnimationAdapter extends VgBaseEngine {
   /**
    * 生成动画预览视频 (使用FFmpeg绘制骨架)
    */
-  private generateAnimationPreview(animationData: any, outputPath: string, fps: number): void {
+  private async generateAnimationPreview(
+    animationData: any,
+    outputPath: string,
+    fps: number
+  ): Promise<void> {
     // 简化版: 生成纯色视频作为placeholder
     // 实际生产中应该绘制骨架线框
     const duration = animationData.duration;
-    const cmd = `ffmpeg -y -f lavfi -i color=c=0x2a2a2a:s=512x512:r=${fps} -t ${duration} -pix_fmt yuv420p "${outputPath}"`;
-
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        `color=c=0x2a2a2a:s=512x512:r=${fps}`,
+        '-t',
+        String(duration),
+        '-pix_fmt',
+        'yuv420p',
+        outputPath,
+      ]);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (error) {
       // Fallback: 如果FFmpeg失败，创建空文件
       writeFileSync(outputPath, '');

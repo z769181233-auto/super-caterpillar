@@ -14,7 +14,7 @@ import { VG08AdvancedLightingAdapter } from './vg08_advanced_lighting.adapter';
 import { CE13PacingAnalyzerAdapter } from './ce13_pacing_analyzer.adapter';
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * Shot Render Router Adapter (Commercial Grade - Explicit Selection)
@@ -286,12 +286,18 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     const bytes = fs.statSync(targetMp4).size;
     let duration = renderMeta.duration_s || 2.0;
     try {
-      const durStr = execSync(
-        `ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "${targetMp4}"`
-      )
-        .toString()
-        .trim();
-      duration = parseFloat(durStr);
+      const durRes = await execAsync('ffprobe', [
+        '-v',
+        'error',
+        '-show_entries',
+        'format=duration',
+        '-of',
+        'default=nw=1:nk=1',
+        targetMp4,
+      ]);
+      if (durRes.code === 0) {
+        duration = parseFloat(durRes.stdout.trim());
+      }
     } catch (e) {
       /* fallback */
     }

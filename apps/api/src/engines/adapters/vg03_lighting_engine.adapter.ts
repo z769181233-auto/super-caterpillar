@@ -4,10 +4,10 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 import { vg03RealEngine } from '@scu/engines-vg03';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class VG03LightingEngineAdapter extends VgBaseEngine {
@@ -51,8 +51,17 @@ export class VG03LightingEngineAdapter extends VgBaseEngine {
     }
 
     const filter = result.filter_string || 'null';
-    const cmd = `ffmpeg -y ${inputArg} -vf "${filter}" -frames:v 1 "${outputPath}"`;
-    execSync(cmd, { stdio: 'ignore' });
+    const args = ['-y'];
+    if (inputArg.startsWith('-f lavfi')) {
+      args.push('-f', 'lavfi', '-i', 'color=c=gray:s=512x512');
+    } else {
+      args.push('-i', sourcePath);
+    }
+    args.push('-vf', filter, '-frames:v', '1', outputPath);
+    const res = await execAsync('ffmpeg', args);
+    if (res.code !== 0) {
+      throw new Error(`VG03 lighting render failed: ${res.stderr}`);
+    }
 
     return {
       assetUrl: `file://${outputPath}`,

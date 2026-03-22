@@ -4,9 +4,9 @@ import { AuBaseEngine } from '../base/au_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class AU03SFXGenAdapter extends AuBaseEngine {
@@ -29,9 +29,17 @@ export class AU03SFXGenAdapter extends AuBaseEngine {
     mkdirSync(outputDir, { recursive: true });
     const outputPath = join(outputDir, `${hash}.wav`);
 
-    // FFmpeg: 生成噪声模拟音效
-    const cmd = `ffmpeg -y -f lavfi -i "anoisesrc=d=1:c=white" "${outputPath}"`;
-    execSync(cmd, { stdio: 'ignore' });
+    const res = await execAsync('ffmpeg', [
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'anoisesrc=d=1:c=white',
+      outputPath,
+    ]);
+    if (res.code !== 0) {
+      throw new Error(`AU03 sfx failed: ${res.stderr}`);
+    }
 
     return {
       assetUrl: `file://${outputPath}`,

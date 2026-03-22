@@ -4,9 +4,9 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * VG11: 粒子特效引擎
@@ -59,7 +59,7 @@ export class VG11ParticleEffectsAdapter extends VgBaseEngine {
 
     // 生成预览图 (FFmpeg)
     const previewPath = join(outputDir, `${hash}_preview.png`);
-    this.generateParticlePreview(previewPath, effectType);
+    await this.generateParticlePreview(previewPath, effectType);
 
     return {
       vfxSystemUrl: `file://${systemPath}`,
@@ -71,16 +71,28 @@ export class VG11ParticleEffectsAdapter extends VgBaseEngine {
     };
   }
 
-  private generateParticlePreview(outputPath: string, effectType: string): void {
+  private async generateParticlePreview(outputPath: string, effectType: string): Promise<void> {
     let color = 'orange'; // default for fire
     if (effectType === 'smoke') color = 'gray';
     if (effectType === 'spark') color = 'white';
     if (effectType === 'magic') color = 'purple';
 
-    const cmd = `ffmpeg -y -f lavfi -i color=c=${color}:s=256x256 -vf "noise=alls=50:allf=t+p" -frames:v 1 "${outputPath}"`;
-
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        `color=c=${color}:s=256x256`,
+        '-vf',
+        'noise=alls=50:allf=t+p',
+        '-frames:v',
+        '1',
+        outputPath,
+      ]);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (error) {
       writeFileSync(outputPath, '');
     }

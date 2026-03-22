@@ -4,9 +4,9 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * VG07: 面部表情引擎
@@ -77,7 +77,7 @@ export class VG07FacialExpressionAdapter extends VgBaseEngine {
 
     // 生成预览图 (单帧表情可视化)
     const previewPath = join(outputDir, `${hash}_preview.png`);
-    this.generateExpressionPreview(expressionData, previewPath, emotion);
+    await this.generateExpressionPreview(expressionData, previewPath, emotion);
 
     return {
       expressionDataUrl: `file://${dataPath}`,
@@ -242,11 +242,11 @@ export class VG07FacialExpressionAdapter extends VgBaseEngine {
   /**
    * 生成表情预览图 (使用FFmpeg绘制简单表情符号)
    */
-  private generateExpressionPreview(
+  private async generateExpressionPreview(
     expressionData: any,
     outputPath: string,
     emotion: string
-  ): void {
+  ): Promise<void> {
     // 根据情感选择颜色
     const colors: Record<string, string> = {
       happy: 'yellow',
@@ -260,10 +260,20 @@ export class VG07FacialExpressionAdapter extends VgBaseEngine {
     const color = colors[emotion] || 'gray';
 
     // 使用FFmpeg生成纯色占位图
-    const cmd = `ffmpeg -y -f lavfi -i color=c=${color}:s=256x256 -frames:v 1 "${outputPath}"`;
-
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        `color=c=${color}:s=256x256`,
+        '-frames:v',
+        '1',
+        outputPath,
+      ]);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (error) {
       // Fallback: 创建空文件
       writeFileSync(outputPath, '');

@@ -4,9 +4,9 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * VG12: 动态灯光组引擎
@@ -62,7 +62,7 @@ export class VG12DynamicLightingRigAdapter extends VgBaseEngine {
 
     // 生成预览图 (FFmpeg)
     const previewPath = join(outputDir, `${hash}_rig_preview.png`);
-    this.generateRigPreview(previewPath, payload.mood);
+    await this.generateRigPreview(previewPath, payload.mood);
 
     return {
       rigDataUrl: `file://${rigPath}`,
@@ -75,15 +75,27 @@ export class VG12DynamicLightingRigAdapter extends VgBaseEngine {
     };
   }
 
-  private generateRigPreview(outputPath: string, mood: string): void {
+  private async generateRigPreview(outputPath: string, mood: string): Promise<void> {
     let color = 'gold';
     if (mood === 'horror') color = 'darkblue';
     if (mood === 'hope') color = 'lightblue';
 
-    const cmd = `ffmpeg -y -f lavfi -i color=c=${color}:s=512x256 -vf "drawgrid=w=50:h=50:t=2:c=yellow@0.5" -frames:v 1 "${outputPath}"`;
-
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        `color=c=${color}:s=512x256`,
+        '-vf',
+        'drawgrid=w=50:h=50:t=2:c=yellow@0.5',
+        '-frames:v',
+        '1',
+        outputPath,
+      ]);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (error) {
       writeFileSync(outputPath, '');
     }

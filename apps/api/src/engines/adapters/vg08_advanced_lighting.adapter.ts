@@ -4,9 +4,9 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * VG08: 高级光照追踪引擎
@@ -67,7 +67,7 @@ export class VG08AdvancedLightingAdapter extends VgBaseEngine {
 
     // 生成预览图 (FFmpeg)
     const previewPath = join(outputDir, `${hash}_preview.png`);
-    this.generateLightingPreview(previewPath, payload.lightSources);
+    await this.generateLightingPreview(previewPath, payload.lightSources);
 
     return {
       lightMapUrl: `file://${lightMapPath}`,
@@ -81,15 +81,27 @@ export class VG08AdvancedLightingAdapter extends VgBaseEngine {
     };
   }
 
-  private generateLightingPreview(outputPath: string, lights: any[]): void {
+  private async generateLightingPreview(outputPath: string, lights: any[]): Promise<void> {
     // 根据光源数量决定明亮度
     const lightCount = (lights || []).length;
     const brightness = Math.min(lightCount * 20 + 40, 100);
 
-    const cmd = `ffmpeg -y -f lavfi -i color=c=white:s=256x256 -vf "drawbox=x=0:y=0:w=256:h=256:color=black@${1 - brightness / 100}:t=fill" -frames:v 1 "${outputPath}"`;
-
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        'color=c=white:s=256x256',
+        '-vf',
+        `drawbox=x=0:y=0:w=256:h=256:color=black@${1 - brightness / 100}:t=fill`,
+        '-frames:v',
+        '1',
+        outputPath,
+      ]);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (error) {
       writeFileSync(outputPath, '');
     }

@@ -4,9 +4,9 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * VG09: 头发物理模拟引擎
@@ -61,7 +61,7 @@ export class VG09HairPhysicsAdapter extends VgBaseEngine {
 
     // 生成预览图 (FFmpeg)
     const previewPath = join(outputDir, `${hash}_preview.png`);
-    this.generateHairPreview(previewPath, hairStyle);
+    await this.generateHairPreview(previewPath, hairStyle);
 
     return {
       physicsDataUrl: `file://${physicsDataPath}`,
@@ -74,16 +74,28 @@ export class VG09HairPhysicsAdapter extends VgBaseEngine {
     };
   }
 
-  private generateHairPreview(outputPath: string, hairStyle: string): void {
+  private async generateHairPreview(outputPath: string, hairStyle: string): Promise<void> {
     // 基于发型选择颜色
     let color = 'brown';
     if (hairStyle.includes('blonde')) color = 'gold';
     if (hairStyle.includes('raven')) color = 'black';
 
-    const cmd = `ffmpeg -y -f lavfi -i color=c=${color}:s=256x256 -vf "drawgrid=w=10:h=10:t=1:c=white@0.3" -frames:v 1 "${outputPath}"`;
-
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        `color=c=${color}:s=256x256`,
+        '-vf',
+        'drawgrid=w=10:h=10:t=1:c=white@0.3',
+        '-frames:v',
+        '1',
+        outputPath,
+      ]);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (error) {
       writeFileSync(outputPath, '');
     }
