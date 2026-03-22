@@ -48,7 +48,7 @@ export default function proxy(req: NextRequest) {
 
   if (isProtected) {
     // Check for token in cookies (User specified 'accessToken')
-    let token = req.cookies.get('accessToken')?.value || req.cookies.get('auth_token')?.value;
+    const token = req.cookies.get('accessToken')?.value || req.cookies.get('auth_token')?.value;
 
     // --- [E2E SEAL] Bypass Mechanism Removed ---
 

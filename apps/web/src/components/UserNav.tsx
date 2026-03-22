@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { userApi } from '@/lib/apiClient';
@@ -20,7 +21,7 @@ export function UserNav() {
     try {
       const userData = await userApi.getCurrentUser();
       setUser(userData as UserDTO);
-    } catch (e: unknown) {
+    } catch {
       // Not logged in or error
       setUser(null);
     } finally {
@@ -34,7 +35,7 @@ export function UserNav() {
     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
       {!user ? (
         <>
-          <a
+          <Link
             href="/login"
             style={{
               fontSize: '0.9rem',
@@ -46,7 +47,7 @@ export function UserNav() {
             className="hover:text-white"
           >
             {t('login')}
-          </a>
+          </Link>
 
           <Button
             size="sm"
@@ -87,7 +88,7 @@ export function UserNav() {
             </div>
           )}
 
-          <a
+          <Link
             href="/projects"
             style={{
               fontSize: '0.9rem',
@@ -98,7 +99,7 @@ export function UserNav() {
             className="hover:text-primary transition-colors"
           >
             {t('enterWorkbench')}
-          </a>
+          </Link>
         </div>
       )}
     </div>

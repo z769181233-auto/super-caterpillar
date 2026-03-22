@@ -99,7 +99,7 @@ describe('FilmIRService Smoke Tests', () => {
     }).compile();
 
     service = module.get<FilmIRService>(FilmIRService);
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   // ==============================
@@ -112,7 +112,7 @@ describe('FilmIRService Smoke Tests', () => {
         projectId: 'project-001',
         enrichedText: '丰富文本',
       });
-      mockPrismaService.filmIR.findFirst.mockResolvedValue(null); // 无 LOCKED 冲突
+      mockPrismaService.filmIR.findUnique.mockResolvedValue(null); // 无 LOCKED 冲突
       mockPrismaService.filmIR.create.mockResolvedValue(mockDraftFilmIR);
       mockPrismaService.scene.update.mockResolvedValue({});
 
@@ -136,7 +136,7 @@ describe('FilmIRService Smoke Tests', () => {
         projectId: 'project-001',
         enrichedText: null,
       });
-      mockPrismaService.filmIR.findFirst.mockResolvedValue(mockLockedFilmIR);
+      mockPrismaService.filmIR.findUnique.mockResolvedValue(mockLockedFilmIR);
 
       await expect(service.create({ sceneId: 'scene-001' })).rejects.toThrow(ConflictException);
     });
@@ -174,7 +174,9 @@ describe('FilmIRService Smoke Tests', () => {
   describe('update()', () => {
     it('DRAFT 状态下应成功更新字段', async () => {
       const updated = { ...mockDraftFilmIR, dramaticFunction: 'CONFLICT' };
-      mockPrismaService.filmIR.findUnique.mockResolvedValue(mockDraftFilmIR);
+      mockPrismaService.filmIR.findUnique
+        .mockResolvedValueOnce(mockDraftFilmIR)
+        .mockResolvedValueOnce(null);
       mockPrismaService.filmIR.update.mockResolvedValue(updated);
 
       const result = await service.update('test-filmIR-001', { dramaticFunction: 'CONFLICT' });
@@ -260,13 +262,14 @@ describe('FilmIRService Smoke Tests', () => {
     it('应创建新版本并递增 plannerVersion', async () => {
       const v2FilmIR = { ...mockDraftFilmIR, id: 'test-filmIR-002', plannerVersion: 'film-planner-v2' };
 
-      mockPrismaService.filmIR.findUnique.mockResolvedValue(mockDraftFilmIR);
+      mockPrismaService.filmIR.findUnique
+        .mockResolvedValueOnce(mockDraftFilmIR)
+        .mockResolvedValueOnce(null);
       mockPrismaService.scene.findUnique.mockResolvedValue({
         id: 'scene-001',
         projectId: 'project-001',
         enrichedText: null,
       });
-      mockPrismaService.filmIR.findFirst.mockResolvedValue(null); // 无冲突
       mockPrismaService.filmIR.create.mockResolvedValue(v2FilmIR);
       mockPrismaService.scene.update.mockResolvedValue({});
 
@@ -278,13 +281,15 @@ describe('FilmIRService Smoke Tests', () => {
       const v2 = { ...mockDraftFilmIR, plannerVersion: 'film-planner-v2' };
       const v3 = { ...mockDraftFilmIR, plannerVersion: 'film-planner-v3' };
 
-      mockPrismaService.filmIR.findUnique.mockResolvedValue(v2);
+      mockPrismaService.filmIR.findUnique
+        .mockResolvedValueOnce(v2)
+        .mockResolvedValueOnce(null);
       mockPrismaService.scene.findUnique.mockResolvedValue({
         id: 'scene-001',
         projectId: 'project-001',
         enrichedText: null,
       });
-      mockPrismaService.filmIR.findFirst.mockResolvedValue(null);
+      mockPrismaService.filmIR.findUnique.mockResolvedValue(null);
       mockPrismaService.filmIR.create.mockResolvedValue(v3);
       mockPrismaService.scene.update.mockResolvedValue({});
 
@@ -307,7 +312,7 @@ describe('FilmIRService Smoke Tests', () => {
   describe('AuditLog 写入', () => {
     it('create 应记录 FILM_IR_CREATED', async () => {
       mockPrismaService.scene.findUnique.mockResolvedValue({ id: 'scene-001', projectId: 'p-001', enrichedText: null });
-      mockPrismaService.filmIR.findFirst.mockResolvedValue(null);
+      mockPrismaService.filmIR.findUnique.mockResolvedValue(null);
       mockPrismaService.filmIR.create.mockResolvedValue(mockDraftFilmIR);
       mockPrismaService.scene.update.mockResolvedValue({});
 

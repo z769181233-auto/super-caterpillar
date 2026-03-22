@@ -20,7 +20,8 @@ type JobType =
   | 'CE_FILM_IR_PLAN'
   | 'CE_SHOT_PLAN'
   | 'CE_CONSISTENCY_CHECK'
-  | 'CE_CONTENT_JUDGE';
+  | 'CE_CONTENT_JUDGE'
+  | 'PIPELINE_STAGE1_NOVEL_TO_VIDEO';
 
 export class CreateJobDto {
   @IsEnum([

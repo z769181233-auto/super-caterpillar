@@ -591,49 +591,14 @@ export class JobService {
 
     // 2. 计算协议级指纹 (Stable Fingerprint)
     const fingerprint = `fp_ce01_${characterId}_${posePreset}_${styleSeed}_${engineVersion}`;
+    const dedupeKey = `ce01_reference_sheet_${organizationId}_${projectId}_${fingerprint}`;
 
-    // 3. 幂等检查：在现有 JobEngineBinding 中寻找已完成的实例
-    // SECURITY: 必须限定 organizationId 和 projectId 作用域，防止跨租户串用
-    const existingBinding = await this.prisma.jobEngineBinding.findFirst({
-      where: {
-        engineKey,
-        status: {
-          in: [
-            JobEngineBindingStatus.BOUND,
-            JobEngineBindingStatus.EXECUTING,
-            JobEngineBindingStatus.COMPLETED,
-          ],
-        },
-        metadata: {
-          path: ['fingerprint'],
-          equals: fingerprint,
-        },
-        job: {
-          organizationId,
-          projectId,
-        },
-      },
-      include: { engineVersion: true },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (existingBinding) {
-      this.logger.log(
-        `[CE01] Idempotency hit: found existing binding ${existingBinding.id} for fingerprint ${fingerprint}`
-      );
-      return {
-        referenceSheetId: existingBinding.id,
-        engineKey: existingBinding.engineKey,
-        engineVersion: existingBinding.engineVersion?.versionName || 'default',
-        fingerprint,
-      };
-    }
-
-    // 4. 创建 CE01 Job（复用 ceCoreJob 占位逻辑）
+    // 3. 创建/复用 CE01 Job（使用稳定 dedupeKey，避免 metadata JSON 软唯一）
     const job = await this.createCECoreJob({
       projectId,
       organizationId,
       jobType,
+      dedupeKey,
       traceId,
       payload: {
         characterId,
@@ -644,7 +609,7 @@ export class JobService {
       },
     });
 
-    // 5. 绑定 Engine 并注入 Fingerprint 到 Metadata
+    // 4. 绑定 Engine 并注入 Fingerprint 到 Metadata
     const binding = await this.prisma.$transaction(async (tx) => {
       let b = await tx.jobEngineBinding.findUnique({ where: { jobId: job.id } });
       if (!b) {
@@ -710,6 +675,8 @@ export class JobService {
     isVerification: boolean = false
   ): Promise<any> {
     const jobType = JobTypeEnum.VIDEO_RENDER;
+    const verificationMode = isVerification ? 'verification' : 'standard';
+    const dedupeKey = `video_render_shot_${shotId}_${traceId}_${verificationMode}`;
 
     // P1 修复：容量门禁检查移入事务，防止竞态条件
     // 在事务内检查容量，确保检查与创建 job 的原子性
@@ -730,38 +697,14 @@ export class JobService {
         );
       }
 
-      // 双重检查：在创建 job 前再次检查容量（防止时间窗口）
-      // 注意：这里仍然存在小的时间窗口，但已大大缩小
-      // 更严格的方案是使用数据库约束或分布式锁，但会增加复杂度
-      // 1. Check existing job (Idempotency)
-      const existing = await tx.shotJob.findFirst({
-        where: {
-          shotId,
-          type: jobType,
-          status: { notIn: [JobStatusEnum.FAILED] }, // Ignore failed, create new one. CANCELLED doesn't exist in Prisma enum yet
-        },
-        orderBy: { createdAt: 'desc' },
+      // 双重检查：在创建 job 前使用 dedupeKey 做幂等保护
+      const existing = await tx.shotJob.findUnique({
+        where: { dedupeKey },
       });
 
       if (existing) {
-        // 商业级防御：避免复用旧的非验证 job，导致永久污染
-        if (isVerification && !existing.isVerification) {
-          throw new BadRequestException({
-            code: 'VIDEO_RENDER_VERIFICATION_MISMATCH',
-            message:
-              'Existing VIDEO_RENDER job is non-verification but current pipeline requires verification. Refuse to reuse to avoid billing contamination.',
-            details: {
-              shotId,
-              existingJobId: existing.id,
-              existingIsVerification: existing.isVerification,
-              requiredIsVerification: isVerification,
-              traceId,
-            },
-          });
-        }
-
         this.logger.log(
-          `[JobService] ensureVideoRenderJob: Job already exists (${existing.id}), isVerification=${existing.isVerification}, skipping.`
+          `[JobService] ensureVideoRenderJob: Job already exists (${existing.id}), dedupeKey=${dedupeKey}, skipping.`
         );
         return existing;
       }
@@ -799,6 +742,7 @@ export class JobService {
           taskId: task.id,
           type: jobType,
           status: JobStatusEnum.PENDING,
+          dedupeKey,
           isVerification: isVerification ?? false, // ✅ 关键修复：写入 isVerification
           payload: {
             shotId, // Explicitly include shotId in payload for Processor
@@ -839,7 +783,7 @@ export class JobService {
       });
 
       this.logger.log(
-        `[JobService] ensureVideoRenderJob: Created job ${job.id}, isVerification=${isVerification}, traceId=${traceId}, bound to ${engineSelection.engineKey}`
+        `[JobService] ensureVideoRenderJob: Created job ${job.id}, dedupeKey=${dedupeKey}, isVerification=${isVerification}, traceId=${traceId}, bound to ${engineSelection.engineKey}`
       );
       return job;
     });
@@ -2301,6 +2245,9 @@ export class JobService {
         );
 
         for (const shot of createdShots) {
+          const pipelineRunId = (job.payload as any)?.pipelineRunId || job.id;
+          const renderDedupeKey = `video_render_shot_${shot.id}_${pipelineRunId}_standard`;
+
           // Create VIDEO_RENDER job for each shot
           // Ensure we pass traceId and other metadata
           await this.createCECoreJob({
@@ -2308,6 +2255,7 @@ export class JobService {
             organizationId: job.organizationId!,
             taskId: job.taskId || undefined,
             jobType: JobTypeEnum.VIDEO_RENDER,
+            dedupeKey: renderDedupeKey,
             payload: {
               projectId: job.projectId,
               sceneId: job.sceneId,
@@ -2317,7 +2265,7 @@ export class JobService {
               prompt: shot.visual_prompt || shot.prompt, // Pass prompt clearly
               duration: shot.duration || 5,
               originalJobId: job.id,
-              pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
+              pipelineRunId,
             },
           });
         }
@@ -2382,7 +2330,50 @@ export class JobService {
           },
         });
 
-        const assetId = (result as any)?.assetId || job.shotId;
+        const timelineResult = (result as Record<string, any> | undefined) || {};
+        const timelineOutput =
+          timelineResult.output &&
+          typeof timelineResult.output === 'object' &&
+          !Array.isArray(timelineResult.output)
+            ? (timelineResult.output as Record<string, any>)
+            : timelineResult;
+        let assetId =
+          typeof timelineOutput.assetId === 'string'
+            ? timelineOutput.assetId
+            : typeof timelineResult.assetId === 'string'
+              ? timelineResult.assetId
+              : undefined;
+
+        if (!assetId) {
+          const createdAssets = await this.prisma.asset.findMany({
+            where: { createdByJobId: job.id },
+            select: { id: true },
+            orderBy: { createdAt: 'desc' },
+            take: 2,
+          });
+
+          if (createdAssets.length === 1) {
+            assetId = createdAssets[0].id;
+          } else if (createdAssets.length > 1) {
+            this.logger.error(
+              `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} resolved multiple assets; refusing ambiguous CE09 fanout.`
+            );
+            return;
+          }
+        }
+
+        if (!assetId) {
+          this.logger.error(
+            `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} missing assetId and no deterministic asset fallback found.`
+          );
+          return;
+        }
+
+        const pipelineRunId =
+          typeof (job.payload as any)?.pipelineRunId === 'string'
+            ? (job.payload as any).pipelineRunId
+            : job.id;
+        const ce09DedupeKey = `ce09_${pipelineRunId}_${assetId}`;
         this.logger.log(`[CE09_FANOUT_ENQUEUED] Enqueuing CE09 with assetId: ${assetId}`);
 
         await this.createCECoreJob({
@@ -2390,10 +2381,17 @@ export class JobService {
           organizationId: job.organizationId!,
           taskId: job.taskId!,
           jobType: JobTypeEnum.CE09_MEDIA_SECURITY,
+          dedupeKey: ce09DedupeKey,
           payload: {
             assetId,
             originJobId: job.id,
+            pipelineRunId,
+            projectId: job.projectId,
+            shotId: job.shotId || undefined,
+            videoAssetStorageKey:
+              typeof timelineOutput.storageKey === 'string' ? timelineOutput.storageKey : undefined,
           },
+          traceId: job.traceId || task?.traceId || undefined,
         });
       }
     } else if (job.type === JobTypeEnum.CE09_MEDIA_SECURITY) {
@@ -2404,9 +2402,7 @@ export class JobService {
 
   /**
    * 处理 CE09 完成后的安全链路
-   * 必须确保：
-   * 1. video_jobs.security_processed = true
-   * 2. assets 表回写 hls_playlist_url / signed_url / watermark_mode / fingerprint_id
+   * 以 shot_jobs / assets 为 SSOT，禁止依赖旧 video_jobs 或硬编码安全链接。
    */
   private async handleShotRenderSecurityPipeline(
     job: ShotJobWithShotHierarchy,
@@ -2415,105 +2411,100 @@ export class JobService {
     try {
       const payload = (job.payload as Record<string, any>) || {};
       const requestedAssetId = typeof payload.assetId === 'string' ? payload.assetId : undefined;
-      const assetHint = requestedAssetId
+      let asset = requestedAssetId
         ? await this.prisma.asset.findUnique({
             where: { id: requestedAssetId },
             select: { id: true, projectId: true, shotId: true },
           })
         : null;
-      const targetShotId = assetHint?.shotId ?? job.shotId ?? undefined;
 
-      if (!targetShotId) {
-        throw new Error(`[CE09] Missing shotId for security pipeline job ${job.id}`);
-      }
-      if (assetHint && assetHint.projectId !== job.projectId) {
-        throw new Error(
-          `[CE09] Asset ${assetHint.id} does not belong to project ${job.projectId}`
-        );
-      }
-
-      // 1. 查找关联的 VideoJob (通过 shotId)
-      const videoJob = await this.prisma.videoJob.findFirst({
-        where: { shotId: targetShotId },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      if (videoJob) {
-        // 更新 VideoJob.securityProcessed
-        await this.prisma.videoJob.update({
-          where: { id: videoJob.id },
-          data: {
-            securityProcessed: true,
-          },
-        });
-
-        // 2. 回写 Asset 安全字段 (DBSpec V1.1)
-        // 从 CE09 结果中提取安全资产信息
-        const securityResult = (result as any)?.securityResult || {};
-        const signedUrl =
-          securityResult.signedUrl || `https://cdn.example.com/signed/${videoJob.id}.mp4`; // Mock/Shim if not real
-        const hlsUrl =
-          securityResult.hlsPlaylistUrl || `https://cdn.example.com/hls/${videoJob.id}/master.m3u8`;
-        const watermarkMode = securityResult.watermarkMode || 'visible_user_id';
-        const fingerprintId = securityResult.fingerprintId || `fp_${job.id}`;
-
-        // 创建或更新 Asset
-        const asset = await this.prisma.asset.upsert({
+      if (!asset && job.shotId) {
+        asset = await this.prisma.asset.findUnique({
           where: {
             ownerType_ownerId_type: {
               ownerType: 'SHOT',
-              ownerId: targetShotId,
+              ownerId: job.shotId,
               type: 'VIDEO',
             },
           },
-          update: {
-            projectId: job.projectId!,
-            ownerId: targetShotId,
-            shotId: targetShotId,
-            storageKey: `secure_videos/${videoJob.id}.mp4`,
-            signedUrl,
-            hlsPlaylistUrl: hlsUrl,
-            watermarkMode,
-            fingerprintId,
-            status: 'GENERATED',
-            createdByJobId: videoJob.id,
-          },
-          create: {
-            projectId: job.projectId!,
-            ownerType: 'SHOT',
-            ownerId: targetShotId,
-            shotId: targetShotId,
-            type: 'VIDEO',
-            storageKey: `secure_videos/${videoJob.id}.mp4`,
-            signedUrl,
-            hlsPlaylistUrl: hlsUrl,
-            watermarkMode,
-            fingerprintId,
-            status: 'GENERATED',
-            createdByJobId: videoJob.id,
-          },
+          select: { id: true, projectId: true, shotId: true },
         });
-
-        // Audit Trail: SECURITY_COMPLETED
-        await this.auditLogService.record({
-          action: 'CE09_SECURITY_COMPLETED',
-          resourceType: 'asset',
-          resourceId: asset.id,
-          traceId: job.traceId || undefined,
-          details: {
-            jobId: job.id,
-            videoJobId: videoJob.id,
-            securityProcessed: true,
-            watermarkMode,
-          },
-        });
-
-        this.logger.log(
-          `CE09: VideoJob ${videoJob.id} security processed, Asset ${asset.id} upserted with secure URLs`
-        );
-      } else {
-        this.logger.warn(`CE09 completed but no VideoJob found for shotId ${targetShotId}`);
       }
+
+      if (!asset) {
+        throw new Error(`[CE09] Missing target asset for security pipeline job ${job.id}`);
+      }
+      if (asset.projectId !== job.projectId) {
+        throw new Error(`[CE09] Asset ${asset.id} does not belong to project ${job.projectId}`);
+      }
+
+      const resultRecord =
+        result && typeof result === 'object' && !Array.isArray(result)
+          ? (result as Record<string, any>)
+          : {};
+      const outputRecord =
+        resultRecord.output &&
+        typeof resultRecord.output === 'object' &&
+        !Array.isArray(resultRecord.output)
+          ? (resultRecord.output as Record<string, any>)
+          : resultRecord;
+      const securityRecord =
+        resultRecord.securityResult &&
+        typeof resultRecord.securityResult === 'object' &&
+        !Array.isArray(resultRecord.securityResult)
+          ? (resultRecord.securityResult as Record<string, any>)
+          : outputRecord;
+
+      const assetUpdateData: Prisma.AssetUpdateInput = {
+        status: 'PUBLISHED',
+      };
+
+      if (typeof securityRecord.storageKey === 'string') {
+        assetUpdateData.storageKey = securityRecord.storageKey;
+      }
+      if (typeof securityRecord.signedUrl === 'string') {
+        assetUpdateData.signedUrl = securityRecord.signedUrl;
+      }
+      if (typeof securityRecord.hlsPlaylistUrl === 'string') {
+        assetUpdateData.hlsPlaylistUrl = securityRecord.hlsPlaylistUrl;
+      }
+      if (typeof securityRecord.watermarkMode === 'string') {
+        assetUpdateData.watermarkMode = securityRecord.watermarkMode;
+      }
+      if (typeof securityRecord.fingerprintId === 'string') {
+        assetUpdateData.fingerprint = {
+          connect: { id: securityRecord.fingerprintId },
+        };
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.shotJob.update({
+          where: { id: job.id },
+          data: { securityProcessed: true },
+        });
+
+        await tx.asset.update({
+          where: { id: asset.id },
+          data: assetUpdateData,
+        });
+      });
+
+      await this.auditLogService.record({
+        action: 'CE09_SECURITY_COMPLETED',
+        resourceType: 'asset',
+        resourceId: asset.id,
+        traceId: job.traceId || undefined,
+        details: {
+          jobId: job.id,
+          securityProcessed: true,
+          watermarkMode:
+            typeof securityRecord.watermarkMode === 'string'
+              ? securityRecord.watermarkMode
+              : undefined,
+        },
+      });
+
+      this.logger.log(`[CE09] Security state reconciled for job ${job.id}, asset ${asset.id}`);
     } catch (error: any) {
       // 软失败：记录 audit_logs（符合 SafetySpec）
       await this.auditLogService
@@ -2654,12 +2645,8 @@ export class JobService {
     if (!pipelineRunId) return;
 
     // 检查是否存在对应的 Stage-1 Pipeline Job
-    const pipelineJob = await this.prisma.shotJob.findFirst({
-      where: {
-        type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
-        traceId: pipelineRunId,
-      },
-      orderBy: { createdAt: 'desc' },
+    const pipelineJob = await this.prisma.shotJob.findUnique({
+      where: { dedupeKey: `stage1_pipeline_${pipelineRunId}` },
     });
 
     if (!pipelineJob) return;
@@ -2722,16 +2709,12 @@ export class JobService {
       return;
     }
 
-    // 关联到 Pipeline 的占位镜头（如果有），否则关联到第一个镜头
-    const placeholderShot = await this.prisma.shot.findFirst({
-      where: {
-        type: 'pipeline_stage1',
-        scene: { episode: { projectId } },
-      },
-      orderBy: { index: 'asc' },
+    const pipelineJob = await this.prisma.shotJob.findUnique({
+      where: { dedupeKey: `stage1_pipeline_${pipelineRunId}` },
+      select: { shotId: true },
     });
 
-    const targetShotId = placeholderShot?.id || succeededShots[0].shotId;
+    const targetShotId = pipelineJob?.shotId || succeededShots[0].shotId;
 
     // 继承验证标记：同一 pipelineRunId 下的所有 shot 应该具有相同的 isVerification
     const isVerification = succeededShots[0]?.isVerification || false;
@@ -2766,12 +2749,8 @@ export class JobService {
     if (!pipelineRunId) return;
 
     // 检查是否存在对应的 Stage-1 Pipeline Job
-    const pipelineJob = await this.prisma.shotJob.findFirst({
-      where: {
-        type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
-        traceId: pipelineRunId,
-      },
-      orderBy: { createdAt: 'desc' },
+    const pipelineJob = await this.prisma.shotJob.findUnique({
+      where: { dedupeKey: `stage1_pipeline_${pipelineRunId}` },
     });
 
     if (!pipelineJob) return;
@@ -2814,6 +2793,7 @@ export class JobService {
       organizationId: job.organizationId!,
       taskId: job.taskId!,
       jobType: JobTypeEnum.CE09_MEDIA_SECURITY,
+      dedupeKey: `ce09_${pipelineRunId}_${assetId}`,
       payload: {
         projectId: job.projectId,
         assetId: assetId,

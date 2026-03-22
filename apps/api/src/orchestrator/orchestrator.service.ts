@@ -791,6 +791,7 @@ export class OrchestratorService {
     const audioEnabled = (env as typeof env & { orchV2AudioEnabled?: boolean }).orchV2AudioEnabled;
     const payload = toRecord(contextJob.payload);
     const pipelineRunId = getStringField(payload, 'pipelineRunId');
+    const audioDedupeKey = pipelineRunId ? `audio_${pipelineRunId}` : undefined;
 
     this.logger.log(
       `[DAG] checkAndSpawnAudioGen called. audioEnabled=${audioEnabled} pipelineRunId=${pipelineRunId}`
@@ -805,23 +806,6 @@ export class OrchestratorService {
     }
 
     try {
-      // Idempotency: Check if AUDIO job already exists for this run
-      const existingAudio = await this.prisma.shotJob.findFirst({
-        where: {
-          type: JobTypeEnum.AUDIO,
-          payload: {
-            path: ['pipelineRunId'],
-            equals: pipelineRunId,
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      if (existingAudio) {
-        this.logger.log(`[DAG] AUDIO job already exists for pipeline ${pipelineRunId}. Skipping.`);
-        return;
-      }
-
       this.logger.log(`[DAG] Spawning AUDIO job for pipeline ${pipelineRunId} (Lazy Trigger)`);
 
       // P18-6 Reuse: Spawn "gate-audio-p18-6-final.sh" equivalent job
@@ -838,6 +822,7 @@ export class OrchestratorService {
         contextJob.shotId || contextJob.id,
         {
           type: JobTypeEnum.AUDIO,
+          dedupeKey: audioDedupeKey,
           payload: {
             pipelineRunId,
             text: 'AUTO_GENERATED_FROM_NOVEL_SOURCE_V1',
@@ -911,18 +896,9 @@ export class OrchestratorService {
     const audioEnabled = true;
 
     if (audioEnabled) {
-      const audioJob = await this.prisma.shotJob.findFirst(
-        /* L3_BYPASS */ {
-          where: {
-            type: JobTypeEnum.AUDIO,
-            payload: {
-              path: ['pipelineRunId'],
-              equals: pipelineRunId,
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-        }
-      );
+      const audioJob = await this.prisma.shotJob.findUnique({
+        where: { dedupeKey: `audio_${pipelineRunId}` },
+      });
 
       if (audioJob && audioJob.status === JobStatusEnum.SUCCEEDED) {
         audioReady = true;
@@ -959,16 +935,18 @@ export class OrchestratorService {
     contextJob: JobLike,
     audioTrack: unknown = null
   ) {
+    const contextPayload = toRecord(contextJob.payload);
+    const sceneId =
+      getStringField(contextPayload, 'sceneId') ??
+      contextJob.sceneId ??
+      contextJob.shot?.sceneId ??
+      'unknown_scene';
+    const traceKey = pipelineRunId || contextJob.traceId || 'unknown_trace';
+    const dedupeKey = `video_render_${sceneId}_${traceKey}`;
+
     // 2.1 Idempotency Check: Did we already spawn a VIDEO_RENDER for this run?
-    const existingVideoJob = await this.prisma.shotJob.findFirst({
-      where: {
-        type: JobTypeEnum.VIDEO_RENDER,
-        payload: {
-          path: ['pipelineRunId'],
-          equals: pipelineRunId,
-        },
-      },
-      orderBy: { createdAt: 'desc' },
+    const existingVideoJob = await this.prisma.shotJob.findUnique({
+      where: { dedupeKey },
     });
 
     if (existingVideoJob) {
@@ -1016,11 +994,6 @@ export class OrchestratorService {
 
     // 2.3 继承验证标记（关键：防止下游作业计费污染）
     const isVerification = !!contextJob.isVerification;
-    const contextPayload = toRecord(contextJob.payload);
-    const sceneId =
-      getStringField(contextPayload, 'sceneId') ?? contextJob.sceneId ?? contextJob.shot?.sceneId ?? 'unknown_scene';
-    const traceKey = pipelineRunId || contextJob.traceId || 'unknown_trace';
-    const dedupeKey = `video_render_${sceneId}_${traceKey}`;
 
     if (isVerification) {
       this.logger.log(
@@ -1072,24 +1045,12 @@ export class OrchestratorService {
   private async checkAndSpawnCE09(videoJob: JobLike) {
     const payload = toRecord(videoJob.payload);
     const pipelineRunId = getStringField(payload, 'pipelineRunId');
+    const sceneId = getStringField(payload, 'sceneId') ?? videoJob.sceneId ?? undefined;
 
     if (!pipelineRunId) {
       this.logger.warn(
         `[DAG] VIDEO_RENDER ${videoJob.id} missing pipelineRunId. Cannot spawn CE09.`
       );
-      return;
-    }
-
-    // 1. Idempotency Check
-    const existing = await this.prisma.shotJob.findFirst({
-      where: {
-        type: JobTypeEnum.CE09_MEDIA_SECURITY,
-        payload: { path: ['pipelineRunId'], equals: pipelineRunId },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (existing) {
-      this.logger.log(`[DAG] CE09 for ${pipelineRunId} already exists (${existing.id}). Skipping.`);
       return;
     }
 
@@ -1103,12 +1064,18 @@ export class OrchestratorService {
 
     // Phase V.4: Robust Fallback for Gate/CI Mode
     if ((!assetId || !storageKey) && (process.env.GATE_MODE === '1' || process.env.CI === 'true')) {
-      this.logger.log(`[DAG] VIDEO_RENDER result missing fields. Attempting DB fallback for sceneId=${payload.sceneId}`);
-      const sceneId = payload.sceneId;
+      this.logger.log(
+        `[DAG] VIDEO_RENDER result missing fields. Attempting DB fallback for sceneId=${sceneId}`
+      );
       if (sceneId) {
-        const asset = await this.prisma.asset.findFirst({
-          where: { ownerType: 'SCENE', ownerId: sceneId, type: 'VIDEO' },
-          orderBy: { createdAt: 'desc' }
+        const asset = await this.prisma.asset.findUnique({
+          where: {
+            ownerType_ownerId_type: {
+              ownerType: 'SCENE',
+              ownerId: sceneId,
+              type: 'VIDEO',
+            },
+          },
         });
         if (asset) {
           assetId = asset.id;
@@ -1130,6 +1097,7 @@ export class OrchestratorService {
     this.logger.log(`[DAG] Spawning CE09 for ${pipelineRunId} from VIDEO_RENDER asset ${assetId}`);
 
     try {
+      const ce09DedupeKey = `ce09_${pipelineRunId}_${assetId}`;
       const projectId = getStringField(payload, 'projectId') ?? videoJob.projectId ?? undefined;
       if (!projectId) {
         throw new Error(`Missing projectId for CE09 spawn on pipeline ${pipelineRunId}`);
@@ -1143,27 +1111,28 @@ export class OrchestratorService {
         throw new Error(`Project ownership missing for CE09 spawn on pipeline ${pipelineRunId}`);
       }
 
-      await this.jobService.create(
-        videoJob.shotId ?? videoJob.id,
-        {
-          type: JobTypeEnum.CE09_MEDIA_SECURITY,
+      const ce09Job = await this.jobService.createCECoreJob({
+        projectId,
+        organizationId: project.organizationId,
+        jobType: JobTypeEnum.CE09_MEDIA_SECURITY,
+        traceId: videoJob.traceId ?? undefined,
+        dedupeKey: ce09DedupeKey,
+        payload: {
+          pipelineRunId,
+          projectId,
+          sceneId,
+          episodeId: getStringField(payload, 'episodeId'),
+          shotId: videoJob.shotId ?? undefined,
+          assetId,
+          videoAssetStorageKey: storageKey,
           traceId: videoJob.traceId ?? undefined,
-          payload: {
-            pipelineRunId,
-            projectId,
-            episodeId: getStringField(payload, 'episodeId'),
-            shotId: videoJob.shotId ?? undefined,
-            assetId,
-            videoAssetStorageKey: storageKey,
-            traceId: videoJob.traceId ?? undefined,
-            engineKey: 'ce09_security_real',
-            rootJobId: getStringField(payload, 'rootJobId'), // Propagate for V1 chain
-          },
+          engineKey: 'ce09_security_real',
+          rootJobId: getStringField(payload, 'rootJobId'),
         },
-        project.ownerId,
-        project.organizationId
+      });
+      this.logger.log(
+        `[DAG] CE09 ensured successfully for ${pipelineRunId}: jobId=${ce09Job.id}, dedupeKey=${ce09DedupeKey}`
       );
-      this.logger.log(`[DAG] CE09 spawned successfully for ${pipelineRunId}`);
     } catch (e: unknown) {
       this.logger.error(`[DAG] Failed to spawn CE09: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -1366,8 +1335,9 @@ export class OrchestratorService {
       const job = await this.jobService.create(
         shot.id,
         {
-          type: JobTypeEnum.SHOT_RENDER,
+          type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
           traceId,
+          dedupeKey: `stage1_pipeline_${traceId}`,
           isVerification: true, // A1验证模式
           payload: {
             novelText,
