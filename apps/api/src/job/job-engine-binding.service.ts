@@ -71,12 +71,8 @@ export class JobEngineBindingService {
     // Stage3-A: 根据 engineKey（即 code）查找 Engine，只选 isActive=true
     let engine: any;
     try {
-      engine = await this.prisma.engine.findFirst({
-        where: {
-          engineKey, // Stage13: 使用 engineKey 字段查找
-          isActive: true,
-          enabled: true,
-        },
+      engine = await this.prisma.engine.findUnique({
+        where: { engineKey },
       });
     } catch (error) {
       if (!this.isPrismaTimeout(error)) {
@@ -107,7 +103,7 @@ export class JobEngineBindingService {
       });
     }
 
-    if (!engine) {
+    if (!engine || engine.isActive !== true || engine.enabled !== true) {
       this.logger.warn(`No active engine found for engineKey: ${engineKey}, jobType: ${jobType}`);
       return null;
     }
@@ -144,11 +140,12 @@ export class JobEngineBindingService {
     if (engine.defaultVersion) {
       let version: any;
       try {
-        version = await this.prisma.engineVersion.findFirst({
+        version = await this.prisma.engineVersion.findUnique({
           where: {
-            engineId: engine.id,
-            versionName: engine.defaultVersion,
-            enabled: true,
+            engineId_versionName: {
+              engineId: engine.id,
+              versionName: engine.defaultVersion,
+            },
           },
         });
       } catch (error) {
@@ -180,6 +177,9 @@ export class JobEngineBindingService {
         });
       }
       if (version) {
+        if (version.enabled !== true) {
+          return null;
+        }
         engineVersionId = version.id;
       }
     }

@@ -654,9 +654,8 @@ export class NovelImportController {
     if (!organizationId) throw new ForbiddenException('No organization context');
     await this.projectService.checkOwnership(projectId, user.userId);
 
-    const novelSource = await this.prisma.novel.findFirst({
+    const novelSource = await this.prisma.novel.findUnique({
       where: { projectId },
-      orderBy: { createdAt: 'desc' },
     });
     if (!novelSource) throw new NotFoundException('找不到小说源');
 

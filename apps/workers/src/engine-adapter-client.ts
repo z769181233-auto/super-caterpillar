@@ -108,9 +108,8 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
         });
       } else {
         // 没指定则取该项目最新的一条
-        novelSource = await this.prisma.novel.findFirst({
+        novelSource = await this.prisma.novel.findUnique({
           where: { projectId },
-          orderBy: { createdAt: 'desc' as const },
         });
       }
 

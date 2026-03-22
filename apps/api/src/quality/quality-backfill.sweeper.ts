@@ -85,6 +85,7 @@ export class QualityBackfillSweeper {
             shotId: job.shotId,
             attempt: job.attempts || 1,
           },
+          orderBy: { createdAt: 'desc' },
         });
 
         if (!existingScore) {

@@ -41,17 +41,23 @@ export class AssetDeliveryController {
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() organizationId: string
   ) {
-    const asset = await this.prisma.asset.findFirst({
-      where: {
-        id: assetId,
-        // 这里的权限逻辑可以根据业务需求扩展，目前暂定只要是该组织的资产即可
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: assetId },
+      select: {
+        id: true,
+        signedUrl: true,
+        watermarkMode: true,
+        fingerprintId: true,
+        type: true,
         project: {
-          organizationId,
+          select: {
+            organizationId: true,
+          },
         },
       },
     });
 
-    if (!asset) {
+    if (!asset || asset.project.organizationId !== organizationId) {
       throw new NotFoundException('Asset not found');
     }
 
@@ -92,16 +98,22 @@ export class AssetDeliveryController {
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() organizationId: string
   ) {
-    const asset = await this.prisma.asset.findFirst({
-      where: {
-        id: assetId,
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: assetId },
+      select: {
+        id: true,
+        hlsPlaylistUrl: true,
+        watermarkMode: true,
+        fingerprintId: true,
         project: {
-          organizationId,
+          select: {
+            organizationId: true,
+          },
         },
       },
     });
 
-    if (!asset) {
+    if (!asset || asset.project.organizationId !== organizationId) {
       throw new NotFoundException('Asset not found');
     }
 

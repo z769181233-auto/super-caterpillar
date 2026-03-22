@@ -177,7 +177,7 @@ export async function processCE06Job(
     // 1. Ensure NovelSource exists
     const payload = getPayloadRecord(job);
     let novelSourceId = getStringField(payload, 'novelSourceId');
-    const novel = await prisma.novel.findFirst({ where: { projectId } });
+    const novel = await prisma.novel.findUnique({ where: { projectId } });
 
     // 2. Spawn NOVEL_SCAN_TOC Job
     const scanJob = await prisma.shotJob.create({

@@ -91,7 +91,7 @@ export class StoryService {
       );
 
       // 1. 确保 Novel 记录存在
-      let novel = await this.prisma.novel.findFirst({ where: { projectId } });
+      let novel = await this.prisma.novel.findUnique({ where: { projectId } });
       if (!novel) {
         novel = await this.prisma.novel.create({
           data: {
@@ -155,7 +155,7 @@ export class StoryService {
     }
 
     // 3.5 确保 Novel (NovelSource) 记录存在
-    const novel = await this.prisma.novel.findFirst({ where: { projectId } });
+    const novel = await this.prisma.novel.findUnique({ where: { projectId } });
     if (!novel) {
       await this.prisma.novel.create({
         data: {

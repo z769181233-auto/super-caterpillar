@@ -69,7 +69,9 @@ async function main() {
   }
 
   // 4) ensure season/episode/scene/shot
-  let season = await prisma.season.findFirst({ where: { projectId: project.id, index: 1 } });
+  let season = await prisma.season.findUnique({
+    where: { projectId_index: { projectId: project.id, index: 1 } },
+  });
   if (!season) {
     season = await prisma.season.create({
       data: {
@@ -120,7 +122,7 @@ async function main() {
   }
 
   // 5) ensure Novel and NovelChapter
-  let novelSource = await prisma.novelSource.findFirst({ where: { projectId: project.id } });
+  let novelSource = await prisma.novelSource.findUnique({ where: { projectId: project.id } });
   if (!novelSource) {
     novelSource = await prisma.novelSource.create({
       data: {

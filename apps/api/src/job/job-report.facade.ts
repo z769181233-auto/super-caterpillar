@@ -227,14 +227,11 @@ export class JobReportFacade {
 
         if (assetKeys.length > 0) {
           // 2) SECURITY: 精确定位 binding（禁止 updateMany），并使用 merge 语义更新 metadata
-          const binding = await this.prisma.jobEngineBinding.findFirst({
-            where: {
-              jobId: updatedJob.id,
-              engineKey: 'character_visual',
-            },
+          const binding = await this.prisma.jobEngineBinding.findUnique({
+            where: { jobId: updatedJob.id },
           });
 
-          if (!binding) {
+          if (!binding || binding.engineKey !== 'character_visual') {
             this.logger.warn(
               `[CE01] No binding found for job ${updatedJob.id}, skipping asset binding`
             );

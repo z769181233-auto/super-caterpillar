@@ -38,15 +38,13 @@ export class ProjectStructureService {
     await this.projectService.checkOwnership(projectId, userId);
 
     // 2. Fetch Project & Recent Tasks
-    const project = await this.prisma.project.findFirst({
-      where: {
-        id: projectId,
-        organizationId,
-      },
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
       select: {
         id: true,
         name: true,
         status: true, // Fetch Status for DTO
+        organizationId: true,
         tasks: {
           where: { type: 'NOVEL_ANALYSIS' },
           select: { id: true, status: true, updatedAt: true },
@@ -60,7 +58,7 @@ export class ProjectStructureService {
       },
     });
 
-    if (!project) {
+    if (!project || project.organizationId !== organizationId) {
       throw new NotFoundException('Project not found');
     }
 

@@ -22,6 +22,7 @@ export class MemoryService {
   async getShortTermMemory(chapterId: string, userId?: string) {
     const memory = await this.prisma.memoryShortTerm.findFirst({
       where: { chapterId },
+      orderBy: { createdAt: 'desc' },
     });
 
     // 记录审计日志
@@ -57,6 +58,7 @@ export class MemoryService {
   async getLongTermMemory(entityId: string, userId?: string) {
     const memory = await this.prisma.memoryLongTerm.findFirst({
       where: { entityId },
+      orderBy: { createdAt: 'desc' },
     });
 
     // 记录审计日志

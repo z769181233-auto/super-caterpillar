@@ -30,11 +30,8 @@ export class StructureGenerateService {
     );
 
     // 获取项目
-    const project = await this.prisma.project.findFirst({
-      where: {
-        id: projectId,
-        organizationId,
-      },
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
       include: {
         novelSources: {
           include: {
@@ -51,7 +48,7 @@ export class StructureGenerateService {
       },
     });
 
-    if (!project) {
+    if (!project || project.organizationId !== organizationId) {
       this.logger.error(`Project not found: ${projectId}`);
       throw new BadRequestException('项目不存在，无法生成结构');
     }
@@ -92,12 +89,13 @@ export class StructureGenerateService {
       const chapter = chapters[chIdx];
 
       // 检查是否已有 Episode 关联到此 Chapter
-      let episode = await this.prisma.episode.findFirst({
-        where: {
-          projectId,
-          chapterId: chapter.id,
-        },
+      let episode = await this.prisma.episode.findUnique({
+        where: { chapterId: chapter.id },
       });
+
+      if (episode && episode.projectId !== projectId) {
+        episode = null;
+      }
 
       if (!episode) {
         // 创建 Episode（每章一集，直接关联 Project）

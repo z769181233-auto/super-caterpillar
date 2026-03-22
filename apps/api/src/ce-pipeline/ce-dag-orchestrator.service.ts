@@ -102,6 +102,7 @@ export class CEDagOrchestratorService {
           },
           sceneIndex: anchorShot.scene.sceneIndex,
         },
+        orderBy: { createdAt: 'desc' },
       });
 
       const structuredText =

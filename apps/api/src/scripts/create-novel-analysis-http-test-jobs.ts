@@ -74,7 +74,9 @@ async function ensureUserOrgProject() {
 
 async function ensureHierarchy(projectId: string, organizationId: string) {
   // season
-  let season = await prisma.season.findFirst({ where: { projectId, index: 1 } });
+  let season = await prisma.season.findUnique({
+    where: { projectId_index: { projectId, index: 1 } },
+  });
   if (!season) {
     season = await prisma.season.create({
       data: {

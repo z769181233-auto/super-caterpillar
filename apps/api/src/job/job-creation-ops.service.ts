@@ -380,16 +380,19 @@ export class JobCreationOpsService {
         if (!referenceSheetId) {
             throw new BadRequestException('referenceSheetId is required for SHOT_RENDER');
         }
-        const rs = await this.prisma.jobEngineBinding.findFirst({
-            where: {
-                id: referenceSheetId,
+        const rs = await this.prisma.jobEngineBinding.findUnique({
+            where: { id: referenceSheetId },
+            select: {
+                id: true,
                 job: {
-                    organizationId,
-                    projectId,
+                    select: {
+                        organizationId: true,
+                        projectId: true,
+                    },
                 },
             },
         });
-        if (!rs) {
+        if (!rs || rs.job.organizationId !== organizationId || rs.job.projectId !== projectId) {
             throw new ForbiddenException('Invalid referenceSheetId or cross-tenant access');
         }
     }

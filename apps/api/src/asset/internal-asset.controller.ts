@@ -19,6 +19,7 @@ export class InternalAssetController {
 
     const found = await this.prisma.asset.findFirst({
       where: { storageKey: key },
+      orderBy: { createdAt: 'desc' },
       select: {
         project: {
           select: {

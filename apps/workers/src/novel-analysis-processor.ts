@@ -391,7 +391,7 @@ export async function applyAnalyzedStructureToDatabase(
 
   // S3-B Fine-Tune: 使用事务确保原子性
   const executeInTransaction = async (tx: Prisma.TransactionClient) => {
-    const nSource = await tx.novel.findFirst({ where: { projectId } });
+    const nSource = await tx.novel.findUnique({ where: { projectId } });
     const hasEpisodes = episodes && episodes.length > 0;
 
     if (hasEpisodes) {
@@ -402,8 +402,8 @@ export async function applyAnalyzedStructureToDatabase(
       });
 
       for (const epData of episodes) {
-        const existingEp = await tx.episode.findFirst({
-          where: { projectId, index: epData.index },
+        const existingEp = await tx.episode.findUnique({
+          where: { projectId_index: { projectId, index: epData.index } },
         });
         let currentEp = existingEp
           ? await tx.episode.update({
@@ -424,8 +424,10 @@ export async function applyAnalyzedStructureToDatabase(
         else stats.created.episodes++;
 
         for (const sceneData of epData.scenes) {
-          const existingScene = await tx.scene.findFirst({
-            where: { projectId, episodeId: currentEp.id, sceneIndex: sceneData.index },
+          const existingScene = await tx.scene.findUnique({
+            where: {
+              episodeId_sceneIndex: { episodeId: currentEp.id, sceneIndex: sceneData.index },
+            },
           });
           let currentScene = existingScene
             ? await tx.scene.update({
@@ -447,8 +449,8 @@ export async function applyAnalyzedStructureToDatabase(
 
           const shotsToCreate: any[] = [];
           for (const shotData of sceneData.shots) {
-            const existingShot = await tx.shot.findFirst({
-              where: { sceneId: currentScene.id, index: shotData.index },
+            const existingShot = await tx.shot.findUnique({
+              where: { sceneId_index: { sceneId: currentScene.id, index: shotData.index } },
             });
             const shotParams = { sourceText: shotData.text || '' };
             const shotBase = {
@@ -614,8 +616,8 @@ export async function applyAnalyzedStructureToDatabase(
       }
       finalSeasons.push(createdSeason);
 
-      const nVolume = await tx.novelVolume.findFirst({
-        where: { projectId, index: season.index },
+      const nVolume = await tx.novelVolume.findUnique({
+        where: { projectId_index: { projectId, index: season.index } },
       });
       if (nVolume) {
         await tx.novelVolume.update({
@@ -1645,9 +1647,8 @@ async function getNovelContentStream(
   }
 
   // Fallback: Check project's latest novel
-  const latestNovel = await prisma.novel.findFirst({
+  const latestNovel = await prisma.novel.findUnique({
     where: { projectId },
-    orderBy: { createdAt: 'desc' },
   });
   if (latestNovel) {
     async function* generateChapters() {

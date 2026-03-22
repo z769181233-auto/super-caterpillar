@@ -144,11 +144,8 @@ export class ProjectService {
 
   async findByIdWithHierarchy(id: string, organizationId: string) {
     // Studio v0.7: 按组织过滤
-    const project = await this.prisma.project.findFirst({
-      where: {
-        id,
-        organizationId, // 确保项目属于当前组织
-      },
+    const project = await this.prisma.project.findUnique({
+      where: { id },
       include: {
         episodes: {
           include: {
@@ -164,7 +161,7 @@ export class ProjectService {
       },
     });
 
-    if (!project) {
+    if (!project || project.organizationId !== organizationId) {
       throw new NotFoundException('Project not found');
     }
 
@@ -174,11 +171,8 @@ export class ProjectService {
   async findTreeById(id: string, organizationId: string) {
     // Studio v0.7: 按组织过滤
     // 影视工业标准：返回 Season → Episode → Scene → Shot 结构树
-    const project = await this.prisma.project.findFirst({
-      where: {
-        id,
-        organizationId, // 确保项目属于当前组织
-      },
+    const project = await this.prisma.project.findUnique({
+      where: { id },
       include: {
         // 获取最新的小说分析 Task
         tasks: {
@@ -329,7 +323,7 @@ export class ProjectService {
       },
     });
 
-    if (!project) {
+    if (!project || project.organizationId !== organizationId) {
       throw new NotFoundException('Project not found');
     }
 
@@ -774,6 +768,7 @@ export class ProjectService {
         try {
           const shortTermMemory = await tx.memoryShortTerm.findFirst({
             where: { chapterId: episode.chapter.id },
+            orderBy: { createdAt: 'desc' },
           });
           if (shortTermMemory) {
             memorySeedSummary = shortTermMemory.summary || null;
@@ -1388,15 +1383,17 @@ export class ProjectService {
     };
   }
   async getProjectOverview(projectId: string, organizationId: string): Promise<ProjectOverviewDTO> {
-    const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId },
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
       include: {
         tasks: { orderBy: { createdAt: 'desc' } },
         novelSources: true,
       },
     });
 
-    if (!project) throw new NotFoundException('Project not found');
+    if (!project || project.organizationId !== organizationId) {
+      throw new NotFoundException('Project not found');
+    }
 
     // 1. Stats & Real Data Fetching
     const [seasons, episodes, scenes, shots, runningJobs, costAgg, auditLogs] = await Promise.all([
@@ -1762,6 +1759,7 @@ export class ProjectService {
         organizationId,
         name: DEMO_PROJECT_NAME,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!project) {
