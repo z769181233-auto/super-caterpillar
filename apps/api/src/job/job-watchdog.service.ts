@@ -18,11 +18,9 @@ export class JobWatchdogService {
   private readonly workerHeartbeatTimeoutMs: number;
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
-    console.log('[DEBUG_BOOT] JobWatchdogService constructor start');
     // P2 修复：统一使用 packages/config 的配置
     this.jobTimeoutMs = (env as any).jobWatchdogTimeoutMs ?? 3600000;
     this.workerHeartbeatTimeoutMs = env.workerHeartbeatTimeoutMs || 30000;
-    console.log('[DEBUG_BOOT] JobWatchdogService constructor end');
   }
 
   private shouldSkipForDatabaseUnavailability(error: any): boolean {

@@ -10,7 +10,6 @@ import {
   NotFoundException,
   Inject,
   Logger,
-  forwardRef,
 } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { WorkerService } from './worker.service';
@@ -24,6 +23,8 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 @Controller('workers')
 @UseGuards(JwtOrHmacGuard) // 支持 JWT 或 HMAC 认证
 export class WorkerController {
+  private readonly logger = new Logger(WorkerController.name);
+
   constructor(
     private readonly moduleRef: ModuleRef,
     @Inject(AuditLogService)
@@ -44,10 +45,6 @@ export class WorkerController {
     @CurrentUser() user: { userId: string },
     @Req() request: Request
   ): Promise<any> {
-    console.log(`[API_WORKER_REGISTER] route=/api/workers/register workerId=${registerDto.workerId} timestamp=${new Date().toISOString()}`);
-    console.log(`[API_WORKER_REGISTER] auth principal: ${user?.userId}`);
-    const headersKeysReg = Object.keys(request.headers).filter(k => !['authorization', 'cookie', 'x-api-key', 'x-signature'].includes(k));
-    console.log(`[API_WORKER_REGISTER] headers: keys=${headersKeysReg.join(',')}`);
     try {
       const requestInfo = AuditLogService.extractRequestInfo(request);
       const apiKeyId = (request as any).apiKey?.id;
@@ -69,7 +66,6 @@ export class WorkerController {
         throw new NotFoundException('Worker not found after registration');
       }
 
-      console.log(`[API_WORKER_ROUTE] handler success`);
       return {
         success: true,
         data: {
@@ -80,12 +76,9 @@ export class WorkerController {
         },
       };
     } catch (e: any) {
-      console.log(`[API_WORKER_REGISTER] CATCH ERROR:`);
-      console.log(`[API_WORKER_REGISTER] error.name=${e.name}`);
-      console.log(`[API_WORKER_REGISTER] error.message=${e.message}`);
-      console.log(`[API_WORKER_REGISTER] error.cause=${e.cause}`);
-      console.log(`[API_WORKER_REGISTER] context: workerId=${registerDto.workerId} user=${user?.userId}`);
-      console.log(`[API_WORKER_REGISTER] error.stack:\n${e.stack}`);
+      this.logger.error(
+        `[API_WORKER_REGISTER] register failed: ${e?.message || 'unknown error'}`
+      );
       throw e;
     }
   }
@@ -154,15 +147,7 @@ export class WorkerController {
     @CurrentUser() user: { userId: string },
     @Req() request: Request
   ): Promise<any> {
-    console.log(`[API_WORKER_NEXT] route=/api/workers/:workerId/jobs/next workerId=${workerId} timestamp=${new Date().toISOString()}`);
-    console.log(`[API_WORKER_NEXT] auth principal: ${user?.userId}`);
-    const headersKeysNext = Object.keys(request.headers).filter(k => !['authorization', 'cookie', 'x-api-key', 'x-signature'].includes(k));
-    console.log(`[API_WORKER_NEXT] headers: keys=${headersKeysNext.join(',')} x-worker-id=${request.headers['x-worker-id']}`);
     try {
-      const logger = new Logger(WorkerController.name);
-      // logger.log(`[WorkerController] getNextJob called. WorkerId=${workerId}`);
-      console.log(`[WorkerController] CONSOLE LOG: getNextJob called. WorkerId=${workerId}`);
-
       // 商业级审计：强制要求x-worker-id header
       const headerWorkerId = ((request.headers['x-worker-id'] as string) || '').trim();
       if (!headerWorkerId) {
@@ -178,8 +163,7 @@ export class WorkerController {
       const job = await this.workerService.dispatchNextJobForWorker(workerId);
 
       // 结构化日志：WORKER_JOBS_NEXT_RESULT
-      // const logger = new Logger(WorkerController.name); // Removed redeclaration
-      logger.log(
+      this.logger.log(
         JSON.stringify({
           event: 'WORKER_JOBS_NEXT_RESULT',
           workerId,
@@ -190,7 +174,6 @@ export class WorkerController {
       );
 
       if (!job) {
-        console.log(`[API_WORKER_ROUTE] handler success`);
         return {
           success: true,
           data: null,
@@ -221,7 +204,6 @@ export class WorkerController {
         traceId: job.traceId || undefined,
       });
 
-      console.log(`[API_WORKER_ROUTE] handler success`);
       return {
         success: true,
         data: {
@@ -241,12 +223,9 @@ export class WorkerController {
         },
       };
     } catch (e: any) {
-      console.log(`[API_WORKER_NEXT] CATCH ERROR:`);
-      console.log(`[API_WORKER_NEXT] error.name=${e.name}`);
-      console.log(`[API_WORKER_NEXT] error.message=${e.message}`);
-      console.log(`[API_WORKER_NEXT] error.cause=${e.cause}`);
-      console.log(`[API_WORKER_NEXT] context: workerId=${workerId} user=${user?.userId}`);
-      console.log(`[API_WORKER_NEXT] error.stack:\n${e.stack}`);
+      this.logger.error(
+        `[API_WORKER_NEXT] dispatch failed: ${e?.message || 'unknown error'}`
+      );
       throw e;
     }
   }
