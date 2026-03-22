@@ -10,7 +10,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
-import { createHmac, createHash, timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual, webcrypto } from 'crypto';
 import { pickHmacSecretSSOT } from '@scu/config';
 
 import { AuditActions } from '../../audit/audit.constants';
@@ -28,6 +28,8 @@ function summarizeSensitiveInput(value: string) {
   // Debug-only metadata; avoid hashing or echoing sensitive inputs to keep CodeQL and logs clean.
   return { len: value.length };
 }
+type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
+const textEncoder = new TextEncoder();
 import {
   SignatureVerificationResult,
   SignatureVerificationContext,
@@ -397,7 +399,7 @@ export class ApiSecurityService {
         });
       }
 
-      const expectedSignature = this.computeSignature(secret, canonicalString);
+      const expectedSignature = await this.computeSignature(secret, canonicalString);
 
       // 8. 对比签名 (Counter Timing Attack)
       // 8. 对比签名 (Counter Timing Attack) - Hex Buffer hardening
@@ -637,10 +639,16 @@ export class ApiSecurityService {
   /**
    * 计算 HMAC-SHA256 签名
    */
-  computeSignature(secret: string, message: string): string {
-    const hmac = createHmac('sha256', secret);
-    hmac.update(message, 'utf8');
-    return hmac.digest('hex');
+  async computeSignature(secret: string, message: string): Promise<string> {
+    const signingKey: NodeCryptoKey = await webcrypto.subtle.importKey(
+      'raw',
+      textEncoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const signature = await webcrypto.subtle.sign('HMAC', signingKey, textEncoder.encode(message));
+    return Buffer.from(signature).toString('hex');
   }
 
   /**

@@ -1,12 +1,16 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { createHmac, randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, webcrypto } from 'crypto';
 import {
   getRuntimeDbTimeoutMs,
   isCiOrGateContextEnv,
   isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
+
+type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
+const textEncoder = new TextEncoder();
+let auditSigningKeyPromise: Promise<NodeCryptoKey> | null = null;
 
 /**
  * 审计日志服务
@@ -115,12 +119,10 @@ export class AuditLogService {
       ].join('|');
 
       const secret = process.env.AUDIT_SIGNING_SECRET;
-      const recordSignature = createHmac(
-        'sha256',
-        secret || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR'
-      )
-        .update(signBase)
-        .digest('hex');
+      const recordSignature = await this.computeAuditSignature(
+        secret || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR',
+        signBase
+      );
 
       const payload = {
         action: options.action,
@@ -217,5 +219,34 @@ export class AuditLogService {
       ip: request.ip || request.headers['x-forwarded-for'] || request.connection?.remoteAddress,
       userAgent: request.headers['user-agent'],
     };
+  }
+
+  private async computeAuditSignature(secret: string, message: string): Promise<string> {
+    if (
+      !auditSigningKeyPromise &&
+      secret === (process.env.AUDIT_SIGNING_SECRET || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR')
+    ) {
+      auditSigningKeyPromise = webcrypto.subtle.importKey(
+        'raw',
+        textEncoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+    }
+
+    const signingKey =
+      secret === (process.env.AUDIT_SIGNING_SECRET || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR')
+        ? await auditSigningKeyPromise!
+        : await webcrypto.subtle.importKey(
+            'raw',
+            textEncoder.encode(secret),
+            { name: 'HMAC', hash: 'SHA-256' },
+            false,
+            ['sign']
+          );
+
+    const signature = await webcrypto.subtle.sign('HMAC', signingKey, textEncoder.encode(message));
+    return Buffer.from(signature).toString('hex');
   }
 }

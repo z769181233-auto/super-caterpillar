@@ -4,9 +4,13 @@
  * 支持 HMAC 认证
  */
 
-import { createHmac, randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, webcrypto } from 'crypto';
 import { env } from '@scu/config';
 import * as util from 'util';
+
+type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
+const textEncoder = new TextEncoder();
+const signingKeyCache = new Map<string, Promise<NodeCryptoKey>>();
 
 export interface ApiResponse<T = any> {
   success?: boolean;
@@ -98,10 +102,21 @@ function buildMessage(apiKey: string, nonce: string, timestamp: string, body: st
  * 计算 HMAC-SHA256 签名
  * 与后端 HmacAuthService.computeSignature 逻辑一致
  */
-function computeSignature(secret: string, message: string): string {
-  const hmac = createHmac('sha256', secret);
-  hmac.update(message);
-  return hmac.digest('hex');
+async function computeSignature(secret: string, message: string): Promise<string> {
+  let signingKeyPromise = signingKeyCache.get(secret);
+  if (!signingKeyPromise) {
+    signingKeyPromise = webcrypto.subtle.importKey(
+      'raw',
+      textEncoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    signingKeyCache.set(secret, signingKeyPromise);
+  }
+  const signingKey = await signingKeyPromise;
+  const signature = await webcrypto.subtle.sign('HMAC', signingKey, textEncoder.encode(message));
+  return Buffer.from(signature).toString('hex');
 }
 
 export class ApiClient {
@@ -174,7 +189,7 @@ export class ApiClient {
       }
 
       const message = buildMessage(this.apiKey, nonce, timestamp, signBody);
-      const signature = computeSignature(this.apiSecret, message);
+      const signature = await computeSignature(this.apiSecret, message);
 
       // 4. 设置 HMAC 认证头
       headers['X-Timestamp'] = timestamp;

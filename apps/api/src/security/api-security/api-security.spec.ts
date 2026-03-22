@@ -120,7 +120,7 @@ describe('ApiSecurityService', () => {
         body,
         contentSha256
       );
-      const signature = service.computeSignature(mockSecret, canonicalV2);
+      const signature = await service.computeSignature(mockSecret, canonicalV2);
 
       // 加密 secret
       const encrypted = secretEncryptionService.encryptSecret(mockSecret);
@@ -172,7 +172,7 @@ describe('ApiSecurityService', () => {
         mockNonce,
         contentSha256
       );
-      const signature = service.computeSignature(mockSecret, canonicalV2);
+      const signature = await service.computeSignature(mockSecret, canonicalV2);
 
       // 加密 secret
       const encrypted = secretEncryptionService.encryptSecret(mockSecret);
@@ -529,17 +529,17 @@ describe('ApiSecurityService', () => {
   });
 
   describe('computeSignature', () => {
-    it('应该正确计算 HMAC-SHA256 签名', () => {
+    it('应该正确计算 HMAC-SHA256 签名', async () => {
       const secret = 'test_secret';
       const message = 'test_message';
 
-      const signature = service.computeSignature(secret, message);
+      const signature = await service.computeSignature(secret, message);
 
       // 验证签名格式（64 字符的十六进制字符串）
       expect(signature).toMatch(/^[a-f0-9]{64}$/);
 
       // 验证签名一致性（相同输入应产生相同签名）
-      const signature2 = service.computeSignature(secret, message);
+      const signature2 = await service.computeSignature(secret, message);
       expect(signature).toBe(signature2);
     });
   });
