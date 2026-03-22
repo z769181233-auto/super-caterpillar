@@ -1570,15 +1570,19 @@ export async function processNovelAnalysisJob(
 
       // 从 structure 中提取 billing_usage（如果有）
       const billingUsage = (structure as any).billing_usage;
+      const orgId = (job as any).organizationId;
 
       if (billingUsage && billingUsage.totalTokens > 0) {
+        if (!orgId) {
+          throw new Error(`[BILLING] Organization ID is required for job ${jobId}`);
+        }
         await costLedger.recordEngineBilling({
           jobId,
           jobType: 'CE06_NOVEL_PARSING',
           traceId: (job as any).traceId || `trace-${jobId}`,
           projectId,
           userId: (job as any).userId || 'system',
-          orgId: (job as any).organizationId || 'default-org',
+          orgId,
           attempt: (job as any).attempts ?? 1,
           engineKey: 'ce06_novel_parsing',
           billingUsage,

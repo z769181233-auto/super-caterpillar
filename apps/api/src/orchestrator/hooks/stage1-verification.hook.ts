@@ -109,7 +109,6 @@ export class Stage1VerificationHook {
             episodeId,
             // 必需：用于后续 VIDEO_RENDER 创建时的 Shot 关联
             shotId: parentJob.shotId,
-            referenceSheetId: 'gate-system-ref-id',
             index: i,
             // 标记验证模式（便于日志追踪）
             isVerification: true,
@@ -129,10 +128,10 @@ export class Stage1VerificationHook {
     // 6. 注入并发 AUDIO 作业（P5 Parallel Track 验证）
     const audioDedupeKey = `gate_audio:${parentJob.id}`;
     try {
-      await this.jobService.createCECoreJob({
-        projectId: parentJob.projectId,
-        organizationId: parentJob.organizationId,
-        jobType: 'AUDIO' as any,
+        await this.jobService.createCECoreJob({
+          projectId: parentJob.projectId,
+          organizationId: parentJob.organizationId,
+          jobType: 'AUDIO' as any,
         traceId: parentJob.traceId ?? undefined,
         isVerification: true,
         dedupeKey: audioDedupeKey,

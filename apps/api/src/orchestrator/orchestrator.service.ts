@@ -1146,23 +1146,38 @@ export class OrchestratorService {
   async startStage1Pipeline(params: {
     novelText: string;
     projectId?: string;
+    organizationId?: string;
     referenceSheetId?: string;
   }) {
     try {
-      const { novelText, projectId: existingProjectId, referenceSheetId: existingRefId } = params;
+      const {
+        novelText,
+        projectId: existingProjectId,
+        organizationId: providedOrganizationId,
+        referenceSheetId: existingRefId,
+      } = params;
       const { randomUUID } = await import('crypto');
       const traceId = `stage1_${randomUUID()}`;
 
-      console.log('[DEBUG_A1] Service Step 1: Resolving Project...');
       // 1. Resolve Project (Create if missing)
       let projectId = existingProjectId;
-      const defaultOrg = await this.prisma.organization.findFirst();
-      let organizationId = defaultOrg?.id || 'default-org';
-
-      const defaultUser = await this.prisma.user.findFirst();
-      const ownerId = defaultUser?.id || 'system';
+      let organizationId = providedOrganizationId;
+      let ownerId: string | undefined;
 
       if (!projectId) {
+        if (!organizationId) {
+          throw new Error('organizationId is required when projectId is not provided');
+        }
+
+        const organization = await this.prisma.organization.findUnique({
+          where: { id: organizationId },
+          select: { id: true, ownerId: true },
+        });
+        if (!organization) {
+          throw new Error(`Organization ${organizationId} not found`);
+        }
+
+        ownerId = organization.ownerId;
         const project = await this.prisma.project.create({
           data: {
             name: `Stage1_${new Date().toISOString().slice(0, 10)}`,
@@ -1173,18 +1188,21 @@ export class OrchestratorService {
         });
         projectId = project.id;
       } else {
-        const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+        const project = await this.prisma.project.findUnique({
+          where: { id: projectId },
+          select: { id: true, organizationId: true, ownerId: true },
+        });
         if (!project) throw new Error(`Project ${projectId} not found`);
         organizationId = project.organizationId;
+        ownerId = project.ownerId;
       }
-      console.log(`[DEBUG_A1] Project resolved: ${projectId}`);
 
       // 2. Create Novel Source & Volume & Chapter
-      console.log('[DEBUG_A1] Service Step 2: Creating Novel, Volume, Chapter...');
       const novelSource = await this.prisma.novel.create({
         data: {
           title: `Stage1_${new Date().toISOString().slice(0, 10)}`,
           projectId,
+          organizationId,
           author: 'System',
         } as any,
       });
@@ -1235,7 +1253,7 @@ export class OrchestratorService {
         data: {
           episodeId: episode.id,
           projectId,
-          sceneIndex: 9999, // V3.0 compliance
+          sceneIndex: 1,
           title: 'Stage 1 Pipeline Scene',
           summary: 'Auto-generated for pipeline orchestration',
         },
@@ -1244,7 +1262,7 @@ export class OrchestratorService {
       const shot = await this.prisma.shot.create({
         data: {
           sceneId: scene.id,
-          index: 9999,
+          index: 1,
           title: 'Stage 1 Pipeline Shot',
           description: 'Auto-generated for pipeline orchestration',
           type: 'pipeline_stage1',
@@ -1252,10 +1270,8 @@ export class OrchestratorService {
           organizationId,
         } as any,
       });
-      console.log(`[DEBUG_A1] Episode/Shot created: shotId=${shot.id}`);
 
       // 4. Dispatch the Pipeline Job
-      console.log('[DEBUG_A1] Service Step 4: Dispatching Job via jobService.create...');
       const job = await this.jobService.create(
         shot.id,
         {
@@ -1270,7 +1286,7 @@ export class OrchestratorService {
             pipelineRunId: traceId,
             projectId,
             organizationId,
-            referenceSheetId: existingRefId || 'gate-system-ref-id',
+            ...(existingRefId ? { referenceSheetId: existingRefId } : {}),
           },
         } as any,
         ownerId,
@@ -1278,9 +1294,7 @@ export class OrchestratorService {
       );
       console.log(`[DEBUG_A1] Job created: ${job.id}`);
 
-      this.logger.log(
-        `Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`
-      );
+      this.logger.log(`Stage 1 Pipeline Started: jobId=${job.id}, projectId=${projectId}, traceId=${traceId}`);
 
       return {
         success: true,

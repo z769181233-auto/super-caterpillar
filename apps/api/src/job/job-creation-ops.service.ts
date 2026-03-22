@@ -376,7 +376,6 @@ export class JobCreationOpsService {
         isVerification: boolean = false
     ) {
         if (isVerification) return;
-        if (referenceSheetId === 'gate-system-ref-id') return;
 
         if (!referenceSheetId) {
             throw new BadRequestException('referenceSheetId is required for SHOT_RENDER');

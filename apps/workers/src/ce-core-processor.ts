@@ -252,7 +252,10 @@ export async function processCE03Job(
       where: { id: jobId },
       select: { organizationId: true },
     });
-    const organizationIdForCE03 = shotJobForCE03?.organizationId || 'system';
+    const organizationIdForCE03 = job.organizationId || shotJobForCE03?.organizationId;
+    if (!organizationIdForCE03) {
+      throw new Error(`[CE03] Organization ID is required for job ${jobId}`);
+    }
 
     // [ORCHESTRATION] Stage 3: CE03 Success -> Trigger CE04 for this scene
     if (novelSceneId) {
@@ -290,7 +293,10 @@ export async function processCE03Job(
         where: { id: projectId },
         select: { ownerId: true },
       });
-      const userId = project?.ownerId || 'system';
+      if (!project?.ownerId) {
+        throw new Error(`[CE03] Project owner is required for job ${jobId}`);
+      }
+      const userId = project.ownerId;
       const pipelineRunId = (job.payload as any)?.pipelineRunId || traceId;
 
       await costLedgerService.recordEngineBilling({
@@ -299,7 +305,7 @@ export async function processCE03Job(
         traceId,
         projectId,
         userId,
-        orgId: organizationIdForCE03 || 'org_unknown',
+        orgId: organizationIdForCE03,
         engineKey: 'ce03_visual_density',
         runId: pipelineRunId,
         cost: 0,

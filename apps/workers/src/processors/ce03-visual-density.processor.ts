@@ -39,7 +39,7 @@ export async function processCE03VisualDensityJob(
     // Resolve Org ID (Priority: Job -> Shot -> Default)
     const jobOrgId = fullJob.organizationId || fullJob.shot?.organizationId;
     if (!jobOrgId) {
-      logger.warn(`[CE03] No Organization ID found for job ${job.id}`);
+      throw new Error(`[CE03] Organization ID is required for job ${job.id}`);
     }
 
     // Resolve Hierarchy IDs for downstream S4-2 pipeline
@@ -75,7 +75,7 @@ export async function processCE03VisualDensityJob(
         resourceType: 'shot',
         resourceId: job.shotId || 'unknown',
         action: 'ce03.visual_density.success',
-        orgId: jobOrgId || 'default-org',
+        orgId: jobOrgId,
         // actorId, traceId in details
         details: {
           jobId: job.id,
@@ -111,7 +111,7 @@ export async function processCE03VisualDensityJob(
       traceId: traceId || job.id,
       projectId,
       userId: 'system', // or derived from job
-      orgId: jobOrgId || 'default-org',
+      orgId: jobOrgId,
       engineKey: 'ce03_visual_density',
       runId: pipelineRunId as string,
       billingUsage: {

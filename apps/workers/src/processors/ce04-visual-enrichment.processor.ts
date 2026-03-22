@@ -30,7 +30,10 @@ export async function processCE04VisualEnrichmentJob(
     });
 
     if (!fullJob || !fullJob.shot) throw new Error(`Job ${job.id} or Shot not found`);
-    const jobOrgId = fullJob.organizationId || fullJob.shot.organizationId || 'org_unknown';
+    const jobOrgId = fullJob.organizationId || fullJob.shot.organizationId;
+    if (!jobOrgId) {
+      throw new Error(`[CE04] Organization ID is required for job ${job.id}`);
+    }
     const projectId = fullJob.projectId;
     const sceneId = fullJob.sceneId;
     shotId = fullJob.shotId!;
@@ -112,7 +115,7 @@ export async function processCE04VisualEnrichmentJob(
         resourceType: 'shot',
         resourceId: shotId,
         action: 'ce04.visual_enrichment.success',
-        orgId: jobOrgId || 'default-org',
+        orgId: jobOrgId,
         details: {
           jobId: job.id,
           traceId,

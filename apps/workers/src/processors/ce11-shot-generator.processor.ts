@@ -337,6 +337,9 @@ export async function processCE11ShotGeneratorJob(
     }
 
     // 4. 计费审计 (P1-2/Bible)
+    if (!job.organizationId) {
+      throw new Error(`[CE11] Organization ID is required for job ${job.id}`);
+    }
     const costService = new CostLedgerService(apiClient, prisma);
     await costService.recordEngineBilling({
       jobId: job.id,
@@ -344,7 +347,7 @@ export async function processCE11ShotGeneratorJob(
       traceId,
       projectId: projectId || 'unknown',
       userId: 'system',
-      orgId: job.organizationId || 'default-org',
+      orgId: job.organizationId,
       engineKey: finalEngineKey,
       runId: payload.pipelineRunId || traceId,
       billingUsage: engineOutput.billing_usage || { model: finalEngineKey, cost: 0 },

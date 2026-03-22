@@ -270,11 +270,12 @@ export class JobService {
       episodeId = episode.id;
 
       // Scene
+      const sceneIndex = (await this.prisma.scene.count({ where: { episodeId: episode.id } })) + 1;
       const scene = await this.prisma.scene.create({
         data: {
           episodeId: episode.id,
           projectId,
-          sceneIndex: 9999,
+          sceneIndex,
           title: `Job Placeholder Scene`,
           summary: 'Auto generated for novel analysis',
         },
@@ -282,10 +283,11 @@ export class JobService {
       sceneId = scene.id;
 
       // Shot
+      const shotIndex = (await this.prisma.shot.count({ where: { sceneId: scene.id } })) + 1;
       const shot = await this.prisma.shot.create({
         data: {
           sceneId: scene.id,
-          index: 9999,
+          index: shotIndex,
           title: `Job Placeholder Shot`,
           description: 'Auto generated for novel analysis',
           type: 'novel_analysis',

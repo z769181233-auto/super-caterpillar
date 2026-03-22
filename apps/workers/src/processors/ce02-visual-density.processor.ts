@@ -22,9 +22,13 @@ export async function processCE02VisualDensityJob(
     const text = payload.text || payload.structured_text || '';
     const traceId = payload.traceId || job.id;
     const projectId = job.projectId || payload.projectId || 'unknown-project';
+    const orgId = job.organizationId;
 
     if (!text) {
       throw new Error('Missing input text for CE02 Visual Density calculation');
+    }
+    if (!orgId) {
+      throw new Error(`[CE02] Organization ID is required for job ${job.id}`);
     }
 
     // 1. 调用现有的 CE03 核心逻辑 (Facade)
@@ -83,7 +87,7 @@ export async function processCE02VisualDensityJob(
       traceId,
       projectId,
       userId: 'system',
-      orgId: job.organizationId || 'default-org',
+      orgId,
       engineKey: 'ce02_visual_density',
       runId: payload.pipelineRunId as string,
       billingUsage: ce03Output.billing_usage || {

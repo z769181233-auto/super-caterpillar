@@ -276,18 +276,19 @@ export class ProdGateController {
    */
   @Post('novel-analysis')
   async triggerNovelAnalysis(
-    @Body() body: { projectId: string; filePath?: string; rawText?: string; jobId?: string }
+    @Body() body: { projectId: string; organizationId?: string; filePath?: string; rawText?: string; jobId?: string }
   ) {
     if (process.env.GATE_MODE !== '1') {
       throw new BadRequestException('Endpoint only available in GATE_MODE=1');
     }
 
     if (!body.projectId) throw new BadRequestException('projectId required');
+    if (!body.organizationId) throw new BadRequestException('organizationId required');
     if (!body.filePath && !body.rawText)
       throw new BadRequestException('filePath or rawText required');
 
     const traceId = body.jobId || `w3_1_na_${Date.now()}`;
-    const organizationId = 'default-org'; // Simplify for gate test
+    const organizationId = body.organizationId;
 
     this.logger.log(
       `[ProdGate] Enqueueing NOVEL_ANALYSIS job via createCECoreJob. Project: ${body.projectId}`
