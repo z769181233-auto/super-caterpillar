@@ -1,5 +1,5 @@
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AuditInsightService } from './audit-insight.service';
 import { NovelAuditFullResponse } from './audit-insight.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -19,7 +19,10 @@ export class AuditNovelController {
     @Param('novelSourceId') novelSourceId: string,
     @CurrentUser() user?: AuthenticatedUser
   ): Promise<NovelAuditFullResponse> {
-    const userId = user?.userId || 'system-audit-viewer';
+    if (!user?.userId) {
+      throw new UnauthorizedException('Authentication required');
+    }
+    const userId = user.userId;
     return this.auditInsightService.getNovelAuditFull(novelSourceId, userId);
   }
 }

@@ -39,12 +39,6 @@ export class StorageAuthService {
   async verifyAccess(key: string, tenantId: string, userId: string): Promise<boolean> {
     this.logger.debug(`verify: key=${key}, tenantId=${tenantId}, userId=${userId}`);
 
-    // 0. System-level audit bypass (bound by signature verification in controller)
-    if (userId === 'system-audit-viewer') {
-      this.logger.log('Access granted for system-audit-viewer');
-      return true;
-    }
-
     // P0 Fix: SSOT - Query by storageKey first (primary)
     const asset = await this.prisma.asset.findFirst({
       where: { storageKey: key },

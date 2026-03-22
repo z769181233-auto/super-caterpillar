@@ -1,5 +1,18 @@
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
-import { Controller, Post, Get, Req, Res, HttpStatus, Query, Logger, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Req,
+  Res,
+  HttpStatus,
+  Query,
+  Logger,
+  Param,
+  UseGuards,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -61,10 +74,16 @@ export class StorageController {
     @CurrentOrganization() orgId: string
   ) {
     const key = normalizeStorageKey(rawKey);
+    if (!user?.userId) {
+      throw new UnauthorizedException('Authentication required');
+    }
+    if (!orgId) {
+      throw new BadRequestException('Organization context required');
+    }
     const { url, expiresAt } = this.signedUrlService.generateSignedUrl({
       key,
-      tenantId: orgId || 'system-gate',
-      userId: user?.userId || 'system-gate-user',
+      tenantId: orgId,
+      userId: user.userId,
     });
     return { url, expiresAt };
   }
