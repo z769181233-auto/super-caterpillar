@@ -20,20 +20,35 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
   try {
     let targetAssetId = assetId;
     let sourceStorageKey = videoAssetStorageKey;
+    let resolvedAsset:
+      | {
+          id: string;
+          projectId: string;
+          storageKey: string;
+          signedUrl: string | null;
+        }
+      | null = null;
 
     // 1. Resolve Asset & Storage Key
-    if (targetAssetId && !sourceStorageKey) {
-      const asset = await prisma.asset.findUnique({ where: { id: targetAssetId } });
-      if (asset) {
-        if (asset.projectId !== projectId) {
-          throw new Error(
-            `[CE09] Asset ${targetAssetId} does not belong to project ${projectId}`
-          );
-        }
-        sourceStorageKey = asset.storageKey;
+    if (targetAssetId) {
+      resolvedAsset = await prisma.asset.findUnique({
+        where: { id: targetAssetId },
+        select: { id: true, projectId: true, storageKey: true, signedUrl: true },
+      });
+
+      if (!resolvedAsset) {
+        throw new Error(`[CE09] Asset ${targetAssetId} not found`);
+      }
+
+      if (resolvedAsset && resolvedAsset.projectId !== projectId) {
+        throw new Error(`[CE09] Asset ${targetAssetId} does not belong to project ${projectId}`);
+      }
+
+      if (!sourceStorageKey) {
+        sourceStorageKey = resolvedAsset?.storageKey;
       }
     } else if (!targetAssetId && shotId) {
-      const asset = await prisma.asset.findUnique({
+      resolvedAsset = await prisma.asset.findUnique({
         where: {
           ownerType_ownerId_type: {
             ownerType: AssetOwnerType.SHOT,
@@ -41,13 +56,17 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
             type: AssetType.VIDEO,
           },
         },
+        select: { id: true, projectId: true, storageKey: true, signedUrl: true },
       });
-      if (asset) {
-        if (asset.projectId !== projectId) {
-          throw new Error(`[CE09] Shot asset ${asset.id} does not belong to project ${projectId}`);
+
+      if (resolvedAsset) {
+        if (resolvedAsset.projectId !== projectId) {
+          throw new Error(
+            `[CE09] Shot asset ${resolvedAsset.id} does not belong to project ${projectId}`
+          );
         }
-        targetAssetId = asset.id;
-        sourceStorageKey = asset.storageKey;
+        targetAssetId = resolvedAsset.id;
+        sourceStorageKey = resolvedAsset.storageKey;
       }
     }
 
@@ -98,7 +117,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
         checksum: sha256,
         status: 'PUBLISHED',
         hlsPlaylistUrl: hlsPlaylistKey,
-        signedUrl: `/api/assets/${targetAssetId}/secure-url`,
+        signedUrl: resolvedAsset?.signedUrl ?? `/api/assets/${targetAssetId}/secure-url`,
         watermarkMode: 'SCU_VISIBLE_V1_ASYNC',
         fingerprintId: fpRecord.id,
       },

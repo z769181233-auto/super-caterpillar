@@ -60,7 +60,7 @@ export async function processVideoRenderJob(
   const upsertAssetViaPg = async (storageKey: string, sha256?: string) =>
     withPgClient(async (client) => {
       const existing = await client.query(
-        `SELECT id FROM assets WHERE "ownerType" = $1 AND "ownerId" = $2 AND type = $3 LIMIT 1`,
+        `SELECT id FROM assets WHERE "ownerType" = $1 AND "ownerId" = $2 AND type = $3 ORDER BY "createdAt" DESC, id DESC LIMIT 1`,
         [AssetOwnerType.SCENE, sceneId, AssetType.VIDEO]
       );
       if (existing.rows[0]?.id) {

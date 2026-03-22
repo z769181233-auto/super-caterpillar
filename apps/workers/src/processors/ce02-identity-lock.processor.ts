@@ -40,10 +40,11 @@ function resolveAbsolutePath(relativeKey: string): string {
  * Helper: Get Evidence Dir
  */
 async function getEvidenceDir(): Promise<string | null> {
-  if (await fileExists(EVIDENCE_DIR_FILE)) {
+  const evidencePath = path.join(resolveSsotRoot(), EVIDENCE_DIR_FILE);
+  if (await fileExists(evidencePath)) {
     // 2.5 CE02 Check (Hard Gate)
     // Use fs_safe
-    const evidenceContent = await readFileUnderLimit(EVIDENCE_DIR_FILE, 1024 * 1024); // 1MB limit for path file
+    const evidenceContent = await readFileUnderLimit(evidencePath, 1024 * 1024); // 1MB limit for path file
     const evidenceDir = evidenceContent.trim();
     return evidenceDir;
   }
@@ -127,17 +128,21 @@ export async function processIdentityLockJob(ctx: {
             );
           }
           // Timeout -> Deactivate and continue
+          await tx.characterIdentityAnchor.updateMany({
+            where: { characterId, isActive: true },
+            data: { isActive: false },
+          });
           await tx.characterIdentityAnchor.update({
             where: { id: existingActive.id },
-            data: { isActive: false, status: 'FAILED', lastError: 'Timeout overridden' },
+            data: { status: 'FAILED', lastError: 'Timeout overridden' },
           });
         } else if (existingActive.status === 'READY' && !payload.forceRebuild) {
           // Idempotency return
           return { type: 'EXISTING', data: existingActive };
         } else {
           // READY but forcing rebuild -> Deactivate
-          await tx.characterIdentityAnchor.update({
-            where: { id: existingActive.id },
+          await tx.characterIdentityAnchor.updateMany({
+            where: { characterId, isActive: true },
             data: { isActive: false },
           });
         }
@@ -256,7 +261,7 @@ export async function processIdentityLockJob(ctx: {
     }
 
     const combinedHash = crypto.createHash('sha256').update(viewHashes.join('')).digest('hex');
-    logEvidence(
+    await logEvidence(
       'IDENTITY_TRIVIEW_SHA256.txt',
       `${combinedHash}  [AGGREGATE_HASH] anchor=${currentAnchorId}`
     );
