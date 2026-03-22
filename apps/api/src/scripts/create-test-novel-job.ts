@@ -40,7 +40,10 @@ async function main() {
   }
 
   // 2) ensure organization
-  let organization = await prisma.organization.findFirst({ where: { name: orgName } });
+  let organization = await prisma.organization.findFirst({
+    where: { name: orgName },
+    orderBy: { createdAt: 'desc' },
+  });
   if (!organization) {
     organization = await prisma.organization.create({
       data: {
@@ -56,6 +59,7 @@ async function main() {
   // 3) ensure project
   let project = await prisma.project.findFirst({
     where: { name: projectName, organizationId: organization.id },
+    orderBy: { createdAt: 'desc' },
   });
   if (!project) {
     project = await prisma.project.create({
@@ -84,7 +88,10 @@ async function main() {
     });
   }
 
-  let episode = await prisma.episode.findFirst({ where: { seasonId: season.id, index: 1 } });
+  let episode = await prisma.episode.findFirst({
+    where: { seasonId: season.id, index: 1 },
+    orderBy: { createdAt: 'desc' },
+  });
   if (!episode) {
     episode = await prisma.episode.create({
       data: {
@@ -96,7 +103,10 @@ async function main() {
     });
   }
 
-  let scene = await prisma.scene.findFirst({ where: { episodeId: episode.id, index: 1 } });
+  let scene = await prisma.scene.findFirst({
+    where: { episodeId: episode.id, index: 1 },
+    orderBy: { createdAt: 'desc' },
+  });
   if (!scene) {
     scene = await prisma.scene.create({
       data: {
@@ -108,7 +118,10 @@ async function main() {
     });
   }
 
-  let shot = await prisma.shot.findFirst({ where: { sceneId: scene.id, index: 1 } });
+  let shot = await prisma.shot.findFirst({
+    where: { sceneId: scene.id, index: 1 },
+    orderBy: { createdAt: 'desc' },
+  });
   if (!shot) {
     shot = await prisma.shot.create({
       data: {
@@ -135,6 +148,7 @@ async function main() {
 
   let novelChapter = await prisma.novelChapter.findFirst({
     where: { novelSourceId: novelSource.id, orderIndex: 1 },
+    orderBy: { createdAt: 'desc' },
   });
   if (!novelChapter) {
     novelChapter = await prisma.novelChapter.create({
