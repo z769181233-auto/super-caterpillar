@@ -52,8 +52,6 @@ export class StoryService {
     isVerification?: boolean
   ) {
     // 1. 参数校验（DTO 已通过 class-validator）
-    // eslint-disable-next-line no-console
-    console.log('[StoryService DEBUG] parseStory dto:', JSON.stringify(dto).slice(0, 100));
     const projectId = dto.projectId;
     this.logger.log(`Parsing story for project ${projectId}, isVerification=${isVerification}`);
     if (!dto.rawText || dto.rawText.trim().length === 0) {
@@ -79,6 +77,10 @@ export class StoryService {
       throw new BadRequestException('projectId is required');
     }
 
+    if (!organizationId) {
+      throw new BadRequestException('organizationId is required');
+    }
+
     // 3. 生成 traceId（Pipeline 级）
     const traceId = targetTraceId || `ce_pipeline_${randomUUID()}`;
 
@@ -94,6 +96,7 @@ export class StoryService {
         novel = await this.prisma.novel.create({
           data: {
             projectId,
+            organizationId,
             title: dto.title || 'Untitled Story',
             author: dto.author || 'Unknown',
             rawFileUrl: '',
@@ -153,6 +156,7 @@ export class StoryService {
       await this.prisma.novel.create({
         data: {
           projectId,
+          organizationId,
           title: dto.title || 'Untitled Story',
           author: dto.author || 'Unknown',
           rawFileUrl: '', // Explicitly provide empty string to satisfy required/missing arg check
@@ -169,9 +173,6 @@ export class StoryService {
     }
 
     // 4. 创建 CE_CORE_PIPELINE Task
-    if (!organizationId) {
-      throw new BadRequestException('organizationId is required');
-    }
     const task = await this.prisma.task.create({
       data: {
         projectId,
@@ -197,8 +198,7 @@ export class StoryService {
       },
     });
 
-    // 5. [A5_FIX] Skip CE06 Job creation for production pipeline.
-    // Parsing/Shredding should be handled by truth-ready services or synchronous logic.
+    // 5. 直接返回任务结果，CE06 由外部链路接管。
     /*
     const job = await this.jobService.createCECoreJob({
       projectId,

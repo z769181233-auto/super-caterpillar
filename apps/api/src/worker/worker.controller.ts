@@ -4,6 +4,7 @@ import {
   Get,
   Body,
   Param,
+  Query,
   UseGuards,
   Req,
   NotFoundException,
@@ -127,7 +128,7 @@ export class WorkerController {
    * GET /workers/online
    */
   @Get('online')
-  async getOnlineWorkers(@Param('jobType') jobType?: string) {
+  async getOnlineWorkers(@Query('jobType') jobType?: string) {
     const workers = await this.workerService.getOnlineWorkers(jobType);
 
     return {
