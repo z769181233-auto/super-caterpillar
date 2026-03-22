@@ -62,6 +62,7 @@ export class AuditInsightService {
             action: { contains: 'SUCCESS' },
           },
           select: { details: true, apiKey: { select: { ownerUserId: true } } },
+          orderBy: { createdAt: 'desc' },
         });
 
         const details = (auditLog?.details as Record<string, any>) || {};
@@ -369,6 +370,7 @@ export class AuditInsightService {
       const shot = await this.prisma.shot.findFirst({
         where: { scene: { episode: { season: { projectId } } } },
         select: { id: true },
+        orderBy: { index: 'asc' },
       });
       shotId = shot?.id || null;
     }
@@ -378,20 +380,30 @@ export class AuditInsightService {
       id: string;
       storageKey: string | null;
       createdByJobId: string | null;
+      status: string;
+      projectId: string;
     } | null = null;
 
     if (shotId) {
-      videoFromAsset = await this.prisma.asset.findFirst({
+      videoFromAsset = await this.prisma.asset.findUnique({
         where: {
-          projectId,
-          ownerType: 'SHOT',
-          ownerId: shotId,
-          type: 'VIDEO',
-          status: 'GENERATED',
+          ownerType_ownerId_type: {
+            ownerType: 'SHOT',
+            ownerId: shotId,
+            type: 'VIDEO',
+          },
         },
-        orderBy: { createdAt: 'desc' },
-        select: { id: true, storageKey: true, createdByJobId: true },
+        select: {
+          id: true,
+          storageKey: true,
+          createdByJobId: true,
+          status: true,
+          projectId: true,
+        },
       });
+      if (videoFromAsset && videoFromAsset.status !== 'GENERATED') {
+        videoFromAsset = null;
+      }
     }
 
     if (videoFromAsset?.storageKey) {

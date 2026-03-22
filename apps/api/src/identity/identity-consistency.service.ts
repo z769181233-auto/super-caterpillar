@@ -109,6 +109,7 @@ export class IdentityConsistencyService {
         referenceAnchorId,
         targetAssetId,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (existing) {

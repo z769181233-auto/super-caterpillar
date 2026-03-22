@@ -814,6 +814,7 @@ export class OrchestratorService {
             equals: pipelineRunId,
           },
         },
+        orderBy: { createdAt: 'desc' },
       });
 
       if (existingAudio) {
@@ -919,6 +920,7 @@ export class OrchestratorService {
               equals: pipelineRunId,
             },
           },
+          orderBy: { createdAt: 'desc' },
         }
       );
 
@@ -966,6 +968,7 @@ export class OrchestratorService {
           equals: pipelineRunId,
         },
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (existingVideoJob) {
@@ -1083,6 +1086,7 @@ export class OrchestratorService {
         type: JobTypeEnum.CE09_MEDIA_SECURITY,
         payload: { path: ['pipelineRunId'], equals: pipelineRunId },
       },
+      orderBy: { createdAt: 'desc' },
     });
     if (existing) {
       this.logger.log(`[DAG] CE09 for ${pipelineRunId} already exists (${existing.id}). Skipping.`);

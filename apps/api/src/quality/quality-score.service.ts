@@ -149,8 +149,14 @@ export class QualityScoreService {
     }
 
     // 2. 物理审计 (Render Physical)
-    const renderAsset = await this.prisma.asset.findFirst({
-      where: { shotId, type: 'VIDEO' },
+    const renderAsset = await this.prisma.asset.findUnique({
+      where: {
+        ownerType_ownerId_type: {
+          ownerType: 'SHOT',
+          ownerId: shotId,
+          type: 'VIDEO',
+        },
+      },
     });
     const renderPhysicalPass = !!renderAsset;
 

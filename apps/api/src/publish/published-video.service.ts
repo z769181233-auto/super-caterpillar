@@ -97,7 +97,7 @@ export class PublishedVideoService {
         : undefined;
 
     return await this.prisma.$transaction(async (tx) => {
-      let pv = await tx.publishedVideo.findFirst({
+      let pv = await tx.publishedVideo.findUnique({
         where: { assetId },
       });
 

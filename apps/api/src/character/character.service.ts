@@ -49,10 +49,12 @@ export class CharacterService {
     }
 
     // 检查是否已存在同名角色
-    const existing = await (this.prisma as any).characterProfile.findFirst({
+    const existing = await (this.prisma as any).characterProfile.findUnique({
       where: {
-        projectId,
-        name: dto.name,
+        projectId_name: {
+          projectId,
+          name: dto.name,
+        },
       },
     });
 

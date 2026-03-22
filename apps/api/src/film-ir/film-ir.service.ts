@@ -64,10 +64,15 @@ export class FilmIRService {
     }
 
     // 幂等检查：LOCKED 版本不允许重建
-    const existingLocked = await this.filmIr.findFirst({
-      where: { sceneId, plannerVersion, status: 'LOCKED' },
+    const existingLocked = await this.filmIr.findUnique({
+      where: {
+        sceneId_plannerVersion: {
+          sceneId,
+          plannerVersion,
+        },
+      },
     });
-    if (existingLocked) {
+    if (existingLocked?.status === 'LOCKED') {
       throw new ConflictException(
         `FilmIR for scene ${sceneId} version ${plannerVersion} is LOCKED. Use /replan to create new version.`,
       );

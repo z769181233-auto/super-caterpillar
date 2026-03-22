@@ -187,6 +187,7 @@ export class ProdGateController {
     const member = await this.db.organizationMember.findFirst({
       where: { organizationId: organizationId },
       select: { userId: true },
+      orderBy: { createdAt: 'asc' },
     });
 
     if (!member?.userId) {
