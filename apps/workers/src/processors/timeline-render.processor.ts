@@ -120,7 +120,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     }
 
     // P0-R5: High-Fidelity Pass-through (Phase T: Strict)
-    // If source asset is MP4, use it directly (bypass frames.txt/fallback-compose)
+    // Timeline render is now sealed to truth-owned shot VIDEO assets only.
     try {
       const sourceAsset = await prisma.asset.findUnique({
         where: {
@@ -153,44 +153,6 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         `[TimelineRender] Critical Failure in Source Asset Resolution: ${error.message}`
       );
     }
-
-    // Render if not skipped
-    const framesTxt = shot.framesTxtStorageKey;
-
-    // P22-0 Race Condition Fix: Wait for SHOT_RENDER completion (frames.txt availability)
-    if (!(await fileExists(framesTxt))) {
-      const startWait = Date.now();
-      while (Date.now() - startWait < 60000) {
-        if (await fileExists(framesTxt)) break;
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-    }
-
-    if (!(await fileExists(framesTxt))) {
-      throw new Error(
-        `[TimelineRender] Fail-fast: frames.txt not found for shotId=${shot.shotId} at ${framesTxt}`
-      );
-    }
-
-    // Real rendering for Stage 1: Shot Frames to MP4
-    const args = [
-      '-f',
-      'concat',
-      '-safe',
-      '0',
-      '-i',
-      framesTxt,
-      '-c:v',
-      'libx264',
-      '-pix_fmt',
-      'yuv420p',
-      '-r',
-      fps.toString(),
-      '-y',
-      shotOutputPath,
-    ];
-    await runFfmpeg(args, `Stage1_Shot_${shot.shotId}`);
-    shotMp4Paths.push(shotOutputPath);
   }
 
   // Stage 1.5: Prepare Audio Assets (P18-1: Production Audio Routing)
