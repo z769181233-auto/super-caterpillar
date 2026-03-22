@@ -121,18 +121,8 @@ export class ApiSecurityService {
     const { apiKey, nonce, timestamp, signature, method, path, contentSha256, ip, userAgent } =
       context;
 
-    // HMAC Branch Coverage Debug
-    const dbg = process.env.HMAC_DEBUG === '1';
-    const dlog = (obj: any) => {
-      if (!dbg) return;
-      try {
-        // Use stdout to ensure it lands in api.log, independent of logger config
-        // eslint-disable-next-line no-console
-        console.log(JSON.stringify({ tag: 'HMAC_DEBUG_STEP', ...obj }));
-      } catch {
-        // Ignore JSON stringify errors in debug logging
-      }
-    };
+    const dbg = false;
+    const dlog = (_obj: any) => {};
 
     dlog({
       step: 'enter',
@@ -622,13 +612,8 @@ export class ApiSecurityService {
     // If method is POST and body is empty (meaning Guard skipped reading it),
     // we use contentSha256 for the canonical string (Sign Hash Protocol).
     if (method === 'POST' && body === '' && contentSha256) {
-      if (process.env.HMAC_DEBUG === '1') console.log('[HMAC_DEBUG] Using ContentHash strategy');
       return `${apiKey}${nonce}${timestamp}${contentSha256}`;
     }
-    if (process.env.HMAC_DEBUG === '1')
-      console.log(
-        `[HMAC_DEBUG] Using Body strategy. Method=${method}, BodyLen=${body.length}, HasContentSha256=${!!contentSha256}`
-      );
     const result = `${apiKey}${nonce}${timestamp}${body}`;
     return result;
   }

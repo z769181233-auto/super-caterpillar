@@ -127,14 +127,8 @@ export class BillingService {
   ): Promise<boolean> {
     if (amount <= 0) return true;
 
-    console.log(`[BILLING_DEBUG] orgId=${organizationId} projectId=${projectId} amount=${amount}`);
-
     // Ensure organizationId is present
     if (!organizationId) throw new ForbiddenException('Organization ID is required');
-
-    console.error(
-      `[BILLING_DEBUG] consumeCredits orgId=${organizationId} amount=${amount} type=${type}`
-    );
 
     const details = {
       amount,
