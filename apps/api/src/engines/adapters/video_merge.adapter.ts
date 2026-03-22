@@ -38,9 +38,9 @@ export class VideoMergeLocalAdapter implements EngineAdapter {
 
       return {
         status: EngineInvokeStatus.SUCCESS,
-        output,
+        output: output as unknown as Record<string, unknown>,
         metrics: {
-          usage: output.billing_usage,
+          usage: output.billing_usage as Record<string, unknown>,
         },
       };
     } catch (error: unknown) {

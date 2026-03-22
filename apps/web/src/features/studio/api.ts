@@ -6,8 +6,7 @@ import {
   InsightsPayload,
   EmotionalFrame,
 } from './types';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+import { buildApiUrl } from '@/lib/api-base';
 
 async function getJSON<T>(url: string): Promise<T> {
   const res = await fetch(url, { cache: 'no-store' });
@@ -89,6 +88,11 @@ function getProjectEpisodes(data: ApiBuildResponse) {
   return seasonEpisodes.length > 0 ? seasonEpisodes : data.episodes || [];
 }
 
+function getDeterministicVariance(index: number, salt: number): number {
+  const seed = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return seed - Math.floor(seed);
+}
+
 interface ApiShotResponse {
   summary?: string;
   shotTitle?: string;
@@ -117,7 +121,7 @@ export async function fetchBuildStudio(buildId: string): Promise<{
   tree: ScriptNode[];
   insights: InsightsPayload;
 }> {
-  const data = await getJSON<ApiBuildResponse>(`${API_BASE}/builds/${buildId}/outline`);
+  const data = await getJSON<ApiBuildResponse>(buildApiUrl(`/api/builds/${buildId}/outline`));
   const episodes = getProjectEpisodes(data);
 
   const summary: BuildSummary = {
@@ -176,9 +180,10 @@ export async function fetchBuildStudio(buildId: string): Promise<{
     (ep.scenes || []).flatMap((sc) => sc.shots || [])
   );
   const dynamicFrames: EmotionalFrame[] = shots.map((sh, i) => {
+    const variance = getDeterministicVariance(i, 1);
     const score = Math.min(
       100,
-      Math.max(0, Math.round(40 + Math.sin(i * 0.8) * 30 + Math.random() * 10))
+      Math.max(0, Math.round(40 + Math.sin(i * 0.8) * 30 + variance * 10))
     );
 
     return {
@@ -193,7 +198,7 @@ export async function fetchBuildStudio(buildId: string): Promise<{
             : score > 80
               ? '高频动作词爆发，多重指令交叠，情节张力达到峰值。'
               : '节奏稳定，角色互动比例符合剧本模型要求。',
-        dialogueRatio: Math.floor(Math.random() * 60) + 20,
+        dialogueRatio: Math.floor(getDeterministicVariance(i, 2) * 60) + 20,
         actionVerbDensity: score > 50 ? 65 : 25,
       },
     };
@@ -210,7 +215,7 @@ export async function fetchBuildStudio(buildId: string): Promise<{
 }
 
 export async function fetchShotReader(shotId: string): Promise<ShotReaderPayload> {
-  const data = await getJSON<ApiShotResponse>(`${API_BASE}/shots/${shotId}/source`);
+  const data = await getJSON<ApiShotResponse>(buildApiUrl(`/api/shots/${shotId}/source`));
 
   return {
     shotId,

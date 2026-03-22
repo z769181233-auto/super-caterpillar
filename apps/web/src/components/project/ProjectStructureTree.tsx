@@ -13,6 +13,12 @@ import {
   ProjectStructureShotNode,
 } from '@scu/shared-types';
 
+type StructureNode =
+  | ProjectStructureSeasonNode
+  | ProjectStructureEpisodeNode
+  | ProjectStructureSceneNode
+  | ProjectStructureShotNode;
+
 interface ProjectStructureTreeProps {
   projectId: string;
   data?: ProjectStructureTreeDTO | null; // S3-C: Single Source of Truth
@@ -130,8 +136,9 @@ export default function ProjectStructureTree({ projectId, data }: ProjectStructu
   };
 
   // S3-C Hard Revision 2: 统一 title/name 读取，避免旧数据字段导致的显示问题
-  const getNodeTitle = (node: any): string => {
-    return node.title ?? node.name ?? '(untitled)';
+  const getNodeTitle = (node: StructureNode): string => {
+    if ('name' in node) return node.name ?? '(untitled)';
+    return node.title ?? '(untitled)';
   };
 
   // S3-D Fine-Tune: 统一状态图标风格

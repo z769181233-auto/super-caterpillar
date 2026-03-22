@@ -1,13 +1,12 @@
-// apps/web/src/lib/apiClient.ts
-// 后端基础地址，优先使用 NEXT_PUBLIC_API_URL，默认 http://localhost:3000
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
 import {
   ProjectSceneGraph,
   NovelAnalysisStatus,
   ProjectOverviewDTO,
   ProjectStructureTree,
 } from '@scu/shared-types';
+import { API_ORIGIN } from '@/lib/api-base';
+
+const API_BASE_URL = API_ORIGIN;
 
 export type UnauthorizedError = Error & { status: 401; code: 'UNAUTHORIZED' };
 

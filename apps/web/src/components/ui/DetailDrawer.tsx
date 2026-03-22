@@ -12,8 +12,8 @@ interface DetailDrawerProps {
   createdAt?: string;
   startedAt?: string;
   finishedAt?: string;
-  input?: any;
-  output?: any;
+  input?: unknown;
+  output?: unknown;
   error?: string | null;
   onRetry?: () => void;
   onCancel?: () => void;

@@ -23,6 +23,14 @@ type Node = {
     children?: Node[];
 };
 
+type PipelineTreeResponse = Node | { data?: Node } | null;
+
+function unwrapPipelineTree(payload: PipelineTreeResponse): Node | null {
+    if (!payload) return null;
+    if ('nodeId' in payload) return payload;
+    return payload.data || null;
+}
+
 function badge(status?: string) {
     const s = (status || '').toUpperCase();
     const cls =
@@ -72,9 +80,9 @@ export function PipelinePageContent() {
         setLoading(true);
         try {
             const data = await pipelineApi.getPipeline(projectId);
-            setRoot((data as any).data || data);
-        } catch (e: any) {
-            setErr(e?.message || '加载失败');
+            setRoot(unwrapPipelineTree(data as PipelineTreeResponse));
+        } catch (error) {
+            setErr(error instanceof Error ? error.message : '加载失败');
         } finally {
             setLoading(false);
         }
@@ -98,8 +106,8 @@ export function PipelinePageContent() {
             else if (kind === 'skip') await pipelineApi.skipNode(projectId, nodeId, reason.trim());
             else if (kind === 'force') await pipelineApi.forcePassNode(projectId, nodeId, reason.trim());
             await refresh();
-        } catch (e: any) {
-            setErr(e?.message || '操作失败');
+        } catch (error) {
+            setErr(error instanceof Error ? error.message : '操作失败');
         } finally {
             setBusyNodeId('');
         }

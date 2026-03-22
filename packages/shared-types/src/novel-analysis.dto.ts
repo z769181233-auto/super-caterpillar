@@ -1,12 +1,14 @@
 // packages/shared-types/src/novel-analysis.dto.ts
 
+import { JsonObject } from './json';
+
 export interface AnalyzedShot {
   index: number; // 镜头序号，从 1 开始
   title?: string; // 镜头标题
   summary?: string; // 镜头简介
   text?: string; // 原始文本
   shotType?: string; // [V3.0] 镜头类型 (close_up, wide等)
-  camera?: Record<string, any>; // [SSOT] 相机参数
+  camera?: JsonObject; // [SSOT] 相机参数
   characters?: string[]; // [SSOT] 镜头角色列表
   action?: string; // [SSOT] 动作描述
   emotion?: string; // [V3.0] 情绪描述

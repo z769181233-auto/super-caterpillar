@@ -30,6 +30,7 @@ import { promises as fsp } from 'fs';
 import * as path from 'path';
 import { fileExists, ensureDir } from '../../../packages/shared/fs_async';
 import sharp from 'sharp';
+import { JsonObject } from '@scu/shared-types';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -345,9 +346,9 @@ export async function processCE03Job(
             organizationId: organizationIdForCE03,
             traceId,
             // Propagate Schema IDs from CE03 Job
-            episodeId: job.episodeId,
-            sceneId: job.sceneId,
-            shotId: job.shotId,
+            episodeId: getStringField(getJobRecord(job), 'episodeId'),
+            sceneId: getStringField(getJobRecord(job), 'sceneId'),
+            shotId: getStringField(getJobRecord(job), 'shotId'),
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -1194,7 +1195,7 @@ export async function processCE07Job(
     previous_memory: previousMemory
       ? {
           summary: previousMemory.summary || '',
-          character_states: toJsonRecord(previousMemory.characterStates),
+          character_states: toJsonRecord(previousMemory.characterStates) as unknown as JsonObject,
         }
       : undefined,
     context: {
@@ -1352,7 +1353,7 @@ export async function processGenericCEJob(
       traceId,
       projectId,
       jobId,
-      jobType: job.type,
+      jobType: getStringField(getJobRecord(job), 'type') || 'generic_ce_real_engine',
       engineKey: getStringField(getJobRecord(job), 'engineKey') || 'generic_ce_real_engine',
       status: 'SUCCESS',
       latencyMs: duration,

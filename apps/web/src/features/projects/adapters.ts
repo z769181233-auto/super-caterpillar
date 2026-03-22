@@ -17,20 +17,37 @@ export interface ProjectCardView {
   tags: string[];
 }
 
+type RawProjectStats = {
+  seasonsCount?: number;
+  scenesCount?: number;
+  shotsCount?: number;
+};
+
+type RawProjectCard = {
+  id?: string;
+  name?: string;
+  createdAt?: string;
+  status?: string;
+  hasVideo?: boolean;
+  stats?: RawProjectStats;
+};
+
+const PROJECT_CARD_STATUSES = ['READY', 'RUNNING', 'ERROR', 'DONE'] as const;
+
 // Adapter to transform backend project schema to Frontend UI schema (ProjectCardView)
-export function adaptProjects(rawProjects: any[]): ProjectCardView[] {
+export function adaptProjects(rawProjects: RawProjectCard[]): ProjectCardView[] {
   if (!Array.isArray(rawProjects)) return [];
 
-  return rawProjects.map((raw: any) => {
+  return rawProjects.map((raw, index) => {
     // Determine status string
     let latestStatus: 'READY' | 'RUNNING' | 'ERROR' | 'DONE' = 'READY';
     const rawStatus = (raw.status || '').toUpperCase();
-    if (['READY', 'RUNNING', 'ERROR', 'DONE'].includes(rawStatus)) {
-      latestStatus = rawStatus as any;
+    if (PROJECT_CARD_STATUSES.includes(rawStatus as (typeof PROJECT_CARD_STATUSES)[number])) {
+      latestStatus = rawStatus as 'READY' | 'RUNNING' | 'ERROR' | 'DONE';
     }
 
     return {
-      id: raw.id || `temp-${Math.random()}`,
+      id: raw.id || `temp-project-${index}`,
       title: raw.name || 'Untitled Project',
       updatedAt: raw.createdAt || new Date().toISOString(),
       latestBuild: {

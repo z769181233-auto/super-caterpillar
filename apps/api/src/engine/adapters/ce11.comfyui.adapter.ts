@@ -112,7 +112,7 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
 
       return {
         status: EngineInvokeStatus.SUCCESS,
-        output: result,
+        output: result as unknown as Record<string, unknown>,
         metrics: {
           latencyMs: Date.now() - started,
         },

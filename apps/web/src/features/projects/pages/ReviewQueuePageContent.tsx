@@ -7,6 +7,15 @@ import { projectApi } from '@/lib/apiClient';
 const FEATURE_V0_ENABLED = process.env.NEXT_PUBLIC_ENGINE_HUB_V0_ENABLED === '1';
 const FEATURE_RERUN_ENABLED = process.env.NEXT_PUBLIC_QUALITY_POLICY_MANUAL_RERUN_ENABLED === '1';
 
+type ReviewDecision = {
+  auditId: string;
+  createdAt: string;
+  decision: string;
+  effectiveDecision: string;
+};
+
+type ReviewStatusFilter = 'PENDING' | 'DONE';
+
 const DecisionBadge = ({ decision }: { decision: string }) => {
     let style: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500 };
     if (decision === 'ALLOW') style = { ...style, backgroundColor: '#dcfce7', color: '#166534' };
@@ -18,15 +27,18 @@ const DecisionBadge = ({ decision }: { decision: string }) => {
 export function ReviewQueuePageContent() {
     const { projectId } = useParams() as { projectId: string };
     const [loading, setLoading] = useState(false);
-    const [decisions, setDecisions] = useState<any[]>([]);
-    const [statusFilter, setStatusFilter] = useState<'PENDING' | 'DONE'>('PENDING');
+    const [decisions, setDecisions] = useState<ReviewDecision[]>([]);
+    const [statusFilter, setStatusFilter] = useState<ReviewStatusFilter>('PENDING');
 
     const fetchData = async () => {
         setLoading(true);
         try {
             const data = await projectApi.getQualityReviewQueue({ projectId, status: statusFilter, limit: 50 });
-            setDecisions(data || []);
-        } catch (err: any) { alert(err.message); } finally { setLoading(false); }
+            setDecisions(Array.isArray(data) ? (data as ReviewDecision[]) : []);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '加载审核队列失败';
+            alert(message);
+        } finally { setLoading(false); }
     };
 
     useEffect(() => { if (projectId) fetchData(); }, [projectId, statusFilter]);
@@ -36,7 +48,7 @@ export function ReviewQueuePageContent() {
             <div style={{ border: '1px solid #1f2937', borderRadius: '8px', backgroundColor: '#0b1120' }}>
                 <div style={{ padding: '1rem', borderBottom: '1px solid #1f2937', display: 'flex', justifyContent: 'space-between' }}>
                     <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Quality Review Queue</h1>
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} style={{ padding: '0.4rem', borderRadius: '4px', backgroundColor: '#020617', color: '#fff' }}>
+                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as ReviewStatusFilter)} style={{ padding: '0.4rem', borderRadius: '4px', backgroundColor: '#020617', color: '#fff' }}>
                         <option value="PENDING">Pending Action</option>
                         <option value="DONE">Done / Handled</option>
                     </select>

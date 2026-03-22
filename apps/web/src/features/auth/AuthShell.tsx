@@ -14,6 +14,16 @@ interface AuthShellProps {
   mode: 'login' | 'register';
 }
 
+interface AuthResponse {
+  success?: boolean;
+  data?: {
+    message?: string;
+  };
+  error?: {
+    message?: string;
+  };
+}
+
 export function AuthShell({ mode }: AuthShellProps) {
   const t = useTranslations('Auth');
   const locale = useLocale();
@@ -42,7 +52,7 @@ export function AuthShell({ mode }: AuthShellProps) {
         body: JSON.stringify({ email, password }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as AuthResponse;
 
       if (!response.ok || !result.success) {
         throw new Error(result.data?.message || result.error?.message || t('errorInvalid'));
@@ -55,8 +65,8 @@ export function AuthShell({ mode }: AuthShellProps) {
 
       // Using replace to prevent back button from returning to login form
       router.replace(safePath);
-    } catch (err: any) {
-      setErrorMsg(err.message || t('errorInvalid'));
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : t('errorInvalid'));
       setLoading(false);
     }
   };

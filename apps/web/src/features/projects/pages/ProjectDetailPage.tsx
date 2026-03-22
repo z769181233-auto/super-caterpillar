@@ -9,12 +9,13 @@ import { useRequestState } from '@/hooks/useRequestState';
 import { ProjectDetailSkeleton } from '../components/ProjectDetailSkeleton';
 import { ProjectDetailShell } from '@/features/project-detail/ProjectDetailShell';
 import { getProjectDetail } from '@/features/project-detail/api';
+import { ProjectDetailView } from '@/features/project-detail/adapters';
 
 export function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.projectId as string;
 
-  const s = useRequestState<any>(null, {
+  const s = useRequestState<ProjectDetailView>(null, {
     initialStatus: 'loading',
     isEmpty: (data) => !data,
   });

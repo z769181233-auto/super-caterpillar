@@ -2,6 +2,17 @@ import { AssetOwnerType, AssetType, PrismaClient } from 'database';
 import { WorkerJobBase } from '@scu/shared-types';
 import { ApiClient } from '../api-client';
 
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getStringField(source: JsonRecord, key: string): string | undefined {
+  const value = source[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
 /**
  * Audio Processor - Hub-only Architecture (PLAN-5)
  * - Removes all local FFmpeg/Say logic.
@@ -13,9 +24,12 @@ export async function processAudioJob(
   job: WorkerJobBase,
   apiClient: ApiClient
 ): Promise<any> {
-  const payload = job.payload as any;
-  const { text, mode, projectId, pipelineRunId, voice } = payload;
-  const sceneId = payload.sceneId || payload.shotId;
+  const payload = isRecord(job.payload) ? job.payload : {};
+  const context = isRecord(job.context) ? job.context : {};
+  const text = getStringField(payload, 'text') || '';
+  const voice = getStringField(payload, 'voice');
+  const projectId = getStringField(payload, 'projectId');
+  const sceneId = getStringField(payload, 'sceneId') || getStringField(payload, 'shotId');
 
   if (!projectId) {
     throw new Error('[AUDIO] Missing projectId');
@@ -29,14 +43,18 @@ export async function processAudioJob(
     const ttsResult = await apiClient.invokeEngine({
       engineKey: 'audio_tts',
       payload: { text, voice },
-      context: { ...job.context, jobId: job.id, traceId: payload.traceId },
+      context: { ...context, jobId: job.id, traceId: getStringField(payload, 'traceId') },
     });
 
     if (ttsResult.status !== 'SUCCESS') {
       throw new Error(`TTS_ENGINE_FAIL: ${ttsResult.error?.message}`);
     }
 
-    const { storageKey, duration, sha256, size } = ttsResult.output;
+    const output = isRecord(ttsResult.output) ? ttsResult.output : {};
+    const storageKey = typeof output.storageKey === 'string' ? output.storageKey : '';
+    const duration = typeof output.duration === 'number' ? output.duration : 0;
+    const sha256 = typeof output.sha256 === 'string' ? output.sha256 : '';
+    const size = typeof output.size === 'number' ? output.size : 0;
 
     // 2. Register Asset in DB
     const asset = await prisma.asset.upsert({

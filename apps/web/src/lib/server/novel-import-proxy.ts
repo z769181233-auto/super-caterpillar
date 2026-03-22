@@ -1,6 +1,5 @@
 import { createHash, createHmac, randomUUID } from 'crypto';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+import { buildApiUrl as buildWebApiUrl } from '@/lib/api-base';
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -80,8 +79,7 @@ export function buildSignedMultipartHeaders(): Record<string, string> {
 }
 
 export function buildApiUrl(pathname: string): string {
-  const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-  return `${base}${pathname}`;
+  return buildWebApiUrl(pathname);
 }
 
 export function extractForwardHeaders(request: Request): HeadersInit {

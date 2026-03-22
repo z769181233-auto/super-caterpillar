@@ -26,6 +26,16 @@ interface DetailPanelProps {
   projectId: string;
 }
 
+type ShotAsset = {
+  type?: string;
+  storageKey?: string | null;
+};
+
+type ShotNodeWithVideo = ShotNode & {
+  videoUrl?: string | null;
+  assets?: ShotAsset[];
+};
+
 /**
  * 分析状态映射（UI-only，仅用于 StatusBadge 展示）
  */
@@ -66,8 +76,7 @@ export default function DetailPanel({ selectedNode, analysisStatus, projectId }:
   // Helper to calculate Path (e.g. S1 E2 Sc3)
   const calculatePath = (node: SelectedNode): string => {
     if (!node) return '';
-    const d = node.data as any;
-    const idx = d.index ?? '?';
+    const idx = node.data.index ?? '?';
 
     if (node.type === 'season') return `S${idx}`;
     if (node.type === 'episode') return `Ep${idx}`; // Ideally S{parent} Ep{idx} but we need parent context. For now just local index.
@@ -287,7 +296,10 @@ export default function DetailPanel({ selectedNode, analysisStatus, projectId }:
     }
 
     if (selectedNode.type === 'shot') {
-      const sh = selectedNode.data;
+      const sh = selectedNode.data as ShotNodeWithVideo;
+      const videoUrlCandidate =
+        sh.videoUrl || sh.assets?.find((asset) => asset.type === 'VIDEO')?.storageKey;
+      const videoUrl = typeof videoUrlCandidate === 'string' ? videoUrlCandidate : null;
       return (
         <div className="space-y-4">
           {MetaHeader}
@@ -361,7 +373,7 @@ export default function DetailPanel({ selectedNode, analysisStatus, projectId }:
               }}
             >
               {/* Show Video Controls if available */}
-              {(sh as any).videoUrl ? (
+              {videoUrl ? (
                 <div className="space-y-3">
                   <div
                     style={{
@@ -373,14 +385,14 @@ export default function DetailPanel({ selectedNode, analysisStatus, projectId }:
                     }}
                   >
                     <video
-                      src={(sh as any).videoUrl}
+                      src={videoUrl}
                       controls
                       style={{ width: '100%', height: '100%' }}
                     />
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <a
-                      href={(sh as any).videoUrl}
+                      href={videoUrl}
                       download
                       style={{ flex: 1, textDecoration: 'none' }}
                     >
@@ -397,7 +409,7 @@ export default function DetailPanel({ selectedNode, analysisStatus, projectId }:
                       </button>
                     </a>
                     <Link
-                      href={`/projects/${projectId}/video?url=${encodeURIComponent((sh as any).videoUrl)}`}
+                      href={`/projects/${projectId}/video?url=${encodeURIComponent(videoUrl)}`}
                       style={{ flex: 1, textDecoration: 'none' }}
                     >
                       <button

@@ -19,7 +19,7 @@ interface Shot {
   type: string;
   visualPrompt?: string;
   cameraMovement?: string;
-  assetBindings?: any;
+  assetBindings?: Record<string, unknown> | null;
 }
 
 interface DirectorPanelProps {

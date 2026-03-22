@@ -7,8 +7,81 @@ import {
   EvidenceSummaryView,
 } from './adapters';
 
-function getProjectEpisodes(raw: any) {
-  const seasonEpisodes = (raw?.seasons || []).flatMap((season: any) => season?.episodes || []);
+type ProjectShot = {
+  id: string;
+  index: number;
+  summary?: string;
+  startOffset?: number;
+  endOffset?: number;
+};
+
+type ProjectScene = {
+  id: string;
+  index: number;
+  title?: string;
+  summary?: string;
+  shots?: ProjectShot[];
+};
+
+type ProjectEpisode = {
+  id: string;
+  index: number;
+  title: string;
+  summary?: string;
+  scenes?: ProjectScene[];
+};
+
+type ProjectSeason = {
+  episodes?: ProjectEpisode[];
+};
+
+type ProjectOverviewAuditLog = {
+  id: string;
+  resourceId?: string;
+  at?: string;
+};
+
+type ProjectOverviewNextAction = {
+  action?: {
+    canRun?: boolean;
+  };
+};
+
+type ProjectRunningJob = {
+  id: string;
+  jobType?: string;
+  taskId?: string;
+  status?: string;
+  createdAt?: string;
+};
+
+type ProjectDetailApiData = {
+  id?: string;
+  name?: string;
+  organizationId?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  seasons?: ProjectSeason[];
+  episodes?: ProjectEpisode[];
+};
+
+type ProjectOverviewApiData = {
+  runningJobs?: ProjectRunningJob[];
+  auditLogs?: ProjectOverviewAuditLog[];
+  nextAction?: ProjectOverviewNextAction;
+};
+
+type ApiEnvelope<T> = {
+  success?: boolean;
+  data?: T;
+  error?: {
+    message?: string;
+  };
+};
+
+function getProjectEpisodes(raw: ProjectDetailApiData) {
+  const seasonEpisodes = (raw?.seasons || []).flatMap((season) => season?.episodes || []);
   return seasonEpisodes.length > 0 ? seasonEpisodes : raw?.episodes || [];
 }
 
@@ -17,13 +90,13 @@ function getProjectEpisodes(raw: any) {
  */
 export async function getProjectDetail(projectId: string): Promise<ProjectDetailView> {
   const response = await fetch(`/api/projects/${projectId}`);
-  const result = await response.json();
+  const result = (await response.json()) as ApiEnvelope<ProjectDetailApiData>;
 
   if (!response.ok || !result.success) {
     throw new Error(result.error?.message || 'Failed to fetch project detail');
   }
 
-  const raw = result.data;
+  const raw = result.data ?? {};
   const episodes = getProjectEpisodes(raw);
   // 映射后端项目实体至前端视图模型
   return adaptProjectDetail({
@@ -46,7 +119,7 @@ export async function getProjectDetail(projectId: string): Promise<ProjectDetail
  */
 export async function getProjectBuilds(projectId: string): Promise<BuildRowView[]> {
   const response = await fetch(`/api/projects/${projectId}/overview`);
-  const result = await response.json();
+  const result = (await response.json()) as ApiEnvelope<ProjectOverviewApiData>;
 
   if (!response.ok || !result.success) {
     return [];
@@ -55,7 +128,7 @@ export async function getProjectBuilds(projectId: string): Promise<BuildRowView[
   const runningJobs = result.data?.runningJobs || [];
   // 将运行中的 Job 映射为 UI 的构建行
   return adaptBuildsList(
-    runningJobs.map((job: any) => ({
+    runningJobs.map((job) => ({
       id: job.id,
       name: `${job.jobType} [Task: ${job.taskId?.slice(0, 8)}]`,
       status: job.status === 'RUNNING' ? 'RUNNING' : job.status === 'SUCCESS' ? 'DONE' : 'ERROR',
@@ -74,13 +147,13 @@ export async function getProjectBuilds(projectId: string): Promise<BuildRowView[
  */
 export async function getProjectEvidenceSummary(projectId: string): Promise<EvidenceSummaryView> {
   const response = await fetch(`/api/projects/${projectId}/overview`);
-  const result = await response.json();
+  const result = (await response.json()) as ApiEnvelope<ProjectOverviewApiData>;
 
   if (!response.ok || !result.success) {
     throw new Error('Failed to fetch evidence summary');
   }
 
-  const overview = result.data;
+  const overview = result.data ?? {};
   const recentAudit = overview.auditLogs?.[0];
 
   return adaptEvidenceSummary({

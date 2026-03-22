@@ -6,8 +6,14 @@ import { Card } from '@/components/ui/Card';
 
 export function FeatureGrid() {
   const t = useTranslations('Landing');
+  type TranslationKey = Parameters<typeof t>[0];
 
-  const features = [
+  const features: Array<{
+    id: number;
+    icon: string;
+    titleKey: TranslationKey;
+    descKey: TranslationKey;
+  }> = [
     { id: 1, icon: '🛡️', titleKey: 'feature1.title', descKey: 'feature1.desc' },
     { id: 2, icon: '⚙️', titleKey: 'feature2.title', descKey: 'feature2.desc' },
     { id: 3, icon: '⛓️', titleKey: 'feature3.title', descKey: 'feature3.desc' },
@@ -55,7 +61,7 @@ export function FeatureGrid() {
                 marginBottom: '1rem',
               }}
             >
-              {t(f.titleKey as any)}
+              {t(f.titleKey)}
             </h3>
             <p
               style={{
@@ -64,7 +70,7 @@ export function FeatureGrid() {
                 lineHeight: 1.6,
               }}
             >
-              {t(f.descKey as any)}
+              {t(f.descKey)}
             </p>
           </Card>
         ))}

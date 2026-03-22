@@ -85,7 +85,7 @@ export abstract class NlpBaseEngine {
 
       return {
         status: 'SUCCESS' as any,
-        output: result,
+        output: result as unknown as Record<string, unknown>,
         metrics: { durationMs },
       };
     } catch (e: any) {
