@@ -102,7 +102,7 @@ export async function processCE11ShotGeneratorJob(
     const payload = job.payload || {};
     const novelSceneId = payload.novelSceneId || payload.sceneId;
     const traceId = payload.traceId || job.id;
-    const projectId = job.projectId || payload.projectId;
+    const projectId = payload.projectId || job.projectId;
 
     if (!novelSceneId) {
       throw new Error('Missing novelSceneId for CE11 Shot Generation');

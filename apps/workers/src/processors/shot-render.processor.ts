@@ -20,7 +20,7 @@ export async function processShotRenderJob(
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
   const payload = (job.payload || {}) as any;
-  const { pipelineRunId, shotId, projectId } = payload;
+  const { pipelineRunId, shotId } = payload;
   const traceId = payload.traceId || job.id;
 
   logger.log(`[ShotRender_HUB] Processing job ${job.id} for shot ${shotId}`);
@@ -35,13 +35,13 @@ export async function processShotRenderJob(
     });
     if (!shot) throw new Error('SHOT_NOT_FOUND');
 
-    const resolvedProjectId = projectId || shot.scene?.episode?.season?.project?.id;
+    const resolvedProjectId = payload.projectId || job.projectId || shot.scene?.projectId;
     const resolvedOrganizationId =
       job.organizationId ||
       shot.organizationId ||
       shot.scene?.episode?.season?.project?.organizationId;
     if (!resolvedProjectId) {
-      throw new Error('MISSING_PROJECT_ID');
+      throw new Error(`MISSING_PROJECT_ID for shot ${shot.id}`);
     }
     if (!resolvedOrganizationId) {
       throw new Error('MISSING_ORGANIZATION_ID');
