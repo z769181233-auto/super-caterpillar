@@ -288,7 +288,7 @@ export async function processCE11ShotGeneratorJob(
             shotData.summary ||
             shotData.title ||
             null,
-          organizationId: job.organizationId || 'org-default',
+          organizationId: job.organizationId,
         },
       });
       createdShots.push({ id: shot.id, index: i + 1 });

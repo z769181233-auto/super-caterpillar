@@ -114,11 +114,15 @@ export class StoryService {
       await fs.writeFile(filePath, dto.rawText);
 
       // 3. 触发 Shredder 工作流
+      if (!userId) {
+        throw new BadRequestException('userId is required');
+      }
+
       const result = await this.novelImportService.triggerShredderWorkflow(
         novel.id,
         projectId,
         organizationId as string,
-        userId || 'system',
+        userId,
         filePath,
         dto.title || 'Untitled Story',
         traceId,

@@ -100,12 +100,15 @@ export class FilmIRController {
     if (!projectId || !organizationId) {
       throw new BadRequestException(`Scene ${sceneId} project hierarchy is incomplete`);
     }
+    if (!project?.ownerId) {
+      throw new BadRequestException(`Scene ${sceneId} owner context is missing`);
+    }
 
     return {
       sceneId: scene.id,
       projectId,
       organizationId,
-      ownerId: project?.ownerId ?? 'system-worker',
+      ownerId: project.ownerId,
     };
   }
 
@@ -146,13 +149,16 @@ export class FilmIRController {
     if (!projectId || !organizationId || !shot.scene?.id) {
       throw new BadRequestException(`Shot ${shotId} hierarchy is incomplete`);
     }
+    if (!project?.ownerId) {
+      throw new BadRequestException(`Shot ${shotId} owner context is missing`);
+    }
 
     return {
       shotId: shot.id,
       sceneId: shot.scene.id,
       projectId,
       organizationId,
-      ownerId: project?.ownerId ?? 'system-worker',
+      ownerId: project.ownerId,
     };
   }
 

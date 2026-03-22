@@ -612,6 +612,17 @@ export class OrchestratorService {
   private async handleV1PipelineChain(completedChildJob: any, rootJobId: string) {
     const rootJob = await this.prisma.shotJob.findUnique({ where: { id: rootJobId } });
     if (!rootJob || rootJob.type !== JobTypeEnum.PIPELINE_PROD_VIDEO_V1) return;
+    if (!rootJob.organizationId) {
+      throw new Error(`Organization missing for root job ${rootJobId}`);
+    }
+    const project = await this.prisma.project.findUnique({
+      where: { id: rootJob.projectId },
+      select: { ownerId: true },
+    });
+    if (!project?.ownerId) {
+      throw new Error(`Project owner missing for root job ${rootJobId}`);
+    }
+    const ownerId = project.ownerId;
 
     const payload = (completedChildJob.payload as any) || {};
     const pipelineRunId = payload.pipelineRunId;
@@ -657,8 +668,8 @@ export class OrchestratorService {
               },
               traceId: rootJob.traceId || undefined,
             } as any,
-            'system-orch',
-            rootJob.organizationId || 'org_dev_0000000000000000'
+            ownerId,
+            rootJob.organizationId
           );
         }
       }
@@ -704,7 +715,7 @@ export class OrchestratorService {
             },
             traceId: rootJob.traceId || undefined,
           } as any,
-          'system-orch',
+          ownerId,
           rootJob.organizationId
         );
       }
@@ -942,6 +953,19 @@ export class OrchestratorService {
       return;
     }
 
+    const projectId = contextJob.projectId as string | undefined;
+    if (!projectId) {
+      throw new Error(`Missing projectId for VIDEO_RENDER spawn on pipeline ${pipelineRunId}`);
+    }
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { ownerId: true, organizationId: true },
+    });
+    if (!project?.ownerId || !project.organizationId) {
+      throw new Error(`Project ownership missing for VIDEO_RENDER spawn on pipeline ${pipelineRunId}`);
+    }
+
     // 2.3 继承验证标记（关键：防止下游作业计费污染）
     const isVerification = !!contextJob.isVerification;
     const dedupeKey = `video_render_${(contextJob.payload as any)?.sceneId || contextJob.sceneId}_${pipelineRunId || contextJob.traceId}`;
@@ -978,8 +1002,8 @@ export class OrchestratorService {
             rootJobId: (contextJob.payload as any)?.rootJobId, // Propagate for V1 chain
           },
         } as any,
-        'system-dag', // triggered by system
-        contextJob.organizationId
+        project.ownerId,
+        project.organizationId
       );
 
       this.logger.log(
@@ -1051,6 +1075,19 @@ export class OrchestratorService {
     this.logger.log(`[DAG] Spawning CE09 for ${pipelineRunId} from VIDEO_RENDER asset ${assetId}`);
 
     try {
+      const projectId = payload.projectId || videoJob.projectId;
+      if (!projectId) {
+        throw new Error(`Missing projectId for CE09 spawn on pipeline ${pipelineRunId}`);
+      }
+
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { ownerId: true, organizationId: true },
+      });
+      if (!project?.ownerId || !project.organizationId) {
+        throw new Error(`Project ownership missing for CE09 spawn on pipeline ${pipelineRunId}`);
+      }
+
       await this.jobService.create(
         videoJob.shotId || videoJob.id,
         {
@@ -1068,8 +1105,8 @@ export class OrchestratorService {
             rootJobId: (payload as any)?.rootJobId, // Propagate for V1 chain
           },
         } as any,
-        'system-dag', // triggered by system
-        videoJob.organizationId
+        project.ownerId,
+        project.organizationId
       );
       this.logger.log(`[DAG] CE09 spawned successfully for ${pipelineRunId}`);
     } catch (e: any) {

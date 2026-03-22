@@ -89,7 +89,10 @@ export async function processCE06Job(
       where: { id: jobId },
       select: { organizationId: true },
     });
-    const organizationId = shotJob?.organizationId || 'system';
+    if (!shotJob?.organizationId) {
+      throw new Error(`[CE06] Organization ID is required for job ${jobId}`);
+    }
+    const organizationId = shotJob.organizationId;
 
     // P0 Fix: DO NOT JOIN! DO NOT READ ALL!
     // Instead, trigger the SCAN phase.
@@ -557,7 +560,7 @@ export async function processCE04Job(
           jobType: 'CE04_VISUAL_ENRICHMENT',
           traceId,
           projectId: job.projectId,
-          userId: project?.ownerId || 'system',
+          userId: project?.ownerId || (() => { throw new Error(`[CE04] Project owner missing for job ${jobId}`); })(),
           orgId: shotJob.organizationId,
           engineKey: 'ce04_visual_enrichment',
           runId: pipelineRunId,
@@ -846,7 +849,7 @@ export async function processShotRenderJob(
         });
         await apiClient.createJob({
           projectId,
-          organizationId: shotJob?.organizationId || 'system',
+          organizationId: shotJob?.organizationId || (() => { throw new Error(`[SHOT_RENDER] Organization ID is required for job ${jobId}`); })(),
           jobType: 'VIDEO_RENDER' as any,
           priority: 10,
           dedupeKey: `video_render_${sceneId}_${traceId}`, // P0: Prevent redundant video renders per scene
@@ -885,7 +888,7 @@ export async function processShotRenderJob(
           jobType: 'SHOT_RENDER',
           traceId,
           projectId,
-          userId: project?.ownerId || 'system',
+          userId: project?.ownerId || (() => { throw new Error(`[SHOT_RENDER] Project owner missing for job ${jobId}`); })(),
           orgId: shotJob.organizationId,
           engineKey: 'shot_render',
           runId: pipelineRunId,

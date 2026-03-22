@@ -52,11 +52,11 @@ export class CreateJobDto {
 
   @IsOptional()
   @IsString()
-  projectId?: string; // Project-level job 创建上下文（system-worker/HMAC 路径仍使用）
+  projectId?: string; // Project-level job 创建上下文
 
   @IsOptional()
   @IsString()
-  organizationId?: string; // 组织上下文（system-worker/HMAC 路径仍使用）
+  organizationId?: string; // 组织上下文
 
   @IsOptional()
   @IsObject()

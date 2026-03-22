@@ -82,7 +82,7 @@ export async function processCE03VisualDensityJob(
           score: densityScore,
           traceId,
           pipelineRunId,
-          actorId: 'system-worker',
+          actorId: job.workerId || 'unassigned',
         },
       },
     });

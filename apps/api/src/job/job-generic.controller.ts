@@ -8,6 +8,8 @@ import {
   Logger,
   Req,
   Inject,
+  UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JobService } from './job.service';
 import { CreateJobDto } from './dto/create-job.dto';
@@ -48,27 +50,30 @@ export class JobGenericController {
         throw new HttpException('JobGenericController is disabled', HttpStatus.FORBIDDEN);
       }
 
-      const userId = user?.userId || req.apiKeyId || 'system-worker';
+      const userId = user?.userId || req.apiKeyId;
       if (!userId) {
-        throw new HttpException('USER_CONTEXT_MISSING', HttpStatus.UNAUTHORIZED);
+        throw new UnauthorizedException('Authentication required');
       }
 
-      // 1. 容量校验 (Disabled for now)
-      // ...
+      if (!organizationId) {
+        throw new BadRequestException('Organization context required');
+      }
 
-      // 2. 创建 Job
-      // Security Hardening: Only use root jobType/projectId/orgId for system-worker/HMAC requests
-      const isSystemWorker = !!(req.apiKeyId || user?.userId === 'system-worker');
+      // 1. 创建 Job
+      const jobTypeStr = createJobDto.type ?? createJobDto.jobType;
+      if (!jobTypeStr) {
+        throw new BadRequestException('Job type is required');
+      }
 
-      const jobTypeStr = isSystemWorker
-        ? (createJobDto.jobType ?? createJobDto.type)
-        : createJobDto.type;
-      const projectId = isSystemWorker
-        ? (createJobDto.projectId ?? createJobDto.payload?.projectId ?? user?.userId)
-        : (createJobDto.payload?.projectId ?? user?.userId);
-      const orgId = isSystemWorker
-        ? (createJobDto.organizationId ?? organizationId ?? 'org-default')
-        : (organizationId ?? 'org-default');
+      const projectId = createJobDto.projectId ?? createJobDto.payload?.projectId;
+      if (!projectId) {
+        throw new BadRequestException('Project ID is required');
+      }
+
+      const orgId = createJobDto.organizationId ?? organizationId;
+      if (!orgId) {
+        throw new BadRequestException('Organization ID is required');
+      }
 
       const job = await this.jobService.createCECoreJob({
         projectId,

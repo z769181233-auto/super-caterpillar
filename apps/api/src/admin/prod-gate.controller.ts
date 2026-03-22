@@ -189,7 +189,10 @@ export class ProdGateController {
       select: { userId: true },
     });
 
-    const userId = member?.userId || 'system';
+    if (!member?.userId) {
+      throw new BadRequestException('organization must have at least one member');
+    }
+    const userId = member.userId;
 
     this.logger.log(
       `[ProdGate] Enqueueing SHOT_RENDER job via JobService. Shot: ${body.shotId}, Project: ${project.id}, Org: ${organizationId}`

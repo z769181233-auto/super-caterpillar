@@ -39,6 +39,7 @@ import { randomUUID } from 'crypto';
 import { Permissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { ProjectPermissions } from '../permission/permission.constants';
+import { UnauthorizedException } from '@nestjs/common';
 
 @Controller()
 @UseGuards(JwtOrHmacGuard)
@@ -83,8 +84,13 @@ export class JobController {
     @Res({ passthrough: true }) res: Response
   ): Promise<any> {
     const u = (req as any).user;
-    // Fix: Handle HMAC/Worker mode where u might be null
-    const effectiveUserId = u?.userId || (req as any).apiKeyId || 'system-worker';
+    const effectiveUserId = u?.userId || (req as any).apiKeyId;
+    if (!effectiveUserId) {
+      throw new UnauthorizedException('Authentication required');
+    }
+    if (!organizationId) {
+      throw new BadRequestException('Organization context required');
+    }
 
     // P1-1: API Backpressure Check
     const { env: scuEnv } = await import('@scu/config');
@@ -150,7 +156,13 @@ export class JobController {
     @Req() req: Request
   ): Promise<any> {
     const u = (req as any).user;
-    const effectiveUserId = u?.userId || (req as any).apiKeyId || 'system-worker';
+    const effectiveUserId = u?.userId || (req as any).apiKeyId;
+    if (!effectiveUserId) {
+      throw new UnauthorizedException('Authentication required');
+    }
+    if (!organizationId) {
+      throw new BadRequestException('Organization context required');
+    }
 
     if (createJobDto.projectId) {
       // 适配 JobType

@@ -279,11 +279,19 @@ export class JobReportFacade {
           const frameKeys = rawFrameKeys.map((key: string) => this.normalizeStorageKey(key));
 
           if (frameKeys.length > 0) {
+            const project = await this.prisma.project.findUnique({
+              where: { id: updatedJob.projectId },
+              select: { ownerId: true },
+            });
+            const billingUserId = params.userId || project?.ownerId;
+            if (!billingUserId) {
+              throw new Error(`Billing userId is required for job ${updatedJob.id}`);
+            }
             await this.jobService.ensureVideoRenderJob(
               updatedJob.shotId,
               frameKeys,
               updatedJob.traceId || `trace-${updatedJob.id}`,
-              params.userId || 'system',
+              billingUserId,
               updatedJob.organizationId,
               updatedJob.isVerification || false // 继承 SHOT_RENDER 的验证标记
             );
@@ -353,9 +361,13 @@ export class JobReportFacade {
           where: { id: updatedJob.projectId },
           select: { ownerId: true },
         });
+        const billingUserId = project?.ownerId || params.userId;
+        if (!billingUserId) {
+          throw new Error(`Billing userId is required for job ${updatedJob.id}`);
+        }
 
         await this.costLedger.recordFromEvent({
-          userId: project?.ownerId || params.userId || 'system',
+          userId: billingUserId,
           projectId: updatedJob.projectId,
           jobId: updatedJob.id,
           jobType: updatedJob.type,
