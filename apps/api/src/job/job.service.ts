@@ -2413,9 +2413,28 @@ export class JobService {
     result?: unknown
   ): Promise<void> {
     try {
+      const payload = (job.payload as Record<string, any>) || {};
+      const requestedAssetId = typeof payload.assetId === 'string' ? payload.assetId : undefined;
+      const assetHint = requestedAssetId
+        ? await this.prisma.asset.findUnique({
+            where: { id: requestedAssetId },
+            select: { id: true, projectId: true, shotId: true },
+          })
+        : null;
+      const targetShotId = assetHint?.shotId ?? job.shotId ?? undefined;
+
+      if (!targetShotId) {
+        throw new Error(`[CE09] Missing shotId for security pipeline job ${job.id}`);
+      }
+      if (assetHint && assetHint.projectId !== job.projectId) {
+        throw new Error(
+          `[CE09] Asset ${assetHint.id} does not belong to project ${job.projectId}`
+        );
+      }
+
       // 1. 查找关联的 VideoJob (通过 shotId)
       const videoJob = await this.prisma.videoJob.findFirst({
-        where: { shotId: job.shotId },
+        where: { shotId: targetShotId },
         orderBy: { createdAt: 'desc' },
       });
 
@@ -2439,26 +2458,39 @@ export class JobService {
         const fingerprintId = securityResult.fingerprintId || `fp_${job.id}`;
 
         // 创建或更新 Asset
-        // 注意：DBSpec 要求 assets 表有这些字段
-        // 这里假设 CE09 产出了一个新的 Asset，或者是更新已有的 Video Asset
-        // 简单起见，且为了符合“产出”逻辑，我们创建一个新的 Asset 记录 或 更新 VideoJob 对应的 Raw Asset
-        // 这里实现为：创建一个类型为 VIDEO 的 Asset，带有安全字段
-        const asset = await this.prisma.asset.create({
-          data: {
+        const asset = await this.prisma.asset.upsert({
+          where: {
+            ownerType_ownerId_type: {
+              ownerType: 'SHOT',
+              ownerId: targetShotId,
+              type: 'VIDEO',
+            },
+          },
+          update: {
             projectId: job.projectId!,
-            ownerType: 'SHOT', // Polymorphic owner
-            ownerId: job.shotId!,
-            shotId: job.shotId, // Explicit FK
+            ownerId: targetShotId,
+            shotId: targetShotId,
+            storageKey: `secure_videos/${videoJob.id}.mp4`,
+            signedUrl,
+            hlsPlaylistUrl: hlsUrl,
+            watermarkMode,
+            fingerprintId,
+            status: 'GENERATED',
+            createdByJobId: videoJob.id,
+          },
+          create: {
+            projectId: job.projectId!,
+            ownerType: 'SHOT',
+            ownerId: targetShotId,
+            shotId: targetShotId,
             type: 'VIDEO',
             storageKey: `secure_videos/${videoJob.id}.mp4`,
-
-            // Security Fields
-            signedUrl: signedUrl,
+            signedUrl,
             hlsPlaylistUrl: hlsUrl,
-            watermarkMode: watermarkMode,
-            fingerprintId: fingerprintId,
-
+            watermarkMode,
+            fingerprintId,
             status: 'GENERATED',
+            createdByJobId: videoJob.id,
           },
         });
 
@@ -2477,10 +2509,10 @@ export class JobService {
         });
 
         this.logger.log(
-          `CE09: VideoJob ${videoJob.id} security processed, Asset ${asset.id} created with secure URLs`
+          `CE09: VideoJob ${videoJob.id} security processed, Asset ${asset.id} upserted with secure URLs`
         );
       } else {
-        this.logger.warn(`CE09 completed but no VideoJob found for shotId ${job.shotId}`);
+        this.logger.warn(`CE09 completed but no VideoJob found for shotId ${targetShotId}`);
       }
     } catch (error: any) {
       // 软失败：记录 audit_logs（符合 SafetySpec）
