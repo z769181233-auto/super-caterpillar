@@ -140,10 +140,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     let organizationId: string | null = null;
     if (payload.orgId) {
       try {
-        const membership = await this.prisma.organizationMember.findFirst({
+        const membership = await this.prisma.organizationMember.findUnique({
           where: {
-            organizationId: payload.orgId,
-            userId: user.id,
+            userId_organizationId: {
+              userId: user.id,
+              organizationId: payload.orgId,
+            },
           },
         });
 

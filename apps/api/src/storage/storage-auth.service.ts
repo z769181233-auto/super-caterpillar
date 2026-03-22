@@ -42,6 +42,7 @@ export class StorageAuthService {
     // P0 Fix: SSOT - Query by storageKey first (primary)
     const asset = await this.prisma.asset.findFirst({
       where: { storageKey: key },
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         projectId: true,
@@ -89,10 +90,12 @@ export class StorageAuthService {
     }
 
     // 4. Verify user has access (organization member or project owner)
-    const membership = await this.prisma.organizationMember.findFirst({
+    const membership = await this.prisma.organizationMember.findUnique({
       where: {
-        organizationId,
-        userId,
+        userId_organizationId: {
+          userId,
+          organizationId,
+        },
       },
     });
 
