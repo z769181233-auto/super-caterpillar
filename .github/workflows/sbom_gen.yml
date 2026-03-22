@@ -20,7 +20,7 @@ jobs:
         with:
           submodules: false # 明确关闭子模块以规避 apps/fusion-engine 导致的 128 报错。认识。
 
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
           run_install: false

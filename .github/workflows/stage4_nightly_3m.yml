@@ -5,6 +5,9 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   stage4-nightly-3m:
     runs-on: ubuntu-latest
@@ -12,13 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20.20.1'
+          cache: 'pnpm'
 
       - name: Install
-        run: corepack enable && pnpm -v && pnpm i --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run Gate (3M baseline) + Capture Evidence
         id: gate

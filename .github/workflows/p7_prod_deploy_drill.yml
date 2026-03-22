@@ -3,6 +3,9 @@ name: p7-prod-deploy-drill
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   p7-prod-deploy-drill:
     runs-on: ubuntu-latest
