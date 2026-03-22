@@ -1,4 +1,11 @@
-import { Controller, Post, Body, UseGuards, InternalServerErrorException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ApiSecurityGuard } from '../security/api-security/api-security.guard';
 import { IdentityConsistencyService } from './identity-consistency.service';
 
@@ -15,6 +22,8 @@ import { IdentityConsistencyService } from './identity-consistency.service';
 @Controller('_internal/ce23')
 @UseGuards(ApiSecurityGuard)
 export class IdentityController {
+  private readonly logger = new Logger(IdentityController.name);
+
   constructor(private readonly identityService: IdentityConsistencyService) {}
 
   @Post('score-and-record')
@@ -45,7 +54,9 @@ export class IdentityController {
         recordId: record.id,
       };
     } catch (e) {
-      console.error('Failed to record score', e);
+      this.logger.error(
+        `Failed to record score: ${e instanceof Error ? e.message : String(e)}`
+      );
       throw new InternalServerErrorException('Failed to record identity score');
     }
   }

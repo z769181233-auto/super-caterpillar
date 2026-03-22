@@ -29,6 +29,8 @@ import { JobType } from 'database';
 @Controller('jobs')
 @UseGuards(JwtOrHmacGuard)
 export class JobGenericController {
+  private readonly logger = new Logger(JobGenericController.name);
+
   constructor(
     @Inject(JobService)
     private readonly jobService: JobService
@@ -43,9 +45,6 @@ export class JobGenericController {
     @Req() req: any
   ): Promise<any> {
     try {
-      console.log('[JobGenericController] Received request:', JSON.stringify(createJobDto));
-      console.log('[JobGenericController] User:', JSON.stringify(user));
-
       if (!process.env.ENABLE_JOB_GENERIC_CONTROLLER) {
         throw new HttpException('JobGenericController is disabled', HttpStatus.FORBIDDEN);
       }
@@ -87,7 +86,7 @@ export class JobGenericController {
         // taskId: undefined // Explicitly undefined to avoid parentJobId mapping
       });
 
-      console.log('[JobGenericController] SUCCESS. Job:', JSON.stringify(job));
+      this.logger.log(`[JobGenericController] createGenericJob success jobId=${job.id}`);
 
       return {
         success: true,
@@ -96,7 +95,9 @@ export class JobGenericController {
         timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
-      console.error('[JobGenericController] CRITICAL ERROR:', error.message, error.stack);
+      this.logger.error(
+        `[JobGenericController] createGenericJob failed: ${error?.message || 'unknown'}`
+      );
       throw error;
     }
   }

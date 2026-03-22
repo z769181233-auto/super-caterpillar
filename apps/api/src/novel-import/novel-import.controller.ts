@@ -80,7 +80,11 @@ export class NovelImportController {
     @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService
   ) {
     // 确保上传目录存在
-    fs.mkdir(this.uploadDir, { recursive: true }).catch(console.error);
+    fs.mkdir(this.uploadDir, { recursive: true }).catch((err) => {
+      this.logger.error(
+        `[NovelImportController] Failed to create upload dir: ${err instanceof Error ? err.message : String(err)}`
+      );
+    });
   }
 
   /**
