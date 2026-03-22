@@ -19,7 +19,7 @@ const STEPS = [
 
 export const ProductionTimeline: React.FC<ProductionTimelineProps> = ({
   statusSummary,
-  productionStatus,
+  productionStatus: _productionStatus,
 }) => {
   // Calculate current completion stage based on props
   // We need external logic to determine exactly where we are, but here's a best effort mapping:

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { PageShell } from '@/components/system/PageShell';
 import { EmptyState } from '@/components/system/EmptyState';
@@ -11,37 +11,40 @@ import { ProjectDetailShell } from '@/features/project-detail/ProjectDetailShell
 import { getProjectDetail } from '@/features/project-detail/api';
 import { ProjectDetailView } from '@/features/project-detail/adapters';
 
+const projectDetailRequestOptions = {
+  initialStatus: 'loading' as const,
+  isEmpty: (data: ProjectDetailView | null) => !data,
+};
+
 export function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.projectId as string;
 
-  const s = useRequestState<ProjectDetailView>(null, {
-    initialStatus: 'loading',
-    isEmpty: (data) => !data,
-  });
+  const s = useRequestState<ProjectDetailView>(null, projectDetailRequestOptions);
+  const { setLoading, setEmpty, setSuccess, setError } = s;
 
-  const fetchData = async () => {
-    s.setLoading();
+  const fetchData = useCallback(async () => {
+    setLoading();
     try {
       const data = await getProjectDetail(projectId);
       if (!data) {
-        s.setEmpty();
+        setEmpty();
       } else {
-        s.setSuccess(data);
+        setSuccess(data);
       }
     } catch (err) {
-      s.setError(
+      setError(
         err instanceof Error ? err : new Error('Failed to load project'),
         'ERR_PJ_DETAIL_' + projectId
       );
     }
-  };
+  }, [projectId, setEmpty, setError, setLoading, setSuccess]);
 
   useEffect(() => {
     if (projectId) {
-      fetchData();
+      void fetchData();
     }
-  }, [projectId]);
+  }, [fetchData, projectId]);
 
   return (
     <PageShell maxWidth="1200px">

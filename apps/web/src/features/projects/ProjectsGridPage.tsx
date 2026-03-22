@@ -12,17 +12,34 @@ import { ProjectsHeader } from './ProjectsHeader';
 import { getProjects } from './api';
 import { ProjectCardView } from './adapters';
 
+const projectGridRequestOptions = {
+  initialStatus: 'loading' as const,
+  isEmpty: (data: ProjectCardView[] | null) => !data || data.length === 0,
+};
+
 export function ProjectsGridPage() {
-  const s = useRequestState<ProjectCardView[]>(null, {
-    initialStatus: 'loading',
-    isEmpty: (data) => !data || (Array.isArray(data) && data.length === 0),
-  });
+  const s = useRequestState<ProjectCardView[]>(null, projectGridRequestOptions);
+  const { setSuccess, setError } = s;
 
   useEffect(() => {
+    let cancelled = false;
+
     getProjects()
-      .then((data) => s.setSuccess(data))
-      .catch((err) => s.setError(err));
-  }, []);
+      .then((data) => {
+        if (!cancelled) {
+          setSuccess(data);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setError, setSuccess]);
 
   return (
     <PageShell

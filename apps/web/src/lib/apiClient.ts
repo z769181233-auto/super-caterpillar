@@ -1,6 +1,5 @@
 import {
   ProjectSceneGraph,
-  NovelAnalysisStatus,
   ProjectOverviewDTO,
   ProjectStructureTree,
 } from '@scu/shared-types';
@@ -120,7 +119,7 @@ export const projectApi = {
     throw new Error('Invalid response format');
   },
 
-  async getProjectSceneGraph(projectId: string) {
+  async getProjectSceneGraph(projectId: string): Promise<ProjectSceneGraph | undefined> {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/scene-graph`, {
       credentials: 'include',
     });
@@ -686,10 +685,8 @@ export const novelImportApi = {
 import type {
   WorkerStatsDTO,
   OrchestratorStatsDTO,
-  ListJobsResponse,
   JobDTO,
   ProjectDTO,
-  ProjectDetailDTO,
   ImportNovelResultDTO,
 } from '@/types/dto';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { projectApi } from '@/lib/apiClient';
 import { Button } from '@/components/ui/Button';
@@ -47,15 +47,11 @@ export function VideoPlayerPageContent() {
   const params = useParams() as { projectId: string };
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [project, setProject] = useState<ProjectStructureTree | null>(null);
-  const [_videoShot, setVideoShot] = useState<VideoShotState | null>(null);
+  const [videoShot, setVideoShot] = useState<VideoShotState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    void loadFirstVideo();
-  }, [params.projectId]);
-
-  const loadFirstVideo = async () => {
+  const loadFirstVideo = useCallback(async () => {
     try {
       setLoading(true);
       const structure = await projectApi.getProjectStructure(params.projectId);
@@ -103,7 +99,11 @@ export function VideoPlayerPageContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.projectId]);
+
+  useEffect(() => {
+    void loadFirstVideo();
+  }, [loadFirstVideo]);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
@@ -111,6 +111,11 @@ export function VideoPlayerPageContent() {
         <div>
           <h1 className="text-lg font-bold">{project?.projectName || 'Project Video'}</h1>
           <p className="text-xs text-gray-400">Project ID: {params.projectId}</p>
+          {videoShot ? (
+            <p className="text-xs text-gray-400">
+              Season {videoShot.seasonIndex ?? '-'} / Episode {videoShot.episodeIndex ?? '-'} / Scene {videoShot.sceneIndex ?? '-'}
+            </p>
+          ) : null}
         </div>
         <Button variant="secondary" onClick={() => router.back()}>Back</Button>
       </div>

@@ -41,7 +41,7 @@ export function getSafeRedirect(
     }
 
     return rawPath;
-  } catch (e) {
+  } catch {
     return fallback;
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -38,7 +38,7 @@ export function ImportNovelPageContent() {
   const latestJob = useMemo(() => (jobs.length > 0 ? jobs[0] : null), [jobs]);
   const latestStatus = normalizeJobStatus(latestJob?.status);
 
-  async function refreshJobs() {
+  const refreshJobs = useCallback(async () => {
     if (!projectId) return;
     try {
       const nextJobs = await novelImportApi.getNovelJobs(projectId);
@@ -48,20 +48,20 @@ export function ImportNovelPageContent() {
       console.error(err);
       return [];
     }
-  }
+  }, [projectId]);
 
   useEffect(() => {
-    refreshJobs();
-  }, [projectId]);
+    void refreshJobs();
+  }, [refreshJobs]);
 
   useEffect(() => {
     if (!latestJob || !isTerminal(latestJob.status)) {
       const timer = window.setInterval(() => {
-        refreshJobs();
+        void refreshJobs();
       }, 3000);
       return () => window.clearInterval(timer);
     }
-  }, [latestJob?.id, latestJob?.status, projectId]);
+  }, [latestJob, refreshJobs]);
 
   useEffect(() => {
     if (latestStatus === 'DONE' && !redirectScheduled) {

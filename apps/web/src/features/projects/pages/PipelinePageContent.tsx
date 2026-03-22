@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { pipelineApi } from '@/lib/apiClient';
 
@@ -75,7 +75,7 @@ export function PipelinePageContent() {
     const [reason, setReason] = useState('');
     const [busyNodeId, setBusyNodeId] = useState<string>('');
 
-    async function refresh() {
+    const refresh = useCallback(async () => {
         setErr('');
         setLoading(true);
         try {
@@ -86,11 +86,11 @@ export function PipelinePageContent() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [projectId]);
 
     useEffect(() => {
-        refresh();
-    }, [projectId]);
+        void refresh();
+    }, [refresh]);
 
     const rows = useMemo(() => flatten(root), [root]);
 
@@ -130,6 +130,7 @@ export function PipelinePageContent() {
                 <input className="w-full border border-gray-700 bg-transparent rounded-md px-3 py-2" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="原因..." />
             </div>
             {err && <div className="text-sm text-red-400">{err}</div>}
+            {loading && <div className="text-sm text-gray-400">加载 pipeline 中...</div>}
             <div className="rounded-xl border border-gray-700 overflow-hidden bg-[#0b1120]">
                 <table className="w-full text-sm">
                     <thead className="bg-[#1f2937]">
