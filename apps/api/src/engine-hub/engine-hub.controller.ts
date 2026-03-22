@@ -21,29 +21,12 @@ export class EngineHubController {
     private readonly moduleRef: ModuleRef,
     @Inject(EngineInvokerHubService)
     private engineInvoker: EngineInvokerHubService
-  ) {
-    console.log(
-      `[EngineHubController] Initialized. engineInvoker defined: ${!!this.engineInvoker}`
-    );
-  }
+  ) {}
 
   @Post('invoke')
   async invoke(@Body() req: EngineInvocationRequest<unknown>) {
     const jobId = req.metadata?.jobId;
-    // P6-0: Physical trace with minimal overhead
-    process.stdout.write(`\n!!! [15M-TRACE-ENTRY] JobId: ${jobId} !!!\n`);
-    console.error(
-      `!!! [15M-DEBUG] JobId: ${jobId} Entry. Keys: ${Object.keys(req.payload || {}).join(',')}`
-    );
-    if ((req.payload as any)?.raw_text) {
-      console.error(`!!! [15M-DEBUG] raw_text len: ${(req.payload as any).raw_text.length}`);
-    } else if ((req.payload as any)?.structured_text) {
-      console.error(
-        `!!! [15M-DEBUG] structured_text len: ${(req.payload as any).structured_text.length}`
-      );
-    } else {
-      console.error(`!!! [15M-DEBUG] NO TEXT FOUND IN PAYLOAD`);
-    }
+    this.logger.log(`[EngineHubController] invoke jobId=${jobId || 'unknown'}`);
 
     if (!this.engineInvoker) {
       this.engineInvoker = this.moduleRef.get(EngineInvokerHubService, { strict: false });
@@ -52,12 +35,12 @@ export class EngineHubController {
     try {
       // P6-0: Forward to invoker which now handles large payloads via AuditLog hardening
       const result = await this.engineInvoker.invoke(req);
-      process.stdout.write(`!!! [15M-TRACE-EXIT] JobId: ${String(jobId)} SUCCESS !!!\n`);
+      this.logger.log(`[EngineHubController] invoke success jobId=${jobId || 'unknown'}`);
       return { success: true, data: result };
     } catch (e: any) {
-      process.stdout.write(`!!! [15M-TRACE-CRASH] JobId: ${String(jobId)} ERROR: ${e.message} !!!\n`);
-      // P1 Security: Do not pass externally controlled string as the first argument (format string vuln)
-      console.error('!!! [15M-STACK] JobId Trace Error:', jobId, e);
+      this.logger.error(
+        `[EngineHubController] invoke failed jobId=${jobId || 'unknown'}: ${e?.message || 'unknown error'}`
+      );
       throw e;
     }
   }

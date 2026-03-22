@@ -36,7 +36,9 @@ export class QualityScoreService {
    * @param attempt 当前尝试次数
    */
   async performScoring(shotId: string, traceId: string, attempt: number = 1) {
-    console.error(`Performing quality scoring for shot ${shotId}, attempt ${attempt}`);
+    this.logger.log(
+      `[QualityScoreService] performScoring shotId=${shotId} attempt=${attempt}`
+    );
 
     // 1. 获取基础数据 (Identity Score)
     const identityScoreRecord = await this.prisma.shotIdentityScore.findFirst({
@@ -235,7 +237,7 @@ export class QualityScoreService {
       const historicalBenchmarkScore = identityScoreRecord?.identityScore || 0; // Historical benchmark score from DB
       const marginalFloor = identityThreshold - 0.03;
 
-      console.warn(
+      this.logger.warn(
         `[GUARDRAIL_DEBUG] Checking shot ${shotId}. Real=${realScore}, Thresh=${identityThreshold} (Floor=${marginalFloor}), Historical=${historicalBenchmarkScore} (Req >= 0.90)`
       );
 
@@ -246,9 +248,9 @@ export class QualityScoreService {
         signals.guardrail_override = true;
         signals.verdict_effective = 'PASS_FOR_PROD';
 
-        console.warn(`[GUARDRAIL] Shot ${shotId} blocked from rework. StopReason set.`);
+        this.logger.warn(`[GUARDRAIL] Shot ${shotId} blocked from rework. StopReason set.`);
       } else {
-        console.warn(
+        this.logger.warn(
           `[GUARDRAIL_SKIP] Real=${realScore} vs ${marginalFloor}, Historical=${historicalBenchmarkScore} vs 0.90. (Enabled: ${ce23RealGuardrailEnabled})`
         );
       }
@@ -265,16 +267,20 @@ export class QualityScoreService {
       },
     });
 
-    console.error(`Shot ${shotId} verdict: ${verdict}, overallScore: ${overallScore}`);
+    this.logger.log(
+      `[QualityScoreService] verdict shotId=${shotId} verdict=${verdict} overallScore=${overallScore}`
+    );
 
     try {
       // 6. 自动返工逻辑 (Triple Guards)
       // Guardrail Blocked -> Skip Rework
       if (verdict === 'FAIL' && !guardrailBlocked) {
-        console.error(`[REWORK_DEBUG] Checking rework for shot ${shotId}, attempt ${attempt}`);
+        this.logger.log(
+          `[REWORK_DEBUG] Checking rework for shotId=${shotId} attempt=${attempt}`
+        );
         stopReason = await this.handleAutoRework(shotId, traceId, attempt, signals);
-        console.error(
-          `[REWORK_DEBUG] Result for shot ${shotId}: stopReason=${stopReason || 'NONE_TRIGGERED'}`
+        this.logger.log(
+          `[REWORK_DEBUG] Result for shotId=${shotId} stopReason=${stopReason || 'NONE_TRIGGERED'}`
         );
       }
 
@@ -288,8 +294,8 @@ export class QualityScoreService {
           where: { id: scoreRecord.id },
           data: { signals: updatedSignals as any },
         });
-        console.error(
-          `[REWORK_DEBUG] Updated quality score ${scoreRecord.id} with stopReason: ${stopReason}`
+        this.logger.log(
+          `[REWORK_DEBUG] Updated quality score ${scoreRecord.id} with stopReason=${stopReason}`
         );
       }
     } catch (err: any) {
@@ -314,7 +320,9 @@ export class QualityScoreService {
   ): Promise<string | undefined> {
     if (attempt >= 2) {
       const reason = 'MAX_ATTEMPT_REACHED';
-      console.error(`STOP_REASON=${reason} for shot ${shotId}. Attempt ${attempt} >= 2.`);
+      this.logger.warn(
+        `STOP_REASON=${reason} for shotId=${shotId} attempt=${attempt} >= 2`
+      );
       return reason;
     }
 
@@ -360,8 +368,8 @@ export class QualityScoreService {
 
     if (runningReworks >= reworkConcurrencyCap) {
       const reason = 'RATE_LIMIT_BLOCKED';
-      console.error(
-        `STOP_REASON=${reason} for shot ${shotId}. Current running reworks: ${runningReworks}, Cap: ${reworkConcurrencyCap}`
+      this.logger.warn(
+        `STOP_REASON=${reason} for shotId=${shotId} runningReworks=${runningReworks} cap=${reworkConcurrencyCap}`
       );
       if (signals) {
         signals.rateLimitSnapshot = { runningReworks, cap: reworkConcurrencyCap };
@@ -383,18 +391,20 @@ export class QualityScoreService {
       // P2002: Unique constraint violation (Prisma unique violation code)
       if (e.code === 'P2002') {
         const reason = 'IDEMPOTENCY_HIT';
-        console.error(`STOP_REASON=${reason} (reworkKey=${reworkKey}) for shot ${shotId}.`);
+        this.logger.warn(
+          `STOP_REASON=${reason} reworkKey=${reworkKey} shotId=${shotId}`
+        );
         return reason;
       }
       throw e;
     }
 
-    console.error(
-      `Triggering rework for shot ${shotId}, new attempt: ${attempt + 1}, traceId: ${standardizedTraceId}`
+    this.logger.log(
+      `Triggering rework for shotId=${shotId} newAttempt=${attempt + 1} traceId=${standardizedTraceId}`
     );
 
-    console.error(
-      `[REWORK_DEBUG] Triggering jobService.create for shot ${shotId} orgId ${organizationId} traceId ${standardizedTraceId}`
+    this.logger.log(
+      `[REWORK_DEBUG] Triggering jobService.create shotId=${shotId} orgId=${organizationId} traceId=${standardizedTraceId}`
     );
     try {
       await this.jobService.create(
@@ -430,7 +440,7 @@ export class QualityScoreService {
         responseMsg.includes('Insufficient credits')
       ) {
         const reason = 'BUDGET_GUARD_BLOCKED';
-        console.error(`STOP_REASON=${reason} (via catch) for shot ${shotId}.`);
+        this.logger.warn(`STOP_REASON=${reason} via catch shotId=${shotId}`);
         return reason;
       }
 
@@ -465,7 +475,7 @@ export class QualityScoreService {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error(`Failed to build quality score from job ${job.id}:`, error);
+      this.logger.error(`Failed to build quality score from job ${job.id}: ${error}`);
       return null;
     }
   }

@@ -158,7 +158,6 @@ export class AudioService {
 
     // P18-3.2 + P18-6.2: Use hardened mixer with caching
     if (fs.existsSync(outPath)) {
-      console.log(`[CACHE] Mix Hit: ${outPath}`);
       this.metrics.incrementAudioCacheHit();
     } else {
       this.metrics.incrementAudioCacheMiss();
