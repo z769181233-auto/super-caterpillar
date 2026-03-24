@@ -290,14 +290,14 @@ export class NovelImportService {
     projectId: string,
     organizationId: string,
     userId: string,
-    filePath: string,
+    storedFileKey: string,
     title: string,
     traceId?: string,
     isVerification?: boolean
   ): Promise<any> {
     this.logger.log(`[Stage 4] Triggering Shredder workflow for Novel: ${title} (${projectId})`);
 
-    const safeFilePath = resolveNovelUploadPath(filePath);
+    const safeFilePath = resolveNovelUploadPath(storedFileKey);
     if (!isWithinNovelUploadRoot(safeFilePath)) {
       throw new BadRequestException('Security violation: Attempt to access outside upload directory');
     }

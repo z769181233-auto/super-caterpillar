@@ -92,16 +92,16 @@ export class FileParserService {
    * @param fileType 文件类型
    * @param fileName 原始文件名（用于提取作品名）
    */
-  async parseFile(filePath: string, fileType: string, fileName?: string): Promise<ParsedNovel> {
+  async parseFile(storedFileKey: string, fileType: string, fileName?: string): Promise<ParsedNovel> {
     switch (fileType.toLowerCase()) {
       case 'txt':
-        return this.parseTxt(filePath, fileName);
+        return this.parseTxt(storedFileKey, fileName);
       case 'docx':
-        return this.parseDocx(filePath, fileName);
+        return this.parseDocx(storedFileKey, fileName);
       case 'epub':
-        return this.parseEpub(filePath);
+        return this.parseEpub(storedFileKey);
       case 'md':
-        return this.parseMarkdown(filePath, fileName);
+        return this.parseMarkdown(storedFileKey, fileName);
       default:
         throw new BadRequestException(`Unsupported file type: ${fileType}`);
     }
@@ -173,8 +173,8 @@ export class FileParserService {
    * 按章节标题拆分（支持多种章节格式）
    * 自动识别编码，统一转换为 UTF-8
    */
-  private async parseTxt(filePath: string, fileName?: string): Promise<ParsedNovel> {
-    const safePath = resolveNovelUploadPath(filePath);
+  private async parseTxt(storedFileKey: string, fileName?: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(storedFileKey);
     this.logger.log(`Parsing TXT file: ${safePath}`);
 
     // 读取文件为 Buffer（必须用 Buffer，不能直接用 utf-8）
@@ -332,8 +332,8 @@ export class FileParserService {
    * 解析 DOCX 文件
    * 识别一级标题作为章节
    */
-  private async parseDocx(filePath: string, fileName?: string): Promise<ParsedNovel> {
-    const safePath = resolveNovelUploadPath(filePath);
+  private async parseDocx(storedFileKey: string, fileName?: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(storedFileKey);
     if (!this.isPathSafe(safePath)) {
       throw new BadRequestException('Security violation: Attempt to read outside upload directory');
     }
@@ -409,8 +409,8 @@ export class FileParserService {
    * 解析 EPUB 文件
    * 读取 metadata 和章节列表
    */
-  private async parseEpub(filePath: string): Promise<ParsedNovel> {
-    const safePath = resolveNovelUploadPath(filePath);
+  private async parseEpub(storedFileKey: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(storedFileKey);
     if (!this.isPathSafe(safePath)) {
       throw new BadRequestException('Security violation: Attempt to read outside upload directory');
     }
@@ -485,8 +485,8 @@ export class FileParserService {
    * 解析 Markdown 文件
    * 按一级标题（#）拆分章节
    */
-  private async parseMarkdown(filePath: string, fileName?: string): Promise<ParsedNovel> {
-    const safePath = resolveNovelUploadPath(filePath);
+  private async parseMarkdown(storedFileKey: string, fileName?: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(storedFileKey);
     // P0 Security: Ensure path is safe before reading
     if (!this.isPathSafe(safePath)) {
       throw new BadRequestException('Security violation: Attempt to read outside upload directory');
