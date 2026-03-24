@@ -289,14 +289,16 @@ export class JobUpdateOpsService {
                     throw new NotFoundException(`Job ${jobId} not found`);
                 }
 
-                const isIdempotent = job.status === 'SUCCEEDED' && result.status === 'SUCCEEDED';
+                const normalizedJob = this.normalizePgJob(job);
+
+                const isIdempotent = normalizedJob.status === 'SUCCEEDED' && result.status === 'SUCCEEDED';
                 this.logger.log(
-                    `[JOB_RESULT_REPORT] jobId=${jobId} type=${job.type} oldStatus=${job.status} newStatus=${result.status} source=pg-fallback idempotentSkip=${isIdempotent}`
+                    `[JOB_RESULT_REPORT] jobId=${jobId} type=${normalizedJob.type} oldStatus=${normalizedJob.status} newStatus=${result.status} source=pg-fallback idempotentSkip=${isIdempotent}`
                 );
 
                 if (isIdempotent) {
                     await client.query('COMMIT');
-                    return { job, updatedJob: job };
+                    return { job: normalizedJob, updatedJob: normalizedJob };
                 }
 
                 const updateResult = await client.query(
@@ -311,15 +313,27 @@ export class JobUpdateOpsService {
                 );
 
                 await client.query('COMMIT');
+                const updatedJob = this.normalizePgJob(updateResult.rows[0]);
                 return {
-                    job,
-                    updatedJob: updateResult.rows[0],
+                    job: normalizedJob,
+                    updatedJob,
                 };
             } catch (error) {
                 await client.query('ROLLBACK').catch(() => undefined);
                 throw error;
             }
         });
+    }
+
+    private normalizePgJob(row: any) {
+        if (!row) {
+            return row;
+        }
+
+        return {
+            ...row,
+            isVerification: row.isVerification ?? row.is_verification ?? false,
+        };
     }
 
     /**

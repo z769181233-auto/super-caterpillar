@@ -65,8 +65,10 @@ export class JobAuthOpsService {
                       SELECT
                         s.id AS shot_id,
                         s."sceneId" AS scene_id,
+                        s."reviewStatus" AS shot_review_status,
                         s."organizationId" AS shot_org_id,
                         sc."episodeId" AS episode_id,
+                        sc."enrichedText" AS scene_enriched_text,
                         sc.project_id AS scene_project_id,
                         p.id AS project_id,
                         p."organizationId" AS project_org_id,
@@ -88,8 +90,10 @@ export class JobAuthOpsService {
                     | {
                         shot_id: string;
                         scene_id: string | null;
+                        shot_review_status: string | null;
                         shot_org_id: string | null;
                         episode_id: string | null;
+                        scene_enriched_text: string | null;
                         scene_project_id: string | null;
                         project_id: string | null;
                         project_org_id: string | null;
@@ -102,10 +106,12 @@ export class JobAuthOpsService {
                 return {
                     id: row.shot_id,
                     organizationId: row.shot_org_id,
+                    reviewStatus: row.shot_review_status,
                     scene: row.scene_id
                         ? {
                             id: row.scene_id,
                             projectId: row.scene_project_id,
+                            enrichedText: row.scene_enriched_text,
                             episode: row.episode_id
                                 ? {
                                     id: row.episode_id,

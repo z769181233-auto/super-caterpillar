@@ -14,9 +14,10 @@ import { PublishedVideoService } from '../publish/published-video.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JobAuthOpsService } from './job-auth-ops.service';
 import { CreateJobDto } from './dto/create-job.dto';
-import { JobEngineBindingStatus } from 'database';
+import { JobEngineBindingStatus, ShotReviewStatus } from 'database';
 import { TaskService } from '../task/task.service';
 import { ProjectResolver } from '../common/project-resolver';
+import { PRODUCTION_MODE } from '@scu/config';
 import {
     getRuntimeDbTimeoutMs,
     isCiOrGateContextEnv,
@@ -137,6 +138,10 @@ export class JobCreationOpsService {
 
             if (!scene || !episode || !project) {
                 throw new NotFoundException('Shot hierarchy is incomplete');
+            }
+
+            if (createJobDto.type === 'SHOT_RENDER') {
+                await this.validateShotRenderReadiness(shot, !!createJobDto.isVerification);
             }
 
             // 计费
@@ -394,6 +399,25 @@ export class JobCreationOpsService {
         });
         if (!rs || rs.job.organizationId !== organizationId || rs.job.projectId !== projectId) {
             throw new ForbiddenException('Invalid referenceSheetId or cross-tenant access');
+        }
+    }
+
+    private async validateShotRenderReadiness(shot: any, isVerification: boolean): Promise<void> {
+        if (isVerification) {
+            return;
+        }
+
+        const sceneText = typeof shot?.scene?.enrichedText === 'string' ? shot.scene.enrichedText.trim() : '';
+        if (!sceneText) {
+            throw new BadRequestException('SHOT_RENDER requires analyzed scene content');
+        }
+
+        if (
+            PRODUCTION_MODE &&
+            shot?.reviewStatus !== ShotReviewStatus.APPROVED &&
+            shot?.reviewStatus !== ShotReviewStatus.FINALIZED
+        ) {
+            throw new ForbiddenException('SHOT_RENDER requires approved shot review in production');
         }
     }
 }
