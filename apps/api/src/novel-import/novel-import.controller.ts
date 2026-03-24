@@ -58,6 +58,7 @@ import {
   isWithinNovelUploadRoot,
   NOVEL_UPLOAD_ROOT,
   resolveNovelUploadPath,
+  unlinkNovelUploadPath,
 } from './novel-upload-path.util';
 
 @Controller('projects/:projectId/novel')
@@ -400,7 +401,7 @@ export class NovelImportController {
         timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
-      if (filePath) await fs.unlink(filePath).catch(() => {});
+      if (filePath) await unlinkNovelUploadPath(filePath).catch(() => {});
       if (error instanceof UnprocessableEntityException) throw error;
       throw new BadRequestException(error.message || 'Import failed');
     }
@@ -582,7 +583,7 @@ export class NovelImportController {
         message: 'Novel imported, analysis job created',
       };
     } catch (error: any) {
-      if (tempPath) await fs.unlink(tempPath).catch(() => {});
+      if (tempPath) await unlinkNovelUploadPath(tempPath).catch(() => {});
       if (error instanceof UnprocessableEntityException) throw error;
       throw new BadRequestException(error.message || 'Import failed');
     }
