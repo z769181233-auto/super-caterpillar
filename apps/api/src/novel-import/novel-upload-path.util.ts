@@ -13,5 +13,6 @@ export function isWithinNovelUploadRoot(filePath: string): boolean {
 }
 
 export function resolveNovelUploadPath(filePath: string): string {
-  return path.resolve(filePath);
+  const safeFileName = path.basename(filePath);
+  return path.join(NOVEL_UPLOAD_ROOT, safeFileName);
 }

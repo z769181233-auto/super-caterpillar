@@ -10,7 +10,7 @@ describe('novel-upload-path.util', () => {
     const safePath = path.join(NOVEL_UPLOAD_ROOT, 'job-1', 'chapter.txt');
 
     expect(isWithinNovelUploadRoot(safePath)).toBe(true);
-    expect(resolveNovelUploadPath(safePath)).toBe(path.resolve(safePath));
+    expect(resolveNovelUploadPath(safePath)).toBe(path.join(NOVEL_UPLOAD_ROOT, 'chapter.txt'));
   });
 
   it('rejects sibling paths that only share the same prefix', () => {
@@ -23,5 +23,10 @@ describe('novel-upload-path.util', () => {
     const unsafePath = path.join(NOVEL_UPLOAD_ROOT, '..', '..', 'etc', 'passwd');
 
     expect(isWithinNovelUploadRoot(unsafePath)).toBe(false);
+  });
+
+  it('normalizes absolute or traversal input back to upload root by basename', () => {
+    expect(resolveNovelUploadPath('/tmp/evil.txt')).toBe(path.join(NOVEL_UPLOAD_ROOT, 'evil.txt'));
+    expect(resolveNovelUploadPath('../escape.md')).toBe(path.join(NOVEL_UPLOAD_ROOT, 'escape.md'));
   });
 });
