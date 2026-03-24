@@ -7,7 +7,7 @@ export type Stage3EngineMode = 'REAL' | 'REPLAY' | 'LEGACY_STUB';
 function getMode(): Stage3EngineMode {
   const v = process.env.STAGE3_ENGINE_MODE?.toUpperCase();
   if (v === 'REAL' || v === 'REPLAY' || v === 'LEGACY_STUB') return v as Stage3EngineMode;
-  return 'REPLAY';
+  return 'REAL';
 }
 
 export async function ce06Selector(input: CE06Input): Promise<CE06Output | null> {
