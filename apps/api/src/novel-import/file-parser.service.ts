@@ -6,6 +6,11 @@ import * as mammoth from 'mammoth';
 import EPub from 'epub2';
 import * as chardet from 'chardet';
 import * as iconv from 'iconv-lite';
+import {
+  isWithinNovelUploadRoot,
+  NOVEL_UPLOAD_ROOT,
+  resolveNovelUploadPath,
+} from './novel-upload-path.util';
 
 interface ParsedChapter {
   title: string;
@@ -32,11 +37,10 @@ export class FileParserService {
   private readonly MAX_PARSE_INPUT_LENGTH = 10000000; // 10MB limit for regex operations
   private readonly TITLE_SANITIZE_REGEX = /[\(\（]\d+[\)\）]$|[-_]\s*副本$/;
   private readonly AUTHOR_EXTRACT_REGEX = /作者[：:]\s*(.+)/;
-  private readonly ALLOWED_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'novels');
+  private readonly ALLOWED_UPLOAD_DIR = NOVEL_UPLOAD_ROOT;
 
-  private async isPathSafe(filePath: string): Promise<boolean> {
-    const normalized = path.normalize(filePath);
-    return normalized.startsWith(this.ALLOWED_UPLOAD_DIR);
+  private isPathSafe(filePath: string): boolean {
+    return isWithinNovelUploadRoot(filePath);
   }
   /**
    * 从文本中解析章节（简单规则：按 "第X章" 分割）
@@ -170,14 +174,15 @@ export class FileParserService {
    * 自动识别编码，统一转换为 UTF-8
    */
   private async parseTxt(filePath: string, fileName?: string): Promise<ParsedNovel> {
-    this.logger.log(`Parsing TXT file: ${filePath}`);
+    const safePath = resolveNovelUploadPath(filePath);
+    this.logger.log(`Parsing TXT file: ${safePath}`);
 
     // 读取文件为 Buffer（必须用 Buffer，不能直接用 utf-8）
     // P0 Security: Ensure path is safe before reading
-    if (!(await this.isPathSafe(filePath))) {
+    if (!this.isPathSafe(safePath)) {
       throw new BadRequestException('Security violation: Attempt to read outside upload directory');
     }
-    const buffer = await fs.readFile(filePath);
+    const buffer = await fs.readFile(safePath);
     this.logger.log(`File size: ${buffer.length} bytes`);
 
     // 使用 chardet 检测编码
@@ -328,7 +333,11 @@ export class FileParserService {
    * 识别一级标题作为章节
    */
   private async parseDocx(filePath: string, fileName?: string): Promise<ParsedNovel> {
-    const result = await mammoth.extractRawText({ path: filePath });
+    const safePath = resolveNovelUploadPath(filePath);
+    if (!this.isPathSafe(safePath)) {
+      throw new BadRequestException('Security violation: Attempt to read outside upload directory');
+    }
+    const result = await mammoth.extractRawText({ path: safePath });
     const content = result.value;
 
     // 简单处理：按段落拆分，识别一级标题
@@ -401,8 +410,13 @@ export class FileParserService {
    * 读取 metadata 和章节列表
    */
   private async parseEpub(filePath: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(filePath);
+    if (!this.isPathSafe(safePath)) {
+      throw new BadRequestException('Security violation: Attempt to read outside upload directory');
+    }
+
     return new Promise((resolve, reject) => {
-      const epub = new EPub(filePath);
+      const epub = new EPub(safePath);
 
       epub.on('end', async () => {
         try {
@@ -472,11 +486,12 @@ export class FileParserService {
    * 按一级标题（#）拆分章节
    */
   private async parseMarkdown(filePath: string, fileName?: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(filePath);
     // P0 Security: Ensure path is safe before reading
-    if (!(await this.isPathSafe(filePath))) {
+    if (!this.isPathSafe(safePath)) {
       throw new BadRequestException('Security violation: Attempt to read outside upload directory');
     }
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await fs.readFile(safePath, 'utf-8');
     const lines = content.split('\n');
 
     const chapters: ParsedChapter[] = [];

@@ -8,11 +8,13 @@
   "description": "Super Caterpillar Universe — Monorepo (API / Web / Workers)",
   "pnpm": {
     "overrides": {
-      "next": "15.5.14",
+      "next": "16.2.1",
       "qs": "6.14.2",
       "hono": "4.12.8",
       "@hono/node-server": "1.19.10",
       "multer": "2.1.1",
+      "@eslint/eslintrc>ajv": "6.12.6",
+      "eslint>ajv": "6.12.6",
       "lodash": "^4.17.21",
       "axios": "^1.7.9",
       "ajv": "8.18.0",

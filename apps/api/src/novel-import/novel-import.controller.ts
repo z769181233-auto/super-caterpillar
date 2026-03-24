@@ -54,12 +54,17 @@ import { ApiSecurityGuard } from '../security/api-security/api-security.guard';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { UnprocessableEntityException } from '@nestjs/common';
+import {
+  isWithinNovelUploadRoot,
+  NOVEL_UPLOAD_ROOT,
+  resolveNovelUploadPath,
+} from './novel-upload-path.util';
 
 @Controller('projects/:projectId/novel')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class NovelImportController {
   private readonly logger = new Logger(NovelImportController.name);
-  private readonly uploadDir = path.join(process.cwd(), 'uploads', 'novels');
+  private readonly uploadDir = NOVEL_UPLOAD_ROOT;
   private readonly SHREDDER_THRESHOLD_CHARACTERS = 1000000;
 
   constructor(
@@ -150,7 +155,7 @@ export class NovelImportController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: (req, file, cb) => {
-          const uploadDir = path.join(process.cwd(), 'uploads', 'novels');
+          const uploadDir = NOVEL_UPLOAD_ROOT;
           fs.mkdir(uploadDir, { recursive: true })
             .then(() => cb(null, uploadDir))
             .catch((err) => cb(err, uploadDir));
@@ -193,7 +198,7 @@ export class NovelImportController {
     if (!file) throw new BadRequestException('File is required');
 
     const fileExt = path.extname(file.originalname).toLowerCase().substring(1);
-    const filePath = file.path;
+    const filePath = resolveNovelUploadPath(file.path);
     const traceId = randomUUID();
 
     try {
@@ -273,11 +278,10 @@ export class NovelImportController {
 
       // 2. 普通解析路径
       // P0 Security: Ensure filepath is normalized and inside standard upload dir to prevent path injection
-      const normalizedPath = path.normalize(filePath);
-      if (!normalizedPath.startsWith(this.uploadDir)) {
+      if (!isWithinNovelUploadRoot(filePath)) {
         throw new ForbiddenException('Access denied: File outside upload directory');
       }
-      const parsed = await this.fileParserService.parseFile(normalizedPath, fileExt, file.originalname);
+      const parsed = await this.fileParserService.parseFile(filePath, fileExt, file.originalname);
 
       // 安全审查
       await this.performSafetyCheck(parsed.rawText, {

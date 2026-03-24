@@ -24,6 +24,7 @@ interface ShotWallProps {
 export default function ShotWall({ shots, selectedShotId, onSelectShot }: ShotWallProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: shots.length,
     getScrollElement: () => parentRef.current,
