@@ -11,25 +11,43 @@ export async function executeCE06Real(input: CE06Input, apiKey: string): Promise
   return ce06RealEngine(input, apiKey);
 }
 
+function asNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
 export const ce06RealEngine = async (input: CE06Input, apiKey?: string): Promise<CE06Output> => {
-  const phase = input.phase || 'SCAN';
+  const phase = input.phase;
+  if (phase !== 'SCAN' && phase !== 'CHUNK_PARSE') {
+    throw new Error('CE06_PHASE_REQUIRED: phase must be SCAN or CHUNK_PARSE');
+  }
+
+  const structuredText = asNonEmptyString(input.structured_text);
+  if (!structuredText) {
+    throw new Error('CE06_TEXT_REQUIRED: structured_text must be non-empty');
+  }
 
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) throw new Error('Missing API Key for CE06 Real Engine');
 
   if (phase === 'SCAN') {
-    return executeScanPhase(input);
+    return executeScanPhase(input, structuredText);
   } else {
-    // Check if multi-agent is enabled in input
-    if (input.multi_agent) {
-      return runMultiAgentAnalysis(input.structured_text, key, input.model || 'gemini-1.5-flash');
+    const modelName = asNonEmptyString(input.model) ?? asNonEmptyString(input.options?.model);
+    if (!modelName) {
+      throw new Error('CE06_MODEL_REQUIRED: chunk parsing requires an explicit model');
     }
-    return executeChunkParsePhase(input, key);
+
+    if (input.multi_agent) {
+      return runMultiAgentAnalysis(structuredText, key, modelName);
+    }
+    return executeChunkParsePhase(input, structuredText, key, modelName);
   }
 };
 
-async function executeScanPhase(input: CE06Input): Promise<CE06Output> {
-  const volumes = scanVolumes(input.structured_text);
+async function executeScanPhase(input: CE06Input, structuredText: string): Promise<CE06Output> {
+  const volumes = scanVolumes(structuredText);
   return {
     volumes,
     chapters: [],
@@ -38,18 +56,17 @@ async function executeScanPhase(input: CE06Input): Promise<CE06Output> {
     audit_trail: {
       engineVersion: 'ce06-real-v1.3.1',
       timestamp: new Date().toISOString(),
-      traceId: input.traceId || 'none',
+      traceId: asNonEmptyString(input.traceId),
     },
   };
 }
 
-async function executeChunkParsePhase(input: CE06Input, apiKey: string): Promise<CE06Output> {
-  const chapterText = input.structured_text;
-  let modelName = input.model || 'gemini-1.5-flash';
-  if (modelName === 'gemini-1.5-flash') {
-    // modelName = 'gemini-flash-latest';
-  }
-
+async function executeChunkParsePhase(
+  input: CE06Input,
+  chapterText: string,
+  apiKey: string,
+  modelName: string
+): Promise<CE06Output> {
   const systemPrompt = `You are a professional Screenwriter. Split the following chapter into scenes for a movie production. For each scene, capture the location, characters, and key actions.
 Your output MUST be a JSON object with a "scenes" array. Each scene MUST have "title", "visual_prompt", and "characters" (list of character objects with "name" and "appearance").`;
 
@@ -109,7 +126,7 @@ Your output MUST be a JSON object with a "scenes" array. Each scene MUST have "t
       audit_trail: {
         engineVersion: 'ce06-real-v1.5.0-sdk',
         timestamp: new Date().toISOString(),
-        traceId: input.traceId || 'none',
+        traceId: asNonEmptyString(input.traceId),
       },
     };
   } catch (error: any) {
