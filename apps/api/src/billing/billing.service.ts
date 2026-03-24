@@ -32,6 +32,19 @@ export class BillingService {
     return isPrismaFallbackEligibleError(error);
   }
 
+  private toCreditsNumber(value: unknown): number {
+    if (value == null) {
+      return 0;
+    }
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      return Number(value);
+    }
+    return Number(value);
+  }
+
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
     return withRuntimePgClient(
       {
@@ -109,7 +122,7 @@ export class BillingService {
 
     if (!org) throw new NotFoundException('Organization not found');
 
-    const credits = org.credits || 0;
+    const credits = this.toCreditsNumber(org.credits);
     return { remaining: credits, total: credits };
   }
 
@@ -145,9 +158,10 @@ export class BillingService {
           );
           const org = orgResult.rows[0] as { credits: number | string | null } | undefined;
 
-          if (!org || Number(org.credits || 0) < amount) {
+          const currentCredits = this.toCreditsNumber(org?.credits);
+          if (!org || currentCredits < amount) {
             throw new ForbiddenException(
-              `Insufficient credits to start job. Required: ${amount} credits. (Available: ${org ? Number(org.credits || 0) : 0})`
+              `Insufficient credits to start job. Required: ${amount} credits. (Available: ${currentCredits})`
             );
           }
 
@@ -156,7 +170,7 @@ export class BillingService {
             [organizationId, amount]
           );
           const updatedRow = updateResult.rows[0] as { credits: number | string | null } | undefined;
-          const newCredits = Number(updatedRow?.credits ?? 0);
+          const newCredits = this.toCreditsNumber(updatedRow?.credits);
 
           const userResult = await client.query(
             'SELECT id FROM users WHERE id = $1 LIMIT 1',
@@ -245,9 +259,10 @@ export class BillingService {
         await tx.$queryRaw`SELECT id, credits FROM "organizations" WHERE id = ${organizationId} FOR UPDATE`;
       const org = orgs[0];
 
-      if (!org || org.credits < amount) {
+      const currentCredits = this.toCreditsNumber(org?.credits);
+      if (!org || currentCredits < amount) {
         throw new ForbiddenException(
-          `Insufficient credits to start job. Required: ${amount} credits. (Available: ${org?.credits || 0})`
+          `Insufficient credits to start job. Required: ${amount} credits. (Available: ${currentCredits})`
         );
       }
 
@@ -258,10 +273,10 @@ export class BillingService {
 
       // 3. Record Billing Event (Ledger)
       // Ensure userId exists to avoid P2003 FK violation (e.g. if userId is an ApiKey ID)
-      let finalUserId = userId;
+      let finalUserId: string | null = userId;
       const userExists = await tx.user.findUnique({ where: { id: userId }, select: { id: true } });
       if (!userExists) {
-        finalUserId = 'system';
+        finalUserId = null;
       }
 
       await tx.billingEvent.create({
@@ -277,7 +292,7 @@ export class BillingService {
 
       // 4. Audit Log (In-Transaction for Stage 10 Strict Consistency)
       const updatedOrg = await tx.organization.findUnique({ where: { id: organizationId } });
-      const newCredits = updatedOrg?.credits ?? 0;
+      const newCredits = this.toCreditsNumber(updatedOrg?.credits);
       const detailsWithBalance = {
         ...details,
         newCredits,
@@ -460,8 +475,8 @@ export class BillingService {
     });
 
     return {
-      totalCreditsDelta: summary._sum?.creditsDelta || 0,
-      eventCount: summary._count?.id || 0,
+      totalCreditsDelta: summary._sum?.creditsDelta ?? 0,
+      eventCount: summary._count?.id ?? 0,
     };
   }
 
@@ -484,8 +499,8 @@ export class BillingService {
       }),
     ]);
 
-    const sumLedger = Number(ledgerSum._sum?.amount || 0n) / 100;
-    const sumEvent = Math.abs(Number(eventSum._sum?.creditsDelta || 0));
+    const sumLedger = Number(ledgerSum._sum?.amount ?? 0n) / 100;
+    const sumEvent = Math.abs(Number(eventSum._sum?.creditsDelta ?? 0));
 
     // Precision-safe comparison (ROUND 6 equivalent)
     const drift = Math.abs(sumLedger - sumEvent);

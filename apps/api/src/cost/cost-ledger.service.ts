@@ -35,6 +35,12 @@ export class CostLedgerService {
     private readonly billingService: BillingService
   ) {}
 
+  private asNonEmptyString(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
   /**
    * P18-2-FIX: Robustly resolve jobId or dedupeKey from event
    */
@@ -207,7 +213,7 @@ export class CostLedgerService {
 
     const byType = costs.reduce(
       (acc, cost) => {
-        const type = cost.billingState || 'UNKNOWN';
+        const type = this.asNonEmptyString(cost.billingState) ?? 'MISSING_BILLING_STATE';
         if (!acc[type]) {
           acc[type] = { count: 0, total: 0 };
         }

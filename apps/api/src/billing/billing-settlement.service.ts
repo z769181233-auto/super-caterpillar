@@ -123,7 +123,7 @@ export class BillingSettlementService {
                 billingEventId: eventId,
                 creditsDelta: costToCharge,
               },
-              l.jobId || runId
+              l.traceId ?? normalizedLedger?.traceId ?? undefined
             );
           },
           {
