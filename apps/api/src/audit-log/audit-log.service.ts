@@ -28,6 +28,12 @@ export class AuditLogService {
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  private asNonEmptyString(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
   private shouldFallbackToPg(error: any): boolean {
     return isPrismaFallbackEligibleError(error);
   }
@@ -90,14 +96,16 @@ export class AuditLogService {
 
       const ip = options.ip || req?.ip || req?.headers['x-forwarded-for'];
       const userAgent = options.userAgent || req?.headers['user-agent'];
-      const traceId = options.traceId || `trace-${randomBytes(8).toString('hex')}`;
+      const traceId = this.asNonEmptyString(options.traceId);
 
       // Server-level Integrity Evidence (Prevent log tampering)
       const serverTimestamp = new Date();
       const serverNonce = randomBytes(16).toString('hex');
 
       const details = options.details ? { ...options.details } : {};
-      details._traceId = traceId;
+      if (traceId) {
+        details._traceId = traceId;
+      }
 
       let detailsStr = '';
       try {
@@ -115,14 +123,18 @@ export class AuditLogService {
         serverTimestamp.toISOString(),
         serverNonce,
         detailsDigest,
-        traceId,
+        traceId || '',
       ].join('|');
 
       const secret = process.env.AUDIT_SIGNING_SECRET;
-      const recordSignature = await this.computeAuditSignature(
-        secret || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR',
-        signBase
-      );
+      const recordSignature = secret
+        ? await this.computeAuditSignature(secret, signBase)
+        : null;
+      if (!secret) {
+        this.logger.warn(
+          'AUDIT_SIGNING_SECRET missing; audit record stored without server-side signature'
+        );
+      }
 
       const payload = {
         action: options.action,

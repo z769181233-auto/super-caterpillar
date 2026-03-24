@@ -2,6 +2,20 @@ export type LegacyBillingState = 'RESERVED' | 'COMMITTED' | 'RELEASED' | string;
 
 export type BillingLedgerSsotStatus = 'PENDING' | 'POSTED' | 'REVERSED' | 'FAILED';
 
+function asNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function requireNonEmptyString(value: unknown, code: string): string {
+  const normalized = asNonEmptyString(value);
+  if (!normalized) {
+    throw new Error(code);
+  }
+  return normalized;
+}
+
 export function mapSsotStatusToLegacyBillingState(
   status: BillingLedgerSsotStatus
 ): LegacyBillingState | null {
@@ -68,13 +82,12 @@ export function buildBillingLedgerSsotIdempotencyKey(params: {
   chargeCode: string;
 }): string {
   return [
-    params.tenantId,
-    params.traceId,
-    params.itemType,
-    params.itemId,
-    params.chargeCode,
+    requireNonEmptyString(params.tenantId, 'BILLING_TENANT_ID_REQUIRED'),
+    requireNonEmptyString(params.traceId, 'BILLING_TRACE_ID_REQUIRED'),
+    requireNonEmptyString(params.itemType, 'BILLING_ITEM_TYPE_REQUIRED'),
+    requireNonEmptyString(params.itemId, 'BILLING_ITEM_ID_REQUIRED'),
+    requireNonEmptyString(params.chargeCode, 'BILLING_CHARGE_CODE_REQUIRED'),
   ]
-    .map((part) => String(part || '').trim())
     .join(':');
 }
 
@@ -91,28 +104,33 @@ export function buildBillingLedgerCreateData(params: {
   evidenceRef?: string | null;
 }) {
   const legacyBillingState = mapSsotStatusToLegacyBillingState(params.status);
-  const jobId = params.jobId || params.traceId;
-  const projectId = params.projectId || params.tenantId;
+  const traceId = requireNonEmptyString(params.traceId, 'BILLING_TRACE_ID_REQUIRED');
+  const tenantId = requireNonEmptyString(params.tenantId, 'BILLING_TENANT_ID_REQUIRED');
+  const itemType = requireNonEmptyString(params.itemType, 'BILLING_ITEM_TYPE_REQUIRED');
+  const itemId = requireNonEmptyString(params.itemId, 'BILLING_ITEM_ID_REQUIRED');
+  const chargeCode = requireNonEmptyString(params.chargeCode, 'BILLING_CHARGE_CODE_REQUIRED');
+  const jobId = requireNonEmptyString(params.jobId, 'BILLING_JOB_ID_REQUIRED');
+  const projectId = requireNonEmptyString(params.projectId, 'BILLING_PROJECT_ID_REQUIRED');
 
   return {
     jobId,
     projectId,
-    billingState: legacyBillingState || 'UNKNOWN',
-    traceId: params.traceId,
-    itemType: params.itemType,
-    itemId: params.itemId,
-    chargeCode: params.chargeCode,
+    billingState: legacyBillingState ?? 'FAILED',
+    traceId,
+    itemType,
+    itemId,
+    chargeCode,
     amount: params.amount,
     currency: 'CREDIT',
     evidenceRef: params.evidenceRef || null,
     idempotencyKey: buildBillingLedgerSsotIdempotencyKey({
-      tenantId: params.tenantId,
-      traceId: params.traceId,
-      itemType: params.itemType,
-      itemId: params.itemId,
-      chargeCode: params.chargeCode,
+      tenantId,
+      traceId,
+      itemType,
+      itemId,
+      chargeCode,
     }),
-    tenantId: params.tenantId,
+    tenantId,
     status: params.status,
   };
 }
@@ -129,15 +147,18 @@ export function buildLegacyBillingLedgerCreateData(params: {
   const billingState = String(params.billingState || '').toUpperCase();
   const status = params.status || mapLegacyBillingStateToSsotStatus(billingState);
   return buildBillingLedgerCreateData({
-    tenantId: params.tenantId || params.projectId,
-    traceId: params.jobId,
+    tenantId: requireNonEmptyString(
+      params.tenantId ?? params.projectId,
+      'BILLING_TENANT_ID_REQUIRED'
+    ),
+    traceId: requireNonEmptyString(params.jobId, 'BILLING_TRACE_ID_REQUIRED'),
     itemType: 'JOB',
-    itemId: params.jobId,
+    itemId: requireNonEmptyString(params.jobId, 'BILLING_ITEM_ID_REQUIRED'),
     chargeCode: mapLegacyBillingStateToChargeCode(billingState),
     amount: params.amount,
     status,
-    projectId: params.projectId,
-    jobId: params.jobId,
+    projectId: requireNonEmptyString(params.projectId, 'BILLING_PROJECT_ID_REQUIRED'),
+    jobId: requireNonEmptyString(params.jobId, 'BILLING_JOB_ID_REQUIRED'),
     evidenceRef: params.evidenceRef || null,
   });
 }

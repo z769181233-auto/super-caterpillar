@@ -64,8 +64,14 @@ export class BillingSettlementService {
             const costToCharge = Number(l.amount) / 100; // Int to Credits
 
             // Helper: Find Org
-            const proj = await tx.project.findUnique({ where: { id: l.projectId } });
-            const orgId = proj?.organizationId || l.projectId;
+            const proj = await tx.project.findUnique({
+              where: { id: l.projectId },
+              select: { organizationId: true },
+            });
+            const orgId = proj?.organizationId;
+            if (!orgId) {
+              throw new Error('MISSING_ORGANIZATION_ID');
+            }
 
             // 3. Row-Level Locking on Credits (Atomicity)
             await tx.$executeRaw`SELECT id FROM organizations WHERE id = ${orgId} FOR UPDATE`;
@@ -89,8 +95,8 @@ export class BillingSettlementService {
                 creditsDelta: -costToCharge, // Negative for consumption
                 metadata: {
                   ledgerId: l.id,
-                  itemId: normalizedLedger?.itemId || l.jobId,
-                  traceId: normalizedLedger?.traceId || l.jobId,
+                  itemId: normalizedLedger?.itemId ?? l.jobId,
+                  traceId: normalizedLedger?.traceId ?? null,
                   settleRunId: runId,
                 },
               },

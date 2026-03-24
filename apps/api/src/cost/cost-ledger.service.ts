@@ -113,10 +113,23 @@ export class CostLedgerService {
         return { deduped: false, amountDeducted: 0, status: 'BILLING_REJECTED_JOB_NOT_SUCCEEDED' };
       }
 
+      if (!job.organizationId) {
+        this.logger.error({
+          msg: 'BILLING_REJECTED_ORGANIZATION_ID_MISSING',
+          jobId: job.id,
+          projectId: e.projectId,
+        });
+        return {
+          deduped: false,
+          amountDeducted: 0,
+          status: 'BILLING_REJECTED_ORGANIZATION_ID_MISSING',
+        };
+      }
+
       await this.billingService.consumeCredits(
         e.projectId,
         e.userId,
-        job.organizationId || 'missing',
+        job.organizationId,
         e.costAmount,
         `BILLING_V3:${e.jobType}`,
         job.id
