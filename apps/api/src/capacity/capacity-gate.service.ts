@@ -54,10 +54,6 @@ export class CapacityGateService {
     return this.isCiOrGateContext() || process.env.FORCE_CAPACITY_PG_FALLBACK === '1';
   }
 
-  private shouldAllowCapacityOpenOnError(): boolean {
-    return this.isCiOrGateContext() || process.env.ALLOW_CAPACITY_OPEN_ON_ERROR === '1';
-  }
-
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
     return withRuntimePgClient(
       {
@@ -240,14 +236,7 @@ export class CapacityGateService {
       };
     } catch (error) {
       this.logger.error(`[CapacityGate] Error checking capacity: ${error.message}`, error.stack);
-      if (!this.shouldAllowCapacityOpenOnError()) {
-        throw new HttpException('Capacity check unavailable', HttpStatus.SERVICE_UNAVAILABLE);
-      }
-      // 仅在 CI/test/gate 或显式 override 下允许 fail-open
-      return {
-        allowed: true,
-        reason: 'Capacity check failed, allowing by default',
-      };
+      throw new HttpException('Capacity check unavailable', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 

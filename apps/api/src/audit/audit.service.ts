@@ -20,15 +20,27 @@ export class AuditService {
   private readonly logger = new Logger(AuditService.name);
   constructor(private readonly prisma: PrismaService) {}
 
+  private asNonEmptyString(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
   async log(input: AuditLogInput) {
     try {
+      const resourceType = this.asNonEmptyString(input.resourceType);
+      if (!resourceType) {
+        this.logger.warn(`Audit log skipped: missing resourceType for action ${input.action}`);
+        return;
+      }
+
       // 使用 audit_logs 表（第二个 AuditLog 模型）
       await (this.prisma as any).auditLog.create({
         data: {
           userId: input.userId || null,
           apiKeyId: input.apiKeyId || null,
           action: input.action,
-          resourceType: input.resourceType || 'unknown', // 第二个模型要求非空
+          resourceType,
           resourceId: input.resourceId || null,
           ip: input.ip || null,
           userAgent: input.userAgent || input.ua || null,
