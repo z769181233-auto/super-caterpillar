@@ -1,6 +1,16 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { createHmac, randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, webcrypto } from 'crypto';
+import {
+  getRuntimeDbTimeoutMs,
+  isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
+  withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
+
+type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
+const textEncoder = new TextEncoder();
+let auditSigningKeyPromise: Promise<NodeCryptoKey> | null = null;
 
 /**
  * 审计日志服务
@@ -14,8 +24,37 @@ import { createHmac, randomBytes, createHash } from 'crypto';
 @Injectable()
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  private asNonEmptyString(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
+  private shouldFallbackToPg(error: any): boolean {
+    return isPrismaFallbackEligibleError(error);
+  }
+
+  private isCiOrGateContext(): boolean {
+    return isCiOrGateContextEnv();
+  }
+
+  private shouldAllowAuditLogPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_AUDIT_LOG_PG_FALLBACK === '1';
+  }
+
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-audit-log',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
+  }
 
   /**
    * 记录审计日志
@@ -57,14 +96,16 @@ export class AuditLogService {
 
       const ip = options.ip || req?.ip || req?.headers['x-forwarded-for'];
       const userAgent = options.userAgent || req?.headers['user-agent'];
-      const traceId = options.traceId || `trace-${randomBytes(8).toString('hex')}`;
+      const traceId = this.asNonEmptyString(options.traceId);
 
       // Server-level Integrity Evidence (Prevent log tampering)
       const serverTimestamp = new Date();
       const serverNonce = randomBytes(16).toString('hex');
 
       const details = options.details ? { ...options.details } : {};
-      details._traceId = traceId;
+      if (traceId) {
+        details._traceId = traceId;
+      }
 
       let detailsStr = '';
       try {
@@ -82,16 +123,18 @@ export class AuditLogService {
         serverTimestamp.toISOString(),
         serverNonce,
         detailsDigest,
-        traceId,
+        traceId || '',
       ].join('|');
 
       const secret = process.env.AUDIT_SIGNING_SECRET;
-      const recordSignature = createHmac(
-        'sha256',
-        secret || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR'
-      )
-        .update(signBase)
-        .digest('hex');
+      const recordSignature = secret
+        ? await this.computeAuditSignature(secret, signBase)
+        : null;
+      if (!secret) {
+        this.logger.warn(
+          'AUDIT_SIGNING_SECRET missing; audit record stored without server-side signature'
+        );
+      }
 
       const payload = {
         action: options.action,
@@ -107,26 +150,71 @@ export class AuditLogService {
         traceId,
         auditKeyVersion: 'v1',
       };
+      const recordId = `audit_${randomBytes(12).toString('hex')}`;
 
-      await this.prisma.auditLog.create({
-        data: {
-          userId: options.userId,
-          orgId: options.orgId,
-          apiKeyId: options.apiKeyId,
-          action: options.action,
-          resourceType: options.resourceType,
-          resourceId: options.resourceId,
-          ip: ip as any,
-          userAgent: userAgent as any,
-          details: details as any,
-          nonce: reqNonce || serverNonce,
-          signature: reqSignature || recordSignature,
-          timestamp: reqTimestamp || serverTimestamp,
-          payload: payload as any,
-        },
-      });
+      const createData = {
+        id: recordId,
+        userId: options.userId,
+        orgId: options.orgId,
+        apiKeyId: options.apiKeyId,
+        action: options.action,
+        resourceType: options.resourceType,
+        resourceId: options.resourceId,
+        ip: ip as any,
+        userAgent: userAgent as any,
+        details: details as any,
+        nonce: reqNonce || serverNonce,
+        signature: reqSignature || recordSignature,
+        timestamp: reqTimestamp || serverTimestamp,
+        payload: payload as any,
+      };
+
+      try {
+        await this.prisma.auditLog.create({ data: createData });
+      } catch (error: any) {
+        if (!this.shouldFallbackToPg(error)) {
+          throw error;
+        }
+        if (!this.shouldAllowAuditLogPgFallback()) {
+          this.logger.warn(
+            `Prisma audit log degraded for ${options.action} ${options.resourceType}:${options.resourceId}, skipping pg fallback outside CI/test/gate unless FORCE_AUDIT_LOG_PG_FALLBACK=1`
+          );
+          return;
+        }
+
+        this.logger.warn(
+          `Prisma audit log degraded for ${options.action} ${options.resourceType}:${options.resourceId}, using pg fallback: ${error.message}`
+        );
+
+        await this.withPgClient((client) =>
+          client.query(
+            `
+              INSERT INTO audit_logs
+                (id, "userId", "orgId", "apiKeyId", action, "resourceType", "resourceId", ip, "userAgent", details, nonce, signature, timestamp, payload, "createdAt")
+              VALUES
+                ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12,$13,$14::jsonb,NOW())
+            `,
+            [
+              createData.id,
+              createData.userId ?? null,
+              createData.orgId ?? null,
+              createData.apiKeyId ?? null,
+              createData.action,
+              createData.resourceType,
+              createData.resourceId ?? null,
+              createData.ip ?? null,
+              createData.userAgent ?? null,
+              JSON.stringify(details),
+              createData.nonce,
+              createData.signature,
+              createData.timestamp,
+              JSON.stringify(payload),
+            ]
+          )
+        );
+      }
     } catch (error: any) {
-      this.logger.error(
+      this.logger.warn(
         `Failed to record audit log: ${options.action} for ${options.resourceType}:${options.resourceId}`,
         error?.stack
       );
@@ -143,5 +231,34 @@ export class AuditLogService {
       ip: request.ip || request.headers['x-forwarded-for'] || request.connection?.remoteAddress,
       userAgent: request.headers['user-agent'],
     };
+  }
+
+  private async computeAuditSignature(secret: string, message: string): Promise<string> {
+    if (
+      !auditSigningKeyPromise &&
+      secret === (process.env.AUDIT_SIGNING_SECRET || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR')
+    ) {
+      auditSigningKeyPromise = webcrypto.subtle.importKey(
+        'raw',
+        textEncoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+    }
+
+    const signingKey =
+      secret === (process.env.AUDIT_SIGNING_SECRET || 'EMERGENCY_UNSECURE_FALLBACK_SUPER_CATERPILLAR')
+        ? await auditSigningKeyPromise!
+        : await webcrypto.subtle.importKey(
+            'raw',
+            textEncoder.encode(secret),
+            { name: 'HMAC', hash: 'SHA-256' },
+            false,
+            ['sign']
+          );
+
+    const signature = await webcrypto.subtle.sign('HMAC', signingKey, textEncoder.encode(message));
+    return Buffer.from(signature).toString('hex');
   }
 }

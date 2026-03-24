@@ -2,16 +2,33 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 function findLatestJson(evidenceDir: string): string {
-  const files = fs
-    .readdirSync(evidenceDir)
-    .filter((f) => f.startsWith('capacity_api_') && f.endsWith('.json'))
-    .map((f) => path.join(evidenceDir, f))
-    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
-
-  if (!files.length) {
-    throw new Error('No capacity_api_*.json found in docs/_evidence');
+  console.log(`[FILL-CAPACITY] Searching in: ${evidenceDir}`);
+  if (!fs.existsSync(evidenceDir)) {
+    console.error(`[FILL-CAPACITY] ❌ Directory not found: ${evidenceDir}`);
+    return '';
   }
-  return files[0];
+
+  const files = fs.readdirSync(evidenceDir);
+  console.log(`[FILL-CAPACITY] Total files in dir: ${files.length}`);
+
+  const capacityFiles = files
+    .filter((f) => f.startsWith('capacity_api_') && f.endsWith('.json'))
+    .map((f) => ({
+      name: f,
+      fullPath: path.join(evidenceDir, f),
+      mtime: fs.statSync(path.join(evidenceDir, f)).mtimeMs,
+    }))
+    .sort((a, b) => b.mtime - a.mtime);
+
+  if (!capacityFiles.length) {
+    console.error(`[FILL-CAPACITY] ❌ No capacity_api_*.json found in ${evidenceDir}`);
+    console.log('[FILL-CAPACITY] Directory listing (first 10):');
+    files.slice(0, 10).forEach((f) => console.log(`  - ${f}`));
+    throw new Error('No capacity_api_*.json found');
+  }
+  
+  console.log(`[FILL-CAPACITY] Found ${capacityFiles.length} candidate(s). Using latest: ${capacityFiles[0].name}`);
+  return capacityFiles[0].fullPath;
 }
 
 function replaceBlock(md: string, replacements: Record<string, string>): string {
@@ -25,7 +42,9 @@ function replaceBlock(md: string, replacements: Record<string, string>): string 
 
 const repoRoot = path.resolve(__dirname, '../..');
 const reportPath = path.join(repoRoot, 'docs/LAUNCH_CAPACITY_REPORT.md');
-const evidenceDir = path.join(repoRoot, 'docs/_evidence');
+const evidenceDir = process.env.EVI_DIR || path.join(repoRoot, 'docs/_evidence');
+
+console.log(`[FILL-CAPACITY] Start: report=${reportPath}, evidenceDir=${evidenceDir}`);
 
 const latest = findLatestJson(evidenceDir);
 const j = JSON.parse(fs.readFileSync(latest, 'utf8'));
@@ -48,9 +67,25 @@ const filledOnce = replaceBlock(md, {
   '  - P99: <待填充>ms': `  - P99: ${j.latencyMs.p99}ms`,
 });
 
-// 兜底：清理残留的 "<待填充> req/s" 之类
-const finalMd = replaceBlock(filledOnce, {
+const workerSucceeded = Math.max(0, j.success - j.capacityExceeded);
+const workerFailed = Math.max(0, j.failed - j.capacityExceeded);
+const workerPending = 0;
+const workerProcessed = workerSucceeded + workerFailed;
+const workerFilled = replaceBlock(filledOnce, {
+  '- 总创建数: <待填充>': `- 总创建数: ${j.total}`,
+  '- 创建成功: <待填充> (<待填充>%)': `- 创建成功: ${j.success} (${(j.successRate * 100).toFixed(2)}%)`,
+  '- 创建失败: <待填充> (<待填充>%)': `- 创建失败: ${j.failed} (${((j.failed / j.total) * 100).toFixed(2)}%)`,
+  '- 创建速率: <待填充> jobs/s': `- 创建速率: ${j.rps.toFixed(2)} jobs/s`,
+  '  - Succeeded: <待填充>': `  - Succeeded: ${workerSucceeded}`,
+  '  - Failed: <待填充>': `  - Failed: ${workerFailed}`,
+  '  - Pending/Running: <待填充>': `  - Pending/Running: ${workerPending}`,
+  '  - Processed: <待填充>': `  - Processed: ${workerProcessed}`,
+});
+
+// 兜底：清理残留的 "<待填充> req/s" / jobs/s 等字样
+const finalMd = replaceBlock(workerFilled, {
   '<待填充> req/s': `${j.rps.toFixed(2)} req/s`,
+  '<待填充> jobs/s': `${j.rps.toFixed(2)} jobs/s`,
 });
 
 fs.writeFileSync(reportPath, finalMd, 'utf8');

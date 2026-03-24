@@ -9,7 +9,7 @@ TS="$(date +%Y%m%d_%H%M%S)"
 EVI="$ROOT/docs/_evidence/w3_1_origin_native_drop_${TS}"
 mkdir -p "$EVI/artifacts"
 
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export GATE_ENV_MODE="${GATE_ENV_MODE:-local}"
 export ENGINE_REAL=1
 export ARTIFACT_DIR="$EVI/artifacts"

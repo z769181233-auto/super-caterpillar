@@ -15,7 +15,7 @@ class MockApiClient extends ApiClient {
 
 async function run() {
   console.log('[Gate] Starting ShotRender Identity Enforce Test...');
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
 
   // Setup Data
   const charId = 'char-enforce-' + Date.now();

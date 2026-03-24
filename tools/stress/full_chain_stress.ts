@@ -17,7 +17,7 @@ import { PrismaClient, JobStatus } from '../../packages/database';
 import { randomUUID, createHmac, randomBytes, createHash } from 'crypto';
 
 const API_URL = process.env.API_URL || 'http://localhost:3999';
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 // Configuration
 const CONFIG = {

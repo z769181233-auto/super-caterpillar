@@ -27,7 +27,7 @@ export SHOT_RENDER_PROVIDER=local
 export SHOT_RENDER_BASE_URL=""
 export GATE_MODE=0
 export WORKER_MAX_CONCURRENCY=5
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5433/scu"
+export DATABASE_URL="postgresql://postgres:password@localhost:5433/scu"
 export STORAGE_ROOT="$(pwd)/.data/storage"
 echo "🔧 Env: PROVIDER=$SHOT_RENDER_PROVIDER, GATE_MODE=$GATE_MODE, DB=:5433, MOCK_URL=OFF, STORAGE=$STORAGE_ROOT"
 

@@ -2,8 +2,8 @@ import { makeHmacRequest } from './helpers/hmac_request.js';
 
 // Load Env
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000/api';
-const API_KEY = process.env.API_KEY || 'test-api-key';
-const API_SECRET = process.env.API_SECRET || 'test-api-secret';
+const API_KEY = process.env.API_KEY || 'ak_smoke_test_key_v1';
+const API_SECRET = process.env.API_SECRET || 'scu_smoke_secret';
 const SHOT_ID = process.env.SHOT_ID;
 const FRAME_KEYS_JSON = process.env.FRAME_KEYS;
 

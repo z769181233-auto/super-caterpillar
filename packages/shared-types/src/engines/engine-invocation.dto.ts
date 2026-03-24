@@ -4,6 +4,7 @@
  */
 
 import { AnalyzedProjectStructure } from '../novel-analysis.dto';
+import { JsonObject } from '../json';
 
 /**
  * 标准引擎调用入参（对所有引擎通用）
@@ -61,7 +62,7 @@ export class EngineInvocationRequest<TInput = unknown> {
    */
   @IsOptional()
   @Allow()
-  context?: any;
+  context?: JsonObject;
 }
 
 /**

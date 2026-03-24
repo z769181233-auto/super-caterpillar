@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { PrismaClient } = require('database');
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const shotId = process.argv[2];

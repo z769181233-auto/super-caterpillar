@@ -1,18 +1,48 @@
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import {
   Controller,
   Post,
   Body,
-  Inject,
   NotFoundException,
   InternalServerErrorException,
   Logger,
   Param,
   Get,
 } from '@nestjs/common';
+import { IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
 import { JobService } from '../job/job.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobType } from 'database';
 import { AssetReceiptResolverService } from './asset-receipt-resolver.service';
+
+class RenderShotBodyDto {
+  @IsString()
+  reference_sheet_id!: string;
+
+  @IsOptional()
+  @IsString()
+  organization_id?: string;
+
+  @IsOptional()
+  @IsString()
+  trace_id?: string;
+
+  @IsOptional()
+  @IsString()
+  dedupe_key?: string;
+
+  @IsOptional()
+  @IsString()
+  engine?: string;
+
+  @IsOptional()
+  @IsObject()
+  engine_config?: Record<string, any>;
+
+  @IsOptional()
+  @IsBoolean()
+  is_verification?: boolean;
+}
 
 @Controller('v3/shot')
 export class ContractShotController {
@@ -59,7 +89,7 @@ export class ContractShotController {
       payload: {
         sceneId: scene.id,
         novelSceneId: scene.id, // Support processor flexibility
-        engineKey: 'ce11_shot_generator_mock', // DEBUG: Hardcoded Mock
+        engineKey: 'ce11_shot_generator_real',
         traceId,
       },
       traceId,
@@ -73,14 +103,64 @@ export class ContractShotController {
   }
 
   @Post(':id/render')
-  async renderShot(@Param('id') id: string) {
-    const shot = await this.prisma.shot.findUnique({ where: { id } });
+  async renderShot(@Param('id') id: string, @Body() body: RenderShotBodyDto) {
+    const shot = await this.prisma.shot.findUnique({
+      where: { id },
+      include: {
+        scene: {
+          include: {
+            episode: {
+              include: {
+                project: true,
+              },
+            },
+          },
+        },
+      },
+    });
     if (!shot) throw new NotFoundException('Shot not found');
 
-    // TODO: Trigger Shot Render Job
+    const scene = shot.scene;
+    const episode = scene?.episode;
+    const project = episode?.project;
+    if (!scene || !episode || !project) {
+      throw new NotFoundException('Shot hierarchy is incomplete');
+    }
+
+    const orgId = body.organization_id || project.organizationId;
+    const traceId = body.trace_id || `v3_sr_${shot.id}_${Date.now()}`;
+
+    const job = await this.jobService.create(
+      shot.id,
+      {
+        type: JobType.SHOT_RENDER,
+        payload: {
+          shotId: shot.id,
+          sceneId: scene.id,
+          episodeId: episode.id,
+          projectId: project.id,
+          organizationId: orgId,
+          referenceSheetId: body.reference_sheet_id,
+          engine: body.engine,
+          engineConfig: body.engine_config ?? {},
+          traceId,
+        },
+        engine: body.engine,
+        engineConfig: body.engine_config ?? {},
+        traceId,
+        dedupeKey: body.dedupe_key,
+        isVerification: body.is_verification,
+      },
+      project.ownerId,
+      orgId
+    );
+
     return {
-      id: shot.id,
-      render_status: 'PENDING',
+      shot_id: shot.id,
+      job_id: job.id,
+      status: 'QUEUED',
+      render_status: 'QUEUED',
+      trace_id: job.traceId || traceId,
     };
   }
 
@@ -113,9 +193,9 @@ export class ContractShotController {
     if (v3Status === 'RUNNING') progress = 50;
     if (v3Status === 'SUCCEEDED') progress = 100;
 
-    if (jobType === 'CE11_SHOT_GENERATOR') currentStep = 'CE11_SHOT_GEN';
-    if (jobType === 'SHOT_RENDER') currentStep = 'SHOT_RENDER';
-    if (jobType === 'VIDEO_RENDER') currentStep = 'VIDEO_MERGE';
+    if (jobType === 'CE11_SHOT_GENERATOR') currentStep = v3Status === 'SUCCEEDED' ? 'SHOT_PERSIST' : 'CE11_SHOT_GEN';
+    if (jobType === 'SHOT_RENDER') currentStep = v3Status === 'SUCCEEDED' ? 'SHOT_PERSIST' : 'SHOT_RENDER';
+    if (jobType === 'VIDEO_RENDER') currentStep = v3Status === 'SUCCEEDED' ? 'PUBLISH_HLS' : 'VIDEO_MERGE';
 
     // 3. Result Preview (Unified stable set)
     const scenesCount = await this.prisma.scene.count({ where: { projectId: job.projectId } });
@@ -125,6 +205,9 @@ export class ContractShotController {
           projectId: job.projectId,
         },
       },
+    });
+    const costLedgerCount = await this.prisma.billingLedger.count({
+      where: { jobId: job.id },
     });
 
     let resultPreview = null;
@@ -139,7 +222,7 @@ export class ContractShotController {
         ...assetReceipt,
         scenes_count: scenesCount,
         shots_count: shotsCount,
-        cost_ledger_count: 1,
+        cost_ledger_count: costLedgerCount,
       };
     } else {
       // Maintain stable key set for FAILED/RUNNING
@@ -153,7 +236,7 @@ export class ContractShotController {
         fallback_reason: null,
         scenes_count: scenesCount,
         shots_count: shotsCount,
-        cost_ledger_count: 0,
+        cost_ledger_count: costLedgerCount,
         error_code: v3Status === 'FAILED' ? 'JOB_FAILED' : undefined,
       };
     }

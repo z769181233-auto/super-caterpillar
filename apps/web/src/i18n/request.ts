@@ -19,7 +19,7 @@ export default getRequestConfig(async ({ locale, requestLocale }) => {
       }
       console.error('[i18n Error]', error);
     },
-    getMessageFallback({ namespace, key, error }) {
+    getMessageFallback({ namespace, key }) {
       throw new Error(
         `[i18n Gate] Missing key fallback triggered for: ${namespace ? namespace + '.' : ''}${key}`
       );

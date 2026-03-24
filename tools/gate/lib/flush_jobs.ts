@@ -1,7 +1,7 @@
 import { PrismaClient } from 'database';
 
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   console.log('Flushing job queue...');
   const res = await prisma.shotJob.updateMany({
     where: {

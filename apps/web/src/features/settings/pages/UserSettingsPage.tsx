@@ -1,52 +1,82 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { PageShell } from '@/components/system/PageShell';
 import { useRequestState } from '@/hooks/useRequestState';
 import { UserSettingsSkeleton } from '../components/UserSettingsSkeleton';
 import { ErrorState } from '@/components/system/ErrorState';
 import { EmptyState } from '@/components/system/EmptyState';
 
+interface UserSettingsData {
+  user: {
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  };
+  notifications: {
+    email: boolean;
+    browser: boolean;
+  };
+  theme: 'dark' | 'light' | 'system';
+  language: string;
+}
+
+const MOCK_USER_SETTINGS: UserSettingsData = {
+  user: {
+    name: 'Adam Artist',
+    email: 'adam@super-caterpillar.com',
+    avatarUrl: null,
+  },
+  notifications: {
+    email: true,
+    browser: false,
+  },
+  theme: 'dark',
+  language: 'en',
+};
+
+const EMPTY_USER_SETTINGS: UserSettingsData = {
+  user: {
+    name: '',
+    email: '',
+    avatarUrl: null,
+  },
+  notifications: {
+    email: false,
+    browser: false,
+  },
+  theme: 'dark',
+  language: 'en',
+};
+
 export function UserSettingsPage() {
   // Mock user settings data
-  const s = useRequestState<any>(null);
+  const s = useRequestState<UserSettingsData>(null);
+  const { setLoading, setSuccess, setError } = s;
 
-  const loadSettings = async () => {
-    s.setLoading();
+  const loadSettings = useCallback(async () => {
+    setLoading();
     try {
       // Simulated fetch
       await new Promise((r) => setTimeout(r, 1200));
-      s.setSuccess({
-        user: {
-          name: 'Adam Artist',
-          email: 'adam@super-caterpillar.com',
-          avatarUrl: null,
-        },
-        notifications: {
-          email: true,
-          browser: false,
-        },
-        theme: 'dark',
-        language: 'en',
-      });
-    } catch (err: any) {
-      s.setError(err, 'SET-USR-' + Date.now().toString().slice(-6));
+      setSuccess(MOCK_USER_SETTINGS);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err : new Error('Unknown settings request failure'),
+        'SET-USR-' + Date.now().toString().slice(-6)
+      );
     }
-  };
+  }, [setError, setLoading, setSuccess]);
 
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, [loadSettings]);
 
   if (s.status === 'loading') {
     return <UserSettingsSkeleton />;
   }
 
-  const d = s.data || {
-    user: { name: '', email: '' },
-    notifications: { email: false, browser: false },
-    theme: 'dark'
-  };
+  const d = s.data ?? EMPTY_USER_SETTINGS;
 
   return (
     <PageShell maxWidth="900px">

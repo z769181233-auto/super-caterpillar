@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Enforces gate-post_sealed_governance.sh via .githooks/pre-push
+set -euo pipefail
+bash .githooks/pre-push

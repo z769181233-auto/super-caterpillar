@@ -2,7 +2,7 @@ import { PrismaClient } from 'database';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 const PROJECT_ID = 'wangu_trailer_20260215_232235';
 

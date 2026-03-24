@@ -16,7 +16,10 @@ import {
 } from '@scu/shared-types';
 import { EngineConfigService, HttpEngineConfig } from '../../config/engine.config';
 import { HttpClient } from '../../common/http/http-client';
-import { createHmac, createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, webcrypto } from 'crypto';
+
+type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
+const textEncoder = new TextEncoder();
 
 /**
  * HTTP 引擎响应格式（预期）
@@ -58,7 +61,6 @@ export class HttpEngineAdapter implements EngineAdapter {
     return (
       engineKey === 'http' ||
       engineKey.startsWith('http_') ||
-      engineKey === 'mock_http_engine' ||
       engineKey === 'ce06_novel_parsing' ||
       engineKey === 'ce03_visual_density' ||
       engineKey === 'ce04_visual_enrichment'
@@ -85,7 +87,7 @@ export class HttpEngineAdapter implements EngineAdapter {
 
       // 3. 构造认证 Header
       // 参考 docs/ENGINE_HTTP_CONFIG.md 第 6 节
-      const headers = this.buildAuthHeaders(config, requestBody);
+      const headers = await this.buildAuthHeaders(config, requestBody);
 
       // 4. 创建 HTTP 客户端并发送请求
       const httpClient = new HttpClient({
@@ -148,7 +150,10 @@ export class HttpEngineAdapter implements EngineAdapter {
    * 构造认证 Header
    * 参考 docs/ENGINE_HTTP_CONFIG.md 第 6.3 节
    */
-  private buildAuthHeaders(config: HttpEngineConfig, requestBody: any): Record<string, string> {
+  private async buildAuthHeaders(
+    config: HttpEngineConfig,
+    requestBody: any
+  ): Promise<Record<string, string>> {
     const headers: Record<string, string> = {};
 
     switch (config.authMode) {
@@ -171,7 +176,7 @@ export class HttpEngineAdapter implements EngineAdapter {
           if (!config.hmac) {
             throw new Error(`HTTP_ENGINE_HMAC_SECRET is required when authMode is 'hmac'`);
           }
-          const hmacHeaders = this.buildHmacHeaders(config.hmac, requestBody);
+          const hmacHeaders = await this.buildHmacHeaders(config.hmac, requestBody);
           Object.assign(headers, hmacHeaders);
         }
         break;
@@ -192,10 +197,10 @@ export class HttpEngineAdapter implements EngineAdapter {
    * 参考 docs/ENGINE_HTTP_CONFIG.md 第 6.1 节（方式 3）
    * 复用项目现有的 HMAC 签名机制
    */
-  private buildHmacHeaders(
+  private async buildHmacHeaders(
     hmacConfig: { keyId: string; secret: string; algorithm: 'sha256'; header?: string },
     requestBody: any
-  ): Record<string, string> {
+  ): Promise<Record<string, string>> {
     const timestamp = Date.now().toString();
     const nonce = randomBytes(16).toString('hex');
     const bodyString = JSON.stringify(requestBody);
@@ -204,7 +209,7 @@ export class HttpEngineAdapter implements EngineAdapter {
     // 构建签名消息：参考 HmacAuthService.buildMessage 的格式
     // 格式：POST\n/invoke\n${bodyHash}\n${nonce}\n${timestamp}
     const message = `POST\n${'/invoke'}\n${bodyHash}\n${nonce}\n${timestamp}`;
-    const signature = this.computeHmacSignature(hmacConfig.secret, message);
+    const signature = await this.computeHmacSignature(hmacConfig.secret, message);
 
     return {
       [hmacConfig.header || 'X-Signature']: signature,
@@ -226,10 +231,16 @@ export class HttpEngineAdapter implements EngineAdapter {
    * 计算 HMAC-SHA256 签名
    * 参考 HmacAuthService.computeSignature
    */
-  private computeHmacSignature(secret: string, message: string): string {
-    const hmac = createHmac('sha256', secret);
-    hmac.update(message);
-    return hmac.digest('hex');
+  private async computeHmacSignature(secret: string, message: string): Promise<string> {
+    const signingKey: NodeCryptoKey = await webcrypto.subtle.importKey(
+      'raw',
+      textEncoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const signature = await webcrypto.subtle.sign('HMAC', signingKey, textEncoder.encode(message));
+    return Buffer.from(signature).toString('hex');
   }
 
   /**

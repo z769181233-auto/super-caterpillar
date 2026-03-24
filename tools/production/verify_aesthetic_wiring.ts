@@ -5,7 +5,7 @@ import axios from 'axios';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const API_URL = process.env.API_URL || 'http://localhost:3000/api';
 
 async function main() {

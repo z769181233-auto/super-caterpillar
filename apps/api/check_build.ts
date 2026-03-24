@@ -1,6 +1,6 @@
 import { PrismaClient } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function check() {
   const buildId = 'bf67cbdc-79a9-42be-b074-6239a2719064';

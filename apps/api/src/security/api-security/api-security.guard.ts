@@ -34,13 +34,6 @@ export class ApiSecurityGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    // P1-1: 门禁模式旁路（仅限测试环境）
-    // P1-1: 门禁模式旁路（仅限测试环境）
-    if (process.env.GATE_MODE === 'test' || process.env.GATE_MODE === '1') {
-      // Allow Stage Validation with GATE_MODE=1 in production
-      return true;
-    }
-
     // 如果未标记，直接通过（不强制签名）
     if (!requireSignature) {
       return true;
@@ -53,19 +46,11 @@ export class ApiSecurityGuard implements CanActivate {
     const path = request.path || request.url?.split('?')[0] || '';
 
     // 1. 提取请求头（v2 规范）
-    // DEBUG: Log all headers to debug missing x-content-sha256
-    // console.log('[ApiSecurityGuard] HMAC_DEBUG=', process.env.HMAC_DEBUG);
-    // console.log('[ApiSecurityGuard] Headers:', JSON.stringify(request.headers));
-
     const apiKey = request.headers['x-api-key'] as string;
     const nonce = request.headers['x-nonce'] as string;
     const timestamp = request.headers['x-timestamp'] as string;
     // contentSha256 might be missing or different case?
     const contentSha256 = request.headers['x-content-sha256'] as string;
-
-    if (!contentSha256 && process.env.HMAC_DEBUG === '1') {
-      console.log('[HMAC_DEBUG] Missing x-content-sha256! Headers:', Object.keys(request.headers));
-    }
 
     const signature = request.headers['x-signature'] as string;
 
@@ -152,7 +137,7 @@ export class ApiSecurityGuard implements CanActivate {
       method,
       path: pathWithQuery, // v2: 包含 query string
       contentSha256: finalContentSha256,
-      body: rawBodyBytes ? rawBodyBytes.toString('utf8') : undefined, // 兼容字段
+      body: rawBodyBytes ? rawBodyBytes.toString('utf8') : undefined, // 供 HMAC 校验元信息使用
       ip: request.ip || (request.headers['x-forwarded-for'] as string) || undefined,
       userAgent: request.headers['user-agent'] || undefined,
     });

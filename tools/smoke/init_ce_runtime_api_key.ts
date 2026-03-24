@@ -8,7 +8,7 @@ import { PrismaClient } from 'database';
  * - dev/test 环境下，HmacAuthService 使用 secretHash 明文作为 secret
  */
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 const DEFAULT_API_KEY = 'ak_test_mj5h0knr';
 const DEFAULT_API_SECRET = '3612e5bc385aaec44c3171156ee8a8be49aceb9ab1e6ce969ab7e0201674911c';
@@ -61,7 +61,7 @@ main()
 import { PrismaClient } from 'database';
 import { ApiKeyStatus } from 'database/src/generated/prisma';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 // 与 tools/smoke/run-ce-core-runtime-verify.sh 中默认值保持一致
 const CE_API_KEY = process.env.API_KEY || 'ak_test_mj5h0knr';

@@ -14,7 +14,7 @@ if (process.env.RENDER_ENGINE !== 'mock') {
   process.exit(1);
 }
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('🚀 Starting S4-4 Verification (Video Synthesis)...');

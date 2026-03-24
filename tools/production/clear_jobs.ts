@@ -5,7 +5,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 import { PrismaClient } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('Clearing PENDING jobs...');

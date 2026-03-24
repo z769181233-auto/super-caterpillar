@@ -47,7 +47,7 @@ if ! curl -s "$API_URL/health" > /dev/null; then
 fi
 
 # 1. Fetch/Prepare Data
-VALID_API_KEY_ID=$(psql "$DB_URL" -t -A -c "SELECT key FROM api_keys WHERE status=$gate$ACTIVE$gate$ LIMIT 1")
+VALID_API_KEY_ID=$(psql "$DATABASE_URL" -t -A -c "SELECT key FROM api_keys WHERE status=$gate$ACTIVE$gate$ LIMIT 1")
 
 if [ -z "$VALID_API_KEY_ID" ]; then
   log "Creating test data..."
@@ -59,7 +59,7 @@ if [ -z "$VALID_API_KEY_ID" ]; then
   exit 1
 fi
 
-ASSET_ID=$(psql "$DB_URL" -t -A -c "SELECT id FROM assets LIMIT 1") # $gate$
+ASSET_ID=$(psql "$DATABASE_URL" -t -A -c "SELECT id FROM assets LIMIT 1") # $gate$
 log "Using Key: $VALID_API_KEY_ID, Asset: $ASSET_ID"
 
 # 2. HMAC Security Check (A2)

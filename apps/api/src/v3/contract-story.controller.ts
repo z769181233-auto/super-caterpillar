@@ -1,3 +1,4 @@
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import {
   Controller,
   Post,
@@ -191,10 +192,10 @@ export class ContractStoryController {
           if (totalShotJobs > 0) {
             const shotProgress = succeededShotJobs / totalShotJobs;
             if (shotProgress < 1) {
-              currentStep = 'CE11_PLANNING';
+              currentStep = 'CE11_SHOT_GEN';
               progress = 50 + Math.floor(shotProgress * 45);
             } else {
-              currentStep = 'CE11_PLANNING'; // Or DONE
+              currentStep = 'CE11_SHOT_GEN';
               progress = 95; // Almost done
             }
           } else {
@@ -205,7 +206,7 @@ export class ContractStoryController {
 
       if (v3Status === 'SUCCEEDED') {
         progress = 100;
-        currentStep = 'Done';
+        currentStep = 'SHOT_PERSIST';
       }
     } else {
       if (v3Status === 'RUNNING') progress = 50;
@@ -213,10 +214,10 @@ export class ContractStoryController {
 
       if (jobType === 'NOVEL_SCAN_TOC') currentStep = 'CE06_SCAN';
       if (jobType === 'NOVEL_CHUNK_PARSE' || jobType === 'CE06_NOVEL_PARSING')
-        currentStep = 'CE06_PARSING';
+        currentStep = v3Status === 'SUCCEEDED' ? 'SCENE_PERSIST' : 'CE06_PARSING';
       if (jobType === 'CE11_SHOT_GENERATOR') currentStep = 'CE11_SHOT_GEN';
-      if (jobType === 'SHOT_RENDER') currentStep = 'SHOT_RENDER';
-      if (jobType === 'VIDEO_RENDER') currentStep = 'VIDEO_MERGE';
+      if (jobType === 'SHOT_RENDER') currentStep = v3Status === 'SUCCEEDED' ? 'SHOT_PERSIST' : 'SHOT_RENDER';
+      if (jobType === 'VIDEO_RENDER') currentStep = v3Status === 'SUCCEEDED' ? 'PUBLISH_HLS' : 'VIDEO_MERGE';
     }
 
     // 3. Result Preview (Unified stable set)
@@ -227,6 +228,9 @@ export class ContractStoryController {
           projectId: job.projectId,
         },
       },
+    });
+    const costLedgerCount = await this.prisma.billingLedger.count({
+      where: { jobId: job.id },
     });
 
     let resultPreview = null;
@@ -241,7 +245,7 @@ export class ContractStoryController {
         ...assetReceipt,
         scenes_count: scenesCount,
         shots_count: shotsCount,
-        cost_ledger_count: 1,
+        cost_ledger_count: costLedgerCount,
       };
     } else {
       // Maintain stable key set for FAILED/RUNNING
@@ -255,7 +259,7 @@ export class ContractStoryController {
         fallback_reason: null,
         scenes_count: scenesCount,
         shots_count: shotsCount,
-        cost_ledger_count: 0,
+        cost_ledger_count: costLedgerCount,
         error_code: v3Status === 'FAILED' ? 'JOB_FAILED' : undefined,
       };
     }

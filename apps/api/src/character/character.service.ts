@@ -2,12 +2,17 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Logger,
   Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCharacterDto, UpdateCharacterDto, RecordAppearanceDto } from './character.dto';
+import {
+  CreateCharacterDto,
+  UpdateCharacterDto,
+  RecordAppearanceDto,
+  TrainLoraDto,
+} from './character.dto';
 import { LoraTrainingService } from './lora-training.service';
 
 @Injectable()
@@ -44,10 +49,12 @@ export class CharacterService {
     }
 
     // 检查是否已存在同名角色
-    const existing = await (this.prisma as any).characterProfile.findFirst({
+    const existing = await (this.prisma as any).characterProfile.findUnique({
       where: {
-        projectId,
-        name: dto.name,
+        projectId_name: {
+          projectId,
+          name: dto.name,
+        },
       },
     });
 
@@ -268,6 +275,65 @@ export class CharacterService {
         score: a.consistencyScore as number,
         shotId: a.shotId,
       }));
+  }
+
+  async trainLora(characterId: string, dto: TrainLoraDto) {
+    const character = await this.prisma.characterProfile.findUnique({
+      where: { id: characterId },
+    });
+
+    if (!character) {
+      throw new NotFoundException(`Character ${characterId} not found`);
+    }
+
+    if (!this.loraTrainingService.isEnabled()) {
+      return {
+        characterId,
+        status: 'DISABLED',
+        message: 'LoRA training is disabled in current environment',
+      };
+    }
+
+    if (character.loraTrainingStatus === 'training' && !dto.forceRetrain) {
+      const currentStatus = await this.loraTrainingService.getTrainingStatus(characterId);
+      return {
+        characterId,
+        status: currentStatus?.status || 'training',
+        message: 'LoRA training is already in progress',
+        trainingId: character.loraModelId,
+        progress: currentStatus?.progress,
+      };
+    }
+
+    const minConsistencyScore = dto.minConsistencyScore ?? 0.7;
+    const trainingImages = await this.collectTrainingImages(characterId, minConsistencyScore);
+    if (trainingImages.length < 10) {
+      throw new BadRequestException(
+        `Not enough qualified training images (${trainingImages.length} < 10)`
+      );
+    }
+
+    const trainingId = await this.loraTrainingService.submitTraining(characterId, trainingImages, {
+      minConsistencyScore,
+      forceRetrain: dto.forceRetrain,
+    });
+
+    if (!trainingId) {
+      return {
+        characterId,
+        status: 'DISABLED',
+        message: 'LoRA training submission skipped',
+      };
+    }
+
+    return {
+      characterId,
+      status: 'TRAINING',
+      trainingId,
+      imageCount: trainingImages.length,
+      minConsistencyScore,
+      forceRetrain: !!dto.forceRetrain,
+    };
   }
 
   /**

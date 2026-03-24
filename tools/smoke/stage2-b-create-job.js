@@ -1,7 +1,7 @@
 // Stage2-B 创建测试 Job
 const { PrismaClient } = require('../../packages/database/src/generated/prisma');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const projectId = process.argv[2];

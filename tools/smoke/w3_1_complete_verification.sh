@@ -25,7 +25,7 @@ echo ""
 export ARTIFACT_DIR="$ART"
 export ENGINE_REAL=1
 export GATE_ENV_MODE=local
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 echo "✅ Step 2: Environment variables set"
 echo "   ARTIFACT_DIR=$ARTIFACT_DIR"

@@ -1,25 +1,47 @@
-import { Controller, Get, Query, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiSecurityGuard } from '../security/api-security/api-security.guard';
 import { SignedUrlService } from '../storage/signed-url.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('_internal/assets')
 @UseGuards(ApiSecurityGuard)
 export class InternalAssetController {
-  constructor(private readonly signedUrlService: SignedUrlService) {}
+  constructor(
+    private readonly signedUrlService: SignedUrlService,
+    private readonly prisma: PrismaService
+  ) {}
 
   @Get('by-storage-key')
-  getPublicUrl(@Query('key') key: string) {
+  async getPublicUrl(@Query('key') key: string) {
     if (!key) {
       throw new BadRequestException('key is required');
     }
 
-    // Generate a short-lived signed URL for internal tools/gates
-    // Using a system userId/tenantId for this internal access or could accept them as query params if needed
-    // For Gate preview, we can use a generic "system-gate" context.
-    const { url, expiresAt } = this.signedUrlService.generateSignedUrl({
+    const found = await this.prisma.asset.findFirst({
+      where: { storageKey: key },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        project: {
+          select: {
+            organizationId: true,
+            ownerId: true,
+          },
+        },
+      },
+    });
+
+    const tenantId = found?.project?.organizationId;
+    const userId = found?.project?.ownerId;
+
+    if (!tenantId || !userId) {
+      throw new NotFoundException('Asset context not found');
+    }
+
+    // Generate a short-lived signed URL for internal tools/gates using real tenant/user context.
+    const { url, expiresAt } = await this.signedUrlService.generateSignedUrl({
       key,
-      tenantId: 'system-gate',
-      userId: 'system-gate-user',
+      tenantId,
+      userId,
       expiresIn: 300, // 5 minutes
     });
 

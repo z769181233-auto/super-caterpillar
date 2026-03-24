@@ -97,7 +97,7 @@ export abstract class QcBaseEngine {
 
       return {
         status: 'SUCCESS' as any,
-        output: finalOutput,
+        output: finalOutput as unknown as Record<string, unknown>,
         metrics: { durationMs },
       };
     } catch (e: any) {

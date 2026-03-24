@@ -6,13 +6,13 @@
  * 策略：非侵入式扩展 (P1-2)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { startTimelinePreview, pollJobStatus } from '../adapters/studio-preview.adapter';
 import { JobDTO } from '@/types/dto';
 
 interface TimelinePreviewPanelProps {
   projectId: string;
-  timelineData: any;
+  timelineData: Record<string, unknown>;
   apiKey: string;
   apiSecret: string;
 }
@@ -27,7 +27,7 @@ type PreviewStatus =
   | 'REPLAY_TEST_4004';
 
 export const TimelinePreviewPanel: React.FC<TimelinePreviewPanelProps> = ({
-  projectId,
+  projectId: _projectId,
   timelineData,
   apiKey,
   apiSecret,
@@ -36,6 +36,10 @@ export const TimelinePreviewPanel: React.FC<TimelinePreviewPanelProps> = ({
   const [job, setJob] = useState<JobDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | number | null>(null);
+
+  const mediaResult = job?.result;
+  const videoUrl = typeof mediaResult?.videoUrl === 'string' ? mediaResult.videoUrl : null;
+  const posterUrl = typeof mediaResult?.posterUrl === 'string' ? mediaResult.posterUrl : undefined;
 
   const handleStartPreview = async () => {
     try {
@@ -53,13 +57,15 @@ export const TimelinePreviewPanel: React.FC<TimelinePreviewPanelProps> = ({
 
       setJob(finishedJob);
       setStatus(finishedJob.status as PreviewStatus);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Preview failed:', err);
-      setError(err.message || '预览请求失败');
-      setErrorCode(err.code || err.status || 'UNKNOWN');
+      const error = err instanceof Error ? err : new Error('预览请求失败');
+      const errorMeta = err as { code?: string | number; status?: string | number } | null;
+      setError(error.message || '预览请求失败');
+      setErrorCode(errorMeta?.code || errorMeta?.status || 'UNKNOWN');
 
       // 如果触发了 4004，由于是硬性规约回归，显式标记以便审计
-      if (err.code === '4004' || err.status === 403) {
+      if (errorMeta?.code === '4004' || errorMeta?.status === 403) {
         setStatus('REPLAY_TEST_4004');
       } else {
         setStatus('FAILED');
@@ -103,19 +109,14 @@ export const TimelinePreviewPanel: React.FC<TimelinePreviewPanelProps> = ({
           </div>
         )}
 
-        {status === 'SUCCEEDED' && job?.result?.videoUrl && (
+        {status === 'SUCCEEDED' && videoUrl && (
           <div className="space-y-4">
             <div className="aspect-video bg-black rounded overflow-hidden border border-slate-700">
-              <video
-                src={job.result.videoUrl}
-                controls
-                className="w-full h-full"
-                poster={job.result.posterUrl}
-              />
+              <video src={videoUrl} controls className="w-full h-full" poster={posterUrl} />
             </div>
             <div className="flex space-x-2">
               <a
-                href={job.result.videoUrl}
+                href={videoUrl}
                 download
                 className="flex-1 text-center py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm transition-colors"
               >

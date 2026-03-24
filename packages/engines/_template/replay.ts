@@ -42,7 +42,7 @@ export async function __ENGINE__ReplayEngine(input: __ENGINE__Input): Promise<__
 
   // 5. 返回确定性结果
   return {
-    // TODO: 添加业务输出字段（确定性值）
+    // TEMPLATE_REQUIRED: 在具体引擎中补上确定性业务输出字段
     // result: { deterministicSeed },
 
     billing_usage,

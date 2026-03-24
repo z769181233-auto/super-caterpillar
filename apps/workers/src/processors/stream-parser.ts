@@ -8,6 +8,20 @@ import {
   AnalyzedShot,
 } from '@scu/shared-types';
 
+interface FailFastError extends Error {
+  blockingReason?: string;
+  nextAction?: string;
+}
+
+function createMissingStructureMarkersError(): FailFastError {
+  const error = new Error(
+    'Novel analysis requires explicit chapter/episode markers; synthetic fallback structure is disabled'
+  ) as FailFastError;
+  error.blockingReason = 'NOVEL_STRUCTURE_MARKERS_MISSING';
+  error.nextAction = 'USE_CE06_OR_ADD_CHAPTER_MARKERS';
+  return error;
+}
+
 /**
  * Stream-based Novel Parser
  * memory-efficient parsing for large novels (15M+ chars)
@@ -25,6 +39,7 @@ export async function parseNovelStream(
   let currentSeason: AnalyzedSeason | null = null;
   let currentEpisode: AnalyzedEpisode | null = null;
   let currentScene: AnalyzedScene | null = null;
+  let detectedStructureMarker = false;
 
   let seasonIndex = 0;
   let episodeIndex = 0;
@@ -122,6 +137,7 @@ export async function parseNovelStream(
 
     const seasonMatch = trimmedLine.match(seasonPattern);
     if (seasonMatch) {
+      detectedStructureMarker = true;
       flushScene();
       flushEpisode();
       flushSeason();
@@ -138,6 +154,7 @@ export async function parseNovelStream(
 
     const episodeMatch = trimmedLine.match(episodePattern);
     if (episodeMatch) {
+      detectedStructureMarker = true;
       flushScene();
       flushEpisode();
       ensureSeason();
@@ -166,13 +183,8 @@ export async function parseNovelStream(
   flushEpisode();
   flushSeason();
 
-  // Fallback for no-structure novels
-  if (seasons.length === 0) {
-    // Logic for flat structure remains if needed, or return empty structure
-    // For now, let's just return what we have (even if empty, consistent with old logic edge case)
-    // If absolutely no structure found, creating a default one is handled by caller or basic fallback logic
-    // But here we mimic basic: if text exists but no structure?
-    // Since stream is consumed, verify if we pushed anything.
+  if (!detectedStructureMarker) {
+    throw createMissingStructureMarkersError();
   }
 
   // Calculate Stats

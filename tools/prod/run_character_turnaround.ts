@@ -24,7 +24,7 @@ const TEMPLATE_FILE = path.join(
   'packages/engines/shot_render/providers/templates/ce02_identity_triview.json'
 );
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const comfy = new ComfyUIClient();
 
 const STORAGE_ROOT = path.join(process.cwd(), '.data', 'storage');

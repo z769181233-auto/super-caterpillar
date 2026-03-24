@@ -4,6 +4,22 @@ import { JobService } from '../../job/job.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JobType, JobStatus, AssetType } from 'database';
 
+type JsonRecord = Record<string, unknown>;
+
+type JobEvent = {
+  id: string;
+  type?: string;
+};
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getStringField(source: JsonRecord, key: string): string | undefined {
+  const value = source[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
 /**
  * Production Flow Hook
  *
@@ -23,7 +39,7 @@ export class ProductionFlowHook {
   ) {}
 
   @OnEvent('job.succeeded')
-  async handleJobSucceeded(evt: any) {
+  async handleJobSucceeded(evt: JobEvent) {
     if (evt.type === 'SHOT_RENDER') {
       await this.handleShotRenderSuccess(evt);
     } else if (evt.type === 'PIPELINE_TIMELINE_COMPOSE') {
@@ -42,12 +58,12 @@ export class ProductionFlowHook {
     }
   }
 
-  private async handleShotRenderSuccess(evt: any) {
+  private async handleShotRenderSuccess(evt: JobEvent) {
     const job = await this.prisma.shotJob.findUnique({ where: { id: evt.id } });
     if (!job) return;
 
-    const payload = job.payload as any;
-    const pipelineRunId = payload.pipelineRunId || payload.runId; // Support both just in case
+    const payload = isRecord(job.payload) ? job.payload : {};
+    const pipelineRunId = getStringField(payload, 'pipelineRunId') || getStringField(payload, 'runId');
     const sceneId = job.sceneId;
 
     if (!pipelineRunId || !sceneId) return;
@@ -95,21 +111,24 @@ export class ProductionFlowHook {
           dedupeKey,
         });
         this.logger.log(`[ProductionFlow] Triggered TIMELINE_COMPOSE for ${dedupeKey}`);
-      } catch (e: any) {
-        if (!e.message.includes('Unique constraint')) {
-          this.logger.error(`[ProductionFlow] Failed to trigger Compose: ${e.message}`);
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'unknown error';
+        if (!message.includes('Unique constraint')) {
+          this.logger.error(`[ProductionFlow] Failed to trigger Compose: ${message}`);
         }
       }
     }
   }
 
-  private async handleTimelineComposeSuccess(evt: any) {
+  private async handleTimelineComposeSuccess(evt: JobEvent) {
     const job = await this.prisma.shotJob.findUnique({ where: { id: evt.id } });
     if (!job) return;
-    const payload = job.payload as any;
-    const pipelineRunId = payload.pipelineRunId;
-    const sceneId = payload.sceneId;
-    const timelineStorageKey = (job.result as any)?.output?.timelineStorageKey;
+    const payload = isRecord(job.payload) ? job.payload : {};
+    const result = isRecord(job.result) ? job.result : {};
+    const resultOutput = isRecord(result.output) ? result.output : undefined;
+    const pipelineRunId = getStringField(payload, 'pipelineRunId');
+    const sceneId = getStringField(payload, 'sceneId');
+    const timelineStorageKey = resultOutput ? getStringField(resultOutput, 'timelineStorageKey') : undefined;
 
     if (!pipelineRunId || !timelineStorageKey) return;
 
@@ -142,20 +161,21 @@ export class ProductionFlowHook {
         dedupeKey,
       });
       this.logger.log(`[ProductionFlow] Triggered TIMELINE_RENDER for ${dedupeKey}`);
-    } catch (e: any) {
+    } catch (e: unknown) {
       // ignore dupes
     }
   }
 
-  private async handleTimelineRenderSuccess(evt: any) {
+  private async handleTimelineRenderSuccess(evt: JobEvent) {
     // If TIMELINE_RENDER succeeded, we have an Asset(VIDEO).
     // We need to create specific "PublishedVideo" record for the Runner to pass.
 
     const job = await this.prisma.shotJob.findUnique({ where: { id: evt.id } });
     if (!job) return;
 
-    const payload = job.payload as any;
-    if (payload.publish) {
+    const payload = isRecord(job.payload) ? job.payload : {};
+    const publish = (payload.publish === true);
+    if (publish) {
       // Manually create PublishedVideo if not created.
       // TIMELINE_RENDER processor (Step 9089) does NOT seem to look at `publish` param.
       // VIDEO_RENDER processor (Step 9088) DOES.
@@ -164,20 +184,23 @@ export class ProductionFlowHook {
       // Or we can just insert it here directly as a quick fix for the Hook.
       // Using raw SQL to ensure bypass of constraints if needed, relying on Asset ID.
 
-      const assetId = (job.result as any)?.assetId;
-      const storageKey = (job.result as any)?.storageKey;
+      const result = isRecord(job.result) ? job.result : {};
+      const assetId = getStringField(result, 'assetId');
+      const storageKey = getStringField(result, 'storageKey');
+      const sceneId = getStringField(payload, 'sceneId');
+      const pipelineRunId = getStringField(payload, 'pipelineRunId');
 
-      if (assetId && storageKey) {
+      if (assetId && storageKey && sceneId) {
         const project = await this.prisma.project.findUnique({ where: { id: job.projectId } });
         // Find episode?
         const scene = await this.prisma.scene.findUnique({
-          where: { id: payload.sceneId },
+          where: { id: sceneId },
           include: { episode: true },
         });
         const episodeId = scene?.episodeId;
 
         if (episodeId) {
-          const dedupeKey = `pub_${payload.pipelineRunId}`;
+          const dedupeKey = `pub_${pipelineRunId}`;
           // Insert PublishedVideo
           // Use assetId as unique key per schema
           await this.prisma.publishedVideo.upsert({
@@ -190,7 +213,7 @@ export class ProductionFlowHook {
               checksum: 'auto-generated',
               status: 'PUBLISHED',
               metadata: {
-                pipelineRunId: payload.pipelineRunId,
+                pipelineRunId: getStringField(payload, 'pipelineRunId'),
                 source: 'ProductionFlowHook',
                 dedupeKey,
               },
@@ -201,11 +224,51 @@ export class ProductionFlowHook {
               updatedAt: new Date(),
             },
           });
-          this.logger.log(
-            `[ProductionFlow] Created PublishedVideo for assetId=${assetId}, pipelineRunId=${payload.pipelineRunId}`
+            this.logger.log(
+            `[ProductionFlow] Created PublishedVideo for assetId=${assetId}, pipelineRunId=${pipelineRunId}`
           );
         }
       }
     }
+
+    if (!publish) {
+      this.logger.warn(`[CE09_FANOUT_SKIPPED] reason=publish_false jobId=${job.id}`);
+      return true;
+    }
+
+    const result = isRecord(job.result) ? job.result : {};
+    const assetId = getStringField(result, 'assetId');
+    if (!assetId) {
+      this.logger.warn(`[CE09_FANOUT_SKIPPED] reason=missing_asset_id jobId=${job.id}`);
+      return true;
+    }
+
+    const pipelineRunId = getStringField(payload, 'pipelineRunId') || job.id;
+    const ce09DedupeKey = `ce09_${pipelineRunId}_${assetId}`;
+    const videoPath = getStringField(result, 'storageKey');
+    this.logger.log(
+      `[CE09_FANOUT_ELIGIBLE] jobId=${job.id} assetId=${assetId} videoPath=${videoPath} pipelineRunId=${pipelineRunId}`
+    );
+
+    await this.jobService.createCECoreJob({
+      projectId: job.projectId,
+      organizationId: job.organizationId,
+      taskId: job.taskId ?? undefined,
+      jobType: JobType.CE09_MEDIA_SECURITY,
+      traceId: job.traceId ?? undefined,
+      dedupeKey: ce09DedupeKey,
+        payload: {
+          projectId: job.projectId,
+          sceneId: getStringField(payload, 'sceneId'),
+          assetId,
+          videoPath,
+          pipelineRunId,
+          originJobId: job.id,
+          engineKey: 'ce09_media_security',
+        },
+    });
+
+    this.logger.log(`[CE09_FANOUT_ENQUEUED] jobId=${job.id} assetId=${assetId} dedupeKey=${ce09DedupeKey}`);
+    return true;
   }
 }

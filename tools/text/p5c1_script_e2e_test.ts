@@ -6,7 +6,7 @@ import {
   processContinuityAuditJob,
 } from '../../apps/workers/src/processors/script-structure.processor';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const PROJECT_ID = 'proj_15m_seal_001';
 const SOURCE_ID = '7cbf8a3e-bc87-4ea8-94b9-2dbd41f68b37'; // Byte-Aligned V2
 

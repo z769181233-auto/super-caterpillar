@@ -7,7 +7,7 @@ type AssertInput = {
   pipelineRunIdB?: string;
 };
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 function must(cond: any, msg: string) {
   if (!cond) {

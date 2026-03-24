@@ -8,7 +8,7 @@ if (require('fs').existsSync(path.join(process.cwd(), '.env.local'))) {
 }
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('Seeding stage1_orchestrator engine...');

@@ -47,7 +47,7 @@ echo ">>> [PLAN-2] Exporting DB Facts for Reference P4 Run (trace_p4_1768632657)
 # 使用用户指定的 Reference P4 ID
 REF_TRACE="trace_p4_1768632748"
 REF_ASSET="ea5505b0-a413-41eb-95e8-160cefe17b14"
-DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 echo "Reference Trace: $REF_TRACE"
 echo "Reference Asset: $REF_ASSET"
@@ -98,7 +98,7 @@ echo ">>> [PLAN-3] Verifying File System & FFprobe..."
 # Re-querying specifically for extraction to variable
 # Use -t (tuples only) and -A (no align) to get clean output
 # Quote DATABASE_URL to handle special chars
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 echo "Checking if asset exists..."
 ASSET_EXISTS=$(psql "$DATABASE_URL" -t -A -c "select count(*) from assets where id = '$REF_ASSET';")

@@ -4,10 +4,10 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 import { vg05RealEngine } from '@scu/engines-vg05';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class VG05VFXCompositorAdapter extends VgBaseEngine {
@@ -49,8 +49,17 @@ export class VG05VFXCompositorAdapter extends VgBaseEngine {
       inputArg = `-i "${sourcePath}"`;
     }
 
-    const cmd = `ffmpeg -y ${inputArg} -vf "${result.filter_string}" -frames:v 1 "${outputPath}"`;
-    execSync(cmd, { stdio: 'ignore' });
+    const args = ['-y'];
+    if (inputArg.startsWith('-f lavfi')) {
+      args.push('-f', 'lavfi', '-i', 'color=c=0x111111:s=512x512');
+    } else {
+      args.push('-i', sourcePath);
+    }
+    args.push('-vf', result.filter_string || 'null', '-frames:v', '1', outputPath);
+    const res = await execAsync('ffmpeg', args);
+    if (res.code !== 0) {
+      throw new Error(`VG05 vfx render failed: ${res.stderr}`);
+    }
 
     return {
       assetUrl: `file://${outputPath}`,

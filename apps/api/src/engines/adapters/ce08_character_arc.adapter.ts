@@ -36,14 +36,14 @@ export class CE08CharacterArcAdapter extends NlpBaseEngine {
     }) as any;
 
     return {
-      character: result.character_name || 'Mock',
-      archetype: result.archetype || 'Mock',
-      state: result.current_state || 'Mock',
+      character: result.character_name || 'UNKNOWN',
+      archetype: result.archetype || 'UNKNOWN',
+      state: result.current_state || 'UNKNOWN',
       markers: result.progression_markers || ['STATIC'],
-      arc_status: result.arc_status || 'Mock',
-      ai_description: result.description || 'Mock',
+      arc_status: result.arc_status || 'UNKNOWN',
+      ai_description: result.description || 'UNKNOWN',
       meta: {
-        engine: result.audit_trail?.engine_version || 'mock_v1',
+        engine: result.audit_trail?.engine_version || 'truth_v1',
       },
     };
   }

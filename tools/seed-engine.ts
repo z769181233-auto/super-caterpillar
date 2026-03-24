@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const engineKey = 'default_novel_analysis';

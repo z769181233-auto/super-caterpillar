@@ -1,4 +1,4 @@
-import { Body, Controller, NotFoundException, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, NotFoundException, Post, Req, UseGuards, Logger } from '@nestjs/common';
 import { StoryService } from '../story/story.service';
 import { TextService } from '../text/text.service';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
@@ -37,6 +37,8 @@ function requireInternalEnabled() {
 @Controller()
 @UseGuards(JwtOrHmacGuard)
 export class BibleAliasController {
+  private readonly logger = new Logger(BibleAliasController.name);
+
   constructor(
     private readonly storyService: StoryService,
     private readonly textService: TextService
@@ -60,8 +62,9 @@ export class BibleAliasController {
   }
 
   private async handleStoryParse(body: any, req: any) {
-    // eslint-disable-next-line no-console
-    console.log('[BibleAlias DEBUG] handleStoryParse incoming body keys:', Object.keys(body));
+    this.logger.log(
+      `[BibleAliasController] handleStoryParse bodyKeys=${Object.keys(body).join(',')}`
+    );
     // 映射所有可能的字段
     const rawText = body.text || body.rawText || body.raw_text;
     const projectId = body.projectId || body.project_id;

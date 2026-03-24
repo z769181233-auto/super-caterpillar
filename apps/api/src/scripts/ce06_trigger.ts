@@ -2,7 +2,7 @@ import { PrismaClient } from 'database';
 import { randomUUID } from 'crypto';
 import * as util from 'util';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   try {

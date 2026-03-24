@@ -20,7 +20,7 @@ export async function processShotRenderJob(
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
   const payload = (job.payload || {}) as any;
-  const { pipelineRunId, shotId, projectId } = payload;
+  const { pipelineRunId, shotId } = payload;
   const traceId = payload.traceId || job.id;
 
   logger.log(`[ShotRender_HUB] Processing job ${job.id} for shot ${shotId}`);
@@ -35,6 +35,18 @@ export async function processShotRenderJob(
     });
     if (!shot) throw new Error('SHOT_NOT_FOUND');
 
+    const resolvedProjectId = payload.projectId || job.projectId || shot.scene?.projectId;
+    const resolvedOrganizationId =
+      job.organizationId ||
+      shot.organizationId ||
+      shot.scene?.episode?.season?.project?.organizationId;
+    if (!resolvedProjectId) {
+      throw new Error(`MISSING_PROJECT_ID for shot ${shot.id}`);
+    }
+    if (!resolvedOrganizationId) {
+      throw new Error('MISSING_ORGANIZATION_ID');
+    }
+
     // 2. Identity Anchor Preparation
     const characterIds = payload.characterIds || (shot.params as any)?.characterIds || [];
     const anchors = await prisma.characterIdentityAnchor.findMany({
@@ -43,7 +55,7 @@ export async function processShotRenderJob(
 
     // Debug Logs for S-3 Fix
     logger.log(
-      `[ShotRender_HUB DEBUG] projectId=${projectId}, sceneId=${shot.sceneId}, shotId=${shotId}`
+      `[ShotRender_HUB DEBUG] projectId=${resolvedProjectId}, sceneId=${shot.sceneId}, shotId=${shotId}`
     );
 
     // 3. Invoke SHOT_RENDER Engine
@@ -52,7 +64,7 @@ export async function processShotRenderJob(
       payload: {
         prompt: shot.enrichedPrompt,
         shotId: shot.id,
-        projectId,
+        projectId: resolvedProjectId,
         traceId,
       },
       context: {
@@ -117,7 +129,7 @@ export async function processShotRenderJob(
       },
       update: { storageKey, checksum: sha256, status: 'GENERATED', createdByJobId: job.id },
       create: {
-        projectId,
+        projectId: resolvedProjectId,
         ownerId: shot.id,
         ownerType: AssetOwnerType.SHOT,
         type: assetType,
@@ -136,15 +148,15 @@ export async function processShotRenderJob(
     // 6. Trigger VIDEO_RENDER
     if (shot.sceneId) {
       await apiClient.createJob({
-        projectId,
-        organizationId: shot.organizationId || 'system',
+        projectId: resolvedProjectId,
+        organizationId: resolvedOrganizationId,
         jobType: 'VIDEO_RENDER' as any,
         payload: {
           pipelineRunId,
           traceId,
           shotId: shot.id,
           frameKeys: [storageKey],
-          projectId,
+          projectId: resolvedProjectId,
           sceneId: shot.sceneId,
           episodeId: shot.scene?.episodeId,
         },

@@ -17,8 +17,15 @@ const EVIDENCE_DIR_FILE = '.current_evidence_dir';
  * P1 Standard: Resolve SSOT Root
  */
 function resolveSsotRoot(): string {
-  if (process.env.SSOT_ROOT) return path.resolve(process.env.SSOT_ROOT);
-  return path.resolve(__dirname, '../../../../');
+  const root = process.env.SSOT_ROOT || process.env.SCU_REPO_ROOT;
+  if (!root) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('CRITICAL: SSOT_ROOT environment variable is missing in production.');
+    }
+    // Fallback for local development
+    return path.resolve(process.cwd());
+  }
+  return path.resolve(root);
 }
 
 /**
@@ -33,10 +40,11 @@ function resolveAbsolutePath(relativeKey: string): string {
  * Helper: Get Evidence Dir
  */
 async function getEvidenceDir(): Promise<string | null> {
-  if (await fileExists(EVIDENCE_DIR_FILE)) {
+  const evidencePath = path.join(resolveSsotRoot(), EVIDENCE_DIR_FILE);
+  if (await fileExists(evidencePath)) {
     // 2.5 CE02 Check (Hard Gate)
     // Use fs_safe
-    const evidenceContent = await readFileUnderLimit(EVIDENCE_DIR_FILE, 1024 * 1024); // 1MB limit for path file
+    const evidenceContent = await readFileUnderLimit(evidencePath, 1024 * 1024); // 1MB limit for path file
     const evidenceDir = evidenceContent.trim();
     return evidenceDir;
   }
@@ -101,35 +109,53 @@ export async function processIdentityLockJob(ctx: {
     traceId,
   });
 
+  let currentAnchorId: string | null = null;
+
   try {
     // 1. Transactional State Management (Active Single Source)
     let anchor = await prisma.$transaction(async (tx) => {
-      // Check for EXISTING processing/ready
-      const existingActive = await tx.characterIdentityAnchor.findFirst({
+      const activeAnchors = await tx.characterIdentityAnchor.findMany({
         where: { characterId, isActive: true },
+        orderBy: { updatedAt: 'desc' },
       });
 
-      if (existingActive) {
-        if (existingActive.status === 'PROCESSING') {
+      const [latestActive, ...staleActive] = activeAnchors;
+
+      if (staleActive.length > 0) {
+        await tx.characterIdentityAnchor.updateMany({
+          where: {
+            id: {
+              in: staleActive.map((anchor) => anchor.id),
+            },
+          },
+          data: { isActive: false },
+        });
+      }
+
+      // Check for EXISTING processing/ready
+      if (latestActive) {
+        if (latestActive.status === 'PROCESSING') {
           // Basic timeout check (e.g. 5 minutes)
-          const ageMs = Date.now() - existingActive.updatedAt.getTime();
+          const ageMs = Date.now() - latestActive.updatedAt.getTime();
           if (ageMs < 5 * 60 * 1000) {
             throw new Error(
-              `Concurrent processing lock: Anchor ${existingActive.id} is PROCESSING`
+              `Concurrent processing lock: Anchor ${latestActive.id} is PROCESSING`
             );
           }
-          // Timeout -> Deactivate and continue
+
           await tx.characterIdentityAnchor.update({
-            where: { id: existingActive.id },
-            data: { isActive: false, status: 'FAILED', lastError: 'Timeout overridden' },
+            where: { id: latestActive.id },
+            data: {
+              isActive: false,
+              status: 'FAILED',
+              lastError: 'Timeout overridden',
+            },
           });
-        } else if (existingActive.status === 'READY' && !payload.forceRebuild) {
-          // Idempotency return
-          return { type: 'EXISTING', data: existingActive };
+        } else if (latestActive.status === 'READY' && !payload.forceRebuild) {
+          return { type: 'EXISTING', data: latestActive };
         } else {
-          // READY but forcing rebuild -> Deactivate
           await tx.characterIdentityAnchor.update({
-            where: { id: existingActive.id },
+            where: { id: latestActive.id },
             data: { isActive: false },
           });
         }
@@ -153,12 +179,18 @@ export async function processIdentityLockJob(ctx: {
       return { status: 'SKIPPED', anchorId: anchor.data.id };
     }
 
-    const currentAnchorId = anchor.data.id;
+    currentAnchorId = anchor.data.id;
     const seed = payload.seed || Math.floor(Math.random() * 2147483647);
 
-    // Character Prompt (Simple Stub)
-    // TODO: Fetch from actual Character model
-    const characterPrompt = 'A character concept sheet, simple background, 8k, best quality';
+    // 2. Fetch Character Profile for dynamic prompt
+    const profile = await prisma.characterProfile.findUnique({
+      where: { projectId_name: { projectId, name: characterId } }, // characterId in payload often refers to the name/slug
+    });
+
+    const characterPrompt = profile?.basePrompt?.trim();
+    if (!characterPrompt) {
+      throw new Error(`[IdentityLock] Missing character profile/basePrompt for ${characterId}`);
+    }
     const ssotRoot = resolveSsotRoot();
     const identityDir = path.join(ssotRoot, 'characters', characterId, 'identity', currentAnchorId);
 
@@ -209,7 +241,9 @@ export async function processIdentityLockJob(ctx: {
       const targetRelPath = path.relative(ssotRoot, targetAbsPath); // characters/...
 
       // Move file to SSOT Location
-      await fsp.rename(sourceAbsPath, targetAbsPath);
+      // 3.1 Move file to SSOT Location (Cross-volume safe)
+      await fsp.copyFile(sourceAbsPath, targetAbsPath);
+      await fsp.unlink(sourceAbsPath);
 
       // Validate: Sharp
       const metadata = await sharp(targetAbsPath).metadata();
@@ -240,7 +274,7 @@ export async function processIdentityLockJob(ctx: {
     }
 
     const combinedHash = crypto.createHash('sha256').update(viewHashes.join('')).digest('hex');
-    logEvidence(
+    await logEvidence(
       'IDENTITY_TRIVIEW_SHA256.txt',
       `${combinedHash}  [AGGREGATE_HASH] anchor=${currentAnchorId}`
     );
@@ -284,13 +318,10 @@ export async function processIdentityLockJob(ctx: {
     // Since we used Transaction for creation, we don't have the ID easily in catch block unless we scoped it.
     // Ideally we should query for the PROCESSING anchor and fail it.
     try {
-      const processing = await prisma.characterIdentityAnchor.findFirst({
-        where: { characterId, status: 'PROCESSING', isActive: true },
-      });
-      if (processing) {
+      if (currentAnchorId) {
         await prisma.characterIdentityAnchor.update({
-          where: { id: processing.id },
-          data: { status: 'FAILED', lastError: error.message },
+          where: { id: currentAnchorId },
+          data: { status: 'FAILED', lastError: error.message, isActive: false },
           // We keep it Active=true (but Failed) so we know the latest attempt failed?
           // Hard constraint says: "If READY but... check fail... mark old inactive".
           // Here we are failing the NEW one.

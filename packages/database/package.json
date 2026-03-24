@@ -27,10 +27,10 @@
     "prisma:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "7.4.2"
+    "@prisma/client": "5.22.0"
   },
   "devDependencies": {
-    "prisma": "7.4.2",
+    "prisma": "5.22.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

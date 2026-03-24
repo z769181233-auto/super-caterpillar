@@ -4,18 +4,27 @@ import { useState, useCallback, useMemo } from 'react';
 
 export type StudioPhase = 'loading' | 'ready' | 'empty' | 'error' | 'permission' | 'offline';
 
+type StudioQueryStatus = 'loading' | 'success' | 'empty' | 'error';
+
+interface StudioQueryError {
+  message?: string;
+  status?: number;
+}
+
+interface StudioQueryState<TData> {
+  status: StudioQueryStatus;
+  data: TData | null;
+  error: StudioQueryError | null;
+  traceId?: string;
+}
+
 export function useStudioRequestState(studioId: string) {
-  const [jobQuery, setJobQuery] = useState<{
-    status: string;
-    data: any;
-    error: any;
-    traceId?: string;
-  }>({
+  const [jobQuery, setJobQuery] = useState<StudioQueryState<unknown>>({
     status: 'loading',
     data: null,
     error: null,
   });
-  const [shotQuery, setShotQuery] = useState<{ status: string; data: any; error: any }>({
+  const [shotQuery, setShotQuery] = useState<StudioQueryState<unknown>>({
     status: 'loading',
     data: null,
     error: null,
@@ -36,7 +45,7 @@ export function useStudioRequestState(studioId: string) {
 
     // Ready state
     return 'ready';
-  }, [jobQuery, shotQuery]);
+  }, [jobQuery]);
 
   const isPartial = useMemo(() => {
     return phase === 'ready' && shotQuery.status === 'error';

@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { randomUUID } from 'crypto';
+import {
+  buildBillingLedgerStatusWhere,
+  normalizeLegacyBillingLedgerRow,
+} from './billing-ledger-compat.util';
 
 @Injectable()
 export class BillingSettlementService {
@@ -27,7 +31,7 @@ export class BillingSettlementService {
     const ledgers = await this.prisma.billingLedger.findMany({
       where: {
         projectId: projectId,
-        billingState: 'COMMITTED',
+        ...buildBillingLedgerStatusWhere('POSTED'),
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -50,7 +54,8 @@ export class BillingSettlementService {
             // In V3.0 BillingLedger is the source, but we still check BillingEvent if needed
             // P3-A: Billing Ledger uses 'COMMITTED' via Job Engine, not 'POSTED' or 'PENDING'
             const ledger = await tx.billingLedger.findUnique({ where: { id: l.id } });
-            if (ledger?.billingState !== 'COMMITTED') {
+            const normalizedLedger = ledger ? normalizeLegacyBillingLedgerRow(ledger as any) : null;
+            if (normalizedLedger?.status !== 'POSTED') {
               return;
             }
 
@@ -59,8 +64,14 @@ export class BillingSettlementService {
             const costToCharge = Number(l.amount) / 100; // Int to Credits
 
             // Helper: Find Org
-            const proj = await tx.project.findUnique({ where: { id: l.projectId } });
-            const orgId = proj?.organizationId || l.projectId;
+            const proj = await tx.project.findUnique({
+              where: { id: l.projectId },
+              select: { organizationId: true },
+            });
+            const orgId = proj?.organizationId;
+            if (!orgId) {
+              throw new Error('MISSING_ORGANIZATION_ID');
+            }
 
             // 3. Row-Level Locking on Credits (Atomicity)
             await tx.$executeRaw`SELECT id FROM organizations WHERE id = ${orgId} FOR UPDATE`;
@@ -84,8 +95,8 @@ export class BillingSettlementService {
                 creditsDelta: -costToCharge, // Negative for consumption
                 metadata: {
                   ledgerId: l.id,
-                  itemId: l.jobId,
-                  traceId: l.jobId,
+                  itemId: normalizedLedger?.itemId ?? l.jobId,
+                  traceId: normalizedLedger?.traceId ?? null,
                   settleRunId: runId,
                 },
               },
@@ -112,7 +123,7 @@ export class BillingSettlementService {
                 billingEventId: eventId,
                 creditsDelta: costToCharge,
               },
-              l.jobId || runId
+              l.traceId ?? normalizedLedger?.traceId ?? undefined
             );
           },
           {
@@ -124,11 +135,11 @@ export class BillingSettlementService {
         failedCount++;
 
         if (e.message === 'INSUFFICIENT_CREDITS') {
-          // Record failure reason for visibility
+          // Keep legacy state compatible while marking SSOT failure explicitly.
           await this.prisma.billingLedger
             .update({
               where: { id: l.id },
-              data: { billingState: 'RELEASED' }, // Substitute for FAILED
+              data: { billingState: 'RELEASED', status: 'FAILED' },
             })
             .catch(() => null);
         }

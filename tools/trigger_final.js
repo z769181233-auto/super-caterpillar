@@ -1,6 +1,6 @@
 const http = require('http');
 const { PrismaClient } = require('database');
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const project = await prisma.project.findFirst({

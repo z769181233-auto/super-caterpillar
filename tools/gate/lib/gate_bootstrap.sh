@@ -12,7 +12,7 @@ cd "$ROOT"
 
 # Common env (do not override if already set)
 export NODE_ENV="${NODE_ENV:-test}"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 export REDIS_URL="${REDIS_URL:-redis://localhost:6379}"
 
 # Evidence dir convention

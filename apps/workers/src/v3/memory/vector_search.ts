@@ -85,15 +85,6 @@ export async function findSimilarChapters(params: {
       limit
     );
 
-    console.log(
-      `[VECTOR_SEARCH] queryVector generated, projectId=${projectId}, resultsCount=${results.length}`
-    );
-    if (results.length > 0) {
-      console.log(
-        `[VECTOR_SEARCH] Top result: id=${results[0].id} similarity=${results[0].similarity.toFixed(4)}`
-      );
-    }
-
     return results.map((r) => ({
       id: r.id,
       title: r.title,
@@ -101,7 +92,6 @@ export async function findSimilarChapters(params: {
       similarity: r.similarity || 0,
     }));
   } catch (error: any) {
-    console.error(`[VectorSearch] Query failed: ${error.message}`);
     return [];
   }
 }

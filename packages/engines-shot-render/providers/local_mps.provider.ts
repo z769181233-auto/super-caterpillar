@@ -49,13 +49,6 @@ export const localMpsProvider = {
     const safeTrace = traceId.slice(-8).replace(/[^a-zA-Z0-9_-]/g, '_');
     const artifactName = `shot_${safeShot}_trace_${safeTrace}_${seed}.png`;
 
-    // P2-FIX-2 DEBUG: 打印命名参数（仅 Gate/Dev）
-    if (process.env.GATE_MODE === '1' || process.env.NODE_ENV !== 'production') {
-      console.log(
-        `[LocalMpsProvider] Artifact name: ${artifactName} (shotId=${shotId}, traceId=${traceId}, seed=${seed})`
-      );
-    }
-
     const outDir =
       process.env.ASSET_STORAGE_DIR ||
       (process.env.STORAGE_ROOT

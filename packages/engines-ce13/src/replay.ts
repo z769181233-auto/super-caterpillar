@@ -13,19 +13,5 @@ export async function ce13ReplayEngine(input: CE13Input): Promise<CE13Output> {
     };
   }
 
-  // 如果没有回放数据，返回一个默认值
-  return {
-    pacing_score: 0.5,
-    emotional_intensity: 0.5,
-    tension_level: 'low',
-    indicators: {
-      sentence_avg_length: 0,
-      action_verb_density: 0,
-      emotional_keywords_count: 0,
-    },
-    audit_trail: {
-      engine_version: 'replay-v1-default',
-      timestamp: new Date().toISOString(),
-    },
-  };
+  throw new Error('CE13_REPLAY_DATA_REQUIRED: replay mode requires context.replay_data');
 }

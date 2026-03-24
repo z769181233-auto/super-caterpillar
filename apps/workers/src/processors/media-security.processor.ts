@@ -10,22 +10,46 @@ import { ProcessorContext } from '../types/processor-context';
  */
 export async function processMediaSecurityJob(context: ProcessorContext) {
   const { prisma, job, apiClient } = context;
-  const { assetId, videoAssetStorageKey, pipelineRunId, shotId, projectId } = job.payload;
+  const { assetId, videoAssetStorageKey, pipelineRunId, shotId } = job.payload;
+  const projectId = job.projectId || job.payload.projectId;
 
-  console.log(`[MediaSecurity_HUB] Processing job ${job.id}. AssetId=${assetId}`);
+  if (!projectId) {
+    throw new Error('[CE09] Missing projectId');
+  }
 
   try {
     let targetAssetId = assetId;
     let sourceStorageKey = videoAssetStorageKey;
+    let resolvedAsset:
+      | {
+          id: string;
+          projectId: string;
+          storageKey: string;
+          signedUrl: string | null;
+          fingerprintId: string | null;
+        }
+      | null = null;
 
     // 1. Resolve Asset & Storage Key
-    if (targetAssetId && !sourceStorageKey) {
-      const asset = await prisma.asset.findUnique({ where: { id: targetAssetId } });
-      if (asset) {
-        sourceStorageKey = asset.storageKey;
+    if (targetAssetId) {
+      resolvedAsset = await prisma.asset.findUnique({
+        where: { id: targetAssetId },
+        select: { id: true, projectId: true, storageKey: true, signedUrl: true, fingerprintId: true },
+      });
+
+      if (!resolvedAsset) {
+        throw new Error(`[CE09] Asset ${targetAssetId} not found`);
+      }
+
+      if (resolvedAsset && resolvedAsset.projectId !== projectId) {
+        throw new Error(`[CE09] Asset ${targetAssetId} does not belong to project ${projectId}`);
+      }
+
+      if (!sourceStorageKey) {
+        sourceStorageKey = resolvedAsset?.storageKey;
       }
     } else if (!targetAssetId && shotId) {
-      const asset = await prisma.asset.findUnique({
+      resolvedAsset = await prisma.asset.findUnique({
         where: {
           ownerType_ownerId_type: {
             ownerType: AssetOwnerType.SHOT,
@@ -33,11 +57,25 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
             type: AssetType.VIDEO,
           },
         },
+        select: { id: true, projectId: true, storageKey: true, signedUrl: true, fingerprintId: true },
       });
-      if (asset) {
-        targetAssetId = asset.id;
-        sourceStorageKey = asset.storageKey;
+
+      if (resolvedAsset) {
+        if (resolvedAsset.projectId !== projectId) {
+          throw new Error(
+            `[CE09] Shot asset ${resolvedAsset.id} does not belong to project ${projectId}`
+          );
+        }
+        targetAssetId = resolvedAsset.id;
+        sourceStorageKey = resolvedAsset.storageKey;
       }
+    }
+
+    if (!targetAssetId) {
+      throw new Error('[CE09] Missing target asset');
+    }
+    if (!sourceStorageKey) {
+      throw new Error('[CE09] Missing source storage key');
     }
 
     // 2. Invoke EngineHub
@@ -59,11 +97,21 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     const { storageKey, hlsPlaylistKey, screenshotKey, framemd5Key, sha256 } = secResult.output;
 
     // 3. Update Asset
-    let fpRecord = await prisma.securityFingerprint.findFirst({
-      where: { assetId: targetAssetId },
-    });
+    let fpRecord = resolvedAsset?.fingerprintId
+      ? await prisma.securityFingerprint.findUnique({
+          where: { id: resolvedAsset.fingerprintId },
+        })
+      : null;
 
-    if (!fpRecord) {
+    if (fpRecord) {
+      fpRecord = await prisma.securityFingerprint.update({
+        where: { id: fpRecord.id },
+        data: {
+          assetId: targetAssetId,
+          fpVector: { algorithm: 'sha256', hash: sha256 },
+        },
+      });
+    } else {
       fpRecord = await prisma.securityFingerprint.create({
         data: {
           assetId: targetAssetId,
@@ -79,7 +127,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
         checksum: sha256,
         status: 'PUBLISHED',
         hlsPlaylistUrl: hlsPlaylistKey,
-        signedUrl: `/api/assets/signed-url?key=${storageKey}&t=${Date.now()}`,
+        signedUrl: resolvedAsset?.signedUrl ?? `/api/assets/${targetAssetId}/secure-url`,
         watermarkMode: 'SCU_VISIBLE_V1_ASYNC',
         fingerprintId: fpRecord.id,
       },
@@ -87,16 +135,12 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
 
     // 4. Publishing Review
     if (shotId) {
-      const existingReview = await prisma.publishingReview.findFirst({
+      const reviewUpdate = await prisma.publishingReview.updateMany({
         where: { shotId },
+        data: { result: ReviewResult.require_review },
       });
 
-      if (existingReview) {
-        await prisma.publishingReview.update({
-          where: { id: existingReview.id },
-          data: { result: ReviewResult.require_review },
-        });
-      } else {
+      if (reviewUpdate.count === 0) {
         await prisma.publishingReview.create({
           data: {
             shotId,
@@ -130,7 +174,6 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
       fingerprintId: fpRecord.id,
     };
   } catch (error: any) {
-    console.error(`[MediaSecurity_HUB] Failed: ${error.message}`);
     throw error;
   }
 }

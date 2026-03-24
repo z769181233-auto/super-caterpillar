@@ -24,6 +24,7 @@ import {
  */
 export async function processNovelScan(context: ProcessorContext) {
   ensureDefaultMetrics();
+  const workerConfig = config as typeof config & { storageRoot: string };
   const t0 = Date.now();
   let peakRssMb = 0;
 
@@ -36,17 +37,26 @@ export async function processNovelScan(context: ProcessorContext) {
   const { prisma, job, workerId } = context;
   const { projectId, options, isVerification } = job.payload;
   const fileKey = job.payload.fileKey || job.payload.filePath;
+  const organizationId = job.organizationId;
+
+  if (!projectId) {
+    throw new Error('[NovelScan] Missing projectId');
+  }
+  if (!organizationId) {
+    throw new Error('[NovelScan] Missing organizationId');
+  }
+  if (!fileKey) {
+    throw new Error('[NovelScan] Missing fileKey/filePath');
+  }
 
   try {
     stage4JobsTotal.inc({ type: job.type, status: 'RUNNING' }, 1);
     sampleRss();
 
-    const engine = await prisma.engine.findFirst({ where: { engineKey: 'ce06_novel_parsing' } });
+    const engine = await prisma.engine.findUnique({ where: { engineKey: 'ce06_novel_parsing' } });
     if (!engine) {
       throw new Error('[NovelScan] ce06_novel_parsing engine not found in DB.');
     }
-
-    console.log(`[NovelScan] Starting Scan for Project ${projectId}, File: ${fileKey}`);
 
     if (job.payload.novelSourceId) {
       await prisma.novelSource
@@ -60,7 +70,7 @@ export async function processNovelScan(context: ProcessorContext) {
     // 1. Path Resolution
     let filePath = fileKey;
     if (!path.isAbsolute(filePath)) {
-      const storageRoot = (config as any).storageRoot;
+      const storageRoot = workerConfig.storageRoot;
       filePath = path.resolve(storageRoot, fileKey);
     }
 
@@ -72,13 +82,11 @@ export async function processNovelScan(context: ProcessorContext) {
     const episodes = await streamScanFile(filePath);
     sampleRss();
 
-    console.log(`[NovelScan] Scanned ${episodes.length} episodes via Stream.`);
-
     // 2.1 Create NovelIngestRun (Versioned SSOT)
     const ingestRun = await prisma.novelIngestRun.create({
       data: {
         projectId,
-        organizationId: job.organizationId as string,
+        organizationId,
         novelSourceId: job.payload.novelSourceId,
         manifestHash: job.payload.manifestHash || 'v1',
         engineVersion: job.payload.engineVersion || 'ce06-v3',
@@ -93,7 +101,7 @@ export async function processNovelScan(context: ProcessorContext) {
         .update({
           where: { id: nsId },
           data: {
-            status: 'PARSING' as any,
+            status: 'PARSING',
             totalChapters: episodes.length,
             processedChunks: 0,
           },
@@ -142,7 +150,7 @@ export async function processNovelScan(context: ProcessorContext) {
 
             const newJob = await tx.shotJob.create({
               data: {
-                organizationId: job.organizationId as string,
+                organizationId,
                 projectId,
                 type: JobType.NOVEL_CHUNK_PARSE,
                 status: 'PENDING',
@@ -168,12 +176,9 @@ export async function processNovelScan(context: ProcessorContext) {
 
       processedCount += batch.length;
       if (processedCount % 500 === 0) {
-        console.log(`[NovelScan] Progress: ${processedCount}/${episodes.length} chunks created.`);
         sampleRss();
       }
     }
-
-    console.log(`[NovelScan] Fan-out complete. Dispatched ${episodes.length} chunks.`);
 
     // 5. Success Tracking
     const durationSec = (Date.now() - t0) / 1000;

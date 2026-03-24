@@ -6,9 +6,8 @@ export enum CE13EngineSelector {
 }
 
 export function ce13Selector(input: CE13Input): CE13EngineSelector {
-  // 默认使用 Real 引擎，除非显式要求 Replay
   if (input.context?.engine_mode === 'replay') {
-    return CE13EngineSelector.REPLAY;
+    throw new Error('CE13_REPLAY_REMOVED: replay mode is no longer supported');
   }
   return CE13EngineSelector.REAL;
 }

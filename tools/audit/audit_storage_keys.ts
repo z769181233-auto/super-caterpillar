@@ -14,7 +14,7 @@ function hashKey(key: string): string {
 }
 
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   const evidDir = path.resolve(process.cwd(), `docs/_evidence/audit_storage_keys_${ts}`);
 

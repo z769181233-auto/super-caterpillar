@@ -4,9 +4,9 @@ import { PpBaseEngine } from '../base/pp_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class PP04HLSPackageAdapter extends PpBaseEngine {
@@ -37,9 +37,30 @@ export class PP04HLSPackageAdapter extends PpBaseEngine {
       inputArg = `-i "${sourcePath}"`;
     }
 
-    // FFmpeg: HLS packaging
-    const cmd = `ffmpeg -y ${inputArg} -c:v libx264 -preset ultrafast -hls_time 2 -hls_list_size 0 -f hls "${outputPath}"`;
-    execSync(cmd, { stdio: 'ignore' });
+    const args = ['-y'];
+    if (inputArg === '-f lavfi -i testsrc=d=5') {
+      args.push('-f', 'lavfi', '-i', 'testsrc=d=5');
+    } else {
+      args.push('-i', sourcePath);
+    }
+    args.push(
+      '-c:v',
+      'libx264',
+      '-preset',
+      'ultrafast',
+      '-hls_time',
+      '2',
+      '-hls_list_size',
+      '0',
+      '-f',
+      'hls',
+      outputPath,
+    );
+
+    const res = await execAsync('ffmpeg', args);
+    if (res.code !== 0) {
+      throw new Error(`PP04 HLS package failed: ${res.stderr}`);
+    }
 
     return {
       assetUrl: `file://${outputPath}`,

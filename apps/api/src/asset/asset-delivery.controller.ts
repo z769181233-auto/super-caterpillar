@@ -34,29 +34,30 @@ export class AssetDeliveryController {
    * V1.1 Allied Endpoint: 获取带安全签名的资产载链接
    * GET /api/assets/:id/secure-url
    */
-  /**
-   * V1.1 Allied Endpoint: 获取带安全签名的资产载链接
-   * GET /api/assets/:id/secure-url
-   */
   @Get(':id/secure-url')
-  @Get(':id/signed-url') // Alias for compatibility
   @RequireSignature()
   async getSecureUrl(
     @Param('id') assetId: string,
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() organizationId: string
   ) {
-    const asset = await this.prisma.asset.findFirst({
-      where: {
-        id: assetId,
-        // 这里的权限逻辑可以根据业务需求扩展，目前暂定只要是该组织的资产即可
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: assetId },
+      select: {
+        id: true,
+        signedUrl: true,
+        watermarkMode: true,
+        fingerprintId: true,
+        type: true,
         project: {
-          organizationId,
+          select: {
+            organizationId: true,
+          },
         },
       },
     });
 
-    if (!asset) {
+    if (!asset || asset.project.organizationId !== organizationId) {
       throw new NotFoundException('Asset not found');
     }
 
@@ -80,8 +81,6 @@ export class AssetDeliveryController {
       success: true,
       data: {
         signed_url: asset.signedUrl, // V1.1: snake_case
-        signedUrl: asset.signedUrl, // Compatibility: Deprecated
-        url: asset.signedUrl, // Compatibility: Deprecated
         expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
         expire: 3600, // V1.1: Seconds (Strict)
       },
@@ -99,16 +98,22 @@ export class AssetDeliveryController {
     @CurrentUser() user: AuthenticatedUser,
     @CurrentOrganization() organizationId: string
   ) {
-    const asset = await this.prisma.asset.findFirst({
-      where: {
-        id: assetId,
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: assetId },
+      select: {
+        id: true,
+        hlsPlaylistUrl: true,
+        watermarkMode: true,
+        fingerprintId: true,
         project: {
-          organizationId,
+          select: {
+            organizationId: true,
+          },
         },
       },
     });
 
-    if (!asset) {
+    if (!asset || asset.project.organizationId !== organizationId) {
       throw new NotFoundException('Asset not found');
     }
 

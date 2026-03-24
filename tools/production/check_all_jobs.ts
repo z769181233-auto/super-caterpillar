@@ -6,7 +6,7 @@ const envLocalPath = path.join(process.cwd(), '.env.local');
 dotenv.config({ path: envLocalPath, override: true });
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const jobs = await prisma.shotJob.findMany({

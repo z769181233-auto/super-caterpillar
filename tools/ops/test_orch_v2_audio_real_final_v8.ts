@@ -2,7 +2,7 @@ import { PrismaClient } from 'database';
 import { randomUUID } from 'node:crypto';
 import * as fs from 'fs';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function test() {
   console.log('--- L2 REAL SEAL: PERFECT PARALLEL RUN ---');

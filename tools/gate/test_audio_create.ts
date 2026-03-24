@@ -2,7 +2,7 @@ import { PrismaClient } from 'database';
 import { randomUUID } from 'node:crypto';
 
 async function test() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   try {
     console.log('--- Manual AUDIO Job Creation Test ---');
     const organizationId = 'gate-org';

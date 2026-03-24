@@ -84,7 +84,7 @@ export class ShotRenderComfyuiAdapter implements EngineAdapter {
           render_meta: {
             width: 1024,
             height: 1024,
-            mocked: false, // ✅ Not mocked
+            isVirtual: false, // ✅ Not virtual
             engine: 'comfyui_sdxl',
             seed: seed,
             prompt: prompt,

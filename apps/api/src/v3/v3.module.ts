@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { ProjectModule } from '../project/project.module';
 import { OrchestratorModule } from '../orchestrator/orchestrator.module';
 import { ContractStoryController } from './contract-story.controller';
@@ -10,7 +11,7 @@ import { JobModule } from '../job/job.module';
 import { AssetReceiptResolverService } from './asset-receipt-resolver.service';
 
 @Module({
-  imports: [PrismaModule, ProjectModule, OrchestratorModule, StoryModule, JobModule],
+  imports: [PrismaModule, AuthModule, ProjectModule, OrchestratorModule, StoryModule, JobModule],
   controllers: [ContractStoryController, ContractShotController],
   providers: [AssetReceiptResolverService],
 })

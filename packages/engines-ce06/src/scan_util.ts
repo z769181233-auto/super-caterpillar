@@ -13,30 +13,30 @@ export interface ScanChunk {
  * 兼容性：支持千万字级文本，采用流式/分块正则扫描，避免 OOM。
  */
 export function scanNovelVolumesAndChapters(fullText: string): ScanChunk[] {
-  console.log(`[SCAN_UTIL] Scanning text with length: ${fullText.length}`);
-  // 正则匹配：卷、章 (要求在行首或全文首)
-  const volumeRegex =
-    /(?:(?:\n|^)\s*第\s*([一二三四五六七八九十0-9]+)\s*[卷册])|(?:(?:\n|^)\s*Volume\s*(\d+))/gi;
-  const chapterRegex =
-    /(?:(?:\n|^)\s*第\s*([一二三四五六七八九十0-9\.]+)\s*[章节回])|(?:(?:\n|^)\s*Chapter\s*(\d+))/gi;
+  // 逐行扫描，避免对不受控长文本做跨全文回溯型正则。
+  const chapterLineRegex = /^\s*(?:第\s*([一二三四五六七八九十0-9.]+)\s*[章节回]|Chapter\s*(\d+))\s*$/i;
 
   const chunks: ScanChunk[] = [];
 
   // 简单实现：由于是 JS 字符串，如果是千万字级别（约 20MB），直接 search 性能尚可。
   // 但为了极端情况（1G 文本），未来可升级为真正的流式 Buffer 扫描。
 
-  let currentVolumeIdx = 1;
   let currentVolumeTitle = 'Main Volume';
   let chapters: { title: string; index: number; start: number }[] = [];
 
-  // 1. 扫描所有章节标记
-  let match;
-  while ((match = chapterRegex.exec(fullText)) !== null) {
-    chapters.push({
-      title: match[0].trim(),
-      index: chapters.length + 1,
-      start: match.index,
-    });
+  // 1. 逐行扫描所有章节标记，并保留真实 offset
+  let offset = 0;
+  const lines = fullText.split('\n');
+  for (const line of lines) {
+    const match = chapterLineRegex.exec(line);
+    if (match) {
+      chapters.push({
+        title: line.trim(),
+        index: chapters.length + 1,
+        start: offset,
+      });
+    }
+    offset += line.length + 1;
   }
 
   // 如果全文没有章节标记，视为一章

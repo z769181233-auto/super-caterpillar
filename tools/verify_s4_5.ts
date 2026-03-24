@@ -2,7 +2,7 @@ import { PrismaClient, JobType, JobStatus, AssetOwnerType, AssetType } from 'dat
 import fs from 'fs';
 import path from 'path';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 // Helper for delays
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

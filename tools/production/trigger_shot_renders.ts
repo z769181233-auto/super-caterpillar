@@ -26,7 +26,7 @@ class SimpleApiClient {
     }
 }
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
     const projectId = process.argv[2];

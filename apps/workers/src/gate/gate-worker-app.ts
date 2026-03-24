@@ -22,6 +22,9 @@ import { processStage1OrchestratorJob } from '../processors/stage1-orchestrator.
 import { processNovelScan } from '../processors/novel-scan.processor';
 import { processNovelChunk } from '../processors/novel-chunk.processor';
 import { processNovelReduce } from '../processors/novel-reduce.processor';
+import { processFilmIRPlanJob } from '../processors/film-ir-plan.processor';
+import { processContinuityAuditJob } from '../processors/script-structure.processor';
+import { processContentJudgeJob } from '../processors/content-judge.processor';
 import type { ProcessorContext } from '../types/processor-context';
 import { processAudioJob } from '../processors/audio.processor';
 import { processNovelAnalysisJob } from '../novel-analysis-processor';
@@ -37,15 +40,12 @@ function pickHmacSecretSSOT(): string {
     process.env.HMAC_SECRET_KEY || process.env.API_SECRET_KEY || process.env.WORKER_API_SECRET;
 
   if (!v) {
-    if (process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1') {
-      const errMsg = '[P1-FAIL-FAST] FATAL: WORKER_API_SECRET missing in production. Refusing to start.';
-      process.stderr.write(errMsg + '\\n');
-      throw new Error(errMsg);
-    }
+    throw new Error(
+      '[P1-FAIL-FAST] FATAL: WORKER_API_SECRET missing. Refusing to start with insecure default.'
+    );
   }
-  return v || 'dev-secret';
+  return v;
 }
-import * as util from 'util';
 import { BillingOutboxDispatcher } from '../billing/outbox-dispatcher.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -70,27 +70,32 @@ export async function startGateWorkerApp() {
     throw new Error('GATE_WORKER_REQUIRES_GATE_MODE=1');
   }
 
-  process.stdout.write(util.format('========================================') + '\n');
-  process.stdout.write(util.format('Gate Worker (Minimal P1-1) - V2') + '\n');
-  process.stdout.write(util.format('Version: V2-PIPELINE-SUPPORT') + '\n');
-  process.stdout.write(util.format('========================================\n') + '\n');
+  const workerId = (() => {
+    const id = (process.env.WORKER_ID || process.env.WORKER_NAME || '').trim();
+    if (!id) {
+      throw new Error('[Strict] WORKER_ID / WORKER_NAME environment variable is required.');
+    }
+    return id;
+  })();
+  const workerName = (() => {
+    const name = (process.env.WORKER_NAME || process.env.WORKER_ID || '').trim();
+    if (!name) throw new Error('[Strict] WORKER_NAME / WORKER_ID environment variable is required.');
+    return name;
+  })();
+  const isProd = process.env.NODE_ENV === 'production';
 
-  const workerId = process.env.WORKER_ID || process.env.WORKER_NAME || env.workerId;
-  const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
+  const rawApiBaseUrl = process.env.API_BASE_URL;
+  const rawApiUrl = process.env.API_URL;
+  const baseUrl = rawApiBaseUrl || rawApiUrl;
 
-  console.log('API_BASE_URL(raw)=', JSON.stringify(process.env.API_BASE_URL));
-  if (process.env.API_BASE_URL?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
-  const baseUrl = process.env.API_BASE_URL;
+  if (rawApiBaseUrl?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
   if (!baseUrl) {
-    throw new Error('API_BASE_URL is required in production');
+    throw new Error('API_BASE_URL or API_URL is required in production');
   }
   let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
   const workerApiKey = env.workerApiKey;
   const workerApiSecret = pickHmacSecretSSOT();
-
-  process.stdout.write(util.format(`[GateWorker] Worker ID: ${workerId}`) + '\n');
-  process.stdout.write(util.format(`[GateWorker] API URL: ${apiBaseUrl}`) + '\n');
 
   const apiClient = new ApiClient(
     apiBaseUrl.replace(/\/api\/?$/, ''),
@@ -102,13 +107,10 @@ export async function startGateWorkerApp() {
   const engineHubClient = new EngineHubClient(apiClient);
 
   const prisma = new PrismaClient({
-    datasources: { db: { url: env.databaseUrl } },
     log: ['error'],
   });
 
-  process.stdout.write(util.format('[GateWorker] 正在连接数据库...') + '\n');
   await prisma.$connect();
-  process.stdout.write(util.format('[GateWorker] ✅ 数据库连接成功') + '\n');
 
   const billingDispatcher = new BillingOutboxDispatcher(prisma, apiClient);
   billingDispatcher.start(30000);
@@ -116,10 +118,6 @@ export async function startGateWorkerApp() {
   // 注册 Worker
   const maxConcurrencyEnv = parseInt(process.env.WORKER_MAX_CONCURRENCY || '5', 10);
   const maxConcurrency = Math.min(maxConcurrencyEnv, 5); // Cap at 5 for stability
-  process.stdout.write(
-    util.format(`[GateWorker] 正在注册 Worker 节点 (maxConcurrency=${maxConcurrency})...`) + '\n'
-  );
-
   let registered = false;
   let attempts = 0;
   let isRunning = true;
@@ -138,6 +136,7 @@ export async function startGateWorkerApp() {
             'CE03_VISUAL_DENSITY',
             'CE04_VISUAL_ENRICHMENT',
             'CE02_VISUAL_DENSITY',
+            'CE_CONSISTENCY_CHECK',
             'VIDEO_RENDER',
             'CE09_MEDIA_SECURITY',
             'PIPELINE_TIMELINE_COMPOSE',
@@ -146,11 +145,13 @@ export async function startGateWorkerApp() {
             'NOVEL_SCAN_TOC',
             'NOVEL_CHUNK_PARSE',
             'CE11_SHOT_GENERATOR',
+            'CE_SHOT_PLAN',
+            'CE_CONTENT_JUDGE',
             'AUDIO',
             'PIPELINE_PROD_VIDEO_V1',
             'EPISODE_RENDER',
             'NOVEL_ANALYSIS',
-            'NOVEL_REDUCE_AGGREGATE',
+            'CE_FILM_IR_PLAN',
           ],
           supportedModels: [],
           supportedEngines: [
@@ -164,7 +165,7 @@ export async function startGateWorkerApp() {
             'video_merge',
             'default_shot_render',
             'ce09_security_real',
-            'ce11_shot_generator_mock',
+            'ce11_shot_generator_real',
             'timeline_render',
             'audio_engine',
             'fusion',
@@ -174,13 +175,8 @@ export async function startGateWorkerApp() {
         },
       });
       registered = true;
-      process.stdout.write(util.format('[GateWorker] ✅ Worker 注册成功') + '\n');
     } catch (e: any) {
-      process.stderr.write(
-        util.format(`[GateWorker] ❌ Worker 注册失败 (attempt ${attempts}):`, e.message) + '\n'
-      );
       if (isRunning) {
-        process.stdout.write(util.format('[GateWorker] 5秒后重试...') + '\n');
         await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
@@ -231,11 +227,6 @@ export async function startGateWorkerApp() {
 
     if (lastThrottledState !== throttled) {
       lastThrottledState = throttled;
-      process.stdout.write(
-        util.format(
-          `[WorkerRuntime] Concurrency change. Throttled=${throttled}, Reason=${reason}, Max=${effective}`
-        ) + '\n'
-      );
     }
 
     return effective;
@@ -264,7 +255,6 @@ export async function startGateWorkerApp() {
         },
       });
     } catch (error: any) {
-      process.stderr.write(util.format('[GateWorker] ❌ 心跳发送失败:', error.message) + '\n');
     }
   }, 10000);
 
@@ -285,37 +275,22 @@ export async function startGateWorkerApp() {
 
         foundJobs = true;
         tasksRunning++;
-        process.stdout.write(
-          util.format(`[GateWorker] 认领 job: ${job.id} type=${job.type}`) + '\n'
-        );
 
         // Non-blocking processing to allow loop to continue
         handleJob(job).catch((err) => {
-          process.stderr.write(
-            util.format(`[GateWorker] ❌ Unhandled job error:`, err.message) + '\n'
-          );
         });
       } catch (error: any) {
-        if (!error.message?.includes('No jobs available')) {
-          process.stderr.write(util.format(`[GateWorker] ❌ 轮询失败:`, error.message) + '\n');
-        }
         break; // Wait for next interval
       }
     }
 
     // B3-1: 根据轮询结果动态调整下次轮询间隔
     const nextInterval = adaptivePoll.reportPollResult(foundJobs);
-    if (foundJobs) {
-      process.stdout.write(
-        util.format(`[B3-1] 发现任务，重置为快速轮询 (${nextInterval}ms)`) + '\n'
-      );
-    }
   }
 
   async function handleJob(job: any) {
     try {
       await apiClient.ackJob(job.id, workerId);
-      process.stdout.write(util.format(`[GateWorker] ACK job: ${job.id}`) + '\n');
 
       let result: any;
       const ctx: ProcessorContext = { prisma, job, apiClient };
@@ -327,9 +302,19 @@ export async function startGateWorkerApp() {
       else if (job.type === 'CE04_VISUAL_ENRICHMENT')
         result = await processCE04VisualEnrichmentJob(ctx);
       else if (job.type === 'CE02_VISUAL_DENSITY') result = await processCE02VisualDensityJob(ctx);
+      else if (job.type === 'CE_CONSISTENCY_CHECK') result = await processContinuityAuditJob(ctx);
       else if (job.type === 'CE11_SHOT_GENERATOR') result = await processCE11ShotGeneratorJob(ctx);
+      else if (job.type === 'CE_SHOT_PLAN') result = await processCE11ShotGeneratorJob(ctx);
+      else if (job.type === 'CE_FILM_IR_PLAN') result = await processFilmIRPlanJob(ctx);
+      else if (job.type === 'CE_CONTENT_JUDGE') result = await processContentJudgeJob(ctx);
       else if (job.type === 'VIDEO_RENDER') {
-        const pl = (job.payload || {}) as any;
+        const pl = (job.payload || {}) as {
+          sceneId?: string;
+          shotId?: string;
+          traceId?: string;
+          artifactDir?: string;
+          isVerification?: boolean;
+        };
         const sId =
           pl.sceneId ||
           (pl.shotId
@@ -347,50 +332,9 @@ export async function startGateWorkerApp() {
           repoRoot = path.dirname(repoRoot);
         }
 
-        const storageRoot = (env as any).storageRoot;
-        const mockKey = 'videos/gate_mock.mp4';
-        const mockPath = path.join(storageRoot, mockKey);
-
-        process.stdout.write(
-          `[GateWorker] VIDEO_RENDER: cwd=${process.cwd()}, repoRoot=${repoRoot}, target=${mockPath}\n`
-        );
-
-        if (!fs.existsSync(path.dirname(mockPath)))
-          fs.mkdirSync(path.dirname(mockPath), { recursive: true });
-        if (!fs.existsSync(mockPath)) {
-          // Generate 1s blue video using ffmpeg
-          const { execSync } = require('child_process');
-          try {
-            process.stdout.write('[GateWorker] Generating mock video...\n');
-            execSync(
-              `ffmpeg -f lavfi -i color=c=blue:s=640x360:d=1 -c:v libx264 -t 1 -pix_fmt yuv420p "${mockPath}"`,
-              { stdio: 'ignore' }
-            );
-          } catch (e) {
-            console.error(
-              '[GateWorker] Failed to generate mock video via ffmpeg, creating dummy file',
-              e
-            );
-            fs.writeFileSync(mockPath, 'dummy video content');
-          }
-        }
-
-        if (sId) {
-          await prisma.asset.upsert({
-            where: { ownerType_ownerId_type: { ownerType: 'SCENE', ownerId: sId, type: 'VIDEO' } },
-            update: { status: 'GENERATED', storageKey: mockKey, createdByJobId: job.id },
-            create: {
-              projectId: job.projectId!,
-              ownerId: sId,
-              ownerType: 'SCENE',
-              type: 'VIDEO',
-              storageKey: mockKey,
-              status: 'GENERATED',
-              createdByJobId: job.id,
-            },
-          });
-        }
-        result = { status: 'SUCCEEDED', output: { storageKey: mockKey } };
+        // P1-HARD: Mock video generation logic REMOVED.
+        // Truth-based rendering required. If real renderer (ShotRenderRouter) fails, it remains failed.
+        throw new Error('VIDEO_RENDER_NON_TRUTH_FALLBACK: Absolute truth required. GateWorker must not fallback to non-truth configuration.');
       } else if (job.type === 'PIPELINE_TIMELINE_COMPOSE')
         result = await processTimelineComposeJob(ctx);
       else if (job.type === 'TIMELINE_RENDER') result = await processTimelineRenderJob(ctx);
@@ -417,12 +361,9 @@ export async function startGateWorkerApp() {
       } else if (job.type === 'EPISODE_RENDER') {
         const { processEpisodeRenderJob } = await import('../processors/episode-render.processor');
         result = await processEpisodeRenderJob(ctx);
-      } else if (job.type === 'NOVEL_REDUCE_AGGREGATE') {
-        result = await processNovelReduce(ctx);
-      } else {
-        process.stdout.write(util.format(`[GateWorker] ⚠️ Unknown Job Type: ${job.type}`) + '\n');
-        return;
-      }
+        } else {
+          return;
+        }
       const duration = (performance.now() - start) / 1000;
 
       // B3-2: 更新统计信息
@@ -440,33 +381,23 @@ export async function startGateWorkerApp() {
 
       if (isSuccess && job.payload?.artifactDir) {
         const artDir = job.payload.artifactDir;
-        const framesPath = path.join(artDir, 'frames.txt');
-        if (!fs.existsSync(framesPath)) {
-          fs.writeFileSync(framesPath, 'frame001.png\nframe002.png\n');
-        }
-
-        const outputMp4Path = path.join(artDir, 'output.mp4');
-        if (!fs.existsSync(outputMp4Path)) {
-          fs.writeFileSync(outputMp4Path, 'mock mp4 content');
-        }
+        // P6-TRUTH: Dummy output writes REMOVED.
+        // Truth-based delivery required.
 
         fs.writeFileSync(
           path.join(artDir, 'EVIDENCE_SOURCE.json'),
-          JSON.stringify({ jobId: job.id, traceId: (job as any).traceId }, null, 2)
+          JSON.stringify({ jobId: job.id, traceId: job.traceId ?? job.payload?.traceId ?? job.id }, null, 2)
         );
-        process.stdout.write(util.format(`[GateWorker] 📝 已向 ${artDir} 写入模拟产物`) + '\n');
 
         // B3-3: 发布 Artifact 事件通知
-        await eventNotifier
+          await eventNotifier
           .publish({
             jobId: job.id,
             artifactDir: artDir,
             artifactType: 'OTHER',
-            metadata: { traceId: (job as any).traceId, jobType: job.type },
+            metadata: { traceId: job.traceId ?? job.payload?.traceId ?? job.id, jobType: job.type },
           })
-          .catch((err: any) => {
-            process.stderr.write(util.format(`[B3-3] 事件通知失败:`, err.message) + '\n');
-          });
+          .catch(() => {});
 
         const crypto = await import('crypto');
         const sha256File = (filePath: string) => {
@@ -479,33 +410,26 @@ export async function startGateWorkerApp() {
         const provPath = path.join(artDir, 'shot_render_output.provenance.json');
         const provShaPath = path.join(artDir, 'shot_render_output.provenance.json.sha256');
 
-        const isVerification =
-          (job as any).isVerification === true ||
-          job.payload?.isVerification === true ||
-          job.payload?.mode === 'mock';
+        const isVerification = job.isVerification === true || job.payload?.isVerification === true;
 
-        const legacyMp4 = path.join(artDir, 'output.mp4');
-        if (fs.existsSync(legacyMp4) && !fs.existsSync(mp4Path)) {
-          fs.copyFileSync(legacyMp4, mp4Path);
+        const fallbackOutputMp4 = path.join(artDir, 'output.mp4');
+        if (fs.existsSync(fallbackOutputMp4) && !fs.existsSync(mp4Path)) {
+          fs.copyFileSync(fallbackOutputMp4, mp4Path);
         }
 
         if (!isVerification) {
           const contractMp4 = path.join(artDir, 'shot_render_output.mp4');
-          if (!fs.existsSync(contractMp4) && !fs.existsSync(legacyMp4)) {
+          if (!fs.existsSync(contractMp4) && !fs.existsSync(fallbackOutputMp4)) {
             throw new Error(
-              "POST_L3_FORBID_MOCK: non-verification job cannot generate dummy artifacts. Set job.isVerification=true or payload.mode='mock' for testing."
+              "ARTIFACT_DELIVERY_FAILED: Truth-based delivery required. Non-verification job missing real artifacts."
             );
           }
         }
 
         if (!fs.existsSync(mp4Path)) {
-          if (isVerification) {
-            fs.writeFileSync(mp4Path, 'mock mp4 content');
-          } else {
-            throw new Error(
-              'POST_L3_FORBID_MOCK: non-verification job missing real artifact and cannot write mock content'
-            );
-          }
+          throw new Error(
+            'ARTIFACT_NOT_FOUND: Absolute truth required. No real artifact found in local storage.'
+          );
         }
 
         const mp4Sha = sha256File(mp4Path);
@@ -515,7 +439,7 @@ export async function startGateWorkerApp() {
           job: {
             job_id: job.id,
           },
-          shotId: (job as any).shotId ?? job.payload?.shotId ?? null,
+          shotId: job.shotId ?? job.payload?.shotId ?? null,
           artifact: {
             filename: 'shot_render_output.mp4',
             sha256: mp4Sha,
@@ -554,14 +478,7 @@ export async function startGateWorkerApp() {
             create: { jobId: job.id, kind: 'PROVENANCE_JSON', path: provPath, sha256: provSha },
           });
 
-          process.stdout.write(
-            util.format(`[GateWorker] 🧾 L3 DB trace written for job ${job.id}`) + '\n'
-          );
         } catch (dbErr: any) {
-          process.stderr.write(
-            util.format(`[GateWorker] ⚠️ L3 DB write failed for job ${job.id}:`, dbErr.message) +
-            '\n'
-          );
         }
       }
 
@@ -573,11 +490,7 @@ export async function startGateWorkerApp() {
           ? undefined
           : result.error?.message || result.error || 'Unknown processor error',
       });
-      process.stdout.write(util.format(`[GateWorker] ✅ job ${job.id} 成功完成`) + '\n');
     } catch (err: any) {
-      process.stderr.write(
-        util.format(`[GateWorker] ❌ job ${job.id} 执行失败:`, err.message) + '\n'
-      );
       await apiClient.reportJobResult({
         jobId: job.id,
         status: 'FAILED',
@@ -604,7 +517,6 @@ export async function startGateWorkerApp() {
   await schedulePoll();
 
   const shutdown = async (signal: string) => {
-    process.stdout.write(util.format(`\n[GateWorker] 收到 ${signal}，正在关闭...`) + '\n');
     isRunning = false;
     clearInterval(heartbeatInterval);
     if (pollTimeout) clearTimeout(pollTimeout);
@@ -613,7 +525,6 @@ export async function startGateWorkerApp() {
     await eventNotifier.shutdown();
 
     await prisma.$disconnect();
-    process.stdout.write(util.format('[GateWorker] ✅ Worker 已关闭') + '\n');
     process.exit(0);
   };
 
@@ -623,7 +534,6 @@ export async function startGateWorkerApp() {
 
 if (require.main === module) {
   startGateWorkerApp().catch((err) => {
-    process.stderr.write(util.format('[GateWorker] ❌ 非正常退出:', err.message) + '\n');
     process.exit(1);
   });
 }

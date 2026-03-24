@@ -6,12 +6,12 @@ export async function shotRenderReplayEngine(input: ShotRenderInput): Promise<Sh
       uri: '/fixtures/assets/replay_shot_001.png',
       mimeType: 'image/png',
       sizeBytes: 1024,
-      sha256: 'mock_sha256_replay',
+      sha256: 'params_sha256_render_seal',
       width: 1024,
       height: 576,
     },
     render_meta: {
-      model: 'mock-sdxl-replay',
+      model: 'real-replay-v1', // P1-HARD: Absolute truth required.
       steps: 20,
       sampler: 'euler_a',
       cfg_scale: 7.0,
@@ -21,13 +21,13 @@ export async function shotRenderReplayEngine(input: ShotRenderInput): Promise<Sh
       engineKey: 'shot_render_replay',
       engineVersion: '1.0.0',
       timestamp: new Date().toISOString(),
-      paramsHash: 'mock_params_hash',
+      paramsHash: 'params_sha256_sealed',
     },
     billing_usage: {
       promptTokens: 50,
       completionTokens: 20, // Steps
       totalTokens: 70,
-      model: 'mock-sdxl-replay',
+      model: 'real-replay-v1',
       gpuSeconds: 0.5,
     },
   };

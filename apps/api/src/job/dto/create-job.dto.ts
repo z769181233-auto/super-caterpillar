@@ -14,8 +14,14 @@ type JobType =
   | 'CE04_VISUAL_ENRICHMENT'
   | 'CE06_NOVEL_PARSING'
   | 'CE07_MEMORY_UPDATE'
+  | 'CE09_MEDIA_SECURITY'
   | 'TIMELINE_PREVIEW'
-  | 'CE11_SHOT_GENERATOR';
+  | 'CE11_SHOT_GENERATOR'
+  | 'CE_FILM_IR_PLAN'
+  | 'CE_SHOT_PLAN'
+  | 'CE_CONSISTENCY_CHECK'
+  | 'CE_CONTENT_JUDGE'
+  | 'PIPELINE_STAGE1_NOVEL_TO_VIDEO';
 
 export class CreateJobDto {
   @IsEnum([
@@ -32,23 +38,28 @@ export class CreateJobDto {
     'CE04_VISUAL_ENRICHMENT',
     'CE06_NOVEL_PARSING',
     'CE07_MEMORY_UPDATE',
+    'CE09_MEDIA_SECURITY',
     'TIMELINE_PREVIEW',
     'CE11_SHOT_GENERATOR',
+    'CE_FILM_IR_PLAN',
+    'CE_SHOT_PLAN',
+    'CE_CONSISTENCY_CHECK',
+    'CE_CONTENT_JUDGE',
     'PIPELINE_STAGE1_NOVEL_TO_VIDEO',
   ] as const)
   type: JobType;
 
   @IsOptional()
   @IsString()
-  jobType?: string; // Worker compatibility
+  jobType?: string; // 系统 worker 仍会发送的兼容别名，新代码应优先使用 type
 
   @IsOptional()
   @IsString()
-  projectId?: string; // Worker compatibility
+  projectId?: string; // Project-level job 创建上下文
 
   @IsOptional()
   @IsString()
-  organizationId?: string; // Worker compatibility
+  organizationId?: string; // 组织上下文
 
   @IsOptional()
   @IsObject()

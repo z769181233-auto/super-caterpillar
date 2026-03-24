@@ -2,7 +2,7 @@
 const path = require('path');
 const { PrismaClient } = require('../../packages/database/src/generated/prisma');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('=== Stage2-A 运行时验证 ===\n');

@@ -12,7 +12,7 @@ if [ -f packages/database/.env ]; then
 fi
 
 # Use default if not set
-BASE_URL=${DATABASE_URL:-"postgresql://postgres@localhost:5432"}
+BASE_URL=${DATABASE_URL:-"postgresql://postgres@127.0.0.1:5432"}
 # Extract base URL without database name
 BASE_URL=$(echo $BASE_URL | sed 's|/[^/]*$||')
 

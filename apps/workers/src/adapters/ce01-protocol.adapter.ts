@@ -51,7 +51,7 @@ export class CE01ProtocolAdapter {
   /**
    * Normalize input to Internal CE06 format.
    * If input matches Bible V3.0 Protocol, transforms it.
-   * Otherwise, assumes it is already internal format (or legacy) and passes through.
+   * Otherwise, assumes it is already in internal/accepted format and passes through.
    */
   static toInternal(input: any): InternalCE06Input {
     // 1. Bible Protocol -> Internal CE06

@@ -18,11 +18,9 @@ export class AgentOrchestrator {
     for (const role of rolesInOrder) {
       const agent = this.agents.get(role);
       if (!agent) {
-        console.warn(`[Orchestrator] No agent registered for role: ${role}. Skipping.`);
         continue;
       }
 
-      console.log(`[Orchestrator] Running Agent: ${role}...`);
       const result = await agent.run(context);
 
       if (!result.success) {
@@ -31,7 +29,6 @@ export class AgentOrchestrator {
 
       // 将结果存入 context 供后续 Agent 使用
       context.previousResults[role] = result.data;
-      console.log(`[Orchestrator] Agent ${role} completed successfully.`);
     }
 
     return context;

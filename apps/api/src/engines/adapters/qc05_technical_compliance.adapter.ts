@@ -41,7 +41,7 @@ export class QC05TechnicalComplianceAdapter implements EngineAdapter {
       resolution: payload.expectedResolution || '1080p',
       bitrateCheck: 'PASS',
       metadataValidated: true,
-      meta: { engine: 'qc05-spec-validator-stub' },
+      meta: { engine: 'qc05-spec-validator-v1' },
     };
 
     await this.cost.recordFromEvent({

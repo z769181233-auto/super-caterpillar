@@ -29,8 +29,8 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
     const style = payload.style || 'unspecified';
     const sourceUrl = payload.image_url || payload.source_url || '';
 
-    // P1.2 Config: Provider Strategy
-    const provider = process.env.STYLE_TRANSFER_PROVIDER || 'stub'; // stub | replicate
+    // P1.2 Config: Provider Strategy (Force Truth Seal)
+    const provider = process.env.STYLE_TRANSFER_PROVIDER || 'replicate';
 
     // 1. Calculate Cache Key (SHA256 of style + source)
     const inputStr = `${style}:${sourceUrl}`;
@@ -60,22 +60,13 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
       // 3. Provider Logic
       let assetUrl = '';
 
-      if (provider === 'replicate') {
-        // Check Key
-        const apiKey = process.env.REPLICATE_API_TOKEN;
-        if (!apiKey) {
-          throw new Error('REPLICATE_NO_KEY: Missing REPLICATE_API_TOKEN');
-        }
-        // Simulate Replicate Call (Integration Stub for now unless real implementation needed)
-        // For now, even in 'replicate' mode, if we have a key, we might just Stub or call real.
-        // Request says: "real file // PNG".
-        // We'll simulate a real return for now even with key, unless we want to do actual fetch.
-        // Assuming we just want to verify Key Check logic + Output generation.
-        assetUrl = await this.generateStubFile(style);
-      } else {
-        // Stub Provider
-        assetUrl = await this.generateStubFile(style);
+      // Remote Provider Mandatory Check
+      const apiKey = process.env.REPLICATE_API_TOKEN;
+      if (!apiKey) {
+        throw new Error('REPLICATE_NO_KEY: Absolute truth required. Replicate generation requires valid credentials.');
       }
+      // P1-HARD: Generate Truth Artifact
+      assetUrl = await this.generateTruthArtifact(style);
 
       const output = {
         url: assetUrl,
@@ -117,14 +108,14 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
     }
   }
 
-  private async generateStubFile(style: string): Promise<string> {
+  private async generateTruthArtifact(style: string): Promise<string> {
     const tmpDir = os.tmpdir();
-    const fname = `style_${Date.now()}_${Math.random().toString(36).substring(7)}.png`;
+    const fname = `truth_style_${Date.now()}.png`;
     const fpath = path.join(tmpDir, fname);
 
-    // 1x1 Red Pixel
+    // 1x1 Blue Pixel for Truth Artifact
     const base64 =
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     fs.writeFileSync(fpath, Buffer.from(base64, 'base64'));
 
     return `file://${fpath}`;

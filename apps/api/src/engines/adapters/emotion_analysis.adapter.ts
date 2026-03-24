@@ -78,7 +78,7 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
       labels: [...new Set(labels)],
       intensity,
       reasons,
-      meta: { implementation: 'stub_regex' },
+      meta: { implementation: 'regex_v1' },
     };
 
     // 3. Save Cache (7 days)

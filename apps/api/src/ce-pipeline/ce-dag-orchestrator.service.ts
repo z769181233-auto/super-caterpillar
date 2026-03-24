@@ -102,6 +102,7 @@ export class CEDagOrchestratorService {
           },
           sceneIndex: anchorShot.scene.sceneIndex,
         },
+        orderBy: { createdAt: 'desc' },
       });
 
       const structuredText =
@@ -168,7 +169,7 @@ export class CEDagOrchestratorService {
 
       // 10. Trigger Parallel SHOT_RENDER
       const renderJobs = await Promise.all(
-        sceneShots.map((s) =>
+        sceneShots.map((s: { id: string }) =>
           this.jobService.create(
             s.id,
             {
@@ -184,8 +185,8 @@ export class CEDagOrchestratorService {
           )
         )
       );
-      jobIds.shotRenderJobIds = renderJobs.map((j) => j.id);
-      await this.waitForJobsCompletion(jobIds.shotRenderJobIds, 'SHOT_RENDER');
+      jobIds.shotRenderJobIds = renderJobs.map((j: { id: string }) => j.id);
+      await this.waitForJobsCompletion(jobIds.shotRenderJobIds ?? [], 'SHOT_RENDER');
 
       // 11. Trigger TIMELINE_COMPOSE
       this.logger.log(
@@ -239,7 +240,7 @@ export class CEDagOrchestratorService {
         ce06JobId: jobIds.ce06JobId!,
         ce03JobId: jobIds.ce03JobId!,
         ce04JobId: jobIds.ce04JobId!,
-        shotRenderJobIds: jobIds.shotRenderJobIds,
+        shotRenderJobIds: jobIds.shotRenderJobIds ?? [],
         timelineComposeJobId: jobIds.timelineComposeJobId,
         timelinePreviewJobId: jobIds.timelinePreviewJobId,
         previewUrl,

@@ -6,7 +6,10 @@ import { HeartbeatDto } from '../worker/dto/heartbeat.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Request } from 'express';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { OrchestratorService } from './orchestrator.service';
+
+type RequestWithAuth = Request & {
+  apiKey?: { id?: string };
+};
 
 /**
  * Worker Alias Controller (Migrated to Orchestrator to break circular dependency)
@@ -31,7 +34,7 @@ export class WorkerAliasController {
     @Req() request: Request
   ): Promise<any> {
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    const apiKeyId = (request as any).apiKey?.id;
+    const apiKeyId = (request as RequestWithAuth).apiKey?.id;
 
     const worker = await this.workerService.registerWorker(
       registerDto.workerId,
@@ -73,7 +76,7 @@ export class WorkerAliasController {
     @Req() request: Request
   ): Promise<any> {
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    const apiKeyId = (request as any).apiKey?.id;
+    const apiKeyId = (request as RequestWithAuth).apiKey?.id;
 
     const worker = await this.workerService.heartbeat(
       workerId,
@@ -105,7 +108,6 @@ export class WorkerAliasController {
     @CurrentUser() user: { userId: string },
     @Req() request: Request
   ): Promise<any> {
-    console.log(`[XXX_DEBUG] WorkerAliasController.getNextJob called for ${workerId}`);
     const job = await this.workerService.dispatchNextJobForWorker(workerId);
 
     if (!job) {
@@ -117,13 +119,15 @@ export class WorkerAliasController {
     }
 
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    const apiKeyId = (request as any).apiKey?.id;
+    const apiKeyId = (request as RequestWithAuth).apiKey?.id;
+    const jobResourceId = String(job.id);
+    const traceId = typeof job.traceId === 'string' ? job.traceId : undefined;
     await this.auditLogService.record({
       userId: user?.userId,
       apiKeyId,
       action: 'JOB_STARTED',
       resourceType: 'job',
-      resourceId: job.id,
+      resourceId: jobResourceId,
       ip: requestInfo.ip,
       userAgent: requestInfo.userAgent,
       details: {
@@ -131,7 +135,7 @@ export class WorkerAliasController {
         taskId: job.taskId,
         type: job.type,
       },
-      traceId: job.traceId || undefined,
+      traceId,
     });
 
     return {

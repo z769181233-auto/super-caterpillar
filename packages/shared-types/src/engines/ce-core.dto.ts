@@ -3,6 +3,20 @@
  * CE06 / CE03 / CE04 Engine Input/Output Types
  */
 
+import { JsonObject } from '../json';
+
+interface CE06SceneSummary {
+  id: string;
+  title: string;
+  content: string;
+}
+
+interface CE06ChapterSummary {
+  id: string;
+  title: string;
+  scenes: CE06SceneSummary[];
+}
+
 // ============================================
 // CE06: Novel Parsing
 // ============================================
@@ -19,18 +33,10 @@ export interface CE06NovelParsingOutput {
   volumes: Array<{
     id: string;
     title: string;
-    chapters: Array<{
-      id: string;
-      title: string;
-      scenes: Array<{
-        id: string;
-        title: string;
-        content: string;
-      }>;
-    }>;
+    chapters: CE06ChapterSummary[];
   }>;
-  chapters?: Array<any>; // 兼容代码中的直接使用
-  scenes?: Array<any>; // 兼容代码中的直接使用
+  chapters?: CE06ChapterSummary[]; // 兼容代码中的直接使用
+  scenes?: CE06SceneSummary[]; // 兼容代码中的直接使用
   parsing_quality: number;
   audit_trail: string;
   engine_version: string;
@@ -52,7 +58,7 @@ export interface CE03VisualDensityInput {
 
 export interface CE03VisualDensityOutput {
   visual_density_score: number;
-  quality_indicators: Record<string, any>;
+  quality_indicators: JsonObject;
   audit_trail: string;
   engine_version: string;
   latency_ms: number;
@@ -83,7 +89,7 @@ export interface CE04VisualEnrichmentOutput {
     seed?: number;
   };
   enrichment_quality: number;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   audit_trail: string;
   engine_version: string;
   latency_ms: number;
@@ -97,7 +103,7 @@ export interface CE07MemoryUpdateInput {
   current_text: string;
   previous_memory?: {
     summary: string;
-    character_states: Record<string, any>;
+    character_states: JsonObject;
   };
   context: {
     projectId: string;
@@ -108,7 +114,7 @@ export interface CE07MemoryUpdateInput {
 
 export interface CE07MemoryUpdateOutput {
   summary: string;
-  character_states: Record<string, any>;
+  character_states: JsonObject;
   key_facts: string[];
   audit_trail: string;
   engine_version: string;

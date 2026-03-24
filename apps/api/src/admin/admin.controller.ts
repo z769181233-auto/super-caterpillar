@@ -108,14 +108,14 @@ export class AdminController {
     }
 
     // 1. 确保用户存在 (用于 ownerId)
-    const dummyUserId = 'case-c-stress-user';
+    const systemUserId = 'case-c-stress-system-user';
     await this.prisma.user.upsert({
-      where: { id: dummyUserId },
+      where: { id: systemUserId },
       update: {},
       create: {
-        id: dummyUserId,
+        id: systemUserId,
         email: 'case-c-stress@test.local',
-        passwordHash: '$2b$10$dummyhash',
+        passwordHash: '$2b$10$systeminithash',
       },
     });
 
@@ -126,7 +126,7 @@ export class AdminController {
       create: {
         id: organizationId,
         name: 'Case C Stress Organization',
-        ownerId: dummyUserId,
+        ownerId: systemUserId,
       },
     });
 
@@ -138,7 +138,7 @@ export class AdminController {
         id: projectId,
         name: 'Case C Stress Project',
         organizationId,
-        ownerId: dummyUserId,
+        ownerId: systemUserId,
         status: 'in_progress',
       },
     });

@@ -12,25 +12,25 @@ export class VisualMetricArtifact {
   jobId: string;
   type: string;
   status: string;
-  score?: number;
+  score?: number | null;
   output_summary: any;
   created_at: Date;
 }
 
 export class NovelAnalysisArtifact {
   jobId: string;
-  workerId?: string;
+  workerId?: string | null;
   createdAt: Date;
-  status: string;
+  status: string | null;
   payload: any;
   result?: any;
 }
 
 export class MemoryUpdateArtifact {
   jobId: string;
-  workerId?: string;
+  workerId?: string | null;
   createdAt: Date;
-  status: string;
+  status: string | null;
   payload: any;
   memoryContent?: any;
 }
@@ -39,7 +39,7 @@ export class JobAuditResponse {
   jobId: string;
   type: string;
   status: string;
-  workerId?: string;
+  workerId?: string | null;
   createdAt: Date;
   updatedAt: Date;
   payload: any;
@@ -49,10 +49,10 @@ export class JobAuditResponse {
 
 export class AuditJobSummaryDto {
   jobId: string;
-  traceId: string;
+  traceId: string | null;
   status: string;
   createdAtIso: string;
-  workerId?: string;
+  workerId?: string | null;
 }
 
 export class DirectorAuditSummaryDto {
@@ -74,11 +74,11 @@ export class VideoAssetDto {
 }
 
 export class DagRunSummaryDto {
-  traceId: string;
+  traceId: string | null;
   timeline: Array<{
     phase: 'CE06' | 'CE03' | 'CE04' | 'SHOT' | 'VIDEO';
-    jobId: string;
-    status: string;
+    jobId: string | null;
+    status: string | null;
   }>;
   missingPhases: string[];
   builtFrom: 'latest_ce04_trace' | 'latest_run' | 'empty';
@@ -96,8 +96,8 @@ export class NovelAuditFullResponse {
     video?: AuditJobSummaryDto | null;
   };
   metrics: {
-    ce03Score: number;
-    ce04Score: number;
+    ce03Score: number | null;
+    ce04Score: number | null;
   };
   director: DirectorAuditSummaryDto;
   dag: DagRunSummaryDto;

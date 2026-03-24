@@ -41,34 +41,45 @@
 
 #### [MODIFY] [ce04-visual-enrichment.processor.ts](apps/workers/src/processors/ce04-visual-enrichment.processor.ts)
 
-- 提交 `shot.prompt` 至 ComfyUI 生成 `keyframe.png`。
-- 落库 `Asset(ownerType=SHOT, type=IMAGE)`。
-- 生成绝对路径索引的 `frames.txt`。
+-# PR #6 红灯收拢计划 (Final Sprint)
 
----
+本计划专注于打绿 PR #6 的最后两个阻塞项：`ci` 与 `Required Check / Launch Gates`。
 
-### 阶段 P2：ShotRender 2.5D 化 (真画面+运动)
+## 用户审查要求
+> [!IMPORTANT]
+> 1. 本次修复仅针对门禁红灯，不包含业务重构。
+> 2. Dependabot 的 5 个安全告警将另案处理，不在本次 PR 中。
 
-#### [MODIFY] [shot-render.local.adapter.ts](apps/api/src/engines/adapters/shot-render.local.adapter.ts)
+## 拟定变更
 
-- 使用 `keyframe.png` 作为输入，通过 FFmpeg `zoompan` 滤镜实现 2.5D 动态效果。
-- 输出固定命名为 `source.mp4` 并落库 `Asset(ownerType=SHOT, type=VIDEO)`。
-- 增加基础质量断言：时长 >= 4s, 大小 >= 1MB, 黑帧比例 < 10%。
+### Launch Gates 修复 (Gate 7)
+针对 `ffmpeg` 解码错误导致的 Gate 7 失败。
 
----
+#### [MODIFY] [helper_p0r2_test.ts](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/tools/gate/gates/helper_p0r2_test.ts)
+- 强制使用 `ffmpeg -f lavfi` 生成合法的单像素 PNG 帧。
+- 增加文件完整性校验，防止 fallback 到 dummy data。
 
-### 阶段 P3：高质量 Timeline 合成
+### CI 单元测试修复 (ci)
+针对 `ShotPreviewFastAdapter` 的 Mock 缺失导致测试失败。
 
-#### [MODIFY] 高质量参数配置
+#### [MODIFY] [shot_preview.spec.ts](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/apps/api/src/engines/adapters/__tests__/shot_preview.spec.ts)
+- 补全 `auditService.log` 和 `costLedgerService.recordFromEvent` 的 Jest Mock。
 
-- 强制输出 1080p 分辨率。
-- 采用生产级编码参数：`-crf 18 -preset slow -b:v 4M`。
+### 基础设施配置最终对齐 (Global Alignment)
+确保所有脚本使用对齐后的 `ak_smoke_test_key_v1`。
 
----
+#### [MODIFY] [launch-gates-required.yml](file:///Users/adam/Desktop/adam/毛毛虫宇宙/Super%20Caterpillar/.github/workflows/launch-gates-required.yml)
+- 确保 `Rigid DB Seeding` 完整覆盖 `api_keys` 通道。
 
-### 阶段 P4：门禁 (非占位符 Gate)
+## 验证计划
 
-#### [NEW] [gate_non_placeholder_video.sh](tools/gate/gates/gate_non_placeholder_video.sh)
+### 自动化测试
+- 启动 `gh run watch` 观察 `ci` 和 `Required Check / Launch Gates` 实时状态。
+- 目标：SHA 结算结果为 `success`。
+
+### 手动验证
+- 检查 `docs/_evidence/run_launch_gates_*/GATEKEEPER_VERIFICATION_REPORT.md` 确认 Gate 7 通关。
+holder_video.sh)
 
 - 实现黑帧检测、时长/码率检测。
 - 检测命令行或日志中是否包含 `testsrc`, `smptebars`, `color`, `noise` 等占位符特征。

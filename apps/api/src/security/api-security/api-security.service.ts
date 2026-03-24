@@ -10,19 +10,26 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { AuditLogService } from '../../audit-log/audit-log.service';
-import { createHmac, createHash, timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual, webcrypto } from 'crypto';
 import { pickHmacSecretSSOT } from '@scu/config';
 
 import { AuditActions } from '../../audit/audit.constants';
 import { Prisma } from 'database';
 import { SecretEncryptionService } from './secret-encryption.service';
 import { buildHmacError } from '../../common/utils/hmac-error.utils';
+import {
+  getRuntimeDbTimeoutMs,
+  isCiOrGateContextEnv,
+  isDatabaseUnavailableError,
+  withRuntimePgClient,
+} from '../../prisma/pg-runtime.util';
 
-function secretFingerprint(secret: string) {
-  // do not leak secret; only fingerprint
-  const fp = createHash('sha256').update(secret).digest('hex').slice(0, 12);
-  return { len: secret.length, sha12: fp };
+function summarizeSensitiveInput(value: string) {
+  // Debug-only metadata; avoid hashing or echoing sensitive inputs to keep CodeQL and logs clean.
+  return { len: value.length };
 }
+type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
+const textEncoder = new TextEncoder();
 import {
   SignatureVerificationResult,
   SignatureVerificationContext,
@@ -42,6 +49,7 @@ export class ApiSecurityService {
   private readonly TIMESTAMP_WINDOW_SECONDS = 300; // ±5 分钟
   private readonly NONCE_TTL_SECONDS = 300; // 5 分钟
   private readonly logger = new Logger(ApiSecurityService.name);
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -50,7 +58,54 @@ export class ApiSecurityService {
     private readonly auditLogService: AuditLogService,
     @Inject(SecretEncryptionService)
     private readonly secretEncryptionService: SecretEncryptionService
-  ) {}
+  ) { }
+
+  private shouldFallbackToPg(error: any): boolean {
+    return isDatabaseUnavailableError(error);
+  }
+
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-hmac',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
+  }
+
+  private isCiOrGateContext(): boolean {
+    return isCiOrGateContextEnv();
+  }
+
+  private shouldAllowEnvSecretFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.ALLOW_HMAC_ENV_FALLBACK === '1';
+  }
+
+  private shouldAllowLegacySecretHashFallback(): boolean {
+    return (
+      this.isCiOrGateContext() ||
+      process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK === '1' ||
+      this.isLocalDevLegacySecretFallbackEnabled()
+    );
+  }
+
+  private isLocalDevLegacySecretFallbackEnabled(): boolean {
+    return process.env.NODE_ENV === 'development';
+  }
+
+  private isLocalDevWorkerApiKey(apiKey: string): boolean {
+    const configuredWorkerApiKey = process.env.WORKER_API_KEY?.trim();
+    return (
+      process.env.NODE_ENV === 'development' &&
+      !!configuredWorkerApiKey &&
+      apiKey === configuredWorkerApiKey
+    );
+  }
+
+  private shouldAllowApiKeyPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_APIKEY_PG_FALLBACK === '1';
+  }
 
   /**
    * 验证 HMAC 签名（v2 规范）
@@ -68,18 +123,8 @@ export class ApiSecurityService {
     const { apiKey, nonce, timestamp, signature, method, path, contentSha256, ip, userAgent } =
       context;
 
-    // HMAC Branch Coverage Debug
-    const dbg = process.env.HMAC_DEBUG === '1';
-    const dlog = (obj: any) => {
-      if (!dbg) return;
-      try {
-        // Use stdout to ensure it lands in api.log, independent of logger config
-        // eslint-disable-next-line no-console
-        console.log(JSON.stringify({ tag: 'HMAC_DEBUG_STEP', ...obj }));
-      } catch {
-        // Ignore JSON stringify errors in debug logging
-      }
-    };
+    const dbg = false;
+    const dlog = (_obj: any) => {};
 
     dlog({
       step: 'enter',
@@ -133,13 +178,7 @@ export class ApiSecurityService {
         throw new Error('Prisma Client Malformed: apiKey model missing');
       }
 
-      const keyRecord = await this.prisma.apiKey.findUnique({
-        where: { key: apiKey },
-        include: {
-          ownerUser: true,
-          ownerOrg: true,
-        },
-      });
+      const keyRecord = await this.findApiKeyRecord(apiKey);
 
       if (!keyRecord) {
         dlog({ step: 'reject', reason: 'invalid_api_key', apiKey: apiKey.slice(0, 12) + '...' });
@@ -286,22 +325,40 @@ export class ApiSecurityService {
         secret = await this.resolveSecretForApiKey(keyRecord, apiKey, ip, userAgent);
         secretSource = 'db_per_key';
       } catch (e) {
-        // allow fallback to env; do not throw here
+        if (!this.shouldAllowEnvSecretFallback()) {
+          throw e;
+        }
+        this.logger.warn(
+          `API Key ${this.maskApiKey(apiKey)} falling back to env-backed HMAC secret in CI/test/gate-compatible mode`
+        );
+        await this.writeAuditLog(
+          {
+            nonce,
+            signature,
+            timestamp,
+            path,
+            method,
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'ENV_SECRET_FALLBACK_USED',
+          },
+          ip,
+          userAgent,
+          keyRecord.id
+        );
         secret = '';
       }
 
-      if (!secret || secret.length === 0) {
+      if ((!secret || secret.length === 0) && this.shouldAllowEnvSecretFallback()) {
         secret = pickHmacSecretSSOT();
         secretSource = 'SSOT';
       }
 
       if (dbg) {
-        const fp = secretFingerprint(secret || '');
+        const fp = summarizeSensitiveInput(secret || '');
         dlog({
           step: 'secret_pick',
           source: secretSource,
           secretLen: fp.len,
-          secretSha12: fp.sha12,
         });
       }
 
@@ -333,18 +390,16 @@ export class ApiSecurityService {
 
       // Debug canonical WITHOUT leaking raw content: sha12 only
       if (dbg) {
-        const cfp = secretFingerprint(canonicalString);
-        const bodyFp = secretFingerprint(bodyToSign);
+        const cfp = summarizeSensitiveInput(canonicalString);
+        const bodyFp = summarizeSensitiveInput(bodyToSign);
         dlog({
           step: 'canonical',
           canonicalLen: cfp.len,
-          canonicalSha12: cfp.sha12,
           bodyLen: bodyFp.len,
-          bodySha12: bodyFp.sha12,
         });
       }
 
-      const expectedSignature = this.computeSignature(secret, canonicalString);
+      const expectedSignature = await this.computeSignature(secret, canonicalString);
 
       // 8. 对比签名 (Counter Timing Attack)
       // 8. 对比签名 (Counter Timing Attack) - Hex Buffer hardening
@@ -429,8 +484,42 @@ export class ApiSecurityService {
           where: { id: keyRecord.id },
           data: { lastUsedAt: new Date() },
         })
-        .catch((e) => {
+        .catch(async (e) => {
           if (dbg) dlog({ step: 'db_update_lastUsedAt_failed', error: e?.message });
+          if (!this.shouldFallbackToPg(e)) {
+            return;
+          }
+          if (!this.shouldAllowApiKeyPgFallback()) {
+            if (dbg) dlog({ step: 'db_update_lastUsedAt_fallback_pg_blocked' });
+            this.logger.warn(
+              `[ApiSecurityService] Prisma apiKey lastUsedAt update degraded for ${this.maskApiKey(apiKey)}, but pg fallback is disabled outside CI/test/gate unless FORCE_APIKEY_PG_FALLBACK=1`
+            );
+            return;
+          }
+          try {
+            await this.withPgClient((client) =>
+              client.query(`UPDATE api_keys SET "lastUsedAt" = NOW(), "updatedAt" = NOW() WHERE id = $1`, [
+                keyRecord.id,
+              ])
+            );
+            await this.writeAuditLog(
+              {
+                nonce,
+                signature,
+                timestamp,
+                path,
+                method,
+                apiKey: this.maskApiKey(apiKey),
+                reason: 'APIKEY_LAST_USED_AT_PG_FALLBACK_USED',
+              },
+              ip,
+              userAgent,
+              keyRecord.id
+            );
+            if (dbg) dlog({ step: 'db_update_lastUsedAt_fallback_pg_ok' });
+          } catch (pgError: any) {
+            if (dbg) dlog({ step: 'db_update_lastUsedAt_fallback_pg_failed', error: pgError?.message });
+          }
         });
 
       // 10. 写入成功审计日志
@@ -525,13 +614,8 @@ export class ApiSecurityService {
     // If method is POST and body is empty (meaning Guard skipped reading it),
     // we use contentSha256 for the canonical string (Sign Hash Protocol).
     if (method === 'POST' && body === '' && contentSha256) {
-      if (process.env.HMAC_DEBUG === '1') console.log('[HMAC_DEBUG] Using ContentHash strategy');
       return `${apiKey}${nonce}${timestamp}${contentSha256}`;
     }
-    if (process.env.HMAC_DEBUG === '1')
-      console.log(
-        `[HMAC_DEBUG] Using Body strategy. Method=${method}, BodyLen=${body.length}, HasContentSha256=${!!contentSha256}`
-      );
     const result = `${apiKey}${nonce}${timestamp}${body}`;
     return result;
   }
@@ -553,22 +637,18 @@ export class ApiSecurityService {
   }
 
   /**
-   * 构建规范字符串 v1（已废弃，保留用于兼容）
-   *
-   * @deprecated 使用 buildCanonicalStringV2 代替
-   */
-  buildCanonicalString(apiKey: string, nonce: string, timestamp: string, body: string): string {
-    const normalizedBody = body || '';
-    return `${apiKey}${nonce}${timestamp}${normalizedBody}`;
-  }
-
-  /**
    * 计算 HMAC-SHA256 签名
    */
-  computeSignature(secret: string, message: string): string {
-    const hmac = createHmac('sha256', secret);
-    hmac.update(message, 'utf8');
-    return hmac.digest('hex');
+  async computeSignature(secret: string, message: string): Promise<string> {
+    const signingKey: NodeCryptoKey = await webcrypto.subtle.importKey(
+      'raw',
+      textEncoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const signature = await webcrypto.subtle.sign('HMAC', signingKey, textEncoder.encode(message));
+    return Buffer.from(signature).toString('hex');
   }
 
   /**
@@ -614,13 +694,14 @@ export class ApiSecurityService {
       }
     }
 
-    // 2. Fallback 到旧字段（仅 dev/test 允许，或主密钥未配置时）
+    // 2. Fallback 到旧字段（仅 CI/test/gate 或显式开关允许）
     if (keyRecord.secretHash) {
-      const isProduction = process.env.NODE_ENV === 'production';
-      const isMasterKeyConfigured = this.secretEncryptionService.isMasterKeyConfigured();
-
-      // 只有在生产环境且主密钥已配置的情况下才强制拦截（硬门禁）
-      if (isProduction && isMasterKeyConfigured) {
+      if (
+        !this.shouldAllowLegacySecretHashFallback() ||
+        (!this.isCiOrGateContext() &&
+          !this.isLocalDevLegacySecretFallbackEnabled() &&
+          this.isLocalDevWorkerApiKey(apiKey))
+      ) {
         await this.writeAuditLog(
           {
             nonce: '',
@@ -639,15 +720,61 @@ export class ApiSecurityService {
 
         throw new InternalServerErrorException(
           `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
-            `Production environment requires encrypted storage.`
+            `Encrypted secret storage is required unless CI/test/gate fallback is explicitly allowed.`
         );
-      } else {
-        // dev/test 环境或主密钥未配置：允许 fallback
-        this.logger.warn(
-          `API Key ${this.maskApiKey(apiKey)} using secretHash fallback (isMasterKeyConfigured=${isMasterKeyConfigured})`
-        );
-        return keyRecord.secretHash;
       }
+
+      const fallbackMode = this.isCiOrGateContext()
+        ? 'CI/test/gate-compatible'
+        : this.isLocalDevWorkerApiKey(apiKey) && this.isLocalDevLegacySecretFallbackEnabled()
+          ? 'local-development'
+          : 'explicit-env';
+
+      if (
+        !this.isCiOrGateContext() &&
+        this.isLocalDevLegacySecretFallbackEnabled() &&
+        !this.isLocalDevWorkerApiKey(apiKey)
+      ) {
+        await this.writeAuditLog(
+          {
+            nonce: '',
+            signature: '',
+            timestamp: new Date().toISOString(),
+            path: '',
+            method: '',
+            apiKey: this.maskApiKey(apiKey),
+            reason: 'INSECURE_SECRET_STORAGE',
+            errorCode: '500',
+          },
+          ip,
+          userAgent,
+          keyRecord.id
+        );
+
+        throw new InternalServerErrorException(
+          `API Key ${this.maskApiKey(apiKey)} uses insecure secret storage (secretHash). ` +
+            `Development fallback is limited to the local dev worker key unless explicitly allowed.`
+        );
+      }
+
+      this.logger.warn(
+        `API Key ${this.maskApiKey(apiKey)} using secretHash fallback in ${fallbackMode} mode`
+      );
+      await this.writeAuditLog(
+        {
+          nonce: '',
+          signature: '',
+          timestamp: new Date().toISOString(),
+          path: '',
+          method: '',
+          apiKey: this.maskApiKey(apiKey),
+          reason: 'LEGACY_SECRET_HASH_FALLBACK_USED',
+        },
+        ip,
+        userAgent,
+        keyRecord.id
+      );
+      return keyRecord.secretHash;
     }
 
     // 3. 既没有新字段也没有旧字段：错误
@@ -670,6 +797,107 @@ export class ApiSecurityService {
     throw new InternalServerErrorException(
       `API Key ${this.maskApiKey(apiKey)} has no secret stored (neither encrypted nor hash).`
     );
+  }
+
+  private async findApiKeyRecord(apiKey: string): Promise<any | null> {
+    try {
+      return await this.prisma.apiKey.findUnique({
+        where: { key: apiKey },
+        include: {
+          ownerUser: true,
+          ownerOrg: true,
+        },
+      });
+    } catch (error: any) {
+      const shouldFallback = isDatabaseUnavailableError(error);
+
+      if (!shouldFallback) {
+        throw error;
+      }
+      if (!this.shouldAllowApiKeyPgFallback()) {
+        this.logger.error(
+          `[ApiSecurityService] Prisma apiKey lookup degraded for ${this.maskApiKey(apiKey)}, but pg fallback is disabled outside CI/test/gate unless FORCE_APIKEY_PG_FALLBACK=1`
+        );
+        throw error;
+      }
+
+      this.logger.warn(
+        `[ApiSecurityService] Prisma apiKey lookup degraded, using pg fallback for ${this.maskApiKey(apiKey)}: ${error instanceof Error ? error.message : String(error)}`
+      );
+      await this.writeAuditLog(
+        {
+          nonce: '',
+          signature: '',
+          timestamp: new Date().toISOString(),
+          path: '',
+          method: '',
+          apiKey: this.maskApiKey(apiKey),
+          reason: 'APIKEY_PG_FALLBACK_USED',
+        },
+        undefined,
+        undefined
+      );
+
+      return this.withPgClient(async (client) => {
+        const result = await client.query(
+          `
+            SELECT
+              ak.*,
+              u.id AS owner_user_id_resolved,
+              u.email AS owner_user_email,
+              u."userType" AS owner_user_type,
+              u.role AS owner_user_role,
+              u.tier AS owner_user_tier,
+              o.id AS owner_org_id_resolved,
+              o.name AS owner_org_name
+            FROM api_keys ak
+            LEFT JOIN users u ON u.id = ak."ownerUserId"
+            LEFT JOIN organizations o ON o.id = ak."ownerOrgId"
+            WHERE ak.key = $1
+            LIMIT 1
+          `,
+          [apiKey]
+        );
+
+        const row = result.rows[0];
+        if (!row) {
+          return null;
+        }
+
+        return {
+          id: row.id,
+          key: row.key,
+          secretHash: row.secretHash,
+          name: row.name,
+          ownerUserId: row.ownerUserId,
+          ownerOrgId: row.ownerOrgId,
+          status: row.status,
+          lastUsedAt: row.lastUsedAt,
+          expiresAt: row.expiresAt,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+          secretEnc: row.secretEnc,
+          secretEncIv: row.secretEncIv,
+          secretEncTag: row.secretEncTag,
+          secretVersion: row.secretVersion,
+          ownerUser: row.owner_user_id_resolved
+            ? {
+                id: row.owner_user_id_resolved,
+                email: row.owner_user_email,
+                userType: row.owner_user_type,
+                role: row.owner_user_role,
+                tier: row.owner_user_tier,
+              }
+            : null,
+          ownerOrg: row.owner_org_id_resolved
+            ? {
+                id: row.owner_org_id_resolved,
+                name: row.owner_org_name,
+              }
+            : null,
+        };
+      });
+    }
   }
 
   /**

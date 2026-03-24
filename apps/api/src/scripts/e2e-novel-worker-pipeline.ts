@@ -79,6 +79,7 @@ async function createOrGetTestUser(
   // 查找或创建组织
   let organization = await prisma.organization.findFirst({
     where: { ownerId: user.id },
+    orderBy: { createdAt: 'desc' },
   });
 
   if (!organization) {
@@ -132,6 +133,7 @@ async function createOrGetTestProject(
       organizationId,
       name: TEST_PROJECT_NAME,
     },
+    orderBy: { createdAt: 'desc' },
   });
 
   if (!project) {

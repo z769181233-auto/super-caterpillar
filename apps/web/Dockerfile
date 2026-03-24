@@ -1,5 +1,7 @@
-FROM node:20-alpine AS base
-RUN npm install pnpm -g
+FROM node:20.20.1-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
 
 FROM base AS builder
 WORKDIR /app
@@ -26,4 +28,3 @@ USER nextjs
 
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]
-

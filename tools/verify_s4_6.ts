@@ -5,7 +5,7 @@ import { exec, spawn } from 'child_process';
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   console.log('🚀 Starting S4-6 Verification (Real Video Rendering)...');

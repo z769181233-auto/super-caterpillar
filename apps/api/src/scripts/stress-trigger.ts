@@ -7,7 +7,7 @@ async function main() {
     process.argv.find((arg) => arg.startsWith('--count='))?.split('=')[1] || '10',
     10
   );
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
 
   process.stdout.write(util.format(`[StressTrigger] Injecting ${count} PENDING jobs...`) + '\n');
 
@@ -27,7 +27,9 @@ async function main() {
     });
   }
 
-  let season = await prisma.season.findFirst({ where: { projectId: project.id } });
+  let season = await prisma.season.findUnique({
+    where: { projectId_index: { projectId: project.id, index: 1 } },
+  });
   if (!season) {
     season = await prisma.season.create({ data: { title: 'S1', index: 1, projectId: project.id } });
   }

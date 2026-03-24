@@ -4,7 +4,7 @@
  * 支持三种模式:
  * - REAL: 真实引擎（调用 API / GPU）
  * - REPLAY: 确定性重放（测试用）
- * - LEGACY_STUB: 兼容旧版 Stub
+ * - LEGACY_STUB: 历史 stub 入口
  */
 
 import { __ENGINE__Input, __ENGINE__Output } from './types';
@@ -37,7 +37,7 @@ export async function __ENGINE__Selector(input: __ENGINE__Input): Promise<__ENGI
 }
 
 /**
- * 引擎选择器类（兼容旧代码调用方式）
+ * 引擎选择器类（保留类形态以适配现有调用方式）
  */
 export class __ENGINE__EngineSelector {
   async invoke(input: __ENGINE__Input): Promise<__ENGINE__Output | null> {

@@ -14,7 +14,7 @@ if (process.env.RENDER_ENGINE !== 'mock') {
   process.exit(1);
 }
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const apiClient = new ApiClient(
   process.env.API_URL || 'http://localhost:3000',
   process.env.WORKER_API_KEY || 'scu-worker-key',

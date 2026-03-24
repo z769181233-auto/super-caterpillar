@@ -2,7 +2,7 @@ import { PrismaClient } from '../../packages/database/src/generated/prisma';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 interface ShotScript {
   shotId: string;

@@ -12,7 +12,7 @@ const envLocalPath = path.join(process.cwd(), '.env.local');
 dotenv.config({ path: envLocalPath, override: true });
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 const PROJECT_ID = 'prod-2-episode';
 const ORGANIZATION_ID = 'default-org';

@@ -50,7 +50,7 @@ function logSummary(label: string, obj: any) {
   ev('summary', { label, summary });
 }
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function fetchJobsByTrace(traceId: string) {
   return prisma.shotJob.findMany({

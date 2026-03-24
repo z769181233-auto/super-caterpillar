@@ -22,7 +22,7 @@ export async function runCoreMvpDev(ctx: { evidenceDir: string; args: string[] }
   console.log('--- [DEV-RUNNER] Starting Core MVP with Mocks ---');
 
   // 1. Setup Mocks (Copy from previous p3prime_core_mvp_runner.ts)
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   const apiClient = new ApiClient('http://localhost:3000');
 
   // (apiClient as any).createJob = ... [Mock logic]

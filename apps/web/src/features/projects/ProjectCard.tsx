@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { KpiStat } from '@/components/ui/KpiStat';
 import { useTranslations } from 'next-intl';
-import type { ProjectCardView } from './mock';
+import { ProjectCardView } from './adapters';
 import { useRouter } from 'next/navigation';
 
 interface ProjectCardProps {

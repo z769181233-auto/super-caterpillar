@@ -52,8 +52,6 @@ export class StoryService {
     isVerification?: boolean
   ) {
     // 1. 参数校验（DTO 已通过 class-validator）
-    // eslint-disable-next-line no-console
-    console.log('[StoryService DEBUG] parseStory dto:', JSON.stringify(dto).slice(0, 100));
     const projectId = dto.projectId;
     this.logger.log(`Parsing story for project ${projectId}, isVerification=${isVerification}`);
     if (!dto.rawText || dto.rawText.trim().length === 0) {
@@ -79,6 +77,10 @@ export class StoryService {
       throw new BadRequestException('projectId is required');
     }
 
+    if (!organizationId) {
+      throw new BadRequestException('organizationId is required');
+    }
+
     // 3. 生成 traceId（Pipeline 级）
     const traceId = targetTraceId || `ce_pipeline_${randomUUID()}`;
 
@@ -89,11 +91,12 @@ export class StoryService {
       );
 
       // 1. 确保 Novel 记录存在
-      let novel = await this.prisma.novel.findFirst({ where: { projectId } });
+      let novel = await this.prisma.novel.findUnique({ where: { projectId } });
       if (!novel) {
         novel = await this.prisma.novel.create({
           data: {
             projectId,
+            organizationId,
             title: dto.title || 'Untitled Story',
             author: dto.author || 'Unknown',
             rawFileUrl: '',
@@ -105,15 +108,21 @@ export class StoryService {
       // 2. 将内容写入磁盘作为流式源 (Shredder 模式必备)
       const uploadDir = path.join(process.cwd(), 'uploads/novels');
       await fs.mkdir(uploadDir, { recursive: true });
-      const filePath = path.join(uploadDir, `shredder_${projectId}_${Date.now()}.txt`);
+      // P0 Security: Break path traversal taint by taking basename of validated projectId
+      const safeId = path.basename(projectId);
+      const filePath = path.join(uploadDir, `shredder_${safeId}_${Date.now()}.txt`);
       await fs.writeFile(filePath, dto.rawText);
 
       // 3. 触发 Shredder 工作流
+      if (!userId) {
+        throw new BadRequestException('userId is required');
+      }
+
       const result = await this.novelImportService.triggerShredderWorkflow(
         novel.id,
         projectId,
         organizationId as string,
-        userId || 'system',
+        userId,
         filePath,
         dto.title || 'Untitled Story',
         traceId,
@@ -146,11 +155,12 @@ export class StoryService {
     }
 
     // 3.5 确保 Novel (NovelSource) 记录存在
-    const novel = await this.prisma.novel.findFirst({ where: { projectId } });
+    const novel = await this.prisma.novel.findUnique({ where: { projectId } });
     if (!novel) {
       await this.prisma.novel.create({
         data: {
           projectId,
+          organizationId,
           title: dto.title || 'Untitled Story',
           author: dto.author || 'Unknown',
           rawFileUrl: '', // Explicitly provide empty string to satisfy required/missing arg check
@@ -167,9 +177,6 @@ export class StoryService {
     }
 
     // 4. 创建 CE_CORE_PIPELINE Task
-    if (!organizationId) {
-      throw new BadRequestException('organizationId is required');
-    }
     const task = await this.prisma.task.create({
       data: {
         projectId,
@@ -179,7 +186,8 @@ export class StoryService {
         traceId, // Task 的 traceId 字段
         payload: {
           pipeline: [
-            'CE06_NOVEL_PARSING',
+            // [A5_FIX] CE06 is an Import Stub and forbidden as production dependency per LAUNCH_STANDARD_V1.1
+            // 'CE06_NOVEL_PARSING', 
             'CE03_VISUAL_DENSITY',
             'CE04_VISUAL_ENRICHMENT',
             'VIDEO_EXPORT',
@@ -194,7 +202,8 @@ export class StoryService {
       },
     });
 
-    // 5. 创建 CE06 Job（复用现有逻辑）
+    // 5. 直接返回任务结果，CE06 由外部链路接管。
+    /*
     const job = await this.jobService.createCECoreJob({
       projectId,
       organizationId,
@@ -209,30 +218,34 @@ export class StoryService {
         traceId,
       },
     });
+    */
+
+    // [A5_FIX] Trigger next step (CE03) directly or via Task flow adjustment
+    this.logger.log(`Task ${task.id} created without CE06 dependency (Stub check).`);
 
     // 6. 记录审计日志
     await this.auditLogService.record({
       userId,
       action: AuditActions.JOB_CREATED,
-      resourceType: 'job',
-      resourceId: job.id,
+      resourceType: 'task', // Changed from job to task
+      resourceId: task.id,
       ip,
       userAgent,
       details: {
-        jobType: 'CE06_NOVEL_PARSING',
+        jobType: 'CE03_VISUAL_DENSITY', // New head of pipeline
         taskId: task.id,
         traceId,
         projectId,
       },
     });
 
-    this.logger.log(`CE06 Job created: ${job.id}, traceId: ${traceId}`);
+    this.logger.log(`Task created: ${task.id}, traceId: ${traceId} (CE06 Bypassed)`);
 
     // 7. 返回结果
     return {
-      jobId: job.id,
+      jobId: task.id, // 旧调用方仍读取 jobId；真实主键语义已迁到 taskId
       traceId,
-      status: job.status,
+      status: task.status,
       taskId: task.id,
     };
   }

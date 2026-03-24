@@ -1,6 +1,6 @@
 import { PrismaClient } from '../../packages/database/src/generated/prisma';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const PROJECT_ID = 'prod-pilot-sealed42';
 
 async function main() {

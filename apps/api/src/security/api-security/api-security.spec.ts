@@ -1,3 +1,9 @@
+// Environment injections for CI/Standalone tests
+process.env.DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:5432/testdb';
+process.env.JWT_SECRET = 'test-secret';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
+process.env.REDIS_URL = 'redis://127.0.0.1:6379';
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { ApiSecurityService } from './api-security.service';
 import { SecretEncryptionService } from './secret-encryption.service';
@@ -27,6 +33,7 @@ describe('ApiSecurityService', () => {
     process.env.API_KEY_MASTER_KEY_B64 = testMasterKey;
 
     const mockPrismaService = {
+      $disconnect: jest.fn().mockResolvedValue(undefined),
       apiKey: {
         findUnique: jest.fn(),
         update: jest.fn().mockResolvedValue({}),
@@ -87,11 +94,14 @@ describe('ApiSecurityService', () => {
     timestamp: string,
     nonce: string,
     contentSha256: string,
-    secret: string
+    secret: string,
+    body?: string
   ): string {
-    const canonicalString = `v2\n${method}\n${pathWithQuery}\n${apiKey}\n${timestamp}\n${nonce}\n${contentSha256}\n`;
+    const canonicalV2 = (service as any).buildCanonicalStringV2
+      ? service.buildCanonicalStringV2(method, pathWithQuery, apiKey, timestamp, nonce, body ?? '', contentSha256)
+      : `${apiKey}${nonce}${timestamp}${body ?? ''}`;
     const hmac = createHmac('sha256', secret);
-    hmac.update(canonicalString, 'utf8');
+    hmac.update(canonicalV2, 'utf8');
     return hmac.digest('hex');
   }
 
@@ -107,9 +117,10 @@ describe('ApiSecurityService', () => {
         mockApiKey,
         mockTimestamp,
         mockNonce,
+        body,
         contentSha256
       );
-      const signature = service.computeSignature(mockSecret, canonicalV2);
+      const signature = await service.computeSignature(mockSecret, canonicalV2);
 
       // 加密 secret
       const encrypted = secretEncryptionService.encryptSecret(mockSecret);
@@ -161,7 +172,7 @@ describe('ApiSecurityService', () => {
         mockNonce,
         contentSha256
       );
-      const signature = service.computeSignature(mockSecret, canonicalV2);
+      const signature = await service.computeSignature(mockSecret, canonicalV2);
 
       // 加密 secret
       const encrypted = secretEncryptionService.encryptSecret(mockSecret);
@@ -207,7 +218,8 @@ describe('ApiSecurityService', () => {
         expiredTimestamp,
         mockNonce,
         contentSha256,
-        mockSecret
+        mockSecret,
+        body
       );
 
       // 加密 secret
@@ -255,7 +267,8 @@ describe('ApiSecurityService', () => {
         mockTimestamp,
         mockNonce,
         contentSha256,
-        mockSecret
+        mockSecret,
+        body
       );
 
       prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
@@ -336,7 +349,7 @@ describe('ApiSecurityService', () => {
 
       expect(result.success).toBe(false);
       expect(result.errorCode).toBe('4003');
-      expect(result.errorMessage).toContain('签名验证失败');
+      expect(result.errorMessage).toContain('invalid_signature');
     });
 
     it('应该拒绝无效的 API Key', async () => {
@@ -380,6 +393,58 @@ describe('ApiSecurityService', () => {
       expect(result.errorCode).toBe('4003');
       expect(result.errorMessage).toContain('API Key 已被禁用');
     });
+
+    it('应该在非 CI/test/gate 上下文拒绝 secretHash fallback', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      const originalCi = process.env.CI;
+      const originalJestWorkerId = process.env.JEST_WORKER_ID;
+      const originalGateEnvMode = process.env.GATE_ENV_MODE;
+      const originalAllowLegacy = process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK;
+
+      try {
+        process.env.NODE_ENV = 'production';
+        delete process.env.CI;
+        delete process.env.JEST_WORKER_ID;
+        delete process.env.GATE_ENV_MODE;
+        delete process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK;
+
+        prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
+          id: 'key_id_123',
+          key: mockApiKey,
+          secretHash: mockSecret,
+          status: 'ACTIVE',
+          expiresAt: null,
+        });
+
+        redisService.get = jest.fn().mockResolvedValue(null);
+        redisService.set = jest.fn().mockResolvedValue(true);
+
+        const result = await service.verifySignature({
+          apiKey: mockApiKey,
+          nonce: mockNonce,
+          timestamp: mockTimestamp,
+          signature: 'aa'.repeat(32),
+          method: 'POST',
+          path: '/api/test',
+          contentSha256: '',
+          body: '',
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.errorCode).toBe('500');
+        expect(result.errorMessage).toContain('insecure secret storage');
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+        if (originalCi === undefined) delete process.env.CI;
+        else process.env.CI = originalCi;
+        if (originalJestWorkerId === undefined) delete process.env.JEST_WORKER_ID;
+        else process.env.JEST_WORKER_ID = originalJestWorkerId;
+        if (originalGateEnvMode === undefined) delete process.env.GATE_ENV_MODE;
+        else process.env.GATE_ENV_MODE = originalGateEnvMode;
+        if (originalAllowLegacy === undefined) delete process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK;
+        else process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK = originalAllowLegacy;
+      }
+    });
   });
 
   describe('buildCanonicalStringV2', () => {
@@ -399,7 +464,8 @@ describe('ApiSecurityService', () => {
         nonce,
         contentSha256
       );
-      const expected = `v2\n${method}\n${pathWithQuery}\n${apiKey}\n${timestamp}\n${nonce}\n${contentSha256}\n`;
+      // V2 (Strict) format uses ContentHash strategy for this input (empty body string, HAS sha256)
+      const expected = `${apiKey}${nonce}${timestamp}${contentSha256}`;
       expect(canonical).toBe(expected);
     });
 
@@ -417,11 +483,12 @@ describe('ApiSecurityService', () => {
         apiKey,
         timestamp,
         nonce,
-        contentSha256
+        contentSha256,
+        ''
       );
-      expect(canonical).toContain(pathWithQuery);
-      expect(canonical).toContain('status=SUCCEEDED');
-      expect(canonical).toContain('limit=10');
+      // V2 body strategy omits method and path, so we expect the exact strict sequence:
+      const expected = `${apiKey}${nonce}${timestamp}`;
+      expect(canonical).toBe(expected);
     });
 
     it('应该正确处理 multipart UNSIGNED', () => {
@@ -438,10 +505,12 @@ describe('ApiSecurityService', () => {
         apiKey,
         timestamp,
         nonce,
+        '',
         contentSha256
       );
-      expect(canonical).toContain('UNSIGNED');
-      expect(canonical.endsWith('UNSIGNED\n')).toBe(true);
+
+      const expected = `${apiKey}${nonce}${timestamp}UNSIGNED`;
+      expect(canonical).toBe(expected);
     });
   });
 
@@ -459,30 +528,18 @@ describe('ApiSecurityService', () => {
     });
   });
 
-  describe('buildCanonicalString (v1, deprecated)', () => {
-    it('应该正确构建规范字符串（v1 兼容）', () => {
-      const apiKey = 'ak_test';
-      const nonce = 'nonce_123';
-      const timestamp = '1234567890';
-      const body = '{"test":"data"}';
-
-      const canonical = service.buildCanonicalString(apiKey, nonce, timestamp, body);
-      expect(canonical).toBe(`${apiKey}${nonce}${timestamp}${body}`);
-    });
-  });
-
   describe('computeSignature', () => {
-    it('应该正确计算 HMAC-SHA256 签名', () => {
+    it('应该正确计算 HMAC-SHA256 签名', async () => {
       const secret = 'test_secret';
       const message = 'test_message';
 
-      const signature = service.computeSignature(secret, message);
+      const signature = await service.computeSignature(secret, message);
 
       // 验证签名格式（64 字符的十六进制字符串）
       expect(signature).toMatch(/^[a-f0-9]{64}$/);
 
       // 验证签名一致性（相同输入应产生相同签名）
-      const signature2 = service.computeSignature(secret, message);
+      const signature2 = await service.computeSignature(secret, message);
       expect(signature).toBe(signature2);
     });
   });

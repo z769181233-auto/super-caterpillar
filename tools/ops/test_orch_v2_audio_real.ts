@@ -3,7 +3,7 @@ import { PrismaClient } from 'database';
 import { randomUUID } from 'node:crypto';
 import * as fs from 'fs';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const apiClient = new ApiClient(
   'http://127.0.0.1:3000',
   process.env.WORKER_API_KEY || 'dev-worker-key',

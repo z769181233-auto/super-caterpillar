@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProjectsHeader } from './ProjectsHeader';
 import { ProjectsGrid } from './ProjectsGrid';
 import { DashboardAside } from './DashboardAside';
-import { ProjectCardView } from './mock';
+import { ProjectCardView } from './adapters';
 import { useTranslations } from 'next-intl';
 import { projectApi } from '@/lib/apiClient';
 import { adaptProjects } from './adapters';
@@ -18,7 +18,7 @@ export function ProjectsDashboard() {
   const [error, setError] = useState<string | null>(null);
   const t = useTranslations('Common');
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -26,17 +26,19 @@ export function ProjectsDashboard() {
       const rawProjects = await projectApi.getProjects();
       const mapped = adaptProjects(rawProjects);
       setData(mapped);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load projects', err);
-      setError(err?.message || 'Failed to load projects. Please check your network.');
+      setError(
+        err instanceof Error ? err.message : 'Failed to load projects. Please check your network.'
+      );
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
   const handleCreate = () => {
     alert('Create Project workflow triggered.');

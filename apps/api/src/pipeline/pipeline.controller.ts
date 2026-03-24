@@ -1,6 +1,8 @@
-import { Controller, Get, Param, Post, Body, Req } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { Controller, Get, Param, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { PipelineService } from './pipeline.service';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('/api/projects/:projectId/pipeline')
 export class PipelineController {
   constructor(private readonly pipeline: PipelineService) {}

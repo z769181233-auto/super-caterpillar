@@ -114,12 +114,10 @@ export async function renderWithReplicateResilient(
 
         // 判断是否可重试
         if (!isRetryableError(err)) {
-          console.error(`[REPLICATE_PROVIDER] Non-retryable error: ${err.message}`);
           throw err;
         }
 
         // 可重试错误，向上抛出让 ExponentialBackoff 处理
-        console.warn(`[REPLICATE_PROVIDER] Retryable error: ${err.message}`);
         throw err;
       }
     }, REPLICATE_RETRY_CONFIG);

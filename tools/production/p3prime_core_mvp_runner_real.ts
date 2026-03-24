@@ -21,7 +21,7 @@ export async function runCoreMvpReal(ctx: { evidenceDir: string; args: string[] 
 
 async function runScaleBench(evidenceDir: string, concurrency: number = 1) {
   console.log(`--- [PROD-RUNNER] Starting Scale Concurrency Bench (N=${concurrency}) ---`);
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   const projectIds = Array.from(
     { length: concurrency },
     (_, i) => `scale_bench_${Date.now()}_${i}`

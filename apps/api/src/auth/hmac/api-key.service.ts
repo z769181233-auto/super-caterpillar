@@ -53,42 +53,27 @@ export class ApiKeyService {
     let secretHash: string | undefined;
 
     try {
-      // 尝试加密存储（如果主密钥已配置）
-      if (this.secretEncryptionService.isMasterKeyConfigured()) {
-        const encrypted = this.secretEncryptionService.encryptSecret(secret);
-        secretEnc = encrypted.enc;
-        secretEncIv = encrypted.iv;
-        secretEncTag = encrypted.tag;
-        secretVersion = 1;
-        // 不存储 secretHash（新字段优先）
-      } else {
-        // 主密钥未配置：仅 dev/test 允许 fallback
+      // CE10 v2: Always use encrypted storage even in dev/test to avoid plain text in DB
+      const encrypted = this.secretEncryptionService.encryptSecret(secret);
+      secretEnc = encrypted.enc;
+      secretEncIv = encrypted.iv;
+      secretEncTag = encrypted.tag;
+      secretVersion = 1;
+
+      if (!this.secretEncryptionService.isMasterKeyConfigured()) {
         const isProduction = process.env.NODE_ENV === 'production';
         if (isProduction) {
           throw new BadRequestException(
-            'API_KEY_MASTER_KEY_B64 is required in production environment. ' +
-              'Please configure the master key before creating API keys.'
+            'API_KEY_MASTER_KEY_B64 is required in production environment.'
           );
         }
-        // dev/test: 使用旧字段（fallback）
         this.logger.warn(
-          'API_KEY_MASTER_KEY_B64 not configured. Using insecure secretHash storage (dev/test only).'
+          'API_KEY_MASTER_KEY_B64 not configured. Using internally generated transient key for dev/test.'
         );
-        secretHash = secret;
       }
     } catch (error: any) {
-      // 加密失败：如果是生产环境，拒绝；否则 fallback
-      const isProduction = process.env.NODE_ENV === 'production';
-      if (isProduction) {
-        // 脱敏错误消息，详细错误记录到日志
-        this.logger.error(`Failed to encrypt secret: ${error.message}`, error.stack);
-        throw new BadRequestException(
-          'Failed to encrypt secret. Production environment requires encrypted storage.'
-        );
-      }
-      // dev/test: fallback
-      this.logger.warn(`Failed to encrypt secret, using fallback: ${error.message}`);
-      secretHash = secret;
+      this.logger.error(`Failed to secure API secret: ${error.message}`);
+      throw new BadRequestException('Failed to secure API secret for storage.');
     }
 
     const apiKey = await (this.prisma as any).apiKey.create({

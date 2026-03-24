@@ -1,4 +1,18 @@
-import { Controller, Post, Get, Req, Res, HttpStatus, Query, Logger, Param } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import {
+  Controller,
+  Post,
+  Get,
+  Req,
+  Res,
+  HttpStatus,
+  Query,
+  Logger,
+  Param,
+  UseGuards,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -8,7 +22,27 @@ import { SignedUrlService } from './signed-url.service';
 import { LocalStorageService } from './local-storage.service';
 import { StorageAuthService } from './storage-auth.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CurrentOrganization } from '../auth/decorators/current-organization.decorator';
+import { AuthenticatedUser } from '@scu/shared-types';
 
+function normalizeStorageKey(keyDef: any): string {
+  if (!keyDef) return '';
+  let key = '';
+  if (Array.isArray(keyDef)) {
+    key = keyDef.join('/');
+  } else {
+    key = String(keyDef);
+  }
+
+  // P1 Security: Path Traversal Protection
+  // 1. Normalize path to resolve '..' and '.'
+  const normalized = path.normalize(key).replace(/^(\.\.(\/|\\|$))+/, '');
+  // 2. Remove leading slashes and prevent drive letters (Windows)
+  return normalized.replace(/^[/\\]+/, '').replace(/^[a-zA-Z]:/, '');
+}
+
+@UseGuards(JwtOrHmacGuard)
 @Controller('storage')
 export class StorageController {
   private readonly logger = new Logger(StorageController.name);
@@ -17,16 +51,51 @@ export class StorageController {
     private readonly signedUrlService: SignedUrlService,
     private readonly localStorageService: LocalStorageService,
     private readonly storageAuthService: StorageAuthService
-  ) {}
+  ) { }
+
+  /**
+   * Diagnostic probe for gate-keeping
+   * GET /api/storage/__probe
+   */
+  @Get('__probe')
+  @Public()
+  probe() {
+    return 'StorageController';
+  }
+
+  /**
+   * Generate signed URL for a storage key
+   * GET /api/storage/sign/*path
+   */
+  @Get('sign/*path')
+  async signUrl(
+    @Param('path') rawKey: any,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() orgId: string
+  ) {
+    const key = normalizeStorageKey(rawKey);
+    if (!user?.userId) {
+      throw new UnauthorizedException('Authentication required');
+    }
+    if (!orgId) {
+      throw new BadRequestException('Organization context required');
+    }
+    const { url, expiresAt } = await this.signedUrlService.generateSignedUrl({
+      key,
+      tenantId: orgId,
+      userId: user.userId,
+    });
+    return { url, expiresAt };
+  }
 
   /**
    * Serve signed URL resources
    * GET /api/storage/signed/:path(*)
    */
-  @Get('signed/:path(*)')
+  @Get('signed/*path')
   @Public() // Signature is verified in method
   async serveSigned(
-    @Param('path') key: string,
+    @Param('path') rawKey: any,
     @Query('expires') expires: string,
     @Query('signature') signature: string,
     @Query('tenantId') tenantId: string,
@@ -34,13 +103,14 @@ export class StorageController {
     @Req() req: Request,
     @Res() res: Response
   ) {
+    const key = normalizeStorageKey(rawKey);
     const method = req.method;
 
     // 1. Verify Signature
     // Proactive Fix: Normalize HEAD to GET for signature verification to support curl -I
     const verifyMethod = method === 'HEAD' ? 'GET' : method;
 
-    const isValid = this.signedUrlService.verifySignedUrl(
+    const isValid = await this.signedUrlService.verifySignedUrl(
       key,
       parseInt(expires, 10),
       signature,
@@ -51,7 +121,7 @@ export class StorageController {
 
     if (!isValid) {
       this.logger.warn(`Invalid or expired signature for key: ${key}`);
-      return res.status(HttpStatus.FORBIDDEN).json({ error: 'INVALID_SIGNATURE' });
+      return res.status(HttpStatus.NOT_FOUND).json({ error: 'FILE_NOT_FOUND' });
     }
 
     // 2. Resource Access Audit (Optional but recommended for commercial grade)
@@ -70,24 +140,9 @@ export class StorageController {
       return res.status(HttpStatus.NOT_FOUND).json({ error: 'FILE_NOT_FOUND' });
     }
 
-    // 4. Stream response
     const absPath = this.localStorageService.getAbsolutePath(key);
-    const ext = path.extname(key).toLowerCase();
-
-    // Set basic content types
-    const mimeMap: Record<string, string> = {
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.mp4': 'video/mp4',
-      '.txt': 'text/plain',
-      '.json': 'application/json',
-    };
-
-    res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
-
-    const stream = fs.createReadStream(absPath);
-    stream.pipe(res);
+    const storageRoot = this.localStorageService.adapter.root;
+    return res.sendFile(key, { root: storageRoot });
   }
 
   @Post('/novels')

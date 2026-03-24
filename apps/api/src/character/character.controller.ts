@@ -1,3 +1,4 @@
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import {
   Controller,
   Get,
@@ -108,16 +109,11 @@ export class CharacterController {
   }
 
   /**
-   * 触发 LoRA 训练（预留接口）
+   * 触发 LoRA 训练
    * POST /api/v1/characters/:characterId/train
    */
   @Post('characters/:characterId/train')
   async trainLora(@Param('characterId') characterId: string, @Body() dto: TrainLoraDto) {
-    // TODO: B2.2 实现 LoRA 训练逻辑
-    return {
-      message: 'LoRA training will be implemented in B2.2',
-      characterId,
-      dto,
-    };
+    return this.characterService.trainLora(characterId, dto);
   }
 }

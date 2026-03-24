@@ -7,7 +7,7 @@
 import { PrismaClient } from 'database';
 import { randomBytes } from 'crypto';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 // 固定配置，保证多次运行幂等
 const SEED_USER_EMAIL = 'e2e_seed_user@scu.test';

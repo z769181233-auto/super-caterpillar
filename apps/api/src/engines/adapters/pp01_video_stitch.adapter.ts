@@ -4,9 +4,9 @@ import { PpBaseEngine } from '../base/pp_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class PP01VideoStitchAdapter extends PpBaseEngine {
@@ -28,9 +28,23 @@ export class PP01VideoStitchAdapter extends PpBaseEngine {
     mkdirSync(outputDir, { recursive: true });
     const outputPath = join(outputDir, `${hash}.mp4`);
 
-    // FFmpeg: 拼接两个 1秒的测试视频
-    const cmd = `ffmpeg -y -f lavfi -i testsrc=d=1 -f lavfi -i testsrc=d=1 -filter_complex concat=n=2:v=1:a=0 "${outputPath}"`;
-    execSync(cmd, { stdio: 'ignore' });
+    const res = await execAsync('ffmpeg', [
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'testsrc=d=1',
+      '-f',
+      'lavfi',
+      '-i',
+      'testsrc=d=1',
+      '-filter_complex',
+      'concat=n=2:v=1:a=0',
+      outputPath,
+    ]);
+    if (res.code !== 0) {
+      throw new Error(`PP01 video stitch failed: ${res.stderr}`);
+    }
 
     return {
       assetUrl: `file://${outputPath}`,

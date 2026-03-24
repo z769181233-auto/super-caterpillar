@@ -4,14 +4,16 @@ import { AuthShell } from '@/features/auth/AuthShell';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const { locale } = await props.params;
   const t = await getTranslations({ locale, namespace: 'Auth' });
   return {
     title: t('titleRegister'),
   };
 }
 
-export default function RegisterPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function RegisterPage(props: { params: Promise<{ locale: string }> }) {
+  const { locale } = await props.params;
   setRequestLocale(locale);
 
   return (

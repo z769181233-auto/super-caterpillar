@@ -20,6 +20,62 @@ export class StructureGenerateService {
     private readonly sceneGraphService: SceneGraphService
   ) {}
 
+  private asNonEmptyString(value: unknown): string | undefined {
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
+  private asNullableString(value: unknown): string | null {
+    return this.asNonEmptyString(value) ?? null;
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  private buildShotParams(shotData: Record<string, any>): Prisma.InputJsonObject {
+    const params: Record<string, Prisma.InputJsonValue> = {};
+
+    const sourceText = this.asNonEmptyString(shotData.text);
+    if (sourceText) {
+      params.sourceText = sourceText;
+    }
+
+    if (this.isRecord(shotData.camera)) {
+      params.camera = shotData.camera as Prisma.InputJsonValue;
+    }
+
+    if (Array.isArray(shotData.characters)) {
+      params.characters = shotData.characters as Prisma.InputJsonValue;
+    }
+
+    const action = this.asNonEmptyString(shotData.action);
+    if (action) {
+      params.action = action;
+    }
+
+    return params as Prisma.InputJsonObject;
+  }
+
+  private extractCameraControl(shotData: Record<string, any>, keys: string[]): string | null {
+    if (!this.isRecord(shotData.camera)) {
+      return null;
+    }
+
+    for (const key of keys) {
+      const value = this.asNonEmptyString(shotData.camera[key]);
+      if (value) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
   /**
    * 生成剧集结构
    * 根据项目的 NovelChapter 自动生成 Episode/Scene/SceneDraft（四层结构：Project → Episode → Scene → Shot）
@@ -30,11 +86,8 @@ export class StructureGenerateService {
     );
 
     // 获取项目
-    const project = await this.prisma.project.findFirst({
-      where: {
-        id: projectId,
-        organizationId,
-      },
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
       include: {
         novelSources: {
           include: {
@@ -51,7 +104,7 @@ export class StructureGenerateService {
       },
     });
 
-    if (!project) {
+    if (!project || project.organizationId !== organizationId) {
       this.logger.error(`Project not found: ${projectId}`);
       throw new BadRequestException('项目不存在，无法生成结构');
     }
@@ -92,12 +145,13 @@ export class StructureGenerateService {
       const chapter = chapters[chIdx];
 
       // 检查是否已有 Episode 关联到此 Chapter
-      let episode = await this.prisma.episode.findFirst({
-        where: {
-          projectId,
-          chapterId: chapter.id,
-        },
+      let episode = await this.prisma.episode.findUnique({
+        where: { chapterId: chapter.id },
       });
+
+      if (episode && episode.projectId !== projectId) {
+        episode = null;
+      }
 
       if (!episode) {
         // 创建 Episode（每章一集，直接关联 Project）
@@ -214,51 +268,139 @@ export class StructureGenerateService {
    * @param structure 解析后的项目结构
    */
   async applyAnalyzedStructureToDatabase(structure: AnalyzedProjectStructure): Promise<void> {
-    const { projectId, seasons, episodes } = structure;
+    const { projectId, episodes } = structure;
+
+    if (!Array.isArray(episodes) || episodes.length === 0) {
+      throw new BadRequestException(
+        'STRUCTURE_EPISODES_REQUIRED: analyzed structure must provide flat episodes'
+      );
+    }
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // V3.0: 我们不再删除 Season，而是清理该项目下所有旧的 Episode (级联清理 Scene/Shot)
-      await tx.episode.deleteMany({
-        where: { projectId },
-      });
-
-      const itemsToProcess =
-        episodes && episodes.length > 0 ? episodes : seasons?.flatMap((s) => s.episodes) || [];
-
-      for (const episodeData of itemsToProcess) {
-        const episode = await tx.episode.create({
-          data: {
+      for (const episodeData of episodes) {
+        const episode = await tx.episode.upsert({
+          where: {
+            projectId_index: {
+              projectId,
+              index: episodeData.index,
+            },
+          },
+          create: {
             projectId,
             seasonId: null as any,
             index: episodeData.index,
             name: episodeData.title,
-            summary: episodeData.summary || undefined,
+            summary: this.asNonEmptyString(episodeData.summary),
+          },
+          update: {
+            name: episodeData.title,
+            summary: this.asNonEmptyString(episodeData.summary),
           },
         });
 
         for (const sceneData of episodeData.scenes) {
-          const scene = await tx.scene.create({
-            data: {
+          const scene = await tx.scene.upsert({
+            where: {
+              episodeId_sceneIndex: {
+                episodeId: episode.id,
+                sceneIndex: sceneData.index,
+              },
+            },
+            create: {
               episodeId: episode.id,
               projectId,
               sceneIndex: sceneData.index,
               title: sceneData.title,
-              summary: sceneData.summary || undefined,
+              summary: this.asNonEmptyString(sceneData.summary),
+            },
+            update: {
+              title: sceneData.title,
+              summary: this.asNonEmptyString(sceneData.summary),
             },
           });
 
           if (sceneData.shots && sceneData.shots.length > 0) {
-            await tx.shot.createMany({
-              data: sceneData.shots.map((shotData) => ({
-                sceneId: scene.id,
-                index: shotData.index,
-                title: shotData.title || null,
-                description: shotData.summary || shotData.text?.substring(0, 200) || null,
-                type: 'novel_analysis',
-                params: { sourceText: shotData.text } as any,
-                qualityScore: {} as any,
-              })),
-            });
+            for (const shotData of sceneData.shots) {
+              const novelQuote =
+                this.asNonEmptyString(shotData.novelQuote) ??
+                this.asNonEmptyString(shotData.text) ??
+                this.asNonEmptyString(shotData.summary) ??
+                this.asNonEmptyString(shotData.title);
+
+              if (!novelQuote) {
+                throw new Error(
+                  `NOVEL_TO_SHOT_SCHEMA_INVALID: shot ${sceneData.index}.${shotData.index} missing novelQuote/source text`
+                );
+              }
+
+              const params = this.buildShotParams(shotData);
+              const description =
+                this.asNonEmptyString(shotData.summary) ??
+                this.asNonEmptyString(shotData.text)?.slice(0, 200) ??
+                null;
+              const actionDescription =
+                this.asNonEmptyString(shotData.action) ??
+                this.asNonEmptyString(shotData.summary) ??
+                this.asNonEmptyString(shotData.text)?.slice(0, 200) ??
+                null;
+
+              await tx.shot.upsert({
+                where: {
+                  sceneId_index: {
+                    sceneId: scene.id,
+                    index: shotData.index,
+                  },
+                },
+                create: {
+                  sceneId: scene.id,
+                  index: shotData.index,
+                  title: this.asNullableString(shotData.title),
+                  description,
+                  type: 'novel_analysis',
+                  params,
+                  qualityScore: {} as Prisma.InputJsonValue,
+                  shotType:
+                    this.asNullableString(shotData.shotType) ??
+                    this.extractCameraControl(shotData, ['shot_type', 'shotType', 'type']),
+                  cameraMovement: this.extractCameraControl(shotData, [
+                    'camera_movement',
+                    'cameraMovement',
+                    'movement',
+                  ]),
+                  cameraAngle: this.extractCameraControl(shotData, [
+                    'camera_angle',
+                    'cameraAngle',
+                    'angle',
+                  ]),
+                  actionDescription,
+                  emotion: this.asNullableString(shotData.emotion),
+                  durationSec: shotData.durationSec ?? null,
+                  novelQuote,
+                },
+                update: {
+                  title: this.asNullableString(shotData.title),
+                  description,
+                  params,
+                  shotType:
+                    this.asNullableString(shotData.shotType) ??
+                    this.extractCameraControl(shotData, ['shot_type', 'shotType', 'type']),
+                  cameraMovement: this.extractCameraControl(shotData, [
+                    'camera_movement',
+                    'cameraMovement',
+                    'movement',
+                  ]),
+                  cameraAngle: this.extractCameraControl(shotData, [
+                    'camera_angle',
+                    'cameraAngle',
+                    'angle',
+                  ]),
+                  actionDescription,
+                  emotion: this.asNullableString(shotData.emotion),
+                  durationSec: shotData.durationSec ?? null,
+                  novelQuote,
+                },
+              });
+            }
           }
         }
       }
@@ -274,19 +416,14 @@ export class StructureGenerateService {
   @OnEvent('job.ce06_succeeded', { async: true })
   async handleCE06Completed(payload: { projectId: string; result: any }) {
     const { projectId, result } = payload;
-    const items = result?.data?.seasons || result?.data?.volumes || result?.data?.episodes || [];
+    const episodes = Array.isArray(result?.data?.episodes) ? result.data.episodes : [];
 
-    if (items.length === 0) {
-      this.logger.warn(`[Event] CE06 succeeded but no structure found for project ${projectId}`);
+    if (episodes.length === 0) {
+      this.logger.warn(
+        `[Event] CE06 succeeded but no flat episodes found for project ${projectId}; legacy seasonal payload is no longer applied`
+      );
       return;
     }
-
-    // 构造三层扁平架构 DTO
-    const episodes = result?.data?.episodes
-      ? result.data.episodes
-      : (result?.data?.seasons || result?.data?.volumes || []).flatMap(
-          (s: any) => s.episodes || []
-        );
 
     this.logger.log(
       `[Event] Applying CE06 structure to DB for project ${projectId} (Found ${episodes.length} episodes)`
@@ -295,13 +432,6 @@ export class StructureGenerateService {
       await this.applyAnalyzedStructureToDatabase({
         projectId,
         episodes: episodes as any,
-        statis: {
-          // NOTE: Field name in legacy might be 'stats', aligned with DTO
-          seasonsCount: 0,
-          episodesCount: episodes.length,
-          scenesCount: 0,
-          shotsCount: 0,
-        } as any,
         stats: {
           seasonsCount: 0,
           episodesCount: episodes.length,

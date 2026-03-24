@@ -1,7 +1,7 @@
 // @ts-ignore
 import { PrismaClient } from '../packages/database/src/generated/prisma/index';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const projects = await prisma.project.findMany({

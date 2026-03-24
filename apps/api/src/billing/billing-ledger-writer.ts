@@ -2,9 +2,7 @@
 import { PrismaClient } from 'database';
 import * as fs from 'fs';
 
-const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.DATABASE_URL } },
-});
+const prisma = new PrismaClient({});
 
 interface BillingEntry {
   tenantId: string;
@@ -23,14 +21,7 @@ interface BillingEntry {
  * 基于 (tenantId, traceId, itemType, itemId, chargeCode) 唯一约束确保幂等
  */
 export async function writeBillingLedger(entry: BillingEntry): Promise<void> {
-  try {
-    console.log(
-      `[BillingLedger] ⚠️ Skipped writing obsolete non-transactional ledger entry for: ${entry.traceId}`
-    );
-  } catch (error: any) {
-    console.error(`[BillingLedger] ❌ Error writing ledger:`, error);
-    throw error;
-  }
+  void entry;
 }
 
 /**

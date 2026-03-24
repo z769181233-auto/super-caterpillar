@@ -10,26 +10,33 @@ export interface DirectorControls {
   lightingPreset?: string | null;
 }
 
-export function extractDirectorControls(params: any): DirectorControls {
+export function extractDirectorControls(params: unknown): DirectorControls {
   if (!params || typeof params !== 'object') {
     return {};
   }
 
+  const record = params as Record<string, unknown>;
   return {
-    shotType: params.shot_type || params.shotType || null,
-    cameraMovement: params.camera_movement || params.cameraMovement || null,
-    cameraAngle: params.camera_angle || params.cameraAngle || null,
-    lightingPreset: params.lighting_preset || params.lightingPreset || null,
-  } as any;
+    shotType: (record.shot_type as string | undefined) || (record.shotType as string | undefined) || null,
+    cameraMovement:
+      (record.camera_movement as string | undefined) || (record.cameraMovement as string | undefined) || null,
+    cameraAngle:
+      (record.camera_angle as string | undefined) || (record.cameraAngle as string | undefined) || null,
+    lightingPreset:
+      (record.lighting_preset as string | undefined) || (record.lightingPreset as string | undefined) || null,
+  };
 }
 
 /**
  * 将提取的字段合并到 Prisma 数据对象中
  */
-export function hydrateShotWithDirectorControls(data: any, params: any) {
+export function hydrateShotWithDirectorControls<T extends Record<string, unknown>>(
+  data: T,
+  params: unknown
+): T & DirectorControls {
   const controls = extractDirectorControls(params);
   return {
     ...data,
     ...controls,
-  };
+  } as T & DirectorControls;
 }

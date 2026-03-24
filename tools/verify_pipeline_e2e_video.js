@@ -3,7 +3,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 // const { v4: uuidv4 } = require('uuid');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const API_URL = 'http://localhost:3000/api';
 
 // Helper: UUID v4 fallback

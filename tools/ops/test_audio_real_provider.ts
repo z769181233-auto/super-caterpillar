@@ -3,7 +3,7 @@ import { PrismaClient } from 'database';
 import * as crypto from 'crypto';
 
 async function test() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   const svc = new AudioService();
 
   const projectId = `test_p18_2_${Date.now()}`;

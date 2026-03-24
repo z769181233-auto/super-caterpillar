@@ -4,6 +4,15 @@
  * 基于五层级结构：Project → Season → Episode → Scene → Shot
  */
 
+import { JsonObject } from './json';
+
+export interface ShotAsset {
+  id?: string;
+  type?: string;
+  url?: string | null;
+  [key: string]: unknown;
+}
+
 /**
  * Shot 节点
  */
@@ -14,13 +23,13 @@ export interface ShotNode {
   title?: string | null;
   description?: string | null;
   type: string;
-  params?: Record<string, any>; // 引擎参数
-  qualityScore?: Record<string, any>; // 质量评分
+  params?: JsonObject; // 引擎参数
+  qualityScore?: JsonObject; // 质量评分
   reviewedAt?: string | null; // ISO 8601 时间字符串
   durationSeconds?: number | null;
-  engineContext?: Record<string, any>; // 预留：引擎上下文（CE07/CE08）
+  engineContext?: JsonObject; // 预留：引擎上下文（CE07/CE08）
   videoUrl?: string | null; // Stage 8: Enhanced MVP
-  assets?: any[]; // Stage 8: Enhanced MVP
+  assets?: ShotAsset[]; // Stage 8: Enhanced MVP
 }
 
 /**
@@ -33,7 +42,7 @@ export interface SceneNode {
   title: string;
   summary?: string | null;
   shots: ShotNode[]; // 子节点：Shots
-  engineContext?: Record<string, any>; // 预留：引擎上下文
+  engineContext?: JsonObject; // 预留：引擎上下文
 }
 
 /**
@@ -41,12 +50,12 @@ export interface SceneNode {
  */
 export interface EpisodeNode {
   id: string;
-  parentId: string; // Season ID（或 Project ID，用于向后兼容）
+  parentId: string; // Season ID（旧项目无 season 时可退回 Project ID）
   index: number; // 在 Season 中的顺序
   name: string; // Episode 使用 name 字段
   summary?: string | null;
   scenes: SceneNode[]; // 子节点：Scenes
-  engineContext?: Record<string, any>; // 预留：引擎上下文
+  engineContext?: JsonObject; // 预留：引擎上下文
 }
 
 /**
@@ -59,7 +68,7 @@ export interface SeasonNode {
   title: string;
   description?: string | null;
   episodes: EpisodeNode[]; // 子节点：Episodes
-  engineContext?: Record<string, any>; // 预留：引擎上下文
+  engineContext?: JsonObject; // 预留：引擎上下文
 }
 
 /**
@@ -73,7 +82,7 @@ export interface ProjectSceneGraph {
   analysisStatus?: 'PENDING' | 'ANALYZING' | 'DONE' | 'FAILED' | null; // 小说分析状态
   analysisUpdatedAt?: string | null; // ISO 8601 时间字符串
   seasons: SeasonNode[]; // 影视工业标准：Season → Episode → Scene → Shot
-  // 向后兼容：直接关联到 Project 的 Episodes（旧数据）
-  episodes?: EpisodeNode[]; // @deprecated 保留用于向下兼容
-  engineContext?: Record<string, any>; // 预留：项目级引擎上下文
+  // 仅旧项目/无 season 数据时才出现
+  episodes?: EpisodeNode[]; // 新代码应优先使用 seasons[].episodes
+  engineContext?: JsonObject; // 预留：项目级引擎上下文
 }

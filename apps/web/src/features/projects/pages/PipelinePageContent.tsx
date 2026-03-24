@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { pipelineApi } from '@/lib/apiClient';
 
@@ -22,6 +22,14 @@ type Node = {
     } | null;
     children?: Node[];
 };
+
+type PipelineTreeResponse = Node | { data?: Node } | null;
+
+function unwrapPipelineTree(payload: PipelineTreeResponse): Node | null {
+    if (!payload) return null;
+    if ('nodeId' in payload) return payload;
+    return payload.data || null;
+}
 
 function badge(status?: string) {
     const s = (status || '').toUpperCase();
@@ -67,22 +75,22 @@ export function PipelinePageContent() {
     const [reason, setReason] = useState('');
     const [busyNodeId, setBusyNodeId] = useState<string>('');
 
-    async function refresh() {
+    const refresh = useCallback(async () => {
         setErr('');
         setLoading(true);
         try {
             const data = await pipelineApi.getPipeline(projectId);
-            setRoot((data as any).data || data);
-        } catch (e: any) {
-            setErr(e?.message || '加载失败');
+            setRoot(unwrapPipelineTree(data as PipelineTreeResponse));
+        } catch (error) {
+            setErr(error instanceof Error ? error.message : '加载失败');
         } finally {
             setLoading(false);
         }
-    }
+    }, [projectId]);
 
     useEffect(() => {
-        refresh();
-    }, [projectId]);
+        void refresh();
+    }, [refresh]);
 
     const rows = useMemo(() => flatten(root), [root]);
 
@@ -98,8 +106,8 @@ export function PipelinePageContent() {
             else if (kind === 'skip') await pipelineApi.skipNode(projectId, nodeId, reason.trim());
             else if (kind === 'force') await pipelineApi.forcePassNode(projectId, nodeId, reason.trim());
             await refresh();
-        } catch (e: any) {
-            setErr(e?.message || '操作失败');
+        } catch (error) {
+            setErr(error instanceof Error ? error.message : '操作失败');
         } finally {
             setBusyNodeId('');
         }
@@ -122,6 +130,7 @@ export function PipelinePageContent() {
                 <input className="w-full border border-gray-700 bg-transparent rounded-md px-3 py-2" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="原因..." />
             </div>
             {err && <div className="text-sm text-red-400">{err}</div>}
+            {loading && <div className="text-sm text-gray-400">加载 pipeline 中...</div>}
             <div className="rounded-xl border border-gray-700 overflow-hidden bg-[#0b1120]">
                 <table className="w-full text-sm">
                     <thead className="bg-[#1f2937]">

@@ -13,7 +13,7 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobService: JobService
-  ) {}
+  ) { }
 
   async onModuleInit() {
     if ((env as any).enableInternalJobWorker) {
@@ -35,7 +35,14 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
               'ce04_visual_enrichment',
               'default_shot_render',
               'video_merge',
-              'default_video_render', // fallback
+              'default_video_render',
+            ],
+            supportedJobTypes: [
+              'NOVEL_ANALYSIS',
+              'CE06_NOVEL_PARSING',
+              'VIDEO_RENDER',
+              'CE03_VISUAL_DENSITY',
+              'CE04_VISUAL_ENRICHMENT',
             ],
           },
         },
@@ -53,6 +60,13 @@ export class JobWorkerService implements OnModuleInit, OnModuleDestroy {
               'default_shot_render',
               'video_merge',
               'default_video_render',
+            ],
+            supportedJobTypes: [
+              'NOVEL_ANALYSIS',
+              'CE06_NOVEL_PARSING',
+              'VIDEO_RENDER',
+              'CE03_VISUAL_DENSITY',
+              'CE04_VISUAL_ENRICHMENT',
             ],
           },
         },

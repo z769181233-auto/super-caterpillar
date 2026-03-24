@@ -1,6 +1,6 @@
 import { PrismaClient } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const jobId = process.argv[2];
 
 if (!jobId) {

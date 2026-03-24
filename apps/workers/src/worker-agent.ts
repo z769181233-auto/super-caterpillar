@@ -14,11 +14,7 @@ import { env } from '@scu/config';
 import * as util from 'util';
 
 const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: env.databaseUrl,
-    },
-  },
+  log: env.isDevelopment ? ['error', 'warn'] : ['error'],
 });
 
 const API_BASE_URL = env.apiUrl;
@@ -208,7 +204,7 @@ async function main() {
   process.stdout.write(util.format(`[Worker] API Base URL: ${API_BASE_URL}`) + '\n');
   process.stdout.write(
     util.format(`[Worker] API Key: ${API_KEY ? API_KEY.substring(0, 20) + '...' : 'NOT SET'}`) +
-      '\n'
+    '\n'
   );
   process.stdout.write(
     util.format(`[Worker] API Secret: ${API_SECRET ? 'SET' : 'NOT SET'}`) + '\n'

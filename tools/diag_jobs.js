@@ -1,5 +1,5 @@
 const { PrismaClient } = require('database');
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const jobs = await prisma.shotJob.findMany({

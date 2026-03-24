@@ -10,7 +10,7 @@ cd "$ROOT"
 PROJECT_ID="wangu_trailer_$(date +"%Y%m%d_%H%M%S")"
 TRACE_ID="trace_${PROJECT_ID}"
 NOVEL_SOURCE_PATH="docs/_specs/wangu_trailer_source.txt"
-DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu}"
+DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu}"
 
 echo "=================================================="
 echo "STARTING WANGU TRAILER PRODUCTION"

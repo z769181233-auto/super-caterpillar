@@ -6,8 +6,8 @@ export REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 export ORCHESTRATOR_ENABLED=true
 export JOB_WORKER_ENABLED=false
 export HEARTBEAT_TTL_SECONDS=10
-export STORAGE_ROOT="${REPO_ROOT}/.data/storage"
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/scu?schema=public}"
+export STORAGE_ROOT="${STORAGE_ROOT:-${REPO_ROOT}/.data/storage}"
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@127.0.0.1:5432/scu?schema=public}"
 export API_BASE_URL="${API_BASE_URL:-http://localhost:3000}"
 export API_URL="${API_URL:-$API_BASE_URL}"
 
@@ -29,13 +29,13 @@ E2E_SEED_ONLY="${E2E_SEED_ONLY:-0}"
 rm -rf "$STORAGE_ROOT/temp/seed"
 mkdir -p "$STORAGE_ROOT"
 
-# Ensure API Key exists (using default scu_smoke_key)
+# Ensure API Key exists
 echo "[0/4] Initializing API Key..."
 npx tsx tools/smoke/init_api_key.ts
 
-# Set Env for Trigger Script
-export API_KEY="scu_smoke_key"
-export API_SECRET="scu_smoke_secret"
+# Set Env for Trigger Script (Align with init_api_key.ts defaults)
+export API_KEY="${API_KEY:-ak_smoke_test_key_v1}"
+export API_SECRET="${API_SECRET:-scu_smoke_secret}"
 
 wait_for_2xx() {
   local url="$1"
@@ -110,7 +110,11 @@ export SHOT_ID
 echo "[E2E] Assert shot exists in DB (seed DB)..."
 npx tsx tools/smoke/assert_shot_exists.ts
 
-E2E_FORCE_RESTART_API="${E2E_FORCE_RESTART_API:-false}"
+if [ -n "${CI:-}" ] || [ "${GATE_ENV_MODE:-}" = "ci" ]; then
+  E2E_FORCE_RESTART_API="${E2E_FORCE_RESTART_API:-true}"
+else
+  E2E_FORCE_RESTART_API="${E2E_FORCE_RESTART_API:-false}"
+fi
 
 kill_port_3000_if_needed() {
   local pids
@@ -162,13 +166,22 @@ mkdir -p "$(dirname "$WORKER_LOG_FILE")"
 (
   cd apps/workers && \
   JOB_WORKER_ENABLED=true \
+  GATE_MODE=0 \
+  IGNORE_ENV_FILE="${IGNORE_ENV_FILE:-true}" \
   JWT_SECRET="${JWT_SECRET:-}" \
   JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-}" \
+  API_SECRET_KEY="${API_SECRET_KEY:-}" \
+  HMAC_SECRET_KEY="${HMAC_SECRET_KEY:-}" \
+  ENGINE_DEFAULT="${ENGINE_DEFAULT:-ce06_novel_parsing}" \
   REDIS_URL="${REDIS_URL:-}" \
+  DISABLE_REDIS="${DISABLE_REDIS:-}" \
   DATABASE_URL="${DATABASE_URL:-}" \
+  PRISMA_CLIENT_ENGINE_TYPE="${PRISMA_CLIENT_ENGINE_TYPE:-binary}" \
+  PRISMA_CLI_QUERY_ENGINE_TYPE="${PRISMA_CLI_QUERY_ENGINE_TYPE:-binary}" \
   API_BASE_URL="${API_BASE_URL:-http://localhost:3000}" \
   API_URL="${API_URL:-http://localhost:3000}" \
-  WORKER_API_KEY="${WORKER_API_KEY:-scu_smoke_key}" \
+  WORKER_ID="${WORKER_ID:-local-worker}" \
+  WORKER_API_KEY="${WORKER_API_KEY:-ak_smoke_test_key_v1}" \
   WORKER_API_SECRET="${WORKER_API_SECRET:-scu_smoke_secret}" \
   pnpm dev
 ) > "$WORKER_LOG_FILE" 2>&1 &
@@ -212,7 +225,7 @@ fi
 
 echo "Job SUCCEEDED!"
 # Parse Result
-RESULT=$(echo "$JOB_RESULT" | jq -r .payload.result)
+RESULT=$(echo "$JOB_RESULT" | jq -r .result)
 VIDEO_KEY=$(echo "$RESULT" | jq -r .videoKey)
 
 echo "Video Key: $VIDEO_KEY"

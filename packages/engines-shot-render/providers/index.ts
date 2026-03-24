@@ -68,4 +68,3 @@ export async function renderWithProvider(
   const provider = getProvider();
   return provider.render(prompt, options);
 }
-console.log('[DEBUG] SHOT_RENDER_PROVIDER env:', process.env.SHOT_RENDER_PROVIDER);

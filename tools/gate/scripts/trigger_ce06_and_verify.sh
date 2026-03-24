@@ -32,10 +32,10 @@ echo "[3/5] 触发 CE06 Smoke Gate..."
 bash tools/gate/gates/gate_ce06_smoke_v1.sh
 echo ""
 
-# 4. 查询 billing_ledgers
-echo "[4/5] 查询 billing_ledgers POSTED..."
+# 4. 查询 billing_ledger
+echo "[4/5] 查询 billing_ledger POSTED..."
 POSTED_COUNT=$(PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -t -c \
-  "SELECT COUNT(*) FROM billing_ledgers WHERE status='POSTED';")
+  "SELECT COUNT(*) FROM billing_ledger WHERE status='POSTED';")
 
 echo "Posted Count: $POSTED_COUNT"
 echo ""
@@ -46,7 +46,7 @@ if [ "$POSTED_COUNT" -gt 0 ]; then
   echo "样本记录："
   PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu -c \
     "SELECT \"traceId\", \"chargeCode\", amount, \"createdAt\"
-     FROM billing_ledgers
+     FROM billing_ledger
      WHERE status='POSTED'
      ORDER BY \"createdAt\" DESC
      LIMIT 5;"

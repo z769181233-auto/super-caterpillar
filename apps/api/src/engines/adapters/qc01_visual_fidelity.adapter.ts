@@ -4,14 +4,12 @@ import { QcBaseEngine } from '../base/qc_base.engine';
 import { RedisService } from '../../redis/redis.service';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { writeFileSync, mkdirSync, readdir, unlink, rmdir } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
+import { promisify } from 'util';
 import sharp from 'sharp';
-
-const execAsync = promisify(exec);
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class QC01VisualFidelityAdapter extends QcBaseEngine implements EngineAdapter {
@@ -43,10 +41,19 @@ export class QC01VisualFidelityAdapter extends QcBaseEngine implements EngineAda
 
     try {
       // Execute ffprobe to get real metadata
-      const { stdout } = await execAsync(
-        `ffprobe -v error -show_streams -show_format -of json "${filePath}"`
-      );
-      const probe = JSON.parse(stdout);
+      const probeRes = await execAsync('ffprobe', [
+        '-v',
+        'error',
+        '-show_streams',
+        '-show_format',
+        '-of',
+        'json',
+        filePath,
+      ]);
+      if (probeRes.code !== 0) {
+        throw new Error(probeRes.stderr || `ffprobe exited with code ${probeRes.code}`);
+      }
+      const probe = JSON.parse(probeRes.stdout);
 
       const videoStream = probe.streams?.find((s: any) => s.codec_type === 'video');
       const duration = parseFloat(probe.format?.duration || '0');
@@ -89,9 +96,19 @@ export class QC01VisualFidelityAdapter extends QcBaseEngine implements EngineAda
           mkdirSync(frameDir, { recursive: true });
 
           // Extract 30 frames
-          await execAsync(
-            `ffmpeg -y -i "${filePath}" -vf "fps=30/${duration}" -vframes 30 "${join(frameDir, 'frame_%03d.jpg')}"`
-          );
+          const frameExtractRes = await execAsync('ffmpeg', [
+            '-y',
+            '-i',
+            filePath,
+            '-vf',
+            `fps=30/${duration}`,
+            '-vframes',
+            '30',
+            join(frameDir, 'frame_%03d.jpg'),
+          ]);
+          if (frameExtractRes.code !== 0) {
+            throw new Error(frameExtractRes.stderr || 'frame extraction failed');
+          }
 
           const frameFiles = (await promisify(readdir)(frameDir))
             .filter((f: string) => f.endsWith('.jpg'))

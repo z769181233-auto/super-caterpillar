@@ -39,17 +39,27 @@ export async function processCE03VisualDensityJob(
     // Resolve Org ID (Priority: Job -> Shot -> Default)
     const jobOrgId = fullJob.organizationId || fullJob.shot?.organizationId;
     if (!jobOrgId) {
-      logger.warn(`[CE03] No Organization ID found for job ${job.id}`);
+      throw new Error(`[CE03] Organization ID is required for job ${job.id}`);
     }
 
     // Resolve Hierarchy IDs for downstream S4-2 pipeline
     const episodeId = fullJob.episodeId || fullJob.shot?.scene?.episodeId;
     const sceneId = fullJob.sceneId || fullJob.shot?.sceneId;
     const projectId = fullJob.projectId;
+    if (!projectId) {
+      throw new Error(`[CE03] Project ID is required for job ${job.id}`);
+    }
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { ownerId: true },
+    });
+    if (!project?.ownerId) {
+      throw new Error(`[CE03] Project owner is required for job ${job.id}`);
+    }
 
     // 2. Logic (Simulate Density Calculation)
     // In real impl, this calls python engine.
-    // For S4-2, we just produce a mock score and persist.
+    // For S4-2, we just produce a truth score and persist.
 
     const densityScore = Math.random() * 100;
 
@@ -73,16 +83,18 @@ export async function processCE03VisualDensityJob(
     await prisma.auditLog.create({
       data: {
         resourceType: 'shot',
-        resourceId: job.shotId || 'unknown',
+        resourceId: job.shotId || fullJob.shotId || (() => {
+          throw new Error(`[CE03] Shot ID is required for job ${job.id}`);
+        })(),
         action: 'ce03.visual_density.success',
-        orgId: jobOrgId || 'default-org',
+        orgId: jobOrgId,
         // actorId, traceId in details
         details: {
           jobId: job.id,
           score: densityScore,
           traceId,
           pipelineRunId,
-          actorId: 'system-worker',
+          actorId: job.workerId ?? null,
         },
       },
     });
@@ -110,8 +122,8 @@ export async function processCE03VisualDensityJob(
       jobType: 'CE03_VISUAL_DENSITY',
       traceId: traceId || job.id,
       projectId,
-      userId: 'system', // or derived from job
-      orgId: jobOrgId || 'default-org',
+      userId: project.ownerId,
+      orgId: jobOrgId,
       engineKey: 'ce03_visual_density',
       runId: pipelineRunId as string,
       billingUsage: {
@@ -126,38 +138,31 @@ export async function processCE03VisualDensityJob(
     // 5. Orchestration (Trigger CE04)
     // S4-2 Requirement: CE03 -> CE04
     if (job.shotId && projectId && jobOrgId) {
-      // Idempotency Check
-      const existingCE04 = await prisma.shotJob.findFirst({
-        where: {
+      const ce04RunKey = pipelineRunId || traceId || fullJob.traceId || job.id;
+      const ce04DedupeKey = `ce04_visual_enrichment_${job.shotId}_${ce04RunKey}`;
+
+      const ce04Job = await prisma.shotJob.upsert({
+        where: { dedupeKey: ce04DedupeKey },
+        update: {},
+        create: {
+          dedupeKey: ce04DedupeKey,
           projectId,
           organizationId: jobOrgId,
+          episodeId: episodeId,
+          sceneId: sceneId,
           shotId: job.shotId,
           type: 'CE04_VISUAL_ENRICHMENT',
+          status: 'PENDING',
+          payload: {
+            rootJobId: job.payload?.rootJobId,
+            precedingJobId: job.id,
+            pipelineRunId,
+            traceId,
+          },
         },
       });
 
-      if (!existingCE04) {
-        const ce04Job = await prisma.shotJob.create({
-          data: {
-            projectId,
-            organizationId: jobOrgId,
-            episodeId: episodeId,
-            sceneId: sceneId,
-            shotId: job.shotId,
-            type: 'CE04_VISUAL_ENRICHMENT',
-            status: 'PENDING',
-            payload: {
-              rootJobId: job.payload?.rootJobId,
-              precedingJobId: job.id,
-              pipelineRunId,
-              traceId,
-            },
-          },
-        });
-        logger.log(`[CE03] Spawned CE04: ${ce04Job.id}`);
-      } else {
-        logger.log(`[CE03] CE04 already exists for run ${pipelineRunId}, skipping spawn.`);
-      }
+      logger.log(`[CE03] Ensured CE04 job: ${ce04Job.id}`);
     }
 
     return {

@@ -1,0 +1,17 @@
+import client from 'prom-client';
+export declare function newTraceId(): `${string}-${string}-${string}-${string}-${string}`;
+export declare function runWithTrace<T>(traceId: string, fn: () => T): T;
+export declare function getTraceId(): string | undefined;
+export declare const registry: client.Registry<"text/plain; version=0.0.4; charset=utf-8">;
+export declare const workerJobsActive: client.Gauge<"engine">;
+export declare const workerJobDuration: client.Histogram<"engine" | "status">;
+export declare const engineExecDuration: client.Histogram<"engine" | "mode">;
+export declare const engineLatency: client.Histogram<"engine">;
+export declare const workerJobQueueDuration: client.Histogram<"engine">;
+export declare const jobQueueDuration: client.Histogram<"status" | "jobType" | "engineKey">;
+export declare const jobPrepareDuration: client.Histogram<"status" | "jobType" | "engineKey">;
+export declare const engineCoreExecDuration: client.Histogram<"status" | "jobType" | "engineKey">;
+export declare const jobPersistDuration: client.Histogram<"status" | "jobType" | "engineKey">;
+export declare const jobE2EDuration: client.Histogram<"status" | "jobType" | "engineKey">;
+export declare const costLedgerRecordsTotal: client.Counter<"status">;
+export declare function metricsText(): Promise<string>;

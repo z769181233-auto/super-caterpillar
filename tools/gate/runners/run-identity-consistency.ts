@@ -15,7 +15,7 @@ class MockApiClient extends ApiClient {
 
 async function run() {
   console.log('[GateConsistency] Starting ShotRender Consistency Test...');
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
 
   const charId = 'char-consist-' + Date.now();
   const projectId = 'proj-consist-' + Date.now();

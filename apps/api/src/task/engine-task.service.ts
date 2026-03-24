@@ -12,7 +12,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { EngineTaskSummary, EngineJobSummary, EngineExecutionStatus } from '@scu/shared-types';
-import { JobType as JobTypeEnum, JobStatus as JobStatusEnum } from 'database';
+import { JobStatus as JobStatusEnum } from 'database';
 
 @Injectable()
 export class EngineTaskService {
@@ -21,7 +21,8 @@ export class EngineTaskService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly engineRegistry: EngineRegistry
-  ) {}
+  ) {
+  }
 
   /**
    * 根据 TaskId 查找 EngineTaskSummary
@@ -33,12 +34,7 @@ export class EngineTaskService {
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        jobs: {
-          where: {
-            type: JobTypeEnum.NOVEL_ANALYSIS, // 只查询 NOVEL_ANALYSIS 类型的 Job
-          },
-          orderBy: { createdAt: 'asc' },
-        },
+        jobs: { orderBy: { createdAt: 'asc' } },
       },
     });
 
@@ -46,9 +42,9 @@ export class EngineTaskService {
       return null;
     }
 
-    // 2. 如果没有关联的 NOVEL_ANALYSIS Job，返回 null
+    // 2. 如果没有关联 Job，返回 null
     if (!task.jobs || task.jobs.length === 0) {
-      this.logger.debug(`Task ${taskId} has no NOVEL_ANALYSIS jobs`);
+      this.logger.debug(`Task ${taskId} has no jobs`);
       return null;
     }
 
@@ -78,7 +74,7 @@ export class EngineTaskService {
   /**
    * 根据 ProjectId 查找 EngineTaskSummary 列表
    * @param projectId Project ID
-   * @param taskType 任务类型（可选，如 'NOVEL_ANALYSIS'）
+   * @param taskType 任务类型（可选）
    * @returns EngineTaskSummary[]
    */
   async findEngineTasksByProject(
@@ -98,22 +94,17 @@ export class EngineTaskService {
     const tasks = await this.prisma.task.findMany({
       where,
       include: {
-        jobs: {
-          where: {
-            type: JobTypeEnum.NOVEL_ANALYSIS,
-          },
-          orderBy: { createdAt: 'asc' },
-        },
+        jobs: { orderBy: { createdAt: 'asc' } },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // 3. 过滤出有 NOVEL_ANALYSIS Job 的 Task，并转换为 EngineTaskSummary
+    // 3. 过滤出有 Job 的 Task，并转换为 EngineTaskSummary
     const engineTasks: EngineTaskSummary[] = [];
 
     for (const task of tasks) {
       if (!task.jobs || task.jobs.length === 0) {
-        continue; // 跳过没有 NOVEL_ANALYSIS Job 的 Task
+        continue; // 跳过没有 Job 的 Task
       }
 
       // 解析 engineKey

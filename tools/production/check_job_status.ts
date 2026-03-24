@@ -9,7 +9,7 @@ dotenv.config({ path: envLocalPath, override: true });
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 console.log('Checking DB URL:', process.env.DATABASE_URL);
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const jobs = await prisma.shotJob.findMany({

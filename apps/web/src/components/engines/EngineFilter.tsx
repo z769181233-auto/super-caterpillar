@@ -68,7 +68,7 @@ export default function EngineFilter({
     async function loadEngines() {
       try {
         setLoading(true);
-        const data = await engineApi.listEngines();
+        const data = await engineApi.getEngines();
         // 只显示启用的引擎
         const enabledEngines = (data || []).filter((e: Engine) => e.enabled !== false);
         setEngines(enabledEngines);

@@ -1,7 +1,7 @@
 import { PrismaClient } from '../packages/database';
 
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   try {
     const engineKey = 'stage1_orchestrator';
     const exists = await prisma.engine.findUnique({ where: { engineKey } });

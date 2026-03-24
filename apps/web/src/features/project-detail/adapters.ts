@@ -40,8 +40,36 @@ export interface EvidenceSummaryView {
   status: 'Verified' | 'Unverified' | 'Unknown';
 }
 
+type RawProjectDetail = {
+  id?: string;
+  name?: string;
+  organizationId?: string;
+  status?: ProjectDetailView['status'];
+  createdAt?: string;
+  updatedAt?: string;
+  stats?: Partial<ProjectDetailView['stats']>;
+  audit?: Partial<ProjectDetailView['audit']>;
+};
+
+type RawBuildRow = {
+  id?: string;
+  name?: string;
+  status?: BuildRowView['status'];
+  createdAt?: string;
+  metrics?: Partial<BuildRowView['metrics']>;
+};
+
+type RawEvidenceSummary = {
+  globalHash?: string;
+  cid?: string;
+  buildId?: string;
+  verified?: boolean;
+  lastGeneratedAt?: string;
+  status?: EvidenceSummaryView['status'];
+};
+
 // Adapters
-export function adaptProjectDetail(raw: any): ProjectDetailView {
+export function adaptProjectDetail(raw: RawProjectDetail): ProjectDetailView {
   return {
     id: raw?.id ?? 'unknown-id',
     name: raw?.name ?? 'Untitled Project',
@@ -61,11 +89,11 @@ export function adaptProjectDetail(raw: any): ProjectDetailView {
   };
 }
 
-export function adaptBuildsList(rawList: any[]): BuildRowView[] {
+export function adaptBuildsList(rawList: RawBuildRow[]): BuildRowView[] {
   if (!Array.isArray(rawList)) return [];
 
-  return rawList.map((raw) => ({
-    id: raw?.id ?? `build-${Math.random().toString(36).slice(2, 9)}`,
+  return rawList.map((raw, index) => ({
+    id: raw?.id ?? `missing-build-${index}`,
     name: raw?.name ?? 'Unnamed Build',
     status: raw?.status ?? 'UNKNOWN',
     createdAt: raw?.createdAt ?? new Date().toISOString(),
@@ -77,7 +105,7 @@ export function adaptBuildsList(rawList: any[]): BuildRowView[] {
   }));
 }
 
-export function adaptEvidenceSummary(raw: any): EvidenceSummaryView {
+export function adaptEvidenceSummary(raw: RawEvidenceSummary): EvidenceSummaryView {
   return {
     globalHash: { value: raw?.globalHash, source: raw?.globalHash ? 'server' : 'missing' },
     cid: { value: raw?.cid, source: raw?.cid ? 'server' : 'missing' },

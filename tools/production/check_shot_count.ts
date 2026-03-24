@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const projectId = 'scale_bench_1769794863695_0';

@@ -82,27 +82,26 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
       const template = this.loadTemplate(input.payload.templateName || this.DEFAULT_TEMPLATE);
 
       // 2. Inject Params
-      // Adjust these node IDs based on actual ComfyUI workflow for CE11
-      // Assuming a Text Input Node (e.g. ID 10) for Scene Context
-      // Assuming a Seed Node (e.g. ID 3)
       const prompt = JSON.parse(JSON.stringify(template)); // Deep copy
 
       const randomSeed = seed || Math.floor(Math.random() * 1000000000);
-
-      // TODO: Map actual nodes. For now using placeholders or "Context Node".
-      // If we don't have the real workflow yet, we simulate the JSON output via a prompt node that returns fixed JSON for the test?
-      // Or we assume specific node IDs. Let's assume a customized "CE11_Input" node if it exists, or standard nodes.
-      // For P5-1, we need a working loop. The User said "ComfyUI workflow outputs a JSON text".
-      // Let's assume there is a node (e.g. "ShowText" or "SaveText") that captures the output.
+      const textNodeId = this.resolveNodeId(prompt, {
+        envNodeId: process.env.CE11_COMFY_TEXT_NODE_ID,
+        preferredClassTypes: ['CLIPTextEncode'],
+        requiredInputField: 'text',
+      });
+      const seedNodeId = this.resolveNodeId(prompt, {
+        envNodeId: process.env.CE11_COMFY_SEED_NODE_ID,
+        preferredClassTypes: ['KSampler', 'RandomNoise'],
+        requiredInputField: 'seed',
+      });
 
       // Inject Context (traceId, sceneId, description)
       const sceneDesc = input.payload.scene_description || '';
-      this.injectNodeValue(
-        prompt,
-        '6',
-        'text',
-        `Generate shots for Scene: ${novelSceneId}. Details: ${sceneDesc}. Trace: ${traceId}`
-      );
+      this.injectNodeValue(prompt, textNodeId, 'text', this.buildScenePrompt(novelSceneId, sceneDesc, traceId));
+      if (seedNodeId) {
+        this.injectNodeValue(prompt, seedNodeId, 'seed', randomSeed);
+      }
 
       // 3. Submit & Poll
       const outputs = await this.executeComfyUI(prompt);
@@ -113,7 +112,7 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
 
       return {
         status: EngineInvokeStatus.SUCCESS,
-        output: result,
+        output: result as unknown as Record<string, unknown>,
         metrics: {
           latencyMs: Date.now() - started,
         },
@@ -192,6 +191,45 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
     }
   }
 
+  private buildScenePrompt(novelSceneId: string, sceneDesc: string, traceId?: string) {
+    return `Generate shots for Scene: ${novelSceneId}. Details: ${sceneDesc}. Trace: ${traceId || 'n/a'}`;
+  }
+
+  private resolveNodeId(
+    prompt: Record<string, any>,
+    options: {
+      envNodeId?: string;
+      preferredClassTypes: string[];
+      requiredInputField: string;
+    }
+  ): string {
+    const envNodeId = options.envNodeId?.trim();
+    if (envNodeId) {
+      if (!prompt[envNodeId]?.inputs || !(options.requiredInputField in prompt[envNodeId].inputs)) {
+        throw new Error(
+          `Configured CE11 node ${envNodeId} does not expose input "${options.requiredInputField}"`
+        );
+      }
+      return envNodeId;
+    }
+
+    for (const [nodeId, node] of Object.entries(prompt)) {
+      if (!node || typeof node !== 'object') continue;
+      const classType = String(node.class_type || '');
+      if (
+        options.preferredClassTypes.includes(classType) &&
+        node.inputs &&
+        options.requiredInputField in node.inputs
+      ) {
+        return nodeId;
+      }
+    }
+
+    throw new Error(
+      `Failed to resolve CE11 ComfyUI node for input "${options.requiredInputField}" from template`
+    );
+  }
+
   private async executeComfyUI(prompt: any): Promise<any> {
     const promptBody = JSON.stringify({ prompt });
     const queueRes = await httpRequest(
@@ -239,11 +277,11 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
 
   private parseOutputs(outputs: any, payload: any): CE11Output {
     // Logic: Look for text/json nodes.
-    // If no text output (e.g. image workflow), verify inputs and return dummy structure?
+    // If no text output (e.g. image workflow), verify inputs and return empty structure?
     // User says: "Parse outputs (Phase 1 can just parse text node... if no text node generate structure from prompt)"
 
     // Let's look for any output containing 'text' or 'json'
-    // Or just return a standard mock structure if we are in a "Real Connection but Logic Mock" phase.
+    // Or just return a standard temporary structure if we are in a "Real Connection but Logic Fallback" phase.
     // However, "Real Gate" implies real I/O.
 
     // Scan outputs for text

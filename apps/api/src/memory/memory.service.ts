@@ -6,9 +6,9 @@ import { AuditLogService } from '../audit-log/audit-log.service';
  * Memory Service
  * CE07/CE08: Story Memory 服务层
  *
- * TODO: 实现真实逻辑
- * - short-term: 读取/更新章节短期记忆（摘要、角色状态）
- * - long-term: 读取/更新实体长期记忆（知识图谱、向量）
+ * 当前实现：
+ * - short-term / long-term 读取真实数据库记录
+ * - update 仅提供接受请求和审计记录的 MVP 语义，返回 PENDING
  */
 @Injectable()
 export class MemoryService {
@@ -20,9 +20,9 @@ export class MemoryService {
   ) {}
 
   async getShortTermMemory(chapterId: string, userId?: string) {
-    // TODO: 实现真实逻辑
     const memory = await this.prisma.memoryShortTerm.findFirst({
       where: { chapterId },
+      orderBy: { createdAt: 'desc' },
     });
 
     // 记录审计日志
@@ -56,9 +56,9 @@ export class MemoryService {
   }
 
   async getLongTermMemory(entityId: string, userId?: string) {
-    // TODO: 实现真实逻辑
     const memory = await this.prisma.memoryLongTerm.findFirst({
       where: { entityId },
+      orderBy: { createdAt: 'desc' },
     });
 
     // 记录审计日志
@@ -97,7 +97,6 @@ export class MemoryService {
     body: { type: 'short-term' | 'long-term'; chapterId?: string; entityId?: string; data: any },
     userId?: string
   ) {
-    // TODO: 实现真实逻辑
     if (body.type === 'short-term' && body.chapterId) {
       // 记录审计日志
       await this.auditLogService.record({

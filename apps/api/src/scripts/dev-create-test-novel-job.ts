@@ -7,7 +7,7 @@ import * as util from 'util';
  *   pnpm --filter ./apps/api dev:create-test-novel-job
  */
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
 
   // 1) 确保有用户
   const email = 'dev+worker@test.local';
@@ -27,7 +27,10 @@ async function main() {
 
   // 2) 确保有组织
   const orgName = 'Dev Org';
-  let org = await prisma.organization.findFirst({ where: { name: orgName } });
+  let org = await prisma.organization.findFirst({
+    where: { name: orgName },
+    orderBy: { createdAt: 'desc' },
+  });
   if (!org) {
     org = await prisma.organization.create({
       data: {
@@ -39,8 +42,8 @@ async function main() {
   }
 
   // 3) 确保成员关系
-  const membership = await prisma.membership.findFirst({
-    where: { userId: user.id, organizationId: org.id },
+  const membership = await prisma.membership.findUnique({
+    where: { userId_organizationId: { userId: user.id, organizationId: org.id } },
   });
   if (!membership) {
     await prisma.membership.create({
@@ -56,6 +59,7 @@ async function main() {
   const projectName = 'Dev Project - Novel Analysis';
   let project = await prisma.project.findFirst({
     where: { name: projectName, organizationId: org.id },
+    orderBy: { createdAt: 'desc' },
   });
   if (!project) {
     project = await prisma.project.create({

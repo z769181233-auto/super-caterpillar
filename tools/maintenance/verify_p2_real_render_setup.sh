@@ -34,7 +34,7 @@ lsof -ti:3000 | xargs kill -9 2>/dev/null || true
 lsof -ti:3001 | xargs kill -9 2>/dev/null || true
 
 echo "=== PLAN-2: DB & Build Alignment ==="
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu"
+export DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu"
 # Force local_mps shim for P2 Plumbing Verification (override .env)
 export SHOT_RENDER_PROVIDER="local_mps"
 export PYTHON_BIN="python3"

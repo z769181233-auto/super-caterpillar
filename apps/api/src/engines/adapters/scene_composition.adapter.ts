@@ -7,11 +7,8 @@ import { createHash } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { sceneCompositionRealEngine } from '@scu/engines-scene-composition';
-
-const execAsync = promisify(exec);
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 interface CompositionElement {
   id: string; // Added id for AI tracking
@@ -104,7 +101,7 @@ export class SceneCompositionAdapter implements EngineAdapter {
         output: {
           ...output,
           source: 'render',
-          ai_audit: aiResult.audit_trail.engine_version,
+          ai_audit: aiResult.audit_trail?.engine_version,
         },
       };
     } catch (error: any) {
@@ -143,76 +140,46 @@ export class SceneCompositionAdapter implements EngineAdapter {
       throw new Error(`Background file not found: ${bgPath}`);
     }
 
-    // Build Inputs
-    // -i bg -i el1 -i el2 ...
-    const inputs = [`-i "${bgPath}"`];
+    const args: string[] = ['-y', '-i', bgPath];
     const filterChains: string[] = [];
-
-    // For each element, add input and filter
-    // We start with [0:v] as base.
-    // Then overlay [1:v], result -> tmp1
-    // Then tmp1 overlay [2:v] -> tmp2 ...
-    // Simplest:
-    // [0:v][1:v] overlay=x=X:y=Y [v1];
-    // [v1][2:v] overlay=x=X:y=Y [v2];
-
-    let lastLabel = '0:v';
+    let lastLabel = '[0:v]';
 
     for (let i = 0; i < elements.length; i++) {
       const el = elements[i];
       const elPath = getPath(el.url);
-      inputs.push(`-i "${elPath}"`);
+      args.push('-i', elPath);
 
-      const inputIdx = i + 1; // 0 is bg
-      const nextLabel = `v${inputIdx}`;
+      const inputIdx = i + 1;
+      const rawScale = typeof el.scale === 'number' ? el.scale : 1;
+      const scale = Number.isFinite(rawScale) && rawScale > 0 ? rawScale : 1;
+      const x = Number.isFinite(el.x as number) ? Number(el.x) : 0;
+      const y = Number.isFinite(el.y as number) ? Number(el.y) : 0;
+      const sourceLabel =
+        scale !== 1 ? `[s${inputIdx}]` : `[${inputIdx}:v]`;
 
-      // Basic overlay. Scaling would require scale filter first.
-      // For MVP P2.2, let's assume pre-scaled or just basic overlay.
-      // If scale is needed: [1:v] scale=W:H [scaled1]; [base][scaled1] overlay...
-      // We'll skip scale for now to keep it simple unless strictly requested.
-      // The Task says "x,y,scale".
-      // Let's implement scale if present.
-
-      let sourceLabel = `[${inputIdx}:v]`;
-      let scaleFilter = '';
-
-      if (el.scale && el.scale !== 1) {
-        const scaledLabel = `s${inputIdx}`;
-        // scale=iw*SCALE:ih*SCALE
-        scaleFilter = `[${inputIdx}:v]scale=iw*${el.scale}:ih*${el.scale}[${scaledLabel}];`;
-        sourceLabel = `[${scaledLabel}]`;
+      if (scale !== 1) {
+        filterChains.push(`[${inputIdx}:v]scale=iw*${scale}:ih*${scale}[s${inputIdx}]`);
       }
 
-      const x = el.x || 0;
-      const y = el.y || 0;
-
-      // If it's the last one, we don't need a label for output, it implicitly flows to -map?
-      // Actually explicit labels are safer.
-      const outLabel = i === elements.length - 1 ? '' : `[${nextLabel}]`;
-
-      // Construct chain
-      // If we have scale: "scaleString [last][scaled] overlay... [out]"
-      // If no scale: "[last][idx] overlay... [out]"
-
-      if (scaleFilter) {
-        filterChains.push(`${scaleFilter}[${lastLabel}]${sourceLabel}overlay=${x}:${y}${outLabel}`);
-      } else {
-        filterChains.push(`[${lastLabel}]${sourceLabel}overlay=${x}:${y}${outLabel}`);
-      }
-
-      if (outLabel) {
-        lastLabel = nextLabel; // Use the named label for next iteration
-      }
+      const outLabel = `[v${inputIdx}]`;
+      filterChains.push(`${lastLabel}${sourceLabel}overlay=${x}:${y}${outLabel}`);
+      lastLabel = outLabel;
     }
 
-    const inputStr = inputs.join(' ');
-    const filterStr = filterChains.length > 0 ? `-filter_complex "${filterChains.join(';')}"` : '';
+    if (filterChains.length > 0) {
+      args.push('-filter_complex', filterChains.join(';'), '-map', lastLabel);
+    } else {
+      args.push('-map', '0:v');
+    }
 
-    const cmd = `ffmpeg -y ${inputStr} ${filterStr} "${outputPath}"`;
+    args.push('-frames:v', '1', outputPath);
 
-    this.logger.log(`Executing FFmpeg: ${cmd}`);
+    this.logger.log(`Executing FFmpeg: ffmpeg ${args.join(' ')}`);
     try {
-      await execAsync(cmd);
+      const res = await execAsync('ffmpeg', args);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (e: any) {
       throw new Error(`FFmpeg Execution Failed: ${e.stderr || e.message}`);
     }

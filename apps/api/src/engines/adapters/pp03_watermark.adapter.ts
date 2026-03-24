@@ -4,9 +4,9 @@ import { PpBaseEngine } from '../base/pp_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class PP03WatermarkAdapter extends PpBaseEngine {
@@ -37,9 +37,24 @@ export class PP03WatermarkAdapter extends PpBaseEngine {
       inputArg = `-i "${sourcePath}"`;
     }
 
-    // FFmpeg: 在右上角放一个色块作为水印
-    const cmd = `ffmpeg -y ${inputArg} -vf "drawbox=x=iw-60:y=10:w=50:h=20:color=red@0.5:t=fill" -c:a copy "${outputPath}"`;
-    execSync(cmd, { stdio: 'ignore' });
+    const args = ['-y'];
+    if (inputArg === '-f lavfi -i testsrc=d=1') {
+      args.push('-f', 'lavfi', '-i', 'testsrc=d=1');
+    } else {
+      args.push('-i', sourcePath);
+    }
+    args.push(
+      '-vf',
+      'drawbox=x=iw-60:y=10:w=50:h=20:color=red@0.5:t=fill',
+      '-c:a',
+      'copy',
+      outputPath,
+    );
+
+    const res = await execAsync('ffmpeg', args);
+    if (res.code !== 0) {
+      throw new Error(`PP03 watermark failed: ${res.stderr}`);
+    }
 
     return {
       assetUrl: `file://${outputPath}`,

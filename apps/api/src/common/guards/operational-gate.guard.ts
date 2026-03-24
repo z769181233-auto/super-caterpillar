@@ -22,7 +22,12 @@ export class OperationalGateGuard implements CanActivate {
     const url = request.originalUrl || request.url;
 
     // 1. Engine Offline Check
-    if (url.includes('/ce-dag/run') || url.includes('/v3/story/parse')) {
+    if (
+      url.includes('/ce-dag/run') ||
+      url.includes('/story/parse') ||
+      url.includes('/v3/story/parse') ||
+      url.includes('/orchestrator/pipeline/stage1')
+    ) {
       const offlineEngines = await this.prisma.engine.findMany({
         where: { enabled: false },
         select: { engineKey: true },

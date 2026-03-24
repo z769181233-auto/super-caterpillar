@@ -40,7 +40,7 @@ if [ -z "${DATABASE_URL:-}" ]; then
   if [ -n "${DB_HOST:-}" ]; then
     DATABASE_URL="postgresql://${DB_USER:-postgres}:${DB_PASS:-postgres}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME:-super_caterpillar_dev}?schema=public"
   else
-    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/scu_smoke?schema=public"
+    DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/scu_smoke?schema=public"
   fi
 fi
 

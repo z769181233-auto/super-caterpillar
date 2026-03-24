@@ -20,7 +20,7 @@ function signJwt(payload: any, secret: string) {
 
 async function setupAuth() {
   console.log('[Setup] Seeding Database for Smoke Test...');
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   try {
     await prisma.$connect();
 

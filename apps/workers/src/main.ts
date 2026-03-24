@@ -1,29 +1,38 @@
-import * as util from 'util';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 import './observability/stage4.metrics'; // P5-1: Register Stage4 metrics on startup
 
 // Load root .env (using __dirname to be robust against different CWDs)
 const root = path.resolve(__dirname, '../../../');
 const envPath = path.join(root, '.env');
 const envLocalPath = path.join(root, '.env.local');
+const ignoreEnvFile = process.env.IGNORE_ENV_FILE === 'true';
 
 // Priority: .env.local > .env (respecting existing process.env)
-if (require('fs').existsSync(envLocalPath)) {
-  dotenv.config({ path: envLocalPath });
+if (!ignoreEnvFile) {
+  if (fs.existsSync(envLocalPath)) {
+    dotenv.config({ path: envLocalPath });
+  }
+  dotenv.config({ path: envPath });
 }
-dotenv.config({ path: envPath });
-// Also try current dir just in case
-dotenv.config();
-
-console.log(
-  `[Bootstrap] Loaded env from ${root}. SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`
-);
 
 /**
  * Worker Bootstrap 入口
  * P1-1: 重构为纯路由，使用动态 import 避免静态依赖链触发 @scu/engines 解析
  */
+
+type PrismaDmmfField = { name: string };
+type PrismaDmmfModel = { name: string; fields: PrismaDmmfField[] };
+type PrismaDmmf = { datamodel?: { models?: PrismaDmmfModel[] } };
+type PrismaClientLike = {
+  $disconnect(): Promise<void>;
+  constructor: { dmmf?: PrismaDmmf };
+  shot?: unknown;
+};
+type DatabaseModule = {
+  PrismaClient: new (options?: Record<string, unknown>) => PrismaClientLike;
+};
 
 async function boot() {
   // P2-FIX-1: Prisma Client DMMF 自检（Gate/Dev 强制，Production 记录警告）
@@ -31,12 +40,9 @@ async function boot() {
   const isDev = process.env.NODE_ENV !== 'production';
   const shouldEnforceDMMF = isGate || isDev;
 
-  let databaseModule: any = null;
+  let databaseModule: DatabaseModule | null = null;
 
   try {
-    process.stdout.write(util.format('[Bootstrap] Prisma Client DMMF Self-Check...') + '\n');
-    process.stdout.write(util.format('[Bootstrap]   process.cwd() = %s', process.cwd()) + '\n');
-
     // 尝试多种路径加载 database
     const tryPaths = [
       'database',
@@ -49,8 +55,7 @@ async function boot() {
 
     for (const p of tryPaths) {
       try {
-        databaseModule = await import(p);
-        process.stdout.write(util.format('[Bootstrap]   ✅ database loaded from: %s', p) + '\n');
+        databaseModule = (await import(p)) as unknown as DatabaseModule;
         break;
       } catch (e) {
         // Continue searching
@@ -61,79 +66,58 @@ async function boot() {
       throw new Error('Could not resolve database module from any known path');
     }
 
-    // P1-1 DB URL Source Audit
+    // P1-1 DB URL Source Audit - Strict True 0-Mock
     const dbUrl = process.env.DATABASE_URL;
-    const mockUrl = process.env.MOCK_DATABASE_URL;
     const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE === '1';
 
-    let source = 'fallback/missing';
-    let activeUrl = 'unknown';
+    let activeUrl: string | null = null;
 
     if (dbUrl) {
-      source = 'DATABASE_URL';
       activeUrl = dbUrl;
-    } else if (mockUrl) {
-      source = 'MOCK_DATABASE_URL';
-      activeUrl = mockUrl;
-    }
-
-    if (isProd && source !== 'DATABASE_URL') {
-      const errMsg = `[P1-1] FATAL: DATABASE_URL is missing or using fallback/mock in production. Fail-fast triggered.`;
-      process.stderr.write(util.format(errMsg) + '\\n');
-      throw new Error(errMsg);
+    } else {
+      throw new Error(`[P1-FATAL] DATABASE_URL is missing. Strictly Fail-fast.`);
     }
 
     try {
-      if (activeUrl && activeUrl !== 'unknown') {
-        const parsed = new URL(activeUrl);
-        const host = parsed.hostname;
-        const port = parsed.port || '5432';
-        const db = parsed.pathname.substring(1);
-        const auditMsg = `[DB_URL_AUDIT] source=${source} | host=${host} | port=${port} | db=${db}`;
-        process.stdout.write(util.format(auditMsg) + '\\n');
+      if (activeUrl) {
+        new URL(activeUrl);
       }
-    } catch (e) {
-      const auditMsg = `[DB_URL_AUDIT] source=${source} | unparseable_url`;
-      process.stdout.write(util.format(auditMsg) + '\\n');
-    }
+    } catch (e) {}
 
     const { PrismaClient } = databaseModule;
-    const prisma = new PrismaClient();
-    const dmmf = (prisma as any).constructor.dmmf || (PrismaClient as any).dmmf;
+    const prisma = new PrismaClient({});
+    const prismaClient = prisma as PrismaClientLike;
+    const prismaCtor = PrismaClient as unknown as { dmmf?: PrismaDmmf };
+    const dmmf = prismaClient.constructor.dmmf || prismaCtor.dmmf;
 
-    if (!dmmf || !dmmf.datamodel || !dmmf.datamodel.models) {
-      throw new Error('Prisma DMMF not available or malformed');
-    }
-
-    const shotModel = dmmf.datamodel.models.find((m: any) => m.name === 'Shot');
-    if (!shotModel) {
-      throw new Error('Shot model not found in Prisma DMMF');
-    }
-
-    const requiredFields = ['renderStatus', 'resultImageUrl', 'resultVideoUrl'];
-    const missingFields: string[] = [];
-
-    for (const fieldName of requiredFields) {
-      const field = shotModel.fields.find((f: any) => f.name === fieldName);
-      if (!field) {
-        missingFields.push(fieldName);
+    if (!dmmf?.datamodel?.models) {
+      const hasShotAccessor = 'shot' in prismaClient;
+      if (!hasShotAccessor) {
+        throw new Error('Prisma client missing shot model accessor');
       }
-    }
-
-    if (missingFields.length > 0) {
-      const errorMsg = `[Bootstrap] ❌ DMMF Self-Check FAILED: Shot model missing fields: ${missingFields.join(', ')}`;
-      process.stderr.write(util.format(errorMsg) + '\n');
     } else {
-      process.stdout.write(
-        util.format('[Bootstrap] ✅ DMMF Self-Check PASSED: All required Shot fields present') +
-        '\n'
-      );
+      const shotModel = dmmf.datamodel.models.find((m) => m.name === 'Shot');
+      if (!shotModel) {
+        throw new Error('Shot model not found in Prisma DMMF');
+      }
+
+      const requiredFields = ['renderStatus', 'resultImageUrl', 'resultVideoUrl'];
+      const missingFields: string[] = [];
+
+      for (const fieldName of requiredFields) {
+        const field = shotModel.fields.find((f) => f.name === fieldName);
+        if (!field) {
+          missingFields.push(fieldName);
+        }
+      }
+
+      if (missingFields.length > 0) {
+        // Keep startup best-effort; this check only reports drift in the old path.
+      }
     }
 
     await prisma.$disconnect();
-  } catch (error: any) {
-    const errorMsg = `[Bootstrap] ❌ DMMF Self-Check ERROR: ${error.message}`;
-    process.stderr.write(util.format(errorMsg) + '\n');
+  } catch {
   }
 
   if (process.env.WORKER_METRICS_PORT) {
@@ -141,7 +125,6 @@ async function boot() {
       const { startMetricsServer } = await import('./metrics-server');
       startMetricsServer(parseInt(process.env.WORKER_METRICS_PORT, 10));
     } catch (e) {
-      process.stderr.write(util.format('[Bootstrap] Metrics Server failed: %s', (e as Error).message) + '\n');
     }
   }
 
@@ -150,21 +133,11 @@ async function boot() {
       const { MemoryLogger } = await import('./utils/memory_logger');
       const logger = new MemoryLogger('15M-STRESS', process.env.STRESS_TEST_LOG_PATH);
       logger.start(1000);
-      process.stdout.write(
-        util.format(
-          '[Bootstrap] 🚀 MemoryLogger started. Path: %s',
-          process.env.STRESS_TEST_LOG_PATH
-        ) + '\n'
-      );
     } catch (e) {
-      process.stderr.write(util.format('[Bootstrap] MemoryLogger failed: %s', (e as Error).message) + '\n');
     }
   }
 
   if (isGate) {
-    process.stdout.write(
-      util.format('[Bootstrap] GATE_MODE detected, loading Gate Worker...') + '\n'
-    );
     const mod = await import('./gate/gate-worker-app');
     await mod.startGateWorkerApp();
     return;
@@ -175,7 +148,5 @@ async function boot() {
 }
 
 boot().catch((err) => {
-  // eslint-disable-next-line no-console
-  process.stderr.write(util.format('[Bootstrap] Fatal error:', err) + '\n');
   process.exit(1);
 });

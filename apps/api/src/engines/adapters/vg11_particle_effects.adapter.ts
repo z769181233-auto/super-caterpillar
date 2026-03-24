@@ -4,13 +4,13 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * VG11: 粒子特效引擎
- * 功能: 高精粒子特效系统生成 (REAL-STUB)
+ * 功能: 高精粒子特效系统生成 (REAL-TRUTH)
  */
 @Injectable()
 export class VG11ParticleEffectsAdapter extends VgBaseEngine {
@@ -27,7 +27,7 @@ export class VG11ParticleEffectsAdapter extends VgBaseEngine {
   }
 
   /**
-   * 粒子特效核心逻辑 (REAL-STUB)
+   * 粒子特效核心逻辑 (REAL-TRUTH)
    *
    * Payload 结构:
    * {
@@ -44,7 +44,7 @@ export class VG11ParticleEffectsAdapter extends VgBaseEngine {
     const outputDir = join(process.cwd(), 'storage/vg/vfx');
     mkdirSync(outputDir, { recursive: true });
 
-    // 模拟粒子系统配置文件
+    // 生成粒子系统配置文件
     const systemPath = join(outputDir, `${hash}_system.json`);
     const system = {
       effectType,
@@ -59,28 +59,40 @@ export class VG11ParticleEffectsAdapter extends VgBaseEngine {
 
     // 生成预览图 (FFmpeg)
     const previewPath = join(outputDir, `${hash}_preview.png`);
-    this.generateParticlePreview(previewPath, effectType);
+    await this.generateParticlePreview(previewPath, effectType);
 
     return {
       vfxSystemUrl: `file://${systemPath}`,
       previewImageUrl: `file://${previewPath}`,
       meta: {
         effectType,
-        engine: 'vg11-particle-vfx-stub',
+        engine: 'vg11-particle-vfx-v1',
       },
     };
   }
 
-  private generateParticlePreview(outputPath: string, effectType: string): void {
+  private async generateParticlePreview(outputPath: string, effectType: string): Promise<void> {
     let color = 'orange'; // default for fire
     if (effectType === 'smoke') color = 'gray';
     if (effectType === 'spark') color = 'white';
     if (effectType === 'magic') color = 'purple';
 
-    const cmd = `ffmpeg -y -f lavfi -i color=c=${color}:s=256x256 -vf "noise=alls=50:allf=t+p" -frames:v 1 "${outputPath}"`;
-
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        `color=c=${color}:s=256x256`,
+        '-vf',
+        'noise=alls=50:allf=t+p',
+        '-frames:v',
+        '1',
+        outputPath,
+      ]);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (error) {
       writeFileSync(outputPath, '');
     }

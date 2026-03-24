@@ -1,6 +1,12 @@
 export type PreviewStatus = 'NONE' | 'PENDING' | 'READY' | 'FAILED';
 
-export function getPreviewStatus(shot: any): PreviewStatus {
+interface PreviewShotLike {
+  renderStatus?: string | null;
+  resultImageUrl?: string | null;
+  resultVideoUrl?: string | null;
+}
+
+export function getPreviewStatus(shot: PreviewShotLike): PreviewStatus {
   if (shot.renderStatus === 'SUCCEEDED' || shot.resultImageUrl || shot.resultVideoUrl) {
     return 'READY';
   }
@@ -13,6 +19,6 @@ export function getPreviewStatus(shot: any): PreviewStatus {
   return 'NONE';
 }
 
-export function getPreviewUrl(shot: any): string | null {
+export function getPreviewUrl(shot: PreviewShotLike): string | null {
   return shot.resultImageUrl || shot.resultVideoUrl || null;
 }

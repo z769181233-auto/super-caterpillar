@@ -26,7 +26,7 @@ const apiClient = new ApiClient(
   'production-trigger-compose'
 );
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 const PROJECT_ID = 'prod-2-episode';
 const ORGANIZATION_ID = 'default-org';

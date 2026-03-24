@@ -7,7 +7,7 @@
 
 import { PrismaClient, JobType, JobStatus } from 'database';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function testQualityMetricsWrite() {
   console.log('=== Quality Metrics Smoke Test ===\n');

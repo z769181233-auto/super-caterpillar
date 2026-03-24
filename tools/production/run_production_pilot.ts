@@ -27,7 +27,7 @@ const API_SECRET =
   process.env.WORKER_API_SECRET ||
   'super-caterpillar-dev-secret-64-chars-long-for-hmac-sha256-signing-12345678';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 const apiClient = new ApiClient('http://localhost:3000', API_KEY, API_SECRET, WORKER_ID);
 
 // ---------------------------------------------------------

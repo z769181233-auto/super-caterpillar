@@ -2,7 +2,7 @@ import { PrismaClient } from 'database';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function exportCSV() {
   console.log('--- Script CSV Export Tool (INDUSTRIAL SEALED) ---');

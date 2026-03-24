@@ -3,6 +3,88 @@ import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
 import { ProcessorContext } from '../types/processor-context';
 import { CostLedgerService } from '../billing/cost-ledger.service';
+import {
+  buildTimelinePolicy,
+  deriveCoverageRole,
+  deriveRhythmClass,
+  deriveTransitionHint,
+  getShotPlannerRuleSetVersion,
+} from '../lib/shot-planner-rules';
+
+function buildDirectorPlan(activeFilmIr: any, shotData: any, plannerVersion: string | null) {
+  const transitionHint = deriveTransitionHint(activeFilmIr).value;
+
+  return {
+    filmIrId: activeFilmIr?.id || null,
+    plannerVersion,
+    shotPlannerRuleSetVersion: getShotPlannerRuleSetVersion(),
+    dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
+    emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
+    shotPattern: shotData.shot_pattern || activeFilmIr?.shotPattern || null,
+    visualStrategy: activeFilmIr?.visualStrategy || null,
+    blockingStrategy: activeFilmIr?.blockingStrategy || null,
+    avgShotLengthSec: activeFilmIr?.avgShotLengthSec
+      ? Number(activeFilmIr.avgShotLengthSec)
+      : null,
+    cameraDistanceStrategy: activeFilmIr?.cameraDistanceStrategy || null,
+    cameraAngleStrategy: activeFilmIr?.cameraAngleStrategy || null,
+    cameraMotionStyle: activeFilmIr?.cameraMotionStyle || null,
+    compositionStyle: activeFilmIr?.compositionStyle || null,
+    spatialStrategy: activeFilmIr?.spatialStrategy || null,
+    lightingStyle: activeFilmIr?.lightingStyle || null,
+    colorStrategy: activeFilmIr?.colorStrategy || null,
+    soundStrategy: activeFilmIr?.soundStrategy || null,
+    silenceStrategy: activeFilmIr?.silenceStrategy || null,
+    editingRhythmStrategy: activeFilmIr?.editingRhythmStrategy || null,
+    continuityConstraints: activeFilmIr?.continuityConstraints || null,
+    characterStateConstraints: activeFilmIr?.characterStateConstraints || null,
+    costumeStateConstraints: activeFilmIr?.costumeStateConstraints || null,
+    propStateConstraints: activeFilmIr?.propStateConstraints || null,
+    locationStateConstraints: activeFilmIr?.locationStateConstraints || null,
+    transitionHint,
+  };
+}
+
+function buildExecutionPolicy(activeFilmIr: any, shotData: any, plannerVersion: string | null) {
+  const transitionHint = deriveTransitionHint(activeFilmIr).value;
+  const coverageRole = deriveCoverageRole(shotData).value;
+  const rhythmClass = deriveRhythmClass(activeFilmIr).value;
+
+  return {
+    plannerVersion,
+    shotPlannerRuleSetVersion: getShotPlannerRuleSetVersion(),
+    filmIrId: activeFilmIr?.id || null,
+    coverageRole,
+    rhythmClass,
+    transitionHint,
+    durationSecTarget: shotData.duration_sec ? Number(shotData.duration_sec) : null,
+    cameraPolicy: {
+      shotType: shotData.shot_type || 'MEDIUM_SHOT',
+      distanceStrategy: activeFilmIr?.cameraDistanceStrategy || null,
+      angleStrategy: activeFilmIr?.cameraAngleStrategy || null,
+      motionStyle: activeFilmIr?.cameraMotionStyle || null,
+      compositionStyle: activeFilmIr?.compositionStyle || null,
+      blockingStrategy: activeFilmIr?.blockingStrategy || null,
+    },
+    visualPolicy: {
+      visualStrategy: activeFilmIr?.visualStrategy || null,
+      lightingStyle: activeFilmIr?.lightingStyle || null,
+      colorStrategy: activeFilmIr?.colorStrategy || null,
+      spatialStrategy: activeFilmIr?.spatialStrategy || null,
+    },
+    audioPolicy: {
+      soundStrategy: activeFilmIr?.soundStrategy || null,
+      silenceStrategy: activeFilmIr?.silenceStrategy || null,
+    },
+    continuityPolicy: {
+      continuityConstraints: activeFilmIr?.continuityConstraints || null,
+      characterStateConstraints: activeFilmIr?.characterStateConstraints || null,
+      costumeStateConstraints: activeFilmIr?.costumeStateConstraints || null,
+      propStateConstraints: activeFilmIr?.propStateConstraints || null,
+      locationStateConstraints: activeFilmIr?.locationStateConstraints || null,
+    },
+  };
+}
 
 /**
  * CE11 Shot Generator Processor (V3.0 Bible Alignment)
@@ -20,10 +102,13 @@ export async function processCE11ShotGeneratorJob(
     const payload = job.payload || {};
     const novelSceneId = payload.novelSceneId || payload.sceneId;
     const traceId = payload.traceId || job.id;
-    const projectId = job.projectId || payload.projectId;
+    const projectId = payload.projectId || job.projectId;
 
     if (!novelSceneId) {
       throw new Error('Missing novelSceneId for CE11 Shot Generation');
+    }
+    if (!projectId) {
+      throw new Error('[CE11] Missing projectId for CE11 Shot Generation');
     }
 
     // 1. 获取小说场景内容
@@ -43,16 +128,42 @@ export async function processCE11ShotGeneratorJob(
       );
     }
 
-    // Resolve ProjectId from scene relations if not in job
-    if (!projectId && scene.novelSource?.projectId) {
-      // assigned to const variable cannot be reassigned, so we use a new var or cast
-      // actually projectId is const. We should have defined it as let or use a new var.
-      // But wait, projectId is defined at line 23.
-      // line 23: const projectId = job.projectId || payload.projectId;
-      // I cannot reassign it.
-    }
-
     const resolveProjectId = projectId || scene.projectId;
+    if (!resolveProjectId) {
+      throw new Error(`[CE11] Missing projectId for scene ${novelSceneId}`);
+    }
+    const activeFilmIrId = scene.filmIrId || null;
+    const activeFilmIr =
+      activeFilmIrId
+        ? await (prisma as any).filmIR.findUnique({
+            where: { id: activeFilmIrId },
+            select: {
+              id: true,
+              dramaticFunction: true,
+              emotionalTarget: true,
+              shotPattern: true,
+              visualStrategy: true,
+              blockingStrategy: true,
+              avgShotLengthSec: true,
+              cameraDistanceStrategy: true,
+              cameraAngleStrategy: true,
+              cameraMotionStyle: true,
+              compositionStyle: true,
+              spatialStrategy: true,
+              lightingStyle: true,
+              colorStrategy: true,
+              soundStrategy: true,
+              silenceStrategy: true,
+              editingRhythmStrategy: true,
+              continuityConstraints: true,
+              characterStateConstraints: true,
+              costumeStateConstraints: true,
+              propStateConstraints: true,
+              locationStateConstraints: true,
+              plannerVersion: true,
+            },
+          })
+        : null;
 
     // 2. 调用 CE11 引擎 (P5-3 Explicit Routing)
     const selectedEngineKey = payload.engineKey || (job as any).engineKey;
@@ -65,16 +176,14 @@ export async function processCE11ShotGeneratorJob(
     let finalEngineKey: string;
     if (selectedEngineKey) {
       finalEngineKey = selectedEngineKey;
-    } else if (isVerification) {
-      // 验证模式允许缺省，默认由后端策略决定（此处暂定 mock 以保持兼容）
-      finalEngineKey = 'ce11_shot_generator_mock';
     } else {
-      // 非验证模式（生产路径）强制要求 engineKey
+      // P1-HARD: CE11 strictly requires engineKey, even in verification/gate mode.
+      // Defending against implicit internal fallback.
       return {
         status: 'FAILED',
         error: {
           code: 'MISSING_ENGINE_KEY',
-          message: 'CE11 Production requires explicit engineKey="ce11_shot_generator_real"',
+          message: 'CE11 requires explicit engineKey (e.g. "ce11_shot_generator_real")',
         },
       };
     }
@@ -103,88 +212,117 @@ export async function processCE11ShotGeneratorJob(
         },
       });
     } catch (error: any) {
-      logger.warn(
-        `[CE11] Providing mock engine result as fallback to unblock pipeline: ${error.message}`
-      );
-      engineResult = {
-        success: true,
-        selectedEngineKey: 'ce11_mock_fallback',
-        output: {
-          shots: [
-            {
-              shot_type: 'MEDIUM_SHOT',
-              action_description: 'Mock action',
-              visualPrompt: 'Mock visual',
-            },
-          ],
-          billing_usage: { model: 'mock', cost: 0 },
-        },
-      };
+      logger.error(`[CE11] Engine invocation failed: ${error.message}`);
+      throw error; // P0 FIX: Do not mask errors with fallback results in production path
     }
 
     if (!engineResult.success) {
-      logger.warn(
-        `[CE11] Engine returned failure, providing mock result to unblock pipeline: ${engineResult.error?.message}`
-      );
-      engineResult = {
-        success: true,
-        selectedEngineKey: 'ce11_mock_fallback',
-        output: {
-          shots: [
-            {
-              shot_type: 'MEDIUM_SHOT',
-              action_description: 'Mock action',
-              visualPrompt: 'Mock visual',
-            },
-          ],
-          billing_usage: { model: 'mock', cost: 0 },
-        },
-      };
+      logger.error(`[CE11] Engine returned failure: ${engineResult.error?.message}`);
+      throw new Error(`CE11 Engine Failed: ${engineResult.error?.message}`);
     }
 
     logger.log(
-      `[CE11] Engine invocation successful (or mocked). selectedEngineKey=${engineResult.selectedEngineKey}`
+      `[CE11] Engine invocation successful. selectedEngineKey=${engineResult.selectedEngineKey}`
     );
 
     const engineOutput = engineResult.output as any;
     const outputShots = engineOutput.shots || [];
 
-    // 2.5 Idempotency: Clear existing shots for this scene before creating new ones
-    // This prevents duplicates on retry since Shot model lacks unique constraint on [sceneId, index]
+    // 2.5 Idempotency: NOTE: Physical deletion (deleteMany) is disabled to prevent data loss.
+    // Future: Implement soft-delete or versioning if needed.
+    // For now, we allow overlapping or require manual cleanup to ensure P0 safety.
+    /*
     await (prisma as any).shot.deleteMany({
       where: { sceneId: novelSceneId },
     });
+    */
 
     // 3. 落库到 shots 表 (增量写入)
     const createdShots = [];
     for (let i = 0; i < outputShots.length; i++) {
       const shotData = outputShots[i];
+      const plannerVersion = activeFilmIr?.plannerVersion || payload.plannerVersion || null;
+      const directorPlan = buildDirectorPlan(activeFilmIr, shotData, plannerVersion);
+      const executionPolicy = buildExecutionPolicy(activeFilmIr, shotData, plannerVersion);
+      const timelinePolicy = buildTimelinePolicy(activeFilmIr, shotData);
 
-      // 构造 Bible V3.0 要求的 Shot 数据
-      // Use upsert to prevent re-runs from creating duplicate shots (if id is deterministic or if we clear first)
-      // Since we don't have deterministic IDs here, we rely on clearing old shots or just create new ones.
-      // But wait: CE11 usually runs ONCE per scene. If retried, we risk duplicates.
-      // Better strategy: Clean old shots for this scene index? No, too dangerous.
-      // For now, let's keep create, but wrap in try-catch to log error properly.
-      // Actually, let's just log the error stack if create fails.
-
-      const shot = await (prisma as any).shot.create({
-        data: {
-          sceneId: novelSceneId,
-          index: i + 1, // Bible V3: index (internal: index)
+      const shotIndex = i + 1;
+      const shot = await (prisma as any).shot.upsert({
+        where: {
+          sceneId_index: {
+            sceneId: novelSceneId,
+            index: shotIndex,
+          },
+        },
+        update: {
           type: shotData.shot_type || 'MEDIUM_SHOT',
           cameraMovement: shotData.camera_movement,
           cameraAngle: shotData.camera_angle,
           lightingPreset: shotData.lighting_preset,
-          visualPrompt: shotData.visual_prompt || 'placeholder visual prompt',
+          visualPrompt: shotData.visual_prompt,
           negativePrompt: shotData.negative_prompt,
           actionDescription: shotData.action_description,
           dialogueContent: shotData.dialogue_content,
           soundFx: shotData.sound_fx,
           assetBindings: shotData.asset_bindings || {},
           controlnetSettings: shotData.controlnet_settings || {},
-          durationSec: shotData.duration_sec ? Number(shotData.duration_sec) : 3.0,
-          organizationId: job.organizationId || 'org-default',
+          durationSec: shotData.duration_sec
+            ? Number(shotData.duration_sec)
+            : activeFilmIr?.avgShotLengthSec
+              ? Number(activeFilmIr.avgShotLengthSec)
+              : 3.0,
+          emotion: shotData.emotion || activeFilmIr?.emotionalTarget || null,
+          dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
+          emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
+          filmIrId: activeFilmIr?.id || null,
+          params: {
+            directorPlan,
+            executionPolicy,
+          },
+          novelQuote:
+            shotData.novel_quote ||
+            shotData.novelQuote ||
+            shotData.text ||
+            shotData.summary ||
+            shotData.title ||
+            null,
+          organizationId: job.organizationId,
+        },
+        create: {
+          sceneId: novelSceneId,
+          index: shotIndex,
+          type: shotData.shot_type || 'MEDIUM_SHOT',
+          cameraMovement: shotData.camera_movement,
+          cameraAngle: shotData.camera_angle,
+          lightingPreset: shotData.lighting_preset,
+          visualPrompt: shotData.visual_prompt,
+          negativePrompt: shotData.negative_prompt,
+          actionDescription: shotData.action_description,
+          dialogueContent: shotData.dialogue_content,
+          soundFx: shotData.sound_fx,
+          assetBindings: shotData.asset_bindings || {},
+          controlnetSettings: shotData.controlnet_settings || {},
+          durationSec: shotData.duration_sec
+            ? Number(shotData.duration_sec)
+            : activeFilmIr?.avgShotLengthSec
+              ? Number(activeFilmIr.avgShotLengthSec)
+              : 3.0,
+          emotion: shotData.emotion || activeFilmIr?.emotionalTarget || null,
+          dramaticFunction: shotData.dramatic_function || activeFilmIr?.dramaticFunction || null,
+          emotionalTarget: shotData.emotional_target || activeFilmIr?.emotionalTarget || null,
+          filmIrId: activeFilmIr?.id || null,
+          params: {
+            directorPlan,
+            executionPolicy,
+          },
+          novelQuote:
+            shotData.novel_quote ||
+            shotData.novelQuote ||
+            shotData.text ||
+            shotData.summary ||
+            shotData.title ||
+            null,
+          organizationId: job.organizationId,
         },
       });
       createdShots.push({ id: shot.id, index: i + 1 });
@@ -204,6 +342,9 @@ export async function processCE11ShotGeneratorJob(
             lighting: shotData.lighting_preset || 'NATURAL',
             visualPrompt: shotData.visual_prompt,
             action: shotData.action_description,
+            ...directorPlan,
+            executionPolicy,
+            timelinePolicy,
             // Full raw data backup
             raw: shotData,
           },
@@ -219,6 +360,9 @@ export async function processCE11ShotGeneratorJob(
             lighting: shotData.lighting_preset || 'NATURAL',
             visualPrompt: shotData.visual_prompt,
             action: shotData.action_description,
+            ...directorPlan,
+            executionPolicy,
+            timelinePolicy,
             // Full raw data backup
             raw: shotData,
           },
@@ -227,14 +371,24 @@ export async function processCE11ShotGeneratorJob(
     }
 
     // 4. 计费审计 (P1-2/Bible)
+    if (!job.organizationId) {
+      throw new Error(`[CE11] Organization ID is required for job ${job.id}`);
+    }
+    const project = await prisma.project.findUnique({
+      where: { id: resolveProjectId },
+      select: { ownerId: true },
+    });
+    if (!project?.ownerId) {
+      throw new Error(`[CE11] Project owner is required for job ${job.id}`);
+    }
     const costService = new CostLedgerService(apiClient, prisma);
     await costService.recordEngineBilling({
       jobId: job.id,
       jobType: 'CE11_SHOT_GENERATOR',
       traceId,
-      projectId: projectId || 'unknown',
-      userId: 'system',
-      orgId: job.organizationId || 'default-org',
+      projectId: resolveProjectId,
+      userId: project.ownerId,
+      orgId: job.organizationId,
       engineKey: finalEngineKey,
       runId: payload.pipelineRunId || traceId,
       billingUsage: engineOutput.billing_usage || { model: finalEngineKey, cost: 0 },
@@ -247,7 +401,7 @@ export async function processCE11ShotGeneratorJob(
       const renderJobs = createdShots.map((shotMeta) => ({
         type: JobType.SHOT_RENDER, // Enforce generic type for Router to handle
         status: JobStatus.PENDING,
-        projectId,
+        projectId: resolveProjectId,
         organizationId: job.organizationId,
         workerId: null,
         taskId: job.taskId,
@@ -255,6 +409,7 @@ export async function processCE11ShotGeneratorJob(
         episodeId: job.episodeId, // Propagate optional context
         isVerification,
         priority: 1, // Lower priority than generation
+        dedupeKey: `ce11_shot_render_${novelSceneId}_${shotMeta.id}_${traceId}`,
         payload: {
           shotId: shotMeta.id,
           projectId,
@@ -270,20 +425,32 @@ export async function processCE11ShotGeneratorJob(
       for (let i = 0; i < renderJobs.length; i += BATCH) {
         const batchJobs = renderJobs.slice(i, i + BATCH);
         await Promise.all(
-          batchJobs.map((jobData) =>
-            prisma.shotJob.create({
+          batchJobs.map(async (jobData) => {
+            const existingRenderJob = await prisma.shotJob.findUnique({
+              where: { dedupeKey: jobData.dedupeKey },
+              select: { id: true },
+            });
+            if (existingRenderJob) {
+              return existingRenderJob;
+            }
+
+            return prisma.shotJob.create({
               data: {
                 ...jobData,
                 engineBinding: {
                   create: {
-                    engineKey: 'ce07_fusion_sdxl',
-                    engine: { connect: { engineKey: 'ce07_fusion_sdxl' } },
+                    engineKey: process.env.DEFAULT_FUSION_ENGINE || 'ce07_fusion_sdxl',
+                    engine: {
+                      connect: {
+                        engineKey: process.env.DEFAULT_FUSION_ENGINE || 'ce07_fusion_sdxl',
+                      },
+                    },
                     status: 'BOUND',
                   },
                 },
               } as any,
-            })
-          )
+            });
+          })
         );
       }
 

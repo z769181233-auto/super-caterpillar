@@ -1,0 +1,59 @@
+{
+    "volumes": [
+        {
+            "index": 1,
+            "title": "回放卷：Gate 8 验证"
+        }
+    ],
+    "chapters": [
+        {
+            "index": 1,
+            "title": "Gate 8 章节",
+            "summary": "回放总结"
+        }
+    ],
+    "scenes": [
+        {
+            "index": 1,
+            "title": "场景 1: 森林边缘",
+            "raw_text": "第一章：张三身穿红色长袍，手持长剑，站在森林边缘。他的长发在风中铺扬，腰间挂着一块玉佩。",
+            "characters": [
+                {
+                    "id": "char_zhang_san",
+                    "name": "张三",
+                    "status": "normal",
+                    "appearance": {
+                        "clothing": "红色长袍",
+                        "hair": "长发"
+                    },
+                    "items": [
+                        "长剑",
+                        "玉佩"
+                    ],
+                    "location": "森林边缘"
+                }
+            ]
+        },
+        {
+            "index": 2,
+            "title": "场景 2: 森林深处",
+            "raw_text": "第二章：张三继续前行，他的红袍在风中铺扬。长剑依然握在手中，森林深处传来声响。",
+            "characters": [
+                {
+                    "id": "char_zhang_san",
+                    "name": "张三",
+                    "status": "normal",
+                    "appearance": {
+                        "clothing": "红色长袍",
+                        "hair": "长发"
+                    },
+                    "items": [
+                        "长剑",
+                        "玉佩"
+                    ],
+                    "location": "森林深处"
+                }
+            ]
+        }
+    ]
+}

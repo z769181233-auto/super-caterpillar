@@ -28,7 +28,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const status = isHttp ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const payload = isHttp ? exception.getResponse() : { message: 'Internal server error' };
-    this.logger.error(`[FILTER_DEBUG] Status: ${status}, Payload: ${JSON.stringify(payload)}`);
     const err = exception as any;
     const errorBody = typeof payload === 'object' ? payload : { message: payload };
     const errorCode = (errorBody as any)?.error?.code;

@@ -8,7 +8,7 @@ async function verify() {
   const payload = {
     sub: 'user_seal_test_001',
     email: 'seal@test.com',
-    tier: 'Basic',
+    tier: 'Free',
     orgId: 'org_seal_test_001',
   };
   const token = jwt.sign(payload, secret);

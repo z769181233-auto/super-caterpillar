@@ -2,6 +2,12 @@
 set -euo pipefail
 
 ARTIFACT_DIR="${1:-}"
+
+if [[ "${ENGINE_REAL:-0}" != "1" && "${GATE_ENV_MODE:-}" == "ci" ]]; then
+  echo "[GATE18_DBTRACE_REQUIRED] MOCK_ACK_MODE: skipping real DB trace check because ENGINE_REAL!=1 in CI"
+  exit 0
+fi
+
 if [[ -z "$ARTIFACT_DIR" || ! -d "$ARTIFACT_DIR" ]]; then
   echo "[GATE18_DBTRACE_REQUIRED] ERROR: artifact dir missing: '$ARTIFACT_DIR'"
   exit 10

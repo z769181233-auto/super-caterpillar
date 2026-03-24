@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { EngineConfigStoreService } from './engine-config-store.service';
 import { EngineAdminService } from '../engine-admin/engine-admin.service';
 
@@ -6,6 +7,7 @@ import { EngineAdminService } from '../engine-admin/engine-admin.service';
  * S3-C.1: 公开的引擎 API（只读）
  * 用于前端筛选器和展示，不需要权限验证
  */
+@UseGuards(JwtOrHmacGuard)
 @Controller('engines')
 export class EngineController {
   constructor(

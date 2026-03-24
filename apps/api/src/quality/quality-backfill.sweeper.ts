@@ -1,6 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { isDatabaseUnavailableError } from '../prisma/pg-runtime.util';
 import { QualityScoreService } from './quality-score.service';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { JobStatus, JobType } from 'database';
@@ -19,6 +20,13 @@ export class QualityBackfillSweeper {
     private readonly qualityScoreService: QualityScoreService,
     private readonly featureFlagService: FeatureFlagService
   ) {}
+
+  private shouldSkipForDatabaseUnavailability(error: any): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return false;
+    }
+    return isDatabaseUnavailableError(error);
+  }
 
   /**
    * 定期执行补偿扫描
@@ -77,6 +85,7 @@ export class QualityBackfillSweeper {
             shotId: job.shotId,
             attempt: job.attempts || 1,
           },
+          orderBy: { createdAt: 'desc' },
         });
 
         if (!existingScore) {
@@ -108,6 +117,12 @@ export class QualityBackfillSweeper {
         );
       }
     } catch (error: any) {
+      if (this.shouldSkipForDatabaseUnavailability(error)) {
+        this.logger.warn(
+          `[QualitySweeper] Skipping backfill scan in non-production due to database unavailability: ${error.message}`
+        );
+        return;
+      }
       this.logger.error(`[QualitySweeper] Error during backfill scan: ${error.message}`);
     }
   }

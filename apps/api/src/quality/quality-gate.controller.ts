@@ -1,8 +1,10 @@
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { Controller, Post, Body, Logger, UseGuards } from '@nestjs/common';
 import { QualityScoreService } from './quality-score.service';
 import { ApiSecurityGuard } from '../security/api-security/api-security.guard';
 import { QualityBackfillSweeper } from './quality-backfill.sweeper';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('quality')
 export class QualityGateController {
   private readonly logger = new Logger(QualityGateController.name);

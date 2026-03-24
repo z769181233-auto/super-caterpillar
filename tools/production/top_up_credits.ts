@@ -9,7 +9,7 @@ if (fs.existsSync(path.join(process.cwd(), '.env.local'))) {
 }
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function main() {
   const orgId = 'org_scale_test';
@@ -44,7 +44,7 @@ main().catch(async (e) => {
   if (e.code === 'P2003' || e.message.includes('Foreign key constraint')) {
     // Create owner user
     console.log('Creating owner user...');
-    const prisma2 = new PrismaClient();
+    const prisma2 = new PrismaClient({});
     await prisma2.user.upsert({
       where: { id: 'user_scale_test_owner' },
       create: { id: 'user_scale_test_owner', email: 'scale_test@scu.com', passwordHash: 'mock' },

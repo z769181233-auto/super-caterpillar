@@ -25,7 +25,7 @@ import { ProjectResolver } from '../common/project-resolver';
     PrismaModule,
     forwardRef(() => JobModule),
     PermissionModule,
-    TaskModule,
+    forwardRef(() => TaskModule),
     AuthModule,
     AuditLogModule,
     AuditModule,

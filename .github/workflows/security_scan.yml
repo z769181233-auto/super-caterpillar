@@ -1,26 +1,35 @@
 name: security-scan
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
+  security-events: write
 
 jobs:
-  dep_audit:
+  dependency-audit:
+    name: dependency-audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v3
+      - uses: actions/checkout@v5
         with:
-          version: 9
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
           run_install: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 20.20.1
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile --ignore-scripts
@@ -28,10 +37,11 @@ jobs:
       - name: pnpm audit
         run: pnpm audit --prod || true
 
-      - name: Install OSV Scanner
-        run: |
-          curl -sL https://github.com/google/osv-scanner/releases/download/v1.9.2/osv-scanner_linux_amd64 -o /usr/local/bin/osv-scanner
-          chmod +x /usr/local/bin/osv-scanner
-
-      - name: OSV scan
-        run: osv-scanner -r . || true
+  osv-scan:
+    name: osv-scan
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.3
+    with:
+      fail-on-vuln: false
+      scan-args: |-
+        --recursive
+        ./

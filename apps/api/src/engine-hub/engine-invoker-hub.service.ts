@@ -35,9 +35,7 @@ export class EngineInvokerHubService implements OnModuleInit {
     private auditLogService: AuditLogService,
     @Inject(CostLimitService)
     private costLimit: CostLimitService
-  ) {
-    console.log(`[EngineInvokerHubService] Constructor - costLimit defined: ${!!this.costLimit}`);
-  }
+  ) {}
 
   async onModuleInit() {
     this.ensureDependencies();
@@ -93,50 +91,29 @@ export class EngineInvokerHubService implements OnModuleInit {
     const started = Date.now();
     let fallbackReason: string | undefined;
 
-    // 0. 故障注入 (Fault Injection) - 仅在 GATE_MODE 下生效
+    // 0. Security Audit: Fault Injection and Bypass are permanently disabled in Round 3 hardening.
     const isGateMode = process.env.GATE_MODE === '1';
-    const forceFailKeys = (process.env.ENGINE_FORCE_FAIL_KEYS || '').split(',').filter(Boolean);
     const disableKeys = (process.env.ENGINE_DISABLE_KEYS || '').split(',').filter(Boolean);
 
-    if (isGateMode && forceFailKeys.includes(req.engineKey)) {
-      const result: EngineInvocationResult<TOutput> = {
-        success: false,
-        selectedEngineKey: req.engineKey,
-        error: {
-          code: 'FAULT_INJECTED',
-          message: `Engine ${req.engineKey} matched ENGINE_FORCE_FAIL_KEYS`,
-        },
-        metrics: { latencyMs: Date.now() - started },
-      };
-      await this.logInvocation(req, result);
-      return result;
-    }
-
     const jobId = req.metadata?.jobId || `manual_${started}`;
-    const projectId = req.metadata?.projectId || 'default_project';
+    const projectId = req.metadata?.projectId;
     const attempt = (req.metadata?.attempt as number) || 0;
+
+    if (!projectId) {
+      throw new BadRequestException('projectId is required for engine hub invocation');
+    }
 
     // 0.0 Auto-resolve engineKey from jobType if missing
     if (!req.engineKey && req.jobType) {
-      const defaultKey = this.memoryRegistry.getDefaultEngineKeyForJobType(req.jobType);
-
-      // P5-0.1: CE11 Strict Engine Key Enforcement (No Silent Mock in Production)
+      // P5-0.1: CE11 Strict Engine Key Enforcement (No Silent Mock even in Verification)
       if (req.jobType === 'CE11_SHOT_GENERATOR') {
-        const payload = req.payload as any;
-        const isVerif =
-          !!req.metadata?.isVerification ||
-          !!(req.metadata?.gateMode as any) ||
-          !!payload?.isVerification ||
-          !!payload?.gateMode;
+        throw new BadRequestException(
+          '[P1-HARD] CE11_SHOT_GENERATOR requires explicit engineKey (e.g. ce11_shot_generator_real)'
+        );
+      }
 
-        if (!isVerif) {
-          throw new BadRequestException(
-            'CE11_SHOT_GENERATOR requires explicit engineKey in production (e.g. ce11_shot_generator_real)'
-          );
-        }
-        // In verification mode, allow implicit mock resolution
-        if (defaultKey) req.engineKey = defaultKey;
-      } else if (defaultKey) {
+      const defaultKey = this.memoryRegistry.getDefaultEngineKeyForJobType(req.jobType);
+      if (defaultKey) {
         req.engineKey = defaultKey;
       }
     }
@@ -271,7 +248,7 @@ export class EngineInvokerHubService implements OnModuleInit {
             engineKey: req.engineKey,
             pricingKey: audit?.pricing_key || 'UNKNOWN',
             actualOutputs: 1,
-            gpuSeconds: engineResult.metrics?.gpuSeconds || 0,
+            gpuSeconds: Number(engineResult.metrics?.gpuSeconds ?? 0),
             costUsd,
             attempt,
             metadata: { traceId: req.metadata?.traceId, provider },
@@ -299,7 +276,7 @@ export class EngineInvokerHubService implements OnModuleInit {
             engineKey: req.engineKey,
             pricingKey: 'CE11_REAL_OT_0',
             actualOutputs: 1,
-            gpuSeconds: engineResult.metrics?.gpuSeconds || 0,
+            gpuSeconds: Number(engineResult.metrics?.gpuSeconds ?? 0),
             costUsd,
             attempt,
             metadata: { traceId: req.metadata?.traceId },
@@ -315,10 +292,10 @@ export class EngineInvokerHubService implements OnModuleInit {
         metrics: {
           latencyMs: Date.now() - started,
           usage: {
-            inputTokens: engineResult?.metrics?.tokensIn || 0,
-            outputTokens: engineResult?.metrics?.tokensOut || 0,
-            totalTokens: (engineResult?.metrics?.tokensUsed as number) || 0,
-            costUsd: (engineResult?.metrics?.costUsd as number) || 0,
+            inputTokens: Number(engineResult?.metrics?.tokensIn ?? 0),
+            outputTokens: Number(engineResult?.metrics?.tokensOut ?? 0),
+            totalTokens: Number(engineResult?.metrics?.tokensUsed ?? 0),
+            costUsd: Number(engineResult?.metrics?.costUsd ?? 0),
           },
           ...(engineResult?.metrics || {}),
         },
@@ -395,7 +372,7 @@ export class EngineInvokerHubService implements OnModuleInit {
     if (engineKey === 'ce04_visual_enrichment') {
       return 'CE04_VISUAL_ENRICHMENT';
     }
-    if (engineKey === 'ce11_shot_generator_real' || engineKey === 'ce11_shot_generator_mock') {
+    if (engineKey === 'ce11_shot_generator_real') {
       return 'CE11_SHOT_GENERATOR';
     }
     if (

@@ -17,11 +17,6 @@ export async function runMultiAgentAnalysis(context: AgentContext): Promise<any>
 
   const finalContext = await orchestrator.executeChain(context);
 
-  console.log(
-    '[DEBUG] AUDITOR Data:',
-    JSON.stringify(finalContext.previousResults[AgentRole.AUDITOR], null, 2)
-  );
-
   // Return the auditor's final output
   return finalContext.previousResults[AgentRole.AUDITOR]?.finalOutput;
 }

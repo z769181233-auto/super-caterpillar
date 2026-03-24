@@ -1,7 +1,7 @@
 import { PrismaClient } from 'database';
 import * as util from 'util';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function check() {
   const binding = await prisma.jobEngineBinding.findUnique({

@@ -12,7 +12,7 @@ import * as dotenv from 'dotenv';
 // 加载环境变量
 dotenv.config({ path: '../../.env' });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 async function auditJobIndexes() {
   console.log('🔍 Auditing Job Indexes...\n');

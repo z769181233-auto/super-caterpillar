@@ -1,7 +1,7 @@
 import { PrismaClient } from '../packages/database';
 
 async function main() {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({});
   try {
     const k = await prisma.apiKey.findUnique({ where: { key: 'dev-worker-key' } });
     console.log('Current Key Record:', JSON.stringify(k, null, 2));

@@ -7,7 +7,9 @@
       "database": ["packages/database/src"],
       "@scu/shared-types": ["packages/shared-types/src"],
       "@scu/engines/*": ["packages/engines/*"],
-      "@scu/api/*": ["apps/api/src/*"]
+      "@scu/api/*": ["apps/api/src/*"],
+      "@scu/shared": ["packages/shared/index.ts"],
+      "@scu/shared/*": ["packages/shared/*"]
     },
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

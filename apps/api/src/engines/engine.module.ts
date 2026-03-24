@@ -9,7 +9,7 @@
 import { Module, OnModuleInit, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { EngineRegistry } from '../engine/engine-registry.service';
-import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter.NEW';
+import { NovelAnalysisLocalAdapter } from './adapters/novel-analysis.local.adapter';
 import { CE06LocalAdapter } from './adapters/ce06_novel_parsing.adapter';
 import { CE09SecurityLocalAdapter } from './adapters/ce09_security.adapter';
 import { CE03LocalAdapter } from './adapters/ce03_visual_density.adapter';
@@ -22,7 +22,7 @@ import { ShotRenderMpsAdapter } from './adapters/shot-render.mps.adapter';
 import { ShotRenderRouterAdapter } from './adapters/shot_render_router.adapter';
 import { FusionAdapter } from './adapters/fusion.adapter';
 import { HttpEngineAdapter } from '../engine/adapters/http-engine.adapter';
-import { MockEngineAdapter } from '../engine/adapters/mock-engine.adapter';
+// P1-HARD: MockEngineAdapter REMOVED per Round 4 Sealing.
 import { CE11ComfyUIAdapter } from '../engine/adapters/ce11.comfyui.adapter';
 import { TranslationCloudAdapter } from './adapters/translation.cloud.adapter';
 import { StyleTransferReplicateAdapter } from './adapters/style-transfer.replicate.adapter';
@@ -91,6 +91,7 @@ import { AuditModule } from '../audit/audit.module';
 import { CostModule } from '../cost/cost.module';
 import { CharacterModule } from '../character/character.module';
 import { AudioModule } from '../audio/audio.module';
+import { AuthModule } from '../auth/auth.module';
 import { AudioTTSLocalAdapter } from './adapters/audio-tts.local.adapter';
 
 @Module({
@@ -99,6 +100,7 @@ import { AudioTTSLocalAdapter } from './adapters/audio-tts.local.adapter';
     EngineAdminModule,
     AuditLogModule,
     AuditModule,
+    AuthModule,
     CostModule,
     CharacterModule,
     forwardRef(() => EngineHubModule),
@@ -124,7 +126,7 @@ import { AudioTTSLocalAdapter } from './adapters/audio-tts.local.adapter';
     ShotRenderRouterAdapter,
     FusionAdapter,
     HttpEngineAdapter,
-    MockEngineAdapter,
+    // MockEngineAdapter REMOVED
     CE11ComfyUIAdapter,
     G5DialogueBindingAdapter, // G5-P0-1: Dialogue Binding Engine
     G5SemanticMotionMapperAdapter, // G5-P0-2: Semantic Motion Mapper
@@ -266,8 +268,7 @@ export class EngineModule implements OnModuleInit {
     private readonly fusionAdapter: FusionAdapter,
     @Inject(HttpEngineAdapter)
     private readonly httpAdapter: HttpEngineAdapter,
-    @Inject(MockEngineAdapter)
-    private readonly mockEngineAdapter: MockEngineAdapter,
+    // MockEngineAdapter REMOVED
     @Inject(CE11ComfyUIAdapter)
     private readonly ce11ComfyUIAdapter: CE11ComfyUIAdapter,
     @Inject(G5DialogueBindingAdapter)
@@ -397,8 +398,7 @@ export class EngineModule implements OnModuleInit {
     // 注册默认的 NovelAnalysisLocalAdapter
     this.registry.register(this.novelAdapter);
 
-    // 注册 HttpEngineAdapter
-    this.registry.register(this.httpAdapter);
+    // MockEngineAdapter registration REMOVED
 
     // CE11 Real Registration (Base registration before alias)
     this.registry.register(this.ce11ComfyUIAdapter);
@@ -415,7 +415,7 @@ export class EngineModule implements OnModuleInit {
     this.registry.registerAlias('ce10_timeline_compose', this.ce04Adapter); // Mapping to enrichment for now
     this.registry.registerAlias('ce11_timeline_preview', this.ce04Adapter);
     this.registry.registerAlias('ce11_shot_generator_real', this.ce11ComfyUIAdapter);
-    this.registry.registerAlias('ce11_shot_generator_mock', this.mockEngineAdapter);
+    // P1-HARD: CE11 Mock alias removed for Round 3 Sealing.
     this.registry.registerAlias('ce23_identity_consistency', this.ce23Adapter);
     this.registry.registerAlias('g5_video_render', this.shotRenderRouterAdapter);
 

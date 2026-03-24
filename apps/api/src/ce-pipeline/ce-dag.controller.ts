@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Logger } from '@nestjs/common';
 import { CEDagOrchestratorService } from './ce-dag-orchestrator.service';
 import { CEDagRunRequestDto, CEDagRunResult } from './ce-dag.types';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
@@ -14,19 +14,18 @@ import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 @Controller('ce-dag')
 @UseGuards(JwtOrHmacGuard)
 export class CEDagController {
+  private readonly logger = new Logger(CEDagController.name);
+
   constructor(private readonly orchestrator: CEDagOrchestratorService) {}
 
   @Post('run')
   async runCEDag(@Body() request: CEDagRunRequestDto): Promise<CEDagRunResult> {
-    console.log(
-      `[CE_DAG_CONTROLLER] [DEBUG] Entering runCEDag with request for shotId=${request.shotId}`
-    );
+    this.logger.log(`[CE_DAG_CONTROLLER] runCEDag shotId=${request.shotId}`);
     try {
       const result = await this.orchestrator.runCEDag(request);
-      console.log(`[CE_DAG_CONTROLLER] [DEBUG] Returning success result`);
       return result;
     } catch (error: any) {
-      console.error(`[CE_DAG_CONTROLLER] [DEBUG] CAUGHT ERROR: ${error.message}`);
+      this.logger.error(`[CE_DAG_CONTROLLER] runCEDag failed: ${error?.message || 'unknown'}`);
       throw error;
     }
   }

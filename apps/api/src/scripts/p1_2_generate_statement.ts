@@ -2,8 +2,9 @@
 import { PrismaClient } from 'database';
 import { createHash } from 'node:crypto';
 import * as util from 'util';
+import { normalizeLegacyBillingLedgerRow } from '../billing/billing-ledger-compat.util';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 function mustEnv(name: string) {
   const v = process.env[name];
@@ -23,24 +24,31 @@ async function main() {
 
   const ledgers = await prisma.billingLedger.findMany({
     where: {
-      tenantId: projectId,
+      OR: [{ tenantId: projectId }, { projectId }],
       createdAt: { gte: start, lte: end },
     },
     select: {
-      itemId: true,
-      itemType: true,
+      jobId: true,
+      projectId: true,
+      billingState: true,
       amount: true,
       createdAt: true,
+      status: true,
+      tenantId: true,
     },
   });
 
   const normalized = ledgers
-    .map((l) => ({
-      jobId: l.itemId,
-      jobType: String(l.itemType),
-      cost: Number(l.amount) / 100, // Amount to Credits
-      createdAt: l.createdAt.toISOString(),
-    }))
+    .map((l) => {
+      const row = normalizeLegacyBillingLedgerRow(l as any);
+      return {
+        jobId: row.itemId,
+        jobType: String(row.chargeCode),
+        cost: Number(row.amount) / 100, // Amount to Credits
+        status: row.status,
+        createdAt: row.createdAt.toISOString(),
+      };
+    })
     .sort((a, b) => {
       if (a.jobType !== b.jobType) return a.jobType.localeCompare(b.jobType);
       if (a.jobId !== b.jobId) return a.jobId.localeCompare(b.jobId);

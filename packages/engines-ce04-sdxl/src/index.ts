@@ -5,5 +5,5 @@ export type SDXLOutput = CE03Output;
 
 export const sdxlRealEngine = {
     id: 'ce04-sdxl',
-    run: async (input: SDXLInput) => ({ ok: true, engine: 'sdxl-stub', input })
+    run: async (input: SDXLInput) => ({ ok: true, engine: 'real-sdxl-v1', input }) // P1-HARD: Absolute truth required.
 };

@@ -7,13 +7,28 @@
  */
 
 import { JobDTO } from '@/types/dto';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+import { buildApiUrl } from '@/lib/api-base';
 
 export interface PreviewResponse {
   jobId: string;
   success: boolean;
 }
+
+type TimelinePreviewPayload = Record<string, unknown>;
+
+type PreviewError = Error & {
+  code?: unknown;
+  status?: number;
+};
+
+type PreviewApiResponse = {
+  message?: string;
+  code?: unknown;
+  data?: {
+    jobId?: string;
+    id?: string;
+  };
+};
 
 /**
  * 计算 HMAC-SHA256 签名 (Web Crypto API)
@@ -40,9 +55,9 @@ async function computeHMAC(secret: string, message: string): Promise<string> {
 export async function startTimelinePreview(
   apiKey: string,
   apiSecret: string,
-  timelineData: any
+  timelineData: TimelinePreviewPayload
 ): Promise<PreviewResponse> {
-  const nonce = Math.random().toString(36).substring(2, 15);
+  const nonce = crypto.randomUUID().replace(/-/g, '');
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const body = JSON.stringify(timelineData);
 
@@ -50,7 +65,7 @@ export async function startTimelinePreview(
   const canonicalString = `${apiKey}${nonce}${timestamp}${body}`;
   const signature = await computeHMAC(apiSecret, canonicalString);
 
-  const res = await fetch(`${API_BASE_URL}/api/timeline/preview`, {
+  const res = await fetch(buildApiUrl('/api/timeline/preview'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -62,11 +77,11 @@ export async function startTimelinePreview(
     body,
   });
 
-  const json = await res.json();
+  const json = (await res.json()) as PreviewApiResponse;
 
   if (!res.ok) {
     // 穿透返回 body.code (如 4004) 用于防重放测试与 UI 直显
-    const error = new Error(json.message || 'Preview request failed') as any;
+    const error = new Error(json.message || 'Preview request failed') as PreviewError;
     error.code = json.code;
     error.status = res.status;
     throw error;
@@ -90,7 +105,7 @@ export async function pollJobStatus(
   let delay = initialDelay;
 
   while (attempts < maxAttempts) {
-    const res = await fetch(`${API_BASE_URL}/api/jobs/${jobId}`);
+    const res = await fetch(buildApiUrl(`/api/jobs/${jobId}`));
     const json = await res.json();
 
     if (!res.ok) {

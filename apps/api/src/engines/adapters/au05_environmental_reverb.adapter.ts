@@ -39,7 +39,7 @@ export class AU05EnvironmentalReverbAdapter implements EngineAdapter {
       decayTime: 2.4,
       wetDryRatio: 0.35,
       spatialImpulseUrl: 'file:///storage/audio/reverb/ir_hall_001.wav',
-      meta: { engine: 'au05-convolution-stub' },
+      meta: { engine: 'au05-convolution-v1' },
     };
 
     await this.cost.recordFromEvent({
