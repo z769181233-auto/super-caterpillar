@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
@@ -40,9 +41,9 @@ export class StorageAuthService {
     this.logger.debug(`verify: key=${key}, tenantId=${tenantId}, userId=${userId}`);
 
     // P0 Fix: SSOT - Query by storageKey first (primary)
-    const asset = await this.prisma.asset.findFirst({
+    const assets = await this.prisma.asset.findMany({
       where: { storageKey: key },
-      orderBy: { createdAt: 'desc' },
+      take: 2,
       select: {
         id: true,
         projectId: true,
@@ -56,13 +57,27 @@ export class StorageAuthService {
     });
 
     // 2. If no Asset found by storageKey, return 404
-    if (!asset) {
+    if (assets.length === 0) {
       this.logger.debug(`[StorageAuth] Asset not found for key: ${key}`);
       this.logger.warn(
         `[StorageAuth] Asset not found for key: ${key}, tenantId: ${tenantId}, userId: ${userId}`
       );
       throw new NotFoundException('Resource not found');
     }
+
+    const distinctContexts = new Set(
+      assets.map(
+        (asset) => `${asset.projectId}:${asset.project?.organizationId ?? 'null'}:${asset.project?.ownerId ?? 'null'}`
+      )
+    );
+    if (distinctContexts.size > 1) {
+      this.logger.error(
+        `[StorageAuth] Ambiguous asset context for key=${key}: ${Array.from(distinctContexts).join(' | ')}`
+      );
+      throw new ConflictException('Ambiguous asset context for storage key');
+    }
+
+    const asset = assets[0];
 
     this.logger.log(
       `asset-found: assetId=${asset.id}, projectId=${asset.projectId}, orgId=${asset.project?.organizationId}`

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
   UnprocessableEntityException,
   Inject,
   forwardRef,
@@ -114,6 +115,28 @@ export class JobService {
     private readonly jobCreationOps: JobCreationOpsService,
     private readonly jobUpdateOps: JobUpdateOpsService
   ) { }
+
+  private async getSingleDispatchedJobForWorker(workerDbId: string) {
+    const jobs = await this.prisma.shotJob.findMany({
+      where: {
+        status: JobStatusEnum.DISPATCHED,
+        workerId: workerDbId,
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 2,
+    });
+
+    if (jobs.length > 1) {
+      this.logger.error(
+        `[JobService] Multiple DISPATCHED jobs assigned to workerDbId=${workerDbId}: ${jobs
+          .map((job) => job.id)
+          .join(', ')}`
+      );
+      throw new ConflictException('Multiple dispatched jobs assigned to the same worker');
+    }
+
+    return jobs[0] ?? null;
+  }
 
   /**
    * Ownership verification delegated to JobAuthOpsService
@@ -1910,13 +1933,7 @@ export class JobService {
       throw new NotFoundException(`Worker ${workerId} not found`);
     }
 
-    const job = await this.prisma.shotJob.findFirst({
-      where: {
-        status: JobStatusEnum.DISPATCHED, // Stage2-A: 改为 DISPATCHED
-        workerId: worker.id, // Stage2-A: 必须是已分配给该 Worker 的 Job
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+    const job = await this.getSingleDispatchedJobForWorker(worker.id);
 
     if (process.env.NODE_ENV === 'development') {
       this.logger.log(

@@ -60,15 +60,11 @@ export class AssetReceiptResolverService {
       orderBy: { createdAt: 'desc' },
     });
     if (level1.length > 0) {
-      const asset = level1[0];
-      return this.mapAssetToReceipt(
-        asset,
-        level1.length > 1 ? 'MULTI_MATCH_CREATED_BY_JOBID' : null
-      );
+      return this.mapFirstAsset(level1, 'MULTI_MATCH_CREATED_BY_JOBID');
     }
 
     // Level 2: Pipeline Trace (Deterministic)
-    const level2 = await this.prisma.asset.findFirst({
+    const level2 = await this.prisma.asset.findMany({
       where: {
         job: { traceId },
         projectId,
@@ -77,13 +73,14 @@ export class AssetReceiptResolverService {
       },
       include: { publishedVideo: true },
       orderBy: { createdAt: 'desc' },
+      take: 2,
     });
-    if (level2) {
-      return this.mapAssetToReceipt(level2, null);
+    if (level2.length > 0) {
+      return this.mapFirstAsset(level2, 'MULTI_MATCH_TRACE_PUBLISHED');
     }
 
     // Level 3: Temporal Window (Deterministic)
-    const level3 = await this.prisma.asset.findFirst({
+    const level3 = await this.prisma.asset.findMany({
       where: {
         projectId,
         job: { traceId },
@@ -96,9 +93,10 @@ export class AssetReceiptResolverService {
       },
       include: { publishedVideo: true },
       orderBy: { createdAt: 'desc' },
+      take: 2,
     });
-    if (level3) {
-      return this.mapAssetToReceipt(level3, null);
+    if (level3.length > 0) {
+      return this.mapFirstAsset(level3, 'MULTI_MATCH_TRACE_WINDOW');
     }
 
     // No asset found - Return full null set with error code
@@ -112,6 +110,10 @@ export class AssetReceiptResolverService {
       fallback_reason: null,
       error_code: 'ERR_ASSET_NOT_FOUND',
     };
+  }
+
+  private mapFirstAsset(assets: any[], multiMatchReason: string): V3AssetReceipt {
+    return this.mapAssetToReceipt(assets[0], assets.length > 1 ? multiMatchReason : null);
   }
 
   private mapAssetToReceipt(asset: any, fallbackReason: string | null): V3AssetReceipt {

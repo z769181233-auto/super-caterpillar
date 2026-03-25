@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
   Inject,
   forwardRef,
@@ -91,6 +92,36 @@ export class WorkerService {
 
   private shouldAllowWorkerLifecyclePgFallback(): boolean {
     return this.isCiOrGateContext() || process.env.FORCE_WORKER_LIFECYCLE_PG_FALLBACK === '1';
+  }
+
+  private async getSingleDispatchedJobForWorker(
+    workerDbId: string,
+    context: string
+  ): Promise<{ id: string; status: JobStatus; createdAt: Date } | null> {
+    const jobs = await this.prisma.shotJob.findMany({
+      where: {
+        workerId: workerDbId,
+        status: JobStatus.DISPATCHED,
+      },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+      },
+      take: 2,
+    });
+
+    if (jobs.length > 1) {
+      this.logger.error(
+        `[WorkerService] ${context} detected multiple DISPATCHED jobs for workerDbId=${workerDbId}: ${jobs
+          .map((job) => job.id)
+          .join(', ')}`
+      );
+      throw new ConflictException('Multiple dispatched jobs assigned to the same worker');
+    }
+
+    return jobs[0] ?? null;
   }
 
   /**
@@ -536,11 +567,13 @@ export class WorkerService {
     }
 
     // 查找分配给该 Worker 的 DISPATCHED Job（Stage2-A：Worker 只能领取 DISPATCHED 状态的 Job）
-    const job = await this.prisma.shotJob.findFirst({
-      where: {
-        workerId: worker.id,
-        status: JobStatus.DISPATCHED, // Stage2-A: 改为 DISPATCHED
-      },
+    const singleJob = await this.getSingleDispatchedJobForWorker(worker.id, 'getNextDispatchedJob');
+    if (!singleJob) {
+      return null;
+    }
+
+    const job = await this.prisma.shotJob.findUnique({
+      where: { id: singleJob.id },
       include: {
         task: true,
         shot: {
@@ -556,9 +589,6 @@ export class WorkerService {
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'asc',
       },
     });
 
@@ -936,13 +966,25 @@ export class WorkerService {
       // 2. Atomic Claim via Transaction
       const dispatchedJob = await this.prisma.$transaction(async (tx) => {
         // 2.0 Recovery: Check if worker already has a DISPATCHED job (e.g. restart/crash recovery)
-        const existingJob = await tx.shotJob.findFirst({
+        const existingJobs = await tx.shotJob.findMany({
           where: {
             workerId: workerNode.id,
             status: JobStatus.DISPATCHED,
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: 'asc' },
+          take: 2,
         });
+
+        if (existingJobs.length > 1) {
+          this.logger.error(
+            `[WorkerService] dispatchNextJobForWorker detected multiple DISPATCHED jobs for worker ${workerId}: ${existingJobs
+              .map((job) => job.id)
+              .join(', ')}`
+          );
+          throw new ConflictException('Multiple dispatched jobs assigned to the same worker');
+        }
+
+        const existingJob = existingJobs[0] ?? null;
 
         if (existingJob) {
           this.logger.log(

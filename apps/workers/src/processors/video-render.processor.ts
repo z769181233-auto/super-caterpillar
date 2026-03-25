@@ -59,33 +59,22 @@ export async function processVideoRenderJob(
 
   const upsertAssetViaPg = async (storageKey: string, sha256?: string) =>
     withPgClient(async (client) => {
-      const existing = await client.query(
-        `SELECT id FROM assets WHERE "ownerType" = $1 AND "ownerId" = $2 AND type = $3 ORDER BY "createdAt" DESC, id DESC LIMIT 1`,
-        [AssetOwnerType.SCENE, sceneId, AssetType.VIDEO]
-      );
-      if (existing.rows[0]?.id) {
-        await client.query(
-          `UPDATE assets
-             SET "storageKey" = $2,
-                 checksum = $3,
-                 "createdByJobId" = $4,
-                 status = 'GENERATED',
-                 "projectId" = COALESCE("projectId", $5)
-           WHERE id = $1`,
-          [existing.rows[0].id, storageKey, sha256, job.id, projectId]
-        );
-        return { id: existing.rows[0].id };
-      }
-
       const assetId = randomUUID();
-      await client.query(
+      const result = await client.query(
         `INSERT INTO assets (
            id, "projectId", "createdAt", checksum, "createdByJobId",
            "ownerId", "ownerType", status, "storageKey", type
-         ) VALUES ($1, $2, NOW(), $3, $4, $5, $6, 'GENERATED', $7, $8)`,
+         ) VALUES ($1, $2, NOW(), $3, $4, $5, $6, 'GENERATED', $7, $8)
+         ON CONFLICT ("ownerType", "ownerId", type)
+         DO UPDATE SET
+           "storageKey" = EXCLUDED."storageKey",
+           checksum = EXCLUDED.checksum,
+           "createdByJobId" = EXCLUDED."createdByJobId",
+           status = 'GENERATED'
+         RETURNING id`,
         [assetId, projectId, sha256, job.id, sceneId, AssetOwnerType.SCENE, storageKey, AssetType.VIDEO]
       );
-      return { id: assetId };
+      return { id: result.rows[0].id };
     });
 
   const normalizeStorageKey = async (rawStorageKey: string): Promise<string> => {
