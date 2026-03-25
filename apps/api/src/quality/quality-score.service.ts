@@ -41,10 +41,19 @@ export class QualityScoreService {
     );
 
     // 1. 获取基础数据 (Identity Score)
-    const identityScoreRecord = await this.prisma.shotIdentityScore.findFirst({
+    const identityScoreRecords = await this.prisma.shotIdentityScore.findMany({
       where: { shotId },
       orderBy: { createdAt: 'desc' },
+      take: 2,
     });
+    if (identityScoreRecords.length > 1) {
+      this.logger.error(
+        `[QualityScoreService] Duplicate identity score records detected for shotId=${shotId}: ${identityScoreRecords
+          .map((record) => record.id)
+          .join(', ')}`
+      );
+    }
+    const identityScoreRecord = identityScoreRecords[0] ?? null;
     let identityScore = identityScoreRecord?.identityScore || 0;
 
     // P16-0: REAL Identity Scoring (Shadow / Real Mode)

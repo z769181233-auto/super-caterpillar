@@ -1313,14 +1313,24 @@ export class WorkerService {
 
         const existingDispatchedResult = await client.query(
           `
-            SELECT 1
+            SELECT id
             FROM shot_jobs
             WHERE "workerId" = $1
               AND status = $2
-            LIMIT 1
+            ORDER BY "createdAt" ASC
+            LIMIT 2
           `,
           [workerNode.id, JobStatus.DISPATCHED]
         );
+
+        if ((existingDispatchedResult.rowCount ?? 0) > 1) {
+          this.logger.error(
+            `[WorkerService] PG preflight detected multiple DISPATCHED jobs for worker ${workerId}: ${existingDispatchedResult.rows
+              .map((row) => row.id)
+              .join(', ')}`
+          );
+          return true;
+        }
 
         if (existingDispatchedResult.rowCount && existingDispatchedResult.rowCount > 0) {
           return true;
@@ -1422,10 +1432,19 @@ export class WorkerService {
           WHERE "workerId" = $1
             AND status = $2
           ORDER BY "createdAt" ASC
-          LIMIT 1
+          LIMIT 2
         `,
         [workerNode.id, JobStatus.DISPATCHED]
       );
+
+      if ((existingJobResult.rowCount ?? 0) > 1) {
+        this.logger.error(
+          `[WorkerService] PG fallback detected multiple DISPATCHED jobs for worker ${workerId}: ${existingJobResult.rows
+            .map((row) => row.id)
+            .join(', ')}`
+        );
+        throw new ConflictException('Multiple dispatched jobs assigned to the same worker');
+      }
 
       if (existingJobResult.rows[0]) {
         await client.query('COMMIT');
