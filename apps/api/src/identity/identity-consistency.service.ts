@@ -102,7 +102,7 @@ export class IdentityConsistencyService {
     targetAssetId: string,
     scoreData: { score: number; verdict: 'PASS' | 'FAIL'; details: any }
   ) {
-    const existing = await this.prisma.shotIdentityScore.findFirst({
+    const existingScores = await this.prisma.shotIdentityScore.findMany({
       where: {
         shotId,
         characterId,
@@ -110,7 +110,18 @@ export class IdentityConsistencyService {
         targetAssetId,
       },
       orderBy: { createdAt: 'desc' },
+      take: 2,
     });
+
+    if (existingScores.length > 1) {
+      this.logger.error(
+        `[IdentityConsistencyService] Duplicate shot identity scores detected for shot=${shotId} character=${characterId} referenceAnchor=${referenceAnchorId} targetAsset=${targetAssetId}: ${existingScores
+          .map((score) => score.id)
+          .join(', ')}`
+      );
+    }
+
+    const existing = existingScores[0] ?? null;
 
     if (existing) {
       return this.prisma.shotIdentityScore.update({
