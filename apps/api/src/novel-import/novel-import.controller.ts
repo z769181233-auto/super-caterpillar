@@ -58,6 +58,7 @@ import {
   isWithinNovelUploadRoot,
   NOVEL_UPLOAD_ROOT,
   resolveNovelUploadPath,
+  unlinkNovelUploadPath,
 } from './novel-upload-path.util';
 
 @Controller('projects/:projectId/novel')
@@ -198,7 +199,8 @@ export class NovelImportController {
     if (!file) throw new BadRequestException('File is required');
 
     const fileExt = path.extname(file.originalname).toLowerCase().substring(1);
-    const filePath = resolveNovelUploadPath(file.path);
+    const storedFileKey = path.basename(file.filename);
+    const filePath = resolveNovelUploadPath(storedFileKey);
     const traceId = randomUUID();
 
     try {
@@ -245,7 +247,7 @@ export class NovelImportController {
           projectId,
           organizationId,
           user.userId,
-          filePath,
+          storedFileKey,
           file.originalname,
           traceId
         );
@@ -281,7 +283,7 @@ export class NovelImportController {
       if (!isWithinNovelUploadRoot(filePath)) {
         throw new ForbiddenException('Access denied: File outside upload directory');
       }
-      const parsed = await this.fileParserService.parseFile(filePath, fileExt, file.originalname);
+      const parsed = await this.fileParserService.parseFile(storedFileKey, fileExt, file.originalname);
 
       // 安全审查
       await this.performSafetyCheck(parsed.rawText, {
@@ -400,7 +402,7 @@ export class NovelImportController {
         timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
-      if (filePath) await fs.unlink(filePath).catch(() => {});
+      if (storedFileKey) await unlinkNovelUploadPath(storedFileKey).catch(() => {});
       if (error instanceof UnprocessableEntityException) throw error;
       throw new BadRequestException(error.message || 'Import failed');
     }
@@ -423,7 +425,7 @@ export class NovelImportController {
 
     const traceId = randomUUID();
     const title = importNovelDto.title || 'Direct Import ' + new Date().toISOString();
-    let tempPath: string | undefined;
+    let tempFileKey: string | undefined;
 
     try {
       const analysisJob = await this.prisma.novelAnalysisJob.create({
@@ -440,8 +442,8 @@ export class NovelImportController {
           `[Stage 4] Large text import detected (${rawText.length} chars), offloading to Shredder.`
         );
 
-        const tempFileName = `direct-import-${Date.now()}.txt`;
-        tempPath = path.join(this.uploadDir, tempFileName);
+        tempFileKey = `direct-import-${Date.now()}.txt`;
+        const tempPath = path.join(this.uploadDir, tempFileKey);
         await fs.writeFile(tempPath, rawText);
 
         const novelSource = await this.prisma.novel.create({
@@ -451,7 +453,7 @@ export class NovelImportController {
             title,
             author: importNovelDto.author || 'Unknown',
             status: 'PARSING',
-            metadata: { importType: 'TEXT', traceId, originalFileName: tempFileName },
+            metadata: { importType: 'TEXT', traceId, originalFileName: tempFileKey },
           },
         });
 
@@ -460,8 +462,8 @@ export class NovelImportController {
           projectId,
           organizationId,
           user.userId,
-          tempPath,
-          tempFileName,
+          tempFileKey,
+          tempFileKey,
           traceId
         );
 
@@ -582,7 +584,7 @@ export class NovelImportController {
         message: 'Novel imported, analysis job created',
       };
     } catch (error: any) {
-      if (tempPath) await fs.unlink(tempPath).catch(() => {});
+      if (tempFileKey) await unlinkNovelUploadPath(tempFileKey).catch(() => {});
       if (error instanceof UnprocessableEntityException) throw error;
       throw new BadRequestException(error.message || 'Import failed');
     }
