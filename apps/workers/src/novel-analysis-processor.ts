@@ -960,9 +960,17 @@ export async function applyAnalyzedStructureToDatabase(
   // - NOVEL_ANALYSIS 可能需要创建/更新数万条 Shot 记录，默认 5s 事务超时会导致
   //   "Transaction already closed / Transaction not found" 错误。
   // - 这里显式将 interactive transaction timeout 调高（例如 5 分钟），避免长事务被过早关闭。
-  const result = await executeInTransaction(prisma);
+  if (typeof (prisma as PrismaClient).$transaction === 'function') {
+    return await (prisma as PrismaClient).$transaction(
+      async (tx) => executeInTransaction(tx),
+      {
+        maxWait: 10000,
+        timeout: 300000,
+      }
+    );
+  }
 
-  return result;
+  return await executeInTransaction(prisma as Prisma.TransactionClient);
 }
 
 /**

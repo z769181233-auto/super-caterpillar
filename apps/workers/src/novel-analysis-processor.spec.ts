@@ -1,5 +1,6 @@
 /// <reference types="jest" />
 import {
+  applyAnalyzedStructureToDatabase,
   getPersistedSceneIndex,
   mapCE06OutputToProjectStructure,
 } from './novel-analysis-processor';
@@ -96,6 +97,75 @@ describe('novel-analysis-processor', () => {
     it('returns undefined for malformed scene-like inputs', () => {
       expect(getPersistedSceneIndex({})).toBeUndefined();
       expect(getPersistedSceneIndex(undefined)).toBeUndefined();
+    });
+  });
+
+  describe('applyAnalyzedStructureToDatabase', () => {
+    const structure = {
+      projectId: 'project-1',
+      seasons: [],
+      episodes: [
+        {
+          index: 1,
+          title: 'Episode 1',
+          summary: '',
+          scenes: [],
+        },
+      ],
+      stats: {
+        seasonsCount: 0,
+        episodesCount: 1,
+        scenesCount: 0,
+        shotsCount: 0,
+      },
+    } as any;
+
+    function createFlatModeTx() {
+      return {
+        novel: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+        episode: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          upsert: jest.fn().mockResolvedValue({
+            id: 'ep-1',
+            index: 1,
+            name: 'Episode 1',
+            summary: null,
+          }),
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: 'ep-1',
+              index: 1,
+              name: 'Episode 1',
+              summary: null,
+              scenes: [],
+            },
+          ]),
+        },
+      };
+    }
+
+    it('uses prisma.$transaction when available on PrismaClient', async () => {
+      const tx = createFlatModeTx();
+      const prisma = {
+        $transaction: jest.fn(async (runner: any) => runner(tx)),
+      } as any;
+
+      const result = await applyAnalyzedStructureToDatabase(prisma, structure);
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(result.stats.created.episodes).toBe(1);
+      expect(tx.episode.upsert).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to direct execution when already given a transaction client', async () => {
+      const tx = createFlatModeTx() as any;
+
+      const result = await applyAnalyzedStructureToDatabase(tx, structure);
+
+      expect(result.stats.created.episodes).toBe(1);
+      expect(tx.episode.upsert).toHaveBeenCalledTimes(1);
     });
   });
 });
